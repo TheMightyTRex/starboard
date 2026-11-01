@@ -98,7 +98,7 @@ def shell(current):
   <div class="site-header__bar">
     <button type="button" class="icon-btn phone-menu-button" data-phone-menu-open aria-haspopup="dialog" aria-expanded="false" aria-controls="phone-menu">{icon("menu", 20)}<span class="visually-hidden">Menu</span></button>
     <a class="brand" href="/index.html">
-      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" fill="var(--color-accent)"/><path d="M16 6l2.6 6.4 6.9.5-5.3 4.4 1.7 6.7L16 20.3 10.1 24l1.7-6.7-5.3-4.4 6.9-.5Z" fill="var(--color-accent-text)"/></svg>
+      <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="3" y="3" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="3" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="17" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><path d="M23 3.5l1.9 4.4 4.7.4-3.6 3.1 1.1 4.6-4.1-2.5-4.1 2.5 1.1-4.6-3.6-3.1 4.7-.4Z" fill="var(--color-logo-star)"/></svg>
       <span class="brand__name" data-site-name>Starboard</span>
     </a>
     <nav class="main-nav menu-tabs" id="main-nav" aria-label="Main">
@@ -112,7 +112,7 @@ def shell(current):
 </header>
 <dialog class="phone-menu" id="phone-menu" aria-label="Menu">
   <div class="side-panel-header">
-    <span class="phone-menu-brand" data-site-name>Starboard</span>
+    <span class="phone-menu-brand"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="3" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="17" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><path d="M23 3.5l1.9 4.4 4.7.4-3.6 3.1 1.1 4.6-4.1-2.5-4.1 2.5 1.1-4.6-3.6-3.1 4.7-.4Z" fill="var(--color-logo-star)"/></svg><span data-site-name>Starboard</span></span>
     <button type="button" class="icon-btn" data-phone-menu-close aria-label="Close menu">{icon("x", 20)}</button>
   </div>
   <div class="phone-menu-search">{search_form("phone-search-input")}</div>

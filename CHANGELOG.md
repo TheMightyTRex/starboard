@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4 (1 November 2026)
+
+- New logo, Tile board: three tiles and a star. In dark mode the star is lighter. Used in the header, the
+  phone menu, the browser tab and the home-screen icon.
+
 ## 0.1.3 (1 November 2026)
 
 - Looks like Storyarr: its colours, its icons (Lucide) and its square tabs. The main menu and every sub-menu

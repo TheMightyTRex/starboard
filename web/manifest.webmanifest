@@ -3,7 +3,7 @@
   "short_name": "Starboard",
   "start_url": "/index.html",
   "display": "standalone",
-  "background_color": "#f4f5f7",
-  "theme_color": "#1f5fbf",
-  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+  "background_color": "#101827",
+  "theme_color": "#323a77",
+  "icons": [{ "src": "/icon-app.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }

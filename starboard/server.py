@@ -24,7 +24,7 @@ MAX_BODY = 64 * 1024
 
 PUBLIC_PAGES = {"/login.html", "/setup.html"}
 PUBLIC_PREFIXES = ("/css/", "/js/", "/fonts/", "/icons/")
-PUBLIC_FILES = {"/favicon.svg", "/manifest.webmanifest"}
+PUBLIC_FILES = {"/favicon.svg", "/icon-app.svg", "/manifest.webmanifest"}
 
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
@@ -166,7 +166,8 @@ class Handler(BaseHTTPRequestHandler):
     def send(self, status, body=b"", content_type="application/json; charset=utf-8", extra=None):
         self.send_response(status)
         for k, v in SECURITY_HEADERS.items():
-            self.send_header(k, v)
+            if k not in (extra or {}):  # a response may set a stricter or different policy of its own
+                self.send_header(k, v)
         if self.is_https():
             self.send_header("Strict-Transport-Security", "max-age=31536000")
         self.send_header("Content-Type", content_type)
@@ -287,7 +288,11 @@ class Handler(BaseHTTPRequestHandler):
         kind = mimetypes.guess_type(full)[0] or "application/octet-stream"
         if kind.startswith("text/") or kind in ("application/javascript", "image/svg+xml", "application/manifest+json"):
             kind += "; charset=utf-8"
-        self.send(200, data, kind, {"Cache-Control": "no-cache"})  # small files on a home network; updates show at once
+        extra = {"Cache-Control": "no-cache"}  # small files on a home network; updates show at once
+        if path in ("/favicon.svg", "/icon-app.svg"):
+            # The logo switches colours for dark mode with its own small style block, and runs nothing.
+            extra["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+        self.send(200, data, kind, extra)
 
     def api(self, method, path):
         app = self.app
