@@ -148,7 +148,7 @@ async function copyText(text) {
   return ok;
 }
 
-const COPY_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11"/><path d="M5 15V5a1 1 0 0 1 1-1h9"/></svg>';
+const COPY_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>'; // Lucide copy
 
 function copyButton(text, label) {
   const button = el("button", { type: "button", class: "copy-btn", "aria-label": `Copy ${label}`, title: `Copy ${label}` });
@@ -162,32 +162,57 @@ function copyButton(text, label) {
   return button;
 }
 
+// The app's own icon, fetched and kept by the server; its initials when there is none.
+function appIcon(s, className = "app__icon") {
+  const box = el("span", { class: `${className} has-image`, "aria-hidden": "true" });
+  const img = el("img", { src: `/api/icons/${encodeURIComponent(s.id)}?v=${encodeURIComponent(s.icon || "")}`, alt: "", loading: "lazy", decoding: "async" });
+  img.addEventListener("error", () => { img.remove(); box.classList.remove("has-image"); box.textContent = monogram(s.name); });
+  box.append(img);
+  return box;
+}
+
 // Header ---------------------------------------------------------------
 
 function setUpHeader() {
-  const menuBtn = $("[data-menu-toggle]");
-  const nav = $("#main-nav");
-  if (menuBtn && nav) {
-    const close = (focusButton) => {
-      nav.classList.remove("is-open");
-      menuBtn.setAttribute("aria-expanded", "false");
-      if (focusButton) menuBtn.focus();
-    };
-    menuBtn.addEventListener("click", () => {
-      const open = !nav.classList.contains("is-open");
-      nav.classList.toggle("is-open", open);
-      menuBtn.setAttribute("aria-expanded", String(open));
-      if (open) $("a, input", nav)?.focus();
-    });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && nav.classList.contains("is-open")) close(true); });
-    document.addEventListener("click", (e) => {
-      if (nav.classList.contains("is-open") && !nav.contains(e.target) && !menuBtn.contains(e.target)) close(false);
-    });
+  // Phone menu: a drawer from the left. <dialog> traps focus and closes with Escape.
+  const drawer = $("#phone-menu");
+  const opener = $("[data-phone-menu-open]");
+  if (drawer && opener) {
+    opener.addEventListener("click", () => { drawer.showModal(); opener.setAttribute("aria-expanded", "true"); });
+    drawer.addEventListener("close", () => { opener.setAttribute("aria-expanded", "false"); opener.focus(); });
+    $("[data-phone-menu-close]", drawer).addEventListener("click", () => drawer.close());
+    drawer.addEventListener("click", (e) => { if (e.target === drawer) drawer.close(); });  // the backdrop
+    $$(".phone-menu-section > button", drawer).forEach((button) => button.addEventListener("click", () => {
+      const open = button.getAttribute("aria-expanded") !== "true";
+      button.setAttribute("aria-expanded", String(open));
+      $(`#${button.getAttribute("aria-controls")}`).hidden = !open;
+    }));
+    matchMedia("(min-width: 900px)").addEventListener("change", (e) => { if (e.matches && drawer.open) drawer.close(); });
   }
+  // Tabs that do not fit show icons only, as in Storyarr.
+  const fit = () => $$(".site-header .menu-tabs").forEach((nav) => {
+    nav.classList.remove("is-compact");
+    if (nav.scrollWidth > nav.clientWidth + 1) nav.classList.add("is-compact");
+  });
+  fit();
+  window.addEventListener("resize", fit);
+  document.fonts?.ready.then(fit);
   $$("[data-sign-out]").forEach((b) => b.addEventListener("click", async () => {
     await api("/api/logout", { method: "POST" }).catch(() => {});
     location.href = "/login.html";
   }));
+}
+
+function showVersion(version, repo) {
+  if (!version) return;
+  const label = `Starboard: v${version}`;
+  $$("[data-version]").forEach((n) => { n.textContent = label; });
+  if ($(".site-header") && !$(".site-footer")) {
+    document.body.append(el("footer", { class: "site-footer" },
+      el("span", { class: "version-label", text: label }),
+      repo ? el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "GitHub repository", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null,
+      el("a", { href: "/settings-updates.html", text: "Updates" })));
+  }
 }
 
 // Display and accessibility panel --------------------------------------
@@ -239,8 +264,8 @@ async function startPage() {
     serverDesign = session.design || "health";
     applyPrefs();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
-    const pageName = document.title.split(" · ")[0];
-    document.title = `${pageName} · ${session.site_name}`;
+    document.title = document.title.replace(/ · [^·]*$/, ` · ${session.site_name}`);
+    showVersion(session.version, session.repo);
     return session;
   } catch { return null; }
 }

@@ -35,13 +35,36 @@ DEFAULTS = {
     "show_outside_address": True,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
-    "groups": ["Watch and listen", "Requests", "Downloads", "Tools"],
+    "groups": ["Watch, listen and request", "Find and organise", "Search and download", "Dashboards and tools"],
 }
 
 SERVICE_FIELDS = {
-    "id", "name", "type", "url", "link", "outside_link", "api_key", "group", "description", "enabled",
+    "id", "name", "type", "url", "link", "outside_link", "icon", "api_key", "group", "description", "enabled",
     "quality_profile_id", "metadata_profile_id", "root_folder", "search_on_add",
 }
+
+# The category each well-known app goes in by default: the index of one of the four default groups.
+CATEGORY_OF = {}
+for _index, _names in enumerate([
+    "jellyfin plex emby audiobookshelf seerr jellyseerr overseerr ombi wizarr jellystat tautulli navidrome kavita komga calibre-web immich",
+    "sonarr radarr lidarr readarr storyarr dewarr bazarr kapowarr mylar whisparr tdarr",
+    "prowlarr jackett qbittorrent transmission deluge sabnzbd nzbget profilarr flaresolverr slskd unpackerr autobrr",
+]):
+    for _name in _names.split():
+        CATEGORY_OF[_name] = _index
+
+
+def guess_group(service, groups):
+    """The group to use when none is chosen: the app's usual category, found by name or else by its place in the list."""
+    if not groups:
+        return ""
+    slug = re.sub(r"[^a-z0-9]+", "-", str(service.get("name", "")).lower()).strip("-")
+    index = CATEGORY_OF.get(slug, CATEGORY_OF.get(service.get("type", ""), 3))
+    wanted = DEFAULTS["groups"][index]
+    if wanted in groups:
+        return wanted
+    return groups[index] if index < len(groups) else groups[-1]  # renamed categories keep their place
+
 
 _ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 
@@ -64,6 +87,9 @@ class Config:
         if not os.path.exists(self.path):
             data = json.loads(json.dumps(DEFAULTS))
             data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
+            name = os.environ.get("STARBOARD_NAME", "").strip()[:60]
+            if name:
+                data["site_name"] = name
             self._write(data)
             return data
         with open(self.path, encoding="utf-8") as f:
@@ -112,6 +138,8 @@ class Config:
     def upsert_service(self, incoming):
         with self.lock:
             clean = validate_service(incoming)
+            if not clean["group"]:
+                clean["group"] = guess_group(clean, self.data["groups"])
             current = self.service(clean["id"]) if incoming.get("id") else None
             if current:
                 if not clean.get("api_key"):
@@ -162,6 +190,8 @@ class Config:
             "show_outside_address": d["show_outside_address"],
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
+            "category_of": CATEGORY_OF,
+            "default_groups": DEFAULTS["groups"],
         }
 
     def update_general(self, incoming):
@@ -218,6 +248,10 @@ def validate_service(s):
         raise ConfigError("That app ID is not valid")
     clean["api_key"] = str(clean.get("api_key", "")).strip()[:200]
     clean["group"] = str(clean.get("group", "")).strip()[:40]
+    icon = str(clean.get("icon", "")).strip()[:300]
+    if icon and not (re.match(r"^[a-z0-9][a-z0-9-]{0,63}$", icon.lower()) or re.match(r"^https://[^\s]+$", icon)):
+        raise ConfigError("The icon must be a name such as sonarr, or an address starting with https://")
+    clean["icon"] = icon
     clean["description"] = str(clean.get("description", "")).strip()[:200]
     clean["root_folder"] = str(clean.get("root_folder", "")).strip()[:300]
     clean["enabled"] = bool(clean.get("enabled", True))

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>Settings · Starboard</title>
+<title>Apps · Settings · Starboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1f5fbf">
@@ -17,43 +17,79 @@
 <script src="/js/settings.js" defer></script>
 </head>
 <body class="page-settings">
-<!-- shell:start (written by tools/apply_shell.py; edit the menu there) -->
+<!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
 <a class="skip-link" href="#main">Skip to main content</a>
 <header class="site-header">
   <div class="site-header__bar">
+    <button type="button" class="icon-btn phone-menu-button" data-phone-menu-open aria-haspopup="dialog" aria-expanded="false" aria-controls="phone-menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg><span class="visually-hidden">Menu</span></button>
     <a class="brand" href="/index.html">
       <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" fill="var(--color-accent)"/><path d="M16 6l2.6 6.4 6.9.5-5.3 4.4 1.7 6.7L16 20.3 10.1 24l1.7-6.7-5.3-4.4 6.9-.5Z" fill="var(--color-accent-text)"/></svg>
       <span class="brand__name" data-site-name>Starboard</span>
     </a>
-    <nav class="main-nav" id="main-nav" aria-label="Main">
-      <form class="nav-search search-bar" action="/search.html" role="search">
-        <label class="visually-hidden" for="nav-search-input">Search your apps</label>
-        <input class="input" id="nav-search-input" name="q" type="search" placeholder="Search films, series, music, books">
-      </form>
-      <ul>
-        <li><a href="/index.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Apps</span></a></li>
-        <li><a href="/search.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span></a></li>
-        <li><a href="/downloads.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg><span>Downloads</span></a></li>
-        <li><a href="/upcoming.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Coming up</span></a></li>
-        <li><a href="/system.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="12"/><path d="M8 20h8M12 16v4"/><path d="m7 12 3-3 2 2 4-4"/></svg><span>System</span></a></li>
-        <li><a href="/settings.html" aria-current="page"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg><span>Settings</span></a></li>
-      </ul>
+    <nav class="main-nav menu-tabs" id="main-nav" aria-label="Main">
+        <a href="/index.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span class="menu-tabs__label">Apps</span></a>
+        <a href="/search.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span class="menu-tabs__label">Search</span></a>
+        <a href="/downloads.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span class="menu-tabs__label">Downloads</span></a>
+        <a href="/upcoming.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg><span class="menu-tabs__label">Coming up</span></a>
+        <a href="/system.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg><span class="menu-tabs__label">System</span></a>
+        <a href="/settings.html" aria-current="page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg><span class="menu-tabs__label">Settings</span></a>
     </nav>
-    <form class="header-search" action="/search.html" role="search">
-      <label class="visually-hidden" for="header-search-input">Search your apps</label>
-      <input class="input" id="header-search-input" name="q" type="search" placeholder="Search films, series, music, books">
-    </form>
+    <div class="header-search"><form class="search-bar" action="/search.html" role="search"><label class="visually-hidden" for="header-search-input">Search your apps</label><input class="input" id="header-search-input" name="q" type="search" placeholder="Search films, series, music, books"></form></div>
     <div class="header-actions">
-      <button type="button" class="icon-btn display-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg><span class="display-btn__label">Display</span></button>
-      <button type="button" class="icon-btn menu-btn" data-menu-toggle aria-expanded="false" aria-controls="main-nav"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menu</span></button>
+      <button type="button" class="icon-btn display-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><span class="display-btn__label">Display</span></button>
     </div>
   </div>
+  <div class="sub-menu">
+    <nav class="menu-tabs" aria-label="Settings">
+      <a href="/settings.html" aria-current="page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 4v4"/><path d="M2 8h20"/><path d="M6 4v4"/></svg><span class="menu-tabs__label">Apps</span></a>
+      <a href="/settings-general.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 5H3"/><path d="M12 19H3"/><path d="M14 3v4"/><path d="M16 17v4"/><path d="M21 12h-9"/><path d="M21 19h-5"/><path d="M21 5h-7"/><path d="M8 10v4"/><path d="M8 12H3"/></svg><span class="menu-tabs__label">General</span></a>
+      <a href="/settings-security.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg><span class="menu-tabs__label">Security</span></a>
+      <a href="/settings-updates.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg><span class="menu-tabs__label">Updates</span></a>
+    </nav>
+  </div>
 </header>
+<dialog class="phone-menu" id="phone-menu" aria-label="Menu">
+  <div class="side-panel-header">
+    <span class="phone-menu-brand" data-site-name>Starboard</span>
+    <button type="button" class="icon-btn" data-phone-menu-close aria-label="Close menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  </div>
+  <div class="phone-menu-search"><form class="search-bar" action="/search.html" role="search"><label class="visually-hidden" for="phone-search-input">Search your apps</label><input class="input" id="phone-search-input" name="q" type="search" placeholder="Search films, series, music, books"></form></div>
+  <nav class="phone-menu-sections" aria-label="Main">
+        <div class="phone-menu-section">
+          <a class="phone-menu-section-button" href="/index.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span>Apps</span></a>
+        </div>
+        <div class="phone-menu-section">
+          <a class="phone-menu-section-button" href="/search.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span>Search</span></a>
+        </div>
+        <div class="phone-menu-section">
+          <a class="phone-menu-section-button" href="/downloads.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>Downloads</span></a>
+        </div>
+        <div class="phone-menu-section">
+          <a class="phone-menu-section-button" href="/upcoming.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg><span>Coming up</span></a>
+        </div>
+        <div class="phone-menu-section">
+          <a class="phone-menu-section-button" href="/system.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg><span>System</span></a>
+        </div>
+        <div class="phone-menu-section" data-current>
+          <button type="button" class="phone-menu-section-button" aria-expanded="true" aria-controls="phone-sub-settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg><span>Settings</span><span class="phone-menu-chevron"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></span></button>
+          <ul id="phone-sub-settings">
+            <li><a href="/settings.html" aria-current="page">Apps</a></li>
+            <li><a href="/settings-general.html">General</a></li>
+            <li><a href="/settings-security.html">Security</a></li>
+            <li><a href="/settings-updates.html">Updates</a></li>
+          </ul>
+        </div>
+  </nav>
+  <div class="phone-menu-footer">
+    <span class="version-label" data-version></span>
+    <button type="button" class="btn btn-quiet" data-sign-out><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg><span>Sign out</span></button>
+  </div>
+</dialog>
 <dialog id="display-panel" aria-labelledby="display-panel-title">
   <form method="dialog">
     <div class="dialog__head">
       <h2 id="display-panel-title">Display and accessibility</h2>
-      <button type="button" class="icon-btn" data-dialog-close aria-label="Close display and accessibility"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <button type="button" class="icon-btn" data-dialog-close aria-label="Close display and accessibility"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     </div>
     <div class="dialog__body">
       <fieldset><legend>Theme</legend>
@@ -82,7 +118,7 @@
       <label class="switch-row" for="pref-underline"><span>Underline links</span><input type="checkbox" id="pref-underline" name="underline"></label>
       <label class="switch-row" for="pref-spacing"><span>Wider text spacing</span><input type="checkbox" id="pref-spacing" name="spacing"></label>
       <fieldset><legend>Design</legend>
-        <p class="hint">Applies to this browser only. Set the default for everyone in Settings.</p>
+        <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General.</p>
         <div class="design-options" data-design-options></div>
       </fieldset>
     </div>
@@ -98,78 +134,17 @@
 <div class="page">
   <div class="page-head">
     <div class="page-head__text">
-      <h1>Settings</h1>
-      <p class="summary">Apps, search, appearance, security and updates.</p>
+      <h1>Apps</h1>
+      <p class="summary">The apps on your dashboard, in the order they appear.</p>
     </div>
   </div>
-  <div class="settings-layout">
-    <nav class="settings-nav" aria-label="Settings sections">
-      <ul>
-        <li><a href="#apps">Apps</a></li>
-        <li><a href="#general">General</a></li>
-        <li><a href="#security">Security</a></li>
-        <li><a href="#updates">Updates</a></li>
-      </ul>
-    </nav>
-    <div class="settings-sections">
-      <section class="panel" id="apps" aria-labelledby="apps-title">
-        <div class="panel__head">
-          <h2 id="apps-title">Apps</h2>
-          <p class="hint">The apps on your dashboard. Sonarr, Radarr, Lidarr and Readarr are also searched. API keys stay on the server and are never shown again.</p>
-        </div>
-        <ul class="rows" id="service-list"></ul>
-        <div class="actions"><button type="button" class="btn btn-primary" id="add-service">Add an app</button></div>
-      </section>
-      <section class="panel" id="general" aria-labelledby="general-title">
-        <div class="panel__head"><h2 id="general-title">General</h2><p class="hint">The name in the header and the design everyone sees unless they choose their own in Display.</p></div>
-        <form id="general-form" class="form-grid">
-          <div class="field"><label for="site-name">Dashboard name</label><input class="input" id="site-name" name="site_name" maxlength="60" required></div>
-          <div class="field"><label for="groups">Groups</label><input class="input" id="groups" name="groups" aria-describedby="groups-hint"><p class="hint" id="groups-hint">Separate with commas. Apps are shown under these headings.</p></div>
-          <fieldset class="field" data-span="all"><legend>On each app's card</legend>
-            <label class="check" for="show-home"><input type="checkbox" id="show-home" name="show_home_address"> Home address, with a copy button</label>
-            <label class="check" for="show-outside"><input type="checkbox" id="show-outside" name="show_outside_address"> Outside address, with a copy button (when the app has one)</label>
-          </fieldset>
-          <fieldset class="field" data-span="all"><legend>Default design</legend><div class="design-options" id="default-design"></div></fieldset>
-          <div class="actions" data-span="all"><button class="btn btn-primary" type="submit">Save general settings</button></div>
-        </form>
-      </section>
-      <section class="panel" id="security" aria-labelledby="security-title">
-        <div class="panel__head"><h2 id="security-title">Security</h2><p class="hint">Sign-in, sessions and cookies.</p></div>
-        <form id="network-form" class="design-options" aria-labelledby="network-title">
-          <h3 id="network-title">Who can open the dashboard</h3>
-          <label class="check" for="network-access"><input type="checkbox" id="network-access" name="network_access" aria-describedby="network-hint"> Phones and other computers on your home network</label>
-          <p class="hint" id="network-hint">When this is off, only the computer Starboard runs on can open it. Other devices cannot connect at all.</p>
-          <div id="network-addresses"></div>
-          <p class="notice" data-tone="warning" id="network-warning" hidden>You are using another device. If you turn this off, this device loses access straight away. Select Save again to turn it off.</p>
-          <p class="field-error" id="network-forced" hidden></p>
-          <div class="actions"><button class="btn btn-primary" type="submit" id="network-save">Save who can open it</button></div>
-        </form>
-        <form id="password-form" class="form-grid">
-          <div class="field"><label for="current-password">Current password</label><input class="input" id="current-password" name="current" type="password" autocomplete="current-password" required></div>
-          <div class="field"><label for="new-password">New password</label><input class="input" id="new-password" name="new" type="password" autocomplete="new-password" minlength="10" required aria-describedby="new-password-hint"><p class="hint" id="new-password-hint">At least 10 characters. Everyone else is signed out.</p></div>
-          <p class="field-error" id="password-error" role="alert" data-span="all"></p>
-          <div class="actions" data-span="all"><button class="btn btn-primary" type="submit">Change password</button></div>
-        </form>
-        <form id="session-form" class="form-grid">
-          <div class="field"><label for="session-days">Remember me keeps people signed in for (days)</label><input class="input" id="session-days" name="session_days" type="number" min="1" max="90" required aria-describedby="session-days-hint"><p class="hint" id="session-days-hint">Without Remember me, people are signed out when they close the browser, or after a day.</p></div>
-          <label class="check" for="secure-cookies"><input type="checkbox" id="secure-cookies" name="secure_cookies"> Only send the sign-in cookie over HTTPS</label>
-          <div class="actions" data-span="all">
-            <button class="btn btn-primary" type="submit">Save session settings</button>
-            <button class="btn btn-danger" type="button" id="end-all">Sign out everywhere</button>
-            <button class="btn" type="button" data-sign-out>Sign out</button>
-          </div>
-        </form>
-      </section>
-      <section class="panel" id="updates" aria-labelledby="updates-title">
-        <div class="panel__head"><h2 id="updates-title">Updates</h2><p class="hint">Updates run on the server, so the dashboard never needs access to Docker.</p></div>
-        <p id="version-line">Checking…</p>
-        <label class="check" for="update-check"><input type="checkbox" id="update-check"> Check GitHub for new releases</label>
-        <p>To update, run this on the server, in the folder you installed into:</p>
-        <code class="code-block">./update.sh</code>
-        <p class="hint">It backs up your settings, installs the newest release and goes back to the previous version if the new one does not start.</p>
-      </section>
+  <section class="panel" id="apps" aria-label="Apps">
+    <div class="panel__head">
+      <p class="hint">The apps on your dashboard. Sonarr, Radarr, Lidarr and Readarr are also searched. API keys stay on the server and are never shown again.</p>
     </div>
-  </div>
+    <ul class="rows" id="service-list"></ul>
+    <div class="actions"><button type="button" class="btn btn-primary" id="add-service">Add an app</button></div>
+  </section>
 </div>
 <dialog id="service-dialog" aria-labelledby="service-title">
   <form id="service-form" novalidate>
@@ -185,7 +160,8 @@
       <div class="field"><label for="svc-link">Address to open in your browser</label><input class="input" id="svc-link" name="link" inputmode="url" aria-describedby="svc-link-hint"><p class="hint" id="svc-link-hint">Leave empty to use the address above. Shown on the app's card as its home address.</p></div>
       <div class="field"><label for="svc-outside">Outside address</label><input class="input" id="svc-outside" name="outside_link" inputmode="url" placeholder="https://" aria-describedby="svc-outside-hint"><p class="hint" id="svc-outside-hint">The address to use away from home, for example your own domain. Optional.</p></div>
       <div class="field" id="svc-key-field"><label for="svc-key">API key</label><input class="input" id="svc-key" name="api_key" type="password" autocomplete="off" aria-describedby="svc-key-hint"><p class="hint" id="svc-key-hint">In the app: Settings, General. Leave empty to keep the saved key.</p></div>
-      <div class="field"><label for="svc-group">Group</label><select class="input" id="svc-group" name="group"></select></div>
+      <div class="field"><label for="svc-icon">Icon</label><input class="input" id="svc-icon" name="icon" maxlength="300" autocomplete="off" aria-describedby="svc-icon-hint"><p class="hint" id="svc-icon-hint">A name from the dashboard-icons collection, such as <code>sonarr</code>, or an address starting with https://. Leave empty to use the app's name.</p></div>
+      <div class="field"><label for="svc-group">Category</label><select class="input" id="svc-group" name="group" aria-describedby="svc-group-hint"></select><p class="hint" id="svc-group-hint">The heading the app sits under. Change the list of categories in Settings, General.</p></div>
       <div class="field"><label for="svc-desc">Description</label><input class="input" id="svc-desc" name="description" maxlength="200"></div>
       <div id="svc-search-fields" class="design-options">
         <div class="field"><label for="svc-quality">Quality profile when adding</label><select class="input" id="svc-quality" name="quality_profile_id"><option value="">First in the list</option></select></div>

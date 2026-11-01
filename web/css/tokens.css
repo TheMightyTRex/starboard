@@ -1,5 +1,5 @@
 /* Design tokens (role names). One set per theme: Light, Dark, High contrast.
-   Components use only these. Based on the Storyarr design system, version 0.1. */
+   Components use only these. Colours are Storyarr's (apps/web/src/theme-tokens.css), so the two look like one family. */
 
 @font-face {
   font-family: "Atkinson Hyperlegible Next";
@@ -33,18 +33,21 @@
   --motion-fast: 120ms;
   --motion-panel: 200ms ease-out;
 
-  --color-bg: #f4f5f7;
-  --color-surface: #ffffff;
+  --color-bg: #f0f5ff;
+  --color-header: #fcfdff;
+  --color-surface: #f7faff;
   --color-surface-raised: #ffffff;
-  --color-surface-sunken: #e9ebef;
-  --color-text: #16181d;
-  --color-text-muted: #4a5160;
-  --color-border: #8a919e;
-  --color-divider: #dcdfe5;
-  --color-accent: #1f5fbf;
+  --color-surface-sunken: #e4ebf7;
+  --color-text: #141416;
+  --color-text-muted: #424b5b;
+  --color-border: #7d879a;
+  --color-divider: #c2cddf;
+  --color-accent: #323a77;
   --color-accent-text: #ffffff;
-  --color-accent-soft: #e3ecfa;
-  --color-focus: #1f5fbf;
+  --color-accent-soft: #e3e7fb;
+  --color-control-active: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  --color-focus: #323a77;
+  --color-count: #af4e24;
   --shadow-raised: 0 8px 28px rgb(16 24 40 / 0.18);
 
   --status-success-bg: #dcf2e3; --status-success-fg: #135c2e;
@@ -58,9 +61,9 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: #111318; --color-surface: #1a1d24; --color-surface-raised: #232731; --color-surface-sunken: #0c0e12;
-    --color-text: #eef0f4; --color-text-muted: #b3b9c5; --color-border: #6f7786; --color-divider: #2d323d;
-    --color-accent: #7fb0ff; --color-accent-text: #0b1830; --color-accent-soft: #1c2c48; --color-focus: #9cc2ff;
+    --color-bg: #101827; --color-header: #141e2e; --color-surface: #1c2738; --color-surface-raised: #232f42; --color-surface-sunken: #0c1220;
+    --color-text: #f3f4f6; --color-text-muted: #a4aec1; --color-border: #6f7b91; --color-divider: #303c51;
+    --color-accent: #a5b4fc; --color-accent-text: #101827; --color-accent-soft: #252f52; --color-focus: #a5b4fc; --color-count: #b7562c;
     --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.5);
     --status-success-bg: #12351f; --status-success-fg: #8fe0aa;
     --status-info-bg: #142a4b;    --status-info-fg: #a8c8ff;
@@ -72,9 +75,9 @@
   }
 }
 :root[data-theme="dark"] {
-  --color-bg: #111318; --color-surface: #1a1d24; --color-surface-raised: #232731; --color-surface-sunken: #0c0e12;
-  --color-text: #eef0f4; --color-text-muted: #b3b9c5; --color-border: #6f7786; --color-divider: #2d323d;
-  --color-accent: #7fb0ff; --color-accent-text: #0b1830; --color-accent-soft: #1c2c48; --color-focus: #9cc2ff;
+  --color-bg: #101827; --color-header: #141e2e; --color-surface: #1c2738; --color-surface-raised: #232f42; --color-surface-sunken: #0c1220;
+    --color-text: #f3f4f6; --color-text-muted: #a4aec1; --color-border: #6f7b91; --color-divider: #303c51;
+    --color-accent: #a5b4fc; --color-accent-text: #101827; --color-accent-soft: #252f52; --color-focus: #a5b4fc; --color-count: #b7562c;
   --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.5);
   --status-success-bg: #12351f; --status-success-fg: #8fe0aa;
   --status-info-bg: #142a4b;    --status-info-fg: #a8c8ff;
@@ -87,17 +90,17 @@
 
 /* High contrast: stronger borders, focus and muted text; borders instead of shadows. */
 :root.pref-contrast {
-  --color-bg: #ffffff; --color-surface: #ffffff; --color-surface-raised: #ffffff; --color-surface-sunken: #f0f0f0;
-  --color-text: #000000; --color-text-muted: #1f1f1f; --color-border: #000000; --color-divider: #000000;
-  --color-accent: #0033a0; --color-accent-text: #ffffff; --color-accent-soft: #dbe5ff; --color-focus: #c4006a;
+  --color-bg: #f0f5ff; --color-header: #ffffff; --color-surface: #ffffff; --color-surface-raised: #ffffff; --color-surface-sunken: #f0f0f0;
+  --color-text: #030304; --color-text-muted: #19212f; --color-border: #000000; --color-divider: #596272;
+  --color-accent: #11104a; --color-accent-text: #ffffff; --color-accent-soft: #dbe0ff; --color-focus: #c4006a; --color-count: #863309;
   --shadow-raised: none;
   --status-success-fg: #003d17; --status-info-fg: #00266e; --status-neutral-fg: #000000;
   --status-warning-fg: #3d2600; --status-danger-fg: #6e0000; --status-muted-fg: #000000;
 }
 :root.pref-contrast.is-dark {
-  --color-bg: #000000; --color-surface: #000000; --color-surface-raised: #000000; --color-surface-sunken: #111111;
-  --color-text: #ffffff; --color-text-muted: #f0f0f0; --color-border: #ffffff; --color-divider: #ffffff;
-  --color-accent: #9cc8ff; --color-accent-text: #000000; --color-accent-soft: #0d2245; --color-focus: #ffd400;
+  --color-bg: #101827; --color-header: #000000; --color-surface: #000000; --color-surface-raised: #000000; --color-surface-sunken: #111111;
+  --color-text: #ffffff; --color-text-muted: #d5e0f4; --color-border: #ffffff; --color-divider: #8391aa;
+  --color-accent: #e7ecff; --color-accent-text: #000000; --color-accent-soft: #0d2245; --color-focus: #ffd400; --color-count: #a44418;
   --status-success-bg: #002b10; --status-success-fg: #a6ffc2; --status-info-bg: #001c45; --status-info-fg: #c2dbff;
   --status-neutral-bg: #1a1a1a; --status-neutral-fg: #ffffff; --status-warning-bg: #2e2000; --status-warning-fg: #ffe08a;
   --status-danger-bg: #330000; --status-danger-fg: #ffc2bd; --status-muted-bg: #1a1a1a; --status-muted-fg: #ffffff;

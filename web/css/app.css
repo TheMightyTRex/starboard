@@ -1,7 +1,7 @@
 /* Shell and components. Square corners, 44px controls, one way to do each job. */
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--header-h) + var(--space-4)); }
+html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   font-family: var(--font);
@@ -38,42 +38,63 @@ a { color: var(--color-accent); }
 }
 .skip-link:focus { top: var(--space-2); }
 
-/* Header: fixed to the top on every page --------------------------------- */
+/* Header: fixed to the top on every page. Storyarr's components: square tabs with icons for the main menu,
+   the same tabs for a section's sub-menu in a second row, and a menu drawer on phones. --------------- */
+:root { --submenu-h: 0px; }
+body:has(.sub-menu) { --submenu-h: 48px; }
 .site-header {
   position: fixed; inset: 0 0 auto 0; z-index: 50;
-  background: var(--color-surface); border-bottom: 1px solid var(--color-divider);
+  background: var(--color-header); border-bottom: 1px solid var(--color-divider);
   padding-top: env(safe-area-inset-top, 0px);
 }
 .site-header__bar {
-  max-width: var(--content-max); margin: 0 auto; min-height: var(--header-h);
-  display: flex; align-items: center; gap: var(--space-4);
+  max-width: var(--content-max); margin: 0 auto; height: var(--header-h);
+  display: flex; align-items: stretch; gap: var(--space-4);
   padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
 }
-.brand { display: flex; align-items: center; gap: var(--space-2); color: var(--color-text); font-weight: 600; min-height: var(--control-h); }
+.site-header__bar > * { align-self: center; }
+.brand { display: flex; align-items: center; gap: var(--space-2); color: var(--color-text); font-weight: 600; min-height: var(--control-h); flex: none; }
 .brand svg { width: 28px; height: 28px; flex: none; }
 .brand__name { font-size: var(--text-md); white-space: nowrap; }
-.main-nav ul { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-1); }
-.main-nav a {
-  display: flex; align-items: center; gap: var(--space-2); min-height: var(--control-h); padding: 0 var(--space-3);
-  color: var(--color-text-muted); font-size: var(--text-sm); border-bottom: 3px solid transparent; white-space: nowrap;
+
+.menu-tabs { display: flex; align-items: stretch; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.menu-tabs::-webkit-scrollbar { display: none; }
+.site-header__bar > .menu-tabs { align-self: stretch; }
+.menu-tabs a {
+  position: relative; display: inline-flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4);
+  min-height: var(--control-h); color: var(--color-text-muted); font-size: var(--text-sm); font-weight: 600; white-space: nowrap;
 }
-.main-nav a svg { width: 20px; height: 20px; flex: none; }
-.main-nav a:hover { color: var(--color-text); background: var(--color-surface-sunken); text-decoration: none; }
-.main-nav a[aria-current="page"] { color: var(--color-text); border-bottom-color: var(--color-accent); font-weight: 600; }
-.header-search { flex: 1 1 200px; max-width: 360px; margin-left: auto; display: flex; }
-.header-search input { width: 100%; }
-.header-actions { display: flex; gap: var(--space-2); }
+.menu-tabs a svg { flex: none; }
+.menu-tabs a:hover { background: var(--color-control-active); color: var(--color-text); text-decoration: none; }
+.menu-tabs a[aria-current="page"] { background: var(--color-control-active); color: var(--color-text); }
+/* A bar under the current page, so it does not rely on colour alone. */
+.menu-tabs a[aria-current="page"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--color-accent); }
+.menu-tabs a:focus-visible { outline-offset: -3px; }
+/* When the names do not fit, tabs show icons only; the names stay as tooltips and for screen readers. */
+.menu-tabs.is-compact a { padding: 0 var(--space-3); }
+.menu-tabs.is-compact .menu-tabs__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.sub-menu { height: var(--submenu-h); border-top: 1px solid var(--color-divider); background: var(--color-header); }
+.sub-menu .menu-tabs {
+  max-width: var(--content-max); margin: 0 auto; height: 100%;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+}
+.sub-menu .menu-tabs a { min-height: 0; }
+
+.header-search { flex: 1 1 200px; max-width: 360px; margin-left: auto; }
+.header-search .search-bar { width: 100%; }
+.header-actions { display: flex; gap: var(--space-2); flex: none; }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
   min-width: var(--control-h); min-height: var(--control-h); padding: 0 var(--space-3);
   background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius); cursor: pointer;
-  font-size: var(--text-sm);
+  font-size: var(--text-sm); font-weight: 600;
 }
-.icon-btn svg { width: 20px; height: 20px; }
-.icon-btn:hover { background: var(--color-surface-sunken); }
-.menu-btn { display: none; }
+.icon-btn:hover { background: var(--color-control-active); }
+.phone-menu-button { display: none; }
 
-main { padding-top: calc(var(--header-h) + env(safe-area-inset-top, 0px)); }
+main { padding-top: calc(var(--header-h) + var(--submenu-h) + env(safe-area-inset-top, 0px)); }
+html { scroll-padding-top: calc(var(--header-h) + var(--submenu-h) + var(--space-4)); }
 .page {
   max-width: var(--content-max); margin: 0 auto;
   padding-block: var(--space-6) var(--space-12);
@@ -84,28 +105,57 @@ main { padding-top: calc(var(--header-h) + env(safe-area-inset-top, 0px)); }
 .page-head__text { display: grid; gap: var(--space-1); }
 .summary { color: var(--color-text-muted); font-size: var(--text-sm); }
 
-/* Phones: the menu button opens the main menu below the header ---------- */
-@media (max-width: 899px) {
-  .menu-btn { display: inline-flex; }
-  .header-search { display: none; }
-  .main-nav {
-    position: fixed; inset: calc(var(--header-h) + env(safe-area-inset-top, 0px)) 0 auto 0; z-index: 49;
-    background: var(--color-surface); border-bottom: 1px solid var(--color-divider); box-shadow: var(--shadow-raised);
-    padding: var(--space-2) max(16px, env(safe-area-inset-right, 0px)) var(--space-4) max(16px, env(safe-area-inset-left, 0px));
-    max-height: calc(100vh - var(--header-h)); overflow-y: auto;
-  }
-  .main-nav:not(.is-open) { display: none; }
-  .main-nav ul { flex-direction: column; }
-  .main-nav a { font-size: var(--text-md); border-bottom: 0; border-left: 3px solid transparent; }
-  .main-nav a[aria-current="page"] { border-left-color: var(--color-accent); }
-  .main-nav .nav-search { display: flex; margin-bottom: var(--space-2); }
-  .header-actions { margin-left: auto; }
-  .display-btn__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-}
-@media (min-width: 900px) { .main-nav .nav-search { display: none; } }
-/* Mid widths: the Search link in the menu stands in for the header search box. */
 @media (max-width: 1199px) { .header-search { display: none; } .header-actions { margin-left: auto; } }
 
+/* Phones: a menu button in the header opens a drawer from the left holding the main menu and the
+   sub-menus (Storyarr's phone menu, option A). ---------------------------------------------------- */
+@media (max-width: 899px) {
+  :root { --header-h: 60px; }
+  body:has(.sub-menu) { --submenu-h: 0px; }
+  .phone-menu-button { display: inline-flex; padding: 0; }
+  .site-header__bar > .main-nav, .sub-menu { display: none; }
+  .display-btn__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .display-btn { padding: 0; }
+}
+dialog.phone-menu {
+  margin: 0; inset: 0 auto 0 0; width: min(340px, 86vw); max-width: none; height: 100%; max-height: none;
+  display: flex; flex-direction: column; padding: 0; border: 0; border-right: 1px solid var(--color-divider);
+  background: var(--color-surface); box-shadow: var(--shadow-raised);
+}
+dialog.phone-menu:not([open]) { display: none; }
+dialog.phone-menu[open] { animation: phone-menu-in var(--motion-panel); }
+@keyframes phone-menu-in { from { transform: translateX(-100%); } }
+.side-panel-header {
+  position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: max(var(--space-2), env(safe-area-inset-top, 0px)) var(--space-2) var(--space-2) var(--space-4);
+  background: var(--color-surface); border-bottom: 1px solid var(--color-divider);
+}
+.phone-menu-brand { font-weight: 700; }
+.phone-menu-search { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-divider); }
+.phone-menu-sections { flex: 1; overflow-y: auto; padding: var(--space-1) 0; }
+.phone-menu-section { border-bottom: 1px solid var(--color-divider); }
+.phone-menu-section-button {
+  display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: 52px; padding: 0 var(--space-4);
+  border: 0; background: transparent; color: var(--color-text); font-size: var(--text-md); font-weight: 600; text-align: left; cursor: pointer;
+}
+a.phone-menu-section-button:hover { text-decoration: none; background: var(--color-control-active); }
+.phone-menu-section[data-current] > .phone-menu-section-button { color: var(--color-accent); }
+.phone-menu-section > a.phone-menu-section-button[aria-current="page"] { box-shadow: inset 3px 0 0 var(--color-accent); background: var(--color-control-active); }
+.phone-menu-chevron { margin-left: auto; color: var(--color-text-muted); display: inline-flex; transition: transform var(--motion-panel); }
+.phone-menu-section-button[aria-expanded="true"] .phone-menu-chevron { transform: rotate(90deg); }
+.phone-menu-section ul { margin: 0; padding: 0 0 var(--space-2); list-style: none; }
+.phone-menu-section ul a { display: flex; align-items: center; min-height: var(--control-h); padding: 0 var(--space-4) 0 48px; color: var(--color-text); }
+.phone-menu-section ul a[aria-current="page"] { color: var(--color-accent); font-weight: 600; background: var(--color-control-active); box-shadow: inset 3px 0 0 var(--color-accent); }
+.phone-menu-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--color-divider);
+}
+.version-label { color: var(--color-text-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.site-footer {
+  max-width: var(--content-max); margin: 0 auto; display: flex; font-size: var(--text-sm); border-top: 1px solid var(--color-divider); flex-wrap: wrap; gap: var(--space-2) var(--space-4);
+  padding-block: var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
 /* Controls ------------------------------------------------------------- */
 .input, select.input, textarea.input {
   min-height: var(--control-h); padding: 0 var(--space-3); background: var(--color-surface);
@@ -242,13 +292,6 @@ fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-2);
   background: var(--color-text); color: var(--color-bg); padding: var(--space-3) var(--space-4); max-width: calc(100vw - 32px);
 }
 
-.settings-layout { display: grid; gap: var(--space-6); grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 1100px) { .settings-layout { grid-template-columns: 220px minmax(0, 1fr); align-items: start; } }
-@media (min-width: 1100px) { .settings-nav { position: sticky; top: calc(var(--header-h) + var(--space-4)); } }
-.settings-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1); }
-@media (min-width: 1100px) { .settings-nav ul { flex-direction: column; } }
-.settings-nav a { display: flex; align-items: center; min-height: var(--control-h); padding: 0 var(--space-3); color: var(--color-text); border-left: 3px solid transparent; }
-.settings-nav a:hover { background: var(--color-surface-sunken); }
 .settings-sections { display: grid; gap: var(--space-6); }
 .service-row .row__side .btn { min-width: var(--control-h); padding: 0 var(--space-3); }
 
@@ -298,3 +341,10 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 }
 .copy-btn:hover { color: var(--color-text); border-color: var(--color-border); background: var(--color-surface-sunken); }
 .pref-contrast .copy-btn { border-color: var(--color-border); color: var(--color-text); }
+
+/* App icons ------------------------------------------------------------ */
+.app__icon.has-image { background: transparent; border-color: transparent; padding: 2px; }
+.app__icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.app__icon--small { width: 32px; height: 32px; font-size: var(--text-sm); }
+.service-row__main { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.app__icon { display: grid; place-items: center; }

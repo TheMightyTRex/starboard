@@ -42,6 +42,15 @@ else
   command -v systemctl >/dev/null || fail "--native needs systemd"
 fi
 
+NAME=""
+if [ ! -f data/config.json ]; then
+  if [ -t 0 ]; then
+    printf '\nName your dashboard (shown in the header; change it later in Settings) [Starboard]: '
+    read -r NAME || NAME=""
+  fi
+  NAME="$(printf '%s' "${NAME:-Starboard}" | tr -d '\n\r=|&\\"' | cut -c1-60)"
+fi
+
 say "Writing settings to .env"
 [ -f .env ] || (umask 077 && cp example.env .env)
 set_env() {
@@ -50,6 +59,7 @@ set_env() {
 set_env STARBOARD_MODE "$MODE"
 set_env STARBOARD_PORT "$PORT"
 set_env STARBOARD_NETWORK "$NETWORK"
+[ -n "$NAME" ] && set_env STARBOARD_NAME "\"$NAME\""
 set_env STARBOARD_UID "$(id -u)"
 set_env STARBOARD_GID "$(id -g)"
 if ! grep -q '^STARBOARD_REPO=.\+' .env; then

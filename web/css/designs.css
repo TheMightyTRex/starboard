@@ -16,17 +16,18 @@
 /* 3. Shelf: an icon rail on the left (desktop) and one app per row, like Storyarr. -------- */
 @media (min-width: 1100px) {
   :root[data-design="shelf"] { --rail-w: 96px; }
-  :root[data-design="shelf"] .main-nav {
+  :root[data-design="shelf"] .site-header__bar > .main-nav {
     position: fixed; top: calc(var(--header-h) + env(safe-area-inset-top, 0px)); bottom: 0; left: 0; width: var(--rail-w);
-    background: var(--color-surface); border-right: 1px solid var(--color-divider); padding-top: var(--space-3);
+    flex-direction: column; overflow-y: auto; background: var(--color-header); border-right: 1px solid var(--color-divider); padding-top: var(--space-2);
   }
-  :root[data-design="shelf"] .main-nav ul { flex-direction: column; gap: var(--space-1); }
   :root[data-design="shelf"] .main-nav a {
     flex-direction: column; justify-content: center; gap: var(--space-1); min-height: 68px; padding: var(--space-2);
-    font-size: var(--text-xs); text-align: center; white-space: normal; border-bottom: 0; border-left: 3px solid transparent;
+    font-size: var(--text-xs); text-align: center; white-space: normal;
   }
   :root[data-design="shelf"] .main-nav a svg { width: 24px; height: 24px; }
-  :root[data-design="shelf"] .main-nav a[aria-current="page"] { border-left-color: var(--color-accent); background: var(--color-accent-soft); }
+  :root[data-design="shelf"] .main-nav .menu-tabs__label { position: static; width: auto; height: auto; clip-path: none; }
+  :root[data-design="shelf"] .main-nav a[aria-current="page"]::after { top: 0; bottom: 0; right: auto; width: 3px; height: auto; }
+  :root[data-design="shelf"] .sub-menu { margin-left: var(--rail-w); }
   :root[data-design="shelf"] main { padding-left: var(--rail-w); }
 }
 :root[data-design="shelf"] .apps { gap: 0; border-top: 1px solid var(--color-divider); }

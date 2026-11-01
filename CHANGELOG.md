@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.3 (1 November 2026)
+
+- Looks like Storyarr: its colours, its icons (Lucide) and its square tabs. The main menu and every sub-menu
+  use the same tabs; on phones a menu drawer holds both.
+- Settings is four pages with a sub-menu: Apps, General, Security and Updates. Old links still work.
+- The installer and the setup page ask you to name your dashboard. Change it in Settings, General.
+- Each app's own icon on its card, from the dashboard-icons collection. Starboard keeps a copy, so icons
+  still show without the internet. Choose another icon in the app's settings.
+- Apps are grouped by category: Watch, listen and request; Find and organise; Search and download;
+  Dashboards and tools. New apps get a category chosen for them; change it in the app's settings. Health
+  first still puts apps that are not responding at the top.
+- A footer on every page: "Starboard: v" and the version, a link to the GitHub repository and to Updates.
+- The version is only shown to people who have signed in.
+
 ## 0.1.2 (1 November 2026)
 
 - Fixed: `./update.sh` made the new version's files readable by you only, so the container could not start

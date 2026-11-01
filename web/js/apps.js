@@ -1,5 +1,5 @@
-// Apps: every app with its status checked by the server. Health first (the default) groups apps by status,
-// with the ones not responding at the top; the other designs group them by your groups.
+// Apps: every app by category, with its status checked by the server. Health first (the default) also puts
+// apps that are not responding in their own group at the top.
 
 let config = null;
 let statuses = {};
@@ -31,7 +31,7 @@ function appItem(s) {
   const home = reachableUrl(s.link);
   const item = el("li", { class: "app", "data-state": st ? st.state : "checking" },
     el("div", { class: "app__top" },
-      el("span", { class: "app__icon", "aria-hidden": "true", text: monogram(s.name) }),
+      appIcon(s),
       el("h3", { class: "app__name" }, el("a", { href: home, target: "_blank", rel: "noopener noreferrer" }, s.name, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })))),
     s.description ? el("p", { class: "app__desc", text: s.description }) : null,
     addresses(s, home),
@@ -50,15 +50,14 @@ function appList(items, headingId) {
 }
 
 function groupsOf(services) {
-  if (design() === "health") {
-    const down = services.filter((s) => statuses[s.id]?.state === "down");
-    const checking = services.filter((s) => !statuses[s.id]);
-    const up = services.filter((s) => statuses[s.id]?.state === "up");
-    return [["Not responding", down], ["Checking", checking], ["Running", up]].filter(([, items]) => items.length);
-  }
+  // Health first: anything not responding on top, then the categories as usual.
+  const health = design() === "health";
+  const down = health ? services.filter((s) => statuses[s.id]?.state === "down") : [];
+  if (down.length) services = services.filter((s) => !down.includes(s));
   const groups = [...config.groups];
   for (const s of services) if (s.group && !groups.includes(s.group)) groups.push(s.group);
   const out = groups.map((g) => [g, services.filter((s) => s.group === g)]);
+  if (down.length) out.unshift(["Not responding", down]);
   out.push(["Other", services.filter((s) => !s.group)]);
   return out.filter(([, items]) => items.length);
 }
@@ -70,7 +69,7 @@ function renderApps() {
   if (!services.length) {
     root.append(el("div", { class: "empty" },
       el("p", { text: "No apps yet." }),
-      el("p", {}, el("a", { href: "/settings.html#apps", text: "Add your first app in Settings" }))));
+      el("p", {}, el("a", { href: "/settings.html", text: "Add your first app in Settings" }))));
     $("#apps-summary").textContent = "Add your apps in Settings to see them here.";
     return;
   }

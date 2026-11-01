@@ -14,7 +14,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import auth, services, sysinfo
+from . import auth, icons, services, sysinfo
 from .config import Config, ConfigError, new_setup_token, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -294,10 +294,13 @@ class Handler(BaseHTTPRequestHandler):
         try:
             # Open routes
             if path == "/api/session" and method == "GET":
+                signed_in = self.signed_in()
                 return self.json(200, {
-                    "signed_in": self.signed_in(), "needs_setup": app.needs_setup,
+                    "signed_in": signed_in, "needs_setup": app.needs_setup,
                     "site_name": app.config.data["site_name"], "design": app.config.data["design"],
-                    "version": app.version,
+                    # Not told to people who have not signed in.
+                    "version": app.version if signed_in else None,
+                    "repo": app.repo if signed_in and re.match(r"^[\w.-]+/[\w.-]+$", app.repo or "") else None,
                 })
             if path == "/api/setup" and method == "POST":
                 return self.first_password()
@@ -336,6 +339,9 @@ class Handler(BaseHTTPRequestHandler):
                 candidate = validate_service(incoming)
                 candidate["id"] = candidate.get("id") or "test"
                 return self.json(200, services.check(candidate))
+            m = re.match(r"^/api/icons/([a-z0-9-]+)$", path)
+            if m and method == "GET":
+                return self.icon(m.group(1))
             m = re.match(r"^/api/services/([a-z0-9-]+)(/options)?$", path)
             if m:
                 service = cfg.service(m.group(1))
@@ -383,6 +389,18 @@ class Handler(BaseHTTPRequestHandler):
         except services.ServiceError as e:
             return self.error(502, str(e))
 
+    def icon(self, service_id):
+        service = self.app.config.service(service_id)
+        found = icons.get(service, os.path.join(self.app.config.data_dir, "icons")) if service else None
+        if not found:
+            return self.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "max-age=3600"})
+        data, ctype = found
+        # An SVG opened on its own must not run anything: no scripts, no outside loads.
+        self.send(200, data, ctype, {
+            "Cache-Control": "private, max-age=86400",
+            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox",
+        })
+
     # Accounts ------------------------------------------------------------
 
     def new_session(self, remember):
@@ -406,6 +424,8 @@ class Handler(BaseHTTPRequestHandler):
         problem = auth.password_problem(password)
         if problem:
             return self.error(400, problem)
+        if "site_name" in data:
+            app.config.update_general({"site_name": data["site_name"]})
         app.config.data["auth"]["password_hash"] = auth.hash_password(password)
         app.config.save()
         app.setup_token = None

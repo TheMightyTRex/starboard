@@ -5,8 +5,13 @@ Sonarr, Radarr, Lidarr and Readarr at once and adds what you find, and lists dow
 how the server is doing.
 
 - **Every page has its own address:** `/index.html` (Apps), `/search.html`, `/downloads.html`,
-  `/upcoming.html`, `/system.html`, `/settings.html`. Searches link too: `/search.html?q=dune`.
-- **A fixed header on every page**, with search, the main menu (a Menu button on phones) and Display.
+  `/upcoming.html`, `/system.html`, and Settings as `/settings.html` (Apps), `/settings-general.html`,
+  `/settings-security.html` and `/settings-updates.html`. Searches link too: `/search.html?q=dune`.
+- **Apps by category, with their own icons.** Icons come from the
+  [dashboard-icons](https://github.com/homarr-labs/dashboard-icons) collection; Starboard keeps a copy in `./data/icons`.
+  Put your own `name.svg` or `name.png` there and use that name as the app's icon.
+- **A fixed header on every page**, with the main menu and a section's sub-menu as the same square tabs,
+  search and Display. On phones a menu drawer holds both. The look matches Storyarr.
 - **Five designs:** Health first (the default: apps that are not responding go to the top), Tiles, Shelf,
   Command and Status board. Change the default in Settings; anyone can pick their own in Display.
 - **Display and accessibility:** theme (match device, light, dark), text size up to 175%, high contrast,
@@ -95,4 +100,5 @@ The header and Display panel are written into every page by `tools/apply_shell.p
 
 ## Licence
 
-MIT. Atkinson Hyperlegible Next is under the SIL Open Font Licence (`web/fonts/LICENSE-OFL.txt`).
+MIT. Atkinson Hyperlegible Next is under the SIL Open Font Licence (`web/fonts/LICENSE-OFL.txt`). Icons are from
+Lucide, under the ISC licence (`tools/LICENSE-lucide.txt`).

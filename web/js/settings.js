@@ -10,9 +10,9 @@ function renderServices() {
   config.services.forEach((s, index) => {
     const type = config.types[s.type]?.label || s.type;
     list.append(el("li", { class: "row service-row" },
-      el("div", {},
+      el("div", { class: "service-row__main" }, appIcon(s, "app__icon app__icon--small"), el("div", {},
         el("p", { class: "row__title", text: s.name }),
-        el("p", { class: "row__meta", text: [type, s.group || "Other", s.has_api_key ? "API key saved" : null, s.enabled ? null : "Hidden"].filter(Boolean).join(" · ") })),
+        el("p", { class: "row__meta", text: [type, s.group || "Other", s.has_api_key ? "API key saved" : null, s.enabled ? null : "Hidden"].filter(Boolean).join(" · ") }))),
       el("div", { class: "row__side" },
         el("button", { type: "button", class: "btn", disabled: index === 0, "aria-label": `Move ${s.name} up`, onclick: () => move(index, -1) }, "↑"),
         el("button", { type: "button", class: "btn", disabled: index === config.services.length - 1, "aria-label": `Move ${s.name} down`, onclick: () => move(index, 1) }, "↓"),
@@ -47,11 +47,27 @@ async function removeService(s) {
 function serviceFormValues() {
   const f = $("#service-form");
   return {
-    id: f.service_id.value || undefined, type: f.type.value, name: f.name.value, url: f.url.value, link: f.link.value, outside_link: f.outside_link.value,
+    id: f.service_id.value || undefined, type: f.type.value, name: f.name.value, url: f.url.value, link: f.link.value, outside_link: f.outside_link.value, icon: f.icon.value,
     api_key: f.api_key.value, group: f.group.value, description: f.description.value, enabled: f.enabled.checked,
     quality_profile_id: f.quality_profile_id.value || null, root_folder: f.root_folder.value,
     metadata_profile_id: f.metadata_profile_id.value || null, search_on_add: f.search_on_add.checked,
   };
+}
+
+// "Choose for me" names the category it will pick, from the app's name or kind.
+function guessGroup() {
+  const f = $("#service-form");
+  const slug = f.name.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const index = config.category_of[slug] ?? config.category_of[f.type.value] ?? 3;
+  const wanted = config.default_groups[index];
+  if (config.groups.includes(wanted)) return wanted;
+  return config.groups[index] || config.groups[config.groups.length - 1] || "";  // renamed categories keep their place
+}
+
+function updateGroupGuess() {
+  const first = $("#svc-group").options[0];
+  const guess = guessGroup();
+  first.textContent = guess ? `Choose for me (${guess})` : "Choose for me";
 }
 
 function updateTypeFields() {
@@ -75,14 +91,16 @@ function openService(s = null) {
   $("#svc-type").replaceChildren(...Object.entries(config.types).map(([k, v]) => el("option", { value: k, text: v.label })));
   const groups = [...config.groups];
   if (s?.group && !groups.includes(s.group)) groups.push(s.group);
-  $("#svc-group").replaceChildren(...groups.map((g) => el("option", { value: g, text: g })), el("option", { value: "", text: "Other" }));
+  $("#svc-group").replaceChildren(el("option", { value: "", text: "Choose for me" }), ...groups.map((g) => el("option", { value: g, text: g })));
+  updateGroupGuess();
   setOptions(f.quality_profile_id, s?.quality_profile_id ? [{ value: s.quality_profile_id, label: `Profile ${s.quality_profile_id}` }] : [], s?.quality_profile_id);
   setOptions(f.root_folder, s?.root_folder ? [{ value: s.root_folder, label: s.root_folder }] : [], s?.root_folder);
   setOptions(f.metadata_profile_id, s?.metadata_profile_id ? [{ value: s.metadata_profile_id, label: `Profile ${s.metadata_profile_id}` }] : [], s?.metadata_profile_id);
   if (s) {
     f.service_id.value = s.id; f.type.value = s.type; f.name.value = s.name; f.url.value = s.url;
     f.link.value = s.link === s.url ? "" : s.link;
-    f.outside_link.value = s.outside_link || ""; f.group.value = s.group || ""; f.description.value = s.description || "";
+    f.outside_link.value = s.outside_link || "";
+    f.icon.value = s.icon || ""; f.group.value = s.group || ""; f.description.value = s.description || "";
     f.enabled.checked = s.enabled; f.search_on_add.checked = s.search_on_add !== false;
     f.api_key.placeholder = s.has_api_key ? "Saved (leave empty to keep)" : "";
   } else {
@@ -144,17 +162,21 @@ async function saveService(event) {
 
 function renderGeneral() {
   const f = $("#general-form");
-  f.site_name.value = config.site_name;
-  f.groups.value = config.groups.join(", ");
-  f.show_home_address.checked = config.show_home_address;
-  f.show_outside_address.checked = config.show_outside_address;
-  const box = $("#default-design");
-  box.replaceChildren(...Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "design-option" },
-    el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("span", { text: label }), el("small", { text: help }))));
+  if (f) {
+    f.site_name.value = config.site_name;
+    f.groups.value = config.groups.join(", ");
+    f.show_home_address.checked = config.show_home_address;
+    f.show_outside_address.checked = config.show_outside_address;
+    const box = $("#default-design");
+    box.replaceChildren(...Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "design-option" },
+      el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("span", { text: label }), el("small", { text: help }))));
+  }
   const s = $("#session-form");
-  s.session_days.value = config.session_days;
-  s.secure_cookies.checked = config.secure_cookies;
-  $("#update-check").checked = config.update_check;
+  if (s) {
+    s.session_days.value = config.session_days;
+    s.secure_cookies.checked = config.secure_cookies;
+  }
+  if ($("#update-check")) $("#update-check").checked = config.update_check;
 }
 
 async function saveGeneral(body, message) {
@@ -203,7 +225,7 @@ async function saveNetwork(event) {
   setTimeout(showNetwork, 1500);
 }
 
-async function showVersion() {
+async function showUpdates() {
   try {
     const v = await api("/api/version");
     const line = $("#version-line");
@@ -214,21 +236,29 @@ async function showVersion() {
   } catch { /* leave the placeholder */ }
 }
 
+// Old links to sections of the single Settings page go to their own pages now.
+const MOVED = { "#general": "/settings-general.html", "#security": "/settings-security.html", "#updates": "/settings-updates.html" };
+if (location.pathname.endsWith("/settings.html") && MOVED[location.hash]) location.replace(MOVED[location.hash]);
+
+const on = (selector, event, handler) => { const node = $(selector); if (node) node.addEventListener(event, handler); };
+
 startPage().then(async () => {
   config = await api("/api/config");
-  renderServices();
   renderGeneral();
-  showVersion();
-  showNetwork();
-  $("#network-form").addEventListener("submit", saveNetwork);
-  $("#network-access").addEventListener("change", () => { confirmLocalOnly = false; $("#network-warning").hidden = true; });
-  wireDialog($("#service-dialog"));
-  $("#add-service").addEventListener("click", () => openService());
-  $("#svc-type").addEventListener("change", updateTypeFields);
-  $("#svc-test").addEventListener("click", testService);
-  $("#svc-load-options").addEventListener("click", loadServiceOptions);
-  $("#service-form").addEventListener("submit", saveService);
-  $("#general-form").addEventListener("submit", (e) => {
+
+  if ($("#service-list")) {  // Apps
+    renderServices();
+    wireDialog($("#service-dialog"));
+    on("#add-service", "click", () => openService());
+    on("#svc-type", "change", () => { updateTypeFields(); updateGroupGuess(); });
+    on("#svc-name", "input", updateGroupGuess);
+    on("#svc-test", "click", testService);
+    on("#svc-load-options", "click", loadServiceOptions);
+    on("#service-form", "submit", saveService);
+    if (!config.services.length) openService();
+  }
+
+  on("#general-form", "submit", (e) => {
     e.preventDefault();
     const f = e.target;
     saveGeneral({
@@ -236,12 +266,17 @@ startPage().then(async () => {
       show_home_address: f.show_home_address.checked, show_outside_address: f.show_outside_address.checked,
     }, "General settings saved");
   });
-  $("#session-form").addEventListener("submit", (e) => {
+
+  if ($("#network-form")) {  // Security
+    showNetwork();
+    on("#network-form", "submit", saveNetwork);
+    on("#network-access", "change", () => { confirmLocalOnly = false; $("#network-warning").hidden = true; });
+  }
+  on("#session-form", "submit", (e) => {
     e.preventDefault();
     saveGeneral({ session_days: Number(e.target.session_days.value), secure_cookies: e.target.secure_cookies.checked }, "Session settings saved");
   });
-  $("#update-check").addEventListener("change", (e) => saveGeneral({ update_check: e.target.checked }, "Saved"));
-  $("#password-form").addEventListener("submit", async (e) => {
+  on("#password-form", "submit", async (e) => {
     e.preventDefault();
     const f = e.target;
     $("#password-error").textContent = "";
@@ -253,9 +288,13 @@ startPage().then(async () => {
       $("#password-error").textContent = err.message;
     }
   });
-  $("#end-all").addEventListener("click", async () => {
+  on("#end-all", "click", async () => {
     await api("/api/sessions/end-all", { method: "POST" });
     location.href = "/login.html";
   });
-  if (location.hash === "#apps" && !config.services.length) openService();
+
+  if ($("#version-line")) {  // Updates
+    showUpdates();
+    on("#update-check", "change", (e) => saveGeneral({ update_check: e.target.checked }, "Saved"));
+  }
 });

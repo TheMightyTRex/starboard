@@ -283,6 +283,15 @@ class ConfigTest(unittest.TestCase):
         self.assertIsNone(auth.password_problem("a" * 10))
         self.assertIsNotNone(auth.password_problem("a" * 9))
 
+    def test_category_is_chosen_for_known_apps(self):
+        from starboard.config import DEFAULTS, guess_group
+        groups = DEFAULTS["groups"]
+        self.assertEqual(guess_group({"name": "Sonarr", "type": "sonarr"}, groups), "Find and organise")
+        self.assertEqual(guess_group({"name": "qBittorrent", "type": "link"}, groups), "Search and download")
+        self.assertEqual(guess_group({"name": "Jellyfin", "type": "jellyfin"}, groups), "Watch, listen and request")
+        self.assertEqual(guess_group({"name": "Something new", "type": "link"}, groups), "Dashboards and tools")
+        self.assertEqual(guess_group({"name": "Sonarr", "type": "sonarr"}, ["Watch", "Get", "Fetch", "Other"]), "Get")
+
     def test_password_hash(self):
         stored = auth.hash_password("a long password here", iterations=1000)
         self.assertTrue(auth.check_password("a long password here", stored))

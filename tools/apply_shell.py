@@ -1,79 +1,134 @@
 #!/usr/bin/env python3
-"""Writes the shared header and Display panel into every page in web/, between the shell markers.
+"""Writes the shared header, phone menu and Display panel into every page in web/, between the shell markers.
 
-Edit the menu here, then run: python3 tools/apply_shell.py
-Each page is its own HTML file, so every page has a real address you can link to.
+Edit the menus here, then run: python3 tools/apply_shell.py
+Each page is its own HTML file, so every page and sub-page has a real address you can link to.
+The header follows Storyarr's components: square tabs with icons for the main menu, the same tabs for a
+section's sub-menu in a second header row, and on phones a menu drawer that holds both.
 """
 
 import pathlib
 import re
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from lucide_icons import ICONS  # noqa: E402
 
 WEB = pathlib.Path(__file__).resolve().parent.parent / "web"
 
-ICONS = {
-    "apps": '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
-    "search": '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
-    "downloads": '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/>',
-    "upcoming": '<rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/>',
-    "system": '<rect x="3" y="4" width="18" height="12"/><path d="M8 20h8M12 16v4"/><path d="m7 12 3-3 2 2 4-4"/>',
-    "settings": '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
-    "display": '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
-    "menu": '<path d="M4 6h16M4 12h16M4 18h16"/>',
-    "close": '<path d="M6 6l12 12M18 6 6 18"/>',
-}
-
-PAGES = [
-    ("index.html", "apps", "Apps"),
-    ("search.html", "search", "Search"),
-    ("downloads.html", "downloads", "Downloads"),
-    ("upcoming.html", "upcoming", "Coming up"),
-    ("system.html", "system", "System"),
-    ("settings.html", "settings", "Settings"),
+# Main menu: (key, first page, label, icon)
+MAIN = [
+    ("apps", "index.html", "Apps", "layout-grid"),
+    ("search", "search.html", "Search", "search"),
+    ("downloads", "downloads.html", "Downloads", "download"),
+    ("upcoming", "upcoming.html", "Coming up", "calendar"),
+    ("system", "system.html", "System", "activity"),
+    ("settings", "settings.html", "Settings", "settings"),
 ]
 
+# Sub-menus: main key -> [(page, label, icon)]. They use the same tabs as the main menu.
+SUB = {
+    "settings": [
+        ("settings.html", "Apps", "app-window"),
+        ("settings-general.html", "General", "sliders-horizontal"),
+        ("settings-security.html", "Security", "shield-check"),
+        ("settings-updates.html", "Updates", "refresh-cw"),
+    ],
+}
 
-def icon(name, size=20):
-    return (f'<svg viewBox="0 0 24 24" width="{size}" height="{size}" fill="none" stroke="currentColor" stroke-width="1.8" '
+# Every page and the main menu item it belongs to.
+PAGES = {page: key for key, page, _, _ in MAIN}
+for key, items in SUB.items():
+    for page, _, _ in items:
+        PAGES[page] = key
+
+
+def icon(name, size=18):
+    return (f'<svg viewBox="0 0 24 24" width="{size}" height="{size}" fill="none" stroke="currentColor" stroke-width="2" '
             f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">{ICONS[name]}</svg>')
 
 
+def tab(href, label, icon_name, current):
+    here = ' aria-current="page"' if current else ""
+    return f'<a href="/{href}"{here}>{icon(icon_name)}<span class="menu-tabs__label">{label}</span></a>'
+
+
+def search_form(id_):
+    return (f'<form class="search-bar" action="/search.html" role="search">'
+            f'<label class="visually-hidden" for="{id_}">Search your apps</label>'
+            f'<input class="input" id="{id_}" name="q" type="search" placeholder="Search films, series, music, books"></form>')
+
+
 def shell(current):
-    links = []
-    for href, key, label in PAGES:
-        here = ' aria-current="page"' if href == current else ""
-        links.append(f'        <li><a href="/{href}"{here}>{icon(key)}<span>{label}</span></a></li>')
-    links = "\n".join(links)
+    section = PAGES[current]
+    main_tabs = "\n        ".join(tab(page, label, ic, key == section) for key, page, label, ic in MAIN)
+    sub = ""
+    if section in SUB:
+        label = next(label for key, _, label, _ in MAIN if key == section)
+        sub_tabs = "\n      ".join(tab(page, l, ic, page == current) for page, l, ic in SUB[section])
+        sub = f'''
+  <div class="sub-menu">
+    <nav class="menu-tabs" aria-label="{label}">
+      {sub_tabs}
+    </nav>
+  </div>'''
+
+    phone_sections = []
+    for key, page, label, ic in MAIN:
+        is_current = key == section
+        mark = " data-current" if is_current else ""
+        if key in SUB:
+            links = "\n            ".join(
+                f'<li><a href="/{p}"{" aria-current=\"page\"" if p == current else ""}>{l}</a></li>' for p, l, _ in SUB[key])
+            phone_sections.append(f'''<div class="phone-menu-section"{mark}>
+          <button type="button" class="phone-menu-section-button" aria-expanded="{"true" if is_current else "false"}" aria-controls="phone-sub-{key}">{icon(ic, 20)}<span>{label}</span><span class="phone-menu-chevron">{icon("chevron-right", 18)}</span></button>
+          <ul id="phone-sub-{key}"{"" if is_current else " hidden"}>
+            {links}
+          </ul>
+        </div>''')
+        else:
+            here = ' aria-current="page"' if page == current else ""
+            phone_sections.append(f'''<div class="phone-menu-section"{mark}>
+          <a class="phone-menu-section-button" href="/{page}"{here}>{icon(ic, 20)}<span>{label}</span></a>
+        </div>''')
+    phone_sections = "\n        ".join(phone_sections)
+
     return f'''<a class="skip-link" href="#main">Skip to main content</a>
 <header class="site-header">
   <div class="site-header__bar">
+    <button type="button" class="icon-btn phone-menu-button" data-phone-menu-open aria-haspopup="dialog" aria-expanded="false" aria-controls="phone-menu">{icon("menu", 20)}<span class="visually-hidden">Menu</span></button>
     <a class="brand" href="/index.html">
       <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" fill="var(--color-accent)"/><path d="M16 6l2.6 6.4 6.9.5-5.3 4.4 1.7 6.7L16 20.3 10.1 24l1.7-6.7-5.3-4.4 6.9-.5Z" fill="var(--color-accent-text)"/></svg>
       <span class="brand__name" data-site-name>Starboard</span>
     </a>
-    <nav class="main-nav" id="main-nav" aria-label="Main">
-      <form class="nav-search search-bar" action="/search.html" role="search">
-        <label class="visually-hidden" for="nav-search-input">Search your apps</label>
-        <input class="input" id="nav-search-input" name="q" type="search" placeholder="Search films, series, music, books">
-      </form>
-      <ul>
-{links}
-      </ul>
+    <nav class="main-nav menu-tabs" id="main-nav" aria-label="Main">
+        {main_tabs}
     </nav>
-    <form class="header-search" action="/search.html" role="search">
-      <label class="visually-hidden" for="header-search-input">Search your apps</label>
-      <input class="input" id="header-search-input" name="q" type="search" placeholder="Search films, series, music, books">
-    </form>
+    <div class="header-search">{search_form("header-search-input")}</div>
     <div class="header-actions">
-      <button type="button" class="icon-btn display-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false">{icon("display")}<span class="display-btn__label">Display</span></button>
-      <button type="button" class="icon-btn menu-btn" data-menu-toggle aria-expanded="false" aria-controls="main-nav">{icon("menu")}<span>Menu</span></button>
+      <button type="button" class="icon-btn display-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false">{icon("sun", 20)}<span class="display-btn__label">Display</span></button>
     </div>
-  </div>
+  </div>{sub}
 </header>
+<dialog class="phone-menu" id="phone-menu" aria-label="Menu">
+  <div class="side-panel-header">
+    <span class="phone-menu-brand" data-site-name>Starboard</span>
+    <button type="button" class="icon-btn" data-phone-menu-close aria-label="Close menu">{icon("x", 20)}</button>
+  </div>
+  <div class="phone-menu-search">{search_form("phone-search-input")}</div>
+  <nav class="phone-menu-sections" aria-label="Main">
+        {phone_sections}
+  </nav>
+  <div class="phone-menu-footer">
+    <span class="version-label" data-version></span>
+    <button type="button" class="btn btn-quiet" data-sign-out>{icon("log-out", 18)}<span>Sign out</span></button>
+  </div>
+</dialog>
 <dialog id="display-panel" aria-labelledby="display-panel-title">
   <form method="dialog">
     <div class="dialog__head">
       <h2 id="display-panel-title">Display and accessibility</h2>
-      <button type="button" class="icon-btn" data-dialog-close aria-label="Close display and accessibility">{icon("close")}</button>
+      <button type="button" class="icon-btn" data-dialog-close aria-label="Close display and accessibility">{icon("x", 20)}</button>
     </div>
     <div class="dialog__body">
       <fieldset><legend>Theme</legend>
@@ -102,7 +157,7 @@ def shell(current):
       <label class="switch-row" for="pref-underline"><span>Underline links</span><input type="checkbox" id="pref-underline" name="underline"></label>
       <label class="switch-row" for="pref-spacing"><span>Wider text spacing</span><input type="checkbox" id="pref-spacing" name="spacing"></label>
       <fieldset><legend>Design</legend>
-        <p class="hint">Applies to this browser only. Set the default for everyone in Settings.</p>
+        <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General.</p>
         <div class="design-options" data-design-options></div>
       </fieldset>
     </div>
@@ -117,15 +172,14 @@ def shell(current):
 
 def main():
     pattern = re.compile(r"<!-- shell:start.*?-->.*?<!-- shell:end -->", re.S)
-    for href, _, _ in PAGES:
-        path = WEB / href
+    for page in PAGES:
+        path = WEB / page
         text = path.read_text(encoding="utf-8")
-        block = f"<!-- shell:start (written by tools/apply_shell.py; edit the menu there) -->\n{shell(href)}\n<!-- shell:end -->"
-        new = pattern.sub(lambda _: block, text, count=1)
         if "shell:start" not in text:
-            raise SystemExit(f"{href} has no shell markers")
-        path.write_text(new, encoding="utf-8")
-        print(f"updated {href}")
+            raise SystemExit(f"{page} has no shell markers")
+        block = f"<!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->\n{shell(page)}\n<!-- shell:end -->"
+        path.write_text(pattern.sub(lambda _: block, text, count=1), encoding="utf-8")
+        print(f"updated {page}")
 
 
 if __name__ == "__main__":
