@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.5 (2 November 2026)
+
+- Apps has a sub-menu: Apps, Updates (each app's version, and whether Sonarr, Radarr, Lidarr, Readarr and
+  Prowlarr have an update) and Other services (services with no web page; a service with no address can follow
+  another app's status).
+- The Apps page opens with two cards: how many apps are running, and how many outside addresses are reachable.
+- System has a sub-menu: Overview, Storage, Disk health, Monitor and Network.
+- Charts: Starboard records a reading every minute for 24 hours. Overview has tiles with trend lines and charts
+  for processor, memory, network, disk activity and temperature over the last hour, 6 hours or 24 hours.
+  Storage, Disk health and Network have their own charts. Every chart can be read with the arrow keys and
+  shown as a table.
+- Disk health reads SMART reports saved by a small job on the server (`deploy/install-smart.sh`).
+- Your own folders and disks go in `compose.override.yaml`, which updates leave alone.
+
 ## 0.1.4 (1 November 2026)
 
 - New logo, Tile board: three tiles and a star. In dark mode the star is lighter. Used in the header, the

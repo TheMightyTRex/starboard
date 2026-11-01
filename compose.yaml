@@ -19,11 +19,11 @@ services:
       - STARBOARD_NAME=${STARBOARD_NAME:-}
       - STARBOARD_REPO=${STARBOARD_REPO:-}
       - STARBOARD_DISKS=${STARBOARD_DISKS:-}
+      - STARBOARD_SMART_DIR=${STARBOARD_SMART_DIR:-}
       - STARBOARD_TRUST_PROXY=${STARBOARD_TRUST_PROXY:-0}
     volumes:
       - ./data:/data
-      # Free space on the System page: mount each folder read-only and list it in STARBOARD_DISKS.
-      # - /mnt/media:/disks/media:ro
+      # Your own folders (Storage, Disk health) go in compose.override.yaml, which updates leave alone.
     read_only: true
     tmpfs:
       - /tmp

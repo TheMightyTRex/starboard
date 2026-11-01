@@ -1,7 +1,11 @@
-// System: load, memory, uptime, storage and the warnings apps report.
+// System overview: summary tiles with a trend line, charts over the chosen time range, and app warnings.
 
-function stat(value, label) {
-  return el("div", { class: "stat" }, el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }));
+let range = null;
+
+function tile(label, value, values, max, tone) {
+  return el("div", { class: "stat", "data-tone": tone || "" },
+    el("span", { class: "stat__label", text: label }),
+    el("div", { class: "stat__trend" }, el("span", { class: "stat__value", text: value }), trendLine(values, max)));
 }
 
 function uptime(seconds) {
@@ -12,23 +16,25 @@ function uptime(seconds) {
 
 async function load() {
   try {
-    const [sys, health] = await Promise.all([api("/api/system"), api("/api/health")]);
+    const [sys, hist, health] = await Promise.all([api("/api/system"), api(`/api/history?hours=${range.value}`), api("/api/health")]);
+    const points = hist.points;
+    const last = points[points.length - 1] || {};
     const memUsed = sys.memory.total - sys.memory.available;
+    const memPct = (memUsed / sys.memory.total) * 100;
+    const col = (key) => points.map((p) => p[key]);
+    const temp = last.temp;
     $("#stats").replaceChildren(
-      stat(sys.load.length ? sys.load[0].toFixed(2) : "–", `Load (1 minute) on ${sys.cpus} threads`),
-      stat(`${Math.round((memUsed / sys.memory.total) * 100) || 0}%`, `Memory used of ${formatBytes(sys.memory.total)}`),
-      stat(uptime(sys.uptime_seconds), "Since the last restart"));
-    const disks = $("#disks");
-    disks.replaceChildren();
-    if (!sys.disks.length) disks.append(el("p", { class: "hint", text: "No folders set. See the README to show free space." }));
-    for (const d of sys.disks) {
-      if (d.missing) { disks.append(el("p", { class: "notice", "data-tone": "warning", text: `${d.label}: folder not found` })); continue; }
-      const pct = Math.round((d.used / d.total) * 100);
-      const bar = el("div", { class: "progress", role: "progressbar", "aria-valuenow": String(pct), "aria-valuemin": "0", "aria-valuemax": "100", "aria-label": `${d.label}, ${pct}% used` }, el("span"));
-      bar.firstChild.style.width = `${pct}%`;
-      disks.append(el("div", { class: "meter-row" },
-        el("div", { class: "meter-row__label" }, el("strong", { text: d.label }), el("span", { class: "num", text: `${formatBytes(d.free)} free of ${formatBytes(d.total)}` })), bar));
-    }
+      tile("Processor", points.length ? percent(last.cpu) : "–", col("cpu"), 100, last.cpu >= 90 ? "warning" : ""),
+      tile("Memory", percent(memPct), col("mem"), 100, memPct >= 90 ? "warning" : ""),
+      tile(`Load on ${sys.cpus} threads`, sys.load.length ? sys.load[0].toFixed(2) : "–", col("load"), Math.max(sys.cpus, ...col("load")), sys.load[0] > sys.cpus ? "warning" : ""),
+      tile("Processor temperature", temp != null ? degrees(temp) : "Not reported", col("temp"), 100, temp >= 85 ? "danger" : ""));
+    const detail = { 1: "Last hour", 6: "Last 6 hours", 24: "Last 24 hours" }[hist.hours];
+    $("#charts").replaceChildren(
+      lineChart({ title: "Processor use", detail, points, series: [{ key: "cpu", name: "Processor" }], format: percent, max: 100 }),
+      lineChart({ title: "Memory use", detail, points, series: [{ key: "mem", name: "Memory" }], format: percent, max: 100 }),
+      lineChart({ title: "Network", detail, points, series: [{ key: "rx", name: "Download", short: "↓" }, { key: "tx", name: "Upload", short: "↑" }], format: perSecond }),
+      lineChart({ title: "Disk activity", detail, points, series: [{ key: "read", name: "Read", short: "Read" }, { key: "write", name: "Write", short: "Write" }], format: perSecond }),
+      lineChart({ title: "Processor temperature", detail, points, series: [{ key: "temp", name: "Temperature" }], format: degrees }));
     const list = $("#health");
     list.replaceChildren();
     for (const e of health.errors) list.append(el("li", { class: "row" }, el("p", { text: e.message }), el("div", { class: "row__side" }, chip("Not responding", "danger"))));
@@ -39,10 +45,15 @@ async function load() {
         el("div", { class: "row__side" }, chip(tone === "info" ? "Note" : "Needs attention", tone))));
     }
     if (!list.children.length) list.append(el("li", { class: "empty", text: "Nothing needs attention." }));
-    $("#system-summary").textContent = `${health.items.length} warnings · updated ${new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+    $("#system-summary").textContent = `Up ${uptime(sys.uptime_seconds)} · ${health.items.length} warnings · updated ${new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
   } catch (e) {
     $("#system-summary").textContent = e.message;
   }
 }
 
-startPage().then(() => { $("#refresh").addEventListener("click", load); load(); });
+startPage().then(() => {
+  range = rangePicker(load);
+  $("#range-row").append(range.element);
+  $("#refresh").addEventListener("click", load);
+  load();
+});

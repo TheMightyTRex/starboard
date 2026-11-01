@@ -16,3 +16,4 @@ __pycache__/
 *.bak*
 /demo-build/
 .private-words
+compose.override.yaml

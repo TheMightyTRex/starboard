@@ -39,7 +39,7 @@ DEFAULTS = {
 }
 
 SERVICE_FIELDS = {
-    "id", "name", "type", "url", "link", "outside_link", "icon", "api_key", "group", "description", "enabled",
+    "id", "name", "type", "url", "link", "outside_link", "icon", "api_key", "background", "follows", "group", "description", "enabled",
     "quality_profile_id", "metadata_profile_id", "root_folder", "search_on_add",
 }
 
@@ -242,7 +242,13 @@ def validate_service(s):
         if value and not re.match(r"^https?://[^\s/]+$|^https?://[^\s/]+/\S*$", value):
             raise ConfigError(f"The {label} must start with http:// or https:// and have no spaces")
         clean[key] = value
-    if not clean["url"]:
+    clean["background"] = bool(clean.get("background", False))
+    follows = str(clean.get("follows") or "").strip()
+    if follows and not _ID_RE.match(follows):
+        raise ConfigError("Choose an app from the list for the status to follow")
+    clean["follows"] = follows
+    # A background service has no web page, so it may have no address: its status can follow another app.
+    if not clean["url"] and not clean["background"]:
         raise ConfigError("Enter the address the server uses to reach the app")
     if "id" in clean and clean["id"] and not _ID_RE.match(str(clean["id"])):
         raise ConfigError("That app ID is not valid")

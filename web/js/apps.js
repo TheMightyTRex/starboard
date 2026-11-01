@@ -4,6 +4,7 @@
 let config = null;
 let statuses = {};
 let health = null;
+let outside = {};  // outside address checks, by app
 
 const design = () => document.documentElement.dataset.design;
 
@@ -22,7 +23,17 @@ function addressLine(kind, url, appName) {
 function addresses(s, home) {
   const lines = [];
   if (config.show_home_address && home) lines.push(addressLine("Home", home, s.name));
-  if (config.show_outside_address && s.outside_link) lines.push(addressLine("Outside", s.outside_link, s.name));
+  if (config.show_outside_address && s.outside_link) {
+    const line = addressLine("Outside", s.outside_link, s.name);
+    const o = outside[s.id];
+    if (o) {
+      // A small dot with words for screen readers and a tooltip; the Network page has the details.
+      const words = o.reachable ? "Reachable" : "Not reachable";
+      line.insertBefore(el("span", { class: "reach-dot", "data-tone": o.reachable ? "success" : "warning", title: words },
+        el("span", { class: "visually-hidden", text: `${words}. ` })), line.querySelector(".address__value"));
+    }
+    lines.push(line);
+  }
   return lines.length ? el("div", { class: "app__addresses" }, lines) : null;
 }
 
@@ -65,12 +76,12 @@ function groupsOf(services) {
 function renderApps() {
   const root = $("#app-groups");
   root.replaceChildren();
-  const services = config.services.filter((s) => s.enabled);
+  const services = config.services.filter((s) => s.enabled && !s.background);
   if (!services.length) {
     root.append(el("div", { class: "empty" },
       el("p", { text: "No apps yet." }),
       el("p", {}, el("a", { href: "/settings.html", text: "Add your first app in Settings" }))));
-    $("#apps-summary").textContent = "Add your apps in Settings to see them here.";
+    setStat("stat-running", "No apps yet", "Add your apps in Settings");
     return;
   }
   groupsOf(services).forEach(([title, items], i) => {
@@ -79,25 +90,51 @@ function renderApps() {
   });
 }
 
+function setStat(id, value, label, tone) {
+  const card = $(`#${id}`);
+  card.dataset.tone = tone || "";
+  $(".stat__value", card).textContent = value;
+  $(".stat__label", card).textContent = label;
+}
+
 async function checkStatus() {
   const button = $("#check-now");
   button.disabled = true;
-  $("#apps-summary").textContent = "Checking your apps…";
+  setStat("stat-running", "Checking…", "Your apps");
   try {
     const { items } = await api("/api/status");
     statuses = Object.fromEntries(items.map((i) => [i.id, i]));
     renderApps();
-    const up = items.filter((i) => i.state === "up").length;
-    const down = items.length - up;
+    const mine = items.filter((i) => config.services.some((s) => s.id === i.id && !s.background));
+    const up = mine.filter((i) => i.state === "up").length;
     const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    const text = `${up} of ${items.length} running${down ? ` · ${down} not responding` : ""} · checked at ${time}`;
-    $("#apps-summary").textContent = text;
-    announce(text);
+    setStat("stat-running", `${up} of ${mine.length} running`, `Checked at ${time}`, up === mine.length ? "success" : "danger");
+    announce(`${up} of ${mine.length} running, checked at ${time}`);
   } catch (e) {
-    $("#apps-summary").textContent = e.message;
+    setStat("stat-running", "Not checked", e.message, "warning");
   } finally {
     button.disabled = false;
   }
+}
+
+async function checkOutside() {
+  const card = $("#stat-outside");
+  const withOutside = config.services.filter((s) => s.enabled && !s.background && s.outside_link);
+  if (!withOutside.length) {
+    setStat("stat-outside", "Not set up", "Add an outside address to an app in Settings");
+    return;
+  }
+  setStat("stat-outside", "Checking…", "Outside access");
+  try {
+    const { items } = await api("/api/outside");
+    outside = Object.fromEntries(items.map((i) => [i.id, i]));
+    const ok = items.filter((i) => i.reachable).length;
+    setStat("stat-outside", `${ok} of ${items.length} reachable`, "Outside access, checked from the server", ok === items.length ? "success" : "warning");
+    renderApps();
+  } catch (e) {
+    setStat("stat-outside", "Not checked", e.message, "warning");
+  }
+  card.title = "Some routers cannot reach their own outside address from inside the home network. Check from a phone on mobile data if this looks wrong.";
 }
 
 async function showAttention() {
@@ -116,8 +153,9 @@ async function showAttention() {
 startPage().then(async () => {
   config = await api("/api/config");
   renderApps();
-  $("#check-now").addEventListener("click", checkStatus);
+  $("#check-now").addEventListener("click", () => { checkStatus(); checkOutside(); });
   document.addEventListener("designchange", renderApps);
   checkStatus();
+  checkOutside();
   showAttention();
 });

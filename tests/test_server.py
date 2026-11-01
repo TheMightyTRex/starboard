@@ -60,6 +60,7 @@ class ServerTest(unittest.TestCase):
         threading.Thread(target=cls.fake.serve_forever, daemon=True).start()
         cls.tmp = tempfile.TemporaryDirectory()
         auth.ITERATIONS = 1000  # fast tests
+        os.environ["STARBOARD_HISTORY"] = "0"
         cls.server, cls.app = make_server("127.0.0.1", 0, cls.tmp.name)
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
         cls.port = cls.server.server_address[1]
@@ -291,6 +292,25 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(guess_group({"name": "Jellyfin", "type": "jellyfin"}, groups), "Watch, listen and request")
         self.assertEqual(guess_group({"name": "Something new", "type": "link"}, groups), "Dashboards and tools")
         self.assertEqual(guess_group({"name": "Sonarr", "type": "sonarr"}, ["Watch", "Get", "Fetch", "Other"]), "Get")
+
+    def test_history_records_and_thins_out(self):
+        import collections
+        import threading
+        import time as clock
+        from starboard import sysinfo
+        with tempfile.TemporaryDirectory() as d:
+            h = sysinfo.History.__new__(sysinfo.History)
+            h.points, h.lock, h.path = collections.deque(), threading.Lock(), os.path.join(d, "history.json")
+            h._previous = sysinfo.monitor()
+            h.sample()
+            self.assertEqual(len(h.get(1)), 1)
+            for key in ("cpu", "mem", "rx", "tx", "read", "write"):
+                self.assertIn(key, h.points[0])
+            now = clock.time()
+            h.points.extend({"t": now - i, "cpu": 1, "mem": 2, "load": 0, "rx": 0, "tx": 0, "read": 0, "write": 0, "temp": None} for i in range(2000))
+            self.assertLessEqual(len(h.get(24)), 360)
+            h._save()
+            self.assertEqual(os.stat(h.path).st_mode & 0o777, 0o600)
 
     def test_password_hash(self):
         stored = auth.hash_password("a long password here", iterations=1000)

@@ -54,6 +54,37 @@ Mount each folder read-only in `compose.yaml` and name it in `.env`:
 STARBOARD_DISKS=Media=/disks/media
 ```
 
+Put the volume in `compose.override.yaml` (see below) rather than `compose.yaml`, so updates do not clash.
+
+### Your own folders and disks: compose.override.yaml
+
+Keep anything specific to your server in `compose.override.yaml` next to `compose.yaml`. Docker reads it
+automatically, git ignores it, and `./update.sh` leaves it alone. For example:
+
+```yaml
+services:
+  starboard:
+    volumes:
+      - /mnt/media:/disks/media:ro          # Storage page
+      - /var/lib/starboard-smart:/smart:ro  # Disk health page
+```
+
+with `STARBOARD_DISKS=Media=/disks/media` and `STARBOARD_SMART_DIR=/smart` in `.env`.
+
+### Disk health
+
+Reading a disk's health (SMART) needs root, so Starboard does not do it itself. A small job on the server
+saves each disk's report every 30 minutes, and Starboard only reads them:
+
+```bash
+sudo deploy/install-smart.sh /var/lib/starboard-smart
+```
+
+### Other services
+
+Services with no web page of their own (a VPN, an unpacker, a clean-up job) go under **Apps, Other services**:
+tick **Background service** when you add them. A service with no address can follow another app's status.
+
 ## Update
 
 ```bash

@@ -50,6 +50,8 @@
   --color-count: #af4e24;
   --color-logo-tile: #323a77;
   --color-logo-star: #af4e24;
+  --chart-1: #4552a8;  /* checked with the palette validator against the light surface */
+  --chart-2: #c0602f;
   --shadow-raised: 0 8px 28px rgb(16 24 40 / 0.18);
 
   --status-success-bg: #dcf2e3; --status-success-fg: #135c2e;
@@ -67,6 +69,7 @@
     --color-text: #f3f4f6; --color-text-muted: #a4aec1; --color-border: #6f7b91; --color-divider: #303c51;
     --color-accent: #a5b4fc; --color-accent-text: #101827; --color-accent-soft: #252f52; --color-focus: #a5b4fc; --color-count: #b7562c;
     --color-logo-tile: #a5b4fc; --color-logo-star: #ffb38a;
+    --chart-1: #6f80e6; --chart-2: #d2733c;  /* checked against the dark surface */
     --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.5);
     --status-success-bg: #12351f; --status-success-fg: #8fe0aa;
     --status-info-bg: #142a4b;    --status-info-fg: #a8c8ff;
@@ -82,6 +85,7 @@
     --color-text: #f3f4f6; --color-text-muted: #a4aec1; --color-border: #6f7b91; --color-divider: #303c51;
     --color-accent: #a5b4fc; --color-accent-text: #101827; --color-accent-soft: #252f52; --color-focus: #a5b4fc; --color-count: #b7562c;
     --color-logo-tile: #a5b4fc; --color-logo-star: #ffb38a;
+    --chart-1: #6f80e6; --chart-2: #d2733c;  /* checked against the dark surface */
   --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.5);
   --status-success-bg: #12351f; --status-success-fg: #8fe0aa;
   --status-info-bg: #142a4b;    --status-info-fg: #a8c8ff;

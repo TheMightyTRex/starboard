@@ -28,6 +28,18 @@ MAIN = [
 
 # Sub-menus: main key -> [(page, label, icon)]. They use the same tabs as the main menu.
 SUB = {
+    "apps": [
+        ("index.html", "Apps", "layout-grid"),
+        ("apps-updates.html", "Updates", "circle-arrow-up"),
+        ("apps-services.html", "Other services", "server-cog"),
+    ],
+    "system": [
+        ("system.html", "Overview", "layout-dashboard"),
+        ("system-storage.html", "Storage", "hard-drive"),
+        ("system-disks.html", "Disk health", "heart-pulse"),
+        ("system-monitor.html", "Monitor", "gauge"),
+        ("system-network.html", "Network", "network"),
+    ],
     "settings": [
         ("settings.html", "Apps", "app-window"),
         ("settings-general.html", "General", "sliders-horizontal"),

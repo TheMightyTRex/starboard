@@ -57,6 +57,7 @@ class App:
         self.limits = auth.RateLimit()
         self.version = read_version()
         self.disks = sysinfo.disk_paths_from_env()
+        self.history = sysinfo.History(data_dir) if os.environ.get("STARBOARD_HISTORY", "1") != "0" else None
         self.repo = os.environ.get("STARBOARD_REPO", "")  # "owner/name" for the update check; optional
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
         self.port = int(os.environ.get("STARBOARD_PORT", "8095"))
@@ -371,12 +372,27 @@ class Handler(BaseHTTPRequestHandler):
                 if not re.match(r"^(tvdb|tmdb|lidarr|readarr):[\w-]{1,64}$", key):
                     return self.error(400, "That item cannot be added")
                 return self.json(200, services.add(service, key, data.get("options") or {}))
+            if path == "/api/outside" and method == "GET":
+                return self.json(200, {"items": services.outside_all(cfg.data["services"])})
+            if path == "/api/app-updates" and method == "GET":
+                return self.json(200, services.app_updates(cfg.data["services"]))
             if path == "/api/queue" and method == "GET":
                 return self.json(200, services.queue(cfg.data["services"]))
             if path == "/api/calendar" and method == "GET":
                 return self.json(200, services.calendar(cfg.data["services"]))
             if path == "/api/health" and method == "GET":
                 return self.json(200, services.health(cfg.data["services"]))
+            if path == "/api/history" and method == "GET":
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                hours = {"1": 1, "6": 6, "24": 24}.get(q.get("hours", ["1"])[0], 1)
+                return self.json(200, {"hours": hours, "interval": sysinfo.History.INTERVAL,
+                                       "points": app.history.get(hours) if app.history else []})
+            if path == "/api/monitor" and method == "GET":
+                return self.json(200, sysinfo.monitor())
+            if path == "/api/interfaces" and method == "GET":
+                return self.json(200, {"items": sysinfo.interfaces()})
+            if path == "/api/disk-health" and method == "GET":
+                return self.json(200, sysinfo.disk_health())
             if path == "/api/system" and method == "GET":
                 return self.json(200, sysinfo.snapshot(app.disks))
             if path == "/api/version" and method == "GET":

@@ -100,7 +100,77 @@ def check(service):
 
 def status_all(services):
     enabled = [s for s in services if s.get("enabled", True)]
-    return list(POOL.map(check, enabled))
+    by_id = {s["id"]: s for s in services}
+    checked = [s for s in enabled if s.get("url")]
+    results = {r["id"]: r for r in POOL.map(check, checked)}
+    out = []
+    for s in enabled:
+        if s["id"] in results:
+            out.append(results[s["id"]])
+            continue
+        target = by_id.get(s.get("follows") or "")
+        if target and target.get("url"):
+            r = results.get(target["id"]) or check(target)
+            follow = {"id": s["id"], "state": r["state"], "follows": target["name"]}
+            if r["state"] == "down":
+                follow["message"] = f"{target['name']} is not responding"
+            out.append(follow)
+        else:
+            out.append({"id": s["id"], "state": "unknown"})
+    return out
+
+
+def _reach(url):
+    """Any answer from the outside address counts as reachable, even "sign in first"."""
+    started = time.monotonic()
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT}, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=6):
+            pass
+    except urllib.error.HTTPError as e:
+        if e.code >= 500:
+            return {"reachable": False, "message": f"Answered with error {e.code}"}
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+        reason = getattr(e, "reason", e)
+        return {"reachable": False, "message": "Not reachable" if not str(reason) else f"Not reachable ({str(reason)[:80]})"}
+    return {"reachable": True, "ms": round((time.monotonic() - started) * 1000)}
+
+
+def outside_all(services):
+    """Checks each app's outside address from the server. Some routers cannot reach their own outside address
+    from inside the home network, so a failure here is worth checking from a phone on mobile data."""
+    targets = [s for s in services if s.get("enabled", True) and s.get("outside_link")]
+    results = POOL.map(lambda s: dict(_reach(s["outside_link"]), id=s["id"]), targets)
+    return list(results)
+
+
+def _update_one(service):
+    items = _api(service, "/update") or []
+    installed = next((i for i in items if i.get("installed")), None)
+    newest = items[0] if items else None
+    available = bool(newest and not newest.get("installed") and newest.get("installable", True)
+                      and installed and newest.get("version") != installed.get("version"))
+    return {
+        "id": service["id"],
+        "installed": (installed or {}).get("version"),
+        "latest": (newest or {}).get("version"),
+        "available": available,
+        "released": (newest or {}).get("releaseDate"),
+    }
+
+
+def app_updates(services):
+    """What each app says about its own updates. Sonarr, Radarr, Lidarr, Readarr and Prowlarr report this;
+    for the others only the running version is known."""
+    targets = [s for s in services if s.get("enabled", True) and s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr")]
+    futures = [(s, POOL.submit(_update_one, s)) for s in targets]
+    rows, errors = [], []
+    for service, future in futures:
+        try:
+            rows.append(future.result(timeout=TIMEOUT + 2))
+        except Exception as e:
+            errors.append({"service": service["id"], "message": str(e) if isinstance(e, ServiceError) else f"Cannot reach {service['name']}"})
+    return {"items": rows, "errors": errors}
 
 
 # Search ------------------------------------------------------------------

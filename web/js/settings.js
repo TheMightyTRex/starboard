@@ -12,7 +12,7 @@ function renderServices() {
     list.append(el("li", { class: "row service-row" },
       el("div", { class: "service-row__main" }, appIcon(s, "app__icon app__icon--small"), el("div", {},
         el("p", { class: "row__title", text: s.name }),
-        el("p", { class: "row__meta", text: [type, s.group || "Other", s.has_api_key ? "API key saved" : null, s.enabled ? null : "Hidden"].filter(Boolean).join(" · ") }))),
+        el("p", { class: "row__meta", text: [type, s.group || "Other", s.background ? "Background service" : null, s.has_api_key ? "API key saved" : null, s.enabled ? null : "Hidden"].filter(Boolean).join(" · ") }))),
       el("div", { class: "row__side" },
         el("button", { type: "button", class: "btn", disabled: index === 0, "aria-label": `Move ${s.name} up`, onclick: () => move(index, -1) }, "↑"),
         el("button", { type: "button", class: "btn", disabled: index === config.services.length - 1, "aria-label": `Move ${s.name} down`, onclick: () => move(index, 1) }, "↓"),
@@ -48,7 +48,7 @@ function serviceFormValues() {
   const f = $("#service-form");
   return {
     id: f.service_id.value || undefined, type: f.type.value, name: f.name.value, url: f.url.value, link: f.link.value, outside_link: f.outside_link.value, icon: f.icon.value,
-    api_key: f.api_key.value, group: f.group.value, description: f.description.value, enabled: f.enabled.checked,
+    api_key: f.api_key.value, group: f.group.value, background: f.background.checked, follows: f.follows.value, description: f.description.value, enabled: f.enabled.checked,
     quality_profile_id: f.quality_profile_id.value || null, root_folder: f.root_folder.value,
     metadata_profile_id: f.metadata_profile_id.value || null, search_on_add: f.search_on_add.checked,
   };
@@ -72,6 +72,7 @@ function updateGroupGuess() {
 
 function updateTypeFields() {
   const type = $("#svc-type").value;
+  $("#svc-follows-field").hidden = !$("#svc-background").checked;
   $("#svc-search-fields").hidden = !SEARCHABLE.includes(type);
   $("#svc-meta-field").hidden = !["lidarr", "readarr"].includes(type);
   $("#svc-key-field").hidden = ["jellyfin", "link"].includes(type);
@@ -93,6 +94,8 @@ function openService(s = null) {
   if (s?.group && !groups.includes(s.group)) groups.push(s.group);
   $("#svc-group").replaceChildren(el("option", { value: "", text: "Choose for me" }), ...groups.map((g) => el("option", { value: g, text: g })));
   updateGroupGuess();
+  $("#svc-follows").replaceChildren(el("option", { value: "", text: "Nothing" }),
+    ...config.services.filter((x) => !x.background && (!s || x.id !== s.id)).map((x) => el("option", { value: x.id, text: x.name })));
   setOptions(f.quality_profile_id, s?.quality_profile_id ? [{ value: s.quality_profile_id, label: `Profile ${s.quality_profile_id}` }] : [], s?.quality_profile_id);
   setOptions(f.root_folder, s?.root_folder ? [{ value: s.root_folder, label: s.root_folder }] : [], s?.root_folder);
   setOptions(f.metadata_profile_id, s?.metadata_profile_id ? [{ value: s.metadata_profile_id, label: `Profile ${s.metadata_profile_id}` }] : [], s?.metadata_profile_id);
@@ -100,7 +103,9 @@ function openService(s = null) {
     f.service_id.value = s.id; f.type.value = s.type; f.name.value = s.name; f.url.value = s.url;
     f.link.value = s.link === s.url ? "" : s.link;
     f.outside_link.value = s.outside_link || "";
-    f.icon.value = s.icon || ""; f.group.value = s.group || ""; f.description.value = s.description || "";
+    f.icon.value = s.icon || "";
+    f.background.checked = !!s.background;
+    f.follows.value = s.follows || ""; f.group.value = s.group || ""; f.description.value = s.description || "";
     f.enabled.checked = s.enabled; f.search_on_add.checked = s.search_on_add !== false;
     f.api_key.placeholder = s.has_api_key ? "Saved (leave empty to keep)" : "";
   } else {
@@ -252,6 +257,7 @@ startPage().then(async () => {
     on("#add-service", "click", () => openService());
     on("#svc-type", "change", () => { updateTypeFields(); updateGroupGuess(); });
     on("#svc-name", "input", updateGroupGuess);
+    on("#svc-background", "change", updateTypeFields);
     on("#svc-test", "click", testService);
     on("#svc-load-options", "click", loadServiceOptions);
     on("#service-form", "submit", saveService);
