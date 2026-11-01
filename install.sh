@@ -43,8 +43,7 @@ else
 fi
 
 say "Writing settings to .env"
-umask 077
-[ -f .env ] || cp example.env .env
+[ -f .env ] || (umask 077 && cp example.env .env)
 set_env() {
   if grep -q "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi
 }
@@ -61,6 +60,7 @@ fi
 chmod 600 .env
 mkdir -p data backups
 chmod 700 data backups
+chmod 600 .env
 
 if [ "$MODE" = docker ]; then
   say "Building and starting the container"

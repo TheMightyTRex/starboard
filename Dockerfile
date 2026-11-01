@@ -8,6 +8,8 @@ WORKDIR /app
 COPY --chown=root:root VERSION ./
 COPY --chown=root:root starboard ./starboard
 COPY --chown=root:root web ./web
+# Readable by the app's user whatever permissions the files had on the host.
+RUN chmod -R a+rX,go-w /app
 
 ENV STARBOARD_PORT=8095 \
     STARBOARD_DATA=/data \

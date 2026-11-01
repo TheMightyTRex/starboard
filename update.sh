@@ -9,6 +9,7 @@
 # version you had and restores the backup.
 set -euo pipefail
 
+umask 022  # files checked out below must be readable inside the container
 # Run from a copy: git checkout replaces this file while it runs, and bash reads scripts as it goes.
 if [ -z "${STARBOARD_UPDATE_DIR:-}" ]; then
   copy="$(mktemp)"
@@ -99,10 +100,10 @@ healthy() {
 }
 
 say "Backing up your settings"
-umask 077
 mkdir -p backups
+chmod 700 backups
 BACKUP="backups/starboard-data-$(date +%Y-%m-%d-%H%M%S)-$(git rev-parse --short HEAD).tar.gz"
-tar -czf "$BACKUP" data
+(umask 077 && tar -czf "$BACKUP" data)  # private backup; the code files below must stay readable
 echo "Saved $BACKUP"
 
 say "Installing $WANT_NAME"

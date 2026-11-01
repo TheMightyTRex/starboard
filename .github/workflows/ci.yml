@@ -22,3 +22,10 @@ jobs:
         run: python tools/apply_shell.py && git diff --exit-code web/
       - name: Docker image builds
         run: docker build -t starboard:ci .
+      - name: Image starts even when the checkout is private to its owner
+        run: |
+          chmod -R go-rwx starboard web VERSION
+          docker build -t starboard:perm .
+          docker run -d --name perm --read-only --tmpfs /tmp -p 127.0.0.1:18095:8095 starboard:perm
+          for i in $(seq 1 15); do curl -fsS http://127.0.0.1:18095/healthz && exit 0; sleep 2; done
+          docker logs perm; exit 1

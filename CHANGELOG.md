@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 (1 November 2026)
+
+- Fixed: `./update.sh` made the new version's files readable by you only, so the container could not start
+  and the roll-back failed the same way. The image now makes its files readable whatever the host's
+  permissions, and the updater only keeps the backup private.
+
 ## 0.1.1 (1 November 2026)
 
 - Passwords need 10 characters or more (was 12).
