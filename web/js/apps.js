@@ -81,7 +81,7 @@ function renderApps() {
     root.append(el("div", { class: "empty" },
       el("p", { text: "No apps yet." }),
       el("p", {}, el("a", { href: "/settings.html", text: "Add your first app in Settings" }))));
-    setStat("stat-running", "No apps yet", "Add your apps in Settings");
+    setStat("stat-running", "No apps yet", "No apps yet. Add your apps in Settings");
     return;
   }
   groupsOf(services).forEach(([title, items], i) => {
@@ -90,17 +90,18 @@ function renderApps() {
   });
 }
 
-function setStat(id, value, label, tone) {
-  const card = $(`#${id}`);
-  card.dataset.tone = tone || "";
-  $(".stat__value", card).textContent = value;
-  $(".stat__label", card).textContent = label;
+// The two status pills beside Check again. "short" is what shows; "spoken" is what screen readers hear.
+function setStat(id, short, spoken, tone) {
+  const pill = $(`#${id}`);
+  pill.dataset.tone = tone || "";
+  pill.replaceChildren(el("span", { "aria-hidden": "true", text: short }), el("span", { class: "visually-hidden", text: spoken || short }));
+  pill.title = spoken || short;
 }
 
 async function checkStatus() {
   const button = $("#check-now");
   button.disabled = true;
-  setStat("stat-running", "Checking…", "Your apps");
+  setStat("stat-running", "Checking…", "Checking your apps");
   try {
     const { items } = await api("/api/status");
     statuses = Object.fromEntries(items.map((i) => [i.id, i]));
@@ -108,33 +109,31 @@ async function checkStatus() {
     const mine = items.filter((i) => config.services.some((s) => s.id === i.id && !s.background));
     const up = mine.filter((i) => i.state === "up").length;
     const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    setStat("stat-running", `${up} of ${mine.length} running`, `Checked at ${time}`, up === mine.length ? "success" : "danger");
+    setStat("stat-running", `${up}/${mine.length} running at ${time}`, `${up} of ${mine.length} apps running, checked at ${time}`, up === mine.length ? "success" : "danger");
     announce(`${up} of ${mine.length} running, checked at ${time}`);
   } catch (e) {
-    setStat("stat-running", "Not checked", e.message, "warning");
+    setStat("stat-running", "Not checked", `Apps not checked: ${e.message}`, "warning");
   } finally {
     button.disabled = false;
   }
 }
 
 async function checkOutside() {
-  const card = $("#stat-outside");
   const withOutside = config.services.filter((s) => s.enabled && !s.background && s.outside_link);
   if (!withOutside.length) {
-    setStat("stat-outside", "Not set up", "Add an outside address to an app in Settings");
+    setStat("stat-outside", "No external access", "No app has an outside address yet. Add one in Settings, Apps");
     return;
   }
-  setStat("stat-outside", "Checking…", "Outside access");
+  setStat("stat-outside", "Checking…", "Checking external access");
   try {
     const { items } = await api("/api/outside");
     outside = Object.fromEntries(items.map((i) => [i.id, i]));
     const ok = items.filter((i) => i.reachable).length;
-    setStat("stat-outside", `${ok} of ${items.length} reachable`, "Outside access, checked from the server", ok === items.length ? "success" : "warning");
+    setStat("stat-outside", `${ok}/${items.length} external access`, `${ok} of ${items.length} outside addresses reachable, checked from the server. Some routers cannot reach their own outside address from inside the home network.`, ok === items.length ? "success" : "warning");
     renderApps();
   } catch (e) {
-    setStat("stat-outside", "Not checked", e.message, "warning");
+    setStat("stat-outside", "Not checked", `External access not checked: ${e.message}`, "warning");
   }
-  card.title = "Some routers cannot reach their own outside address from inside the home network. Check from a phone on mobile data if this looks wrong.";
 }
 
 async function showAttention() {

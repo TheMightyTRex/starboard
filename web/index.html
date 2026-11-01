@@ -79,6 +79,7 @@
             <li><a href="/system-disks.html">Disk health</a></li>
             <li><a href="/system-monitor.html">Monitor</a></li>
             <li><a href="/system-network.html">Network</a></li>
+            <li><a href="/system-backup.html">Backup and restore</a></li>
           </ul>
         </div>
         <div class="phone-menu-section">
@@ -155,14 +156,12 @@
     <div class="page-head__text">
       <h1>Apps</h1>
     </div>
-    <div class="actions">
+    <div class="actions" aria-live="polite">
+      <span class="status-pill" id="stat-running">Checking…</span>
+      <span class="status-pill" id="stat-outside">Checking…</span>
       <button type="button" class="btn" id="check-now">Check again</button>
       <a class="btn btn-quiet" href="/settings.html">Add an app</a>
     </div>
-  </div>
-  <div class="stats" id="apps-stats" aria-live="polite">
-    <div class="stat" id="stat-running"><span class="stat__value">Checking…</span><span class="stat__label">Your apps</span></div>
-    <div class="stat" id="stat-outside"><span class="stat__value">Checking…</span><span class="stat__label">Outside access</span></div>
   </div>
   <div id="attention" hidden></div>
   <div class="app-groups" id="app-groups"></div>

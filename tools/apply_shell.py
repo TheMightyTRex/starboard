@@ -39,6 +39,7 @@ SUB = {
         ("system-disks.html", "Disk health", "heart-pulse"),
         ("system-monitor.html", "Monitor", "gauge"),
         ("system-network.html", "Network", "network"),
+        ("system-backup.html", "Backup and restore", "archive-restore"),
     ],
     "settings": [
         ("settings.html", "Apps", "app-window"),

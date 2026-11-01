@@ -80,6 +80,21 @@ saves each disk's report every 30 minutes, and Starboard only reads them:
 sudo deploy/install-smart.sh /var/lib/starboard-smart
 ```
 
+### Backup and restore
+
+**System, Backup and restore** downloads Starboard's settings as a file (your apps, API keys, categories and
+settings, never your password) and restores from one. Starboard also keeps copies of its settings in
+`./data/backups` before a restore or an update that changes them.
+
+For the whole server, Starboard works with a backup job that runs on the host, so it never needs to read the
+server itself. Point it at two folders in `compose.override.yaml` and `.env`:
+
+- `STARBOARD_JOBS_DIR`: a folder with a `requests` folder inside. **Back up the server now** creates an empty
+  file named `backup` in `requests`; your job (for example a systemd path unit) runs, removes it, and writes
+  `backup.json` with `status` (`running`, `done` or `failed`), `started`, `finished` and `summary`.
+  Mount the folder read-only and its `requests` folder read-write.
+- `STARBOARD_BACKUP_DIR`: where the job saves its files, mounted read-only, so the page can list them.
+
 ### Other services
 
 Services with no web page of their own (a VPN, an unpacker, a clean-up job) go under **Apps, Other services**:

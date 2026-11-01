@@ -14,7 +14,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import auth, icons, services, sysinfo
+from . import auth, backup, icons, services, sysinfo
 from .config import Config, ConfigError, new_setup_token, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -130,6 +130,12 @@ class App:
             return self._latest["tag"]
 
 
+class PasswordProblem(Exception):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status, self.message = status, message
+
+
 def is_loopback(address):
     try:
         ip = ipaddress.ip_address(address)
@@ -187,9 +193,9 @@ class Handler(BaseHTTPRequestHandler):
     def error(self, status, message):
         self.json(status, {"error": message})
 
-    def body(self):
+    def body(self, limit=MAX_BODY):
         length = int(self.headers.get("Content-Length") or 0)
-        if length > MAX_BODY:
+        if length > limit:
             raise ValueError("That request is too large")
         raw = self.rfile.read(length) if length else b"{}"
         data = json.loads(raw or b"{}")
@@ -397,6 +403,26 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, sysinfo.snapshot(app.disks))
             if path == "/api/version" and method == "GET":
                 return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo})
+            if path == "/api/backup/settings" and method == "POST":
+                self.check_password(self.body())
+                return self.json(200, backup.export(cfg, app.version))
+            if path == "/api/backup/restore" and method == "POST":
+                data = self.body(limit=2 * 1024 * 1024)
+                self.check_password(data)
+                count = backup.restore(cfg, data.get("backup"))
+                return self.json(200, {"apps": count, "config": cfg.public()})
+            if path == "/api/backup/saved" and method == "GET":
+                return self.json(200, {"items": backup.saved_copies(cfg)})
+            if path == "/api/backup/restore-saved" and method == "POST":
+                data = self.body()
+                self.check_password(data)
+                count = backup.restore_saved(cfg, str(data.get("name", "")))
+                return self.json(200, {"apps": count, "config": cfg.public()})
+            if path == "/api/backup/server" and method == "GET":
+                return self.json(200, backup.server_status())
+            if path == "/api/backup/server" and method == "POST":
+                backup.request_server_backup()
+                return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
             if path == "/api/sessions/end-all" and method == "POST":
@@ -405,8 +431,12 @@ class Handler(BaseHTTPRequestHandler):
                 app.sessions.end_all()
                 return self.json(200, {"ok": True}, {"Set-Cookie": self.session_cookie("", 0)})
             return self.error(404, "Not found")
+        except PasswordProblem as e:
+            return self.error(e.status, e.message)
         except (ConfigError, ValueError) as e:
             return self.error(400, str(e))
+        except OSError:
+            return self.error(404, "That file is not there any more")
         except services.ServiceError as e:
             return self.error(502, str(e))
 
@@ -464,6 +494,16 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(401, "That password is not right")
         app.limits.clear(address)
         return self.json(200, {"ok": True}, self.new_session(bool(data.get("remember"))))
+
+    def check_password(self, data):
+        """Downloading or restoring settings needs the password again: the file holds API keys."""
+        app = self.app
+        address = self.client_address_text()
+        if app.limits.blocked(address):
+            raise PasswordProblem(429, "Too many attempts. Wait 15 minutes and try again")
+        if not auth.check_password(str(data.get("password", "")), app.config.data["auth"]["password_hash"]):
+            app.limits.fail(address)
+            raise PasswordProblem(401, "That password is not right")
 
     def change_password(self):
         app = self.app

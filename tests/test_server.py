@@ -244,6 +244,32 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(len(called), 2)
 
 
+    def test_14_backup_and_restore_settings(self):
+        self.sign_in()
+        resp, _ = self.request("POST", "/api/backup/settings", {"password": "wrong"})
+        self.assertEqual(resp.status, 401)
+        self.app.limits.clear("127.0.0.1")
+        resp, saved = self.request("POST", "/api/backup/settings", {"password": "correct horse battery"})
+        self.assertEqual(resp.status, 200)
+        self.assertEqual(saved["format"], "starboard-settings")
+        self.assertNotIn("auth", json.dumps(saved["settings"]))
+        before = len(saved["services"])
+        # Change something, then put the backup back.
+        self.request("POST", "/api/services", {"name": "Temporary", "type": "link", "url": "http://127.0.0.1:9"})
+        resp, data = self.request("POST", "/api/backup/restore", {"password": "correct horse battery", "backup": saved})
+        self.assertEqual(resp.status, 200, data)
+        self.assertEqual(len(data["config"]["services"]), before)
+        self.assertTrue(self.app.config.data["auth"]["password_hash"])  # the password survives a restore
+        resp, data = self.request("POST", "/api/backup/restore", {"password": "correct horse battery", "backup": {"format": "other"}})
+        self.assertEqual(resp.status, 400)
+        resp, listed = self.request("GET", "/api/backup/saved")
+        self.assertTrue(any("before-restore" in i["name"] for i in listed["items"]))
+        resp, data = self.request("POST", "/api/backup/restore-saved", {"password": "correct horse battery", "name": "../config.json"})
+        self.assertEqual(resp.status, 400)
+        resp, data = self.request("GET", "/api/backup/server")
+        self.assertFalse(data["configured"])
+
+
 class ConfigTest(unittest.TestCase):
     def test_rejects_bad_addresses(self):
         for url in ("file:///etc/passwd", "ftp://x", "javascript:alert(1)", ""):

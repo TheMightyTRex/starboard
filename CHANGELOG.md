@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 (2 November 2026)
+
+- Apps: the running and external access counts sit on the same row as Check again and Add an app, at the
+  same height, with their coloured edge: "20/20 running at 23:47", "0/4 external access".
+- System, Backup and restore: download Starboard's settings as a file, restore from a file or from a copy
+  Starboard saved, and start the server's own backup job and see its result and files. Downloading or
+  restoring needs your password again.
+
 ## 0.1.5 (2 November 2026)
 
 - Apps has a sub-menu: Apps, Updates (each app's version, and whether Sonarr, Radarr, Lidarr, Readarr and
