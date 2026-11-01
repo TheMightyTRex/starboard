@@ -5,7 +5,6 @@ After=network-online.target
 
 [Service]
 WorkingDirectory=@DIR@
-Environment=STARBOARD_HOST=@BIND@
 Environment=STARBOARD_PORT=@PORT@
 Environment=STARBOARD_DATA=@DIR@/data
 EnvironmentFile=-@DIR@/.env

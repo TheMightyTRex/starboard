@@ -3,7 +3,7 @@
 #
 #   --native         Run with this computer's Python as a systemd user service, without Docker
 #   --port 8095      Port to listen on
-#   --network        Let other devices on your network open it (default: this computer only)
+#   --local-only     Only this computer can open it (default: your home network too; change it in Settings)
 #
 # Nothing here needs sudo. Your settings go in ./data, which git ignores.
 set -euo pipefail
@@ -11,13 +11,13 @@ set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 MODE=docker
 PORT=8095
-BIND=127.0.0.1
+NETWORK=1
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --native) MODE=native ;;
     --port) PORT="${2:?--port needs a number}"; shift ;;
-    --network) BIND=0.0.0.0 ;;
+    --local-only) NETWORK=0 ;;
     -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
@@ -50,7 +50,7 @@ set_env() {
 }
 set_env STARBOARD_MODE "$MODE"
 set_env STARBOARD_PORT "$PORT"
-set_env STARBOARD_BIND "$BIND"
+set_env STARBOARD_NETWORK "$NETWORK"
 set_env STARBOARD_UID "$(id -u)"
 set_env STARBOARD_GID "$(id -g)"
 if ! grep -q '^STARBOARD_REPO=.\+' .env; then
@@ -69,7 +69,7 @@ else
   say "Installing the systemd user service"
   unit_dir="$HOME/.config/systemd/user"
   mkdir -p "$unit_dir"
-  sed -e "s|@DIR@|$PWD|g" -e "s|@PORT@|$PORT|g" -e "s|@BIND@|$BIND|g" deploy/starboard.service > "$unit_dir/starboard.service"
+  sed -e "s|@DIR@|$PWD|g" -e "s|@PORT@|$PORT|g" deploy/starboard.service > "$unit_dir/starboard.service"
   systemctl --user daemon-reload
   systemctl --user enable --now starboard.service
   echo "To keep it running after you sign out: loginctl enable-linger $USER"
@@ -84,10 +84,13 @@ for _ in $(seq 1 30); do
 done
 [ "${ok:-}" = 1 ] || fail "Starboard did not start. See: docker compose logs starboard (or journalctl --user -u starboard)"
 
-host="localhost"
-[ "$BIND" = 0.0.0.0 ] && host="$(hostname -I 2>/dev/null | awk '{print $1}')"
 say "Starboard is running"
-echo "Open: http://${host:-localhost}:$PORT"
+echo "On this computer: http://localhost:$PORT"
+lan="$(hostname -I 2>/dev/null | awk '{print $1}')"
+if [ -f data/config.json ] && grep -q '"network_access": true' data/config.json && [ -n "$lan" ]; then
+  echo "On your phone or other computers: http://$lan:$PORT"
+fi
+echo "Turn network access on or off in Settings, Security."
 if [ -f data/setup-token ]; then
   echo "Setup code (you need it once, to choose your password): $(cat data/setup-token)"
 fi

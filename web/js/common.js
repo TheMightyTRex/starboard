@@ -9,6 +9,10 @@ const DESIGNS = {
   command: ["Command", "Search first, with apps as a compact icon grid."],
   board: ["Status board", "A dense table for checking everything at a glance."],
   calm: ["Calm", "Larger cards in bands with more space."],
+  now: ["Now", "What needs you, what is downloading and what is coming, above the apps."],
+  split: ["Split view", "A list of apps on the left and the chosen app's details on the right."],
+  poster: ["Poster wall", "Big colour tiles, like a streaming app's home screen."],
+  health: ["Health first", "Apps that are not responding at the top, with a coloured edge for status."],
 };
 
 function readPrefs() {
@@ -33,7 +37,11 @@ function applyPrefs(prefs = readPrefs()) {
   root.classList.toggle("pref-motion-off", prefs.motion === "off");
   root.classList.toggle("pref-underline", !!prefs.underline);
   root.classList.toggle("pref-spacing", !!prefs.spacing);
-  root.dataset.design = DESIGNS[prefs.design] ? prefs.design : serverDesign;
+  const design = DESIGNS[prefs.design] ? prefs.design : serverDesign;
+  if (root.dataset.design !== design) {
+    root.dataset.design = design;
+    document.dispatchEvent(new CustomEvent("designchange", { detail: design }));
+  }
 }
 applyPrefs();
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => applyPrefs());

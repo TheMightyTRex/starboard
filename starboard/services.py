@@ -242,6 +242,17 @@ def add(service, key, choice):
 
 # Downloads, calendar and health ----------------------------------------
 
+IMPORT_STATES = {"importPending", "importing", "imported", "failedPending", "failed", "importBlocked"}
+
+
+def _queue_state(record):
+    """The download client's own state (so a paused client shows Paused), except while importing."""
+    tracked = record.get("trackedDownloadState") or ""
+    if tracked in IMPORT_STATES:
+        return tracked
+    return record.get("status") or tracked or ""
+
+
 def _queue_one(service):
     params = {"pageSize": 100, "includeUnknownSeriesItems": "true"}
     if service["type"] == "sonarr":
@@ -255,7 +266,7 @@ def _queue_one(service):
         rows.append({
             "service_name": service["name"],
             "title": r.get("title") or "Unknown",
-            "status": r.get("trackedDownloadState") or r.get("status") or "",
+            "status": _queue_state(r),
             "problem": r.get("trackedDownloadStatus") in ("warning", "error"),
             "messages": [m for s in r.get("statusMessages") or [] for m in s.get("messages") or []][:3],
             "progress": round((size - left) / size * 100, 1) if size else 0,

@@ -4,7 +4,9 @@ import json
 import mimetypes
 import os
 import posixpath
+import ipaddress
 import re
+import socket
 import threading
 import time
 import urllib.parse
@@ -57,6 +59,9 @@ class App:
         self.disks = sysinfo.disk_paths_from_env()
         self.repo = os.environ.get("STARBOARD_REPO", "")  # "owner/name" for the update check; optional
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
+        self.port = int(os.environ.get("STARBOARD_PORT", "8095"))
+        self.forced_host = os.environ.get("STARBOARD_HOST", "")  # when set, Settings cannot change the address
+        self.on_network_change = None  # set by the runner in __main__
         self.setup_token = None
         self._latest = {"checked": 0, "tag": None}
         self._latest_lock = threading.Lock()
@@ -72,6 +77,28 @@ class App:
             os.remove(os.path.join(data_dir, "setup-token"))
         except FileNotFoundError:
             pass
+
+    def listen_host(self):
+        if self.forced_host:
+            return self.forced_host
+        return "0.0.0.0" if self.config.data.get("network_access", True) else "127.0.0.1"
+
+    def network_info(self, client_ip):
+        addresses = []
+        try:
+            # Finds the address other devices use. Connecting a UDP socket sends nothing.
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("192.0.2.1", 9))
+                addresses.append(s.getsockname()[0])
+        except OSError:
+            pass
+        return {
+            "network_access": self.config.data.get("network_access", True),
+            "addresses": [a for a in addresses if not a.startswith("127.")],
+            "port": self.port,
+            "forced_by": "STARBOARD_HOST" if self.forced_host else None,
+            "you_are_on_this_computer": is_loopback(client_ip),
+        }
 
     @property
     def needs_setup(self):
@@ -100,6 +127,16 @@ class App:
             except (OSError, ValueError):
                 pass
             return self._latest["tag"]
+
+
+def is_loopback(address):
+    try:
+        ip = ipaddress.ip_address(address)
+        if ip.version == 6 and ip.ipv4_mapped:
+            ip = ip.ipv4_mapped
+        return ip.is_loopback
+    except ValueError:
+        return False
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -192,7 +229,16 @@ class Handler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.do_GET()
 
+    def local_only_refused(self):
+        """With network access off, only this computer may connect, even if the address was overridden."""
+        if self.app.config.data.get("network_access", True) or is_loopback(self.client_address[0]):
+            return False
+        self.send(403, b"This dashboard only accepts connections from the computer it runs on.", "text/plain; charset=utf-8")
+        return True
+
     def do_GET(self):
+        if self.local_only_refused():
+            return
         path = urllib.parse.urlparse(self.path).path
         if path == "/healthz":
             return self.send(200, b"ok", "text/plain; charset=utf-8")
@@ -210,6 +256,8 @@ class Handler(BaseHTTPRequestHandler):
         self.mutating("DELETE")
 
     def mutating(self, method):
+        if self.local_only_refused():
+            return
         path = urllib.parse.urlparse(self.path).path
         if not path.startswith("/api/"):
             return self.error(405, "Not allowed")
@@ -263,8 +311,14 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/config" and method == "GET":
                 return self.json(200, cfg.public())
             if path == "/api/config/general" and method == "PUT":
+                before = cfg.data.get("network_access", True)
                 cfg.update_general(self.body())
+                if cfg.data.get("network_access", True) != before and app.on_network_change:
+                    # Answer first, then move the listener.
+                    threading.Timer(0.5, app.on_network_change).start()
                 return self.json(200, cfg.public())
+            if path == "/api/network" and method == "GET":
+                return self.json(200, app.network_info(self.client_address[0]))
             if path == "/api/services" and method == "POST":
                 service_id = cfg.upsert_service(self.body())
                 return self.json(200, {"id": service_id, "config": cfg.public()})
@@ -387,8 +441,8 @@ class Handler(BaseHTTPRequestHandler):
         return self.json(200, {"ok": True}, {"Set-Cookie": self.session_cookie(token, days * 86400)})
 
 
-def make_server(host, port, data_dir):
-    app = App(data_dir)
+def make_server(host, port, data_dir_or_app):
+    app = data_dir_or_app if isinstance(data_dir_or_app, App) else App(data_dir_or_app)
     handler = type("BoundHandler", (Handler,), {"app": app})
     server = ThreadingHTTPServer((host, port), handler)
     server.daemon_threads = True

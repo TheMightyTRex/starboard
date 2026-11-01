@@ -21,7 +21,7 @@ SERVICE_TYPES = {
     "link": {"label": "Other app", "api": "", "searchable": False},
 }
 
-DESIGNS = ["tiles", "shelf", "command", "board", "calm"]
+DESIGNS = ["tiles", "shelf", "command", "board", "calm", "now", "split", "poster", "health"]
 
 DEFAULTS = {
     "schema": SCHEMA,
@@ -30,6 +30,7 @@ DEFAULTS = {
     "secure_cookies": False,
     "session_days": 7,
     "update_check": True,
+    "network_access": None,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
     "groups": ["Watch and listen", "Requests", "Downloads", "Tools"],
@@ -60,6 +61,7 @@ class Config:
     def _load(self):
         if not os.path.exists(self.path):
             data = json.loads(json.dumps(DEFAULTS))
+            data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
             self._write(data)
             return data
         with open(self.path, encoding="utf-8") as f:
@@ -70,6 +72,9 @@ class Config:
             self._write(data)
         for key, value in DEFAULTS.items():
             data.setdefault(key, json.loads(json.dumps(value)))
+        if data["network_access"] is None:
+            data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
+            self._write(data)
         return data
 
     def _write(self, data):
@@ -147,6 +152,7 @@ class Config:
             "secure_cookies": d["secure_cookies"],
             "session_days": d["session_days"],
             "update_check": d["update_check"],
+            "network_access": d["network_access"],
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
         }
@@ -161,12 +167,12 @@ class Config:
                 d["site_name"] = name
             if "design" in incoming:
                 if incoming["design"] not in DESIGNS:
-                    raise ConfigError("Choose one of the five designs")
+                    raise ConfigError("Choose one of the designs")
                 d["design"] = incoming["design"]
             if "groups" in incoming:
                 groups = [str(g).strip()[:40] for g in incoming["groups"] if str(g).strip()]
                 d["groups"] = groups[:20] or DEFAULTS["groups"]
-            for key in ("secure_cookies", "update_check"):
+            for key in ("secure_cookies", "update_check", "network_access"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
             if "session_days" in incoming:

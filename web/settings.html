@@ -6,6 +6,10 @@
 <meta name="referrer" content="no-referrer">
 <title>Settings · Starboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#1f5fbf">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
@@ -127,6 +131,15 @@
       </section>
       <section class="panel" id="security" aria-labelledby="security-title">
         <div class="panel__head"><h2 id="security-title">Security</h2><p class="hint">Sign-in, sessions and cookies.</p></div>
+        <form id="network-form" class="design-options" aria-labelledby="network-title">
+          <h3 id="network-title">Who can open the dashboard</h3>
+          <label class="check" for="network-access"><input type="checkbox" id="network-access" name="network_access" aria-describedby="network-hint"> Phones and other computers on your home network</label>
+          <p class="hint" id="network-hint">When this is off, only the computer Starboard runs on can open it. Other devices cannot connect at all.</p>
+          <div id="network-addresses"></div>
+          <p class="notice" data-tone="warning" id="network-warning" hidden>You are using another device. If you turn this off, this device loses access straight away. Select Save again to turn it off.</p>
+          <p class="field-error" id="network-forced" hidden></p>
+          <div class="actions"><button class="btn btn-primary" type="submit" id="network-save">Save who can open it</button></div>
+        </form>
         <form id="password-form" class="form-grid">
           <div class="field"><label for="current-password">Current password</label><input class="input" id="current-password" name="current" type="password" autocomplete="current-password" required></div>
           <div class="field"><label for="new-password">New password</label><input class="input" id="new-password" name="new" type="password" autocomplete="new-password" minlength="12" required aria-describedby="new-password-hint"><p class="hint" id="new-password-hint">At least 12 characters. Everyone else is signed out.</p></div>

@@ -9,8 +9,7 @@ COPY --chown=root:root VERSION ./
 COPY --chown=root:root starboard ./starboard
 COPY --chown=root:root web ./web
 
-ENV STARBOARD_HOST=0.0.0.0 \
-    STARBOARD_PORT=8095 \
+ENV STARBOARD_PORT=8095 \
     STARBOARD_DATA=/data \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -18,5 +17,5 @@ ENV STARBOARD_HOST=0.0.0.0 \
 USER starboard
 EXPOSE 8095
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
-  CMD wget -q -O /dev/null http://127.0.0.1:8095/healthz || exit 1
+  CMD wget -q -O /dev/null http://127.0.0.1:${STARBOARD_PORT}/healthz || exit 1
 CMD ["python", "-m", "starboard"]

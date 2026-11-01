@@ -6,7 +6,7 @@ let timer = null;
 
 const STATE_WORDS = {
   downloading: ["Downloading", "info"], importPending: ["Waiting to import", "neutral"], importing: ["Importing", "info"],
-  imported: ["In library", "success"], failedPending: ["Failed", "danger"], failed: ["Failed", "danger"],
+  imported: ["In library", "success"], importBlocked: ["Needs attention", "warning"], failedPending: ["Failed", "danger"], failed: ["Failed", "danger"],
   paused: ["Paused", "muted"], queued: ["Waiting", "neutral"], delay: ["Waiting", "neutral"], completed: ["Downloaded", "success"],
 };
 

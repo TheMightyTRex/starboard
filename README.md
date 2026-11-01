@@ -21,15 +21,20 @@ You need Docker with the Compose plugin (or Python 3.10+ and systemd for `--nati
 ```bash
 git clone https://github.com/OWNER/starboard.git
 cd starboard
-./install.sh --network
+./install.sh
 ```
 
-Leave out `--network` to allow this computer only. The installer prints the address and a one-time setup
-code. Open the address, enter the code and choose a password (at least 12 characters). Then go to
-**Settings, Apps** and add your apps.
+The installer prints two addresses: one for this computer and one for phones and other computers on your
+home network, plus a one-time setup code. Open either address, enter the code and choose a password (at least
+12 characters). Then go to **Settings, Apps** and add your apps. Use `127.0.0.1` and each app's port (for
+example `http://127.0.0.1:8989` for Sonarr) as the address the server uses.
 
-To reach your apps by container name (for example `http://sonarr:8989`), join their Docker network: uncomment
-the `networks` lines in `compose.yaml` and put your network's name in. Otherwise use the server's address.
+### Home network or this computer only
+
+**Settings, Security, Who can open the dashboard** switches between your home network (the default) and this
+computer only. The change takes effect at once: Starboard stops listening on the network, so other devices
+cannot connect at all. Install with `--local-only` to start that way. The Docker setup uses host networking
+so this works (Docker on Linux).
 
 ### Free space on the System page
 
@@ -64,7 +69,7 @@ your settings restored) if the new one does not start. `./update.sh --check` onl
 - A strict Content Security Policy: no inline scripts, nothing loaded from other sites except cover images.
 - The container runs as your user, read-only, with every Linux capability dropped. It does not need the
   Docker socket.
-- By default it listens on this computer only. To use it away from home, put it behind a VPN or a reverse
+- Other devices on your home network can open it unless you switch that off in Settings. To use it away from home, put it behind a VPN or a reverse
   proxy with HTTPS (set `STARBOARD_TRUST_PROXY=1` and turn on HTTPS-only cookies in Settings). Do not forward
   the port straight to the internet.
 

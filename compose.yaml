@@ -1,5 +1,9 @@
 # Starboard. Settings, sessions and API keys live in ./data (never in the repository).
 # Copy example.env to .env and change the values there.
+#
+# Host networking lets Starboard choose who can connect: everyone on your home network, or this computer only
+# (Settings, Security). It also reaches your other apps on their published ports, such as http://127.0.0.1:8989.
+# Host networking needs Docker on Linux.
 services:
   starboard:
     build: .
@@ -7,10 +11,11 @@ services:
     container_name: starboard
     user: "${STARBOARD_UID:-10001}:${STARBOARD_GID:-10001}"
     restart: unless-stopped
-    ports:
-      - "${STARBOARD_BIND:-127.0.0.1}:${STARBOARD_PORT:-8095}:8095"
+    network_mode: host
     environment:
       - TZ=${TZ:-Etc/UTC}
+      - STARBOARD_PORT=${STARBOARD_PORT:-8095}
+      - STARBOARD_NETWORK=${STARBOARD_NETWORK:-1}
       - STARBOARD_REPO=${STARBOARD_REPO:-}
       - STARBOARD_DISKS=${STARBOARD_DISKS:-}
       - STARBOARD_TRUST_PROXY=${STARBOARD_TRUST_PROXY:-0}
@@ -25,12 +30,3 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    networks:
-      - default
-      # To reach apps by container name, join their network (see the README):
-      # - media
-
-# networks:
-#   media:
-#     external: true
-#     name: your-media-network

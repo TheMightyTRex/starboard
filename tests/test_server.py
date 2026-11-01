@@ -207,6 +207,34 @@ class ServerTest(unittest.TestCase):
         self.assertIn("refused the API key", data["message"])
 
 
+    def test_13_network_switch(self):
+        self.sign_in()
+        resp, data = self.request("GET", "/api/network")
+        self.assertTrue(data["network_access"])
+        self.assertTrue(data["you_are_on_this_computer"])
+        called = []
+        self.app.on_network_change = lambda: called.append(True)
+        resp, data = self.request("PUT", "/api/config/general", {"network_access": False})
+        self.assertFalse(data["network_access"])
+        self.assertEqual(self.app.listen_host(), "127.0.0.1")
+        # This computer still gets in; any other address is refused.
+        resp, _ = self.request("GET", "/api/network")
+        self.assertEqual(resp.status, 200)
+        from starboard import server as srv
+        original = srv.is_loopback
+        srv.is_loopback = lambda address: False
+        try:
+            resp, _ = self.request("GET", "/api/config")
+            self.assertEqual(resp.status, 403)
+        finally:
+            srv.is_loopback = original
+        self.request("PUT", "/api/config/general", {"network_access": True})
+        self.assertEqual(self.app.listen_host(), "0.0.0.0")
+        import time
+        time.sleep(0.8)
+        self.assertEqual(len(called), 2)
+
+
 class ConfigTest(unittest.TestCase):
     def test_rejects_bad_addresses(self):
         for url in ("file:///etc/passwd", "ftp://x", "javascript:alert(1)", ""):

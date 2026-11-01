@@ -165,6 +165,41 @@ async function saveGeneral(body, message) {
   }
 }
 
+let network = null;
+let confirmLocalOnly = false;
+
+async function showNetwork() {
+  try {
+    network = await api("/api/network");
+  } catch { return; }
+  $("#network-access").checked = network.network_access;
+  $("#network-forced").hidden = !network.forced_by;
+  if (network.forced_by) {
+    $("#network-forced").textContent = `Set by ${network.forced_by} on the server, so it cannot be changed here.`;
+    $("#network-access").disabled = true;
+    $("#network-save").disabled = true;
+  }
+  const list = $("#network-addresses");
+  list.replaceChildren();
+  const rows = [["This computer", `http://localhost:${network.port}`]];
+  if (network.network_access) for (const a of network.addresses) rows.push(["Phones and other computers", `http://${a}:${network.port}`]);
+  for (const [label, url] of rows) list.append(el("p", {}, `${label}: `, el("code", { text: url })));
+}
+
+async function saveNetwork(event) {
+  event.preventDefault();
+  const want = $("#network-access").checked;
+  if (!want && network && !network.you_are_on_this_computer && !confirmLocalOnly) {
+    confirmLocalOnly = true;
+    $("#network-warning").hidden = false;
+    return;
+  }
+  confirmLocalOnly = false;
+  $("#network-warning").hidden = true;
+  await saveGeneral({ network_access: want }, want ? "Other devices on your network can now open it" : "Only this computer can open it now");
+  setTimeout(showNetwork, 1500);
+}
+
 async function showVersion() {
   try {
     const v = await api("/api/version");
@@ -181,6 +216,9 @@ startPage().then(async () => {
   renderServices();
   renderGeneral();
   showVersion();
+  showNetwork();
+  $("#network-form").addEventListener("submit", saveNetwork);
+  $("#network-access").addEventListener("change", () => { confirmLocalOnly = false; $("#network-warning").hidden = true; });
   wireDialog($("#service-dialog"));
   $("#add-service").addEventListener("click", () => openService());
   $("#svc-type").addEventListener("change", updateTypeFields);
