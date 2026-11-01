@@ -1,0 +1,233 @@
+"""Settings file: load, save, migrate and keep secrets out of what the browser sees."""
+
+import json
+import os
+import re
+import secrets
+import shutil
+import threading
+import time
+
+SCHEMA = 1
+
+SERVICE_TYPES = {
+    "sonarr": {"label": "Sonarr", "api": "/api/v3", "searchable": True, "kind": "Series"},
+    "radarr": {"label": "Radarr", "api": "/api/v3", "searchable": True, "kind": "Film"},
+    "lidarr": {"label": "Lidarr", "api": "/api/v1", "searchable": True, "kind": "Artist"},
+    "readarr": {"label": "Readarr", "api": "/api/v1", "searchable": True, "kind": "Author"},
+    "prowlarr": {"label": "Prowlarr", "api": "/api/v1", "searchable": False},
+    "bazarr": {"label": "Bazarr", "api": "/api", "searchable": False},
+    "jellyfin": {"label": "Jellyfin", "api": "", "searchable": False},
+    "link": {"label": "Other app", "api": "", "searchable": False},
+}
+
+DESIGNS = ["tiles", "shelf", "command", "board", "calm"]
+
+DEFAULTS = {
+    "schema": SCHEMA,
+    "site_name": "Starboard",
+    "design": "tiles",
+    "secure_cookies": False,
+    "session_days": 7,
+    "update_check": True,
+    "auth": {"password_hash": "", "session_version": 1},
+    "services": [],
+    "groups": ["Watch and listen", "Requests", "Downloads", "Tools"],
+}
+
+SERVICE_FIELDS = {
+    "id", "name", "type", "url", "link", "api_key", "group", "description", "enabled",
+    "quality_profile_id", "metadata_profile_id", "root_folder", "search_on_add",
+}
+
+_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
+
+
+class ConfigError(ValueError):
+    pass
+
+
+class Config:
+    """Thread-safe settings stored as JSON in the data folder (never in the repository)."""
+
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
+        self.path = os.path.join(data_dir, "config.json")
+        self.lock = threading.RLock()
+        os.makedirs(data_dir, mode=0o700, exist_ok=True)
+        self.data = self._load()
+
+    def _load(self):
+        if not os.path.exists(self.path):
+            data = json.loads(json.dumps(DEFAULTS))
+            self._write(data)
+            return data
+        with open(self.path, encoding="utf-8") as f:
+            data = json.load(f)
+        if data.get("schema", 0) < SCHEMA:
+            self.backup("before-migration")
+            data = migrate(data)
+            self._write(data)
+        for key, value in DEFAULTS.items():
+            data.setdefault(key, json.loads(json.dumps(value)))
+        return data
+
+    def _write(self, data):
+        tmp = self.path + ".tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, self.path)
+
+    def save(self):
+        with self.lock:
+            self._write(self.data)
+
+    def backup(self, reason):
+        folder = os.path.join(self.data_dir, "backups")
+        os.makedirs(folder, mode=0o700, exist_ok=True)
+        if os.path.exists(self.path):
+            name = f"config-{time.strftime('%Y-%m-%d-%H%M%S')}-{reason}.json"
+            shutil.copy2(self.path, os.path.join(folder, name))
+            os.chmod(os.path.join(folder, name), 0o600)
+
+    # Services -----------------------------------------------------------
+
+    def service(self, service_id):
+        for s in self.data["services"]:
+            if s["id"] == service_id:
+                return s
+        return None
+
+    def upsert_service(self, incoming):
+        with self.lock:
+            clean = validate_service(incoming)
+            current = self.service(clean["id"]) if incoming.get("id") else None
+            if current:
+                if not clean.get("api_key"):
+                    clean["api_key"] = current.get("api_key", "")
+                current.clear()
+                current.update(clean)
+            else:
+                clean["id"] = self._new_id(clean["name"])
+                self.data["services"].append(clean)
+            self.save()
+            return clean["id"]
+
+    def remove_service(self, service_id):
+        with self.lock:
+            before = len(self.data["services"])
+            self.data["services"] = [s for s in self.data["services"] if s["id"] != service_id]
+            self.save()
+            return len(self.data["services"]) < before
+
+    def reorder_services(self, ids):
+        with self.lock:
+            by_id = {s["id"]: s for s in self.data["services"]}
+            ordered = [by_id.pop(i) for i in ids if i in by_id]
+            self.data["services"] = ordered + list(by_id.values())
+            self.save()
+
+    def _new_id(self, name):
+        base = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:30] or "app"
+        taken = {s["id"] for s in self.data["services"]}
+        candidate, n = base, 2
+        while candidate in taken:
+            candidate, n = f"{base}-{n}", n + 1
+        return candidate
+
+    # What the browser may see -------------------------------------------
+
+    def public(self):
+        d = self.data
+        return {
+            "site_name": d["site_name"],
+            "design": d["design"],
+            "groups": d["groups"],
+            "secure_cookies": d["secure_cookies"],
+            "session_days": d["session_days"],
+            "update_check": d["update_check"],
+            "services": [public_service(s) for s in d["services"]],
+            "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
+        }
+
+    def update_general(self, incoming):
+        with self.lock:
+            d = self.data
+            if "site_name" in incoming:
+                name = str(incoming["site_name"]).strip()[:60]
+                if not name:
+                    raise ConfigError("Enter a name for the dashboard")
+                d["site_name"] = name
+            if "design" in incoming:
+                if incoming["design"] not in DESIGNS:
+                    raise ConfigError("Choose one of the five designs")
+                d["design"] = incoming["design"]
+            if "groups" in incoming:
+                groups = [str(g).strip()[:40] for g in incoming["groups"] if str(g).strip()]
+                d["groups"] = groups[:20] or DEFAULTS["groups"]
+            for key in ("secure_cookies", "update_check"):
+                if key in incoming:
+                    d[key] = bool(incoming[key])
+            if "session_days" in incoming:
+                days = int(incoming["session_days"])
+                if not 1 <= days <= 90:
+                    raise ConfigError("Keep people signed in for 1 to 90 days")
+                d["session_days"] = days
+            self.save()
+
+
+def public_service(s):
+    out = {k: v for k, v in s.items() if k != "api_key"}
+    out["has_api_key"] = bool(s.get("api_key"))
+    out["link"] = s.get("link") or s.get("url", "")
+    return out
+
+
+def validate_service(s):
+    if not isinstance(s, dict):
+        raise ConfigError("Send the app as an object")
+    clean = {k: s[k] for k in SERVICE_FIELDS if k in s}
+    clean["name"] = str(clean.get("name", "")).strip()[:60]
+    if not clean["name"]:
+        raise ConfigError("Enter a name for the app")
+    if clean.get("type") not in SERVICE_TYPES:
+        raise ConfigError("Choose what kind of app this is")
+    for key in ("url", "link"):
+        value = str(clean.get(key, "")).strip().rstrip("/")
+        if value and not re.match(r"^https?://[^\s/]+", value):
+            raise ConfigError(f"The {'address' if key == 'url' else 'link'} must start with http:// or https://")
+        clean[key] = value
+    if not clean["url"]:
+        raise ConfigError("Enter the address the server uses to reach the app")
+    if "id" in clean and clean["id"] and not _ID_RE.match(str(clean["id"])):
+        raise ConfigError("That app ID is not valid")
+    clean["api_key"] = str(clean.get("api_key", "")).strip()[:200]
+    clean["group"] = str(clean.get("group", "")).strip()[:40]
+    clean["description"] = str(clean.get("description", "")).strip()[:200]
+    clean["root_folder"] = str(clean.get("root_folder", "")).strip()[:300]
+    clean["enabled"] = bool(clean.get("enabled", True))
+    clean["search_on_add"] = bool(clean.get("search_on_add", True))
+    for key in ("quality_profile_id", "metadata_profile_id"):
+        value = clean.get(key)
+        clean[key] = int(value) if str(value or "").isdigit() else None
+    return clean
+
+
+def migrate(data):
+    """Bring an older settings file up to SCHEMA. Add a step for every schema change."""
+    version = data.get("schema", 0)
+    if version < 1:
+        data.setdefault("auth", {"password_hash": "", "session_version": 1})
+        data["schema"] = 1
+    return data
+
+
+def new_setup_token(data_dir):
+    """A one-time code that must be entered to create the first password."""
+    token = secrets.token_urlsafe(12)
+    path = os.path.join(data_dir, "setup-token")
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(token + "\n")
+    return token

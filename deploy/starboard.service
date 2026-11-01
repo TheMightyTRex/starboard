@@ -1,0 +1,18 @@
+# Written by install.sh --native. Runs as your user; settings in @DIR@/data.
+[Unit]
+Description=Starboard dashboard
+After=network-online.target
+
+[Service]
+WorkingDirectory=@DIR@
+Environment=STARBOARD_HOST=@BIND@
+Environment=STARBOARD_PORT=@PORT@
+Environment=STARBOARD_DATA=@DIR@/data
+EnvironmentFile=-@DIR@/.env
+ExecStart=/usr/bin/env python3 -m starboard
+Restart=on-failure
+NoNewPrivileges=true
+UMask=0077
+
+[Install]
+WantedBy=default.target

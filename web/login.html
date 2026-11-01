@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Sign in · Starboard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/app.css">
+<script src="/js/common.js"></script>
+<script src="/js/login.js" defer></script>
+</head>
+<body class="auth-page">
+<main id="main">
+<section class="panel auth-card" aria-labelledby="auth-title">
+  <div class="panel__head"><h1 id="auth-title">Sign in to <span data-site-name>Starboard</span></h1></div>
+  <form id="login-form" class="design-options" data-mode="login">
+    <div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" required autofocus></div>
+    <p class="field-error" id="auth-error" role="alert"></p>
+    <button class="btn btn-primary" type="submit">Sign in</button>
+  </form>
+</section>
+</main>
+</body>
+</html>

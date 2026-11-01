@@ -1,0 +1,36 @@
+# Starboard. Settings, sessions and API keys live in ./data (never in the repository).
+# Copy example.env to .env and change the values there.
+services:
+  starboard:
+    build: .
+    image: starboard:local
+    container_name: starboard
+    user: "${STARBOARD_UID:-10001}:${STARBOARD_GID:-10001}"
+    restart: unless-stopped
+    ports:
+      - "${STARBOARD_BIND:-127.0.0.1}:${STARBOARD_PORT:-8095}:8095"
+    environment:
+      - TZ=${TZ:-Etc/UTC}
+      - STARBOARD_REPO=${STARBOARD_REPO:-}
+      - STARBOARD_DISKS=${STARBOARD_DISKS:-}
+      - STARBOARD_TRUST_PROXY=${STARBOARD_TRUST_PROXY:-0}
+    volumes:
+      - ./data:/data
+      # Free space on the System page: mount each folder read-only and list it in STARBOARD_DISKS.
+      # - /mnt/media:/disks/media:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - default
+      # To reach apps by container name, join their network (see the README):
+      # - media
+
+# networks:
+#   media:
+#     external: true
+#     name: your-media-network

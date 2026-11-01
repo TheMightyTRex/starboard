@@ -1,0 +1,113 @@
+/* Design tokens (role names). One set per theme: Light, Dark, High contrast.
+   Components use only these. Based on the Storyarr design system, version 0.1. */
+
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  src: url("../fonts/atkinson-hyperlegible-next.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+:root {
+  --font: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --text-scale: 1;
+  --text-xs: calc(0.75rem * var(--text-scale));
+  --text-sm: calc(0.875rem * var(--text-scale));
+  --text-md: calc(1rem * var(--text-scale));
+  --text-lg: calc(1.25rem * var(--text-scale));
+  --text-xl: calc(1.5rem * var(--text-scale));
+  --text-2xl: calc(2rem * var(--text-scale));
+  --leading: 1.5;
+  --leading-tight: 1.25;
+  --letter-spacing: normal;
+  --word-spacing: normal;
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px;
+  --control-h: 44px;
+  --radius: 0;
+  --radius-round: 50%;
+  --header-h: 64px;
+  --rail-w: 0px;
+  --content-max: 1440px;
+  --motion-fast: 120ms;
+  --motion-panel: 200ms ease-out;
+
+  --color-bg: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #e9ebef;
+  --color-text: #16181d;
+  --color-text-muted: #4a5160;
+  --color-border: #8a919e;
+  --color-divider: #dcdfe5;
+  --color-accent: #1f5fbf;
+  --color-accent-text: #ffffff;
+  --color-accent-soft: #e3ecfa;
+  --color-focus: #1f5fbf;
+  --shadow-raised: 0 8px 28px rgb(16 24 40 / 0.18);
+
+  --status-success-bg: #dcf2e3; --status-success-fg: #135c2e;
+  --status-info-bg: #dde9fb;    --status-info-fg: #154a96;
+  --status-neutral-bg: #eceef2; --status-neutral-fg: #3c4350;
+  --status-warning-bg: #fdefc8; --status-warning-fg: #6b4500;
+  --status-danger-bg: #fbe0de;  --status-danger-fg: #9b1c14;
+  --status-muted-bg: #eceef2;   --status-muted-fg: #4a5160;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #111318; --color-surface: #1a1d24; --color-surface-raised: #232731; --color-surface-sunken: #0c0e12;
+    --color-text: #eef0f4; --color-text-muted: #b3b9c5; --color-border: #6f7786; --color-divider: #2d323d;
+    --color-accent: #7fb0ff; --color-accent-text: #0b1830; --color-accent-soft: #1c2c48; --color-focus: #9cc2ff;
+    --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.5);
+    --status-success-bg: #12351f; --status-success-fg: #8fe0aa;
+    --status-info-bg: #142a4b;    --status-info-fg: #a8c8ff;
+    --status-neutral-bg: #262a33; --status-neutral-fg: #c9ced8;
+    --status-warning-bg: #3a2c09; --status-warning-fg: #f6cf6b;
+    --status-danger-bg: #431816;  --status-danger-fg: #ffaaa3;
+    --status-muted-bg: #262a33;   --status-muted-fg: #b3b9c5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --color-bg: #111318; --color-surface: #1a1d24; --color-surface-raised: #232731; --color-surface-sunken: #0c0e12;
+  --color-text: #eef0f4; --color-text-muted: #b3b9c5; --color-border: #6f7786; --color-divider: #2d323d;
+  --color-accent: #7fb0ff; --color-accent-text: #0b1830; --color-accent-soft: #1c2c48; --color-focus: #9cc2ff;
+  --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.5);
+  --status-success-bg: #12351f; --status-success-fg: #8fe0aa;
+  --status-info-bg: #142a4b;    --status-info-fg: #a8c8ff;
+  --status-neutral-bg: #262a33; --status-neutral-fg: #c9ced8;
+  --status-warning-bg: #3a2c09; --status-warning-fg: #f6cf6b;
+  --status-danger-bg: #431816;  --status-danger-fg: #ffaaa3;
+  --status-muted-bg: #262a33;   --status-muted-fg: #b3b9c5;
+  color-scheme: dark;
+}
+
+/* High contrast: stronger borders, focus and muted text; borders instead of shadows. */
+:root.pref-contrast {
+  --color-bg: #ffffff; --color-surface: #ffffff; --color-surface-raised: #ffffff; --color-surface-sunken: #f0f0f0;
+  --color-text: #000000; --color-text-muted: #1f1f1f; --color-border: #000000; --color-divider: #000000;
+  --color-accent: #0033a0; --color-accent-text: #ffffff; --color-accent-soft: #dbe5ff; --color-focus: #c4006a;
+  --shadow-raised: none;
+  --status-success-fg: #003d17; --status-info-fg: #00266e; --status-neutral-fg: #000000;
+  --status-warning-fg: #3d2600; --status-danger-fg: #6e0000; --status-muted-fg: #000000;
+}
+:root.pref-contrast.is-dark {
+  --color-bg: #000000; --color-surface: #000000; --color-surface-raised: #000000; --color-surface-sunken: #111111;
+  --color-text: #ffffff; --color-text-muted: #f0f0f0; --color-border: #ffffff; --color-divider: #ffffff;
+  --color-accent: #9cc8ff; --color-accent-text: #000000; --color-accent-soft: #0d2245; --color-focus: #ffd400;
+  --status-success-bg: #002b10; --status-success-fg: #a6ffc2; --status-info-bg: #001c45; --status-info-fg: #c2dbff;
+  --status-neutral-bg: #1a1a1a; --status-neutral-fg: #ffffff; --status-warning-bg: #2e2000; --status-warning-fg: #ffe08a;
+  --status-danger-bg: #330000; --status-danger-fg: #ffc2bd; --status-muted-bg: #1a1a1a; --status-muted-fg: #ffffff;
+}
+
+:root.pref-text-125 { --text-scale: 1.25; }
+:root.pref-text-150 { --text-scale: 1.5; }
+:root.pref-text-175 { --text-scale: 1.75; }
+:root.pref-spacing { --leading: 1.8; --letter-spacing: 0.12em; --word-spacing: 0.16em; }
+:root.pref-motion { --motion-fast: 0ms; --motion-panel: 0ms; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not(.pref-motion-off) { --motion-fast: 0ms; --motion-panel: 0ms; }
+}

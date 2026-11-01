@@ -1,0 +1,17 @@
+# Your settings, sessions and API keys. Never commit these.
+/data/
+.env
+*.env
+!example.env
+setup-token
+config.json
+sessions.json
+backups/
+
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+*.bak*
+/demo-build/
+.private-words
