@@ -1,5 +1,6 @@
 # Your settings, sessions and API keys. Never commit these.
 /data/
+/data.*/
 .env
 *.env
 !example.env
