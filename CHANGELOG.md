@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (not released yet)
+## 0.1.0 (1 November 2026)
 
 - Apps, Search, Downloads, Coming up, System and Settings, each on its own page.
 - Search Sonarr, Radarr, Lidarr and Readarr at once and add what you find.
