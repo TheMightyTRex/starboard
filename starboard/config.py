@@ -21,12 +21,12 @@ SERVICE_TYPES = {
     "link": {"label": "Other app", "api": "", "searchable": False},
 }
 
-DESIGNS = ["tiles", "shelf", "command", "board", "calm", "now", "split", "poster", "health"]
+DESIGNS = ["health", "tiles", "shelf", "command", "board"]
 
 DEFAULTS = {
     "schema": SCHEMA,
     "site_name": "Starboard",
-    "design": "tiles",
+    "design": "health",
     "secure_cookies": False,
     "session_days": 7,
     "update_check": True,
@@ -72,6 +72,9 @@ class Config:
             self._write(data)
         for key, value in DEFAULTS.items():
             data.setdefault(key, json.loads(json.dumps(value)))
+        if data.get("design") not in DESIGNS:  # a design that has since been removed
+            data["design"] = DEFAULTS["design"]
+            self._write(data)
         if data["network_access"] is None:
             data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
             self._write(data)

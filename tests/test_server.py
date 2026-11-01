@@ -249,6 +249,12 @@ class ConfigTest(unittest.TestCase):
             self.assertEqual(cfg.data["schema"], 1)
             self.assertTrue(os.listdir(os.path.join(d, "backups")))
 
+    def test_removed_design_falls_back_to_health_first(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "config.json"), "w") as f:
+                json.dump({"schema": 1, "design": "calm", "services": []}, f)
+            self.assertEqual(Config(d).data["design"], "health")
+
     def test_password_hash(self):
         stored = auth.hash_password("a long password here", iterations=1000)
         self.assertTrue(auth.check_password("a long password here", stored))

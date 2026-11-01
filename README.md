@@ -7,8 +7,8 @@ how the server is doing.
 - **Every page has its own address:** `/index.html` (Apps), `/search.html`, `/downloads.html`,
   `/upcoming.html`, `/system.html`, `/settings.html`. Searches link too: `/search.html?q=dune`.
 - **A fixed header on every page**, with search, the main menu (a Menu button on phones) and Display.
-- **Five designs:** Tiles, Shelf, Command, Status board and Calm. Choose a default in Settings; anyone can
-  pick their own in Display.
+- **Five designs:** Health first (the default: apps that are not responding go to the top), Tiles, Shelf,
+  Command and Status board. Change the default in Settings; anyone can pick their own in Display.
 - **Display and accessibility:** theme (match device, light, dark), text size up to 175%, high contrast,
   reduce motion, underline links and wider text spacing. Built to WCAG 2.2 AA, with 44px controls and the
   Atkinson Hyperlegible Next typeface.

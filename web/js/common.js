@@ -4,15 +4,11 @@
 const PREF_KEY = "starboard.display";
 const DEFAULT_PREFS = { theme: "system", text: "100", contrast: false, motion: "device", underline: false, spacing: false, design: "" };
 const DESIGNS = {
+  health: ["Health first", "Apps that are not responding at the top, with a coloured edge for status."],
   tiles: ["Tiles", "A grid of cards with a description, like a launcher."],
   shelf: ["Shelf", "An icon rail on the left and one app per row."],
   command: ["Command", "Search first, with apps as a compact icon grid."],
   board: ["Status board", "A dense table for checking everything at a glance."],
-  calm: ["Calm", "Larger cards in bands with more space."],
-  now: ["Now", "What needs you, what is downloading and what is coming, above the apps."],
-  split: ["Split view", "A list of apps on the left and the chosen app's details on the right."],
-  poster: ["Poster wall", "Big colour tiles, like a streaming app's home screen."],
-  health: ["Health first", "Apps that are not responding at the top, with a coloured edge for status."],
 };
 
 function readPrefs() {
@@ -23,7 +19,7 @@ function writePrefs(prefs) {
   try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch { /* private window: settings last until reload */ }
 }
 
-let serverDesign = "tiles";
+let serverDesign = "health";
 
 function applyPrefs(prefs = readPrefs()) {
   const root = document.documentElement;
@@ -190,7 +186,7 @@ async function startPage() {
   setUpDisplayPanel();
   try {
     const session = await api("/api/session");
-    serverDesign = session.design || "tiles";
+    serverDesign = session.design || "health";
     applyPrefs();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
     const pageName = document.title.split(" · ")[0];
