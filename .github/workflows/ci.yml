@@ -26,6 +26,6 @@ jobs:
         run: |
           chmod -R go-rwx starboard web VERSION
           docker build -t starboard:perm .
-          docker run -d --name perm --read-only --tmpfs /tmp -p 127.0.0.1:18095:8095 starboard:perm
+          docker run -d --name perm --read-only --tmpfs /tmp --tmpfs /data:uid=10001,gid=10001,mode=0700 -p 127.0.0.1:18095:8095 starboard:perm
           for i in $(seq 1 15); do curl -fsS http://127.0.0.1:18095/healthz && exit 0; sleep 2; done
           docker logs perm; exit 1
