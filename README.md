@@ -26,7 +26,7 @@ cd starboard
 
 The installer prints two addresses: one for this computer and one for phones and other computers on your
 home network, plus a one-time setup code. Open either address, enter the code and choose a password (at least
-12 characters). Then go to **Settings, Apps** and add your apps. Use `127.0.0.1` and each app's port (for
+10 characters). Then go to **Settings, Apps** and add your apps. Use `127.0.0.1` and each app's port (for
 example `http://127.0.0.1:8989` for Sonarr) as the address the server uses.
 
 ### Home network or this computer only
@@ -61,7 +61,8 @@ your settings restored) if the new one does not start. `./update.sh --check` onl
 
 ## Security
 
-- One password, hashed with PBKDF2-SHA256 (600,000 rounds). Five wrong attempts lock an address out for
+- One password (at least 10 characters), hashed with PBKDF2-SHA256 (600,000 rounds). Without Remember me,
+  you are signed out when the browser closes, or after a day. Five wrong attempts lock an address out for
   15 minutes. The first password needs the setup code from the installer.
 - Sign-in cookies are `HttpOnly` and `SameSite=Strict`. Every change also needs a header only the dashboard's
   own pages send, and a matching `Origin`.

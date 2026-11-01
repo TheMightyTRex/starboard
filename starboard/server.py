@@ -207,8 +207,11 @@ class Handler(BaseHTTPRequestHandler):
         return self.app.sessions.valid(self.token(), self.app.session_version)
 
     def session_cookie(self, token, max_age):
+        """max_age None makes a cookie the browser forgets when it closes (Remember me not ticked)."""
         secure = self.is_https() or self.app.config.data.get("secure_cookies")
-        parts = [f"{COOKIE}={token}", "Path=/", "HttpOnly", "SameSite=Strict", f"Max-Age={max_age}"]
+        parts = [f"{COOKIE}={token}", "Path=/", "HttpOnly", "SameSite=Strict"]
+        if max_age is not None:
+            parts.append(f"Max-Age={max_age}")
         if secure:
             parts.append("Secure")
         return "; ".join(parts)
@@ -382,6 +385,12 @@ class Handler(BaseHTTPRequestHandler):
 
     # Accounts ------------------------------------------------------------
 
+    def new_session(self, remember):
+        app = self.app
+        days = app.config.data["session_days"] if remember else auth.FORGET_AFTER_DAYS
+        token = app.sessions.create(days, app.session_version, remember)
+        return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
+
     def first_password(self):
         app = self.app
         if not app.needs_setup:
@@ -401,9 +410,7 @@ class Handler(BaseHTTPRequestHandler):
         app.config.save()
         app.setup_token = None
         App._remove_setup_token(app.config.data_dir)
-        days = app.config.data["session_days"]
-        token = app.sessions.create(days, app.session_version)
-        return self.json(200, {"ok": True}, {"Set-Cookie": self.session_cookie(token, days * 86400)})
+        return self.json(200, {"ok": True}, self.new_session(bool(data.get("remember"))))
 
     def login(self):
         app = self.app
@@ -415,9 +422,7 @@ class Handler(BaseHTTPRequestHandler):
             app.limits.fail(address)
             return self.error(401, "That password is not right")
         app.limits.clear(address)
-        days = app.config.data["session_days"]
-        token = app.sessions.create(days, app.session_version)
-        return self.json(200, {"ok": True}, {"Set-Cookie": self.session_cookie(token, days * 86400)})
+        return self.json(200, {"ok": True}, self.new_session(bool(data.get("remember"))))
 
     def change_password(self):
         app = self.app
@@ -435,10 +440,9 @@ class Handler(BaseHTTPRequestHandler):
         app.config.data["auth"]["password_hash"] = auth.hash_password(new)
         app.config.data["auth"]["session_version"] = app.session_version + 1
         app.config.save()
+        remember = app.sessions.remembered(self.token())
         app.sessions.end_all()
-        days = app.config.data["session_days"]
-        token = app.sessions.create(days, app.session_version)
-        return self.json(200, {"ok": True}, {"Set-Cookie": self.session_cookie(token, days * 86400)})
+        return self.json(200, {"ok": True}, self.new_session(remember))
 
 
 def make_server(host, port, data_dir_or_app):

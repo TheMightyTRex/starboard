@@ -238,9 +238,17 @@ def migrate(data):
 
 
 def new_setup_token(data_dir):
-    """A one-time code that must be entered to create the first password."""
-    token = secrets.token_urlsafe(12)
+    """A one-time code that must be entered to create the first password. Kept across restarts and updates, so the
+    code the installer printed still works until a password is set."""
     path = os.path.join(data_dir, "setup-token")
+    try:
+        with open(path, encoding="utf-8") as f:
+            existing = f.read().strip()
+        if len(existing) >= 12:
+            return existing
+    except OSError:
+        pass
+    token = secrets.token_urlsafe(12)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as f:
         f.write(token + "\n")

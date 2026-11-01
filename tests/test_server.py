@@ -120,6 +120,7 @@ class ServerTest(unittest.TestCase):
         cookie = resp.getheader("Set-Cookie")
         for flag in ("HttpOnly", "SameSite=Strict", "Path=/"):
             self.assertIn(flag, cookie)
+        self.assertNotIn("Max-Age", cookie)  # Remember me not ticked: gone when the browser closes
         ServerTest.cookie = cookie.split(";")[0]
         self.assertFalse(os.path.exists(os.path.join(self.tmp.name, "setup-token")))
         resp, _ = self.request("POST", "/api/setup", {"token": "x", "password": "another long password"}, cookie=False)
@@ -151,6 +152,13 @@ class ServerTest(unittest.TestCase):
         resp, _ = self.request("POST", "/api/login", {"password": "correct horse battery"}, cookie=False)
         self.assertEqual(resp.status, 429)
         self.app.limits.clear("127.0.0.1")
+
+    def test_08b_remember_me_keeps_the_cookie(self):
+        resp, _ = self.request("POST", "/api/login", {"password": "correct horse battery", "remember": True}, cookie=False)
+        self.assertEqual(resp.status, 200)
+        self.assertIn(f"Max-Age={7 * 86400}", resp.getheader("Set-Cookie"))
+        resp, _ = self.request("POST", "/api/login", {"password": "correct horse battery"}, cookie=False)
+        self.assertNotIn("Max-Age", resp.getheader("Set-Cookie"))
 
     def test_09_api_needs_sign_in(self):
         resp, _ = self.request("GET", "/api/config", cookie=False)
@@ -265,6 +273,15 @@ class ConfigTest(unittest.TestCase):
             with open(os.path.join(d, "config.json"), "w") as f:
                 json.dump({"schema": 1, "design": "calm", "services": []}, f)
             self.assertEqual(Config(d).data["design"], "health")
+
+    def test_setup_code_survives_a_restart(self):
+        from starboard.config import new_setup_token
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(new_setup_token(d), new_setup_token(d))
+
+    def test_ten_characters_is_enough(self):
+        self.assertIsNone(auth.password_problem("a" * 10))
+        self.assertIsNotNone(auth.password_problem("a" * 9))
 
     def test_password_hash(self):
         stored = auth.hash_password("a long password here", iterations=1000)

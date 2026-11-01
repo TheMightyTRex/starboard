@@ -14,8 +14,8 @@ startPage().then((session) => {
     const button = $("button[type=submit]", form);
     button.disabled = true;
     try {
-      if (setup) await api("/api/setup", { method: "POST", body: { token: form.token.value, password: form.password.value } });
-      else await api("/api/login", { method: "POST", body: { password: form.password.value } });
+      if (setup) await api("/api/setup", { method: "POST", body: { token: form.token.value, password: form.password.value, remember: form.remember.checked } });
+      else await api("/api/login", { method: "POST", body: { password: form.password.value, remember: form.remember.checked } });
       const next = new URLSearchParams(location.search).get("next") || "/index.html";
       location.href = /^\/(?![/\\])/.test(next) ? next : "/index.html";
     } catch (err) {

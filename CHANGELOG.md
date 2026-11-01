@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 (1 November 2026)
+
+- Passwords need 10 characters or more (was 12).
+- Remember me on the sign-in and setup pages. Without it, you are signed out when the browser closes, or after
+  a day. With it, you stay signed in for the number of days set in Settings, Security.
+- The setup code stays the same when Starboard restarts or updates, so the code the installer printed keeps
+  working until a password is set.
+
 ## 0.1.0 (1 November 2026)
 
 - Apps, Search, Downloads, Coming up, System and Settings, each on its own page.

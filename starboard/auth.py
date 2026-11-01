@@ -9,7 +9,8 @@ import threading
 import time
 
 ITERATIONS = 600_000
-MIN_PASSWORD = 12
+MIN_PASSWORD = 10
+FORGET_AFTER_DAYS = 1  # without Remember me, a session ends when the browser closes, or after a day at most
 
 
 def hash_password(password, iterations=ITERATIONS):
@@ -62,12 +63,12 @@ class Sessions:
             json.dump(self.items, f)
         os.replace(tmp, self.path)
 
-    def create(self, days, version):
+    def create(self, days, version, remember=True):
         token = secrets.token_urlsafe(32)
         with self.lock:
             now = time.time()
             self.items = {k: v for k, v in self.items.items() if v["expires"] > now}
-            self.items[self._key(token)] = {"expires": now + days * 86400, "version": version}
+            self.items[self._key(token)] = {"expires": now + days * 86400, "version": version, "remember": remember}
             self._save()
         return token
 
@@ -77,6 +78,11 @@ class Sessions:
         with self.lock:
             item = self.items.get(self._key(token))
             return bool(item and item["expires"] > time.time() and item["version"] == version)
+
+    def remembered(self, token):
+        with self.lock:
+            item = self.items.get(self._key(token or ""))
+            return bool(item and item.get("remember", True))
 
     def end(self, token):
         with self.lock:
