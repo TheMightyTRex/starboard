@@ -13,6 +13,26 @@ def _read(path):
         return ""
 
 
+FS_NAMES = {"fuse.mergerfs": "mergerfs", "fuseblk": "NTFS", "ntfs3": "NTFS", "ntfs": "NTFS", "vfat": "FAT32",
+            "exfat": "exFAT", "fuse.sshfs": "SSHFS", "nfs4": "NFS", "nfs": "NFS", "cifs": "SMB", "zfs": "ZFS",
+            "fuse.shfs": "Unraid", "overlay": "overlay"}
+
+
+def filesystem(path):
+    """The filesystem a folder lives on, from the mount table (the longest mount point that holds it)."""
+    best, kind = "", ""
+    real = os.path.realpath(path)
+    for line in _read("/proc/self/mountinfo").splitlines():
+        left, _, right = line.partition(" - ")
+        fields = left.split()
+        if len(fields) < 5 or not right:
+            continue
+        point = fields[4].replace("\\040", " ")
+        if (real == point or real.startswith(point.rstrip("/") + "/")) and len(point) >= len(best):
+            best, kind = point, right.split()[0]
+    return FS_NAMES.get(kind, kind)
+
+
 def snapshot(disk_paths):
     load = _read("/proc/loadavg").split()
     mem = {}
@@ -25,7 +45,8 @@ def snapshot(disk_paths):
     for label, path in disk_paths:
         try:
             usage = shutil.disk_usage(path)
-            disks.append({"label": label, "total": usage.total, "used": usage.used, "free": usage.free})
+            disks.append({"label": label, "total": usage.total, "used": usage.used, "free": usage.free,
+                          "filesystem": filesystem(path)})
         except OSError:
             disks.append({"label": label, "missing": True})
     return {

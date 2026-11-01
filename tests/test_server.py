@@ -338,6 +338,10 @@ class ConfigTest(unittest.TestCase):
             h._save()
             self.assertEqual(os.stat(h.path).st_mode & 0o777, 0o600)
 
+    def test_filesystem_is_named(self):
+        from starboard import sysinfo
+        self.assertTrue(sysinfo.filesystem("/"))
+
     def test_password_hash(self):
         stored = auth.hash_password("a long password here", iterations=1000)
         self.assertTrue(auth.check_password("a long password here", stored))

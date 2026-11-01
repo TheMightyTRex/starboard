@@ -445,3 +445,4 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 .status-pill[data-tone="danger"] { border-left-color: var(--status-danger-fg); }
 .page-apps .page-head { align-items: center; }
 .page-apps .page-head .actions { justify-content: flex-end; align-items: center; }
+.tag { display: inline-flex; align-items: center; padding: 1px var(--space-2); border: 1px solid var(--color-border); font-size: var(--text-xs); font-weight: 600; color: var(--color-text-muted); white-space: nowrap; }

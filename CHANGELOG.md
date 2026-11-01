@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7 (2 November 2026)
+
+- Storage: each folder has a tag with its filesystem, such as ext4, NTFS or mergerfs.
+
 ## 0.1.6 (2 November 2026)
 
 - Apps: the running and external access counts sit on the same row as Check again and Add an app, at the

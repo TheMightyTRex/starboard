@@ -21,7 +21,7 @@ async function load() {
       const pct = Math.round((d.used / d.total) * 100);
       list.append(el("li", { class: "row" },
         el("div", {}, el("p", { class: "row__title", text: d.label }), el("p", { class: "row__meta num", text: `${formatBytes(d.used)} used · ${formatBytes(d.free)} free of ${formatBytes(d.total)}` })),
-        el("div", { class: "row__side" }, el("span", { class: "num", text: `${pct}%` }), pct >= 90 ? chip("Nearly full", "danger") : pct >= 80 ? chip("Filling up", "warning") : chip("Space free", "success")),
+        el("div", { class: "row__side" }, d.filesystem ? el("span", { class: "tag", title: "Filesystem", text: d.filesystem }) : null, el("span", { class: "num", text: `${pct}%` }), pct >= 90 ? chip("Nearly full", "danger") : pct >= 80 ? chip("Filling up", "warning") : chip("Space free", "success")),
         meter(pct, `${d.label}, ${pct}% used`)));
     }
     const stats = $("#storage-stats");
