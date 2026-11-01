@@ -112,6 +112,56 @@ function monogram(name) {
   return ((words[0] || "?")[0] + (words[1] ? words[1][0] : (words[0] || "")[1] || "")).toUpperCase();
 }
 
+// Addresses and copying ----------------------------------------------------
+
+// An app saved as http://127.0.0.1:8989 is only reachable from the server itself. Swap in the name this browser
+// used to reach Starboard, so links and copied addresses work from a phone too.
+function reachableUrl(url) {
+  try {
+    const u = new URL(url);
+    if (["127.0.0.1", "localhost", "[::1]", "0.0.0.0"].includes(u.hostname) && !["127.0.0.1", "localhost", "[::1]"].includes(location.hostname)) {
+      u.hostname = location.hostname;
+    }
+    return u.href.replace(/\/$/, "");
+  } catch { return url; }
+}
+
+function shortUrl(url) {
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+// The clipboard API needs HTTPS or localhost; on a home network address the old copy command still works.
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch { /* fall through */ }
+  const area = el("textarea", { class: "visually-hidden", readonly: true, "aria-hidden": "true" });
+  area.value = text;
+  document.body.append(area);
+  area.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch { ok = false; }
+  area.remove();
+  return ok;
+}
+
+const COPY_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11"/><path d="M5 15V5a1 1 0 0 1 1-1h9"/></svg>';
+
+function copyButton(text, label) {
+  const button = el("button", { type: "button", class: "copy-btn", "aria-label": `Copy ${label}`, title: `Copy ${label}` });
+  button.innerHTML = COPY_ICON; // a fixed icon from this file, never data
+  button.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const ok = await copyText(text);
+    toast(ok ? `Copied ${label}` : `Could not copy. The address is ${text}`);
+  });
+  return button;
+}
+
 // Header ---------------------------------------------------------------
 
 function setUpHeader() {

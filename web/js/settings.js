@@ -47,7 +47,7 @@ async function removeService(s) {
 function serviceFormValues() {
   const f = $("#service-form");
   return {
-    id: f.service_id.value || undefined, type: f.type.value, name: f.name.value, url: f.url.value, link: f.link.value,
+    id: f.service_id.value || undefined, type: f.type.value, name: f.name.value, url: f.url.value, link: f.link.value, outside_link: f.outside_link.value,
     api_key: f.api_key.value, group: f.group.value, description: f.description.value, enabled: f.enabled.checked,
     quality_profile_id: f.quality_profile_id.value || null, root_folder: f.root_folder.value,
     metadata_profile_id: f.metadata_profile_id.value || null, search_on_add: f.search_on_add.checked,
@@ -81,7 +81,8 @@ function openService(s = null) {
   setOptions(f.metadata_profile_id, s?.metadata_profile_id ? [{ value: s.metadata_profile_id, label: `Profile ${s.metadata_profile_id}` }] : [], s?.metadata_profile_id);
   if (s) {
     f.service_id.value = s.id; f.type.value = s.type; f.name.value = s.name; f.url.value = s.url;
-    f.link.value = s.link === s.url ? "" : s.link; f.group.value = s.group || ""; f.description.value = s.description || "";
+    f.link.value = s.link === s.url ? "" : s.link;
+    f.outside_link.value = s.outside_link || ""; f.group.value = s.group || ""; f.description.value = s.description || "";
     f.enabled.checked = s.enabled; f.search_on_add.checked = s.search_on_add !== false;
     f.api_key.placeholder = s.has_api_key ? "Saved (leave empty to keep)" : "";
   } else {
@@ -145,6 +146,8 @@ function renderGeneral() {
   const f = $("#general-form");
   f.site_name.value = config.site_name;
   f.groups.value = config.groups.join(", ");
+  f.show_home_address.checked = config.show_home_address;
+  f.show_outside_address.checked = config.show_outside_address;
   const box = $("#default-design");
   box.replaceChildren(...Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "design-option" },
     el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("span", { text: label }), el("small", { text: help }))));
@@ -228,7 +231,10 @@ startPage().then(async () => {
   $("#general-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const f = e.target;
-    saveGeneral({ site_name: f.site_name.value, groups: f.groups.value.split(","), design: f.design.value }, "General settings saved");
+    saveGeneral({
+      site_name: f.site_name.value, groups: f.groups.value.split(","), design: f.design.value,
+      show_home_address: f.show_home_address.checked, show_outside_address: f.show_outside_address.checked,
+    }, "General settings saved");
   });
   $("#session-form").addEventListener("submit", (e) => {
     e.preventDefault();

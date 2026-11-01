@@ -30,14 +30,16 @@ DEFAULTS = {
     "secure_cookies": False,
     "session_days": 7,
     "update_check": True,
-    "network_access": None,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
+    "network_access": None,
+    "show_home_address": True,
+    "show_outside_address": True,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
     "groups": ["Watch and listen", "Requests", "Downloads", "Tools"],
 }
 
 SERVICE_FIELDS = {
-    "id", "name", "type", "url", "link", "api_key", "group", "description", "enabled",
+    "id", "name", "type", "url", "link", "outside_link", "api_key", "group", "description", "enabled",
     "quality_profile_id", "metadata_profile_id", "root_folder", "search_on_add",
 }
 
@@ -156,6 +158,8 @@ class Config:
             "session_days": d["session_days"],
             "update_check": d["update_check"],
             "network_access": d["network_access"],
+            "show_home_address": d["show_home_address"],
+            "show_outside_address": d["show_outside_address"],
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
         }
@@ -175,7 +179,7 @@ class Config:
             if "groups" in incoming:
                 groups = [str(g).strip()[:40] for g in incoming["groups"] if str(g).strip()]
                 d["groups"] = groups[:20] or DEFAULTS["groups"]
-            for key in ("secure_cookies", "update_check", "network_access"):
+            for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
             if "session_days" in incoming:
@@ -202,10 +206,11 @@ def validate_service(s):
         raise ConfigError("Enter a name for the app")
     if clean.get("type") not in SERVICE_TYPES:
         raise ConfigError("Choose what kind of app this is")
-    for key in ("url", "link"):
-        value = str(clean.get(key, "")).strip().rstrip("/")
-        if value and not re.match(r"^https?://[^\s/]+", value):
-            raise ConfigError(f"The {'address' if key == 'url' else 'link'} must start with http:// or https://")
+    labels = {"url": "address the server uses", "link": "address to open in your browser", "outside_link": "outside address"}
+    for key, label in labels.items():
+        value = str(clean.get(key, "")).strip().rstrip("/")[:300]
+        if value and not re.match(r"^https?://[^\s/]+$|^https?://[^\s/]+/\S*$", value):
+            raise ConfigError(f"The {label} must start with http:// or https:// and have no spaces")
         clean[key] = value
     if not clean["url"]:
         raise ConfigError("Enter the address the server uses to reach the app")

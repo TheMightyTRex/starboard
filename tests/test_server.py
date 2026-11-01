@@ -241,6 +241,17 @@ class ConfigTest(unittest.TestCase):
             with self.assertRaises(ConfigError):
                 validate_service({"name": "A", "type": "link", "url": url})
 
+    def test_outside_address(self):
+        ok = validate_service({"name": "A", "type": "link", "url": "http://127.0.0.1:1", "outside_link": "https://media.example.com/"})
+        self.assertEqual(ok["outside_link"], "https://media.example.com")
+        for bad in ("media.example.com", "javascript:alert(1)", "https://a b"):
+            with self.assertRaises(ConfigError):
+                validate_service({"name": "A", "type": "link", "url": "http://127.0.0.1:1", "outside_link": bad})
+        with tempfile.TemporaryDirectory() as d:
+            public = Config(d).public()
+            self.assertTrue(public["show_home_address"])
+            self.assertTrue(public["show_outside_address"])
+
     def test_migration_backs_up(self):
         with tempfile.TemporaryDirectory() as d:
             with open(os.path.join(d, "config.json"), "w") as f:

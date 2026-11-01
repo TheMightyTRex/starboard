@@ -80,3 +80,11 @@
   :root[data-design="board"] .app { grid-template-columns: minmax(0, 1fr) auto; }
   :root[data-design="board"] .app__group-label, :root[data-design="board"] .app__ms, :root[data-design="board"] .app__version { display: none; }
 }
+
+/* Addresses in the denser designs. */
+:root[data-design="board"] .app__addresses { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+:root[data-design="command"] .app__addresses { justify-items: center; width: 100%; }
+:root[data-design="command"] .address { justify-content: center; }
+:root[data-design="command"] .address__label { min-width: 0; }
+:root[data-design="command"] .address__value { flex: 0 1 auto; }
+:root[data-design="shelf"] .app__addresses { grid-column: 1; padding-left: calc(40px + var(--space-3)); }

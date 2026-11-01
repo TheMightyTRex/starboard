@@ -12,13 +12,29 @@ function statusChip(s) {
   return s.state === "up" ? chip("Running", "success") : chip("Not responding", "danger");
 }
 
+function addressLine(kind, url, appName) {
+  return el("div", { class: "address" },
+    el("span", { class: "address__label", text: kind }),
+    el("span", { class: "address__value num", text: shortUrl(url) }),
+    copyButton(url, `${kind.toLowerCase()} address for ${appName}`));
+}
+
+function addresses(s, home) {
+  const lines = [];
+  if (config.show_home_address && home) lines.push(addressLine("Home", home, s.name));
+  if (config.show_outside_address && s.outside_link) lines.push(addressLine("Outside", s.outside_link, s.name));
+  return lines.length ? el("div", { class: "app__addresses" }, lines) : null;
+}
+
 function appItem(s) {
   const st = statuses[s.id];
+  const home = reachableUrl(s.link);
   const item = el("li", { class: "app", "data-state": st ? st.state : "checking" },
     el("div", { class: "app__top" },
       el("span", { class: "app__icon", "aria-hidden": "true", text: monogram(s.name) }),
-      el("h3", { class: "app__name" }, el("a", { href: s.link, target: "_blank", rel: "noopener noreferrer" }, s.name, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })))),
+      el("h3", { class: "app__name" }, el("a", { href: home, target: "_blank", rel: "noopener noreferrer" }, s.name, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })))),
     s.description ? el("p", { class: "app__desc", text: s.description }) : null,
+    addresses(s, home),
     el("div", { class: "app__meta" },
       el("span", { class: "app__group-label", text: s.group || "Other" }),
       statusChip(st),

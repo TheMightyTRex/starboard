@@ -33,7 +33,11 @@ const SAMPLE_SERVICES = [
 ];
 const SAMPLE_CONFIG = {
   site_name: "Starboard", design: "health", groups: ["Watch and listen", "Requests", "Downloads", "Tools"],
-  services: SAMPLE_SERVICES.map(([id, name, group, description]) => ({ id, name, group, description, enabled: true, link: "#" })),
+  show_home_address: true, show_outside_address: true,
+  services: SAMPLE_SERVICES.map(([id, name, group, description], i) => ({
+    id, name, group, description, enabled: true, link: `http://server.local:${8080 + i}`,
+    outside_link: ["jellyfin", "audiobookshelf", "seerr"].includes(id) ? `https://${id}.example.com` : "",
+  })),
 };
 api = async (path) => {
   await new Promise((r) => setTimeout(r, 250));
@@ -60,9 +64,9 @@ document.addEventListener("DOMContentLoaded", () => {
     type: "button", class: "filter", "data-design": key, onclick: () => pick(key),
   }, `${i + 1}. ${label}`)));
   pick(DESIGNS[readPrefs().design] ? readPrefs().design : "health");
-  $$("#main-nav a, .brand").forEach((a) => a.addEventListener("click", (e) => {
+  $$("#main-nav a, .brand, .app__name a").forEach((a) => a.addEventListener("click", (e) => {
     e.preventDefault();
-    toast(`In the dashboard this opens ${a.getAttribute("href").replace("/", "")}`);
+    toast(`In the dashboard this opens ${a.getAttribute("href").replace(/^\//, "")}`);
   }));
   $$("form[role=search]").forEach((f) => f.addEventListener("submit", (e) => {
     e.preventDefault();
