@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.3 (2 November 2026)
+
+- **App cards:** the reply time sits on the right and takes only its own width, with a gap between the cells, so
+  long versions such as Prowlarr's 2.7.0.5723 no longer run into it. On a very narrow card a version breaks
+  after a dot, never inside a number. An unknown version shows nothing; an app that does not answer shows N/A.
+
 ## 0.7.2 (2 November 2026)
 
 - **App cards (Health first and Tiles):** every card has the same rows in the same places. The status sits beside

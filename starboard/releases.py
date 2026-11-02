@@ -111,6 +111,12 @@ RELEASES = [
      "fixed": [("Updates for test builds", "An app on a test build, such as v0.4.9-dev.6, which is not in its registry, is now offered the newest release instead of nothing.")],
      "review": [],
      "settings": "No settings change. To go back, run ./update.sh --to v0.7.1."},
+    {"version": "0.7.3", "date": "2 November 2026",
+     "added": [],
+     "changed": [("App cards", "The reply time is on the right, so long versions such as 2.7.0.5723 have room. An unknown version shows nothing, and an app that does not answer shows N/A for its reply time.")],
+     "fixed": [("Long versions", "A long version number no longer runs into the reply time; on a very narrow card it breaks after a dot.")],
+     "review": [],
+     "settings": "No settings change. To go back, run ./update.sh --to v0.7.2."},
 ]
 
 

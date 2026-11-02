@@ -17,8 +17,8 @@
    its rows from the grid (subgrid), so the rows line up and a row of cards is all one height. */
 :root:is([data-design="health"], [data-design="tiles"]) .app-card {
   grid-row: span 4; grid-template-rows: subgrid;
-  grid-template-columns: minmax(calc(var(--text-xs) * 12.5), 1.4fr) minmax(0, 1fr) minmax(0, 1fr); /* wide enough for "Update available" */
-  row-gap: var(--space-2); column-gap: 0;
+  grid-template-columns: calc(var(--text-xs) * 11.5) minmax(0, 1fr) auto; /* just wide enough for "Update available"; the version gets the rest, the reply time only its width, on the right */
+  row-gap: var(--space-2); column-gap: var(--space-3);
 }
 :root[data-design="tiles"] .app-card { grid-row: span 5; }
 :root[data-design="health"] .app-cards:has(.card__address) .app-card { grid-row: span 5; }
@@ -40,10 +40,11 @@
 :root:is([data-design="health"], [data-design="tiles"]) .app-card .card__notes { padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-divider); }
 :root:is([data-design="health"], [data-design="tiles"]) .app-card .card__update { grid-column: 1; justify-self: start; align-self: center; }
 :root:is([data-design="health"], [data-design="tiles"]) .app-card :is(.card__version, .card__ms) {
-  align-self: stretch; align-items: center; padding-left: var(--space-2); font-size: var(--text-sm); white-space: nowrap;
+  align-self: stretch; align-items: center; font-size: var(--text-sm); white-space: nowrap;
 }
-:root:is([data-design="health"], [data-design="tiles"]) .app-card .card__version { grid-column: 2; }
-:root:is([data-design="health"], [data-design="tiles"]) .app-card .card__ms { grid-column: 3; }
+/* A long version (2.7.0.5723) breaks after a dot on a narrow card (apps.js adds the break points) rather than running into the time. */
+:root:is([data-design="health"], [data-design="tiles"]) .app-card .card__version { grid-column: 2; white-space: normal; }
+:root:is([data-design="health"], [data-design="tiles"]) .app-card .card__ms { grid-column: 3; justify-content: end; }
 :root[data-design="health"] .app-card .card__top { grid-row: 1; }
 :root[data-design="health"] .app-card .card__activity { grid-row: 2; }
 :root[data-design="health"] .app-card .card__notes { grid-row: 3; }

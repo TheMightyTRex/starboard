@@ -42,8 +42,8 @@ function card(s, old) {
     el("p", { class: "small muted card__desc", text: s.description || "" }),
     el("p", { class: `small card__activity${down || !numbers?.length ? " muted" : ""}`, text: activity }),
     el("div", { class: "card__meta card__status" }, chips,
-      el("span", { class: "card__version num", text: u ? `v${u.installed}` : st?.version ? `v${st.version}` : down ? "Not known" : "" }),
-      el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : down ? "No reply" : "" }),
+      versionCell(u ? u.installed : st?.version),
+      el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : down ? "N/A" : "" }),
       el("span", { class: "card__group", text: s.group || "Other" })),
     el("div", { class: "card__meta card__actions" },
       home ? el("a", { class: "btn", href: home, target: "_blank", rel: "noopener noreferrer" },
@@ -51,6 +51,12 @@ function card(s, old) {
       home && config.show_home_address ? copyButton(home, `home address for ${s.name}`) : null,
       home && config.show_home_address ? el("a", { class: "card__address", href: home, target: "_blank", rel: "noopener noreferrer" },
         el("code", { text: shortUrl(home) }), el("span", { class: "visually-hidden", text: `, opens ${s.name} in a new tab` })) : null));
+}
+
+// The version, which may break onto a second line only after a dot (2.7.0. then 5723), never inside a number.
+function versionCell(version) {
+  const parts = version ? `v${version}`.split(/(?<=\.)/) : [];
+  return el("span", { class: "card__version num" }, parts.flatMap((p, i) => (i ? [el("wbr"), p] : [p])));
 }
 
 function groupsOf(services) {
