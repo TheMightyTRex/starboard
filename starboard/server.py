@@ -385,7 +385,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/queue" and method == "GET":
                 return self.json(200, services.queue(cfg.data["services"]))
             if path == "/api/calendar" and method == "GET":
-                return self.json(200, services.calendar(cfg.data["services"]))
+                return self.json(200, services.calendar(cfg.data["services"], cfg.data["upcoming_days"]))
             if path == "/api/health" and method == "GET":
                 return self.json(200, services.health(cfg.data["services"]))
             if path == "/api/history" and method == "GET":

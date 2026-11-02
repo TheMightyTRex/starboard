@@ -147,13 +147,16 @@
   </div>
   <div class="toolbar">
     <div class="toolbar__row">
-      <fieldset class="segmented" id="range">
-        <legend class="visually-hidden">Range</legend>
-        <label><input type="radio" name="range" value="7"><span>This week</span></label>
-        <label><input type="radio" name="range" value="14" checked><span>Two weeks</span></label>
+      <fieldset class="segmented" id="view">
+        <legend class="visually-hidden">View</legend>
+        <label><input type="radio" name="view" value="list"><span><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-list"/></svg>List</span></label>
+        <label><input type="radio" name="view" value="calendar"><span><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-calendar-days"/></svg>Calendar</span></label>
       </fieldset>
       <div class="filter-chips" id="status-filters" role="group" aria-label="Show only"></div>
       <div class="filter-chips" id="app-filters" role="group" aria-label="Show only one app"></div>
+      <div class="toolbar__end">
+        <a class="btn btn--quiet" href="/settings-general.html#coming-up"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-settings"/></svg>Change how far ahead</a>
+      </div>
     </div>
   </div>
   <div id="calendar-errors"></div>

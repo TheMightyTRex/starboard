@@ -296,6 +296,16 @@ class ConfigTest(unittest.TestCase):
             self.assertTrue(public["show_home_address"])
             self.assertTrue(public["show_outside_address"])
 
+    def test_coming_up_settings(self):
+        with tempfile.TemporaryDirectory() as d:
+            c = Config(d)
+            self.assertEqual((c.public()["upcoming_view"], c.public()["upcoming_days"]), ("list", 14))
+            c.update_general({"upcoming_view": "calendar", "upcoming_days": 30})
+            self.assertEqual((Config(d).data["upcoming_view"], Config(d).data["upcoming_days"]), ("calendar", 30))
+            for bad in ({"upcoming_view": "grid"}, {"upcoming_days": 365}, {"upcoming_days": "x"}):
+                with self.assertRaises((ConfigError, ValueError)):
+                    c.update_general(bad)
+
     def test_migration_backs_up(self):
         with tempfile.TemporaryDirectory() as d:
             with open(os.path.join(d, "config.json"), "w") as f:

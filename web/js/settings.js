@@ -657,6 +657,19 @@ function startGeneral() {
     catch (err) { toast(err.message); }
   });
 
+  // Coming up: selects that apply at once.
+  const upcomingSelect = (key, labelId, options, message) => {
+    const select = el("select", { class: "select", "aria-labelledby": labelId },
+      options.map(([value, label]) => el("option", { value: String(value), text: label, selected: String(config[key]) === String(value) })));
+    select.addEventListener("change", async () => {
+      const before = config[key];
+      try { await saveGeneral({ [key]: key === "upcoming_days" ? Number(select.value) : select.value }, message(select.selectedOptions[0].text)); }
+      catch (err) { select.value = String(before); toast(err.message); }
+    });
+    return select;
+  };
+  const dayChoices = (config.upcoming_days_choices || [7, 14, 30, 60, 90]).map((n) => [n, n === 7 ? "1 week" : n === 14 ? "2 weeks" : `${n} days`]);
+
   $("#general-sections").removeAttribute("aria-busy");
   $("#general-sections").replaceChildren(
     section("gn-name", "Dashboard", "Shown in the header and the browser tab.", nameForm),
@@ -666,9 +679,15 @@ function startGeneral() {
       el("ul", { class: "settings-rows" },
         settingRow("Home address", "With a copy button.", cardSwitch("show_home_address", "card-home-l", "Cards now show the home address", "Cards no longer show the home address"), "card-home-l"),
         settingRow("Outside address", "With a copy button, when the app has one.", cardSwitch("show_outside_address", "card-out-l", "Cards now show the outside address", "Cards no longer show the outside address"), "card-out-l"))),
+    el("div", { id: "coming-up" }, section("gn-up", "Coming up", "What the Coming up page shows. These apply at once.",
+      el("ul", { class: "settings-rows" },
+        settingRow("View", "List shows releases by day; Calendar shows them on a month. The switch on the page changes this too.",
+          upcomingSelect("upcoming_view", "up-view-l", [["list", "List"], ["calendar", "Calendar"]], (t) => `Coming up now opens as ${t === "List" ? "a list" : "a calendar"}`), "up-view-l"),
+        settingRow("How far ahead", "Releases from today to this far ahead, plus yesterday's.",
+          upcomingSelect("upcoming_days", "up-days-l", dayChoices, (t) => `Coming up now looks ${t} ahead`), "up-days-l")))),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm));
   renderCategories();
-  if (location.hash === "#categories") $("#categories").scrollIntoView();
+  if (location.hash === "#categories" || location.hash === "#coming-up") $(location.hash).scrollIntoView();
 }
 
 // Security ------------------------------------------------------------------

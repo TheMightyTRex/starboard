@@ -2202,6 +2202,26 @@
     content: " · today";
     font-weight: var(--weight-regular);
   }
+  /* A day with releases: small covers, the first title and "N releases", which opens the day's slide-out. */
+  .calendar__covers {
+    display: flex;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+  }
+  .cover--mini {
+    width: 24px;
+    flex: none;
+  }
+  .calendar__titles {
+    margin-top: var(--space-1);
+  }
+  .calendar__open {
+    margin-top: var(--space-1);
+  }
+  .calendar__short {
+    display: none;
+    text-decoration: none;
+  }
 
   /* Selection bar: "3 selected" with bulk actions; same place and look as the save bar. */
   .selection-bar {
@@ -2278,6 +2298,12 @@
 
   /* 7. Phones and narrow windows ---------------------------------------------------------------- */
   @media (max-width: 1100px) {
+    .calendar__long {
+      display: none;
+    }
+    .calendar__short {
+      display: inline;
+    }
     .page {
       padding: var(--space-6) var(--space-6) var(--space-12);
     }
@@ -2354,8 +2380,30 @@
     .steps__short:only-child {
       display: block;
     }
+    /* On phones the month becomes an agenda: only the days with releases, each with its full date. */
+    .calendar thead {
+      display: none;
+    }
+    .calendar,
+    .calendar tbody,
+    .calendar tr,
     .calendar td {
-      height: 72px;
+      display: block;
+      width: 100%;
+    }
+    .calendar td {
+      height: auto;
+      border-width: 1px 0 0;
+    }
+    .calendar td[data-empty] {
+      display: none;
+    }
+    .calendar td::before {
+      content: attr(data-label);
+      font-weight: var(--weight-strong);
+    }
+    .calendar td .calendar__day {
+      display: none;
     }
     .setting__control {
       justify-content: start;

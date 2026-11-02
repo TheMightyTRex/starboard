@@ -352,6 +352,10 @@ def _calendar_one(service, start, end):
     kind = service["type"]
     if kind == "sonarr":
         params["includeSeries"] = "true"
+    elif kind == "lidarr":
+        params["includeArtist"] = "true"
+    elif kind == "readarr":
+        params["includeAuthor"] = "true"
     items = _api(service, "/calendar", params) or []
     out = []
     for i in items:
@@ -360,18 +364,25 @@ def _calendar_one(service, start, end):
             detail = f"S{i.get('seasonNumber', 0):02d}E{i.get('episodeNumber', 0):02d} · {i.get('title', '')}"
             when = i.get("airDateUtc")
             have = i.get("hasFile")
+            image = _image(i.get("series") or {}, "poster")
         elif kind == "radarr":
             title, detail = i.get("title", ""), "Film"
             when = i.get("digitalRelease") or i.get("physicalRelease") or i.get("inCinemas")
             have = i.get("hasFile")
+            image = _image(i, "poster")
         elif kind == "lidarr":
             title, detail = (i.get("artist") or {}).get("artistName", ""), i.get("title", "")
             when, have = i.get("releaseDate"), (i.get("statistics") or {}).get("percentOfTracks") == 100
+            image = _image(i, "cover") or _image(i.get("artist") or {}, "poster")
         else:
             title, detail = i.get("title", ""), (i.get("author") or {}).get("authorName", "")
             when, have = i.get("releaseDate"), (i.get("statistics") or {}).get("bookFileCount", 0) > 0
+            image = _image(i, "cover") or _image(i.get("author") or {}, "poster")
         if when:
-            out.append({"service_name": service["name"], "title": title, "detail": detail, "when": when, "have": bool(have)})
+            # TMDB serves any width: a small poster is plenty for a row or a calendar day.
+            image = image.replace("image.tmdb.org/t/p/original/", "image.tmdb.org/t/p/w342/")
+            out.append({"service_name": service["name"], "title": title, "detail": detail, "when": when,
+                        "have": bool(have), "image": image})
     return out
 
 

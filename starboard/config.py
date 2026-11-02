@@ -23,6 +23,9 @@ SERVICE_TYPES = {
 
 DESIGNS = ["health", "tiles", "shelf", "command", "board"]
 
+UPCOMING_VIEWS = ("list", "calendar")
+UPCOMING_DAYS = (7, 14, 30, 60, 90)
+
 DEFAULTS = {
     "schema": SCHEMA,
     "site_name": "Starboard",
@@ -33,6 +36,8 @@ DEFAULTS = {
     "network_access": None,
     "show_home_address": True,
     "show_outside_address": True,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
+    "upcoming_view": "list",
+    "upcoming_days": 14,
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
     "groups": ["Watch, listen and request", "Find and organise", "Search and download", "Dashboards and tools"],
@@ -188,6 +193,9 @@ class Config:
             "network_access": d["network_access"],
             "show_home_address": d["show_home_address"],
             "show_outside_address": d["show_outside_address"],
+            "upcoming_view": d["upcoming_view"],
+            "upcoming_days": d["upcoming_days"],
+            "upcoming_days_choices": UPCOMING_DAYS,
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
             "category_of": CATEGORY_OF,
@@ -212,6 +220,15 @@ class Config:
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
+            if "upcoming_view" in incoming:
+                if incoming["upcoming_view"] not in UPCOMING_VIEWS:
+                    raise ConfigError("Choose List or Calendar")
+                d["upcoming_view"] = incoming["upcoming_view"]
+            if "upcoming_days" in incoming:
+                days = int(incoming["upcoming_days"])
+                if days not in UPCOMING_DAYS:
+                    raise ConfigError("Choose 7, 14, 30, 60 or 90 days")
+                d["upcoming_days"] = days
             if "session_days" in incoming:
                 days = int(incoming["session_days"])
                 if not 1 <= days <= 90:
