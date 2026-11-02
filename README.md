@@ -9,16 +9,24 @@ is coming up and how the server is doing.
 
 ## Screenshots
 
-All made with example data.
+All made with example data (`tools/screenshots.sh`).
 
 | | |
 |---|---|
 | ![System, Storage: the pool by type, with free space](docs/screenshots/storage.png) | ![System, Storage in dark mode](docs/screenshots/storage-dark.png) |
 | **Storage:** the pool by type, with free space | **Storage** in dark mode |
-| ![Install apps: groups such as Movies and TV](docs/screenshots/install-apps.png) | ![The set-up guide's first step](docs/screenshots/setup-guide.png) |
-| **Install apps:** set up a media server in groups | **Set-up guide** after the first password |
-| ![Settings, Performance: presets and a switch for each piece of background work](docs/screenshots/performance.png) | ![Apps and Storage on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) |
-| **Settings, Performance:** what each part costs | **On a phone** |
+| ![Each drive in the pool, fullest first](docs/screenshots/storage-drives.png) | ![Space used over time, with a forecast of when the pool fills](docs/screenshots/storage-history.png) |
+| **Drives in the pool**, fullest first | **Space used over time**, with a forecast |
+| ![System, Overview: Jellyfin with its status beside the name](docs/screenshots/jellyfin.png) | ![Release notes, opened from the version in the footer](docs/screenshots/release-notes.png) |
+| **Jellyfin** on System, Overview | **Release notes** from the footer |
+| ![Install apps: groups such as Movies and TV](docs/screenshots/install-apps.png) | ![Search for new apps, in a slide-out on Manage apps](docs/screenshots/search-new-apps.png) |
+| **Install apps:** set up a media server in groups | **Search for new apps** |
+| ![The set-up guide's first step](docs/screenshots/setup-guide.png) | ![The upgrade guide: what is new, then only the new questions](docs/screenshots/upgrade-guide.png) |
+| **Set-up guide** after the first password | **Upgrade guide** after an upgrade with choices |
+| ![The notice after an upgrade, with Open the upgrade guide](docs/screenshots/upgrade-notice.png) | ![Settings, Performance: presets and a switch for each piece of background work](docs/screenshots/performance.png) |
+| **After an upgrade** | **Settings, Performance:** what each part costs |
+| ![Apps on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) | |
+| **On a phone** | |
 
 ## Design principles
 
@@ -254,6 +262,7 @@ DNS names, email addresses, keys and the words you list in `.private-words` (als
 STARBOARD_DATA=./data python3 -m starboard     # http://127.0.0.1:8095
 python3 -m unittest discover -s tests
 python3 tools/apply_shell.py                   # after changing the header or menu
+tools/screenshots.sh                           # retake the README screenshots from example data
 ```
 
 The header and Display panel are written into every page by `tools/apply_shell.py`. Design tokens are in

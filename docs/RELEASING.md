@@ -16,8 +16,12 @@ guide and the notes on GitHub, so they always say the same thing.
 3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`.
 4. **Changelog.** Add the same release to the top of `CHANGELOG.md`, with more detail if it helps.
 5. **Checks.** Run the tests (`python3 -m unittest discover -s tests`) and `tools/check-private.sh`.
-6. **Commit and tag** on `main`: `git tag vX.Y.Z`.
-7. **Publish** (David runs this himself, after his OK to push):
+6. **Screenshots, at every push.** Run `tools/screenshots.sh` and look at every picture in `docs/screenshots`:
+   the screens must match what changed, and only example data may appear (no real names, addresses, titles or
+   folders). A screen that is new or changed a lot gets its own shot: add it to the list in
+   `tools/screenshots/shoot.mjs` and to the Screenshots table in the README.
+7. **Commit and tag** on `main`: `git tag vX.Y.Z`.
+8. **Publish** (David runs this himself, after his OK to push):
 
    ```bash
    gh release create vX.Y.Z --notes-file docs/releases/vX.Y.Z.md
