@@ -14,7 +14,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import auth, backup, icons, schedule, services, sysinfo
+from . import auth, backup, containers, icons, schedule, services, sysinfo
 from .config import Config, ConfigError, new_setup_token, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -387,6 +387,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, services.app_updates(cfg.data["services"]))
             if path == "/api/queue" and method == "GET":
                 return self.json(200, services.queue(cfg.data["services"]))
+            if path.startswith("/api/containers"):
+                if not containers.available():
+                    return self.json(200, {"available": False, "items": [], "containers": []})
+                ordered = cfg.data["services"]
+                if path == "/api/containers" and method == "GET":
+                    return self.json(200, containers.apps(ordered))
+                if path == "/api/containers/check" and method == "POST":
+                    return self.json(200, containers.check(ordered))
+                if path == "/api/containers/update" and method == "POST":
+                    ids = self.body().get("ids")
+                    if not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
+                        return self.error(400, "Choose the apps to update")
+                    return self.json(200, containers.update(ordered, ids))
             if path == "/api/schedule" and method == "GET":
                 return self.json(200, app.schedule.status())
             if path == "/api/schedule" and method == "POST":
@@ -445,6 +458,8 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             return self.error(404, "That file is not there any more")
         except services.ServiceError as e:
+            return self.error(502, str(e))
+        except containers.DockerError as e:
             return self.error(502, str(e))
 
     def icon(self, service_id):

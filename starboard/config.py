@@ -49,7 +49,7 @@ DEFAULTS = {
 
 SERVICE_FIELDS = {
     "id", "name", "type", "url", "link", "outside_link", "icon", "api_key", "background", "follows", "group", "description", "enabled",
-    "quality_profile_id", "metadata_profile_id", "root_folder", "search_on_add",
+    "quality_profile_id", "metadata_profile_id", "root_folder", "search_on_add", "container",
 }
 
 # The category each well-known app goes in by default: the index of one of the four default groups.
@@ -300,6 +300,10 @@ def validate_service(s):
         raise ConfigError("The icon must be a name such as sonarr, or an address starting with https://")
     clean["icon"] = icon
     clean["description"] = str(clean.get("description", "")).strip()[:200]
+    container = str(clean.get("container", "")).strip()[:128]
+    if container and not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$", container):
+        raise ConfigError("Choose a container from the list")
+    clean["container"] = container
     clean["root_folder"] = str(clean.get("root_folder", "")).strip()[:300]
     clean["enabled"] = bool(clean.get("enabled", True))
     clean["search_on_add"] = bool(clean.get("search_on_add", True))
