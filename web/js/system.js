@@ -169,6 +169,7 @@ function renderJellyfin(j) {
   if (j.restart) state.push(chip("Restart needed", "warning"));
   if (j.update) state.push(chip("Update available", "info"));
   if (!j.restart && !j.update) state.push(chip("Up to date", "success"));
+  $("#jellyfin-state").replaceChildren(...state);  // beside the name, on the heading's line
   const facts = [];
   if (j.channels != null) facts.push(el("dt", { text: "Live TV" }), el("dd", { text: `${j.channels} ${j.channels === 1 ? "channel" : "channels"}` }));
   if (j.guide) facts.push(el("dt", { text: "TV guide" }), el("dd", { text: j.guide.state === "Running" ? "Updating now" : j.guide.finished ? `Updated ${ago(j.guide.finished)}${j.guide.result && j.guide.result !== "Completed" ? ` (${j.guide.result.toLowerCase()})` : ""}` : "Never updated" }));
@@ -183,7 +184,6 @@ function renderJellyfin(j) {
     el("div", {}, el("div", { class: "row__title", text: a.series ? `${a.series}: ${a.title}` : a.title }),
       el("div", { class: "row__meta", text: [{ Movie: "Film", Episode: "Episode", MusicAlbum: "Album", AudioBook: "Audiobook", Book: "Book" }[a.type] || a.type, ago(a.when)].join(" · ") })))));
   $("#jellyfin").replaceChildren(...[
-    el("div", { class: "actions" }, state),
     facts.length ? el("dl", { class: "facts" }, facts) : null,
     el("h3", { text: `Playing now${j.playing.length ? `, ${j.playing.length}` : ""}` }), playing,
     j.playing.some((p) => p.transcoding) ? el("p", { class: "small muted", text: "Converting uses the processor; direct play does not." }) : null,
