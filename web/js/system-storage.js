@@ -3,6 +3,10 @@
 
 let repo = "";
 let disks = [];
+let members = new Set();
+let poolsFound = {};
+let usage = null;
+let perf = {};
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const timeNow = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -114,7 +118,9 @@ async function load() {
       stat(formatBytes(used), `Used (${total ? Math.round((used / total) * 100) : 0}%)`),
       stat(String(full), "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
       missing ? stat(String(missing), missing === 1 ? "Folder not found" : "Folders not found", ["warning", "Not found"]) : null].filter(Boolean));
-    const sorted = [...disks].sort((a, b) => (b.missing ? 101 : pctUsed(b)) - (a.missing ? 101 : pctUsed(a)));
+    members = new Set(Object.values(sys.pools || {}).flat());
+    poolsFound = sys.pools || {};
+    const sorted = [...disks].filter((d) => !members.has(d.label)).sort((a, b) => (b.missing ? 101 : pctUsed(b)) - (a.missing ? 101 : pctUsed(a)));
     let list = $("ul.rows", box);
     if (!list) { list = el("ul", { class: "rows", "aria-label": "Folders, fullest first" }); box.replaceChildren(list); }
     renderKeyed(list, sorted, (d) => d.label, (d) => row(d));
@@ -123,6 +129,7 @@ async function load() {
     if (missing) parts.push(`${missing} not found`);
     parts.push(`updated at ${timeNow()}`);
     $("#storage-summary").textContent = parts.join(" · ");
+    renderCharts();
   } catch (e) {
     $("#storage-summary").textContent = `Could not load storage: ${e.message}`;
   }
@@ -132,15 +139,21 @@ async function load() {
 let usageTimer = null;
 
 function renderUsage(u) {
+  usage = u;
+  const off = u.every === "off";
   $("#usage-panel").hidden = !disks.length;
   const button = $("#usage-run");
+  button.hidden = off;
   button.disabled = !!u.running;
   $("span", button).textContent = u.running ? "Working it out…" : u.finished ? "Work it out again" : "Work it out now";
-  $("#usage-when").textContent = u.running ? "Reading the folders now" : u.finished ? `Worked out ${formatDate(u.finished * 1000, true)}` : "Not worked out yet";
+  $("#usage-when").textContent = off ? "Off in Settings, Performance" : u.running ? "Reading the folders now" : u.finished ? `Worked out ${formatDate(u.finished * 1000, true)}` : "Not worked out yet";
+  $("#usage-about").textContent = off
+    ? "Working out what uses the space is off in Settings, Performance, so the charts show used and free space only."
+    : `Starboard reads every folder to sort the space by type: ${USAGE_WORDS[u.every] || USAGE_WORDS.ask} A file shared by a download and the library counts once, for the library.`;
   clearTimeout(usageTimer);
   if (u.running) usageTimer = setTimeout(loadUsage, 5000);
-  if (!u.folders) { $("#usage").replaceChildren(); return; }
-  $("#usage").replaceChildren(...u.folders.map((f) => {
+  const plain = (u.folders || []).filter((f) => !Object.values(f.types || {}).some(Boolean));
+  $("#usage").replaceChildren(...plain.map((f) => {
     const total = f.items.reduce((t, i) => t + i.bytes, 0) || 1;
     return el("section", { class: "sys-block", "aria-label": f.label },
       el("h3", { text: f.label }),
@@ -148,6 +161,59 @@ function renderUsage(u) {
         el("div", { class: "meter__label" }, el("span", { text: i.name }), el("span", { class: "numeric", text: formatBytes(i.bytes) })),
         bar(Math.max(1, Math.round((i.bytes / total) * 100)), "success")))));
   }));
+  renderCharts();
+}
+
+const USAGE_WORDS = {
+  ask: "only when you press Work it out.",
+  open: "when you open Storage, if the last answer is over a day old.",
+  nightly: "every night.",
+  weekly: "every week.",
+};
+
+async function runUsage() {
+  try { renderUsage(await api("/api/usage", { method: "POST" })); announce("Working out what is using the space."); }
+  catch (e) { toast(e.message); }
+}
+
+// The pool cards, the drives in each pool, space over time and the biggest folders.
+let spaceDays = null;
+function renderCharts() {
+  const box = $("#storage-charts");
+  if (!box) return;
+  const sorted = (usage?.folders || []).filter((f) => Object.values(f.types || {}).some(Boolean));
+  const poolLabels = Object.keys(poolsFound);
+  const main = [...new Set([...poolLabels, ...sorted.map((f) => f.label)])]
+    .map((label) => disks.find((d) => d.label === label && !d.missing)).filter(Boolean);
+  const off = usage?.every === "off";
+  box.replaceChildren(...main.map((d) => {
+    const f = sorted.find((x) => x.label === d.label);
+    const when = f && usage.finished ? `Sorted by type ${formatDate(usage.finished * 1000, true)}` : off ? "Sorting by type is off" : "Not sorted by type yet";
+    const action = off ? null : el("button", { type: "button", class: "btn btn--compact", disabled: !!usage?.running, onclick: runUsage },
+      icon("refresh-cw"), usage?.running ? "Working it out…" : f ? "Work it out again" : "Work it out now");
+    return poolCard(d, f ? f.types : null, when, action);
+  }));
+  // Drives
+  const drives = Object.values(poolsFound).flat().map((l) => disks.find((d) => d.label === l && !d.missing)).filter(Boolean);
+  $("#drives-panel").hidden = !drives.length;
+  if (drives.length) {
+    $("#drives-note").textContent = `${drives.length} drives, fullest first`;
+    $("#drives").replaceChildren(...drivesChart(drives, (label, opener) => openFolder(disks.find((d) => d.label === label), opener)));
+  }
+  // Biggest
+  const biggest = sorted.flatMap((f) => f.biggest || []).sort((a, b) => b.bytes - a.bytes).slice(0, 10);
+  $("#biggest-panel").hidden = !biggest.length;
+  if (biggest.length) $("#biggest").replaceChildren(...biggestChart(biggest));
+  renderGrowth(main[0]);
+}
+
+function renderGrowth(disk) {
+  const panel = $("#growth-panel");
+  if (!disk || !spaceDays || perf.space_log === false) { panel.hidden = true; return; }
+  const readings = Object.keys(spaceDays).sort().map((date) => ({ date, v: spaceDays[date][disk.label] }))
+    .filter((r) => r.v).map((r) => ({ date: r.date, used: r.v[0], total: r.v[1] }));
+  panel.hidden = !readings.length;
+  if (readings.length) $("#growth").replaceChildren(...growthChart(disk.label, readings));
 }
 
 async function loadUsage() {
@@ -178,15 +244,19 @@ async function loadDevices() {
     el("tbody", {}, rows))));
 }
 
-startPage().then((session) => {
-  $("#usage-run").addEventListener("click", async () => {
-    try { renderUsage(await api("/api/usage", { method: "POST" })); announce("Working out what is using the space."); }
-    catch (e) { toast(e.message); }
-  });
+startPage().then(async (session) => {
+  $("#usage-run").addEventListener("click", runUsage);
   repo = session?.repo || "";
+  try { perf = (await api("/api/config")).performance || {}; } catch { perf = {}; }
   const refresh = $("#refresh");
   refresh.replaceChildren(icon("refresh-cw"), el("span", { text: "Check again" }));
   refresh.addEventListener("click", async () => { await load(); announce("Checked again."); });
-  load().then(loadUsage);
+  await load();
+  await loadUsage();
+  try { spaceDays = (await api("/api/space-history")).days; renderCharts(); } catch { /* no history yet */ }
+  // When you open Storage: sort by type if the last answer is over a day old (Settings, Performance).
+  if (usage && usage.every === "open" && !usage.running && (!usage.finished || Date.now() / 1000 - usage.finished > 86400)) runUsage();
+  // Sizes update by themselves while the page is open and in view, or only with Check again.
+  if (perf.storage_refresh) setInterval(() => { if (!document.hidden) load(); }, perf.storage_refresh * 1000);
   loadDevices();
 });

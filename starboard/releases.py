@@ -5,7 +5,7 @@ Newest last. Each release:
   version, date
   added, changed, fixed      lists of (title, sentence)
   review                     upgrade wizard steps for settings worth choosing after this upgrade (ids the wizard
-                             knows: "apps", "keys", "jellyfin", "hours", "alerts", "preset", "names"); empty when
+                             knows: "apps", "keys", "jellyfin", "hours", "alerts", "preset", "names", "storage"); empty when
                              the upgrade needs no choices, so it finishes on its own
   settings                   what changed in your settings, and the way back to the version before
 """
@@ -40,13 +40,14 @@ RELEASES = [
      "settings": "Adds performance settings (the Balanced preset). To go back, run ./update.sh --to v0.3.4."},
     {"version": "0.5.0", "date": "2 November 2026",
      "added": [("Install apps", "A guide that sets up a media server in groups (Movies, TV, Music, Ebooks, Audiobooks, Comics and more): it writes a Compose file, shows it, and starts the apps when you give your password. It can point them at your media where it is."),
+               ("Storage charts", "System, Storage shows the pool as a bar and a ring by type (TV, films, books and more) with free space, each drive in the pool, space used over time with a forecast, and the biggest series and films."),
                ("Search for new apps", "Manage apps finds apps on this computer and adds the ones you tick, with their API keys if Starboard has Docker access."),
                ("Set-up guide", "Finds your apps, then asks about API keys, Jellyfin, download hours, alerts and how much Starboard does. Run it again from Settings, General."),
                ("Release notes", "Select the version in the footer to read what is new."),
                ("Upgrade guide", "After an upgrade with something to choose, a short guide shows what is new and asks only those questions.")],
      "changed": [], "fixed": [],
-     "review": ["apps"],
-     "settings": "Adds a record of the set-up guide and the last upgrade. To go back, run ./update.sh --to v0.4.0."},
+     "review": ["apps", "storage"],
+     "settings": "Adds a record of the set-up guide and the last upgrade, and three Storage settings in Settings, Performance (sorting by type only when you ask, a daily record of used space, and page updates only when you press Check again). To go back, run ./update.sh --to v0.4.0."},
 ]
 
 

@@ -55,7 +55,7 @@ class ReleasesTest(unittest.TestCase):
         import pathlib
         version = (pathlib.Path(__file__).resolve().parent.parent / "VERSION").read_text().strip()
         self.assertEqual(releases.RELEASES[-1]["version"], version)
-        known = {"apps", "keys", "jellyfin", "hours", "alerts", "preset", "names"}
+        known = {"apps", "keys", "jellyfin", "hours", "alerts", "preset", "names", "storage"}
         for r in releases.RELEASES:
             self.assertTrue(set(r["review"]) <= known, r["version"])
             self.assertNotIn("—", releases.markdown(r))
@@ -63,7 +63,7 @@ class ReleasesTest(unittest.TestCase):
     def test_pending_collects_each_question_once(self):
         p = releases.pending("0.2.0", "0.5.0", True)
         self.assertEqual([r["version"] for r in p["releases"]], ["0.3.0", "0.3.4", "0.4.0", "0.5.0"])
-        self.assertEqual(p["review"], ["jellyfin", "preset", "names", "apps"])
+        self.assertEqual(p["review"], ["jellyfin", "preset", "names", "apps", "storage"])
         self.assertTrue(p["wizard"])
 
     def test_fresh_and_up_to_date_installs_need_no_guide(self):
@@ -72,7 +72,7 @@ class ReleasesTest(unittest.TestCase):
 
     def test_an_install_from_before_the_record_starts_at_the_previous_release(self):
         p = releases.pending("", "0.5.0", True)
-        self.assertEqual((p["from"], p["review"]), ("0.4.0", ["apps"]))
+        self.assertEqual((p["from"], p["review"]), ("0.4.0", ["apps", "storage"]))
 
 
 if __name__ == "__main__":

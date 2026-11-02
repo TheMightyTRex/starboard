@@ -806,9 +806,15 @@ const COSTS = {
   downloadsRefresh: "Each update asks each download app once (shared for 10 seconds). Slower, or off, means fewer requests while Downloads is open.",
   monitorRefresh: "Each reading takes under a thousandth of a second on the server. Slower means fewer readings while Monitor is open.",
   cardNumbers: "Costs about: one small request per app when Apps opens, shared for a minute. Off saves that.",
+  usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory), and nothing between runs. Starboard skips the drives inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
+  spaceLog: "Costs about: one size check of each folder a day, taken when a page or the history asks anyway, and a few kilobytes a year. Nothing noticeable.",
+  storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Off means only when you open the page or press Check again.",
   posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
   icons: "Costs about: one download per app, once.",
 };
+
+const USAGE_CHOICES = [["ask", "Only when I press Work it out"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night"], ["weekly", "Every week"], ["off", "Off"]];
+const STORAGE_REFRESH = [[0, "Only when I press Check again"], [60, "Every minute"], [300, "Every 5 minutes"]];
 
 function withCost(hint, key) {
   return el("span", {}, hint, el("span", { class: "setting__cost", text: COSTS[key] }));
@@ -887,6 +893,24 @@ async function stepContent(id, root) {
       if (!fresh.checked) return true;
       location.href = "/install-apps.html?from=guide";
       return false;
+    };
+  } else if (id === "storage") {
+    const p = config.performance;
+    const radios = USAGE_CHOICES.map(([v, t]) => ({ v, input: el("input", { type: "radio", name: "usage-every", value: v, checked: p.usage_every === v }), t }));
+    const refresh = el("select", { class: "select", id: "guide-st-refresh" }, STORAGE_REFRESH.map(([v, t]) => el("option", { value: String(v), text: t, selected: Number(v) === p.storage_refresh })));
+    const daily = el("input", { type: "checkbox", checked: p.space_log !== false });
+    nodes = [
+      el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: "Work out what uses the space" }),
+        el("p", { class: "small muted", text: COSTS.usage }),
+        el("div", { class: "option-cards" }, radios.map((r) => el("label", { class: "option-card" }, r.input, el("strong", { text: r.t }))))),
+      field("Storage page updates", refresh, { hint: "Sizes update by themselves while the page is open, or only when you press Check again." }),
+      el("label", { class: "check" }, daily, el("span", { class: "check__text" }, el("strong", { text: "Keep a daily record of used space" }),
+        el("span", { class: "check__hint", text: "For the Space used over time chart and when the pool will be full. Nothing noticeable." }))),
+    ];
+    save = async () => {
+      const picked = radios.find((r) => r.input.checked);
+      await saveGeneral({ performance: { usage_every: picked ? picked.v : "ask", storage_refresh: Number(refresh.value), space_log: daily.checked } });
+      return true;
     };
   } else if (id === "apps") {
     const finder = await appFinder();
@@ -992,6 +1016,8 @@ async function startGuide() {
   }
   let steps = [];
   let index = 0;
+  let hasDisks = false;
+  try { hasDisks = (await api("/api/system")).disks.length > 0; } catch { /* leave the step out */ }
 
   const build = () => {
     const list = [];
@@ -1006,6 +1032,7 @@ async function startGuide() {
     if (types(["jellyfin"]).length) list.push({ id: "jellyfin", title: "Jellyfin", question: "Use Starboard's Jellyfin extras?", intro: "Each one is off until you tick it. All are in Settings, Jellyfin later." });
     if (types(["qbittorrent", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", title: "Download hours", question: "Only download at set hours?", intro: "Starboard pauses qBittorrent and SABnzbd outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", title: "Alerts", question: "Get an alert when something stops?", intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
+    if (hasDisks) list.push({ id: "storage", title: "Storage", question: "How should Storage keep up to date?", intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
     list.push({ id: "preset", title: "How much it does", question: "How much should Starboard do in the background?", intro: "You can change each part in Settings, Performance." });
     list.push({ id: "finish", title: "Finish", question: "Ready to go", skippable: false });
     return list;
@@ -1062,8 +1089,8 @@ async function startUpgrade() {
   root.removeAttribute("aria-busy");
   const r = await api("/api/releases");
   const p = r.pending;
-  const titles = { apps: "New apps", keys: "API keys", jellyfin: "Jellyfin", hours: "Download hours", alerts: "Alerts", preset: "How much it does", names: "Names it answers to" };
-  const questions = { apps: "Add apps Starboard can now find?", keys: "Give Starboard their API keys?", jellyfin: "Use Starboard's Jellyfin extras?",
+  const titles = { storage: "Storage", apps: "New apps", keys: "API keys", jellyfin: "Jellyfin", hours: "Download hours", alerts: "Alerts", preset: "How much it does", names: "Names it answers to" };
+  const questions = { storage: "How should Storage keep up to date?", apps: "Add apps Starboard can now find?", keys: "Give Starboard their API keys?", jellyfin: "Use Starboard's Jellyfin extras?",
     hours: "Only download at set hours?", alerts: "Get an alert when something stops?", preset: "How much should Starboard do in the background?", names: "Do you open Starboard with another name?" };
   const steps = [{ id: "new", title: "What is new", question: `What is new in ${p.to}` },
     ...p.review.map((id) => ({ id, title: titles[id] || id, question: questions[id] || titles[id] })),
@@ -1412,6 +1439,10 @@ async function startPerformance() {
       sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } }, on ? "History applied every hour" : "History applied only when you ask")), "pf-imp-l"),
     settingRow("Jellyfin user defaults", withCost("Settings, Jellyfin, User defaults.", "defaults"),
       sw("pf-def-l", x.defaults, (on) => save({ extras: { defaults: on } }, on ? "User defaults on" : "User defaults off")), "pf-def-l"),
+    settingRow("Work out what uses the space", withCost("Sorts your storage by type (TV, films, books and so on) for the charts on System, Storage.", "usage"),
+      pick("pf-usage-l", USAGE_CHOICES, perf().usage_every, (v, t) => save({ performance: { usage_every: v } }, `What uses the space: ${t.toLowerCase()}`)), "pf-usage-l"),
+    settingRow("Daily record of used space", withCost("For the Space used over time chart and its forecast on System, Storage.", "spaceLog"),
+      sw("pf-space-l", perf().space_log, (on) => save({ performance: { space_log: on } }, on ? "Daily record on" : "Daily record off")), "pf-space-l"),
     settingRow("Posters on Coming up", withCost("Off: Coming up shows each app's icon.", "posters"),
       sw("pf-post-l", config.show_posters, (on) => save({ show_posters: on }, on ? "Posters on" : "Posters off")), "pf-post-l"));
 
@@ -1420,6 +1451,8 @@ async function startPerformance() {
     settingRow("Downloads page updates", withCost("While Downloads is open and in view.", "downloadsRefresh"),
       pick("pf-dl-l", [[0, "Only when I press Check again"], [10, "Every 10 seconds"], [15, "Every 15 seconds"], [30, "Every 30 seconds"], [60, "Every minute"]], perf().downloads_refresh,
         (v, t) => save({ performance: { downloads_refresh: Number(v) } }, `Downloads: ${t.toLowerCase()}`)), "pf-dl-l"),
+    settingRow("Storage page updates", withCost("While Storage is open and in view.", "storageRefresh"),
+      pick("pf-st-l", STORAGE_REFRESH, perf().storage_refresh, (v, t) => save({ performance: { storage_refresh: Number(v) } }, `Storage: ${t.toLowerCase()}`)), "pf-st-l"),
     settingRow("Monitor page readings", withCost("While Monitor is open and in view.", "monitorRefresh"),
       pick("pf-mon-l", [[2, "Every 2 seconds"], [5, "Every 5 seconds"], [10, "Every 10 seconds"]], perf().monitor_refresh,
         (v, t) => save({ performance: { monitor_refresh: Number(v) } }, `Monitor: ${t.toLowerCase()}`)), "pf-mon-l"),

@@ -18,6 +18,7 @@
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/charts.js" defer></script>
+<script src="/js/storage-charts.js" defer></script>
 <script src="/js/system-storage.js" defer></script>
 </head>
 <body class="page-system-storage">
@@ -163,12 +164,25 @@
     <div class="actions"><button type="button" class="btn" id="refresh"></button></div>
   </div>
   <div class="stats" id="storage-stats"></div>
+  <div id="storage-charts"></div>
   <div id="storage"></div>
   <section class="panel" id="usage-panel" aria-labelledby="usage-title" hidden>
     <div class="sys-panel-head"><h2 id="usage-title">What is using the space</h2><span class="small muted" id="usage-when"></span></div>
-    <p class="small muted">Starboard adds up each folder's top-level folders only when you ask, because reading every file takes a while on a big drive. A file shared by a download and the library counts once.</p>
+    <p class="small muted" id="usage-about">Starboard reads every folder to sort the space by type, so it runs when Settings, Performance says. A file shared by a download and the library counts once, for the library.</p>
     <div class="actions"><button type="button" class="btn" id="usage-run"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-refresh-cw"/></svg><span>Work it out now</span></button></div>
     <div id="usage"></div>
+  </section>
+  <section class="panel" id="drives-panel" aria-labelledby="drives-title" hidden>
+    <div class="sys-panel-head"><h2 id="drives-title">Drives in the pool</h2><span class="small muted" id="drives-note"></span></div>
+    <div id="drives"></div>
+  </section>
+  <section class="panel" id="growth-panel" aria-labelledby="growth-title" hidden>
+    <div class="sys-panel-head"><h2 id="growth-title">Space used over time</h2></div>
+    <div id="growth"></div>
+  </section>
+  <section class="panel" id="biggest-panel" aria-labelledby="biggest-title" hidden>
+    <div class="sys-panel-head"><h2 id="biggest-title">Biggest series and films</h2></div>
+    <div id="biggest"></div>
   </section>
   <section class="panel" id="devices-panel" aria-labelledby="devices-title" hidden>
     <div class="sys-panel-head"><h2 id="devices-title">Drives in this computer</h2><span class="small muted">From the Disk health job: every drive and partition, and where it is mounted</span></div>

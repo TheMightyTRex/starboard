@@ -55,7 +55,8 @@ DEFAULTS = {
     "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "import_keep": False, "defaults": False},
     # How much Starboard does in the background and how often (Settings, Performance).
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
-                    "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True},
+                    "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
+                    "storage_refresh": 0, "usage_every": "ask", "space_log": True},
     "setup_guide_done": False,
     "last_version": "",  # the version the upgrade wizard last finished, so it opens once per upgrade
     "auth": {"password_hash": "", "session_version": 1},
@@ -125,6 +126,8 @@ class Config:
             self._write(data)
         for key, value in DEFAULTS.items():
             data.setdefault(key, json.loads(json.dumps(value)))
+        for key, value in DEFAULTS["performance"].items():  # settings added in later versions
+            data["performance"].setdefault(key, value)
         if data.get("design") not in DESIGNS:  # a design that has since been removed
             data["design"] = DEFAULTS["design"]
             self._write(data)
@@ -289,20 +292,24 @@ class Config:
 
 
 PERF_CHOICES = {"history_every": (60, 300, 900), "schedule_every": (60, 300), "downloads_refresh": (0, 10, 15, 30, 60),
-                "monitor_refresh": (2, 5, 10)}
+                "monitor_refresh": (2, 5, 10), "storage_refresh": (0, 60, 300)}
+USAGE_CHOICES = ("off", "ask", "open", "nightly", "weekly")
 
 # Presets set every optional piece of background work at once. Features you choose for what they do (Live TV,
 # download hours, the import itself) are left as they are; only how often and how much changes.
 PRESETS = {
     "small": {"title": "Small server", "performance": {"history": False, "history_every": 900, "schedule_every": 300,
-              "downloads_refresh": 30, "monitor_refresh": 5, "card_numbers": False},
+              "downloads_refresh": 30, "monitor_refresh": 5, "card_numbers": False,
+              "storage_refresh": 0, "usage_every": "ask"},
               "watch": {"enabled": False}, "extras": {"white_logos": False, "import_keep": False, "defaults": False},
               "show_posters": False},
     "balanced": {"title": "Balanced", "performance": {"history": True, "history_every": 300, "schedule_every": 60,
-                 "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True},
+                 "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
+                 "storage_refresh": 0, "usage_every": "ask"},
                  "watch": {}, "extras": {"white_logos": True}, "show_posters": True},
     "everything": {"title": "Everything", "performance": {"history": True, "history_every": 60, "schedule_every": 60,
-                   "downloads_refresh": 10, "monitor_refresh": 2, "card_numbers": True},
+                   "downloads_refresh": 10, "monitor_refresh": 2, "card_numbers": True,
+                   "storage_refresh": 60, "usage_every": "weekly"},
                    "watch": {"enabled": True, "every": 5, "weekly": True},
                    "extras": {"white_logos": True, "import_keep": True, "defaults": True}, "show_posters": True},
 }
@@ -335,9 +342,13 @@ def clean_performance(incoming, current):
     if not isinstance(incoming, dict):
         raise ConfigError("Send the performance settings as an object")
     out = dict(current)
-    for key in ("history", "card_numbers"):
+    for key in ("history", "card_numbers", "space_log"):
         if key in incoming:
             out[key] = bool(incoming[key])
+    if "usage_every" in incoming:
+        if incoming["usage_every"] not in USAGE_CHOICES:
+            raise ConfigError("Choose when to work out what uses the space from the list")
+        out["usage_every"] = incoming["usage_every"]
     for key, choices in PERF_CHOICES.items():
         if key in incoming:
             value = int(incoming[key])

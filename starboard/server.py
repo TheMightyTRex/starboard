@@ -89,7 +89,11 @@ class App:
         self.history = (sysinfo.History(data_dir, lambda: self.config.data["performance"])
                         if os.environ.get("STARBOARD_HISTORY", "1") != "0" else None)
         self.disk_temps = sysinfo.DiskTemps(data_dir)
-        self.usage = sysinfo.Usage(data_dir)
+        perf = lambda: self.config.data["performance"]  # noqa: E731
+        self.usage = sysinfo.Usage(data_dir, perf, self.disks if os.environ.get("STARBOARD_USAGE", "1") != "0" else ())
+        self.space = sysinfo.SpaceLog(data_dir, perf)
+        if self.history:
+            self.history.on_tick = self.record_space
         self.watch = watch.Watch(self)
         if os.environ.get("STARBOARD_WATCH", "1") != "0":
             self.watch.start()
@@ -158,6 +162,11 @@ class App:
             "forced_by": "STARBOARD_HOST" if self.forced_host else None,
             "you_are_on_this_computer": is_loopback(client_ip),
         }
+
+    def record_space(self, snap=None):
+        """The day's reading of used space, if not taken yet (no thread of its own)."""
+        if self.disks and self.space.due():
+            self.space.record((snap or sysinfo.snapshot(self.disks))["disks"])
 
     @property
     def needs_setup(self):
@@ -504,6 +513,7 @@ class Handler(BaseHTTPRequestHandler):
                     app.schedule.ensure()
                 if app.history:
                     app.history.ensure()
+                app.usage.ensure()
                 if cfg.data.get("network_access", True) != before and app.on_network_change:
                     # Answer first, then move the listener.
                     threading.Timer(0.5, app.on_network_change).start()
@@ -697,7 +707,12 @@ class Handler(BaseHTTPRequestHandler):
                 app.usage.start(app.disks)
                 return self.json(200, app.usage.get())
             if path == "/api/system" and method == "GET":
-                return self.json(200, sysinfo.snapshot(app.disks))
+                snap = sysinfo.snapshot(app.disks)
+                app.record_space(snap)
+                snap["pools"] = sysinfo.pools([dict(d, path=p) for (_, p), d in zip(app.disks, snap["disks"])])
+                return self.json(200, snap)
+            if path == "/api/space-history" and method == "GET":
+                return self.json(200, {"on": cfg.data["performance"].get("space_log", True), "days": app.space.get()})
             if path == "/api/version" and method == "GET":
                 return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo})
             if path == "/api/backup/settings" and method == "POST":

@@ -393,15 +393,62 @@ class DiskTemps:
 
 
 # What is using the space -------------------------------------------------------------
-# On demand only (a button on System, Storage): walks each folder's top-level folders once and keeps the answer in
-# data/usage.json. A file with several hard links (a seeding torrent that is also in the library) counts once.
+# Walks each folder once and keeps the answer in data/usage.json: the top-level folders, the space by media type
+# (folders named movies, tv, music, audiobooks, books, downloads and so on), and the biggest series and films.
+# A file with several hard links (a seeding torrent that is also in the library) counts once, for the library,
+# because the library is read first. The drives that make up a pool are not read again on their own.
+# When it runs is a setting (Settings, Performance): off, when you ask, when you open Storage (if the last answer
+# is over a day old), every night or every week. A scheduled thread exists only while a schedule is chosen.
+
+MEDIA_TYPES = ("tv", "movies", "audiobooks", "music", "books", "downloads", "other")
+_TYPE_NAMES = {
+    "tv": ("tv", "tv shows", "shows", "series", "television", "anime"),
+    "movies": ("movies", "movie", "films", "film"),
+    "audiobooks": ("audiobooks", "audiobook", "audio books"),
+    "music": ("music", "albums"),
+    "books": ("books", "ebooks", "comics", "manga", "magazines"),
+    "downloads": ("torrents", "usenet", "downloads", "download", "temp_downloads", "incomplete", "complete", "nzb"),
+}
+
+
+def media_type(name):
+    n = name.strip().lower()
+    return next((k for k, names in _TYPE_NAMES.items() if n in names), None)
+
+
+def pools(disks):
+    """Which folders are a pool of other folders: a folder whose size is the sum (within 3%) of a set of
+    folders that share one parent folder, such as /disks/each/*. {pool label: [member labels]}."""
+    found, taken = {}, set()
+    ok = [d for d in disks if not d.get("missing") and d.get("path")]
+    for big in sorted(ok, key=lambda d: d["total"], reverse=True):
+        if big["label"] in taken:
+            continue
+        groups = {}
+        for d in ok:  # every other folder under one parent: the whole group, not a few that happen to add up
+            if d is not big:
+                groups.setdefault(os.path.dirname(d["path"].rstrip("/")), []).append(d)
+        for members in groups.values():
+            if len(members) > 1 and abs(sum(m["total"] for m in members) - big["total"]) <= big["total"] * 0.03:
+                found[big["label"]] = [m["label"] for m in members]
+                taken.update(found[big["label"]])
+                break
+    return found
+
 
 class Usage:
-    def __init__(self, data_dir):
+    EVERY = {"nightly": 86400, "weekly": 7 * 86400}
+
+    def __init__(self, data_dir, settings=None, disks=()):
         import threading
         self.path = os.path.join(data_dir, "usage.json")
         self.lock = threading.Lock()
         self.running = False
+        self.settings = settings or (lambda: {"usage_every": "ask"})
+        self.disks = list(disks)
+        self.wake = threading.Event()
+        self.thread = None
+        self.ensure()
 
     def get(self):
         import json
@@ -411,51 +458,114 @@ class Usage:
         except (OSError, ValueError):
             data = {}
         data["running"] = self.running
+        data["every"] = self.settings().get("usage_every", "ask")
         return data
+
+    def ensure(self):
+        """A thread only while nightly or weekly is chosen; it ends when the choice changes."""
+        import threading
+        if self.settings().get("usage_every") not in self.EVERY or not self.disks:
+            self.wake.set()
+            return
+        if self.thread and self.thread.is_alive():
+            self.wake.set()
+            return
+        self.wake.clear()
+        self.thread = threading.Thread(target=self._timer, name="usage", daemon=True)
+        self.thread.start()
+
+    def _timer(self):
+        while True:
+            every = self.EVERY.get(self.settings().get("usage_every"))
+            if not every:
+                return
+            last = self.get().get("finished") or 0
+            wait = last + every - time.time()
+            if wait <= 0:
+                self.start(self.disks)
+                wait = every
+            self.wake.wait(min(wait, 6 * 3600))
+            self.wake.clear()
 
     def start(self, disks):
         import threading
+        if self.settings().get("usage_every") == "off":
+            raise ValueError("Working out what uses the space is off in Settings, Performance")
         with self.lock:
             if self.running:
                 return
             self.running = True
-        threading.Thread(target=self._scan, args=(disks,), name="usage", daemon=True).start()
+        threading.Thread(target=self._scan, args=(disks,), name="usage-scan", daemon=True).start()
 
     def _scan(self, disks):
         import json
+        seen = set()
+
+        def size(path):
+            total = 0
+            try:
+                st = os.lstat(path)
+            except OSError:
+                return 0
+            if not os.path.isdir(path) or os.path.islink(path):
+                return st.st_blocks * 512
+            for base, dirs, files in os.walk(path):
+                for name in files:
+                    try:
+                        st = os.lstat(os.path.join(base, name))
+                    except OSError:
+                        continue
+                    if st.st_nlink > 1:
+                        key = (st.st_dev, st.st_ino)
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                    total += st.st_blocks * 512
+            return total
+
+        def children(path):
+            try:
+                return sorted((e for e in os.scandir(path) if not e.is_symlink()), key=lambda e: e.name.lower())
+            except OSError:
+                return []
+
         started = time.time()
         out = {"started": started, "folders": []}
-        seen = set()
         try:
+            snap = [dict(d, path=p) for (_, p), d in zip(disks, snapshot(disks)["disks"])]
+            skip = {m for members in pools(snap).values() for m in members}
             for label, root in disks:
-                entries = []
-                try:
-                    tops = sorted(os.scandir(root), key=lambda e: e.name.lower())
-                except OSError:
+                if label in skip:
                     continue
-                for top in tops:
-                    total = 0
-                    if top.is_symlink():
-                        continue
-                    if top.is_file():
-                        st = top.stat(follow_symlinks=False)
-                        total = st.st_blocks * 512
+                types = dict.fromkeys(MEDIA_TYPES, 0)
+                tops, biggest = {}, []
+                plan = []  # (type, path, top name): library first, downloads after, the rest last
+                for top in children(root):
+                    kind = media_type(top.name)
+                    inner = [c for c in children(top.path) if media_type(c.name)] if top.is_dir() and not kind else []
+                    if kind:
+                        plan.append((kind, top.path, top.name))
+                    elif inner:
+                        for c in children(top.path):
+                            plan.append((media_type(c.name) or "other", c.path, top.name))
                     else:
-                        for base, dirs, files in os.walk(top.path):
-                            for name in files:
-                                try:
-                                    st = os.lstat(os.path.join(base, name))
-                                except OSError:
-                                    continue
-                                if st.st_nlink > 1:
-                                    key = (st.st_dev, st.st_ino)
-                                    if key in seen:
-                                        continue
-                                    seen.add(key)
-                                total += st.st_blocks * 512
-                    entries.append({"name": top.name, "bytes": total})
-                entries.sort(key=lambda e: e["bytes"], reverse=True)
-                out["folders"].append({"label": label, "items": entries[:30]})
+                        plan.append(("other", top.path, top.name))
+                order = {k: i for i, k in enumerate(MEDIA_TYPES)}
+                for kind, path, top in sorted(plan, key=lambda x: order[x[0]]):
+                    if kind in ("tv", "movies", "audiobooks", "music", "books") and os.path.isdir(path):
+                        total = 0
+                        for c in children(path):
+                            b = size(c.path)
+                            total += b
+                            biggest.append({"name": c.name, "type": kind, "bytes": b})
+                    else:
+                        total = size(path)
+                    types[kind] += total
+                    tops[top] = tops.get(top, 0) + total
+                entries = sorted(({"name": n, "bytes": b} for n, b in tops.items()), key=lambda e: e["bytes"], reverse=True)
+                biggest.sort(key=lambda e: e["bytes"], reverse=True)
+                out["folders"].append({"label": label, "items": entries[:30], "types": types, "biggest": biggest[:10],
+                                       "skipped": [m for p, ms in pools(snap).items() if p == label for m in ms]})
             out["finished"] = time.time()
             tmp = self.path + ".tmp"
             with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
@@ -463,6 +573,55 @@ class Usage:
             os.replace(tmp, self.path)
         finally:
             self.running = False
+
+
+# Space over time ---------------------------------------------------------------------
+# One reading of each folder's used space a day, for the forecast on System, Storage. No thread of its own: it is
+# taken when Storage or Overview is opened, or by the history thread, whichever comes first that day. A year of
+# readings is a few kilobytes. Off in Settings, Performance.
+
+class SpaceLog:
+    KEEP_DAYS = 400
+
+    def __init__(self, data_dir, settings=None):
+        import threading
+        self.path = os.path.join(data_dir, "space.json")
+        self.lock = threading.Lock()
+        self.settings = settings or (lambda: {"space_log": True})
+        self.today = None
+
+    def _load(self):
+        import json
+        try:
+            with open(self.path, encoding="utf-8") as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def record(self, disks):
+        """disks: the snapshot's list. Once a day; does nothing when off or already done today."""
+        import json
+        day = time.strftime("%Y-%m-%d")
+        if not self.settings().get("space_log", True) or self.today == day:
+            return
+        with self.lock:
+            data = self._load()
+            data[day] = {d["label"]: [d["used"], d["total"]] for d in disks if not d.get("missing")}
+            for old in sorted(data)[:-self.KEEP_DAYS]:
+                del data[old]
+            tmp = self.path + ".tmp"
+            with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+                json.dump(data, f, separators=(",", ":"))
+            os.replace(tmp, self.path)
+            self.today = day
+
+    def due(self):
+        return self.settings().get("space_log", True) and self.today != time.strftime("%Y-%m-%d")
+
+    def get(self):
+        with self.lock:
+            return self._load()
 
 
 # History -------------------------------------------------------------------------
@@ -486,6 +645,7 @@ class History:
         self._load()
         self._previous = None
         self._last_save = time.time()
+        self.on_tick = None  # also called each reading (the daily space log uses it)
         self.ensure()
 
     @property
@@ -571,6 +731,8 @@ class History:
                 return
             try:
                 self.sample()
+                if self.on_tick:
+                    self.on_tick()
                 if time.time() - self._last_save > 600:
                     self._save()
                     self._last_save = time.time()
