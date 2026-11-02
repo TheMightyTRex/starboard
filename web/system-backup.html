@@ -185,10 +185,14 @@
   <section class="panel" aria-labelledby="server-backup-title">
     <div class="panel__head">
       <h2 id="server-backup-title">The whole server</h2>
-      <p class="hint">A backup job on the server saves the settings of every app. Starboard can start it and shows the result.
-      Restoring a whole server is done by hand from one of these files.</p>
+      <p class="hint">A backup job on the server saves everything needed to rebuild it if the system disk fails, apart from
+      media: every app's settings and databases, system settings, and the list of packages. Starboard starts it and
+      shows the result. Keep a copy somewhere other than the system disk.</p>
     </div>
     <div id="server-status"></div>
+    <label class="check" for="with-prompt"><input type="checkbox" id="with-prompt" checked aria-describedby="with-prompt-hint"> Include a rebuild prompt for an AI assistant</label>
+    <p class="hint" id="with-prompt-hint">Adds REBUILD-PROMPT.md: step-by-step instructions an AI assistant with a shell can follow to rebuild
+    the whole server from the backup in one go. It is saved inside the backup and next to it.</p>
     <div class="actions"><button class="btn btn-primary" type="button" id="server-run">Back up the server now</button></div>
     <ul class="rows" id="server-files"></ul>
   </section>

@@ -268,6 +268,15 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(resp.status, 400)
         resp, data = self.request("GET", "/api/backup/server")
         self.assertFalse(data["configured"])
+        with tempfile.TemporaryDirectory() as jobs:
+            os.makedirs(os.path.join(jobs, "requests"))
+            os.environ["STARBOARD_JOBS_DIR"] = jobs
+            try:
+                resp, data = self.request("POST", "/api/backup/server", {"with_prompt": True})
+                self.assertTrue(os.path.exists(os.path.join(jobs, "requests", "backup-with-prompt")))
+                self.assertEqual(data["status"]["status"], "waiting")
+            finally:
+                del os.environ["STARBOARD_JOBS_DIR"]
 
 
 class ConfigTest(unittest.TestCase):

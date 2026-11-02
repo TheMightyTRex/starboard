@@ -421,7 +421,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/backup/server" and method == "GET":
                 return self.json(200, backup.server_status())
             if path == "/api/backup/server" and method == "POST":
-                backup.request_server_backup()
+                backup.request_server_backup(bool(self.body().get("with_prompt")))
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()

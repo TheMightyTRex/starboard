@@ -105,7 +105,7 @@ async function loadServer() {
     const [label, tone] = STATUS_WORDS[s.status] || [s.status, "neutral"];
     const when = s.finished ? `Finished ${formatDate(s.finished * 1000, true)}` : s.started ? `Started ${formatDate(s.started * 1000, true)}` : "";
     box.replaceChildren(el("div", { class: "row" },
-      el("div", {}, el("p", { class: "row__title", text: "Last backup" }), el("p", { class: "row__meta", text: [when, s.summary].filter(Boolean).join(" · ") })),
+      el("div", {}, el("p", { class: "row__title", text: s.with_prompt ? "Last backup, with a rebuild prompt" : "Last backup" }), el("p", { class: "row__meta", text: [when, s.summary].filter(Boolean).join(" · ") })),
       el("div", { class: "row__side" }, chip(label, tone))));
     run.disabled = s.status === "running" || s.status === "waiting";
   } else {
@@ -126,7 +126,7 @@ startPage().then(() => {
   $("#restore-form").addEventListener("change", () => { pendingRestore = null; $("#restore-confirm").hidden = true; });
   $("#server-run").addEventListener("click", async () => {
     try {
-      await api("/api/backup/server", { method: "POST" });
+      await api("/api/backup/server", { method: "POST", body: { with_prompt: $("#with-prompt").checked } });
       announce("Server backup started");
       loadServer();
     } catch (e) { toast(e.message); }

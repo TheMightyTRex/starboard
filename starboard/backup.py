@@ -4,7 +4,8 @@ Starboard's settings: a JSON file with the apps, API keys, categories and settin
 sessions. Restoring saves a copy of the current settings first.
 
 Server backup: Starboard cannot read the whole server, so a job on the host does the work. Starboard only drops
-an empty file named "backup" into STARBOARD_JOBS_DIR/requests and reads STARBOARD_JOBS_DIR/backup.json
+an empty file into STARBOARD_JOBS_DIR/requests, named "backup", or "backup-with-prompt" to ask for a rebuild
+prompt for an AI assistant as well, and reads STARBOARD_JOBS_DIR/<that name>.json
 ({"status", "started", "finished", "summary"}) for the result. STARBOARD_BACKUP_DIR (read-only) lists the
 backup files that job made.
 """
@@ -89,6 +90,9 @@ def restore_saved(config, name):
 
 # Server backup through a host job ------------------------------------------------
 
+JOB_NAMES = ("backup", "backup-with-prompt")
+
+
 def jobs_dir():
     return os.environ.get("STARBOARD_JOBS_DIR", "")
 
@@ -101,29 +105,32 @@ def server_status():
     jobs, folder = jobs_dir(), backup_dir()
     status = None
     if jobs:
-        try:
-            with open(os.path.join(jobs, "backup.json"), encoding="utf-8") as f:
-                raw = json.load(f)
-            status = {k: raw.get(k) for k in ("status", "started", "finished", "summary", "exit")}
-        except (OSError, ValueError):
-            status = None
-        if os.path.exists(os.path.join(jobs, "requests", "backup")):
+        for job in JOB_NAMES:
+            try:
+                with open(os.path.join(jobs, f"{job}.json"), encoding="utf-8") as f:
+                    raw = json.load(f)
+            except (OSError, ValueError):
+                continue
+            if not status or (raw.get("started") or 0) > (status.get("started") or 0):
+                status = {k: raw.get(k) for k in ("status", "started", "finished", "summary", "exit")}
+                status["with_prompt"] = job == "backup-with-prompt"
+        if any(os.path.exists(os.path.join(jobs, "requests", job)) for job in JOB_NAMES):
             status = dict(status or {}, status="waiting")
     files = []
     if folder and os.path.isdir(folder):
         for path in glob.glob(os.path.join(folder, "*")):
-            if os.path.isfile(path) and re.search(r"\.(zip|tar|tar\.gz|tgz|gz|7z|dump|sql)$", path):
+            if os.path.isfile(path) and re.search(r"\.(zip|tar|tar\.gz|tgz|gz|7z|dump|sql|md)$", path):
                 files.append({"name": os.path.basename(path), "size": os.path.getsize(path), "modified": os.path.getmtime(path)})
         files.sort(key=lambda f: f["modified"], reverse=True)
     return {"can_run": bool(jobs) and os.access(os.path.join(jobs, "requests"), os.W_OK),
             "configured": bool(jobs or folder), "status": status, "files": files[:50]}
 
 
-def request_server_backup():
+def request_server_backup(with_prompt=False):
     jobs = jobs_dir()
     if not jobs:
         raise ConfigError("No server backup job is set up. See Backup and restore in the README")
-    path = os.path.join(jobs, "requests", "backup")
+    path = os.path.join(jobs, "requests", "backup-with-prompt" if with_prompt else "backup")
     try:
         with open(path, "w"):
             pass

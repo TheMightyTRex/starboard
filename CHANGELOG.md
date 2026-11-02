@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8 (2 November 2026)
+
+- Backup and restore: an option to include a rebuild prompt for an AI assistant with the server backup
+  (the job is asked for `backup-with-prompt`). The page says what the server backup covers.
+
 ## 0.1.7 (2 November 2026)
 
 - Storage: each folder has a tag with its filesystem, such as ext4, NTFS or mergerfs.

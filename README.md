@@ -90,8 +90,9 @@ For the whole server, Starboard works with a backup job that runs on the host, s
 server itself. Point it at two folders in `compose.override.yaml` and `.env`:
 
 - `STARBOARD_JOBS_DIR`: a folder with a `requests` folder inside. **Back up the server now** creates an empty
-  file named `backup` in `requests`; your job (for example a systemd path unit) runs, removes it, and writes
-  `backup.json` with `status` (`running`, `done` or `failed`), `started`, `finished` and `summary`.
+  file in `requests`: `backup`, or `backup-with-prompt` when **Include a rebuild prompt for an AI assistant** is
+  ticked. Your job (for example a systemd path unit) runs, removes it, and writes `backup.json` (or
+  `backup-with-prompt.json`) with `status` (`running`, `done` or `failed`), `started`, `finished` and `summary`.
   Mount the folder read-only and its `requests` folder read-write.
 - `STARBOARD_BACKUP_DIR`: where the job saves its files, mounted read-only, so the page can list them.
 
