@@ -220,8 +220,13 @@ if [ "$DISKS_GIVEN" = 0 ]; then
     fi
   fi
 fi
+# Values go into .env and compose.access.yaml: refuse characters that would break those files.
+safe_value() { case "$1" in *[\|\&\\\"\'\$\`]*|*$'\n'*) return 1 ;; esac; return 0; }
+if [ -n "$LIVETV" ] && ! safe_value "$LIVETV"; then fail "the Live TV folder's name has a character Starboard cannot use (| & \\ \" ' \$ \`)"; fi
+if ! safe_value "$PWD"; then fail "this folder's path has a character Starboard cannot use (| & \\ \" ' \$ \`); move it"; fi
 if [ "$DISKS_GIVEN" != skip ]; then
   for d in "${DISKS[@]+"${DISKS[@]}"}"; do
+    safe_value "$d" || fail "a folder name has a character Starboard cannot use (| & \\ \" ' \$ \`): $d"
     [[ "$d" =~ ^[^=,]+=/[^,]*$ ]] || fail "write each folder as Name=/path, with no commas: $d"
     [ -d "${d#*=}" ] || fail "there is no folder ${d#*=}"
   done

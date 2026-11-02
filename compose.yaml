@@ -25,6 +25,8 @@ services:
       - STARBOARD_CGROUP=${STARBOARD_CGROUP:-}
       - STARBOARD_IPTV_DIR=${STARBOARD_IPTV_DIR:-}
       - STARBOARD_TRUST_PROXY=${STARBOARD_TRUST_PROXY:-0}
+      - STARBOARD_PROXY_ADDRESSES=${STARBOARD_PROXY_ADDRESSES:-}
+      - STARBOARD_ALLOWED_HOSTS=${STARBOARD_ALLOWED_HOSTS:-}
     volumes:
       - ./data:/data
       # Your own folders (Storage, Disk health) go in compose.override.yaml, which updates leave alone.

@@ -24,7 +24,8 @@ def check_password(password, stored):
         algo, iterations, salt, digest = stored.split("$")
         if algo != "pbkdf2_sha256":
             return False
-        test = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), int(iterations))
+        with _HASHING:
+            test = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), int(iterations))
         return hmac.compare_digest(test.hex(), digest)
     except (ValueError, AttributeError):
         return False
@@ -95,24 +96,36 @@ class Sessions:
             self._save()
 
 
+_HASHING = threading.BoundedSemaphore(2)  # at most two password checks at once: each takes about 0.3 s
+
+
 class RateLimit:
-    """At most `limit` failed sign-ins per address in `window` seconds."""
+    """At most `limit` sign-in attempts per address in `window` seconds, counted before the password is checked,
+    so attempts sent all at once cannot get past it. A right password clears the address's count."""
 
     def __init__(self, limit=5, window=900):
         self.limit, self.window = limit, window
         self.failures = {}
         self.lock = threading.Lock()
 
-    def blocked(self, address):
+    def attempt(self, address):
+        """Records an attempt and says whether it may go ahead."""
         with self.lock:
             now = time.time()
             recent = [t for t in self.failures.get(address, []) if now - t < self.window]
+            if len(recent) >= self.limit:
+                self.failures[address] = recent
+                return False
+            recent.append(now)
             self.failures[address] = recent
-            return len(recent) >= self.limit
+            if len(self.failures) > 10000:  # many addresses: forget the ones with nothing recent
+                self.failures = {a: ts for a, ts in self.failures.items() if ts and now - ts[-1] < self.window}
+            return True
 
-    def fail(self, address):
+    def blocked(self, address):
         with self.lock:
-            self.failures.setdefault(address, []).append(time.time())
+            now = time.time()
+            return len([t for t in self.failures.get(address, []) if now - t < self.window]) >= self.limit
 
     def clear(self, address):
         with self.lock:

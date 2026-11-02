@@ -56,8 +56,13 @@ startPage().then((session) => {
         const found = await api("/api/jellyfin/detect").catch(() => null);
         if (found?.found) { location.href = "/settings-jellyfin.html?welcome=1"; return; }
       }
-      const next = new URLSearchParams(location.search).get("next") || "/index.html";
-      location.href = /^\/(?![/\\])/.test(next) ? next : "/index.html";
+      // Only a page on this dashboard: the address is resolved first, so tricks like "/\t/evil.example" fail.
+      let next = "/index.html";
+      try {
+        const asked = new URL(new URLSearchParams(location.search).get("next") || "/index.html", location.origin);
+        if (asked.origin === location.origin) next = asked.pathname + asked.search + asked.hash;
+      } catch { /* not an address: go to Apps */ }
+      location.href = next;
     } catch (err) {
       const m = err.message;
       if (!setup) showFieldError(form.password, /not right/i.test(m) ? "That password is not right. Check Caps Lock and try again." : m);

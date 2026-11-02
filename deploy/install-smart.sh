@@ -20,7 +20,7 @@ cat > /etc/systemd/system/starboard-smart.service <<UNIT
 Description=Save SMART reports for Starboard
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/starboard-smart $OUT
+ExecStart=/usr/local/bin/starboard-smart "$OUT"
 UNIT
 cat > /etc/systemd/system/starboard-smart.timer <<UNIT
 [Unit]

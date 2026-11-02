@@ -17,7 +17,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import access, auth, backup, containers, icons, jobs, livetv, migrate, posters, schedule, services, sysinfo, watch
-from .config import Config, ConfigError, new_setup_token, validate_service
+from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(ROOT, "web")
@@ -96,11 +96,15 @@ class App:
             self.jobs.ensure()
         self.importing = None  # the watch history import that is running, if any
         self.import_result = None
+        self.import_lock = threading.Lock()
         self.schedule = schedule.Schedule(self.config)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
         self.repo = os.environ.get("STARBOARD_REPO", "")  # "owner/name" for the update check; optional
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
+        self.machine_name = socket.gethostname().split(".", 1)[0].lower()
+        self.allowed_hosts = {h.strip().lower() for h in os.environ.get("STARBOARD_ALLOWED_HOSTS", "").split(",") if h.strip()}
+        self.proxy_addresses = {"127.0.0.1", "::1", *[a.strip() for a in os.environ.get("STARBOARD_PROXY_ADDRESSES", "").split(",") if a.strip()]}
         self.port = int(os.environ.get("STARBOARD_PORT", "8095"))
         self.forced_host = os.environ.get("STARBOARD_HOST", "")  # when set, Settings cannot change the address
         self.on_network_change = None  # set by the runner in __main__
@@ -119,6 +123,17 @@ class App:
             os.remove(os.path.join(data_dir, "setup-token"))
         except FileNotFoundError:
             pass
+
+    def host_allowed(self, name):
+        if not name or name in ("localhost",) or name.endswith(".localhost") or name in self.allowed_hosts:
+            return True
+        try:
+            ipaddress.ip_address(name)
+            return True
+        except ValueError:
+            pass
+        first = name.split(".", 1)[0]
+        return first == self.machine_name or any(name.endswith("." + h) for h in self.allowed_hosts if h.startswith("."))
 
     def listen_host(self):
         if self.forced_host:
@@ -188,6 +203,7 @@ def is_loopback(address):
 
 
 class Handler(BaseHTTPRequestHandler):
+    timeout = 30  # an idle or slow connection is closed after 30 seconds, so it cannot hold a thread for ever
     server_version = "Starboard"
     sys_version = ""
     app: App = None  # set by make_server
@@ -202,7 +218,8 @@ class Handler(BaseHTTPRequestHandler):
         print(f"[starboard] {self.command} {path} {args[1] if len(args) > 1 else ''}", flush=True)
 
     def client_address_text(self):
-        if self.app.trust_proxy:
+        # X-Forwarded-For is believed only from the proxy itself (this computer, or STARBOARD_PROXY_ADDRESSES).
+        if self.app.trust_proxy and self.client_address[0] in self.app.proxy_addresses:
             forwarded = self.headers.get("X-Forwarded-For", "")
             if forwarded:
                 return forwarded.split(",")[0].strip()
@@ -244,7 +261,7 @@ class Handler(BaseHTTPRequestHandler):
         self.json(status, {"error": message})
 
     def body(self, limit=MAX_BODY):
-        length = int(self.headers.get("Content-Length") or 0)
+        length = self.content_length()
         if length > limit:
             raise ValueError("That request is too large")
         raw = self.rfile.read(length) if length else b"{}"
@@ -252,6 +269,14 @@ class Handler(BaseHTTPRequestHandler):
         if not isinstance(data, dict):
             raise ValueError("Send a JSON object")
         return data
+
+    def content_length(self):
+        """The declared body size: a whole number from 0 up, or the request is refused (never read to the end)."""
+        raw = (self.headers.get("Content-Length") or "0").strip()
+        if not raw.isdigit():
+            self.close_connection = True
+            raise ValueError("Send a Content-Length of 0 or more")
+        return int(raw)
 
     def token(self):
         jar = cookies.SimpleCookie()
@@ -297,8 +322,22 @@ class Handler(BaseHTTPRequestHandler):
         self.send(403, b"This dashboard only accepts connections from the computer it runs on.", "text/plain; charset=utf-8")
         return True
 
+    def host_refused(self):
+        """Answers only to names it knows (an IP address, localhost, this computer's name or STARBOARD_ALLOWED_HOSTS),
+        so a web page cannot reach Starboard through a domain name it controls (DNS rebinding)."""
+        host = (self.headers.get("Host") or "").strip().lower()
+        if host.startswith("["):
+            name = host[1:host.find("]")] if "]" in host else host
+        else:
+            name = host.rsplit(":", 1)[0] if host.count(":") == 1 else host
+        if self.app.host_allowed(name):
+            return False
+        self.send(421, f"Starboard does not answer to the name {name[:80]}. Use its address, or add the name to "
+                       "STARBOARD_ALLOWED_HOSTS on the server.".encode(), "text/plain; charset=utf-8")
+        return True
+
     def do_GET(self):
-        if self.local_only_refused():
+        if self.local_only_refused() or self.host_refused():
             return
         path = urllib.parse.urlparse(self.path).path
         if path == "/healthz":
@@ -339,7 +378,7 @@ class Handler(BaseHTTPRequestHandler):
         self.mutating("DELETE")
 
     def mutating(self, method):
-        if self.local_only_refused():
+        if self.local_only_refused() or self.host_refused():
             return
         path = urllib.parse.urlparse(self.path).path
         if not path.startswith("/api/"):
@@ -349,6 +388,8 @@ class Handler(BaseHTTPRequestHandler):
         self.api(method, path)
 
     def static(self, path):
+        if "/." in path or "\\" in path:  # no dot-dot or hidden files: the sign-in check reads the path as given
+            return self.send(404, b"Not found", "text/plain; charset=utf-8")
         if path == "/":
             path = "/index.html"
         if not path.endswith(".html") and "." not in posixpath.basename(path):
@@ -436,6 +477,8 @@ class Handler(BaseHTTPRequestHandler):
                 incoming = self.body()
                 stored = cfg.service(incoming.get("id", "")) if incoming.get("id") else None
                 if stored and not incoming.get("api_key"):
+                    if not same_server(stored.get("url", ""), str(incoming.get("url", ""))):
+                        return self.error(400, "The address points to a different server, so enter the API key to test it")
                     incoming["api_key"] = stored.get("api_key", "")
                 candidate = validate_service(incoming)
                 candidate["id"] = candidate.get("id") or "test"
@@ -616,6 +659,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(502, str(e))
         except containers.DockerError as e:
             return self.error(502, str(e))
+        except (TypeError, KeyError, AttributeError) as e:  # a request of the wrong shape, or a damaged file
+            print(f"[starboard] {method} {path}: {type(e).__name__}: {e}", flush=True)
+            return self.error(400, "That request could not be used. Check what was sent")
 
     def icon(self, service_id):
         service = self.app.config.service(service_id)
@@ -652,9 +698,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(400, "Enter the token or API key")
         if kind not in ("plex", "emby", "jellyfin"):
             return self.error(400, "Choose where to import from")
-        if app.importing:
-            return self.error(409, "An import is already running")
-        app.importing = {"kind": kind, "started": time.time()}
+        with app.import_lock:
+            if app.importing:
+                return self.error(409, "An import is already running")
+            app.importing = {"kind": kind, "started": time.time()}
 
         def work():
             try:
@@ -678,11 +725,13 @@ class Handler(BaseHTTPRequestHandler):
         kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("kind", [""])[0]
         if kind not in ("plexdb", "json"):
             return self.error(400, "Choose a Plex database file or a history file")
-        length = int(self.headers.get("Content-Length") or 0)
+        length = self.content_length()
         if not 0 < length <= 8 * 1024 ** 3:
             return self.error(400, "Choose a file up to 8 GB")
-        if app.importing:
-            return self.error(409, "An import is already running")
+        with app.import_lock:  # claim the import before reading the upload, so two cannot write one file
+            if app.importing:
+                return self.error(409, "An import is already running")
+            app.importing = {"kind": kind, "started": time.time(), "state": "uploading"}
         target = os.path.join(migrate.folder(app.config.data_dir), "upload.db" if kind == "plexdb" else "upload.json")
         with open(os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb") as f:
             left = length
@@ -692,6 +741,9 @@ class Handler(BaseHTTPRequestHandler):
                     break
                 f.write(chunk)
                 left -= len(chunk)
+        if left:
+            app.importing = None
+            return self.error(400, "The upload stopped before the end")
         app.importing = {"kind": kind, "started": time.time()}
 
         def work():
@@ -716,11 +768,10 @@ class Handler(BaseHTTPRequestHandler):
         if not app.needs_setup:
             return self.error(409, "A password is already set. Sign in instead")
         address = self.client_address_text()
-        if app.limits.blocked(address):
+        if not app.limits.attempt(address):
             return self.error(429, "Too many attempts. Wait 15 minutes and try again")
         data = self.body()
         if not app.setup_token or not auth.hmac.compare_digest(str(data.get("token", "")).strip(), app.setup_token):
-            app.limits.fail(address)
             return self.error(403, "The setup code is not right. Find it in the installer's output or the server log")
         password = str(data.get("password", ""))
         problem = auth.password_problem(password)
@@ -732,16 +783,16 @@ class Handler(BaseHTTPRequestHandler):
         app.config.save()
         app.setup_token = None
         App._remove_setup_token(app.config.data_dir)
+        app.limits.clear(address)
         return self.json(200, {"ok": True}, self.new_session(bool(data.get("remember"))))
 
     def login(self):
         app = self.app
         address = self.client_address_text()
-        if app.limits.blocked(address):
+        if not app.limits.attempt(address):
             return self.error(429, "Too many attempts. Wait 15 minutes and try again")
         data = self.body()
         if app.needs_setup or not auth.check_password(str(data.get("password", "")), app.config.data["auth"]["password_hash"]):
-            app.limits.fail(address)
             return self.error(401, "That password is not right")
         app.limits.clear(address)
         return self.json(200, {"ok": True}, self.new_session(bool(data.get("remember"))))
@@ -750,21 +801,21 @@ class Handler(BaseHTTPRequestHandler):
         """Downloading or restoring settings needs the password again: the file holds API keys."""
         app = self.app
         address = self.client_address_text()
-        if app.limits.blocked(address):
+        if not app.limits.attempt(address):
             raise PasswordProblem(429, "Too many attempts. Wait 15 minutes and try again")
         if not auth.check_password(str(data.get("password", "")), app.config.data["auth"]["password_hash"]):
-            app.limits.fail(address)
             raise PasswordProblem(401, "That password is not right")
+        app.limits.clear(address)
 
     def change_password(self):
         app = self.app
         address = self.client_address_text()
-        if app.limits.blocked(address):
+        if not app.limits.attempt(address):
             return self.error(429, "Too many attempts. Wait 15 minutes and try again")
         data = self.body()
         if not auth.check_password(str(data.get("current", "")), app.config.data["auth"]["password_hash"]):
-            app.limits.fail(address)
             return self.error(401, "Your current password is not right")
+        app.limits.clear(address)
         new = str(data.get("new", ""))
         problem = auth.password_problem(new)
         if problem:
@@ -777,9 +828,27 @@ class Handler(BaseHTTPRequestHandler):
         return self.json(200, {"ok": True}, self.new_session(remember))
 
 
+class BoundedServer(ThreadingHTTPServer):
+    """At most 64 requests at once; more wait their turn (a home dashboard never needs more)."""
+    request_queue_size = 64
+    _slots = threading.BoundedSemaphore(64)
+
+    def process_request(self, request, client_address):
+        if not self._slots.acquire(timeout=10):
+            self.shutdown_request(request)
+            return
+        super().process_request(request, client_address)
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._slots.release()
+
+
 def make_server(host, port, data_dir_or_app):
     app = data_dir_or_app if isinstance(data_dir_or_app, App) else App(data_dir_or_app)
     handler = type("BoundHandler", (Handler,), {"app": app})
-    server = ThreadingHTTPServer((host, port), handler)
+    server = BoundedServer((host, port), handler)
     server.daemon_threads = True
     return server, app

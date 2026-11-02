@@ -64,9 +64,46 @@ def pillow():
         return False
 
 
-def fetch(url, ua="Starboard", timeout=120):
+MAX_DOWNLOAD = 200 * 1024 * 1024  # a guide is about 30 MB; anything far bigger is refused
+MAX_UNPACKED = 600 * 1024 * 1024
+
+
+def fetch(url, ua="Starboard", timeout=120, limit=MAX_DOWNLOAD):
+    """Downloads an http(s) address, refusing anything else or anything larger than the limit."""
+    if not url.lower().startswith(("https://", "http://")):
+        raise ValueError("Only http and https addresses")
     with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=timeout) as r:
-        return r.read()
+        data = r.read(limit + 1)
+    if len(data) > limit:
+        raise ValueError("The download is too large")
+    return data
+
+
+def _gunzip(data):
+    """Unpacks gzip data, stopping at MAX_UNPACKED (a small file that unpacks to gigabytes is refused)."""
+    with gzip.GzipFile(fileobj=io.BytesIO(data)) as g:
+        out = g.read(MAX_UNPACKED + 1)
+    if len(out) > MAX_UNPACKED:
+        raise ValueError("The file unpacks to too much")
+    return out
+
+
+def _xml_events(data):
+    """Parses a gzip'd XMLTV guide, refusing any DOCTYPE (no entities, so no entity bombs)."""
+    raw = _gunzip(data)
+    if b"<!DOCTYPE" in raw[:4096] or b"<!ENTITY" in raw[:65536]:
+        raise ValueError("The guide has a DOCTYPE, which Starboard does not accept")
+    return ET.iterparse(io.BytesIO(raw))
+
+
+def _clean(text, limit=200):
+    """Text that goes into a playlist line: no line breaks, control characters or double quotes."""
+    return re.sub(r'[\x00-\x1f\x7f"]', "", str(text or ""))[:limit]
+
+
+def _clean_url(url):
+    url = _clean(url, 600)
+    return url if url.lower().startswith(("https://", "http://")) else ""
 
 
 def _write(path, text):
@@ -89,6 +126,8 @@ def adult(v):
 
 def plays(url, ua):
     """A stream plays when its playlist, a quality variant and that variant's first video segment all load."""
+    if not str(url).lower().startswith(("https://", "http://")):
+        return False
     try:
         with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=15) as r:
             base, text = r.url, r.read(200000).decode("utf-8", "replace")
@@ -115,16 +154,17 @@ def plays(url, ua):
 
 
 def _entry(cid, v, chno, group, url):
-    name = v["name"].replace('"', "'")
-    return (f'#EXTINF:-1 tvg-id="{cid}" tvg-name="{name}" tvg-logo="{v.get("logo", "")}" tvg-chno="{chno}" '
-            f'group-title="{group}",{name}\n{url}')
+    """One playlist entry. Everything from the channel lists is cleaned, so it cannot add lines of its own."""
+    name = _clean(str(v.get("name", "")).replace('"', "'"))
+    return (f'#EXTINF:-1 tvg-id="{_clean(cid, 80)}" tvg-name="{name}" tvg-logo="{_clean_url(v.get("logo", ""))}" '
+            f'tvg-chno="{int(chno)}" group-title="{_clean(group)}",{name}\n{_clean_url(url)}')
 
 
 def _filtered_guide(sources, ids, out):
     root = ET.Element("tv", {"generator-info-name": "Starboard"})
     keep = []
     for url in sources:
-        for _, el in ET.iterparse(gzip.GzipFile(fileobj=io.BytesIO(fetch(url, timeout=300)))):
+        for _, el in _xml_events(fetch(url, timeout=300)):
             if el.tag in ("channel", "programme") and (el.get("id") if el.tag == "channel" else el.get("channel")) in ids:
                 keep.append(el)
             elif el.tag in ("channel", "programme"):
@@ -137,7 +177,7 @@ def _filtered_guide(sources, ids, out):
 
 
 def _channels_json(service):
-    return json.loads(gzip.decompress(fetch(f"{RAW}/{service}/.channels.json.gz")))
+    return json.loads(_gunzip(fetch(f"{RAW}/{service}/.channels.json.gz")))
 
 
 # The playlists and guides -----------------------------------------------------------------
@@ -151,7 +191,7 @@ def build_guide(d):
     root = ET.Element("tv", {"generator-info-name": "Starboard (from epgshare01)"})
     channels, programmes, seen = [], [], set()
     for url in GUIDES:
-        for _, el in ET.iterparse(gzip.GzipFile(fileobj=io.BytesIO(fetch(url, timeout=300)))):
+        for _, el in _xml_events(fetch(url, timeout=300)):
             if el.tag == "channel" and el.get("id") in wanted and el.get("id") not in seen:
                 seen.add(el.get("id"))
                 channels.append(el)
@@ -248,8 +288,11 @@ def pluto_url(channel_id):
                                         "deviceModel": "web", "deviceMake": "chrome", "deviceType": "web",
                                         "clientID": str(uuid.uuid4()), "clientModelNumber": "1.0.0",
                                         "serverSideAds": "false", "drmCapabilities": ""})
-            b = json.loads(fetch(f"https://boot.pluto.tv/v4/start?{q}", ua="Mozilla/5.0", timeout=20))
-            _pluto.update(stitcher=b["servers"]["stitcher"], params=b["stitcherParams"], jwt=b["sessionToken"],
+            b = json.loads(fetch(f"https://boot.pluto.tv/v4/start?{q}", ua="Mozilla/5.0", timeout=20, limit=1_000_000))
+            stitcher = str(b["servers"]["stitcher"]).rstrip("/")
+            if not re.match(r"^https://[a-z0-9.-]+\.pluto\.tv$", stitcher):
+                raise ValueError("Pluto sent an unexpected stream server")
+            _pluto.update(stitcher=stitcher, params=b["stitcherParams"], jwt=b["sessionToken"],
                           exp=time.time() + int(b.get("refreshInSec", 3600)) - 600)
         return (f'{_pluto["stitcher"]}/v2/stitch/hls/channel/{channel_id}/master.m3u8?{_pluto["params"]}'
                 f'&jwt={_pluto["jwt"]}&masterJWTPassthrough=true')
@@ -287,8 +330,14 @@ def logo_key(ch):
 
 def whiten(data):
     """A logo turned white on a transparent 400 by 225 canvas. Raises ValueError for a photo or a blank image."""
+    import warnings
     from PIL import Image
-    im = Image.open(io.BytesIO(data)).convert("RGBA")
+    Image.MAX_IMAGE_PIXELS = 16_000_000  # a logo is small; a huge image (a decompression bomb) is refused
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", Image.DecompressionBombWarning)
+        im = Image.open(io.BytesIO(data))
+        im.load()
+    im = im.convert("RGBA")
     im.thumbnail((400, 400))
     w, h = im.size
     px = im.load()
@@ -380,7 +429,7 @@ def _make_logo(ch, logos, white):
     try:
         if not src:
             raise ValueError("no logo")
-        png = whiten(fetch(src, ua="Mozilla/5.0", timeout=20))
+        png = whiten(fetch(src, ua="Mozilla/5.0", timeout=20, limit=5_000_000))
     except Exception as e:
         if "429" in str(e):  # rate limited: keep what is there, try again next time
             return key, os.path.exists(path)

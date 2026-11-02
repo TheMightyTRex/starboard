@@ -223,7 +223,12 @@ def read_media_server(url, api_key, name="Emby"):
     return accounts
 
 
+MAX_HISTORY_FILE = 512 * 1024 * 1024
+
+
 def read_file(path):
+    if os.path.getsize(path) > MAX_HISTORY_FILE:
+        raise ValueError("That history file is larger than 512 MB")
     data = _load(path, None)
     if not isinstance(data, dict) or not isinstance(data.get("accounts"), dict):
         raise ValueError("This is not a watch history file")
@@ -256,6 +261,9 @@ def status(data_dir, services):
     lower = {u.lower(): u for u in users}
     accounts = []
     for name, entries in (history.get("accounts") or {}).items():
+        if not isinstance(entries, list):
+            continue
+        entries = [e for e in entries if isinstance(e, dict)]
         target = mapping.get(name, "")
         accounts.append({"name": name, "films": sum(e["type"] == "movie" for e in entries),
                          "episodes": sum(e["type"] == "episode" for e in entries),

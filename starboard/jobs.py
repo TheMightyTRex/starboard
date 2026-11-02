@@ -25,6 +25,7 @@ class Jobs:
         self.app = app
         self.path = os.path.join(app.config.data_dir, "jobs.json")
         self.lock = threading.Lock()
+        self.file_lock = threading.Lock()
         self.running = set()
         self.wake = threading.Event()
         self.thread = None
@@ -52,7 +53,7 @@ class Jobs:
             return {}
 
     def _record(self, key, **values):
-        with self.lock:
+        with self.file_lock:
             data = self._load()
             data.setdefault(key, {}).update(values)
             tmp = self.path + ".tmp"
@@ -63,9 +64,10 @@ class Jobs:
     # Running ------------------------------------------------------------------------------
 
     def run(self, key, force=False):
-        if key in self.running:
-            return
-        self.running.add(key)
+        with self.lock:  # one run of each job at a time, however many clicks
+            if key in self.running:
+                return
+            self.running.add(key)
         self._record(key, started=time.time(), state="running")
         services = self.app.config.data["services"]
         try:

@@ -163,6 +163,10 @@ class Config:
             current = self.service(clean["id"]) if incoming.get("id") else None
             if current:
                 if not clean.get("api_key"):
+                    # A saved key goes only to the server it was saved for: a new address needs the key again,
+                    # so a stolen session cannot point an app elsewhere and collect its key.
+                    if current.get("api_key") and not same_server(current.get("url", ""), clean.get("url", "")):
+                        raise ConfigError("The address points to a different server, so enter the API key again")
                     clean["api_key"] = current.get("api_key", "")
                 current.clear()
                 current.update(clean)
@@ -264,6 +268,13 @@ class Config:
             self.save()
 
 
+def same_server(a, b):
+    """True when two addresses reach the same server: the same scheme, host and port."""
+    import urllib.parse
+    pa, pb = urllib.parse.urlsplit(a or ""), urllib.parse.urlsplit(b or "")
+    return (pa.scheme, pa.hostname, pa.port) == (pb.scheme, pb.hostname, pb.port)
+
+
 def clean_extras(incoming, current):
     if not isinstance(incoming, dict):
         raise ConfigError("Send the Jellyfin job settings as an object")
@@ -310,6 +321,8 @@ def clean_watch(incoming, current):
             url = str(ch["url"]).strip()[:300]
             if url and not re.match(r"^https?://[^\s/]+(/\S*)?$", url):
                 raise ConfigError("The alert address must start with http:// or https:// and have no spaces")
+            if out["channel"].get("token") and not same_server(out["channel"].get("url", ""), url) and not ch.get("token"):
+                out["channel"]["token"] = ""  # the saved token goes only to the server it was saved for
             out["channel"]["url"] = url
         if ch.get("token"):  # blank keeps the saved token
             out["channel"]["token"] = str(ch["token"]).strip()[:300]

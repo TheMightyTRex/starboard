@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.5 (not released yet): security fixes
+
+From a full security check. No critical issues; these are fixed:
+
+- A request with a negative size could make Starboard read without end and use up memory, signed out. Refused now.
+- Password guesses sent all at once got past the 5-attempt limit. Attempts are now counted before the check, and
+  at most two password checks run at once. X-Forwarded-For is believed only from the proxy itself.
+- The sign-in page's "next" address could send you to another site. Only pages on this dashboard now.
+- A saved API key or alert token is not reused when an address points to a different server, and keys are not
+  carried across a redirect to another server.
+- Apps, Updates: Compose details from container labels are strictly checked and quoted, the folder can never be
+  /, and the helper image is pinned to one exact build.
+- Dot-dot paths, idle connections (closed after 30 seconds, 64 requests at most), malformed requests, unknown
+  host names (DNS rebinding; STARBOARD_ALLOWED_HOSTS adds names), size limits on uploads and downloads, Live TV
+  channel data cleaned, Pluto's stream server checked, XML guides with a DOCTYPE refused, Pillow image limits.
+- Installer: names with characters that would break .env or Compose files are refused. The disk health job
+  writes in a private folder and never follows a planted link.
+
 ## 0.3.4 (2 November 2026)
 
 - Every setting that uses processor time or memory says what it costs, measured on a home server, so a small

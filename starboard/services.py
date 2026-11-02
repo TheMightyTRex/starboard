@@ -16,6 +16,28 @@ from . import posters
 from .config import SERVICE_TYPES
 
 TIMEOUT = 8
+
+
+class _KeepKeysHome(urllib.request.HTTPRedirectHandler):
+    """Follows a redirect, but never carries an app's key to a different server."""
+    SECRET = ("authorization", "x-api-key", "x-emby-token", "x-plex-token")
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None:
+            old_host = urllib.parse.urlsplit(req.full_url)
+            new_host = urllib.parse.urlsplit(newurl)
+            if (old_host.scheme, old_host.hostname, old_host.port) != (new_host.scheme, new_host.hostname, new_host.port):
+                for name in list(new.headers):
+                    if name.lower() in self.SECRET:
+                        del new.headers[name]
+                if "apikey=" in newurl.lower() or "token=" in newurl.lower():
+                    return None  # a key in the address itself: do not follow
+        return new
+
+
+# Every request Starboard makes goes through this opener.
+urllib.request.install_opener(urllib.request.build_opener(_KeepKeysHome))
 USER_AGENT = "Starboard"
 class _LazyPool:
     """A thread pool that starts its threads only when the first job arrives, and never more than 6."""

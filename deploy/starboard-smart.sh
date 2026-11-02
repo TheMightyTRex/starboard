@@ -6,16 +6,28 @@
 #   Install: sudo deploy/install-smart.sh /path/to/folder
 set -eu
 OUT="${1:?usage: starboard-smart.sh FOLDER}"
+# This runs as root in a folder its owner can write to, so it never follows a link someone planted there:
+# reports are made in a private temporary folder and renamed into place (a rename replaces a link, it does not
+# write through it), and the folders it writes in must be real folders.
+for d in "$OUT" "$OUT/current"; do
+  if [ -L "$d" ]; then echo "Stopped: $d is a link"; exit 1; fi
+done
 mkdir -p "$OUT/current" "$OUT/requests"
+chown root:root "$OUT/current" && chmod 755 "$OUT/current"
 rm -f "$OUT/requests/read"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
 # Drives and partitions: names, sizes, file systems and where they are mounted.
-lsblk -J -b -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS,LABEL,MODEL,SERIAL > "$OUT/.lsblk.tmp" 2>/dev/null && mv "$OUT/.lsblk.tmp" "$OUT/lsblk.json" && chmod 644 "$OUT/lsblk.json" || rm -f "$OUT/.lsblk.tmp"
+if lsblk -J -b -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS,LABEL,MODEL,SERIAL > "$WORK/lsblk.json" 2>/dev/null; then
+  chmod 644 "$WORK/lsblk.json"
+  mv -f "$WORK/lsblk.json" "$OUT/lsblk.json"
+fi
 for dev in /sys/block/sd* /sys/block/nvme*n*; do
   [ -e "$dev" ] || continue
   name="$(basename "$dev")"
-  tmp="$OUT/current/.$name.tmp"
+  tmp="$WORK/$name.json"
   # -n standby: do not wake sleeping disks just to read them.
   smartctl -x -j -n standby "/dev/$name" > "$tmp" 2>/dev/null || true
   serial="$(sed -n 's/.*"serial_number": *"\([^"]*\)".*/\1/p' "$tmp" | head -n 1 | tr -cd 'A-Za-z0-9_-')"
-  if [ -n "$serial" ]; then mv "$tmp" "$OUT/current/$serial.json"; chmod 644 "$OUT/current/$serial.json"; else rm -f "$tmp"; fi
+  if [ -n "$serial" ]; then chmod 644 "$tmp"; mv -f "$tmp" "$OUT/current/$serial.json"; fi
 done

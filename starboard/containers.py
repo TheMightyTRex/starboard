@@ -26,7 +26,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-HELPER_IMAGE = "docker:27-cli"
+# docker:27-cli, pinned to one exact build: it gets the Docker socket, so a changed tag must not change what runs.
+HELPER_IMAGE = "docker@sha256:851f91d241214e7c6db86513b270d58776379aacc5eb9c4a87e5b47115e3065c"
+NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 SEMVER = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 ACCEPT = ", ".join(["application/vnd.oci.image.index.v1+json", "application/vnd.docker.distribution.manifest.list.v2+json",
                     "application/vnd.docker.distribution.manifest.v2+json", "application/vnd.oci.image.manifest.v1+json"])
@@ -117,6 +119,12 @@ def containers(light=False):
         except DockerError:
             info = {}
         conf = info.get("Config") or {}
+
+        def own(key):
+            # Labels can come from the image itself (Compose stamps the images it builds), so they are only trusted
+            # after _compose checks every name, the folder and the files; a made-up label can then at most name a
+            # Compose project already on this computer, never run a command.
+            return labels.get(key, "")
         tag = parse_ref(ref)[2]
         version = version_of(conf.get("Labels"), conf.get("Env")) or (tag if tag != "latest" else "")
         out.append({
@@ -124,11 +132,27 @@ def containers(light=False):
             "state": c.get("State", ""), "status": c.get("Status", ""),
             "version": version, "created": (info.get("Created") or "")[:10],
             "digests": info.get("RepoDigests") or [],
-            "service": labels.get("com.docker.compose.service", ""), "project": labels.get("com.docker.compose.project", ""),
-            "folder": labels.get("com.docker.compose.project.working_dir", ""),
-            "files": [f for f in labels.get("com.docker.compose.project.config_files", "").split(",") if f],
+            **_compose(own("com.docker.compose.service"), own("com.docker.compose.project"),
+                       own("com.docker.compose.project.working_dir"), own("com.docker.compose.project.config_files")),
         })
     return out
+
+
+def _compose(service, project, folder, files):
+    """The Compose details Starboard may use, or blanks: every name strictly checked, the folder a real project
+    folder (never /), and every Compose file inside it."""
+    import posixpath
+    blank = {"service": "", "project": "", "folder": "", "files": []}
+    if not (NAME_RE.match(service or "") and NAME_RE.match(project or "")):
+        return blank
+    folder = folder or ""
+    if not folder.startswith("/") or posixpath.normpath(folder) != folder or folder.count("/") < 2:
+        return blank
+    names = [f for f in (files or "").split(",") if f]
+    for f in names:
+        if posixpath.normpath(f) != f or not f.startswith(folder + "/") or not f.endswith((".yml", ".yaml")) or "'" in f:
+            return blank
+    return {"service": service, "project": project, "folder": folder, "files": names}
 
 
 def _simple(text):
@@ -384,7 +408,8 @@ def _run(names):
             stamp = time.strftime("%Y-%m-%d-%H%M")
             for n in group:
                 svc = found[n]["service"]
-                steps.append(f"if [ -f starboard-before-update/{svc}.sh ]; then sh starboard-before-update/{svc}.sh; fi")
+                hook = _quote(f"starboard-before-update/{svc}.sh")
+                steps.append(f"if [ -f {hook} ]; then sh {hook}; fi")
                 if n in targets:
                     old = found[n]["image"]
                     new = old.rsplit(":", 1)[0] + ":" + targets[n]
@@ -438,8 +463,7 @@ def update(services, ids):
         _state["job"] = {"started": time.time(), "finished": False, "log": "",
                          "items": {n: {"phase": "queued", "pct": 0} for n in names}}
     try:
-        name, tag = HELPER_IMAGE.split(":")
-        docker("POST", f"/images/create?fromImage={name}&tag={tag}", raw=True, timeout=300)
+        docker("POST", f"/images/create?fromImage={urllib.parse.quote(HELPER_IMAGE, safe='')}", raw=True, timeout=300)
     except DockerError:
         pass  # the helper may already be here
     threading.Thread(target=_run, args=(names,), name="updates", daemon=True).start()
