@@ -813,7 +813,7 @@ const COSTS = {
   icons: "Costs about: one download per app, once.",
 };
 
-const USAGE_CHOICES = [["ask", "Only when I press Work it out"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night"], ["weekly", "Every week"], ["off", "Off"]];
+const USAGE_CHOICES = [["ask", "Only when I press Work it out"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night at 3 am"], ["weekly", "Every week, at 3 am"], ["off", "Off"]];
 const STORAGE_REFRESH = [[0, "Only when I press Check again"], [60, "Every minute"], [300, "Every 5 minutes"]];
 
 function withCost(hint, key) {

@@ -436,6 +436,13 @@ def pools(disks):
     return found
 
 
+def _same_device(path, device):
+    try:
+        return os.lstat(path).st_dev == device
+    except OSError:
+        return False
+
+
 class Usage:
     EVERY = {"nightly": 86400, "weekly": 7 * 86400}
 
@@ -474,16 +481,28 @@ class Usage:
         self.thread = threading.Thread(target=self._timer, name="usage", daemon=True)
         self.thread.start()
 
+    @staticmethod
+    def next_run(every, last, now=None):
+        """3 am (the server's time) once the interval since the last run has nearly passed, so a reading never
+        starts in the middle of the day, nor the moment the schedule is chosen."""
+        from datetime import datetime, timedelta
+        now = now or time.time()
+        t = datetime.fromtimestamp(max(now, last + every - 6 * 3600))
+        at = t.replace(hour=3, minute=0, second=0, microsecond=0)
+        return (at if at > t else at + timedelta(days=1)).timestamp()
+
     def _timer(self):
         while True:
             every = self.EVERY.get(self.settings().get("usage_every"))
             if not every:
                 return
-            last = self.get().get("finished") or 0
-            wait = last + every - time.time()
-            if wait <= 0:
-                self.start(self.disks)
-                wait = every
+            wait = self.next_run(every, self.get().get("finished") or 0) - time.time()
+            if wait <= 60:
+                try:
+                    self.start(self.disks)
+                except ValueError:
+                    return
+                wait = 3600
             self.wake.wait(min(wait, 6 * 3600))
             self.wake.clear()
 
@@ -510,6 +529,8 @@ class Usage:
             if not os.path.isdir(path) or os.path.islink(path):
                 return st.st_blocks * 512
             for base, dirs, files in os.walk(path):
+                # Stay on this file system (like du -x): a drive mounted inside is not counted again.
+                dirs[:] = [x for x in dirs if _same_device(os.path.join(base, x), device)]
                 for name in files:
                     try:
                         st = os.lstat(os.path.join(base, name))
@@ -537,10 +558,16 @@ class Usage:
             for label, root in disks:
                 if label in skip:
                     continue
+                try:
+                    device = os.stat(root).st_dev
+                except OSError:
+                    continue
                 types = dict.fromkeys(MEDIA_TYPES, 0)
                 tops, biggest = {}, []
                 plan = []  # (type, path, top name): library first, downloads after, the rest last
                 for top in children(root):
+                    if not _same_device(top.path, device):
+                        continue
                     kind = media_type(top.name)
                     inner = [c for c in children(top.path) if media_type(c.name)] if top.is_dir() and not kind else []
                     if kind:

@@ -47,6 +47,9 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
   **weekly summary**. Off until you turn it on in Settings, Alerts.
 - **Jellyfin** on System, Overview: update or restart needed, Live TV guide, what is playing (and whether it
   is being converted) and what was added.
+- **Storage charts:** each pool as a bar and a ring by type (TV, films, books and more) with free space, each
+  drive in the pool, space used over time with a forecast, and the biggest series and films. Sorting by type
+  reads every file name, so it runs only when you choose (Settings, Performance).
 - **Server jobs** (such as a check of every app) with Run now; **Disk health** with 30-day temperatures;
   **Storage** with what is using the space and every drive; **Monitor** with each app's processor and memory.
 - **Jellyfin extras** (Settings, Jellyfin), each off until you turn it on: free **Live TV** channels and

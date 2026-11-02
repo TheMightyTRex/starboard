@@ -51,7 +51,7 @@
 :root {
   --media-tv: #2a78d6; --media-movies: #eb6834; --media-audiobooks: #1baf7a; --media-music: #eda100;
   --media-books: #e87ba4; --media-downloads: #008300; --media-other: #6250d6;
-  --media-free: #dfe5ef; --media-free-line: #b9c2d1;
+  --media-free: #dfe5ef; --media-free-line: #b9c2d1; --media-used: var(--chart-1);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -67,6 +67,8 @@
 }
 .media-pool { display: grid; gap: var(--space-4); }
 .media-bar, .media-ring, .growth { display: block; width: 100%; height: auto; overflow: visible; }
+.media-bar { height: 64px; }
+@media (max-width: 720px) { .media-bar { height: 40px; } .media-bar__label { display: none; } }
 .media-ring { max-width: 220px; }
 .media-mark { stroke: var(--color-surface-raised); stroke-width: 2; }
 .media-mark:focus-visible { outline: none; stroke: var(--color-focus); stroke-width: 3; }

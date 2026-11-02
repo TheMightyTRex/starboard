@@ -10,6 +10,20 @@
   Prowlarr, SABnzbd and Seerr from their own settings files, if you tick "Fill in API keys for me".
 - It runs only when you press the button: no background work.
 
+### Storage charts
+
+- **System, Storage** shows each pool as a bar (how full) and a ring (what fills it) by type: TV, films,
+  audiobooks, music, books and comics, downloads waiting and everything else, with free space. Also each drive
+  in the pool (fullest first), space used over time with a forecast of when it fills, and the biggest series and
+  films. Every chart has a table view.
+- Sorting by type reads every file name, so Settings, Performance (and the set-up and upgrade guides) choose
+  when: only when you press Work it out (the default), when you open Storage if over a day old, every night or
+  every week at 3 am, or off. It now reads a pool once, skipping its drives, and stays on one file system: on
+  the test server, 105 seconds for 30 TB, down from reading it twice.
+- A daily record of used space (on; nothing noticeable) feeds the forecast. Storage page updates: only when you
+  press Check again (the default), or every minute or 5 minutes while the page is open.
+- The stat tiles count a pool once, not once for the pool and again for its drives.
+
 ### Install apps
 
 - **Install apps** (Settings, Manage apps, or the first step of the set-up guide): tick groups such as Movies,

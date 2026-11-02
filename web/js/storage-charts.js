@@ -64,7 +64,7 @@ function mediaTable(caption, parts, of) {
 // One bar for the whole pool: each type, then free space. Labels under the marks wide enough to hold them.
 function poolBar(parts, total) {
   const W = 1000, H = 40;
-  const svg = sv("svg", { class: "media-bar", viewBox: `0 0 ${W} ${H + 24}`, role: "group", "aria-label": "The pool by type, then free space" }, hatchDefs());
+  const svg = sv("svg", { class: "media-bar", viewBox: `0 0 ${W} ${H + 24}`, preserveAspectRatio: "none", role: "group", "aria-label": "The pool by type, then free space" }, hatchDefs());
   let x = 0;
   for (const p of parts) {
     const w = (p.bytes / total) * W;
@@ -117,7 +117,7 @@ function poolCard(disk, types, when, action) {
   }
   const free = { ...FREE, bytes: disk.free };
   const pct = Math.round((disk.used / disk.total) * 100);
-  const barParts = types ? [...groupSmall(parts, disk.total), free] : [{ key: "other", name: "Used", bytes: disk.used }, free];
+  const barParts = types ? [...groupSmall(parts, disk.total), free] : [{ key: "used", name: "Used", bytes: disk.used }, free];
   const sentence = types
     ? `${disk.label}: ${formatBytes(disk.total)}, ${pct}% full. ${parts.filter((p) => p.bytes / disk.used >= 0.05).map((p) => `${p.name} ${formatBytes(p.bytes)}`).join(", ")}; ${formatBytes(disk.free)} free.`
     : `${disk.label}: ${formatBytes(disk.used)} of ${formatBytes(disk.total)} used, ${formatBytes(disk.free)} free.`;
@@ -155,7 +155,7 @@ function drivesChart(drives, onOpen) {
     el("div", { class: "table-scroll" }, el("table", {}, el("caption", { class: "visually-hidden", text: "Drives in the pool" }),
       el("thead", {}, el("tr", {}, ["Drive", "Size", "Used", "Free"].map((h) => el("th", { scope: "col", text: h })))),
       el("tbody", {}, sorted.map((d) => el("tr", {}, el("th", { scope: "row", text: d.label }), el("td", { class: "num", text: formatBytes(d.total) }),
-        el("td", { class: "num", text: `${formatBytes(d.used)} (${Math.round((d.used / d.total) * 100)}%)` }), el("td", { class: "num", text: formatBytes(d.free) }))))))))];
+        el("td", { class: "num", text: `${formatBytes(d.used)} (${Math.round((d.used / d.total) * 100)}%)` }), el("td", { class: "num", text: formatBytes(d.free) })))))))];
 }
 
 // Least squares over the readings: bytes a day. Needs a week, so one busy day does not decide it.

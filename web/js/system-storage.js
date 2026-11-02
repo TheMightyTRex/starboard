@@ -108,23 +108,25 @@ async function load() {
       $("#storage-summary").textContent = "Not set up";
       return;
     }
-    const found = disks.filter((d) => !d.missing);
-    const missing = disks.length - found.length;
+    members = new Set(Object.values(sys.pools || {}).flat());
+    poolsFound = sys.pools || {};
+    // A pool's drives are inside the pool: count the pool once.
+    const found = disks.filter((d) => !d.missing && !members.has(d.label));
+    const missing = disks.filter((d) => d.missing).length;
     const total = found.reduce((t, d) => t + d.total, 0);
     const used = found.reduce((t, d) => t + d.used, 0);
-    const full = found.filter((d) => pctUsed(d) >= 90).length;
+    const full = disks.filter((d) => !d.missing && pctUsed(d) >= 90).length;
     stats.replaceChildren(...[
       stat(formatBytes(total), "Total space"),
       stat(formatBytes(used), `Used (${total ? Math.round((used / total) * 100) : 0}%)`),
-      stat(String(full), "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
+      stat(String(full), members.size ? "Drives or folders over 90% full" : "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
       missing ? stat(String(missing), missing === 1 ? "Folder not found" : "Folders not found", ["warning", "Not found"]) : null].filter(Boolean));
-    members = new Set(Object.values(sys.pools || {}).flat());
-    poolsFound = sys.pools || {};
     const sorted = [...disks].filter((d) => !members.has(d.label)).sort((a, b) => (b.missing ? 101 : pctUsed(b)) - (a.missing ? 101 : pctUsed(a)));
     let list = $("ul.rows", box);
     if (!list) { list = el("ul", { class: "rows", "aria-label": "Folders, fullest first" }); box.replaceChildren(list); }
     renderKeyed(list, sorted, (d) => d.label, (d) => row(d));
-    const parts = [plural(disks.length, "folder", "folders")];
+    const parts = members.size ? [plural(disks.length - members.size, "folder", "folders"), plural(members.size, "drive in a pool", "drives in a pool")]
+      : [plural(disks.length, "folder", "folders")];
     if (full) parts.push(`${full} nearly full`);
     if (missing) parts.push(`${missing} not found`);
     parts.push(`updated at ${timeNow()}`);
@@ -152,7 +154,7 @@ function renderUsage(u) {
     : `Starboard reads every folder to sort the space by type: ${USAGE_WORDS[u.every] || USAGE_WORDS.ask} A file shared by a download and the library counts once, for the library.`;
   clearTimeout(usageTimer);
   if (u.running) usageTimer = setTimeout(loadUsage, 5000);
-  const plain = (u.folders || []).filter((f) => !Object.values(f.types || {}).some(Boolean));
+  const plain = (u.folders || []).filter((f) => !["tv", "movies", "audiobooks", "music", "books"].some((k) => (f.types || {})[k] > 0));
   $("#usage").replaceChildren(...plain.map((f) => {
     const total = f.items.reduce((t, i) => t + i.bytes, 0) || 1;
     return el("section", { class: "sys-block", "aria-label": f.label },
@@ -167,8 +169,8 @@ function renderUsage(u) {
 const USAGE_WORDS = {
   ask: "only when you press Work it out.",
   open: "when you open Storage, if the last answer is over a day old.",
-  nightly: "every night.",
-  weekly: "every week.",
+  nightly: "every night at 3 am.",
+  weekly: "once a week, at 3 am.",
 };
 
 async function runUsage() {
@@ -181,7 +183,8 @@ let spaceDays = null;
 function renderCharts() {
   const box = $("#storage-charts");
   if (!box) return;
-  const sorted = (usage?.folders || []).filter((f) => Object.values(f.types || {}).some(Boolean));
+  const hasMedia = (f) => ["tv", "movies", "audiobooks", "music", "books"].some((k) => (f.types || {})[k] > 0);
+  const sorted = (usage?.folders || []).filter(hasMedia);
   const poolLabels = Object.keys(poolsFound);
   const main = [...new Set([...poolLabels, ...sorted.map((f) => f.label)])]
     .map((label) => disks.find((d) => d.label === label && !d.missing)).filter(Boolean);
