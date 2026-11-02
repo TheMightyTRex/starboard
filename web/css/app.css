@@ -109,3 +109,6 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
   justify-items: start;
   gap: var(--space-2);
 }
+
+/* Downloads: the toolbar already draws the line above the queue. */
+.toolbar ~ #queue > :first-child > .rows:first-child { border-top: 0; }

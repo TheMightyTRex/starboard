@@ -31,11 +31,12 @@ function card(s, old) {
   return el("li", { class: "card app-card", "data-state": words.state, "data-tone": words.state === "down" ? "danger" : null },
     el("div", { class: "card__top" }, AppDetails.iconFor(s, old), el("h3", { class: "card__title" }, AppDetails.opener(s))),
     s.description ? el("p", { class: "small muted card__desc", text: s.description }) : null,
-    AppDetails.state.numbers?.[s.id] ? el("p", { class: "small card__numbers", text: AppDetails.state.numbers[s.id].join(" · ") }) : null,
     el("div", { class: "card__meta card__status" }, chips,
       el("span", { class: "card__version num", text: u ? `v${u.installed}` : st?.version ? `v${st.version}` : "" }),
       el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : "" }),
       el("span", { class: "card__group", text: s.group || "Other" })),
+    // Small numbers under the status line, so the status lines up across cards in a row.
+    AppDetails.state.numbers?.[s.id] ? el("p", { class: "small muted card__numbers", text: AppDetails.state.numbers[s.id].join(" · ") }) : null,
     el("div", { class: "card__meta card__actions" },
       home ? el("a", { class: "btn", href: home, target: "_blank", rel: "noopener noreferrer" },
         icon("external-link"), "Open", el("span", { class: "visually-hidden", text: ` ${s.name} (opens in a new tab)` })) : null,

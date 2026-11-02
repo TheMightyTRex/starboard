@@ -81,3 +81,43 @@
   .notice { grid-template-columns: auto minmax(0, 1fr); }
   .notice > .btn { grid-column: 2; justify-self: start; }
 }
+
+/* Settings pages: one column, 880px at most, for the heading as well as the sections, so the heading's
+   button lines up with the rows' buttons. A little more room between the heading and the first section. */
+.page--settings > * { width: 100%; max-width: 880px; }
+.page--settings > .page-head { margin-bottom: var(--space-2); }
+.page--settings .settings-sections { gap: var(--space-10, 40px); }
+
+/* Manage apps: the status is an icon beside the name; its words are in hidden text and the tooltip. */
+.row__title .status-icon, .setting__label .status-icon { display: inline-flex; vertical-align: -3px; margin-left: var(--space-2); }
+.status-icon[data-tone="success"] { color: var(--status-success-fg); }
+.status-icon[data-tone="danger"] { color: var(--status-danger-fg); }
+.status-icon[data-tone="muted"] { color: var(--color-text-muted); }
+
+/* A text box with its button beside it (dashboard name, new category, days): one row, one height. */
+.inline-save { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: end; }
+.inline-save > .field { flex: 0 1 420px; }
+.inline-save > .btn { flex: none; }
+.setting__control .inline-save { justify-content: end; flex-wrap: nowrap; }
+.setting__control .inline-save .days-group { width: 160px; }
+
+/* Forms that stack their fields: every box the same width. */
+.form-stack { display: grid; gap: var(--space-4); max-width: 420px; }
+
+/* Addresses that open Starboard, under the network switch. */
+.page--settings .facts--addresses { margin: 0; }
+.facts--addresses { align-items: center; }
+.facts--addresses dt, .facts--addresses dd { margin: 0; align-self: center; }
+.facts--addresses dd { display: flex; align-items: center; gap: var(--space-2); }
+
+/* What Starboard can access: the state and how to change it line up on the right, from the top of the row. */
+.setting:has(.access-change) { align-items: start; }
+.access-change { justify-items: end; text-align: right; }
+.access-change { width: 100%; max-width: 320px; justify-self: end; }
+.access-change .command { width: 100%; text-align: left; }
+.access-change .command .code-block { flex: 1; }
+
+@media (max-width: 720px) {
+  .setting__control .inline-save { justify-content: start; flex-wrap: wrap; }
+  .access-change { justify-items: start; text-align: left; }
+}

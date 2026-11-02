@@ -147,8 +147,12 @@ function renderCalendar(list) {
     const rows = [];
     for (let d = new Date(start); d.getMonth() === m.getMonth() || d < m; ) {
       const cells = [];
+      const weekStart = new Date(d);
       for (let w = 0; w < 7; w++, d.setDate(d.getDate() + 1)) cells.push(dayCell(new Date(d), m, first, last, groups, todayKey));
-      rows.push(el("tr", {}, cells));
+      // Only weeks with a day inside the window: no rows of greyed-out days after it ends.
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      if (weekEnd >= first && weekStart <= last) rows.push(el("tr", {}, cells));
     }
     months.push(el("section", { class: "media-section calendar-month", "aria-labelledby": id },
       el("h2", { class: "group-heading", id, text: `${name} · ${releases(inMonth)}` }),

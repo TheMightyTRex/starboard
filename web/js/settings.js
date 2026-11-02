@@ -129,13 +129,16 @@ function sectionsOf(services) {
   return out.filter((g) => g.items.length);
 }
 
-function statusChip(s) {
-  if (!s.enabled) return chip("Hidden", "muted");
+// The app's state as an icon beside its name: a tick, a cross or a dashed circle, never colour alone, with the
+// words in hidden text and in the tooltip.
+function statusIcon(s) {
   const st = statusById[s.id];
-  if (!st) return null;
-  if (st.state === "up") return chip(s.background ? "Running" : "Connected", "success");
-  if (st.state === "down") return chip(s.background ? "Not running" : "Cannot connect", "danger");
-  return chip("Not checked", "muted");
+  const [words, tone, name] = !s.enabled ? ["Hidden from the dashboard", "muted", "eye-off"]
+    : !st ? ["Checking", "muted", "circle"]
+    : st.state === "up" ? [s.background ? "Running" : "Connected", "success", "circle-check"]
+    : st.state === "down" ? [s.background ? "Not running" : "Cannot connect", "danger", "circle-x"]
+    : ["Not checked", "muted", "circle-help"];
+  return el("span", { class: "status-icon", "data-tone": tone, title: words }, icon(name), el("span", { class: "visually-hidden", text: `, ${words}` }));
 }
 
 function serviceMeta(s) {
@@ -162,10 +165,9 @@ function serviceRow(s, items, index) {
   return el("li", { class: "row row--opens" },
     appIcon(s, "app-icon"),
     el("div", { class: "row__text" },
-      el("div", { class: "row__title" }, el("button", { type: "button", onclick: (e) => openService(s, e.currentTarget) }, s.name)),
+      el("div", { class: "row__title" }, el("button", { type: "button", onclick: (e) => openService(s, e.currentTarget) }, s.name, statusIcon(s))),
       el("div", { class: "row__meta", text: serviceMeta(s) })),
     el("div", { class: "row__side" },
-      statusChip(s),
       el("button", { type: "button", class: "btn", onclick: (e) => openService(s, e.currentTarget) }, icon("pencil"), "Edit", el("span", { class: "visually-hidden", text: ` ${s.name}` })),
       menuButton(`More actions for ${s.name}`, menuItems)));
 }
@@ -555,7 +557,7 @@ function renderCategories() {
   const box = $("#category-loose");
   box.replaceChildren();
   if (loose.length) {
-    const add = el("button", { type: "button", class: "btn btn--compact" }, icon("plus"), loose.length === 1 ? "Add it to the list" : "Add them to the list");
+    const add = el("button", { type: "button", class: "btn" }, icon("plus"), loose.length === 1 ? "Add it to the list" : "Add them to the list");
     add.addEventListener("click", async () => {
       if (await saveGroups([...config.groups, ...loose].slice(0, 20), `Added ${loose.join(", ")}`)) $("#category-list .btn")?.focus();
     });
@@ -625,8 +627,8 @@ async function removeCategory(name) {
 function startGeneral() {
   // Dashboard name
   const siteName = el("input", { class: "input", name: "site_name", maxlength: "60", required: true, value: config.site_name });
-  const nameForm = el("form", { novalidate: true }, field("Dashboard name", siteName, { short: true }),
-    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save name" })));
+  const nameForm = el("form", { novalidate: true, class: "inline-save" }, field("Dashboard name", siteName),
+    el("button", { type: "submit", class: "btn btn--primary", text: "Save name" }));
   nameForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     setError(siteName, "");
@@ -741,30 +743,39 @@ async function renderAccess() {
   const list = $("#access-rows");
   let items;
   try { items = (await api("/api/access")).items; } catch (e) { list.replaceChildren(el("li", { class: "setting", text: e.message })); return; }
-  const state = (on) => chip(on ? "On" : "Off", on ? "success" : "muted");
-  list.replaceChildren(...items.map((a) => {
+  // On or off as an icon beside the name: a tick or an empty ring (never colour alone), with the word in
+  // hidden text and in the tooltip. Rows with a switch show their state in the switch itself.
+  const stateIcon = (on) => el("span", { class: "status-icon", "data-tone": on ? "success" : "muted", title: on ? "On" : "Off" },
+    icon(on ? "circle-check" : "circle"), el("span", { class: "visually-hidden", text: on ? ", on" : ", off" }));
+  const row = (a, control, withIcon) => {
     const labelId = `acc-${a.key}-l`;
-    let control;
+    return el("li", { class: "setting" },
+      el("div", { class: "setting__text" },
+        el("span", { class: "setting__label", id: labelId }, a.title, withIcon ? stateIcon(a.on) : null),
+        el("span", { class: "setting__hint", text: a.what })),
+      el("div", { class: "setting__control" }, control));
+  };
+  list.replaceChildren(...items.map((a) => {
     if (a.change === "setting" && a.setting && a.setting !== "update_check") {
-      const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked: config[a.setting] });
+      const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": `acc-${a.key}-l`, checked: config[a.setting] });
       input.addEventListener("change", async () => {
         try { await saveGeneral({ [a.setting]: input.checked }, `${a.title}: ${input.checked ? "on" : "off"}`); }
         catch (err) { input.checked = !input.checked; toast(err.message); }
       });
-      control = el("label", { class: "switch" }, input);
-    } else if (a.change === "installer") {
-      const command = `./install.sh ${a.on ? a.off_flag : a.on_flag}`;
-      control = el("div", { class: "access-change" }, state(a.on),
-        el("span", { class: "small", text: a.on ? "To turn it off, run on the server:" : "To turn it on, run on the server:" }),
-        el("div", { class: "command" }, el("code", { class: "code-block", text: command }), copyButton(command, `the command for ${a.title}`)));
-    } else if (a.change === "readme") {
-      control = el("div", { class: "access-change" }, state(a.on), el("span", { class: "small", text: "Set up by hand: see Backup and restore in the README." }));
-    } else {
-      const where = a.link?.startsWith("#") ? null : a.link;
-      control = el("div", { class: "access-change" }, state(a.on),
-        where ? el("a", { href: where, text: a.change === "apps" ? "Manage apps" : "Change it" }) : el("span", { class: "small", text: "Use the switch above" }));
+      return row(a, el("label", { class: "switch" }, input), false);
     }
-    return settingRow(a.title, a.what, control, labelId);
+    if (a.change === "installer") {
+      const command = `./install.sh ${a.on ? a.off_flag : a.on_flag}`;
+      return row(a, el("div", { class: "access-change" },
+        el("span", { class: "small", text: a.on ? "To turn it off, run on the server:" : "To turn it on, run on the server:" }),
+        el("div", { class: "command" }, el("code", { class: "code-block", text: command }), copyButton(command, `the command for ${a.title}`))), true);
+    }
+    if (a.change === "readme") {
+      return row(a, el("span", { class: "small access-change", text: "Set up by hand: see Backup and restore in the README." }), true);
+    }
+    const where = a.link?.startsWith("#") ? null : a.link;
+    return row(a, where ? el("a", { class: "btn", href: where }, a.change === "apps" ? "Manage apps" : "Change it", el("span", { class: "visually-hidden", text: ` for ${a.title}` }))
+      : el("span", { class: "small access-change", text: "Use the switch above" }), true);
   }));
   list.removeAttribute("aria-busy");
   if (location.hash === "#access") $("#access").scrollIntoView();
@@ -864,7 +875,7 @@ async function startSecurity() {
   // Who can open the dashboard
   const access = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "net-l", "aria-describedby": "net-result" });
   const result = el("span", { id: "net-result" });
-  const addresses = el("ul", { class: "network-addresses", "aria-label": "Addresses that open Starboard" });
+  const addresses = el("dl", { class: "facts facts--addresses", "aria-label": "Addresses that open Starboard" });
   const forced = el("p", { class: "small muted", hidden: true });
   let network;
   const showNetwork = () => {
@@ -874,7 +885,7 @@ async function startSecurity() {
       : "Off: only the computer Starboard runs on can open it.";
     const rows = [["This computer", `http://localhost:${network.port}`]];
     if (network.network_access) for (const a of network.addresses) rows.push(["Phones and other computers", `http://${a}:${network.port}`]);
-    addresses.replaceChildren(...rows.map(([label, u]) => el("li", {}, `${label}: `, el("code", { text: u }))));
+    addresses.replaceChildren(...rows.flatMap(([label, u]) => [el("dt", { text: label }), el("dd", {}, el("code", { text: u }), copyButton(u, `the address for ${label.toLowerCase()}`))]));
     if (network.forced_by) {
       access.disabled = true;
       forced.hidden = false;
@@ -910,8 +921,8 @@ async function startSecurity() {
   const fresh = el("input", { class: "input", type: "password", autocomplete: "new-password", required: true });
   const again = el("input", { class: "input", type: "password", autocomplete: "new-password", required: true });
   const pwForm = el("form", { novalidate: true },
-    el("div", { class: "form-grid" },
-      el("div", { "data-span": "all", class: "field--short" }, field("Current password", current)),
+    el("div", { class: "form-stack" },
+      field("Current password", current),
       field("New password", fresh),
       field("Type the new password again", again)),
     el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Change password" })));
@@ -988,10 +999,12 @@ async function startSecurity() {
           el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "days-l", text: "Remember me keeps people signed in for" }),
             el("span", { class: "setting__hint", id: "days-h", text: "1 to 90 days. Without Remember me, people are signed out when they close the browser, or after a day." })),
           el("div", { class: "setting__control" }, el("div", { class: "field" },
-            el("div", { class: "input-group days-group" }, days, el("span", { class: "input-group__unit", text: "days" })), daysError))),
-        settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Turn on when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l")),
-      el("div", { class: "actions session-actions" },
-        el("button", { type: "submit", class: "btn btn--primary", text: "Save how long" }), signOut, everywhere));
+            el("div", { class: "inline-save" },
+              el("div", { class: "input-group days-group" }, days, el("span", { class: "input-group__unit", text: "days" })),
+              el("button", { type: "submit", class: "btn btn--primary" }, "Save", el("span", { class: "visually-hidden", text: " how long" }))),
+            daysError))),
+        settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Turn on when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
+        settingRow("Sign out", "This browser, or every browser and phone at once.", el("div", { class: "actions session-actions" }, signOut, everywhere), "signout-l")));
   showNetwork();
 }
 

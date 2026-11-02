@@ -41,3 +41,6 @@
   .sys-disks td:last-child::before { content: none; }
   .sys-disks td.numeric { text-align: left; }
 }
+
+/* Server jobs: the job's findings open under the whole row, not beside its buttons. */
+#jobs .row > .disclosure { grid-column: 1 / -1; }

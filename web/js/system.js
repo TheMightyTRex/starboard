@@ -207,11 +207,11 @@ function renderJobs(d) {
     const busy = j.status === "running" || j.status === "waiting";
     return el("li", { class: "row row--no-lead", "data-key": j.name },
       el("div", {}, el("div", { class: "row__title", text: j.title }),
-        el("div", { class: "row__meta", text: [j.summary, finished && !busy ? `finished ${finished}` : ""].filter(Boolean).join(" · ") }),
-        j.output ? el("details", { class: "disclosure" }, el("summary", { text: "What it found" }), el("div", { class: "disclosure__body" }, el("pre", { class: "code-block", text: j.output }))) : null),
+        el("div", { class: "row__meta", text: [j.summary, finished && !busy ? `finished ${finished}` : ""].filter(Boolean).join(" · ") })),
       el("div", { class: "row__side" }, chip(words, tone),
-        d.can_run ? el("button", { type: "button", class: "btn btn--compact", disabled: busy, onclick: () => runJob(j) },
-          icon("play"), "Run now", el("span", { class: "visually-hidden", text: ` ${j.title}` })) : null));
+        d.can_run ? el("button", { type: "button", class: "btn", disabled: busy, onclick: () => runJob(j) },
+          icon("play"), "Run now", el("span", { class: "visually-hidden", text: ` ${j.title}` })) : null),
+      j.output ? el("details", { class: "disclosure" }, el("summary", { text: "What it found" }), el("div", { class: "disclosure__body" }, el("pre", { class: "code-block", text: j.output }))) : null);
   });
   const busy = d.items.some((j) => j.status === "running" || j.status === "waiting");
   clearTimeout(jobTimer);
