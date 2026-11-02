@@ -60,7 +60,10 @@ def _iso(ts):
 # Jellyfin (and Emby, which speaks the same language) ----------------------------------------
 
 def _mb(service, path, method="GET", body=None, timeout=120):
-    headers = {"X-Emby-Token": service.get("api_key", ""), "Accept": "application/json", "User-Agent": USER_AGENT}
+    # Newer Jellyfin takes the key only in Authorization; Emby takes X-Emby-Token. Both are sent.
+    key = service.get("api_key", "")
+    headers = {"Authorization": f'MediaBrowser Token="{key}"', "X-Emby-Token": key,
+               "Accept": "application/json", "User-Agent": USER_AGENT}
     data = None
     if body is not None:
         data = json.dumps(body).encode()

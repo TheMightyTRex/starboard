@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 (2 November 2026)
+
+- Jellyfin jobs: send Jellyfin's API key the way newer Jellyfin versions need it.
+
 ## 0.3.0 (2 November 2026)
 
 - **Settings, Jellyfin:** jobs moved in from the old launcher, each off until you turn it on.
