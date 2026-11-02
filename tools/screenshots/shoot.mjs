@@ -32,6 +32,8 @@ const SHOTS = [
   { file: "release-notes.png", page: "index.html", ...desk, click: ".site-footer .version-label" },
   { file: "logs.png", page: "system-logs.html", ...desk, before: 'api("/api/config/general", { method: "PUT", body: { logs: { detail: "day" } } })' },
   { file: "logs-entries.png", page: "system-logs.html", ...desk, run: top("#entries-h") },
+  { file: "display.png", page: "index.html", ...desk, click: "[data-display-toggle]" },
+  { file: "copy-settings.png", page: "copy-settings.html", width: 1280, height: 1000, click: "#copy-sections button[type=submit]", after: top("#copy-sections h3") },
   { file: "audiobookshelf.png", page: "settings-audiobookshelf.html", ...desk, run: top("#listening-sections .table-wrap") },
   { file: "logs-settings.png", page: "settings-general.html", width: 1280, height: 700, run: top("#gn-logs-h") },
   { file: "apps-phone.png", page: "index.html", ...phone },
@@ -70,6 +72,7 @@ for (const shot of SHOTS) {
   await page.waitForTimeout(600);
   if (shot.run) { await page.evaluate(shot.run); await page.waitForTimeout(300); }
   if (shot.click) { await page.locator(shot.click).first().click(); await page.waitForTimeout(600); }
+  if (shot.after) { await page.evaluate(shot.after); await page.waitForTimeout(300); }
   await page.screenshot({ path: `${out}/${shot.file}` });
   const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   if (wide > 0) failed = true;

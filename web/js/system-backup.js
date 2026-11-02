@@ -6,24 +6,6 @@ let server = null;
 
 // Small helpers ------------------------------------------------------------
 
-// Password checks answer 401 when the password is wrong. api() in common.js reads 401 as "signed out" and goes
-// to Sign in, so these calls keep the page and show the error by the password field instead.
-async function postKeepingPage(path, body) {
-  const res = await fetch(path, {
-    method: "POST", credentials: "same-origin",
-    headers: { Accept: "application/json", "Content-Type": "application/json", "X-Starboard": "1" },
-    body: JSON.stringify(body || {}),
-  });
-  let data = {};
-  try { data = await res.json(); } catch { /* empty */ }
-  if (!res.ok) {
-    const error = new Error(data.error || `Something went wrong (error ${res.status})`);
-    error.status = res.status;
-    throw error;
-  }
-  return data;
-}
-
 function notice(tone, title, text, action) {
   const icons = { success: "circle-check", warning: "triangle-alert", danger: "circle-alert", info: "info" };
   return el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" },
@@ -97,14 +79,38 @@ function openRun(opener) {
         ["Rebuild prompt", s.with_prompt ? "Included, and saved next to the backup" : "Not included"],
         ["Result", s.status === "done" || s.status === "failed" ? (s.summary || "No summary") : ""],
       ]),
-      el("p", { class: "small muted", text: "Starboard sees the last run only. The files it made are listed under it on the page." }),
-    ],
+      s.unreadable?.length ? notice("warning", `${s.unreadable.length} ${s.unreadable.length === 1 ? "thing" : "things"} could not be read`, s.unreadable.join(", ")) : null,
+      s.included?.length ? el("details", { class: "disclosure" }, el("summary", { text: `What went in (${s.included.length})` }),
+        el("div", { class: "disclosure__body" }, el("ul", {}, s.included.map((x) => el("li", {}, el("code", { text: x })))))) : null,
+      s.runs?.length ? el("section", { class: "stack-2", "aria-labelledby": "earlier-runs" }, el("h3", { id: "earlier-runs", text: "Earlier runs" }),
+        el("ul", { class: "rows" }, s.runs.map((r) => el("li", { class: "row row--no-lead" },
+          el("div", { class: "row__text" }, el("div", { class: "row__title", text: runTime(r) }), el("div", { class: "row__meta", text: r.summary || "" })),
+          el("div", { class: "row__side" }, chip(...(STATUS_WORDS[r.status] || [r.status || "Unknown", "muted"]))))))) : null,
+      s.runs?.length ? null : el("p", { class: "small muted", text: "The server's job reports its last run only. The files it made are listed under it on the page." }),
+    ].filter(Boolean),
   });
+}
+
+async function downloadServerFile(f) {
+  const r = await withPassword({
+    title: `Download ${f.name}?`,
+    message: `${formatBytes(f.size)}. A server backup can hold API keys and private files. Keep it somewhere private.`,
+    confirm: "Download",
+    run: (password) => api("/api/backup/server/link", { method: "POST", body: { password, name: f.name } }),
+  });
+  if (!r) return;
+  const link = el("a", { href: r.url, download: f.name });
+  document.body.append(link);
+  link.click();
+  link.remove();
 }
 
 function openFile(f, opener) {
   const prompt = /\.md$/i.test(f.name);
+  const save = el("button", { type: "button", class: "btn" }, icon("download"), "Download");
+  save.addEventListener("click", () => downloadServerFile(f));
   sidePanel({
+    foot: [save],
     title: prompt ? "Rebuild prompt" : `Server backup, ${when(f.modified)}`, opener,
     body: [
       facts([
@@ -200,7 +206,7 @@ async function download() {
     title: "Download a backup of Starboard's settings",
     message: "The file holds your apps' API keys. Keep it somewhere private.",
     confirm: "Download",
-    run: (password) => postKeepingPage("/api/backup/settings", { password }),
+    run: (password) => api("/api/backup/settings", { method: "POST", body: { password } }),
   });
   if (!data) return;
   saveFile(data);
@@ -221,7 +227,7 @@ async function restoreFromFile(file) {
     title: "Restore Starboard's settings?",
     message: [el("p", { text: `Your apps, categories and settings are replaced with the ones in ${file.name}${made ? `, made ${made}` : ""}, which has ${apps} ${apps === 1 ? "app" : "apps"}.` }), el("p", { text: KEPT })],
     confirm: "Restore settings", danger: true,
-    run: (password) => postKeepingPage("/api/backup/restore", { password, backup }),
+    run: (password) => api("/api/backup/restore", { method: "POST", body: { password, backup } }),
   });
   if (!result) return;
   showSettingsMessage("success", "Settings restored", `${result.apps} ${result.apps === 1 ? "app" : "apps"} from ${file.name}. The settings from before are in the saved copies below.`);
@@ -234,7 +240,7 @@ async function restoreSaved(item, panel) {
     title: "Restore Starboard's settings?",
     message: [el("p", { text: `Your apps, categories and settings are replaced with the ones in the copy from ${when(item.saved)}.` }), el("p", { text: KEPT })],
     confirm: "Restore settings", danger: true,
-    run: (password) => postKeepingPage("/api/backup/restore-saved", { password, name: item.name }),
+    run: (password) => api("/api/backup/restore-saved", { method: "POST", body: { password, name: item.name } }),
   });
   if (!result) return;
   panel?.close(false);
@@ -245,15 +251,31 @@ async function restoreSaved(item, panel) {
 
 function openSaved(item, opener) {
   const restore = el("button", { type: "button", class: "btn btn--danger" }, icon("archive-restore"), "Restore this copy");
+  const save = el("button", { type: "button", class: "btn" }, icon("download"), "Download");
+  const holds = el("div", { "aria-live": "polite" }, el("p", { class: "small muted", text: "Reading what it holds…" }));
   const panel = sidePanel({
     title: `Saved copy, ${when(item.saved)}`, opener,
     body: [
       facts([["Made", when(item.saved)], ["Why", item.reason], ["Size", el("span", { class: "numeric", text: formatBytes(item.size) })], ["File", el("code", { text: item.name })]]),
+      holds,
       el("p", { class: "small muted", text: "Restoring it replaces your apps, categories and settings. Your password and sign-ins stay as they are." }),
     ],
-    foot: [restore],
+    foot: [save, restore],
   });
   restore.addEventListener("click", () => restoreSaved(item, panel));
+  save.addEventListener("click", async () => {
+    const data = await withPassword({
+      title: "Download this saved copy",
+      message: "The file holds your apps' API keys. Keep it somewhere private.",
+      confirm: "Download",
+      run: (password) => api("/api/backup/saved/download", { method: "POST", body: { password, name: item.name } }),
+    });
+    if (data) { saveFile(data); toast(`Saved copy downloaded: ${data.services.length} apps`); }
+  });
+  api(`/api/backup/saved?name=${encodeURIComponent(item.name)}`).then((d) => holds.replaceChildren(...[
+    facts([["Apps", el("span", { class: "numeric", text: String(d.apps) })], ["Categories", d.categories.join(", ") || "None"]]),
+    d.app_names.length ? el("p", { class: "small", text: d.app_names.join(", ") }) : null,
+  ].filter(Boolean))).catch((e) => holds.replaceChildren(el("p", { class: "small muted", text: `Could not read it: ${e.message}` })));
 }
 
 async function loadSaved() {

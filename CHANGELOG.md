@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.7.0 (2 November 2026)
+
+### Install apps, for people who have never set up a media server
+- **Start here:** what each app does (find, choose, download, sort, watch), how long it takes and what you need.
+  **Advanced settings** (a tick, remembered) shows every app in each group, the settings folder, user and group
+  numbers, time zone and the files; without it, the guide picks the apps and folders.
+- **Every step is checked**, with the problem shown by its field: at least one thing ticked (and a warning when
+  nothing can download), a full media folder path, numbers and time zone in Advanced settings, and the VPN.
+- **VPN** is its own step: provider (with a list of common ones), WireGuard or OpenVPN as a segmented choice, and
+  only that connection's fields, each saying where to find it. Only those fields are written to .env, and they
+  are required.
+- **Pool drive:** "Join several drives into one" opens a pop-up listing the mounted drives (from Disk health's
+  drive list, or typed in), and writes the mergerfs commands to run on the server. The pool becomes the media
+  folder. Nothing is erased.
+- **Check** sums up every step with a Change link to it; the files are behind a disclosure (open in Advanced).
+- **Connect your apps:** after starting, numbered steps with the exact hosts, ports and folders for qBittorrent,
+  SABnzbd, Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr, Jellyfin, Seerr and Bazarr (gluetun when they go through
+  the VPN).
+- **Storyarr** is offered by default (`ghcr.io/themightytrex/storyarr`, pinned, so Updates offers newer versions;
+  `STARBOARD_STORYARR_IMAGE=none` leaves it out), and Install apps writes `starboard-before-update/storyarr.sh`, a
+  database backup that runs before each update.
+
+### Copy app settings (Settings, Manage apps)
+- From one Sonarr, Radarr or Lidarr into another of the same kind and major version: tags, custom formats,
+  quality profiles (format scores matched by name), root folders, download clients and remote path mappings,
+  naming and media management. A preview says what will be added, what is already there and what will be
+  replaced. Passwords the old app hides are asked for; without them a client is added switched off. Indexers:
+  add the new app in Prowlarr.
+
+### The API gaps (DASH-19)
+- Apps: Check again in a slide-out checks that app only; Recent checks (the last 20, in memory); "Not responding
+  for 12 minutes"; the app's own warnings carry its id, when first seen and a How to fix it link.
+- Downloads: Remove (optionally blocking the release) and Find another; the added date; all messages.
+- Coming up: each item's overview and a link to its page in the app; Earlier and Later move a month at a time.
+- Search: In the library links open the item in its app.
+- Storage: the folder path and the disk (or pool members) it is on.
+- Disk health: rpm, the self-test history, every SMART attribute, events with their time and a status icon, and
+  Download the full report.
+- Backups: what a saved copy holds, and downloading it (password first); downloading a server backup through a
+  one-time link (streamed); earlier runs, what went in and what could not be read, when the server job reports them.
+- Settings: renaming or removing a category is one save; About shows when this version started.
+- A wrong password in a dialog (or Install apps' Start) stays on the page: the server says `reason: "password"`.
+
+### Look and feel
+- **Slide-outs:** Display and accessibility is a slide-out; every slide-out header (and the phone menu's) is in
+  the page background over a white or dark-surface body (library token `--color-slide-header`).
+
+### Other
+- Upgrade now from Storyarr: `apps-updates.html?app=storyarr` checks at once and goes to that row.
+- Images for 32-bit Raspberry Pi (linux/arm/v7). Pillow is installed only where a ready-made build exists.
+
 ## 0.6.0 (2 November 2026)
 
 - **Listening progress (Settings, Audiobookshelf):** reads where everyone is in each audiobook from a Plex server

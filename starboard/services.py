@@ -3,6 +3,7 @@
 API keys stay on the server. Every call goes to an address an administrator saved in Settings.
 """
 
+import collections
 import datetime as dt
 import json
 import threading
@@ -16,6 +17,11 @@ from . import logs, posters
 from .config import SERVICE_TYPES
 
 TIMEOUT = 8
+
+# The last checks of each app, in memory only: about 40 KB for 20 apps. Lost on restart, which is fine.
+RECENT = collections.defaultdict(lambda: collections.deque(maxlen=20))
+DOWN_SINCE = {}  # app id: when it first stopped answering, cleared when it answers again
+FIRST_SEEN = {}  # (app id, message): when an app's own health warning was first seen
 
 
 class _KeepKeysHome(urllib.request.HTTPRedirectHandler):
@@ -221,15 +227,43 @@ def check(service):
                 if e.code >= 500:
                     raise ServiceError(f"{service['name']} answered with error {e.code}") from None
             version = ""
-        return {"id": service["id"], "state": "up", "version": version,
-                "ms": round((time.monotonic() - started) * 1000)}
+        return _record(service, {"id": service["id"], "state": "up", "version": version,
+                                 "ms": round((time.monotonic() - started) * 1000)})
     except (ServiceError, urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
         message = str(e) if isinstance(e, ServiceError) else f"Cannot reach {service['name']}"
-        return {"id": service["id"], "state": "down", "message": message}
+        return _record(service, {"id": service["id"], "state": "down", "message": message})
 
 
-def status_all(services):
-    enabled = [s for s in services if s.get("enabled", True)]
+def _record(service, result):
+    """Keeps the last 20 checks of a saved app and when it stopped answering."""
+    sid = service.get("id")
+    if sid:
+        now = time.time()
+        RECENT[sid].append({"t": round(now), "state": result["state"], "ms": result.get("ms"), "message": result.get("message", "")})
+        if result["state"] == "down":
+            result["down_since"] = DOWN_SINCE.setdefault(sid, now)
+        else:
+            DOWN_SINCE.pop(sid, None)
+    return result
+
+
+def status_one(services, service_id):
+    """Checks one app and puts its answer into the shared status, so every page sees it."""
+    rows = status_all(services, only=service_id)
+    with _cache_lock:
+        hit = _cache.get("status")
+        if hit and rows:
+            _cache["status"] = (hit[0], [rows[0] if r["id"] == service_id else r for r in hit[1]])
+    return rows
+
+
+def recent_checks(service_id):
+    return list(reversed(RECENT.get(service_id, [])))
+
+
+def status_all(services, only=None):
+    """Every enabled app's state; only: one app id, checked on its own (Check again in its slide-out)."""
+    enabled = [s for s in services if s.get("enabled", True) and (only is None or s["id"] == only)]
     by_id = {s["id"]: s for s in services}
     checked = [s for s in enabled if s.get("url")]
     results = {r["id"]: r for r in POOL.map(check, checked)}
@@ -360,6 +394,7 @@ def normalise(service, item):
         "overview": overview[:400] + ("…" if len(overview) > 400 else ""),
         "image": image,
         "in_library": bool(item.get("id")),
+        "slug": item.get("titleSlug") or item.get("foreignArtistId") or item.get("foreignAuthorId") or "",
     }
 
 
@@ -471,11 +506,15 @@ def _queue_one(service):
         size = r.get("size") or 0
         left = r.get("sizeleft") or 0
         rows.append({
+            "id": r.get("id"),
+            "service": service["id"],
             "service_name": service["name"],
+            "download_id": r.get("downloadId") or "",
+            "added": r.get("added") or "",
             "title": r.get("title") or "Unknown",
             "status": _queue_state(r),
             "problem": r.get("trackedDownloadStatus") in ("warning", "error"),
-            "messages": [m for s in r.get("statusMessages") or [] for m in s.get("messages") or []][:3],
+            "messages": [m for s in r.get("statusMessages") or [] for m in s.get("messages") or []][:20],
             "progress": round((size - left) / size * 100, 1) if size else 0,
             "size": size,
             "time_left": r.get("timeleft") or "",
@@ -485,6 +524,7 @@ def _queue_one(service):
 
 
 def _calendar_one(service, start, end):
+    """One app's releases between two dates, with the item's id in the app and a short overview."""
     params = {"start": start.isoformat(), "end": end.isoformat(), "unmonitored": "false"}
     kind = service["type"]
     if kind == "sonarr":
@@ -517,8 +557,12 @@ def _calendar_one(service, start, end):
             when, have = i.get("releaseDate"), (i.get("statistics") or {}).get("bookFileCount", 0) > 0
             image = posters.address(service, "book", i.get("id"))
         if when:
-            out.append({"service_name": service["name"], "title": title, "detail": detail, "when": when,
-                        "have": bool(have), "image": image})
+            overview = ((i.get("series") or {}).get("overview") if kind == "sonarr" else None) or i.get("overview") or ""
+            item = i.get("seriesId") if kind == "sonarr" else i.get("artistId") if kind == "lidarr" else i.get("authorId") if kind == "readarr" else i.get("id")
+            slug = ((i.get("series") or i.get("artist") or i.get("author") or {}).get("titleSlug") if kind != "radarr" else i.get("titleSlug")) or ""
+            out.append({"service": service["id"], "service_name": service["name"], "title": title, "detail": detail, "when": when,
+                        "have": bool(have), "image": image, "item_id": item, "slug": slug,
+                        "overview": overview[:300] + ("…" if len(overview) > 300 else "")})
     return out
 
 
@@ -538,17 +582,45 @@ def queue(services):
     return {"items": rows, "errors": errors}
 
 
-def calendar(services, days=14):
-    start = dt.date.today() - dt.timedelta(days=1)
-    end = start + dt.timedelta(days=days + 1)
+QUEUE_ACTIONS = {
+    "remove": {"removeFromClient": "true", "blocklist": "false"},
+    "block": {"removeFromClient": "true", "blocklist": "true", "skipRedownload": "true"},
+    "block-search": {"removeFromClient": "true", "blocklist": "true", "skipRedownload": "false"},
+}
+
+
+def queue_action(service, item_id, action):
+    """Removes one queue item from its app and download client; block also blocklists that release, and
+    block-search then looks for another."""
+    if action not in QUEUE_ACTIONS:
+        raise ServiceError("Choose remove, block or block-search")
+    _api(service, f"/queue/{int(item_id)}", QUEUE_ACTIONS[action], method="DELETE")
+    forget("queue")
+
+
+def calendar(services, days=14, start=None, end=None):
+    """From yesterday for days, or from start to end (dates; at most 62 days, for a month view)."""
+    if start and end:
+        end = min(end, start + dt.timedelta(days=62))
+    else:
+        start = dt.date.today() - dt.timedelta(days=1)
+        end = start + dt.timedelta(days=days + 1)
     rows, errors = _gather(_arrs(services), lambda s: _calendar_one(s, start, end))
     rows.sort(key=lambda r: r["when"])
     return {"items": rows, "errors": errors}
 
 
 def _health_one(service):
-    return [{"service_name": service["name"], "level": h.get("type", "warning"), "message": h.get("message", "")}
-            for h in _api(service, "/health") or []]
+    now = time.time()
+    out = []
+    for h in _api(service, "/health") or []:
+        message = h.get("message", "")
+        out.append({"service": service["id"], "service_name": service["name"], "level": h.get("type", "warning"), "message": message,
+                    "first_seen": FIRST_SEEN.setdefault((service["id"], message), now), "wiki": h.get("wikiUrl") or ""})
+    seen = {(service["id"], h["message"]) for h in out}
+    for key in [k for k in FIRST_SEEN if k[0] == service["id"] and k not in seen]:
+        FIRST_SEEN.pop(key, None)  # gone: forget it, so it is new if it comes back
+    return out
 
 
 def health(services):

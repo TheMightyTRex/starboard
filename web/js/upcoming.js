@@ -8,6 +8,7 @@ let view = "list";
 let status = null; // "Wanted", "In library" or null
 let app = null; // an app name or null
 let services = new Map(); // app name -> app from /api/config (type for the icon, link for "Open in")
+let month = null; // Calendar view, moved to another month: { start: Date (the 1st), items } or null for the normal window
 const ICONS = { sonarr: "tv", radarr: "film", lidarr: "music", readarr: "book" };
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -60,7 +61,7 @@ function notice(tone, title, text) {
 // Filters ----------------------------------------------------------------
 
 function shown() {
-  return items.filter((i) => (!status || statusWord(i) === status) && (!app || i.service_name === app));
+  return (month ? month.items : items).filter((i) => (!status || statusWord(i) === status) && (!app || i.service_name === app));
 }
 
 function chipButton(text, pressed, onclick, iconName) {
@@ -129,13 +130,18 @@ function renderList(list) {
 
 // Calendar view --------------------------------------------------------------
 
-// One table per month, weeks from Monday. Days outside the window are greyed out.
+// One table per month, weeks from Monday. Days outside the window are greyed out. Earlier and Later move a whole
+// month at a time (the server keeps the three months either side of the one shown).
 function renderCalendar(list) {
   const groups = byDay(list);
-  const first = startOfToday();
+  let first = startOfToday();
   first.setDate(first.getDate() - 1);
-  const last = startOfToday();
+  let last = startOfToday();
   last.setDate(last.getDate() + days);
+  if (month) {
+    first = new Date(month.start);
+    last = new Date(month.start.getFullYear(), month.start.getMonth() + 1, 0);
+  }
   const todayKey = dayKey(startOfToday());
   const months = [];
   for (let m = new Date(first.getFullYear(), first.getMonth(), 1); m <= last; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
@@ -154,6 +160,7 @@ function renderCalendar(list) {
       weekEnd.setDate(weekEnd.getDate() + 6);
       if (weekEnd >= first && weekStart <= last) rows.push(el("tr", {}, cells));
     }
+    if (months.length === 0) months.push(monthNav(m));
     months.push(el("section", { class: "media-section calendar-month", "aria-labelledby": id },
       el("h2", { class: "group-heading", id, text: `${name} · ${releases(inMonth)}` }),
       el("table", { class: "calendar" },
@@ -162,6 +169,27 @@ function renderCalendar(list) {
         el("tbody", {}, rows))));
   }
   return months;
+}
+
+function monthNav(shownMonth) {
+  const go = (step) => goToMonth(new Date(shownMonth.getFullYear(), shownMonth.getMonth() + step, 1));
+  const name = (step) => new Date(shownMonth.getFullYear(), shownMonth.getMonth() + step, 1).toLocaleDateString("en-GB", { month: "long" });
+  return el("div", { class: "actions" },
+    el("button", { type: "button", class: "btn", onclick: () => go(-1) }, icon("chevron-left"), `Earlier: ${name(-1)}`),
+    month ? el("button", { type: "button", class: "btn btn--quiet", onclick: () => goToMonth(null) }, "Back to now") : null,
+    el("button", { type: "button", class: "btn", onclick: () => go(1) }, `Later: ${name(1)}`, icon("chevron-right")));
+}
+
+async function goToMonth(start) {
+  if (!start) { month = null; renderDays(); return; }
+  const key = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
+  try {
+    const data = await api(`/api/calendar?month=${key}`);
+    month = { start, items: data.items };
+    renderDays();
+    $("#calendar .group-heading")?.focus?.();
+    announce(`Showing ${start.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`);
+  } catch (e) { toast(e.message); }
 }
 
 function dayCell(d, month, first, last, groups, todayKey) {
@@ -212,6 +240,7 @@ function openDay(d, dayItems, opener) {
 
 function renderDays() {
   const root = $("#calendar");
+  if (view !== "calendar") month = null;
   const list = shown();
   root.dataset.view = view;
   root.replaceChildren(...(view === "calendar" ? renderCalendar(list) : renderList(list)));
@@ -223,9 +252,10 @@ function renderDays() {
     if (view === "calendar") root.prepend(empty); else root.append(empty);
   }
   const wanted = list.filter((i) => !i.have).length;
+  const span = month ? month.start.toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : ahead;
   $("#calendar-summary").textContent = list.length
-    ? `${releases(list.length)} in ${ahead} · ${wanted} wanted · ${list.length - wanted} already in the library`
-    : `Nothing due in ${ahead}.`;
+    ? `${releases(list.length)} in ${span} · ${wanted} wanted · ${list.length - wanted} already in the library`
+    : `Nothing due in ${span}.`;
 }
 
 function update() {
@@ -246,6 +276,13 @@ async function chooseView(next) {
 
 // Item slide-out -----------------------------------------------------------
 
+// The item's own page in its app, from the slug the app gave (Sonarr /series/x, Radarr /movie/x, and so on).
+function itemPage(svc, i) {
+  if (!i.slug || !/^[\w.-]+$/.test(i.slug)) return "";
+  const base = { sonarr: "/series/", radarr: "/movie/", lidarr: "/artist/", readarr: "/author/" }[svc?.type];
+  return base ? base + i.slug : "";
+}
+
 function openItem(i, opener) {
   const { title, sub } = describe(i);
   const date = new Date(i.when);
@@ -259,9 +296,10 @@ function openItem(i, opener) {
       ? `Wanted. ${i.service_name} has not found it yet.`
       : `Wanted. ${i.service_name} searches for it when it comes out.`],
   ];
+  const page = itemPage(svc, i);
   const link = svc?.link
-    ? el("a", { class: "btn btn--primary", href: `${reachableUrl(svc.link)}/calendar`, target: "_blank", rel: "noopener noreferrer" },
-      icon("external-link"), `Open the calendar in ${i.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
+    ? el("a", { class: "btn btn--primary", href: `${reachableUrl(svc.link)}${page || "/calendar"}`, target: "_blank", rel: "noopener noreferrer" },
+      icon("external-link"), page ? `Open in ${i.service_name}` : `Open the calendar in ${i.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
     : null;
   sidePanel({
     title: day.replace(/^(Today|Tomorrow|Yesterday), /, ""), opener,
@@ -273,7 +311,8 @@ function openItem(i, opener) {
           chip(statusWord(i), i.have ? "success" : "neutral"),
           sub ? el("span", { class: "small muted", text: sub }) : null)),
       el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])),
-    ],
+      i.overview ? el("p", { text: i.overview }) : null,
+    ].filter(Boolean),
     foot: link ? [link] : [],
   });
 }

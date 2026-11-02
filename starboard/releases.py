@@ -84,6 +84,19 @@ RELEASES = [
      "fixed": [],
      "review": ["keys"],
      "settings": "Adds a switch to keep applying listening progress (off; on in the Everything preset), and gives apps named Audiobookshelf their own type. To go back, run ./update.sh --to v0.5.6, which keeps the app as an Other app."},
+    {"version": "0.7.0", "date": "2 November 2026",
+     "added": [("Install apps for beginners", "A Start here step explains how the apps work together; sensible apps and folders are chosen for you, with Advanced settings for the rest; every step is checked; a pool can join several drives; and after starting, a guide shows how to connect each app."),
+               ("Copy app settings", "Copies tags, custom formats, quality profiles, root folders, download clients and naming from one Sonarr, Radarr or Lidarr into another, and asks for the passwords the old app keeps hidden."),
+               ("Storyarr in Install apps", "Offered by default, with a database backup before each update."),
+               ("Upgrade now from Storyarr", "Apps, Updates opens on one app (apps-updates.html?app=storyarr), checks at once and goes to its row."),
+               ("More detail", "Recent checks and Check again for one app; how long an app has been down; Remove and Find another for downloads; overviews and app links on Coming up, with a month at a time; links from Search into the app; the full SMART table, self-tests and report download; what each saved settings copy holds, and downloads of copies and server backups; the date this version started.")],
+     "changed": [("Slide-outs", "Display and accessibility is now a slide-out. Every slide-out has its header in the page colour over a white (or dark) body."),
+                 ("Categories", "Renaming or removing one moves its apps in a single save."),
+                 ("Wrong passwords", "A wrong password in a dialog or Install apps stays on the page instead of signing you out."),
+                 ("Raspberry Pi", "The image is also built for 32-bit Raspberry Pi; Pillow (white logos) is left out where it cannot be installed.")],
+     "fixed": [],
+     "review": [],
+     "settings": "No settings change. To go back, run ./update.sh --to v0.6.0."},
 ]
 
 

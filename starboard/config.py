@@ -260,6 +260,14 @@ class Config:
             if "groups" in incoming:
                 groups = [str(g).strip()[:40] for g in incoming["groups"] if str(g).strip()]
                 d["groups"] = groups[:20] or DEFAULTS["groups"]
+            move = incoming.get("move_apps")
+            if isinstance(move, dict) and move.get("from"):  # renaming or removing a category moves its apps in the same save
+                old, new = str(move["from"]), str(move.get("to") or "").strip()[:40]
+                if new not in d["groups"]:
+                    raise ConfigError("Choose a category in the list for its apps")
+                for s in d["services"]:
+                    if s.get("group") == old:
+                        s["group"] = new
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
                         "fetch_icons", "show_posters", "setup_guide_done"):
                 if key in incoming:

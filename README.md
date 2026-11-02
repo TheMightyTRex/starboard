@@ -29,6 +29,8 @@ All made with example data (`tools/screenshots.sh`).
 | **Logs**, with Report a problem | **The log**, newest first |
 | ![Settings, General: how long to keep logs, and detailed logging](docs/screenshots/logs-settings.png) | ![Settings, Audiobookshelf: each account, the Audiobookshelf user it goes to, and how many books were applied](docs/screenshots/audiobookshelf.png) |
 | **Log settings** | **Listening progress** into Audiobookshelf |
+| ![Display and accessibility, a slide-out with the header in the page colour](docs/screenshots/display.png) | ![Copy app settings: what will be added, what is already there and what will be replaced](docs/screenshots/copy-settings.png) |
+| **Display and accessibility** | **Copy app settings** |
 | ![Apps on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) | |
 | **On a phone** | |
 
@@ -82,6 +84,8 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
 - **Jellyfin extras** (Settings, Jellyfin), each off until you turn it on: free **Live TV** channels and
   guides with Sky-style numbers and white logos; **import watch history** from Plex, Emby or another Jellyfin;
   **defaults for every user**. Set-up offers them when it finds Jellyfin.
+- **Copy app settings** (Settings, Manage apps): tags, quality profiles, folders, download clients and naming from
+  one Sonarr, Radarr or Lidarr into another, with a preview first and the hidden passwords asked for.
 - **Listening progress** (Settings, Audiobookshelf): copies where everyone is in each audiobook, and what they
   finished, from Plex, Jellyfin, Emby or another Audiobookshelf. Books are matched by ASIN, ISBN, title and author,
   or folder; progress people already have is never changed, and books not found are listed. It needs an admin API
@@ -89,10 +93,13 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
   minutes, and deletes that key straight after.
 - **Search for new apps** (Settings, Manage apps) finds apps on this computer and adds the ones you tick, with
   their API keys if Starboard has Docker access. It runs only when you press it.
-- **Install apps** sets up a media server in groups (Movies, TV, Music, Ebooks, Audiobooks, Comics, Watching,
-  Downloads, VPN and more). It writes a Compose file into `data/stack`, shows it, and starts the apps only when you
-  press Start and give your password (with Docker access), or gives you the command to run. It can point the new
-  apps at the media folders your other apps already use.
+- **Install apps: a complete *arr stack for beginners.** Never set one up? The guide explains what each app does,
+  picks the apps for what you want (Movies, TV, Music, Ebooks, Audiobooks, Comics, Watching, Downloads, VPN and
+  more) and sensible folders, checks every step, and can join several drives into one pool. It writes a Compose
+  file into `data/stack`, shows it, and starts the apps only when you press Start and give your password (with
+  Docker access), or gives you the command to run. Then it talks you through connecting each app, with the exact
+  addresses and folders. **Advanced settings** shows every app, folder and number. It can point the new apps at the
+  media folders your other apps already use.
 - **A set-up guide** after the first password, and an **upgrade guide** after an upgrade that brings something
   to choose. The version in the footer opens the release notes.
 - **Almost no third-party packages:** Python's standard library and plain HTML, CSS and JavaScript, plus Pillow
@@ -105,7 +112,8 @@ repository and asks, step by step, what Starboard may access).
 
 ### The ready-made image
 
-Images for amd64 and arm64 (such as a Raspberry Pi 4 or 5 on a 64-bit system) are published for every release
+Images for amd64, arm64 (such as a Raspberry Pi 4 or 5 on a 64-bit system) and 32-bit arm (armv7, such as a
+Raspberry Pi 2 or 3 on a 32-bit system) are published for every release
 at `ghcr.io/themightytrex/starboard`. Download [`compose.image.yaml`](compose.image.yaml), then:
 
 ```bash

@@ -7,24 +7,6 @@ const NO_KEY = ["link"];
 
 // Small helpers ------------------------------------------------------------
 
-// Checks of the password answer 401 when it is wrong. api() in common.js reads 401 as "signed out" and goes to
-// Sign in, so these calls keep the page and show the error by the field instead.
-async function postKeepingPage(path, body) {
-  const res = await fetch(path, {
-    method: "POST", credentials: "same-origin",
-    headers: { Accept: "application/json", "Content-Type": "application/json", "X-Starboard": "1" },
-    body: JSON.stringify(body || {}),
-  });
-  let data = {};
-  try { data = await res.json(); } catch { /* empty */ }
-  if (!res.ok) {
-    const error = new Error(data.error || `Something went wrong (error ${res.status})`);
-    error.status = res.status;
-    throw error;
-  }
-  return data;
-}
-
 // A field with its label, hint and an error tied to the control.
 let fieldCount = 0;
 function field(label, control, { hint, span, short } = {}) {
@@ -526,13 +508,7 @@ function countIn(group) { return config.services.filter((s) => s.group === group
 function appsWord(n) { return `${n} ${n === 1 ? "app" : "apps"}`; }
 
 // Categories are saved as a list of names, and each app keeps its category's name. Renaming or removing one
-// also moves the apps in it, one save per app.
-async function moveApps(from, to) {
-  for (const s of config.services.filter((x) => x.group === from)) {
-    const saved = await api("/api/services", { method: "POST", body: serviceBody(s, { group: to }) });
-    config = saved.config;
-  }
-}
+// moves the apps in it in the same save (move_apps).
 
 function categoryRow(name, index, list) {
   const n = countIn(name);
@@ -571,9 +547,9 @@ function renderCategories() {
   }
 }
 
-async function saveGroups(groups, message) {
+async function saveGroups(groups, message, moveApps = null) {
   try {
-    await saveGeneral({ groups }, null);
+    await saveGeneral(moveApps ? { groups, move_apps: moveApps } : { groups }, null);
     renderCategories();
     if (message) announce(message);
     return true;
@@ -598,12 +574,8 @@ async function renameCategory(name) {
   const to = input.value.trim();
   if (!ok || !to || to === name) return;
   if (config.groups.includes(to)) { toast(`There is already a category called ${to}`); return; }
-  if (!(await saveGroups(config.groups.map((g) => (g === name ? to : g))))) return;
-  try {
-    await moveApps(name, to);
-    renderCategories();
-    toast(`Renamed ${name} to ${to}`);
-  } catch (e) { toast(`Renamed, but some apps were not moved: ${e.message}`); }
+  if (!(await saveGroups(config.groups.map((g) => (g === name ? to : g)), null, { from: name, to }))) return;
+  toast(`Renamed ${name} to ${to}`);
   $(`#category-list [data-key="${CSS.escape(to)}"] .btn`)?.focus();
 }
 
@@ -620,10 +592,7 @@ async function removeCategory(name) {
   if (!ok) return;
   const row = $(`#category-list [data-key="${CSS.escape(name)}"]`);
   const next = row?.nextElementSibling || row?.previousElementSibling;
-  try {
-    if (n) await moveApps(name, to.value);
-  } catch (e) { toast(`Not removed: ${e.message}`); return; }
-  if (await saveGroups(others)) {
+  if (await saveGroups(others, null, n ? { from: name, to: to.value } : null)) {
     toast(n ? `Removed ${name}. Its apps are now in ${to.value}` : `Removed ${name}`);
     (next?.isConnected ? $(".btn", next) : $("#category-name"))?.focus();
   }
@@ -1684,7 +1653,7 @@ async function startSecurity() {
     if (fresh.value.length < 10) { setError(fresh, `Use at least 10 characters. This one has ${fresh.value.length}.`); fresh.focus(); return; }
     if (fresh.value !== again.value) { setError(again, "The two new passwords are different. Type the new one again."); again.focus(); return; }
     try {
-      await postKeepingPage("/api/password", { current: current.value, new: fresh.value });
+      await api("/api/password", { method: "POST", body: { current: current.value, new: fresh.value } });
       pwForm.reset();
       toast("Password changed. Everyone else is signed out");
     } catch (err) {
@@ -1781,6 +1750,7 @@ async function startAbout() {
     top.replaceChildren(box);
     const facts = $("#about-facts");
     facts.replaceChildren(el("dt", { text: "Version" }), el("dd", { class: "numeric", text: v.current }));
+    if (v.since) facts.append(el("dt", { text: "Running since" }), el("dd", { text: new Date(v.since * 1000).toLocaleString("en-GB", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) }));
     if (repo) facts.append(el("dt", { text: "Source code" }), el("dd", {}, el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "Starboard on GitHub", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))));
   };
   check.addEventListener("change", async () => {
@@ -1810,5 +1780,6 @@ startPage().then(async (session) => {
   if ($("#guide")) startGuide();
   if ($("#upgrade")) startUpgrade();
   if ($("#install") && typeof startInstall === "function") startInstall();
+  if ($("#copy-sections") && typeof startCopy === "function") startCopy();
   if ($("#version-notice")) startAbout();
 });

@@ -18,9 +18,13 @@ async function getConfig() {
   return config;
 }
 
+// In the library: the item's own page in its app (from the slug the app gave). Otherwise the app itself.
 function appHref(result) {
   const svc = config?.services.find((s) => s.id === result.service);
-  return svc?.link ? reachableUrl(svc.link) : "";
+  if (!svc?.link) return "";
+  const base = { sonarr: "/series/", radarr: "/movie/", lidarr: "/artist/", readarr: "/author/" }[svc.type];
+  const page = result.in_library && base && /^[\w.-]+$/.test(result.slug || "") ? base + result.slug : "";
+  return reachableUrl(svc.link) + page;
 }
 
 function cover(r, className) {
@@ -137,7 +141,7 @@ function openLink(r, primary) {
   const href = appHref(r);
   if (!href) return null;
   return el("a", { class: primary ? "btn btn--primary" : "btn", href, target: "_blank", rel: "noopener noreferrer" },
-    icon("external-link"), `Open ${r.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
+    icon("external-link"), r.in_library && r.slug ? `Open in ${r.service_name}` : `Open ${r.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
 }
 
 async function openPanel(r, opener) {

@@ -61,7 +61,7 @@ function tableFor(rows, caption) {
       el("tbody", {}, rows.map((r) => {
         const c = r.container;
         return el("tr", {},
-          el("th", { scope: "row", "data-label": "App" }, el("strong", { text: r.name }),
+          el("th", { scope: "row", "data-label": "App", id: `update-${r.id}`, tabindex: "-1" }, el("strong", { text: r.name }),
             el("div", { class: "small muted", text: c ? `${c.name} · ${c.status || c.state}` : "Choose its container in Manage apps" })),
           el("td", { "data-label": "Image" }, c ? el("code", { text: c.image }) : "None"),
           el("td", { "data-label": "Installed", class: "numeric" }, c ? (c.version || (c.created ? `Built ${formatDate(c.created)}` : "Not known")) : ""),
@@ -163,9 +163,23 @@ async function runUpdate(rows) {
   }
 }
 
+// ?app=storyarr (Storyarr's Upgrade now, through BOOK_UPGRADE_URL): check straight away and go to that app.
+async function openFor(wanted) {
+  await check();
+  const key = wanted.toLowerCase();
+  const row = (data.items || []).find((r) => r.id.toLowerCase() === key || r.name.toLowerCase() === key);
+  const cell = row && document.getElementById(`update-${row.id}`);
+  if (!cell) return;
+  cell.scrollIntoView({ block: "center" });
+  cell.focus({ preventScroll: true });
+  announce(row.update ? `${row.name} can be updated to ${row.latest || "a newer build"}` : `${row.name} is up to date`);
+}
+
 startPage().then(async () => {
   config = await api("/api/config").catch(() => ({ groups: [] }));
   $("#check-updates").addEventListener("click", check);
   $("#update-all").addEventListener("click", () => runUpdate(data.items.filter(safe)));
   await refresh();
+  const wanted = new URLSearchParams(location.search).get("app");
+  if (wanted && data.available) openFor(wanted);
 });

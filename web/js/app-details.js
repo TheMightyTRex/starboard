@@ -7,7 +7,7 @@
 const AppDetails = (() => {
   const UPDATE_TYPES = ["sonarr", "radarr", "lidarr", "readarr", "prowlarr"];
   const state = {
-    config: null, status: {}, outside: {}, updates: {}, updateErrors: {}, warnings: {},
+    config: null, status: {}, outside: {}, updates: {}, updateErrors: {}, warnings: {}, recent: {},
     loaded: new Set(), errors: {}, checkedAt: null,
   };
   let current = null; // { id, panel, opener, pushed }
@@ -45,13 +45,8 @@ const AppDetails = (() => {
       if (!hasUpdates()) { state.warnings = {}; return; }
       const { items, errors } = await api(fresh("/api/health"));
       state.healthErrors = Object.fromEntries((errors || []).map((e) => [e.service, e.message]));
-      // The API names the app, not its id; match by name.
-      const byName = new Map((state.config?.services || []).map((s) => [s.name, s.id]));
       state.warnings = {};
-      for (const item of items) {
-        const id = byName.get(item.service_name);
-        if (id) (state.warnings[id] ||= []).push(item);
-      }
+      for (const item of items) (state.warnings[item.service] ||= []).push(item);
     },
   };
 
@@ -182,7 +177,7 @@ const AppDetails = (() => {
     if (st?.state === "down") {
       out.push(el("div", { class: "notice", "data-tone": "danger" }, icon("circle-alert"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: `Starboard could not reach ${s.name}` }),
-        el("p", { text: `${sentence(st.message || "It did not answer")} Check that it is running, then select Check again.` }))));
+        el("p", { text: `${sentence(st.message || "It did not answer")}${st.down_since ? ` Not responding for ${since(st.down_since)}.` : ""} Check that it is running, then select Check again.` }))));
     } else if (st?.state === "unknown" || (!st && state.loaded.has("status"))) {
       out.push(el("div", { class: "notice" }, icon("info"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: "Starboard cannot check this service" }),
@@ -213,6 +208,9 @@ const AppDetails = (() => {
     // Uptime, when Starboard watches in the background (Settings, Alerts).
     out.push(section("Uptime", "app-details-uptime", uptimeBlock(s)));
 
+    // The last checks Starboard made of this app since it started (kept in memory, up to 20).
+    if (s.url) out.push(section("Recent checks", "app-details-checks", recentBlock(s)));
+
     // The app's own warnings (only apps that report them).
     if (UPDATE_TYPES.includes(s.type)) {
       const list = warnings(s);
@@ -221,7 +219,9 @@ const AppDetails = (() => {
       else if (state.healthErrors?.[s.id]) content = el("p", { class: "muted", text: `Could not ask ${s.name} for warnings: ${sentence(state.healthErrors[s.id])}` });
       else if (!list.length) content = el("p", { class: "muted", text: `${s.name} reports no warnings.` });
       else content = el("ul", { class: "rows" }, list.map((w) => el("li", { class: "row row--no-lead" },
-        el("div", {}, el("div", { class: "row__title", text: w.message })),
+        el("div", {}, el("div", { class: "row__title", text: w.message }),
+          el("div", { class: "row__meta" }, w.first_seen ? `Since ${clockOrDay(w.first_seen)}` : "",
+            /^https:\/\//.test(w.wiki || "") ? [w.first_seen ? " · " : "", el("a", { href: w.wiki, target: "_blank", rel: "noopener noreferrer" }, "How to fix it", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))] : null)),
         el("div", { class: "row__side" }, w.level === "error" ? chip("Error", "danger") : chip("Needs attention", "warning")))));
       out.push(section(`Warnings from ${s.name}`, "app-details-warn", content));
     }
@@ -249,6 +249,35 @@ const AppDetails = (() => {
     about.push(el("dt", { text: "Followed by" }), el("dd", { text: fol.length ? fol.map((x) => x.name).join(", ") : "No other services" }));
     out.push(section(s.background ? "About this service" : "About this app", "app-details-about", el("dl", { class: "facts" }, about)));
     return out;
+  }
+
+  function since(t) {
+    const mins = Math.max(1, Math.round((Date.now() / 1000 - t) / 60));
+    if (mins < 60) return `${mins} ${mins === 1 ? "minute" : "minutes"}`;
+    const hours = Math.round(mins / 60);
+    return hours < 48 ? `${hours} ${hours === 1 ? "hour" : "hours"}` : `${Math.round(hours / 24)} days`;
+  }
+
+  function clockOrDay(t) {
+    const d = new Date(t * 1000);
+    return d.toDateString() === new Date().toDateString() ? clock(d) : d.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function recentBlock(s) {
+    const rows = state.recent[s.id];
+    if (!rows) {
+      api(`/api/status?recent=${encodeURIComponent(s.id)}`).then((r) => { state.recent[s.id] = r.recent; if (current?.id === s.id) fill(); }).catch(() => {});
+      return el("p", { class: "muted", text: "Loading…" });
+    }
+    if (!rows.length) return el("p", { class: "muted", text: "None since Starboard started." });
+    return el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+      el("caption", { class: "visually-hidden", text: `Recent checks of ${s.name}, newest first` }),
+      el("thead", {}, el("tr", {}, ["Time", "Result", "Answered in"].map((t) => el("th", { scope: "col", text: t })))),
+      el("tbody", {}, rows.map((r) => el("tr", {},
+        el("td", { "data-label": "Time", class: "numeric", text: clockOrDay(r.t) }),
+        el("td", { "data-label": "Result" }, r.state === "up" ? chip("Running", "success") : chip("Not responding", "danger"),
+          r.message ? el("div", { class: "small muted", text: r.message }) : null),
+        el("td", { "data-label": "Answered in", class: "numeric", text: r.ms != null ? `${r.ms} ms` : "" }))))));
   }
 
   function uptimeBlock(s) {
@@ -280,7 +309,17 @@ const AppDetails = (() => {
     check.addEventListener("click", async () => {
       check.disabled = true;
       check.setAttribute("aria-busy", "true");
-      await checkAgain("status", "outside", "updates", "health");
+      // This app only: its status (shared with the other pages), its recent checks, and its warnings and updates.
+      try {
+        const r = await api(`/api/status?id=${encodeURIComponent(s.id)}`);
+        for (const row of r.items) state.status[row.id] = row;
+        state.recent[s.id] = r.recent;
+        state.checkedAt = new Date();
+      } catch (e) { toast(e.message); }
+      const more = [...(UPDATE_TYPES.includes(s.type) ? ["updates", "health"] : []), ...(s.outside_link ? ["outside"] : [])];
+      if (more.length) await checkAgain(...more);
+      listeners.forEach((fn) => fn(["status"]));  // the card on the page follows the slide-out
+      if (current) fill();
       const again = current?.panel.foot.querySelector("[data-check]");
       if (again) { again.disabled = false; again.removeAttribute("aria-busy"); again.focus(); }
       const words = status(s);

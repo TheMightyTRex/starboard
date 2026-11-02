@@ -10,7 +10,8 @@ from starboard import stack
 
 CHOICE = {"apps": ["radarr", "qbittorrent", "gluetun", "storyarr", "unpackerr"], "config_dir": "/srv/stack/config",
           "data_dir": "/srv/media", "puid": 1000, "pgid": 1000, "tz": "Europe/London",
-          "vpn": {"provider": "mullvad", "type": "wireguard", "wireguard_private_key": "secret+key="}}
+          "vpn": {"provider": "mullvad", "type": "wireguard", "wireguard_private_key": "secret+key=",
+                  "wireguard_addresses": "10.0.0.2/32", "openvpn_user": "not-used"}}
 
 
 class StackTest(unittest.TestCase):
@@ -47,7 +48,7 @@ class StackTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             stack.build({**CHOICE, "apps": ["evil"]})
         with self.assertRaises(ValueError):
-            stack.build({**CHOICE, "vpn": {**CHOICE["vpn"], "openvpn_password": "a\nB=1"}})
+            stack.build({**CHOICE, "vpn": {**CHOICE["vpn"], "wireguard_addresses": "a\nB=1"}})
         with self.assertRaises(ValueError):
             stack.build({**CHOICE, "tz": "Europe/London; rm"})
 
@@ -66,8 +67,33 @@ class StackTest(unittest.TestCase):
             self.assertEqual(os.stat(os.path.join(d, "stack", ".env")).st_mode & 0o777, 0o600)
 
 
-    def test_storyarr_is_offered_only_with_an_image(self):
-        with mock.patch.dict(stack.APPS["storyarr"], {"image": ""}):
+    def test_storyarr_gets_a_database_backup_before_updates(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as d:
+            built = stack.build(dict(CHOICE))
+            self.assertEqual(list(built["hooks"]), ["storyarr"])
+            script = built["hooks"]["storyarr"]
+            self.assertIn("docker exec storyarr-db pg_dump -U storyarr storyarr", script)
+            self.assertEqual(subprocess.run(["sh", "-n"], input=script, text=True).returncode, 0)
+            path = stack.write(d, built)
+            hook = os.path.join(path, "starboard-before-update", "storyarr.sh")
+            self.assertEqual(os.stat(hook).st_mode & 0o777, 0o700)
+            with open(hook, "w") as f:
+                f.write("mine\n")
+            stack.write(d, stack.build(dict(CHOICE)))
+            with open(hook) as f:
+                self.assertEqual(f.read(), "mine\n")  # a hook you changed is kept
+
+    def test_only_the_chosen_vpn_connection_is_written_and_needed(self):
+        env = stack.build(dict(CHOICE))["env"]
+        self.assertIn("WIREGUARD_ADDRESSES", env)
+        self.assertNotIn("OPENVPN_USER", env)
+        with self.assertRaisesRegex(ValueError, "OpenVPN password"):
+            stack.build(dict(CHOICE, vpn={"provider": "mullvad", "type": "openvpn", "openvpn_user": "me"}))
+
+    def test_storyarr_is_offered_unless_turned_off(self):
+        self.assertIn("storyarr", [a["key"] for a in stack.catalogue(set())["apps"]])
+        with mock.patch.dict(stack.APPS["storyarr"], {"image": "none"}):
             self.assertNotIn("storyarr", [a["key"] for a in stack.catalogue(set())["apps"]])
 
 

@@ -64,10 +64,10 @@ for key, items in SUB.items():
     for page, _, _ in items:
         PAGES[page] = key
 # Pages that belong to a section but have no tab of their own (opened from a button).
-PAGES.update({"setup-guide.html": "settings", "upgrade.html": "settings", "install-apps.html": "settings"})
+PAGES.update({"setup-guide.html": "settings", "upgrade.html": "settings", "install-apps.html": "settings", "copy-settings.html": "settings"})
 # Pages with no tab of their own show the tab they belong to as current: the guides open from Settings, General,
 # and Install apps from Manage apps.
-TAB_OF = {"setup-guide.html": "settings-general.html", "upgrade.html": "settings-general.html", "install-apps.html": "settings.html"}
+TAB_OF = {"setup-guide.html": "settings-general.html", "upgrade.html": "settings-general.html", "install-apps.html": "settings.html", "copy-settings.html": "settings.html"}
 
 
 def icon(name, size=18):
@@ -159,13 +159,9 @@ def shell(current):
     </div>
   </nav>
 </div>
-<dialog class="dialog" id="display-panel" aria-labelledby="display-panel-title">
-  <form method="dialog">
-    <div class="panel-header">
-      <h2 class="panel-header__title" id="display-panel-title">Display and accessibility</h2>
-      <button type="button" class="icon-btn" data-dialog-close aria-label="Close display and accessibility">{icon("x", 20)}</button>
-    </div>
-    <div class="dialog__body">
+<!-- Display and accessibility: a slide-out (common.js builds it from this template when Display is pressed). -->
+<template id="display-panel">
+  <form class="form-stack" data-display-form>
       <fieldset><legend>Theme</legend>
         <div class="segmented">
           <label><input type="radio" name="theme" value="system"><span>Match device</span></label>
@@ -195,13 +191,8 @@ def shell(current):
         <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General.</p>
         <div class="option-cards" data-design-options></div>
       </fieldset>
-    </div>
-    <div class="dialog__foot">
-      <button type="submit" class="btn btn--primary">Done</button>
-      <button type="button" class="btn" data-display-reset>Reset</button>
-    </div>
   </form>
-</dialog>
+</template>
 <div id="announcer" class="visually-hidden" aria-live="polite"></div>'''
 
 

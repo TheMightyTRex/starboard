@@ -76,11 +76,16 @@ async function api(path, { method = "GET", body } = {}) {
   const res = await fetch(path, opts);
   let data = {};
   try { data = await res.json(); } catch { /* empty */ }
-  if (res.status === 401 && !location.pathname.startsWith("/login")) {
+  // 401 means signed out, except a password check that was wrong (reason "password"): that stays on the page.
+  if (res.status === 401 && data.reason !== "password" && !location.pathname.startsWith("/login")) {
     location.href = "/login.html?next=" + encodeURIComponent(location.pathname + location.search);
     throw new Error("Sign in first");
   }
-  if (!res.ok) throw new Error(data.error || `Something went wrong (error ${res.status})`);
+  if (!res.ok) {
+    const error = new Error(data.error || `Something went wrong (error ${res.status})`);
+    error.status = res.status;
+    throw error;
+  }
   return data;
 }
 
@@ -377,12 +382,18 @@ function upgradeNotice(upgrade) {
 
 // Display and accessibility panel --------------------------------------
 
+// A slide-out, like every other panel that opens over a page (DESIGN-SYSTEM.md, Consistency rules). Choices apply
+// at once and are kept in this browser; Done closes it, Reset goes back to the defaults.
 function setUpDisplayPanel() {
-  const dialog = $("#display-panel");
+  const template = $("#display-panel");
   const opener = $("[data-display-toggle]");
-  if (!dialog || !opener) return;
-  const form = $("form", dialog);
-  const designList = $("[data-design-options]", dialog);
+  if (!template || !opener) return;
+  opener.addEventListener("click", () => openDisplayPanel(template, opener));
+}
+
+function openDisplayPanel(template, opener) {
+  const form = template.content.querySelector("[data-display-form]").cloneNode(true);
+  const designList = $("[data-design-options]", form);
   const choices = [["", "Use the dashboard's default"], ...Object.entries(DESIGNS).map(([k, v]) => [k, v[0], v[1]])];
   for (const [value, label, help] of choices) {
     designList.append(el("label", { class: "option-card" },
@@ -405,11 +416,15 @@ function setUpDisplayPanel() {
     applyPrefs(prefs);
   };
   form.addEventListener("change", save);
-  form.addEventListener("submit", (e) => { e.preventDefault(); dialog.close(); });
-  $("[data-display-reset]", dialog).addEventListener("click", () => { writePrefs(DEFAULT_PREFS); applyPrefs(DEFAULT_PREFS); fill(); announce("Display settings reset"); });
-  $("[data-dialog-close]", dialog).addEventListener("click", () => dialog.close());
-  opener.addEventListener("click", () => { fill(); dialog.showModal(); opener.setAttribute("aria-expanded", "true"); });
-  dialog.addEventListener("close", () => { opener.setAttribute("aria-expanded", "false"); opener.focus(); });
+  const done = el("button", { type: "button", class: "btn btn--primary", text: "Done" });
+  const reset = el("button", { type: "button", class: "btn", text: "Reset" });
+  fill();
+  opener.setAttribute("aria-expanded", "true");
+  const panel = sidePanel({ title: "Display and accessibility", opener, body: [form], foot: [done, reset],
+    onClose: () => opener.setAttribute("aria-expanded", "false") });
+  form.addEventListener("submit", (e) => { e.preventDefault(); panel.close(); });
+  done.addEventListener("click", () => panel.close());
+  reset.addEventListener("click", () => { writePrefs(DEFAULT_PREFS); applyPrefs(DEFAULT_PREFS); fill(); announce("Display settings reset"); });
 }
 
 // Every dialog closes with its X button and returns focus (the browser handles Escape and focus trapping).

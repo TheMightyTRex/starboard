@@ -206,17 +206,46 @@ function detailsBody(item) {
       el("h3", { id: "dd-msg-h", text: `Messages from ${item.service_name}` }),
       el("ul", { class: "rows" }, item.messages.map((m) => el("li", { class: "row row--no-lead" }, el("div", { class: "row__title", text: m }))))));
   }
+  const added = item.added ? new Date(item.added).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
   const facts = [["App", item.service_name], ["Download client", item.client], ["State", label], ["Size", item.size ? formatBytes(item.size) : ""],
-    ["Time left", timeLeftWords(item.time_left)], ["Release", item.title]].filter(([, v]) => v);
+    ["Time left", timeLeftWords(item.time_left)], ["Added", added], ["Release", item.title]].filter(([, v]) => v);
   body.push(el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])));
   return body;
 }
 
 function detailsFoot(item) {
   const href = appLink(item);
-  if (!href) return [];
-  return [el("a", { class: "btn btn--primary", href, target: "_blank", rel: "noopener noreferrer" }, icon("external-link"),
-    `Open the queue in ${item.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))];
+  const out = href ? [el("a", { class: "btn btn--primary", href, target: "_blank", rel: "noopener noreferrer" }, icon("external-link"),
+    `Open the queue in ${item.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))] : [];
+  if (item.id == null || !item.service) return out;
+  const another = el("button", { type: "button", class: "btn" }, icon("search"), "Find another");
+  another.addEventListener("click", () => queueAction(item, "block-search", {
+    title: "Block this release and find another?",
+    message: `${item.service_name} removes it from ${item.client || "the download client"}, never downloads this release again, and searches for another now.`,
+    confirm: "Block and search",
+  }));
+  const remove = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Remove");
+  remove.addEventListener("click", () => {
+    const block = el("input", { type: "checkbox" });
+    queueAction(item, () => (block.checked ? "block" : "remove"), {
+      title: "Remove this download?",
+      message: `${item.service_name} removes it from the queue and from ${item.client || "the download client"}, with what it has downloaded so far.`,
+      fields: [el("label", { class: "check" }, block, el("span", { class: "check__text" }, el("strong", { text: "Block this release" }),
+        el("span", { class: "check__hint", text: `So ${item.service_name} does not download it again.` })))],
+      confirm: "Remove download", danger: true,
+    });
+  });
+  return [...out, another, remove];
+}
+
+async function queueAction(item, action, dialog) {
+  if (!(await confirmDialog(dialog))) return;
+  const chosen = typeof action === "function" ? action() : action;
+  try {
+    await api("/api/queue/action", { method: "POST", body: { service: item.service, id: item.id, action: chosen } });
+    toast({ remove: "Removed", block: "Removed and blocked", "block-search": "Blocked. Searching for another" }[chosen]);
+    load({ announceIt: true });
+  } catch (e) { toast(`Not done: ${e.message}`); }
 }
 
 function openDetails(key, opener) {
@@ -248,7 +277,7 @@ async function load({ announceIt = false } = {}) {
     const data = await api(announceIt ? "/api/queue?fresh=1" : "/api/queue");
     const seen = new Map();
     items = data.items.map((i, order) => {
-      const base = `${i.service_name}|${i.client}|${i.title}`;
+      const base = i.id != null ? `${i.service}|${i.id}` : `${i.service_name}|${i.client}|${i.title}`;
       const n = (seen.get(base) || 0) + 1;
       seen.set(base, n);
       return { ...i, messages: i.messages || [], order, key: n > 1 ? `${base}#${n}` : base };

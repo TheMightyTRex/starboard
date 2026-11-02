@@ -79,12 +79,32 @@ def saved_copies(config):
     return out
 
 
-def restore_saved(config, name):
+def _saved(config, name):
     if not SAVED_RE.match(name or ""):
         raise ConfigError("Choose a saved copy from the list")
-    path = os.path.join(config.data_dir, "backups", name)
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+    with open(os.path.join(config.data_dir, "backups", name), encoding="utf-8") as f:
+        return json.load(f)
+
+
+def saved_detail(config, name):
+    """What one saved copy holds, read only when it is opened (the list reads none of the files)."""
+    data = _saved(config, name)
+    services = [s for s in data.get("services") or [] if isinstance(s, dict)]
+    return {"name": name, "site_name": data.get("site_name", ""), "apps": len(services),
+            "categories": [g for g in data.get("groups") or [] if isinstance(g, str)],
+            "app_names": sorted(str(s.get("name", "")) for s in services)[:60]}
+
+
+def export_saved(config, name, version):
+    """A saved copy in the download format, so it can be restored from a file later. Never the password."""
+    data = _saved(config, name)
+    return {"format": FORMAT, "version": version, "created": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(
+        os.path.getmtime(os.path.join(config.data_dir, "backups", name)))),
+        "settings": {k: data[k] for k in GENERAL_KEYS if k in data}, "services": data.get("services", [])}
+
+
+def restore_saved(config, name):
+    data = _saved(config, name)
     # Saved copies are whole settings files: turn them into the backup format, keeping the password.
     return restore(config, {"format": FORMAT, "settings": data, "services": data.get("services", [])})
 
@@ -114,6 +134,13 @@ def server_status():
                 continue
             if not status or (raw.get("started") or 0) > (status.get("started") or 0):
                 status = {k: raw.get(k) for k in ("status", "started", "finished", "summary", "exit")}
+                # Optional, when the host job writes them: what went in, what could not be read, earlier runs.
+                for key in ("included", "unreadable"):
+                    if isinstance(raw.get(key), list):
+                        status[key] = [str(x)[:300] for x in raw[key][:200]]
+                if isinstance(raw.get("runs"), list):
+                    status["runs"] = [{k: r.get(k) for k in ("status", "started", "finished", "summary")}
+                                      for r in raw["runs"][:20] if isinstance(r, dict)]
                 status["with_prompt"] = job == "backup-with-prompt"
         if any(os.path.exists(os.path.join(jobs, "requests", job)) for job in JOB_NAMES):
             status = dict(status or {}, status="waiting")
@@ -125,6 +152,16 @@ def server_status():
         files.sort(key=lambda f: f["modified"], reverse=True)
     return {"can_run": bool(jobs) and os.access(os.path.join(jobs, "requests"), os.W_OK),
             "configured": bool(jobs or folder), "status": status, "files": files[:50]}
+
+
+def server_file(name):
+    """A file the server backup job made, by name, for downloading. None if it is not one of them."""
+    folder = backup_dir()
+    if not folder or not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,200}$", name or ""):
+        return None
+    path = os.path.join(folder, name)
+    ok = os.path.isfile(path) and re.search(r"\.(zip|tar|tar\.gz|tgz|gz|7z|dump|sql|md)$", path)
+    return path if ok else None
 
 
 def request_server_backup(with_prompt=False):

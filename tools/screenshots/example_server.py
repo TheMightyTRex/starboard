@@ -36,8 +36,9 @@ _snapshot = sysinfo.snapshot
 def example_snapshot(disk_paths):
     out = _snapshot([])
     out["disks"] = [{"label": label, "total": int(DISKS[label][0]), "used": int(DISKS[label][1]),
-                     "free": int(DISKS[label][0] - DISKS[label][1]), "filesystem": "mergerfs" if label == "Media pool" else "ext4"}
-                    for label, _ in disk_paths]
+                     "free": int(DISKS[label][0] - DISKS[label][1]), "filesystem": "mergerfs" if label == "Media pool" else "ext4",
+                     "path": path, "source": "/disks/each/1:/disks/each/2:/disks/each/3:/disks/each/4" if label == "Media pool" else "/dev/sdx1"}
+                    for label, path in disk_paths]
     return out
 
 
@@ -97,8 +98,19 @@ class FakeArr(BaseHTTPRequestHandler):
             return self.send_json(items)
         if "/lookup" in p:
             return self.send_json([{"title": "Example result", "year": 2024, "tvdbId": 1, "tmdbId": 1, "overview": "A made-up search result.", "images": []}])
+        # Settings for Copy app settings: the 4K copy is new, so it has only some of them.
+        new = "/tv4k" in p
+        if p.endswith("/tag"):
+            return self.send_json([{"id": 1, "label": "kids"}] + ([] if new else [{"id": 2, "label": "anime"}]))
+        if p.endswith("/customformat"):
+            return self.send_json([] if new else [{"id": 1, "name": "x265", "specifications": []}, {"id": 2, "name": "Remux", "specifications": []}])
+        if p.endswith("/downloadclient"):
+            return self.send_json([] if new else [{"id": 1, "name": "qBittorrent", "implementationName": "qBittorrent", "fields": [{"name": "password", "label": "Password", "value": "********"}]},
+                                                  {"id": 2, "name": "SABnzbd", "implementationName": "SABnzbd", "fields": [{"name": "apiKey", "label": "API Key", "value": "********"}]}])
+        if p.endswith("/remotepathmapping"):
+            return self.send_json([])
         if "/qualityprofile" in p:
-            return self.send_json([{"id": 1, "name": "HD"}])
+            return self.send_json([{"id": 1, "name": "HD"}] + ([] if new else [{"id": 2, "name": "Ultra HD"}]))
         if "/rootfolder" in p:
             return self.send_json([{"path": "/media", "freeSpace": 10**12}])
         return self.send_json([], 200)
@@ -121,6 +133,7 @@ APPS = [
     ("Example music", "link", "Watch and listen", "music"),
     ("Example books", "link", "Watch and listen", "books"),
     ("Example films", "radarr", "Downloads", "films"),
+    ("Example TV 4K", "sonarr", "Downloads", "tv4k"),
     ("Media player", "link", "Watch and listen", "player"),
     ("Audiobookshelf", "audiobookshelf", "Watch and listen", "abs"),
     ("Not running", "link", "Watch and listen", None),

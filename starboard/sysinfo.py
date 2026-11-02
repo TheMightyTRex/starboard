@@ -1,5 +1,6 @@
 """Load, memory, uptime and free space, read from /proc without extra privileges."""
 
+import re
 import os
 import shutil
 import time
@@ -18,9 +19,10 @@ FS_NAMES = {"fuse.mergerfs": "mergerfs", "fuseblk": "NTFS", "ntfs3": "NTFS", "nt
             "fuse.shfs": "Unraid", "overlay": "overlay"}
 
 
-def filesystem(path):
-    """The filesystem a folder lives on, from the mount table (the longest mount point that holds it)."""
-    best, kind = "", ""
+def filesystem(path, source=False):
+    """The filesystem a folder lives on, from the mount table (the longest mount point that holds it). With
+    source=True, (filesystem, what is mounted there: a device such as /dev/sdb1, or a pool's member list)."""
+    best, kind, where = "", "", ""
     real = os.path.realpath(path)
     for line in _read("/proc/self/mountinfo").splitlines():
         left, _, right = line.partition(" - ")
@@ -29,8 +31,10 @@ def filesystem(path):
             continue
         point = fields[4].replace("\\040", " ")
         if (real == point or real.startswith(point.rstrip("/") + "/")) and len(point) >= len(best):
-            best, kind = point, right.split()[0]
-    return FS_NAMES.get(kind, kind)
+            parts = right.split()
+            best, kind, where = point, parts[0], parts[1] if len(parts) > 1 else ""
+    name = FS_NAMES.get(kind, kind)
+    return (name, where.replace("\\040", " ")) if source else name
 
 
 def snapshot(disk_paths):
@@ -45,8 +49,9 @@ def snapshot(disk_paths):
     for label, path in disk_paths:
         try:
             usage = shutil.disk_usage(path)
+            kind, source = filesystem(path, source=True)
             disks.append({"label": label, "total": usage.total, "used": usage.used, "free": usage.free,
-                          "filesystem": filesystem(path)})
+                          "filesystem": kind, "path": path, "source": source})
         except OSError:
             disks.append({"label": label, "missing": True})
     return {
@@ -247,6 +252,28 @@ WATCH = {5: "Reallocated sectors", 196: "Reallocation events", 197: "Sectors wai
          199: "Cable (CRC) errors", 10: "Spin-up retries", 184: "End-to-end errors"}
 
 
+_EVENT_TIME = re.compile(r"^\[?(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2})?)\]?\s*(.*)$")
+
+
+def _event(line):
+    """An event line split into its time (when it starts with one), its words and a tone for the page."""
+    m = _EVENT_TIME.match(line.strip())
+    when, text = (m.group(1), m.group(2)) if m else ("", line.strip())
+    tone = "danger" if re.search(r"(?i)fail|error|critical", text) else "warning" if re.search(r"(?i)warn|changed|pending|reallocat|temperature", text) else "info"
+    return {"when": when, "text": text, "tone": tone}
+
+
+def smart_report(name):
+    """One disk's full smartctl report (a JSON file the host job wrote), by its file name."""
+    folder = smart_dir()
+    if not folder or not re.match(r"^[A-Za-z0-9_.-]{1,120}\.json$", name or ""):
+        return None
+    for path in (os.path.join(folder, "current", name), os.path.join(folder, name)):
+        if os.path.isfile(path):
+            return path
+    return None
+
+
 def smart_dir():
     return os.environ.get("STARBOARD_SMART_DIR", "")
 
@@ -281,6 +308,12 @@ def disk_health():
                       "lifetime_hours": t.get("power_on_hours")}
                      for t in (d.get("nvme_self_test_log") or {}).get("table") or []]
         last_test = tests[0] if tests else None
+        table = [{"id": a.get("id"), "name": str(a.get("name", "")).replace("_", " "), "value": a.get("value"),
+                  "worst": a.get("worst"), "threshold": a.get("thresh"), "raw": (a.get("raw") or {}).get("string", "")}
+                 for a in attrs.values()]
+        if nvme:
+            table = [{"id": None, "name": k.replace("_", " ").capitalize(), "value": None, "worst": None, "threshold": None,
+                      "raw": str(v)} for k, v in nvme.items() if not isinstance(v, (list, dict))]
         disks.append({
             "model": d.get("model_name") or d.get("model_family") or "Disk",
             "serial": d.get("serial_number", ""),
@@ -294,6 +327,11 @@ def disk_health():
             "last_test": {"type": last_test.get("type", {}).get("string", ""),
                           "result": last_test.get("status", {}).get("string", ""),
                           "hours": last_test.get("lifetime_hours")} if last_test else None,
+            "tests": [{"type": t.get("type", {}).get("string", ""), "result": t.get("status", {}).get("string", ""),
+                       "hours": t.get("lifetime_hours")} for t in tests[:10]],
+            "attributes": table,
+            "rpm": d.get("rotation_rate"),
+            "report": os.path.basename(path),
             "checked": os.path.getmtime(path),
             # The drive's own recent temperature log (SCT), newest last, when it keeps one.
             "sct": _sct(d),
@@ -304,7 +342,7 @@ def disk_health():
         events.extend(line for line in lines if line.strip())
     events.sort(reverse=True)
     requests = os.path.join(folder, "requests")
-    return {"configured": True, "disks": disks, "events": events[:40], "devices": _devices(folder),
+    return {"configured": True, "disks": disks, "events": [_event(e) for e in events[:40]], "devices": _devices(folder),
             "can_read": os.path.isdir(requests) and os.access(requests, os.W_OK),
             "reading": os.path.exists(os.path.join(requests, "read"))}
 
@@ -336,6 +374,24 @@ def _devices(folder):
                           "label": part.get("label") or "", "mounted": mounts[:3]})
         out.append({"name": disk.get("name"), "model": (disk.get("model") or "").strip(), "serial": disk.get("serial") or "",
                     "size": disk.get("size"), "parts": parts})
+    return out
+
+
+def pool_candidates():
+    """Mounted drives that could join a pool (for Install apps): from the SMART job's lsblk.json. The system disk
+    (mounted at / or /boot) is left out. None when Starboard has no drive list."""
+    folder = smart_dir()
+    devices = _devices(folder) if folder else None
+    if devices is None:
+        return None
+    out = []
+    for disk in devices:
+        if any(m in ("/", "/boot", "/boot/efi") or m.startswith("/boot") for p in disk["parts"] for m in p["mounted"]):
+            continue
+        for p in disk["parts"]:
+            for m in p["mounted"]:
+                if m.startswith("/") and p["fs"] not in ("swap", "fuse.mergerfs"):
+                    out.append({"mount": m, "device": p["name"], "size": p["size"], "fs": p["fs"], "model": disk["model"], "label": p["label"]})
     return out
 
 

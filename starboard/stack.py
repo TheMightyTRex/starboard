@@ -41,6 +41,10 @@ LSIO = {"PUID": "${PUID}", "PGID": "${PGID}", "TZ": "${TZ}"}
 CFG = "${CONFIG_DIR}"
 DATA = "${DATA_DIR}"
 
+# Storyarr is pinned to a version, so Apps, Updates offers each newer one (with a database backup first).
+# STARBOARD_STORYARR_IMAGE chooses another image, or none to leave Storyarr out.
+STORYARR_IMAGE = "ghcr.io/themightytrex/storyarr:v0.4.8"
+
 APPS = {
     "radarr": {"name": "Radarr", "groups": ["movies"], "image": "lscr.io/linuxserver/radarr:latest",
                "ports": ["7878:7878"], "volumes": [f"{CFG}/radarr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200},
@@ -51,7 +55,7 @@ APPS = {
     "bookshelf": {"name": "Bookshelf", "groups": ["ebooks"], "image": "ghcr.io/pennydreadful/bookshelf:softcover",
                   "ports": ["8787:8787"], "volumes": [f"{CFG}/bookshelf:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200,
                   "notes": "A maintained version of Readarr."},
-    "storyarr": {"name": "Storyarr", "groups": ["ebooks", "audiobooks"], "image": os.environ.get("STARBOARD_STORYARR_IMAGE", ""),
+    "storyarr": {"name": "Storyarr", "groups": ["ebooks", "audiobooks"], "image": os.environ.get("STARBOARD_STORYARR_IMAGE") or STORYARR_IMAGE,
                  "ports": ["8000:8000"], "volumes": [f"{CFG}/storyarr:/config", f"{DATA}:/data"], "memory": 250,
                  "env": {**LSIO, "DB_HOST": "storyarr-db", "DB_PORT": "5432", "DB_NAME": "storyarr", "DB_USER": "storyarr",
                          "DB_PASSWORD": "${STORYARR_DB_PASSWORD}"},
@@ -180,9 +184,8 @@ def existing_media():
 
 
 def offered():
-    """Apps with an image to install. Storyarr's image is a setting (STARBOARD_STORYARR_IMAGE), so it is offered
-    only when that is set."""
-    return {k: a for k, a in APPS.items() if a["image"]}
+    """Apps with an image to install. STARBOARD_STORYARR_IMAGE=none leaves Storyarr out."""
+    return {k: a for k, a in APPS.items() if a["image"] and a["image"] != "none"}
 
 
 def catalogue(installed_keys):
@@ -235,8 +238,13 @@ def build(choice):
         if not re.match(r"^[a-z0-9 _-]{2,40}$", provider) or kind not in ("wireguard", "openvpn"):
             raise ValueError("Choose your VPN provider, and WireGuard or OpenVPN")
         vals = {"VPN_SERVICE_PROVIDER": provider, "VPN_TYPE": kind, "SERVER_COUNTRIES": str(vpn_choice.get("countries", ""))}
-        for f in ("WIREGUARD_PRIVATE_KEY", "WIREGUARD_ADDRESSES", "OPENVPN_USER", "OPENVPN_PASSWORD"):
-            vals[f] = str(vpn_choice.get(f.lower(), ""))
+        # Only the fields for the chosen connection go in, and those are needed.
+        needed = {"wireguard": {"WIREGUARD_PRIVATE_KEY": "WireGuard private key", "WIREGUARD_ADDRESSES": "WireGuard address"},
+                  "openvpn": {"OPENVPN_USER": "OpenVPN user name", "OPENVPN_PASSWORD": "OpenVPN password"}}[kind]
+        for f, label in needed.items():
+            vals[f] = str(vpn_choice.get(f.lower(), "")).strip()
+            if not vals[f]:
+                raise ValueError(f"Enter the {label} from your VPN provider")
         for k, v in vals.items():
             if "\n" in v or "\r" in v or "'" in v or len(v) > 300:
                 raise ValueError("A VPN detail has a line break or a ' mark, or is too long. Add it to the .env file by hand instead")
@@ -296,8 +304,21 @@ def build(choice):
                                                      for f in DATA_FOLDERS.get(g, [])]
     env_text = "# Starboard's Install apps guide. Keep this file private: it holds passwords.\n" + \
         "".join(f"{k}={_env_value(v)}\n" for k, v in env.items())
+    hooks = {k: before_update(APPS[k]) for k in keys if APPS[k].get("db")}
     return {"compose": "\n".join(lines) + "\n", "env": env_text, "env_shown": shown, "folders": sorted(set(folders)),
-            "moved": moved, "later": later}
+            "moved": moved, "later": later, "hooks": hooks}
+
+
+def before_update(app):
+    """A database backup that Apps, Updates runs before it changes this app (containers.py runs
+    starboard-before-update/<service>.sh from the Compose folder). If the backup fails or is empty, the update stops."""
+    db = app["db"]
+    name = db["env"]["POSTGRES_DB"]
+    return ("#!/bin/sh\n# Written by Starboard's Install apps: backs up the database before Apps, Updates changes the app.\n"
+            "set -eu\nset -o pipefail\nmkdir -p starboard-before-update/backups\n"
+            f"out=starboard-before-update/backups/{name}-db-$(date +%Y-%m-%d-%H%M).sql.gz\n"
+            f"docker exec {db['service']} pg_dump -U {db['env']['POSTGRES_USER']} {name} | gzip > \"$out\"\n"
+            "test -s \"$out\"\necho \"Database backed up to $out\"\n")
 
 
 def _env_value(v):
@@ -325,6 +346,13 @@ def write(data_dir, built):
         fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
         with os.fdopen(fd, "w") as f:
             f.write(text)
+    hooks = os.path.join(path, "starboard-before-update")
+    for key, script in (built.get("hooks") or {}).items():
+        os.makedirs(hooks, mode=0o700, exist_ok=True)
+        target = os.path.join(hooks, f"{key}.sh")
+        if not os.path.exists(target):  # one you changed is kept
+            with os.fdopen(os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o700), "w") as f:
+                f.write(script)
     return path
 
 

@@ -1,5 +1,6 @@
 """The web server: static pages, the JSON API and the security rules around both."""
 
+import datetime as dt
 import gzip
 import hashlib
 import json
@@ -8,6 +9,7 @@ import os
 import posixpath
 import ipaddress
 import re
+import secrets
 import socket
 import threading
 import time
@@ -16,7 +18,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, discovery, icons, jobs, listening, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, watch
+from . import access, auth, backup, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -86,6 +88,10 @@ class App:
         self.sessions = auth.Sessions(data_dir)
         self.limits = auth.RateLimit()
         self.version = read_version()
+        since = self.config.data.get("version_since") or {}
+        if since.get("version") != self.version:  # the time this version first started: About shows it
+            self.config.data["version_since"] = {"version": self.version, "since": time.time()}
+            self.config.save()
         self.disks = sysinfo.disk_paths_from_env()
         self.history = (sysinfo.History(data_dir, lambda: self.config.data["performance"])
                         if os.environ.get("STARBOARD_HISTORY", "1") != "0" else None)
@@ -104,6 +110,7 @@ class App:
         self.importing = None  # the watch history import that is running, if any
         self.import_result = None
         self.import_lock = threading.Lock()
+        self.download_links = {}  # one-time links for server backup downloads: token: (file name, until)
         self.listening_busy = None  # reading listening progress, if it is running
         self.listening_read = None
         self.schedule = schedule.Schedule(self.config)
@@ -281,8 +288,21 @@ class Handler(BaseHTTPRequestHandler):
         headers.update(extra or {})
         self.send(status, json.dumps(payload).encode(), extra=headers)
 
-    def error(self, status, message):
-        self.json(status, {"error": message})
+    def stream_file(self, path, name):
+        size = os.path.getsize(path)
+        self.send_response(200)
+        for k, v in SECURITY_HEADERS.items():
+            self.send_header(k, v)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Length", str(size))
+        self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+        self.end_headers()
+        with open(path, "rb") as f:
+            while chunk := f.read(1 << 20):
+                self.wfile.write(chunk)
+
+    def error(self, status, message, **extra):
+        self.json(status, {"error": message, **extra})
 
     def body(self, limit=MAX_BODY):
         length = self.content_length()
@@ -460,7 +480,7 @@ class Handler(BaseHTTPRequestHandler):
         if data_dir in ("/", ""):
             data_dir = f"{base}/media"
         return {**stack.catalogue(installed), "docker": containers.available(), "can_start": bool(host and containers.available()),
-                "existing_media": media,
+                "existing_media": media, "drives": sysinfo.pool_candidates(),
                 "servers": [{"key": i["key"], "name": i["name"]} for i in found
                             if i["key"] in ("plex", "emby", "jellyfin", "audiobookshelf", "sonarr", "radarr", "lidarr")],
                 "written": os.path.exists(os.path.join(stack.folder(app.data_dir), "compose.yaml")),
@@ -574,6 +594,14 @@ class Handler(BaseHTTPRequestHandler):
                     logs.event("info", "apps", f"Removed {service['name']}")
                     return self.json(200, cfg.public())
             if path == "/api/status" and method == "GET":
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                one = q.get("id", [""])[0]
+                if q.get("recent"):  # the last checks of one app, without checking it again
+                    return self.json(200, {"recent": services.recent_checks(q["recent"][0])})
+                if one:
+                    if not cfg.service(one):
+                        return self.error(404, "No app with that ID")
+                    return self.json(200, {"items": services.status_one(cfg.data["services"], one), "recent": services.recent_checks(one)})
                 return self.json(200, {"items": services.cached("status", 15, lambda: services.status_all(cfg.data["services"]), fresh)})
             if path == "/api/search" and method == "GET":
                 query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("q", [""])[0]
@@ -593,6 +621,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, services.cached("app-updates", 600, lambda: services.app_updates(cfg.data["services"]), fresh))
             if path == "/api/queue" and method == "GET":
                 return self.json(200, services.cached("queue", 10, lambda: services.queue(cfg.data["services"]), fresh))
+            if path == "/api/queue/action" and method == "POST":
+                data = self.body()
+                service = cfg.service(str(data.get("service", "")))
+                if not service or service["type"] not in ("sonarr", "radarr", "lidarr", "readarr") or not str(data.get("id", "")).isdigit():
+                    return self.error(400, "Choose a download in Sonarr, Radarr, Lidarr or Readarr")
+                services.queue_action(service, int(data["id"]), str(data.get("action", "")))
+                logs.event("info", "downloads", f"{data.get('action')} for a download in {service['name']}")
+                return self.json(200, {"ok": True})
             if path.startswith("/api/containers"):
                 if not containers.available():
                     return self.json(200, {"available": False, "items": [], "containers": []})
@@ -629,6 +665,28 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/listening/mapping" and method == "PUT":
                 listening.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
                 return self.json(200, {"ok": True})
+            if path == "/api/copy-settings" and method == "GET":
+                return self.json(200, {"parts": copyset.PARTS, "apps": [
+                    {"id": sv["id"], "name": sv["name"], "type": sv["type"], "has_api_key": bool(sv.get("api_key"))}
+                    for sv in cfg.data["services"] if sv["type"] in copyset.KINDS and sv.get("enabled", True)]})
+            if path in ("/api/copy-settings/preview", "/api/copy-settings/apply") and method == "POST":
+                body = self.body()
+                source, target = cfg.service(str(body.get("from", ""))), cfg.service(str(body.get("to", "")))
+                parts = body.get("parts") if isinstance(body.get("parts"), list) else []
+                if not source or not target:
+                    return self.error(400, "Choose the app to copy from and the app to copy to")
+                if not parts:
+                    return self.error(400, "Choose at least one part to copy")
+                try:
+                    if path.endswith("preview"):
+                        return self.json(200, copyset.preview(source, target, parts))
+                    secrets_given = body.get("secrets") if isinstance(body.get("secrets"), dict) else {}
+                    result = copyset.apply(source, target, parts, {str(k): v for k, v in secrets_given.items() if isinstance(v, dict)})
+                    logs.event("info", "copy", f"Copied {', '.join(parts)} from {source['name']} to {target['name']}" +
+                               (f"; {len(result['problems'])} problems" if result["problems"] else ""))
+                    return self.json(200, result)
+                except (ValueError, services.ServiceError) as e:
+                    return self.error(400, str(e))
             if path == "/api/discover" and method == "GET":
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":
@@ -637,7 +695,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, self.stack_overview())
             if path == "/api/stack/preview" and method == "POST":
                 built = stack.build(self.body())
-                return self.json(200, {k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")})
+                return self.json(200, {**{k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")}, "hooks": sorted(built["hooks"])})
             if path == "/api/stack/write" and method == "POST":
                 built = stack.build(self.body())
                 stack.write(app.data_dir, built)
@@ -697,7 +755,22 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, app.schedule.act(str(self.body().get("action", ""))))
             if path == "/api/calendar" and method == "GET":
                 days = cfg.data["upcoming_days"]
-                result = json.loads(json.dumps(services.cached(f"calendar-{days}", 600, lambda: services.calendar(cfg.data["services"], days), fresh)))
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                try:
+                    month = dt.date.fromisoformat(q.get("month", [""])[0] + "-01") if q.get("month") else None
+                except ValueError:
+                    return self.error(400, "Send the month as YYYY-MM")
+                if month:  # a month view: its own saved answer, at most 3 kept (this month and either side)
+                    start = month - dt.timedelta(days=7)
+                    end = (month + dt.timedelta(days=32)).replace(day=1) + dt.timedelta(days=7)
+                    key = f"calendar-month-{month:%Y-%m}"
+                    with services._cache_lock:
+                        months = sorted(k for k in services._cache if k.startswith("calendar-month-") and k != key)
+                    if len(months) >= 3:
+                        services.forget(*months[:len(months) - 2])
+                    result = json.loads(json.dumps(services.cached(key, 600, lambda: services.calendar(cfg.data["services"], start=start, end=end), fresh)))
+                else:
+                    result = json.loads(json.dumps(services.cached(f"calendar-{days}", 600, lambda: services.calendar(cfg.data["services"], days), fresh)))
                 if not cfg.data["show_posters"]:
                     for item in result["items"]:
                         item["image"] = ""
@@ -738,6 +811,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, sysinfo.monitor())
             if path == "/api/interfaces" and method == "GET":
                 return self.json(200, {"items": sysinfo.interfaces()})
+            if path == "/api/disk-health/report" and method == "GET":
+                name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("file", [""])[0]
+                found = sysinfo.smart_report(name)
+                if not found:
+                    return self.error(404, "That report is not there any more")
+                with open(found, "rb") as f:
+                    body = f.read(5 * 1024 * 1024)
+                return self.send(200, body, "application/json", {"Content-Disposition": f'attachment; filename="smart-{name}"'})
             if path == "/api/disk-health" and method == "GET":
                 result = sysinfo.disk_health()
                 app.disk_temps.record(result["disks"])
@@ -762,7 +843,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/space-history" and method == "GET":
                 return self.json(200, {"on": cfg.data["performance"].get("space_log", True), "days": app.space.get()})
             if path == "/api/version" and method == "GET":
-                return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo})
+                return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo,
+                                       "since": (cfg.data.get("version_since") or {}).get("since")})
             if path == "/api/backup/settings" and method == "POST":
                 self.check_password(self.body())
                 return self.json(200, backup.export(cfg, app.version))
@@ -773,13 +855,42 @@ class Handler(BaseHTTPRequestHandler):
                 logs.event("info", "backup", f"Settings restored from a file ({count} apps)")
                 return self.json(200, {"apps": count, "config": cfg.public()})
             if path == "/api/backup/saved" and method == "GET":
+                one = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
+                if one:
+                    return self.json(200, backup.saved_detail(cfg, one))
                 return self.json(200, {"items": backup.saved_copies(cfg)})
+            if path == "/api/backup/saved/download" and method == "POST":
+                data = self.body()
+                self.check_password(data)
+                logs.event("info", "backup", "A saved copy of the settings was downloaded")
+                return self.json(200, backup.export_saved(cfg, str(data.get("name", "")), app.version))
             if path == "/api/backup/restore-saved" and method == "POST":
                 data = self.body()
                 self.check_password(data)
                 count = backup.restore_saved(cfg, str(data.get("name", "")))
                 logs.event("info", "backup", f"Settings restored from a saved copy ({count} apps)")
                 return self.json(200, {"apps": count, "config": cfg.public()})
+            if path == "/api/backup/server/link" and method == "POST":
+                # Backups can be gigabytes, so the password buys a one-time link for a minute, and the browser
+                # downloads it as a file (streamed in 1 MB pieces, never held in memory).
+                data = self.body()
+                self.check_password(data)
+                if not backup.server_file(str(data.get("name", ""))):
+                    return self.error(404, "That backup is not there any more")
+                token = secrets.token_urlsafe(24)
+                with app.import_lock:
+                    app.download_links = {k: v for k, v in app.download_links.items() if v[1] > time.time()}
+                    app.download_links[token] = (str(data["name"]), time.time() + 60)
+                return self.json(200, {"url": f"/api/backup/server/file?link={token}"})
+            if path == "/api/backup/server/file" and method == "GET":
+                token = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("link", [""])[0]
+                with app.import_lock:
+                    name, until = app.download_links.pop(token, ("", 0))
+                found = backup.server_file(name) if until > time.time() else None
+                if not found:
+                    return self.error(404, "That link has run out. Choose Download again")
+                logs.event("info", "backup", "A server backup was downloaded")
+                return self.stream_file(found, name)
             if path == "/api/backup/server" and method == "GET":
                 return self.json(200, backup.server_status())
             if path == "/api/backup/server" and method == "POST":
@@ -794,7 +905,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"ok": True}, {"Set-Cookie": self.session_cookie("", 0)})
             return self.error(404, "Not found")
         except PasswordProblem as e:
-            return self.error(e.status, e.message)
+            return self.error(e.status, e.message, reason="password")
         except (ConfigError, ValueError) as e:
             return self.error(400, str(e))
         except OSError:
@@ -1026,10 +1137,10 @@ class Handler(BaseHTTPRequestHandler):
         app = self.app
         address = self.client_address_text()
         if not app.limits.attempt(address):
-            return self.error(429, "Too many attempts. Wait 15 minutes and try again")
+            return self.error(429, "Too many attempts. Wait 15 minutes and try again", reason="password")
         data = self.body()
         if not auth.check_password(str(data.get("current", "")), app.config.data["auth"]["password_hash"]):
-            return self.error(401, "Your current password is not right")
+            return self.error(401, "Your current password is not right", reason="password")
         app.limits.clear(address)
         new = str(data.get("new", ""))
         problem = auth.password_problem(new)

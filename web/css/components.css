@@ -298,7 +298,7 @@
     width: min(340px, 86vw);
     display: flex;
     flex-direction: column;
-    background: var(--color-surface);
+    background: var(--color-surface-raised);
     border-right: 1px solid var(--color-divider);
     box-shadow: var(--shadow-raised);
     animation: slide-in-left var(--motion-panel);
@@ -2412,6 +2412,13 @@
   }
   .pref-contrast .panel-header {
     border-bottom-color: currentColor;
+  }
+  /* Slide-outs (from the right, and the phone menu from the left): the header wears the page background and
+     the body is the raised surface (white, or the dark surface), so the header reads as part of the page and
+     the body as the thing that slid out. Dialogs keep the plain header. */
+  .side-panel .panel-header,
+  .phone-menu .panel-header {
+    background: var(--color-slide-header);
   }
 
   /* Slide-out (side panel): from the right, below nothing, over a dimmed page. For details of one

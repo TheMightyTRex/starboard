@@ -36,7 +36,16 @@ function age(hours) {
 
 function eventsFor(d) {
   const marks = [short(d), d.serial].filter(Boolean);
-  return marks.length ? data.events.filter((line) => marks.some((m) => line.includes(m))) : [];
+  return marks.length ? data.events.filter((e) => marks.some((m) => e.text.includes(m))) : [];
+}
+
+// One event: its time, then the words, with a status icon (the word is in hidden text and the tooltip).
+const EVENT_WORDS = { danger: ["Problem", "circle-x"], warning: ["Worth a look", "triangle-alert"], info: ["Information", "info"] };
+function eventRow(e) {
+  const [word, iconName] = EVENT_WORDS[e.tone] || EVENT_WORDS.info;
+  return el("li", { class: "row row--no-lead" },
+    el("p", {}, el("span", { class: "status-icon", "data-tone": e.tone === "info" ? null : e.tone, title: word }, icon(iconName), el("span", { class: "visually-hidden", text: `${word}: ` })),
+      e.when ? el("span", { class: "small muted numeric", text: `${e.when} ` }) : null, e.text));
 }
 
 // SMART report slide-out --------------------------------------------------------------------------
@@ -48,6 +57,7 @@ function reportBody(d) {
     ["Serial number", d.serial || "Not reported"],
     ["Device", d.device ? el("code", { text: d.device }) : "Not reported"],
     ["Size", d.capacity ? formatBytes(d.capacity) : "Not reported"],
+    ["Speed", d.rpm === 0 ? "Solid state" : d.rpm ? `${d.rpm.toLocaleString("en-GB")} rpm` : "Not reported"],
     ["Health check", d.passed === false ? "Failed" : d.passed ? "Passed" : "Not reported"],
     ["Temperature", d.temperature != null ? `${d.temperature}°C${d.temperature_limit ? ` (limit ${d.temperature_limit}°C)` : ""}` : "Not reported"],
     ["Powered on", d.hours != null ? age(d.hours) : "Not reported"],
@@ -73,10 +83,25 @@ function reportBody(d) {
     ...tempCharts(d),
     el("section", { class: "sys-block", "aria-labelledby": "smart-events" },
       el("h3", { id: "smart-events", text: "Events for this disk" }),
-      events.length ? el("ul", { class: "rows" }, events.map((line) => el("li", { class: "row row--no-lead" }, el("p", { text: line }))))
+      events.length ? el("ul", { class: "rows" }, events.map(eventRow))
         : el("p", { class: "muted", text: "Nothing recorded for this disk." })),
-    el("p", { class: "small muted", text: "Starboard shows the counters that matter and the latest self-test. The full attribute table and the self-test history are in the report file on the server." }),
-  ];
+    (d.tests || []).length > 1 ? el("section", { class: "sys-block", "aria-labelledby": "smart-tests" },
+      el("h3", { id: "smart-tests", text: "Self-tests, newest first" }),
+      el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+        el("caption", { class: "visually-hidden", text: "Self-tests, newest first" }),
+        el("thead", {}, el("tr", {}, ["Test", "Result", "At hour"].map((t) => el("th", { scope: "col", text: t })))),
+        el("tbody", {}, d.tests.map((t) => el("tr", {}, el("td", { "data-label": "Test", text: t.type || "Test" }), el("td", { "data-label": "Result", text: t.result || "No result" }),
+          el("td", { "data-label": "At hour", class: "numeric", text: t.hours != null ? t.hours.toLocaleString("en-GB") : "" }))))))) : null,
+    (d.attributes || []).length ? el("details", { class: "disclosure" }, el("summary", { text: `Every attribute (${d.attributes.length})` }),
+      el("div", { class: "disclosure__body" }, el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+        el("caption", { class: "visually-hidden", text: "Every SMART attribute" }),
+        el("thead", {}, el("tr", {}, ["ID", "Attribute", "Value", "Worst", "Threshold", "Raw"].map((t) => el("th", { scope: "col", text: t })))),
+        el("tbody", {}, d.attributes.map((a) => el("tr", {},
+          el("td", { "data-label": "ID", class: "numeric", text: a.id ?? "" }), el("th", { scope: "row", "data-label": "Attribute", text: a.name }),
+          el("td", { "data-label": "Value", class: "numeric", text: a.value ?? "" }), el("td", { "data-label": "Worst", class: "numeric", text: a.worst ?? "" }),
+          el("td", { "data-label": "Threshold", class: "numeric", text: a.threshold ?? "" }), el("td", { "data-label": "Raw", class: "numeric", text: a.raw }))))))))) : null,
+    d.report ? el("a", { class: "btn", href: `/api/disk-health/report?file=${encodeURIComponent(d.report)}`, download: "" }, icon("download"), "Download the full report") : null,
+  ].filter(Boolean);
 }
 
 // Temperature over 30 days (Starboard keeps one reading an hour) and the drive's own recent log (SCT).
@@ -216,7 +241,7 @@ async function load() {
 
     $("#events-panel").hidden = false;
     $("#events").replaceChildren(...(data.events.length
-      ? data.events.map((line) => el("li", { class: "row row--no-lead" }, el("p", { text: line })))
+      ? data.events.map(eventRow)
       : [el("li", { class: "row row--no-lead" }, el("p", { class: "muted", text: "Nothing recorded yet." }))]));
 
     const newest = Math.max(...disks.map((d) => d.checked));

@@ -1,10 +1,13 @@
 # Starboard: Python's standard library, plus Pillow (open source, see THIRD-PARTY.md) for white Live TV logos.
+# Pillow is optional: where no ready-made Pillow exists (such as 32-bit Raspberry Pi), the image builds without it
+# and channels keep their own logos. Nothing is compiled, so every build stays small and quick.
 FROM python:3.12-alpine
 LABEL org.opencontainers.image.source="https://github.com/TheMightyTRex/starboard"
 
 # tzdata: download hours follow the server's local time (TZ).
 RUN apk add --no-cache tzdata \
- && pip install --no-cache-dir "pillow==11.3.0"
+ && (pip install --no-cache-dir --only-binary=:all: "pillow==11.3.0" \
+     || echo "No ready-made Pillow for this processor: white logos are off")
 
 RUN addgroup -S -g 10001 starboard && adduser -S -u 10001 -G starboard -H -h /app starboard \
  && mkdir -p /data && chown starboard:starboard /data && chmod 700 /data

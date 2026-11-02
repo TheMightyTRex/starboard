@@ -90,6 +90,7 @@
   --color-accent-text: #ffffff;
   --color-accent-soft: #dff1ef;
   --color-panel-header: #ffffff;
+  --color-slide-header: var(--color-bg); /* slide-out headers: the page background over a white body */
   --color-control-active: color-mix(in srgb, var(--color-accent) 12%, transparent);
   --color-focus: #0b5f5a;
   --color-count: #af4e24;
@@ -139,6 +140,8 @@
     --color-accent-text: #101827;
     --color-accent-soft: #163a38;
     --color-panel-header: #232f42;
+  --color-slide-header: var(--color-bg);
+    --color-slide-header: var(--color-bg);
     --color-focus: #5ed3c6;
     --color-count: #b7562c;
     --color-backdrop: rgb(0 0 0 / 0.6);
@@ -179,6 +182,7 @@
   --color-accent-text: #101827;
   --color-accent-soft: #163a38;
   --color-panel-header: #232f42;
+  --color-slide-header: var(--color-bg);
   --color-focus: #5ed3c6;
   --color-count: #b7562c;
   --color-backdrop: rgb(0 0 0 / 0.6);
@@ -220,6 +224,7 @@
   --color-accent-text: #ffffff;
   --color-accent-soft: #d6eeeb;
   --color-panel-header: #ffffff;
+  --color-slide-header: var(--color-bg); /* slide-out headers: the page background over a white body */
   --chart-1: #1f2a8a;
   --chart-2: #8a3200;
   --series-1: #1f5fbf; --series-2: #c4471b; --series-3: #00806a; --series-4: #946000;
@@ -252,6 +257,7 @@
   --color-accent-text: #000000;
   --color-accent-soft: #0b2a27;
   --color-panel-header: #000000;
+  --color-slide-header: var(--color-bg);
   --chart-1: #c2cbff;
   --chart-2: #ffb38a;
   --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
