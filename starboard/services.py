@@ -503,3 +503,91 @@ def health(services):
     targets = [s for s in services if s.get("enabled", True) and s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr")]
     rows, errors = _gather(targets, _health_one)
     return {"items": rows, "errors": errors}
+
+
+# Finished downloads --------------------------------------------------------------
+# The newest imports from each app's history (one small page each), for Downloads, Finished this week.
+
+IMPORTED = {"sonarr": (3, {"includeSeries": "true", "includeEpisode": "true"}), "radarr": (3, {"includeMovie": "true"}),
+            "lidarr": (8, {"includeArtist": "true", "includeAlbum": "true"}), "readarr": (8, {"includeAuthor": "true", "includeBook": "true"})}
+
+
+def _recent_one(service, cutoff):
+    event, extra = IMPORTED[service["type"]]
+    page = _api(service, "/history", {"page": 1, "pageSize": 25, "sortKey": "date", "sortDirection": "descending",
+                                      "eventType": event, **extra}) or {}
+    out = []
+    for r in page.get("records") or []:
+        when = r.get("date") or ""
+        if when[:10] < cutoff:
+            continue
+        kind = service["type"]
+        if kind == "sonarr":
+            ep = r.get("episode") or {}
+            title = (r.get("series") or {}).get("title", "")
+            detail = f"S{ep.get('seasonNumber', 0):02d}E{ep.get('episodeNumber', 0):02d} · {ep.get('title', '')}" if ep else ""
+        elif kind == "radarr":
+            title, detail = (r.get("movie") or {}).get("title", ""), "Film"
+        elif kind == "lidarr":
+            title, detail = (r.get("artist") or {}).get("artistName", ""), (r.get("album") or {}).get("title", "")
+        else:
+            title, detail = (r.get("book") or {}).get("title", ""), (r.get("author") or {}).get("authorName", "")
+        out.append({"service_name": service["name"], "title": title or r.get("sourceTitle", ""), "detail": detail,
+                    "when": when, "quality": ((r.get("quality") or {}).get("quality") or {}).get("name", "")})
+    return out
+
+
+def recent(services, days=7):
+    cutoff = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    rows, errors = _gather(_arrs(services), lambda s: _recent_one(s, cutoff))
+    rows.sort(key=lambda r: r["when"], reverse=True)
+    return {"items": rows[:60], "errors": errors}
+
+
+# Jellyfin ---------------------------------------------------------------------------
+# Version, updates, restart needed, Live TV, who is watching and what was added, with Jellyfin's API key.
+
+def _jf(service, path, timeout=TIMEOUT):
+    req = urllib.request.Request(service["url"].rstrip("/") + path, headers={
+        "Authorization": f'MediaBrowser Token="{service.get("api_key", "")}"', "Accept": "application/json", "User-Agent": USER_AGENT})
+    return _fetch(service, req, timeout)
+
+
+def jellyfin(services):
+    found = [s for s in services if s["type"] == "jellyfin" and s.get("enabled", True) and s.get("api_key")]
+    if not found:
+        return {"configured": False}
+    s = found[0]
+    info = _jf(s, "/System/Info")
+    out = {"configured": True, "name": s["name"], "version": info.get("Version", ""),
+           "update": bool(info.get("HasUpdateAvailable")), "restart": bool(info.get("HasPendingRestart")),
+           "playing": [], "added": [], "channels": None, "guide": None}
+    try:
+        out["channels"] = (_jf(s, "/LiveTv/Channels?limit=0") or {}).get("TotalRecordCount")
+        guide = next((t for t in _jf(s, "/ScheduledTasks") or [] if t.get("Key") == "RefreshGuide"), None)
+        if guide:
+            last = guide.get("LastExecutionResult") or {}
+            out["guide"] = {"state": guide.get("State", ""), "finished": last.get("EndTimeUtc"), "result": last.get("Status", "")}
+    except ServiceError:
+        pass  # no Live TV
+    for sess in _jf(s, "/Sessions?activeWithinSeconds=900") or []:
+        item = sess.get("NowPlayingItem")
+        if not item:
+            continue
+        play = sess.get("PlayState") or {}
+        trans = sess.get("TranscodingInfo") or {}
+        length = item.get("RunTimeTicks") or 0
+        out["playing"].append({
+            "user": sess.get("UserName", ""), "device": sess.get("DeviceName", ""), "client": sess.get("Client", ""),
+            "title": item.get("Name", ""), "series": item.get("SeriesName", ""), "type": item.get("Type", ""),
+            "paused": bool(play.get("IsPaused")),
+            "progress": round((play.get("PositionTicks") or 0) / length * 100) if length else None,
+            "transcoding": bool(trans) and not trans.get("IsVideoDirect", True),
+            "reason": ", ".join(trans.get("TranscodeReasons") or [])[:120],
+        })
+    latest = _jf(s, "/Items?SortBy=DateCreated&SortOrder=Descending&Recursive=true&Limit=12"
+                    "&IncludeItemTypes=Movie,Episode,MusicAlbum,AudioBook,Book&Fields=DateCreated") or {}
+    for item in latest.get("Items") or []:
+        out["added"].append({"title": item.get("Name", ""), "series": item.get("SeriesName", ""), "type": item.get("Type", ""),
+                             "when": item.get("DateCreated", ""), "year": item.get("ProductionYear")})
+    return out

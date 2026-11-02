@@ -149,12 +149,59 @@ async function load() {
   }
 }
 
+// Jellyfin: its own state, who is watching now (and whether the server is converting it), and what was added.
+// Shown only when a Jellyfin app has an API key.
+function ago(iso) {
+  const mins = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (mins < 60) return `${mins} ${mins === 1 ? "minute" : "minutes"} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function renderJellyfin(j) {
+  const panel = $("#jellyfin-panel");
+  panel.hidden = !j?.configured;
+  if (panel.hidden) return;
+  $("#jellyfin-title").textContent = j.name;
+  $("#jellyfin-sub").textContent = `Version ${j.version}`;
+  const state = [];
+  if (j.restart) state.push(chip("Restart needed", "warning"));
+  if (j.update) state.push(chip("Update available", "info"));
+  if (!j.restart && !j.update) state.push(chip("Up to date", "success"));
+  const facts = [];
+  if (j.channels != null) facts.push(el("dt", { text: "Live TV" }), el("dd", { text: `${j.channels} ${j.channels === 1 ? "channel" : "channels"}` }));
+  if (j.guide) facts.push(el("dt", { text: "TV guide" }), el("dd", { text: j.guide.state === "Running" ? "Updating now" : j.guide.finished ? `Updated ${ago(j.guide.finished)}${j.guide.result && j.guide.result !== "Completed" ? ` (${j.guide.result.toLowerCase()})` : ""}` : "Never updated" }));
+  const playing = j.playing.length
+    ? el("ul", { class: "rows" }, j.playing.map((p) => el("li", { class: "row row--no-lead" },
+      el("div", {}, el("div", { class: "row__title", text: p.series ? `${p.series}: ${p.title}` : p.title }),
+        el("div", { class: "row__meta", text: [p.user, p.device, p.progress != null ? `${p.progress}% through` : ""].filter(Boolean).join(" · ") })),
+      el("div", { class: "row__side" }, p.paused ? chip("Paused", "muted") : null,
+        p.transcoding ? chip("Converting", "warning") : chip("Direct play", "success")))))
+    : el("p", { class: "muted", text: "Nobody is watching or listening." });
+  const added = el("ul", { class: "rows" }, j.added.slice(0, 8).map((a) => el("li", { class: "row row--no-lead" },
+    el("div", {}, el("div", { class: "row__title", text: a.series ? `${a.series}: ${a.title}` : a.title }),
+      el("div", { class: "row__meta", text: [{ Movie: "Film", Episode: "Episode", MusicAlbum: "Album", AudioBook: "Audiobook", Book: "Book" }[a.type] || a.type, ago(a.when)].join(" · ") })))));
+  $("#jellyfin").replaceChildren(
+    el("div", { class: "actions" }, state),
+    facts.length ? el("dl", { class: "facts" }, facts) : null,
+    el("h3", { text: `Playing now${j.playing.length ? `, ${j.playing.length}` : ""}` }), playing,
+    j.playing.some((p) => p.transcoding) ? el("p", { class: "small muted", text: "Converting uses the processor; direct play does not." }) : null,
+    el("h3", { text: "Recently added" }), j.added.length ? added : el("p", { class: "muted", text: "Nothing added yet." }));
+}
+
+async function loadJellyfin(fresh = false) {
+  try { renderJellyfin(await api(fresh ? "/api/jellyfin?fresh=1" : "/api/jellyfin")); }
+  catch (e) { $("#jellyfin-panel").hidden = false; $("#jellyfin").replaceChildren(el("p", { class: "muted", text: `Could not ask Jellyfin: ${e.message}` })); }
+}
+
 startPage().then(async () => {
   checkAgainLabel($("#refresh"));
   range = rangePicker(() => load(), { live: true });
   $("#range-row").append(range.element);
   makeCharts();
   config = await api("/api/config").catch(() => null);
-  $("#refresh").addEventListener("click", async () => { await load(); announce("Checked again."); });
+  $("#refresh").addEventListener("click", async () => { await Promise.all([load(), loadJellyfin(true)]); announce("Checked again."); });
   load();
+  loadJellyfin();
 });

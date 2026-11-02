@@ -3,7 +3,7 @@
 
 let config = null;
 const SEARCHABLE = ["sonarr", "radarr", "lidarr", "readarr"];
-const NO_KEY = ["jellyfin", "link"];
+const NO_KEY = ["link"];
 
 // Small helpers ------------------------------------------------------------
 
@@ -355,7 +355,8 @@ function openService(s = null, opener = null, { background = false } = {}) {
   const updateFields = () => {
     const t = type.value;
     keyField.hidden = NO_KEY.includes(t);
-    const where = { qbittorrent: "Options, Web UI, API key (version 5.2 or later)", sabnzbd: "Config, General, API Key" }[t] || "Settings, General";
+    const where = { qbittorrent: "Options, Web UI, API key (version 5.2 or later)", sabnzbd: "Config, General, API Key",
+      jellyfin: "Dashboard, API keys. Optional: it adds Jellyfin's state, what is playing and recently added to System" }[t] || "Settings, General";
     keyHint.textContent = `In ${config.types[t]?.label || "the app"}: ${where}.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
     followsField.hidden = !bg.checked;
     group.options[0].textContent = `Choose for me (${guessGroup(name.value, t) || "the last category"})`;

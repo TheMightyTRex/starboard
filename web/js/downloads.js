@@ -266,6 +266,25 @@ async function load({ announceIt = false } = {}) {
   }
 }
 
+// Finished this week: the newest imports from each app's history. Loaded once when the page opens.
+
+async function loadRecent() {
+  try {
+    const data = await api("/api/recent");
+    const box = $("#recent-section");
+    box.hidden = false;
+    const byApp = {};
+    for (const r of data.items) byApp[r.service_name] = (byApp[r.service_name] || 0) + 1;
+    $("#recent-summary").textContent = data.items.length
+      ? `The newest ${data.items.length}: ${Object.entries(byApp).map(([a, n]) => `${n} from ${a}`).join(", ")}.`
+      : "Nothing finished in the last 7 days.";
+    $("#recent").replaceChildren(...data.items.map((r) => el("li", { class: "row row--no-lead" },
+      el("div", {}, el("div", { class: "row__title", text: r.title }),
+        el("div", { class: "row__meta", text: [r.detail, r.quality, r.service_name].filter(Boolean).join(" · ") })),
+      el("div", { class: "row__side small muted", text: new Date(r.when).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" }) }))));
+  } catch { /* the queue works without it */ }
+}
+
 // Download hours ---------------------------------------------------------------
 
 const hourText = (h) => `${String(h).padStart(2, "0")}:00`;
@@ -353,6 +372,7 @@ startPage().then(async () => {
     services = new Map(cfg.services.map((s) => [s.name, s]));
   } catch { /* links to the apps are an extra; the queue works without them */ }
   await Promise.all([load(), loadSchedule()]);
+  loadRecent();
   setPaused(false);
   document.addEventListener("visibilitychange", () => { if (!document.hidden && !paused) { load(); loadSchedule(); } });
 });
