@@ -129,6 +129,12 @@ if [ "$ASK" = 1 ] && [ ! -f data/config.json ] && [ "$NETWORK" = 1 ]; then
   yes_no "Let your home network open Starboard?" 1 || NETWORK=0
 fi
 
+if [ -f data/config.json ] && [ "$NETWORK" = 0 ]; then
+  echo
+  echo "Note: --local-only applies to a new install only. Starboard is already set up, so change who can open it"
+  echo "in Settings, Security, Who can open the dashboard. It takes effect at once."
+fi
+
 # Docker, for app updates.
 if [ "$MODE" = docker ]; then
   if [ -z "$DOCKER" ]; then

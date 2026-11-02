@@ -154,7 +154,7 @@ computer. Every kind of access is optional: say no and only that part of Starboa
 
 | Access | What it is for | What it means for your computer | Default | Change it |
 |---|---|---|---|---|
-| Home network | Phones and computers on your network can open Starboard | Starboard listens on your network, behind your password | Yes | Settings, Security; `--local-only` |
+| Home network | Phones and computers on your network can open Starboard | Starboard listens on your network, behind your password | Yes | Settings, Security (`--local-only` on a new install) |
 | Docker | **Apps, Updates**: check for and install new app images | The Docker socket is mounted: full control of Docker, so of the computer | No | `--docker`, `--no-docker` |
 | Per-app use | **System, Monitor**: each app's processor and memory | `/sys/fs/cgroup` is mounted read-only; two small files per container are read while Monitor is open | No | `--app-use`, `--no-app-use` |
 | Live TV folder | **Settings, Jellyfin**: free channels and guides for Jellyfin | Jellyfin's Live TV folder is mounted read-write; Starboard writes playlists, guides and logos there once a day while Live TV is on | None | `--livetv-folder /path`, `--no-livetv` |
