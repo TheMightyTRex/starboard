@@ -371,6 +371,8 @@ def _make_logo(ch, logos, white):
     src = LOGO_OVERRIDES.get(ch["name"], ch["attrs"].get("tvg-logo-src", ""))
     key = logo_key(ch)
     path = os.path.join(logos, f"{key}.png")
+    if "/iptv/logos/" in src:  # a logo this folder already serves (Free-TV's own list): use it as it is
+        return key, os.path.exists(path)
     if os.path.exists(path) and (not white or _stamp(path) == f"{LOGO_VERSION}|{src}"):
         return key, True
     if not white:

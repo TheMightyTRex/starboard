@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 (2 November 2026)
+
+- Live TV: logos the folder already serves are used as they are, not processed again.
+
 ## 0.3.2 (2 November 2026)
 
 - Live TV: the guides refresh daily, but the channel lists are rebuilt (and every stream tested) only when a
