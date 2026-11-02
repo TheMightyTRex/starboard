@@ -475,6 +475,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, result)
             if path == "/api/access" and method == "GET":
                 return self.json(200, {"items": access.summary(app)})
+            if path == "/api/transfer" and method == "GET":
+                return self.json(200, services.cached("transfer", 5, lambda: services.transfer(cfg.data["services"]), fresh))
+            if path == "/api/numbers" and method == "GET":
+                return self.json(200, {"items": services.cached("numbers", 60, lambda: services.numbers(cfg.data["services"]), fresh)})
             if path == "/api/recent" and method == "GET":
                 return self.json(200, services.cached("recent", 300, lambda: services.recent(cfg.data["services"]), fresh))
             if path == "/api/jellyfin" and method == "GET":

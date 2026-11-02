@@ -64,8 +64,10 @@ function renderOutside() {
   $("#outside-empty").hidden = !!items.length;
   list.hidden = !items.length;
   renderKeyed(list, items, (i) => i.s.id, ({ s, o }, old) => {
-    const side = !o ? chip("Checking", "neutral") : o.reachable ? chip("Reachable", "success") : chip("Not reachable", "danger");
-    const after = !o ? "" : o.reachable ? `${o.ms} ms` : (o.message || "no answer");
+    const side = !o ? chip("Checking", "neutral") : !o.reachable ? chip("Not reachable", "danger")
+      : o.cert_days != null && o.cert_days <= 14 ? chip("Certificate runs out soon", "warning") : chip("Reachable", "success");
+    const cert = o?.cert_days == null ? "" : o.cert_days < 0 ? "certificate has run out" : `certificate runs out in ${o.cert_days} ${o.cert_days === 1 ? "day" : "days"}`;
+    const after = !o ? "" : o.reachable ? [`${o.ms} ms`, cert].filter(Boolean).join(" · ") : (o.message || "no answer");
     return AppDetails.morph(old, el("li", { class: "row row--lead row--opens row--phone-short" },
       AppDetails.iconFor(s, old),
       el("div", {}, el("div", { class: "row__title" }, AppDetails.opener(s)),

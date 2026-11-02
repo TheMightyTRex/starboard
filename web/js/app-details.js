@@ -38,6 +38,7 @@ const AppDetails = (() => {
       state.updateErrors = Object.fromEntries(errors.map((e) => [e.service, e.message]));
     },
     uptime: async () => { state.uptime = await api("/api/uptime"); },
+    numbers: async () => { state.numbers = (await api(fresh("/api/numbers"))).items; },
     health: async () => {
       if (!hasUpdates()) { state.warnings = {}; return; }
       const { items, errors } = await api(fresh("/api/health"));
@@ -234,6 +235,14 @@ const AppDetails = (() => {
     else if (!UPDATE_TYPES.includes(s.type) && !s.background) about.push(el("dt", { text: "Updates" }), el("dd", { text: `${s.name} does not say when it has an update` }));
     if (state.config.types[s.type]?.searchable) about.push(el("dt", { text: "Search" }), el("dd", { text: "Searched from Starboard's Search page" }));
     if (s.background) about.push(el("dt", { text: "Follows" }), el("dd", { text: s.follows ? (service(s.follows)?.name || "An app that is no longer set up") : "No other app" }));
+    // Logs: a link to Dozzle when it is one of your apps. Starboard does not read logs itself.
+    const dozzle = (state.config.services || []).find((x) => x.enabled && /dozzle/i.test(`${x.id} ${x.name} ${x.icon || ""}`) && x.link);
+    if (dozzle && dozzle.id !== s.id) {
+      about.push(el("dt", { text: "Logs" }), el("dd", {},
+        el("a", { href: reachableUrl(dozzle.link), target: "_blank", rel: "noopener noreferrer" }, `Open ${dozzle.name}`,
+          el("span", { class: "visually-hidden", text: " (opens in a new tab)" })),
+        el("span", { class: "small muted", text: ` and choose ${s.container || s.id}` })));
+    }
     const fol = followers(s);
     about.push(el("dt", { text: "Followed by" }), el("dd", { text: fol.length ? fol.map((x) => x.name).join(", ") : "No other services" }));
     out.push(section(s.background ? "About this service" : "About this app", "app-details-about", el("dl", { class: "facts" }, about)));

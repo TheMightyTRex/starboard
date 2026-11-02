@@ -20,6 +20,7 @@ SERVICE_TYPES = {
     "jellyfin": {"label": "Jellyfin", "api": "", "searchable": False},
     "qbittorrent": {"label": "qBittorrent", "api": "/api/v2", "searchable": False},
     "sabnzbd": {"label": "SABnzbd", "api": "/sabnzbd/api", "searchable": False},
+    "gluetun": {"label": "Gluetun (VPN)", "api": "", "searchable": False},
     "link": {"label": "Other app", "api": "", "searchable": False},
 }
 

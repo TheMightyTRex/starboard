@@ -266,6 +266,33 @@ async function load({ announceIt = false } = {}) {
   }
 }
 
+// Speeds and the VPN: one tile per download client and per Gluetun, refreshed with the queue.
+
+function stat(value, label, tone, words) {
+  return el("div", { class: "stat", "data-tone": tone || null },
+    el("span", { class: "stat__value num", text: value }),
+    el("span", { class: "stat__label" }, label, words ? el("span", { class: "small" }, " · ", chip(words, tone)) : null));
+}
+
+async function loadTransfer(fresh = false) {
+  let t;
+  try { t = await api(fresh ? "/api/transfer?fresh=1" : "/api/transfer"); } catch { return; }
+  const tiles = [];
+  for (const c of t.clients) {
+    if (c.kind === "torrent") tiles.push(stat(c.down_text, `${c.name}: downloading, sending ${c.up_text}`));
+    else tiles.push(stat(c.paused ? "Paused" : c.down_text, `${c.name}${c.count ? `: ${c.count} in the queue, ${c.left} left` : ""}`, c.paused ? "warning" : null));
+  }
+  for (const v of t.vpn) {
+    const where = [v.city, v.country].filter(Boolean).join(", ");
+    tiles.push(stat(v.running ? "Connected" : "Not connected",
+      `${v.name}${where ? `: ${where}` : ""}${v.port ? `, forwarded port ${v.port}` : v.running ? ", no forwarded port" : ""}`,
+      v.running ? "success" : "danger", v.running ? null : "Downloads may stop"));
+  }
+  for (const e of t.errors) tiles.push(stat("Not answering", e.message, "danger"));
+  $("#transfer").hidden = !tiles.length;
+  $("#transfer").replaceChildren(...tiles);
+}
+
 // Finished this week: the newest imports from each app's history. Loaded once when the page opens.
 
 async function loadRecent() {
@@ -343,13 +370,13 @@ function setPaused(on) {
   paused = on;
   clearInterval(timer);
   // Every 15 seconds while the tab is in view; a hidden tab asks nothing and catches up when shown again.
-  timer = on ? null : setInterval(() => { if (!document.hidden) { load(); loadSchedule(); } }, 15000);
+  timer = on ? null : setInterval(() => { if (!document.hidden) { load(); loadSchedule(); loadTransfer(); } }, 15000);
   $("#auto-refresh").setAttribute("aria-pressed", String(on));
   renderSummary();
 }
 
 startPage().then(async () => {
-  $("#refresh").addEventListener("click", () => load({ announceIt: true }));
+  $("#refresh").addEventListener("click", () => { load({ announceIt: true }); loadTransfer(true); });
   $("#auto-refresh").addEventListener("click", () => {
     setPaused(!paused);
     announce(paused ? "Updates paused" : "Updates resumed, every 15 seconds");
@@ -371,8 +398,8 @@ startPage().then(async () => {
     const cfg = await api("/api/config");
     services = new Map(cfg.services.map((s) => [s.name, s]));
   } catch { /* links to the apps are an extra; the queue works without them */ }
-  await Promise.all([load(), loadSchedule()]);
+  await Promise.all([load(), loadSchedule(), loadTransfer()]);
   loadRecent();
   setPaused(false);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && !paused) { load(); loadSchedule(); } });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !paused) { load(); loadSchedule(); loadTransfer(); } });
 });

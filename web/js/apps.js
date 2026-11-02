@@ -31,6 +31,7 @@ function card(s, old) {
   return el("li", { class: "card app-card", "data-state": words.state, "data-tone": words.state === "down" ? "danger" : null },
     el("div", { class: "card__top" }, AppDetails.iconFor(s, old), el("h3", { class: "card__title" }, AppDetails.opener(s))),
     s.description ? el("p", { class: "small muted card__desc", text: s.description }) : null,
+    AppDetails.state.numbers?.[s.id] ? el("p", { class: "small card__numbers", text: AppDetails.state.numbers[s.id].join(" · ") }) : null,
     el("div", { class: "card__meta card__status" }, chips,
       el("span", { class: "card__version num", text: u ? `v${u.installed}` : st?.version ? `v${st.version}` : "" }),
       el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : "" }),
@@ -190,7 +191,7 @@ async function check() {
   button.disabled = true;
   button.setAttribute("aria-busy", "true");
   $("#apps-summary").textContent = "Checking your apps…";
-  await AppDetails.checkAgain("status", "outside", "updates", "health");
+  await AppDetails.checkAgain("status", "outside", "updates", "health", "numbers");
   button.disabled = false;
   button.removeAttribute("aria-busy");
   announce(summaryText(apps()));
@@ -215,6 +216,6 @@ startPage().then(async () => {
   });
   $("#check-now").addEventListener("click", check);
   document.addEventListener("designchange", () => render());
-  await AppDetails.load("outside", "updates", "health");
+  await AppDetails.load("outside", "updates", "health", "numbers");
   announce(summaryText(apps())); // once, when the first full check is done
 });

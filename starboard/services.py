@@ -163,6 +163,11 @@ def check(service):
         elif kind == "sabnzbd":
             version = sab(service, "version", timeout=5).get("version", "")
             sab(service, "queue", timeout=5, limit=0)  # "version" works without a key; this one does not
+        elif kind == "gluetun":
+            v = vpn_one(service)
+            if not v["running"]:
+                raise ServiceError(f"The VPN is {v['status'] or 'not connected'}")
+            version = ""
         elif kind == "jellyfin":
             req = urllib.request.Request(service["url"].rstrip("/") + "/System/Info/Public", headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(req, timeout=5) as resp:
@@ -224,9 +229,16 @@ def _reach(url):
 def outside_all(services):
     """Checks each app's outside address from the server. Some routers cannot reach their own outside address
     from inside the home network, so a failure here is worth checking from a phone on mobile data."""
+    from .watch import cert_days_left  # one more TLS handshake for https:// addresses, only when checked
+
+    def one(s):
+        out = dict(_reach(s["outside_link"]), id=s["id"])
+        if out["reachable"] and s["outside_link"].startswith("https://"):
+            out["cert_days"] = cert_days_left(s["outside_link"])
+        return out
+
     targets = [s for s in services if s.get("enabled", True) and s.get("outside_link")]
-    results = POOL.map(lambda s: dict(_reach(s["outside_link"]), id=s["id"]), targets)
-    return list(results)
+    return list(POOL.map(one, targets))
 
 
 def _update_one(service):
@@ -590,4 +602,130 @@ def jellyfin(services):
     for item in latest.get("Items") or []:
         out["added"].append({"title": item.get("Name", ""), "series": item.get("SeriesName", ""), "type": item.get("Type", ""),
                              "when": item.get("DateCreated", ""), "year": item.get("ProductionYear")})
+    return out
+
+
+# Download speeds and the VPN ---------------------------------------------------------
+
+def _speed(n):
+    n = float(n or 0)
+    for unit in ("B/s", "KB/s", "MB/s", "GB/s"):
+        if n < 1000 or unit == "GB/s":
+            return f"{n:.0f} {unit}" if unit == "B/s" else f"{n:.1f} {unit}"
+        n /= 1000
+
+
+def _gluetun(service, path):
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+    if service.get("api_key"):
+        headers["X-API-Key"] = service["api_key"]
+    return _fetch(service, urllib.request.Request(service["url"].rstrip("/") + path, headers=headers), 5)
+
+
+def vpn_one(service):
+    try:
+        status = _gluetun(service, "/v1/vpn/status")
+    except ServiceError:
+        status = _gluetun(service, "/v1/openvpn/status")  # Gluetun before 3.40
+    out = {"name": service["name"], "running": (status or {}).get("status") == "running", "status": (status or {}).get("status", "")}
+    try:
+        ip = _gluetun(service, "/v1/publicip/ip") or {}
+        out.update(ip=ip.get("public_ip", ""), country=ip.get("country", ""), city=ip.get("city", ""))
+    except ServiceError:
+        pass
+    for path in ("/v1/portforward", "/v1/openvpn/portforwarded"):
+        try:
+            out["port"] = (_gluetun(service, path) or {}).get("port") or None
+            break
+        except ServiceError:
+            continue
+    return out
+
+
+def transfer(services):
+    """Speeds from qBittorrent and SABnzbd, and the VPN's state from Gluetun, for the top of Downloads."""
+    on = [s for s in services if s.get("enabled", True) and s.get("url")]
+    out = {"clients": [], "vpn": [], "errors": []}
+
+    def one(s):
+        if s["type"] == "qbittorrent" and s.get("api_key"):
+            t = qbit(s, "transfer/info") or {}
+            return "clients", {"name": s["name"], "kind": "torrent", "down": t.get("dl_info_speed", 0), "up": t.get("up_info_speed", 0),
+                               "down_text": _speed(t.get("dl_info_speed")), "up_text": _speed(t.get("up_info_speed"))}
+        if s["type"] == "sabnzbd" and s.get("api_key"):
+            q = (sab(s, "queue", limit=0) or {}).get("queue") or {}
+            down = float(q.get("kbpersec") or 0) * 1000
+            return "clients", {"name": s["name"], "kind": "usenet", "down": down, "down_text": _speed(down),
+                               "paused": bool(q.get("paused")), "left": q.get("sizeleft", ""), "count": int(q.get("noofslots") or 0)}
+        if s["type"] == "gluetun":
+            return "vpn", vpn_one(s)
+        return None
+
+    targets = [s for s in on if s["type"] in ("qbittorrent", "sabnzbd", "gluetun")]
+    for s, f in [(s, POOL.submit(one, s)) for s in targets]:
+        try:
+            r = f.result(timeout=TIMEOUT + 2)
+            if r:
+                out[r[0]].append(r[1])
+        except Exception as e:
+            out["errors"].append({"service": s["id"], "message": str(e) if isinstance(e, ServiceError) else f"Cannot reach {s['name']}"})
+    return out
+
+
+# Small numbers for the app cards ----------------------------------------------------------
+# A few words per app, such as "3 in the queue · 120 wanted". One small request per app, shared for a minute.
+
+def _numbers_one(s, queue_counts, speeds, playing):
+    kind = s["type"]
+    parts = []
+    if kind in ("sonarr", "radarr", "lidarr", "readarr"):
+        n = queue_counts.get(s["name"], 0)
+        if n:
+            parts.append(f"{n} in the queue")
+        path = "/wanted/missing"
+        wanted = (_api(s, path, {"page": 1, "pageSize": 1, "monitored": "true"}) or {}).get("totalRecords")
+        if wanted is not None:
+            parts.append(f"{wanted} wanted")
+    elif kind == "prowlarr":
+        indexers = _api(s, "/indexer") or []
+        now = dt.datetime.now(dt.timezone.utc).isoformat()
+        failing = [i for i in _api(s, "/indexerstatus") or [] if (i.get("disabledTill") or "") > now]
+        parts.append(f"{len(indexers)} indexers" + (f", {len(failing)} failing" if failing else ""))
+    elif kind in ("qbittorrent", "sabnzbd") and s["name"] in speeds:
+        c = speeds[s["name"]]
+        if c.get("paused"):
+            parts.append("Paused")
+        elif c["down"] or c.get("up"):
+            parts.append(f"Downloading {c['down_text']}" + (f", sending {c['up_text']}" if c.get("up") else ""))
+        else:
+            parts.append("Idle")
+    elif kind == "jellyfin" and playing is not None:
+        parts.append(f"{playing} playing" if playing else "Nobody playing")
+    return parts
+
+
+def numbers(services):
+    on = [s for s in services if s.get("enabled", True) and s.get("url")]
+    kinds = {s["type"] for s in on}
+    queue_counts, speeds, playing = {}, {}, None
+    if kinds & {"sonarr", "radarr", "lidarr", "readarr"}:
+        for item in cached("queue", 10, lambda: queue(services))["items"]:
+            queue_counts[item["service_name"]] = queue_counts.get(item["service_name"], 0) + 1
+    if kinds & {"qbittorrent", "sabnzbd"}:
+        speeds = {c["name"]: c for c in cached("transfer", 5, lambda: transfer(services))["clients"]}
+    if "jellyfin" in kinds:
+        try:
+            j = cached("jellyfin", 20, lambda: jellyfin(services))
+            playing = len(j["playing"]) if j.get("configured") else None
+        except ServiceError:
+            playing = None
+    targets = [s for s in on if s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr", "qbittorrent", "sabnzbd", "jellyfin")]
+    out = {}
+    for s, f in [(s, POOL.submit(_numbers_one, s, queue_counts, speeds, playing)) for s in targets]:
+        try:
+            parts = f.result(timeout=TIMEOUT + 2)
+        except Exception:
+            continue
+        if parts:
+            out[s["id"]] = parts
     return out
