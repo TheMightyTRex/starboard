@@ -1,8 +1,25 @@
 # Starboard
 
-A fast, accessible dashboard for a home media server. It shows every app and whether it is running, searches
-Sonarr, Radarr, Lidarr and Readarr at once and adds what you find, and lists downloads, what is coming up and
-how the server is doing.
+A lightweight, accessible dashboard for smaller home media servers. It uses very little processor time and
+memory (about 18 MB while idle), so your server's power goes to your apps. It shows every app and whether it is
+running, searches Sonarr, Radarr, Lidarr and Readarr at once and adds what you find, and lists downloads, what
+is coming up and how the server is doing.
+
+## Design principles
+
+Lightweight comes first. Every change to Starboard has to keep it small and quiet:
+
+1. **Very little processor time and memory.** Measure before and after a change; idle use must stay near zero.
+2. **No third-party packages.** Python's standard library and plain HTML, CSS and JavaScript.
+3. **Nothing runs unless it is needed.** Work happens when a page that shows it is open, or on a schedule you
+   turned on. Hidden tabs stop refreshing.
+4. **Ask the apps as little as possible.** Share and cache answers rather than asking again for each tab or
+   device; fetch only what a page shows.
+5. **Small to send.** Files are cached by the browser and compressed; images are small and kept locally
+   where possible.
+6. **Only the access you allow.** Each kind of access is optional, asked for by the installer and listed in
+   Settings.
+7. **Accessible to everyone.** WCAG 2.2 AA, built on the shared component library.
 
 - **Every page has its own address:** `/index.html` (Apps), `/search.html`, `/downloads.html`,
   `/upcoming.html`, `/system.html`, and Settings as `/settings.html` (Apps), `/settings-general.html`,

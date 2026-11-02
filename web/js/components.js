@@ -23,6 +23,12 @@
       };
       const open = () => {
         menu.hidden = false;
+        // A menu inside a shelf that scrolls sideways is fixed over the page, under its button.
+        if (menu.hasAttribute("data-fixed")) {
+          const r = button.getBoundingClientRect();
+          menu.style.top = `${r.bottom + 4}px`;
+          menu.style.left = `${Math.max(8, Math.min(r.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 8))}px`;
+        }
         button.setAttribute("aria-expanded", "true");
         items()[0]?.focus();
       };
@@ -223,8 +229,39 @@
     });
   }
 
+  /* Shelf (UX-30): a .shelf-scroller with a .shelf-track and two .shelf-edge arrows. An edge shows
+     only when there are more books that way; each arrow press moves one screen less one cover (a jump
+     with reduced motion); tabbing to a book scrolls it fully into view. */
+  function setupShelves(root = document) {
+    root.querySelectorAll(".shelf-scroller").forEach((box) => {
+      if (box.dataset.ready) return;
+      box.dataset.ready = "1";
+      const track = box.querySelector(".shelf-track");
+      const start = box.querySelector(".shelf-edge--start");
+      const end = box.querySelector(".shelf-edge--end");
+      const update = () => {
+        start.hidden = track.scrollLeft <= 2;
+        end.hidden = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+      };
+      box.addEventListener("click", (event) => {
+        const arrow = event.target.closest(".shelf-arrow");
+        if (!arrow) return;
+        const first = track.firstElementChild;
+        const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        const step = Math.max(track.clientWidth - (first ? first.getBoundingClientRect().width + gap : 0), 100);
+        const still = matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("pref-motion");
+        track.scrollBy({ left: (arrow.closest(".shelf-edge--start") ? -1 : 1) * step, behavior: still ? "instant" : "smooth" });
+      });
+      track.addEventListener("focusin", (event) => event.target.closest(".shelf-track > *")?.scrollIntoView({ block: "nearest", inline: "nearest" }));
+      track.addEventListener("scroll", update, { passive: true });
+      new ResizeObserver(update).observe(track);
+      update();
+    });
+  }
+
   function setup(root) {
     setupMenus(root);
+    setupShelves(root);
     setupLayers(root);
     setupDialogs(root);
     setupFolds(root);
