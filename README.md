@@ -5,6 +5,21 @@ memory (about 18 MB while idle), so your server's power goes to your apps. It sh
 running, searches Sonarr, Radarr, Lidarr and Readarr at once and adds what you find, and lists downloads, what
 is coming up and how the server is doing.
 
+![Apps, in the Health first design](docs/screenshots/apps.png)
+
+## Screenshots
+
+All made with example data.
+
+| | |
+|---|---|
+| ![System, Storage: the pool by type, with free space](docs/screenshots/storage.png) | ![System, Storage in dark mode](docs/screenshots/storage-dark.png) |
+| **Storage:** the pool by type, with free space | **Storage** in dark mode |
+| ![Install apps: groups such as Movies and TV](docs/screenshots/install-apps.png) | ![The set-up guide's first step](docs/screenshots/setup-guide.png) |
+| **Install apps:** set up a media server in groups | **Set-up guide** after the first password |
+| ![Settings, Performance: presets and a switch for each piece of background work](docs/screenshots/performance.png) | ![Apps and Storage on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) |
+| **Settings, Performance:** what each part costs | **On a phone** |
+
 ## Design principles
 
 Lightweight comes first. Every change to Starboard has to keep it small and quiet:
