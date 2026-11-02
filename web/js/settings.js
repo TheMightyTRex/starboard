@@ -1620,7 +1620,7 @@ async function startAbout() {
     const notes = repo && v.latest ? el("a", { class: "btn btn--compact", href: `https://github.com/${repo}/releases/tag/${encodeURIComponent(v.latest)}`, target: "_blank", rel: "noopener noreferrer" },
       "Release notes", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null;
     let box;
-    if (latest && latest !== v.current) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then run the update command on the server.`, notes);
+    if (latest && isNewer(latest, v.current)) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then run the update command on the server.`, notes);
     else if (latest) box = notice("success", "You have the newest version", `Version ${v.current}.`);
     else if (!repo) box = notice("info", `You have version ${v.current}`, "Starboard cannot look for new versions, because STARBOARD_REPO is not set on the server.");
     else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Looking for new versions is off. Turn it on below to see when one is out.");

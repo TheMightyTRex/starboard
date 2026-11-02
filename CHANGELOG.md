@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1 (2 November 2026)
+
+- Upgrade available looks for the newest version tag (what ./update.sh installs), and never offers an older
+  version as an upgrade. Before, GitHub's last published release (0.1.8) could be offered.
+
 ## 0.5.0 (2 November 2026)
 
 ### Finding apps

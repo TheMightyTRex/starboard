@@ -51,6 +51,11 @@ class DiscoveryTest(unittest.TestCase):
 
 
 class ReleasesTest(unittest.TestCase):
+    def test_the_newest_tag_is_found_by_number_not_by_name(self):
+        from starboard.server import newest_tag
+        self.assertEqual(newest_tag(["v0.1.8", "v0.10.0", "v0.5.0", "v0.9.9-dev.1", "latest"]), "v0.10.0")
+        self.assertIsNone(newest_tag(["edge"]))
+
     def test_the_current_version_has_release_notes(self):
         import pathlib
         version = (pathlib.Path(__file__).resolve().parent.parent / "VERSION").read_text().strip()

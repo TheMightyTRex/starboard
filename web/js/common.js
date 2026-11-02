@@ -312,13 +312,21 @@ function setUpHeader() {
   }));
 }
 
+// True when version a is newer than b ("v0.5.1" > "0.5.0"); an older or equal release is never an upgrade.
+function isNewer(a, b) {
+  const parts = (v) => String(v || "").replace(/^v/, "").split(/[.-]/).slice(0, 3).map((n) => parseInt(n, 10) || 0);
+  const [x, y] = [parts(a), parts(b)];
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i];
+  return false;
+}
+
 function showVersion(version, repo, latest) {
   if (!version) return;
   const label = `Starboard: v${version}`;
   $$("[data-version]").forEach((n) => { n.textContent = label; });
   if ($(".site-header") && !$(".site-footer")) {
     // The version opens the release notes; a newer release on GitHub shows "Upgrade available" beside it.
-    const newer = latest && latest.replace(/^v/, "") !== version;
+    const newer = isNewer(latest, version);
     const button = el("button", { type: "button", class: "btn btn--quiet btn--compact version-label", onclick: (e) => openReleaseNotes(e.currentTarget) },
       label, el("span", { class: "visually-hidden", text: ", release notes" }));
     document.body.append(el("footer", { class: "site-footer" }, button,
@@ -343,7 +351,7 @@ async function openReleaseNotes(opener) {
   const panel = sidePanel({ title: "Release notes", opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
   try {
     const r = await api("/api/releases");
-    const newer = r.latest && r.latest.replace(/^v/, "") !== r.current;
+    const newer = isNewer(r.latest, r.current);
     panel.body.replaceChildren(...[
       newer ? el("div", { class: "notice", role: "status" }, icon("circle-arrow-up"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: `Version ${r.latest} is out` }),

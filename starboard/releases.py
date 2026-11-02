@@ -48,6 +48,10 @@ RELEASES = [
      "changed": [], "fixed": [],
      "review": ["apps", "storage"],
      "settings": "Adds a record of the set-up guide and the last upgrade, and three Storage settings in Settings, Performance (sorting by type only when you ask, a daily record of used space, and page updates only when you press Check again). To go back, run ./update.sh --to v0.4.0."},
+    {"version": "0.5.1", "date": "2 November 2026",
+     "added": [], "changed": [("Upgrade available", "Looks for the newest version tag, which is what ./update.sh installs.")],
+     "fixed": [("Upgrade available", "No longer offers an older version as an upgrade.")],
+     "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.0."},
 ]
 
 

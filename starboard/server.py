@@ -177,7 +177,8 @@ class App:
         return self.config.data["auth"].get("session_version", 1)
 
     def latest_release(self):
-        """Asks GitHub for the newest release tag at most every 6 hours. Off when STARBOARD_REPO is not set."""
+        """Asks GitHub for the newest version tag (what ./update.sh installs) at most every 6 hours. Off when
+        STARBOARD_REPO is not set."""
         if not self.repo or not self.config.data.get("update_check", True):
             return None
         if not re.match(r"^[\w.-]+/[\w.-]+$", self.repo):
@@ -188,13 +189,19 @@ class App:
             self._latest["checked"] = time.time()
             try:
                 req = urllib.request.Request(
-                    f"https://api.github.com/repos/{self.repo}/releases/latest",
+                    f"https://api.github.com/repos/{self.repo}/tags?per_page=100",
                     headers={"Accept": "application/vnd.github+json", "User-Agent": "Starboard"})
                 with urllib.request.urlopen(req, timeout=6) as resp:
-                    self._latest["tag"] = json.loads(resp.read(200000)).get("tag_name")
+                    self._latest["tag"] = newest_tag(t.get("name", "") for t in json.loads(resp.read(500000)))
             except (OSError, ValueError):
                 pass
             return self._latest["tag"]
+
+
+def newest_tag(names):
+    """The highest vX.Y.Z among tag names (test builds such as v0.5.0-dev.1 are left out)."""
+    found = [(tuple(int(x) for x in m.groups()), n) for n in names if (m := re.match(r"^v(\d+)\.(\d+)\.(\d+)$", n or ""))]
+    return max(found)[1] if found else None
 
 
 class PasswordProblem(Exception):
