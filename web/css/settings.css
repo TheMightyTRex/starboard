@@ -89,10 +89,7 @@
 .page--settings .settings-sections { gap: var(--space-10, 40px); }
 
 /* Manage apps: the status is an icon beside the name; its words are in hidden text and the tooltip. */
-.row__title .status-icon, .setting__label .status-icon { display: inline-flex; vertical-align: -3px; margin-left: var(--space-2); }
-.status-icon[data-tone="success"] { color: var(--status-success-fg); }
-.status-icon[data-tone="danger"] { color: var(--status-danger-fg); }
-.status-icon[data-tone="muted"] { color: var(--color-text-muted); }
+/* .status-icon is in the shared library (components.css). */
 
 /* A text box with its button beside it (dashboard name, new category, days): one row, one height. */
 .inline-save { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: end; }
