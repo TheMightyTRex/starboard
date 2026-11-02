@@ -432,6 +432,21 @@ function wireDialog(dialog) {
   $$("[data-dialog-close]", dialog).forEach((b) => b.addEventListener("click", () => dialog.close()));
 }
 
+// Testing (Settings, General): the shared library's Note an issue button, with the notes kept on the server in
+// data/ux-notes.json. The script loads only while it is on.
+async function startUxNotes(version) {
+  if (!version) version = (await api("/api/session").catch(() => ({}))).version;
+  const store = {
+    list: async () => (await api("/api/ux-notes")).notes,
+    add: (note) => api("/api/ux-notes", { method: "POST", body: note }),
+    update: (id, changes) => api("/api/ux-notes/update", { method: "POST", body: { id, ...changes } }),
+    remove: (id) => api("/api/ux-notes/remove", { method: "POST", body: { id } }),
+  };
+  const start = () => window.UxNotes?.start({ app: "Starboard", version, store });
+  if (window.UxNotes) return start();
+  document.head.append(el("script", { src: "/js/ux-notes.js", onload: start }));
+}
+
 async function startPage() {
   setUpHeader();
   setUpDisplayPanel();
@@ -443,6 +458,7 @@ async function startPage() {
     document.title = document.title.replace(/ · [^·]*$/, ` · ${session.site_name}`);
     showVersion(session.version, session.repo, session.latest);
     upgradeNotice(session.upgrade);
+    if (session.ux_notes) startUxNotes(session.version);
     return session;
   } catch { return null; }
 }

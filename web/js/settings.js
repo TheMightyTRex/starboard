@@ -627,6 +627,14 @@ function startGeneral() {
   });
 
   // App cards: switches that apply at once.
+  const uxInput = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "ux-notes-l", checked: config.ux_notes });
+  uxInput.addEventListener("change", async () => {
+    try {
+      await saveGeneral({ ux_notes: uxInput.checked }, uxInput.checked ? "Note an issue is on, on every page" : "Note an issue is off");
+      if (uxInput.checked) startUxNotes(); else window.UxNotes?.stop();
+    } catch (err) { uxInput.checked = !uxInput.checked; toast(err.message); }
+  });
+  const uxSwitch = el("label", { class: "switch" }, uxInput);
   const cardSwitch = (key, labelId, on, off) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked: config[key] });
     input.addEventListener("change", async () => {
@@ -719,9 +727,13 @@ function startGeneral() {
           logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I turn it off"]], config.logs.detail,
             (v, t) => saveGeneral({ logs: { detail: v } }, `Detailed logging: ${t.toLowerCase()}`)), "lg-detail-l")),
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")))),
-    section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm));
+    section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
+    el("div", { id: "testing" }, section("gn-test", "Testing", "For trying Starboard out and reporting what could be better.",
+      el("ul", { class: "settings-rows" },
+        settingRow("Note issues", "Adds Note an issue to the corner of every page: choose the part of the page and say what is wrong. Notes are kept on the server in data/ux-notes.json, and Notes beside the button lists them.",
+          uxSwitch, "ux-notes-l")))));
   renderCategories();
-  if (["#categories", "#coming-up", "#download-hours", "#logs"].includes(location.hash)) $(location.hash).scrollIntoView();
+  if (["#categories", "#coming-up", "#download-hours", "#logs", "#testing"].includes(location.hash)) $(location.hash).scrollIntoView();
 }
 
 // What Starboard can access: a row per kind of access, with a switch, a link or the installer command.

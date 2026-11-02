@@ -18,7 +18,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, watch
+from . import access, auth, backup, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -84,6 +84,7 @@ class App:
     def __init__(self, data_dir):
         self.data_dir = data_dir
         self.config = Config(data_dir)
+        self.uxnotes = uxnotes.UxNotes(data_dir)
         self.log = logs.start(data_dir, lambda: self.config.data["logs"], lambda: [self.config.data.get("site_name", "")])
         self.sessions = auth.Sessions(data_dir)
         self.limits = auth.RateLimit()
@@ -512,6 +513,7 @@ class Handler(BaseHTTPRequestHandler):
                     # Only what is already known (no call to GitHub here): the footer's "Upgrade available".
                     "latest": app._latest["tag"] if signed_in else None,
                     "upgrade": self.upgrade_summary() if signed_in else None,
+                    "ux_notes": bool(signed_in and app.config.data.get("ux_notes")),
                 })
             if path == "/api/jellyfin/detect" and method == "GET":
                 if not (app.needs_setup or self.signed_in()):
@@ -554,6 +556,19 @@ class Handler(BaseHTTPRequestHandler):
                     # Answer first, then move the listener.
                     threading.Timer(0.5, app.on_network_change).start()
                 return self.json(200, cfg.public())
+            if path.startswith("/api/ux-notes"):
+                if not cfg.data.get("ux_notes"):
+                    return self.error(404, "Turn on Note issues in Settings, General first")
+                if path == "/api/ux-notes" and method == "GET":
+                    return self.json(200, {"notes": app.uxnotes.list()})
+                if path == "/api/ux-notes" and method == "POST":
+                    return self.json(200, app.uxnotes.add(self.body()))
+                if path == "/api/ux-notes/update" and method == "POST":
+                    b = self.body()
+                    return self.json(200, app.uxnotes.update(str(b.get("id", "")), b.get("status")))
+                if path == "/api/ux-notes/remove" and method == "POST":
+                    app.uxnotes.remove(str(self.body().get("id", "")))
+                    return self.json(200, {"ok": True})
             if path == "/api/network" and method == "GET":
                 return self.json(200, app.network_info(self.client_address[0]))
             if path == "/api/services" and method == "POST":

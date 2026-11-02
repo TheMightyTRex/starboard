@@ -62,6 +62,7 @@ DEFAULTS = {
     # Starboard's own log (System, Logs): days to keep, and detailed logging for reporting a problem.
     "logs": {"keep_days": 60, "detail": "off", "detail_until": 0},
     "setup_guide_done": False,
+    "ux_notes": False,  # Testing: the Note an issue button on every page (the shared library's ux-notes.js)
     "last_version": "",  # the version the upgrade wizard last finished, so it opens once per upgrade
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
@@ -237,6 +238,7 @@ class Config:
             "performance": dict(d["performance"], preset=matching_preset(d)),
             "logs": d["logs"],
             "setup_guide_done": d["setup_guide_done"],
+            "ux_notes": d["ux_notes"],
             "last_version": d["last_version"],  # what the settings really match
             "presets": {k: v["title"] for k, v in PRESETS.items()},
             "services": [public_service(s) for s in d["services"]],
@@ -269,7 +271,7 @@ class Config:
                     if s.get("group") == old:
                         s["group"] = new
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
-                        "fetch_icons", "show_posters", "setup_guide_done"):
+                        "fetch_icons", "show_posters", "setup_guide_done", "ux_notes"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
             if "upcoming_view" in incoming:

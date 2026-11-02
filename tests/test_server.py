@@ -318,6 +318,35 @@ class ServerTest(unittest.TestCase):
         self.request("PUT", "/api/config/general", {"show_posters": True, "fetch_icons": True})
 
 
+    def test_70_ux_notes_only_while_turned_on(self):
+        self.sign_in()
+        resp, _ = self.request("GET", "/api/ux-notes")
+        self.assertEqual(resp.status, 404)  # off by default
+        self.request("PUT", "/api/config/general", {"ux_notes": True})
+        resp, data = self.request("GET", "/api/session")
+        self.assertTrue(data["ux_notes"])
+        resp, data = self.request("POST", "/api/ux-notes", {"what": "  "})
+        self.assertEqual(resp.status, 400)
+        resp, note = self.request("POST", "/api/ux-notes", {
+            "what": "<script>alert(1)</script>" + "x" * 5000, "kind": "Nonsense", "severity": "stops-me",
+            "page": "/index.html", "part": "Button: Check again", "zoom": 1.25, "display": ["contrast", 5], "extra": "dropped"})
+        self.assertEqual(resp.status, 200)
+        self.assertEqual((note["kind"], note["severity"], note["status"], len(note["what"])), ("Other", "stops-me", "open", 4000))
+        self.assertNotIn("extra", note)
+        self.assertEqual(note["display"], ["contrast"])
+        path = os.path.join(self.tmp.name, "ux-notes.json")
+        self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+        resp, _ = self.request("POST", "/api/ux-notes/update", {"id": note["id"], "status": "fixed"})
+        self.assertEqual(resp.status, 200)
+        _, data = self.request("GET", "/api/ux-notes")
+        self.assertEqual(data["notes"][0]["status"], "fixed")
+        self.request("POST", "/api/ux-notes/remove", {"id": note["id"]})
+        _, data = self.request("GET", "/api/ux-notes")
+        self.assertEqual(data["notes"], [])
+        resp, _ = self.request("GET", "/api/ux-notes", cookie=False)
+        self.assertEqual(resp.status, 401)
+        self.request("PUT", "/api/config/general", {"ux_notes": False})
+
     def test_16_static_files_are_compressed_and_cached(self):
         resp, _ = self.request("GET", "/js/common.js", headers={"Accept-Encoding": "gzip"}, cookie=False)
         self.assertEqual(resp.getheader("Content-Encoding"), "gzip")
