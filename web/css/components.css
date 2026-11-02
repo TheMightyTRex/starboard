@@ -1954,6 +1954,7 @@
                > img.show-art__img (or span.show-art__text), span.show-art__label
                  > span.show-art__station, span.show-art__name */
   .show-art {
+    container-type: inline-size;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     width: 100%;
@@ -2011,6 +2012,18 @@
     font-weight: var(--weight-strong);
     line-height: var(--leading-tight);
     overflow-wrap: anywhere;
+  }
+  /* Small show art (under 120px wide): the name alone in the label. */
+  @container (max-width: 120px) {
+    .show-art__station {
+      display: none;
+    }
+    .show-art__label {
+      padding: var(--space-1) var(--space-2);
+    }
+    .show-art__name {
+      font-size: var(--text-xs);
+    }
   }
   /* Logo tile: a station's (or a channel's) logo on a plain tile, or its name as text when there is
      no logo. Markup: .logo-tile > img (alt="") or span.logo-tile__text. */
