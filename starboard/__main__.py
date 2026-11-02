@@ -3,6 +3,7 @@
 import os
 import threading
 
+from . import logs
 from .server import App, make_server
 
 
@@ -23,7 +24,7 @@ class Runner:
         thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         thread.start()
         where = "this computer only" if host.startswith("127.") else "your network"
-        print(f"[starboard] {self.app.version} listening on http://{host}:{self.app.port} ({where})", flush=True)
+        logs.event("info", "start", f"Starboard {self.app.version} listening on port {self.app.port} ({where})")
         return thread
 
     def rebind(self):
@@ -34,7 +35,7 @@ class Runner:
             try:
                 self.start()
             except OSError as e:
-                print(f"[starboard] Could not move the listener ({e}); going back to {old_host}", flush=True)
+                logs.event("error", "start", f"Could not move the listener ({e}); going back to the previous address")
                 self.start(old_host)
 
 

@@ -24,7 +24,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 
-from . import backup, services, sysinfo
+from . import backup, logs, services, sysinfo
 
 KEEP = 8 * 86400
 
@@ -139,7 +139,7 @@ class Watch:
             try:
                 self.tick()
             except Exception as e:  # keep watching whatever one check does
-                print(f"[starboard] watch: {e}", flush=True)
+                logs.error("watch", f"A check failed: {e}", e)
             # Sleep until the next check; a change in Settings wakes it at once.
             self.wake.wait(max(60, int(w.get("every", 5)) * 60))
             self.wake.clear()
@@ -149,15 +149,17 @@ class Watch:
         if key in self.state["alerted"]:
             return
         self.state["alerted"][key] = time.time()
+        logs.event("warning", "alert", f"{title}: {message}")
         channel = self.settings().get("channel") or {}
         if channel.get("kind") in ("ntfy", "gotify", "webhook"):
             try:
                 send(channel, title, message, level)
             except ValueError as e:
-                print(f"[starboard] alert not sent: {e}", flush=True)
+                logs.event("error", "alert", f"Alert not sent: {e}")
 
     def clear(self, key, title=None, message=None):
         if self.state["alerted"].pop(key, None) and title:
+            logs.event("info", "alert", f"{title}: {message}")
             channel = self.settings().get("channel") or {}
             if channel.get("kind") in ("ntfy", "gotify", "webhook"):
                 try:
@@ -292,7 +294,7 @@ class Watch:
             try:
                 send(channel, f"{name}: your week", "\n".join(lines), "info")
             except ValueError as e:
-                print(f"[starboard] weekly summary not sent: {e}", flush=True)
+                logs.event("error", "alert", f"Weekly summary not sent: {e}")
 
     # The pages ---------------------------------------------------------------------
 

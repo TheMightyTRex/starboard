@@ -740,9 +740,18 @@ function startGeneral() {
     section("gn-guide", "Set-up guide", "Finds your apps and walks through what Starboard can do. Running it again changes nothing until you press Continue.",
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/setup-guide.html" }, icon("play"), config.setup_guide_done ? "Run the set-up guide again" : "Run the set-up guide"),
         el("a", { class: "btn", href: "/install-apps.html" }, icon("download"), "Install apps"))),
+    el("div", { id: "logs" }, section("gn-logs", "Logs", "What Starboard did and every problem it met, on System, Logs. Personal details (passwords, API keys, addresses, names) are removed before anything is written.",
+      el("ul", { class: "settings-rows" },
+        settingRow("Keep logs for", withCost("Older days are removed once a day.", "logKeep"),
+          logPick("lg-keep-l", [[7, "7 days"], [14, "14 days"], [30, "30 days"], [60, "60 days"], [90, "90 days"], [180, "180 days"], [365, "A year"]], config.logs.keep_days,
+            (v, t) => saveGeneral({ logs: { keep_days: Number(v) } }, `Logs kept for ${t.toLowerCase()}`)), "lg-keep-l"),
+        settingRow("Detailed logging", withCost("For reporting a problem: adds every page request and every call to your apps, and the full detail of errors. Personal details are still removed.", "logDetail"),
+          logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I turn it off"]], config.logs.detail,
+            (v, t) => saveGeneral({ logs: { detail: v } }, `Detailed logging: ${t.toLowerCase()}`)), "lg-detail-l")),
+      el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")))),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm));
   renderCategories();
-  if (["#categories", "#coming-up", "#download-hours"].includes(location.hash)) $(location.hash).scrollIntoView();
+  if (["#categories", "#coming-up", "#download-hours", "#logs"].includes(location.hash)) $(location.hash).scrollIntoView();
 }
 
 // What Starboard can access: a row per kind of access, with a switch, a link or the installer command.
@@ -808,6 +817,8 @@ const COSTS = {
   cardNumbers: "Costs about: one small request per app when Apps opens, shared for a minute. Off saves that.",
   usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory), and nothing between runs. Starboard skips the drives inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
   spaceLog: "Costs about: one size check of each folder a day, taken when a page or the history asks anyway, and a few kilobytes a year. Nothing noticeable.",
+  logKeep: "Costs about: a few kilobytes a day on disk (about 100 KB a month for a quiet server). Nothing in memory.",
+  logDetail: "Costs about: one short line per page request and per call to your apps, about 1 to 5 MB a day on a busy dashboard. For 24 hours turns itself off, so it cannot fill the disk.",
   storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Off means only when you open the page or press Check again.",
   posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
   icons: "Costs about: one download per app, once.",
@@ -815,6 +826,15 @@ const COSTS = {
 
 const USAGE_CHOICES = [["ask", "Only when I press Work it out"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night at 3 am"], ["weekly", "Every week, at 3 am"], ["off", "Off"]];
 const STORAGE_REFRESH = [[0, "Only when I press Check again"], [60, "Every minute"], [300, "Every 5 minutes"]];
+
+function logPick(labelId, options, value, onChange) {
+  const select = el("select", { class: "select", "aria-labelledby": labelId },
+    options.map(([v, t]) => el("option", { value: String(v), text: t, selected: String(v) === String(value) })));
+  select.addEventListener("change", async () => {
+    try { await onChange(select.value, select.selectedOptions[0].text); } catch (e) { toast(e.message); }
+  });
+  return select;
+}
 
 function withCost(hint, key) {
   return el("span", {}, hint, el("span", { class: "setting__cost", text: COSTS[key] }));

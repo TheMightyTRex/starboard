@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.5 (2 November 2026)
+
+### Logs
+
+- **System, Logs:** what Starboard did (start-up, sign-ins, settings and apps changing, alerts, download hours,
+  updates, storage readings, background jobs) and every problem it met, newest first, with Everything,
+  Problems and Detailed, a search, Download and Delete logs.
+- **Settings, General, Logs:** keep logs for 7 days to a year (60 by default); older days are removed once a day,
+  with no thread of its own. **Detailed logging** (Off, For 24 hours, Until I turn it off) adds each page request
+  and each call to your apps, and the full detail of errors.
+- **Report a problem:** turn on detailed logging, do the thing again, then Copy the details (versions, how it
+  runs, what is switched on, the kinds of apps, recent entries) and Open a new issue on GitHub, which uses a new
+  issue template.
+- Personal details are removed before anything is written, in both modes: passwords, API keys and tokens, IP
+  addresses, host and computer names, email addresses, user names in folder paths and the dashboard's name.
+- Docker's own log now holds only start-up and problems, and both Compose files cap it at 3 files of 1 MB.
+
+### Fixed
+
+- System, Overview: the charts' history failed to load since 0.4.0 (found by the new log).
+
 ## 0.5.4 (2 November 2026)
 
 - System, Overview: Jellyfin's status chips sit beside its name, centred on the heading's line, with the

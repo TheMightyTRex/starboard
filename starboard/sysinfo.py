@@ -598,6 +598,11 @@ class Usage:
             with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
                 json.dump(out, f)
             os.replace(tmp, self.path)
+            from . import logs
+            logs.event("info", "storage", f"Worked out what uses the space in {round(out['finished'] - started)} seconds")
+        except Exception as e:
+            from . import logs
+            logs.error("storage", f"Working out what uses the space failed: {e}", e)
         finally:
             self.running = False
 
@@ -764,7 +769,8 @@ class History:
                     self._save()
                     self._last_save = time.time()
             except Exception as e:  # keep recording whatever one reading does
-                print(f"[starboard] History reading failed: {e}", flush=True)
+                from . import logs
+                logs.event("warning", "history", f"A reading failed: {e}")
 
     def get(self, hours):
         cutoff = time.time() - hours * 3600

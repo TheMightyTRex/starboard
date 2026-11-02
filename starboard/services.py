@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from . import posters
+from . import logs, posters
 from .config import SERVICE_TYPES
 
 TIMEOUT = 8
@@ -102,11 +102,14 @@ def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):
         data = json.dumps(body).encode()
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    started = time.time()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read(8_000_000)
+            logs.detail("apps", f"{service['name']} {method} {path} {resp.status} in {round((time.time() - started) * 1000)} ms")
             return json.loads(raw) if raw else None
     except urllib.error.HTTPError as e:
+        logs.detail("apps", f"{service['name']} {method} {path} answered {e.code} in {round((time.time() - started) * 1000)} ms")
         detail = ""
         try:
             payload = json.loads(e.read(20000))
@@ -119,7 +122,8 @@ def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):
         if e.code in (401, 403):
             raise ServiceError(f"{service['name']} refused the API key") from None
         raise ServiceError(detail or f"{service['name']} answered with error {e.code}") from None
-    except (urllib.error.URLError, TimeoutError, OSError):
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        logs.detail("apps", f"{service['name']} {method} {path} not reached: {e}")
         raise ServiceError(f"Cannot reach {service['name']}") from None
     except ValueError:
         raise ServiceError(f"{service['name']} sent something that is not JSON") from None
@@ -139,10 +143,14 @@ def _arrs(services):
 # qBittorrent (5.2 or later) takes its API key as a bearer token and form posts; SABnzbd takes the key in the query.
 
 def _fetch(service, req, timeout):
+    where = f"{service['name']} {req.get_method()} {urllib.parse.urlsplit(req.full_url).path}"  # no query: it can hold the key
+    started = time.time()
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             raw = resp.read(8_000_000)
+            logs.detail("apps", f"{where} {resp.status} in {round((time.time() - started) * 1000)} ms")
     except urllib.error.HTTPError as e:
+        logs.detail("apps", f"{where} answered {e.code}")
         if e.code in (401, 403):
             raise ServiceError(f"{service['name']} refused the API key") from None
         raise ServiceError(f"{service['name']} answered with error {e.code}") from None

@@ -10,7 +10,7 @@ import os
 import threading
 import time
 
-from . import livetv, migrate
+from . import livetv, logs, migrate
 
 JOBS = {
     "livetv": {"title": "Live TV channels and guide", "every": 3600, "what": "Refreshes Jellyfin's free TV guides daily, and its channels when a channel list changes"},
@@ -78,8 +78,10 @@ class Jobs:
             else:
                 summary = migrate.ensure_defaults(services)
             self._record(key, finished=time.time(), state="done", summary=summary)
+            logs.event("info", "jobs", f"{key} finished: {summary}" if isinstance(summary, str) else f"{key} finished")
         except Exception as e:  # recorded for the pages; the next run tries again
             self._record(key, finished=time.time(), state="failed", summary=str(e)[:300])
+            logs.error("jobs", f"{key} failed: {e}", e)
         finally:
             self.running.discard(key)
 

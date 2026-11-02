@@ -110,3 +110,9 @@
 .growth__dot { fill: var(--chart-1); }
 .growth__limit { stroke: var(--status-danger-fg); stroke-dasharray: 4 4; }
 .growth__sentence { font-weight: var(--weight-strong); }
+
+/* System, Logs */
+.steps-list { display: grid; gap: var(--space-3); margin: 0; padding-left: var(--space-5); }
+.steps-list .actions { margin-top: var(--space-2); }
+.nowrap { white-space: nowrap; }
+.tabular { font-variant-numeric: tabular-nums; }

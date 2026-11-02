@@ -44,6 +44,7 @@ SUB = {
         ("system-monitor.html", "Monitor", "gauge"),
         ("system-network.html", "Network", "network"),
         ("system-backup.html", "Backup and restore", "archive-restore"),
+        ("system-logs.html", "Logs", "scroll-text"),
     ],
     "settings": [
         ("settings.html", "Manage apps", "app-window"),

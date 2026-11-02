@@ -57,6 +57,8 @@ DEFAULTS = {
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
                     "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
                     "storage_refresh": 0, "usage_every": "ask", "space_log": True},
+    # Starboard's own log (System, Logs): days to keep, and detailed logging for reporting a problem.
+    "logs": {"keep_days": 60, "detail": "off", "detail_until": 0},
     "setup_guide_done": False,
     "last_version": "",  # the version the upgrade wizard last finished, so it opens once per upgrade
     "auth": {"password_hash": "", "session_version": 1},
@@ -128,6 +130,8 @@ class Config:
             data.setdefault(key, json.loads(json.dumps(value)))
         for key, value in DEFAULTS["performance"].items():  # settings added in later versions
             data["performance"].setdefault(key, value)
+        for key, value in DEFAULTS["logs"].items():
+            data["logs"].setdefault(key, value)
         if data.get("design") not in DESIGNS:  # a design that has since been removed
             data["design"] = DEFAULTS["design"]
             self._write(data)
@@ -229,6 +233,7 @@ class Config:
             "watch": public_watch(d["watch"]),
             "extras": d["extras"],
             "performance": dict(d["performance"], preset=matching_preset(d)),
+            "logs": d["logs"],
             "setup_guide_done": d["setup_guide_done"],
             "last_version": d["last_version"],  # what the settings really match
             "presets": {k: v["title"] for k, v in PRESETS.items()},
@@ -283,6 +288,8 @@ class Config:
                 d["download_hours"] = clean_hours(incoming["download_hours"], d["download_hours"])
             if "preset" not in incoming:
                 d["performance"]["preset"] = matching_preset(d)  # a change by hand is Custom, unless it matches one
+            if "logs" in incoming:
+                d["logs"] = clean_logs(incoming["logs"], d["logs"])
             if "session_days" in incoming:
                 days = int(incoming["session_days"])
                 if not 1 <= days <= 90:
@@ -355,6 +362,24 @@ def clean_performance(incoming, current):
             if value not in choices:
                 raise ConfigError("Choose a value from the list")
             out[key] = value
+    return out
+
+
+def clean_logs(incoming, current):
+    from .logs import DETAIL_CHOICES, KEEP_CHOICES
+    if not isinstance(incoming, dict):
+        raise ConfigError("Send the log settings as an object")
+    out = dict(current)
+    if "keep_days" in incoming:
+        days = int(incoming["keep_days"])
+        if days not in KEEP_CHOICES:
+            raise ConfigError("Choose how long to keep logs from the list")
+        out["keep_days"] = days
+    if "detail" in incoming:
+        if incoming["detail"] not in DETAIL_CHOICES:
+            raise ConfigError("Choose Off, For 24 hours or Until I turn it off")
+        out["detail"] = incoming["detail"]
+        out["detail_until"] = int(time.time()) + 86400 if out["detail"] == "day" else 0
     return out
 
 

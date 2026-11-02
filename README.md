@@ -25,6 +25,10 @@ All made with example data (`tools/screenshots.sh`).
 | **Set-up guide** after the first password | **Upgrade guide** after an upgrade with choices |
 | ![The notice after an upgrade, with Open the upgrade guide](docs/screenshots/upgrade-notice.png) | ![Settings, Performance: presets and a switch for each piece of background work](docs/screenshots/performance.png) |
 | **After an upgrade** | **Settings, Performance:** what each part costs |
+| ![System, Logs: the log, Report a problem, Download and Delete logs](docs/screenshots/logs.png) | ![The log, newest first, with Everything, Problems and Detailed](docs/screenshots/logs-entries.png) |
+| **Logs**, with Report a problem | **The log**, newest first |
+| ![Settings, General: how long to keep logs, and detailed logging](docs/screenshots/logs-settings.png) | |
+| **Log settings** | |
 | ![Apps on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) | |
 | **On a phone** | |
 

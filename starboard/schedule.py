@@ -15,7 +15,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 
-from . import services
+from . import logs, services
 from .services import ServiceError
 
 PAUSED = ("stoppedDL", "pausedDL")
@@ -143,6 +143,8 @@ class Schedule:
                 want, _ = self.wanted(state, now)
                 # Pausing is checked every minute (it catches new downloads); running only when it changes.
                 if want == "pause" or state["applied"] != want:
+                    if state["applied"] != want:
+                        logs.event("info", "download hours", "Downloads paused" if want == "pause" else "Downloads running again")
                     self.apply(want, state, enforcing=want == "pause" and state["applied"] == "pause")
                     state["applied"] = want
             if json.dumps(state, sort_keys=True) != before:  # write only when something changed
@@ -157,7 +159,7 @@ class Schedule:
             try:
                 self.tick()
             except Exception as e:  # keep checking whatever one client does
-                print(f"[starboard] download hours: {e}", flush=True)
+                logs.event("warning", "download hours", str(e))
             if not self.needed():
                 self.thread = None
                 return  # off and nothing to undo: no thread at all until it is turned on again

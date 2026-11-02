@@ -36,3 +36,10 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
+    # Docker's own copy of the log holds only start-up and problems (Starboard's full log is on System, Logs, where
+    # Settings decides how long it is kept). Capped at 3 files of 1 MB, so it can never grow large.
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "3"

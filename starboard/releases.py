@@ -63,6 +63,12 @@ RELEASES = [
     {"version": "0.5.4", "date": "2 November 2026",
      "added": [], "changed": [("Status beside headings", "On System, Overview, Jellyfin's state (Up to date, Restart needed, Update available) sits beside its name instead of on a line of its own. Status follows one rule across Starboard and Storyarr.")],
      "fixed": [], "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.3."},
+    {"version": "0.5.5", "date": "2 November 2026",
+     "added": [("System, Logs", "What Starboard did and every problem it met, newest first, with Download and Delete logs. Kept for 60 days by default (Settings, General)."),
+               ("Report a problem", "Detailed logging for 24 hours, then Copy the details and Open a new issue on GitHub. Passwords, API keys, addresses and names are removed before anything is written.")],
+     "changed": [("Docker's log", "Holds only start-up and problems, capped at 3 MB in the Compose files.")],
+     "fixed": [("System, Overview", "The charts' history loads again (broken since 0.4.0).")],
+     "review": [], "settings": "Adds log settings: kept for 60 days, detailed logging off. To go back, run ./update.sh --to v0.5.4."},
 ]
 
 

@@ -432,6 +432,13 @@ def _run(names):
                                            **({} if ok else {"error": "The restart did not finish. The log below says why."}))
         with _lock:
             job["log"] = "\n".join(log)[-4000:]
+            done = [n for n, i in job["items"].items() if i.get("phase") == "done"]
+            failed = [n for n, i in job["items"].items() if i.get("phase") == "failed"]
+        from . import logs
+        if done:
+            logs.event("info", "updates", f"Updated {', '.join(done)}")
+        if failed:
+            logs.event("error", "updates", f"Update did not finish for {', '.join(failed)}", log="\n".join(log)[-2000:])
         # Remove only the images these apps used before, if nothing uses them now.
         in_use = {c["image_id"] for c in containers()}
         for image_id in old_images - in_use:
@@ -442,6 +449,8 @@ def _run(names):
     except DockerError as e:
         with _lock:
             job["log"] = str(e)
+        from . import logs
+        logs.event("error", "updates", f"Updates stopped: {e}")
     finally:
         with _lock:
             job.update(finished=True, ended=time.time())

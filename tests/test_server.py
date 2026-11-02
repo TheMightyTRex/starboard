@@ -131,6 +131,27 @@ class ServerTest(unittest.TestCase):
         resp, _ = self.request("POST", "/api/setup", {"token": "x", "password": "another long password"}, cookie=False)
         self.assertEqual(resp.status, 409)
 
+    def test_history_answers_with_history_off(self):
+        self.sign_in()
+        resp, data = self.request("GET", "/api/history?hours=1")
+        self.assertEqual(resp.status, 200, data)
+        self.assertEqual((data["interval"], data["points"]), (300, []))
+
+    def test_logs_list_report_and_delete(self):
+        self.sign_in()
+        self.request("PUT", "/api/config/general", {"logs": {"keep_days": 30}}, {"Origin": f"http://127.0.0.1:{self.port}"})
+        resp, data = self.request("GET", "/api/logs")
+        self.assertEqual(resp.status, 200)
+        self.assertTrue(any(e["message"].startswith("Changed: logs") for e in data["entries"]))
+        self.assertEqual(data["settings"]["keep_days"], 30)
+        resp, text = self.request("GET", "/api/logs/report")
+        self.assertIn(b"## About this Starboard", text)
+        self.assertNotIn(b"correct horse", text)
+        resp, data = self.request("POST", "/api/logs/clear", {}, {"Origin": f"http://127.0.0.1:{self.port}"})
+        self.assertEqual(resp.status, 200)
+        resp, data = self.request("GET", "/api/logs")
+        self.assertEqual([e["area"] for e in data["entries"]], ["logs"])  # only the line saying they were deleted
+
     def test_05_security_headers(self):
         resp, _ = self.request("GET", "/login.html", cookie=False)
         self.assertIn("default-src 'self'", resp.getheader("Content-Security-Policy"))

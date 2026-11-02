@@ -21,6 +21,7 @@ DATA = pathlib.Path(sys.argv[1])
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 18792
 FAKE_PORT = PORT + 1
 os.environ["STARBOARD_HISTORY"] = "0"
+os.environ["STARBOARD_REPO"] = "TheMightyTRex/starboard"  # the public repository: release notes and Report a problem
 os.environ["STARBOARD_DISKS"] = ("Media pool=/disks/pool,System disk=/data,Drive 1=/disks/each/1,Drive 2=/disks/each/2,"
                                  "Drive 3=/disks/each/3,Drive 4=/disks/each/4")
 from starboard import containers, discovery, stack, sysinfo  # noqa: E402

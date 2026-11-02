@@ -16,7 +16,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, discovery, icons, jobs, livetv, migrate, posters, releases, schedule, services, stack, sysinfo, watch
+from . import access, auth, backup, containers, discovery, icons, jobs, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,6 +82,7 @@ class App:
     def __init__(self, data_dir):
         self.data_dir = data_dir
         self.config = Config(data_dir)
+        self.log = logs.start(data_dir, lambda: self.config.data["logs"], lambda: [self.config.data.get("site_name", "")])
         self.sessions = auth.Sessions(data_dir)
         self.limits = auth.RateLimit()
         self.version = read_version()
@@ -231,9 +232,12 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # Keep logs free of query strings (search terms) and cookies.
         path = self.path.split("?", 1)[0]
-        if path == "/healthz":
+        if path == "/healthz" or path.startswith(("/css/", "/js/", "/icons/", "/fonts/", "/favicon")) or path.startswith("/api/icons/"):
+            return  # files the browser loads say nothing about a problem
+        status = args[1] if len(args) > 1 else ""
+        if str(status) == "304":
             return
-        print(f"[starboard] {self.command} {path} {args[1] if len(args) > 1 else ''}", flush=True)
+        logs.detail("request", f"{self.command} {path} {status}")
 
     def client_address_text(self):
         # X-Forwarded-For is believed only from the proxy itself (this computer, or STARBOARD_PROXY_ADDRESSES).
@@ -509,6 +513,7 @@ class Handler(BaseHTTPRequestHandler):
                 before = cfg.data.get("network_access", True)
                 incoming = self.body()
                 cfg.update_general(incoming)
+                logs.event("info", "settings", f"Changed: {', '.join(sorted(incoming)) or 'nothing'}")
                 if "watch" in incoming:
                     app.watch.wake.set()  # turning watching on, or changing how often, takes effect at once
                 # Background work follows the settings at once: threads start when turned on and end when off.
@@ -528,7 +533,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/network" and method == "GET":
                 return self.json(200, app.network_info(self.client_address[0]))
             if path == "/api/services" and method == "POST":
-                service_id = cfg.upsert_service(self.body())
+                incoming = self.body()
+                service_id = cfg.upsert_service(incoming)
+                logs.event("info", "apps", f"{'Changed' if incoming.get('id') else 'Added'} {str(incoming.get('name', 'an app'))[:60]}")
                 return self.json(200, {"id": service_id, "config": cfg.public()})
             if path == "/api/services/order" and method == "POST":
                 cfg.reorder_services(self.body().get("ids", []))
@@ -562,6 +569,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, services.options(service))
                 if not m.group(2) and method == "DELETE":
                     cfg.remove_service(service["id"])
+                    logs.event("info", "apps", f"Removed {service['name']}")
                     return self.json(200, cfg.public())
             if path == "/api/status" and method == "GET":
                 return self.json(200, {"items": services.cached("status", 15, lambda: services.status_all(cfg.data["services"]), fresh)})
@@ -633,9 +641,29 @@ class Handler(BaseHTTPRequestHandler):
                 if not host or not containers.available() or not os.path.exists(env_file):
                     raise ValueError("Starboard cannot start apps here. Run the command instead")
                 with open(env_file) as f:
+                    logs.event("info", "install apps", "Starting the apps in data/stack")
                     return self.json(200, stack.start(host, f.read()))
             if path == "/api/stack/job" and method == "GET":
                 return self.json(200, stack.job())
+            # Starboard's own log (System, Logs)
+            if path == "/api/logs" and method == "GET":
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                level = q.get("level", ["all"])[0]
+                before = float(q.get("before", ["0"])[0] or 0) or None
+                return self.json(200, {"entries": app.log.read(level if level in ("all", "problems", "detail") else "all",
+                                                               q.get("q", [""])[0][:100], before),
+                                       "summary": app.log.summary(), "detailed": app.log.detailed(), "settings": cfg.data["logs"],
+                                       "repo": app.repo if re.match(r"^[\w.-]+/[\w.-]+$", app.repo or "") else None})
+            if path == "/api/logs/download" and method == "GET":
+                body = app.log.text(app.log.read("all", limit=200000)).encode()
+                return self.send(200, body, "text/plain; charset=utf-8",
+                                 {"Content-Disposition": f'attachment; filename="starboard-log-{time.strftime("%Y-%m-%d")}.txt"'})
+            if path == "/api/logs/report" and method == "GET":
+                return self.send(200, logs.report(app, app.log).encode(), "text/plain; charset=utf-8")
+            if path == "/api/logs/clear" and method == "POST":
+                removed = app.log.clear()
+                logs.event("info", "logs", f"Logs deleted ({removed} {'day' if removed == 1 else 'days'})")
+                return self.json(200, {"removed": removed})
             if path == "/api/releases" and method == "GET":
                 d = cfg.data
                 return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo,
@@ -692,7 +720,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/history" and method == "GET":
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                 hours = {"1": 1, "6": 6, "24": 24}.get(q.get("hours", ["1"])[0], 1)
-                return self.json(200, {"hours": hours, "interval": sysinfo.History.INTERVAL,
+                interval = app.history.INTERVAL if app.history else int(cfg.data["performance"].get("history_every", 300))
+                return self.json(200, {"hours": hours, "interval": interval,
                                        "points": app.history.get(hours) if app.history else []})
             if path == "/api/monitor" and method == "GET":
                 return self.json(200, sysinfo.monitor())
@@ -712,6 +741,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not app.disks:
                     return self.error(400, "Choose folders for System, Storage first (./install.sh --disk)")
                 app.usage.start(app.disks)
+                logs.event("info", "storage", "Started working out what uses the space")
                 return self.json(200, app.usage.get())
             if path == "/api/system" and method == "GET":
                 snap = sysinfo.snapshot(app.disks)
@@ -729,6 +759,7 @@ class Handler(BaseHTTPRequestHandler):
                 data = self.body(limit=2 * 1024 * 1024)
                 self.check_password(data)
                 count = backup.restore(cfg, data.get("backup"))
+                logs.event("info", "backup", f"Settings restored from a file ({count} apps)")
                 return self.json(200, {"apps": count, "config": cfg.public()})
             if path == "/api/backup/saved" and method == "GET":
                 return self.json(200, {"items": backup.saved_copies(cfg)})
@@ -736,6 +767,7 @@ class Handler(BaseHTTPRequestHandler):
                 data = self.body()
                 self.check_password(data)
                 count = backup.restore_saved(cfg, str(data.get("name", "")))
+                logs.event("info", "backup", f"Settings restored from a saved copy ({count} apps)")
                 return self.json(200, {"apps": count, "config": cfg.public()})
             if path == "/api/backup/server" and method == "GET":
                 return self.json(200, backup.server_status())
@@ -761,8 +793,11 @@ class Handler(BaseHTTPRequestHandler):
         except containers.DockerError as e:
             return self.error(502, str(e))
         except (TypeError, KeyError, AttributeError) as e:  # a request of the wrong shape, or a damaged file
-            print(f"[starboard] {method} {path}: {type(e).__name__}: {e}", flush=True)
+            logs.error("request", f"{method} {path}: {type(e).__name__}: {e}", e)
             return self.error(400, "That request could not be used. Check what was sent")
+        except Exception as e:  # anything Starboard did not expect: logged in full, so it can be reported
+            logs.error("request", f"{method} {path}: {type(e).__name__}: {e}", e)
+            return self.error(500, "Something went wrong. The details are in System, Logs")
 
     def icon(self, service_id):
         service = self.app.config.service(service_id)
@@ -921,8 +956,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(429, "Too many attempts. Wait 15 minutes and try again")
         data = self.body()
         if app.needs_setup or not auth.check_password(str(data.get("password", "")), app.config.data["auth"]["password_hash"]):
+            logs.event("warning", "sign-in", "A sign-in used the wrong password")
             return self.error(401, "That password is not right")
         app.limits.clear(address)
+        logs.event("info", "sign-in", "Signed in")
         return self.json(200, {"ok": True}, self.new_session(bool(data.get("remember"))))
 
     def check_password(self, data):
@@ -953,6 +990,7 @@ class Handler(BaseHTTPRequestHandler):
         app.config.save()
         remember = app.sessions.remembered(self.token())
         app.sessions.end_all()
+        logs.event("info", "sign-in", "Password changed; other sessions signed out")
         return self.json(200, {"ok": True}, self.new_session(remember))
 
 
