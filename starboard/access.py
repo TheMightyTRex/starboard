@@ -42,6 +42,13 @@ def summary(app):
               "Reads two small files per container from the server's cgroup folder, read-only, while System, Monitor is open.",
               bool(sysinfo.cgroup_dir()) and os.path.isdir(os.path.join(sysinfo.cgroup_dir(), "system.slice")),
               "installer", on_flag="--app-use", off_flag="--no-app-use"),
+        _item("livetv", "Jellyfin's Live TV folder",
+              "Starboard writes channel playlists, guides and logos there once a day while Live TV is on (Settings, Jellyfin). "
+              "Jellyfin can fetch logos and Pluto streams from Starboard without signing in, and only while Live TV is on.",
+              bool(os.environ.get("STARBOARD_IPTV_DIR")), "installer", on_flag="--livetv-folder /path", off_flag="--no-livetv"),
+        _item("jellyfin_jobs", "Jellyfin: watch history import and user defaults",
+              "With Jellyfin's API key, Starboard marks imported history as watched and sets defaults for users who have not chosen their own.",
+              d["extras"].get("import_keep") or d["extras"].get("defaults"), "setting", link="/settings-jellyfin.html"),
         _item("disks", "Your folders, for free space",
               "Reads how full the folders you chose are, on System, Storage. Read-only.",
               app.disks, "installer", on_flag="--disk Name=/path", off_flag="--no-disks"),

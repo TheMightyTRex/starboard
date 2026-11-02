@@ -67,6 +67,26 @@ async function check() {
   announce(summary(services()));
 }
 
+// Starboard's own jobs: the Jellyfin jobs, download hours and watching, with their state and a link to their settings.
+const JOB_ICON = { livetv: "tv", import: "import", defaults: "users", hours: "clock", watch: "bell" };
+
+async function renderOwnJobs() {
+  let extras = null, hours = null;
+  try { [extras, hours] = await Promise.all([api("/api/extras"), api("/api/schedule").catch(() => null)]); } catch { return; }
+  const cfg = AppDetails.state.config;
+  const rows = extras.jobs.map((j) => ({ key: j.key, title: j.title, what: j.what, on: j.enabled, state: j.state, summary: j.summary, link: "/settings-jellyfin.html" }));
+  rows.push({ key: "hours", title: "Download hours", what: "Pauses qBittorrent and SABnzbd outside the hours you set", on: !!hours?.enabled, link: "/settings-general.html#download-hours" });
+  rows.push({ key: "watch", title: "Watching and alerts", what: "Checks your apps every few minutes and sends alerts", on: !!cfg?.watch?.enabled, link: "/settings-alerts.html" });
+  renderKeyed($("#own-jobs"), rows, (r) => r.key, (r) => {
+    const [words, tone] = !r.on ? ["Off", "muted"] : r.state === "failed" ? ["Last run failed", "danger"] : r.state === "running" ? ["Running", "info"] : ["On", "success"];
+    return el("li", { class: "row row--lead", "data-key": r.key },
+      el("span", { class: "app-icon", "aria-hidden": "true" }, icon(JOB_ICON[r.key] || "server-cog", 20)),
+      el("div", {}, el("div", { class: "row__title" }, el("a", { href: r.link, text: r.title })),
+        el("div", { class: "row__meta", text: [r.what, r.on && r.summary ? r.summary : ""].filter(Boolean).join(" · ") })),
+      el("div", { class: "row__side" }, chip(words, tone)));
+  });
+}
+
 startPage().then(async () => {
   try {
     await AppDetails.load("config", "status");
@@ -76,6 +96,7 @@ startPage().then(async () => {
   }
   AppDetails.onChange(render);
   render();
+  renderOwnJobs();
   announce(summary(services()));
   AppDetails.openFromAddress();
   $("#check-now").addEventListener("click", check);

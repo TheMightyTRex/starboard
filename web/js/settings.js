@@ -272,7 +272,7 @@ function setAddress(s, background) {
   history.replaceState(null, "", u);
 }
 
-function openService(s = null, opener = null, { background = false } = {}) {
+function openService(s = null, opener = null, { background = false, preset = null } = {}) {
   const isNew = !s;
   let current = s ? { ...s } : null;
 
@@ -348,6 +348,8 @@ function openService(s = null, opener = null, { background = false } = {}) {
   } else if (background) {
     bg.checked = true;
     type.value = "link";
+  } else if (preset) {
+    type.value = preset.type; name.value = preset.name; url.value = preset.url;
   }
 
   const saveButton = el("button", { type: "submit", form: "service-form", class: "btn btn--primary" });
@@ -511,6 +513,7 @@ function startManageApps() {
   if (editing) openService(editing, $(`#app-sections [data-key="${CSS.escape(editing.id)}"] .row__title button`));
   else if (editId) { setAddress(null, false); toast("That app is not in your list any more"); }
   else if (params.get("add") === "background") openService(null, $("#add-service"), { background: true });
+  else if (params.get("add") === "jellyfin") openService(null, $("#add-service"), { preset: { type: "jellyfin", name: "Jellyfin", url: params.get("url") || "" } });
   else if (params.has("add") || !config.services.length) openService(null, $("#add-service"));
   loadStatus();
 }
@@ -869,6 +872,154 @@ function startAlerts() {
     section("al-week", "Weekly summary", null, weekly));
 }
 
+// Jellyfin ------------------------------------------------------------------
+// Live TV, watch history import and user defaults: switches that apply at once, each job's last run, Run now.
+
+const JOB_STATE = { running: ["Running", "info"], done: ["Last run worked", "success"], failed: ["Last run failed", "danger"] };
+
+function jobRun(job) {
+  const when = job.finished ? new Date(job.finished * 1000).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+  const [words, tone] = JOB_STATE[job.state] || ["Not run yet", "muted"];
+  return el("div", { class: "job-run" }, chip(words, tone),
+    el("span", { class: "small muted", text: [when, job.summary].filter(Boolean).join(" · ") }));
+}
+
+async function startJellyfin() {
+  const root = $("#jellyfin-sections");
+  let d;
+  try { d = await api("/api/extras"); } catch (e) { root.replaceChildren(notice("danger", "Could not load", e.message)); return; }
+  const jobs = Object.fromEntries(d.jobs.map((j) => [j.key, j]));
+  const x = () => config.extras;
+  const save = async (body, message) => {
+    try { await saveGeneral({ extras: body }, message); return true; } catch (err) { toast(err.message); return false; }
+  };
+  const sw = (labelId, checked, onChange, disabled = false) => {
+    const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked, disabled });
+    input.addEventListener("change", async () => { if (!(await onChange(input.checked))) input.checked = !input.checked; else startJellyfin(); });
+    return el("label", { class: "switch" }, input);
+  };
+  const runNow = (key, label) => el("button", { type: "button", class: "btn", onclick: async (e) => {
+    e.currentTarget.disabled = true;
+    try { await api(`/api/extras/${key}/run`, { method: "POST" }); toast(`${label} started`); setTimeout(startJellyfin, 4000); }
+    catch (err) { toast(err.message); }
+  } }, icon("play"), `Run ${label} now`);
+  const welcome = new URLSearchParams(location.search).has("welcome");
+  const jfMissing = !d.history.jellyfin;
+
+  // Jellyfin itself
+  let top = null;
+  if (jfMissing) {
+    const found = await api("/api/jellyfin/detect").catch(() => null);
+    top = notice("info", found?.found ? `Starboard found Jellyfin ${found.found.version} at ${found.found.url}` : "Add Jellyfin first",
+      found?.found && !found.in_apps
+        ? "Add it in Manage apps with its API key (in Jellyfin: Dashboard, API keys). Live TV works without the key; the import and user defaults need it."
+        : "In Manage apps, give your Jellyfin app its API key (in Jellyfin: Dashboard, API keys). Live TV works without it.",
+      el("a", { class: "btn", href: found?.found && !found.in_apps ? `/settings.html?add=jellyfin&url=${encodeURIComponent(found.found.url)}` : "/settings.html" }, "Manage apps"));
+  }
+
+  // Live TV
+  const lt = jobs.livetv;
+  const address = el("input", { class: "input", inputmode: "url", autocomplete: "off", value: x().livetv_address, placeholder: d.self_url });
+  const addressForm = el("form", { class: "inline-save", novalidate: true },
+    field("Address Jellyfin uses to reach Starboard", address, { hint: `For channel logos and Pluto streams. Blank: ${d.self_url}. Jellyfin must be able to open it, so Starboard needs home network access on.` }),
+    el("button", { type: "submit", class: "btn btn--primary", text: "Save address" }));
+  addressForm.addEventListener("submit", async (e) => { e.preventDefault(); if (await save({ livetv_address: address.value }, "Address saved")) startJellyfin(); });
+  const liveRows = el("ul", { class: "settings-rows" },
+    settingRow("Build Live TV channels and guide", lt.what + ". Free channels only: Samsung TV Plus, Pluto TV and Free-TV, with Sky-style numbers.",
+      sw("lt-on-l", x().livetv, (on) => save({ livetv: on }, on ? "Live TV on" : "Live TV off")), "lt-on-l"),
+    settingRow("White channel logos", d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About). Off: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.",
+      sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }, on ? "White logos on" : "White logos off"), !d.pillow), "lt-white-l"));
+  const liveNeeds = lt.needs.length ? notice("warning", "Needs set-up on the server", `Starboard needs ${lt.needs.join(" and ")}. Run ./install.sh and say yes to Live TV.`) : null;
+  const liveHelp = el("details", { class: "disclosure" }, el("summary", { text: "How Jellyfin uses these files" }),
+    el("div", { class: "disclosure__body" }, el("p", { text: "In Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder Jellyfin sees them in." })));
+
+  // Import watch history
+  const h = d.history;
+  const kind = el("select", { class: "select" }, [["plexdb", "A Plex database file"], ["plex", "A Plex server"], ["emby", "An Emby server"], ["jellyfin", "Another Jellyfin server"], ["json", "A history file Starboard made before"]]
+    .map(([v, t]) => el("option", { value: v, text: t })));
+  const url = el("input", { class: "input", inputmode: "url", autocomplete: "off", placeholder: "http://plex:32400" });
+  const token = el("input", { class: "input", type: "password", autocomplete: "off" });
+  const file = el("input", { type: "file", class: "input" });
+  const urlField = field("Server address", url, { span: true });
+  const tokenHint = el("span", {});
+  const fileHint = el("span", {});
+  const tokenField = field("Token or API key", token, { span: true, hint: tokenHint });
+  const fileField = field("File", file, { span: true, hint: fileHint });
+  const importError = el("div", { role: "alert" });
+  const showFields = () => {
+    const isFile = ["plexdb", "json"].includes(kind.value);
+    urlField.hidden = tokenField.hidden = isFile;
+    fileField.hidden = !isFile;
+    tokenHint.textContent = kind.value === "plex" ? "Your Plex token (Plex's help: Finding an authentication token). Only your own account's history is read." : "An API key from that server's Dashboard, API keys. Every user's history is read.";
+    fileHint.textContent = kind.value === "plexdb" ? "A copy of com.plexapp.plugins.library.db from the Plex server (stop Plex first, or copy it with its -wal file). Every account's history is read; the copy is deleted after reading." : "history.json from an earlier import, or plex-watched.json from the old launcher.";
+    url.placeholder = kind.value === "plex" ? "http://plex:32400" : "http://emby:8096";
+  };
+  kind.addEventListener("change", showFields);
+  const importForm = el("form", { novalidate: true, class: "stack-4" },
+    el("div", { class: "form-grid" }, field("Import from", kind, { span: true }), urlField, tokenField, fileField),
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary" }, icon("import"), "Read the history")), importError);
+  showFields();
+  importForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    importError.replaceChildren();
+    try {
+      if (["plexdb", "json"].includes(kind.value)) {
+        if (!file.files[0]) throw new Error("Choose a file first");
+        const r = await fetch(`/api/import/upload?kind=${kind.value}`, { method: "POST", headers: { "X-Starboard": "1" }, body: file.files[0] });
+        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "The upload did not work");
+      } else {
+        await api("/api/import", { method: "POST", body: { kind: kind.value, url: url.value, token: token.value } });
+      }
+      toast("Reading the history. This can take a few minutes.");
+      const wait = setInterval(async () => { const now = await api("/api/extras"); if (!now.importing) { clearInterval(wait); startJellyfin(); } }, 3000);
+    } catch (err) { importError.replaceChildren(notice("danger", "Not started", err.message)); }
+  });
+  const users = h.jellyfin_users;
+  const mapping = h.accounts.length ? el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+    el("caption", { class: "visually-hidden", text: "Accounts and the Jellyfin user each one goes to" }),
+    el("thead", {}, el("tr", {}, ["Account", "Films", "Episodes", "Goes to Jellyfin user", "Applied"].map((t) => el("th", { scope: "col", text: t })))),
+    el("tbody", {}, h.accounts.map((a) => {
+      const pick = el("select", { class: "select", "aria-label": `Jellyfin user for ${a.name}` },
+        el("option", { value: "", text: "Do not import" }), users.map((u) => el("option", { value: u, text: u, selected: (a.jellyfin_user || "") === u })));
+      pick.addEventListener("change", async () => {
+        try { await api("/api/import/mapping", { method: "PUT", body: { mapping: { [a.name]: pick.value } } }); toast(pick.value ? `${a.name} goes to ${pick.value}` : `${a.name} is not imported`); }
+        catch (err) { toast(err.message); }
+      });
+      return el("tr", {}, el("th", { scope: "row", "data-label": "Account", text: a.name }),
+        el("td", { "data-label": "Films", class: "numeric", text: String(a.films) }),
+        el("td", { "data-label": "Episodes", class: "numeric", text: String(a.episodes) }),
+        el("td", { "data-label": "Goes to" }, pick, a.suggested && !a.jellyfin_user ? el("span", { class: "small muted", text: ` Same name: ${a.suggested}` }) : null),
+        el("td", { "data-label": "Applied", class: "numeric", text: String(a.applied) }));
+    })))) : null;
+  const matchSame = h.accounts.some((a) => a.suggested && !a.jellyfin_user)
+    ? el("button", { type: "button", class: "btn", onclick: async () => {
+      const m = Object.fromEntries(h.accounts.filter((a) => a.suggested && !a.jellyfin_user).map((a) => [a.name, a.suggested]));
+      await api("/api/import/mapping", { method: "PUT", body: { mapping: m } }); toast("Matched accounts with the same name"); startJellyfin();
+    } }, icon("users"), "Match accounts with the same name") : null;
+  const imported = h.imported ? el("p", { class: "small muted", text: `${h.source}, read ${new Date(h.imported).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}. ${h.accounts.length} ${h.accounts.length === 1 ? "account" : "accounts"}.` }) : null;
+  const result = d.import_result ? notice(d.import_result.ok ? "success" : "danger", d.import_result.ok ? "History read" : "The import did not work", d.import_result.message) : null;
+  const applyRows = el("ul", { class: "settings-rows" },
+    settingRow("Keep applying every hour", "History for films and episodes you do not have yet is applied when they arrive. Off: only when you choose Apply now.",
+      sw("im-keep-l", x().import_keep, (on) => save({ import_keep: on }, on ? "History is applied every hour" : "History is applied only when you ask")), "im-keep-l"));
+
+  // User defaults
+  const df = jobs.defaults;
+  const defaultRows = el("ul", { class: "settings-rows" },
+    settingRow("Give every Jellyfin user the defaults", "Every hour, users who have not chosen otherwise get: Live TV opens on the Guide. New users get it too.",
+      sw("df-on-l", x().defaults, (on) => save({ defaults: on }, on ? "User defaults on" : "User defaults off")), "df-on-l"));
+
+  root.removeAttribute("aria-busy");
+  root.replaceChildren(...[
+    welcome ? notice("success", "Starboard found Jellyfin", "These are all off. Turn on what you want; you can change them here at any time.") : null,
+    top,
+    section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV, rebuilt once a day.", liveNeeds, liveRows, addressForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
+    section("jf-import", "Import watch history", "Move what people watched, and where they stopped, from Plex, Emby or another Jellyfin into this Jellyfin.",
+      importForm, result, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
+      el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply") : null)),
+    section("jf-defaults", "User defaults", null, defaultRows, el("div", { class: "actions" }, jobRun(df), runNow("defaults", "Defaults"))),
+  ].filter(Boolean));
+}
+
 // Security ------------------------------------------------------------------
 
 async function startSecurity() {
@@ -1053,5 +1204,6 @@ startPage().then(async (session) => {
   if ($("#general-sections")) startGeneral();
   if ($("#security-sections")) startSecurity();
   if ($("#alerts-sections")) startAlerts();
+  if ($("#jellyfin-sections")) startJellyfin();
   if ($("#version-notice")) startAbout();
 });

@@ -10,7 +10,8 @@ is coming up and how the server is doing.
 Lightweight comes first. Every change to Starboard has to keep it small and quiet:
 
 1. **Very little processor time and memory.** Measure before and after a change; idle use must stay near zero.
-2. **No third-party packages.** Python's standard library and plain HTML, CSS and JavaScript.
+2. **Almost no third-party packages.** Python's standard library and plain HTML, CSS and JavaScript. The one
+   exception is Pillow, open source and credited, used only while Live TV's white logos are on.
 3. **Nothing runs unless it is needed.** Work happens when a page that shows it is open, or on a schedule you
    turned on. Hidden tabs stop refreshing.
 4. **Ask the apps as little as possible.** Share and cache answers rather than asking again for each tab or
@@ -46,7 +47,11 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
   is being converted) and what was added.
 - **Server jobs** (such as a check of every app) with Run now; **Disk health** with 30-day temperatures;
   **Storage** with what is using the space and every drive; **Monitor** with each app's processor and memory.
-- **No third-party packages.** Python's standard library and plain HTML, CSS and JavaScript.
+- **Jellyfin extras** (Settings, Jellyfin), each off until you turn it on: free **Live TV** channels and
+  guides with Sky-style numbers and white logos; **import watch history** from Plex, Emby or another Jellyfin;
+  **defaults for every user**. Set-up offers them when it finds Jellyfin.
+- **Almost no third-party packages:** Python's standard library and plain HTML, CSS and JavaScript, plus Pillow
+  for Live TV logos (see Credits).
 
 ## Install
 
@@ -80,6 +85,7 @@ computer. Every kind of access is optional: say no and only that part of Starboa
 | Home network | Phones and computers on your network can open Starboard | Starboard listens on your network, behind your password | Yes | Settings, Security; `--local-only` |
 | Docker | **Apps, Updates**: check for and install new app images | The Docker socket is mounted: full control of Docker, so of the computer | No | `--docker`, `--no-docker` |
 | Per-app use | **System, Monitor**: each app's processor and memory | `/sys/fs/cgroup` is mounted read-only; two small files per container are read while Monitor is open | No | `--app-use`, `--no-app-use` |
+| Live TV folder | **Settings, Jellyfin**: free channels and guides for Jellyfin | Jellyfin's Live TV folder is mounted read-write; Starboard writes playlists, guides and logos there once a day while Live TV is on | None | `--livetv-folder /path`, `--no-livetv` |
 | Folders | **System, Storage**: free space | Each folder is mounted read-only; Starboard reads sizes, not files | None | `--disk Name=/path`, `--no-disks` |
 | Disk health | **System, Disk health**: each drive's SMART report, and the drive list on Storage | Runs `deploy/install-smart.sh` with `sudo`: a systemd timer runs `deploy/starboard-smart.sh` (smartctl and lsblk, as root) every 30 minutes and saves reports in `./smart`. Starboard may write only to `./smart/requests`, to ask for a reading now | No | `--disk-health`, `--no-disk-health` |
 
@@ -198,6 +204,11 @@ python3 tools/apply_shell.py                   # after changing the header or me
 
 The header and Display panel are written into every page by `tools/apply_shell.py`. Design tokens are in
 `web/css/tokens.css`; the five designs in `web/css/designs.css`.
+
+## Credits
+
+Pillow, Lucide, Atkinson Hyperlegible Next and the data sources Starboard uses are listed, with their
+licences, in [THIRD-PARTY.md](THIRD-PARTY.md).
 
 ## Licence
 

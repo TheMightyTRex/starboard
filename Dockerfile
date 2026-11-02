@@ -1,8 +1,9 @@
-# Starboard: standard library Python only, so there are no third-party packages to keep patched.
+# Starboard: Python's standard library, plus Pillow (open source, see THIRD-PARTY.md) for white Live TV logos.
 FROM python:3.12-alpine
 
 # tzdata: download hours follow the server's local time (TZ).
-RUN apk add --no-cache tzdata
+RUN apk add --no-cache tzdata \
+ && pip install --no-cache-dir "pillow==11.3.0"
 
 RUN addgroup -S -g 10001 starboard && adduser -S -u 10001 -G starboard -H -h /app starboard \
  && mkdir -p /data && chown starboard:starboard /data && chmod 700 /data

@@ -49,6 +49,7 @@ SUB = {
         ("settings.html", "Manage apps", "app-window"),
         ("settings-general.html", "General", "sliders-horizontal"),
         ("settings-alerts.html", "Alerts", "bell"),
+        ("settings-jellyfin.html", "Jellyfin", "tv"),
         ("settings-security.html", "Security", "shield-check"),
         ("settings-updates.html", "About and updates", "info"),
     ],

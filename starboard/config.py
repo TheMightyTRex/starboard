@@ -51,6 +51,8 @@ DEFAULTS = {
               "channel": {"kind": "", "url": "", "token": ""},
               "alerts": {"apps_down": True, "disk_problem": True, "disk_full": 90, "download_stuck": True,
                          "backup_failed": True, "cert_days": 14}},
+    # Jellyfin jobs (jobs.py): each off until turned on in Settings, Jellyfin.
+    "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "import_keep": False, "defaults": False},
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
     "groups": ["Watch, listen and request", "Find and organise", "Search and download", "Dashboards and tools"],
@@ -213,6 +215,7 @@ class Config:
             "upcoming_days_choices": UPCOMING_DAYS,
             "download_hours": d["download_hours"],
             "watch": public_watch(d["watch"]),
+            "extras": d["extras"],
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
             "category_of": CATEGORY_OF,
@@ -247,6 +250,8 @@ class Config:
                 if days not in UPCOMING_DAYS:
                     raise ConfigError("Choose 7, 14, 30, 60 or 90 days")
                 d["upcoming_days"] = days
+            if "extras" in incoming:
+                d["extras"] = clean_extras(incoming["extras"], d["extras"])
             if "watch" in incoming:
                 d["watch"] = clean_watch(incoming["watch"], d["watch"])
             if "download_hours" in incoming:
@@ -257,6 +262,21 @@ class Config:
                     raise ConfigError("Keep people signed in for 1 to 90 days")
                 d["session_days"] = days
             self.save()
+
+
+def clean_extras(incoming, current):
+    if not isinstance(incoming, dict):
+        raise ConfigError("Send the Jellyfin job settings as an object")
+    out = dict(current)
+    for key in ("livetv", "white_logos", "import_keep", "defaults"):
+        if key in incoming:
+            out[key] = bool(incoming[key])
+    if "livetv_address" in incoming:
+        url = str(incoming["livetv_address"] or "").strip().rstrip("/")[:200]
+        if url and not re.match(r"^https?://[^\s/]+$", url):
+            raise ConfigError("Enter the address as http://address:port, with nothing after the port")
+        out["livetv_address"] = url
+    return out
 
 
 WATCH_EVERY = (1, 5, 10, 15, 30, 60)

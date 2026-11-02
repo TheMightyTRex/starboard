@@ -13,6 +13,8 @@
 #   --no-disks            Show no folders
 #   --app-use             Show processor and memory use for each app on System, Monitor (read-only)
 #   --no-app-use          Take that away
+#   --livetv-folder PATH  Live TV: the folder Jellyfin reads its Live TV playlists and guides from (read-write)
+#   --no-livetv           Take that away
 #   --disk-health         Set up Disk health reports (installs a timer with sudo; asks for your password)
 #   --no-disk-health      Stop reading Disk health reports (and say how to remove the timer)
 #   --yes                 Do not ask: use the options above, and your last answers (or No) for the rest
@@ -28,6 +30,7 @@ ASK=1
 DOCKER=""
 HEALTH=""
 APPUSE=""
+LIVETV="-"
 DISKS_GIVEN=0
 DISKS=()
 
@@ -40,12 +43,14 @@ while [ $# -gt 0 ]; do
     --no-docker) DOCKER=0 ;;
     --disk) DISKS+=("${2:?--disk needs Name=/path}"); DISKS_GIVEN=1; shift ;;
     --no-disks) DISKS=(); DISKS_GIVEN=1 ;;
+    --livetv-folder) LIVETV="${2:?--livetv-folder needs a folder}"; shift ;;
+    --no-livetv) LIVETV="" ;;
     --app-use) APPUSE=1 ;;
     --no-app-use) APPUSE=0 ;;
     --disk-health) HEALTH=1 ;;
     --no-disk-health) HEALTH=0 ;;
     --yes) ASK=0 ;;
-    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -162,6 +167,29 @@ if [ "$APPUSE" = 1 ] && [ ! -d /sys/fs/cgroup/system.slice ]; then
   APPUSE=0
 fi
 
+# Live TV for Jellyfin.
+if [ "$LIVETV" = "-" ]; then
+  LIVETV="$(env_value STARBOARD_LIVETV_PATH)"
+  if [ "$ASK" = 1 ]; then
+    echo
+    echo "Live TV for Jellyfin: Starboard can build free channel playlists and TV guides once a day (Settings,"
+    echo "  Jellyfin; off until you turn it on there). For that it needs to write in the folder Jellyfin reads its"
+    echo "  Live TV files from, and nowhere else. No: the Live TV switch says it needs this folder."
+    [ -n "$LIVETV" ] && echo "  Now: $LIVETV"
+    if yes_no "Give Starboard a Live TV folder?" "$([ -n "$LIVETV" ] && echo 1 || echo 0)"; then
+      printf '  Folder (for example /srv/jellyfin/config/iptv) [%s]: ' "$LIVETV"
+      read -r answer || answer=""
+      LIVETV="${answer:-$LIVETV}"
+    else
+      LIVETV=""
+    fi
+  fi
+fi
+if [ -n "$LIVETV" ] && [ ! -d "$LIVETV" ]; then fail "there is no folder $LIVETV"; fi
+if [ -n "$LIVETV" ] && [ ! -w "$LIVETV" ]; then
+  fail "you cannot write in $LIVETV; give your user that folder first (for example: sudo chown -R $(id -un) \"$LIVETV\")"
+fi
+
 # Folders for free space.
 if [ "$DISKS_GIVEN" = 0 ]; then
   hand="$(env_value STARBOARD_DISKS)"
@@ -230,6 +258,12 @@ set_env STARBOARD_UID "$(id -u)"
 set_env STARBOARD_GID "$(id -g)"
 set_env STARBOARD_ALLOW_DOCKER "$DOCKER"
 set_env STARBOARD_ALLOW_APPUSE "$APPUSE"
+set_env STARBOARD_LIVETV_PATH "$LIVETV"
+if [ -n "$LIVETV" ]; then
+  if [ "$MODE" = docker ]; then set_env STARBOARD_IPTV_DIR /iptv; else set_env STARBOARD_IPTV_DIR "$LIVETV"; fi
+else
+  set_env STARBOARD_IPTV_DIR ""
+fi
 if [ "$APPUSE" = 1 ]; then
   if [ "$MODE" = docker ]; then set_env STARBOARD_CGROUP /host-cgroup; else set_env STARBOARD_CGROUP /sys/fs/cgroup; fi
 else
@@ -257,6 +291,7 @@ chmod 700 data backups
   echo "      - ./data:/data"
   if [ "$DOCKER" = 1 ]; then echo "      - /var/run/docker.sock:/var/run/docker.sock  # app updates"; fi
   if [ "$APPUSE" = 1 ]; then echo "      - /sys/fs/cgroup:/host-cgroup:ro  # per-app use"; fi
+  if [ -n "$LIVETV" ]; then echo "      - \"$LIVETV:/iptv\"  # Live TV for Jellyfin (read-write)"; fi
   if [ "$DISKS_GIVEN" != skip ]; then
     i=0
     for d in "${DISKS[@]+"${DISKS[@]}"}"; do

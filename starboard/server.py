@@ -16,7 +16,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, icons, posters, schedule, services, sysinfo, watch
+from . import access, auth, backup, containers, icons, jobs, livetv, migrate, posters, schedule, services, sysinfo, watch
 from .config import Config, ConfigError, new_setup_token, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -91,6 +91,11 @@ class App:
         self.watch = watch.Watch(self)
         if os.environ.get("STARBOARD_WATCH", "1") != "0":
             self.watch.start()
+        self.jobs = jobs.Jobs(self)
+        if os.environ.get("STARBOARD_JOBS", "1") != "0":
+            self.jobs.ensure()
+        self.importing = None  # the watch history import that is running, if any
+        self.import_result = None
         self.schedule = schedule.Schedule(self.config)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
@@ -300,7 +305,29 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, b"ok", "text/plain; charset=utf-8")
         if path.startswith("/api/"):
             return self.api("GET", path)
+        if path.startswith("/iptv/"):
+            return self.iptv(path)
         return self.static(path)
+
+    def iptv(self, path):
+        """For Jellyfin, with no sign-in, only while Live TV is on: channel logos and Pluto stream links."""
+        if not self.app.config.data["extras"].get("livetv"):
+            return self.send(404, b"", "text/plain; charset=utf-8")
+        m = re.match(r"^/iptv/logos/([A-Za-z0-9._-]{1,80}\.png)$", path)
+        if m:
+            found = livetv.logo_file(m.group(1))
+            if not found:
+                return self.send(404, b"", "text/plain; charset=utf-8")
+            with open(found, "rb") as f:
+                return self.send(200, f.read(), "image/png", {"Cache-Control": "max-age=86400"})
+        m = re.match(r"^/iptv/pluto/([A-Za-z0-9]{8,40})\.m3u8$", path)
+        if m:
+            try:
+                target = livetv.pluto_url(m.group(1))
+            except Exception:
+                return self.send(502, b"Pluto did not start a session", "text/plain; charset=utf-8")
+            return self.send(302, b"", "text/plain; charset=utf-8", {"Location": target, "Cache-Control": "no-store"})
+        return self.send(404, b"", "text/plain; charset=utf-8")
 
     def do_POST(self):
         self.mutating("POST")
@@ -365,6 +392,12 @@ class Handler(BaseHTTPRequestHandler):
                     "version": app.version if signed_in else None,
                     "repo": app.repo if signed_in and re.match(r"^[\w.-]+/[\w.-]+$", app.repo or "") else None,
                 })
+            if path == "/api/jellyfin/detect" and method == "GET":
+                if not (app.needs_setup or self.signed_in()):
+                    return self.error(401, "Sign in first")
+                found = migrate.detect_jellyfin()
+                have = any(sv["type"] == "jellyfin" for sv in app.config.data["services"])
+                return self.json(200, {"found": found, "in_apps": have})
             if path == "/api/setup" and method == "POST":
                 return self.first_password()
             if path == "/api/login" and method == "POST":
@@ -385,6 +418,8 @@ class Handler(BaseHTTPRequestHandler):
                 cfg.update_general(incoming)
                 if "watch" in incoming:
                     app.watch.wake.set()  # turning watching on, or changing how often, takes effect at once
+                if "extras" in incoming:
+                    app.jobs.ensure()  # a job turned on starts its thread; one turned off stops at the next check
                 if cfg.data.get("network_access", True) != before and app.on_network_change:
                     # Answer first, then move the listener.
                     threading.Timer(0.5, app.on_network_change).start()
@@ -458,6 +493,20 @@ class Handler(BaseHTTPRequestHandler):
                     if not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
                         return self.error(400, "Choose the apps to update")
                     return self.json(200, containers.update(ordered, ids))
+            if path == "/api/extras" and method == "GET":
+                return self.json(200, dict(app.jobs.status(), importing=app.importing, import_result=app.import_result,
+                                           history=migrate.status(cfg.data_dir, cfg.data["services"])))
+            m = re.match(r"^/api/extras/(livetv|import|defaults)/run$", path)
+            if m and method == "POST":
+                app.jobs.run_soon(m.group(1), force=True)
+                return self.json(200, {"ok": True})
+            if path == "/api/import" and method == "POST":
+                return self.start_import(self.body())
+            if path == "/api/import/upload" and method == "POST":
+                return self.upload_import()
+            if path == "/api/import/mapping" and method == "PUT":
+                migrate.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
+                return self.json(200, migrate.status(cfg.data_dir, cfg.data["services"]))
             if path == "/api/uptime" and method == "GET":
                 return self.json(200, {"enabled": cfg.data["watch"]["enabled"], "items": app.watch.uptime(cfg.data["services"])})
             if path == "/api/alerts/test" and method == "POST":
@@ -588,6 +637,79 @@ class Handler(BaseHTTPRequestHandler):
         days = app.config.data["session_days"] if remember else auth.FORGET_AFTER_DAYS
         token = app.sessions.create(days, app.session_version, remember)
         return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
+
+    # Watch history import --------------------------------------------------------------
+
+    def start_import(self, data):
+        """Reads history from a Plex server, an Emby or Jellyfin server, or a file already in data/imports."""
+        app = self.app
+        kind = str(data.get("kind", ""))
+        url = str(data.get("url", "")).strip().rstrip("/")
+        secret = str(data.get("token", "")).strip()
+        if kind in ("plex", "emby", "jellyfin") and not re.match(r"^https?://[^\s/]+(/\S*)?$", url):
+            return self.error(400, "Enter the server's address, starting with http:// or https://")
+        if kind in ("plex", "emby", "jellyfin") and not secret:
+            return self.error(400, "Enter the token or API key")
+        if kind not in ("plex", "emby", "jellyfin"):
+            return self.error(400, "Choose where to import from")
+        if app.importing:
+            return self.error(409, "An import is already running")
+        app.importing = {"kind": kind, "started": time.time()}
+
+        def work():
+            try:
+                if kind == "plex":
+                    accounts = migrate.read_plex_server(url, secret)
+                else:
+                    accounts = migrate.read_media_server(url, secret, "Emby" if kind == "emby" else "Jellyfin")
+                migrate.save_history(app.config.data_dir, {"plex": "Plex server", "emby": "Emby", "jellyfin": "Jellyfin"}[kind], accounts)
+                app.importing = None
+                app.import_result = {"ok": True, "message": f"Read {sum(len(v) for v in accounts.values())} films and episodes from {len(accounts)} accounts"}
+            except Exception as e:  # shown on the page
+                app.importing = None
+                app.import_result = {"ok": False, "message": str(e)[:300]}
+
+        threading.Thread(target=work, name="import", daemon=True).start()
+        return self.json(200, {"started": True})
+
+    def upload_import(self):
+        """A Plex database file or a history file, streamed to data/imports. Up to 8 GB."""
+        app = self.app
+        kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("kind", [""])[0]
+        if kind not in ("plexdb", "json"):
+            return self.error(400, "Choose a Plex database file or a history file")
+        length = int(self.headers.get("Content-Length") or 0)
+        if not 0 < length <= 8 * 1024 ** 3:
+            return self.error(400, "Choose a file up to 8 GB")
+        if app.importing:
+            return self.error(409, "An import is already running")
+        target = os.path.join(migrate.folder(app.config.data_dir), "upload.db" if kind == "plexdb" else "upload.json")
+        with open(os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb") as f:
+            left = length
+            while left:
+                chunk = self.rfile.read(min(1 << 20, left))
+                if not chunk:
+                    break
+                f.write(chunk)
+                left -= len(chunk)
+        app.importing = {"kind": kind, "started": time.time()}
+
+        def work():
+            try:
+                accounts = migrate.read_plex_db(target) if kind == "plexdb" else migrate.read_file(target)
+                migrate.save_history(app.config.data_dir, "Plex database" if kind == "plexdb" else "History file", accounts)
+                app.import_result = {"ok": True, "message": f"Read {sum(len(v) for v in accounts.values())} films and episodes from {len(accounts)} accounts"}
+            except Exception as e:  # shown on the page
+                app.import_result = {"ok": False, "message": f"Could not read that file: {str(e)[:200]}"}
+            finally:
+                app.importing = None
+                try:
+                    os.remove(target)  # Starboard's own upload copy; the history it read is kept
+                except OSError:
+                    pass
+
+        threading.Thread(target=work, name="import", daemon=True).start()
+        return self.json(200, {"started": True})
 
     def first_password(self):
         app = self.app
