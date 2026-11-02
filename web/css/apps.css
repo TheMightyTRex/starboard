@@ -69,3 +69,29 @@
 .range-row__label { color: var(--color-text-muted); font-size: var(--text-sm); }
 .panel__head .hint { flex-basis: 100%; }
 @media (max-width: 639px) { .page-apps .page-head .actions { justify-content: start; } }
+
+/* Uptime in an app's details: 48 half-hour blocks for the last 24 hours. The sentence above it carries the
+   meaning; the strip is a picture of it, so it is hidden from screen readers. */
+.uptime {
+  display: grid;
+  gap: var(--space-2);
+}
+.uptime__strip {
+  display: grid;
+  grid-template-columns: repeat(48, 1fr);
+  gap: 2px;
+  height: 24px;
+}
+.uptime__strip span {
+  background: var(--color-surface-sunken);
+}
+.uptime__strip span[data-state="up"] {
+  background: var(--status-success-fg);
+}
+.uptime__strip span[data-state="down"] {
+  background: var(--status-danger-fg);
+}
+.uptime__scale {
+  display: flex;
+  justify-content: space-between;
+}

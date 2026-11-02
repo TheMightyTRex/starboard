@@ -62,6 +62,7 @@ class ServerTest(unittest.TestCase):
         auth.ITERATIONS = 1000  # fast tests
         os.environ["STARBOARD_HISTORY"] = "0"
         os.environ["STARBOARD_SCHEDULE"] = "0"
+        os.environ["STARBOARD_WATCH"] = "0"
         os.environ["STARBOARD_DOCKER"] = "/nonexistent/docker.sock"
         cls.server, cls.app = make_server("127.0.0.1", 0, cls.tmp.name)
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()

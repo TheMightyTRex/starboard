@@ -16,7 +16,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, icons, posters, schedule, services, sysinfo
+from . import access, auth, backup, containers, icons, posters, schedule, services, sysinfo, watch
 from .config import Config, ConfigError, new_setup_token, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -86,6 +86,9 @@ class App:
         self.version = read_version()
         self.disks = sysinfo.disk_paths_from_env()
         self.history = sysinfo.History(data_dir) if os.environ.get("STARBOARD_HISTORY", "1") != "0" else None
+        self.watch = watch.Watch(self)
+        if os.environ.get("STARBOARD_WATCH", "1") != "0":
+            self.watch.start()
         self.schedule = schedule.Schedule(self.config)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
@@ -376,7 +379,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, cfg.public())
             if path == "/api/config/general" and method == "PUT":
                 before = cfg.data.get("network_access", True)
-                cfg.update_general(self.body())
+                incoming = self.body()
+                cfg.update_general(incoming)
+                if "watch" in incoming:
+                    app.watch.wake.set()  # turning watching on, or changing how often, takes effect at once
                 if cfg.data.get("network_access", True) != before and app.on_network_change:
                     # Answer first, then move the listener.
                     threading.Timer(0.5, app.on_network_change).start()
@@ -450,6 +456,12 @@ class Handler(BaseHTTPRequestHandler):
                     if not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
                         return self.error(400, "Choose the apps to update")
                     return self.json(200, containers.update(ordered, ids))
+            if path == "/api/uptime" and method == "GET":
+                return self.json(200, {"enabled": cfg.data["watch"]["enabled"], "items": app.watch.uptime(cfg.data["services"])})
+            if path == "/api/alerts/test" and method == "POST":
+                watch.send(cfg.data["watch"]["channel"], f"Test from {cfg.data['site_name']}",
+                           "Alerts from Starboard reach you here.", "info")
+                return self.json(200, {"ok": True})
             if path == "/api/schedule" and method == "GET":
                 return self.json(200, app.schedule.status())
             if path == "/api/schedule" and method == "POST":

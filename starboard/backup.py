@@ -21,7 +21,7 @@ from .config import ConfigError, validate_service
 FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "design", "groups", "show_home_address", "show_outside_address",
                 "session_days", "secure_cookies", "update_check", "network_access", "upcoming_view", "upcoming_days", "download_hours",
-                "fetch_icons", "show_posters")
+                "fetch_icons", "show_posters", "watch")
 SAVED_RE = re.compile(r"^config-[0-9-]+-[a-z-]+\.json$")
 
 

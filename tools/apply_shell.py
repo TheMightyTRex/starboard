@@ -44,6 +44,7 @@ SUB = {
     "settings": [
         ("settings.html", "Manage apps", "app-window"),
         ("settings-general.html", "General", "sliders-horizontal"),
+        ("settings-alerts.html", "Alerts", "bell"),
         ("settings-security.html", "Security", "shield-check"),
         ("settings-updates.html", "About and updates", "info"),
     ],

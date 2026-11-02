@@ -30,6 +30,10 @@ def summary(app):
               "Outside your download hours, Starboard pauses qBittorrent and SABnzbd"
               + (f" ({' and '.join(clients)})" if clients else "") + ".",
               d["download_hours"]["enabled"] and clients, "setting", link="/settings-general.html#download-hours"),
+        _item("watch", "Watching in the background, and alerts",
+              "Checks your apps every few minutes with no page open, keeps their uptime history, and sends alerts"
+              + (f" to {d['watch']['channel']['kind']}" if d["watch"]["channel"].get("kind") else "") + ".",
+              d["watch"]["enabled"], "setting", link="/settings-alerts.html"),
         _item("docker", "Docker, for app updates",
               "Lists your containers and installs new images on Apps, Updates. This is full control of Docker, "
               "which is the same as full control of the server.",

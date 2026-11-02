@@ -44,6 +44,11 @@ DEFAULTS = {
     "upcoming_days": 14,
     # Download hours: qBittorrent and SABnzbd only download from start to end (whole hours, local time).
     "download_hours": {"enabled": False, "start": 1, "end": 6},
+    # Watching in the background (watch.py): off until turned on, because it runs with no page open.
+    "watch": {"enabled": False, "every": 5, "weekly": False,
+              "channel": {"kind": "", "url": "", "token": ""},
+              "alerts": {"apps_down": True, "disk_problem": True, "disk_full": 90, "download_stuck": True,
+                         "backup_failed": True, "cert_days": 14}},
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
     "groups": ["Watch, listen and request", "Find and organise", "Search and download", "Dashboards and tools"],
@@ -205,6 +210,7 @@ class Config:
             "upcoming_days": d["upcoming_days"],
             "upcoming_days_choices": UPCOMING_DAYS,
             "download_hours": d["download_hours"],
+            "watch": public_watch(d["watch"]),
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
             "category_of": CATEGORY_OF,
@@ -239,6 +245,8 @@ class Config:
                 if days not in UPCOMING_DAYS:
                     raise ConfigError("Choose 7, 14, 30, 60 or 90 days")
                 d["upcoming_days"] = days
+            if "watch" in incoming:
+                d["watch"] = clean_watch(incoming["watch"], d["watch"])
             if "download_hours" in incoming:
                 d["download_hours"] = clean_hours(incoming["download_hours"], d["download_hours"])
             if "session_days" in incoming:
@@ -247,6 +255,60 @@ class Config:
                     raise ConfigError("Keep people signed in for 1 to 90 days")
                 d["session_days"] = days
             self.save()
+
+
+WATCH_EVERY = (1, 5, 10, 15, 30, 60)
+
+
+def public_watch(w):
+    out = json.loads(json.dumps(w))
+    out["channel"]["has_token"] = bool(out["channel"].pop("token", ""))
+    return out
+
+
+def clean_watch(incoming, current):
+    if not isinstance(incoming, dict):
+        raise ConfigError("Send the alert settings as an object")
+    out = json.loads(json.dumps(current))
+    for key in ("enabled", "weekly"):
+        if key in incoming:
+            out[key] = bool(incoming[key])
+    if "every" in incoming:
+        every = int(incoming["every"])
+        if every not in WATCH_EVERY:
+            raise ConfigError("Choose how often to check from the list")
+        out["every"] = every
+    ch = incoming.get("channel")
+    if isinstance(ch, dict):
+        if "kind" in ch:
+            if ch["kind"] not in ("", "ntfy", "gotify", "webhook"):
+                raise ConfigError("Choose ntfy, Gotify or a webhook")
+            out["channel"]["kind"] = ch["kind"]
+        if "url" in ch:
+            url = str(ch["url"]).strip()[:300]
+            if url and not re.match(r"^https?://[^\s/]+(/\S*)?$", url):
+                raise ConfigError("The alert address must start with http:// or https:// and have no spaces")
+            out["channel"]["url"] = url
+        if ch.get("token"):  # blank keeps the saved token
+            out["channel"]["token"] = str(ch["token"]).strip()[:300]
+        if ch.get("clear_token"):
+            out["channel"]["token"] = ""
+    alerts = incoming.get("alerts")
+    if isinstance(alerts, dict):
+        for key in ("apps_down", "disk_problem", "download_stuck", "backup_failed"):
+            if key in alerts:
+                out["alerts"][key] = bool(alerts[key])
+        if "disk_full" in alerts:
+            pct = int(alerts["disk_full"] or 0)
+            if pct and not 50 <= pct <= 99:
+                raise ConfigError("Choose a limit from 50% to 99%, or off")
+            out["alerts"]["disk_full"] = pct
+        if "cert_days" in alerts:
+            days = int(alerts["cert_days"] or 0)
+            if not 0 <= days <= 60:
+                raise ConfigError("Choose from 0 to 60 days")
+            out["alerts"]["cert_days"] = days
+    return out
 
 
 def clean_hours(incoming, current):

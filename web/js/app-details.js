@@ -37,6 +37,7 @@ const AppDetails = (() => {
       state.updates = Object.fromEntries(items.map((i) => [i.id, i]));
       state.updateErrors = Object.fromEntries(errors.map((e) => [e.service, e.message]));
     },
+    uptime: async () => { state.uptime = await api("/api/uptime"); },
     health: async () => {
       if (!hasUpdates()) { state.warnings = {}; return; }
       const { items, errors } = await api(fresh("/api/health"));
@@ -206,6 +207,9 @@ const AppDetails = (() => {
     out.push(section("Addresses", "app-details-addr", facts.length ? el("dl", { class: "facts" }, facts)
       : el("p", { class: "muted", text: s.follows ? `No address. Starboard shows the status of ${service(s.follows)?.name || "the app it follows"}.` : "No address yet. Add one in Edit." })));
 
+    // Uptime, when Starboard watches in the background (Settings, Alerts).
+    out.push(section("Uptime", "app-details-uptime", uptimeBlock(s)));
+
     // The app's own warnings (only apps that report them).
     if (UPDATE_TYPES.includes(s.type)) {
       const list = warnings(s);
@@ -234,6 +238,27 @@ const AppDetails = (() => {
     about.push(el("dt", { text: "Followed by" }), el("dd", { text: fol.length ? fol.map((x) => x.name).join(", ") : "No other services" }));
     out.push(section(s.background ? "About this service" : "About this app", "app-details-about", el("dl", { class: "facts" }, about)));
     return out;
+  }
+
+  function uptimeBlock(s) {
+    const u = state.uptime;
+    if (!u) return el("p", { class: "muted", text: state.errors.uptime ? `Could not load the history: ${state.errors.uptime}` : "Loading…" });
+    const row = u.items[s.id];
+    if (!u.enabled && !row?.pct7 && row?.pct7 !== 0) {
+      return el("p", { class: "muted" }, "Starboard keeps uptime history only while it watches in the background. Turn it on in ",
+        el("a", { href: "/settings-alerts.html", text: "Settings, Alerts" }), ".");
+    }
+    if (!row || row.pct24 === null) return el("p", { class: "muted", text: "No history yet. It starts with the next check." });
+    const pct = (v) => `${String(v).replace(/\.0$/, "")}%`;
+    const times = (n) => `${n} ${n === 1 ? "time" : "times"}`;
+    const lines = [`Last 24 hours: answering ${pct(row.pct24)} of the time.`,
+      row.pct7 === null ? "" : `Last 7 days: ${pct(row.pct7)}, stopped answering ${times(row.downs7)}.`,
+      row.last_down ? `Last stopped ${new Date(row.last_down * 1000).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.` : ""];
+    return el("div", { class: "uptime" },
+      el("p", { text: lines.filter(Boolean).join(" ") }),
+      // The words above carry the meaning; the strip is a picture of the same 24 hours.
+      el("div", { class: "uptime__strip", "aria-hidden": "true" }, row.slots.map((st) => el("span", { "data-state": st || "none" }))),
+      el("div", { class: "uptime__scale small muted", "aria-hidden": "true" }, el("span", { text: "24 hours ago" }), el("span", { text: "Now" })));
   }
 
   function foot(s) {
@@ -297,7 +322,7 @@ const AppDetails = (() => {
     entry.panel.setFoot(foot(s).filter(Boolean));
     fill();
     // Pages load only what they show; the slide-out asks for the rest (updates, warnings) when it opens.
-    const missing = ["status", "outside", "updates", "health"].filter((p) => !state.loaded.has(p) && !state.errors[p]);
+    const missing = ["status", "outside", "updates", "health", "uptime"].filter((p) => !state.loaded.has(p) && !state.errors[p]);
     if (missing.length) load(...missing);
     if (!fromAddress) {
       entry.pushed = new URL(location.href).searchParams.get("app") !== id;
