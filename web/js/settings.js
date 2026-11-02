@@ -297,6 +297,18 @@ function openService(s = null, opener = null, { background = false } = {}) {
     config.services.filter((x) => !x.background && (!s || x.id !== s.id)).map((x) => el("option", { value: x.id, text: x.name })));
   const followsField = field("Status follows", follows, { hint: "For a service with no address: show the status of the app it works with, such as a VPN that qBittorrent runs through.", span: true });
   const formError = el("div", { role: "alert" });
+  // Container for Updates: filled from Docker when Starboard has access; otherwise the field stays hidden.
+  const container = el("select", { class: "select", name: "container" }, el("option", { value: "", text: "Find it by name" }));
+  const containerField = field("Container", container, { hint: "The container this app runs in, for Apps, Updates. Starboard finds it by the app's name unless you choose one.", span: true });
+  containerField.hidden = true;
+  api("/api/containers").then((d) => {
+    if (!d.available) return;
+    const names = new Set(d.containers);
+    if (s?.container) names.add(s.container);
+    container.append(...[...names].sort().map((n) => el("option", { value: n, text: n })));
+    container.value = s?.container || "";
+    containerField.hidden = false;
+  }).catch(() => {});
 
   const form = el("form", { id: "service-form", novalidate: true },
     el("section", { class: "step-section", "aria-labelledby": "svc-conn-h" },
@@ -315,7 +327,8 @@ function openService(s = null, opener = null, { background = false } = {}) {
         field("Icon", iconInput, { hint: "A name from the dashboard icons collection, such as sonarr, or an address starting with https://. Leave blank to use the name.", span: true }),
         field("Description", desc, { span: true }),
         field("Address to open in your browser", link, { hint: "Leave blank to use the address Starboard uses. Shown on the card as the home address.", span: true }),
-        field("Outside address", outside, { hint: "The address that works away from home, such as your own domain. Optional.", span: true })),
+        field("Outside address", outside, { hint: "The address that works away from home, such as your own domain. Optional.", span: true }),
+        containerField),
       el("div", { class: "switch-list" },
         switchRow("Show on the dashboard", null, enabled),
         switchRow("Background service", "It has no web page, so it is listed under Apps, Other services.", bg)),
@@ -353,7 +366,7 @@ function openService(s = null, opener = null, { background = false } = {}) {
   const values = () => ({
     id: current?.id, type: type.value, name: name.value, url: url.value, link: link.value, outside_link: outside.value,
     icon: iconInput.value, api_key: key.value, group: group.value, background: bg.checked, follows: bg.checked ? follows.value : "",
-    description: desc.value, enabled: enabled.checked,
+    description: desc.value, enabled: enabled.checked, container: container.value,
     quality_profile_id: current?.quality_profile_id ?? null, root_folder: current?.root_folder || "",
     metadata_profile_id: current?.metadata_profile_id ?? null, search_on_add: current ? current.search_on_add !== false : true,
   });

@@ -95,7 +95,7 @@ def version_of(labels, env=None):
         return v
     for e in env or []:
         k, _, val = e.partition("=")
-        if k in ("APP_VERSION", "NGINX_VERSION", "PG_VERSION", "PYTHON_VERSION", "VERSION") and val:
+        if k in ("APP_VERSION", "NGINX_VERSION", "PG_VERSION", "VERSION") and val:
             return val
     return ""
 
@@ -113,10 +113,12 @@ def containers():
         except DockerError:
             info = {}
         conf = info.get("Config") or {}
+        tag = parse_ref(ref)[2]
+        version = version_of(conf.get("Labels"), conf.get("Env")) or (tag if tag != "latest" else "")
         out.append({
             "name": c["Names"][0].lstrip("/"), "image": ref, "image_id": c["ImageID"],
             "state": c.get("State", ""), "status": c.get("Status", ""),
-            "version": version_of(conf.get("Labels"), conf.get("Env")), "created": (info.get("Created") or "")[:10],
+            "version": version, "created": (info.get("Created") or "")[:10],
             "digests": info.get("RepoDigests") or [],
             "service": labels.get("com.docker.compose.service", ""), "project": labels.get("com.docker.compose.project", ""),
             "folder": labels.get("com.docker.compose.project.working_dir", ""),
@@ -229,8 +231,12 @@ def _check_one(c):
             out.update(latest=target, target_tag=target, update=True, unknown=False, pinned=True,
                        big_change=_major(c["version"] or parse_ref(c["image"])[2]) != _major(target))
         return out
-    except (urllib.error.URLError, OSError, ValueError, KeyError, DockerError) as e:
-        return {"latest": "", "update": False, "unknown": True, "error": str(e)[:160]}
+    except urllib.error.HTTPError as e:
+        message = ("This tag is not in its registry, so it may be a local or test build" if e.code == 404
+                   else f"The registry answered with error {e.code}")
+        return {"latest": "", "update": False, "unknown": True, "error": message}
+    except (urllib.error.URLError, OSError, ValueError, KeyError, DockerError):
+        return {"latest": "", "update": False, "unknown": True, "error": "Cannot reach the image's registry"}
 
 
 # The page --------------------------------------------------------------------------

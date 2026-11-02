@@ -30,6 +30,7 @@ MAIN = [
 SUB = {
     "apps": [
         ("index.html", "Apps", "layout-grid"),
+        ("apps-updates.html", "Updates", "circle-arrow-up"),
         ("apps-services.html", "Other services", "server-cog"),
     ],
     "system": [
