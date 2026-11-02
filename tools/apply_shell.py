@@ -51,6 +51,7 @@ SUB = {
         ("settings-general.html", "General", "sliders-horizontal"),
         ("settings-alerts.html", "Alerts", "bell"),
         ("settings-jellyfin.html", "Jellyfin", "tv"),
+        ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
         ("settings-performance.html", "Performance", "gauge"),
         ("settings-security.html", "Security", "shield-check"),
         ("settings-updates.html", "About and updates", "info"),

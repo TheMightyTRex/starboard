@@ -360,7 +360,8 @@ function openService(s = null, opener = null, { background = false, preset = nul
     const t = type.value;
     keyField.hidden = NO_KEY.includes(t);
     const where = { qbittorrent: "Options, Web UI, API key (version 5.2 or later)", sabnzbd: "Config, General, API Key",
-      jellyfin: "Dashboard, API keys. Optional: it adds Jellyfin's state, what is playing and recently added to System" }[t] || "Settings, General";
+      jellyfin: "Dashboard, API keys. Optional: it adds Jellyfin's state, what is playing and recently added to System",
+      audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Audiobookshelf)" }[t] || "Settings, General";
     keyHint.textContent = `In ${config.types[t]?.label || "the app"}: ${where}.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
     followsField.hidden = !bg.checked;
     group.options[0].textContent = `Choose for me (${guessGroup(name.value, t) || "the last category"})`;
@@ -810,6 +811,7 @@ const COSTS = {
   white: "Costs about: only when new channels arrive, a second or two per logo and up to 15 MB more memory while it runs. Off saves that; logos already made stay.",
   importKeep: "Costs about: 1 second of processor and up to 40 MB more memory for about 20 seconds an hour, while it reads your Jellyfin library. Off saves that; Apply now still works.",
   defaults: "Costs about: two small requests per Jellyfin user an hour. Nothing noticeable.",
+  listeningKeep: "Costs about: one reading of your Audiobookshelf library and users an hour, under a second of processor and a few MB more memory while it runs. Off saves that; Apply now still works.",
   history: "Costs about: one reading of the server's own counters each time, under 0.01% of the processor, and up to 1.5 MB of memory for a day of readings. Off: the System charts have no history.",
   scheduleEvery: "Every minute catches a new download straight away; every 5 minutes uses a fifth of the requests.",
   downloadsRefresh: "Each update asks each download app once (shared for 10 seconds). Slower, or off, means fewer requests while Downloads is open.",
@@ -1006,7 +1008,7 @@ const KEY_PLACE = {
   sonarr: "Settings, General, API key", radarr: "Settings, General, API key", lidarr: "Settings, General, API key",
   readarr: "Settings, General, API key", prowlarr: "Settings, General, API key", bazarr: "Settings, General, API key",
   qbittorrent: "Options, Web UI, API key (5.2 or later)", sabnzbd: "Config, General, API Key",
-  jellyfin: "Dashboard, API keys", seerr: "Settings, General, API key",
+  jellyfin: "Dashboard, API keys", seerr: "Settings, General, API key", audiobookshelf: "Settings, API Keys (an admin's key)",
 };
 
 function wizardFrame({ root, steps, index, onBack, onSkip, onContinue, continueText = "Continue", busy = false }) {
@@ -1386,13 +1388,139 @@ async function startJellyfin() {
   ].filter(Boolean));
 }
 
+// Audiobookshelf ------------------------------------------------------------
+// Listening progress from Plex, Jellyfin, Emby or another Audiobookshelf: read it, match each account to an
+// Audiobookshelf user, apply. Laid out like Settings, Jellyfin, Import watch history.
+
+const LISTEN_FROM = [["plex", "A Plex server"], ["jellyfin", "A Jellyfin server"], ["emby", "An Emby server"], ["audiobookshelf", "Another Audiobookshelf"]];
+const LISTEN_HINT = {
+  plex: "Your Plex token (Plex's help: Finding an authentication token). Only your own account is read, from music libraries with book in their name or that use the Audnexus agent.",
+  jellyfin: "An API key from that server's Dashboard, API keys. Every user is read, from audiobooks in a Books library.",
+  emby: "An API key from that server's Dashboard, API keys. Every user is read, from audiobooks in a Books library.",
+  audiobookshelf: "An admin's API key from that server's Settings, API Keys. Every user is read.",
+};
+
+async function startListening() {
+  const root = $("#listening-sections");
+  let d;
+  try { d = await api("/api/listening"); } catch (e) { root.replaceChildren(notice("danger", "Could not load", e.message)); return; }
+  const redraw = () => startListening();
+  const when = (t) => new Date(t * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  // Audiobookshelf itself
+  const top = !d.abs
+    ? notice("info", "Give Audiobookshelf an admin API key first",
+      "In Audiobookshelf: Settings, API Keys, Add API key, for an admin user. Then, in Manage apps, add Audiobookshelf (or edit it) and paste the key. You can read progress before that; applying it needs the key.",
+      el("a", { class: "btn", href: "/settings.html" }, "Manage apps"))
+    : d.abs_problem ? notice("danger", "Starboard cannot reach Audiobookshelf", `${d.abs_problem}. Check its address and API key in Manage apps.`) : null;
+
+  // Read
+  const kind = el("select", { class: "select" }, LISTEN_FROM.map(([v, t]) => el("option", { value: v, text: t })));
+  const url = el("input", { class: "input", inputmode: "url", autocomplete: "off" });
+  const token = el("input", { class: "input", type: "password", autocomplete: "off" });
+  const tokenHint = el("span", {});
+  const readError = el("div", { role: "alert" });
+  const showHints = () => {
+    tokenHint.textContent = LISTEN_HINT[kind.value];
+    url.placeholder = { plex: "http://plex:32400", jellyfin: "http://jellyfin:8096", emby: "http://emby:8096", audiobookshelf: "http://audiobookshelf:13378" }[kind.value];
+  };
+  kind.addEventListener("change", showHints);
+  showHints();
+  const readButton = el("button", { type: "submit", class: "btn btn--primary", disabled: d.reading }, icon("import"), d.reading ? "Reading…" : "Read the progress");
+  const readForm = el("form", { novalidate: true, class: "stack-4" },
+    el("div", { class: "form-grid" }, field("Read from", kind, { span: true }), field("Server address", url, { span: true }),
+      field("Token or API key", token, { span: true, hint: tokenHint })),
+    el("div", { class: "actions" }, readButton), readError);
+  const waitForRead = () => { const wait = setInterval(async () => { const now = await api("/api/listening").catch(() => null); if (now && !now.reading) { clearInterval(wait); redraw(); } }, 3000); };
+  readForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    readError.replaceChildren();
+    try {
+      await api("/api/listening/read", { method: "POST", body: { kind: kind.value, url: url.value, token: token.value } });
+      toast("Reading the progress. This can take a minute or two.");
+      readButton.disabled = true;
+      waitForRead();
+    } catch (err) { readError.replaceChildren(notice("danger", "Not started", err.message)); }
+  });
+  if (d.reading) waitForRead();
+  const readResult = d.read_result ? notice(d.read_result.ok ? "success" : "danger", d.read_result.ok ? "Progress read" : "Reading did not work", d.read_result.message) : null;
+  const imported = d.imported ? el("p", { class: "small muted", text: `${d.source}, read ${when(d.imported)}. ${d.accounts.length} ${d.accounts.length === 1 ? "account" : "accounts"}.` }) : null;
+
+  // Match
+  const users = d.abs_users;
+  const mapping = d.accounts.length ? el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+    el("caption", { class: "visually-hidden", text: "Accounts and the Audiobookshelf user each one goes to" }),
+    el("thead", {}, el("tr", {}, ["Account", "Books", "Finished", "Goes to Audiobookshelf user", "Applied"].map((t) => el("th", { scope: "col", text: t })))),
+    el("tbody", {}, d.accounts.map((a) => {
+      const pick = el("select", { class: "select", "aria-label": `Audiobookshelf user for ${a.name}`, disabled: !users.length },
+        el("option", { value: "", text: "Do not copy" }), users.map((u) => el("option", { value: u, text: u, selected: (a.abs_user || "") === u })));
+      pick.addEventListener("change", async () => {
+        try { await api("/api/listening/mapping", { method: "PUT", body: { mapping: { [a.name]: pick.value } } }); toast(pick.value ? `${a.name} goes to ${pick.value}` : `${a.name} is not copied`); }
+        catch (err) { toast(err.message); }
+      });
+      return el("tr", {}, el("th", { scope: "row", "data-label": "Account", text: a.name }),
+        el("td", { "data-label": "Books", class: "numeric", text: String(a.books) }),
+        el("td", { "data-label": "Finished", class: "numeric", text: String(a.finished) }),
+        el("td", { "data-label": "Goes to" }, pick, a.suggested && !a.abs_user ? el("span", { class: "small muted", text: ` Same name: ${a.suggested}` }) : null),
+        el("td", { "data-label": "Applied", class: "numeric", text: String(a.applied) }));
+    })))) : null;
+  const matchSame = d.accounts.some((a) => a.suggested && !a.abs_user)
+    ? el("button", { type: "button", class: "btn", onclick: async () => {
+      const m = Object.fromEntries(d.accounts.filter((a) => a.suggested && !a.abs_user).map((a) => [a.name, a.suggested]));
+      await api("/api/listening/mapping", { method: "PUT", body: { mapping: m } }); toast("Matched accounts with the same name"); redraw();
+    } }, icon("users"), "Match accounts with the same name") : null;
+
+  // Apply
+  const keepInput = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "ls-keep-l", checked: config.extras.listening_keep });
+  keepInput.addEventListener("change", async () => {
+    try { await saveGeneral({ extras: { listening_keep: keepInput.checked } }, keepInput.checked ? "Listening progress applied every hour" : "Listening progress applied only when you ask"); }
+    catch (err) { keepInput.checked = !keepInput.checked; toast(err.message); }
+  });
+  const applyRows = el("ul", { class: "settings-rows" },
+    settingRow("Keep applying every hour", withCost("Books that are not in Audiobookshelf yet get their progress once they are scanned in. Off: only when you choose Apply now.", "listeningKeep"),
+      el("label", { class: "switch" }, keepInput), "ls-keep-l"));
+  const applyNow = d.accounts.length ? el("button", { type: "button", class: "btn", disabled: !d.abs || d.job.state === "running", onclick: async (e) => {
+    e.currentTarget.disabled = true;
+    try {
+      await api("/api/extras/listening/run", { method: "POST" });
+      toast("Applying listening progress");
+      const wait = setInterval(async () => { const now = await api("/api/listening").catch(() => null); if (now && now.job.state !== "running") { clearInterval(wait); redraw(); } }, 3000);
+    } catch (err) { toast(err.message); }
+  } }, icon("play"), "Apply now") : null;
+  const rules = el("details", { class: "disclosure" }, el("summary", { text: "How Starboard copies progress" }),
+    el("div", { class: "disclosure__body stack-2" },
+      el("p", { text: "Each book is matched by its ASIN, then its ISBN, then its title and author, then its folder. A book in several files becomes one position: the earlier files plus the place in the current one. If the two copies differ in length, the position is scaled to fit." }),
+      el("p", { text: "Progress a person already has in Audiobookshelf is never changed, and each book is copied once." }),
+      el("p", { text: "Audiobookshelf keeps progress per person. Starboard uses the admin key to make a key that acts as each person, writes their progress with it, and deletes it straight away. Any key left behind stops working after 15 minutes." })));
+
+  // Not found
+  const last = d.last;
+  const missing = last && last.unmatched_count ? section("ls-missing", "Books not found in Audiobookshelf",
+    "Either they are not scanned in yet, or their details differ. Check the title, author or ASIN in Audiobookshelf; the next Apply picks them up.",
+    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+      el("caption", { class: "visually-hidden", text: "Books not found in Audiobookshelf" }),
+      el("thead", {}, el("tr", {}, ["Book", "Author", "Account"].map((t) => el("th", { scope: "col", text: t })))),
+      el("tbody", {}, last.unmatched.map((u) => el("tr", {}, el("th", { scope: "row", "data-label": "Book", text: u.title }),
+        el("td", { "data-label": "Author", text: u.author || "Unknown" }), el("td", { "data-label": "Account", text: u.account })))))),
+    last.unmatched_count > last.unmatched.length ? el("p", { class: "small muted", text: `Showing the first ${last.unmatched.length} of ${last.unmatched_count}.` }) : null) : null;
+
+  root.removeAttribute("aria-busy");
+  root.replaceChildren(...[
+    top,
+    section("ls-copy", "Copy listening progress", "Where everyone is in each audiobook, and what they finished, into Audiobookshelf. Copy it once Audiobookshelf has scanned in your books.",
+      readForm, readResult, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
+      el("div", { class: "actions" }, jobRun(d.job), applyNow), rules),
+    missing,
+  ].filter(Boolean));
+}
+
 // Performance ---------------------------------------------------------------
 // Presets set every optional piece of background work at once; changing one by hand makes it Custom.
 
 const PRESET_WORDS = {
-  small: "For a small or busy server: no history, no watching, no card numbers, no white logos or posters, no hourly Jellyfin jobs, slower pages. Live TV and download hours stay as you set them.",
-  balanced: "The default: history every 5 minutes, card numbers, white logos, posters, normal page updates. Watching and the Jellyfin jobs stay as you set them.",
-  everything: "Everything on and as fresh as it goes: history every minute, watching every 5 minutes with a weekly summary, the hourly Jellyfin jobs, faster Downloads.",
+  small: "For a small or busy server: no history, no watching, no card numbers, no white logos or posters, no hourly Jellyfin or Audiobookshelf jobs, slower pages. Live TV and download hours stay as you set them.",
+  balanced: "The default: history every 5 minutes, card numbers, white logos, posters, normal page updates. Watching and the hourly Jellyfin and Audiobookshelf jobs stay as you set them.",
+  everything: "Everything on and as fresh as it goes: history every minute, watching every 5 minutes with a weekly summary, the hourly Jellyfin and Audiobookshelf jobs, faster Downloads.",
   custom: "Your own choices below. Changing anything here or on another Settings page makes it Custom.",
 };
 
@@ -1461,6 +1589,8 @@ async function startPerformance() {
       sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } }, on ? "History applied every hour" : "History applied only when you ask")), "pf-imp-l"),
     settingRow("Jellyfin user defaults", withCost("Settings, Jellyfin, User defaults.", "defaults"),
       sw("pf-def-l", x.defaults, (on) => save({ extras: { defaults: on } }, on ? "User defaults on" : "User defaults off")), "pf-def-l"),
+    settingRow("Keep applying listening progress", withCost("Settings, Audiobookshelf, Copy listening progress.", "listeningKeep"),
+      sw("pf-listen-l", x.listening_keep, (on) => save({ extras: { listening_keep: on } }, on ? "Listening progress applied every hour" : "Listening progress applied only when you ask")), "pf-listen-l"),
     settingRow("Work out what uses the space", withCost("Sorts your storage by type (TV, films, books and so on) for the charts on System, Storage.", "usage"),
       pick("pf-usage-l", USAGE_CHOICES, perf().usage_every, (v, t) => save({ performance: { usage_every: v } }, `What uses the space: ${t.toLowerCase()}`)), "pf-usage-l"),
     settingRow("Daily record of used space", withCost("For the Space used over time chart and its forecast on System, Storage.", "spaceLog"),
@@ -1675,6 +1805,7 @@ startPage().then(async (session) => {
   if ($("#security-sections")) startSecurity();
   if ($("#alerts-sections")) startAlerts();
   if ($("#jellyfin-sections")) startJellyfin();
+  if ($("#listening-sections")) startListening();
   if ($("#performance-sections")) startPerformance();
   if ($("#guide")) startGuide();
   if ($("#upgrade")) startUpgrade();

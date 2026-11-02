@@ -40,7 +40,7 @@ CATALOGUE = {
     "gluetun": ("Gluetun (VPN)", "gluetun", [8000], ("json", "/v1/publicip/ip", "public_ip"), False, True),
     "flaresolverr": ("FlareSolverr", "link", [8191], ("body", "flaresolverr"), False, True),
     "tautulli": ("Tautulli", "link", [8181], ("title", "tautulli"), False, False),
-    "audiobookshelf": ("Audiobookshelf", "link", [13378], ("title", "audiobookshelf"), False, False),
+    "audiobookshelf": ("Audiobookshelf", "audiobookshelf", [13378], ("json", "/status", "serverVersion"), False, False),
     "navidrome": ("Navidrome", "link", [4533], ("title", "navidrome"), False, False),
     "kavita": ("Kavita", "link", [5000], ("title", "kavita"), False, False),
     "komga": ("Komga", "link", [25600], ("title", "komga"), False, False),

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 (2 November 2026)
+
+- **Listening progress (Settings, Audiobookshelf):** reads where everyone is in each audiobook from a Plex server
+  (your own account, from libraries with book in their name or the Audnexus agent), a Jellyfin or Emby server
+  (every user, from Books libraries) or another Audiobookshelf (every user). A book in several files becomes one
+  position. Match each account to an Audiobookshelf user, then Apply now, or keep applying every hour so books get
+  their progress once they are scanned in.
+- **Matching:** ASIN, then ISBN, then title and author (first author, ignoring punctuation and a leading The),
+  then the book's folder. A position from a copy of a different length is scaled to fit. Books not found are
+  listed, with their account.
+- **Safe by default:** progress a person already has in Audiobookshelf is never changed, and each book is
+  written once. The admin key makes a key that acts as one person, ends by itself after 15 minutes, and is
+  deleted as soon as that person's progress is written.
+- **Audiobookshelf app type:** its version on Apps, and an optional API key. Apps named Audiobookshelf move to the
+  new type when you upgrade (settings schema 2; a backup is made first). The upgrade guide asks for the key.
+- **Install apps:** the Listening progress offer is ready, and points to Settings, Audiobookshelf.
+
 ## 0.5.6 (2 November 2026)
 
 From a design consistency review of Starboard and the shared component library (all 23 findings fixed):

@@ -49,6 +49,10 @@ def summary(app):
         _item("jellyfin_jobs", "Jellyfin: watch history import and user defaults",
               "With Jellyfin's API key, Starboard marks imported history as watched and sets defaults for users who have not chosen their own.",
               d["extras"].get("import_keep") or d["extras"].get("defaults"), "setting", link="/settings-jellyfin.html", cost="About 1 second of processor and up to 40 MB of memory for 20 seconds an hour (import); defaults, nothing noticeable."),
+        _item("listening", "Audiobookshelf: listening progress",
+              "With an admin API key, Starboard makes a key that acts as each person for up to 15 minutes, writes their progress "
+              "and deletes the key. Progress a person already has is never changed.",
+              d["extras"].get("listening_keep"), "setting", link="/settings-audiobookshelf.html", cost="Reads your Audiobookshelf library once an hour: about a second of processor."),
         _item("disks", "Your folders, for free space",
               "Reads how full the folders you chose are, on System, Storage. Read-only.",
               app.disks, "installer", on_flag="--disk Name=/path", off_flag="--no-disks", cost="Reads free space when a page shows it; Sort by type (on demand) reads every file once."),

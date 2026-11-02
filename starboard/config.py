@@ -8,7 +8,7 @@ import shutil
 import threading
 import time
 
-SCHEMA = 1
+SCHEMA = 2
 
 SERVICE_TYPES = {
     "sonarr": {"label": "Sonarr", "api": "/api/v3", "searchable": True, "kind": "Series"},
@@ -22,6 +22,7 @@ SERVICE_TYPES = {
     "sabnzbd": {"label": "SABnzbd", "api": "/sabnzbd/api", "searchable": False},
     "gluetun": {"label": "Gluetun (VPN)", "api": "", "searchable": False},
     "seerr": {"label": "Seerr, Jellyseerr or Overseerr", "api": "/api/v1", "searchable": False},
+    "audiobookshelf": {"label": "Audiobookshelf", "api": "/api", "searchable": False},
     "link": {"label": "Other app", "api": "", "searchable": False},
 }
 
@@ -51,8 +52,9 @@ DEFAULTS = {
               "channel": {"kind": "", "url": "", "token": ""},
               "alerts": {"apps_down": True, "disk_problem": True, "disk_full": 90, "download_stuck": True,
                          "backup_failed": True, "cert_days": 14}},
-    # Jellyfin jobs (jobs.py): each off until turned on in Settings, Jellyfin.
-    "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "import_keep": False, "defaults": False},
+    # Hourly jobs (jobs.py): each off until turned on in Settings, Jellyfin or Settings, Audiobookshelf.
+    "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "import_keep": False, "defaults": False,
+               "listening_keep": False},
     # How much Starboard does in the background and how often (Settings, Performance).
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
                     "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
@@ -308,7 +310,7 @@ PRESETS = {
     "small": {"title": "Small server", "performance": {"history": False, "history_every": 900, "schedule_every": 300,
               "downloads_refresh": 30, "monitor_refresh": 5, "card_numbers": False,
               "storage_refresh": 0, "usage_every": "ask"},
-              "watch": {"enabled": False}, "extras": {"white_logos": False, "import_keep": False, "defaults": False},
+              "watch": {"enabled": False}, "extras": {"white_logos": False, "import_keep": False, "defaults": False, "listening_keep": False},
               "show_posters": False},
     "balanced": {"title": "Balanced", "performance": {"history": True, "history_every": 300, "schedule_every": 60,
                  "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
@@ -318,7 +320,7 @@ PRESETS = {
                    "downloads_refresh": 10, "monitor_refresh": 2, "card_numbers": True,
                    "storage_refresh": 60, "usage_every": "weekly"},
                    "watch": {"enabled": True, "every": 5, "weekly": True},
-                   "extras": {"white_logos": True, "import_keep": True, "defaults": True}, "show_posters": True},
+                   "extras": {"white_logos": True, "import_keep": True, "defaults": True, "listening_keep": True}, "show_posters": True},
 }
 
 
@@ -394,7 +396,7 @@ def clean_extras(incoming, current):
     if not isinstance(incoming, dict):
         raise ConfigError("Send the Jellyfin job settings as an object")
     out = dict(current)
-    for key in ("livetv", "white_logos", "import_keep", "defaults"):
+    for key in ("livetv", "white_logos", "import_keep", "defaults", "listening_keep"):
         if key in incoming:
             out[key] = bool(incoming[key])
     if "livetv_address" in incoming:
@@ -536,6 +538,11 @@ def migrate(data):
     if version < 1:
         data.setdefault("auth", {"password_hash": "", "session_version": 1})
         data["schema"] = 1
+    if version < 2:  # Audiobookshelf has its own type, for its API key and listening progress
+        for s in data.get("services", []):
+            if s.get("type") == "link" and re.sub(r"[^a-z]", "", str(s.get("name", "")).lower()) == "audiobookshelf":
+                s["type"] = "audiobookshelf"
+        data["schema"] = 2
     return data
 
 

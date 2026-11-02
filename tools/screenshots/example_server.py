@@ -66,6 +66,12 @@ class FakeArr(BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = self.path
+        if p.startswith("/abs"):  # a made-up Audiobookshelf, for Settings, Audiobookshelf
+            if p == "/abs/status":
+                return self.send_json({"app": "audiobookshelf", "serverVersion": "2.37.2"})
+            if p.startswith("/abs/api/users"):
+                return self.send_json({"users": [{"id": "u1", "username": "sam"}, {"id": "u2", "username": "alex"}, {"id": "u3", "username": "jo"}]})
+            return self.send_json({"libraries": []})
         film = "/films" in p
         if "/system/status" in p:
             return self.send_json({"version": "6.0.4" if film else "4.0.16"})
@@ -116,6 +122,7 @@ APPS = [
     ("Example books", "link", "Watch and listen", "books"),
     ("Example films", "radarr", "Downloads", "films"),
     ("Media player", "link", "Watch and listen", "player"),
+    ("Audiobookshelf", "audiobookshelf", "Watch and listen", "abs"),
     ("Not running", "link", "Watch and listen", None),
 ]
 
@@ -134,6 +141,21 @@ def main():
         {"label": "Media pool", "items": [], "types": {k: int(v) for k, v in types.items()}, "biggest": biggest}]}))
     (DATA / "space.json").write_text(json.dumps({(today - dt.timedelta(days=59 - i)).isoformat():
                                                   {"Media pool": [int(13.2 * TB + i * 0.017 * TB), int(24 * TB)]} for i in range(60)}))
+    imports = DATA / "imports"
+    imports.mkdir(exist_ok=True)
+    titles = ["The Lighthouse Keepers", "Harbour Street", "Northern Line", "Copper Valley", "Midnight Garden", "The Quiet Coast",
+              "Paper Planets", "Saltmarsh", "A Winter Map", "The Glass Orchard", "Small Hours", "Tidewater"]
+    book = lambda i, t: {"title": t, "author": "A. Example", "asin": "", "isbn": "", "folder": "", "position_s": 3600.0 * (i + 1),
+                         "duration_s": 36000.0, "finished": i % 4 == 0, "finished_at": None, "updated": now}
+    (imports / "listening.json").write_text(json.dumps({"source": "Plex", "imported": now - 600, "accounts": {
+        "Sam": [book(i, t) for i, t in enumerate(titles)], "Alex": [book(i, t) for i, t in enumerate(titles[:5])],
+        "Jo": [book(i, t) for i, t in enumerate(titles[5:8])]}}))
+    (imports / "listening-mapping.json").write_text(json.dumps({"Sam": "sam", "Alex": "alex", "Jo": ""}))
+    (imports / "listening-applied.json").write_text(json.dumps({"sam": [f"b{i}" for i in range(10)], "alex": [f"b{i}" for i in range(5)]}))
+    (imports / "listening-result.json").write_text(json.dumps({"finished": now - 300, "written": 14, "kept": 1, "unmatched_count": 2, "problems": [],
+        "unmatched": [{"account": "Sam", "title": "Small Hours", "author": "A. Example"}, {"account": "Sam", "title": "Tidewater", "author": "A. Example"}]}))
+    (DATA / "jobs.json").write_text(json.dumps({"listening": {"started": now - 320, "finished": now - 300, "state": "done",
+                                                               "summary": "Wrote 14 books; kept 1 that already had progress; 2 not found in Audiobookshelf"}}))
     server, app = make_server("127.0.0.1", PORT, str(DATA))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     if app.needs_setup:

@@ -27,8 +27,8 @@ All made with example data (`tools/screenshots.sh`).
 | **After an upgrade** | **Settings, Performance:** what each part costs |
 | ![System, Logs: the log, Report a problem, Download and Delete logs](docs/screenshots/logs.png) | ![The log, newest first, with Everything, Problems and Detailed](docs/screenshots/logs-entries.png) |
 | **Logs**, with Report a problem | **The log**, newest first |
-| ![Settings, General: how long to keep logs, and detailed logging](docs/screenshots/logs-settings.png) | |
-| **Log settings** | |
+| ![Settings, General: how long to keep logs, and detailed logging](docs/screenshots/logs-settings.png) | ![Settings, Audiobookshelf: each account, the Audiobookshelf user it goes to, and how many books were applied](docs/screenshots/audiobookshelf.png) |
+| **Log settings** | **Listening progress** into Audiobookshelf |
 | ![Apps on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) | |
 | **On a phone** | |
 
@@ -82,6 +82,11 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
 - **Jellyfin extras** (Settings, Jellyfin), each off until you turn it on: free **Live TV** channels and
   guides with Sky-style numbers and white logos; **import watch history** from Plex, Emby or another Jellyfin;
   **defaults for every user**. Set-up offers them when it finds Jellyfin.
+- **Listening progress** (Settings, Audiobookshelf): copies where everyone is in each audiobook, and what they
+  finished, from Plex, Jellyfin, Emby or another Audiobookshelf. Books are matched by ASIN, ISBN, title and author,
+  or folder; progress people already have is never changed, and books not found are listed. It needs an admin API
+  key from Audiobookshelf (Settings, API Keys): Starboard uses it to make a key that acts as each person for a few
+  minutes, and deletes that key straight after.
 - **Search for new apps** (Settings, Manage apps) finds apps on this computer and adds the ones you tick, with
   their API keys if Starboard has Docker access. It runs only when you press it.
 - **Install apps** sets up a media server in groups (Movies, TV, Music, Ebooks, Audiobooks, Comics, Watching,

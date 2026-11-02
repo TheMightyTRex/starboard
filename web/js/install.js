@@ -157,9 +157,9 @@ async function installStep(id, state, data, apps) {
     if (history.length && state.apps.has("jellyfin")) {
       offers.push({ id: "history", title: "Watch history", text: `What everyone has watched in ${history.map((s) => s.name).join(" and ")}, into Jellyfin. Settings, Jellyfin, Import, once Jellyfin is set up.` });
     }
-    const listening = has(["plex", "jellyfin"]);
+    const listening = has(["plex", "jellyfin", "emby"]);
     if (listening.length && state.apps.has("audiobookshelf")) {
-      offers.push({ id: "listening", title: "Listening progress", soon: true, text: `Where everyone is in each audiobook, from ${listening.map((s) => s.name).join(" and ")}. Coming soon: it needs the books scanned in first.` });
+      offers.push({ id: "listening", title: "Listening progress", text: `Where everyone is in each audiobook, from ${listening.map((s) => s.name).join(" and ")}, into Audiobookshelf. Settings, Audiobookshelf, once it has scanned in your books.` });
     }
     const arrs = has(["sonarr", "radarr", "lidarr"]);
     const newArrs = ["sonarr", "radarr", "lidarr", "bookshelf"].filter((k) => state.apps.has(k));
@@ -206,6 +206,7 @@ async function installStep(id, state, data, apps) {
         el("li", { text: "Open each new app once to set it up (Jellyfin and Seerr ask for an admin account)." }),
         state.apps.has("prowlarr") ? el("li", { text: "In Prowlarr, add your search sites, then Settings, Apps: add Sonarr, Radarr and the others, so it shares the sites with them." }) : null,
         state.moving.has("history") ? el("li", {}, "Import watch history: ", el("a", { href: "/settings-jellyfin.html", text: "Settings, Jellyfin" }), ".") : null,
+        state.moving.has("listening") ? el("li", {}, "Copy listening progress once Audiobookshelf has scanned in your books: ", el("a", { href: "/settings-audiobookshelf.html", text: "Settings, Audiobookshelf" }), ".") : null,
       ].filter(Boolean);
       after.replaceChildren(el("h3", { text: "Add them to Starboard" }), finder.box, add, el("h3", { text: "Next" }), el("ol", {}, next));
     };

@@ -77,6 +77,13 @@ RELEASES = [
         ("Charts", "Text follows the Text size setting; media colours come from the shared library, with a high contrast set.")],
      "fixed": [("Look and feel", "Wizard headings no longer show a focus box; Performance's preset cards line up; Jellyfin's sections have room; the second line on System charts is dashed like its legend; phone stat tiles fill their row.")],
      "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.5."},
+    {"version": "0.6.0", "date": "2 November 2026",
+     "added": [("Listening progress", "Settings, Audiobookshelf copies where everyone is in each audiobook, and what they finished, from Plex, Jellyfin, Emby or another Audiobookshelf. Progress people already have is never changed, and books not found are listed.")],
+     "changed": [("Audiobookshelf", "Is an app type of its own, with its version and an optional admin API key. Apps named Audiobookshelf move to it by themselves."),
+                 ("Install apps", "Listening progress is no longer marked coming soon.")],
+     "fixed": [],
+     "review": ["keys"],
+     "settings": "Adds a switch to keep applying listening progress (off; on in the Everything preset), and gives apps named Audiobookshelf their own type. To go back, run ./update.sh --to v0.5.6, which keeps the app as an Other app."},
 ]
 
 

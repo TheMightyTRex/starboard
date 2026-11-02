@@ -206,7 +206,8 @@ def report(app, log):
     on = [name for name, value in (
         ("watching and alerts", d.get("watch", {}).get("enabled")), ("download hours", d.get("download_hours", {}).get("enabled")),
         ("Live TV", d.get("extras", {}).get("livetv")), ("history import kept", d.get("extras", {}).get("import_keep")),
-        ("Jellyfin user defaults", d.get("extras", {}).get("defaults")), ("system history", perf.get("history")),
+        ("Jellyfin user defaults", d.get("extras", {}).get("defaults")),
+        ("listening progress kept", d.get("extras", {}).get("listening_keep")), ("system history", perf.get("history")),
         ("daily space record", perf.get("space_log"))) if value]
     try:
         from . import containers

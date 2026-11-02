@@ -67,14 +67,14 @@ async function check() {
   announce(summary(services()));
 }
 
-// Starboard's own jobs: the Jellyfin jobs, download hours and watching, with their state and a link to their settings.
+// Starboard's own jobs: the Jellyfin and Audiobookshelf jobs, download hours and watching, with their state and a link to their settings.
 const JOB_ICON = { livetv: "tv", import: "import", defaults: "users", hours: "clock", watch: "bell" };
 
 async function renderOwnJobs() {
   let extras = null, hours = null;
   try { [extras, hours] = await Promise.all([api("/api/extras"), api("/api/schedule").catch(() => null)]); } catch { return; }
   const cfg = AppDetails.state.config;
-  const rows = extras.jobs.map((j) => ({ key: j.key, title: j.title, what: j.what, on: j.enabled, state: j.state, summary: j.summary, link: "/settings-jellyfin.html" }));
+  const rows = extras.jobs.map((j) => ({ key: j.key, title: j.title, what: j.what, on: j.enabled, state: j.state, summary: j.summary, link: j.page || "/settings-jellyfin.html" }));
   rows.push({ key: "hours", title: "Download hours", what: "Pauses qBittorrent and SABnzbd outside the hours you set", on: !!hours?.enabled, link: "/settings-general.html#download-hours" });
   rows.push({ key: "watch", title: "Watching and alerts", what: "Checks your apps every few minutes and sends alerts", on: !!cfg?.watch?.enabled, link: "/settings-alerts.html" });
   renderKeyed($("#own-jobs"), rows, (r) => r.key, (r) => {

@@ -16,7 +16,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, discovery, icons, jobs, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, watch
+from . import access, auth, backup, containers, discovery, icons, jobs, listening, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -104,6 +104,8 @@ class App:
         self.importing = None  # the watch history import that is running, if any
         self.import_result = None
         self.import_lock = threading.Lock()
+        self.listening_busy = None  # reading listening progress, if it is running
+        self.listening_read = None
         self.schedule = schedule.Schedule(self.config)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
@@ -607,7 +609,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/extras" and method == "GET":
                 return self.json(200, dict(app.jobs.status(), importing=app.importing, import_result=app.import_result,
                                            history=migrate.status(cfg.data_dir, cfg.data["services"])))
-            m = re.match(r"^/api/extras/(livetv|import|defaults)/run$", path)
+            m = re.match(r"^/api/extras/(livetv|import|defaults|listening)/run$", path)
             if m and method == "POST":
                 app.jobs.run_soon(m.group(1), force=True)
                 return self.json(200, {"ok": True})
@@ -618,6 +620,15 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/import/mapping" and method == "PUT":
                 migrate.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
                 return self.json(200, migrate.status(cfg.data_dir, cfg.data["services"]))
+            if path == "/api/listening" and method == "GET":
+                job = next(j for j in app.jobs.status()["jobs"] if j["key"] == "listening")
+                return self.json(200, dict(listening.status(cfg.data_dir, cfg.data["services"]), job=job,
+                                           reading=bool(app.listening_busy), read_result=app.listening_read))
+            if path == "/api/listening/read" and method == "POST":
+                return self.start_listening(self.body())
+            if path == "/api/listening/mapping" and method == "PUT":
+                listening.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
+                return self.json(200, {"ok": True})
             if path == "/api/discover" and method == "GET":
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":
@@ -879,6 +890,45 @@ class Handler(BaseHTTPRequestHandler):
                 app.import_result = {"ok": False, "message": str(e)[:300]}
 
         threading.Thread(target=work, name="import", daemon=True).start()
+        return self.json(200, {"started": True})
+
+    def start_listening(self, data):
+        """Reads listening progress from a Plex, Jellyfin, Emby or Audiobookshelf server, in the background."""
+        app = self.app
+        kind = str(data.get("kind", ""))
+        url = str(data.get("url", "")).strip().rstrip("/")
+        secret = str(data.get("token", "")).strip()
+        names = {"plex": "Plex", "jellyfin": "Jellyfin", "emby": "Emby", "audiobookshelf": "Audiobookshelf"}
+        if kind not in names:
+            return self.error(400, "Choose where to read from")
+        if not re.match(r"^https?://[^\s/]+(/\S*)?$", url):
+            return self.error(400, "Enter the server's address, starting with http:// or https://")
+        if not secret:
+            return self.error(400, "Enter the token or API key")
+        with app.import_lock:
+            if app.listening_busy:
+                return self.error(409, "Starboard is already reading listening progress")
+            app.listening_busy = {"kind": kind, "started": time.time()}
+
+        def work():
+            try:
+                if kind == "plex":
+                    accounts = listening.read_plex(url, secret)
+                elif kind == "audiobookshelf":
+                    accounts = listening.read_abs(url, secret)
+                else:
+                    accounts = listening.read_media_server(url, secret, names[kind])
+                listening.save_progress(app.config.data_dir, names[kind], accounts)
+                books = sum(len(v) for v in accounts.values())
+                app.listening_read = {"ok": True, "message": f"Read {books} {'book' if books == 1 else 'books'} from {len(accounts)} {'account' if len(accounts) == 1 else 'accounts'}"}
+                logs.event("info", "listening", f"Read listening progress from {names[kind]}: {books} books")
+            except Exception as e:  # shown on the page
+                app.listening_read = {"ok": False, "message": str(e)[:300]}
+                logs.error("listening", f"Reading listening progress failed: {e}", e)
+            finally:
+                app.listening_busy = None
+
+        threading.Thread(target=work, name="listening", daemon=True).start()
         return self.json(200, {"started": True})
 
     def upload_import(self):

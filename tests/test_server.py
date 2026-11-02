@@ -9,7 +9,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from starboard import auth
-from starboard.config import Config, ConfigError, validate_service
+from starboard.config import SCHEMA, Config, ConfigError, validate_service
 from starboard.server import make_server
 
 API_KEY = "test-key-not-real"
@@ -358,7 +358,7 @@ class ConfigTest(unittest.TestCase):
             with open(os.path.join(d, "config.json"), "w") as f:
                 json.dump({"schema": 0, "services": []}, f)
             cfg = Config(d)
-            self.assertEqual(cfg.data["schema"], 1)
+            self.assertEqual(cfg.data["schema"], SCHEMA)
             self.assertTrue(os.listdir(os.path.join(d, "backups")))
 
     def test_removed_design_falls_back_to_health_first(self):

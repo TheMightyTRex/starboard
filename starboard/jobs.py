@@ -1,6 +1,7 @@
-"""Starboard's own background jobs for Jellyfin: Live TV, applying imported watch history, user defaults.
+"""Starboard's own background jobs: Live TV, applying imported watch history and user defaults (Jellyfin), and
+applying listening progress (Audiobookshelf).
 
-Each is off until turned on in Settings, Jellyfin. One thread runs them, and it starts only when one is on:
+Each is off until turned on in Settings, Jellyfin or Settings, Audiobookshelf. One thread runs them, and it starts only when one is on:
 it wakes every 10 minutes and runs whatever is due (Live TV daily, the others hourly). Each job's last run
 is kept in data/jobs.json, for Apps, Other services and Settings.
 """
@@ -10,14 +11,16 @@ import os
 import threading
 import time
 
-from . import livetv, logs, migrate
+from . import listening, livetv, logs, migrate
 
 JOBS = {
     "livetv": {"title": "Live TV channels and guide", "every": 3600, "what": "Refreshes Jellyfin's free TV guides daily, and its channels when a channel list changes"},
     "import": {"title": "Watch history import", "every": 3600, "what": "Applies imported watch history to Jellyfin as the media arrives"},
     "defaults": {"title": "Jellyfin user defaults", "every": 3600, "what": "Gives every Jellyfin user your defaults, unless they chose otherwise"},
+    "listening": {"title": "Listening progress", "every": 3600, "what": "Applies listening progress to Audiobookshelf as the books are scanned in"},
 }
-SETTING = {"livetv": "livetv", "import": "import_keep", "defaults": "defaults"}
+SETTING = {"livetv": "livetv", "import": "import_keep", "defaults": "defaults", "listening": "listening_keep"}
+PAGE = {"listening": "/settings-audiobookshelf.html"}
 
 
 class Jobs:
@@ -75,6 +78,8 @@ class Jobs:
                 summary = livetv.run(self.self_url(), bool(self.settings().get("white_logos", True)), force=force)
             elif key == "import":
                 summary = migrate.apply(self.app.config.data_dir, services)
+            elif key == "listening":
+                summary = listening.apply(self.app.config.data_dir, services)
             else:
                 summary = migrate.ensure_defaults(services)
             self._record(key, finished=time.time(), state="done", summary=summary)
@@ -118,15 +123,18 @@ class Jobs:
     def status(self):
         last = self._load()
         jf = migrate.jellyfin_app(self.app.config.data["services"])
+        abs_ = listening.abs_app(self.app.config.data["services"])
         out = []
         for key, job in JOBS.items():
-            row = {"key": key, "title": job["title"], "what": job["what"], "enabled": self.enabled(key),
+            row = {"key": key, "title": job["title"], "what": job["what"], "enabled": self.enabled(key), "page": PAGE.get(key, "/settings-jellyfin.html"),
                    **{k: last.get(key, {}).get(k) for k in ("started", "finished", "state", "summary")}}
             if key in self.running:
                 row["state"] = "running"
             needs = []
             if not jf:
                 needs.append("Jellyfin with its API key in Manage apps")
+            if key == "listening":
+                needs = [] if abs_ else ["Audiobookshelf with an admin API key in Manage apps"]
             if key == "livetv":
                 needs = [] if livetv.folder() and os.path.isdir(livetv.folder()) else ["Jellyfin's Live TV folder (./install.sh asks)"]
             row["needs"] = needs

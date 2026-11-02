@@ -97,6 +97,8 @@ def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):
     headers = {"Accept": "application/json", "User-Agent": USER_AGENT}
     if service.get("api_key"):
         headers["X-Api-Key"] = service["api_key"]
+        if service["type"] == "audiobookshelf":
+            headers["Authorization"] = f"Bearer {service['api_key']}"
     data = None
     if body is not None:
         data = json.dumps(body).encode()
@@ -200,6 +202,12 @@ def check(service):
             if not v["running"]:
                 raise ServiceError(f"The VPN is {v['status'] or 'not connected'}")
             version = ""
+        elif kind == "audiobookshelf":
+            req = urllib.request.Request(service["url"].rstrip("/") + "/status", headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                version = json.loads(resp.read(200000)).get("serverVersion", "")
+            if service.get("api_key"):
+                _api(service, "/libraries", timeout=5)  # an API key that is wrong shows as a problem
         elif kind == "jellyfin":
             req = urllib.request.Request(service["url"].rstrip("/") + "/System/Info/Public", headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(req, timeout=5) as resp:
