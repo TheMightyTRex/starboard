@@ -14,7 +14,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import auth, backup, containers, icons, schedule, services, sysinfo
+from . import access, auth, backup, containers, icons, schedule, services, sysinfo
 from .config import Config, ConfigError, new_setup_token, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -405,7 +405,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/schedule" and method == "POST":
                 return self.json(200, app.schedule.act(str(self.body().get("action", ""))))
             if path == "/api/calendar" and method == "GET":
-                return self.json(200, services.calendar(cfg.data["services"], cfg.data["upcoming_days"]))
+                result = services.calendar(cfg.data["services"], cfg.data["upcoming_days"])
+                if not cfg.data["show_posters"]:
+                    for item in result["items"]:
+                        item["image"] = ""
+                return self.json(200, result)
+            if path == "/api/access" and method == "GET":
+                return self.json(200, {"items": access.summary(app)})
             if path == "/api/health" and method == "GET":
                 return self.json(200, services.health(cfg.data["services"]))
             if path == "/api/history" and method == "GET":
@@ -464,7 +470,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def icon(self, service_id):
         service = self.app.config.service(service_id)
-        found = icons.get(service, os.path.join(self.app.config.data_dir, "icons")) if service else None
+        found = icons.get(service, os.path.join(self.app.config.data_dir, "icons"),
+                          fetch=self.app.config.data["fetch_icons"]) if service else None
         if not found:
             return self.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "max-age=3600"})
         data, ctype = found

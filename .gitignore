@@ -17,3 +17,5 @@ __pycache__/
 /demo-build/
 .private-words
 compose.override.yaml
+compose.access.yaml
+/smart/

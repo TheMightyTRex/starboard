@@ -61,6 +61,8 @@ class ServerTest(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         auth.ITERATIONS = 1000  # fast tests
         os.environ["STARBOARD_HISTORY"] = "0"
+        os.environ["STARBOARD_SCHEDULE"] = "0"
+        os.environ["STARBOARD_DOCKER"] = "/nonexistent/docker.sock"
         cls.server, cls.app = make_server("127.0.0.1", 0, cls.tmp.name)
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
         cls.port = cls.server.server_address[1]
@@ -277,6 +279,20 @@ class ServerTest(unittest.TestCase):
                 self.assertEqual(data["status"]["status"], "waiting")
             finally:
                 del os.environ["STARBOARD_JOBS_DIR"]
+
+
+    def test_15_access_list_and_privacy_switches(self):
+        self.sign_in()
+        resp, data = self.request("GET", "/api/access")
+        keys = {a["key"]: a for a in data["items"]}
+        self.assertFalse(keys["docker"]["on"])
+        self.assertEqual(keys["docker"]["on_flag"], "--docker")
+        self.request("PUT", "/api/config/general", {"show_posters": False, "fetch_icons": False})
+        resp, data = self.request("GET", "/api/access")
+        self.assertFalse({a["key"]: a for a in data["items"]}["posters"]["on"])
+        resp, data = self.request("GET", "/api/containers")
+        self.assertFalse(data["available"])
+        self.request("PUT", "/api/config/general", {"show_posters": True, "fetch_icons": True})
 
 
 class ConfigTest(unittest.TestCase):

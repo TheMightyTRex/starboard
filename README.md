@@ -17,6 +17,9 @@ how the server is doing.
 - **Display and accessibility:** theme (match device, light, dark), text size up to 175%, high contrast,
   reduce motion, underline links and wider text spacing. Built to WCAG 2.2 AA, with 44px controls and the
   Atkinson Hyperlegible Next typeface.
+- **Coming up** as a list or a month calendar, with posters, as far ahead as you choose.
+- **Download hours:** qBittorrent and SABnzbd download only between the hours you set, with Resume and
+  Pause on the Downloads page.
 - **No third-party packages.** Python's standard library and plain HTML, CSS and JavaScript.
 
 ## Install
@@ -31,8 +34,44 @@ cd starboard
 
 The installer prints two addresses: one for this computer and one for phones and other computers on your
 home network, plus a one-time setup code. Open either address, enter the code and choose a password (at least
-10 characters). Then go to **Settings, Apps** and add your apps. Use `127.0.0.1` and each app's port (for
-example `http://127.0.0.1:8989` for Sonarr) as the address the server uses.
+10 characters). Then go to **Settings, Manage apps** and add your apps. Use `127.0.0.1` and each app's port
+(for example `http://127.0.0.1:8989` for Sonarr) as the address the server uses.
+
+### What the installer does, and what it asks
+
+`./install.sh` explains each step before it runs it, and asks before giving Starboard any access to your
+computer. Every kind of access is optional: say no and only that part of Starboard is missing. Run
+`./install.sh` again at any time to change your answers; your settings and password stay.
+
+1. **Checks what is installed:** Docker and Docker Compose (or Python and systemd). It changes nothing.
+2. **Asks what Starboard may access** (the table below).
+3. **Saves your answers** in `.env` (readable by you only) and `compose.access.yaml`. Both are ignored by git.
+4. **Builds and starts Starboard** with `docker compose up -d --build`, or a systemd service for your user
+   with `--native`. Neither needs `sudo`.
+
+| Access | What it is for | What it means for your computer | Default | Change it |
+|---|---|---|---|---|
+| Home network | Phones and computers on your network can open Starboard | Starboard listens on your network, behind your password | Yes | Settings, Security; `--local-only` |
+| Docker | **Apps, Updates**: check for and install new app images | The Docker socket is mounted: full control of Docker, so of the computer | No | `--docker`, `--no-docker` |
+| Folders | **System, Storage**: free space | Each folder is mounted read-only; Starboard reads sizes, not files | None | `--disk Name=/path`, `--no-disks` |
+| Disk health | **System, Disk health**: each drive's SMART report | Runs `deploy/install-smart.sh` with `sudo`: a systemd timer runs `deploy/starboard-smart.sh` (smartctl, as root) every 30 minutes and saves reports in `./smart` | No | `--disk-health`, `--no-disk-health` |
+
+`--yes` answers without asking: the options you give, then your last answers, then No. To remove the Disk
+health timer, run `sudo deploy/install-smart.sh --remove`.
+
+Some access is a switch in Settings instead, because it needs nothing from the installer:
+
+- **Your apps** (Settings, Manage apps): Starboard reads status, queues and calendars with the API keys you
+  give it, and adds films, series and books only when you choose Add.
+- **Download hours** (Settings, General): pauses qBittorrent and SABnzbd outside the hours you choose. Off
+  until you turn it on. It needs each client's API key (qBittorrent 5.2 or later).
+- **GitHub** (Settings, About and updates): looks for new Starboard releases, at most every 6 hours.
+- **The dashboard-icons collection** (Settings, About and updates): downloads each app's icon once.
+- **Posters** (Settings, About and updates): your browser loads posters on Coming up from the image sites
+  your apps use, such as TheTVDB and TMDB, so those sites see your address.
+
+**Settings, About and updates, What Starboard can access** lists all of these, says which are on now, and
+gives the switch or the command to change each one.
 
 ### Home network or this computer only
 
@@ -41,25 +80,21 @@ computer only. The change takes effect at once: Starboard stops listening on the
 cannot connect at all. Install with `--local-only` to start that way. The Docker setup uses host networking
 so this works (Docker on Linux).
 
-### Free space on the System page
+### App updates
 
-Mount each folder read-only in `compose.yaml` and name it in `.env`:
-
-```yaml
-    volumes:
-      - /mnt/media:/disks/media:ro
-```
-
-```
-STARBOARD_DISKS=Media=/disks/media
-```
-
-Put the volume in `compose.override.yaml` (see below) rather than `compose.yaml`, so updates do not clash.
+With Docker access, **Apps, Updates** lists every app on the Apps page in the same categories, with the
+container it runs in, the version installed and the newest one. **Check for updates** asks each image's
+registry (only a few small files are downloaded). **Update** downloads the new image and runs
+`docker compose up -d` for the app's Compose project, in a short-lived `docker:cli` container, so anything
+that depends on it restarts too. An image pinned to a version (such as `v1.4.2`) is offered the newest
+higher version; Starboard copies the Compose file before it changes the tag. If the project folder has
+`starboard-before-update/<service>.sh`, that runs first (a database backup, for example), and if it fails
+nothing changes. Starboard finds each app's container by name; choose another in the app's settings.
 
 ### Your own folders and disks: compose.override.yaml
 
-Keep anything specific to your server in `compose.override.yaml` next to `compose.yaml`. Docker reads it
-automatically, git ignores it, and `./update.sh` leaves it alone. For example:
+Keep anything else specific to your server in `compose.override.yaml` next to `compose.yaml`. Git ignores
+it, and `./install.sh` and `./update.sh` leave it alone. For example, folders you set up by hand:
 
 ```yaml
 services:
@@ -69,16 +104,8 @@ services:
       - /var/lib/starboard-smart:/smart:ro  # Disk health page
 ```
 
-with `STARBOARD_DISKS=Media=/disks/media` and `STARBOARD_SMART_DIR=/smart` in `.env`.
-
-### Disk health
-
-Reading a disk's health (SMART) needs root, so Starboard does not do it itself. A small job on the server
-saves each disk's report every 30 minutes, and Starboard only reads them:
-
-```bash
-sudo deploy/install-smart.sh /var/lib/starboard-smart
-```
+with `STARBOARD_DISKS=Media=/disks/media` and `STARBOARD_SMART_DIR=/smart` in `.env`. The installer sees
+folders set up this way and leaves them as they are.
 
 ### Backup and restore
 
@@ -120,8 +147,8 @@ your settings restored) if the new one does not start. `./update.sh --check` onl
   own pages send, and a matching `Origin`.
 - API keys stay in `./data/config.json` (readable by you only) and are never sent to the browser.
 - A strict Content Security Policy: no inline scripts, nothing loaded from other sites except cover images.
-- The container runs as your user, read-only, with every Linux capability dropped. It does not need the
-  Docker socket.
+- The container runs as your user, read-only, with every Linux capability dropped. It has the Docker socket
+  only if you say yes to app updates.
 - Other devices on your home network can open it unless you switch that off in Settings. To use it away from home, put it behind a VPN or a reverse
   proxy with HTTPS (set `STARBOARD_TRUST_PROXY=1` and turn on HTTPS-only cookies in Settings). Do not forward
   the port straight to the internet.

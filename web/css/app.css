@@ -102,3 +102,10 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 
 /* An open More actions menu sits above the rows after it. */
 .row:has(.menu:not([hidden])), .card:has(.menu:not([hidden])) { position: relative; z-index: 3; }
+
+/* Settings, About and updates: what Starboard can access. The state, then how to change it. */
+.access-change {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+}

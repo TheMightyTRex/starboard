@@ -735,6 +735,40 @@ function startGeneral() {
   if (["#categories", "#coming-up", "#download-hours"].includes(location.hash)) $(location.hash).scrollIntoView();
 }
 
+// What Starboard can access: a row per kind of access, with a switch, a link or the installer command.
+async function renderAccess() {
+  const list = $("#access-rows");
+  let items;
+  try { items = (await api("/api/access")).items; } catch (e) { list.replaceChildren(el("li", { class: "setting", text: e.message })); return; }
+  const state = (on) => chip(on ? "On" : "Off", on ? "success" : "muted");
+  list.replaceChildren(...items.map((a) => {
+    const labelId = `acc-${a.key}-l`;
+    let control;
+    if (a.change === "setting" && a.setting && a.setting !== "update_check") {
+      const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked: config[a.setting] });
+      input.addEventListener("change", async () => {
+        try { await saveGeneral({ [a.setting]: input.checked }, `${a.title}: ${input.checked ? "on" : "off"}`); }
+        catch (err) { input.checked = !input.checked; toast(err.message); }
+      });
+      control = el("label", { class: "switch" }, input);
+    } else if (a.change === "installer") {
+      const command = `./install.sh ${a.on ? a.off_flag : a.on_flag}`;
+      control = el("div", { class: "access-change" }, state(a.on),
+        el("span", { class: "small", text: a.on ? "To turn it off, run on the server:" : "To turn it on, run on the server:" }),
+        el("div", { class: "command" }, el("code", { class: "code-block", text: command }), copyButton(command, `the command for ${a.title}`)));
+    } else if (a.change === "readme") {
+      control = el("div", { class: "access-change" }, state(a.on), el("span", { class: "small", text: "Set up by hand: see Backup and restore in the README." }));
+    } else {
+      const where = a.link?.startsWith("#") ? null : a.link;
+      control = el("div", { class: "access-change" }, state(a.on),
+        where ? el("a", { href: where, text: a.change === "apps" ? "Manage apps" : "Change it" }) : el("span", { class: "small", text: "Use the switch above" }));
+    }
+    return settingRow(a.title, a.what, control, labelId);
+  }));
+  list.removeAttribute("aria-busy");
+  if (location.hash === "#access") $("#access").scrollIntoView();
+}
+
 // Security ------------------------------------------------------------------
 
 async function startSecurity() {
@@ -905,6 +939,7 @@ async function startAbout() {
   });
   $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "On: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
   $("#update-command").append(copyButton("./update.sh", "the update command"));
+  renderAccess();
   try { v = await api("/api/version"); } catch { /* no notice */ }
   showVersion();
 }

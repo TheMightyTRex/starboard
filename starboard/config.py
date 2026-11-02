@@ -38,6 +38,8 @@ DEFAULTS = {
     "network_access": None,
     "show_home_address": True,
     "show_outside_address": True,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
+    "fetch_icons": True,  # app icons from the dashboard-icons collection on the internet
+    "show_posters": True,  # posters on Coming up, which browsers load from the image sites the apps use
     "upcoming_view": "list",
     "upcoming_days": 14,
     # Download hours: qBittorrent and SABnzbd only download from start to end (whole hours, local time).
@@ -197,6 +199,8 @@ class Config:
             "network_access": d["network_access"],
             "show_home_address": d["show_home_address"],
             "show_outside_address": d["show_outside_address"],
+            "fetch_icons": d["fetch_icons"],
+            "show_posters": d["show_posters"],
             "upcoming_view": d["upcoming_view"],
             "upcoming_days": d["upcoming_days"],
             "upcoming_days_choices": UPCOMING_DAYS,
@@ -222,7 +226,8 @@ class Config:
             if "groups" in incoming:
                 groups = [str(g).strip()[:40] for g in incoming["groups"] if str(g).strip()]
                 d["groups"] = groups[:20] or DEFAULTS["groups"]
-            for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address"):
+            for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
+                        "fetch_icons", "show_posters"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
             if "upcoming_view" in incoming:

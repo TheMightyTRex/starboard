@@ -1,9 +1,17 @@
 #!/bin/sh
 # Installs the SMART report job as a systemd timer. Run once with sudo:
 #   sudo deploy/install-smart.sh /home/you/starboard/smart
-# Then set STARBOARD_SMART_DIR=/smart in .env and mount the folder read-only in compose.override.yaml.
+# ./install.sh runs this for you when you say yes to Disk health. To remove the timer again:
+#   sudo deploy/install-smart.sh --remove
 set -eu
 [ "$(id -u)" -eq 0 ] || { echo "Run with sudo"; exit 1; }
+if [ "${1:-}" = "--remove" ]; then
+  systemctl disable --now starboard-smart.timer 2>/dev/null || true
+  rm -f /etc/systemd/system/starboard-smart.timer /etc/systemd/system/starboard-smart.service /usr/local/bin/starboard-smart
+  systemctl daemon-reload
+  echo "Removed the Disk health timer. The reports already saved stay in their folder."
+  exit 0
+fi
 OUT="${1:?usage: sudo deploy/install-smart.sh FOLDER}"
 command -v smartctl >/dev/null || { echo "Install smartmontools first (apt install smartmontools)"; exit 1; }
 install -m 755 "$(dirname "$0")/starboard-smart.sh" /usr/local/bin/starboard-smart

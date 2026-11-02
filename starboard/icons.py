@@ -59,8 +59,8 @@ def _looks_like(data, ext):
     return b"<svg" in head
 
 
-def get(service, folder):
-    """Returns (bytes, content type) or None."""
+def get(service, folder, fetch=True):
+    """Returns (bytes, content type) or None. fetch=False: only icons already saved or put in the folder."""
     src = source(service)
     if not src:
         return None
@@ -74,6 +74,8 @@ def get(service, folder):
                 with open(path, "rb") as f:
                     return f.read(), ctype
         missing = os.path.join(folder, key + ".missing")
+        if not fetch:
+            return None
         if os.path.exists(missing) and time.time() - os.path.getmtime(missing) < RETRY_MISSING_AFTER:
             return None
         if kind == "name":
