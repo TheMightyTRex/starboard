@@ -312,16 +312,59 @@ function setUpHeader() {
   }));
 }
 
-function showVersion(version, repo) {
+function showVersion(version, repo, latest) {
   if (!version) return;
   const label = `Starboard: v${version}`;
   $$("[data-version]").forEach((n) => { n.textContent = label; });
   if ($(".site-header") && !$(".site-footer")) {
-    document.body.append(el("footer", { class: "site-footer" },
-      el("span", { class: "version-label", text: label }),
+    // The version opens the release notes; a newer release on GitHub shows "Upgrade available" beside it.
+    const newer = latest && latest.replace(/^v/, "") !== version;
+    const button = el("button", { type: "button", class: "btn btn--quiet btn--compact version-label", onclick: (e) => openReleaseNotes(e.currentTarget) },
+      label, el("span", { class: "visually-hidden", text: ", release notes" }));
+    document.body.append(el("footer", { class: "site-footer" }, button,
+      newer ? el("a", { class: "upgrade-available", href: "/settings-updates.html" }, el("span", { class: "update-dot", "aria-hidden": "true" }), `Upgrade available: ${latest}`) : null,
       repo ? el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "GitHub repository", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null,
       el("a", { href: "/settings-updates.html", text: "About and updates" })));
   }
+}
+
+// Release notes: one look for every release (Added, Changed, Fixed, Your settings and the way back), in the
+// slide-out from the footer and on the upgrade guide's first step.
+function releaseNotes(rel, level = 3) {
+  const group = (title, items) => items.length ? [el(`h${level + 1}`, { text: title }),
+    el("ul", {}, items.map(([t, sentence]) => el("li", {}, el("strong", { text: `${t}. ` }), sentence)))] : [];
+  return el("section", { class: "release-notes", "aria-label": `Version ${rel.version}` },
+    el(`h${level}`, { text: `Version ${rel.version}` }), el("p", { class: "small muted", text: `Released ${rel.date}` }),
+    ...group("Added", rel.added), ...group("Changed", rel.changed), ...group("Fixed", rel.fixed),
+    el(`h${level + 1}`, { text: "Your settings and the way back" }), el("p", { text: rel.settings }));
+}
+
+async function openReleaseNotes(opener) {
+  const panel = sidePanel({ title: "Release notes", opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
+  try {
+    const r = await api("/api/releases");
+    const newer = r.latest && r.latest.replace(/^v/, "") !== r.current;
+    panel.body.replaceChildren(...[
+      newer ? el("div", { class: "notice", role: "status" }, icon("circle-arrow-up"), el("div", { class: "notice__body" },
+        el("span", { class: "notice__title", text: `Version ${r.latest} is out` }),
+        el("p", {}, `You have ${r.current}. `, el("a", { href: "/settings-updates.html", text: "How to update" }), "."))) : null,
+      ...r.all.map((rel) => releaseNotes(rel, 3)),
+    ].filter(Boolean));
+  } catch (e) { panel.body.replaceChildren(el("p", { text: e.message })); }
+}
+
+// After an upgrade: with something to choose, a notice opens the upgrade guide (or waits, with Remind me later);
+// with nothing to choose, the upgrade is marked as seen and the notes stay under the version.
+function upgradeNotice(upgrade) {
+  if (!upgrade || upgrade.from === upgrade.to || /\/(upgrade|setup-guide)\.html$/.test(location.pathname)) return;
+  if (!upgrade.wizard) { api("/api/releases/seen", { method: "POST" }).catch(() => {}); return; }
+  try { if (sessionStorage.getItem(`upgrade-later-${upgrade.to}`)) return; } catch { /* show it */ }
+  const main = $("#main .page");
+  if (!main || $("#upgrade-notice")) return;
+  main.prepend(el("div", { class: "notice", id: "upgrade-notice", role: "status" }, icon("circle-arrow-up"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `Starboard ${upgrade.to} is installed` }),
+      el("p", { text: `${upgrade.count} ${upgrade.count === 1 ? "thing" : "things"} to choose. The rest carries on as before.` })),
+    el("a", { class: "btn btn--primary", href: "/upgrade.html" }, "Open the upgrade guide")));
 }
 
 // Display and accessibility panel --------------------------------------
@@ -375,7 +418,8 @@ async function startPage() {
     applyPrefs();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
     document.title = document.title.replace(/ · [^·]*$/, ` · ${session.site_name}`);
-    showVersion(session.version, session.repo);
+    showVersion(session.version, session.repo, session.latest);
+    upgradeNotice(session.upgrade);
     return session;
   } catch { return null; }
 }

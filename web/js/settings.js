@@ -870,6 +870,76 @@ async function openFinder(opener) {
   });
 }
 
+// One wizard step's content: { nodes, save }. Shared by the set-up guide and the upgrade guide.
+async function stepContent(id, root) {
+  const types = (t) => config.services.filter((s) => s.enabled !== false && t.includes(s.type));
+  let nodes = [];
+  let save = async () => true;
+  if (id === "apps") {
+    const finder = await appFinder();
+    nodes = [finder.box];
+    save = async () => (finder.add && finder.ticked() ? !!(await finder.add()) : true);  // nothing ticked: just go on
+  } else if (id === "keys") {
+    const rows = types(Object.keys(KEY_PLACE)).filter((s) => !s.has_api_key).map((s) => {
+      const input = el("input", { class: "input", type: "password", autocomplete: "off", "aria-label": `API key for ${s.name}` });
+      return { s, input, node: field(`${s.name} API key`, input, { hint: `In ${s.name}: ${KEY_PLACE[s.type]}.`, span: true }) };
+    });
+    nodes = [el("div", { class: "form-stack" }, rows.map((r) => r.node)), el("p", { class: "small muted", text: "Leave a box empty to add that key later in Manage apps." })];
+    save = async () => {
+      for (const r of rows.filter((x) => x.input.value.trim())) {
+        const saved = await api("/api/services", { method: "POST", body: serviceBody(r.s, { api_key: r.input.value.trim() }) });
+        config = saved.config;
+      }
+      return true;
+    };
+  } else if (id === "jellyfin") {
+    const box = (key, label, hint) => {
+      const input = el("input", { type: "checkbox", checked: !!config.extras[key] });
+      return { key, input, node: el("label", { class: "check" }, input, el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: hint }))) };
+    };
+    const picks = [box("livetv", "Live TV channels and guide", "Free channels for Jellyfin's Live TV, with guides. Needs Jellyfin's Live TV folder (./install.sh asks)."),
+      box("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin. You choose where from in Settings, Jellyfin."),
+      box("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone who has not chosen otherwise.")];
+    nodes = [el("div", { class: "switch-list" }, picks.map((x) => x.node))];
+    save = async () => { await saveGeneral({ extras: Object.fromEntries(picks.map((x) => [x.key, x.input.checked])) }); return true; };
+  } else if (id === "hours") {
+    const on = el("input", { type: "checkbox", checked: config.download_hours.enabled });
+    const hour = (v) => el("select", { class: "select" }, Array.from({ length: 24 }, (_, h) => el("option", { value: String(h), text: `${String(h).padStart(2, "0")}:00`, selected: h === v })));
+    const start = hour(config.download_hours.start);
+    const end = hour(config.download_hours.end);
+    nodes = [el("label", { class: "check" }, on, el("span", { class: "check__text" }, el("strong", { text: "Yes, only download between" }))),
+      el("div", { class: "form-grid" }, field("From", start), field("Until", end))];
+    save = async () => { await saveGeneral({ download_hours: { enabled: on.checked, start: Number(start.value), end: Number(end.value) } }); return true; };
+  } else if (id === "alerts") {
+    const kinds = [["", "Not now", "No alerts. Starboard does not watch in the background."], ["ntfy", "ntfy", "A free push service with a phone app; you choose a private topic."],
+      ["gotify", "Gotify", "Your own push server."], ["webhook", "A webhook", "Starboard posts JSON to an address you choose."]];
+    const name = `alert-${Date.now()}`;
+    const radios = kinds.map(([v, t, h]) => {
+      const input = el("input", { type: "radio", name, value: v, checked: (config.watch.enabled ? config.watch.channel.kind : "") === v });
+      return el("label", { class: "option-card" }, input, el("strong", { text: t }), el("small", { text: h }));
+    });
+    const url = el("input", { class: "input", inputmode: "url", autocomplete: "off", value: config.watch.channel.url || "", placeholder: "https://ntfy.sh/a-long-private-name" });
+    const token = el("input", { class: "input", type: "password", autocomplete: "off" });
+    nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Where alerts go" }), el("div", { class: "option-cards" }, radios)),
+      el("div", { class: "form-grid" }, field("Address", url, { span: true }), field("Token (if it needs one)", token, { span: true }))];
+    save = async () => {
+      const kind = root.querySelector(`input[name="${name}"]:checked`)?.value || "";
+      await saveGeneral({ watch: kind ? { enabled: true, channel: { kind, url: url.value, token: token.value } } : { enabled: false } });
+      return true;
+    };
+  } else if (id === "preset") {
+    const name = `preset-${Date.now()}`;
+    const radios = ["small", "balanced", "everything"].map((k) => el("label", { class: "option-card" },
+      el("input", { type: "radio", name, value: k, checked: (config.performance.preset === "custom" ? "balanced" : config.performance.preset) === k }),
+      el("strong", { text: config.presets[k] }), el("small", { text: PRESET_WORDS[k] })));
+    nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Preset" }), el("div", { class: "option-cards" }, radios))];
+    save = async () => { await saveGeneral({ preset: root.querySelector(`input[name="${name}"]:checked`).value }); return true; };
+  } else if (id === "names") {
+    nodes = [notice("info", "Starboard answers only to names it knows", "It opens at IP addresses (such as this server's), localhost and this computer's own name. If you open it with another name, such as your own domain, add that name to STARBOARD_ALLOWED_HOSTS in .env on the server and run ./update.sh."),
+      el("p", { class: "small muted", text: "This stops a trick called DNS rebinding, where a web page reaches Starboard through a name it controls." })];
+  }
+  return { nodes, save };
+}
 // Set-up guide ----------------------------------------------------------------
 // The library's wizard: a step list, one question per step, Continue saves it, Back, Skip this step, and Keep the
 // defaults and finish at the top. Steps that do not apply (no Jellyfin, no download apps) are left out.
@@ -932,7 +1002,8 @@ async function startGuide() {
     const step = steps[index];
     step.nodes = [el("p", { class: "muted", text: "Loading…" })];
     let save = async () => true;
-    const frame = () => wizardFrame({ root, steps, index, continueText: step.id === "finish" ? "Go to Apps" : "Continue",
+    let loading = true;  // Continue waits until the step has loaded, so a quick click cannot skip it
+    const frame = () => wizardFrame({ root, steps, index, busy: loading, continueText: step.id === "finish" ? "Go to Apps" : "Continue",
       onBack: () => go(index - 1), onSkip: () => go(index + 1),
       onContinue: async (e) => {
         const button = e.currentTarget;  // the event forgets it once the save has been awaited
@@ -944,66 +1015,9 @@ async function startGuide() {
     frame();
     $("#guide-summary").textContent = `Step ${index + 1} of ${steps.length} · about 3 minutes · you can change everything later in Settings`;
 
-    if (step.id === "apps") {
-      const finder = await appFinder();
-      step.nodes = [finder.box];
-      save = async () => (finder.add && finder.ticked() ? !!(await finder.add()) : true);  // nothing ticked: just go on
-    } else if (step.id === "keys") {
-      const rows = types(Object.keys(KEY_PLACE)).filter((s) => !s.has_api_key).map((s) => {
-        const input = el("input", { class: "input", type: "password", autocomplete: "off", "aria-label": `API key for ${s.name}` });
-        return { s, input, node: field(`${s.name} API key`, input, { hint: `In ${s.name}: ${KEY_PLACE[s.type]}.`, span: true }) };
-      });
-      step.nodes = [el("div", { class: "form-stack" }, rows.map((r) => r.node)), el("p", { class: "small muted", text: "Leave a box empty to add that key later in Manage apps." })];
-      save = async () => {
-        for (const r of rows.filter((x) => x.input.value.trim())) {
-          const saved = await api("/api/services", { method: "POST", body: serviceBody(r.s, { api_key: r.input.value.trim() }) });
-          config = saved.config;
-        }
-        return true;
-      };
-    } else if (step.id === "jellyfin") {
-      const box = (key, label, hint) => {
-        const input = el("input", { type: "checkbox", checked: !!config.extras[key] });
-        return { key, input, node: el("label", { class: "check" }, input, el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: hint }))) };
-      };
-      const picks = [box("livetv", "Live TV channels and guide", "Free channels for Jellyfin's Live TV, with guides. Needs Jellyfin's Live TV folder (./install.sh asks)."),
-        box("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin. You choose where from in Settings, Jellyfin."),
-        box("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone who has not chosen otherwise.")];
-      step.nodes = [el("div", { class: "switch-list" }, picks.map((x) => x.node))];
-      save = async () => { await saveGeneral({ extras: Object.fromEntries(picks.map((x) => [x.key, x.input.checked])) }); return true; };
-    } else if (step.id === "hours") {
-      const on = el("input", { type: "checkbox", checked: config.download_hours.enabled });
-      const hour = (v) => el("select", { class: "select" }, Array.from({ length: 24 }, (_, h) => el("option", { value: String(h), text: `${String(h).padStart(2, "0")}:00`, selected: h === v })));
-      const start = hour(config.download_hours.start);
-      const end = hour(config.download_hours.end);
-      step.nodes = [el("label", { class: "check" }, on, el("span", { class: "check__text" }, el("strong", { text: "Yes, only download between" }))),
-        el("div", { class: "form-grid" }, field("From", start), field("Until", end))];
-      save = async () => { await saveGeneral({ download_hours: { enabled: on.checked, start: Number(start.value), end: Number(end.value) } }); return true; };
-    } else if (step.id === "alerts") {
-      const kinds = [["", "Not now", "No alerts. Starboard does not watch in the background."], ["ntfy", "ntfy", "A free push service with a phone app; you choose a private topic."],
-        ["gotify", "Gotify", "Your own push server."], ["webhook", "A webhook", "Starboard posts JSON to an address you choose."]];
-      const name = `alert-${Date.now()}`;
-      const radios = kinds.map(([v, t, h]) => {
-        const input = el("input", { type: "radio", name, value: v, checked: (config.watch.enabled ? config.watch.channel.kind : "") === v });
-        return el("label", { class: "option-card" }, input, el("strong", { text: t }), el("small", { text: h }));
-      });
-      const url = el("input", { class: "input", inputmode: "url", autocomplete: "off", value: config.watch.channel.url || "", placeholder: "https://ntfy.sh/a-long-private-name" });
-      const token = el("input", { class: "input", type: "password", autocomplete: "off" });
-      step.nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Where alerts go" }), el("div", { class: "option-cards" }, radios)),
-        el("div", { class: "form-grid" }, field("Address", url, { span: true }), field("Token (if it needs one)", token, { span: true }))];
-      save = async () => {
-        const kind = root.querySelector(`input[name="${name}"]:checked`)?.value || "";
-        await saveGeneral({ watch: kind ? { enabled: true, channel: { kind, url: url.value, token: token.value } } : { enabled: false } });
-        return true;
-      };
-    } else if (step.id === "preset") {
-      const name = `preset-${Date.now()}`;
-      const radios = ["small", "balanced", "everything"].map((k) => el("label", { class: "option-card" },
-        el("input", { type: "radio", name, value: k, checked: (config.performance.preset === "custom" ? "balanced" : config.performance.preset) === k }),
-        el("strong", { text: config.presets[k] }), el("small", { text: PRESET_WORDS[k] })));
-      step.nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Preset" }), el("div", { class: "option-cards" }, radios))];
-      save = async () => { await saveGeneral({ preset: root.querySelector(`input[name="${name}"]:checked`).value }); return true; };
-    } else if (step.id === "finish") {
+    const content = await stepContent(step.id, root);
+    if (step.id !== "finish") { step.nodes = content.nodes; save = content.save; }
+    if (step.id === "finish") {
       await saveGeneral({ setup_guide_done: true });
       const apps = config.services.filter((s) => !s.background).length;
       const keyless = types(Object.keys(KEY_PLACE)).filter((s) => !s.has_api_key).map((s) => s.name);
@@ -1017,9 +1031,60 @@ async function startGuide() {
       step.nodes = [el("dl", { class: "facts" }, facts.flatMap(([k, v, href]) => [el("dt", { text: k }),
         el("dd", {}, v, " · ", el("a", { href }, "Change", el("span", { class: "visually-hidden", text: ` ${k.toLowerCase()}` })))]))];
     }
+    loading = false;
     const { heading } = frame();
     heading.focus();
   };
+  go(0);
+}
+
+// Upgrade guide -----------------------------------------------------------------
+// After an upgrade that brings settings to choose: What is new, one step per choice, Finish. "Remind me later"
+// hides the notice in this browser until the next time it opens; "Keep the defaults and finish" ends it now.
+
+async function startUpgrade() {
+  const root = $("#upgrade");
+  root.removeAttribute("aria-busy");
+  const r = await api("/api/releases");
+  const p = r.pending;
+  const titles = { apps: "New apps", keys: "API keys", jellyfin: "Jellyfin", hours: "Download hours", alerts: "Alerts", preset: "How much it does", names: "Names it answers to" };
+  const questions = { apps: "Add apps Starboard can now find?", keys: "Give Starboard their API keys?", jellyfin: "Use Starboard's Jellyfin extras?",
+    hours: "Only download at set hours?", alerts: "Get an alert when something stops?", preset: "How much should Starboard do in the background?", names: "Do you open Starboard with another name?" };
+  const steps = [{ id: "new", title: "What is new", question: `What is new in ${p.to}` },
+    ...p.review.map((id) => ({ id, title: titles[id] || id, question: questions[id] || titles[id] })),
+    { id: "done", title: "Finish", question: "Upgrade finished", skippable: false }];
+  const finish = async () => { await api("/api/releases/seen", { method: "POST" }); location.href = "/index.html"; };
+  const head = $(".page-head");
+  if (!$("#upgrade-later", head)) {
+    head.append(el("div", { class: "actions" },
+      el("button", { type: "button", class: "btn btn--quiet", id: "upgrade-later", onclick: () => { try { sessionStorage.setItem(`upgrade-later-${p.to}`, "1"); } catch { /* fine */ } location.href = "/index.html"; } }, "Remind me later"),
+      el("button", { type: "button", class: "btn btn--quiet", onclick: finish }, "Keep the defaults and finish")));
+  }
+  const go = async (index) => {
+    const step = steps[index];
+    let save = async () => true;
+    step.nodes = [el("p", { class: "muted", text: "Loading…" })];
+    let loading = true;
+    const frame = () => wizardFrame({ root, steps, index, busy: loading, continueText: step.id === "done" ? "Go to Apps" : "Continue",
+      onBack: () => go(index - 1), onSkip: () => go(index + 1),
+      onContinue: async (e) => {
+        const button = e.currentTarget;
+        button.disabled = true;
+        try { if (await save()) { if (step.id === "done") await finish(); else go(index + 1); } } catch (err) { toast(err.message); }
+        finally { if (button.isConnected) button.disabled = false; }
+      } });
+    frame();
+    $("#upgrade-summary").textContent = `From ${p.from} to ${p.to} · ${steps.length} steps · ./update.sh saved your settings first`;
+    if (step.id === "new") step.nodes = p.releases.slice().reverse().map((rel) => releaseNotes(rel, 3));
+    else if (step.id === "done") step.nodes = [el("p", { text: "Everything else carries on as it was. The release notes stay under the version in the footer." })];
+    else { const c = await stepContent(step.id, root); step.nodes = c.nodes; save = c.save; }
+    loading = false;
+    frame().heading.focus();
+  };
+  if (!p.releases.length) {
+    root.replaceChildren(notice("success", "Nothing to do", `Starboard ${r.current} has nothing new to choose.`), el("div", { class: "actions" }, el("a", { class: "btn", href: "/index.html", text: "Go to Apps" })));
+    return;
+  }
   go(0);
 }
 
@@ -1542,5 +1607,6 @@ startPage().then(async (session) => {
   if ($("#jellyfin-sections")) startJellyfin();
   if ($("#performance-sections")) startPerformance();
   if ($("#guide")) startGuide();
+  if ($("#upgrade")) startUpgrade();
   if ($("#version-notice")) startAbout();
 });

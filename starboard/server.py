@@ -16,7 +16,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, discovery, icons, jobs, livetv, migrate, posters, schedule, services, sysinfo, watch
+from . import access, auth, backup, containers, discovery, icons, jobs, livetv, migrate, posters, releases, schedule, services, sysinfo, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -418,6 +418,11 @@ class Handler(BaseHTTPRequestHandler):
             extra["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
         self.send(200, data, kind, extra)
 
+    def upgrade_summary(self):
+        d = self.app.config.data
+        p = releases.pending(d.get("last_version", ""), self.app.version, not self.app.needs_setup)
+        return {"from": p["from"], "to": p["to"], "wizard": p["wizard"], "count": len(p["review"])}
+
     def api(self, method, path):
         app = self.app
         fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check again": skip the shared answers
@@ -433,6 +438,9 @@ class Handler(BaseHTTPRequestHandler):
                     # Not told to people who have not signed in.
                     "version": app.version if signed_in else None,
                     "repo": app.repo if signed_in and re.match(r"^[\w.-]+/[\w.-]+$", app.repo or "") else None,
+                    # Only what is already known (no call to GitHub here): the footer's "Upgrade available".
+                    "latest": app._latest["tag"] if signed_in else None,
+                    "upgrade": self.upgrade_summary() if signed_in else None,
                 })
             if path == "/api/jellyfin/detect" and method == "GET":
                 if not (app.needs_setup or self.signed_in()):
@@ -562,6 +570,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":
                 return self.json(200, self.add_found(self.body().get("items")))
+            if path == "/api/releases" and method == "GET":
+                d = cfg.data
+                return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo,
+                                       "pending": releases.pending(d["last_version"], app.version, not app.needs_setup),
+                                       "all": list(reversed(releases.RELEASES))})
+            if path == "/api/releases/seen" and method == "POST":
+                cfg.update_general({"last_version": app.version})
+                return self.json(200, {"ok": True})
             if path == "/api/self" and method == "GET":
                 return self.json(200, sysinfo.self_usage())
             if path == "/api/uptime" and method == "GET":
@@ -820,6 +836,7 @@ class Handler(BaseHTTPRequestHandler):
         if "site_name" in data:
             app.config.update_general({"site_name": data["site_name"]})
         app.config.data["auth"]["password_hash"] = auth.hash_password(password)
+        app.config.data["last_version"] = app.version if re.match(r"^\d+\.\d+\.\d+$", app.version or "") else ""
         app.config.save()
         app.setup_token = None
         App._remove_setup_token(app.config.data_dir)

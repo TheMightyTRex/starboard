@@ -52,6 +52,10 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
 - **Jellyfin extras** (Settings, Jellyfin), each off until you turn it on: free **Live TV** channels and
   guides with Sky-style numbers and white logos; **import watch history** from Plex, Emby or another Jellyfin;
   **defaults for every user**. Set-up offers them when it finds Jellyfin.
+- **Search for new apps** (Settings, Manage apps) finds apps on this computer and adds the ones you tick, with
+  their API keys if Starboard has Docker access. It runs only when you press it.
+- **A set-up guide** after the first password, and an **upgrade guide** after an upgrade that brings something
+  to choose. The version in the footer opens the release notes.
 - **Almost no third-party packages:** Python's standard library and plain HTML, CSS and JavaScript, plus Pillow
   for Live TV logos (see Credits).
 
@@ -172,6 +176,10 @@ tick **Background service** when you add them. A service with no address can fol
 It backs up `./data` to `./backups`, installs the newest release, and goes back to the version you had (with
 your settings restored) if the new one does not start. `./update.sh --check` only checks;
 `./update.sh --to v0.1.0` installs a particular release, which is also how you go back.
+
+After an upgrade, select the version in the footer for the release notes. If the release brings settings worth
+choosing, a notice opens the upgrade guide, which asks only those questions; you can leave it for later. How
+releases are made is in [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Security
 

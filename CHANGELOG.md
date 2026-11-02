@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.5.0 (2 November 2026)
+
+### Finding apps
+
+- **Search for new apps** (Settings, Manage apps): Starboard tries the usual port of about 40 apps, and every
+  port a container publishes, on this computer only. It recognises each app by its page, leaves out the ones you
+  have, and adds the ones you tick. With Docker access it reads the API keys of Sonarr, Radarr, Lidarr, Readarr,
+  Prowlarr, SABnzbd and Seerr from their own settings files, if you tick "Fill in API keys for me".
+- It runs only when you press the button: no background work.
+
+### Set-up and upgrades
+
+- **Set-up guide** after the first password: apps, API keys, Jellyfin extras, download hours, alerts and how
+  much Starboard does, with a summary and Change links at the end. Steps that do not apply are left out. Run it
+  again from Settings, General.
+- **Release notes** open from the version in the footer. "Upgrade available" shows there when GitHub has a newer
+  release.
+- **Upgrade guide:** after an upgrade that brings settings to choose, a notice opens a short guide with what is
+  new and only those questions. "Remind me later" and "Keep the defaults and finish" are always there. Upgrades
+  with nothing to choose do not interrupt.
+- Releases follow one process, in `docs/RELEASING.md`; `tools/release_notes.py` writes the GitHub notes.
+
 ## 0.4.0 (2 November 2026)
 
 ### Performance
