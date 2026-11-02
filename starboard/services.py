@@ -68,6 +68,41 @@ def _arrs(services):
 
 # Status ------------------------------------------------------------------
 
+# Download clients ---------------------------------------------------------
+# qBittorrent (5.2 or later) takes its API key as a bearer token and form posts; SABnzbd takes the key in the query.
+
+def _fetch(service, req, timeout):
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read(8_000_000)
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise ServiceError(f"{service['name']} refused the API key") from None
+        raise ServiceError(f"{service['name']} answered with error {e.code}") from None
+    except (urllib.error.URLError, TimeoutError, OSError):
+        raise ServiceError(f"Cannot reach {service['name']}") from None
+    try:
+        return json.loads(raw) if raw[:1] in (b"[", b"{") else raw.decode("utf-8", "replace")
+    except ValueError:
+        raise ServiceError(f"{service['name']} sent something that is not JSON") from None
+
+
+def qbit(service, path, data=None, timeout=TIMEOUT):
+    req = urllib.request.Request(service["url"].rstrip("/") + "/api/v2/" + path,
+                                 data=urllib.parse.urlencode(data).encode() if data is not None else None,
+                                 headers={"Authorization": f"Bearer {service.get('api_key', '')}", "User-Agent": USER_AGENT})
+    return _fetch(service, req, timeout)
+
+
+def sab(service, mode, timeout=TIMEOUT, **params):
+    query = urllib.parse.urlencode({"apikey": service.get("api_key", ""), "output": "json", "mode": mode, **params})
+    req = urllib.request.Request(f"{service['url'].rstrip('/')}/sabnzbd/api?{query}", headers={"User-Agent": USER_AGENT})
+    result = _fetch(service, req, timeout)
+    if isinstance(result, dict) and result.get("error"):
+        raise ServiceError(f"{service['name']}: {result['error']}")
+    return result
+
+
 def check(service):
     started = time.monotonic()
     kind = service["type"]
@@ -78,6 +113,11 @@ def check(service):
         elif kind == "bazarr":
             info = _api(service, "/system/status", timeout=5)
             version = (info.get("data") or {}).get("bazarr_version", "")
+        elif kind == "qbittorrent":
+            version = str(qbit(service, "app/version", timeout=5)).strip()
+        elif kind == "sabnzbd":
+            version = sab(service, "version", timeout=5).get("version", "")
+            sab(service, "queue", timeout=5, limit=0)  # "version" works without a key; this one does not
         elif kind == "jellyfin":
             req = urllib.request.Request(service["url"].rstrip("/") + "/System/Info/Public", headers={"User-Agent": USER_AGENT})
             with urllib.request.urlopen(req, timeout=5) as resp:

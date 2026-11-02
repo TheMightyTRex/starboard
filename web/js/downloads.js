@@ -266,10 +266,64 @@ async function load({ announceIt = false } = {}) {
   }
 }
 
+// Download hours ---------------------------------------------------------------
+
+const hourText = (h) => `${String(h).padStart(2, "0")}:00`;
+
+function whenText(iso) {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return d.toDateString() === new Date().toDateString() ? time : `${time} tomorrow`;
+}
+
+function renderSchedule(s) {
+  const box = $("#schedule");
+  box.hidden = !s.enabled && !s.clients.length;
+  if (box.hidden) return;
+  const hours = `${hourText(s.start)} to ${hourText(s.end)}`;
+  const settings = el("a", { href: "/settings-general.html#download-hours", text: "Settings, General" });
+  box.dataset.tone = !s.enabled ? "neutral" : s.mode === "run" ? "success" : "warning";
+  if (!s.enabled) {
+    $("#schedule-chip").replaceChildren(chip("Off", "muted"));
+    $("#schedule-text").replaceChildren(`Downloads run at any time. To download only at night, turn on download hours in `, settings, ".");
+    $("#schedule-actions").replaceChildren();
+    return;
+  }
+  const running = s.mode === "run";
+  $("#schedule-chip").replaceChildren(chip(running ? "Downloading" : "Paused", running ? "success" : "warning"));
+  const text = running
+    ? (s.reason === "manual" ? `Resumed by you. Back to the hours at ${whenText(s.next_change)}.` : `Inside the hours (${hours}). Pauses at ${whenText(s.next_change)}.`)
+    : (s.reason === "manual" ? `Paused by you. Resumes at ${whenText(s.next_change)}.` : `Downloads run ${hours}. Next start ${whenText(s.next_change)}.`);
+  $("#schedule-text").replaceChildren(text, s.clients.length ? "" : " No qBittorrent or SABnzbd with an API key is set up yet.");
+  const button = (label, iconName, action, primary) => el("button", { type: "button", class: primary ? "btn btn--primary" : "btn", onclick: (e) => scheduleAct(action, e.currentTarget) }, icon(iconName), label);
+  $("#schedule-actions").replaceChildren(
+    running ? null : button("Resume downloads now", "play", "resume", true),
+    running ? button(`Pause downloads until ${hourText(s.start)}`, "pause", "pause") : null,
+    s.reason === "manual" ? button("Follow the hours", "clock", "follow") : null);
+}
+
+async function loadSchedule() {
+  try { renderSchedule(await api("/api/schedule")); } catch { /* the queue works without it */ }
+}
+
+async function scheduleAct(action, button) {
+  button.disabled = true;
+  try {
+    const s = await api("/api/schedule", { method: "POST", body: { action } });
+    renderSchedule(s);
+    const done = { resume: "Downloads resumed", pause: "Downloads paused", follow: "Following the download hours" }[action];
+    toast(s.errors?.length ? `${done}, with problems: ${s.errors.join("; ")}` : done);
+    $("#schedule-actions .btn")?.focus();
+  } catch (e) {
+    toast(e.message);
+    button.disabled = false;
+  }
+}
+
 function setPaused(on) {
   paused = on;
   clearInterval(timer);
-  timer = on ? null : setInterval(load, 15000);
+  timer = on ? null : setInterval(() => { load(); loadSchedule(); }, 15000);
   $("#auto-refresh").setAttribute("aria-pressed", String(on));
   renderSummary();
 }
@@ -297,6 +351,6 @@ startPage().then(async () => {
     const cfg = await api("/api/config");
     services = new Map(cfg.services.map((s) => [s.name, s]));
   } catch { /* links to the apps are an extra; the queue works without them */ }
-  await load();
+  await Promise.all([load(), loadSchedule()]);
   setPaused(false);
 });

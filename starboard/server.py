@@ -14,7 +14,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import auth, backup, icons, services, sysinfo
+from . import auth, backup, icons, schedule, services, sysinfo
 from .config import Config, ConfigError, new_setup_token, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -58,6 +58,9 @@ class App:
         self.version = read_version()
         self.disks = sysinfo.disk_paths_from_env()
         self.history = sysinfo.History(data_dir) if os.environ.get("STARBOARD_HISTORY", "1") != "0" else None
+        self.schedule = schedule.Schedule(self.config)
+        if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
+            self.schedule.start()
         self.repo = os.environ.get("STARBOARD_REPO", "")  # "owner/name" for the update check; optional
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
         self.port = int(os.environ.get("STARBOARD_PORT", "8095"))
@@ -384,6 +387,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, services.app_updates(cfg.data["services"]))
             if path == "/api/queue" and method == "GET":
                 return self.json(200, services.queue(cfg.data["services"]))
+            if path == "/api/schedule" and method == "GET":
+                return self.json(200, app.schedule.status())
+            if path == "/api/schedule" and method == "POST":
+                return self.json(200, app.schedule.act(str(self.body().get("action", ""))))
             if path == "/api/calendar" and method == "GET":
                 return self.json(200, services.calendar(cfg.data["services"], cfg.data["upcoming_days"]))
             if path == "/api/health" and method == "GET":

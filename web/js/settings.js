@@ -342,7 +342,8 @@ function openService(s = null, opener = null, { background = false } = {}) {
   const updateFields = () => {
     const t = type.value;
     keyField.hidden = NO_KEY.includes(t);
-    keyHint.textContent = `In ${config.types[t]?.label || "the app"}: Settings, General.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
+    const where = { qbittorrent: "Options, Web UI, API key (version 5.2 or later)", sabnzbd: "Config, General, API Key" }[t] || "Settings, General";
+    keyHint.textContent = `In ${config.types[t]?.label || "the app"}: ${where}.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
     followsField.hidden = !bg.checked;
     group.options[0].textContent = `Choose for me (${guessGroup(name.value, t) || "the last category"})`;
     steps.hidden = !SEARCHABLE.includes(t);
@@ -670,6 +671,31 @@ function startGeneral() {
   };
   const dayChoices = (config.upcoming_days_choices || [7, 14, 30, 60, 90]).map((n) => [n, n === 7 ? "1 week" : n === 14 ? "2 weeks" : `${n} days`]);
 
+  // Download hours: a switch and two selects, each applying at once.
+  const hoursList = Array.from({ length: 24 }, (_, h) => [h, `${String(h).padStart(2, "0")}:00`]);
+  const hoursSelect = (key, labelId) => {
+    const select = el("select", { class: "select", "aria-labelledby": labelId },
+      hoursList.map(([h, label]) => el("option", { value: String(h), text: label, selected: config.download_hours[key] === h })));
+    select.addEventListener("change", async () => {
+      const before = config.download_hours[key];
+      try {
+        await saveGeneral({ download_hours: { [key]: Number(select.value) } },
+          `Downloads now run from ${hoursText(config.download_hours.start)} to ${hoursText(config.download_hours.end)}`);
+      } catch (err) { select.value = String(before); toast(err.message); }
+    });
+    return select;
+  };
+  const hoursText = (h) => `${String(h).padStart(2, "0")}:00`;
+  const hoursOn = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "dh-on-l", checked: config.download_hours.enabled });
+  hoursOn.addEventListener("change", async () => {
+    try {
+      await saveGeneral({ download_hours: { enabled: hoursOn.checked } }, hoursOn.checked
+        ? `Download hours on: downloads run from ${hoursText(config.download_hours.start)} to ${hoursText(config.download_hours.end)}`
+        : "Download hours off: downloads run at any time");
+    } catch (err) { hoursOn.checked = !hoursOn.checked; toast(err.message); }
+  });
+  const clients = config.services.filter((s) => ["qbittorrent", "sabnzbd"].includes(s.type) && s.has_api_key);
+
   $("#general-sections").removeAttribute("aria-busy");
   $("#general-sections").replaceChildren(
     section("gn-name", "Dashboard", "Shown in the header and the browser tab.", nameForm),
@@ -685,9 +711,15 @@ function startGeneral() {
           upcomingSelect("upcoming_view", "up-view-l", [["list", "List"], ["calendar", "Calendar"]], (t) => `Coming up now opens as ${t === "List" ? "a list" : "a calendar"}`), "up-view-l"),
         settingRow("How far ahead", "Releases from today to this far ahead, plus yesterday's.",
           upcomingSelect("upcoming_days", "up-days-l", dayChoices, (t) => `Coming up now looks ${t} ahead`), "up-days-l")))),
+    el("div", { id: "download-hours" }, section("gn-dh", "Download hours", "Starboard pauses qBittorrent and SABnzbd outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
+      clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent or SABnzbd with its API key in Manage apps, so Starboard can pause and resume them."),
+      el("ul", { class: "settings-rows" },
+        settingRow("Only download between set hours", "Off: downloads run at any time.", el("label", { class: "switch" }, hoursOn), "dh-on-l"),
+        settingRow("Start", "Downloads start at this hour.", hoursSelect("start", "dh-start-l"), "dh-start-l"),
+        settingRow("End", "Downloads pause at this hour. An end before the start runs overnight.", hoursSelect("end", "dh-end-l"), "dh-end-l")))),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm));
   renderCategories();
-  if (location.hash === "#categories" || location.hash === "#coming-up") $(location.hash).scrollIntoView();
+  if (["#categories", "#coming-up", "#download-hours"].includes(location.hash)) $(location.hash).scrollIntoView();
 }
 
 // Security ------------------------------------------------------------------

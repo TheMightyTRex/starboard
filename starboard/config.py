@@ -18,6 +18,8 @@ SERVICE_TYPES = {
     "prowlarr": {"label": "Prowlarr", "api": "/api/v1", "searchable": False},
     "bazarr": {"label": "Bazarr", "api": "/api", "searchable": False},
     "jellyfin": {"label": "Jellyfin", "api": "", "searchable": False},
+    "qbittorrent": {"label": "qBittorrent", "api": "/api/v2", "searchable": False},
+    "sabnzbd": {"label": "SABnzbd", "api": "/sabnzbd/api", "searchable": False},
     "link": {"label": "Other app", "api": "", "searchable": False},
 }
 
@@ -38,6 +40,8 @@ DEFAULTS = {
     "show_outside_address": True,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
     "upcoming_view": "list",
     "upcoming_days": 14,
+    # Download hours: qBittorrent and SABnzbd only download from start to end (whole hours, local time).
+    "download_hours": {"enabled": False, "start": 1, "end": 6},
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
     "groups": ["Watch, listen and request", "Find and organise", "Search and download", "Dashboards and tools"],
@@ -196,6 +200,7 @@ class Config:
             "upcoming_view": d["upcoming_view"],
             "upcoming_days": d["upcoming_days"],
             "upcoming_days_choices": UPCOMING_DAYS,
+            "download_hours": d["download_hours"],
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
             "category_of": CATEGORY_OF,
@@ -229,12 +234,31 @@ class Config:
                 if days not in UPCOMING_DAYS:
                     raise ConfigError("Choose 7, 14, 30, 60 or 90 days")
                 d["upcoming_days"] = days
+            if "download_hours" in incoming:
+                d["download_hours"] = clean_hours(incoming["download_hours"], d["download_hours"])
             if "session_days" in incoming:
                 days = int(incoming["session_days"])
                 if not 1 <= days <= 90:
                     raise ConfigError("Keep people signed in for 1 to 90 days")
                 d["session_days"] = days
             self.save()
+
+
+def clean_hours(incoming, current):
+    if not isinstance(incoming, dict):
+        raise ConfigError("Send the download hours as an object")
+    out = dict(current)
+    if "enabled" in incoming:
+        out["enabled"] = bool(incoming["enabled"])
+    for key in ("start", "end"):
+        if key in incoming:
+            hour = int(incoming[key])
+            if not 0 <= hour <= 23:
+                raise ConfigError("Choose an hour from 00:00 to 23:00")
+            out[key] = hour
+    if out["start"] == out["end"]:
+        raise ConfigError("Choose a different time for the start and the end")
+    return out
 
 
 def public_service(s):

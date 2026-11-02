@@ -1,6 +1,9 @@
 # Starboard: standard library Python only, so there are no third-party packages to keep patched.
 FROM python:3.12-alpine
 
+# tzdata: download hours follow the server's local time (TZ).
+RUN apk add --no-cache tzdata
+
 RUN addgroup -S -g 10001 starboard && adduser -S -u 10001 -G starboard -H -h /app starboard \
  && mkdir -p /data && chown starboard:starboard /data && chmod 700 /data
 
