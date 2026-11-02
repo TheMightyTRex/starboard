@@ -5,21 +5,66 @@ API keys stay on the server. Every call goes to an address an administrator save
 
 import datetime as dt
 import json
+import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
+from . import posters
 from .config import SERVICE_TYPES
 
 TIMEOUT = 8
 USER_AGENT = "Starboard"
-POOL = ThreadPoolExecutor(max_workers=12)
+class _LazyPool:
+    """A thread pool that starts its threads only when the first job arrives, and never more than 6."""
+    _pool = None
+
+    def __getattr__(self, name):
+        if _LazyPool._pool is None:
+            _LazyPool._pool = ThreadPoolExecutor(max_workers=6, thread_name_prefix="apps")
+        return getattr(_LazyPool._pool, name)
+
+
+POOL = _LazyPool()
 
 
 class ServiceError(Exception):
     pass
+
+
+# Shared answers ----------------------------------------------------------------
+# Every open tab and device shares one answer per kind for a short time, and only one request per kind runs at
+# a time, so five open tabs ask Sonarr once, not five times. "Check again" passes fresh=True.
+
+_cache = {}
+_cache_lock = threading.Lock()
+_flight = {}
+
+
+def cached(key, seconds, fn, fresh=False):
+    with _cache_lock:
+        hit = _cache.get(key)
+        if hit and not fresh and time.monotonic() - hit[0] < seconds:
+            return hit[1]
+        flight = _flight.setdefault(key, threading.Lock())
+    with flight:  # a second caller waits for the first one's answer instead of asking again
+        with _cache_lock:
+            hit = _cache.get(key)
+            if hit and time.monotonic() - hit[0] < (0.5 if fresh else seconds):
+                return hit[1]
+        value = fn()
+        with _cache_lock:
+            _cache[key] = (time.monotonic(), value)
+        return value
+
+
+def forget(*keys):
+    """Drops the shared answers named, or all of them."""
+    with _cache_lock:
+        for k in keys or list(_cache):
+            _cache.pop(k, None)
 
 
 def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):
@@ -399,28 +444,27 @@ def _calendar_one(service, start, end):
     items = _api(service, "/calendar", params) or []
     out = []
     for i in items:
+        # Posters come from the app's own small copies, through Starboard (see posters.py).
         if kind == "sonarr":
             title = (i.get("series") or {}).get("title", "")
             detail = f"S{i.get('seasonNumber', 0):02d}E{i.get('episodeNumber', 0):02d} · {i.get('title', '')}"
             when = i.get("airDateUtc")
             have = i.get("hasFile")
-            image = _image(i.get("series") or {}, "poster")
+            image = posters.address(service, "series", i.get("seriesId"))
         elif kind == "radarr":
             title, detail = i.get("title", ""), "Film"
             when = i.get("digitalRelease") or i.get("physicalRelease") or i.get("inCinemas")
             have = i.get("hasFile")
-            image = _image(i, "poster")
+            image = posters.address(service, "movie", i.get("id"))
         elif kind == "lidarr":
             title, detail = (i.get("artist") or {}).get("artistName", ""), i.get("title", "")
             when, have = i.get("releaseDate"), (i.get("statistics") or {}).get("percentOfTracks") == 100
-            image = _image(i, "cover") or _image(i.get("artist") or {}, "poster")
+            image = posters.address(service, "album", i.get("id"))
         else:
             title, detail = i.get("title", ""), (i.get("author") or {}).get("authorName", "")
             when, have = i.get("releaseDate"), (i.get("statistics") or {}).get("bookFileCount", 0) > 0
-            image = _image(i, "cover") or _image(i.get("author") or {}, "poster")
+            image = posters.address(service, "book", i.get("id"))
         if when:
-            # TMDB serves any width: a small poster is plenty for a row or a calendar day.
-            image = image.replace("image.tmdb.org/t/p/original/", "image.tmdb.org/t/p/w342/")
             out.append({"service_name": service["name"], "title": title, "detail": detail, "when": when,
                         "have": bool(have), "image": image})
     return out

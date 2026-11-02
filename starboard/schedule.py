@@ -125,8 +125,11 @@ class Schedule:
     # The minute-by-minute check -------------------------------------------------
 
     def tick(self):
+        if not self.hours()["enabled"] and not os.path.exists(self.path):
+            return  # never used: nothing to check or undo, and no file to write
         with self.lock:
             state = self.load()
+            before = json.dumps(state, sort_keys=True)
             now = datetime.now()
             if state["override"] and state["until"] <= now.timestamp():
                 state["override"], state["until"] = None, 0
@@ -140,7 +143,8 @@ class Schedule:
                 if want == "pause" or state["applied"] != want:
                     self.apply(want, state, enforcing=want == "pause" and state["applied"] == "pause")
                     state["applied"] = want
-            self.save(state)
+            if json.dumps(state, sort_keys=True) != before:  # write only when something changed
+                self.save(state)
 
     def loop(self):
         while True:

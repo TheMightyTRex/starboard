@@ -295,6 +295,14 @@ class ServerTest(unittest.TestCase):
         self.request("PUT", "/api/config/general", {"show_posters": True, "fetch_icons": True})
 
 
+    def test_16_static_files_are_compressed_and_cached(self):
+        resp, _ = self.request("GET", "/js/common.js", headers={"Accept-Encoding": "gzip"}, cookie=False)
+        self.assertEqual(resp.getheader("Content-Encoding"), "gzip")
+        tag = resp.getheader("ETag")
+        resp, _ = self.request("GET", "/js/common.js", headers={"If-None-Match": tag}, cookie=False)
+        self.assertEqual(resp.status, 304)
+
+
 class ConfigTest(unittest.TestCase):
     def test_rejects_bad_addresses(self):
         for url in ("file:///etc/passwd", "ftp://x", "javascript:alert(1)", ""):

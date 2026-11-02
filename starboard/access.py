@@ -52,8 +52,9 @@ def summary(app):
               "The server downloads each app's icon once from the dashboard-icons collection and keeps a copy. "
               "Off: only icons already saved, or ones you put in data/icons.",
               d["fetch_icons"], "setting", setting="fetch_icons"),
-        _item("posters", "Image sites, for posters on Coming up",
-              "Your browser loads posters and covers from the sites your apps use, such as TheTVDB and TMDB, "
-              "so those sites see your address. Off: Coming up shows the app's icon instead.",
+        _item("posters", "Posters on Coming up",
+              "The server fetches small posters from your own apps and keeps copies for a week (a few megabytes). "
+              "Off: Coming up shows each app's icon instead. Search results still show covers from the sites "
+              "your apps use, such as TMDB.",
               d["show_posters"], "setting", setting="show_posters"),
     ]

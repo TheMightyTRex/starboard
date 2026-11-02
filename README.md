@@ -84,8 +84,8 @@ Some access is a switch in Settings instead, because it needs nothing from the i
   until you turn it on. It needs each client's API key (qBittorrent 5.2 or later).
 - **GitHub** (Settings, About and updates): looks for new Starboard releases, at most every 6 hours.
 - **The dashboard-icons collection** (Settings, About and updates): downloads each app's icon once.
-- **Posters** (Settings, About and updates): your browser loads posters on Coming up from the image sites
-  your apps use, such as TheTVDB and TMDB, so those sites see your address.
+- **Posters** (Settings, About and updates): the server fetches small posters for Coming up from your own
+  apps and keeps copies for a week. Search results still show covers from the sites your apps use, such as TMDB.
 
 **Settings, About and updates, What Starboard can access** lists all of these, says which are on now, and
 gives the switch or the command to change each one.

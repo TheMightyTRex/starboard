@@ -1,5 +1,7 @@
 """The web server: static pages, the JSON API and the security rules around both."""
 
+import gzip
+import hashlib
 import json
 import mimetypes
 import os
@@ -14,7 +16,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, icons, schedule, services, sysinfo
+from . import access, auth, backup, containers, icons, posters, schedule, services, sysinfo
 from .config import Config, ConfigError, new_setup_token, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,6 +50,32 @@ def read_version():
             return f.read().strip()
     except OSError:
         return "0.0.0"
+
+
+_static = {}
+_static_lock = threading.Lock()
+
+
+def static_file(full):
+    """(bytes, gzip bytes or None, ETag, content type) for a file under web/, read and compressed once and kept
+    until the file changes. The whole web folder is well under a megabyte."""
+    st = os.stat(full)
+    key = (st.st_mtime_ns, st.st_size)
+    with _static_lock:
+        hit = _static.get(full)
+        if hit and hit[0] == key:
+            return hit[1]
+    with open(full, "rb") as f:
+        data = f.read()
+    kind = mimetypes.guess_type(full)[0] or "application/octet-stream"
+    text = kind.startswith("text/") or kind in ("application/javascript", "image/svg+xml", "application/manifest+json")
+    if text:
+        kind += "; charset=utf-8"
+    packed = gzip.compress(data, 9) if text and len(data) > 1024 else None
+    tag = '"' + hashlib.sha256(data).hexdigest()[:20] + '"'
+    with _static_lock:
+        _static[full] = (key, (data, packed, tag, kind))
+    return data, packed, tag, kind
 
 
 class App:
@@ -173,7 +201,16 @@ class Handler(BaseHTTPRequestHandler):
     def is_https(self):
         return self.app.trust_proxy and self.headers.get("X-Forwarded-Proto", "") == "https"
 
+    def accepts_gzip(self):
+        return "gzip" in (self.headers.get("Accept-Encoding") or "")
+
     def send(self, status, body=b"", content_type="application/json; charset=utf-8", extra=None):
+        # Larger JSON answers go compressed when the browser accepts it: a few hundred microseconds of work
+        # for a quarter of the bytes. Static files arrive here already compressed (see static()).
+        if (len(body) > 2048 and content_type.startswith("application/json") and self.accepts_gzip()
+                and "Content-Encoding" not in (extra or {})):
+            body = gzip.compress(body, 5)
+            extra = dict(extra or {}, **{"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
         self.send_response(status)
         for k, v in SECURITY_HEADERS.items():
             if k not in (extra or {}):  # a response may set a stricter or different policy of its own
@@ -293,12 +330,15 @@ class Handler(BaseHTTPRequestHandler):
         full = os.path.realpath(os.path.join(WEB, path.lstrip("/")))
         if not full.startswith(WEB + os.sep) or not os.path.isfile(full):
             return self.send(404, b"Not found", "text/plain; charset=utf-8")
-        with open(full, "rb") as f:
-            data = f.read()
-        kind = mimetypes.guess_type(full)[0] or "application/octet-stream"
-        if kind.startswith("text/") or kind in ("application/javascript", "image/svg+xml", "application/manifest+json"):
-            kind += "; charset=utf-8"
-        extra = {"Cache-Control": "no-cache"}  # small files on a home network; updates show at once
+        data, packed, tag, kind = static_file(full)
+        # no-cache with an ETag: the browser asks each time and gets "304 Not Modified" (no body) until the
+        # file changes, so an update shows at once but pages cost almost nothing to open again.
+        extra = {"Cache-Control": "no-cache", "ETag": tag, "Vary": "Accept-Encoding"}
+        if self.headers.get("If-None-Match") == tag:
+            return self.send(304, b"", kind, extra)
+        if packed and self.accepts_gzip():
+            data = packed
+            extra["Content-Encoding"] = "gzip"
         if path in ("/favicon.svg", "/icon-app.svg"):
             # The logo switches colours for dark mode with its own small style block, and runs nothing.
             extra["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
@@ -306,6 +346,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def api(self, method, path):
         app = self.app
+        fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check again": skip the shared answers
+        if method != "GET":
+            services.forget()  # a change (an app added, a setting saved) makes the shared answers out of date
         try:
             # Open routes
             if path == "/api/session" and method == "GET":
@@ -354,6 +397,13 @@ class Handler(BaseHTTPRequestHandler):
                 candidate = validate_service(incoming)
                 candidate["id"] = candidate.get("id") or "test"
                 return self.json(200, services.check(candidate))
+            m = re.match(r"^/api/posters/([a-z0-9-]+)/([a-z]+)/(\d{1,10})$", path)
+            if m and method == "GET":
+                service = cfg.service(m.group(1))
+                found = posters.get(service, m.group(2), m.group(3), os.path.join(cfg.data_dir, "posters")) if service and cfg.data["show_posters"] else None
+                if not found:
+                    return self.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "private, max-age=3600"})
+                return self.send(200, found[0], found[1], {"Cache-Control": "private, max-age=604800"})
             m = re.match(r"^/api/icons/([a-z0-9-]+)$", path)
             if m and method == "GET":
                 return self.icon(m.group(1))
@@ -368,7 +418,7 @@ class Handler(BaseHTTPRequestHandler):
                     cfg.remove_service(service["id"])
                     return self.json(200, cfg.public())
             if path == "/api/status" and method == "GET":
-                return self.json(200, {"items": services.status_all(cfg.data["services"])})
+                return self.json(200, {"items": services.cached("status", 15, lambda: services.status_all(cfg.data["services"]), fresh)})
             if path == "/api/search" and method == "GET":
                 query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("q", [""])[0]
                 return self.json(200, services.search(cfg.data["services"], query))
@@ -384,9 +434,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/outside" and method == "GET":
                 return self.json(200, {"items": services.outside_all(cfg.data["services"])})
             if path == "/api/app-updates" and method == "GET":
-                return self.json(200, services.app_updates(cfg.data["services"]))
+                return self.json(200, services.cached("app-updates", 600, lambda: services.app_updates(cfg.data["services"]), fresh))
             if path == "/api/queue" and method == "GET":
-                return self.json(200, services.queue(cfg.data["services"]))
+                return self.json(200, services.cached("queue", 10, lambda: services.queue(cfg.data["services"]), fresh))
             if path.startswith("/api/containers"):
                 if not containers.available():
                     return self.json(200, {"available": False, "items": [], "containers": []})
@@ -405,7 +455,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/schedule" and method == "POST":
                 return self.json(200, app.schedule.act(str(self.body().get("action", ""))))
             if path == "/api/calendar" and method == "GET":
-                result = services.calendar(cfg.data["services"], cfg.data["upcoming_days"])
+                days = cfg.data["upcoming_days"]
+                result = json.loads(json.dumps(services.cached(f"calendar-{days}", 600, lambda: services.calendar(cfg.data["services"], days), fresh)))
                 if not cfg.data["show_posters"]:
                     for item in result["items"]:
                         item["image"] = ""
@@ -413,7 +464,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/access" and method == "GET":
                 return self.json(200, {"items": access.summary(app)})
             if path == "/api/health" and method == "GET":
-                return self.json(200, services.health(cfg.data["services"]))
+                return self.json(200, services.cached("health", 300, lambda: services.health(cfg.data["services"]), fresh))
             if path == "/api/history" and method == "GET":
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                 hours = {"1": 1, "6": 6, "24": 24}.get(q.get("hours", ["1"])[0], 1)

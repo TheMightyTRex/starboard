@@ -244,7 +244,7 @@ function refreshDetails() {
 
 async function load({ announceIt = false } = {}) {
   try {
-    const data = await api("/api/queue");
+    const data = await api(announceIt ? "/api/queue?fresh=1" : "/api/queue");
     const seen = new Map();
     items = data.items.map((i, order) => {
       const base = `${i.service_name}|${i.client}|${i.title}`;
@@ -323,7 +323,8 @@ async function scheduleAct(action, button) {
 function setPaused(on) {
   paused = on;
   clearInterval(timer);
-  timer = on ? null : setInterval(() => { load(); loadSchedule(); }, 15000);
+  // Every 15 seconds while the tab is in view; a hidden tab asks nothing and catches up when shown again.
+  timer = on ? null : setInterval(() => { if (!document.hidden) { load(); loadSchedule(); } }, 15000);
   $("#auto-refresh").setAttribute("aria-pressed", String(on));
   renderSummary();
 }
@@ -353,4 +354,5 @@ startPage().then(async () => {
   } catch { /* links to the apps are an extra; the queue works without them */ }
   await Promise.all([load(), loadSchedule()]);
   setPaused(false);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !paused) { load(); loadSchedule(); } });
 });

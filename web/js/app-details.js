@@ -22,7 +22,7 @@ const AppDetails = (() => {
   const fetchers = {
     config: async () => { state.config = await api("/api/config"); },
     status: async () => {
-      const { items } = await api("/api/status");
+      const { items } = await api(fresh("/api/status"));
       state.status = Object.fromEntries(items.map((i) => [i.id, i]));
       state.checkedAt = new Date();
     },
@@ -33,13 +33,13 @@ const AppDetails = (() => {
     },
     updates: async () => {
       if (!hasUpdates()) { state.updates = {}; state.updateErrors = {}; return; }
-      const { items, errors } = await api("/api/app-updates");
+      const { items, errors } = await api(fresh("/api/app-updates"));
       state.updates = Object.fromEntries(items.map((i) => [i.id, i]));
       state.updateErrors = Object.fromEntries(errors.map((e) => [e.service, e.message]));
     },
     health: async () => {
       if (!hasUpdates()) { state.warnings = {}; return; }
-      const { items, errors } = await api("/api/health");
+      const { items, errors } = await api(fresh("/api/health"));
       state.healthErrors = Object.fromEntries((errors || []).map((e) => [e.service, e.message]));
       // The API names the app, not its id; match by name.
       const byName = new Map((state.config?.services || []).map((s) => [s.name, s.id]));
@@ -50,6 +50,14 @@ const AppDetails = (() => {
       }
     },
   };
+
+  // The server shares app answers for a few seconds; "Check now" and "Check again" ask the apps afresh.
+  let asking = false;
+  const fresh = (path) => (asking ? `${path}?fresh=1` : path);
+  async function checkAgain(...parts) {
+    asking = true;
+    try { await load(...parts); } finally { asking = false; }
+  }
 
   // load("status", "outside") fetches those parts (config first when it is not there yet).
   async function load(...parts) {
@@ -236,7 +244,7 @@ const AppDetails = (() => {
     check.addEventListener("click", async () => {
       check.disabled = true;
       check.setAttribute("aria-busy", "true");
-      await load("status", "outside", "updates", "health");
+      await checkAgain("status", "outside", "updates", "health");
       const again = current?.panel.foot.querySelector("[data-check]");
       if (again) { again.disabled = false; again.removeAttribute("aria-busy"); again.focus(); }
       const words = status(s);
@@ -310,7 +318,7 @@ const AppDetails = (() => {
   }
 
   return {
-    state, load, status, update, warnings, how, homeAddress, opener, open, openFromAddress, service, clock, morph, iconFor, sentence,
+    state, load, checkAgain, status, update, warnings, how, homeAddress, opener, open, openFromAddress, service, clock, morph, iconFor, sentence,
     onChange: (fn) => listeners.add(fn),
   };
 })();

@@ -190,7 +190,7 @@ async function check() {
   button.disabled = true;
   button.setAttribute("aria-busy", "true");
   $("#apps-summary").textContent = "Checking your apps…";
-  await AppDetails.load("status", "outside", "updates", "health");
+  await AppDetails.checkAgain("status", "outside", "updates", "health");
   button.disabled = false;
   button.removeAttribute("aria-busy");
   announce(summaryText(apps()));
