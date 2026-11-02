@@ -136,7 +136,7 @@ case "$ACTION" in
     vm "git clone -q starboard.bundle starboard"
 
     say "INS-02 installer, answering No to everything"
-    vm "cd starboard && ./install.sh --yes --no-docker --no-disks --no-app-use --no-livetv --no-disk-health" | tail -n 8
+    vm "cd starboard && ./install.sh --yes --no-docker --no-disks --no-app-use --no-livetv --no-disk-health" | tail -n 8 || echo "     That step failed: the checks below show what it broke"
     check INS-02 "starts and answers /healthz" wait_web
     check INS-02 "first visit goes to set-up" test "$(web /index.html)" = 303
     check INS-02 "setup code written" vm "test -s starboard/data/setup-token"
@@ -150,7 +150,7 @@ case "$ACTION" in
 
     say "INS-05 run the installer again with Docker access"
     TOKEN="$(vm "cat starboard/data/setup-token")"
-    vm "cd starboard && ./install.sh --yes --docker" | tail -n 3
+    vm "cd starboard && ./install.sh --yes --docker" | tail -n 3 || echo "     That step failed: the checks below show what it broke"
     check INS-05 "starts again" wait_web
     check INS-05 "setup code kept" test "$(vm "cat starboard/data/setup-token")" = "$TOKEN"
     check INS-03 "Docker socket mounted when asked" vm "docker inspect starboard --format '{{range .Mounts}}{{.Source}} {{end}}' | grep -q docker.sock"
@@ -158,7 +158,7 @@ case "$ACTION" in
     say "INS-06 this computer only"
     check INS-06 "a re-run with --local-only says to use Settings" vm "cd starboard && ./install.sh --yes --local-only | grep -q 'Settings, Security'"
     vm "cd starboard && docker compose down" >/dev/null 2>&1
-    vm "git clone -q starboard.bundle local-only && cd local-only && ./install.sh --yes --local-only --no-docker" | tail -n 2
+    vm "git clone -q starboard.bundle local-only && cd local-only && ./install.sh --yes --local-only --no-docker" | tail -n 2 || echo "     That step failed: the checks below show what it broke"
     check INS-06 "answers inside the VM" vm "for i in \$(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:8095/healthz && exit 0; sleep 5; done; exit 1"
     check INS-06 "refused from outside the VM" test "$(web /healthz)" != 200
     vm "cd local-only && docker compose down" >/dev/null 2>&1
@@ -168,7 +168,7 @@ case "$ACTION" in
     check UPD-01 "./update.sh --check runs" vm "cd starboard && ./update.sh --check"
 
     say "INS-01 the ready-made image"
-    vm "mkdir -p ~/image/data && cp compose.image.yaml ~/image/ && cd ~/image && docker compose -f compose.image.yaml up -d" | tail -n 2
+    vm "mkdir -p ~/image/data && cp starboard/compose.image.yaml ~/image/ && cd ~/image && docker compose -f compose.image.yaml up -d" | tail -n 2 || echo "     That step failed: the checks below show what it broke"
     check INS-01 "published image starts" wait_web
     check INS-01 "setup code in the log" vm "docker logs starboard 2>&1 | grep -qi 'setup code'"
 
