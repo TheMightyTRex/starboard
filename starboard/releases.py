@@ -60,6 +60,9 @@ RELEASES = [
      "added": [("Ready-made image", "Starboard is published at ghcr.io/themightytrex/starboard for amd64 and arm64, with compose.image.yaml to run it without building anything.")],
      "changed": [("Links", "The README and licence name the project's GitHub account and author.")],
      "fixed": [], "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.2."},
+    {"version": "0.5.4", "date": "2 November 2026",
+     "added": [], "changed": [("Status beside headings", "On System, Overview, Jellyfin's state (Up to date, Restart needed, Update available) sits beside its name instead of on a line of its own. Status follows one rule across Starboard and Storyarr.")],
+     "fixed": [], "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.3."},
 ]
 
 

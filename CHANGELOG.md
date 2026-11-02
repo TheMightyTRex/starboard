@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.4 (2 November 2026)
+
+- System, Overview: Jellyfin's status chips sit beside its name, centred on the heading's line, with the
+  version on the right. The pattern (`.title-status`) and the status icon after a name (`.status-icon`) are now
+  in the shared component library, with a "where status goes" rule for both apps.
+
 ## 0.5.3 (2 November 2026)
 
 - **Ready-made image** for amd64 and arm64 at `ghcr.io/themightytrex/starboard` (each version, its minor
