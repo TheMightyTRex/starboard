@@ -58,7 +58,13 @@ function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-function chip(text, tone) { return el("span", { class: "chip", "data-tone": tone, text }); }
+// Status chip (shared library, style B): the state's icon, then its words. Pass an icon for the state, or
+// the tone's default is used.
+const CHIP_ICONS = { success: "circle-check", info: "info", warning: "triangle-alert", danger: "circle-x", muted: "minus", neutral: "clock" };
+function chip(text, tone, iconName) {
+  const name = iconName || CHIP_ICONS[tone] || "circle";
+  return el("span", { class: "chip", "data-tone": tone }, icon(name, 14), el("span", { text }));
+}
 
 async function api(path, { method = "GET", body } = {}) {
   const opts = { method, headers: { Accept: "application/json" }, credentials: "same-origin" };
