@@ -27,9 +27,13 @@ function statusCell(row) {
   const item = jobItem(row);
   if (item) {
     const words = item.phase === "downloading" ? `${PHASE.downloading}, ${Math.round(item.pct)}%` : PHASE[item.phase] || item.phase;
-    return [chip(words, "info"),
-      item.phase === "downloading" ? el("div", { class: "progress", role: "progressbar", "aria-label": `Downloading ${row.name}`,
-        "aria-valuenow": String(Math.round(item.pct)), "aria-valuemin": "0", "aria-valuemax": "100" }, el("span", { style: `width:${item.pct}%` })) : null];
+    let bar = null;
+    if (item.phase === "downloading") {
+      bar = el("div", { class: "progress", role: "progressbar", "aria-label": `Downloading ${row.name}`,
+        "aria-valuenow": String(Math.round(item.pct)), "aria-valuemin": "0", "aria-valuemax": "100" }, el("span"));
+      bar.firstChild.style.width = `${item.pct}%`;  // set in script: the page's policy blocks style attributes
+    }
+    return [chip(words, "info"), bar];
   }
   const done = lastResult(row);
   if (done?.phase === "done") return chip(done.version ? `Updated to ${done.version}` : "Updated", "success");

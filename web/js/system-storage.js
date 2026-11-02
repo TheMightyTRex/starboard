@@ -109,11 +109,11 @@ async function load() {
     const total = found.reduce((t, d) => t + d.total, 0);
     const used = found.reduce((t, d) => t + d.used, 0);
     const full = found.filter((d) => pctUsed(d) >= 90).length;
-    stats.replaceChildren(
+    stats.replaceChildren(...[
       stat(formatBytes(total), "Total space"),
       stat(formatBytes(used), `Used (${total ? Math.round((used / total) * 100) : 0}%)`),
       stat(String(full), "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
-      missing ? stat(String(missing), missing === 1 ? "Folder not found" : "Folders not found", ["warning", "Not found"]) : null);
+      missing ? stat(String(missing), missing === 1 ? "Folder not found" : "Folders not found", ["warning", "Not found"]) : null].filter(Boolean));
     const sorted = [...disks].sort((a, b) => (b.missing ? 101 : pctUsed(b)) - (a.missing ? 101 : pctUsed(a)));
     let list = $("ul.rows", box);
     if (!list) { list = el("ul", { class: "rows", "aria-label": "Folders, fullest first" }); box.replaceChildren(list); }
@@ -146,7 +146,7 @@ function renderUsage(u) {
       el("h3", { text: f.label }),
       el("ul", { class: "meter-list" }, f.items.slice(0, 12).map((i) => el("li", {},
         el("div", { class: "meter__label" }, el("span", { text: i.name }), el("span", { class: "numeric", text: formatBytes(i.bytes) })),
-        el("div", { class: "progress", role: "presentation" }, el("span", { style: `width:${Math.max(1, (i.bytes / total) * 100)}%` }))))));
+        bar(Math.max(1, Math.round((i.bytes / total) * 100)), "success")))));
   }));
 }
 

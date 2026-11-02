@@ -182,12 +182,12 @@ function renderJellyfin(j) {
   const added = el("ul", { class: "rows" }, j.added.slice(0, 8).map((a) => el("li", { class: "row row--no-lead" },
     el("div", {}, el("div", { class: "row__title", text: a.series ? `${a.series}: ${a.title}` : a.title }),
       el("div", { class: "row__meta", text: [{ Movie: "Film", Episode: "Episode", MusicAlbum: "Album", AudioBook: "Audiobook", Book: "Book" }[a.type] || a.type, ago(a.when)].join(" · ") })))));
-  $("#jellyfin").replaceChildren(
+  $("#jellyfin").replaceChildren(...[
     el("div", { class: "actions" }, state),
     facts.length ? el("dl", { class: "facts" }, facts) : null,
     el("h3", { text: `Playing now${j.playing.length ? `, ${j.playing.length}` : ""}` }), playing,
     j.playing.some((p) => p.transcoding) ? el("p", { class: "small muted", text: "Converting uses the processor; direct play does not." }) : null,
-    el("h3", { text: "Recently added" }), j.added.length ? added : el("p", { class: "muted", text: "Nothing added yet." }));
+    el("h3", { text: "Recently added" }), j.added.length ? added : el("p", { class: "muted", text: "Nothing added yet." })].filter(Boolean));
 }
 
 async function loadJellyfin(fresh = false) {

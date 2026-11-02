@@ -342,10 +342,10 @@ function renderSchedule(s) {
     : (s.reason === "manual" ? `Paused by you. Resumes at ${whenText(s.next_change)}.` : `Downloads run ${hours}. Next start ${whenText(s.next_change)}.`);
   $("#schedule-text").replaceChildren(text, s.clients.length ? "" : " No qBittorrent or SABnzbd with an API key is set up yet.");
   const button = (label, iconName, action, primary) => el("button", { type: "button", class: primary ? "btn btn--primary" : "btn", onclick: (e) => scheduleAct(action, e.currentTarget) }, icon(iconName), label);
-  $("#schedule-actions").replaceChildren(
+  $("#schedule-actions").replaceChildren(...[
     running ? null : button("Resume downloads now", "play", "resume", true),
     running ? button(`Pause downloads until ${hourText(s.start)}`, "pause", "pause") : null,
-    s.reason === "manual" ? button("Follow the hours", "clock", "follow") : null);
+    s.reason === "manual" ? button("Follow the hours", "clock", "follow") : null].filter(Boolean));
 }
 
 async function loadSchedule() {
