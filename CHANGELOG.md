@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0 (2 November 2026)
+
+- **Settings, Jellyfin:** jobs moved in from the old launcher, each off until you turn it on.
+  - **Live TV:** free channels and guides for Jellyfin (Free-TV, Samsung TV Plus, Pluto TV), Sky-style
+    numbers, and white logos made with Pillow (switchable). Needs Jellyfin's Live TV folder (`./install.sh`).
+  - **Import watch history** into Jellyfin from a Plex database file, a Plex server, Emby, another Jellyfin or a
+    history file, with account matching; applied once per item, and every hour if you choose.
+  - **User defaults** for every Jellyfin user.
+- **Apps, Other services** lists Starboard's own jobs and whether each is on.
+- **Set-up** offers the Jellyfin jobs when it finds Jellyfin.
+- Pillow and the data sources are credited in THIRD-PARTY.md.
+
 ## 0.2.0 (2 November 2026)
 
 Lightweight first: a dashboard for smaller servers that uses very little processor time and memory (about
