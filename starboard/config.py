@@ -56,6 +56,8 @@ DEFAULTS = {
     # How much Starboard does in the background and how often (Settings, Performance).
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
                     "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True},
+    "setup_guide_done": False,
+    "last_version": "",  # the version the upgrade wizard last finished, so it opens once per upgrade
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
     "groups": ["Watch, listen and request", "Find and organise", "Search and download", "Dashboards and tools"],
@@ -223,7 +225,9 @@ class Config:
             "download_hours": d["download_hours"],
             "watch": public_watch(d["watch"]),
             "extras": d["extras"],
-            "performance": dict(d["performance"], preset=matching_preset(d)),  # what the settings really match
+            "performance": dict(d["performance"], preset=matching_preset(d)),
+            "setup_guide_done": d["setup_guide_done"],
+            "last_version": d["last_version"],  # what the settings really match
             "presets": {k: v["title"] for k, v in PRESETS.items()},
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
@@ -247,7 +251,7 @@ class Config:
                 groups = [str(g).strip()[:40] for g in incoming["groups"] if str(g).strip()]
                 d["groups"] = groups[:20] or DEFAULTS["groups"]
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
-                        "fetch_icons", "show_posters"):
+                        "fetch_icons", "show_posters", "setup_guide_done"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
             if "upcoming_view" in incoming:
@@ -259,6 +263,11 @@ class Config:
                 if days not in UPCOMING_DAYS:
                     raise ConfigError("Choose 7, 14, 30, 60 or 90 days")
                 d["upcoming_days"] = days
+            if "last_version" in incoming:
+                v = str(incoming["last_version"])[:20]
+                if v and not re.match(r"^\d+\.\d+\.\d+$", v):
+                    raise ConfigError("Not a version number")
+                d["last_version"] = v
             if "preset" in incoming:
                 apply_preset(d, incoming["preset"])
             if "performance" in incoming:

@@ -61,6 +61,8 @@ PAGES = {page: key for key, page, _, _ in MAIN}
 for key, items in SUB.items():
     for page, _, _ in items:
         PAGES[page] = key
+# Pages that belong to a section but have no tab of their own (opened from a button).
+PAGES.update({"setup-guide.html": "settings", "upgrade.html": "settings"})
 
 
 def icon(name, size=18):

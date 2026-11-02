@@ -16,7 +16,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, icons, jobs, livetv, migrate, posters, schedule, services, sysinfo, watch
+from . import access, auth, backup, containers, discovery, icons, jobs, livetv, migrate, posters, schedule, services, sysinfo, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -558,6 +558,10 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/import/mapping" and method == "PUT":
                 migrate.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
                 return self.json(200, migrate.status(cfg.data_dir, cfg.data["services"]))
+            if path == "/api/discover" and method == "GET":
+                return self.json(200, discovery.search(cfg.data["services"]))
+            if path == "/api/discover/add" and method == "POST":
+                return self.json(200, self.add_found(self.body().get("items")))
             if path == "/api/self" and method == "GET":
                 return self.json(200, sysinfo.self_usage())
             if path == "/api/uptime" and method == "GET":
@@ -693,6 +697,32 @@ class Handler(BaseHTTPRequestHandler):
         days = app.config.data["session_days"] if remember else auth.FORGET_AFTER_DAYS
         token = app.sessions.create(days, app.session_version, remember)
         return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
+
+    def add_found(self, items):
+        """Adds apps that Search for new apps found. Each one's API key is read from its own settings file
+        through Docker when asked and possible; otherwise it is added without one, to fill in later."""
+        if not isinstance(items, list) or not items:
+            raise ValueError("Choose the apps to add")
+        cfg = self.app.config
+        added, missing_keys = [], []
+        for it in items[:60]:
+            if not isinstance(it, dict) or it.get("key") not in discovery.CATALOGUE:
+                continue
+            name, kind, _, _, needs_key, background = discovery.CATALOGUE[it["key"]]
+            url = str(it.get("url", ""))
+            if not re.match(r"^http://127\.0\.0\.1:\d{2,5}$", url):
+                continue  # only what discovery itself found on this computer
+            key = discovery.read_key(it["key"], str(it.get("container", ""))) if it.get("read_key") else None
+            service = {"name": name, "type": kind, "url": url, "background": background, "icon": it["key"],
+                       "container": str(it.get("container", "")) if it.get("container") else ""}
+            if key:
+                service["api_key"] = key
+            cfg.upsert_service(service)
+            added.append(name)
+            if needs_key and not key:
+                missing_keys.append(name)
+        services.forget()
+        return {"added": added, "missing_keys": missing_keys, "config": cfg.public()}
 
     # Watch history import --------------------------------------------------------------
 

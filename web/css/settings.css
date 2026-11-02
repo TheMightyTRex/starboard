@@ -127,3 +127,9 @@
 
 /* What a setting costs: a line of its own under the hint. */
 .setting__cost { display: block; margin-top: var(--space-1); color: var(--color-text-muted); font-size: var(--text-xs); }
+
+/* The set-up and upgrade wizards. */
+.stack-1 { display: grid; gap: var(--space-1); }
+.wizard .panel { gap: var(--space-5); }
+.wizard h2:focus { outline: none; }
+.wizard h2:focus-visible { outline: var(--focus-w) solid var(--color-focus); outline-offset: 2px; }

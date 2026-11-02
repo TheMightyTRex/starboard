@@ -51,11 +51,7 @@ startPage().then((session) => {
     try {
       if (setup) await api("/api/setup", { method: "POST", body: { token: form.token.value, password: form.password.value, remember: form.remember.checked, site_name: form.site_name.value } });
       else await api("/api/login", { method: "POST", body: { password: form.password.value, remember: form.remember.checked } });
-      if (setup) {
-        // A Jellyfin on this computer: offer its jobs (all off) on the next page.
-        const found = await api("/api/jellyfin/detect").catch(() => null);
-        if (found?.found) { location.href = "/settings-jellyfin.html?welcome=1"; return; }
-      }
+      if (setup) { location.href = "/setup-guide.html"; return; }  // set-up goes on to the guide: find apps, choose what runs
       // Only a page on this dashboard: the address is resolved first, so tricks like "/\t/evil.example" fail.
       let next = "/index.html";
       try {
