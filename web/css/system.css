@@ -1,0 +1,43 @@
+/* System pages (Overview, Storage, Disk health, Monitor): only what the shared library and app.css do not
+   already give. Loaded after app.css. */
+
+/* A heading row with a control at the end (the time range). */
+.sys-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+
+/* Charts: two to a row on wide screens, one per row on phones. */
+.sys-charts { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); }
+.chart .chart__head { flex-wrap: wrap; }
+.chart .chart__head h3 { font-size: var(--text-md); }
+.chart__value { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-weight: var(--weight-strong); }
+
+/* Rows with an app icon or disk icon in front (app.css gives rows two columns; these need three). */
+.row.sys-row--lead { grid-template-columns: auto minmax(0, 1fr) auto; }
+.sys-lead { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--color-divider); background: var(--color-surface-sunken); color: var(--color-text-muted); }
+
+/* Needs attention panel with a status edge when something is listed. */
+.panel[data-tone="warning"] { border-left: var(--status-edge-w, 6px) solid var(--status-warning-fg); }
+.panel[data-tone="danger"] { border-left: var(--status-edge-w, 6px) solid var(--status-danger-fg); }
+.sys-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); }
+
+/* Lists of meters (disk temperature and age, processor threads). */
+.sys-meters { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+.meter-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3) var(--space-6); }
+.meter-list--threads { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+
+/* Slide-out content blocks. */
+.sys-block { display: grid; gap: var(--space-3); }
+.sys-block h3 { font-size: var(--text-md); }
+.side-panel__body .chip { justify-self: start; }
+.sys-message { font-size: var(--text-md); overflow-wrap: anywhere; }
+
+/* Disk table: the details button keeps its words on one line. */
+.sys-disks td:last-child { white-space: nowrap; }
+.sys-disks .chip + .small { display: block; margin-top: var(--space-1); }
+
+@media (max-width: 639px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .row.sys-row--lead { grid-template-columns: auto minmax(0, 1fr); }
+  .row.sys-row--lead > .row__side { grid-column: 2; }
+  .sys-disks td:last-child::before { content: none; }
+  .sys-disks td.numeric { text-align: left; }
+}

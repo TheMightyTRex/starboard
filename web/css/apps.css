@@ -1,0 +1,71 @@
+/* Apps, Other services and Network, and the app details slide-out they share. Library classes do most of
+   the work; this file only scopes what app.css overrides and lays out the app cards. The five designs change
+   the app cards in designs.css. */
+
+/* App cards (Tiles is the plain library card) ------------------------------------------------ */
+.app-groups { display: grid; gap: var(--space-6); }
+.app-group { display: grid; gap: var(--space-3); }
+.app-group .group-heading { padding-top: 0; }
+.app-cards .apps-head { display: none; }
+.app-card .app-icon { width: 40px; height: 40px; }
+.card__chips { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); }
+.card__group { display: none; }
+.card__ms:empty, .card__version:empty { display: none; }
+.card__actions { align-items: center; }
+.card__address { min-width: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
+.card__actions .copy-btn { flex: none; }
+
+/* Toolbar: the filter chips scroll sideways on phones instead of filling the screen. */
+@media (max-width: 639px) {
+  .page-apps .toolbar__row > .filter-chips { flex-wrap: nowrap; overflow-x: auto; width: 100%; padding: var(--focus-w); margin: calc(-1 * var(--focus-w)); }
+  .page-apps .toolbar__row > .filter-chips .filter-chip { flex: none; }
+  .page-apps .toolbar__search { max-width: none; }
+  .app-card .card__address { display: none; }
+}
+
+/* Notice with an action button on the right (app.css gives notices their colours only). */
+#attention .notice { align-items: center; }
+#attention .notice .btn { color: var(--color-text); }
+@media (max-width: 639px) {
+  #attention .notice { grid-template-columns: auto minmax(0, 1fr); }
+  #attention .notice .btn { grid-column: 2; justify-self: start; }
+}
+
+/* Rows with an icon at the start (app.css makes every row two columns; the library row has three). ---- */
+.rows .row.row--lead { grid-template-columns: auto minmax(0, 1fr) auto; }
+.row--lead .app-icon { width: 40px; height: 40px; }
+.row--lead > .app-icon > svg { width: 20px; height: 20px; }
+.row--opens .row__title button { cursor: pointer; }
+.row--opens .row__title button:focus-visible { outline: none; }
+.row--opens:focus-within { outline: var(--focus-w) solid var(--color-focus); outline-offset: -1px; }
+.row--opens { padding-inline: var(--space-2); }
+@media (max-width: 639px) {
+  .rows .row.row--lead { grid-template-columns: auto minmax(0, 1fr); }
+  .rows .row.row--lead > .row__side { grid-column: 2; justify-content: start; }
+  .row--phone-short .row__meta { display: none; }
+}
+
+/* App details slide-out -------------------------------------------------------------------- */
+.app-details__lead { display: flex; align-items: center; gap: var(--space-3); }
+.app-details__lead .app-icon { width: 48px; height: 48px; }
+.app-details__state { display: grid; gap: var(--space-1); justify-items: start; }
+.app-details__section { display: grid; gap: var(--space-3); }
+.app-details__section h3 { font-size: var(--text-md); }
+.app-details__address { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+.app-details__address code { min-width: 0; }
+.app-details__reach { display: grid; gap: var(--space-1); justify-items: start; flex-basis: 100%; }
+.side-panel .notice { align-items: start; }
+.side-panel .facts { grid-template-columns: max-content minmax(0, 1fr); }
+@media (max-width: 420px) { .side-panel .facts { grid-template-columns: minmax(0, 1fr); } .side-panel .facts dd { margin-bottom: var(--space-2); } }
+
+/* Other services ---------------------------------------------------------------------------- */
+.page-other-services .empty h2 { font-size: var(--text-lg); }
+
+/* Network ------------------------------------------------------------------------------------ */
+.stat .chip { justify-self: start; }
+.access-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.access-line > svg { flex: none; color: var(--color-text-muted); }
+.range-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); border: 0; margin: 0; padding: 0; }
+.range-row__label { color: var(--color-text-muted); font-size: var(--text-sm); }
+.panel__head .hint { flex-basis: 100%; }
+@media (max-width: 639px) { .page-apps .page-head .actions { justify-content: start; } }

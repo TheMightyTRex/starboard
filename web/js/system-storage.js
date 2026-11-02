@@ -1,47 +1,137 @@
-// Storage: free space in each folder Starboard has been given (STARBOARD_DISKS).
+// Storage: free space in each folder Starboard has been given (STARBOARD_DISKS). One list, fullest first;
+// each row opens a slide-out with the folder's details. The set-up hint shows only when nothing is set up.
 
-function meter(pct, label) {
-  const bar = el("div", { class: "progress", role: "progressbar", "aria-valuenow": String(pct), "aria-valuemin": "0", "aria-valuemax": "100", "aria-label": label }, el("span"));
-  bar.firstChild.style.width = `${pct}%`;
-  if (pct >= 90) bar.dataset.tone = "danger"; else if (pct >= 80) bar.dataset.tone = "warning";
-  return bar;
+let repo = "";
+let disks = [];
+
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const timeNow = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+const pctUsed = (d) => Math.round((d.used / d.total) * 100);
+
+// "7.6 of 8 TB": the used amount in the same unit as the total.
+function sizePair(used, total) {
+  const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+  const i = total ? Math.min(Math.floor(Math.log(total) / Math.log(1024)), units.length - 1) : 0;
+  const fmt = (n) => String(Number((n / 1024 ** i).toFixed(1)));
+  return `${fmt(used)} of ${fmt(total)} ${units[i]}`;
+}
+
+function status(d) {
+  if (d.missing) return ["warning", "Not found"];
+  const pct = pctUsed(d);
+  if (pct >= 98) return ["danger", "Full"];
+  if (pct >= 90) return ["warning", "Nearly full"];
+  return ["success", "Healthy"];
+}
+
+function bar(pct, tone) {
+  const node = el("div", { class: "progress", "data-tone": tone === "success" ? null : tone, role: "img", "aria-label": `${pct}% used` }, el("span"));
+  node.firstChild.style.width = `${pct}%`;
+  return node;
+}
+
+const guideLink = (text, anchor) => el("a", { class: "btn", href: `https://github.com/${repo}#${anchor}`, target: "_blank", rel: "noopener noreferrer" },
+  el("span", { text }), el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
+
+function folderBody(d) {
+  const [tone, word] = status(d);
+  if (d.missing) {
+    return [chip(word, tone),
+      el("div", { class: "notice", "data-tone": "warning", role: "status" }, icon("triangle-alert"),
+        el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Starboard cannot find this folder" }),
+          el("p", { text: `Check the path for ${d.label} in STARBOARD_DISKS and that the folder is mounted into Starboard, then restart Starboard.` }))),
+      repo ? guideLink("Open the set-up guide", "free-space-on-the-system-page") : null];
+  }
+  const pct = pctUsed(d);
+  return [
+    el("div", { class: "meter" },
+      el("div", { class: "meter__label" }, chip(word, tone), el("span", { class: "numeric", text: `${sizePair(d.used, d.total)} used (${pct}%)` })),
+      bar(pct, tone)),
+    pct >= 90 ? el("div", { class: "notice", "data-tone": tone, role: "status" }, icon("triangle-alert"),
+      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${formatBytes(d.free)} left` }),
+        el("p", { text: "Free some space or add a disk before it fills. Downloads stop when there is no room." }))) : null,
+    el("dl", { class: "facts" },
+      el("dt", { text: "Filesystem" }), el("dd", {}, d.filesystem ? el("span", { class: "tag", text: d.filesystem }) : "Not reported"),
+      el("dt", { text: "Used" }), el("dd", { class: "numeric", text: formatBytes(d.used) }),
+      el("dt", { text: "Free" }), el("dd", { class: "numeric", text: formatBytes(d.free) }),
+      el("dt", { text: "Size" }), el("dd", { class: "numeric", text: formatBytes(d.total) })),
+  ];
+}
+
+function openFolder(d, opener) {
+  const again = el("button", { type: "button", class: "btn" }, icon("refresh-cw"), el("span", { text: "Check again" }));
+  const panel = sidePanel({ title: d.label, opener, body: folderBody(d).filter(Boolean), foot: [again] });
+  again.addEventListener("click", async () => {
+    await load();
+    const now = disks.find((x) => x.label === d.label);
+    if (now) panel.body.replaceChildren(...folderBody(now).filter(Boolean));
+    announce(`Checked ${d.label} again.`);
+  });
+}
+
+function row(d) {
+  const [tone, word] = status(d);
+  const title = el("button", { type: "button", "aria-haspopup": "dialog", text: d.label, onclick: (e) => openFolder(d, e.currentTarget) });
+  if (d.missing) {
+    return el("li", { class: "row row--opens row--no-lead" },
+      el("div", {}, el("p", { class: "row__title" }, title), el("p", { class: "row__meta", text: "Starboard cannot find this folder" })),
+      el("div", { class: "row__side" }, chip(word, tone)));
+  }
+  const pct = pctUsed(d);
+  return el("li", { class: "row row--opens row--no-lead" },
+    el("div", {}, el("p", { class: "row__title" }, title), d.filesystem ? el("p", { class: "row__meta", text: `${d.filesystem} filesystem` }) : null),
+    el("div", { class: "row__side" }, el("span", { class: "numeric", text: `${sizePair(d.used, d.total)} used (${pct}%) · ${formatBytes(d.free)} free` }), chip(word, tone)),
+    bar(pct, tone));
+}
+
+function stat(value, label, tone) {
+  return el("div", { class: "stat", "data-tone": tone ? tone[0] : null },
+    el("span", { class: "stat__value", text: value }), el("span", { class: "stat__label", text: label }), tone ? chip(tone[1], tone[0]) : null);
 }
 
 async function load() {
   try {
     const sys = await api("/api/system");
-    const list = $("#storage");
-    list.replaceChildren();
-    const found = sys.disks.filter((d) => !d.missing);
-    if (!sys.disks.length) list.append(el("li", { class: "empty", text: "No folders set yet. List them in STARBOARD_DISKS (see the README)." }));
-    let total = 0, free = 0;
-    for (const d of sys.disks) {
-      if (d.missing) { list.append(el("li", { class: "row" }, el("p", { class: "row__title", text: d.label }), el("div", { class: "row__side" }, chip("Folder not found", "warning")))); continue; }
-      total += d.total; free += d.free;
-      const pct = Math.round((d.used / d.total) * 100);
-      list.append(el("li", { class: "row" },
-        el("div", {}, el("p", { class: "row__title", text: d.label }), el("p", { class: "row__meta num", text: `${formatBytes(d.used)} used · ${formatBytes(d.free)} free of ${formatBytes(d.total)}` })),
-        el("div", { class: "row__side" }, d.filesystem ? el("span", { class: "tag", title: "Filesystem", text: d.filesystem }) : null, el("span", { class: "num", text: `${pct}%` }), pct >= 90 ? chip("Nearly full", "danger") : pct >= 80 ? chip("Filling up", "warning") : chip("Space free", "success")),
-        meter(pct, `${d.label}, ${pct}% used`)));
-    }
+    disks = sys.disks;
+    const box = $("#storage");
     const stats = $("#storage-stats");
-    stats.replaceChildren();
-    if (found.length) {
-      const stat = (v, l) => el("div", { class: "stat" }, el("span", { class: "stat__value", text: v }), el("span", { class: "stat__label", text: l }));
-      stats.append(stat(formatBytes(free), "Free"), stat(formatBytes(total), "In total"), stat(`${Math.round(((total - free) / total) * 100)}%`, "Used"));
+    if (!disks.length) {
+      stats.replaceChildren();
+      box.replaceChildren(el("div", { class: "empty" }, icon("hard-drive", 32),
+        el("h2", { text: "No folders set up yet" }),
+        el("p", { text: "Starboard shows free space for the folders listed in STARBOARD_DISKS, each mounted read-only. Add them to the compose file and restart Starboard." }),
+        repo ? guideLink("Open the set-up guide", "free-space-on-the-system-page") : null));
+      $("#storage-summary").textContent = "Not set up";
+      return;
     }
-    const rows = found.map((d) => {
-      const pct = (d.used / d.total) * 100;
-      return { label: d.label, value: pct, tone: pct >= 90 ? "danger" : pct >= 80 ? "warning" : "", note: `${formatBytes(d.free)} free of ${formatBytes(d.total)}` };
-    }).sort((a, b) => b.value - a.value);
-    $("#storage-charts").replaceChildren(...(rows.length ? [
-      barChart({ title: "How full each folder is", detail: "Fullest first", rows, max: 100, format: percent }),
-      barChart({ title: "Free space", detail: "Most free first", rows: found.map((d) => ({ label: d.label, value: d.free })).sort((a, b) => b.value - a.value), format: formatBytes }),
-    ] : []));
-    $("#storage-summary").textContent = `${found.length} ${found.length === 1 ? "folder" : "folders"}`;
+    const found = disks.filter((d) => !d.missing);
+    const missing = disks.length - found.length;
+    const total = found.reduce((t, d) => t + d.total, 0);
+    const used = found.reduce((t, d) => t + d.used, 0);
+    const full = found.filter((d) => pctUsed(d) >= 90).length;
+    stats.replaceChildren(
+      stat(formatBytes(total), "Total space"),
+      stat(formatBytes(used), `Used (${total ? Math.round((used / total) * 100) : 0}%)`),
+      stat(String(full), "Folders over 90% full", full ? ["warning", "Nearly full"] : null),
+      missing ? stat(String(missing), missing === 1 ? "Folder not found" : "Folders not found", ["warning", "Not found"]) : null);
+    const sorted = [...disks].sort((a, b) => (b.missing ? 101 : pctUsed(b)) - (a.missing ? 101 : pctUsed(a)));
+    let list = $("ul.rows", box);
+    if (!list) { list = el("ul", { class: "rows", "aria-label": "Folders, fullest first" }); box.replaceChildren(list); }
+    renderKeyed(list, sorted, (d) => d.label, (d) => row(d));
+    const parts = [plural(disks.length, "folder", "folders")];
+    if (full) parts.push(`${full} nearly full`);
+    if (missing) parts.push(`${missing} not found`);
+    parts.push(`updated at ${timeNow()}`);
+    $("#storage-summary").textContent = parts.join(" · ");
   } catch (e) {
-    $("#storage-summary").textContent = e.message;
+    $("#storage-summary").textContent = `Could not load storage: ${e.message}`;
   }
 }
 
-startPage().then(() => { $("#refresh").addEventListener("click", load); load(); });
+startPage().then((session) => {
+  repo = session?.repo || "";
+  const refresh = $("#refresh");
+  refresh.replaceChildren(icon("refresh-cw"), el("span", { text: "Check again" }));
+  refresh.addEventListener("click", async () => { await load(); announce("Checked again."); });
+  load();
+});

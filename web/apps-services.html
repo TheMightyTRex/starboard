@@ -14,8 +14,10 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/apps.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
+<script src="/js/app-details.js" defer></script>
 <script src="/js/other-services.js" defer></script>
 </head>
 <body class="page-other-services">
@@ -147,16 +149,20 @@
   <div class="page-head">
     <div class="page-head__text">
       <h1>Other services</h1>
-      <p class="summary" id="services-summary">Checking…</p>
+      <p class="page-head__summary" id="services-summary">Checking your services…</p>
     </div>
     <div class="actions">
-      <button type="button" class="btn" id="check-now">Check again</button>
-      <a class="btn btn--quiet" href="/settings.html">Add a service</a>
+      <button type="button" class="btn" id="check-now"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-refresh-cw"/></svg>Check again</button>
+      <a class="btn btn--quiet" id="add-service" href="/settings.html?add=background"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-plus"/></svg>Add a service</a>
     </div>
   </div>
-  <p class="hint">Services that work behind the scenes and have no web page of their own. A service without an
-  address can follow another app's status, such as a VPN that qBittorrent runs through.</p>
   <ul class="rows" id="services"></ul>
+  <div class="empty" id="services-empty" hidden>
+    <svg class="i i-xl empty__icon" width="32" height="32" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-server-cog"/></svg>
+    <h2>Add services that have no web page</h2>
+    <p>A VPN, a database or a backup job. A service with no address can follow another app's status, such as a VPN that qBittorrent runs through.</p>
+    <a class="btn btn--primary" href="/settings.html?add=background"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-plus"/></svg>Add a service</a>
+  </div>
 </div>
 </main>
 </body>

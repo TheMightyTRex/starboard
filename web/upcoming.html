@@ -14,11 +14,12 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/media.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/upcoming.js" defer></script>
 </head>
-<body class="page-upcoming">
+<body class="page-upcoming media">
 <!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
 <a class="skip-link" href="#main">Skip to main content</a>
 <header class="site-header site-header--no-rail">
@@ -141,7 +142,18 @@
   <div class="page-head">
     <div class="page-head__text">
       <h1>Coming up</h1>
-      <p class="summary" id="calendar-summary">Loading the next two weeks…</p>
+      <p class="page-head__summary summary" id="calendar-summary">Loading the next two weeks…</p>
+    </div>
+  </div>
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <fieldset class="segmented" id="range">
+        <legend class="visually-hidden">Range</legend>
+        <label><input type="radio" name="range" value="7"><span>This week</span></label>
+        <label><input type="radio" name="range" value="14" checked><span>Two weeks</span></label>
+      </fieldset>
+      <div class="filter-chips" id="status-filters" role="group" aria-label="Show only"></div>
+      <div class="filter-chips" id="app-filters" role="group" aria-label="Show only one app"></div>
     </div>
   </div>
   <div id="calendar-errors"></div>

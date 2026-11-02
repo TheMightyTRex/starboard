@@ -261,8 +261,11 @@ function renderKeyed(list, items, key, render) {
     const node = render(item, prev || null);
     node.dataset.key = k;
     old.delete(k);
+    if (prev && prev !== node) {
+      prev.replaceWith(node); // a fresh node takes the old one's place
+      if (before === prev) before = node;
+    }
     if (node !== before) list.insertBefore(node, before); else before = before.nextElementSibling;
-    if (prev && prev !== node) prev.remove();
   }
   old.forEach((n) => n.remove());
   if (focused?.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
@@ -332,7 +335,8 @@ function setUpDisplayPanel() {
   }
   const fill = () => {
     const p = readPrefs();
-    form.theme.value = p.theme; form.text.value = p.text; form.motion.value = p.motion; form.design.value = p.design;
+    form.theme.value = p.theme; form.text.value = p.text; form.motion.value = p.motion;
+    $$("input[name=design]", form).forEach((r) => { r.checked = r.value === p.design; }); // "" is the dashboard's default
     form.contrast.checked = p.contrast; form.underline.checked = p.underline; form.spacing.checked = p.spacing;
   };
   const save = () => {

@@ -14,8 +14,10 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/system.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
+<script src="/js/charts.js" defer></script>
 <script src="/js/system-monitor.js" defer></script>
 </head>
 <body class="page-system-monitor">
@@ -149,11 +151,15 @@
 <main id="main" tabindex="-1">
 <div class="page">
   <div class="page-head">
-    <div class="page-head__text"><h1>Monitor</h1><p class="summary" id="monitor-summary">Starting…</p></div>
-    <button type="button" class="btn" id="pause" aria-pressed="false">Pause</button>
+    <div class="page-head__text"><h1>Monitor</h1><p class="page-head__summary" id="monitor-summary">Live while this page is open · every 2 seconds · last 3 minutes</p></div>
+    <div class="actions"><button type="button" class="btn" id="pause" aria-pressed="false"></button></div>
   </div>
-  <p class="hint">Live while this page is open, every 2 seconds, for the last 3 minutes.</p>
-  <div class="charts" id="charts"></div>
+  <p class="small muted" id="monitor-machine"></p>
+  <div class="sys-charts" id="charts"></div>
+  <section class="panel" aria-labelledby="threads-title">
+    <div class="sys-panel-head"><h2 id="threads-title">Processor threads</h2><span class="small muted" id="threads-detail">Starting</span></div>
+    <ul class="meter-list meter-list--threads" id="threads"></ul>
+  </section>
 </div>
 </main>
 </body>

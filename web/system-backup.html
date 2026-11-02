@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/settings.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/system-backup.js" defer></script>
@@ -149,53 +150,31 @@
 <main id="main" tabindex="-1">
 <div class="page">
   <div class="page-head">
-    <div class="page-head__text"><h1>Backup and restore</h1><p class="summary">Keep a copy of Starboard's settings, and of the whole server.</p></div>
+    <div class="page-head__text"><h1>Backup and restore</h1><p class="page-head__summary" id="backup-summary">Keep a copy of the whole server, and of Starboard's settings.</p></div>
   </div>
 
-  <section class="panel" aria-labelledby="settings-backup-title">
+  <section class="panel" aria-labelledby="bk-server-h">
     <div class="panel__head">
-      <h2 id="settings-backup-title">Starboard's settings</h2>
-      <p class="hint">Your apps, their API keys, categories and the other settings, in one file. Your password is not in it.
-      Keep the file somewhere private, because it holds API keys.</p>
+      <h2 id="bk-server-h">The whole server</h2>
+      <p class="small muted">Every app's settings and databases, system settings and the package list. Not your media.</p>
     </div>
-    <form id="download-form" class="form-grid">
-      <div class="field"><label for="download-password">Your password</label><input class="input" id="download-password" name="password" type="password" autocomplete="current-password" required></div>
-      <p class="field-error" id="download-error" role="alert" data-span="all"></p>
-      <div class="actions" data-span="all"><button class="btn btn--primary" type="submit">Download a backup</button></div>
-    </form>
+    <div class="stack-4" id="server-body" aria-busy="true"></div>
   </section>
 
-  <section class="panel" aria-labelledby="restore-title">
+  <section class="panel" aria-labelledby="bk-sb-h">
     <div class="panel__head">
-      <h2 id="restore-title">Restore settings</h2>
-      <p class="hint">Replaces your apps and settings with the ones in a backup file. Starboard saves a copy of the current ones
-      first, so you can go back. Your password and sign-ins stay as they are.</p>
+      <h2 id="bk-sb-h">Starboard's settings</h2>
+      <p class="small muted">Your apps, their API keys, categories and other settings, in one file. Not your password.</p>
     </div>
-    <form id="restore-form" class="form-grid">
-      <div class="field"><label for="restore-file">Backup file</label><input class="input" id="restore-file" name="file" type="file" accept=".json,application/json" required></div>
-      <div class="field"><label for="restore-password">Your password</label><input class="input" id="restore-password" name="password" type="password" autocomplete="current-password" required></div>
-      <p class="notice" data-tone="warning" id="restore-confirm" data-span="all" hidden></p>
-      <p class="field-error" id="restore-error" role="alert" data-span="all"></p>
-      <div class="actions" data-span="all"><button class="btn btn--primary" type="submit" id="restore-submit">Restore from this file</button></div>
-    </form>
+    <div class="actions">
+      <button type="button" class="btn btn--primary" id="download"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-download"/></svg>Download a backup</button>
+      <button type="button" class="btn" id="restore-file"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-upload"/></svg>Restore from a file</button>
+      <input type="file" class="file-pick" id="restore-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
+    </div>
+    <div id="settings-message" role="alert"></div>
     <h3>Copies Starboard saved</h3>
-    <p class="hint">Made automatically before a restore and before an update changes the settings.</p>
-    <ul class="rows" id="saved"></ul>
-  </section>
-
-  <section class="panel" aria-labelledby="server-backup-title">
-    <div class="panel__head">
-      <h2 id="server-backup-title">The whole server</h2>
-      <p class="hint">A backup job on the server saves everything needed to rebuild it if the system disk fails, apart from
-      media: every app's settings and databases, system settings, and the list of packages. Starboard starts it and
-      shows the result. Keep a copy somewhere other than the system disk.</p>
-    </div>
-    <div id="server-status"></div>
-    <label class="check" for="with-prompt"><input type="checkbox" id="with-prompt" checked aria-describedby="with-prompt-hint"> Include a rebuild prompt for an AI assistant</label>
-    <p class="hint" id="with-prompt-hint">Adds REBUILD-PROMPT.md: step-by-step instructions an AI assistant with a shell can follow to rebuild
-    the whole server from the backup in one go. It is saved inside the backup and next to it.</p>
-    <div class="actions"><button class="btn btn--primary" type="button" id="server-run">Back up the server now</button></div>
-    <ul class="rows" id="server-files"></ul>
+    <p class="small muted">Made before every restore and before an update changes the settings.</p>
+    <ul class="rows" id="saved" aria-label="Saved copies, newest first"></ul>
   </section>
 </div>
 </main>

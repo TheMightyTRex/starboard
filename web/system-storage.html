@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/system.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/charts.js" defer></script>
@@ -150,13 +151,11 @@
 <main id="main" tabindex="-1">
 <div class="page">
   <div class="page-head">
-    <div class="page-head__text"><h1>Storage</h1><p class="summary" id="storage-summary">Loading…</p></div>
-    <button type="button" class="btn" id="refresh">Refresh</button>
+    <div class="page-head__text"><h1>Storage</h1><p class="page-head__summary" id="storage-summary">Loading</p></div>
+    <div class="actions"><button type="button" class="btn" id="refresh"></button></div>
   </div>
-  <p class="hint">Free space in the folders listed in STARBOARD_DISKS, each mounted read-only into Starboard.</p>
   <div class="stats" id="storage-stats"></div>
-  <div class="chart-grid" id="storage-charts"></div>
-  <ul class="rows" id="storage"></ul>
+  <div id="storage"></div>
 </div>
 </main>
 </body>

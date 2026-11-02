@@ -1,73 +1,123 @@
-// Search every Sonarr, Radarr, Lidarr and Readarr at once, and add what you find.
+// Search every Sonarr, Radarr, Lidarr and Readarr at once, and add what you find from an Add slide-out.
 
 let results = [];
-let kind = "All";
-let adding = null;
-const KIND_LABEL = { All: "All", Series: "Series", Film: "Films", Artist: "Artists", Author: "Authors" };
+let kind = null; // a kind ("Series", "Film", "Artist", "Author"), or null for everything
+let config = null;
+const KINDS = { Series: ["Series", "tv"], Film: ["Films", "film"], Artist: ["Music", "music"], Author: ["Books", "book"] };
+
+const resultKey = (r) => `${r.service}|${r.key}`;
+
+function notice(tone, title, text, extra = null) {
+  const iconName = { success: "circle-check", warning: "triangle-alert", danger: "circle-x" }[tone] || "info";
+  return el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(iconName),
+    el("div", { class: "notice__body" }, title ? el("span", { class: "notice__title", text: title }) : null, text ? el("p", { text }) : null), extra);
+}
+
+async function getConfig() {
+  if (!config) config = await api("/api/config");
+  return config;
+}
+
+function appHref(result) {
+  const svc = config?.services.find((s) => s.id === result.service);
+  return svc?.link ? reachableUrl(svc.link) : "";
+}
+
+function cover(r, className) {
+  if (r.image) {
+    const box = el("div", { class: className });
+    const img = el("img", { src: r.image, alt: "", loading: "lazy", referrerpolicy: "no-referrer" });
+    img.addEventListener("error", () => { img.remove(); box.textContent = "No cover"; });
+    box.append(img);
+    return box;
+  }
+  return el("div", { class: className, text: "No cover" });
+}
+
+const titleWithYear = (r) => (r.year ? `${r.title} (${r.year})` : r.title);
+const metaLine = (r) => [r.kind, r.detail, r.service_name].filter(Boolean).join(" · ");
+
+// Results ------------------------------------------------------------------
 
 function renderFilters() {
   const box = $("#kind-filters");
-  box.replaceChildren();
-  if (!results.length) return;
-  const counts = { All: results.length };
+  const counts = {};
   for (const r of results) counts[r.kind] = (counts[r.kind] || 0) + 1;
-  for (const k of Object.keys(KIND_LABEL)) {
-    if (!counts[k]) continue;
-    box.append(el("button", {
-      type: "button", class: "filter-chip", "aria-pressed": String(kind === k),
-      onclick: () => { kind = k; renderFilters(); renderResults(); },
-    }, `${KIND_LABEL[k]}, ${counts[k]}`));
-  }
+  const kinds = Object.keys(KINDS).filter((k) => counts[k]);
+  box.hidden = kinds.length < 2;
+  box.replaceChildren(...kinds.map((k) => el("button", {
+    type: "button", class: "filter-chip", "aria-pressed": "false", "data-kind": k,
+    onclick: (e) => {
+      // Toggled in place: the chip stays, so focus stays on it.
+      kind = kind === k ? null : k;
+      $$(".filter-chip", box).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.kind === kind)));
+      renderResults();
+      announce(`${shownResults().length} results shown`);
+      e.currentTarget.focus();
+    },
+  }, icon(KINDS[k][1]), `${KINDS[k][0]}, ${counts[k]}`)));
+}
+
+function shownResults() { return results.filter((r) => !kind || r.kind === kind); }
+
+function renderRow(r) {
+  const side = r.in_library
+    ? chip("In library", "success")
+    : el("button", { type: "button", class: "btn", onclick: (e) => openPanel(r, e.currentTarget) },
+      icon("plus"), "Add", el("span", { class: "visually-hidden", text: ` ${r.title} to ${r.service_name}` }));
+  const title = el("button", { type: "button", onclick: (e) => openPanel(r, e.currentTarget) }, titleWithYear(r));
+  return el("li", { class: "row row--opens" },
+    cover(r, "cover cover--result"),
+    el("div", {},
+      el("h3", { class: "row__title" }, title),
+      el("div", { class: "row__meta", text: metaLine(r) }),
+      r.overview ? el("p", { class: "small muted clamp-2 result-overview", text: r.overview }) : null),
+    el("div", { class: "row__side" }, side));
 }
 
 function renderResults() {
-  const list = $("#results");
-  list.replaceChildren();
-  const shown = results.filter((r) => kind === "All" || r.kind === kind);
-  for (const r of shown) {
-    const cover = r.image
-      ? el("img", { class: "result__cover", src: r.image, alt: `Cover of ${r.title}`, loading: "lazy", referrerpolicy: "no-referrer" })
-      : el("div", { class: "result__cover", text: "No cover" });
-    const action = r.in_library
-      ? chip(`In ${r.service_name}`, "success")
-      : el("button", { type: "button", class: "btn btn--primary", onclick: () => openAdd(r) }, `Add to ${r.service_name}`, el("span", { class: "visually-hidden", text: `: ${r.title}` }));
-    list.append(el("li", { class: "result" }, cover,
-      el("div", { class: "result__body" },
-        el("h2", { class: "result__title" }, r.title, r.year ? el("span", { class: "summary", text: ` (${r.year})` }) : null),
-        el("p", { class: "result__meta" }, chip(r.kind === "Film" ? "Film" : r.kind, "info"), r.detail ? el("span", { text: r.detail }) : null),
-        r.overview ? el("p", { class: "result__overview", text: r.overview }) : null,
-        el("div", { class: "actions" }, action))));
-  }
+  const shown = shownResults();
+  renderKeyed($("#results"), shown, resultKey, (r) => renderRow(r));
+  const apps = new Set(results.map((r) => r.service_name)).size;
+  $("#search-count").textContent = results.length
+    ? `${kind ? `${shown.length} of ` : ""}${results.length} ${results.length === 1 ? "result" : "results"} from ${apps} ${apps === 1 ? "app" : "apps"}`
+    : "";
+  $("#results-section").hidden = !results.length;
 }
 
 async function runSearch(query) {
   const q = query.trim();
   const summary = $("#search-summary");
-  const list = $("#results");
+  const section = $("#results-section");
   $("#search-errors").replaceChildren();
-  if (q.length < 2) { summary.textContent = "Type at least two letters."; return; }
+  if (q.length < 2) { summary.textContent = "Type at least two letters."; announce(summary.textContent); return; }
   const url = new URL(location.href);
   url.searchParams.set("q", q);
   history.replaceState(null, "", url);
   document.title = `${q} · Search · ${document.title.split(" · ").pop()}`;
-  summary.textContent = `Searching for “${q}”…`;
-  list.setAttribute("aria-busy", "true");
+  summary.textContent = `Searching for "${q}"…`;
+  section.setAttribute("aria-busy", "true");
   try {
     const data = await api(`/api/search?q=${encodeURIComponent(q)}`);
     results = data.results;
-    kind = "All";
-    for (const err of data.errors) $("#search-errors").append(el("p", { class: "notice", "data-tone": "warning", text: err.message }));
-    const text = results.length ? `${results.length} results for “${q}”` : `Nothing found for “${q}”. Check the spelling or try fewer words.`;
+    kind = null;
+    $("#search-errors").replaceChildren(...data.errors.map((err) =>
+      notice("warning", "Some results may be missing", err.message, el("a", { class: "btn btn--compact", href: "/index.html", text: "View apps" }))));
+    const text = results.length ? `${results.length} results for "${q}"` : `Nothing found for "${q}". Check the spelling or try fewer words.`;
     summary.textContent = text;
     announce(text);
     renderFilters();
+    $("#results").replaceChildren();
     renderResults();
   } catch (e) {
     summary.textContent = e.message;
+    announce(e.message);
   } finally {
-    list.setAttribute("aria-busy", "false");
+    section.setAttribute("aria-busy", "false");
   }
 }
+
+// Add slide-out ----------------------------------------------------------
 
 function fillSelect(select, items, value, label) {
   select.replaceChildren(...items.map((i) => el("option", { value: i.value, text: i.label })));
@@ -75,63 +125,114 @@ function fillSelect(select, items, value, label) {
   if (!items.length) select.append(el("option", { value: "", text: `No ${label} found in the app` }));
 }
 
-async function openAdd(result) {
-  adding = result;
-  const dialog = $("#add-dialog");
-  $("#add-title").textContent = `Add ${result.title}`;
-  $("#add-intro").textContent = `Adds to ${result.service_name}.`;
-  $("#add-error").textContent = "";
-  $("#add-submit").disabled = true;
-  dialog.showModal();
-  try {
-    const cfg = await api("/api/config");
-    const svc = cfg.services.find((s) => s.id === result.service) || {};
-    const opts = await api(`/api/services/${result.service}/options`);
-    fillSelect($("#add-quality"), opts.quality_profiles.map((p) => ({ value: p.id, label: p.name })), svc.quality_profile_id ?? opts.quality_profiles[0]?.id, "quality profiles");
-    fillSelect($("#add-root"), opts.root_folders.map((r) => ({ value: r.path, label: r.free ? `${r.path} (${formatBytes(r.free)} free)` : r.path })), svc.root_folder || opts.root_folders[0]?.path, "folders");
-    $("#add-meta-field").hidden = !opts.metadata_profiles.length;
-    fillSelect($("#add-meta"), opts.metadata_profiles.map((p) => ({ value: p.id, label: p.name })), svc.metadata_profile_id ?? opts.metadata_profiles[0]?.id, "metadata profiles");
-    $("#add-search").checked = svc.search_on_add !== false;
-    $("#add-submit").disabled = false;
-  } catch (e) {
-    $("#add-error").textContent = e.message;
-  }
+function lead(r) {
+  return el("div", { class: "side-panel__lead" }, cover(r, "cover"),
+    el("div", { class: "media-panel-lead__text" },
+      el("h3", { text: titleWithYear(r) }),
+      r.in_library ? chip(`In ${r.service_name}`, "success") : chip("Not in library", "muted"),
+      el("span", { class: "small muted", text: metaLine(r) })));
 }
 
-async function submitAdd(event) {
-  event.preventDefault();
-  if (!adding) return;
-  const button = $("#add-submit");
-  button.disabled = true;
-  $("#add-error").textContent = "";
-  try {
-    const done = await api("/api/add", {
-      method: "POST",
-      body: {
-        service: adding.service, key: adding.key,
-        options: {
-          quality_profile_id: Number($("#add-quality").value) || null,
-          root_folder: $("#add-root").value || null,
-          metadata_profile_id: Number($("#add-meta").value) || null,
-          search: $("#add-search").checked,
-        },
-      },
+function openLink(r, primary) {
+  const href = appHref(r);
+  if (!href) return null;
+  return el("a", { class: primary ? "btn btn--primary" : "btn", href, target: "_blank", rel: "noopener noreferrer" },
+    icon("external-link"), `Open ${r.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
+}
+
+async function openPanel(r, opener) {
+  await getConfig().catch(() => null);
+  const key = resultKey(r);
+  const focusRow = () => {
+    // The Add button is gone once added: go back to the same result's title.
+    if (!opener.isConnected) $(`#results [data-key="${CSS.escape(key)}"] .row__title button`)?.focus();
+  };
+  if (r.in_library) {
+    const link = openLink(r, true);
+    sidePanel({
+      title: r.title, opener, onClose: focusRow,
+      body: [lead(r), r.overview ? el("p", { text: r.overview }) : null,
+        notice("success", `Already in ${r.service_name}`, `Manage it in ${r.service_name}.`)].filter(Boolean),
+      foot: link ? [link] : [],
     });
-    adding.in_library = true;
-    $("#add-dialog").close();
-    renderResults();
-    toast(`Added ${done.title} to ${done.service_name}`);
+    return;
+  }
+
+  const ids = { q: "add-quality", f: "add-root", m: "add-meta", s: "add-search", e: "add-error" };
+  const quality = el("select", { class: "select", id: ids.q, name: "quality_profile_id" }, el("option", { text: "Loading…" }));
+  const root = el("select", { class: "select", id: ids.f, name: "root_folder" }, el("option", { text: "Loading…" }));
+  const meta = el("select", { class: "select", id: ids.m, name: "metadata_profile_id" });
+  const metaField = el("div", { class: "field", hidden: true }, el("label", { for: ids.m, text: "Metadata profile" }), meta);
+  const search = el("input", { type: "checkbox", id: ids.s, name: "search", checked: true });
+  const error = el("p", { class: "field-error", id: ids.e, role: "alert" });
+  const submit = el("button", { type: "submit", form: "add-form", class: "btn btn--primary", disabled: true }, icon("plus"), `Add to ${r.service_name}`);
+  const form = el("form", { id: "add-form", class: "media-panel-section", "aria-labelledby": "add-options-h", novalidate: true },
+    el("h3", { id: "add-options-h", text: `Add to ${r.service_name}` }),
+    el("div", { class: "field" }, el("label", { for: ids.q, text: "Quality profile" }), quality),
+    el("div", { class: "field" }, el("label", { for: ids.f, text: "Folder" }), root),
+    metaField,
+    el("label", { class: "check", for: ids.s }, search, el("span", { class: "check__text", text: "Start searching for it now" })),
+    error);
+  const cancel = el("button", { type: "button", class: "btn btn--quiet", "data-closes": true, text: "Cancel" });
+  const panel = sidePanel({
+    title: `Add ${r.title}`, opener, onClose: focusRow,
+    body: [lead(r), r.overview ? el("p", { text: r.overview }) : null, form].filter(Boolean),
+    foot: [submit, cancel],
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    submit.disabled = true;
+    error.textContent = "";
+    try {
+      const done = await api("/api/add", {
+        method: "POST",
+        body: {
+          service: r.service, key: r.key,
+          options: {
+            quality_profile_id: Number(quality.value) || null,
+            root_folder: root.value || null,
+            metadata_profile_id: Number(meta.value) || null,
+            search: search.checked,
+          },
+        },
+      });
+      r.in_library = true;
+      renderResults();
+      const link = openLink(r, false);
+      form.replaceWith(notice("success", `Added to ${done.service_name}`,
+        search.checked
+          ? `${done.service_name} is searching for ${done.title} now. Follow it on Downloads.`
+          : `${done.title} is in ${done.service_name}. It searches when you ask it to.`,
+        link));
+      $(".side-panel__lead .chip", panel.layer)?.replaceWith(chip(`In ${done.service_name}`, "success"));
+      const back = el("button", { type: "button", class: "btn btn--primary", "data-closes": true }, "Back to results");
+      panel.setFoot([back, el("a", { class: "btn", href: "/downloads.html" }, icon("download"), "View downloads")]);
+      back.focus();
+      toast(`Added ${done.title} to ${done.service_name}`);
+    } catch (e) {
+      error.textContent = e.message;
+      submit.disabled = false;
+    }
+  });
+
+  try {
+    const svc = config?.services.find((s) => s.id === r.service) || {};
+    const opts = await api(`/api/services/${encodeURIComponent(r.service)}/options`);
+    fillSelect(quality, opts.quality_profiles.map((p) => ({ value: p.id, label: p.name })), svc.quality_profile_id ?? opts.quality_profiles[0]?.id, "quality profiles");
+    fillSelect(root, opts.root_folders.map((f) => ({ value: f.path, label: f.free ? `${f.path} (${formatBytes(f.free)} free)` : f.path })), svc.root_folder || opts.root_folders[0]?.path, "folders");
+    metaField.hidden = !opts.metadata_profiles.length;
+    fillSelect(meta, opts.metadata_profiles.map((p) => ({ value: p.id, label: p.name })), svc.metadata_profile_id ?? opts.metadata_profiles[0]?.id, "metadata profiles");
+    search.checked = svc.search_on_add !== false;
+    submit.disabled = false;
   } catch (e) {
-    $("#add-error").textContent = e.message;
-  } finally {
-    button.disabled = false;
+    error.textContent = `${e.message}. Close this panel and try again.`;
   }
 }
 
 startPage().then(() => {
-  wireDialog($("#add-dialog"));
-  $("#add-form").addEventListener("submit", submitAdd);
   $("#search-form").addEventListener("submit", (e) => { e.preventDefault(); runSearch($("#q").value); });
   const q = new URLSearchParams(location.search).get("q");
   if (q) { $("#q").value = q; runSearch(q); } else { $("#q").focus(); }
+  getConfig().catch(() => null);
 });

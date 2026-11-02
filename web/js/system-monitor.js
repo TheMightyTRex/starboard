@@ -1,69 +1,80 @@
-// Monitor: live charts while the page is open. The server sends raw counters; rates are worked out here.
+// Monitor: live charts while the page is open, using the same line chart as Overview. The server sends raw
+// counters; rates are worked out here. Charts and thread meters update in place, so focus stays where it is.
 
-const POINTS = 90;
-const history = { cpu: [], mem: [], rx: [], tx: [], read: [], write: [], temp: [] };
+const POINTS = 90; // 3 minutes at one reading every 2 seconds
+const points = [];
 let previous = null;
 let timer = null;
-const SVG = "http://www.w3.org/2000/svg";
-
-function push(list, value) { list.push(value); if (list.length > POINTS) list.shift(); }
-
-function sparkline(series, max, label) {
-  const w = 300, h = 80;
-  const top = max || Math.max(1, ...series.flat());
-  const svg = document.createElementNS(SVG, "svg");
-  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.setAttribute("preserveAspectRatio", "none");
-  svg.setAttribute("class", "spark");
-  svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", label);
-  for (const y of [h - 2, h / 2]) {
-    const line = document.createElementNS(SVG, "line");
-    Object.entries({ x1: 0, x2: w, y1: y, y2: y, class: y === h / 2 ? "spark__grid spark__grid--mid" : "spark__grid" }).forEach(([k, v]) => line.setAttribute(k, v));
-    svg.append(line);
-  }
-  series.forEach((values, i) => {
-    const line = document.createElementNS(SVG, "polyline");
-    line.setAttribute("points", values.map((v, k) => `${((w * (k + POINTS - values.length)) / (POINTS - 1)).toFixed(1)},${(h - 2 - (h - 6) * Math.min(1, v / top)).toFixed(1)}`).join(" "));
-    line.setAttribute("class", `spark__line spark__line--${i}`);
-    svg.append(line);
-  });
-  return svg;
-}
-
-function chart(title, detail, big, svg, legend = []) {
-  return el("section", { class: "panel chart" },
-    el("div", { class: "chart__head" }, el("h2", { text: title }), el("span", { class: "row__meta", text: detail })),
-    el("p", { class: "chart__big num", text: big }),
-    svg,
-    legend.length ? el("p", { class: "chart__legend" }, legend.map(([text, i]) => el("span", {}, i !== undefined ? el("i", { class: `swatch swatch--${i}`, "aria-hidden": "true" }) : null, text))) : null);
-}
+let charts = null;
+const threadRows = [];
 
 const rate = (n) => `${formatBytes(n)}/s`;
 const sum = (o, i) => Object.values(o).reduce((t, v) => t + v[i], 0);
+const tempTone = (c) => (c == null ? null : c >= 85 ? ["danger", "Very hot"] : c >= 75 ? ["warning", "Hot"] : null);
+const packageTemp = (m) => (m.temps.find((t) => /package|tctl|tdie/i.test(t.label)) || m.temps[0] || {}).c;
+const SPAN = "the last 3 minutes";
+
+// Axis and table labels count back from now: "3 min ago", "40 s ago", "now".
+function ago(t, last) {
+  const s = Math.round(last - t);
+  if (s < 1) return "now";
+  if (s < 60) return `${s} s ago`;
+  return `${Number((s / 60).toFixed(1))} min ago`;
+}
+
+function makeCharts() {
+  const base = { points: [], span: SPAN, xFormat: ago, waiting: "Reading the server. The chart starts in a few seconds." };
+  charts = {
+    cpu: lineChart({ ...base, title: "Processor", series: [{ key: "cpu", name: "Processor" }], format: percent, max: 100 }),
+    mem: lineChart({ ...base, title: "Memory", series: [{ key: "mem", name: "Memory" }], format: percent, max: 100 }),
+    temp: lineChart({ ...base, title: "Processor temperature", series: [{ key: "temp", name: "Temperature" }], format: degrees, max: 100 }),
+    net: lineChart({ ...base, title: "Network", series: [{ key: "rx", name: "Download" }, { key: "tx", name: "Upload" }], format: perSecond }),
+    disk: lineChart({ ...base, title: "Disk activity", series: [{ key: "read", name: "Read" }, { key: "write", name: "Write" }], format: perSecond }),
+  };
+  $("#charts").replaceChildren(...Object.values(charts));
+}
+
+function renderThreads(cores) {
+  const list = $("#threads");
+  cores.forEach((c, i) => {
+    let r = threadRows[i];
+    if (!r) {
+      const value = el("span", { class: "numeric" });
+      const fill = el("span");
+      const bar = el("div", { class: "progress", "aria-hidden": "true" }, fill);
+      const node = el("li", { class: "meter" }, el("div", { class: "meter__label" }, el("span", { text: `Thread ${i + 1}` }), value), bar);
+      r = threadRows[i] = { node, value, fill, bar };
+      list.append(node);
+    }
+    const busy = c >= 90;
+    r.value.textContent = `${Math.round(c)}%${busy ? ", busy" : ""}`;
+    r.fill.style.width = `${Math.max(1, Math.min(100, c))}%`;
+    if (busy) r.bar.dataset.tone = "warning"; else delete r.bar.dataset.tone;
+  });
+}
 
 function render(m, rates) {
   const memUsed = m.memory.total - m.memory.available;
-  const memPct = (memUsed / m.memory.total) * 100;
-  const pkg = (m.temps.find((t) => /package|tctl|tdie/i.test(t.label)) || m.temps[0] || {}).c;
+  const pkg = packageTemp(m);
   const up = m.uptime_seconds || 0;
-  $("#monitor-summary").textContent = `${m.cpu.model} · ${m.cpu.threads} threads · up ${Math.floor(up / 86400)} days ${Math.floor((up % 86400) / 3600)} hours · load ${m.cpu.load.join(" / ")}`;
-  const coreBars = el("div", { class: "cores", "aria-label": "Each bar is one processor thread" },
-    rates.cores.map((c, i) => { const b = el("span", { title: `Thread ${i + 1}: ${c.toFixed(0)}%` }); b.style.height = `${Math.max(2, c)}%`; return b; }));
-  const cpu = chart("Processor", `${m.cpu.threads} threads`, `${rates.cpu.toFixed(0)}%`, sparkline([history.cpu], 100, "Processor use over the last 3 minutes"));
-  cpu.append(coreBars);
-  $("#charts").replaceChildren(
-    cpu,
-    chart("Memory", formatBytes(m.memory.total), `${memPct.toFixed(0)}%`, sparkline([history.mem], 100, "Memory use over the last 3 minutes"),
-      [[`${formatBytes(memUsed)} used`], [`${formatBytes(m.memory.cached)} cache`], [`${formatBytes(m.memory.available)} free`],
-        ...(m.memory.swap_total ? [[`Swap ${formatBytes(m.memory.swap_total - m.memory.swap_free)} of ${formatBytes(m.memory.swap_total)}`]] : [])]),
-    chart("Network", Object.keys(m.net).join(", "), `↓ ${rate(rates.rx)}  ↑ ${rate(rates.tx)}`, sparkline([history.rx, history.tx], 0, "Network traffic over the last 3 minutes"),
-      [["Download", 0], ["Upload", 1]]),
-    chart("Disk activity", `${Object.keys(m.disks).length} disks`, `Read ${rate(rates.read)}  Write ${rate(rates.write)}`, sparkline([history.read, history.write], 0, "Disk activity over the last 3 minutes"),
-      [["Read", 0], ["Write", 1]]),
-    chart("Temperature", "Processor", pkg != null ? `${pkg.toFixed(0)} °C` : "Not reported", sparkline([history.temp], 100, "Processor temperature over the last 3 minutes"),
-      m.temps.filter((t) => !/^Core /.test(t.label)).slice(0, 8).map((t) => [`${t.chip === t.label ? t.chip : `${t.chip} ${t.label}`}: ${t.c} °C`])));
+  $("#monitor-machine").textContent = [m.cpu.model, `up ${Math.floor(up / 86400)} days ${Math.floor((up % 86400) / 3600)} hours`,
+    m.cpu.load.length ? `load ${m.cpu.load.map((l) => l.toFixed(2)).join(", ")} (1, 5 and 15 minutes)` : null].filter(Boolean).join(" · ");
+  $("#threads-detail").textContent = `${m.cpu.threads} threads, now`;
+  charts.cpu.update({ points, tone: rates.cpu >= 90 ? ["warning", "Busy"] : null });
+  charts.mem.update({ points, note: [`${formatBytes(memUsed)} used of ${formatBytes(m.memory.total)}`, `${formatBytes(m.memory.cached)} cache`, `${formatBytes(m.memory.available)} free`,
+    m.memory.swap_total ? `swap ${formatBytes(m.memory.swap_total - m.memory.swap_free)} of ${formatBytes(m.memory.swap_total)}` : null].filter(Boolean).join(" · ") });
+  const tempPoints = points.filter((p) => p.temp != null);
+  charts.temp.hidden = !tempPoints.length;
+  if (tempPoints.length) {
+    charts.temp.update({ points: tempPoints, tone: tempTone(pkg),
+      note: m.temps.filter((t) => !/^Core /.test(t.label)).slice(0, 6).map((t) => `${t.chip === t.label ? t.chip : `${t.chip} ${t.label}`} ${Math.round(t.c)}°C`).join(" · ") });
+  }
+  charts.net.update({ points, detail: Object.keys(m.net).join(", ") || null });
+  charts.disk.update({ points, detail: Object.keys(m.disks).length ? plural(Object.keys(m.disks).length) : null });
+  renderThreads(rates.cores);
 }
+
+const plural = (n) => `${n} ${n === 1 ? "disk" : "disks"}`;
 
 async function tick() {
   if (document.hidden) return;
@@ -78,29 +89,34 @@ async function tick() {
         rx: Math.max(0, (sum(m.net, 0) - sum(previous.net, 0)) / dt), tx: Math.max(0, (sum(m.net, 1) - sum(previous.net, 1)) / dt),
         read: Math.max(0, (sum(m.disks, 0) - sum(previous.disks, 0)) / dt), write: Math.max(0, (sum(m.disks, 1) - sum(previous.disks, 1)) / dt),
       };
-      const pkg = (m.temps.find((t) => /package|tctl|tdie/i.test(t.label)) || m.temps[0] || {}).c;
-      push(history.cpu, rates.cpu); push(history.mem, ((m.memory.total - m.memory.available) / m.memory.total) * 100);
-      push(history.rx, rates.rx); push(history.tx, rates.tx); push(history.read, rates.read); push(history.write, rates.write);
-      if (pkg != null) push(history.temp, pkg);
+      const pkg = packageTemp(m);
+      points.push({ t: m.time, cpu: rates.cpu, mem: ((m.memory.total - m.memory.available) / m.memory.total) * 100,
+        rx: rates.rx, tx: rates.tx, read: rates.read, write: rates.write, temp: pkg ?? null });
+      if (points.length > POINTS) points.shift();
       render(m, rates);
     }
     previous = m;
   } catch (e) {
-    $("#monitor-summary").textContent = e.message;
+    $("#monitor-summary").textContent = `Could not read the server: ${e.message}`;
   }
 }
 
+// Pause keeps one label; aria-pressed says whether it is on.
 function setRunning(on) {
   clearInterval(timer);
   timer = on ? setInterval(tick, 2000) : null;
-  const button = $("#pause");
-  button.textContent = on ? "Pause" : "Resume";
-  button.setAttribute("aria-pressed", String(!on));
+  $("#pause").setAttribute("aria-pressed", String(!on));
+  $("#monitor-summary").textContent = on
+    ? "Live while this page is open · every 2 seconds · last 3 minutes"
+    : "Paused · press Pause again to carry on";
   if (on) tick();
 }
 
 startPage().then(() => {
-  $("#pause").addEventListener("click", () => setRunning(!timer));
+  const pause = $("#pause");
+  pause.replaceChildren(icon("pause"), el("span", { text: "Pause" }));
+  pause.addEventListener("click", () => { setRunning(!timer); announce(timer ? "Monitor carrying on." : "Monitor paused."); });
+  makeCharts();
   document.addEventListener("visibilitychange", () => { if (!document.hidden && timer) tick(); });
   setRunning(true);
 });

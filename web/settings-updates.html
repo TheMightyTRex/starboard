@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>Updates · Settings · Starboard</title>
+<title>About and updates · Settings · Starboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#323a77">
@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/settings.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/settings.js" defer></script>
@@ -148,18 +149,29 @@
 <div class="page">
   <div class="page-head">
     <div class="page-head__text">
-      <h1>Updates</h1>
-      <p class="summary">Your version and how to update.</p>
+      <h1>About and updates</h1>
+      <p class="page-head__summary">Your version and how to update Starboard.</p>
     </div>
   </div>
-  <section class="panel" id="updates" aria-label="Updates">
-    <div class="panel__head"><p class="hint">Updates run on the server, so the dashboard never needs access to Docker.</p></div>
-    <p id="version-line">Checking…</p>
-    <label class="check" for="update-check"><input type="checkbox" id="update-check"> Check GitHub for new releases</label>
-    <p>To update, run this on the server, in the folder you installed into:</p>
-    <code class="code-block">./update.sh</code>
-    <p class="hint">It backs up your settings, installs the newest release and goes back to the previous version if the new one does not start.</p>
-  </section>
+  <div id="version-notice"></div>
+  <div class="settings-sections">
+    <section class="settings-section" aria-labelledby="ab-up-h">
+      <div class="settings-section__head"><h2 id="ab-up-h">Updates</h2><p class="small muted">Updates run on the server, so the dashboard never needs access to Docker.</p></div>
+      <ul class="settings-rows" id="update-check-row"></ul>
+      <h3>How to update</h3>
+      <p>Run this on the server, in the folder you installed Starboard into:</p>
+      <div class="command" id="update-command"><code class="code-block">./update.sh</code></div>
+      <ol class="update-steps small">
+        <li>It backs up your settings.</li>
+        <li>It installs the newest release.</li>
+        <li>If the new version does not start, it goes back to the previous one.</li>
+      </ol>
+    </section>
+    <section class="settings-section" aria-labelledby="ab-ab-h">
+      <div class="settings-section__head"><h2 id="ab-ab-h">About</h2></div>
+      <dl class="facts" id="about-facts"></dl>
+    </section>
+  </div>
 </div>
 </main>
 </body>

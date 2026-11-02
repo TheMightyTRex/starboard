@@ -1,160 +1,220 @@
-// Apps: every app by category, with its status checked by the server. Health first (the default) also puts
-// apps that are not responding in their own group at the top.
+// Apps: every app by category, with its status checked by the server. Each card opens the app details
+// slide-out (app-details.js); Open is its own button. Updates are a filter chip here (/index.html?show=updates),
+// not a page of their own. Health first (the default design) puts apps that are not responding in their own
+// group at the top; designs.css lays the same cards out for the other four designs.
 
-let config = null;
-let statuses = {};
-let health = null;
-let outside = {};  // outside address checks, by app
+const FILTERS = [
+  { key: "down", label: "Not responding", test: (s) => AppDetails.status(s).state === "down" },
+  { key: "updates", label: "Update available", test: (s) => !!AppDetails.update(s) },
+  { key: "warnings", label: "Has warnings", test: (s) => AppDetails.warnings(s).length > 0 },
+];
+const pressed = new Set((new URLSearchParams(location.search).get("show") || "").split(",").filter((k) => FILTERS.some((f) => f.key === k)));
+let nameFilter = "";
 
 const design = () => document.documentElement.dataset.design;
+const apps = () => (AppDetails.state.config?.services || []).filter((s) => s.enabled && !s.background);
 
-function statusChip(s) {
-  if (!s) return chip("Checking", "neutral");
-  return s.state === "up" ? chip("Running", "success") : chip("Not responding", "danger");
-}
+// Cards -------------------------------------------------------------------------------------
 
-function addressLine(kind, url, appName) {
-  return el("div", { class: "address" },
-    el("span", { class: "address__label", text: kind }),
-    el("span", { class: "address__value num", text: shortUrl(url) }),
-    copyButton(url, `${kind.toLowerCase()} address for ${appName}`));
-}
-
-function addresses(s, home) {
-  const lines = [];
-  if (config.show_home_address && home) lines.push(addressLine("Home", home, s.name));
-  if (config.show_outside_address && s.outside_link) {
-    const line = addressLine("Outside", s.outside_link, s.name);
-    const o = outside[s.id];
-    if (o) {
-      // A small dot with words for screen readers and a tooltip; the Network page has the details.
-      const words = o.reachable ? "Reachable" : "Not reachable";
-      line.insertBefore(el("span", { class: "reach-dot", "data-tone": o.reachable ? "success" : "warning", title: words },
-        el("span", { class: "visually-hidden", text: `${words}. ` })), line.querySelector(".address__value"));
-    }
-    lines.push(line);
-  }
-  return lines.length ? el("div", { class: "app__addresses" }, lines) : null;
-}
-
-function appItem(s) {
-  const st = statuses[s.id];
-  const home = reachableUrl(s.link);
-  const item = el("li", { class: "app", "data-state": st ? st.state : "checking" },
-    el("div", { class: "app__top" },
-      appIcon(s),
-      el("h3", { class: "app__name" }, el("a", { href: home, target: "_blank", rel: "noopener noreferrer" }, s.name, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })))),
-    s.description ? el("p", { class: "app__desc", text: s.description }) : null,
-    addresses(s, home),
-    el("div", { class: "app__meta" },
-      el("span", { class: "app__group-label", text: s.group || "Other" }),
-      statusChip(st),
-      el("span", { class: "app__version num", text: st && st.version ? `v${st.version}` : "" }),
-      el("span", { class: "app__ms num", text: st && st.ms !== undefined ? `${st.ms} ms` : "" })));
-  return item;
-}
-
-function appList(items, headingId) {
-  return el("ul", { class: "apps", "aria-labelledby": headingId },
-    el("li", { class: "apps-head", "aria-hidden": "true" }, el("span", { text: "App" }), el("span", { text: "Group" }), el("span", { text: "Status" }), el("span", { text: "Version" }), el("span", { text: "Reply" })),
-    items.map(appItem));
+function card(s, old) {
+  const { config } = AppDetails.state;
+  const words = AppDetails.status(s);
+  const st = AppDetails.state.status[s.id];
+  const u = AppDetails.update(s);
+  const warn = AppDetails.warnings(s);
+  const o = AppDetails.state.outside[s.id];
+  const home = s.link ? reachableUrl(s.link) : "";
+  const chips = el("span", { class: "card__chips" }, chip(words.label, words.tone),
+    u ? chip("Update available", "info") : null,
+    warn.length ? chip(warn.length === 1 ? "1 warning" : `${warn.length} warnings`, "warning") : null,
+    o && !o.reachable ? chip("Not reachable from outside", "warning") : null);
+  return el("li", { class: "card app-card", "data-state": words.state, "data-tone": words.state === "down" ? "danger" : null },
+    el("div", { class: "card__top" }, AppDetails.iconFor(s, old), el("h3", { class: "card__title" }, AppDetails.opener(s))),
+    s.description ? el("p", { class: "small muted card__desc", text: s.description }) : null,
+    el("div", { class: "card__meta card__status" }, chips,
+      el("span", { class: "card__version num", text: u ? `v${u.installed}` : st?.version ? `v${st.version}` : "" }),
+      el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : "" }),
+      el("span", { class: "card__group", text: s.group || "Other" })),
+    el("div", { class: "card__meta card__actions" },
+      home ? el("a", { class: "btn", href: home, target: "_blank", rel: "noopener noreferrer" },
+        icon("external-link"), "Open", el("span", { class: "visually-hidden", text: ` ${s.name} (opens in a new tab)` })) : null,
+      home && config.show_home_address ? copyButton(home, `home address for ${s.name}`) : null,
+      home && config.show_home_address ? el("code", { class: "card__address", text: shortUrl(home) }) : null));
 }
 
 function groupsOf(services) {
-  // Health first: anything not responding on top, then the categories as usual.
-  const health = design() === "health";
-  const down = health ? services.filter((s) => statuses[s.id]?.state === "down") : [];
-  if (down.length) services = services.filter((s) => !down.includes(s));
-  const groups = [...config.groups];
-  for (const s of services) if (s.group && !groups.includes(s.group)) groups.push(s.group);
-  const out = groups.map((g) => [g, services.filter((s) => s.group === g)]);
+  const down = design() === "health" ? services.filter((s) => AppDetails.status(s).state === "down") : [];
+  const rest = services.filter((s) => !down.includes(s));
+  const groups = [...AppDetails.state.config.groups];
+  for (const s of rest) if (s.group && !groups.includes(s.group)) groups.push(s.group);
+  const out = groups.map((g) => [g, rest.filter((s) => s.group === g)]);
   if (down.length) out.unshift(["Not responding", down]);
-  out.push(["Other", services.filter((s) => !s.group)]);
+  out.push(["Other", rest.filter((s) => !s.group)]);
   return out.filter(([, items]) => items.length);
 }
 
-function renderApps() {
+// The column names for the Status board design (hidden in the others; the cards carry their own words).
+const headRow = () => el("li", { class: "apps-head", "aria-hidden": "true" },
+  el("span", { text: "App" }), el("span", { text: "Status" }), el("span", { text: "Version" }), el("span", { text: "Reply" }), el("span", { text: "Category" }), el("span"));
+
+function renderGroups(services) {
   const root = $("#app-groups");
-  root.replaceChildren();
-  const services = config.services.filter((s) => s.enabled && !s.background);
-  if (!services.length) {
-    root.append(el("div", { class: "empty" },
-      el("p", { text: "No apps yet." }),
-      el("p", {}, el("a", { href: "/settings.html", text: "Add your first app in Settings" }))));
-    setStat("stat-running", "No apps yet", "No apps yet. Add your apps in Settings");
-    return;
-  }
-  groupsOf(services).forEach(([title, items], i) => {
-    const headingId = `group-${i}`;
-    root.append(el("section", { class: "app-group" }, el("h2", { class: "app-group__title", id: headingId, text: title }), appList(items, headingId)));
+  renderKeyed(root, groupsOf(services), ([title]) => title, ([title, items], old) => {
+    const id = `group-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+    const section = old || el("section", { class: "app-group", "aria-labelledby": id },
+      el("h2", { class: "group-heading", id, text: title }), el("ul", { class: "cards app-cards" }));
+    const list = $("ul", section);
+    const head = list.querySelector(".apps-head") || headRow();
+    head.remove(); // renderKeyed looks after the cards only
+    renderKeyed(list, items, (s) => s.id, (s, old) => AppDetails.morph(old, card(s, old)));
+    list.prepend(head);
+    return section;
   });
 }
 
-// The two status pills beside Check again. "short" is what shows; "spoken" is what screen readers hear.
-function setStat(id, short, spoken, tone) {
-  const pill = $(`#${id}`);
-  pill.dataset.tone = tone || "";
-  pill.replaceChildren(el("span", { "aria-hidden": "true", text: short }), el("span", { class: "visually-hidden", text: spoken || short }));
-  pill.title = spoken || short;
+// Toolbar, summary and notice ----------------------------------------------------------------
+
+function setShowInAddress() {
+  const url = new URL(location.href);
+  if (pressed.size) url.searchParams.set("show", [...pressed].join(",")); else url.searchParams.delete("show");
+  history.replaceState(history.state, "", url);
 }
 
-async function checkStatus() {
+function renderChips(services) {
+  const box = $("#app-filters");
+  const want = FILTERS.map((f) => ({ ...f, count: services.filter(f.test).length }))
+    .filter((f) => f.count || pressed.has(f.key));
+  renderKeyed(box, want, (f) => f.key, (f, old) => {
+    const button = old || el("button", { type: "button", class: "filter-chip", onclick: () => {
+      if (pressed.has(f.key)) pressed.delete(f.key); else pressed.add(f.key);
+      setShowInAddress();
+      render({ announceCount: true });
+    } });
+    button.textContent = `${f.label}, ${f.count}`;
+    button.setAttribute("aria-pressed", String(pressed.has(f.key)));
+    return button;
+  });
+  box.hidden = !want.length;
+}
+
+function filtered(services) {
+  const q = nameFilter.trim().toLowerCase();
+  const active = FILTERS.filter((f) => pressed.has(f.key));
+  return services.filter((s) => (!q || s.name.toLowerCase().includes(q) || (s.description || "").toLowerCase().includes(q))
+    && (!active.length || active.some((f) => f.test(s))));
+}
+
+function summaryText(services) {
+  const { state } = AppDetails;
+  if (!state.loaded.has("status")) return state.errors.status ? `Apps not checked: ${state.errors.status}` : "Checking your apps…";
+  const up = services.filter((s) => AppDetails.status(s).state === "up").length;
+  const down = services.filter((s) => AppDetails.status(s).state === "down").length;
+  const updates = services.filter((s) => AppDetails.update(s)).length;
+  const parts = [`${up} of ${services.length} running`];
+  if (down) parts.push(`${down} not responding`);
+  if (updates) parts.push(`${updates} ${updates === 1 ? "update" : "updates"} available`);
+  parts.push(`checked at ${AppDetails.clock(state.checkedAt)}`);
+  return parts.join(" · ");
+}
+
+function renderNotice(services) {
+  const box = $("#attention");
+  const down = services.filter((s) => AppDetails.status(s).state === "down");
+  if (!down.length) { box.replaceChildren(); box.dataset.sig = ""; box.hidden = true; return; }
+  const one = down.length === 1 ? down[0] : null;
+  const title = one ? `${one.name} is not responding` : `${down.length} apps are not responding`;
+  const text = one ? `${AppDetails.sentence(AppDetails.state.status[one.id]?.message || "It did not answer")} Check that its container is running.`
+    : `${down.map((s) => s.name).join(", ")}. Check that their containers are running.`;
+  const sig = `${title}|${text}`;
+  if (box.dataset.sig === sig) return; // keep the button, and focus on it, when nothing changed
+  box.dataset.sig = sig;
+  const action = one
+    ? el("button", { type: "button", class: "btn btn--compact", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(one.id, e.currentTarget) }, `View ${one.name}`)
+    : el("button", { type: "button", class: "btn btn--compact", onclick: () => { pressed.clear(); pressed.add("down"); setShowInAddress(); render({ announceCount: true }); } }, "Show them");
+  box.replaceChildren(el("div", { class: "notice", "data-tone": "danger" }, icon("circle-alert"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action));
+  box.hidden = false;
+}
+
+function showAll() {
+  pressed.clear();
+  nameFilter = "";
+  $("#app-filter").value = "";
+  setShowInAddress();
+  render({ announceCount: true });
+  $("#app-filter").focus();
+}
+
+function emptyState(services) {
+  const box = $("#apps-empty");
+  let node = null;
+  if (!services.length) {
+    node = el("div", { class: "empty" }, icon("layout-grid", 32), el("h2", { text: "No apps yet" }),
+      el("p", { text: "Add the apps you run, such as Jellyfin or Sonarr. Starboard checks them and links to them from here." }),
+      el("a", { class: "btn btn--primary", href: "/settings.html" }, icon("plus"), "Add an app"));
+  } else if (!filtered(services).length) {
+    const onlyUpdates = pressed.size === 1 && pressed.has("updates") && !nameFilter.trim();
+    const all = el("button", { type: "button", class: "btn", onclick: showAll }, "Show all apps");
+    if (onlyUpdates && !AppDetails.state.loaded.has("updates")) {
+      node = el("div", { class: "empty" }, el("p", { text: "Asking your apps about updates…" }));
+    } else if (onlyUpdates) {
+      node = el("div", { class: "empty" }, icon("circle-check", 32), el("h2", { text: "No updates available" }),
+        el("p", { text: "Sonarr, Radarr, Lidarr, Readarr and Prowlarr say when they have an update, and none has one. Other apps update when their container image is updated." }), all);
+    } else {
+      node = el("div", { class: "empty" }, icon("filter", 32), el("h2", { text: "No apps match" }),
+        el("p", { text: "Change the filter, or show all apps." }), all);
+    }
+  }
+  const sig = node ? node.textContent : "";
+  if (box.dataset.sig !== sig) { box.dataset.sig = sig; box.replaceChildren(...(node ? [node] : [])); }
+  box.hidden = !node;
+}
+
+function render({ announceCount = false } = {}) {
+  if (!AppDetails.state.config) return;
+  const services = apps();
+  $("#apps-summary").textContent = summaryText(services);
+  $("#apps-toolbar").hidden = !services.length;
+  renderNotice(services);
+  renderChips(services);
+  const shown = filtered(services);
+  renderGroups(shown);
+  const count = shown.length === services.length ? `${services.length} ${services.length === 1 ? "app" : "apps"}` : `Showing ${shown.length} of ${services.length} apps`;
+  $("#apps-count").textContent = count;
+  emptyState(services);
+  if (announceCount) announce(count);
+}
+
+async function check() {
   const button = $("#check-now");
   button.disabled = true;
-  setStat("stat-running", "Checking…", "Checking your apps");
-  try {
-    const { items } = await api("/api/status");
-    statuses = Object.fromEntries(items.map((i) => [i.id, i]));
-    renderApps();
-    const mine = items.filter((i) => config.services.some((s) => s.id === i.id && !s.background));
-    const up = mine.filter((i) => i.state === "up").length;
-    const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-    setStat("stat-running", `${up}/${mine.length} running at ${time}`, `${up} of ${mine.length} apps running, checked at ${time}`, up === mine.length ? "success" : "danger");
-    announce(`${up} of ${mine.length} running, checked at ${time}`);
-  } catch (e) {
-    setStat("stat-running", "Not checked", `Apps not checked: ${e.message}`, "warning");
-  } finally {
-    button.disabled = false;
-  }
-}
-
-async function checkOutside() {
-  const withOutside = config.services.filter((s) => s.enabled && !s.background && s.outside_link);
-  if (!withOutside.length) {
-    setStat("stat-outside", "No external access", "No app has an outside address yet. Add one in Settings, Apps");
-    return;
-  }
-  setStat("stat-outside", "Checking…", "Checking external access");
-  try {
-    const { items } = await api("/api/outside");
-    outside = Object.fromEntries(items.map((i) => [i.id, i]));
-    const ok = items.filter((i) => i.reachable).length;
-    setStat("stat-outside", `${ok}/${items.length} external access`, `${ok} of ${items.length} outside addresses reachable, checked from the server. Some routers cannot reach their own outside address from inside the home network.`, ok === items.length ? "success" : "warning");
-    renderApps();
-  } catch (e) {
-    setStat("stat-outside", "Not checked", `External access not checked: ${e.message}`, "warning");
-  }
-}
-
-async function showAttention() {
-  try {
-    health = health || await api("/api/health");
-    const box = $("#attention");
-    const serious = health.items.filter((i) => i.level === "error" || i.level === "warning");
-    if (!serious.length) { box.hidden = true; return; }
-    box.replaceChildren(el("div", { class: "notice", "data-tone": "warning" },
-      el("strong", { text: `${serious.length} ${serious.length === 1 ? "warning" : "warnings"} from your apps. ` }),
-      el("a", { href: "/system.html#health-title", text: "See what needs attention" })));
-    box.hidden = false;
-  } catch { /* the System page shows the details */ }
+  button.setAttribute("aria-busy", "true");
+  $("#apps-summary").textContent = "Checking your apps…";
+  await AppDetails.load("status", "outside", "updates", "health");
+  button.disabled = false;
+  button.removeAttribute("aria-busy");
+  announce(summaryText(apps()));
 }
 
 startPage().then(async () => {
-  config = await api("/api/config");
-  renderApps();
-  $("#check-now").addEventListener("click", () => { checkStatus(); checkOutside(); });
-  document.addEventListener("designchange", renderApps);
-  checkStatus();
-  checkOutside();
-  showAttention();
+  try {
+    await AppDetails.load("config", "status");
+  } catch (e) {
+    $("#apps-summary").textContent = `Could not load your apps: ${e.message}`;
+    return;
+  }
+  AppDetails.onChange(() => render());
+  render();
+  AppDetails.openFromAddress();
+  let typing;
+  $("#app-filter").addEventListener("input", (e) => {
+    nameFilter = e.target.value;
+    clearTimeout(typing);
+    render();
+    typing = setTimeout(() => announce($("#apps-count").textContent), 600);
+  });
+  $("#check-now").addEventListener("click", check);
+  document.addEventListener("designchange", () => render());
+  await AppDetails.load("outside", "updates", "health");
+  announce(summaryText(apps())); // once, when the first full check is done
 });

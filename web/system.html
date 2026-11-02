@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/system.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/charts.js" defer></script>
@@ -152,17 +153,17 @@
   <div class="page-head">
     <div class="page-head__text">
       <h1>Overview</h1>
-      <p class="summary" id="system-summary">Loading…</p>
+      <p class="page-head__summary" id="system-summary">Loading</p>
     </div>
-    <button type="button" class="btn" id="refresh">Refresh</button>
+    <div class="actions"><button type="button" class="btn" id="refresh"></button></div>
   </div>
-  <div class="filter-row" id="range-row"></div>
-  <div class="stats" id="stats"></div>
-  <div class="chart-grid" id="charts"></div>
-  <section class="panel" aria-labelledby="health-title">
-    <div class="panel__head"><h2 id="health-title">Needs attention</h2><p class="hint">Warnings your apps report about themselves.</p></div>
-    <ul class="rows" id="health"></ul>
+  <div class="stats" id="stats" aria-live="off"></div>
+  <section class="panel" id="health-panel" aria-labelledby="health-title" aria-busy="true">
+    <div class="sys-panel-head"><h2 id="health-title">Needs attention</h2><span class="small muted">Warnings your apps and disks report about themselves</span></div>
+    <div id="health"></div>
   </section>
+  <div class="sys-bar" id="range-row"><h2 id="range-title">Last hour</h2></div>
+  <div class="sys-charts" id="charts"></div>
 </div>
 </main>
 </body>

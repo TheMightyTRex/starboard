@@ -14,11 +14,12 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/media.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/downloads.js" defer></script>
 </head>
-<body class="page-downloads">
+<body class="page-downloads media">
 <!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
 <a class="skip-link" href="#main">Skip to main content</a>
 <header class="site-header site-header--no-rail">
@@ -141,16 +142,33 @@
   <div class="page-head">
     <div class="page-head__text">
       <h1>Downloads</h1>
-      <p class="summary" id="queue-summary">Loading the queue…</p>
+      <p class="page-head__summary summary" id="queue-summary">Loading the queue…</p>
     </div>
     <div class="actions">
-      <button type="button" class="btn" id="auto-refresh" aria-pressed="true">Pause updates</button>
-      <button type="button" class="btn" id="refresh">Refresh</button>
+      <button type="button" class="btn" id="auto-refresh" aria-pressed="false"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-pause"/></svg>Pause updates</button>
+      <button type="button" class="btn" id="refresh"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-refresh-cw"/></svg>Check again</button>
     </div>
   </div>
-  <div class="filter-chips" id="queue-filters" role="group" aria-label="Show"></div>
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <div class="filter-chips" id="queue-filters" role="group" aria-label="Show only"></div>
+      <div class="toolbar__end">
+        <span class="toolbar__count" id="queue-count"></span>
+        <div class="menu-wrap" id="sort-wrap">
+          <button type="button" class="btn" id="sort-button" aria-haspopup="menu" aria-controls="sort-menu"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-arrow-up-down"/></svg><span id="sort-label">Sort: Needs you first</span><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-chevron-down"/></svg></button>
+          <div class="menu" id="sort-menu" role="menu" aria-label="Sort" hidden>
+            <button type="button" role="menuitemradio" aria-checked="true" data-sort="attention">Needs you first</button>
+            <button type="button" role="menuitemradio" aria-checked="false" data-sort="time">Time left</button>
+            <button type="button" role="menuitemradio" aria-checked="false" data-sort="title">Name</button>
+            <button type="button" role="menuitemradio" aria-checked="false" data-sort="queue">Queue order</button>
+          </div>
+        </div>
+        <button type="button" class="btn" id="group-by-app" aria-pressed="false"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-layers"/></svg>Group by app</button>
+      </div>
+    </div>
+  </div>
   <div id="queue-errors"></div>
-  <ul class="rows" id="queue"></ul>
+  <div id="queue" aria-label="Queue"></div>
 </div>
 </main>
 </body>

@@ -1,0 +1,83 @@
+/* Settings, Backup and restore, Sign in and Set up (group D). Linked after app.css on those pages only.
+   app.css still has older rules for .row, .notice and .panel__head that override the shared library; the
+   rules here put the library's layout back on these pages. Everything else comes from components.css. */
+
+/* Rows with a leading icon, as in the library (app.css drops the lead column). */
+.rows > .row { grid-template-columns: auto minmax(0, 1fr) auto; }
+.rows > .row.row--no-lead { grid-template-columns: minmax(0, 1fr) auto; }
+.row__text { display: grid; gap: 2px; min-width: 0; }
+.row .app-icon .i { width: 20px; height: 20px; }
+.row__side .menu-wrap .icon-btn { width: var(--control-h); height: var(--control-h); }
+.rows .empty { border: 0; }
+
+/* Notices: icon, words, then an optional action (app.css drops the grid). */
+.notice { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: start; }
+.notice > .i { margin-top: 2px; }
+.notice > .btn { align-self: center; }
+.notice__body { display: grid; gap: var(--space-1); }
+
+/* Settings sections on these pages share the page width up to the library's measure. */
+.settings-sections { display: grid; gap: var(--space-8); }
+.settings-section--wide { max-width: none; }
+.settings-section .actions { margin-top: var(--space-1); }
+.settings-section h3 { font-size: var(--text-md); }
+.field--short { max-width: 420px; }
+.add-row { display: flex; flex-wrap: wrap; gap: var(--space-2); max-width: 560px; }
+.add-row .field { flex: 1 1 240px; }
+.add-row .btn { align-self: end; }
+.days-group { max-width: 200px; }
+.network-addresses { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.update-steps { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); }
+.command { max-width: 560px; }
+.notice--page { max-width: 880px; }
+
+/* The add and edit slide-out. */
+.step-section { display: grid; gap: var(--space-4); }
+.step-section h3:focus { outline: none; }
+.step-section h3:focus-visible { outline: var(--focus-w) solid var(--color-focus); outline-offset: 2px; }
+.switch-list { display: grid; gap: var(--space-2); }
+.switch-list .switch { justify-content: space-between; }
+.side-panel__body > form { display: grid; gap: var(--space-6); }
+
+/* Backup and restore. */
+.backup-run { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; justify-content: space-between; }
+.backup-run .switch { max-width: 560px; flex: 1 1 320px; }
+.panel__head .small { flex-basis: 100%; }
+.file-pick { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+/* Sign in and Set up: a slim header with the name and Display, then one narrow column. */
+.auth-header .site-header__actions { margin-left: auto; }
+.auth-header .site-header__brand { color: var(--color-text); text-decoration: none; }
+.auth-main .page--narrow { width: 100%; }
+.auth-main .panel { margin-top: var(--space-6); gap: var(--space-5); }
+.auth-main form > .btn--primary { width: 100%; justify-content: center; }
+.auth-main fieldset { gap: var(--space-4); }
+.auth-main fieldset > legend { margin-bottom: var(--space-2); }
+
+@media (max-width: 720px) {
+  .rows > .row { grid-template-columns: auto minmax(0, 1fr); }
+  .rows > .row.row--no-lead { grid-template-columns: minmax(0, 1fr); }
+  .rows > .row > .row__side { grid-column: 1 / -1; justify-content: start; }
+  .backup-run .btn { width: 100%; justify-content: center; }
+  .session-actions { display: grid; }
+  .session-actions .btn { justify-content: center; }
+  .auth-main .panel { margin-top: var(--space-2); }
+}
+
+/* A list straight under a section head shares its line (app.css gives every .rows a top border). */
+.settings-section__head + .rows, .settings-section__head + .settings-rows, .settings-section__head + form > .settings-rows:first-child { border-top: 0; }
+.settings-section .option-cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.settings-section .form-grid { max-width: 720px; }
+#category-loose:empty { display: none; }
+#session-form { display: grid; gap: var(--space-4); }
+/* An open More actions menu sits above the rows below it (each row side is its own layer). */
+.row__side:has(.menu:not([hidden])) { z-index: 5; }
+.form-grid > .field { align-content: start; }
+.stack-4 { display: grid; gap: var(--space-4); }
+/* app.css colours every notice as info; give success its own colours back. */
+.notice[data-tone="success"] { border-color: var(--status-success-fg); background: var(--status-success-bg); color: var(--status-success-fg); }
+.settings-section, .settings-section > form, .panel { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 720px) {
+  .notice { grid-template-columns: auto minmax(0, 1fr); }
+  .notice > .btn { grid-column: 2; justify-self: start; }
+}

@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/settings.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/settings.js" defer></script>
@@ -149,36 +150,10 @@
   <div class="page-head">
     <div class="page-head__text">
       <h1>Security</h1>
-      <p class="summary">Who can open the dashboard, your password and how long people stay signed in.</p>
+      <p class="page-head__summary">Who can open the dashboard, your password and how long people stay signed in.</p>
     </div>
   </div>
-  <section class="panel" id="security" aria-label="Security">
-    <div class="panel__head"><p class="hint">Sign-in, sessions and cookies.</p></div>
-    <form id="network-form" class="stack" aria-labelledby="network-title">
-      <h3 id="network-title">Who can open the dashboard</h3>
-      <label class="check" for="network-access"><input type="checkbox" id="network-access" name="network_access" aria-describedby="network-hint"> Phones and other computers on your home network</label>
-      <p class="hint" id="network-hint">When this is off, only the computer Starboard runs on can open it. Other devices cannot connect at all.</p>
-      <div id="network-addresses"></div>
-      <p class="notice" data-tone="warning" id="network-warning" hidden>You are using another device. If you turn this off, this device loses access straight away. Select Save again to turn it off.</p>
-      <p class="field-error" id="network-forced" hidden></p>
-      <div class="actions"><button class="btn btn--primary" type="submit" id="network-save">Save who can open it</button></div>
-    </form>
-    <form id="password-form" class="form-grid">
-      <div class="field"><label for="current-password">Current password</label><input class="input" id="current-password" name="current" type="password" autocomplete="current-password" required></div>
-      <div class="field"><label for="new-password">New password</label><input class="input" id="new-password" name="new" type="password" autocomplete="new-password" minlength="10" required aria-describedby="new-password-hint"><p class="hint" id="new-password-hint">At least 10 characters. Everyone else is signed out.</p></div>
-      <p class="field-error" id="password-error" role="alert" data-span="all"></p>
-      <div class="actions" data-span="all"><button class="btn btn--primary" type="submit">Change password</button></div>
-    </form>
-    <form id="session-form" class="form-grid">
-      <div class="field"><label for="session-days">Remember me keeps people signed in for (days)</label><input class="input" id="session-days" name="session_days" type="number" min="1" max="90" required aria-describedby="session-days-hint"><p class="hint" id="session-days-hint">Without Remember me, people are signed out when they close the browser, or after a day.</p></div>
-      <label class="check" for="secure-cookies"><input type="checkbox" id="secure-cookies" name="secure_cookies"> Only send the sign-in cookie over HTTPS</label>
-      <div class="actions" data-span="all">
-        <button class="btn btn--primary" type="submit">Save session settings</button>
-        <button class="btn btn--danger" type="button" id="end-all">Sign out everywhere</button>
-        <button class="btn" type="button" data-sign-out>Sign out</button>
-      </div>
-    </form>
-  </section>
+  <div class="settings-sections" id="security-sections" aria-busy="true"></div>
 </div>
 </main>
 </body>

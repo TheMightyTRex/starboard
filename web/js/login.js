@@ -1,4 +1,31 @@
-// Sign in, or choose the first password with the setup code.
+// Sign in, or choose the first password with the setup code. Errors show under the field they are about.
+
+function showFieldError(input, message) {
+  const error = $(`#${input.id}-error`);
+  const hint = $(`#${input.id}-hint`);
+  if (!error) return false;
+  error.replaceChildren(icon("circle-alert"), el("span", { text: message }));
+  error.hidden = false;
+  input.setAttribute("aria-invalid", "true");
+  input.setAttribute("aria-describedby", [hint?.id, error.id].filter(Boolean).join(" "));
+  input.focus();
+  return true;
+}
+
+function clearErrors(form) {
+  $$(".field-error", form).forEach((n) => { n.hidden = true; n.replaceChildren(); });
+  $$("[aria-invalid]", form).forEach((input) => {
+    input.removeAttribute("aria-invalid");
+    const hint = $(`#${input.id}-hint`);
+    if (hint) input.setAttribute("aria-describedby", hint.id); else input.removeAttribute("aria-describedby");
+  });
+}
+
+function showFormError(message) {
+  const box = $("#auth-error");
+  box.replaceChildren(icon("circle-alert"), el("span", { text: message }));
+  box.hidden = false;
+}
 
 startPage().then((session) => {
   const form = $("#login-form");
@@ -9,9 +36,16 @@ startPage().then((session) => {
   if (setup && session && form.site_name && !form.site_name.value) form.site_name.value = session.site_name;
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const error = $("#auth-error");
-    error.textContent = "";
-    if (setup && form.password.value !== form.confirm.value) { error.textContent = "The two passwords are different"; return; }
+    clearErrors(form);
+    if (setup) {
+      if (!form.token.value.trim()) { showFieldError(form.token, "Enter the setup code. It is in the installer's output or the server log."); return; }
+      if (!form.site_name.value.trim()) { showFieldError(form.site_name, "Enter a name for the dashboard"); return; }
+      if (form.password.value.length < 10) { showFieldError(form.password, `Use at least 10 characters. This one has ${form.password.value.length}.`); return; }
+      if (form.password.value !== form.confirm.value) { showFieldError(form.confirm, "The two passwords are different. Type it again."); return; }
+    } else if (!form.password.value) {
+      showFieldError(form.password, "Enter your password");
+      return;
+    }
     const button = $("button[type=submit]", form);
     button.disabled = true;
     try {
@@ -20,8 +54,13 @@ startPage().then((session) => {
       const next = new URLSearchParams(location.search).get("next") || "/index.html";
       location.href = /^\/(?![/\\])/.test(next) ? next : "/index.html";
     } catch (err) {
-      error.textContent = err.message;
-      form.password.focus();
+      const m = err.message;
+      if (!setup) showFieldError(form.password, /not right/i.test(m) ? "That password is not right. Check Caps Lock and try again." : m);
+      else if (/setup code/i.test(m)) showFieldError(form.token, m);
+      else if (/name/i.test(m)) showFieldError(form.site_name, m);
+      else if (/password is already set/i.test(m)) showFormError(m);
+      else if (/password|characters/i.test(m)) showFieldError(form.password, m);
+      else showFormError(m);
     } finally {
       button.disabled = false;
     }

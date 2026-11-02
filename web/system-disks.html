@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/system.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/charts.js" defer></script>
@@ -150,15 +151,14 @@
 <main id="main" tabindex="-1">
 <div class="page">
   <div class="page-head">
-    <div class="page-head__text"><h1>Disk health</h1><p class="summary" id="disks-summary">Loading…</p></div>
-    <button type="button" class="btn" id="refresh">Refresh</button>
+    <div class="page-head__text"><h1>Disk health</h1><p class="page-head__summary" id="disks-summary">Loading</p></div>
+    <div class="actions"><button type="button" class="btn" id="refresh"></button></div>
   </div>
-  <p class="hint">From each disk's own SMART report, saved by a job on the server (STARBOARD_SMART_DIR).
-  Counters that should stay at zero are listed when they are not.</p>
-  <div class="chart-grid" id="disk-charts"></div>
-  <div class="disk-grid" id="disks"></div>
-  <section class="panel" aria-labelledby="events-title">
-    <div class="panel__head"><h2 id="events-title">Recent events</h2><p class="hint">Self-tests and anything that changed, newest first.</p></div>
+  <div class="stats" id="disk-stats"></div>
+  <div id="disks"></div>
+  <div class="sys-meters" id="disk-meters"></div>
+  <section class="panel" id="events-panel" aria-labelledby="events-title" hidden>
+    <div class="sys-panel-head"><h2 id="events-title">Recent events</h2><span class="small muted">Self-tests and changes, newest first</span></div>
     <ul class="rows" id="events"></ul>
   </section>
 </div>

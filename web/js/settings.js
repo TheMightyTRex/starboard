@@ -1,306 +1,855 @@
-// Settings: apps (add, edit, test, order, remove), general, security and updates.
+// Settings: Manage apps (add, edit, test, order, hide, remove), General, Security, and About and updates.
+// Each page has its own start function below; the page's markup says which one runs.
 
 let config = null;
 const SEARCHABLE = ["sonarr", "radarr", "lidarr", "readarr"];
+const NO_KEY = ["jellyfin", "link"];
 
-function renderServices() {
-  const list = $("#service-list");
-  list.replaceChildren();
-  if (!config.services.length) list.append(el("li", { class: "empty", text: "No apps yet. Add your first one." }));
-  config.services.forEach((s, index) => {
-    const type = config.types[s.type]?.label || s.type;
-    list.append(el("li", { class: "row service-row" },
-      el("div", { class: "service-row__main" }, appIcon(s, "app-icon app-icon--small"), el("div", {},
-        el("p", { class: "row__title", text: s.name }),
-        el("p", { class: "row__meta", text: [type, s.group || "Other", s.background ? "Background service" : null, s.has_api_key ? "API key saved" : null, s.enabled ? null : "Hidden"].filter(Boolean).join(" · ") }))),
-      el("div", { class: "row__side" },
-        el("button", { type: "button", class: "btn", disabled: index === 0, "aria-label": `Move ${s.name} up`, onclick: () => move(index, -1) }, "↑"),
-        el("button", { type: "button", class: "btn", disabled: index === config.services.length - 1, "aria-label": `Move ${s.name} down`, onclick: () => move(index, 1) }, "↓"),
-        el("button", { type: "button", class: "btn", onclick: () => openService(s) }, "Edit", el("span", { class: "visually-hidden", text: ` ${s.name}` })),
-        el("button", { type: "button", class: "btn btn--danger", onclick: () => removeService(s) }, "Remove", el("span", { class: "visually-hidden", text: ` ${s.name}` })))));
+// Small helpers ------------------------------------------------------------
+
+// Checks of the password answer 401 when it is wrong. api() in common.js reads 401 as "signed out" and goes to
+// Sign in, so these calls keep the page and show the error by the field instead.
+async function postKeepingPage(path, body) {
+  const res = await fetch(path, {
+    method: "POST", credentials: "same-origin",
+    headers: { Accept: "application/json", "Content-Type": "application/json", "X-Starboard": "1" },
+    body: JSON.stringify(body || {}),
   });
-}
-
-async function move(index, by) {
-  const ids = config.services.map((s) => s.id);
-  [ids[index], ids[index + by]] = [ids[index + by], ids[index]];
-  config = await api("/api/services/order", { method: "POST", body: { ids } });
-  renderServices();
-  announce("Order saved");
-}
-
-const pendingRemove = new Set();
-async function removeService(s) {
-  // Two clicks: the first asks, the second removes. No browser confirm() pop-up.
-  if (!pendingRemove.has(s.id)) {
-    pendingRemove.add(s.id);
-    toast(`Select Remove again to remove ${s.name}`);
-    setTimeout(() => pendingRemove.delete(s.id), 6000);
-    return;
+  let data = {};
+  try { data = await res.json(); } catch { /* empty */ }
+  if (!res.ok) {
+    const error = new Error(data.error || `Something went wrong (error ${res.status})`);
+    error.status = res.status;
+    throw error;
   }
-  pendingRemove.delete(s.id);
-  config = await api(`/api/services/${s.id}`, { method: "DELETE" });
-  renderServices();
-  toast(`Removed ${s.name}`);
+  return data;
 }
 
-function serviceFormValues() {
-  const f = $("#service-form");
-  return {
-    id: f.service_id.value || undefined, type: f.type.value, name: f.name.value, url: f.url.value, link: f.link.value, outside_link: f.outside_link.value, icon: f.icon.value,
-    api_key: f.api_key.value, group: f.group.value, background: f.background.checked, follows: f.follows.value, description: f.description.value, enabled: f.enabled.checked,
-    quality_profile_id: f.quality_profile_id.value || null, root_folder: f.root_folder.value,
-    metadata_profile_id: f.metadata_profile_id.value || null, search_on_add: f.search_on_add.checked,
-  };
+// A field with its label, hint and an error tied to the control.
+let fieldCount = 0;
+function field(label, control, { hint, span, short } = {}) {
+  if (!control.id) control.id = `field-${++fieldCount}`;
+  const hintNode = hint ? el("span", { class: "hint", id: `${control.id}-hint` }, hint) : null;
+  const error = el("span", { class: "field-error", id: `${control.id}-error`, hidden: true });
+  if (hintNode) control.setAttribute("aria-describedby", hintNode.id);
+  control.fieldError = error;
+  control.fieldHint = hintNode;
+  return el("div", { class: short ? "field field--short" : "field", "data-span": span ? "all" : null },
+    el("label", { for: control.id, text: label }), hintNode, control, error);
 }
 
-// "Choose for me" names the category it will pick, from the app's name or kind.
-function guessGroup() {
-  const f = $("#service-form");
-  const slug = f.name.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const index = config.category_of[slug] ?? config.category_of[f.type.value] ?? 3;
-  const wanted = config.default_groups[index];
-  if (config.groups.includes(wanted)) return wanted;
-  return config.groups[index] || config.groups[config.groups.length - 1] || "";  // renamed categories keep their place
-}
-
-function updateGroupGuess() {
-  const first = $("#svc-group").options[0];
-  const guess = guessGroup();
-  first.textContent = guess ? `Choose for me (${guess})` : "Choose for me";
-}
-
-function updateTypeFields() {
-  const type = $("#svc-type").value;
-  $("#svc-follows-field").hidden = !$("#svc-background").checked;
-  $("#svc-search-fields").hidden = !SEARCHABLE.includes(type);
-  $("#svc-meta-field").hidden = !["lidarr", "readarr"].includes(type);
-  $("#svc-key-field").hidden = ["jellyfin", "link"].includes(type);
-}
-
-function setOptions(select, items, value) {
-  select.replaceChildren(el("option", { value: "", text: "First in the list" }), ...items.map((i) => el("option", { value: i.value, text: i.label })));
-  select.value = value ?? "";
-}
-
-function openService(s = null) {
-  const f = $("#service-form");
-  f.reset();
-  $("#service-title").textContent = s ? `Edit ${s.name}` : "Add an app";
-  $("#svc-error").textContent = "";
-  $("#svc-test-result").textContent = "";
-  $("#svc-type").replaceChildren(...Object.entries(config.types).map(([k, v]) => el("option", { value: k, text: v.label })));
-  const groups = [...config.groups];
-  if (s?.group && !groups.includes(s.group)) groups.push(s.group);
-  $("#svc-group").replaceChildren(el("option", { value: "", text: "Choose for me" }), ...groups.map((g) => el("option", { value: g, text: g })));
-  updateGroupGuess();
-  $("#svc-follows").replaceChildren(el("option", { value: "", text: "Nothing" }),
-    ...config.services.filter((x) => !x.background && (!s || x.id !== s.id)).map((x) => el("option", { value: x.id, text: x.name })));
-  setOptions(f.quality_profile_id, s?.quality_profile_id ? [{ value: s.quality_profile_id, label: `Profile ${s.quality_profile_id}` }] : [], s?.quality_profile_id);
-  setOptions(f.root_folder, s?.root_folder ? [{ value: s.root_folder, label: s.root_folder }] : [], s?.root_folder);
-  setOptions(f.metadata_profile_id, s?.metadata_profile_id ? [{ value: s.metadata_profile_id, label: `Profile ${s.metadata_profile_id}` }] : [], s?.metadata_profile_id);
-  if (s) {
-    f.service_id.value = s.id; f.type.value = s.type; f.name.value = s.name; f.url.value = s.url;
-    f.link.value = s.link === s.url ? "" : s.link;
-    f.outside_link.value = s.outside_link || "";
-    f.icon.value = s.icon || "";
-    f.background.checked = !!s.background;
-    f.follows.value = s.follows || ""; f.group.value = s.group || ""; f.description.value = s.description || "";
-    f.enabled.checked = s.enabled; f.search_on_add.checked = s.search_on_add !== false;
-    f.api_key.placeholder = s.has_api_key ? "Saved (leave empty to keep)" : "";
+function setError(control, message) {
+  const error = control.fieldError;
+  const ids = [control.fieldHint?.id];
+  if (message) {
+    error.replaceChildren(icon("circle-alert"), el("span", { text: message }));
+    error.hidden = false;
+    control.setAttribute("aria-invalid", "true");
+    ids.push(error.id);
   } else {
-    f.service_id.value = ""; f.api_key.placeholder = "";
+    error.hidden = true;
+    error.replaceChildren();
+    control.removeAttribute("aria-invalid");
   }
-  updateTypeFields();
-  $("#service-dialog").showModal();
+  const describedBy = ids.filter(Boolean).join(" ");
+  if (describedBy) control.setAttribute("aria-describedby", describedBy); else control.removeAttribute("aria-describedby");
 }
 
-async function loadServiceOptions() {
-  const f = $("#service-form");
-  const result = $("#svc-test-result");
-  if (!f.service_id.value) { result.textContent = "Save the app first, then load its profiles and folders."; return; }
-  result.textContent = "Loading…";
-  try {
-    const opts = await api(`/api/services/${f.service_id.value}/options`);
-    const keep = serviceFormValues();
-    setOptions(f.quality_profile_id, opts.quality_profiles.map((p) => ({ value: p.id, label: p.name })), keep.quality_profile_id);
-    setOptions(f.root_folder, opts.root_folders.map((r) => ({ value: r.path, label: r.path })), keep.root_folder);
-    setOptions(f.metadata_profile_id, opts.metadata_profiles.map((p) => ({ value: p.id, label: p.name })), keep.metadata_profile_id);
-    result.textContent = "Profiles and folders loaded.";
-  } catch (e) {
-    result.textContent = e.message;
-  }
+function switchRow(label, hint, input) {
+  input.setAttribute("role", "switch");
+  return el("label", { class: "switch" },
+    el("span", { class: "check__text" }, el("strong", { text: label }), hint ? el("span", { class: "check__hint", text: hint }) : null), input);
 }
 
-async function testService() {
-  const result = $("#svc-test-result");
-  result.textContent = "Testing…";
-  try {
-    const r = await api("/api/services/test", { method: "POST", body: serviceFormValues() });
-    result.textContent = r.state === "up" ? `Connected${r.version ? `, version ${r.version}` : ""} (${r.ms} ms).` : r.message;
-  } catch (e) {
-    result.textContent = e.message;
-  }
+// A settings row: label and hint on the left, the control on the right.
+function settingRow(label, hint, control, labelId) {
+  return el("li", { class: "setting" },
+    el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: labelId || null, text: label }), hint ? el("span", { class: "setting__hint" }, hint) : null),
+    el("div", { class: "setting__control" }, control));
 }
 
-async function saveService(event) {
-  event.preventDefault();
-  const error = $("#svc-error");
-  error.textContent = "";
-  try {
-    const saved = await api("/api/services", { method: "POST", body: serviceFormValues() });
-    config = saved.config;
-    const wasNew = !$("#service-form").service_id.value;
-    $("#service-form").service_id.value = saved.id;
-    renderServices();
-    if (wasNew && SEARCHABLE.includes($("#svc-type").value)) {
-      $("#service-title").textContent = "App saved. Choose what to use when adding";
-      await loadServiceOptions();
-      return;
-    }
-    $("#service-dialog").close();
-    toast("App saved");
-  } catch (e) {
-    error.textContent = e.message;
-  }
+function notice(tone, title, text, action) {
+  const icons = { success: "circle-check", warning: "triangle-alert", danger: "circle-alert", info: "info" };
+  return el("div", { class: "notice", "data-tone": tone === "info" ? null : tone, role: "status" },
+    icon(icons[tone] || "info"), el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), text ? el("p", {}, text) : null), action || null);
 }
 
-function renderGeneral() {
-  const f = $("#general-form");
-  if (f) {
-    f.site_name.value = config.site_name;
-    f.groups.value = config.groups.join(", ");
-    f.show_home_address.checked = config.show_home_address;
-    f.show_outside_address.checked = config.show_outside_address;
-    const box = $("#default-design");
-    box.replaceChildren(...Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "option-card" },
-      el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("span", { text: label }), el("small", { text: help }))));
-  }
-  const s = $("#session-form");
-  if (s) {
-    s.session_days.value = config.session_days;
-    s.secure_cookies.checked = config.secure_cookies;
-  }
-  if ($("#update-check")) $("#update-check").checked = config.update_check;
+// One section of a settings page: an h2, a one-line description and its content.
+function section(id, title, description, ...content) {
+  return el("section", { class: "settings-section", "aria-labelledby": `${id}-h` },
+    el("div", { class: "settings-section__head" }, el("h2", { id: `${id}-h`, text: title }), description ? el("p", { class: "small muted" }, description) : null),
+    ...content);
 }
 
 async function saveGeneral(body, message) {
-  try {
-    config = await api("/api/config/general", { method: "PUT", body });
-    renderGeneral();
-    toast(message);
-    $$("[data-site-name]").forEach((n) => { n.textContent = config.site_name; });
-  } catch (e) {
-    toast(e.message);
-  }
+  config = await api("/api/config/general", { method: "PUT", body });
+  if (message) toast(message);
+  $$("[data-site-name]").forEach((n) => { n.textContent = config.site_name; });
+  return config;
 }
 
-let network = null;
-let confirmLocalOnly = false;
-
-async function showNetwork() {
-  try {
-    network = await api("/api/network");
-  } catch { return; }
-  $("#network-access").checked = network.network_access;
-  $("#network-forced").hidden = !network.forced_by;
-  if (network.forced_by) {
-    $("#network-forced").textContent = `Set by ${network.forced_by} on the server, so it cannot be changed here.`;
-    $("#network-access").disabled = true;
-    $("#network-save").disabled = true;
-  }
-  const list = $("#network-addresses");
-  list.replaceChildren();
-  const rows = [["This computer", `http://localhost:${network.port}`]];
-  if (network.network_access) for (const a of network.addresses) rows.push(["Phones and other computers", `http://${a}:${network.port}`]);
-  for (const [label, url] of rows) list.append(el("p", {}, `${label}: `, el("code", { text: url })));
+// The whole app, as the server wants it back: a blank API key keeps the saved one.
+function serviceBody(s, changes = {}) {
+  const body = { ...s, ...changes };
+  delete body.has_api_key;
+  body.api_key = changes.api_key || "";
+  if (body.link === body.url) body.link = "";
+  return body;
 }
 
-async function saveNetwork(event) {
-  event.preventDefault();
-  const want = $("#network-access").checked;
-  if (!want && network && !network.you_are_on_this_computer && !confirmLocalOnly) {
-    confirmLocalOnly = true;
-    $("#network-warning").hidden = false;
+// Redraws a list and keeps focus on the same control of the same row (rows carry data-key), so a row that moved
+// keeps focus. (renderKeyed in common.js loses rows when render returns a new node for a key it already had.)
+function redraw(root, nodes) {
+  const focused = document.activeElement;
+  const row = root.contains(focused) ? focused.closest("[data-key]") : null;
+  const controls = (node) => [...node.querySelectorAll("button, a, input, select")];
+  const at = row ? controls(row).indexOf(focused) : -1;
+  root.replaceChildren(...nodes);
+  if (!row) return;
+  const again = [...root.querySelectorAll("[data-key]")].find((n) => n.dataset.key === row.dataset.key);
+  (again && at >= 0 ? controls(again)[at] : again)?.focus({ preventScroll: true });
+}
+
+// Menu items run after the menu has closed and given focus back to its button, so a dialog returns there.
+function later(fn) { setTimeout(fn, 0); }
+
+// Manage apps ---------------------------------------------------------------
+
+let statusById = {};
+
+function sectionKeyOf(s) { return s.background ? "background" : `group:${s.group || ""}`; }
+
+function sectionsOf(services) {
+  const shown = services.filter((s) => !s.background);
+  const groups = [...config.groups];
+  for (const s of shown) if (s.group && !groups.includes(s.group)) groups.push(s.group);
+  const out = groups.map((g) => ({ key: `group:${g}`, title: g, items: shown.filter((s) => s.group === g) }));
+  out.push({ key: "group:", title: "Other", items: shown.filter((s) => !s.group) });
+  out.push({ key: "background", title: "Other services", hint: "Services with no web page. They appear under Apps, Other services.", items: services.filter((s) => s.background) });
+  return out.filter((g) => g.items.length);
+}
+
+function statusChip(s) {
+  if (!s.enabled) return chip("Hidden", "muted");
+  const st = statusById[s.id];
+  if (!st) return null;
+  if (st.state === "up") return chip(s.background ? "Running" : "Connected", "success");
+  if (st.state === "down") return chip(s.background ? "Not running" : "Cannot connect", "danger");
+  return chip("Not checked", "muted");
+}
+
+function serviceMeta(s) {
+  const type = config.types[s.type]?.label || s.type;
+  const target = s.follows ? config.services.find((x) => x.id === s.follows) : null;
+  return [
+    s.url ? shortUrl(s.url) : "No address",
+    type,
+    target ? `follows ${target.name}` : null,
+    SEARCHABLE.includes(s.type) ? "searched" : null,
+    s.outside_link ? "outside address set" : null,
+    s.enabled ? null : "hidden from the dashboard",
+  ].filter(Boolean).join(" · ");
+}
+
+function serviceRow(s, items, index) {
+  const menuItems = [];
+  if (index > 0) menuItems.push({ label: "Move up", icon: "arrow-up", onSelect: () => later(() => moveService(s, -1)) });
+  if (index < items.length - 1) menuItems.push({ label: "Move down", icon: "arrow-down", onSelect: () => later(() => moveService(s, 1)) });
+  menuItems.push(s.enabled
+    ? { label: "Hide from the dashboard", icon: "eye-off", onSelect: () => later(() => setShown(s, false)) }
+    : { label: "Show on the dashboard", icon: "eye", onSelect: () => later(() => setShown(s, true)) });
+  menuItems.push({ label: "Remove", icon: "trash-2", danger: true, onSelect: () => later(() => removeService(s)) });
+  return el("li", { class: "row row--opens" },
+    appIcon(s, "app-icon"),
+    el("div", { class: "row__text" },
+      el("div", { class: "row__title" }, el("button", { type: "button", onclick: (e) => openService(s, e.currentTarget) }, s.name)),
+      el("div", { class: "row__meta", text: serviceMeta(s) })),
+    el("div", { class: "row__side" },
+      statusChip(s),
+      el("button", { type: "button", class: "btn", onclick: (e) => openService(s, e.currentTarget) }, icon("pencil"), "Edit", el("span", { class: "visually-hidden", text: ` ${s.name}` })),
+      menuButton(`More actions for ${s.name}`, menuItems)));
+}
+
+function renderServices() {
+  const root = $("#app-sections");
+  root.removeAttribute("aria-busy");
+  const apps = config.services.filter((s) => !s.background).length;
+  const bg = config.services.length - apps;
+  $("#apps-summary").textContent = config.services.length
+    ? `${apps} ${apps === 1 ? "app" : "apps"}${bg ? ` and ${bg} ${bg === 1 ? "service" : "services"}` : ""}, in the order they appear on the dashboard.`
+    : "The apps on your dashboard, in the order they appear.";
+  if (!config.services.length) {
+    root.replaceChildren(el("div", { class: "empty" },
+      el("p", { text: "No apps yet. Add the first one, with the address Starboard uses to reach it." }),
+      el("button", { type: "button", class: "btn btn--primary", onclick: (e) => openService(null, e.currentTarget) }, icon("plus"), "Add an app")));
     return;
   }
-  confirmLocalOnly = false;
-  $("#network-warning").hidden = true;
-  await saveGeneral({ network_access: want }, want ? "Other devices on your network can now open it" : "Only this computer can open it now");
-  setTimeout(showNetwork, 1500);
+  redraw(root, sectionsOf(config.services).map((g, i) => el("section", { class: "settings-section settings-section--wide", "aria-labelledby": `sec-${i}-h` },
+    el("div", { class: "settings-section__head" }, el("h2", { id: `sec-${i}-h`, text: g.title }), g.hint ? el("p", { class: "small muted", text: g.hint }) : null),
+    el("ul", { class: "rows" }, g.items.map((s, index) => {
+      const row = serviceRow(s, g.items, index);
+      row.dataset.key = s.id;
+      return row;
+    })))));
 }
 
-async function showUpdates() {
+async function loadStatus() {
   try {
-    const v = await api("/api/version");
-    const line = $("#version-line");
-    line.replaceChildren(`You have version ${v.current}. `);
-    if (v.latest && v.latest.replace(/^v/, "") !== v.current) line.append(chip(`Version ${v.latest.replace(/^v/, "")} is available`, "info"));
-    else if (v.latest) line.append(chip("Up to date", "success"));
-    else if (!v.repo) line.append("Set STARBOARD_REPO to check for new releases.");
-  } catch { /* leave the placeholder */ }
+    const { items } = await api("/api/status");
+    statusById = Object.fromEntries(items.map((i) => [i.id, i]));
+    renderServices();
+  } catch { /* no status chips */ }
 }
 
-// Old links to sections of the single Settings page go to their own pages now.
-const MOVED = { "#general": "/settings-general.html", "#security": "/settings-security.html", "#updates": "/settings-updates.html" };
-if (location.pathname.endsWith("/settings.html") && MOVED[location.hash]) location.replace(MOVED[location.hash]);
-
-const on = (selector, event, handler) => { const node = $(selector); if (node) node.addEventListener(event, handler); };
-
-startPage().then(async () => {
-  config = await api("/api/config");
-  renderGeneral();
-
-  if ($("#service-list")) {  // Apps
+async function moveService(s, by) {
+  const peers = config.services.filter((x) => sectionKeyOf(x) === sectionKeyOf(s));
+  const at = peers.findIndex((x) => x.id === s.id);
+  const other = peers[at + by];
+  if (!other) return;
+  const ids = config.services.map((x) => x.id);
+  const i = ids.indexOf(s.id);
+  const j = ids.indexOf(other.id);
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  try {
+    config = await api("/api/services/order", { method: "POST", body: { ids } });
     renderServices();
-    wireDialog($("#service-dialog"));
-    on("#add-service", "click", () => openService());
-    on("#svc-type", "change", () => { updateTypeFields(); updateGroupGuess(); });
-    on("#svc-name", "input", updateGroupGuess);
-    on("#svc-background", "change", updateTypeFields);
-    on("#svc-test", "click", testService);
-    on("#svc-load-options", "click", loadServiceOptions);
-    on("#service-form", "submit", saveService);
-    if (!config.services.length) openService();
+    announce(`${s.name} moved ${by < 0 ? "up" : "down"}, now ${at + by + 1} of ${peers.length}`);
+  } catch (e) { toast(e.message); }
+}
+
+async function setShown(s, shown) {
+  try {
+    const saved = await api("/api/services", { method: "POST", body: serviceBody(s, { enabled: shown }) });
+    config = saved.config;
+    renderServices();
+    announce(shown ? `${s.name} is shown on the dashboard` : `${s.name} is hidden from the dashboard`);
+  } catch (e) { toast(e.message); }
+}
+
+async function removeService(s, { fromPanel } = {}) {
+  const ok = await confirmDialog({
+    title: `Remove ${s.name}?`,
+    message: `${s.name} leaves the dashboard${SEARCHABLE.includes(s.type) ? " and Search" : ""}. ${s.name} itself, its files and its settings stay as they are. You can add it again at any time.`,
+    confirm: `Remove ${s.name}`, cancel: "Keep it", danger: true,
+  });
+  if (!ok) return false;
+  // Focus goes to the next row's name, or to Add an app when that was the last one.
+  const row = $(`#app-sections [data-key="${CSS.escape(s.id)}"]`);
+  const next = row?.nextElementSibling || row?.previousElementSibling;
+  try {
+    config = await api(`/api/services/${s.id}`, { method: "DELETE" });
+    fromPanel?.close(false);
+    renderServices();
+    const target = next?.isConnected ? $(".row__title button", next) : $("#add-service");
+    target?.focus();
+    toast(`Removed ${s.name}`);
+    return true;
+  } catch (e) { toast(e.message); return false; }
+}
+
+// The add and edit slide-out: Connection first, then Adding options for apps that are searched.
+
+function setOptions(select, items, value, first = "First in the list") {
+  select.replaceChildren(el("option", { value: "", text: first }), ...items.map((i) => el("option", { value: i.value, text: i.label })));
+  select.value = value ?? "";
+}
+
+function guessGroup(name, type) {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const index = config.category_of[slug] ?? config.category_of[type] ?? 3;
+  const wanted = config.default_groups[index];
+  if (config.groups.includes(wanted)) return wanted;
+  return config.groups[index] || config.groups[config.groups.length - 1] || "";
+}
+
+function setAddress(s, background) {
+  const u = new URL(location.href);
+  u.searchParams.delete("add");
+  u.searchParams.delete("edit");
+  if (s) u.searchParams.set("edit", s.id); else if (background) u.searchParams.set("add", "background");
+  history.replaceState(null, "", u);
+}
+
+function openService(s = null, opener = null, { background = false } = {}) {
+  const isNew = !s;
+  let current = s ? { ...s } : null;
+
+  // Step 1: Connection, and how it shows on the dashboard.
+  const type = el("select", { class: "select", name: "type" }, Object.entries(config.types).map(([k, v]) => el("option", { value: k, text: v.label })));
+  const name = el("input", { class: "input", name: "name", maxlength: "60", required: true, autocomplete: "off" });
+  const url = el("input", { class: "input", name: "url", inputmode: "url", placeholder: "http://sonarr:8989", autocomplete: "off" });
+  const key = el("input", { class: "input", name: "api_key", type: "password", autocomplete: "off" });
+  const keyHint = el("span", {});
+  const keyField = field("API key", key, { hint: keyHint, span: true });
+  const testButton = el("button", { type: "button", class: "btn" }, icon("zap"), "Test connection");
+  const testResult = el("div", { "aria-live": "polite" });
+
+  const groups = [...config.groups];
+  if (s?.group && !groups.includes(s.group)) groups.push(s.group);
+  const group = el("select", { class: "select", name: "group" }, el("option", { value: "", text: "Choose for me" }), groups.map((g) => el("option", { value: g, text: g })));
+  const iconInput = el("input", { class: "input", name: "icon", maxlength: "300", autocomplete: "off" });
+  const desc = el("input", { class: "input", name: "description", maxlength: "200" });
+  const link = el("input", { class: "input", name: "link", inputmode: "url", autocomplete: "off" });
+  const outside = el("input", { class: "input", name: "outside_link", inputmode: "url", placeholder: "https://", autocomplete: "off" });
+  const enabled = el("input", { type: "checkbox", name: "enabled", checked: true });
+  const bg = el("input", { type: "checkbox", name: "background" });
+  const follows = el("select", { class: "select", name: "follows" }, el("option", { value: "", text: "Nothing" }),
+    config.services.filter((x) => !x.background && (!s || x.id !== s.id)).map((x) => el("option", { value: x.id, text: x.name })));
+  const followsField = field("Status follows", follows, { hint: "For a service with no address: show the status of the app it works with, such as a VPN that qBittorrent runs through.", span: true });
+  const formError = el("div", { role: "alert" });
+
+  const form = el("form", { id: "service-form", novalidate: true },
+    el("section", { class: "step-section", "aria-labelledby": "svc-conn-h" },
+      el("h3", { id: "svc-conn-h", tabindex: "-1", text: "Connection" }),
+      el("div", { class: "form-grid" },
+        field("Kind of app", type),
+        field("Name", name),
+        field("Address Starboard uses", url, { hint: "On Docker, the container name and port, such as http://sonarr:8989. Optional for a background service.", span: true }),
+        keyField),
+      el("div", { class: "actions" }, testButton),
+      testResult),
+    el("section", { class: "step-section", "aria-labelledby": "svc-show-h" },
+      el("h3", { id: "svc-show-h", text: "On the dashboard" }),
+      el("div", { class: "form-grid" },
+        field("Category", group, { hint: el("span", {}, "The heading it sits under. Change the list in ", el("a", { href: "/settings-general.html#categories", text: "Settings, General" }), "."), span: true }),
+        field("Icon", iconInput, { hint: "A name from the dashboard icons collection, such as sonarr, or an address starting with https://. Leave blank to use the name.", span: true }),
+        field("Description", desc, { span: true }),
+        field("Address to open in your browser", link, { hint: "Leave blank to use the address Starboard uses. Shown on the card as the home address.", span: true }),
+        field("Outside address", outside, { hint: "The address that works away from home, such as your own domain. Optional.", span: true })),
+      el("div", { class: "switch-list" },
+        switchRow("Show on the dashboard", null, enabled),
+        switchRow("Background service", "It has no web page, so it is listed under Apps, Other services.", bg)),
+      followsField),
+    formError);
+
+  const steps = el("ol", { class: "steps", "aria-label": "Steps" }, el("li", { "aria-current": "step", text: "Connection" }), el("li", { text: "Adding options" }));
+
+  if (s) {
+    type.value = s.type; name.value = s.name; url.value = s.url || "";
+    link.value = s.link === s.url ? "" : (s.link || "");
+    outside.value = s.outside_link || ""; iconInput.value = s.icon || "";
+    group.value = s.group || ""; desc.value = s.description || "";
+    enabled.checked = s.enabled; bg.checked = !!s.background; follows.value = s.follows || "";
+  } else if (background) {
+    bg.checked = true;
+    type.value = "link";
   }
 
-  on("#general-form", "submit", (e) => {
-    e.preventDefault();
-    const f = e.target;
-    saveGeneral({
-      site_name: f.site_name.value, groups: f.groups.value.split(","), design: f.design.value,
-      show_home_address: f.show_home_address.checked, show_outside_address: f.show_outside_address.checked,
-    }, "General settings saved");
+  const saveButton = el("button", { type: "submit", form: "service-form", class: "btn btn--primary" });
+  const cancel = el("button", { type: "button", class: "btn btn--quiet", "data-closes": true, text: "Cancel" });
+  const remove = s ? el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Remove", el("span", { class: "visually-hidden", text: ` ${s.name}` })) : null;
+
+  const updateFields = () => {
+    const t = type.value;
+    keyField.hidden = NO_KEY.includes(t);
+    keyHint.textContent = `In ${config.types[t]?.label || "the app"}: Settings, General.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
+    followsField.hidden = !bg.checked;
+    group.options[0].textContent = `Choose for me (${guessGroup(name.value, t) || "the last category"})`;
+    steps.hidden = !SEARCHABLE.includes(t);
+    saveButton.textContent = SEARCHABLE.includes(t) ? "Save and continue" : (isNew ? "Add app" : "Save app");
+  };
+
+  const values = () => ({
+    id: current?.id, type: type.value, name: name.value, url: url.value, link: link.value, outside_link: outside.value,
+    icon: iconInput.value, api_key: key.value, group: group.value, background: bg.checked, follows: bg.checked ? follows.value : "",
+    description: desc.value, enabled: enabled.checked,
+    quality_profile_id: current?.quality_profile_id ?? null, root_folder: current?.root_folder || "",
+    metadata_profile_id: current?.metadata_profile_id ?? null, search_on_add: current ? current.search_on_add !== false : true,
   });
 
-  if ($("#network-form")) {  // Security
-    showNetwork();
-    on("#network-form", "submit", saveNetwork);
-    on("#network-access", "change", () => { confirmLocalOnly = false; $("#network-warning").hidden = true; });
-  }
-  on("#session-form", "submit", (e) => {
-    e.preventDefault();
-    saveGeneral({ session_days: Number(e.target.session_days.value), secure_cookies: e.target.secure_cookies.checked }, "Session settings saved");
+  const panel = sidePanel({
+    title: s ? `Edit ${s.name}` : (background ? "Add a background service" : "Add an app"), wide: true, opener,
+    body: [steps, form],
+    foot: [saveButton, cancel, remove].filter(Boolean),
+    onClose: () => {
+      setAddress(null, false);
+      // Saving redraws the list, so the button that opened the slide-out may be gone: go to the app's new row.
+      if (document.activeElement === document.body || !document.activeElement) {
+        const row = current && [...document.querySelectorAll("#app-sections [data-key]")].find((n) => n.dataset.key === current.id);
+        (row ? $(".row__title button", row) : $("#add-service"))?.focus();
+      }
+    },
   });
-  on("#password-form", "submit", async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    $("#password-error").textContent = "";
+  setAddress(s, background);
+  updateFields();
+
+  type.addEventListener("change", updateFields);
+  name.addEventListener("input", updateFields);
+  bg.addEventListener("change", updateFields);
+  remove?.addEventListener("click", () => removeService(current, { fromPanel: panel }));
+
+  testButton.addEventListener("click", async () => {
+    testResult.replaceChildren(el("p", { class: "small muted", text: "Testing…" }));
     try {
-      await api("/api/password", { method: "POST", body: { current: f.current.value, new: f.new.value } });
-      f.reset();
-      toast("Password changed. Everyone else is signed out");
-    } catch (err) {
-      $("#password-error").textContent = err.message;
+      const r = await api("/api/services/test", { method: "POST", body: values() });
+      testResult.replaceChildren(r.state === "up"
+        ? notice("success", "Connected", `${name.value || "The app"}${r.version ? ` ${r.version}` : ""} answered in ${r.ms} ms.`)
+        : notice("danger", "Cannot connect", r.message || "Check the address and the API key."));
+    } catch (e) {
+      testResult.replaceChildren(notice("danger", "Cannot test yet", e.message));
     }
   });
-  on("#end-all", "click", async () => {
-    await api("/api/sessions/end-all", { method: "POST" });
+
+  // Errors from the server go next to the field they are about.
+  const showError = (message) => {
+    const m = message || "";
+    const target = /name for the app/i.test(m) ? name
+      : /address the server uses|reach the app/i.test(m) ? url
+        : /browser/i.test(m) ? link
+          : /outside address/i.test(m) ? outside
+            : /icon/i.test(m) ? iconInput : null;
+    if (target) { setError(target, m); target.focus(); } else formError.replaceChildren(notice("danger", "Not saved", m));
+  };
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    formError.replaceChildren();
+    [name, url, link, outside, iconInput].forEach((c) => setError(c, ""));
+    if (!name.value.trim()) { setError(name, "Enter a name for the app"); name.focus(); return; }
+    if (!url.value.trim() && !bg.checked) { setError(url, "Enter the address Starboard uses to reach the app, such as http://sonarr:8989"); url.focus(); return; }
+    saveButton.disabled = true;
+    try {
+      const saved = await api("/api/services", { method: "POST", body: values() });
+      config = saved.config;
+      current = config.services.find((x) => x.id === saved.id);
+      renderServices();
+      if (SEARCHABLE.includes(current.type)) showAddingOptions();
+      else { panel.close(); toast(isNew ? `${current.name} added` : `${current.name} saved`); }
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+
+  // Step 2: what Starboard uses when you add something from Search.
+  async function showAddingOptions() {
+    panel.setTitle(isNew ? `Add ${current.name}` : `Edit ${current.name}`);
+    setAddress(current, false);
+    steps.replaceChildren(el("li", { "data-done": true, text: "Connection" }), el("li", { "aria-current": "step", text: "Adding options" }));
+    const quality = el("select", { class: "select", name: "quality_profile_id" });
+    const root = el("select", { class: "select", name: "root_folder" });
+    const meta = el("select", { class: "select", name: "metadata_profile_id" });
+    const searchOnAdd = el("input", { type: "checkbox", name: "search_on_add", checked: current.search_on_add !== false });
+    const kind = { sonarr: "every episode", radarr: "the film", lidarr: "every album", readarr: "every book" }[current.type];
+    setOptions(quality, current.quality_profile_id ? [{ value: current.quality_profile_id, label: `Profile ${current.quality_profile_id}` }] : [], current.quality_profile_id);
+    setOptions(root, current.root_folder ? [{ value: current.root_folder, label: current.root_folder }] : [], current.root_folder);
+    setOptions(meta, current.metadata_profile_id ? [{ value: current.metadata_profile_id, label: `Profile ${current.metadata_profile_id}` }] : [], current.metadata_profile_id);
+    const loadState = el("div", { "aria-live": "polite" }, el("p", { class: "small muted", text: `Loading profiles and folders from ${current.name}…` }));
+    const metaField = field("Metadata profile", meta);
+    metaField.hidden = !["lidarr", "readarr"].includes(current.type);
+    const heading = el("h3", { id: "svc-add-h", tabindex: "-1", text: "Adding options" });
+    const optionsForm = el("form", { id: "options-form", novalidate: true },
+      notice("success", `${current.name} saved`, "Now choose what Starboard uses when you add something from Search."),
+      el("section", { class: "step-section", "aria-labelledby": "svc-add-h" },
+        heading,
+        loadState,
+        el("div", { class: "form-grid" }, field("Quality profile", quality), field("Folder", root), metaField),
+        el("div", { class: "switch-list" }, switchRow("Search as soon as something is added", `On: ${current.name} looks for ${kind} straight away.`, searchOnAdd))));
+    form.replaceWith(optionsForm);
+    const saveOptions = el("button", { type: "submit", form: "options-form", class: "btn btn--primary", text: "Save adding options" });
+    panel.setFoot([saveOptions, el("button", { type: "button", class: "btn btn--quiet", "data-closes": true, text: "Skip for now" })]);
+    heading.focus();
+    optionsForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      saveOptions.disabled = true;
+      try {
+        const saved = await api("/api/services", { method: "POST", body: serviceBody(current, {
+          quality_profile_id: quality.value || null, root_folder: root.value,
+          metadata_profile_id: meta.value || null, search_on_add: searchOnAdd.checked,
+        }) });
+        config = saved.config;
+        renderServices();
+        panel.close();
+        toast(`${current.name} saved`);
+      } catch (e) {
+        loadState.replaceChildren(notice("danger", "Not saved", e.message));
+      } finally {
+        saveOptions.disabled = false;
+      }
+    });
+    try {
+      const opts = await api(`/api/services/${current.id}/options`);
+      setOptions(quality, opts.quality_profiles.map((p) => ({ value: p.id, label: p.name })), current.quality_profile_id);
+      setOptions(root, opts.root_folders.map((r) => ({ value: r.path, label: r.path })), current.root_folder);
+      setOptions(meta, opts.metadata_profiles.map((p) => ({ value: p.id, label: p.name })), current.metadata_profile_id);
+      loadState.replaceChildren();
+    } catch (e) {
+      loadState.replaceChildren(notice("warning", "Could not load the profiles and folders", `${e.message}. Starboard uses the first in each list until you choose.`));
+    }
+  }
+  return panel;
+}
+
+function startManageApps() {
+  // Old links to sections of the single Settings page go to their own pages now.
+  const MOVED = { "#general": "/settings-general.html", "#security": "/settings-security.html", "#updates": "/settings-updates.html" };
+  if (MOVED[location.hash]) { location.replace(MOVED[location.hash]); return; }
+  renderServices();
+  $("#add-service").addEventListener("click", (e) => openService(null, e.currentTarget));
+  // Other pages link here: ?edit=<app id> opens that app; ?add=background starts a background service.
+  const params = new URLSearchParams(location.search);
+  const editId = params.get("edit");
+  const editing = editId && config.services.find((s) => s.id === editId);
+  if (editing) openService(editing, $(`#app-sections [data-key="${CSS.escape(editing.id)}"] .row__title button`));
+  else if (editId) { setAddress(null, false); toast("That app is not in your list any more"); }
+  else if (params.get("add") === "background") openService(null, $("#add-service"), { background: true });
+  else if (params.has("add") || !config.services.length) openService(null, $("#add-service"));
+  loadStatus();
+}
+
+// General -------------------------------------------------------------------
+
+function countIn(group) { return config.services.filter((s) => s.group === group).length; }
+function appsWord(n) { return `${n} ${n === 1 ? "app" : "apps"}`; }
+
+// Categories are saved as a list of names, and each app keeps its category's name. Renaming or removing one
+// also moves the apps in it, one save per app.
+async function moveApps(from, to) {
+  for (const s of config.services.filter((x) => x.group === from)) {
+    const saved = await api("/api/services", { method: "POST", body: serviceBody(s, { group: to }) });
+    config = saved.config;
+  }
+}
+
+function categoryRow(name, index, list) {
+  const n = countIn(name);
+  const items = [];
+  if (index > 0) items.push({ label: "Move up", icon: "arrow-up", onSelect: () => later(() => moveCategory(index, -1)) });
+  if (index < list.length - 1) items.push({ label: "Move down", icon: "arrow-down", onSelect: () => later(() => moveCategory(index, 1)) });
+  if (list.length > 1) items.push({ label: "Remove", icon: "trash-2", danger: true, onSelect: () => later(() => removeCategory(name)) });
+  return el("li", { class: "row" },
+    el("span", { class: "app-icon", "aria-hidden": "true", text: String(index + 1) }),
+    el("div", { class: "row__text" }, el("div", { class: "row__title", text: name }), el("div", { class: "row__meta", text: n ? appsWord(n) : "No apps yet" })),
+    el("div", { class: "row__side" },
+      el("button", { type: "button", class: "btn", onclick: () => renameCategory(name) }, icon("pencil"), "Rename", el("span", { class: "visually-hidden", text: ` ${name}` })),
+      menuButton(`More actions for ${name}`, items)));
+}
+
+function renderCategories() {
+  const groups = config.groups;
+  redraw($("#category-list"), groups.map((g, i) => {
+    const row = categoryRow(g, i, groups);
+    row.dataset.key = g;
+    return row;
+  }));
+  $("#category-add").disabled = groups.length >= 20;
+  // Apps can sit in a category that is not in the list (from an older version or a restore). The Apps page
+  // shows those after the listed ones; offer to add them so they can be renamed and ordered here.
+  const loose = [...new Set(config.services.filter((s) => !s.background && s.group && !groups.includes(s.group)).map((s) => s.group))];
+  const box = $("#category-loose");
+  box.replaceChildren();
+  if (loose.length) {
+    const add = el("button", { type: "button", class: "btn btn--compact" }, icon("plus"), loose.length === 1 ? "Add it to the list" : "Add them to the list");
+    add.addEventListener("click", async () => {
+      if (await saveGroups([...config.groups, ...loose].slice(0, 20), `Added ${loose.join(", ")}`)) $("#category-list .btn")?.focus();
+    });
+    box.append(notice("info", loose.length === 1 ? "1 more category is in use" : `${loose.length} more categories are in use`,
+      `Some apps are in ${loose.join(", ")}, which ${loose.length === 1 ? "is" : "are"} not in this list. The Apps page shows ${loose.length === 1 ? "it" : "them"} after the categories here.`, add));
+  }
+}
+
+async function saveGroups(groups, message) {
+  try {
+    await saveGeneral({ groups }, null);
+    renderCategories();
+    if (message) announce(message);
+    return true;
+  } catch (e) { toast(e.message); return false; }
+}
+
+async function moveCategory(index, by) {
+  const groups = [...config.groups];
+  [groups[index], groups[index + by]] = [groups[index + by], groups[index]];
+  await saveGroups(groups, `${groups[index + by]} moved ${by < 0 ? "up" : "down"}, now ${index + by + 1} of ${groups.length}`);
+}
+
+async function renameCategory(name) {
+  const input = el("input", { class: "input", maxlength: "40", required: true, value: name, autocomplete: "off" });
+  const n = countIn(name);
+  const ok = await confirmDialog({
+    title: `Rename ${name}`,
+    message: n ? `The ${appsWord(n)} in it move with it.` : "No apps are in it yet.",
+    fields: [field("New name", input)],
+    confirm: "Rename category",
+  });
+  const to = input.value.trim();
+  if (!ok || !to || to === name) return;
+  if (config.groups.includes(to)) { toast(`There is already a category called ${to}`); return; }
+  if (!(await saveGroups(config.groups.map((g) => (g === name ? to : g))))) return;
+  try {
+    await moveApps(name, to);
+    renderCategories();
+    toast(`Renamed ${name} to ${to}`);
+  } catch (e) { toast(`Renamed, but some apps were not moved: ${e.message}`); }
+  $(`#category-list [data-key="${CSS.escape(to)}"] .btn`)?.focus();
+}
+
+async function removeCategory(name) {
+  const n = countIn(name);
+  const others = config.groups.filter((g) => g !== name);
+  const to = el("select", { class: "select" }, others.map((g) => el("option", { value: g, text: g })));
+  const ok = await confirmDialog({
+    title: `Remove the ${name} category?`,
+    message: n ? `${appsWord(n)} ${n === 1 ? "is" : "are"} in ${name}. Choose where ${n === 1 ? "it goes" : "they go"}. The apps themselves are not changed.` : "No apps are in it. Nothing else changes.",
+    fields: n ? [field("Move its apps to", to)] : [],
+    confirm: "Remove category", cancel: "Keep it", danger: true,
+  });
+  if (!ok) return;
+  const row = $(`#category-list [data-key="${CSS.escape(name)}"]`);
+  const next = row?.nextElementSibling || row?.previousElementSibling;
+  try {
+    if (n) await moveApps(name, to.value);
+  } catch (e) { toast(`Not removed: ${e.message}`); return; }
+  if (await saveGroups(others)) {
+    toast(n ? `Removed ${name}. Its apps are now in ${to.value}` : `Removed ${name}`);
+    (next?.isConnected ? $(".btn", next) : $("#category-name"))?.focus();
+  }
+}
+
+function startGeneral() {
+  // Dashboard name
+  const siteName = el("input", { class: "input", name: "site_name", maxlength: "60", required: true, value: config.site_name });
+  const nameForm = el("form", { novalidate: true }, field("Dashboard name", siteName, { short: true }),
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save name" })));
+  nameForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setError(siteName, "");
+    if (!siteName.value.trim()) { setError(siteName, "Enter a name for the dashboard"); siteName.focus(); return; }
+    try {
+      await saveGeneral({ site_name: siteName.value }, "Name saved");
+      document.title = document.title.replace(/ · [^·]*$/, ` · ${config.site_name}`);
+    } catch (err) { setError(siteName, err.message); siteName.focus(); }
+  });
+
+  // Categories
+  const newName = el("input", { class: "input", id: "category-name", maxlength: "40", placeholder: "For example: Home", autocomplete: "off" });
+  const addForm = el("form", { class: "add-row", novalidate: true }, field("New category", newName),
+    el("button", { type: "submit", class: "btn", id: "category-add" }, icon("plus"), "Add category"));
+  addForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setError(newName, "");
+    const value = newName.value.trim();
+    if (!value) { setError(newName, "Enter a name for the category"); newName.focus(); return; }
+    if (config.groups.includes(value)) { setError(newName, `There is already a category called ${value}`); newName.focus(); return; }
+    if (await saveGroups([...config.groups, value], `Added ${value}`)) newName.value = "";
+  });
+
+  // App cards: switches that apply at once.
+  const cardSwitch = (key, labelId, on, off) => {
+    const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked: config[key] });
+    input.addEventListener("change", async () => {
+      try { await saveGeneral({ [key]: input.checked }, input.checked ? on : off); }
+      catch (err) { input.checked = !input.checked; toast(err.message); }
+    });
+    return el("label", { class: "switch" }, input);
+  };
+
+  // Default design
+  const designForm = el("form", {},
+    el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Default design" }),
+      el("div", { class: "option-cards" }, Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "option-card" },
+        el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("strong", { text: label }), el("small", { text: help }))))),
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save default design" })));
+  designForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try { await saveGeneral({ design: designForm.design.value }, `Default design saved: ${DESIGNS[designForm.design.value][0]}`); }
+    catch (err) { toast(err.message); }
+  });
+
+  $("#general-sections").removeAttribute("aria-busy");
+  $("#general-sections").replaceChildren(
+    section("gn-name", "Dashboard", "Shown in the header and the browser tab.", nameForm),
+    el("div", { id: "categories" }, section("gn-cat", "Categories", "The headings apps sit under on the Apps page, in this order. Changes apply at once.",
+      el("ul", { class: "rows", id: "category-list" }), el("div", { id: "category-loose" }), addForm)),
+    section("gn-card", "App cards", "What everyone sees on each card. These apply at once.",
+      el("ul", { class: "settings-rows" },
+        settingRow("Home address", "With a copy button.", cardSwitch("show_home_address", "card-home-l", "Cards now show the home address", "Cards no longer show the home address"), "card-home-l"),
+        settingRow("Outside address", "With a copy button, when the app has one.", cardSwitch("show_outside_address", "card-out-l", "Cards now show the outside address", "Cards no longer show the outside address"), "card-out-l"))),
+    section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm));
+  renderCategories();
+  if (location.hash === "#categories") $("#categories").scrollIntoView();
+}
+
+// Security ------------------------------------------------------------------
+
+async function startSecurity() {
+  // Who can open the dashboard
+  const access = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "net-l", "aria-describedby": "net-result" });
+  const result = el("span", { id: "net-result" });
+  const addresses = el("ul", { class: "network-addresses", "aria-label": "Addresses that open Starboard" });
+  const forced = el("p", { class: "small muted", hidden: true });
+  let network;
+  const showNetwork = () => {
+    access.checked = network.network_access;
+    result.textContent = network.network_access
+      ? "On: phones and other computers on your home network can reach the sign-in page."
+      : "Off: only the computer Starboard runs on can open it.";
+    const rows = [["This computer", `http://localhost:${network.port}`]];
+    if (network.network_access) for (const a of network.addresses) rows.push(["Phones and other computers", `http://${a}:${network.port}`]);
+    addresses.replaceChildren(...rows.map(([label, u]) => el("li", {}, `${label}: `, el("code", { text: u }))));
+    if (network.forced_by) {
+      access.disabled = true;
+      forced.hidden = false;
+      forced.textContent = `Set by ${network.forced_by} on the server, so it cannot be changed here.`;
+    }
+  };
+  try { network = await api("/api/network"); }
+  catch { network = { network_access: config.network_access, addresses: [], port: location.port || 80, you_are_on_this_computer: false }; }
+  access.addEventListener("change", async () => {
+    const want = access.checked;
+    if (!want) {
+      access.checked = true;
+      const ok = await confirmDialog({
+        title: "Turn off access from your home network?",
+        message: network.you_are_on_this_computer
+          ? el("p", { text: "Phones and other computers lose access straight away. Only this computer, the server, can open Starboard after this." })
+          : notice("warning", "You are using another device", "This phone or computer loses access straight away. Only the server itself can open Starboard after this."),
+        confirm: "Turn off network access", cancel: "Keep it on", danger: true,
+      });
+      if (!ok) { access.focus(); return; }
+      access.checked = false;
+    }
+    try {
+      await saveGeneral({ network_access: want }, want ? "Other devices on your home network can open Starboard now" : "Only this computer can open Starboard now");
+      network.network_access = want;
+      showNetwork();
+      setTimeout(async () => { try { network = await api("/api/network"); showNetwork(); } catch { /* this device lost access */ } }, 1500);
+    } catch (e) { access.checked = !want; toast(e.message); }
+  });
+
+  // Password
+  const current = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true });
+  const fresh = el("input", { class: "input", type: "password", autocomplete: "new-password", required: true });
+  const again = el("input", { class: "input", type: "password", autocomplete: "new-password", required: true });
+  const pwForm = el("form", { novalidate: true },
+    el("div", { class: "form-grid" },
+      el("div", { "data-span": "all", class: "field--short" }, field("Current password", current)),
+      field("New password", fresh),
+      field("Type the new password again", again)),
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Change password" })));
+  pwForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    [current, fresh, again].forEach((c) => setError(c, ""));
+    if (!current.value) { setError(current, "Enter your current password"); current.focus(); return; }
+    if (fresh.value.length < 10) { setError(fresh, `Use at least 10 characters. This one has ${fresh.value.length}.`); fresh.focus(); return; }
+    if (fresh.value !== again.value) { setError(again, "The two new passwords are different. Type the new one again."); again.focus(); return; }
+    try {
+      await postKeepingPage("/api/password", { current: current.value, new: fresh.value });
+      pwForm.reset();
+      toast("Password changed. Everyone else is signed out");
+    } catch (err) {
+      if (err.status === 401 || err.status === 429) { setError(current, err.message); current.focus(); }
+      else { setError(fresh, err.message); fresh.focus(); }
+    }
+  });
+
+  // Sessions
+  const days = el("input", { class: "input", inputmode: "numeric", "aria-labelledby": "days-l", "aria-describedby": "days-h", value: String(config.session_days) });
+  const daysError = el("span", { class: "field-error", id: "days-e", hidden: true });
+  const secure = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "secure-l", "aria-describedby": "secure-h", checked: config.secure_cookies });
+  secure.addEventListener("change", async () => {
+    try { await saveGeneral({ secure_cookies: secure.checked }, secure.checked ? "The sign-in cookie is now only sent over HTTPS" : "The sign-in cookie is sent over HTTP and HTTPS"); }
+    catch (err) { secure.checked = !secure.checked; toast(err.message); }
+  });
+  const daysForm = el("form", { novalidate: true, id: "session-form" });
+  daysForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    daysError.hidden = true;
+    days.removeAttribute("aria-invalid");
+    days.setAttribute("aria-describedby", "days-h");
+    const fail = (m) => {
+      daysError.replaceChildren(icon("circle-alert"), el("span", { text: m }));
+      daysError.hidden = false;
+      days.setAttribute("aria-invalid", "true");
+      days.setAttribute("aria-describedby", "days-h days-e");
+      days.focus();
+    };
+    const n = Number(days.value);
+    if (!Number.isInteger(n) || n < 1 || n > 90) { fail("Enter a whole number of days from 1 to 90"); return; }
+    try { await saveGeneral({ session_days: n }, `Remember me now lasts ${n} ${n === 1 ? "day" : "days"}`); }
+    catch (err) { fail(err.message); }
+  });
+  const everywhere = el("button", { type: "button", class: "btn btn--danger", text: "Sign out everywhere" });
+  everywhere.addEventListener("click", async () => {
+    const ok = await confirmDialog({
+      title: "Sign out everywhere?",
+      message: "Every browser and phone signed in to Starboard is signed out, including this one. Everyone needs the password to sign in again.",
+      confirm: "Sign out everywhere", cancel: "Stay signed in", danger: true,
+    });
+    if (!ok) return;
+    try { await api("/api/sessions/end-all", { method: "POST" }); } catch { /* signed out anyway */ }
+    location.href = "/login.html";
+  });
+  const signOut = el("button", { type: "button", class: "btn" }, icon("log-out"), "Sign out");
+  signOut.addEventListener("click", async () => {
+    await api("/api/logout", { method: "POST" }).catch(() => {});
     location.href = "/login.html";
   });
 
-  if ($("#version-line")) {  // Updates
-    showUpdates();
-    on("#update-check", "change", (e) => saveGeneral({ update_check: e.target.checked }, "Saved"));
-  }
+  $("#security-sections").removeAttribute("aria-busy");
+  $("#security-sections").replaceChildren(
+    section("sc-who", "Who can open the dashboard", "When this is off, only the computer Starboard runs on can open it.",
+      el("ul", { class: "settings-rows" },
+        settingRow("Phones and other computers on your home network", result, el("label", { class: "switch" }, access), "net-l")),
+      addresses, forced),
+    section("sc-pw", "Password", "At least 10 characters; a short sentence is easy to remember. You stay signed in here and everyone else is signed out.", pwForm),
+    section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm));
+  daysForm.append(
+      el("ul", { class: "settings-rows" },
+        el("li", { class: "setting" },
+          el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "days-l", text: "Remember me keeps people signed in for" }),
+            el("span", { class: "setting__hint", id: "days-h", text: "1 to 90 days. Without Remember me, people are signed out when they close the browser, or after a day." })),
+          el("div", { class: "setting__control" }, el("div", { class: "field" },
+            el("div", { class: "input-group days-group" }, days, el("span", { class: "input-group__unit", text: "days" })), daysError))),
+        settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Turn on when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l")),
+      el("div", { class: "actions session-actions" },
+        el("button", { type: "submit", class: "btn btn--primary", text: "Save how long" }), signOut, everywhere));
+  showNetwork();
+}
+
+// About and updates -----------------------------------------------------------
+
+async function startAbout() {
+  const top = $("#version-notice");
+  const check = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "check-l", "aria-describedby": "check-h", checked: config.update_check });
+  let v = null;
+  const showVersion = () => {
+    if (!v) return;
+    const latest = (v.latest || "").replace(/^v/, "");
+    const repo = /^[\w.-]+\/[\w.-]+$/.test(v.repo || "") ? v.repo : "";
+    const notes = repo && v.latest ? el("a", { class: "btn btn--compact", href: `https://github.com/${repo}/releases/tag/${encodeURIComponent(v.latest)}`, target: "_blank", rel: "noopener noreferrer" },
+      "Release notes", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null;
+    let box;
+    if (latest && latest !== v.current) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then run the update command on the server.`, notes);
+    else if (latest) box = notice("success", "You have the newest version", `Version ${v.current}.`);
+    else if (!repo) box = notice("info", `You have version ${v.current}`, "Starboard cannot look for new versions, because STARBOARD_REPO is not set on the server.");
+    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Looking for new versions is off. Turn it on below to see when one is out.");
+    else box = notice("info", `You have version ${v.current}`, "GitHub did not answer, so Starboard does not know yet whether a newer version is out.");
+    box.classList.add("notice--page");
+    top.replaceChildren(box);
+    const facts = $("#about-facts");
+    facts.replaceChildren(el("dt", { text: "Version" }), el("dd", { class: "numeric", text: v.current }));
+    if (repo) facts.append(el("dt", { text: "Source code" }), el("dd", {}, el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "Starboard on GitHub", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))));
+  };
+  check.addEventListener("change", async () => {
+    try {
+      await saveGeneral({ update_check: check.checked }, check.checked ? "Starboard looks for new versions" : "Starboard no longer looks for new versions");
+      v = await api("/api/version");
+      showVersion();
+    } catch (e) { check.checked = !check.checked; toast(e.message); }
+  });
+  $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "On: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
+  $("#update-command").append(copyButton("./update.sh", "the update command"));
+  try { v = await api("/api/version"); } catch { /* no notice */ }
+  showVersion();
+}
+
+startPage().then(async (session) => {
+  if (!session) return;
+  try { config = await api("/api/config"); } catch (e) { toast(e.message); return; }
+  if ($("#app-sections")) startManageApps();
+  if ($("#general-sections")) startGeneral();
+  if ($("#security-sections")) startSecurity();
+  if ($("#version-notice")) startAbout();
 });

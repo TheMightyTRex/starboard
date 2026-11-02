@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/settings.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/settings.js" defer></script>
@@ -149,22 +150,10 @@
   <div class="page-head">
     <div class="page-head__text">
       <h1>General</h1>
-      <p class="summary">The dashboard's name, what each card shows and the default design.</p>
+      <p class="page-head__summary">The dashboard's name, its categories and what each app card shows.</p>
     </div>
   </div>
-  <section class="panel" id="general" aria-label="General">
-    <div class="panel__head"><p class="hint">The name in the header and the design everyone sees unless they choose their own in Display.</p></div>
-    <form id="general-form" class="form-grid">
-      <div class="field"><label for="site-name">Dashboard name</label><input class="input" id="site-name" name="site_name" maxlength="60" required></div>
-      <div class="field"><label for="groups">Categories</label><input class="input" id="groups" name="groups" aria-describedby="groups-hint"><p class="hint" id="groups-hint">Separate with commas. Apps are shown under these headings, in this order.</p></div>
-      <fieldset class="field" data-span="all"><legend>On each app's card</legend>
-        <label class="check" for="show-home"><input type="checkbox" id="show-home" name="show_home_address"> Home address, with a copy button</label>
-        <label class="check" for="show-outside"><input type="checkbox" id="show-outside" name="show_outside_address"> Outside address, with a copy button (when the app has one)</label>
-      </fieldset>
-      <fieldset class="field" data-span="all"><legend>Default design</legend><div class="option-cards" id="default-design"></div></fieldset>
-      <div class="actions" data-span="all"><button class="btn btn--primary" type="submit">Save general settings</button></div>
-    </form>
-  </section>
+  <div class="settings-sections" id="general-sections" aria-busy="true"></div>
 </div>
 </main>
 </body>

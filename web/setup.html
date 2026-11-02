@@ -13,27 +13,104 @@
 <link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/settings.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/login.js" defer></script>
 </head>
-<body class="auth-page">
-<main id="main">
-<section class="panel auth-card" aria-labelledby="auth-title">
-  <div class="panel__head">
-    <h1 id="auth-title">Set up Starboard</h1>
-    <p class="hint">Name your dashboard and choose its password. The setup code is in the installer's output, or run <code>docker compose logs starboard</code>.</p>
+<body class="page-auth">
+<!-- A slim header with the name and the Display button. Sign in and Set up have no menus, so tools/apply_shell.py
+     does not write this page; the Display dialog below is a copy of the one it writes for the other pages. -->
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header site-header--no-rail auth-header">
+  <div class="site-header__bar">
+    <span class="site-header__brand"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false"><rect x="3" y="3" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="3" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="17" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><path d="M23 3.5l1.9 4.4 4.7.4-3.6 3.1 1.1 4.6-4.1-2.5-4.1 2.5 1.1-4.6-3.6-3.1 4.7-.4Z" fill="var(--color-logo-star)"/></svg><span data-site-name>Starboard</span></span>
+    <div class="site-header__actions">
+      <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><span class="label">Display</span></button>
+    </div>
   </div>
-  <form id="login-form" class="stack" data-mode="setup">
-    <div class="field"><label for="site-name">Name your dashboard</label><input class="input" id="site-name" name="site_name" maxlength="60" required aria-describedby="site-name-hint"><p class="hint" id="site-name-hint">Shown in the header and the browser tab. You can change it later in Settings, General.</p></div>
-    <div class="field"><label for="token">Setup code</label><input class="input" id="token" name="token" autocomplete="off" required autofocus></div>
-    <div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="new-password" minlength="10" required aria-describedby="password-hint"><p class="hint" id="password-hint">At least 10 characters. A short sentence is easy to remember.</p></div>
-    <div class="field"><label for="confirm">Type the password again</label><input class="input" id="confirm" name="confirm" type="password" autocomplete="new-password" required></div>
-    <label class="check" for="remember"><input type="checkbox" id="remember" name="remember"> Remember me on this device</label>
-    <p class="field-error" id="auth-error" role="alert"></p>
-    <button class="btn btn--primary" type="submit">Save password and continue</button>
+</header>
+<dialog class="dialog" id="display-panel" aria-labelledby="display-panel-title">
+  <form method="dialog">
+    <div class="panel-header">
+      <h2 class="panel-header__title" id="display-panel-title">Display and accessibility</h2>
+      <button type="button" class="icon-btn" data-dialog-close aria-label="Close display and accessibility"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+    <div class="dialog__body">
+      <fieldset><legend>Theme</legend>
+        <div class="segmented">
+          <label><input type="radio" name="theme" value="system"><span>Match device</span></label>
+          <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+          <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Text size</legend>
+        <div class="segmented">
+          <label><input type="radio" name="text" value="100"><span>100%</span></label>
+          <label><input type="radio" name="text" value="125"><span>125%</span></label>
+          <label><input type="radio" name="text" value="150"><span>150%</span></label>
+          <label><input type="radio" name="text" value="175"><span>175%</span></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Reduce motion</legend>
+        <div class="segmented">
+          <label><input type="radio" name="motion" value="device"><span>Match device</span></label>
+          <label><input type="radio" name="motion" value="on"><span>On</span></label>
+          <label><input type="radio" name="motion" value="off"><span>Off</span></label>
+        </div>
+      </fieldset>
+      <label class="switch" for="pref-contrast"><span>High contrast</span><input type="checkbox" role="switch" id="pref-contrast" name="contrast"></label>
+      <label class="switch" for="pref-underline"><span>Underline links</span><input type="checkbox" role="switch" id="pref-underline" name="underline"></label>
+      <label class="switch" for="pref-spacing"><span>Wider text spacing</span><input type="checkbox" role="switch" id="pref-spacing" name="spacing"></label>
+      <fieldset><legend>Design</legend>
+        <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General.</p>
+        <div class="option-cards" data-design-options></div>
+      </fieldset>
+    </div>
+    <div class="dialog__foot">
+      <button type="submit" class="btn btn--primary">Done</button>
+      <button type="button" class="btn" data-display-reset>Reset</button>
+    </div>
   </form>
-</section>
+</dialog>
+<div id="announcer" class="visually-hidden" aria-live="polite"></div>
+<main id="main" tabindex="-1" class="auth-main">
+<div class="page page--narrow">
+  <section class="panel" aria-labelledby="auth-title">
+    <div class="page-head__text"><h1 id="auth-title">Set up Starboard</h1><p class="muted">Three things, then you are in.</p></div>
+    <form id="login-form" class="stack-4" data-mode="setup" novalidate>
+      <div class="field">
+        <label for="token">Setup code</label>
+        <span class="hint" id="token-hint">In the installer's output, or run <code>docker compose logs starboard</code> on the server.</span>
+        <input class="input" id="token" name="token" autocomplete="off" required autofocus aria-describedby="token-hint">
+        <span class="field-error" id="token-error" role="alert" hidden></span>
+      </div>
+      <div class="field">
+        <label for="site-name">Name your dashboard</label>
+        <span class="hint" id="site-name-hint">Shown in the header and the browser tab. You can change it later in Settings, General.</span>
+        <input class="input" id="site-name" name="site_name" maxlength="60" required aria-describedby="site-name-hint">
+        <span class="field-error" id="site-name-error" role="alert" hidden></span>
+      </div>
+      <fieldset>
+        <legend class="field__label">Password</legend>
+        <div class="field">
+          <label for="password">Choose a password</label>
+          <span class="hint" id="password-hint">At least 10 characters. A short sentence is easy to remember.</span>
+          <input class="input" id="password" name="password" type="password" autocomplete="new-password" minlength="10" required aria-describedby="password-hint">
+          <span class="field-error" id="password-error" role="alert" hidden></span>
+        </div>
+        <div class="field">
+          <label for="confirm">Type it again</label>
+          <input class="input" id="confirm" name="confirm" type="password" autocomplete="new-password" required>
+          <span class="field-error" id="confirm-error" role="alert" hidden></span>
+        </div>
+      </fieldset>
+      <label class="check" for="remember"><input type="checkbox" id="remember" name="remember"><span class="check__text">Remember me on this device<span class="check__hint">Leave this off on a shared computer.</span></span></label>
+      <p class="field-error" id="auth-error" role="alert" hidden></p>
+      <button class="btn btn--primary" type="submit">Save password and continue</button>
+    </form>
+  </section>
+</div>
 </main>
 </body>
 </html>

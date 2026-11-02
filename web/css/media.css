@@ -1,0 +1,49 @@
+/* Media pages: Downloads, Search and Coming up (UX-41, group B).
+   Loaded after app.css. app.css still has older rules for .row and .notice that override the shared library,
+   so the library's own layout is put back here, scoped to body.media (slide-outs are added to body, so
+   they are covered too). Everything else comes from components.css. */
+
+/* Rows: the library's three columns (lead, text, side), or two without a lead. */
+.media .row { grid-template-columns: auto minmax(0, 1fr) auto; }
+.media .row--no-lead { grid-template-columns: minmax(0, 1fr) auto; }
+.media .row__title { margin: 0; font-size: var(--text-md); }
+/* Empty holders for messages take no space in the page's gap. */
+#queue-errors:empty, #search-errors:empty, #calendar-errors:empty { display: none; }
+
+/* Notices: icon, words, then an optional action, as in the library. */
+.media .notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-3);
+  align-items: start;
+}
+.media .notice > svg { margin-top: 2px; }
+
+/* Page sections stack with the page's own gap. */
+.media-section { display: grid; gap: var(--space-2); }
+.media-section > h2:not(.group-heading) { font-size: var(--text-lg); }
+.media-panel-section { display: grid; gap: var(--space-3); }
+.media-panel-lead__text { display: grid; gap: var(--space-2); align-content: start; }
+.media-panel-lead__text h3 { font-size: var(--text-lg); overflow-wrap: anywhere; }
+.media-panel-lead__text .chip { justify-self: start; }
+
+/* Search: a cover as the row's lead, the overview clamped to two lines. */
+.media .cover--result { width: 64px; }
+.media .result-overview { max-width: 70ch; margin-top: var(--space-1); }
+.media .toolbar__search { gap: var(--space-2); max-width: 480px; }
+.media .toolbar__search .input { min-width: 0; }
+
+/* Downloads: the reason a row needs attention shows in the row on wider screens only. */
+.dl-reason { color: var(--status-warning-fg); }
+
+/* Phones: rows put the side (chip, Add) under the text; rows with no lead are one column. */
+@media (max-width: 720px) {
+  .media .row { grid-template-columns: auto minmax(0, 1fr); }
+  .media .row--no-lead { grid-template-columns: minmax(0, 1fr) auto; }
+  .media .row--no-lead .row__side { grid-column: auto; justify-content: end; }
+  .media .cover--result { width: 48px; }
+  .media .result-overview { display: none; }
+  .media .row__side .btn { flex: 1 1 auto; }
+  .dl-reason { display: none; }
+  .media .toolbar__search { max-width: none; }
+}

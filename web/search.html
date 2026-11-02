@@ -14,11 +14,12 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/media.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/search.js" defer></script>
 </head>
-<body class="page-search">
+<body class="page-search media">
 <!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
 <a class="skip-link" href="#main">Skip to main content</a>
 <header class="site-header site-header--no-rail">
@@ -141,39 +142,27 @@
   <div class="page-head">
     <div class="page-head__text">
       <h1>Search</h1>
-      <p class="summary" id="search-summary">Find a series, film, artist or author and add it to the right app.</p>
+      <p class="page-head__summary summary" id="search-summary">Find a series, film, artist or author and add it to the right app.</p>
     </div>
   </div>
-  <form class="search-bar" id="search-form" role="search">
-    <label class="visually-hidden" for="q">Search for</label>
-    <input class="input" id="q" name="q" type="search" autocomplete="off" placeholder="For example: Blue Planet, Dune, Björk">
-    <button class="btn btn--primary" type="submit">Search</button>
-  </form>
-  <div class="filter-chips" id="kind-filters" role="group" aria-label="Show"></div>
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <form class="toolbar__search search-field" id="search-form" role="search">
+        <label class="visually-hidden" for="q">Search for</label>
+        <input class="input" id="q" name="q" type="search" autocomplete="off" placeholder="For example: Blue Planet, Dune, Björk">
+        <button class="btn btn--primary" type="submit"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-search"/></svg>Search</button>
+      </form>
+      <div class="filter-chips" id="kind-filters" role="group" aria-label="Show only" hidden></div>
+      <div class="toolbar__end"><span class="toolbar__count" id="search-count"></span></div>
+    </div>
+  </div>
   <div id="search-errors"></div>
-  <ul class="results" id="results" aria-live="polite" aria-busy="false"></ul>
-  <p class="hint">Not finding it? <a href="/settings.html">Add another app to search</a>.</p>
+  <section class="media-section" id="results-section" aria-labelledby="results-h" aria-busy="false" hidden>
+    <h2 id="results-h">Results</h2>
+    <ul class="rows" id="results"></ul>
+  </section>
+  <p class="small muted">Not finding it? <a href="/settings.html">Add another app to search</a>.</p>
 </div>
-<dialog id="add-dialog" aria-labelledby="add-title">
-  <form id="add-form">
-    <div class="panel-header">
-      <h2 id="add-title">Add</h2>
-      <button type="button" class="icon-btn" data-dialog-close aria-label="Close add">✕</button>
-    </div>
-    <div class="dialog__body">
-      <p id="add-intro"></p>
-      <div class="field"><label for="add-quality">Quality profile</label><select class="input" id="add-quality" name="quality_profile_id"></select></div>
-      <div class="field"><label for="add-root">Folder</label><select class="input" id="add-root" name="root_folder"></select></div>
-      <div class="field" id="add-meta-field" hidden><label for="add-meta">Metadata profile</label><select class="input" id="add-meta" name="metadata_profile_id"></select></div>
-      <label class="check" for="add-search"><input type="checkbox" id="add-search" name="search" checked> Start searching for it now</label>
-      <p class="field-error" id="add-error" role="alert"></p>
-    </div>
-    <div class="dialog__foot">
-      <button type="submit" class="btn btn--primary" id="add-submit">Add</button>
-      <button type="button" class="btn" data-dialog-close>Cancel</button>
-    </div>
-  </form>
-</dialog>
 </main>
 </body>
 </html>
