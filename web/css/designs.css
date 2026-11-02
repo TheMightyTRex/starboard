@@ -7,11 +7,59 @@
 :root[data-design="health"] .app-card[data-state="up"] { border-left-color: var(--status-success-fg); }
 :root[data-design="health"] .app-card[data-state="down"] { border-left-color: var(--status-danger-fg); background: var(--status-danger-bg); }
 :root[data-design="health"] .app-card:is([data-state="checking"], [data-state="unknown"]) { border-left-color: var(--status-neutral-fg); }
-:root[data-design="health"] .app-card[data-state="up"] .card__desc { display: none; }
+:root[data-design="health"] .app-card .card__desc { display: none; }
 
 /* 2. Tiles: the familiar launcher. The library's card grid with each app's description. ------------ */
 :root[data-design="tiles"] .app-cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
-:root[data-design="tiles"] .app-card .card__ms { display: none; }
+
+/* Health first and Tiles share one card (design D, 2 November 2026): name and Open; what the app is doing;
+   update and warning chips; then a strip of status, version and reply time. Every card has every row, and takes
+   its rows from the grid (subgrid), so the rows line up and a row of cards is all one height. */
+:root:is([data-design="health"], [data-design="tiles"]) .app-card {
+  grid-row: span 4; grid-template-rows: subgrid;
+  grid-template-columns: minmax(calc(var(--text-xs) * 12.5), 1.4fr) minmax(0, 1fr) minmax(0, 1fr); /* wide enough for "Update available" */
+  row-gap: var(--space-2); column-gap: 0;
+}
+:root[data-design="tiles"] .app-card { grid-row: span 5; }
+:root[data-design="health"] .app-cards:has(.card__address) .app-card { grid-row: span 5; }
+:root[data-design="tiles"] .app-cards:has(.card__address) .app-card { grid-row: span 6; }
+:root:is([data-design="health"], [data-design="tiles"]) .app-card :is(.card__top, .card__desc, .card__activity, .card__notes, .card__actions) { grid-column: 1 / -1; }
+:root:is([data-design="health"], [data-design="tiles"]) .app-card :is(.card__status, .card__chips) { display: contents; }
+/* The status sits beside the name, on its line; the copy in .card__chips is for the other designs. */
+:root:is([data-design="health"], [data-design="tiles"]) .card__top { align-items: center; }
+:root:is([data-design="health"], [data-design="tiles"]) .card__top-state { display: inline-flex; flex: none; margin-left: auto; }
+:root:is([data-design="health"], [data-design="tiles"]) .card__state { display: none; }
+:root:is([data-design="health"], [data-design="tiles"]) .card__actions > .btn { display: none; }
+:root:is([data-design="health"], [data-design="tiles"]) .card__actions:not(:has(.copy-btn)) { display: none; }
+:root:is([data-design="health"], [data-design="tiles"]) .card__notes { display: flex; align-items: center; min-height: calc(var(--text-xs) * 2 + var(--space-2) + 1px); /* one chip, even when empty */ }
+:root:is([data-design="health"], [data-design="tiles"]) .card__version,
+:root:is([data-design="health"], [data-design="tiles"]) .card__ms { display: flex; }
+/* A category where no card has an update or warning chip keeps only the line above the strip. */
+:root:is([data-design="health"], [data-design="tiles"]) .app-cards:not(:has(.card__notes:not(:empty))) .card__notes { min-height: 0; padding-bottom: 0; }
+/* The strip: three cells, left-aligned and centred on the row, under a line. */
+:root:is([data-design="health"], [data-design="tiles"]) .app-card .card__notes { padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-divider); }
+:root:is([data-design="health"], [data-design="tiles"]) .app-card .card__update { grid-column: 1; justify-self: start; align-self: center; }
+:root:is([data-design="health"], [data-design="tiles"]) .app-card :is(.card__version, .card__ms) {
+  align-self: stretch; align-items: center; padding-left: var(--space-2); font-size: var(--text-sm); white-space: nowrap;
+}
+:root:is([data-design="health"], [data-design="tiles"]) .app-card .card__version { grid-column: 2; }
+:root:is([data-design="health"], [data-design="tiles"]) .app-card .card__ms { grid-column: 3; }
+:root[data-design="health"] .app-card .card__top { grid-row: 1; }
+:root[data-design="health"] .app-card .card__activity { grid-row: 2; }
+:root[data-design="health"] .app-card .card__notes { grid-row: 3; }
+:root[data-design="health"] .app-card :is(.card__update, .card__version, .card__ms) { grid-row: 4; }
+:root[data-design="tiles"] .app-card .card__top { grid-row: 1; }
+:root[data-design="tiles"] .app-card .card__desc { grid-row: 2; }
+:root[data-design="tiles"] .app-card .card__activity { grid-row: 3; }
+:root[data-design="tiles"] .app-card .card__notes { grid-row: 4; }
+:root[data-design="tiles"] .app-card :is(.card__update, .card__version, .card__ms) { grid-row: 5; }
+/* With home addresses shown, the address and its copy button sit above the line, after what the app is doing. */
+:root[data-design="health"] .app-cards:has(.card__address) .app-card .card__actions { grid-row: 3; }
+:root[data-design="health"] .app-cards:has(.card__address) .app-card .card__notes { grid-row: 4; }
+:root[data-design="health"] .app-cards:has(.card__address) .app-card :is(.card__update, .card__version, .card__ms) { grid-row: 5; }
+:root[data-design="tiles"] .app-cards:has(.card__address) .app-card .card__actions { grid-row: 4; }
+:root[data-design="tiles"] .app-cards:has(.card__address) .app-card .card__notes { grid-row: 5; }
+:root[data-design="tiles"] .app-cards:has(.card__address) .app-card :is(.card__update, .card__version, .card__ms) { grid-row: 6; }
 
 /* 3. Shelf: an icon rail on the left (computers) and one app per row, like Storyarr. ---------------- */
 @media (min-width: 1100px) {
@@ -81,7 +129,7 @@
 :root[data-design="board"] .app-card .card__ms { grid-column: 4; grid-row: 1; display: block; text-align: right; }
 :root[data-design="board"] .app-card .card__group { grid-column: 5; grid-row: 1; display: block; }
 :root[data-design="board"] .app-card .card__actions { grid-column: 6; grid-row: 1; }
-:root[data-design="board"] .app-card :is(.card__desc, .card__address, .copy-btn) { display: none; }
+:root[data-design="board"] .app-card :is(.card__desc, .card__activity, .card__address, .copy-btn) { display: none; }
 :root[data-design="board"] .app-card .app-icon { width: 28px; height: 28px; font-size: var(--text-xs); }
 :root[data-design="board"] .app-card .card__actions .btn { min-height: var(--control-h); }
 @media (max-width: 719px) {

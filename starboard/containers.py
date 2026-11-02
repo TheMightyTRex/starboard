@@ -30,6 +30,7 @@ import urllib.request
 HELPER_IMAGE = "docker@sha256:851f91d241214e7c6db86513b270d58776379aacc5eb9c4a87e5b47115e3065c"
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
 SEMVER = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
+PINNED = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)([-+.].+)?$")  # a version tag, or a test build such as v0.4.9-dev.6
 ACCEPT = ", ".join(["application/vnd.oci.image.index.v1+json", "application/vnd.docker.distribution.manifest.list.v2+json",
                     "application/vnd.docker.distribution.manifest.v2+json", "application/vnd.oci.image.manifest.v1+json"])
 
@@ -226,18 +227,20 @@ def remote(ref):
 
 
 def newer_pinned(ref):
-    """For an image pinned to a version tag, the newest higher stable tag in its registry, or None."""
+    """For an image pinned to a version tag, the newest higher stable tag in its registry, or None. A test build
+    (v0.4.9-dev.6) counts as older than its release, so v0.4.9 itself is offered too."""
     reg, repo, tag = parse_ref(ref)
-    now = SEMVER.match(tag)
+    now = PINNED.match(tag)
     if not now:
         return None
+    current, test_build = tuple(int(x) for x in now.groups()[:3]), bool(now.group(4))
     _, body = _registry(reg, repo, "tags/list?n=1000", accept="application/json")
     best = None
     for name in json.loads(body).get("tags") or []:
         m = SEMVER.match(name)
         if m and name.startswith("v") == tag.startswith("v"):
             key = tuple(int(x) for x in m.groups())
-            if key > tuple(int(x) for x in now.groups()) and (not best or key > best[0]):
+            if (key > current or (test_build and key == current)) and (not best or key > best[0]):
                 best = (key, name)
     return best[1] if best else None
 
@@ -260,6 +263,15 @@ def _check_one(c):
                        big_change=_major(c["version"] or parse_ref(c["image"])[2]) != _major(target))
         return out
     except urllib.error.HTTPError as e:
+        if e.code == 404:
+            # A local or test build (v0.4.9-dev.6) is not in the registry, but a newer release may be.
+            try:
+                target = newer_pinned(c["image"])
+            except (urllib.error.URLError, OSError, ValueError, KeyError, DockerError):
+                target = None
+            if target:
+                return {"latest": target, "target_tag": target, "update": True, "unknown": False, "pinned": True,
+                        "big_change": _major(c["version"] or parse_ref(c["image"])[2]) != _major(target)}
         message = ("This tag is not in its registry, so it may be a local or test build" if e.code == 404
                    else f"The registry answered with error {e.code}")
         return {"latest": "", "update": False, "unknown": True, "error": message}

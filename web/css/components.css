@@ -1092,6 +1092,11 @@
     height: 100%;
     object-fit: contain;
   }
+  /* With its logo, the icon is just the image: no tile and no border. Initials keep the tile. */
+  .app-icon.has-image {
+    border-color: transparent;
+    background: none;
+  }
   /* Cover: a book cover at 2:3; audiobook squares are letterboxed, never cropped. */
   .cover {
     position: relative;

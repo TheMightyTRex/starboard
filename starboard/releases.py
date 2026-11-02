@@ -104,6 +104,13 @@ RELEASES = [
                ("Log", "A connection that stayed idle until it timed out no longer writes an error to Docker's log.")],
      "review": [],
      "settings": "No settings change. To go back, run ./update.sh --to v0.7.0."},
+    {"version": "0.7.2", "date": "2 November 2026",
+     "added": [],
+     "changed": [("App cards", "In Health first and Tiles every card has the same rows in the same places: the status beside the name, what the app is doing, the address as a link that opens the app, warnings, then update, version and reply time along the bottom. Cards side by side are the same height."),
+                 ("App logos", "A logo is shown on its own, without a tile; apps without one keep their initials on a tile.")],
+     "fixed": [("Updates for test builds", "An app on a test build, such as v0.4.9-dev.6, which is not in its registry, is now offered the newest release instead of nothing.")],
+     "review": [],
+     "settings": "No settings change. To go back, run ./update.sh --to v0.7.1."},
 ]
 
 

@@ -8,11 +8,12 @@
 .app-group .group-heading { padding-top: 0; }
 .app-cards .apps-head { display: none; }
 .app-card .app-icon { width: 40px; height: 40px; }
-.card__chips { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); }
-.card__group { display: none; }
-.card__ms:empty, .card__version:empty { display: none; }
+.card__chips, .card__notes, .card__state, .card__update { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); }
+.card__group, .card__top-state { display: none; }  /* .card__top-state: Health first and Tiles only */
+.card__ms:empty, .card__version:empty, .card__desc:empty, .card__activity:empty, .card__notes:empty { display: none; }
+.card__desc, .card__activity { margin: 0; }
 .card__actions { align-items: center; }
-.card__address { min-width: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
+.card__address { min-width: 0; font-size: var(--text-sm); overflow-wrap: anywhere; }  /* a link to the app, in the link colour */
 .card__actions .copy-btn { flex: none; }
 
 /* Toolbar: the filter chips scroll sideways on phones instead of filling the screen. */
@@ -20,7 +21,6 @@
   .page-apps .toolbar__row > .filter-chips { flex-wrap: nowrap; overflow-x: auto; width: 100%; padding: var(--focus-w); margin: calc(-1 * var(--focus-w)); }
   .page-apps .toolbar__row > .filter-chips .filter-chip { flex: none; }
   .page-apps .toolbar__search { max-width: none; }
-  .app-card .card__address { display: none; }
 }
 
 /* Notice with an action button on the right (app.css gives notices their colours only). */
@@ -111,8 +111,6 @@
   width: auto;
   height: 2.6rem;
   aspect-ratio: 1;
-  border: 0;
-  background: none;
 }
 /* The app's name has a second line, so the other cells (status, Update) sit on the middle of the row. */
 .updates-table :is(th, td) {

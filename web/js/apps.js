@@ -24,24 +24,33 @@ function card(s, old) {
   const warn = AppDetails.warnings(s);
   const o = AppDetails.state.outside[s.id];
   const home = s.link ? reachableUrl(s.link) : "";
-  const chips = el("span", { class: "card__chips" }, chip(words.label, words.tone),
-    u ? chip("Update available", "info") : null,
-    warn.length ? chip(warn.length === 1 ? "1 warning" : `${warn.length} warnings`, "warning") : null,
-    o && !o.reachable ? chip("Not reachable from outside", "warning") : null);
-  return el("li", { class: "card app-card", "data-state": words.state, "data-tone": words.state === "down" ? "danger" : null },
-    el("div", { class: "card__top" }, AppDetails.iconFor(s, old), el("h3", { class: "card__title" }, AppDetails.opener(s))),
-    s.description ? el("p", { class: "small muted card__desc", text: s.description }) : null,
+  const down = words.state === "down";
+  const numbersOff = config.performance?.card_numbers === false;
+  // Status, update, then a box for warning and outside chips. Status board keeps them together; Health first and
+  // Tiles show the status beside the name, the update in the strip and the rest in their own row.
+  const chips = el("span", { class: "card__chips" }, el("span", { class: "card__state" }, chip(words.label, words.tone)),
+    u ? el("span", { class: "card__update" }, chip("Update available", "info")) : null,
+    el("span", { class: "card__notes" },
+      warn.length ? chip(warn.length === 1 ? "1 warning" : `${warn.length} warnings`, "warning") : null,
+      o && !o.reachable ? chip("Not reachable from outside", "warning") : null));
+  const numbers = AppDetails.state.numbers?.[s.id];
+  const activity = down ? "Cannot reach it" : numbers?.length ? numbers.join(" · ") : numbersOff || !st ? "" : "Nothing to report";
+  // Every card has the same parts in the same order, so each line sits in the same place on every card.
+  return el("li", { class: "card app-card", "data-state": words.state, "data-tone": down ? "danger" : null },
+    el("div", { class: "card__top" }, AppDetails.iconFor(s, old), el("h3", { class: "card__title" }, AppDetails.opener(s)),
+      el("span", { class: "card__top-state" }, chip(words.label, words.tone))),
+    el("p", { class: "small muted card__desc", text: s.description || "" }),
+    el("p", { class: `small card__activity${down || !numbers?.length ? " muted" : ""}`, text: activity }),
     el("div", { class: "card__meta card__status" }, chips,
-      el("span", { class: "card__version num", text: u ? `v${u.installed}` : st?.version ? `v${st.version}` : "" }),
-      el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : "" }),
+      el("span", { class: "card__version num", text: u ? `v${u.installed}` : st?.version ? `v${st.version}` : down ? "Not known" : "" }),
+      el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : down ? "No reply" : "" }),
       el("span", { class: "card__group", text: s.group || "Other" })),
-    // Small numbers under the status line, so the status lines up across cards in a row.
-    AppDetails.state.numbers?.[s.id] ? el("p", { class: "small muted card__numbers", text: AppDetails.state.numbers[s.id].join(" · ") }) : null,
     el("div", { class: "card__meta card__actions" },
       home ? el("a", { class: "btn", href: home, target: "_blank", rel: "noopener noreferrer" },
         icon("external-link"), "Open", el("span", { class: "visually-hidden", text: ` ${s.name} (opens in a new tab)` })) : null,
       home && config.show_home_address ? copyButton(home, `home address for ${s.name}`) : null,
-      home && config.show_home_address ? el("code", { class: "card__address", text: shortUrl(home) }) : null));
+      home && config.show_home_address ? el("a", { class: "card__address", href: home, target: "_blank", rel: "noopener noreferrer" },
+        el("code", { text: shortUrl(home) }), el("span", { class: "visually-hidden", text: `, opens ${s.name} in a new tab` })) : null));
 }
 
 function groupsOf(services) {

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.2 (2 November 2026)
+
+- **App cards (Health first and Tiles):** every card has the same rows in the same places. The status sits beside
+  the name; then what the app is doing ("3 in the queue", "Nobody playing", "Nothing to report", "Cannot reach
+  it"); the home address as a link that opens the app (now on phones too); warnings, in a row only when a card in
+  that category has one; and along the bottom, under a line, Update available, the version and the reply time
+  ("Not known" and "No reply" when the app does not answer). Each card takes its rows from the grid, so cards
+  side by side are the same height. The Open button is in the app's details.
+- **App logos** are shown on their own, without a tile (shared library); initials keep their tile.
+- **Updates for test builds:** an image pinned to a test build such as `v0.4.9-dev.6`, which is not in its
+  registry, is now offered the newest release (a test build counts as older than its release).
+
 ## 0.7.1 (2 November 2026)
 
 - **Long API keys:** keys were cut to 200 characters when saved, so Audiobookshelf (whose keys are about 211
