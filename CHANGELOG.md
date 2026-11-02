@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.4 (2 November 2026)
+
+- Every setting that uses processor time or memory says what it costs, measured on a home server, so a small
+  server can keep only what it needs. The access list on About and updates says the same for each item.
+
 ## 0.3.3 (2 November 2026)
 
 - Live TV: logos the folder already serves are used as they are, not processed again.

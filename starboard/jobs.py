@@ -13,7 +13,7 @@ import time
 from . import livetv, migrate
 
 JOBS = {
-    "livetv": {"title": "Live TV channels and guide", "every": 3600, "what": "Rebuilds Jellyfin's free channels, guides, numbering and logos once a day"},
+    "livetv": {"title": "Live TV channels and guide", "every": 3600, "what": "Refreshes Jellyfin's free TV guides daily, and its channels when a channel list changes"},
     "import": {"title": "Watch history import", "every": 3600, "what": "Applies imported watch history to Jellyfin as the media arrives"},
     "defaults": {"title": "Jellyfin user defaults", "every": 3600, "what": "Gives every Jellyfin user your defaults, unless they chose otherwise"},
 }
