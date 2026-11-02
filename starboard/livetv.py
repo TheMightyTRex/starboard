@@ -26,7 +26,6 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
-import xml.etree.ElementTree as ET
 
 RAW = "https://raw.githubusercontent.com/matthuisman/i.mjh.nz/master"
 GUIDES = [
@@ -50,6 +49,12 @@ FREE_TV = {"CBBC": "Kids", "CBeebies": "Kids", "Pop": "Kids", "BBC News": "News"
            "WeatherNation": "News", "Great! Movies": "Movies", "True Crime": "Documentaries"}
 LOGO_VERSION = "v3"
 DAY = 20 * 3600  # "older than a day", with room for the hourly check
+
+
+def _et():
+    """The XML parser, loaded only when a guide is built (it is not needed the rest of the time)."""
+    import xml.etree.ElementTree as ET
+    return ET
 
 
 def folder():
@@ -93,7 +98,7 @@ def _xml_events(data):
     raw = _gunzip(data)
     if b"<!DOCTYPE" in raw[:4096] or b"<!ENTITY" in raw[:65536]:
         raise ValueError("The guide has a DOCTYPE, which Starboard does not accept")
-    return ET.iterparse(io.BytesIO(raw))
+    return _et().iterparse(io.BytesIO(raw))
 
 
 def _clean(text, limit=200):
@@ -161,6 +166,7 @@ def _entry(cid, v, chno, group, url):
 
 
 def _filtered_guide(sources, ids, out):
+    ET = _et()
     root = ET.Element("tv", {"generator-info-name": "Starboard"})
     keep = []
     for url in sources:
@@ -188,6 +194,7 @@ def build_guide(d):
         return "No guide-map.txt, so no main guide"
     with open(path, encoding="utf-8") as f:
         wanted = {line.strip() for line in f if line.strip()}
+    ET = _et()
     root = ET.Element("tv", {"generator-info-name": "Starboard (from epgshare01)"})
     channels, programmes, seen = [], [], set()
     for url in GUIDES:

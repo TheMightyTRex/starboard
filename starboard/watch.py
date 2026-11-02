@@ -94,6 +94,7 @@ class Watch:
         self.path = os.path.join(app.config.data_dir, "uptime.json")
         self.lock = threading.Lock()
         self.wake = threading.Event()
+        self.thread = None
         self.state = self._load()
 
     def settings(self):
@@ -118,18 +119,29 @@ class Watch:
         os.replace(tmp, self.path)
 
     def start(self):
-        threading.Thread(target=self._loop, name="watch", daemon=True).start()
+        self.ensure()
+
+    def ensure(self):
+        """Starts the thread when watching is on; a running thread is woken, and ends if watching is off."""
+        if self.thread and self.thread.is_alive():
+            self.wake.set()
+            return
+        if self.settings()["enabled"]:
+            self.thread = threading.Thread(target=self._loop, name="watch", daemon=True)
+            self.thread.start()
 
     def _loop(self):
         while True:
             w = self.settings()
-            if w["enabled"]:
-                try:
-                    self.tick()
-                except Exception as e:  # keep watching whatever one check does
-                    print(f"[starboard] watch: {e}", flush=True)
-            # Sleep until the next check; turning watching on in Settings wakes it at once.
-            self.wake.wait(max(60, int(w.get("every", 5)) * 60) if w["enabled"] else 3600)
+            if not w["enabled"]:
+                self.thread = None
+                return  # watching off: no thread at all until it is turned on again
+            try:
+                self.tick()
+            except Exception as e:  # keep watching whatever one check does
+                print(f"[starboard] watch: {e}", flush=True)
+            # Sleep until the next check; a change in Settings wakes it at once.
+            self.wake.wait(max(60, int(w.get("every", 5)) * 60))
             self.wake.clear()
 
     def alert(self, key, title, message, level="problem"):

@@ -21,7 +21,6 @@ Jellyfin is reached with the API key of the Jellyfin app in Manage apps.
 import json
 import os
 import re
-import sqlite3
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -101,6 +100,7 @@ def _norm(ids):
 
 def read_plex_db(path):
     """Every account's history from a copy of Plex's database. Opened read-only."""
+    import sqlite3  # loaded only for this import
     db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     q = lambda s, *a: db.execute(s, a).fetchall()
     ids = {}

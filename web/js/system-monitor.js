@@ -1,7 +1,8 @@
 // Monitor: live charts while the page is open, using the same line chart as Overview. The server sends raw
 // counters; rates are worked out here. Charts and thread meters update in place, so focus stays where it is.
 
-const POINTS = 90; // 3 minutes at one reading every 2 seconds
+let every = 2; // seconds between readings; Settings, Performance
+let POINTS = 90; // 3 minutes of readings
 const points = [];
 let previous = null;
 let timer = null;
@@ -127,15 +128,18 @@ async function tick() {
 // Pause keeps one label; aria-pressed says whether it is on.
 function setRunning(on) {
   clearInterval(timer);
-  timer = on ? setInterval(tick, 2000) : null;
+  timer = on ? setInterval(tick, every * 1000) : null;
   $("#pause").setAttribute("aria-pressed", String(!on));
   $("#monitor-summary").textContent = on
-    ? "Live while this page is open · every 2 seconds · last 3 minutes"
+    ? `Live while this page is open · every ${every} seconds · last 3 minutes`
     : "Paused · press Pause again to carry on";
   if (on) tick();
 }
 
-startPage().then(() => {
+startPage().then(async () => {
+  const cfg = await api("/api/config").catch(() => null);
+  every = cfg?.performance?.monitor_refresh || 2;
+  POINTS = Math.round(180 / every);
   const pause = $("#pause");
   pause.replaceChildren(icon("pause"), el("span", { text: "Pause" }));
   pause.addEventListener("click", () => { setRunning(!timer); announce(timer ? "Monitor carrying on." : "Monitor paused."); });

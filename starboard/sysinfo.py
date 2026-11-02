@@ -187,7 +187,7 @@ def app_usage():
     return out
 
 
-def monitor():
+def monitor(apps=True):
     total, cores = _cpu_times()
     mem = {}
     for line in _read("/proc/meminfo").splitlines():
@@ -207,7 +207,7 @@ def monitor():
         "disks": _disk_counters(),
         "temps": _temperatures(),
         "uptime_seconds": float(uptime[0]) if uptime else None,
-        "apps": app_usage(),
+        "apps": app_usage() if apps else None,
     }
 
 
@@ -470,19 +470,39 @@ class Usage:
 # so the System charts can look back. About 1,440 small readings; nothing leaves the server.
 
 class History:
-    INTERVAL = 60
+    """Readings for the System charts. Off, or less often, in Settings, Performance: the thread runs only while
+    it is on, and ends when it is turned off (after saving)."""
     KEEP = 24 * 3600
 
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, settings=None):
         import collections
         import threading
         self.path = os.path.join(data_dir, "history.json")
         self.points = collections.deque()
         self.lock = threading.Lock()
+        self.settings = settings or (lambda: {"history": True, "history_every": 60})
+        self.wake = threading.Event()
+        self.thread = None
         self._load()
-        self._previous = monitor()
+        self._previous = None
         self._last_save = time.time()
-        threading.Thread(target=self._run, daemon=True).start()
+        self.ensure()
+
+    @property
+    def INTERVAL(self):
+        return int(self.settings().get("history_every", 60))
+
+    def ensure(self):
+        import threading
+        if not self.settings().get("history", True):
+            self.wake.set()  # a running thread notices and ends
+            return
+        if self.thread and self.thread.is_alive():
+            self.wake.set()
+            return
+        self._previous = monitor(apps=False)
+        self.thread = threading.Thread(target=self._run, name="history", daemon=True)
+        self.thread.start()
 
     def _load(self):
         import json
@@ -512,8 +532,8 @@ class History:
         return max(0.0, 100 * (1 - (now[1] - before[1]) / total)) if total > 0 else 0.0
 
     def sample(self):
-        now = monitor()
-        prev, self._previous = self._previous, now
+        now = monitor(apps=False)  # the charts need the whole server, not each app
+        prev, self._previous = self._previous or now, now
         dt = max(1.0, now["time"] - prev["time"])
 
         def rate(key, index):
@@ -543,7 +563,12 @@ class History:
 
     def _run(self):
         while True:
-            time.sleep(self.INTERVAL)
+            self.wake.wait(self.INTERVAL)
+            self.wake.clear()
+            if not self.settings().get("history", True):
+                self._save()
+                self.thread = None
+                return
             try:
                 self.sample()
                 if time.time() - self._last_save > 600:
@@ -569,3 +594,21 @@ class History:
                 merged[key] = round(sum(values) / len(values), 1) if values else None
             out.append(merged)
         return out
+
+
+def self_usage():
+    """Starboard's own memory and processor use, and its threads, for Settings, Performance."""
+    import threading
+    status = {}
+    for line in _read("/proc/self/status").splitlines():
+        k, _, v = line.partition(":")
+        status[k] = v.strip()
+    stat = _read("/proc/self/stat").rsplit(")", 1)[-1].split()
+    ticks = os.sysconf("SC_CLK_TCK") if hasattr(os, "sysconf") else 100
+    cpu_seconds = (int(stat[11]) + int(stat[12])) / ticks if len(stat) > 12 else 0
+    started = float(stat[19]) / ticks if len(stat) > 19 else 0
+    boot = float((_read("/proc/uptime").split() or ["0"])[0])
+    alive = max(1.0, boot - started)
+    names = sorted(t.name for t in threading.enumerate())
+    return {"memory": int(status.get("VmRSS", "0 kB").split()[0]) * 1024, "cpu_seconds": round(cpu_seconds, 1),
+            "running_seconds": int(alive), "cpu_percent": round(cpu_seconds / alive * 100, 3), "threads": names}

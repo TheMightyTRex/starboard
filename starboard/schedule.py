@@ -35,6 +35,8 @@ class Schedule:
         self.config = config
         self.path = os.path.join(config.data_dir, "schedule.json")
         self.lock = threading.Lock()
+        self.wake = threading.Event()
+        self.thread = None
 
     # State --------------------------------------------------------------------
 
@@ -146,16 +148,33 @@ class Schedule:
             if json.dumps(state, sort_keys=True) != before:  # write only when something changed
                 self.save(state)
 
+    def needed(self):
+        """On, or off but still holding downloads it paused (they are started again first)."""
+        return self.hours()["enabled"] or self.load().get("applied") == "pause"
+
     def loop(self):
         while True:
             try:
                 self.tick()
             except Exception as e:  # keep checking whatever one client does
                 print(f"[starboard] download hours: {e}", flush=True)
-            time.sleep(60)
+            if not self.needed():
+                self.thread = None
+                return  # off and nothing to undo: no thread at all until it is turned on again
+            every = int(self.config.data.get("performance", {}).get("schedule_every", 60))
+            self.wake.wait(every)
+            self.wake.clear()
 
     def start(self):
-        threading.Thread(target=self.loop, name="download-hours", daemon=True).start()
+        self.ensure()
+
+    def ensure(self):
+        if self.thread and self.thread.is_alive():
+            self.wake.set()
+            return
+        if self.needed():
+            self.thread = threading.Thread(target=self.loop, name="download-hours", daemon=True)
+            self.thread.start()
 
     # The page -----------------------------------------------------------------
 

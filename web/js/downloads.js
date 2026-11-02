@@ -1,4 +1,4 @@
-// Downloads: the queues of every app in one list. Rows are updated in place every 15 seconds (renderKeyed), so
+// Downloads: the queues of every app in one list. Rows are updated in place every few seconds (renderKeyed), so
 // focus and an open download details slide-out stay put. Updates can be paused.
 
 let items = [];
@@ -7,6 +7,7 @@ let filter = null; // a state word, or null for everything
 let sort = "attention";
 let grouped = false;
 let paused = false;
+let every = 15; // seconds between updates; Settings, Performance (0: only when you press Check again)
 let timer = null;
 let services = new Map(); // app name -> app from /api/config, for "Open in" links
 let panel = null;
@@ -369,8 +370,9 @@ async function scheduleAct(action, button) {
 function setPaused(on) {
   paused = on;
   clearInterval(timer);
-  // Every 15 seconds while the tab is in view; a hidden tab asks nothing and catches up when shown again.
-  timer = on ? null : setInterval(() => { if (!document.hidden) { load(); loadSchedule(); loadTransfer(); } }, 15000);
+  // Every few seconds (Settings, Performance) while the tab is in view; a hidden tab asks nothing and catches up
+  // when shown again.
+  timer = on || !every ? null : setInterval(() => { if (!document.hidden) { load(); loadSchedule(); loadTransfer(); } }, every * 1000);
   $("#auto-refresh").setAttribute("aria-pressed", String(on));
   renderSummary();
 }
@@ -379,7 +381,7 @@ startPage().then(async () => {
   $("#refresh").addEventListener("click", () => { load({ announceIt: true }); loadTransfer(true); });
   $("#auto-refresh").addEventListener("click", () => {
     setPaused(!paused);
-    announce(paused ? "Updates paused" : "Updates resumed, every 15 seconds");
+    announce(paused ? "Updates paused" : every ? `Updates resumed, every ${every} seconds` : "Updates only when you press Check again");
   });
   $("#group-by-app").addEventListener("click", (e) => {
     grouped = !grouped;
@@ -397,6 +399,7 @@ startPage().then(async () => {
   try {
     const cfg = await api("/api/config");
     services = new Map(cfg.services.map((s) => [s.name, s]));
+    every = cfg.performance?.downloads_refresh ?? 15;
   } catch { /* links to the apps are an extra; the queue works without them */ }
   await Promise.all([load(), loadSchedule(), loadTransfer()]);
   loadRecent();

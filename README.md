@@ -20,7 +20,9 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
    where possible.
 6. **Only the access you allow.** Each kind of access is optional, asked for by the installer and listed in
    Settings.
-7. **Accessible to everyone.** WCAG 2.2 AA, built on the shared component library.
+7. **You choose what runs.** Settings, Performance shows Starboard's own use, offers presets (Small server,
+   Balanced, Everything, Custom) and lets you switch off, or slow down, every piece of background work.
+8. **Accessible to everyone.** WCAG 2.2 AA, built on the shared component library.
 
 - **Every page has its own address:** `/index.html` (Apps), `/search.html`, `/downloads.html`,
   `/upcoming.html`, `/system.html`, and Settings as `/settings.html` (Apps), `/settings-general.html`,

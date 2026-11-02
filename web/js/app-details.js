@@ -38,7 +38,9 @@ const AppDetails = (() => {
       state.updateErrors = Object.fromEntries(errors.map((e) => [e.service, e.message]));
     },
     uptime: async () => { state.uptime = await api("/api/uptime"); },
-    numbers: async () => { state.numbers = (await api(fresh("/api/numbers"))).items; },
+    numbers: async () => {  // the small numbers on cards: off in Settings, Performance saves a request per app
+      state.numbers = state.config?.performance?.card_numbers === false ? {} : (await api(fresh("/api/numbers"))).items;
+    },
     health: async () => {
       if (!hasUpdates()) { state.warnings = {}; return; }
       const { items, errors } = await api(fresh("/api/health"));

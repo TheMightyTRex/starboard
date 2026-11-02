@@ -53,6 +53,9 @@ DEFAULTS = {
                          "backup_failed": True, "cert_days": 14}},
     # Jellyfin jobs (jobs.py): each off until turned on in Settings, Jellyfin.
     "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "import_keep": False, "defaults": False},
+    # How much Starboard does in the background and how often (Settings, Performance).
+    "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
+                    "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True},
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
     "groups": ["Watch, listen and request", "Find and organise", "Search and download", "Dashboards and tools"],
@@ -220,6 +223,8 @@ class Config:
             "download_hours": d["download_hours"],
             "watch": public_watch(d["watch"]),
             "extras": d["extras"],
+            "performance": dict(d["performance"], preset=matching_preset(d)),  # what the settings really match
+            "presets": {k: v["title"] for k, v in PRESETS.items()},
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
             "category_of": CATEGORY_OF,
@@ -254,18 +259,83 @@ class Config:
                 if days not in UPCOMING_DAYS:
                     raise ConfigError("Choose 7, 14, 30, 60 or 90 days")
                 d["upcoming_days"] = days
+            if "preset" in incoming:
+                apply_preset(d, incoming["preset"])
+            if "performance" in incoming:
+                d["performance"] = clean_performance(incoming["performance"], d["performance"])
             if "extras" in incoming:
                 d["extras"] = clean_extras(incoming["extras"], d["extras"])
             if "watch" in incoming:
                 d["watch"] = clean_watch(incoming["watch"], d["watch"])
             if "download_hours" in incoming:
                 d["download_hours"] = clean_hours(incoming["download_hours"], d["download_hours"])
+            if "preset" not in incoming:
+                d["performance"]["preset"] = matching_preset(d)  # a change by hand is Custom, unless it matches one
             if "session_days" in incoming:
                 days = int(incoming["session_days"])
                 if not 1 <= days <= 90:
                     raise ConfigError("Keep people signed in for 1 to 90 days")
                 d["session_days"] = days
             self.save()
+
+
+PERF_CHOICES = {"history_every": (60, 300, 900), "schedule_every": (60, 300), "downloads_refresh": (0, 10, 15, 30, 60),
+                "monitor_refresh": (2, 5, 10)}
+
+# Presets set every optional piece of background work at once. Features you choose for what they do (Live TV,
+# download hours, the import itself) are left as they are; only how often and how much changes.
+PRESETS = {
+    "small": {"title": "Small server", "performance": {"history": False, "history_every": 900, "schedule_every": 300,
+              "downloads_refresh": 30, "monitor_refresh": 5, "card_numbers": False},
+              "watch": {"enabled": False}, "extras": {"white_logos": False, "import_keep": False, "defaults": False},
+              "show_posters": False},
+    "balanced": {"title": "Balanced", "performance": {"history": True, "history_every": 300, "schedule_every": 60,
+                 "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True},
+                 "watch": {}, "extras": {"white_logos": True}, "show_posters": True},
+    "everything": {"title": "Everything", "performance": {"history": True, "history_every": 60, "schedule_every": 60,
+                   "downloads_refresh": 10, "monitor_refresh": 2, "card_numbers": True},
+                   "watch": {"enabled": True, "every": 5, "weekly": True},
+                   "extras": {"white_logos": True, "import_keep": True, "defaults": True}, "show_posters": True},
+}
+
+
+def apply_preset(d, name):
+    if name == "custom":
+        d["performance"]["preset"] = "custom"
+        return
+    if name not in PRESETS:
+        raise ConfigError("Choose Small server, Balanced, Everything or Custom")
+    p = PRESETS[name]
+    d["performance"].update(p["performance"])
+    d["watch"].update(p["watch"])
+    d["extras"].update(p["extras"])
+    d["show_posters"] = p["show_posters"]
+    d["performance"]["preset"] = name
+
+
+def matching_preset(d):
+    for name, p in PRESETS.items():
+        if all(d["performance"].get(k) == v for k, v in p["performance"].items()) and \
+                all(d["watch"].get(k) == v for k, v in p["watch"].items()) and \
+                all(d["extras"].get(k) == v for k, v in p["extras"].items()) and d.get("show_posters") == p["show_posters"]:
+            return name
+    return "custom"
+
+
+def clean_performance(incoming, current):
+    if not isinstance(incoming, dict):
+        raise ConfigError("Send the performance settings as an object")
+    out = dict(current)
+    for key in ("history", "card_numbers"):
+        if key in incoming:
+            out[key] = bool(incoming[key])
+    for key, choices in PERF_CHOICES.items():
+        if key in incoming:
+            value = int(incoming[key])
+            if value not in choices:
+                raise ConfigError("Choose a value from the list")
+            out[key] = value
+    return out
 
 
 def same_server(a, b):

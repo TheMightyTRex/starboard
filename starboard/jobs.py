@@ -97,13 +97,16 @@ class Jobs:
                 return  # nothing on: the thread ends, and starts again when a job is turned on
             self.wake.wait(600)
             self.wake.clear()
+            if not any(self.enabled(k) for k in JOBS):
+                self.thread = None
+                return
 
     def ensure(self):
-        """Starts the thread if a job is on; wakes it if it is already running."""
-        if not any(self.enabled(k) for k in JOBS):
-            return
+        """Starts the thread if a job is on; wakes a running thread, which ends if every job is off."""
         if self.thread and self.thread.is_alive():
             self.wake.set()
+            return
+        if not any(self.enabled(k) for k in JOBS):
             return
         self.thread = threading.Thread(target=self._loop, name="jobs", daemon=True)
         self.thread.start()

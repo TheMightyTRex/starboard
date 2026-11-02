@@ -85,7 +85,8 @@ class App:
         self.limits = auth.RateLimit()
         self.version = read_version()
         self.disks = sysinfo.disk_paths_from_env()
-        self.history = sysinfo.History(data_dir) if os.environ.get("STARBOARD_HISTORY", "1") != "0" else None
+        self.history = (sysinfo.History(data_dir, lambda: self.config.data["performance"])
+                        if os.environ.get("STARBOARD_HISTORY", "1") != "0" else None)
         self.disk_temps = sysinfo.DiskTemps(data_dir)
         self.usage = sysinfo.Usage(data_dir)
         self.watch = watch.Watch(self)
@@ -459,8 +460,15 @@ class Handler(BaseHTTPRequestHandler):
                 cfg.update_general(incoming)
                 if "watch" in incoming:
                     app.watch.wake.set()  # turning watching on, or changing how often, takes effect at once
-                if "extras" in incoming:
-                    app.jobs.ensure()  # a job turned on starts its thread; one turned off stops at the next check
+                # Background work follows the settings at once: threads start when turned on and end when off.
+                if os.environ.get("STARBOARD_JOBS", "1") != "0":
+                    app.jobs.ensure()
+                if os.environ.get("STARBOARD_WATCH", "1") != "0":
+                    app.watch.ensure()
+                if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
+                    app.schedule.ensure()
+                if app.history:
+                    app.history.ensure()
                 if cfg.data.get("network_access", True) != before and app.on_network_change:
                     # Answer first, then move the listener.
                     threading.Timer(0.5, app.on_network_change).start()
@@ -550,6 +558,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/import/mapping" and method == "PUT":
                 migrate.set_mapping(cfg.data_dir, self.body().get("mapping") or {})
                 return self.json(200, migrate.status(cfg.data_dir, cfg.data["services"]))
+            if path == "/api/self" and method == "GET":
+                return self.json(200, sysinfo.self_usage())
             if path == "/api/uptime" and method == "GET":
                 return self.json(200, {"enabled": cfg.data["watch"]["enabled"], "items": app.watch.uptime(cfg.data["services"])})
             if path == "/api/alerts/test" and method == "POST":

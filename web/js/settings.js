@@ -797,6 +797,13 @@ const COSTS = {
   white: "Costs about: only when new channels arrive, a second or two per logo and up to 15 MB more memory while it runs. Off saves that; logos already made stay.",
   importKeep: "Costs about: 1 second of processor and up to 40 MB more memory for about 20 seconds an hour, while it reads your Jellyfin library. Off saves that; Apply now still works.",
   defaults: "Costs about: two small requests per Jellyfin user an hour. Nothing noticeable.",
+  history: "Costs about: one reading of the server's own counters each time, under 0.01% of the processor, and up to 1.5 MB of memory for a day of readings. Off: the System charts have no history.",
+  scheduleEvery: "Every minute catches a new download straight away; every 5 minutes uses a fifth of the requests.",
+  downloadsRefresh: "Each update asks each download app once (shared for 10 seconds). Slower, or off, means fewer requests while Downloads is open.",
+  monitorRefresh: "Each reading takes under a thousandth of a second on the server. Slower means fewer readings while Monitor is open.",
+  cardNumbers: "Costs about: one small request per app when Apps opens, shared for a minute. Off saves that.",
+  posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
+  icons: "Costs about: one download per app, once.",
 };
 
 function withCost(hint, key) {
@@ -1039,6 +1046,102 @@ async function startJellyfin() {
   ].filter(Boolean));
 }
 
+// Performance ---------------------------------------------------------------
+// Presets set every optional piece of background work at once; changing one by hand makes it Custom.
+
+const PRESET_WORDS = {
+  small: "For a small or busy server: no history, no watching, no card numbers, no white logos or posters, no hourly Jellyfin jobs, slower pages. Live TV and download hours stay as you set them.",
+  balanced: "The default: history every 5 minutes, card numbers, white logos, posters, normal page updates. Watching and the Jellyfin jobs stay as you set them.",
+  everything: "Everything on and as fresh as it goes: history every minute, watching every 5 minutes with a weekly summary, the hourly Jellyfin jobs, faster Downloads.",
+  custom: "Your own choices below. Changing anything here or on another Settings page makes it Custom.",
+};
+
+async function startPerformance() {
+  const root = $("#performance-sections");
+  const me = await api("/api/self").catch(() => null);
+  const perf = () => config.performance;
+  const redraw = () => startPerformance();
+  const save = async (body, message) => {
+    try { await saveGeneral(body, message); redraw(); return true; } catch (err) { toast(err.message); return false; }
+  };
+  const sw = (labelId, checked, onChange) => {
+    const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked });
+    input.addEventListener("change", async () => { if (!(await onChange(input.checked))) input.checked = !input.checked; });
+    return el("label", { class: "switch" }, input);
+  };
+  const pick = (labelId, options, value, onChange) => {
+    const select = el("select", { class: "select", "aria-labelledby": labelId },
+      options.map(([v, t]) => el("option", { value: String(v), text: t, selected: String(v) === String(value) })));
+    select.addEventListener("change", () => onChange(select.value, select.selectedOptions[0].text));
+    return select;
+  };
+
+  // Now
+  const span = (secs) => secs < 3600 ? `${Math.max(1, Math.round(secs / 60))} minutes` : secs < 172800 ? `${Math.round(secs / 3600)} hours` : `${Math.round(secs / 86400)} days`;
+  const threadWords = (names) => {
+    const checks = names.filter((n) => /^apps_\d+$/.test(n)).length;
+    const requests = names.filter((n) => /process_request_thread/.test(n)).length;
+    const own = names.filter((n) => !/^apps_\d+$|process_request_thread|serve_forever|MainThread/.test(n));
+    return [`${names.length} threads`, own.length ? `background: ${own.join(", ")}` : "no background work",
+      checks ? `${checks} app ${checks === 1 ? "check" : "checks"} waiting` : "", requests ? `${requests} answering pages` : ""].filter(Boolean).join(" · ");
+  };
+  const now = me ? el("dl", { class: "facts" },
+    el("dt", { text: "Memory" }), el("dd", { class: "numeric", text: formatBytes(me.memory) }),
+    el("dt", { text: "Processor" }), el("dd", { class: "numeric", text: `${me.cpu_percent < 0.01 ? "under 0.01" : me.cpu_percent.toFixed(2)}% on average, over the ${span(me.running_seconds)} since it started` }),
+    el("dt", { text: "Running" }), el("dd", { text: threadWords(me.threads) })) : null;
+
+  // Presets
+  const presetForm = el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Preset" }),
+    el("div", { class: "option-cards" }, ["small", "balanced", "everything", "custom"].map((k) => {
+      const input = el("input", { type: "radio", name: "preset", value: k, checked: perf().preset === k });
+      input.addEventListener("change", () => { if (k !== "custom") save({ preset: k }, `${config.presets[k]} preset in use`); });
+      return el("label", { class: "option-card" }, input, el("strong", { text: k === "custom" ? "Custom" : config.presets[k] }), el("small", { text: PRESET_WORDS[k] }));
+    })));
+
+  // Background work
+  const w = config.watch;
+  const x = config.extras;
+  const background = el("ul", { class: "settings-rows" },
+    settingRow("System history", withCost("Readings for the charts on System, Overview.", "history"),
+      el("div", { class: "inline-save" }, pick("pf-hist-every", [[60, "Every minute"], [300, "Every 5 minutes"], [900, "Every 15 minutes"]], perf().history_every,
+        (v, t) => save({ performance: { history_every: Number(v) } }, `History: ${t.toLowerCase()}`)),
+        sw("pf-hist-l", perf().history, (on) => save({ performance: { history: on } }, on ? "History on" : "History off"))), "pf-hist-l"),
+    settingRow("Watching and alerts", withCost("Checks your apps with no page open and sends alerts. Where alerts go: Settings, Alerts.", "watch"),
+      el("div", { class: "inline-save" }, pick("pf-watch-every", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w.every,
+        (v, t) => save({ watch: { every: Number(v) } }, `Watching: ${t.toLowerCase()}`)),
+        sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }, on ? "Watching on" : "Watching off"))), "pf-watch-l"),
+    settingRow("Download hours check", withCost("How often Starboard checks qBittorrent and SABnzbd while download hours are on (Settings, General).", "scheduleEvery"),
+      pick("pf-sched-l", [[60, "Every minute"], [300, "Every 5 minutes"]], perf().schedule_every,
+        (v, t) => save({ performance: { schedule_every: Number(v) } }, `Download hours check: ${t.toLowerCase()}`)), "pf-sched-l"),
+    settingRow("Live TV white logos", withCost("Only matters while Live TV is on (Settings, Jellyfin).", "white"),
+      sw("pf-white-l", x.white_logos, (on) => save({ extras: { white_logos: on } }, on ? "White logos on" : "White logos off")), "pf-white-l"),
+    settingRow("Keep applying imported history", withCost("Settings, Jellyfin, Import watch history.", "importKeep"),
+      sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } }, on ? "History applied every hour" : "History applied only when you ask")), "pf-imp-l"),
+    settingRow("Jellyfin user defaults", withCost("Settings, Jellyfin, User defaults.", "defaults"),
+      sw("pf-def-l", x.defaults, (on) => save({ extras: { defaults: on } }, on ? "User defaults on" : "User defaults off")), "pf-def-l"),
+    settingRow("Posters on Coming up", withCost("Off: Coming up shows each app's icon.", "posters"),
+      sw("pf-post-l", config.show_posters, (on) => save({ show_posters: on }, on ? "Posters on" : "Posters off")), "pf-post-l"));
+
+  // Pages
+  const pages = el("ul", { class: "settings-rows" },
+    settingRow("Downloads page updates", withCost("While Downloads is open and in view.", "downloadsRefresh"),
+      pick("pf-dl-l", [[0, "Only when I press Check again"], [10, "Every 10 seconds"], [15, "Every 15 seconds"], [30, "Every 30 seconds"], [60, "Every minute"]], perf().downloads_refresh,
+        (v, t) => save({ performance: { downloads_refresh: Number(v) } }, `Downloads: ${t.toLowerCase()}`)), "pf-dl-l"),
+    settingRow("Monitor page readings", withCost("While Monitor is open and in view.", "monitorRefresh"),
+      pick("pf-mon-l", [[2, "Every 2 seconds"], [5, "Every 5 seconds"], [10, "Every 10 seconds"]], perf().monitor_refresh,
+        (v, t) => save({ performance: { monitor_refresh: Number(v) } }, `Monitor: ${t.toLowerCase()}`)), "pf-mon-l"),
+    settingRow("Numbers on app cards", withCost("Such as 3 in the queue or 120 wanted, on Apps.", "cardNumbers"),
+      sw("pf-num-l", perf().card_numbers, (on) => save({ performance: { card_numbers: on } }, on ? "Card numbers on" : "Card numbers off")), "pf-num-l"));
+
+  root.removeAttribute("aria-busy");
+  root.replaceChildren(...[
+    now ? section("pf-now", "Starboard now", "Measured on this server while you look.", now) : null,
+    section("pf-preset", "Preset", "Sets everything below at once. Features you chose for what they do, such as Live TV and download hours, stay as they are.", presetForm),
+    section("pf-bg", "Background work", "Runs with no page open. Each part's thread exists only while it is on.", background),
+    section("pf-pages", "While a page is open", "Only while the page is open and in view; a hidden tab asks for nothing.", pages),
+  ].filter(Boolean));
+}
+
 // Security ------------------------------------------------------------------
 
 async function startSecurity() {
@@ -1224,5 +1327,6 @@ startPage().then(async (session) => {
   if ($("#security-sections")) startSecurity();
   if ($("#alerts-sections")) startAlerts();
   if ($("#jellyfin-sections")) startJellyfin();
+  if ($("#performance-sections")) startPerformance();
   if ($("#version-notice")) startAbout();
 });

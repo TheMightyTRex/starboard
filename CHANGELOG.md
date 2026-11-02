@@ -1,6 +1,20 @@
 # Changelog
 
-## 0.3.5 (not released yet): security fixes
+## 0.4.0 (2 November 2026)
+
+### Performance
+
+- **Settings, Performance:** Starboard's own memory, processor and threads, measured live; four presets (Small
+  server, Balanced, Everything, Custom); and every piece of background work with a switch, how often it runs
+  and what it costs. Changing anything by hand makes it Custom.
+- Background threads exist only while their feature is on: history, watching, download hours and the Jellyfin
+  jobs each start when turned on and end when turned off. With Small server, Starboard runs only its web server.
+- System history can be off, or every 1, 5 or 15 minutes (5 by default, was 1), and no longer reads each
+  container's use. The download hours check can run every 5 minutes. Downloads and Monitor update at the rate
+  you choose, or Downloads only when you press Check again. Card numbers can be switched off.
+- The Plex database and XML code are loaded only when an import or a Live TV run needs them.
+
+### Security fixes
 
 From a full security check. No critical issues; these are fixed:
 
