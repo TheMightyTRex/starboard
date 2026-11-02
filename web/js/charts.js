@@ -170,7 +170,7 @@ const RANGE_KEY = "starboard.range";
 function rangePicker(onChange) {
   let hours = "1";
   try { hours = localStorage.getItem(RANGE_KEY) || "1"; } catch { /* private window */ }
-  const box = el("div", { class: "seg", role: "radiogroup", "aria-label": "Time range" });
+  const box = el("div", { class: "segmented", role: "radiogroup", "aria-label": "Time range" });
   for (const [value, label] of [["1", "Last hour"], ["6", "Last 6 hours"], ["24", "Last 24 hours"]]) {
     const input = el("input", { type: "radio", name: "range", value, checked: value === hours });
     input.addEventListener("change", () => { try { localStorage.setItem(RANGE_KEY, value); } catch { /* ignore */ } onChange(value); });

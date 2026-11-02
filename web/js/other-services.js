@@ -27,7 +27,7 @@ async function load() {
       const [label, tone] = words(st);
       const how = st?.follows ? `Follows ${st.follows}` : s.url ? shortUrl(s.url) : "No address to check";
       list.append(el("li", { class: "row service-row" },
-        el("div", { class: "service-row__main" }, appIcon(s, "app__icon app__icon--small"), el("div", {},
+        el("div", { class: "service-row__main" }, appIcon(s, "app-icon app-icon--small"), el("div", {},
           el("p", { class: "row__title", text: s.name }),
           s.description ? el("p", { class: "row__meta", text: s.description }) : null,
           el("p", { class: "row__meta", text: st?.message ? `${how} · ${st.message}` : how }))),

@@ -163,7 +163,7 @@ function copyButton(text, label) {
 }
 
 // The app's own icon, fetched and kept by the server; its initials when there is none.
-function appIcon(s, className = "app__icon") {
+function appIcon(s, className = "app-icon") {
   const box = el("span", { class: `${className} has-image`, "aria-hidden": "true" });
   const img = el("img", { src: `/api/icons/${encodeURIComponent(s.id)}?v=${encodeURIComponent(s.icon || "")}`, alt: "", loading: "lazy", decoding: "async" });
   img.addEventListener("error", () => { img.remove(); box.classList.remove("has-image"); box.textContent = monogram(s.name); });
@@ -171,23 +171,123 @@ function appIcon(s, className = "app__icon") {
   return box;
 }
 
+// Icons from the shared sprite (web/icons/sprite.svg). Decoration only: the words beside them carry the meaning.
+function icon(name, size = 18) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", size >= 20 ? "i i-lg" : "i");
+  svg.setAttribute("width", size); svg.setAttribute("height", size);
+  svg.setAttribute("aria-hidden", "true"); svg.setAttribute("focusable", "false");
+  const use = document.createElementNS(ns, "use");
+  use.setAttribute("href", `/icons/sprite.svg#i-${name}`);
+  svg.append(use);
+  return svg;
+}
+
+// Slide-out: details of one thing, or editing it, without leaving the list (shared library: .side-panel).
+// sidePanel({ title, body: [nodes], foot: [nodes], wide, opener, onClose }) -> { layer, body, foot, close, setTitle }
+// It opens at once; focus moves to Close and goes back to the opener when it closes. Only one is open at a time.
+function sidePanel({ title, body = [], foot = [], wide = false, opener = document.activeElement, onClose } = {}) {
+  $("#side-panel")?.closeLayer?.(false);
+  $("#side-panel")?.remove();
+  const heading = el("h2", { class: "panel-header__title", id: "side-panel-title", text: title });
+  const close = el("button", { type: "button", class: "icon-btn", "data-closes": true, "aria-label": `Close ${title}` }, icon("x", 20));
+  const bodyNode = el("div", { class: "side-panel__body" }, body);
+  const footNode = el("div", { class: "side-panel__foot" }, foot);
+  footNode.hidden = !foot.length;
+  const layer = el("div", { class: "side-panel-layer", id: "side-panel" },
+    el("div", { class: "side-panel-backdrop" }),
+    el("aside", { class: wide ? "side-panel side-panel--wide" : "side-panel", role: "dialog", "aria-modal": "true", "aria-labelledby": "side-panel-title" },
+      el("div", { class: "panel-header" }, heading, close), bodyNode, footNode));
+  document.body.append(layer);
+  const shut = SharedComponents.openLayer(layer, opener instanceof HTMLElement ? opener : null, () => { layer.remove(); onClose?.(); });
+  return {
+    layer, body: bodyNode, foot: footNode, close: shut,
+    setTitle(text) { heading.textContent = text; close.setAttribute("aria-label", `Close ${text}`); },
+    setFoot(nodes) { footNode.replaceChildren(...nodes); footNode.hidden = !nodes.length; },
+  };
+}
+
+// Confirm dialog: a decision that must be made before going on. Says what will happen; resolves true or false.
+// confirmDialog({ title, message: string or [nodes], confirm: "Remove", danger: true, fields: [nodes] })
+function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel", danger = false, fields = [] }) {
+  return new Promise((resolve) => {
+    const id = `confirm-${Date.now()}`;
+    const form = el("form", { method: "dialog" },
+      el("div", { class: "panel-header" },
+        el("h2", { class: "panel-header__title", id, text: title }),
+        el("button", { type: "button", class: "icon-btn", value: "cancel", "data-dialog-close": true, "aria-label": `Close ${title}` }, icon("x", 20))),
+      el("div", { class: "dialog__body" }, typeof message === "string" ? el("p", { text: message }) : message, fields),
+      el("div", { class: "dialog__foot" },
+        el("button", { type: "submit", value: "ok", class: danger ? "btn btn--primary btn--danger" : "btn btn--primary", text: confirm }),
+        el("button", { type: "submit", value: "cancel", formnovalidate: true, class: "btn", text: cancel })));
+    const dialog = el("dialog", { class: "dialog", "aria-labelledby": id }, form);
+    const opener = document.activeElement;
+    let result = false;
+    form.addEventListener("submit", (e) => { result = e.submitter?.value === "ok"; });
+    $("[data-dialog-close]", form).addEventListener("click", () => dialog.close());
+    dialog.addEventListener("close", () => { dialog.remove(); if (opener?.isConnected) opener.focus(); resolve(result); });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
+}
+
+// Menu button: a button that opens a short list of actions (More actions). items: [{ label, icon, onSelect, danger }]
+let menuCount = 0;
+function menuButton(label, items, { iconName = "ellipsis", text = "" } = {}) {
+  const id = `menu-${++menuCount}`;
+  const button = el("button", { type: "button", class: text ? "btn" : "icon-btn", "aria-haspopup": "menu", "aria-controls": id, "aria-label": text ? null : label },
+    icon(iconName), text ? el("span", { text }) : null);
+  const menu = el("div", { class: "menu", role: "menu", id, "aria-label": label },
+    items.map((item) => el("button", { type: "button", role: "menuitem", class: item.danger ? "is-danger" : null, onclick: () => item.onSelect() },
+      item.icon ? icon(item.icon) : null, el("span", { text: item.label }))));
+  const wrap = el("div", { class: "menu-wrap" }, button, menu);
+  queueMicrotask(() => SharedComponents.setup(wrap));
+  return wrap;
+}
+
+// Lists that redraw (every 15 seconds on Downloads) keep focus: rows are matched by key, changed in place,
+// added or removed, so the row or button you are on is still there afterwards.
+// renderKeyed(list, items, key, render) where render(item, oldNode) returns the row node (reuse oldNode if you can).
+function renderKeyed(list, items, key, render) {
+  const old = new Map([...list.children].map((n) => [n.dataset.key, n]));
+  const focused = document.activeElement;
+  const focusedRow = list.contains(focused) ? focused.closest("[data-key]") : null;
+  const focusPath = focusedRow ? [...focusedRow.querySelectorAll("button, a, input, select")].indexOf(focused) : -1;
+  let before = list.firstElementChild;
+  for (const item of items) {
+    const k = String(key(item));
+    const prev = old.get(k);
+    const node = render(item, prev || null);
+    node.dataset.key = k;
+    old.delete(k);
+    if (node !== before) list.insertBefore(node, before); else before = before.nextElementSibling;
+    if (prev && prev !== node) prev.remove();
+  }
+  old.forEach((n) => n.remove());
+  if (focused?.isConnected && document.activeElement !== focused) focused.focus({ preventScroll: true });
+  else if (focusedRow && !focusedRow.isConnected) {
+    const again = list.querySelector(`[data-key="${CSS.escape(focusedRow.dataset.key)}"]`);
+    const target = again && focusPath >= 0 ? again.querySelectorAll("button, a, input, select")[focusPath] : null;
+    (target || again)?.focus();
+  }
+}
+
 // Header ---------------------------------------------------------------
 
 function setUpHeader() {
-  // Phone menu: a drawer from the left. <dialog> traps focus and closes with Escape.
+  // Phone menu: a drawer from the left (the shared slide-out layer: focus moves in, Tab stays inside,
+  // Escape or a press outside closes it and focus returns to the menu button).
   const drawer = $("#phone-menu");
   const opener = $("[data-phone-menu-open]");
   if (drawer && opener) {
-    opener.addEventListener("click", () => { drawer.showModal(); opener.setAttribute("aria-expanded", "true"); });
-    drawer.addEventListener("close", () => { opener.setAttribute("aria-expanded", "false"); opener.focus(); });
-    $("[data-phone-menu-close]", drawer).addEventListener("click", () => drawer.close());
-    drawer.addEventListener("click", (e) => { if (e.target === drawer) drawer.close(); });  // the backdrop
-    $$(".phone-menu-section > button", drawer).forEach((button) => button.addEventListener("click", () => {
+    opener.addEventListener("click", () => SharedComponents.openLayer(drawer, opener));
+    $$(".phone-menu__section > button", drawer).forEach((button) => button.addEventListener("click", () => {
       const open = button.getAttribute("aria-expanded") !== "true";
       button.setAttribute("aria-expanded", String(open));
       $(`#${button.getAttribute("aria-controls")}`).hidden = !open;
     }));
-    matchMedia("(min-width: 900px)").addEventListener("change", (e) => { if (e.matches && drawer.open) drawer.close(); });
+    matchMedia("(min-width: 721px)").addEventListener("change", (e) => { if (e.matches) drawer.closeLayer?.(false); });
   }
   // Tabs that do not fit show icons only, as in Storyarr.
   const fit = () => $$(".site-header .menu-tabs").forEach((nav) => {
@@ -211,7 +311,7 @@ function showVersion(version, repo) {
     document.body.append(el("footer", { class: "site-footer" },
       el("span", { class: "version-label", text: label }),
       repo ? el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "GitHub repository", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null,
-      el("a", { href: "/settings-updates.html", text: "Updates" })));
+      el("a", { href: "/settings-updates.html", text: "About and updates" })));
   }
 }
 
@@ -225,9 +325,9 @@ function setUpDisplayPanel() {
   const designList = $("[data-design-options]", dialog);
   const choices = [["", "Use the dashboard's default"], ...Object.entries(DESIGNS).map(([k, v]) => [k, v[0], v[1]])];
   for (const [value, label, help] of choices) {
-    designList.append(el("label", { class: "design-option" },
+    designList.append(el("label", { class: "option-card" },
       el("input", { type: "radio", name: "design", value }),
-      el("span", { text: label }),
+      el("strong", { text: label }),
       help ? el("small", { text: help }) : null));
   }
   const fill = () => {

@@ -10,14 +10,14 @@ function renderServices() {
   config.services.forEach((s, index) => {
     const type = config.types[s.type]?.label || s.type;
     list.append(el("li", { class: "row service-row" },
-      el("div", { class: "service-row__main" }, appIcon(s, "app__icon app__icon--small"), el("div", {},
+      el("div", { class: "service-row__main" }, appIcon(s, "app-icon app-icon--small"), el("div", {},
         el("p", { class: "row__title", text: s.name }),
         el("p", { class: "row__meta", text: [type, s.group || "Other", s.background ? "Background service" : null, s.has_api_key ? "API key saved" : null, s.enabled ? null : "Hidden"].filter(Boolean).join(" · ") }))),
       el("div", { class: "row__side" },
         el("button", { type: "button", class: "btn", disabled: index === 0, "aria-label": `Move ${s.name} up`, onclick: () => move(index, -1) }, "↑"),
         el("button", { type: "button", class: "btn", disabled: index === config.services.length - 1, "aria-label": `Move ${s.name} down`, onclick: () => move(index, 1) }, "↓"),
         el("button", { type: "button", class: "btn", onclick: () => openService(s) }, "Edit", el("span", { class: "visually-hidden", text: ` ${s.name}` })),
-        el("button", { type: "button", class: "btn btn-danger", onclick: () => removeService(s) }, "Remove", el("span", { class: "visually-hidden", text: ` ${s.name}` })))));
+        el("button", { type: "button", class: "btn btn--danger", onclick: () => removeService(s) }, "Remove", el("span", { class: "visually-hidden", text: ` ${s.name}` })))));
   });
 }
 
@@ -173,7 +173,7 @@ function renderGeneral() {
     f.show_home_address.checked = config.show_home_address;
     f.show_outside_address.checked = config.show_outside_address;
     const box = $("#default-design");
-    box.replaceChildren(...Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "design-option" },
+    box.replaceChildren(...Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "option-card" },
       el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("span", { text: label }), el("small", { text: help }))));
   }
   const s = $("#session-form");

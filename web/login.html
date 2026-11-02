@@ -11,7 +11,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
+<script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/login.js" defer></script>
 </head>
@@ -19,11 +21,11 @@
 <main id="main">
 <section class="panel auth-card" aria-labelledby="auth-title">
   <div class="panel__head"><h1 id="auth-title">Sign in to <span data-site-name>Starboard</span></h1></div>
-  <form id="login-form" class="design-options" data-mode="login">
+  <form id="login-form" class="stack" data-mode="login">
     <div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" required autofocus></div>
     <label class="check" for="remember"><input type="checkbox" id="remember" name="remember"> Remember me on this device</label>
     <p class="field-error" id="auth-error" role="alert"></p>
-    <button class="btn btn-primary" type="submit">Sign in</button>
+    <button class="btn btn--primary" type="submit">Sign in</button>
   </form>
 </section>
 </main>

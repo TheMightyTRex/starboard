@@ -23,7 +23,7 @@ async function load() {
     $("#outside").replaceChildren(...(outside.items.length ? outside.items.map((o) => {
       const s = byId[o.id];
       return el("li", { class: "row" },
-        el("div", { class: "service-row__main" }, appIcon(s, "app__icon app__icon--small"), el("div", {},
+        el("div", { class: "service-row__main" }, appIcon(s, "app-icon app-icon--small"), el("div", {},
           el("p", { class: "row__title", text: s.name }), el("p", { class: "row__meta", text: o.reachable ? `${shortUrl(s.outside_link)} · ${o.ms} ms` : `${shortUrl(s.outside_link)} · ${o.message}` }))),
         el("div", { class: "row__side" }, o.reachable ? chip("Reachable", "success") : chip("Not reachable", "warning"), copyButton(s.outside_link, `outside address for ${s.name}`)));
     }) : [el("li", { class: "empty", text: "No outside addresses yet. Add one to an app in Settings, Apps." })]));

@@ -20,7 +20,7 @@ function render() {
   for (const i of items) { const w = words(i)[0]; counts[w] = (counts[w] || 0) + 1; }
   const filters = $("#queue-filters");
   filters.replaceChildren(...Object.entries(counts).map(([k, n]) => el("button", {
-    type: "button", class: "filter", "aria-pressed": String(filter === k), onclick: () => { filter = k; render(); },
+    type: "button", class: "filter-chip", "aria-pressed": String(filter === k), onclick: () => { filter = k; render(); },
   }, `${k}, ${n}`)));
   if (!counts[filter]) filter = "All";
   const list = $("#queue");

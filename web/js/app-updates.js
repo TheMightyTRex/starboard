@@ -22,7 +22,7 @@ async function load() {
       else if (r) side = chip("Up to date", "success");
       else side = chip("Not reported", "muted");
       list.append(el("li", { class: "row service-row" },
-        el("div", { class: "service-row__main" }, appIcon(s, "app__icon app__icon--small"), el("div", {},
+        el("div", { class: "service-row__main" }, appIcon(s, "app-icon app-icon--small"), el("div", {},
           el("p", { class: "row__title", text: s.name }),
           el("p", { class: "row__meta num", text: version ? `Running version ${version}` : "Version not reported" }))),
         el("div", { class: "row__side" }, side)));

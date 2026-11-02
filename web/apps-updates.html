@@ -11,8 +11,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/app-updates.js" defer></script>
 </head>
@@ -94,12 +96,12 @@
   </nav>
   <div class="phone-menu-footer">
     <span class="version-label" data-version></span>
-    <button type="button" class="btn btn-quiet" data-sign-out><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg><span>Sign out</span></button>
+    <button type="button" class="btn btn--quiet" data-sign-out><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg><span>Sign out</span></button>
   </div>
 </dialog>
 <dialog id="display-panel" aria-labelledby="display-panel-title">
   <form method="dialog">
-    <div class="dialog__head">
+    <div class="panel-header">
       <h2 id="display-panel-title">Display and accessibility</h2>
       <button type="button" class="icon-btn" data-dialog-close aria-label="Close display and accessibility"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     </div>
@@ -131,11 +133,11 @@
       <label class="switch-row" for="pref-spacing"><span>Wider text spacing</span><input type="checkbox" id="pref-spacing" name="spacing"></label>
       <fieldset><legend>Design</legend>
         <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General.</p>
-        <div class="design-options" data-design-options></div>
+        <div class="stack" data-design-options></div>
       </fieldset>
     </div>
     <div class="dialog__foot">
-      <button type="submit" class="btn btn-primary">Done</button>
+      <button type="submit" class="btn btn--primary">Done</button>
       <button type="button" class="btn" data-display-reset>Reset</button>
     </div>
   </form>

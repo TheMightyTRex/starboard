@@ -14,7 +14,7 @@ function renderFilters() {
   for (const k of Object.keys(KIND_LABEL)) {
     if (!counts[k]) continue;
     box.append(el("button", {
-      type: "button", class: "filter", "aria-pressed": String(kind === k),
+      type: "button", class: "filter-chip", "aria-pressed": String(kind === k),
       onclick: () => { kind = k; renderFilters(); renderResults(); },
     }, `${KIND_LABEL[k]}, ${counts[k]}`));
   }
@@ -30,7 +30,7 @@ function renderResults() {
       : el("div", { class: "result__cover", text: "No cover" });
     const action = r.in_library
       ? chip(`In ${r.service_name}`, "success")
-      : el("button", { type: "button", class: "btn btn-primary", onclick: () => openAdd(r) }, `Add to ${r.service_name}`, el("span", { class: "visually-hidden", text: `: ${r.title}` }));
+      : el("button", { type: "button", class: "btn btn--primary", onclick: () => openAdd(r) }, `Add to ${r.service_name}`, el("span", { class: "visually-hidden", text: `: ${r.title}` }));
     list.append(el("li", { class: "result" }, cover,
       el("div", { class: "result__body" },
         el("h2", { class: "result__title" }, r.title, r.year ? el("span", { class: "summary", text: ` (${r.year})` }) : null),
