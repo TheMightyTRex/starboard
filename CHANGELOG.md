@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.0 (2 November 2026)
+
+Lightweight first: a dashboard for smaller servers that uses very little processor time and memory (about
+14 MB while idle). Every page now uses the component library shared with Storyarr.
+
+- **Lighter:** pages are compressed and the browser keeps them until they change; several tabs or devices
+  share one answer from each app; hidden tabs stop refreshing; posters come from your own apps, kept for a
+  week; background work starts only when needed.
+- **Installer:** explains each step, and asks before each kind of access (home network, Docker for app
+  updates, per-app use, folders for free space, Disk health). Run it again to change your answers.
+  Settings, About and updates lists what Starboard can access, with the switch or command to change each.
+- **Settings:** one column; Manage apps and the access list show each state as an icon beside the name;
+  a new Alerts page; Coming up and Download hours settings in General.
+- **Alerts:** to ntfy, Gotify or a webhook when an app stops answering, a disk has a problem or gets full, a
+  download is stuck, a backup fails or a certificate runs out; uptime history for each app; a weekly
+  summary. Off until you turn it on.
+- **Apps:** small numbers on each card; Updates is its own page again, with each app's container, Check for
+  updates, Update all and Update (needs Docker access).
+- **Downloads:** download hours for qBittorrent and SABnzbd, with Resume, Pause and Follow the hours;
+  speeds and the VPN's state (Gluetun); Finished this week; Requests from Seerr with Approve and Decline.
+- **Coming up:** posters, a List or Calendar view, and how far ahead to look.
+- **System:** Jellyfin's state, what is playing and what was added; server jobs with Run now; 30-day disk
+  temperatures and the drive's own log; Read disks now; what is using the space; every drive; each app's
+  processor and memory on Monitor; certificate expiry on Network.
+
 ## 0.1.8 (2 November 2026)
 
 - Backup and restore: an option to include a rebuild prompt for an AI assistant with the server backup
