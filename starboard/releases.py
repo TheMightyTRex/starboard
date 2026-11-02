@@ -97,6 +97,13 @@ RELEASES = [
      "fixed": [],
      "review": [],
      "settings": "No settings change. To go back, run ./update.sh --to v0.6.0."},
+    {"version": "0.7.1", "date": "2 November 2026",
+     "added": [],
+     "changed": [("Updates", "Each app has its logo beside its name. Installed and Latest are left-aligned, every category's table has the same column widths so the columns line up, and each row's cells sit on the middle of the row.")],
+     "fixed": [("Long API keys", "Keys were cut to 200 characters when saved, so Audiobookshelf, whose keys are longer, refused its key. If Audiobookshelf says the key is wrong, paste it again in Manage apps."),
+               ("Log", "A connection that stayed idle until it timed out no longer writes an error to Docker's log.")],
+     "review": [],
+     "settings": "No settings change. To go back, run ./update.sh --to v0.7.0."},
 ]
 
 

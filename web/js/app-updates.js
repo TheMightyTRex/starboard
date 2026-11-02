@@ -54,18 +54,22 @@ function actionCell(row) {
 
 function tableFor(rows, caption) {
   return el("div", { class: "table-wrap", "data-stack": true },
-    el("table", { class: "table" },
+    el("table", { class: "table updates-table" },
       el("caption", { class: "visually-hidden", text: caption }),
+      // The same column widths in every category's table, so the columns line up down the page.
+      el("colgroup", {}, ["app", "image", "installed", "latest", "status", "actions"].map((c) => el("col", { class: `updates-table__${c}` }))),
       el("thead", {}, el("tr", {}, ["App", "Image", "Installed", "Latest", "Status"].map((h) => el("th", { scope: "col", text: h })),
         el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Actions" })))),
       el("tbody", {}, rows.map((r) => {
         const c = r.container;
         return el("tr", {},
-          el("th", { scope: "row", "data-label": "App", id: `update-${r.id}`, tabindex: "-1" }, el("strong", { text: r.name }),
-            el("div", { class: "small muted", text: c ? `${c.name} · ${c.status || c.state}` : "Choose its container in Manage apps" })),
+          el("th", { scope: "row", "data-label": "App", id: `update-${r.id}`, tabindex: "-1" },
+            el("div", { class: "updates-app" }, appIcon(r, "app-icon updates-app__icon"),
+              el("div", {}, el("strong", { text: r.name }),
+                el("div", { class: "small muted", text: c ? `${c.name} · ${c.status || c.state}` : "Choose its container in Manage apps" })))),
           el("td", { "data-label": "Image" }, c ? el("code", { text: c.image }) : "None"),
-          el("td", { "data-label": "Installed", class: "numeric" }, c ? (c.version || (c.created ? `Built ${formatDate(c.created)}` : "Not known")) : ""),
-          el("td", { "data-label": "Latest", class: "numeric" }, r.latest || (r.update ? "Newer build" : "")),
+          el("td", { "data-label": "Installed" }, c ? (c.version || (c.created ? `Built ${formatDate(c.created)}` : "Not known")) : ""),
+          el("td", { "data-label": "Latest" }, r.latest || (r.update ? "Newer build" : "")),
           el("td", { "data-label": "Status" }, statusCell(r)),
           el("td", { "data-label": "Actions" }, actionCell(r)));
       }))));

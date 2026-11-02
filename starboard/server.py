@@ -240,6 +240,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         # Keep logs free of query strings (search terms) and cookies.
+        if not hasattr(self, "path"):
+            return  # an idle connection timed out before sending a request
         path = self.path.split("?", 1)[0]
         if path == "/healthz" or path.startswith(("/css/", "/js/", "/icons/", "/fonts/", "/favicon")) or path.startswith("/api/icons/"):
             return  # files the browser loads say nothing about a problem

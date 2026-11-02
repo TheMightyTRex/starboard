@@ -520,7 +520,7 @@ def validate_service(s):
         raise ConfigError("Enter the address the server uses to reach the app")
     if "id" in clean and clean["id"] and not _ID_RE.match(str(clean["id"])):
         raise ConfigError("That app ID is not valid")
-    clean["api_key"] = str(clean.get("api_key", "")).strip()[:200]
+    clean["api_key"] = str(clean.get("api_key", "")).strip()[:2000]  # Audiobookshelf keys are over 200 characters
     clean["group"] = str(clean.get("group", "")).strip()[:40]
     icon = str(clean.get("icon", "")).strip()[:300]
     if icon and not (re.match(r"^[a-z0-9][a-z0-9-]{0,63}$", icon.lower()) or re.match(r"^https://[^\s]+$", icon)):

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.1 (2 November 2026)
+
+- **Long API keys:** keys were cut to 200 characters when saved, so Audiobookshelf (whose keys are about 211
+  characters) refused its key. Keys up to 2000 characters are now kept whole. If Audiobookshelf says the key is
+  wrong, paste it again in Settings, Manage apps.
+- **Updates:** each app has its logo beside its name (no tile, as tall as the name and the line under it);
+  Installed and Latest are left-aligned; every category's table has the same column widths, so the
+  columns line up down the page; and each row's cells sit on the middle of the row.
+- **Log:** a connection that stayed idle until it timed out no longer writes an error to Docker's log.
+
 ## 0.7.0 (2 November 2026)
 
 ### Install apps, for people who have never set up a media server

@@ -123,6 +123,14 @@ class GapsTest(unittest.TestCase):
                 self.assertIsNone(backup.server_file("notes.txt"))
                 self.assertIsNone(backup.server_file("../etc/passwd"))
 
+    def test_long_api_keys_are_kept_whole(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg = Config(d)
+            key = "x" * 211  # Audiobookshelf keys are longer than 200 characters
+            cfg.data["services"] = []
+            cfg.upsert_service({"name": "Audiobookshelf", "type": "audiobookshelf", "url": "http://homeserver.local:13378", "api_key": key})
+            self.assertEqual(cfg.data["services"][0]["api_key"], key)
+
     def test_disk_events_are_split(self):
         self.assertEqual(sysinfo._event("2026-11-02 09:15:00 /dev/sda: SMART test failed"),
                          {"when": "2026-11-02 09:15:00", "text": "/dev/sda: SMART test failed", "tone": "danger"})

@@ -95,3 +95,49 @@
   display: flex;
   justify-content: space-between;
 }
+
+/* Updates: one table per category, each with the same column widths so the columns line up down the page.
+   Below 721px the library stacks each row, so the widths apply only above that. */
+.updates-table code {
+  overflow-wrap: anywhere;
+}
+/* The app's logo on its own (no tile), as tall as the name and the line under it. */
+.updates-app {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.updates-app__icon {
+  width: auto;
+  height: 2.6rem;
+  aspect-ratio: 1;
+  border: 0;
+  background: none;
+}
+/* The app's name has a second line, so the other cells (status, Update) sit on the middle of the row. */
+.updates-table :is(th, td) {
+  vertical-align: middle;
+}
+@media (min-width: 721px) {
+  .updates-table {
+    table-layout: fixed;
+  }
+  .updates-table__app {
+    width: 20%;
+  }
+  .updates-table__image {
+    width: 28%;
+  }
+  .updates-table__installed {
+    width: 13%;
+  }
+  .updates-table__latest {
+    width: 13%;
+  }
+  .updates-table__status {
+    width: 14%;
+  }
+  .updates-table__actions {
+    width: 12%;
+  }
+}
