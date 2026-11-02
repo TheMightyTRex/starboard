@@ -6,8 +6,8 @@
 set -eu
 [ "$(id -u)" -eq 0 ] || { echo "Run with sudo"; exit 1; }
 if [ "${1:-}" = "--remove" ]; then
-  systemctl disable --now starboard-smart.timer 2>/dev/null || true
-  rm -f /etc/systemd/system/starboard-smart.timer /etc/systemd/system/starboard-smart.service /usr/local/bin/starboard-smart
+  systemctl disable --now starboard-smart.timer starboard-smart.path 2>/dev/null || true
+  rm -f /etc/systemd/system/starboard-smart.timer /etc/systemd/system/starboard-smart.path /etc/systemd/system/starboard-smart.service /usr/local/bin/starboard-smart
   systemctl daemon-reload
   echo "Removed the Disk health timer. The reports already saved stay in their folder."
   exit 0
@@ -31,7 +31,19 @@ OnUnitActiveSec=30min
 [Install]
 WantedBy=timers.target
 UNIT
+# Read now: Starboard drops an empty file in $OUT/requests (the only place it may write); this runs the job.
+mkdir -p "$OUT/requests"
+chown "${SUDO_UID:-0}:${SUDO_GID:-0}" "$OUT/requests"
+cat > /etc/systemd/system/starboard-smart.path <<UNIT
+[Unit]
+Description=Read SMART reports when Starboard asks
+[Path]
+PathExists=$OUT/requests/read
+Unit=starboard-smart.service
+[Install]
+WantedBy=paths.target
+UNIT
 systemctl daemon-reload
-systemctl enable --now starboard-smart.timer
+systemctl enable --now starboard-smart.timer starboard-smart.path
 systemctl start starboard-smart.service
 echo "Saved reports in $OUT/current. Starboard reads them from STARBOARD_SMART_DIR."

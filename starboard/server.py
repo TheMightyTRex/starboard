@@ -86,6 +86,8 @@ class App:
         self.version = read_version()
         self.disks = sysinfo.disk_paths_from_env()
         self.history = sysinfo.History(data_dir) if os.environ.get("STARBOARD_HISTORY", "1") != "0" else None
+        self.disk_temps = sysinfo.DiskTemps(data_dir)
+        self.usage = sysinfo.Usage(data_dir)
         self.watch = watch.Watch(self)
         if os.environ.get("STARBOARD_WATCH", "1") != "0":
             self.watch.start()
@@ -509,7 +511,20 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/interfaces" and method == "GET":
                 return self.json(200, {"items": sysinfo.interfaces()})
             if path == "/api/disk-health" and method == "GET":
-                return self.json(200, sysinfo.disk_health())
+                result = sysinfo.disk_health()
+                app.disk_temps.record(result["disks"])
+                result["history"] = app.disk_temps.get()
+                return self.json(200, result)
+            if path == "/api/disk-health/read" and method == "POST":
+                sysinfo.request_disk_read()
+                return self.json(200, {"ok": True})
+            if path == "/api/usage" and method == "GET":
+                return self.json(200, app.usage.get())
+            if path == "/api/usage" and method == "POST":
+                if not app.disks:
+                    return self.error(400, "Choose folders for System, Storage first (./install.sh --disk)")
+                app.usage.start(app.disks)
+                return self.json(200, app.usage.get())
             if path == "/api/system" and method == "GET":
                 return self.json(200, sysinfo.snapshot(app.disks))
             if path == "/api/version" and method == "GET":

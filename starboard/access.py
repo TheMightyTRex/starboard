@@ -6,7 +6,7 @@ was asked for), and how to change it: a switch in Settings, or a question in ./i
 
 import os
 
-from . import containers
+from . import containers, sysinfo
 
 
 def _item(key, title, what, on, change, **extra):
@@ -38,6 +38,10 @@ def summary(app):
               "Lists your containers and installs new images on Apps, Updates. This is full control of Docker, "
               "which is the same as full control of the server.",
               containers.available(), "installer", on_flag="--docker", off_flag="--no-docker"),
+        _item("app_use", "Per-app processor and memory use",
+              "Reads two small files per container from the server's cgroup folder, read-only, while System, Monitor is open.",
+              bool(sysinfo.cgroup_dir()) and os.path.isdir(os.path.join(sysinfo.cgroup_dir(), "system.slice")),
+              "installer", on_flag="--app-use", off_flag="--no-app-use"),
         _item("disks", "Your folders, for free space",
               "Reads how full the folders you chose are, on System, Storage. Read-only.",
               app.disks, "installer", on_flag="--disk Name=/path", off_flag="--no-disks"),

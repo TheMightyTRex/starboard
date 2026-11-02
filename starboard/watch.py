@@ -191,8 +191,10 @@ class Watch:
                     changed = True
 
             # Disks: health reports and how full each folder is.
+            health = sysinfo.disk_health() if sysinfo.smart_dir() else {}
+            self.app.disk_temps.record(health.get("disks", []))  # keeps the 30-day temperature history going
             if on.get("disk_problem"):
-                for d in sysinfo.disk_health().get("disks", []):
+                for d in health.get("disks", []):
                     key = f"disk:{d['serial'] or d['device']}"
                     if d.get("passed") is False or d.get("problems"):
                         words = ", ".join(f"{p['name']} {p['value']}" for p in d.get("problems", [])) or "failed its health check"

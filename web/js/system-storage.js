@@ -128,10 +128,65 @@ async function load() {
   }
 }
 
+// What is using the space: on demand; the server walks the folders in the background and keeps the answer.
+let usageTimer = null;
+
+function renderUsage(u) {
+  $("#usage-panel").hidden = !disks.length;
+  const button = $("#usage-run");
+  button.disabled = !!u.running;
+  $("span", button).textContent = u.running ? "Working it out…" : u.finished ? "Work it out again" : "Work it out now";
+  $("#usage-when").textContent = u.running ? "Reading the folders now" : u.finished ? `Worked out ${formatDate(u.finished * 1000, true)}` : "Not worked out yet";
+  clearTimeout(usageTimer);
+  if (u.running) usageTimer = setTimeout(loadUsage, 5000);
+  if (!u.folders) { $("#usage").replaceChildren(); return; }
+  $("#usage").replaceChildren(...u.folders.map((f) => {
+    const total = f.items.reduce((t, i) => t + i.bytes, 0) || 1;
+    return el("section", { class: "sys-block", "aria-label": f.label },
+      el("h3", { text: f.label }),
+      el("ul", { class: "meter-list" }, f.items.slice(0, 12).map((i) => el("li", {},
+        el("div", { class: "meter__label" }, el("span", { text: i.name }), el("span", { class: "numeric", text: formatBytes(i.bytes) })),
+        el("div", { class: "progress", role: "presentation" }, el("span", { style: `width:${Math.max(1, (i.bytes / total) * 100)}%` }))))));
+  }));
+}
+
+async function loadUsage() {
+  try { renderUsage(await api("/api/usage")); } catch { /* the folders above still show */ }
+}
+
+// Drives in this computer, from the SMART job's lsblk.json: unmounted partitions and Windows file systems stand out.
+async function loadDevices() {
+  let d;
+  try { d = await api("/api/disk-health"); } catch { return; }
+  $("#devices-panel").hidden = !d.devices?.length;
+  if (!d.devices?.length) return;
+  const rows = d.devices.flatMap((disk) => disk.parts.map((p) => {
+    const fs = (p.fs || "").toLowerCase();
+    const notes = [];
+    if (!p.mounted.length) notes.push(chip("Not mounted", "muted"));
+    if (fs === "ntfs" || fs === "exfat" || fs === "vfat") notes.push(chip("Windows file system: slower on Linux", "warning"));
+    return el("tr", {},
+      el("td", { "data-label": "Drive" }, el("strong", { text: disk.model || disk.name }), el("span", { class: "small muted", text: ` ${p.name}` })),
+      el("td", { "data-label": "Size", class: "numeric", text: p.size ? formatBytes(p.size) : "" }),
+      el("td", { "data-label": "File system", text: p.fs || "None" }),
+      el("td", { "data-label": "Mounted at" }, p.mounted.length ? el("code", { text: p.mounted.join(", ") }) : "Nowhere"),
+      el("td", { "data-label": "Notes" }, ...notes));
+  }));
+  $("#devices").replaceChildren(el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+    el("caption", { class: "visually-hidden", text: "Drives and partitions" }),
+    el("thead", {}, el("tr", {}, ["Drive", "Size", "File system", "Mounted at", "Notes"].map((h) => el("th", { scope: "col", text: h })))),
+    el("tbody", {}, rows))));
+}
+
 startPage().then((session) => {
+  $("#usage-run").addEventListener("click", async () => {
+    try { renderUsage(await api("/api/usage", { method: "POST" })); announce("Working out what is using the space."); }
+    catch (e) { toast(e.message); }
+  });
   repo = session?.repo || "";
   const refresh = $("#refresh");
   refresh.replaceChildren(icon("refresh-cw"), el("span", { text: "Check again" }));
   refresh.addEventListener("click", async () => { await load(); announce("Checked again."); });
-  load();
+  load().then(loadUsage);
+  loadDevices();
 });

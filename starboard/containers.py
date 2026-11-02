@@ -100,9 +100,13 @@ def version_of(labels, env=None):
     return ""
 
 
-def containers():
+def containers(light=False):
+    """Every container. light=True: names and IDs only, with no request per image (for Monitor's names)."""
     out = []
-    for c in docker("GET", "/containers/json?all=1"):
+    listed = docker("GET", "/containers/json?all=1")
+    if light:
+        return [{"id": c["Id"], "name": c["Names"][0].lstrip("/")} for c in listed]
+    for c in listed:
         labels = c.get("Labels") or {}
         image = c["Image"]
         if image.startswith("sha256:"):
@@ -116,7 +120,7 @@ def containers():
         tag = parse_ref(ref)[2]
         version = version_of(conf.get("Labels"), conf.get("Env")) or (tag if tag != "latest" else "")
         out.append({
-            "name": c["Names"][0].lstrip("/"), "image": ref, "image_id": c["ImageID"],
+            "id": c["Id"], "name": c["Names"][0].lstrip("/"), "image": ref, "image_id": c["ImageID"],
             "state": c.get("State", ""), "status": c.get("Status", ""),
             "version": version, "created": (info.get("Created") or "")[:10],
             "digests": info.get("RepoDigests") or [],

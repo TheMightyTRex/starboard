@@ -11,6 +11,8 @@
 #   --no-docker           Take that away
 #   --disk Name=/path     Show free space for a folder on System, Storage (read-only; repeat for more)
 #   --no-disks            Show no folders
+#   --app-use             Show processor and memory use for each app on System, Monitor (read-only)
+#   --no-app-use          Take that away
 #   --disk-health         Set up Disk health reports (installs a timer with sudo; asks for your password)
 #   --no-disk-health      Stop reading Disk health reports (and say how to remove the timer)
 #   --yes                 Do not ask: use the options above, and your last answers (or No) for the rest
@@ -25,6 +27,7 @@ NETWORK=1
 ASK=1
 DOCKER=""
 HEALTH=""
+APPUSE=""
 DISKS_GIVEN=0
 DISKS=()
 
@@ -37,10 +40,12 @@ while [ $# -gt 0 ]; do
     --no-docker) DOCKER=0 ;;
     --disk) DISKS+=("${2:?--disk needs Name=/path}"); DISKS_GIVEN=1; shift ;;
     --no-disks) DISKS=(); DISKS_GIVEN=1 ;;
+    --app-use) APPUSE=1 ;;
+    --no-app-use) APPUSE=0 ;;
     --disk-health) HEALTH=1 ;;
     --no-disk-health) HEALTH=0 ;;
     --yes) ASK=0 ;;
-    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -140,6 +145,23 @@ else
   DOCKER=0
 fi
 
+# Per-app use.
+if [ -z "$APPUSE" ]; then
+  APPUSE="$(env_value STARBOARD_ALLOW_APPUSE)"
+  APPUSE="${APPUSE:-0}"
+  if [ "$ASK" = 1 ]; then
+    echo
+    echo "Per-app use: System, Monitor can list each app's processor and memory use. Starboard reads two small"
+    echo "  files per container from /sys/fs/cgroup, read-only, every 2 seconds while Monitor is open. With Docker"
+    echo "  access it also shows the apps' names; without it, their short IDs. No: Monitor shows the whole server only."
+    if yes_no "Show each app's processor and memory use?" "$APPUSE"; then APPUSE=1; else APPUSE=0; fi
+  fi
+fi
+if [ "$APPUSE" = 1 ] && [ ! -d /sys/fs/cgroup/system.slice ]; then
+  echo "This computer has no /sys/fs/cgroup/system.slice (cgroup v2 with systemd), so per-app use stays off."
+  APPUSE=0
+fi
+
 # Folders for free space.
 if [ "$DISKS_GIVEN" = 0 ]; then
   hand="$(env_value STARBOARD_DISKS)"
@@ -207,6 +229,12 @@ if [ -n "$NAME" ]; then set_env STARBOARD_NAME "\"$NAME\""; fi
 set_env STARBOARD_UID "$(id -u)"
 set_env STARBOARD_GID "$(id -g)"
 set_env STARBOARD_ALLOW_DOCKER "$DOCKER"
+set_env STARBOARD_ALLOW_APPUSE "$APPUSE"
+if [ "$APPUSE" = 1 ]; then
+  if [ "$MODE" = docker ]; then set_env STARBOARD_CGROUP /host-cgroup; else set_env STARBOARD_CGROUP /sys/fs/cgroup; fi
+else
+  set_env STARBOARD_CGROUP ""
+fi
 if [ "$HEALTH" != skip ]; then set_env STARBOARD_ALLOW_HEALTH "$HEALTH"; fi
 if ! grep -q '^STARBOARD_REPO=.\+' .env; then
   origin="$(git remote get-url origin 2>/dev/null || true)"
@@ -228,6 +256,7 @@ chmod 700 data backups
   echo "    volumes:"
   echo "      - ./data:/data"
   if [ "$DOCKER" = 1 ]; then echo "      - /var/run/docker.sock:/var/run/docker.sock  # app updates"; fi
+  if [ "$APPUSE" = 1 ]; then echo "      - /sys/fs/cgroup:/host-cgroup:ro  # per-app use"; fi
   if [ "$DISKS_GIVEN" != skip ]; then
     i=0
     for d in "${DISKS[@]+"${DISKS[@]}"}"; do
@@ -235,7 +264,10 @@ chmod 700 data backups
       echo "      - \"${d#*=}:/disks/$i:ro,rslave\"  # free space: ${d%%=*}"
     done
   fi
-  if [ "$HEALTH" = 1 ]; then echo "      - ./smart:/smart:ro  # Disk health reports"; fi
+  if [ "$HEALTH" = 1 ]; then
+    echo "      - ./smart:/smart:ro  # Disk health reports"
+    echo "      - ./smart/requests:/smart/requests  # the one place Starboard writes: Read disks now"
+  fi
 } > compose.access.yaml
 if [ "$DISKS_GIVEN" != skip ]; then
   paths=""; inside=""; i=0
@@ -268,7 +300,7 @@ if [ "$HEALTH" = 1 ]; then
     echo "The Disk health timer is already installed."
   else
     command -v smartctl >/dev/null || fail "install smartmontools first (for example: sudo apt install smartmontools), then run ./install.sh again"
-    mkdir -p smart
+    mkdir -p smart/requests
     echo "Running: sudo deploy/install-smart.sh $PWD/smart"
     sudo deploy/install-smart.sh "$PWD/smart"
   fi

@@ -143,6 +143,50 @@ def _temperatures():
     return temps[:24]
 
 
+# Per-app use -----------------------------------------------------------------------------
+# Optional: the host's cgroup files mounted read-only (STARBOARD_CGROUP, the installer asks). Each container's
+# processor time and memory are two small files; names come from Docker when Starboard has Docker access,
+# otherwise the container's short ID is shown.
+
+_names = {"at": 0, "map": {}}
+
+
+def cgroup_dir():
+    return os.environ.get("STARBOARD_CGROUP", "")
+
+
+def _container_names():
+    if time.time() - _names["at"] > 300:
+        _names["at"] = time.time()
+        try:
+            from . import containers
+            if containers.available():
+                _names["map"] = {c["id"]: c["name"] for c in containers.containers(light=True)}
+        except Exception:
+            pass
+    return _names["map"]
+
+
+def app_usage():
+    if not cgroup_dir():
+        return None
+    base = os.path.join(cgroup_dir(), "system.slice")
+    try:
+        entries = os.listdir(base)
+    except OSError:
+        return None
+    names = _container_names()
+    out = []
+    for d in entries:
+        if not (d.startswith("docker-") and d.endswith(".scope")):
+            continue
+        cid = d[7:-6]
+        stat = dict(line.split() for line in _read(os.path.join(base, d, "cpu.stat")).splitlines() if " " in line)
+        mem = _read(os.path.join(base, d, "memory.current")).strip()
+        out.append({"name": names.get(cid, cid[:12]), "cpu_usec": int(stat.get("usage_usec", 0)), "memory": int(mem or 0)})
+    return out
+
+
 def monitor():
     total, cores = _cpu_times()
     mem = {}
@@ -163,6 +207,7 @@ def monitor():
         "disks": _disk_counters(),
         "temps": _temperatures(),
         "uptime_seconds": float(uptime[0]) if uptime else None,
+        "apps": app_usage(),
     }
 
 
@@ -250,13 +295,174 @@ def disk_health():
                           "result": last_test.get("status", {}).get("string", ""),
                           "hours": last_test.get("lifetime_hours")} if last_test else None,
             "checked": os.path.getmtime(path),
+            # The drive's own recent temperature log (SCT), newest last, when it keeps one.
+            "sct": _sct(d),
         })
     events = []
     for name in ("events.log", "alerts.log"):
         lines = _read(os.path.join(folder, name)).splitlines()
         events.extend(line for line in lines if line.strip())
     events.sort(reverse=True)
-    return {"configured": True, "disks": disks, "events": events[:40]}
+    requests = os.path.join(folder, "requests")
+    return {"configured": True, "disks": disks, "events": events[:40], "devices": _devices(folder),
+            "can_read": os.path.isdir(requests) and os.access(requests, os.W_OK),
+            "reading": os.path.exists(os.path.join(requests, "read"))}
+
+
+def _sct(d):
+    h = d.get("ata_sct_temperature_history") or {}
+    temps = [t for t in (h.get("table") or []) if isinstance(t, (int, float))]
+    if not temps:
+        return None
+    return {"minutes": h.get("logging_interval_minutes") or 1, "temps": temps[-96:]}
+
+
+def _devices(folder):
+    """Drives and partitions from lsblk.json, which the SMART job saves: which are mounted, and their file systems."""
+    import json
+    try:
+        with open(os.path.join(folder, "lsblk.json"), encoding="utf-8") as f:
+            tree = json.load(f).get("blockdevices") or []
+    except (OSError, ValueError):
+        return None
+    out = []
+    for disk in tree:
+        if disk.get("type") != "disk":
+            continue
+        parts = []
+        for part in disk.get("children") or [disk]:
+            mounts = [m for m in (part.get("mountpoints") or []) if m]
+            parts.append({"name": part.get("name"), "size": part.get("size"), "fs": part.get("fstype") or "",
+                          "label": part.get("label") or "", "mounted": mounts[:3]})
+        out.append({"name": disk.get("name"), "model": (disk.get("model") or "").strip(), "serial": disk.get("serial") or "",
+                    "size": disk.get("size"), "parts": parts})
+    return out
+
+
+def request_disk_read():
+    folder = smart_dir()
+    try:
+        with open(os.path.join(folder, "requests", "read"), "w"):
+            pass
+    except OSError:
+        raise ValueError("Starboard cannot ask for a reading: the SMART job's requests folder is not writable") from None
+
+
+class DiskTemps:
+    """Each disk's temperature once an hour for 30 days (data/disk-temps.json), recorded whenever disk health is read:
+    by the Disk health page, or by watching in the background. About 720 numbers per disk."""
+    KEEP = 30 * 86400
+
+    def __init__(self, data_dir):
+        import threading
+        self.path = os.path.join(data_dir, "disk-temps.json")
+        self.lock = threading.Lock()
+
+    def _load(self):
+        import json
+        try:
+            with open(self.path, encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return {}
+
+    def record(self, disks):
+        import json
+        now = time.time()
+        with self.lock:
+            data = self._load()
+            changed = False
+            for d in disks:
+                key = d.get("serial") or d.get("device")
+                if not key or d.get("temperature") is None:
+                    continue
+                rows = data.setdefault(key, [])
+                if not rows or now - rows[-1][0] >= 3000:
+                    rows.append([round(now), d["temperature"]])
+                    data[key] = [r for r in rows if r[0] > now - self.KEEP]
+                    changed = True
+            if changed:
+                tmp = self.path + ".tmp"
+                with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+                    json.dump(data, f)
+                os.replace(tmp, self.path)
+
+    def get(self):
+        with self.lock:
+            return self._load()
+
+
+# What is using the space -------------------------------------------------------------
+# On demand only (a button on System, Storage): walks each folder's top-level folders once and keeps the answer in
+# data/usage.json. A file with several hard links (a seeding torrent that is also in the library) counts once.
+
+class Usage:
+    def __init__(self, data_dir):
+        import threading
+        self.path = os.path.join(data_dir, "usage.json")
+        self.lock = threading.Lock()
+        self.running = False
+
+    def get(self):
+        import json
+        try:
+            with open(self.path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            data = {}
+        data["running"] = self.running
+        return data
+
+    def start(self, disks):
+        import threading
+        with self.lock:
+            if self.running:
+                return
+            self.running = True
+        threading.Thread(target=self._scan, args=(disks,), name="usage", daemon=True).start()
+
+    def _scan(self, disks):
+        import json
+        started = time.time()
+        out = {"started": started, "folders": []}
+        seen = set()
+        try:
+            for label, root in disks:
+                entries = []
+                try:
+                    tops = sorted(os.scandir(root), key=lambda e: e.name.lower())
+                except OSError:
+                    continue
+                for top in tops:
+                    total = 0
+                    if top.is_symlink():
+                        continue
+                    if top.is_file():
+                        st = top.stat(follow_symlinks=False)
+                        total = st.st_blocks * 512
+                    else:
+                        for base, dirs, files in os.walk(top.path):
+                            for name in files:
+                                try:
+                                    st = os.lstat(os.path.join(base, name))
+                                except OSError:
+                                    continue
+                                if st.st_nlink > 1:
+                                    key = (st.st_dev, st.st_ino)
+                                    if key in seen:
+                                        continue
+                                    seen.add(key)
+                                total += st.st_blocks * 512
+                    entries.append({"name": top.name, "bytes": total})
+                entries.sort(key=lambda e: e["bytes"], reverse=True)
+                out["folders"].append({"label": label, "items": entries[:30]})
+            out["finished"] = time.time()
+            tmp = self.path + ".tmp"
+            with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+                json.dump(out, f)
+            os.replace(tmp, self.path)
+        finally:
+            self.running = False
 
 
 # History -------------------------------------------------------------------------

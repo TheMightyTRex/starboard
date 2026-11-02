@@ -70,12 +70,45 @@ function reportBody(d) {
         ? el("div", { class: "stats" }, d.problems.map((p) => el("div", { class: "stat", "data-tone": "warning" },
           el("span", { class: "stat__value", text: p.value.toLocaleString("en-GB") }), el("span", { class: "stat__label", text: p.name }))))
         : el("p", { text: "All at zero: reallocated, pending and unreadable sectors, uncorrectable errors, command timeouts, cable errors and spin-up retries." })),
+    ...tempCharts(d),
     el("section", { class: "sys-block", "aria-labelledby": "smart-events" },
       el("h3", { id: "smart-events", text: "Events for this disk" }),
       events.length ? el("ul", { class: "rows" }, events.map((line) => el("li", { class: "row row--no-lead" }, el("p", { text: line }))))
         : el("p", { class: "muted", text: "Nothing recorded for this disk." })),
     el("p", { class: "small muted", text: "Starboard shows the counters that matter and the latest self-test. The full attribute table and the self-test history are in the report file on the server." }),
   ];
+}
+
+// Temperature over 30 days (Starboard keeps one reading an hour) and the drive's own recent log (SCT).
+function tempCharts(d) {
+  const out = [];
+  const rows = (data.history || {})[d.serial || d.device] || [];
+  if (rows.length > 1) {
+    const chart = lineChart({ level: 3, title: "Temperature, last 30 days", series: [{ key: "temp", name: "Temperature" }], format: (v) => `${Math.round(v)}°C`,
+      xFormat: (t) => new Date(t * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short" }), points: [] });
+    chart.update({ points: rows.map(([t, temp]) => ({ t, temp })), span: "the last 30 days", note: "One reading an hour, recorded while Disk health is open or Starboard watches in the background." });
+    out.push(chart);
+  }
+  if (d.sct?.temps?.length > 1) {
+    const now = Date.now() / 1000;
+    const step = d.sct.minutes * 60;
+    const points = d.sct.temps.map((temp, i) => ({ t: now - (d.sct.temps.length - 1 - i) * step, temp }));
+    const chart = lineChart({ level: 3, title: "Temperature, the drive's own log", series: [{ key: "temp", name: "Temperature" }], format: (v) => `${Math.round(v)}°C`, points: [] });
+    chart.update({ points, span: `the last ${Math.round((points.length * step) / 3600)} hours`, note: `The drive records one reading every ${d.sct.minutes} ${d.sct.minutes === 1 ? "minute" : "minutes"}.` });
+    out.push(chart);
+  }
+  return out;
+}
+
+async function readNow() {
+  const b = $("#read-now");
+  b.disabled = true;
+  try {
+    await api("/api/disk-health/read", { method: "POST" });
+    $("span", b).textContent = "Reading the disks…";
+    announce("Asked the server to read the disks. New reports arrive in about a minute.");
+    setTimeout(async () => { await load(); }, 60000);
+  } catch (e) { toast(`Not asked: ${e.message}`); b.disabled = false; }
 }
 
 function openReport(d, opener) {
@@ -144,6 +177,10 @@ async function load() {
       $("#disks-summary").textContent = "No reports yet";
       return;
     }
+    const read = $("#read-now");
+    read.hidden = !data.can_read;
+    read.disabled = !!data.reading;
+    $("span", read).textContent = data.reading ? "Reading the disks…" : "Read disks now";
     const disks = [...data.disks].sort((a, b) => status(a)[2] - status(b)[2] || (b.temperature ?? 0) - (a.temperature ?? 0));
     const failing = disks.filter((d) => status(d)[0] === "danger").length;
     const toCheck = disks.filter((d) => ["danger", "warning"].includes(status(d)[0])).length;
@@ -190,6 +227,7 @@ async function load() {
 }
 
 startPage().then((session) => {
+  $("#read-now").addEventListener("click", readNow);
   repo = session?.repo || "";
   const refresh = $("#refresh");
   refresh.replaceChildren(icon("refresh-cw"), el("span", { text: "Check again" }));

@@ -76,6 +76,28 @@ function render(m, rates) {
 
 const plural = (n) => `${n} ${n === 1 ? "disk" : "disks"}`;
 
+// Each app's share of the whole processor since the last reading, and its memory. Needs per-app use (installer).
+function renderApps(m, prev, dt) {
+  $("#apps-panel").hidden = !m.apps;
+  if (!m.apps || !prev?.apps) return;
+  const before = new Map(prev.apps.map((a) => [a.name, a.cpu_usec]));
+  const rows = m.apps.map((a) => ({ ...a, cpu: before.has(a.name) ? Math.max(0, (a.cpu_usec - before.get(a.name)) / (dt * 1e6 * m.cpu.threads)) * 100 : 0 }))
+    .sort((a, b) => b.cpu - a.cpu || b.memory - a.memory).slice(0, 12);
+  $("#apps-detail").textContent = `The ${rows.length} busiest of ${m.apps.length}, now`;
+  const tbody = $("#apps-use tbody") || (() => {
+    const body = el("tbody");
+    $("#apps-use").replaceChildren(el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+      el("caption", { class: "visually-hidden", text: "Processor and memory for each app, busiest first" }),
+      el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "App" }), el("th", { scope: "col", class: "numeric", text: "Processor" }), el("th", { scope: "col", class: "numeric", text: "Memory" }))),
+      body)));
+    return body;
+  })();
+  tbody.replaceChildren(...rows.map((a) => el("tr", {},
+    el("th", { scope: "row", "data-label": "App", text: a.name }),
+    el("td", { "data-label": "Processor", class: "numeric", text: `${a.cpu < 0.1 ? "under 0.1" : a.cpu.toFixed(1)}%` }),
+    el("td", { "data-label": "Memory", class: "numeric", text: formatBytes(a.memory) }))));
+}
+
 async function tick() {
   if (document.hidden) return;
   try {
@@ -94,6 +116,7 @@ async function tick() {
         rx: rates.rx, tx: rates.tx, read: rates.read, write: rates.write, temp: pkg ?? null });
       if (points.length > POINTS) points.shift();
       render(m, rates);
+      renderApps(m, previous, dt);
     }
     previous = m;
   } catch (e) {

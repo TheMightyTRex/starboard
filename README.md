@@ -70,8 +70,9 @@ computer. Every kind of access is optional: say no and only that part of Starboa
 |---|---|---|---|---|
 | Home network | Phones and computers on your network can open Starboard | Starboard listens on your network, behind your password | Yes | Settings, Security; `--local-only` |
 | Docker | **Apps, Updates**: check for and install new app images | The Docker socket is mounted: full control of Docker, so of the computer | No | `--docker`, `--no-docker` |
+| Per-app use | **System, Monitor**: each app's processor and memory | `/sys/fs/cgroup` is mounted read-only; two small files per container are read while Monitor is open | No | `--app-use`, `--no-app-use` |
 | Folders | **System, Storage**: free space | Each folder is mounted read-only; Starboard reads sizes, not files | None | `--disk Name=/path`, `--no-disks` |
-| Disk health | **System, Disk health**: each drive's SMART report | Runs `deploy/install-smart.sh` with `sudo`: a systemd timer runs `deploy/starboard-smart.sh` (smartctl, as root) every 30 minutes and saves reports in `./smart` | No | `--disk-health`, `--no-disk-health` |
+| Disk health | **System, Disk health**: each drive's SMART report, and the drive list on Storage | Runs `deploy/install-smart.sh` with `sudo`: a systemd timer runs `deploy/starboard-smart.sh` (smartctl and lsblk, as root) every 30 minutes and saves reports in `./smart`. Starboard may write only to `./smart/requests`, to ask for a reading now | No | `--disk-health`, `--no-disk-health` |
 
 `--yes` answers without asking: the options you give, then your last answers, then No. To remove the Disk
 health timer, run `sudo deploy/install-smart.sh --remove`.
