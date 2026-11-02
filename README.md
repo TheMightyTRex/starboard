@@ -36,7 +36,16 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
   Atkinson Hyperlegible Next typeface.
 - **Coming up** as a list or a month calendar, with posters, as far ahead as you choose.
 - **Download hours:** qBittorrent and SABnzbd download only between the hours you set, with Resume and
-  Pause on the Downloads page.
+  Pause on the Downloads page, plus download speeds and the VPN's state (Gluetun) at the top.
+- **Requests** from Seerr, Jellyseerr or Overseerr, with Approve and Decline; **Finished this week** from
+  your apps' history.
+- **Alerts** to ntfy, Gotify or a webhook when an app stops answering, a disk has a problem or gets full, a
+  download is stuck, a backup fails or a certificate runs out; **uptime history** for each app; an optional
+  **weekly summary**. Off until you turn it on in Settings, Alerts.
+- **Jellyfin** on System, Overview: update or restart needed, Live TV guide, what is playing (and whether it
+  is being converted) and what was added.
+- **Server jobs** (such as a check of every app) with Run now; **Disk health** with 30-day temperatures;
+  **Storage** with what is using the space and every drive; **Monitor** with each app's processor and memory.
 - **No third-party packages.** Python's standard library and plain HTML, CSS and JavaScript.
 
 ## Install
