@@ -76,8 +76,9 @@ class ReleasesTest(unittest.TestCase):
         self.assertFalse(releases.pending("0.5.0", "0.5.0", True)["wizard"])
 
     def test_an_install_from_before_the_record_starts_at_the_previous_release(self):
-        p = releases.pending("", "0.5.0", True)
-        self.assertEqual((p["from"], p["review"]), ("0.4.0", ["apps", "storage"]))
+        for current in ("0.5.0", "0.5.1", "0.5.2"):
+            p = releases.pending("", current, True)
+            self.assertEqual((p["from"], p["review"]), ("0.4.0", ["apps", "storage"]), current)
 
 
 if __name__ == "__main__":

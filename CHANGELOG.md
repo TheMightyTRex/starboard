@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.2 (2 November 2026)
+
+- An upgrade from 0.4.0 or earlier now opens the upgrade guide with the 0.5.0 questions (new apps and Storage).
+  Before, it assumed 0.5.0 and skipped them.
+
 ## 0.5.1 (2 November 2026)
 
 - Upgrade available looks for the newest version tag (what ./update.sh installs), and never offers an older

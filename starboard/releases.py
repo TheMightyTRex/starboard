@@ -52,7 +52,14 @@ RELEASES = [
      "added": [], "changed": [("Upgrade available", "Looks for the newest version tag, which is what ./update.sh installs.")],
      "fixed": [("Upgrade available", "No longer offers an older version as an upgrade.")],
      "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.0."},
+    {"version": "0.5.2", "date": "2 November 2026",
+     "added": [], "changed": [],
+     "fixed": [("Upgrade guide", "An upgrade from 0.4.0 or earlier now shows the 0.5.0 questions (new apps and Storage) instead of skipping them.")],
+     "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.1."},
 ]
+
+
+FIRST_RECORDED = "0.5.0"  # the first release that records which version the upgrade guide last finished
 
 
 def _key(version):
@@ -70,10 +77,11 @@ def between(old, new):
 def pending(last_version, current, set_up):
     """What the upgrade wizard needs: the releases since the last one finished, and the questions they bring.
     An install with no password yet needs none (set-up records the version); an install from before this was
-    recorded starts from the release before the current one."""
+    recorded (0.4.0 or earlier) starts from 0.4.0."""
     if not set_up and not last_version:
         return {"from": current, "to": current, "releases": [], "review": [], "wizard": False}
-    start = last_version or next((r["version"] for r in reversed(RELEASES) if _key(r["version"]) < _key(current)), current)
+    # The record began with 0.5.0, so an install without one came from 0.4.0 or earlier.
+    start = last_version or ("0.4.0" if _key(current) >= _key(FIRST_RECORDED) else current)
     found = between(start, current)
     review = []
     for r in found:
