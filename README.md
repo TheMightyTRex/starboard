@@ -54,6 +54,10 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
   **defaults for every user**. Set-up offers them when it finds Jellyfin.
 - **Search for new apps** (Settings, Manage apps) finds apps on this computer and adds the ones you tick, with
   their API keys if Starboard has Docker access. It runs only when you press it.
+- **Install apps** sets up a media server in groups (Movies, TV, Music, Ebooks, Audiobooks, Comics, Watching,
+  Downloads, VPN and more). It writes a Compose file into `data/stack`, shows it, and starts the apps only when you
+  press Start and give your password (with Docker access), or gives you the command to run. It can point the new
+  apps at the media folders your other apps already use.
 - **A set-up guide** after the first password, and an **upgrade guide** after an upgrade that brings something
   to choose. The version in the footer opens the release notes.
 - **Almost no third-party packages:** Python's standard library and plain HTML, CSS and JavaScript, plus Pillow
@@ -192,6 +196,9 @@ releases are made is in [docs/RELEASING.md](docs/RELEASING.md).
 - A strict Content Security Policy: no inline scripts, nothing loaded from other sites except cover images.
 - The container runs as your user, read-only, with every Linux capability dropped. It has the Docker socket
   only if you say yes to app updates.
+- Install apps starts containers only from its own list of images, with folders it has checked (never a system
+  folder), and asks for your password first. Starting containers through Docker is as powerful as root, so it
+  needs the Docker access you chose at install.
 - Other devices on your home network can open it unless you switch that off in Settings. To use it away from home, put it behind a VPN or a reverse
   proxy with HTTPS (set `STARBOARD_TRUST_PROXY=1` and turn on HTTPS-only cookies in Settings). Do not forward
   the port straight to the internet.

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Install apps · Settings · Starboard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#323a77">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/app.css">
+<link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/settings.css">
+<script src="/js/components.js" data-manual></script>
+<script src="/js/common.js"></script>
+<script src="/js/settings.js" defer></script>
+<script src="/js/install.js" defer></script>
+</head>
+<body class="page-settings">
+<!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site-header site-header--no-rail">
+  <div class="site-header__bar">
+    <button type="button" class="icon-btn phone-menu-button" data-phone-menu-open aria-expanded="false" aria-controls="phone-menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg><span class="visually-hidden">Menu</span></button>
+    <a class="site-header__brand" href="/index.html"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false"><rect x="3" y="3" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="3" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="17" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><path d="M23 3.5l1.9 4.4 4.7.4-3.6 3.1 1.1 4.6-4.1-2.5-4.1 2.5 1.1-4.6-3.6-3.1 4.7-.4Z" fill="var(--color-logo-star)"/></svg><span data-site-name>Starboard</span></a>
+    <nav class="menu-tabs" id="main-nav" aria-label="Main">
+        <a href="/index.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span class="menu-tabs__label">Apps</span></a>
+        <a href="/search.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span class="menu-tabs__label">Search</span></a>
+        <a href="/downloads.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span class="menu-tabs__label">Downloads</span></a>
+        <a href="/upcoming.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg><span class="menu-tabs__label">Coming up</span></a>
+        <a href="/system.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg><span class="menu-tabs__label">System</span></a>
+        <a href="/settings.html" aria-current="page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg><span class="menu-tabs__label">Settings</span></a>
+    </nav>
+    <form class="site-header__search search-field" action="/search.html" role="search"><label class="visually-hidden" for="header-search-input">Search films, series, music and books</label><input class="input" id="header-search-input" name="q" type="search" placeholder="Search films, series, music and books"><button type="submit" class="visually-hidden">Search</button></form>
+    <div class="site-header__actions">
+      <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><span class="label">Display</span></button>
+    </div>
+  </div>
+  <div class="site-header__tabs">
+    <nav class="menu-tabs" aria-label="Settings">
+      <a href="/settings.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 4v4"/><path d="M2 8h20"/><path d="M6 4v4"/></svg><span class="menu-tabs__label">Manage apps</span></a>
+      <a href="/settings-general.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 5H3"/><path d="M12 19H3"/><path d="M14 3v4"/><path d="M16 17v4"/><path d="M21 12h-9"/><path d="M21 19h-5"/><path d="M21 5h-7"/><path d="M8 10v4"/><path d="M8 12H3"/></svg><span class="menu-tabs__label">General</span></a>
+      <a href="/settings-alerts.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg><span class="menu-tabs__label">Alerts</span></a>
+      <a href="/settings-jellyfin.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m17 2-5 5-5-5"/><rect width="20" height="15" x="2" y="7" rx="2"/></svg><span class="menu-tabs__label">Jellyfin</span></a>
+      <a href="/settings-performance.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg><span class="menu-tabs__label">Performance</span></a>
+      <a href="/settings-security.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg><span class="menu-tabs__label">Security</span></a>
+      <a href="/settings-updates.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span class="menu-tabs__label">About and updates</span></a>
+    </nav>
+  </div>
+</header>
+<div class="side-panel-layer" id="phone-menu" hidden>
+  <div class="side-panel-backdrop"></div>
+  <nav class="phone-menu" aria-label="Menu">
+    <div class="panel-header">
+      <span class="panel-header__brand"><svg viewBox="0 0 32 32" width="24" height="24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="3" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="17" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><path d="M23 3.5l1.9 4.4 4.7.4-3.6 3.1 1.1 4.6-4.1-2.5-4.1 2.5 1.1-4.6-3.6-3.1 4.7-.4Z" fill="var(--color-logo-star)"/></svg><span data-site-name>Starboard</span></span>
+      <button type="button" class="icon-btn" data-closes aria-label="Close menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+    <form class="phone-menu__search search-field" action="/search.html" role="search"><label class="visually-hidden" for="phone-search-input">Search films, series, music and books</label><input class="input" id="phone-search-input" name="q" type="search" placeholder="Search films, series, music and books"><button type="submit" class="visually-hidden">Search</button></form>
+    <div class="phone-menu__sections">
+        <div class="phone-menu__section">
+          <button type="button" aria-expanded="false" aria-controls="phone-sub-apps"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg><span>Apps</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="phone-menu__chevron" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
+          <ul id="phone-sub-apps" hidden>
+            <li><a href="/index.html">Apps</a></li>
+            <li><a href="/apps-updates.html">Updates</a></li>
+            <li><a href="/apps-services.html">Other services</a></li>
+          </ul>
+        </div>
+        <div class="phone-menu__section">
+          <a href="/search.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span>Search</span></a>
+        </div>
+        <div class="phone-menu__section">
+          <button type="button" aria-expanded="false" aria-controls="phone-sub-downloads"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg><span>Downloads</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="phone-menu__chevron" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
+          <ul id="phone-sub-downloads" hidden>
+            <li><a href="/downloads.html">Queue</a></li>
+            <li><a href="/downloads-requests.html">Requests</a></li>
+          </ul>
+        </div>
+        <div class="phone-menu__section">
+          <a href="/upcoming.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg><span>Coming up</span></a>
+        </div>
+        <div class="phone-menu__section">
+          <button type="button" aria-expanded="false" aria-controls="phone-sub-system"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg><span>System</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="phone-menu__chevron" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
+          <ul id="phone-sub-system" hidden>
+            <li><a href="/system.html">Overview</a></li>
+            <li><a href="/system-storage.html">Storage</a></li>
+            <li><a href="/system-disks.html">Disk health</a></li>
+            <li><a href="/system-monitor.html">Monitor</a></li>
+            <li><a href="/system-network.html">Network</a></li>
+            <li><a href="/system-backup.html">Backup and restore</a></li>
+          </ul>
+        </div>
+        <div class="phone-menu__section" data-current>
+          <button type="button" aria-expanded="true" aria-controls="phone-sub-settings"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg><span>Settings</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="phone-menu__chevron" aria-hidden="true" focusable="false"><path d="m9 18 6-6-6-6"/></svg></button>
+          <ul id="phone-sub-settings">
+            <li><a href="/settings.html">Manage apps</a></li>
+            <li><a href="/settings-general.html">General</a></li>
+            <li><a href="/settings-alerts.html">Alerts</a></li>
+            <li><a href="/settings-jellyfin.html">Jellyfin</a></li>
+            <li><a href="/settings-performance.html">Performance</a></li>
+            <li><a href="/settings-security.html">Security</a></li>
+            <li><a href="/settings-updates.html">About and updates</a></li>
+          </ul>
+        </div>
+    </div>
+    <div class="phone-menu__foot">
+      <span class="version-label" data-version></span>
+      <button type="button" class="btn btn--quiet" data-sign-out><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg><span>Sign out</span></button>
+    </div>
+  </nav>
+</div>
+<dialog class="dialog" id="display-panel" aria-labelledby="display-panel-title">
+  <form method="dialog">
+    <div class="panel-header">
+      <h2 class="panel-header__title" id="display-panel-title">Display and accessibility</h2>
+      <button type="button" class="icon-btn" data-dialog-close aria-label="Close display and accessibility"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+    <div class="dialog__body">
+      <fieldset><legend>Theme</legend>
+        <div class="segmented">
+          <label><input type="radio" name="theme" value="system"><span>Match device</span></label>
+          <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+          <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Text size</legend>
+        <div class="segmented">
+          <label><input type="radio" name="text" value="100"><span>100%</span></label>
+          <label><input type="radio" name="text" value="125"><span>125%</span></label>
+          <label><input type="radio" name="text" value="150"><span>150%</span></label>
+          <label><input type="radio" name="text" value="175"><span>175%</span></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Reduce motion</legend>
+        <div class="segmented">
+          <label><input type="radio" name="motion" value="device"><span>Match device</span></label>
+          <label><input type="radio" name="motion" value="on"><span>On</span></label>
+          <label><input type="radio" name="motion" value="off"><span>Off</span></label>
+        </div>
+      </fieldset>
+      <label class="switch" for="pref-contrast"><span>High contrast</span><input type="checkbox" role="switch" id="pref-contrast" name="contrast"></label>
+      <label class="switch" for="pref-underline"><span>Underline links</span><input type="checkbox" role="switch" id="pref-underline" name="underline"></label>
+      <label class="switch" for="pref-spacing"><span>Wider text spacing</span><input type="checkbox" role="switch" id="pref-spacing" name="spacing"></label>
+      <fieldset><legend>Design</legend>
+        <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General.</p>
+        <div class="option-cards" data-design-options></div>
+      </fieldset>
+    </div>
+    <div class="dialog__foot">
+      <button type="submit" class="btn btn--primary">Done</button>
+      <button type="button" class="btn" data-display-reset>Reset</button>
+    </div>
+  </form>
+</dialog>
+<div id="announcer" class="visually-hidden" aria-live="polite"></div>
+<!-- shell:end -->
+<main id="main" tabindex="-1">
+<div class="page page--settings">
+  <div class="page-head">
+    <div class="page-head__text">
+      <h1>Install apps</h1>
+      <p class="page-head__summary" id="install-summary">Set up a media server in groups: Movies, TV, Ebooks and more. Starboard writes the files and shows them before anything starts.</p>
+    </div>
+  </div>
+  <div class="wizard" id="install" aria-busy="true"></div>
+</div>
+</main>
+</body>
+</html>

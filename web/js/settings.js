@@ -738,7 +738,8 @@ function startGeneral() {
         settingRow("Start", "Downloads start at this hour.", hoursSelect("start", "dh-start-l"), "dh-start-l"),
         settingRow("End", "Downloads pause at this hour. An end before the start runs overnight.", hoursSelect("end", "dh-end-l"), "dh-end-l")))),
     section("gn-guide", "Set-up guide", "Finds your apps and walks through what Starboard can do. Running it again changes nothing until you press Continue.",
-      el("div", { class: "actions" }, el("a", { class: "btn", href: "/setup-guide.html" }, icon("play"), config.setup_guide_done ? "Run the set-up guide again" : "Run the set-up guide"))),
+      el("div", { class: "actions" }, el("a", { class: "btn", href: "/setup-guide.html" }, icon("play"), config.setup_guide_done ? "Run the set-up guide again" : "Run the set-up guide"),
+        el("a", { class: "btn", href: "/install-apps.html" }, icon("download"), "Install apps"))),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm));
   renderCategories();
   if (["#categories", "#coming-up", "#download-hours"].includes(location.hash)) $(location.hash).scrollIntoView();
@@ -875,7 +876,19 @@ async function stepContent(id, root) {
   const types = (t) => config.services.filter((s) => s.enabled !== false && t.includes(s.type));
   let nodes = [];
   let save = async () => true;
-  if (id === "apps") {
+  if (id === "install") {
+    const have = el("input", { type: "radio", name: "install", checked: true });
+    const fresh = el("input", { type: "radio", name: "install" });
+    nodes = [el("div", { class: "option-cards" },
+      el("label", { class: "option-card" }, have, el("strong", { text: "Use the apps I have" }), el("small", { text: "Starboard looks for them on the next step." })),
+      el("label", { class: "option-card" }, fresh, el("strong", { text: "Install apps for me" }),
+        el("small", { text: "Choose groups such as Movies, TV, Ebooks and Audiobooks. Starboard writes the files, shows them, and starts the apps when you say. It also offers to bring over what your current apps have." })))];
+    save = async () => {
+      if (!fresh.checked) return true;
+      location.href = "/install-apps.html?from=guide";
+      return false;
+    };
+  } else if (id === "apps") {
     const finder = await appFinder();
     nodes = [finder.box];
     save = async () => (finder.add && finder.ticked() ? !!(await finder.add()) : true);  // nothing ticked: just go on
@@ -982,6 +995,8 @@ async function startGuide() {
 
   const build = () => {
     const list = [];
+    list.push({ id: "install", title: "Your apps", question: "Do you have your apps already?",
+      intro: "Starboard can find the apps on this computer, or set up a media server for you first." });
     list.push({ id: "apps", title: "Find your apps", question: "Add the apps on this computer?",
       intro: "Starboard looked for apps it knows on this computer. Tick the ones to add; you can add others by hand later." });
     if (types(Object.keys(KEY_PLACE)).some((s) => !s.has_api_key)) {
@@ -1608,5 +1623,6 @@ startPage().then(async (session) => {
   if ($("#performance-sections")) startPerformance();
   if ($("#guide")) startGuide();
   if ($("#upgrade")) startUpgrade();
+  if ($("#install") && typeof startInstall === "function") startInstall();
   if ($("#version-notice")) startAbout();
 });

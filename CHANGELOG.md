@@ -10,6 +10,18 @@
   Prowlarr, SABnzbd and Seerr from their own settings files, if you tick "Fill in API keys for me".
 - It runs only when you press the button: no background work.
 
+### Install apps
+
+- **Install apps** (Settings, Manage apps, or the first step of the set-up guide): tick groups such as Movies,
+  TV, Music, Ebooks, Audiobooks, Comics, Watching, Downloads, VPN and Subtitles, and change the apps inside each.
+  Apps already running are left alone; ports in use move to the next free one; each app shows its memory use.
+- Starboard writes `data/stack/compose.yaml` and `.env` (private, with database passwords made up for you),
+  shows both, and keeps older copies. With Docker access, Start asks for your password, then makes the folders
+  and starts the apps; without it, it gives you the one command to run.
+- It finds the folders your other apps already use for media and offers them, so nothing is moved. It offers
+  watch history from Plex or Emby into a new Jellyfin; listening progress and copying app settings are next.
+- Apps that need their own settings file first (Unpackerr, Decluttarr, Janitorr) are written but not started.
+
 ### Set-up and upgrades
 
 - **Set-up guide** after the first password: apps, API keys, Jellyfin extras, download hours, alerts and how

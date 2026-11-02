@@ -16,7 +16,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, discovery, icons, jobs, livetv, migrate, posters, releases, schedule, services, sysinfo, watch
+from . import access, auth, backup, containers, discovery, icons, jobs, livetv, migrate, posters, releases, schedule, services, stack, sysinfo, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -80,6 +80,7 @@ def static_file(full):
 
 class App:
     def __init__(self, data_dir):
+        self.data_dir = data_dir
         self.config = Config(data_dir)
         self.sessions = auth.Sessions(data_dir)
         self.limits = auth.RateLimit()
@@ -418,6 +419,32 @@ class Handler(BaseHTTPRequestHandler):
             extra["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
         self.send(200, data, kind, extra)
 
+    def stack_overview(self):
+        """What Install apps needs: the groups and apps (those already running marked), folders already used for
+        media, the servers a migration could come from, and sensible defaults."""
+        app = self.app
+        found = discovery.search(app.config.data["services"])["items"]
+        names = {re.sub(r"[^a-z0-9]", "", i["key"]) for i in found}
+        if containers.available():
+            try:
+                names |= {re.sub(r"[^a-z0-9]", "", c["Names"][0].lower()) for c in containers.docker("GET", "/containers/json?all=1")}
+            except containers.DockerError:
+                pass
+        installed = {k for k in stack.APPS if k in names or (k == "bookshelf" and "readarr" in names)}
+        media = stack.existing_media()
+        host = stack.host_folder(app.data_dir)
+        base = os.path.dirname(os.path.dirname(os.path.dirname(host))) if host else "/srv"
+        data_dir = os.path.commonpath([m["path"] for m in media]) if media else f"{base}/media"
+        if data_dir in ("/", ""):
+            data_dir = f"{base}/media"
+        return {**stack.catalogue(installed), "docker": containers.available(), "can_start": bool(host and containers.available()),
+                "existing_media": media,
+                "servers": [{"key": i["key"], "name": i["name"]} for i in found
+                            if i["key"] in ("plex", "emby", "jellyfin", "audiobookshelf", "sonarr", "radarr", "lidarr")],
+                "written": os.path.exists(os.path.join(stack.folder(app.data_dir), "compose.yaml")),
+                "defaults": {"config_dir": f"{base}/media-stack/config", "data_dir": data_dir, "puid": os.getuid() or 1000,
+                             "pgid": os.getgid() or 1000, "tz": os.environ.get("TZ") or "Etc/UTC"}}
+
     def upgrade_summary(self):
         d = self.app.config.data
         p = releases.pending(d.get("last_version", ""), self.app.version, not self.app.needs_setup)
@@ -570,6 +597,28 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":
                 return self.json(200, self.add_found(self.body().get("items")))
+            if path == "/api/stack" and method == "GET":
+                return self.json(200, self.stack_overview())
+            if path == "/api/stack/preview" and method == "POST":
+                built = stack.build(self.body())
+                return self.json(200, {k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")})
+            if path == "/api/stack/write" and method == "POST":
+                built = stack.build(self.body())
+                stack.write(app.data_dir, built)
+                host = stack.host_folder(app.data_dir)
+                return self.json(200, {"host_folder": host, "can_start": bool(host and containers.available()),
+                                       "command": f"cd {host or '<Starboard folder>/data/stack'} && docker compose -p {stack.PROJECT} up -d",
+                                       "moved": built["moved"], "later": built["later"]})
+            if path == "/api/stack/start" and method == "POST":
+                self.check_password(self.body())  # starting containers changes the computer: the password again
+                host = stack.host_folder(app.data_dir)
+                env_file = os.path.join(stack.folder(app.data_dir), ".env")
+                if not host or not containers.available() or not os.path.exists(env_file):
+                    raise ValueError("Starboard cannot start apps here. Run the command instead")
+                with open(env_file) as f:
+                    return self.json(200, stack.start(host, f.read()))
+            if path == "/api/stack/job" and method == "GET":
+                return self.json(200, stack.job())
             if path == "/api/releases" and method == "GET":
                 d = cfg.data
                 return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo,

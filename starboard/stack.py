@@ -1,0 +1,390 @@
+"""Install apps: the first-install guide that sets up a media server stack, in groups you tick.
+
+Only when asked, and nothing runs in the background. Starboard writes a Compose file and a .env file into
+data/stack, shows both, and starts them only when you press Start (with Docker access and your password).
+Without Docker access it gives you the one command to run yourself. Images come from this list only; the
+folders you choose are checked, and ports already in use move to the next free one.
+
+Each app: name, groups, image, ports ("host:inside", host ports move when taken), volumes, environment, and
+optional extras: "later" (needs its own settings file first, so it is left out of `up -d` until you add it),
+"vpn" (runs through Gluetun when the VPN group is on), "db" (a database that comes with it), "notes".
+"""
+
+import os
+import re
+import secrets
+import socket
+import threading
+import time
+
+from . import containers
+
+GROUPS = [
+    # key, name, what it is for, kind ("media", "core" or "extras"), on by default
+    ("movies", "Movies", "Find, download and sort films", "media", True),
+    ("tv", "TV", "Find, download and sort series", "media", True),
+    ("music", "Music", "Albums and artists", "media", False),
+    ("ebooks", "Ebooks", "Books to read", "media", False),
+    ("audiobooks", "Audiobooks", "Books to listen to, with progress on every device", "media", False),
+    ("comics", "Comics", "Comics and graphic novels", "media", False),
+    ("watching", "Watching", "Play everything, and let people ask for more", "core", True),
+    ("downloads", "Downloads", "Download clients and the sites to search", "core", True),
+    ("vpn", "VPN", "Send downloads through a VPN", "core", False),
+    ("subtitles", "Subtitles", "Subtitles for films and series", "core", False),
+    ("tidy", "Tidy-up", "Clear stuck downloads and old media, sync quality settings", "extras", False),
+    ("livetv", "Live TV", "Free TV channels and guides", "extras", False),
+    ("logs", "Logs", "Read every container's log in the browser", "extras", False),
+    ("transcoding", "Transcoding", "Convert the library to save space", "extras", False),
+]
+
+LSIO = {"PUID": "${PUID}", "PGID": "${PGID}", "TZ": "${TZ}"}
+CFG = "${CONFIG_DIR}"
+DATA = "${DATA_DIR}"
+
+APPS = {
+    "radarr": {"name": "Radarr", "groups": ["movies"], "image": "lscr.io/linuxserver/radarr:latest",
+               "ports": ["7878:7878"], "volumes": [f"{CFG}/radarr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200},
+    "sonarr": {"name": "Sonarr", "groups": ["tv"], "image": "lscr.io/linuxserver/sonarr:latest",
+               "ports": ["8989:8989"], "volumes": [f"{CFG}/sonarr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200},
+    "lidarr": {"name": "Lidarr", "groups": ["music"], "image": "lscr.io/linuxserver/lidarr:latest",
+               "ports": ["8686:8686"], "volumes": [f"{CFG}/lidarr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200},
+    "bookshelf": {"name": "Bookshelf", "groups": ["ebooks"], "image": "ghcr.io/pennydreadful/bookshelf:softcover",
+                  "ports": ["8787:8787"], "volumes": [f"{CFG}/bookshelf:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200,
+                  "notes": "A maintained version of Readarr."},
+    "storyarr": {"name": "Storyarr", "groups": ["ebooks", "audiobooks"], "image": os.environ.get("STARBOARD_STORYARR_IMAGE", ""),
+                 "ports": ["8000:8000"], "volumes": [f"{CFG}/storyarr:/config", f"{DATA}:/data"], "memory": 250,
+                 "env": {**LSIO, "DB_HOST": "storyarr-db", "DB_PORT": "5432", "DB_NAME": "storyarr", "DB_USER": "storyarr",
+                         "DB_PASSWORD": "${STORYARR_DB_PASSWORD}"},
+                 "db": {"service": "storyarr-db", "image": "postgres:18", "volume": f"{CFG}/storyarr-db:/var/lib/postgresql",
+                        "env": {"POSTGRES_DB": "storyarr", "POSTGRES_USER": "storyarr", "POSTGRES_PASSWORD": "${STORYARR_DB_PASSWORD}"},
+                        "secret": "STORYARR_DB_PASSWORD"},
+                 "default": False, "notes": "Ebooks and audiobooks in one place, with series and reading lists."},
+    "audiobookshelf": {"name": "Audiobookshelf", "groups": ["audiobooks"], "image": "ghcr.io/advplyr/audiobookshelf:latest",
+                       "ports": ["13378:80"], "env": {"TZ": "${TZ}"}, "memory": 150,
+                       "volumes": [f"{CFG}/audiobookshelf/config:/config", f"{CFG}/audiobookshelf/metadata:/metadata", f"{DATA}/media:/media"]},
+    "kapowarr": {"name": "Kapowarr", "groups": ["comics"], "image": "mrcas/kapowarr:latest", "ports": ["5656:5656"], "memory": 100,
+                 "volumes": [f"{CFG}/kapowarr:/app/db", f"{DATA}/downloads/comics:/app/temp_downloads", f"{DATA}/media/comics:/comics-1"]},
+    "jellyfin": {"name": "Jellyfin", "groups": ["watching"], "image": "lscr.io/linuxserver/jellyfin:latest",
+                 "ports": ["8096:8096"], "volumes": [f"{CFG}/jellyfin:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 400},
+    "seerr": {"name": "Seerr", "groups": ["watching"], "image": "ghcr.io/seerr-team/seerr:latest", "ports": ["5055:5055"],
+              "volumes": [f"{CFG}/seerr:/app/config"], "env": {"TZ": "${TZ}"}, "memory": 200,
+              "notes": "People ask for films and series; it sends them to Radarr and Sonarr."},
+    "jellystat": {"name": "Jellystat", "groups": ["watching"], "image": "cyfershepard/jellystat:latest", "ports": ["3000:3000"],
+                  "env": {"POSTGRES_USER": "jellystat", "POSTGRES_PASSWORD": "${JELLYSTAT_DB_PASSWORD}", "POSTGRES_IP": "jellystat-db",
+                          "POSTGRES_PORT": "5432", "JWT_SECRET": "${JELLYSTAT_JWT_SECRET}", "TZ": "${TZ}"},
+                  "volumes": [f"{CFG}/jellystat/backup:/app/backend/backup-data"], "memory": 200, "default": False,
+                  "db": {"service": "jellystat-db", "image": "postgres:15.2", "volume": f"{CFG}/jellystat-db:/var/lib/postgresql/data",
+                         "env": {"POSTGRES_DB": "jfstat", "POSTGRES_USER": "jellystat", "POSTGRES_PASSWORD": "${JELLYSTAT_DB_PASSWORD}"},
+                         "secret": "JELLYSTAT_DB_PASSWORD", "secret2": "JELLYSTAT_JWT_SECRET"}},
+    "wizarr": {"name": "Wizarr", "groups": ["watching"], "image": "ghcr.io/wizarrrr/wizarr:latest", "ports": ["5690:5690"],
+               "volumes": [f"{CFG}/wizarr:/data/database"], "env": {"TZ": "${TZ}"}, "memory": 100, "default": False,
+               "notes": "Invite friends to Jellyfin with a link."},
+    "qbittorrent": {"name": "qBittorrent", "groups": ["downloads"], "image": "lscr.io/linuxserver/qbittorrent:latest",
+                    "ports": ["8080:8080", "6881:6881", "6881:6881/udp"], "volumes": [f"{CFG}/qbittorrent:/config", f"{DATA}:/data"],
+                    "env": {**LSIO, "WEBUI_PORT": "8080"}, "vpn": True, "memory": 150},
+    "sabnzbd": {"name": "SABnzbd", "groups": ["downloads"], "image": "lscr.io/linuxserver/sabnzbd:latest", "ports": ["8085:8080"],
+                "volumes": [f"{CFG}/sabnzbd:/config", f"{DATA}:/data"], "env": LSIO, "vpn": True, "memory": 150, "default": False,
+                "notes": "For Usenet, which needs a paid provider."},
+    "prowlarr": {"name": "Prowlarr", "groups": ["downloads"], "image": "lscr.io/linuxserver/prowlarr:latest", "ports": ["9696:9696"],
+                 "volumes": [f"{CFG}/prowlarr:/config"], "env": LSIO, "vpn": True, "memory": 150,
+                 "notes": "One list of sites to search, shared with every app."},
+    "flaresolverr": {"name": "FlareSolverr", "groups": ["downloads"], "image": "ghcr.io/flaresolverr/flaresolverr:latest",
+                     "ports": ["8191:8191"], "env": {"TZ": "${TZ}"}, "vpn": True, "memory": 300,
+                     "notes": "Gets past browser checks on some search sites."},
+    "unpackerr": {"name": "Unpackerr", "groups": ["downloads"], "image": "ghcr.io/hotio/unpackerr:latest",
+                  "volumes": [f"{CFG}/unpackerr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 50, "default": False, "later": True,
+                  "notes": "Unpacks downloads. Needs the API keys of your apps in its settings file first."},
+    "gluetun": {"name": "Gluetun", "groups": ["vpn"], "image": "qmcgaw/gluetun:v3", "memory": 50, "gluetun": True,
+                "env": {"TZ": "${TZ}", "VPN_SERVICE_PROVIDER": "${VPN_SERVICE_PROVIDER}", "VPN_TYPE": "${VPN_TYPE}",
+                        "WIREGUARD_PRIVATE_KEY": "${WIREGUARD_PRIVATE_KEY}", "WIREGUARD_ADDRESSES": "${WIREGUARD_ADDRESSES}",
+                        "OPENVPN_USER": "${OPENVPN_USER}", "OPENVPN_PASSWORD": "${OPENVPN_PASSWORD}", "SERVER_COUNTRIES": "${SERVER_COUNTRIES}"},
+                "volumes": [f"{CFG}/gluetun:/gluetun"], "notes": "Your VPN details go in the .env file, never in Starboard's settings."},
+    "bazarr": {"name": "Bazarr", "groups": ["subtitles"], "image": "lscr.io/linuxserver/bazarr:latest", "ports": ["6767:6767"],
+               "volumes": [f"{CFG}/bazarr:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 150},
+    "decluttarr": {"name": "Decluttarr", "groups": ["tidy"], "image": "ghcr.io/manimatter/decluttarr:latest", "memory": 50,
+                   "volumes": [f"{CFG}/decluttarr:/app/config"], "env": {"TZ": "${TZ}"}, "later": True,
+                   "notes": "Removes stuck downloads. Needs a settings file with your apps' API keys first."},
+    "profilarr": {"name": "Profilarr", "groups": ["tidy"], "image": "santiagosayshey/profilarr:latest", "ports": ["6868:6868"],
+                  "volumes": [f"{CFG}/profilarr:/config"], "env": {"TZ": "${TZ}"}, "memory": 100,
+                  "notes": "Shares quality settings between Radarr and Sonarr."},
+    "janitorr": {"name": "Janitorr", "groups": ["tidy"], "image": "ghcr.io/schaka/janitorr:jvm-stable", "memory": 250, "later": True,
+                 "volumes": [f"{CFG}/janitorr:/config", f"{DATA}:/data"], "default": False,
+                 "notes": "Deletes media nobody watches. Needs application.yml in its settings folder first."},
+    "dispatcharr": {"name": "Dispatcharr", "groups": ["livetv"], "image": "ghcr.io/dispatcharr/dispatcharr:latest",
+                    "ports": ["9191:9191"], "volumes": [f"{CFG}/dispatcharr:/data"], "env": {"TZ": "${TZ}"}, "memory": 300},
+    "dozzle": {"name": "Dozzle", "groups": ["logs"], "image": "amir20/dozzle:latest", "ports": ["9999:8080"], "memory": 30,
+               "volumes": ["/var/run/docker.sock:/var/run/docker.sock:ro"], "notes": "Reads Docker's logs, so it sees every container."},
+    "tdarr": {"name": "Tdarr", "groups": ["transcoding"], "image": "ghcr.io/haveagitgat/tdarr:latest", "ports": ["8265:8265", "8266:8266"],
+              "volumes": [f"{CFG}/tdarr/server:/app/server", f"{CFG}/tdarr/configs:/app/configs", f"{CFG}/tdarr/logs:/app/logs",
+                          f"{DATA}/media:/media", f"{CFG}/tdarr/cache:/temp"],
+              "env": {**LSIO, "serverIP": "0.0.0.0", "serverPort": "8266", "webUIPort": "8265", "internalNode": "true", "nodeName": "starboard"},
+              "memory": 500, "notes": "Uses a lot of processor time while it converts."},
+}
+
+# Folders made inside the data folder, so downloads and the library share one disk and moves are instant.
+DATA_FOLDERS = {"movies": ["media/movies"], "tv": ["media/tv"], "music": ["media/music"], "ebooks": ["media/books"],
+                "audiobooks": ["media/audiobooks"], "comics": ["media/comics", "downloads/comics"],
+                "downloads": ["downloads/torrents", "downloads/usenet"]}
+
+PROJECT = "media-stack"
+_SAFE_PATH = re.compile(r"^/[A-Za-z0-9._/-]{1,200}$")
+_SYSTEM = ("/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var/run", "/var/lib/docker")
+
+
+def clean_folder(path, what):
+    path = str(path or "").strip().rstrip("/")
+    if not _SAFE_PATH.match(path) or "/../" in path + "/" or "/./" in path + "/" or "//" in path:
+        raise ValueError(f"The {what} must be a full path such as /srv/media, with letters, numbers, dots, dashes and underscores")
+    if path == "" or any(path == s or path.startswith(s + "/") for s in _SYSTEM):
+        raise ValueError(f"The {what} cannot be a system folder")
+    return path
+
+
+def _port_free(port):
+    with socket.socket() as s:
+        s.settimeout(0.3)
+        return s.connect_ex(("127.0.0.1", port)) != 0
+
+
+def defaults_for(app):
+    return app.get("default", True)
+
+
+def existing_media():
+    """Host folders other containers already use for media or downloads (with Docker access): offered as the
+    data folder, so new apps use your media where it is. Nothing is moved."""
+    if not containers.available():
+        return []
+    found = {}
+    try:
+        for c in containers.docker("GET", "/containers/json?all=1"):
+            name = c["Names"][0].lstrip("/")
+            if (c.get("Labels") or {}).get("com.docker.compose.service") == "starboard":
+                continue
+            for m in c.get("Mounts") or []:
+                src, dst = m.get("Source", ""), m.get("Destination", "")
+                if m.get("Type") != "bind" or not _SAFE_PATH.match(src or ""):
+                    continue
+                if re.search(r"/(config|database|db|appdata|metadata)(/|$)", src, re.I):
+                    continue  # an app's own settings, not media
+                if re.search(r"^/(data|media|movies|tv|music|books|audiobooks|comics|downloads|library)(/|$)", dst):
+                    found.setdefault(src, set()).add(name)
+    except containers.DockerError:
+        return []
+    # Outermost folders only: a folder inside another one adds its apps to the outer one.
+    outer = {}
+    for path in sorted(found, key=len):
+        top = next((o for o in outer if path.startswith(o + "/")), None)
+        outer.setdefault(top or path, set()).update(found[path])
+    return [{"path": p, "used_by": sorted(n)} for p, n in sorted(outer.items())]
+
+
+def offered():
+    """Apps with an image to install. Storyarr's image is a setting (STARBOARD_STORYARR_IMAGE), so it is offered
+    only when that is set."""
+    return {k: a for k, a in APPS.items() if a["image"]}
+
+
+def catalogue(installed_keys):
+    """Groups and apps for the guide; apps found running are marked and left unticked."""
+    apps = []
+    for key, a in offered().items():
+        ports = []
+        for p in a.get("ports", []):
+            host = int(p.split(":")[0])
+            ports.append({"port": host, "free": key in installed_keys or _port_free(host)})
+        apps.append({"key": key, "name": a["name"], "groups": a["groups"], "image": a["image"], "notes": a.get("notes", ""),
+                     "default": defaults_for(a), "later": bool(a.get("later")), "memory": a.get("memory", 100),
+                     "installed": key in installed_keys, "ports": ports})
+    return {"groups": [{"key": k, "name": n, "about": t, "kind": kind, "default": d} for k, n, t, kind, d in GROUPS], "apps": apps}
+
+
+def _yaml_value(v):
+    v = str(v)
+    return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def _next_free(port, used):
+    while port in used or not _port_free(port):
+        port += 1
+    used.add(port)
+    return port
+
+
+def build(choice):
+    """The Compose file and .env for the ticked apps. choice: {apps, config_dir, data_dir, puid, pgid, tz, vpn}.
+    Returns {compose, env, env_shown, folders, moved, later}."""
+    keys = [k for k in choice.get("apps", []) if k in offered()]
+    if not keys:
+        raise ValueError("Tick at least one app to install")
+    config_dir = clean_folder(choice.get("config_dir"), "settings folder")
+    data_dir = clean_folder(choice.get("data_dir"), "media folder")
+    puid, pgid = int(choice.get("puid", 1000)), int(choice.get("pgid", 1000))
+    if not (0 < puid < 65536 and 0 < pgid < 65536):
+        raise ValueError("The user and group numbers must be between 1 and 65535")
+    tz = str(choice.get("tz") or "Etc/UTC")
+    if not re.match(r"^[A-Za-z0-9_+/-]{1,40}$", tz):
+        raise ValueError("Choose a time zone such as Europe/London")
+    vpn = "gluetun" in keys
+    vpn_choice = choice.get("vpn") or {}
+    env = {"PUID": str(puid), "PGID": str(pgid), "TZ": tz, "CONFIG_DIR": config_dir, "DATA_DIR": data_dir}
+    shown = dict(env)
+    if vpn:
+        provider = str(vpn_choice.get("provider", "")).strip().lower()
+        kind = str(vpn_choice.get("type", "wireguard")).strip().lower()
+        if not re.match(r"^[a-z0-9 _-]{2,40}$", provider) or kind not in ("wireguard", "openvpn"):
+            raise ValueError("Choose your VPN provider, and WireGuard or OpenVPN")
+        vals = {"VPN_SERVICE_PROVIDER": provider, "VPN_TYPE": kind, "SERVER_COUNTRIES": str(vpn_choice.get("countries", ""))}
+        for f in ("WIREGUARD_PRIVATE_KEY", "WIREGUARD_ADDRESSES", "OPENVPN_USER", "OPENVPN_PASSWORD"):
+            vals[f] = str(vpn_choice.get(f.lower(), ""))
+        for k, v in vals.items():
+            if "\n" in v or "\r" in v or "'" in v or len(v) > 300:
+                raise ValueError("A VPN detail has a line break or a ' mark, or is too long. Add it to the .env file by hand instead")
+            env[k] = v
+            shown[k] = "(hidden)" if v and k in ("WIREGUARD_PRIVATE_KEY", "OPENVPN_PASSWORD") else v
+    used, moved, later = set(), [], []
+    lines = ["# Written by Starboard's Install apps guide. Change it by hand if you like; Starboard does not overwrite",
+             "# it unless you run the guide again. Your settings and secrets are in .env next to it.", "services:"]
+    vpn_ports = []
+    for key in keys:
+        a = APPS[key]
+        through_vpn = vpn and a.get("vpn")
+        lines += [f"  {key}:", f"    image: {a['image']}", f"    container_name: {key}", "    restart: unless-stopped"]
+        if a.get("later"):
+            lines.append('    profiles: ["later"]  # needs its own settings file first: docker compose --profile later up -d')
+            later.append(a["name"])
+        if a.get("gluetun"):
+            lines += ["    cap_add:", "      - NET_ADMIN", "    devices:", "      - /dev/net/tun:/dev/net/tun"]
+        ports = []
+        for p in a.get("ports", []):
+            host, inside = p.split(":", 1)
+            new = _next_free(int(host), used) if "/udp" not in inside else int(host)
+            if new != int(host):
+                moved.append(f"{a['name']} uses port {new}, because {host} is taken")
+            ports.append(f"{new}:{inside}")
+        depends = (["gluetun"] if through_vpn else []) + ([a["db"]["service"]] if a.get("db") else [])
+        if depends:
+            lines += ["    depends_on:"] + [f"      - {d}" for d in depends]
+        if through_vpn:
+            lines.append('    network_mode: "service:gluetun"')
+            vpn_ports += ports
+        elif ports:
+            lines.append("    ports:")
+            lines += [f"      - {_yaml_value(p)}" for p in ports]
+        if a.get("env"):
+            lines.append("    environment:")
+            lines += [f"      {k}: {_yaml_value(v)}" for k, v in a["env"].items()]
+        if a.get("volumes"):
+            lines.append("    volumes:")
+            lines += [f"      - {_yaml_value(v)}" for v in a["volumes"]]
+        db = a.get("db")
+        if db:
+            for s in ("secret", "secret2"):
+                if db.get(s):
+                    env[db[s]] = secrets.token_urlsafe(24)
+                    shown[db[s]] = "(made up for you)"
+            lines += [f"  {db['service']}:", f"    image: {db['image']}", f"    container_name: {db['service']}",
+                      "    restart: unless-stopped", "    environment:"]
+            lines += [f"      {k}: {_yaml_value(v)}" for k, v in db["env"].items()]
+            lines += ["    volumes:", f"      - {_yaml_value(db['volume'])}"]
+    if vpn and vpn_ports:
+        i = lines.index("  gluetun:") + 1
+        while i < len(lines) and lines[i].startswith("    "):
+            i += 1
+        lines[i:i] = ["    ports:  # apps that go through the VPN are reached on Gluetun's ports"] + [f"      - {_yaml_value(p)}" for p in vpn_ports]
+    folders = [f"{config_dir}/{k}" for k in keys] + [f"{data_dir}/{f}" for g in {g for k in keys for g in APPS[k]["groups"]}
+                                                     for f in DATA_FOLDERS.get(g, [])]
+    env_text = "# Starboard's Install apps guide. Keep this file private: it holds passwords.\n" + \
+        "".join(f"{k}={_env_value(v)}\n" for k, v in env.items())
+    return {"compose": "\n".join(lines) + "\n", "env": env_text, "env_shown": shown, "folders": sorted(set(folders)),
+            "moved": moved, "later": later}
+
+
+def _env_value(v):
+    v = str(v)
+    return v if re.match(r"^[A-Za-z0-9_./:@,+-]*$", v) else f"'{v}'"  # single quotes: taken as written
+
+
+# Writing and starting -----------------------------------------------------------------------------------------
+
+_lock = threading.Lock()
+_job = {}
+
+
+def folder(data_dir):
+    return os.path.join(data_dir, "stack")
+
+
+def write(data_dir, built):
+    path = folder(data_dir)
+    os.makedirs(path, mode=0o700, exist_ok=True)
+    for name, text, mode in (("compose.yaml", built["compose"], 0o644), (".env", built["env"], 0o600)):
+        target = os.path.join(path, name)
+        if os.path.exists(target):
+            os.replace(target, target + f".before-{time.strftime('%Y%m%d-%H%M%S')}")  # the old one is kept
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+    return path
+
+
+def host_folder(data_dir):
+    """Where data/stack is on the computer itself: from Starboard's own container (Docker sees host paths)."""
+    if not containers.available():
+        return None
+    try:
+        for c in containers.docker("GET", "/containers/json"):
+            if (c.get("Labels") or {}).get("com.docker.compose.service") != "starboard":
+                continue
+            for m in c.get("Mounts") or []:
+                if m.get("Destination") == data_dir.rstrip("/") and _SAFE_PATH.match(m.get("Source", "")):
+                    return m["Source"] + "/stack"
+    except containers.DockerError:
+        return None
+    return None if os.path.exists("/.dockerenv") else os.path.abspath(folder(data_dir))
+
+
+def job():
+    with _lock:
+        return dict(_job)
+
+
+def start(host_stack, built_env):
+    """Makes the folders (owned by PUID:PGID) and runs `docker compose up -d`, in a short-lived helper."""
+    env = dict(line.split("=", 1) for line in built_env.splitlines() if "=" in line and not line.startswith("#"))
+    for k in ("CONFIG_DIR", "DATA_DIR"):
+        clean_folder(env.get(k, "").strip("'"), "folder")
+    with _lock:
+        if _job and not _job.get("finished"):
+            raise ValueError("The apps are already starting")
+        _job.clear()
+        _job.update(started=time.time(), finished=False, ok=None, log="")
+    threading.Thread(target=_start, args=(host_stack, env), name="stack", daemon=True).start()
+    return job()
+
+
+def _start(host_stack, env):
+    q = containers._quote
+    cfg, data = env["CONFIG_DIR"].strip("'"), env["DATA_DIR"].strip("'")
+    script = " && ".join([
+        f"mkdir -p {q(cfg)} {q(data)}",
+        f"chown {int(env['PUID'])}:{int(env['PGID'])} {q(cfg)} {q(data)}",
+        f"docker compose -p {PROJECT} --env-file .env -f compose.yaml pull 2>&1 | tail -n 20",
+        f"docker compose -p {PROJECT} --env-file .env -f compose.yaml up -d 2>&1",
+        f"for d in {q(cfg)}/* {q(data)}/media {q(data)}/downloads; do [ -d \"$d\" ] && chown {int(env['PUID'])}:{int(env['PGID'])} \"$d\"; done; true",
+    ])
+    try:
+        try:
+            containers.docker("POST", f"/images/create?fromImage={containers.urllib.parse.quote(containers.HELPER_IMAGE, safe='')}",
+                              raw=True, timeout=300)
+        except containers.DockerError:
+            pass
+        code, text = containers._helper(host_stack, script, extra_binds=[f"{cfg}:{cfg}", f"{data}:{data}"])
+        with _lock:
+            _job.update(ok=code == 0, log=text[-6000:])
+    except containers.DockerError as e:
+        with _lock:
+            _job.update(ok=False, log=str(e))
+    finally:
+        with _lock:
+            _job.update(finished=True, ended=time.time())

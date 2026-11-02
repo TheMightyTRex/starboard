@@ -27,6 +27,7 @@ services:
       - STARBOARD_TRUST_PROXY=${STARBOARD_TRUST_PROXY:-0}
       - STARBOARD_PROXY_ADDRESSES=${STARBOARD_PROXY_ADDRESSES:-}
       - STARBOARD_ALLOWED_HOSTS=${STARBOARD_ALLOWED_HOSTS:-}
+      - STARBOARD_STORYARR_IMAGE=${STARBOARD_STORYARR_IMAGE:-}
     volumes:
       - ./data:/data
       # Your own folders (Storage, Disk health) go in compose.override.yaml, which updates leave alone.

@@ -351,10 +351,11 @@ def _quote(text):
     return "'" + text.replace("'", "'\\''") + "'"
 
 
-def _helper(folder, script):
-    """Runs a shell script in a short-lived docker:cli container that can see the project folder."""
+def _helper(folder, script, extra_binds=()):
+    """Runs a shell script in a short-lived docker:cli container that can see the project folder (and, for
+    Install apps, the settings and media folders it makes)."""
     body = {"Image": HELPER_IMAGE, "Cmd": ["sh", "-c", script], "WorkingDir": folder, "Labels": {"starboard.updater": "1"},
-            "HostConfig": {"Binds": ["/var/run/docker.sock:/var/run/docker.sock", f"{folder}:{folder}"]}}
+            "HostConfig": {"Binds": ["/var/run/docker.sock:/var/run/docker.sock", f"{folder}:{folder}", *extra_binds]}}
     cid = docker("POST", f"/containers/create?name=starboard-updater-{int(time.time() * 1000)}", body)["Id"]
     try:
         docker("POST", f"/containers/{cid}/start")
