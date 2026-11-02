@@ -137,3 +137,43 @@ def request_server_backup(with_prompt=False):
             pass
     except OSError:
         raise ConfigError("Starboard cannot ask for a backup: the requests folder is not writable") from None
+
+
+# Other jobs on the host --------------------------------------------------------------
+# The same requests folder runs other jobs too, such as a server check: each writes <name>.json like the backup
+# job does. Starboard lists every job it finds there (apart from the backups) and can ask for one to run.
+
+JOB_TITLES = {"check": "Server check"}
+
+
+def jobs_status():
+    jobs = jobs_dir()
+    if not jobs or not os.path.isdir(jobs):
+        return {"configured": False, "items": []}
+    out = []
+    for path in sorted(glob.glob(os.path.join(jobs, "*.json"))):
+        name = os.path.basename(path)[:-5]
+        if name in JOB_NAMES or not re.match(r"^[a-z][a-z0-9-]{0,30}$", name):
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                raw = json.load(f)
+        except (OSError, ValueError):
+            continue
+        item = {k: raw.get(k) for k in ("status", "started", "finished", "summary", "exit")}
+        item.update(name=name, title=raw.get("title") or JOB_TITLES.get(name) or name.replace("-", " ").capitalize(),
+                    output=str(raw.get("output") or "")[-12000:])
+        if os.path.exists(os.path.join(jobs, "requests", name)) and item["status"] != "running":
+            item["status"] = "waiting"
+        out.append(item)
+    return {"configured": True, "can_run": os.access(os.path.join(jobs, "requests"), os.W_OK), "items": out}
+
+
+def request_job(name):
+    if name in JOB_NAMES or name not in {j["name"] for j in jobs_status()["items"]}:
+        raise ConfigError("Choose a job from the list")
+    try:
+        with open(os.path.join(jobs_dir(), "requests", name), "w"):
+            pass
+    except OSError:
+        raise ConfigError("Starboard cannot ask for the job: the requests folder is not writable") from None

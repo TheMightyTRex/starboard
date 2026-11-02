@@ -479,6 +479,20 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, services.cached("transfer", 5, lambda: services.transfer(cfg.data["services"]), fresh))
             if path == "/api/numbers" and method == "GET":
                 return self.json(200, {"items": services.cached("numbers", 60, lambda: services.numbers(cfg.data["services"]), fresh)})
+            if path == "/api/requests" and method == "GET":
+                pending = "pending=1" in urllib.parse.urlparse(self.path).query
+                return self.json(200, services.cached(f"requests-{pending}", 20, lambda: services.requests(cfg.data["services"], pending), fresh))
+            m = re.match(r"^/api/requests/(\d{1,10})/(approve|decline)$", path)
+            if m and method == "POST":
+                services.request_action(cfg.data["services"], m.group(1), m.group(2))
+                services.forget()
+                return self.json(200, services.requests(cfg.data["services"]))
+            if path == "/api/jobs" and method == "GET":
+                return self.json(200, backup.jobs_status())
+            m = re.match(r"^/api/jobs/([a-z][a-z0-9-]{0,30})$", path)
+            if m and method == "POST":
+                backup.request_job(m.group(1))
+                return self.json(200, backup.jobs_status())
             if path == "/api/recent" and method == "GET":
                 return self.json(200, services.cached("recent", 300, lambda: services.recent(cfg.data["services"]), fresh))
             if path == "/api/jellyfin" and method == "GET":

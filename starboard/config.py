@@ -21,6 +21,7 @@ SERVICE_TYPES = {
     "qbittorrent": {"label": "qBittorrent", "api": "/api/v2", "searchable": False},
     "sabnzbd": {"label": "SABnzbd", "api": "/sabnzbd/api", "searchable": False},
     "gluetun": {"label": "Gluetun (VPN)", "api": "", "searchable": False},
+    "seerr": {"label": "Seerr, Jellyseerr or Overseerr", "api": "/api/v1", "searchable": False},
     "link": {"label": "Other app", "api": "", "searchable": False},
 }
 

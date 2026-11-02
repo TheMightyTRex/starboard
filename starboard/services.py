@@ -163,6 +163,8 @@ def check(service):
         elif kind == "sabnzbd":
             version = sab(service, "version", timeout=5).get("version", "")
             sab(service, "queue", timeout=5, limit=0)  # "version" works without a key; this one does not
+        elif kind == "seerr":
+            version = (_api(service, "/status", timeout=5) or {}).get("version", "")
         elif kind == "gluetun":
             v = vpn_one(service)
             if not v["running"]:
@@ -729,3 +731,60 @@ def numbers(services):
         if parts:
             out[s["id"]] = parts
     return out
+
+
+# Requests from Seerr (or Jellyseerr, Overseerr) ----------------------------------------
+# The newest requests, with their titles. A title costs one request to Seerr the first time; Starboard keeps
+# up to 500 titles in memory so later loads cost nothing.
+
+REQUEST_STATUS = {1: ("Waiting for approval", "warning"), 2: ("Approved", "info"), 3: ("Declined", "muted"),
+                  4: ("Failed", "danger"), 5: ("Completed", "success")}
+MEDIA_STATUS = {2: "Requested", 3: "Downloading", 4: "Partly available", 5: "Available", 6: "Deleted"}
+_titles = {}
+
+
+def _seerr(service, path, method="GET"):
+    return _api(dict(service, type="seerr"), path, method=method)
+
+
+def _title(service, kind, tmdb):
+    key = (service["id"], kind, tmdb)
+    if key not in _titles:
+        try:
+            d = _seerr(service, f"/{'movie' if kind == 'movie' else 'tv'}/{tmdb}") or {}
+            _titles[key] = {"title": d.get("title") or d.get("name") or f"TMDB {tmdb}",
+                            "year": (d.get("releaseDate") or d.get("firstAirDate") or "")[:4]}
+        except ServiceError:
+            return {"title": f"TMDB {tmdb}", "year": ""}
+        if len(_titles) > 500:
+            _titles.pop(next(iter(_titles)))
+    return _titles[key]
+
+
+def requests(services, pending_only=False):
+    found = [s for s in services if s["type"] == "seerr" and s.get("enabled", True) and s.get("api_key")]
+    if not found:
+        return {"configured": False, "items": [], "pending": 0}
+    s = found[0]
+    page = _seerr(s, f"/request?take=30&skip=0&sort=added&filter={'pending' if pending_only else 'all'}") or {}
+    items = []
+    for r in page.get("results") or []:
+        media = r.get("media") or {}
+        kind = media.get("mediaType") or r.get("type")
+        info = _title(s, kind, media.get("tmdbId"))
+        words, tone = REQUEST_STATUS.get(r.get("status"), ("Unknown", "muted"))
+        items.append({"id": r["id"], "kind": "Film" if kind == "movie" else "Series", **info,
+                      "seasons": [x.get("seasonNumber") for x in r.get("seasons") or []],
+                      "status": words, "tone": tone, "pending": r.get("status") == 1,
+                      "media": MEDIA_STATUS.get(media.get("status"), ""),
+                      "by": (r.get("requestedBy") or {}).get("displayName", ""), "when": r.get("createdAt", "")})
+    counts = _seerr(s, "/request/count") or {}
+    return {"configured": True, "name": s["name"], "link": s.get("link") or s["url"], "items": items,
+            "pending": counts.get("pending", sum(i["pending"] for i in items))}
+
+
+def request_action(services, request_id, action):
+    s = next((s for s in services if s["type"] == "seerr" and s.get("enabled", True) and s.get("api_key")), None)
+    if not s:
+        raise ServiceError("No Seerr app with an API key is set up")
+    _seerr(s, f"/request/{int(request_id)}/{'approve' if action == 'approve' else 'decline'}", method="POST")

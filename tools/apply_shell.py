@@ -28,6 +28,10 @@ MAIN = [
 
 # Sub-menus: main key -> [(page, label, icon)]. They use the same tabs as the main menu.
 SUB = {
+    "downloads": [
+        ("downloads.html", "Queue", "download"),
+        ("downloads-requests.html", "Requests", "inbox"),
+    ],
     "apps": [
         ("index.html", "Apps", "layout-grid"),
         ("apps-updates.html", "Updates", "circle-arrow-up"),

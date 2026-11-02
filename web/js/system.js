@@ -195,6 +195,38 @@ async function loadJellyfin(fresh = false) {
   catch (e) { $("#jellyfin-panel").hidden = false; $("#jellyfin").replaceChildren(el("p", { class: "muted", text: `Could not ask Jellyfin: ${e.message}` })); }
 }
 
+// Server jobs: what the host's job runner reports, with Run now. Starboard only asks; the job runs on the host.
+const JOB_WORDS = { done: ["Finished", "success"], failed: ["Failed", "danger"], running: ["Running", "info"], waiting: ["Waiting to start", "neutral"] };
+let jobTimer = null;
+
+function renderJobs(d) {
+  $("#jobs-panel").hidden = !d.configured || !d.items.length;
+  renderKeyed($("#jobs"), d.items, (j) => j.name, (j) => {
+    const [words, tone] = JOB_WORDS[j.status] || ["Not run yet", "muted"];
+    const finished = j.finished ? new Date(j.finished * 1000).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+    const busy = j.status === "running" || j.status === "waiting";
+    return el("li", { class: "row row--no-lead", "data-key": j.name },
+      el("div", {}, el("div", { class: "row__title", text: j.title }),
+        el("div", { class: "row__meta", text: [j.summary, finished && !busy ? `finished ${finished}` : ""].filter(Boolean).join(" · ") }),
+        j.output ? el("details", { class: "disclosure" }, el("summary", { text: "What it found" }), el("div", { class: "disclosure__body" }, el("pre", { class: "code-block", text: j.output }))) : null),
+      el("div", { class: "row__side" }, chip(words, tone),
+        d.can_run ? el("button", { type: "button", class: "btn btn--compact", disabled: busy, onclick: () => runJob(j) },
+          icon("play"), "Run now", el("span", { class: "visually-hidden", text: ` ${j.title}` })) : null));
+  });
+  const busy = d.items.some((j) => j.status === "running" || j.status === "waiting");
+  clearTimeout(jobTimer);
+  if (busy) jobTimer = setTimeout(loadJobs, 5000);  // only while a job runs
+}
+
+async function loadJobs() {
+  try { renderJobs(await api("/api/jobs")); } catch { /* the page works without it */ }
+}
+
+async function runJob(j) {
+  try { renderJobs(await api(`/api/jobs/${j.name}`, { method: "POST" })); announce(`${j.title} asked to run`); }
+  catch (e) { toast(`Not started: ${e.message}`); }
+}
+
 startPage().then(async () => {
   checkAgainLabel($("#refresh"));
   range = rangePicker(() => load(), { live: true });
@@ -204,4 +236,5 @@ startPage().then(async () => {
   $("#refresh").addEventListener("click", async () => { await Promise.all([load(), loadJellyfin(true)]); announce("Checked again."); });
   load();
   loadJellyfin();
+  loadJobs();
 });
