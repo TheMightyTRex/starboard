@@ -1,17 +1,13 @@
-/* Settings, Backup and restore, Sign in and Set up (group D). Linked after app.css on those pages only.
-   app.css still has older rules for .row, .notice and .panel__head that override the shared library; the
-   rules here put the library's layout back on these pages. Everything else comes from components.css. */
+/* Settings, Backup and restore, Sign in and Set up (group D). Linked after app.css on those pages only; rows,
+   notices and panel heads come from the library (components.css). */
 
-/* Rows with a leading icon, as in the library (app.css drops the lead column). */
-.rows > .row { grid-template-columns: auto minmax(0, 1fr) auto; }
-.rows > .row.row--no-lead { grid-template-columns: minmax(0, 1fr) auto; }
+/* Rows */
 .row__text { display: grid; gap: 2px; min-width: 0; }
 .row .app-icon .i { width: 20px; height: 20px; }
 .row__side .menu-wrap .icon-btn { width: var(--control-h); height: var(--control-h); }
 .rows .empty { border: 0; }
 
-/* Notices: icon, words, then an optional action (app.css drops the grid). */
-.notice { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: start; }
+/* Notices */
 .notice > .i { margin-top: 2px; }
 .notice > .btn { align-self: center; }
 .notice__body { display: grid; gap: var(--space-1); }
@@ -33,8 +29,6 @@
 
 /* The add and edit slide-out. */
 .step-section { display: grid; gap: var(--space-4); }
-.step-section h3:focus { outline: none; }
-.step-section h3:focus-visible { outline: var(--focus-w) solid var(--color-focus); outline-offset: 2px; }
 .switch-list { display: grid; gap: var(--space-2); }
 .switch-list .switch { justify-content: space-between; }
 .side-panel__body > form { display: grid; gap: var(--space-6); }
@@ -66,14 +60,12 @@
 
 /* A list straight under a section head shares its line (app.css gives every .rows a top border). */
 .settings-section__head + .rows, .settings-section__head + .settings-rows, .settings-section__head + form > .settings-rows:first-child { border-top: 0; }
-.settings-section .option-cards { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .settings-section .form-grid { max-width: 720px; }
 #category-loose:empty { display: none; }
 #session-form { display: grid; gap: var(--space-4); }
 /* An open More actions menu sits above the rows below it (each row side is its own layer). */
 .row__side:has(.menu:not([hidden])) { z-index: 5; }
 .form-grid > .field { align-content: start; }
-.stack-4 { display: grid; gap: var(--space-4); }
 /* app.css colours every notice as info; give success its own colours back. */
 .notice[data-tone="success"] { border-color: var(--status-success-fg); background: var(--status-success-bg); color: var(--status-success-fg); }
 .settings-section, .settings-section > form, .panel { grid-template-columns: minmax(0, 1fr); }
@@ -86,20 +78,15 @@
    button lines up with the rows' buttons. A little more room between the heading and the first section. */
 .page--settings > * { width: 100%; max-width: 880px; }
 .page--settings > .page-head { margin-bottom: var(--space-2); }
-.page--settings .settings-sections { gap: var(--space-10, 40px); }
+.page--settings .settings-sections { gap: var(--space-10); }
 
 /* Manage apps: the status is an icon beside the name; its words are in hidden text and the tooltip. */
 /* .status-icon is in the shared library (components.css). */
 
 /* A text box with its button beside it (dashboard name, new category, days): one row, one height. */
-.inline-save { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: end; }
-.inline-save > .field { flex: 0 1 420px; }
-.inline-save > .btn { flex: none; }
-.setting__control .inline-save { justify-content: end; flex-wrap: nowrap; }
 .setting__control .inline-save .days-group { width: 160px; }
 
 /* Forms that stack their fields: every box the same width. */
-.form-stack { display: grid; gap: var(--space-4); max-width: 420px; }
 
 /* Addresses that open Starboard, under the network switch. */
 .page--settings .facts--addresses { margin: 0; }
@@ -123,13 +110,9 @@
 .job-run { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); flex: 1 1 320px; }
 
 /* What a setting costs: a line of its own under the hint. */
-.setting__cost { display: block; margin-top: var(--space-1); color: var(--color-text-muted); font-size: var(--text-xs); }
 
 /* The set-up and upgrade wizards. */
-.stack-1 { display: grid; gap: var(--space-1); }
 .wizard .panel { gap: var(--space-5); }
-.wizard h2:focus { outline: none; }
-.wizard h2:focus-visible { outline: var(--focus-w) solid var(--color-focus); outline-offset: 2px; }
 
 /* Install apps: a group's apps sit under its card, indented. */
 .install-group { display: grid; gap: var(--space-2); }

@@ -147,7 +147,7 @@ function renderUsage(u) {
   const button = $("#usage-run");
   button.hidden = off;
   button.disabled = !!u.running;
-  $("span", button).textContent = u.running ? "Working it out…" : u.finished ? "Work it out again" : "Work it out now";
+  $("span", button).textContent = u.running ? "Sorting by type…" : u.finished ? "Sort by type again" : "Sort by type now";
   $("#usage-when").textContent = off ? "Off in Settings, Performance" : u.running ? "Reading the folders now" : u.finished ? `Worked out ${formatDate(u.finished * 1000, true)}` : "Not worked out yet";
   $("#usage-about").textContent = off
     ? "Working out what uses the space is off in Settings, Performance, so the charts show used and free space only."
@@ -167,7 +167,7 @@ function renderUsage(u) {
 }
 
 const USAGE_WORDS = {
-  ask: "only when you press Work it out.",
+  ask: "only when you press Sort by type.",
   open: "when you open Storage, if the last answer is over a day old.",
   nightly: "every night at 3 am.",
   weekly: "once a week, at 3 am.",
@@ -192,8 +192,8 @@ function renderCharts() {
   box.replaceChildren(...main.map((d) => {
     const f = sorted.find((x) => x.label === d.label);
     const when = f && usage.finished ? `Sorted by type ${formatDate(usage.finished * 1000, true)}` : off ? "Sorting by type is off" : "Not sorted by type yet";
-    const action = off ? null : el("button", { type: "button", class: "btn btn--compact", disabled: !!usage?.running, onclick: runUsage },
-      icon("refresh-cw"), usage?.running ? "Working it out…" : f ? "Work it out again" : "Work it out now");
+    const action = off ? null : el("button", { type: "button", class: "btn", disabled: !!usage?.running, onclick: runUsage },
+      icon("refresh-cw"), usage?.running ? "Sorting by type…" : f ? "Sort by type again" : "Sort by type now");
     return poolCard(d, f ? f.types : null, when, action);
   }));
   // Drives
@@ -216,7 +216,7 @@ function renderGrowth(disk) {
   const readings = Object.keys(spaceDays).sort().map((date) => ({ date, v: spaceDays[date][disk.label] }))
     .filter((r) => r.v).map((r) => ({ date: r.date, used: r.v[0], total: r.v[1] }));
   panel.hidden = !readings.length;
-  if (readings.length) $("#growth").replaceChildren(...growthChart(disk.label, readings));
+  if (readings.length) $("#growth").replaceChildren(...growthChart(disk.label, readings, $("#growth").clientWidth));
 }
 
 async function loadUsage() {
@@ -246,6 +246,10 @@ async function loadDevices() {
     el("thead", {}, el("tr", {}, ["Drive", "Size", "File system", "Mounted at", "Notes"].map((h) => el("th", { scope: "col", text: h })))),
     el("tbody", {}, rows))));
 }
+
+// The growth chart is drawn at its real width (so its text stays at the token size): draw again when that changes.
+let resizeTimer = null;
+window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderCharts, 200); });
 
 startPage().then(async (session) => {
   $("#usage-run").addEventListener("click", runUsage);

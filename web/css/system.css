@@ -7,17 +7,10 @@
 /* Charts: two to a row on wide screens, one per row on phones. */
 .sys-charts { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); }
 .chart .chart__head { flex-wrap: wrap; }
-.chart .chart__head h3 { font-size: var(--text-md); }
 .chart__value { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-weight: var(--weight-strong); }
 
 /* Rows with an app icon or disk icon in front (app.css gives rows two columns; these need three). */
 .row.sys-row--lead { grid-template-columns: auto minmax(0, 1fr) auto; }
-.sys-lead { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--color-divider); background: var(--color-surface-sunken); color: var(--color-text-muted); }
-
-/* Needs attention panel with a status edge when something is listed. */
-.panel[data-tone="warning"] { border-left: var(--status-edge-w, 6px) solid var(--status-warning-fg); }
-.panel[data-tone="danger"] { border-left: var(--status-edge-w, 6px) solid var(--status-danger-fg); }
-.sys-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); }
 
 /* Lists of meters (disk temperature and age, processor threads). */
 .sys-meters { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
@@ -26,7 +19,6 @@
 
 /* Slide-out content blocks. */
 .sys-block { display: grid; gap: var(--space-3); }
-.sys-block h3 { font-size: var(--text-md); }
 .side-panel__body .chip { justify-self: start; }
 .sys-message { font-size: var(--text-md); overflow-wrap: anywhere; }
 
@@ -36,6 +28,7 @@
 
 @media (max-width: 639px) {
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats > :last-child:nth-child(odd) { grid-column: 1 / -1; } /* an odd tile out spans the row */
   .row.sys-row--lead { grid-template-columns: auto minmax(0, 1fr); }
   .row.sys-row--lead > .row__side { grid-column: 2; }
   .sys-disks td:last-child::before { content: none; }
@@ -49,39 +42,30 @@
    blindness against the card in light and dark (data-viz checks, 2 November 2026); free space is grey with a
    hatch. Text stays in text colours; only marks use these. */
 :root {
-  --media-tv: #2a78d6; --media-movies: #eb6834; --media-audiobooks: #1baf7a; --media-music: #eda100;
-  --media-books: #e87ba4; --media-downloads: #008300; --media-other: #6250d6;
-  --media-free: #dfe5ef; --media-free-line: #b9c2d1; --media-used: var(--chart-1);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --media-tv: #3987e5; --media-movies: #d95926; --media-audiobooks: #199e70; --media-music: #c98500;
-    --media-books: #d55181; --media-downloads: #008300; --media-other: #9085e9;
-    --media-free: #3a475c; --media-free-line: #56647b;
-  }
-}
-:root[data-theme="dark"] {
-  --media-tv: #3987e5; --media-movies: #d95926; --media-audiobooks: #199e70; --media-music: #c98500;
-  --media-books: #d55181; --media-downloads: #008300; --media-other: #9085e9;
-  --media-free: #3a475c; --media-free-line: #56647b;
+  /* Media types take the library's series colours in a fixed order (all four themes are in tokens.css). */
+  --media-tv: var(--series-1); --media-movies: var(--series-2); --media-audiobooks: var(--series-3);
+  --media-music: var(--series-4); --media-books: var(--series-5); --media-downloads: var(--series-6);
+  --media-other: var(--series-7); --media-free: var(--series-empty); --media-free-line: var(--series-empty-line);
+  --media-used: var(--chart-1);
 }
 .media-pool { display: grid; gap: var(--space-4); }
 .media-bar, .media-ring, .growth { display: block; width: 100%; height: auto; overflow: visible; }
-.media-bar { height: 64px; }
-@media (max-width: 720px) { .media-bar { height: 40px; } .media-bar__label { display: none; } }
+.media-bar { height: 40px; }
+.media-bar-wrap { display: grid; gap: var(--space-1); }
+.media-bar__labels { position: relative; min-height: 1.5em; }
+@media (max-width: 720px) { .media-bar__labels { display: none; } }
 .media-ring { max-width: 220px; }
 .media-mark { stroke: var(--color-surface-raised); stroke-width: 2; }
 .media-mark:focus-visible { outline: none; stroke: var(--color-focus); stroke-width: 3; }
-.media-bar__label { fill: var(--color-text); font-size: 15px; }
-.media-ring__value { fill: var(--color-text); font-size: 24px; font-weight: var(--weight-strong); }
-.media-ring__label { fill: var(--color-text-muted); font-size: 13px; }
+.media-bar__label { position: absolute; top: 0; padding-left: var(--space-2); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--text-sm); }
+.media-ring__value { fill: var(--color-text); font-size: var(--text-xl); font-weight: var(--weight-strong); }
+.media-ring__label { fill: var(--color-text-muted); font-size: var(--text-xs); }
 .media-pool__split { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--space-6); align-items: center; }
 .media-pool__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
 @media (max-width: 720px) { .media-pool__split { grid-template-columns: 1fr; justify-items: center; } .media-pool__split .media-legend { width: 100%; } }
 .media-legend { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .media-legend li { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto 4.5em; gap: var(--space-2); align-items: center; }
 .media-legend li > :last-child { text-align: right; }
-.media-legend__small { color: var(--color-text-muted); font-size: var(--text-sm); }
 .media-legend--inline { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
 .media-legend--inline li { display: inline-flex; gap: var(--space-2); }
 .media-legend__swatch { width: 14px; height: 14px; border-radius: 3px; }
@@ -95,7 +79,9 @@
 .media-legend__swatch--free { background: repeating-linear-gradient(45deg, var(--media-free) 0 3px, var(--media-free-line) 3px 5px); }
 .drive-bars, .biggest { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
 .drive-bars li { display: grid; grid-template-columns: minmax(8rem, 12rem) minmax(0, 1fr) auto auto; gap: var(--space-3); align-items: center; }
-.drive-bars__name { text-align: left; background: none; border: 0; padding: 0; color: var(--color-link, var(--color-accent)); text-decoration: underline; cursor: pointer; font: inherit; min-height: 44px; }
+/* A drive's name opens its details, like a row title (.row--opens): text colour, underline on hover. */
+.drive-bars__name { text-align: left; background: none; border: 0; padding: 0; color: var(--color-text); font: inherit; font-weight: var(--weight-strong); cursor: pointer; min-height: var(--control-h); }
+.drive-bars__name:hover { text-decoration: underline; }
 .drive-bars__track { display: block; height: 18px; border-radius: 4px; background: repeating-linear-gradient(45deg, var(--media-free) 0 3px, var(--media-free-line) 3px 5px); overflow: hidden; }
 .drive-bars__fill { display: block; height: 100%; background: var(--media-tv); }
 .drive-bars__fill[data-tone="warning"] { background: var(--status-warning-fg); }

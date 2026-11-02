@@ -1,23 +1,9 @@
-/* Media pages: Downloads, Search and Coming up (UX-41, group B).
-   Loaded after app.css. app.css still has older rules for .row and .notice that override the shared library,
-   so the library's own layout is put back here, scoped to body.media (slide-outs are added to body, so
-   they are covered too). Everything else comes from components.css. */
+/* Media pages: Downloads, Search and Coming up (UX-41, group B). Loaded after app.css; rows and notices come
+   from the library (components.css), and only what these pages add is here. */
 
-/* Rows: the library's three columns (lead, text, side), or two without a lead. */
-.media .row { grid-template-columns: auto minmax(0, 1fr) auto; }
-.media .row--no-lead { grid-template-columns: minmax(0, 1fr) auto; }
 .media .row__title { margin: 0; font-size: var(--text-md); }
 /* Empty holders for messages take no space in the page's gap. */
 #queue-errors:empty, #search-errors:empty, #calendar-errors:empty { display: none; }
-
-/* Notices: icon, words, then an optional action, as in the library. */
-.media .notice {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: var(--space-1) var(--space-3);
-  align-items: start;
-}
-.media .notice > svg { margin-top: 2px; }
 
 /* Page sections stack with the page's own gap. */
 .media-section { display: grid; gap: var(--space-2); }

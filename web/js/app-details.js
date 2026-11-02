@@ -55,7 +55,7 @@ const AppDetails = (() => {
     },
   };
 
-  // The server shares app answers for a few seconds; "Check now" and "Check again" ask the apps afresh.
+  // The server shares app answers for a few seconds; "Check again" asks the apps afresh.
   let asking = false;
   const fresh = (path) => (asking ? `${path}?fresh=1` : path);
   async function checkAgain(...parts) {
@@ -182,7 +182,7 @@ const AppDetails = (() => {
     if (st?.state === "down") {
       out.push(el("div", { class: "notice", "data-tone": "danger" }, icon("circle-alert"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: `Starboard could not reach ${s.name}` }),
-        el("p", { text: `${sentence(st.message || "It did not answer")} Check that it is running, then select Check now.` }))));
+        el("p", { text: `${sentence(st.message || "It did not answer")} Check that it is running, then select Check again.` }))));
     } else if (st?.state === "unknown" || (!st && state.loaded.has("status"))) {
       out.push(el("div", { class: "notice" }, icon("info"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: "Starboard cannot check this service" }),
@@ -276,7 +276,7 @@ const AppDetails = (() => {
     const st = state.status[s.id];
     const down = st?.state === "down";
     const link = !s.background && s.link ? reachableUrl(s.link) : "";
-    const check = el("button", { type: "button", class: down || !link ? "btn btn--primary" : "btn btn--quiet", "data-check": true }, icon("refresh-cw"), el("span", { text: "Check now" }));
+    const check = el("button", { type: "button", class: down || !link ? "btn btn--primary" : "btn btn--quiet", "data-check": true }, icon("refresh-cw"), el("span", { text: "Check again" }));
     check.addEventListener("click", async () => {
       check.disabled = true;
       check.setAttribute("aria-busy", "true");

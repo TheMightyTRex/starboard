@@ -64,6 +64,9 @@ for key, items in SUB.items():
         PAGES[page] = key
 # Pages that belong to a section but have no tab of their own (opened from a button).
 PAGES.update({"setup-guide.html": "settings", "upgrade.html": "settings", "install-apps.html": "settings"})
+# Pages with no tab of their own show the tab they belong to as current: the guides open from Settings, General,
+# and Install apps from Manage apps.
+TAB_OF = {"setup-guide.html": "settings-general.html", "upgrade.html": "settings-general.html", "install-apps.html": "settings.html"}
 
 
 def icon(name, size=18):
@@ -90,6 +93,7 @@ LOGO = ('<svg viewBox="0 0 32 32" width="{s}" height="{s}" aria-hidden="true" fo
 
 def shell(current):
     section = PAGES[current]
+    current = TAB_OF.get(current, current)
     main_tabs = "\n        ".join(tab(page, label, ic, key == section) for key, page, label, ic in MAIN)
     sub = ""
     if section in SUB:

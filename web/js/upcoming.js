@@ -201,7 +201,7 @@ function openDay(d, dayItems, opener) {
           el("div", {}, el("div", { class: "row__title", text: title }),
             el("div", { class: "row__meta", text: [sub, hasTime(i) ? timeOf(i) : "", i.service_name].filter(Boolean).join(" · ") }),
             el("div", { class: "actions" }, chip(statusWord(i), i.have ? "success" : "neutral"),
-              svc?.link ? el("a", { class: "btn btn--compact", href: `${reachableUrl(svc.link)}/calendar`, target: "_blank", rel: "noopener noreferrer" },
+              svc?.link ? el("a", { class: "btn", href: `${reachableUrl(svc.link)}/calendar`, target: "_blank", rel: "noopener noreferrer" },
                 icon("external-link"), `Open in ${i.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null)));
       })),
     ],

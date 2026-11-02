@@ -76,7 +76,7 @@ function openWarning(item, opener) {
 }
 
 function warningRow(item) {
-  const lead = item.service ? appIcon(item.service, "app-icon") : el("span", { class: "sys-lead", "aria-hidden": "true" }, icon(item.kind === "disk" ? "hard-drive" : "circle-alert"));
+  const lead = item.service ? appIcon(item.service, "app-icon") : el("span", { class: "app-icon", "aria-hidden": "true" }, icon(item.kind === "disk" ? "hard-drive" : "circle-alert"));
   const titleControl = item.kind === "disk"
     ? el("a", { href: "/system-disks.html", text: item.title })
     : el("button", { type: "button", "aria-haspopup": "dialog", text: item.title, onclick: (e) => openWarning(item, e.currentTarget) });

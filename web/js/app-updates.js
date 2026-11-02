@@ -48,7 +48,7 @@ function statusCell(row) {
 
 function actionCell(row) {
   if (!row.update || jobItem(row)) return null;
-  return el("button", { type: "button", class: row.big_change ? "btn btn--compact" : "btn btn--primary btn--compact",
+  return el("button", { type: "button", class: "btn btn--compact", // in a dense table; "Update all" is the page's one primary
     disabled: busy(), onclick: () => runUpdate([row]) }, "Update", el("span", { class: "visually-hidden", text: ` ${row.name}` }));
 }
 

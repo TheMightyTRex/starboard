@@ -232,7 +232,7 @@ async function removeService(s, { fromPanel } = {}) {
   const ok = await confirmDialog({
     title: `Remove ${s.name}?`,
     message: `${s.name} leaves the dashboard${SEARCHABLE.includes(s.type) ? " and Search" : ""}. ${s.name} itself, its files and its settings stay as they are. You can add it again at any time.`,
-    confirm: `Remove ${s.name}`, cancel: "Keep it", danger: true,
+    confirm: `Remove ${s.name}`, danger: true,
   });
   if (!ok) return false;
   // Focus goes to the next row's name, or to Add an app when that was the last one.
@@ -614,7 +614,7 @@ async function removeCategory(name) {
     title: `Remove the ${name} category?`,
     message: n ? `${appsWord(n)} ${n === 1 ? "is" : "are"} in ${name}. Choose where ${n === 1 ? "it goes" : "they go"}. The apps themselves are not changed.` : "No apps are in it. Nothing else changes.",
     fields: n ? [field("Move its apps to", to)] : [],
-    confirm: "Remove category", cancel: "Keep it", danger: true,
+    confirm: "Remove category", danger: true,
   });
   if (!ok) return;
   const row = $(`#category-list [data-key="${CSS.escape(name)}"]`);
@@ -632,7 +632,7 @@ function startGeneral() {
   // Dashboard name
   const siteName = el("input", { class: "input", name: "site_name", maxlength: "60", required: true, value: config.site_name });
   const nameForm = el("form", { novalidate: true, class: "inline-save" }, field("Dashboard name", siteName),
-    el("button", { type: "submit", class: "btn btn--primary", text: "Save name" }));
+    el("button", { type: "submit", class: "btn", text: "Save name" }));
   nameForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     setError(siteName, "");
@@ -667,15 +667,15 @@ function startGeneral() {
   };
 
   // Default design
+  // Default design: a choice, so it saves as soon as it changes (the design system's save rule).
   const designForm = el("form", {},
     el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Default design" }),
-      el("div", { class: "option-cards" }, Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "option-card" },
-        el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("strong", { text: label }), el("small", { text: help }))))),
-    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save default design" })));
-  designForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    try { await saveGeneral({ design: designForm.design.value }, `Default design saved: ${DESIGNS[designForm.design.value][0]}`); }
-    catch (err) { toast(err.message); }
+      el("div", { class: "option-cards option-cards--row" }, Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "option-card" },
+        el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("strong", { text: label }), el("small", { text: help }))))));
+  designForm.addEventListener("change", async () => {
+    const before = config.design;
+    try { await saveGeneral({ design: designForm.design.value }, `Default design: ${DESIGNS[designForm.design.value][0]}`); }
+    catch (err) { designForm.design.value = before; toast(err.message); }
   });
 
   // Coming up: selects that apply at once.
@@ -824,7 +824,7 @@ const COSTS = {
   icons: "Costs about: one download per app, once.",
 };
 
-const USAGE_CHOICES = [["ask", "Only when I press Work it out"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night at 3 am"], ["weekly", "Every week, at 3 am"], ["off", "Off"]];
+const USAGE_CHOICES = [["ask", "Only when I press Sort by type"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night at 3 am"], ["weekly", "Every week, at 3 am"], ["off", "Off"]];
 const STORAGE_REFRESH = [[0, "Only when I press Check again"], [60, "Every minute"], [300, "Every 5 minutes"]];
 
 function logPick(labelId, options, value, onChange) {
@@ -1195,7 +1195,7 @@ function startAlerts() {
   const channelForm = el("form", { novalidate: true },
     el("div", { class: "form-grid" }, field("Send alerts to", kind), field("Address", url, { hint: urlHint, span: true }), field("Token", token, { hint: tokenHint, span: true })),
     el("div", { class: "actions" },
-      el("button", { type: "submit", class: "btn btn--primary", text: "Save where alerts go" }),
+      el("button", { type: "submit", class: "btn", text: "Save where alerts go" }),
       el("button", { type: "button", class: "btn", id: "alert-test", onclick: async (e) => {
         e.currentTarget.disabled = true;
         try { await api("/api/alerts/test", { method: "POST" }); toast("Test alert sent. Check that it arrived."); }
@@ -1288,7 +1288,7 @@ async function startJellyfin() {
   const address = el("input", { class: "input", inputmode: "url", autocomplete: "off", value: x().livetv_address, placeholder: d.self_url });
   const addressForm = el("form", { class: "inline-save", novalidate: true },
     field("Address Jellyfin uses to reach Starboard", address, { hint: `For channel logos and Pluto streams. Blank: ${d.self_url}. Jellyfin must be able to open it, so Starboard needs home network access on.` }),
-    el("button", { type: "submit", class: "btn btn--primary", text: "Save address" }));
+    el("button", { type: "submit", class: "btn", text: "Save address" }));
   addressForm.addEventListener("submit", async (e) => { e.preventDefault(); if (await save({ livetv_address: address.value }, "Address saved")) startJellyfin(); });
   const liveRows = el("ul", { class: "settings-rows" },
     settingRow("Build Live TV channels and guide", withCost(lt.what + ". Free channels only: Samsung TV Plus, Pluto TV and Free-TV, with Sky-style numbers.", "livetv"),
@@ -1417,22 +1417,24 @@ async function startPerformance() {
   };
 
   // Now
-  const span = (secs) => secs < 3600 ? `${Math.max(1, Math.round(secs / 60))} minutes` : secs < 172800 ? `${Math.round(secs / 3600)} hours` : `${Math.round(secs / 86400)} days`;
+  const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  const span = (secs) => secs < 3600 ? count(Math.max(1, Math.round(secs / 60)), "minute", "minutes")
+    : secs < 172800 ? count(Math.round(secs / 3600), "hour", "hours") : count(Math.round(secs / 86400), "day", "days");
   const threadWords = (names) => {
     const checks = names.filter((n) => /^apps_\d+$/.test(n)).length;
     const requests = names.filter((n) => /process_request_thread/.test(n)).length;
     const own = names.filter((n) => !/^apps_\d+$|process_request_thread|serve_forever|MainThread/.test(n));
     return [`${names.length} threads`, own.length ? `background: ${own.join(", ")}` : "no background work",
-      checks ? `${checks} app ${checks === 1 ? "check" : "checks"} waiting` : "", requests ? `${requests} answering pages` : ""].filter(Boolean).join(" · ");
+      checks ? `${checks} app ${checks === 1 ? "check" : "checks"} waiting` : "", requests ? `${requests} answering ${requests === 1 ? "a page" : "pages"}` : ""].filter(Boolean).join(" · ");
   };
   const now = me ? el("dl", { class: "facts" },
     el("dt", { text: "Memory" }), el("dd", { class: "numeric", text: formatBytes(me.memory) }),
-    el("dt", { text: "Processor" }), el("dd", { class: "numeric", text: `${me.cpu_percent < 0.01 ? "under 0.01" : me.cpu_percent.toFixed(2)}% on average, over the ${span(me.running_seconds)} since it started` }),
+    el("dt", { text: "Processor" }), el("dd", { class: "numeric", text: `${me.cpu_percent < 0.1 ? "under 0.1" : me.cpu_percent < 10 ? me.cpu_percent.toFixed(1) : Math.round(me.cpu_percent)}% on average, over the ${span(me.running_seconds)} since it started` }),
     el("dt", { text: "Running" }), el("dd", { text: threadWords(me.threads) })) : null;
 
   // Presets
   const presetForm = el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Preset" }),
-    el("div", { class: "option-cards" }, ["small", "balanced", "everything", "custom"].map((k) => {
+    el("div", { class: "option-cards option-cards--row" }, ["small", "balanced", "everything", "custom"].map((k) => {
       const input = el("input", { type: "radio", name: "preset", value: k, checked: perf().preset === k });
       input.addEventListener("change", () => { if (k !== "custom") save({ preset: k }, `${config.presets[k]} preset in use`); });
       return el("label", { class: "option-card" }, input, el("strong", { text: k === "custom" ? "Custom" : config.presets[k] }), el("small", { text: PRESET_WORDS[k] }));
@@ -1522,7 +1524,7 @@ async function startSecurity() {
         message: network.you_are_on_this_computer
           ? el("p", { text: "Phones and other computers lose access straight away. Only this computer, the server, can open Starboard after this." })
           : notice("warning", "You are using another device", "This phone or computer loses access straight away. Only the server itself can open Starboard after this."),
-        confirm: "Turn off network access", cancel: "Keep it on", danger: true,
+        confirm: "Turn off network access", danger: true,
       });
       if (!ok) { access.focus(); return; }
       access.checked = false;
@@ -1592,7 +1594,7 @@ async function startSecurity() {
     const ok = await confirmDialog({
       title: "Sign out everywhere?",
       message: "Every browser and phone signed in to Starboard is signed out, including this one. Everyone needs the password to sign in again.",
-      confirm: "Sign out everywhere", cancel: "Stay signed in", danger: true,
+      confirm: "Sign out everywhere", danger: true,
     });
     if (!ok) return;
     try { await api("/api/sessions/end-all", { method: "POST" }); } catch { /* signed out anyway */ }
@@ -1620,7 +1622,7 @@ async function startSecurity() {
           el("div", { class: "setting__control" }, el("div", { class: "field" },
             el("div", { class: "inline-save" },
               el("div", { class: "input-group days-group" }, days, el("span", { class: "input-group__unit", text: "days" })),
-              el("button", { type: "submit", class: "btn btn--primary" }, "Save", el("span", { class: "visually-hidden", text: " how long" }))),
+              el("button", { type: "submit", class: "btn" }, "Save", el("span", { class: "visually-hidden", text: " how long" }))),
             daysError))),
         settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Turn on when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
         settingRow("Sign out", "This browser, or every browser and phone at once.", el("div", { class: "actions session-actions" }, signOut, everywhere), "signout-l")));
@@ -1637,7 +1639,7 @@ async function startAbout() {
     if (!v) return;
     const latest = (v.latest || "").replace(/^v/, "");
     const repo = /^[\w.-]+\/[\w.-]+$/.test(v.repo || "") ? v.repo : "";
-    const notes = repo && v.latest ? el("a", { class: "btn btn--compact", href: `https://github.com/${repo}/releases/tag/${encodeURIComponent(v.latest)}`, target: "_blank", rel: "noopener noreferrer" },
+    const notes = repo && v.latest ? el("a", { class: "btn", href: `https://github.com/${repo}/releases/tag/${encodeURIComponent(v.latest)}`, target: "_blank", rel: "noopener noreferrer" },
       "Release notes", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null;
     let box;
     if (latest && isNewer(latest, v.current)) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then run the update command on the server.`, notes);

@@ -119,7 +119,7 @@ function lineChart(opts) {
       if (series.length === 1) {
         svg.append(svgEl("polygon", { points: `${x(t0)},${y(0)} ${coords.join(" ")} ${x(t1)},${y(0)}`, class: `chart__area chart__area--${i}` }));
       }
-      const line = svgEl("polyline", { points: coords.join(" "), class: `chart__line chart__line--${i}` });
+      const line = svgEl("polyline", { points: coords.join(" "), class: `chart__line chart__line--${i + 1}` });
       if (i === 1) line.setAttribute("stroke-dasharray", "6 4"); // the second series is dashed, so it is not colour alone
       svg.append(line);
       svg.append(svgEl("circle", { cx: x(t1), cy: y(value(points[points.length - 1], s)), r: 4, class: `chart__dot chart__dot--${i}` }));
@@ -240,7 +240,7 @@ function trendLine(values, max) {
   const top = max ?? Math.max(1, ...values);
   const svg = svgEl("svg", { viewBox: `0 0 ${w} ${h}`, class: "trend", "aria-hidden": "true", preserveAspectRatio: "none" });
   if (values.length > 1) {
-    svg.append(svgEl("polyline", { class: "chart__line chart__line--0",
+    svg.append(svgEl("polyline", { class: "chart__line chart__line--1",
       points: values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 2 - (h - 4) * Math.min(1, (v ?? 0) / top)).toFixed(1)}`).join(" ") }));
   }
   return svg;
@@ -249,7 +249,7 @@ function trendLine(values, max) {
 /**
  * The time range: a labelled segmented control (Last hour, 6 hours, 24 hours), remembered in this browser.
  * rangePicker(onChange, { live }) returns { element, value }; onChange(value) runs when it changes.
- * live: true adds a "Live" link to Monitor. The layout is set here so it needs no page style sheet.
+ * live: true adds a "Live" link to Monitor. Its layout is .range-picker in app.css.
  */
 const RANGE_KEY = "starboard.range";
 function rangePicker(onChange, { live = false } = {}) {
@@ -266,7 +266,6 @@ function rangePicker(onChange, { live = false } = {}) {
     el("legend", { class: "visually-hidden", text: "Time range" }),
     el("span", { class: "small muted", "aria-hidden": "true", text: "Time range" }), box,
     live ? el("a", { class: "btn btn--quiet", href: "/system-monitor.html" }, icon("chart-line"), el("span", { text: "Live" })) : null);
-  Object.assign(element.style, { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "var(--space-3)", margin: "0", padding: "0", border: "0", minWidth: "0" });
   return { element, get value() { return box.querySelector("input:checked").value; } };
 }
 

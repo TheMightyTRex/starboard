@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.5.6 (2 November 2026)
+
+From a design consistency review of Starboard and the shared component library (all 23 findings fixed):
+
+- **Names:** "Check again" for every refresh (it was also Check now and Check for updates); Storage's job is
+  "Sort by type". "Run now" stays for server jobs.
+- **Saving:** choices save as soon as they change (the default design no longer needs a button); text fields keep
+  a secondary Save; one primary button per page (request rows, Updates rows and settings forms no longer each
+  have one).
+- **Buttons and dialogs:** compact buttons only in dense tables; Decline and Restore are danger buttons, as their
+  dialogs are; every confirm dialog says Cancel; delete uses the bin icon.
+- **Logs:** the filter is a segmented control; detailed logging is the same select as in Settings; the wording
+  follows whether it is on.
+- **Charts:** the pool bar's labels no longer stretch; chart and ring text follow Text size; the second line on
+  System charts is dashed to match its legend; media colours come from the library's new series tokens, with a
+  high contrast set.
+- **Layout:** no focus box on wizard headings; Performance's four presets in one row with their text lined up;
+  space in the Jellyfin panel; headings at one level are one size; the guides show their Settings tab as current;
+  an odd stat tile spans the row on phones; small legend rows no longer look muted.
+- **Code:** old copies of library rules removed (rows, notices, panel heads, charts, stacks, focus); settings
+  helpers moved into the library; Performance's wording fixed ("1 minute", "1 answering a page").
+
 ## 0.5.5 (2 November 2026)
 
 ### Logs

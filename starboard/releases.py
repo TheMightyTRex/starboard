@@ -69,6 +69,14 @@ RELEASES = [
      "changed": [("Docker's log", "Holds only start-up and problems, capped at 3 MB in the Compose files.")],
      "fixed": [("System, Overview", "The charts' history loads again (broken since 0.4.0).")],
      "review": [], "settings": "Adds log settings: kept for 60 days, detailed logging off. To go back, run ./update.sh --to v0.5.4."},
+    {"version": "0.5.6", "date": "2 November 2026",
+     "added": [], "changed": [
+        ("One name for refresh", "Check again everywhere; Storage's slower job is Sort by type."),
+        ("Settings save one way", "Choices save as soon as they change; text fields keep a Save button; one main button per page."),
+        ("Buttons and dialogs", "Full-size buttons outside dense tables; danger buttons before danger dialogs, with Cancel and the bin icon."),
+        ("Charts", "Text follows the Text size setting; media colours come from the shared library, with a high contrast set.")],
+     "fixed": [("Look and feel", "Wizard headings no longer show a focus box; Performance's preset cards line up; Jellyfin's sections have room; the second line on System charts is dashed like its legend; phone stat tiles fill their row.")],
+     "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.5."},
 ]
 
 

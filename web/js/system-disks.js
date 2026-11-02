@@ -145,7 +145,7 @@ function diskRow(d) {
 
 function meterPanel(id, title, hint, rows) {
   return el("section", { class: "panel", "aria-labelledby": id },
-    el("div", { class: "sys-panel-head" }, el("h2", { id, text: title }), el("span", { class: "small muted", text: hint })),
+    el("div", { class: "panel__head" }, el("h2", { id, text: title }), el("span", { class: "small muted", text: hint })),
     el("ul", { class: "meter-list" }, rows.map((r) => {
       const fill = el("span");
       fill.style.width = `${Math.min(100, Math.max(1, r.pct))}%`;

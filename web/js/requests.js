@@ -10,9 +10,9 @@ function when(iso) {
 function row(r) {
   const what = r.kind === "Series" && r.seasons.length ? `Series, ${r.seasons.length === 1 ? `season ${r.seasons[0]}` : `${r.seasons.length} seasons`}` : r.kind;
   const actions = r.pending ? [
-    el("button", { type: "button", class: "btn btn--primary btn--compact", onclick: (e) => act(r, "approve", e.currentTarget) },
+    el("button", { type: "button", class: "btn", onclick: (e) => act(r, "approve", e.currentTarget) },
       icon("check"), "Approve", el("span", { class: "visually-hidden", text: ` ${r.title}` })),
-    el("button", { type: "button", class: "btn btn--compact", onclick: (e) => act(r, "decline", e.currentTarget) },
+    el("button", { type: "button", class: "btn btn--danger", onclick: (e) => act(r, "decline", e.currentTarget) },
       icon("x"), "Decline", el("span", { class: "visually-hidden", text: ` ${r.title}` })),
   ] : [];
   return el("li", { class: "row row--no-lead", "data-key": String(r.id) },

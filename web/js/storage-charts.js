@@ -48,7 +48,7 @@ function mediaLegend(parts, of, { free } = {}) {
   const rows = [...parts.filter((p) => p.bytes > 0), ...(free ? [free] : [])];
   return el("ul", { class: "media-legend" }, rows.map((p) => {
     const sw = el("span", { class: `media-legend__swatch media-legend__swatch--${p.key}`, "aria-hidden": "true" });
-    return el("li", { class: p.bytes / of < 0.01 ? "media-legend__small" : null }, sw, el("span", { text: p.name }),
+    return el("li", {}, sw, el("span", { text: p.name }),
       el("span", { class: "numeric", text: formatBytes(p.bytes) }), el("span", { class: "numeric muted", text: share(p.bytes, of) }));
   }));
 }
@@ -61,21 +61,28 @@ function mediaTable(caption, parts, of) {
         el("td", { class: "num", text: formatBytes(p.bytes) }), el("td", { class: "num", text: share(p.bytes, of) })))))));
 }
 
-// One bar for the whole pool: each type, then free space. Labels under the marks wide enough to hold them.
+// One bar for the whole pool: each type, then free space. The marks stretch to the width; the labels are HTML
+// under the marks wide enough to hold them, so text never stretches and follows Text size.
 function poolBar(parts, total) {
   const W = 1000, H = 40;
-  const svg = sv("svg", { class: "media-bar", viewBox: `0 0 ${W} ${H + 24}`, preserveAspectRatio: "none", role: "group", "aria-label": "The pool by type, then free space" }, hatchDefs());
+  const svg = sv("svg", { class: "media-bar", viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "group", "aria-label": "The pool by type, then free space" }, hatchDefs());
+  const labels = el("div", { class: "media-bar__labels", "aria-hidden": "true" });
   let x = 0;
   for (const p of parts) {
     const w = (p.bytes / total) * W;
     if (w <= 0) continue;
-    const rect = sv("rect", { class: "media-mark", x: x.toFixed(1), y: 0, width: Math.max(w - 2, 1.5).toFixed(1), height: H, rx: 4, fill: mediaFill(p.key) });
+    const rect = sv("rect", { class: "media-mark", x: x.toFixed(1), y: 0, width: Math.max(w - 2, 1.5).toFixed(1), height: H, fill: mediaFill(p.key) });
     markValue(rect, `${p.name}: ${formatBytes(p.bytes)}, ${share(p.bytes, total)}${p.parts ? ` (${p.parts.map((q) => q.name).join(", ")})` : ""}`);
     svg.append(rect);
-    if (w > 130) svg.append(sv("text", { class: "media-bar__label", x: (x + 8).toFixed(1), y: H + 18 }, `${p.name} ${formatBytes(p.bytes)}`));
+    if (w > 130) {
+      const label = el("span", { class: "media-bar__label", text: `${p.name} ${formatBytes(p.bytes)}` });
+      label.style.left = `${(x / W) * 100}%`;
+      label.style.maxWidth = `${(w / W) * 100}%`;
+      labels.append(label);
+    }
     x += w;
   }
-  return svg;
+  return el("div", { class: "media-bar-wrap" }, svg, labels);
 }
 
 // A ring of what fills the pool (no free space, so the types compare with each other); the total in the middle.
@@ -128,7 +135,7 @@ function poolCard(disk, types, when, action) {
     poolBar(barParts, disk.total),
     types ? el("div", { class: "media-pool__split" },
       mediaRing(groupSmall(parts, disk.used), disk.used, [formatBytes(disk.used), "of media and files"]),
-      mediaLegend(parts, disk.used)) : el("p", { class: "muted", text: "Sort the space by type (TV, films, books and so on) with Work it out." }),
+      mediaLegend(parts, disk.used)) : el("p", { class: "muted", text: "Sort the space by type (TV, films, books and so on) with Sort by type." }),
     el("div", { class: "media-pool__foot" }, el("span", { class: "small muted", text: when }), action),
     types ? mediaTable(`${disk.label} by type`, [...parts.filter((p) => p.bytes > 0), free], disk.total) : null);
 }
@@ -170,7 +177,7 @@ function growthRate(points) {
  * Space used each day for one folder, with a dashed forecast to full when it is growing.
  * readings: [{date: "YYYY-MM-DD", used, total}] oldest first.
  */
-function growthChart(label, readings) {
+function growthChart(label, readings, width = 640) {
   const pts = readings.slice(-90).map((r) => ({ ...r, day: Date.parse(`${r.date}T12:00:00`) / 86400000 }));
   const last = pts[pts.length - 1];
   const rate = growthRate(pts);
@@ -180,7 +187,7 @@ function growthChart(label, readings) {
     ? `Starboard has ${pts.length} ${pts.length === 1 ? "day" : "days"} of readings. The forecast appears after a week.`
     : !rate || rate <= 0 ? `${label} has not grown over the last ${pts.length} days.`
       : `${label} grows by about ${formatBytes(rate * 30)} a month. At this rate it is full in about ${daysLeft > 730 ? `${Math.round(daysLeft / 365)} years` : daysLeft > 60 ? `${Math.round(daysLeft / 30)} months` : `${Math.round(daysLeft)} days`} (${fullOn.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}).`;
-  const W = 640, H = 200, pad = { l: 56, r: 12, t: 12, b: 24 };
+  const W = Math.max(320, Math.round(width)), H = 220, pad = { l: 64, r: 12, t: 18, b: 24 }; // drawn at the real width
   const ahead = daysLeft ? Math.min(daysLeft, Math.max(30, pts.length)) : 0;
   const d0 = pts[0].day, d1 = last.day + ahead;
   const low = Math.min(...pts.map((p) => p.used)) * 0.98, high = last.total;

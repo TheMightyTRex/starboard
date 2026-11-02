@@ -131,8 +131,8 @@ function renderNotice(services) {
   if (box.dataset.sig === sig) return; // keep the button, and focus on it, when nothing changed
   box.dataset.sig = sig;
   const action = one
-    ? el("button", { type: "button", class: "btn btn--compact", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(one.id, e.currentTarget) }, `View ${one.name}`)
-    : el("button", { type: "button", class: "btn btn--compact", onclick: () => { pressed.clear(); pressed.add("down"); setShowInAddress(); render({ announceCount: true }); } }, "Show them");
+    ? el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(one.id, e.currentTarget) }, `View ${one.name}`)
+    : el("button", { type: "button", class: "btn", onclick: () => { pressed.clear(); pressed.add("down"); setShowInAddress(); render({ announceCount: true }); } }, "Show them");
   box.replaceChildren(el("div", { class: "notice", "data-tone": "danger" }, icon("circle-alert"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action));
   box.hidden = false;

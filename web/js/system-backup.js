@@ -244,7 +244,7 @@ async function restoreSaved(item, panel) {
 }
 
 function openSaved(item, opener) {
-  const restore = el("button", { type: "button", class: "btn btn--primary" }, icon("archive-restore"), "Restore this copy");
+  const restore = el("button", { type: "button", class: "btn btn--danger" }, icon("archive-restore"), "Restore this copy");
   const panel = sidePanel({
     title: `Saved copy, ${when(item.saved)}`, opener,
     body: [
@@ -265,7 +265,7 @@ async function loadSaved() {
       el("div", { class: "row__title" }, el("button", { type: "button", onclick: (e) => openSaved(item, e.currentTarget) }, when(item.saved))),
       el("div", { class: "row__meta", text: `${item.reason} · ${formatBytes(item.size)}` })),
     el("div", { class: "row__side" },
-      el("button", { type: "button", class: "btn", onclick: () => restoreSaved(item) }, "Restore", el("span", { class: "visually-hidden", text: ` the copy from ${when(item.saved)}` })))))
+      el("button", { type: "button", class: "btn btn--danger", onclick: () => restoreSaved(item) }, "Restore", el("span", { class: "visually-hidden", text: ` the copy from ${when(item.saved)}` })))))
     : [el("li", { class: "empty", text: "No saved copies yet. Starboard makes one before every restore and before an update changes the settings." })]));
 }
 

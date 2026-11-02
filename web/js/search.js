@@ -102,7 +102,7 @@ async function runSearch(query) {
     results = data.results;
     kind = null;
     $("#search-errors").replaceChildren(...data.errors.map((err) =>
-      notice("warning", "Some results may be missing", err.message, el("a", { class: "btn btn--compact", href: "/index.html", text: "View apps" }))));
+      notice("warning", "Some results may be missing", err.message, el("a", { class: "btn", href: "/index.html", text: "View apps" }))));
     const text = results.length ? `${results.length} results for "${q}"` : `Nothing found for "${q}". Check the spelling or try fewer words.`;
     summary.textContent = text;
     announce(text);

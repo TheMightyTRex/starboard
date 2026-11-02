@@ -327,7 +327,7 @@ function showVersion(version, repo, latest) {
   if ($(".site-header") && !$(".site-footer")) {
     // The version opens the release notes; a newer release on GitHub shows "Upgrade available" beside it.
     const newer = isNewer(latest, version);
-    const button = el("button", { type: "button", class: "btn btn--quiet btn--compact version-label", onclick: (e) => openReleaseNotes(e.currentTarget) },
+    const button = el("button", { type: "button", class: "btn btn--quiet version-label", onclick: (e) => openReleaseNotes(e.currentTarget) },
       label, el("span", { class: "visually-hidden", text: ", release notes" }));
     document.body.append(el("footer", { class: "site-footer" }, button,
       newer ? el("a", { class: "upgrade-available", href: "/settings-updates.html" }, el("span", { class: "update-dot", "aria-hidden": "true" }), `Upgrade available: ${latest}`) : null,

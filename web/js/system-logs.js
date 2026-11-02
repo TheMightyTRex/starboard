@@ -25,8 +25,8 @@ function renderHead() {
   const keep = state.settings.keep_days;
   $("#logs-summary").replaceChildren(
     s.days ? `${s.days} ${s.days === 1 ? "day" : "days"} of logs (${formatBytes(s.bytes)}) · kept for ${keep} days · ` : `No logs yet · kept for ${keep} days · `,
-    el("a", { href: "/settings-general.html#logs", text: "Change" }));
-  const del = el("button", { type: "button", class: "btn btn--danger", disabled: !s.days }, icon("x"), "Delete logs");
+    el("a", { href: "/settings-general.html#logs", text: "Change in Settings, General" }));
+  const del = el("button", { type: "button", class: "btn btn--danger", disabled: !s.days }, icon("trash-2"), "Delete logs");
   del.addEventListener("click", async () => {
     const ok = await confirmDialog({ title: "Delete all logs?", danger: true, confirm: "Delete logs",
       message: "Starboard removes every day of its log now. This cannot be undone. New entries start again straight away." });
@@ -57,9 +57,10 @@ async function setDetail(mode) {
 
 function renderReport() {
   const box = $("#report");
-  const detailButton = state.detailed
-    ? el("button", { type: "button", class: "btn", onclick: () => setDetail("off") }, "Turn detailed logging off")
-    : el("button", { type: "button", class: "btn", onclick: () => setDetail("day") }, icon("play"), "Turn on for 24 hours");
+  // The same choice as Settings, General, so it reads the same in both places.
+  const detailSelect = el("select", { class: "select", id: "detail-choice" },
+    Object.entries(DETAIL_WORDS).map(([v, t]) => el("option", { value: v, text: t, selected: v === state.settings.detail })));
+  detailSelect.addEventListener("change", () => setDetail(detailSelect.value));
   const copy = el("button", { type: "button", class: "btn" }, icon("copy"), "Copy the details");
   copy.addEventListener("click", async () => {
     try {
@@ -79,8 +80,9 @@ function renderReport() {
     : el("p", { class: "small muted", text: "Set STARBOARD_REPO on the server to link straight to the issue page." });
   box.replaceChildren(
     el("ol", { class: "steps-list" },
-      el("li", {}, el("strong", { text: "Turn on detailed logging. " }), "It records every page request and every call to your apps.",
-        el("div", { class: "actions" }, detailButton)),
+      el("li", {}, el("strong", { text: state.detailed ? "Detailed logging is on. " : "Turn on detailed logging. " }),
+        "It records every page request and every call to your apps.",
+        el("div", { class: "field field--short" }, el("label", { for: "detail-choice", text: "Detailed logging" }), detailSelect)),
       el("li", {}, el("strong", { text: "Do the thing that went wrong again. " })),
       el("li", {}, el("strong", { text: "Copy the details and open an issue. " }), "Paste them in, and say what you expected to happen. ",
         el("div", { class: "actions" }, copy, issue))),
@@ -115,12 +117,13 @@ function render(hasMore) {
 }
 
 function toolbar() {
-  const chips = el("div", { class: "filter-chips", role: "group", "aria-label": "Show" }, [["all", "Everything"], ["problems", "Problems"], ["detail", "Detailed"]].map(([value, label]) =>
-    el("button", { type: "button", class: "filter-chip", "aria-pressed": String(value === level), onclick: (e) => {
-      level = value;
-      chips.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === e.currentTarget)));
-      load();
-    } }, label)));
+  // One of three at a time, so a segmented control (filter chips are for toggles that can be on together).
+  const chips = el("fieldset", { class: "segmented" }, el("legend", { class: "visually-hidden", text: "Show" }),
+    [["all", "Everything"], ["problems", "Problems"], ["detail", "Detailed"]].map(([value, label]) => {
+      const input = el("input", { type: "radio", name: "log-level", value, checked: value === level });
+      input.addEventListener("change", () => { level = value; load(); });
+      return el("label", {}, input, el("span", { text: label }));
+    }));
   const search = el("input", { class: "input", type: "search", placeholder: "Search the log", "aria-label": "Search the log" });
   let timer = null;
   search.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => { query = search.value; load(); }, 300); });

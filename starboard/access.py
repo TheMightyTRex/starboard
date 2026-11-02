@@ -51,7 +51,7 @@ def summary(app):
               d["extras"].get("import_keep") or d["extras"].get("defaults"), "setting", link="/settings-jellyfin.html", cost="About 1 second of processor and up to 40 MB of memory for 20 seconds an hour (import); defaults, nothing noticeable."),
         _item("disks", "Your folders, for free space",
               "Reads how full the folders you chose are, on System, Storage. Read-only.",
-              app.disks, "installer", on_flag="--disk Name=/path", off_flag="--no-disks", cost="Reads free space when a page shows it; Work it out (on demand) reads every file once."),
+              app.disks, "installer", on_flag="--disk Name=/path", off_flag="--no-disks", cost="Reads free space when a page shows it; Sort by type (on demand) reads every file once."),
         _item("disk_health", "Disk health reports",
               "A timer on the server runs smartctl as root every 30 minutes and saves reports that Starboard reads. "
               "Setting it up asks for your password with sudo.",
