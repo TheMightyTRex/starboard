@@ -1,7 +1,9 @@
 """Live TV for Jellyfin: free channel playlists, their TV guides, Sky-style numbering and clean logos.
 
 Optional (Settings, Jellyfin, Live TV; off until turned on). Works in the folder Jellyfin reads its Live TV
-files from (STARBOARD_IPTV_DIR, which the installer asks about). Once a day it rebuilds:
+files from (STARBOARD_IPTV_DIR, which the installer asks about). The guides are refreshed once a day, because
+listings only cover the next few days. The channel lists are rebuilt (and every stream tested, the costly part)
+only when a source's list of channels has changed, or once a week to drop channels that stopped playing:
   guide.xml          the guide for the channel IDs listed in guide-map.txt, from epgshare01
   channels.m3u       Free-TV channels from freetv-source.m3u, keeping only the ones that play from here
   samsung.m3u, guide-samsung.xml   Samsung TV Plus UK and US, from i.mjh.nz (Matt Huisman)
@@ -178,8 +180,34 @@ def build_freetv(d):
     return f"Free-TV: {len(keep)} of {len(pairs)} play"
 
 
-def build_samsung(d):
-    data = _channels_json("SamsungTVPlus")
+def _samsung_channels(data):
+    return {region: {k: v for k, v in data["regions"][region]["channels"].items() if not v.get("license_url") and not adult(v)}
+            for region in ("gb", "us")}
+
+
+def _ids_in(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return set(re.findall(r'tvg-id="([^"]+)"', f.read()))
+    except OSError:
+        return set()
+
+
+def samsung_guide(d):
+    ids = _ids_in(os.path.join(d, "samsung.m3u"))
+    p = _filtered_guide(["https://i.mjh.nz/SamsungTVPlus/gb.xml.gz", "https://i.mjh.nz/SamsungTVPlus/us.xml.gz"], ids,
+                        os.path.join(d, "guide-samsung.xml"))
+    return f"Samsung TV Plus guide: {p} programmes"
+
+
+def pluto_guide(d):
+    ids = _ids_in(os.path.join(d, "pluto.m3u"))
+    p = _filtered_guide(["https://i.mjh.nz/PlutoTV/gb.xml.gz"], ids, os.path.join(d, "guide-pluto.xml"))
+    return f"Pluto TV guide: {p} programmes"
+
+
+def build_samsung(d, data=None):
+    data = data or _channels_json("SamsungTVPlus")
     lines, ids = ["#EXTM3U"], set()
     for region, offset, label in (("gb", 0, "Samsung UK"), ("us", 10000, "Samsung US")):
         chans = {k: v for k, v in data["regions"][region]["channels"].items() if not v.get("license_url") and not adult(v)}
@@ -195,8 +223,8 @@ def build_samsung(d):
     return f"Samsung TV Plus: {len(ids)} channels, {p} programmes"
 
 
-def build_pluto(d, self_url):
-    data = _channels_json("PlutoTV")
+def build_pluto(d, self_url, data=None):
+    data = data or _channels_json("PlutoTV")
     chans = {k: v for k, v in data["regions"]["gb"]["channels"].items() if not adult(v)}
     lines = ["#EXTM3U"] + [_entry(k, v, v["chno"] + 20000, f"Pluto UK · {v.get('group', 'Other')}", f"{self_url}/iptv/pluto/{k}.m3u8")
                            for k, v in sorted(chans.items(), key=lambda kv: kv[1]["chno"])]
@@ -412,22 +440,83 @@ def number_and_logos(d, self_url, white):
     return f"Numbered {len(chans)} channels; {sum(have.values())} with logos" + ("" if white else " (white logos off)")
 
 
+WEEK = 7 * 86400
+
+
+def _fingerprint(obj):
+    import hashlib
+    return hashlib.sha256(json.dumps(obj, sort_keys=True).encode()).hexdigest()[:16]
+
+
 def run(self_url, white, force=False):
-    """Rebuilds whatever is a day old (or everything with force). Returns a sentence about what it did."""
+    """Refreshes what is due. Guides: daily. Channel lists: when a source's list changed, or weekly (or with force).
+    Returns a sentence about what it did."""
     d = folder()
     if not d or not os.path.isdir(d):
         raise ValueError("No Live TV folder: set STARBOARD_IPTV_DIR with ./install.sh")
-    done = []
-    for path, fn in (("guide.xml", lambda: build_guide(d)), ("channels.m3u", lambda: build_freetv(d)),
-                     ("samsung.m3u", lambda: build_samsung(d)), ("pluto.m3u", lambda: build_pluto(d, self_url))):
-        if force or _old(os.path.join(d, path)):
-            try:
-                done.append(fn())
-            except Exception as e:  # one source failing does not stop the others
-                done.append(f"{path}: {str(e)[:120]}")
-    if done:
+    state_path = os.path.join(d, ".starboard-livetv.json")
+    try:
+        with open(state_path, encoding="utf-8") as f:
+            state = json.load(f)
+    except (OSError, ValueError):
+        state = {}
+    now = time.time()
+    done, rebuilt = [], False
+
+    def due_list(name, fp):
+        """A channel list is rebuilt when it changed, a week has passed, the playlist is missing, or with force."""
+        old = state.get(name, {})
+        return force or fp != old.get("fp") or now - old.get("built", 0) > WEEK or address_changed or \
+            not os.path.exists(os.path.join(d, {"freetv": "channels.m3u"}.get(name, f"{name}.m3u")))
+
+    def step(label, fn):
+        try:
+            done.append(fn())
+            return True
+        except Exception as e:  # one source failing does not stop the others
+            done.append(f"{label}: {str(e)[:120]}")
+            return False
+
+    address_changed = state.get("self_url") != self_url
+    if force or _old(os.path.join(d, "guide.xml")):
+        step("Guide", lambda: build_guide(d))
+    # Free-TV: its source is a file in the folder.
+    try:
+        with open(os.path.join(d, "freetv-source.m3u"), "rb") as f:
+            fp = _fingerprint(f.read().decode("utf-8", "replace"))
+    except OSError:
+        fp = None
+    if fp and due_list("freetv", fp):
+        if step("Free-TV", lambda: build_freetv(d)):
+            state["freetv"] = {"fp": fp, "built": now}
+            rebuilt = True
+    # Samsung TV Plus and Pluto TV: their channel lists are small; fetch them only when a guide is due.
+    for name, service, build, guide in (("samsung", "SamsungTVPlus", build_samsung, samsung_guide),
+                                        ("pluto", "PlutoTV", lambda dd, data: build_pluto(dd, self_url, data), pluto_guide)):
+        guide_due = force or _old(os.path.join(d, f"guide-{name}.xml"))
+        if not guide_due and not address_changed and now - state.get(name, {}).get("built", 0) <= WEEK:
+            continue
+        try:
+            data = _channels_json(service)
+        except Exception as e:  # keep yesterday's files
+            done.append(f"{name}: {str(e)[:120]}")
+            continue
+        chans = _samsung_channels(data) if name == "samsung" else {k: v.get("name") for k, v in data["regions"]["gb"]["channels"].items() if not adult(v)}
+        fp = _fingerprint({r: sorted(c) for r, c in chans.items()} if name == "samsung" else sorted(chans))
+        if due_list(name, fp):
+            if step(name, lambda: build(d, data)):  # builds the playlist and its guide
+                state[name] = {"fp": fp, "built": now}
+                rebuilt = True
+        elif guide_due:
+            step(f"{name} guide", lambda: guide(d))
+    if rebuilt:
         done.append(number_and_logos(d, self_url, white))
-    return " · ".join(done) or "Everything is less than a day old"
+    state["self_url"] = self_url
+    tmp = state_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(state, f)
+    os.replace(tmp, state_path)
+    return " · ".join(done) or "Nothing due: guides are less than a day old and no channel list has changed"
 
 
 def logo_file(name):

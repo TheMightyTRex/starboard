@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 (2 November 2026)
+
+- Live TV: the guides refresh daily, but the channel lists are rebuilt (and every stream tested) only when a
+  source's channel list changes, or once a week. Numbers and logos are redone only when a playlist changed.
+- Watch history import: Jellyfin and Emby libraries are read 1,000 items at a time, so big libraries work.
+
 ## 0.3.1 (2 November 2026)
 
 - Jellyfin jobs: send Jellyfin's API key the way newer Jellyfin versions need it.

@@ -72,6 +72,19 @@ def _mb(service, path, method="GET", body=None, timeout=120):
     return _fetch(service, req, timeout)
 
 
+def _all_items(service, path, params):
+    """Every item from an /Items query, a page of 1,000 at a time, so a big library never arrives in one reply."""
+    out, start = [], 0
+    while True:
+        q = urllib.parse.urlencode({**params, "StartIndex": start, "Limit": 1000})
+        page = _mb(service, f"{path}?{q}") or {}
+        items = page.get("Items") or []
+        out.extend(items)
+        start += len(items)
+        if not items or start >= (page.get("TotalRecordCount") or 0):
+            return out
+
+
 def jellyfin_app(services):
     return next((s for s in services if s["type"] == "jellyfin" and s.get("enabled", True) and s.get("url") and s.get("api_key")), None)
 
@@ -183,9 +196,8 @@ def read_media_server(url, api_key, name="Emby"):
         uid = user["Id"]
         seen = {}
         for flt in ("IsPlayed", "IsResumable"):
-            q = urllib.parse.urlencode({"Recursive": "true", "IncludeItemTypes": "Movie,Episode", "Filters": flt,
-                                        "Fields": "ProviderIds,SeriesId,ProductionYear", "EnableImages": "false"})
-            for it in (_mb(service, f"/Users/{uid}/Items?{q}") or {}).get("Items") or []:
+            for it in _all_items(service, f"/Users/{uid}/Items", {"Recursive": "true", "IncludeItemTypes": "Movie,Episode", "Filters": flt,
+                                                                  "Fields": "ProviderIds,SeriesId,ProductionYear", "EnableImages": "false"}):
                 seen[it["Id"]] = it
         series = {}
         wanted = sorted({i["SeriesId"] for i in seen.values() if i.get("SeriesId")})
@@ -290,9 +302,8 @@ def apply(data_dir, services):
                     movies[(k, str(v))] = e
                 else:
                     episodes[(k, str(v), e.get("season"), e.get("episode"))] = e
-        q = urllib.parse.urlencode({"userId": uid, "recursive": "true", "includeItemTypes": "Movie,Episode",
-                                    "fields": "ProviderIds,UserData,SeriesId", "enableImages": "false"})
-        items = (_mb(jf, f"/Items?{q}") or {}).get("Items") or []
+        items = _all_items(jf, "/Items", {"userId": uid, "recursive": "true", "includeItemTypes": "Movie,Episode",
+                                          "fields": "ProviderIds,UserData,SeriesId", "enableImages": "false"})
         series = {}
         for sid in {i["SeriesId"] for i in items if i.get("SeriesId") and i["Id"] not in done}:
             series[sid] = _norm((_mb(jf, f"/Items/{sid}?userId={uid}") or {}).get("ProviderIds"))
