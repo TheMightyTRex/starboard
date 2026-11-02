@@ -1657,16 +1657,19 @@
   .cover-card:has(> .cover-card__open:hover) .media-card__title {
     text-decoration: underline;
   }
+  /* The column is exactly the height of the cover, whatever its shape or size (David, 2 November
+     2026): top and bottom edges match the art. Its 44px targets spread down the cover; on a cover
+     shorter than five targets (a small or square cover) they share the height evenly instead of
+     running past the bottom edge. Keep covers at least 120px tall so each target stays 24px or more. */
   .cover-actions {
     position: absolute;
     z-index: 2;
     top: 0;
     right: 0;
-    display: grid;
-    /* Square 44px targets spread down the full height of the cover. */
-    grid-auto-rows: var(--control-h);
-    align-content: space-between;
-    min-height: 100%;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     background: var(--color-surface-raised);
     border-left: 1px solid var(--color-divider);
     box-shadow: var(--shadow-raised);
@@ -1691,6 +1694,12 @@
       pointer-events: auto;
     }
   }
+  .cover-actions:not(.cover-actions--row) > .cover-actions__btn {
+    flex: 0 1 var(--control-h);
+    min-height: 0;
+  }
+  /* Beside the art: the column takes the cover's height (size containment stops its own five
+     targets from making the row taller than the cover). */
   .cover-card[data-actions="beside"] .cover-card__art {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--control-h);
@@ -1700,8 +1709,9 @@
     position: relative;
     top: auto;
     right: auto;
-    grid-auto-rows: var(--control-h);
-    min-height: 0;
+    bottom: auto;
+    align-self: stretch;
+    contain: size;
     border: 1px solid var(--color-divider);
     border-left: 0;
     box-shadow: none;
@@ -1878,7 +1888,9 @@
     position: relative;
     top: auto;
     right: auto;
+    bottom: auto;
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     min-height: 0;
     background: transparent;

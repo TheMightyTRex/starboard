@@ -1,5 +1,6 @@
 # Starboard: Python's standard library, plus Pillow (open source, see THIRD-PARTY.md) for white Live TV logos.
 FROM python:3.12-alpine
+LABEL org.opencontainers.image.source="https://github.com/TheMightyTRex/starboard"
 
 # tzdata: download hours follow the server's local time (TZ).
 RUN apk add --no-cache tzdata \

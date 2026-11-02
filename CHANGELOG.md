@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.3 (2 November 2026)
+
+- **Ready-made image** for amd64 and arm64 at `ghcr.io/themightytrex/starboard` (each version, its minor
+  version and `latest`), published by a workflow for every release tag. `compose.image.yaml` runs it with no build.
+- The README's clone address and the licence now name the GitHub account (TheMightyTRex) and author
+  (TheMightyTRexUK). The privacy check allows those two names and still catches everything else.
+
 ## 0.5.2 (2 November 2026)
 
 - An upgrade from 0.4.0 or earlier now opens the upgrade guide with the 0.5.0 questions (new apps and Storage).

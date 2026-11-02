@@ -1,0 +1,38 @@
+# Starboard from the ready-made image: nothing to build. Settings, sessions and API keys live in ./data.
+#
+#   mkdir -p data
+#   docker compose -f compose.image.yaml up -d
+#   docker logs starboard            # the one-time setup code
+#
+# Then open http://<your server>:8095. To update: docker compose -f compose.image.yaml pull && ... up -d
+# Host networking lets Starboard reach your apps on their published ports (http://127.0.0.1:8989 for Sonarr)
+# and choose who can connect (Settings, Security). It needs Docker on Linux.
+services:
+  starboard:
+    image: ghcr.io/themightytrex/starboard:latest   # or a version, such as :0.5.3
+    container_name: starboard
+    # Your user and group (run: id -u; id -g), so the files in ./data are yours.
+    user: "1000:1000"
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=Europe/London                          # your time zone: download hours follow it
+      - STARBOARD_PORT=8095
+      - STARBOARD_REPO=TheMightyTRex/starboard    # release notes and "Upgrade available"; empty to switch off
+      # Folders for System, Storage, as Name=/path inside the container (mounted below), separated by commas:
+      # - STARBOARD_DISKS=Media=/disks/media,System=/disks/root
+    volumes:
+      - ./data:/data
+      # Optional, read-only folders for System, Storage:
+      # - /mnt/media:/disks/media:ro
+      # - /:/disks/root:ro
+      # Optional: Apps, Updates (check for and install new app images) and reading API keys in Search for new
+      # apps. This gives Starboard full control of Docker, so of the computer. Leave it out if unsure.
+      # - /var/run/docker.sock:/var/run/docker.sock
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

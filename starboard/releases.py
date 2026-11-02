@@ -56,6 +56,10 @@ RELEASES = [
      "added": [], "changed": [],
      "fixed": [("Upgrade guide", "An upgrade from 0.4.0 or earlier now shows the 0.5.0 questions (new apps and Storage) instead of skipping them.")],
      "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.1."},
+    {"version": "0.5.3", "date": "2 November 2026",
+     "added": [("Ready-made image", "Starboard is published at ghcr.io/themightytrex/starboard for amd64 and arm64, with compose.image.yaml to run it without building anything.")],
+     "changed": [("Links", "The README and licence name the project's GitHub account and author.")],
+     "fixed": [], "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.2."},
 ]
 
 

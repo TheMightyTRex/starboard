@@ -35,10 +35,22 @@ check "Possible API key (32 hex characters)" '(^|[^0-9a-fA-F])[0-9a-f]{32}([^0-9
 check "Possible token" '(ghp_|github_pat_|xox[bap]-|sk-[A-Za-z0-9]{20})'
 check "Private key" 'BEGIN [A-Z ]*PRIVATE KEY'
 
+# Public names that may appear even though they contain a private word: the project's GitHub account and the
+# author name (in links, image addresses and the licence). They are taken out of a line before the check, so
+# anything else on that line is still caught.
+PUBLIC_NAMES='[Tt][Hh][Ee][Mm][Ii][Gg][Hh][Tt][Yy][Tt][Rr][Ee][Xx]([Uu][Kk])?'
+
 if [ -f .private-words ]; then
   while IFS= read -r word; do
     [ -z "$word" ] || [ "${word#\#}" != "$word" ] && continue
-    check "Private word from .private-words" "$(printf '%s' "$word" | sed 's/[][\.*^$(){}?+|/]/\\&/g')"
+    pattern="$(printf '%s' "$word" | sed 's/[][\.*^$(){}?+|/]/\\&/g')"
+    hits="$("${grep_cmd[@]}" -i "$pattern" "${exclude[@]}" 2>/dev/null | while IFS= read -r line; do
+      printf '%s\n' "$line" | cut -d: -f3- | sed -E "s/$PUBLIC_NAMES//g" | grep -q -i -E "$pattern" && printf '%s\n' "$line"
+    done || true)"
+    if [ -n "$hits" ]; then
+      printf '\n%s:\n%s\n' "Private word from .private-words" "$hits"
+      found=1
+    fi
   done < .private-words
 fi
 

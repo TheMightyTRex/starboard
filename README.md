@@ -83,10 +83,29 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
 
 ## Install
 
+Two ways: the **ready-made image** (quickest; nothing to build), or the **installer** (builds from this
+repository and asks, step by step, what Starboard may access).
+
+### The ready-made image
+
+Images for amd64 and arm64 (such as a Raspberry Pi 4 or 5 on a 64-bit system) are published for every release
+at `ghcr.io/themightytrex/starboard`. Download [`compose.image.yaml`](compose.image.yaml), then:
+
+```bash
+mkdir -p data
+docker compose -f compose.image.yaml up -d
+```
+
+Open `http://<your server>:8095`. The setup code is in the log: `docker logs starboard`. The file explains each
+optional extra (Docker access for Apps, Updates; folders for System, Storage) as comments you can uncomment.
+Update with `docker compose -f compose.image.yaml pull && docker compose -f compose.image.yaml up -d`.
+
+### The installer
+
 You need Docker with the Compose plugin (or Python 3.10+ and systemd for `--native`), and git.
 
 ```bash
-git clone https://github.com/OWNER/starboard.git
+git clone https://github.com/TheMightyTRex/starboard.git
 cd starboard
 ./install.sh
 ```
@@ -247,5 +266,5 @@ licences, in [THIRD-PARTY.md](THIRD-PARTY.md).
 
 ## Licence
 
-MIT. Atkinson Hyperlegible Next is under the SIL Open Font Licence (`web/fonts/LICENSE-OFL.txt`). Icons are from
+MIT, by TheMightyTRexUK and contributors. Atkinson Hyperlegible Next is under the SIL Open Font Licence (`web/fonts/LICENSE-OFL.txt`). Icons are from
 Lucide, under the ISC licence (`tools/LICENSE-lucide.txt`).
