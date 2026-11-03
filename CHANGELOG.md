@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.5 (3 November 2026)
 
 - **Send feedback** (Settings, General, Testing) replaces Note issues. It uses
   [Snaglist](https://github.com/TheMightyTRex/snaglist): report a problem, suggest something or check a page for
@@ -14,6 +14,9 @@
   processes, so a fault cannot take the whole server's (Docker Bench for Security, 3 November 2026). A watch
   history file can now be up to 80 MB (was 512 MB): reading one takes about 4.5 times its size, and 80 MB is
   more than 250,000 films and episodes.
+- **Security (CodeQL):** a saved copy's name is length-checked and matched only one way, so it cannot make the
+  check slow; a header value with a line break is never sent; certificate checks need TLS 1.2 or newer. Each has
+  a test. The other 15 alerts are explained in `docs/SECURITY-AND-TESTS.md` and dismissed with reasons.
 
 ## 0.7.4 (3 November 2026)
 

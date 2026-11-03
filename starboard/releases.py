@@ -137,6 +137,20 @@ RELEASES = [
                   ("Checks", "Every release is scanned with Trivy, OWASP ZAP, Gitleaks, Bandit, ShellCheck and Hadolint. What each found is in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "No settings change. To go back, run ./update.sh --to v0.7.3."},
+    {"version": "0.7.5", "date": "3 November 2026",
+     "added": [("Send feedback", "In place of Note issues, activate it in Settings, General to report a problem, suggest something or check a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page or is saved in Starboard, listed under Testing.")],
+     "changed": [("Errors where they happened", "A problem saving a setting or running an action shows beside that switch or button, and clears on your next try. An error with nothing on the page to belong to stays in the corner until you close it."),
+                 ("Updates", "The button says Check until the first check, then Check again."),
+                 ("Watch history files", "A history file can be up to 80 MB, which is more than 250,000 films and episodes. Reading one takes about four and a half times its size in memory.")],
+     "fixed": [],
+     "security": [("Memory and process limits", "Starboard is capped at 512 MB of memory and 200 processes, so a fault cannot take the whole server's. Docker Bench for Security found it had none."),
+                  ("Slow name check", "A saved copy's name made of many hyphens could make one check slow. Names are now length-checked and matched only one way (found by CodeQL)."),
+                  ("Line breaks in headers", "A header value with a line break is never sent, so no answer can be split in two (found by CodeQL)."),
+                  ("Older TLS", "Checking when an https address's certificate runs out now needs TLS 1.2 or newer (found by CodeQL)."),
+                  ("Send feedback", "Its reports are saved only with a key given to a signed-in browser, which stops working when that browser signs out. The content policy lets in only Snaglist's own stylesheet."),
+                  ("Checks", "Trivy, OWASP ZAP, Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. What each found is in docs/SECURITY-AND-TESTS.md.")],
+     "review": [],
+     "settings": "If Note issues was active, Send feedback is active, and your notes are listed with the new reports. With Docker, the limits come with the update. Without Docker (--native), run ./install.sh --native again to add them. To go back, run ./update.sh --to v0.7.4."},
 ]
 
 
