@@ -175,6 +175,30 @@ class BackupTest(unittest.TestCase):
             self.assertNotIn(token, f.read())
 
 
+class ResetPasswordTest(unittest.TestCase):
+    def test_reset_password_file_signs_everyone_out_and_asks_for_setup(self):
+        from starboard import server
+        d = tempfile.mkdtemp()
+        env = {k: "0" for k in ("STARBOARD_HISTORY", "STARBOARD_SCHEDULE", "STARBOARD_WATCH", "STARBOARD_JOBS")}
+        try:
+            with mock.patch.dict(os.environ, env):
+                app = server.App(d)
+                app.config.data["auth"]["password_hash"] = auth.hash_password("made-up password 1")
+                app.config.upsert_service(APPS[0])
+                app.config.save()
+                token = app.sessions.create(30, app.session_version)
+                self.assertFalse(app.needs_setup)
+                open(os.path.join(d, "reset-password"), "w").close()
+                again = server.App(d)
+            self.assertTrue(again.needs_setup)
+            self.assertTrue(again.setup_token)
+            self.assertFalse(again.sessions.valid(token, again.session_version))
+            self.assertFalse(os.path.exists(os.path.join(d, "reset-password")))
+            self.assertEqual(len(again.config.data["services"]), 1)  # apps and settings stay
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+
 # Moving watch history ---------------------------------------------------------------------------
 
 def plex_fixture(path):

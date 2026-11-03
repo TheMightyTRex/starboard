@@ -87,6 +87,8 @@ class App:
         self.uxnotes = uxnotes.UxNotes(data_dir)
         self.log = logs.start(data_dir, lambda: self.config.data["logs"], lambda: [self.config.data.get("site_name", "")])
         self.sessions = auth.Sessions(data_dir)
+        if os.path.exists(os.path.join(data_dir, "reset-password")):
+            self._reset_password(data_dir)
         self.limits = auth.RateLimit()
         self.version = read_version()
         since = self.config.data.get("version_since") or {}
@@ -132,7 +134,19 @@ class App:
             self._remove_setup_token(data_dir)
         else:
             self.setup_token = new_setup_token(data_dir)
-            print(f"[starboard] First run. Open the dashboard and enter this setup code: {self.setup_token}", flush=True)
+            print(f"[starboard] No password yet. Open the dashboard and enter this setup code: {self.setup_token}", flush=True)
+
+    def _reset_password(self, data_dir):
+        """./reset-password.sh, run on the server itself, leaves a file asking for this: no password, everyone
+        signed out, and a new setup code at start-up. Apps and settings stay."""
+        with self.config.lock:
+            self.config.data["auth"]["password_hash"] = ""
+            self.config.data["auth"]["session_version"] = self.config.data["auth"].get("session_version", 1) + 1
+            self.config.save()
+        self.sessions.end_all()
+        self._remove_setup_token(data_dir)  # an old code from before the first password must not work again
+        os.remove(os.path.join(data_dir, "reset-password"))
+        logs.event("warning", "security", "The password was reset on the server. Everyone is signed out; a new setup code is in the log")
 
     @staticmethod
     def _remove_setup_token(data_dir):

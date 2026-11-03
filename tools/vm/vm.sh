@@ -6,7 +6,9 @@
 #   tools/vm/vm.sh shell ubuntu       Start a fresh copy and open a shell in it (for trying things by hand)
 #   tools/vm/vm.sh clean ubuntu       Delete that system's files (the downloaded image stays)
 #
-# Systems: ubuntu (24.04), debian (12), fedora (42). Plain QEMU with user networking: no root, no libvirt,
+# Systems: ubuntu (24.04), debian (12), fedora (42), and arm64: Debian 12 for 64-bit ARM, like Raspberry Pi
+# OS (64-bit), with 1 GB of memory like a small Pi (VM_MEMORY=512 for a Pi Zero 2 W). arm64 needs the packages
+# qemu-system-arm and qemu-efi-aarch64, and is always emulated, so slow. Plain QEMU with user networking: no root, no libvirt,
 # nothing on the home network. Hardware speed-up (KVM) is used when /dev/kvm exists; without it everything
 # still works, about ten times slower. Files live in ~/.cache/starboard-vm (STARBOARD_VM_DIR), never in the repo.
 # Each test starts from the ready system, so nothing from one run reaches the next.
@@ -17,7 +19,7 @@ REPO="$PWD"
 DIR="${STARBOARD_VM_DIR:-$HOME/.cache/starboard-vm}"
 SSH_PORT="${VM_SSH_PORT:-2222}"
 WEB_PORT="${VM_WEB_PORT:-18095}"
-MEMORY="${VM_MEMORY:-2048}"
+MEMORY="${VM_MEMORY:-}"
 ACTION="${1:-}"
 SYSTEM="${2:-ubuntu}"
 
@@ -25,7 +27,8 @@ case "$SYSTEM" in
   ubuntu) URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img" ;;
   debian) URL="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2" ;;
   fedora) URL="https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2" ;;
-  *) echo "Choose ubuntu, debian or fedora" >&2; exit 2 ;;
+  arm64) URL="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-arm64.qcow2" ;;
+  *) echo "Choose ubuntu, debian, fedora or arm64" >&2; exit 2 ;;
 esac
 
 mkdir -p "$DIR"
@@ -37,7 +40,17 @@ KEY="$DIR/id_ed25519"
 LOG="$DIR/$SYSTEM-console.log"
 [ -f "$KEY" ] || ssh-keygen -q -t ed25519 -N "" -C starboard-vm -f "$KEY"
 
-if [ -w /dev/kvm ]; then ACCEL=(-accel kvm -cpu host); SPEED="KVM"; else ACCEL=(-accel tcg -cpu max); SPEED="software only (slow)"; fi
+if [ "$SYSTEM" = arm64 ]; then
+  QEMU=qemu-system-aarch64
+  FIRMWARE="$(ls /usr/share/qemu-efi-aarch64/QEMU_EFI.fd /usr/share/AAVMF/AAVMF_CODE.fd 2>/dev/null | head -n 1)"
+  [ -n "$FIRMWARE" ] && command -v "$QEMU" >/dev/null || { echo "Install qemu-system-arm and qemu-efi-aarch64 first" >&2; exit 1; }
+  ACCEL=(-machine virt -accel tcg,thread=multi -cpu cortex-a72 -bios "$FIRMWARE"); SPEED="emulated 64-bit ARM (slow)"
+  MEMORY="${MEMORY:-1024}"; WAIT=3600
+else
+  QEMU=qemu-system-x86_64
+  if [ -w /dev/kvm ]; then ACCEL=(-accel kvm -cpu host); SPEED="KVM"; else ACCEL=(-accel tcg -cpu max); SPEED="software only (slow)"; fi
+  MEMORY="${MEMORY:-2048}"; WAIT=1200
+fi
 SSH=(ssh -q -i "$KEY" -p "$SSH_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=5 tester@127.0.0.1)
 SCP=(scp -q -i "$KEY" -P "$SSH_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
 say() { printf '\n== %s\n' "$*"; }
@@ -65,7 +78,7 @@ EOF
 
 boot() { # boot a disk in the background; extra arguments go to QEMU
   local disk="$1"; shift
-  qemu-system-x86_64 "${ACCEL[@]}" -smp 2 -m "$MEMORY" -nographic -serial "file:$LOG" -monitor none \
+  "$QEMU" "${ACCEL[@]}" -smp 2 -m "$MEMORY" -nographic -serial "file:$LOG" -monitor none \
     -drive "file=$disk,if=virtio,format=qcow2" \
     -nic "user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:$SSH_PORT-:22,hostfwd=tcp:127.0.0.1:$WEB_PORT-:8095" \
     "$@" >/dev/null 2>&1 &
@@ -96,7 +109,7 @@ fresh() { # a new copy of the ready system, started
   say "Starting a fresh $SYSTEM ($SPEED)"
   boot "$RUN"
   trap stop EXIT
-  wait_ssh 1200
+  wait_ssh "$WAIT"
 }
 
 case "$ACTION" in
@@ -107,7 +120,7 @@ case "$ACTION" in
     say "First start: installing Docker and git ($SPEED; this can take a while)"
     boot "$READY" -drive "file=$(seed),if=virtio,format=raw,readonly=on"
     trap stop EXIT
-    wait_ssh 2400
+    wait_ssh $((WAIT * 2))
     until "${SSH[@]}" test -f /var/lib/starboard-ready; do sleep 10; done
     "${SSH[@]}" "docker --version && docker compose version && git --version"
     "${SSH[@]}" "sudo cloud-init clean --logs >/dev/null 2>&1 || true"

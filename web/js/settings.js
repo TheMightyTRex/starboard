@@ -261,7 +261,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
   // Step 1: Connection, and how it shows on the dashboard.
   const type = el("select", { class: "select", name: "type" }, Object.entries(config.types).map(([k, v]) => el("option", { value: k, text: v.label })));
   const name = el("input", { class: "input", name: "name", maxlength: "60", required: true, autocomplete: "off" });
-  const url = el("input", { class: "input", name: "url", inputmode: "url", placeholder: "http://sonarr:8989", autocomplete: "off" });
+  const url = el("input", { class: "input", name: "url", inputmode: "url", placeholder: "http://127.0.0.1:8989", autocomplete: "off" });
   const key = el("input", { class: "input", name: "api_key", type: "password", autocomplete: "off" });
   const keyHint = el("span", {});
   const keyField = field("API key", key, { hint: keyHint, span: true });
@@ -300,7 +300,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
       el("div", { class: "form-grid" },
         field("Kind of app", type),
         field("Name", name),
-        field("Address Starboard uses", url, { hint: "On Docker, the container name and port, such as http://sonarr:8989. Optional for a background service.", span: true }),
+        field("Address Starboard uses", url, { hint: "For an app on this computer, 127.0.0.1 and the app's port, such as http://127.0.0.1:8989. For another computer, its address. Optional for a background service.", span: true }),
         keyField),
       el("div", { class: "actions" }, testButton),
       testResult),
@@ -343,7 +343,8 @@ function openService(s = null, opener = null, { background = false, preset = nul
     keyField.hidden = NO_KEY.includes(t);
     const where = { qbittorrent: "Options, Web UI, API key (version 5.2 or later)", sabnzbd: "Config, General, API Key",
       jellyfin: "Dashboard, API keys. Optional: it adds Jellyfin's state, what is playing and recently added to System",
-      audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Audiobookshelf)" }[t] || "Settings, General";
+      audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Audiobookshelf)",
+      gluetun: "its control server settings. Optional: only if you gave its control server an API key" }[t] || "Settings, General";
     keyHint.textContent = `In ${config.types[t]?.label || "the app"}: ${where}.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
     followsField.hidden = !bg.checked;
     group.options[0].textContent = `Choose for me (${guessGroup(name.value, t) || "the last category"})`;
@@ -408,7 +409,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
     formError.replaceChildren();
     [name, url, link, outside, iconInput].forEach((c) => setError(c, ""));
     if (!name.value.trim()) { setError(name, "Enter a name for the app"); name.focus(); return; }
-    if (!url.value.trim() && !bg.checked) { setError(url, "Enter the address Starboard uses to reach the app, such as http://sonarr:8989"); url.focus(); return; }
+    if (!url.value.trim() && !bg.checked) { setError(url, "Enter the address Starboard uses to reach the app, such as http://127.0.0.1:8989"); url.focus(); return; }
     saveButton.disabled = true;
     try {
       const saved = await api("/api/services", { method: "POST", body: values() });
@@ -1247,11 +1248,11 @@ async function startJellyfin() {
     input.addEventListener("change", async () => { if (!(await onChange(input.checked))) input.checked = !input.checked; else startJellyfin(); });
     return el("label", { class: "switch" }, input);
   };
-  const runNow = (key, label) => el("button", { type: "button", class: "btn", onclick: async (e) => {
+  const runNow = (key, label, text = `Run ${label} now`) => el("button", { type: "button", class: "btn", onclick: async (e) => {
     e.currentTarget.disabled = true;
     try { await api(`/api/extras/${key}/run`, { method: "POST" }); toast(`${label} started`); setTimeout(startJellyfin, 4000); }
     catch (err) { toast(err.message); }
-  } }, icon("play"), `Run ${label} now`);
+  } }, icon("play"), text);
   const welcome = new URLSearchParams(location.search).has("welcome");
   const jfMissing = !d.history.jellyfin;
 
@@ -1375,7 +1376,7 @@ async function startJellyfin() {
     section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV: guides refreshed daily, channels only when a list changes.", liveNeeds, liveRows, addressForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
     section("jf-import", "Import watch history", "Move what people watched, and where they stopped, from Plex, Emby or another Jellyfin into this Jellyfin.",
       importForm, result, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
-      el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply") : null)),
+      el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply", "Apply now") : null)),
     missing,
     section("jf-defaults", "User defaults", null, defaultRows, el("div", { class: "actions" }, jobRun(df), runNow("defaults", "Defaults"))),
   ].filter(Boolean));

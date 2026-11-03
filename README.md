@@ -188,7 +188,7 @@ so this works (Docker on Linux).
 ### App updates
 
 With Docker access, **Apps, Updates** lists every app on the Apps page in the same categories, with the
-container it runs in, the version installed and the newest one. **Check for updates** asks each image's
+container it runs in, the version installed and the newest one. **Check again** asks each image's
 registry (only a few small files are downloaded). **Update** downloads the new image and runs
 `docker compose up -d` for the app's Compose project, in a short-lived `docker:cli` container, so anything
 that depends on it restarts too. An image pinned to a version (such as `v1.4.2`) is offered the newest
@@ -222,7 +222,7 @@ For the whole server, Starboard works with a backup job that runs on the host, s
 server itself. Point it at two folders in `compose.override.yaml` and `.env`:
 
 - `STARBOARD_JOBS_DIR`: a folder with a `requests` folder inside. **Back up the server now** creates an empty
-  file in `requests`: `backup`, or `backup-with-prompt` when **Include a rebuild prompt for an AI assistant** is
+  file in `requests`: `backup`, or `backup-with-prompt` when **Include a rebuild prompt** is
   ticked. Your job (for example a systemd path unit) runs, removes it, and writes `backup.json` (or
   `backup-with-prompt.json`) with `status` (`running`, `done` or `failed`), `started`, `finished` and `summary`.
   Mount the folder read-only and its `requests` folder read-write.
