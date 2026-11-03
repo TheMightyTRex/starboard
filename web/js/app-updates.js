@@ -99,6 +99,7 @@ function render() {
   updateAll.disabled = busy() || !all.length;
   $("span", updateAll).textContent = busy() ? "Updating…" : all.length ? `Update all (${all.length})` : "Update all";
   $("#check-updates").disabled = busy();
+  $("span", $("#check-updates")).textContent = data.checked_at ? "Check again" : "Check"; // "again" only after a first check
   const checked = data.checked_at ? new Date(data.checked_at * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : null;
   const missing = rows.filter((r) => !r.container).length;
   $("#updates-summary").textContent = busy() ? "Updating. Apps restart for a moment as they update."

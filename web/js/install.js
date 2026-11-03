@@ -75,7 +75,7 @@ function memoryText(mb) { return mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `
 
 // The first problem found: shown by its field, which gets focus. Returns false so a save can return it.
 function stop(control, message) {
-  if (control.fieldError) setError(control, message); else problem(message);
+  if (control.fieldError) setError(control, message); else problem(message, control);
   control.focus();
   return false;
 }

@@ -11,6 +11,9 @@ EnvironmentFile=-@DIR@/.env
 ExecStart=/usr/bin/env python3 -m starboard
 Restart=on-failure
 NoNewPrivileges=true
+# The same limits as compose.yaml: a fault cannot take the whole computer's memory or processes.
+MemoryMax=512M
+TasksMax=200
 UMask=0077
 
 [Install]

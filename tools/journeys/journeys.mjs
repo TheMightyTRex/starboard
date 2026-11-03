@@ -63,6 +63,28 @@ await page.locator("dialog[open]").getByRole("button", { name: "Remove Journey R
 await page.waitForTimeout(800);
 check("USE-02", "removed: gone from the list", await row().count() === 0);
 
+// CON-01: an error shows beside what it belongs to; with nothing on the page, as an error toast that stays
+console.log("\n== CON-01 Errors beside what they belong to");
+await open("settings-general.html");
+const cats = (await api("/api/config")).groups;
+await page.locator("#category-list .row").first().getByRole("button", { name: /^Rename/ }).click();
+await page.locator("dialog[open] input").fill(cats[1]);
+await page.locator("dialog[open]").getByRole("button", { name: "Rename category" }).click();
+await page.waitForTimeout(300);
+const beside = page.locator("#category-list .row").first().locator(".field-error");
+check("CON-01", "a rename to a name in use says so in its row", (await beside.textContent().catch(() => ""))?.includes("There is already a category"));
+check("CON-01", "and not in a toast", await page.locator("#toast-stack .toast").count() === 0);
+await page.locator("#category-list .row").first().getByRole("button", { name: /^Rename/ }).click();
+await page.keyboard.press("Escape");
+check("CON-01", "the next try clears it", await beside.count() === 0);
+await open("index.html");
+await page.evaluate(() => problem("A made-up journey error"));
+check("CON-01", "with nothing in use, an error toast", await page.locator('#toast-stack .toast[data-tone="danger"]').count() === 1);
+await open("apps-updates.html");
+const summary = await page.locator("#updates-summary").textContent();
+const label = (await page.locator("#check-updates").textContent()).trim();
+check("DASH-50", "the Updates button says Check until the first check", /Not checked/.test(summary) ? label === "Check" : /Last checked/.test(summary) ? label === "Check again" : true, `${label} / ${summary}`);
+
 // SEC-07: names, categories, descriptions and UX notes that look like code are shown as text
 console.log("\n== SEC-07 Text that looks like code");
 const before = await api("/api/config");

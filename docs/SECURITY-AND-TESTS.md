@@ -65,7 +65,7 @@ several low issues were found; all are fixed, and each fix has a test so it stay
 | Low | Idle or slow connections were held for ever. | They close after 30 seconds, with at most 64 at once. |
 | Low | Badly shaped requests ended with an error in the log. | They get a plain refusal. |
 | Low | Two uploads, or two runs of the same job, could collide. | Each claims a lock first. |
-| Low | No size limits on history files or Live TV downloads. | 512 MB for history, 200 and 600 MB for Live TV, and pictures over 16 megapixels are refused. |
+| Low | No size limits on history files or Live TV downloads. | 80 MB for history, 200 and 600 MB for Live TV, and pictures over 16 megapixels are refused. |
 | Low | Live TV channel data could add lines to a playlist. | Channel data is cleaned and only web addresses are used. |
 | Low | A folder name with special characters could break the installer's files. | Such names are refused. |
 | Low | The disk health job, which runs as root, could be tricked into writing elsewhere. | It writes in a private folder and refuses linked folders. |
@@ -101,7 +101,7 @@ Each check has an ID, which the test scripts print beside their results. The tes
 | SEC-13 | A saved key appears in no page or answer | Unit test; browser journey | Pass |
 | SEC-14 | `.env` and data files are readable by the owner only | Install tests; unit tests | Pass |
 | SEC-15 | Container labels cannot run commands | Unit test | Pass |
-| SEC-16 | A history file over 512 MB is refused, before the upload | Unit test | Pass. The Live TV and picture limits have no test yet. |
+| SEC-16 | A history file over 80 MB is refused, before the upload | Unit test | Pass. The Live TV and picture limits have no test yet. |
 | SEC-17 | The setup code is needed, and works only once | Unit test | Pass. Guessing the code has no test yet. |
 | SEC-18 | A new password signs out every other browser | Unit test | Pass |
 | SEC-19 | Scan with OWASP ZAP, signed out and signed in (active) | `tools/security-scan.sh` | Pass: no failures; the warnings left are explained below |
@@ -171,6 +171,8 @@ These suit Starboard and cost nothing:
 - **Nmap** from another computer on your network, to confirm which ports your server really has open.
 - **Lynis** and **Docker Bench for Security**, to audit the server itself and its Docker set-up rather than
   Starboard.
+  Docker Bench was run on 3 November 2026. Its one finding for Starboard was that the container had no memory
+  or process limit; the compose files now set 512 MB and 200 processes (and the `--native` service the same).
 - **testssl.sh**, if you put Starboard behind a reverse proxy with HTTPS.
 
 ## Not tested yet

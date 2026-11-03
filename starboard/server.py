@@ -1091,7 +1091,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(400, "Choose a file up to 8 GB")
         if kind == "json" and length > migrate.MAX_HISTORY_FILE:  # refused before the upload, not after it
             self.close_connection = True
-            return self.error(400, "That history file is larger than 512 MB")
+            return self.error(400, "That history file is larger than 80 MB")
         with app.import_lock:  # claim the import before reading the upload, so two cannot write one file
             if app.importing:
                 return self.error(409, "An import is already running")

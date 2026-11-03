@@ -223,12 +223,12 @@ def read_media_server(url, api_key, name="Emby"):
     return accounts
 
 
-MAX_HISTORY_FILE = 512 * 1024 * 1024
+MAX_HISTORY_FILE = 80 * 1024 * 1024  # reading one takes about 4.5 times its size, within the 512 MB limit in compose
 
 
 def read_file(path):
     if os.path.getsize(path) > MAX_HISTORY_FILE:
-        raise ValueError("That history file is larger than 512 MB")
+        raise ValueError("That history file is larger than 80 MB")
     data = _load(path, None)
     if not isinstance(data, dict) or not isinstance(data.get("accounts"), dict):
         raise ValueError("This is not a watch history file")

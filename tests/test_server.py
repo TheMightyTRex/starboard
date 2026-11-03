@@ -324,15 +324,15 @@ class ServerTest(unittest.TestCase):
         self.request("PUT", "/api/config/general", {"show_posters": True, "fetch_icons": True})
 
 
-    def test_71_a_history_file_over_512_mb_is_refused_before_the_upload(self):
+    def test_71_a_history_file_over_80_mb_is_refused_before_the_upload(self):
         self.sign_in()
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
         conn.putrequest("POST", "/api/import/upload?kind=json")
-        for k, v in (("X-Starboard", "1"), ("Cookie", self.cookie), ("Content-Length", str(513 * 1024 * 1024))):
+        for k, v in (("X-Starboard", "1"), ("Cookie", self.cookie), ("Content-Length", str(81 * 1024 * 1024))):
             conn.putheader(k, v)
         conn.endheaders()  # no body sent: the answer comes from the size alone
         resp = conn.getresponse()
-        self.assertEqual((resp.status, json.loads(resp.read())["error"]), (400, "That history file is larger than 512 MB"))
+        self.assertEqual((resp.status, json.loads(resp.read())["error"]), (400, "That history file is larger than 80 MB"))
         conn.close()
         self.assertFalse(self.app.importing)
 

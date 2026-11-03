@@ -100,8 +100,42 @@ function toast(message, options = {}) {
   title = title.replace(/\.$/, "");
   return window.SharedComponents.toast(title, { ...options, detail });
 }
-function problem(message) {
-  return toast(message, { tone: "info" });
+// An error shows beside what it belongs to (content rule): the control named, or the one just used. With
+// neither (an error while a page loads), it is an error toast, which stays until it is closed.
+const CONTROLS = "button, input, select, textarea";
+let lastUsed = null;
+for (const type of ["click", "change"]) {
+  document.addEventListener(type, (e) => {
+    const control = e.target.closest?.(CONTROLS);
+    // A confirm dialog closes before its answer comes, so the button that opened it stays the one in use.
+    if (control && !control.closest(".toasts, dialog.dialog")) lastUsed = { control, at: Date.now() };
+  }, true);
+}
+function problem(message, near) {
+  let control = near instanceof Element ? near
+    : lastUsed?.control.isConnected && Date.now() - lastUsed.at < 30000 ? lastUsed.control : null;
+  if (control?.closest(".menu")) control = $(":scope > button", control.closest(".menu-wrap")); // a menu closes: its button stays
+  if (!control || !control.getClientRects().length) return window.SharedComponents.toast.error(String(message).replace(/\.$/, ""));
+  return inlineError(control, message);
+}
+function inlineError(control, message) {
+  const row = control.closest(".row");
+  const box = (row && $(".row__text", row)) || control.closest(".field, td, li");
+  const after = box ? null : control.closest(".actions, label") || control;
+  const holder = box || after.parentElement;
+  $(":scope > .field-error[data-problem]", holder)?.remove();
+  const text = String(message).replace(/\.?$/, ".");
+  const error = el("p", { class: "field-error", role: "alert", "data-problem": "", id: `problem-${Date.now()}` }, icon("circle-alert"), el("span", { text }));
+  if (box) box.append(error); else after.after(error);
+  control.setAttribute("aria-describedby", [control.getAttribute("aria-describedby"), error.id].filter(Boolean).join(" "));
+  // The next go clears it: a new answer replaces it, a success leaves nothing to explain.
+  const clear = () => {
+    error.remove();
+    const ids = (control.getAttribute("aria-describedby") || "").split(" ").filter((id) => id && id !== error.id);
+    if (ids.length) control.setAttribute("aria-describedby", ids.join(" ")); else control.removeAttribute("aria-describedby");
+  };
+  for (const type of ["click", "input", "change"]) control.addEventListener(type, clear, { once: true });
+  return clear;
 }
 
 function announce(message) {

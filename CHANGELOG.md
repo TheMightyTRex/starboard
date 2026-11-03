@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Errors show where they happened:** a problem saving a setting, renaming a category or running an action
+  now shows beside that control, in words, and clears on the next try. An error with nothing on the page to
+  belong to is an error toast that stays until you close it (it used to fade like an information toast).
+- **Apps, Updates:** the button says Check until the first check, then Check again.
+- **Limits:** the compose files and the service for `--native` cap Starboard at 512 MB of memory and 200
+  processes, so a fault cannot take the whole server's (Docker Bench for Security, 3 November 2026). A watch
+  history file can now be up to 80 MB (was 512 MB): reading one takes about 4.5 times its size, and 80 MB is
+  more than 250,000 films and episodes.
+
 ## 0.7.4 (3 November 2026)
 
 - **Help centre** (`docs/help`): 53 topics, 8 guides and 7 basics articles for people new to home servers, with

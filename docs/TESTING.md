@@ -28,7 +28,7 @@ costs.
 | Test | Command | Covers | Time |
 |---|---|---|---|
 | Unit and API tests | `python3 -m unittest discover -s tests` | 117 tests: the server and its API, security findings, backup and restore, moving history from other apps, storage, logs, Install apps, discovery, copying app settings | 25 seconds |
-| Browser journeys | `tools/journeys.sh` | 19 checks in a real browser against example data | 2 minutes |
+| Browser journeys | `tools/journeys.sh` | 24 checks in a real browser against example data | 2 minutes |
 | Install tests in VMs | `tools/vm/vm.sh test <system>` | 17 checks of a fresh install on a clean system | 15 to 60 minutes each |
 | Help centre | `python3 tools/check-help.py` | Links, layout and writing rules of `docs/help` | 1 second |
 | Security scans | `tools/security-scan.sh` (`--full` adds ZAP's active scan) | Trivy, ZAP, Gitleaks, Bandit, ShellCheck, Hadolint ([Security](SECURITY-AND-TESTS.md)) | 10 minutes, or about an hour with `--full` |
@@ -65,6 +65,9 @@ runs `tools/journeys/journeys.mjs` in the Playwright image. It needs Docker. It 
 
 - every page script parses;
 - adding, changing, testing and removing an app through the page;
+- an error shows beside what it belongs to (renaming a category to a name in use), the next try clears it, and
+  an error with nothing on the page to belong to is an error toast;
+- the Updates button says Check until the first check;
 - after signing in, the `next` address cannot send you to another site;
 - names, categories, descriptions and UX notes that look like code are shown as text, and nothing runs;
 - the content security policy is on all 26 pages and blocks nothing;

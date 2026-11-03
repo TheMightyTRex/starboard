@@ -331,7 +331,7 @@ class MigrationTest(unittest.TestCase):
         big = os.path.join(self.dir, "big.json")
         with open(big, "wb") as f:
             f.truncate(migrate.MAX_HISTORY_FILE + 1)  # sparse: takes no room on the disk
-        with self.assertRaisesRegex(ValueError, "larger than 512 MB"):
+        with self.assertRaisesRegex(ValueError, "larger than 80 MB"):
             migrate.read_file(big)
 
 

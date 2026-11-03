@@ -13,7 +13,7 @@ browser.
 
 | | Starboard needs | Measured |
 |---|---|---|
-| Memory | 32 MB | 15 to 27 MB when idle, 37 MB at its busiest. It ran without problems when Docker limited it to 24 MB. |
+| Memory | 32 MB | 15 to 27 MB when idle, 37 MB at its busiest. It ran without problems when Docker limited it to 24 MB. The compose files cap it at 512 MB, for room to read a large watch history. |
 | Processor | Any | 2 seconds of processor time to open every page once. Close to nothing when nobody has it open. |
 | Disk space | 150 MB | The image is 117 MB. Settings, logs and history add about 3 MB. |
 | Download | 30 MB | 29 MB for 64-bit computers and 64-bit Raspberry Pi systems, 21 MB for 32-bit Raspberry Pi systems. |

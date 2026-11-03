@@ -16,7 +16,7 @@ for a moment while it updates, and anything that depends on it restarts too.
 
 1. Go to **Apps**, then **Updates**. The page lists every app in the same categories as the Apps page, with its
    **Image**, the **Installed** version, the **Latest** version and a **Status**.
-2. Select **Check again**. Starboard asks the registry each app comes from, where its downloads live, for a newer version. This
+2. Select **Check** (it says **Check again** after the first check). Starboard asks the registry each app comes from, where its downloads live, for a newer version. This
    can take a minute.
 3. Read each app's **Status**: **Update available**, **Up to date**, or **Big change: check first**.
 4. To update one app, select **Update** for it. To update every app marked **Update available**, select

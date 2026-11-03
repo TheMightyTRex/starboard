@@ -31,6 +31,10 @@ services:
     volumes:
       - ./data:/data
       # Your own folders (Storage, Disk health) go in compose.override.yaml, which updates leave alone.
+    # Limits, so a fault cannot take the whole server's memory or processes. Starboard uses 15 to 40 MB; reading a
+    # large watch history takes the most (an 80 MB file, the largest accepted, about 400 MB).
+    mem_limit: 512m
+    pids_limit: 200
     read_only: true
     tmpfs:
       - /tmp
