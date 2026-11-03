@@ -28,13 +28,13 @@ class FakeJellyfin(BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
         if path == "/Users":
             return self.reply([{"Name": "alex", "Id": "u1"}])
+        if path == "/Items" and "ids=" in self.path:
+            return self.reply({"Items": [{"Id": "s1", "ProviderIds": {"Tvdb": "81189"}}]})
         if path == "/Items":
             return self.reply({"Items": [
                 {"Id": "m1", "Type": "Movie", "ProviderIds": {"Tmdb": "603"}, "UserData": {}},
                 {"Id": "e1", "Type": "Episode", "SeriesId": "s1", "ParentIndexNumber": 1, "IndexNumber": 2, "UserData": {}},
                 {"Id": "m2", "Type": "Movie", "ProviderIds": {"Imdb": "tt0000001"}, "UserData": {}}]})
-        if path == "/Items/s1":
-            return self.reply({"ProviderIds": {"Tvdb": "81189"}})
         if path.startswith("/DisplayPreferences"):
             return self.reply({"CustomPrefs": dict(FakeJellyfin.prefs)})
         return self.reply({})

@@ -16,7 +16,7 @@ import os
 import re
 import time
 
-from .config import ConfigError, validate_service
+from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, migrate, validate_service
 
 FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "design", "groups", "show_home_address", "show_outside_address",
@@ -30,6 +30,7 @@ def export(config, version):
     return {
         "format": FORMAT,
         "version": version,
+        "schema": SCHEMA,
         "created": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "settings": {k: d[k] for k in GENERAL_KEYS if k in d},
         "services": d["services"],
@@ -37,16 +38,28 @@ def export(config, version):
 
 
 def restore(config, backup):
-    """Replaces apps and settings with the backup's, after checking every part. Password and sessions stay."""
+    """Replaces apps and settings with the backup's, after checking every part. Password and sessions stay.
+
+    A backup from an older version is brought up to date the way an old settings file is (backups before 0.7.4
+    say no schema, so they count as schema 1). Unknown settings are ignored, a choice that no longer exists goes
+    back to the default, and an app of a kind Starboard no longer knows becomes a plain link."""
     if not isinstance(backup, dict) or backup.get("format") != FORMAT:
         raise ConfigError("This is not a Starboard settings backup")
     services = backup.get("services")
     settings = backup.get("settings") or {}
     if not isinstance(services, list) or not isinstance(settings, dict):
         raise ConfigError("This backup is incomplete")
+    schema = backup.get("schema") if isinstance(backup.get("schema"), int) else 1
+    services = migrate({"schema": schema, "services": json.loads(json.dumps(services))})["services"]
+    settings = dict(settings)
+    for key, allowed in (("design", DESIGNS), ("upcoming_view", UPCOMING_VIEWS), ("upcoming_days", UPCOMING_DAYS)):
+        if key in settings and settings[key] not in allowed:
+            settings[key] = DEFAULTS[key]
     clean = []
     seen = set()
     for s in services:
+        if isinstance(s, dict) and s.get("type") not in SERVICE_TYPES:
+            s = dict(s, type="link")
         c = validate_service(s)
         c["id"] = str(s.get("id", ""))
         if not re.match(r"^[a-z0-9][a-z0-9-]{0,39}$", c["id"]) or c["id"] in seen:
@@ -98,7 +111,7 @@ def saved_detail(config, name):
 def export_saved(config, name, version):
     """A saved copy in the download format, so it can be restored from a file later. Never the password."""
     data = _saved(config, name)
-    return {"format": FORMAT, "version": version, "created": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(
+    return {"format": FORMAT, "version": version, "schema": data.get("schema", 1), "created": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(
         os.path.getmtime(os.path.join(config.data_dir, "backups", name)))),
         "settings": {k: data[k] for k in GENERAL_KEYS if k in data}, "services": data.get("services", [])}
 
@@ -106,7 +119,7 @@ def export_saved(config, name, version):
 def restore_saved(config, name):
     data = _saved(config, name)
     # Saved copies are whole settings files: turn them into the backup format, keeping the password.
-    return restore(config, {"format": FORMAT, "settings": data, "services": data.get("services", [])})
+    return restore(config, {"format": FORMAT, "schema": data.get("schema", 0), "settings": data, "services": data.get("services", [])})
 
 
 # Server backup through a host job ------------------------------------------------

@@ -167,6 +167,13 @@ def main():
     (imports / "listening-applied.json").write_text(json.dumps({"sam": [f"b{i}" for i in range(10)], "alex": [f"b{i}" for i in range(5)]}))
     (imports / "listening-result.json").write_text(json.dumps({"finished": now - 300, "written": 14, "kept": 1, "unmatched_count": 2, "problems": [],
         "unmatched": [{"account": "Sam", "title": "Small Hours", "author": "A. Example"}, {"account": "Sam", "title": "Tidewater", "author": "A. Example"}]}))
+    film = lambda t, y: {"type": "movie", "title": t, "year": y, "watched": True, "ids": {"tmdb": str(y)}}
+    (imports / "history.json").write_text(json.dumps({"source": "Plex database", "imported": dt.datetime.now(dt.timezone.utc).isoformat(), "accounts": {
+        "Sam": [film(t, 2000 + i) for i, t in enumerate(titles)], "Alex": [film(t, 2010 + i) for i, t in enumerate(titles[:4])]}}))
+    (imports / "mapping.json").write_text(json.dumps({"Sam": "sam", "Alex": "alex"}))
+    (imports / "result.json").write_text(json.dumps({"finished": dt.datetime.now(dt.timezone.utc).isoformat(), "marked": 13, "resumed": 0, "unmatched_count": 3,
+        "unmatched": [{"account": "Sam", "title": "Small Hours (2010)"}, {"account": "Sam", "title": "Tidewater (2011)"},
+                      {"account": "Alex", "title": "Harbour Street (2011)"}]}))
     (DATA / "jobs.json").write_text(json.dumps({"listening": {"started": now - 320, "finished": now - 300, "state": "done",
                                                                "summary": "Wrote 14 books; kept 1 that already had progress; 2 not found in Audiobookshelf"}}))
     server, app = make_server("127.0.0.1", PORT, str(DATA))

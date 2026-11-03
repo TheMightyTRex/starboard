@@ -239,6 +239,8 @@ def read_file(path):
 
 def save_history(data_dir, source, accounts):
     d = folder(data_dir)
+    if os.path.exists(os.path.join(d, "result.json")):
+        os.replace(os.path.join(d, "result.json"), os.path.join(d, "result-before.json"))  # the list was for the old history
     _save(os.path.join(d, "history.json"), {"source": source, "imported": datetime.now(timezone.utc).isoformat(), "accounts": accounts})
     mapping = _load(os.path.join(d, "mapping.json"), {})
     for name in accounts:
@@ -271,7 +273,7 @@ def status(data_dir, services):
                          "applied": len(applied.get(target, [])) if target else 0})
     accounts.sort(key=lambda a: -(a["films"] + a["episodes"]))
     return {"source": history.get("source"), "imported": history.get("imported"), "accounts": accounts,
-            "jellyfin_users": users, "jellyfin": bool(jf)}
+            "jellyfin_users": users, "jellyfin": bool(jf), "last": _load(os.path.join(d, "result.json"), None)}
 
 
 def set_mapping(data_dir, mapping):
@@ -295,11 +297,13 @@ def apply(data_dir, services):
     applied = _load(os.path.join(d, "applied.json"), {})
     users = {u["Name"].lower(): u["Id"] for u in _mb(jf, "/Users") or []}
     marked = resumed = 0
+    unmatched = []
     for account, jf_name in mapping.items():
         uid = users.get((jf_name or "").lower())
         if not uid or account not in history:
             continue
         done = set(applied.get(jf_name, []))
+        found = set()  # history entries that matched an item, applied now or before
         movies, episodes = {}, {}
         for e in history[account]:
             for k in ("tmdb", "imdb", "tvdb"):
@@ -312,12 +316,13 @@ def apply(data_dir, services):
                     episodes[(k, str(v), e.get("season"), e.get("episode"))] = e
         items = _all_items(jf, "/Items", {"userId": uid, "recursive": "true", "includeItemTypes": "Movie,Episode",
                                           "fields": "ProviderIds,UserData,SeriesId", "enableImages": "false"})
-        series = {}
-        for sid in {i["SeriesId"] for i in items if i.get("SeriesId") and i["Id"] not in done}:
-            series[sid] = _norm((_mb(jf, f"/Items/{sid}?userId={uid}") or {}).get("ProviderIds"))
+        series = {}  # every show's IDs, 100 shows a request, so episodes applied before are still known as found
+        wanted = sorted({i["SeriesId"] for i in items if i.get("SeriesId")})
+        for start in range(0, len(wanted), 100):
+            q = urllib.parse.urlencode({"userId": uid, "ids": ",".join(wanted[start:start + 100]), "fields": "ProviderIds", "enableImages": "false"})
+            for s in (_mb(jf, f"/Items?{q}") or {}).get("Items") or []:
+                series[s["Id"]] = _norm(s.get("ProviderIds"))
         for it in items:
-            if it["Id"] in done:
-                continue
             if it["Type"] == "Movie":
                 match = next((movies[(k, v)] for k, v in _norm(it.get("ProviderIds")).items() if (k, v) in movies), None)
             elif it.get("SeriesId"):
@@ -326,6 +331,9 @@ def apply(data_dir, services):
             else:
                 match = None
             if not match:
+                continue
+            found.add(id(match))
+            if it["Id"] in done:
                 continue
             ud = it.get("UserData") or {}
             if match["watched"] and not ud.get("Played"):
@@ -339,8 +347,19 @@ def apply(data_dir, services):
                 resumed += 1
             done.add(it["Id"])
         applied[jf_name] = sorted(done)
+        for e in history[account]:
+            if id(e) not in found:
+                unmatched.append({"account": account, "title": _title(e)})
     _save(os.path.join(d, "applied.json"), applied)
-    return f"Marked {marked} as watched and set {resumed} resume points"
+    _save(os.path.join(d, "result.json"), {"finished": datetime.now(timezone.utc).isoformat(), "marked": marked, "resumed": resumed,
+                                           "unmatched": unmatched[:300], "unmatched_count": len(unmatched)})
+    return f"Marked {marked} as watched and set {resumed} resume points; {len(unmatched)} not in Jellyfin yet"
+
+
+def _title(e):
+    if e.get("type") == "episode":
+        return f"{e.get('show') or 'Unknown show'} S{int(e.get('season') or 0):02d}E{int(e.get('episode') or 0):02d}"
+    return f"{e.get('title') or 'Unknown film'}" + (f" ({e['year']})" if e.get("year") else "")
 
 
 # User defaults -----------------------------------------------------------------------------

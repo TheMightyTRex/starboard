@@ -1351,6 +1351,17 @@ async function startJellyfin() {
     settingRow("Keep applying every hour", withCost("History for films and episodes you do not have yet is applied when they arrive. Off: only when you choose Apply now.", "importKeep"),
       sw("im-keep-l", x().import_keep, (on) => save({ import_keep: on }, on ? "History is applied every hour" : "History is applied only when you ask")), "im-keep-l"));
 
+  // Not found
+  const last = h.last;
+  const missing = last && last.unmatched_count ? section("jf-missing", "Not in Jellyfin yet",
+    "Either they are not in Jellyfin yet, or Jellyfin has no TMDB, IMDb or TVDB ID for them. With Keep applying on, they are picked up when they arrive.",
+    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
+      el("caption", { class: "visually-hidden", text: "Films and episodes not in Jellyfin yet" }),
+      el("thead", {}, el("tr", {}, ["Film or episode", "Account"].map((t) => el("th", { scope: "col", text: t })))),
+      el("tbody", {}, last.unmatched.map((u) => el("tr", {}, el("th", { scope: "row", "data-label": "Film or episode", text: u.title }),
+        el("td", { "data-label": "Account", text: u.account })))))),
+    last.unmatched_count > last.unmatched.length ? el("p", { class: "small muted", text: `Showing the first ${last.unmatched.length} of ${last.unmatched_count}.` }) : null) : null;
+
   // User defaults
   const df = jobs.defaults;
   const defaultRows = el("ul", { class: "settings-rows" },
@@ -1365,6 +1376,7 @@ async function startJellyfin() {
     section("jf-import", "Import watch history", "Move what people watched, and where they stopped, from Plex, Emby or another Jellyfin into this Jellyfin.",
       importForm, result, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
       el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply") : null)),
+    missing,
     section("jf-defaults", "User defaults", null, defaultRows, el("div", { class: "actions" }, jobRun(df), runNow("defaults", "Defaults"))),
   ].filter(Boolean));
 }
