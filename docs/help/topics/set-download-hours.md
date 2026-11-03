@@ -20,8 +20,8 @@ or pause them by hand.
    first.
 3. In **Start**, choose the hour downloads start, such as **01:00**.
 4. In **End**, choose the hour downloads pause, such as **07:00**.
-5. Switch on **Only download between set hours**. Starboard confirms with a message such as **Download hours on:
-   downloads run from 01:00 to 07:00**.
+5. Activate **Only download between set hours**. Starboard confirms with **Download hours activated**, and the hours, such as
+   "Downloads run from 01:00 to 07:00".
 
 Each change applies at once. There is no save button.
 
@@ -40,7 +40,7 @@ Each change applies at once. There is no save button.
   the time zone, such as `TZ=Europe/London`.
 - Starboard starts again only what it paused. Anything you paused yourself in qBittorrent or SABnzbd stays
   paused. Seeding is left alone.
-- Starboard checks every minute while download hours are on, unless you chose the **Small server** preset.
+- Starboard checks every minute while download hours are active, unless you chose the **Small server** preset.
   To change it, go to **Settings**, then **Performance**, and change **Download hours check**.
 - The Downloads page shows the state of download hours, such as **Downloading** or **Paused**, and when it next
   changes.

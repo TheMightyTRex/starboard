@@ -35,8 +35,8 @@ In **Calendar**, select **Earlier** or **Later** to move by a month, and **Back 
 ### Show or hide posters
 
 1. Go to **Settings**, then **Performance**.
-2. Under **Background work**, switch **Posters on Coming up** on or off. Off, each release shows its app's icon
-   instead.
+2. Under **Background work**, activate or deactivate **Posters on Coming up**. Inactive: each release shows its
+   app's icon instead.
 
 ## Things to note
 
@@ -52,7 +52,7 @@ In **Calendar**, select **Earlier** or **Later** to move by a month, and **Back 
 ## If it does not work
 
 - **Nothing is due:** your apps have nothing due in that time. Choose a longer time in **How far ahead**.
-- **Nothing matches these filters:** select the filter you chose again to turn it off.
+- **Nothing matches these filters:** select the filter you chose again to deactivate it.
 - **A warning about one app:** that app did not answer, so its releases are missing. Read
   [An app shows as not responding](app-not-responding.md).
 - **The view changed here but was not saved:** the page shows your choice, but Starboard could not save it.

@@ -32,11 +32,11 @@ and select **Add**, and the right app adds it and, if you like, starts looking f
 
 ## Things to note
 
-- Starboard searches only the apps that have **Show on the dashboard** switched on. Read
+- Starboard searches only the apps that have **Show on the dashboard** active. Read
   [Change or remove an app](change-or-remove-an-app.md).
 - Changes you make in the **Add** panel apply to this one item only. To change what every new item uses, edit
   the app and change its **Adding options**.
-- If you switch off **Start searching for it now**, the app keeps the item but does not look for it. Start the
+- If you deactivate **Start searching for it now**, the app keeps the item but does not look for it. Start the
   search later in the app itself.
 - Each search has its own address, such as `http://192.168.1.20:8095/search.html?q=harbour`, so you can bookmark
   or share a search.

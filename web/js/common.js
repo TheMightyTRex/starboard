@@ -89,14 +89,19 @@ async function api(path, { method = "GET", body } = {}) {
   return data;
 }
 
-let toastTimer;
-function toast(message) {
-  let node = $("#toast");
-  if (!node) { node = el("div", { id: "toast", class: "toast", role: "status" }); document.body.append(node); }
-  node.textContent = message;
-  node.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { node.hidden = true; }, 6000);
+// The shared toast (option C): a card in the corner, up to three stacked. Its icons come from Starboard's sprite
+// file. A message of two sentences becomes a title and a line of detail, and the title loses its full stop
+// (CONTENT-DESIGN.md: "Name saved", not "Name saved."). Problems use the info tone, never the success tick.
+window.SharedComponentsSprite = "/icons/sprite.svg";
+function toast(message, options = {}) {
+  let title = String(message), detail = options.detail;
+  const split = title.indexOf(". ");
+  if (!detail && split > 0) { detail = title.slice(split + 2); title = title.slice(0, split); }
+  title = title.replace(/\.$/, "");
+  return window.SharedComponents.toast(title, { ...options, detail });
+}
+function problem(message) {
+  return toast(message, { tone: "info" });
 }
 
 function announce(message) {
@@ -168,7 +173,7 @@ function copyButton(text, label) {
     e.preventDefault();
     e.stopPropagation();
     const ok = await copyText(text);
-    toast(ok ? `Copied ${label}` : `Could not copy. The address is ${text}`);
+    (ok ? toast : problem)(ok ? `Copied ${label}` : `Could not copy. The address is ${text}`);
   });
   return button;
 }

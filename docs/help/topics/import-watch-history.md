@@ -47,7 +47,7 @@ Each choice saves straight away.
 1. Select **Apply now**.
 2. When it ends, the **Applied** column shows how many items each account received.
 
-To keep applying history as new films and episodes arrive in Jellyfin, turn on **Keep applying every
+To keep applying history as new films and episodes arrive in Jellyfin, activate **Keep applying every
 hour**.
 
 ## Things to note

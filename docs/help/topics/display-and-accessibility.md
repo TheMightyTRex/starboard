@@ -12,9 +12,9 @@ movement, underlined links and wider spacing. Each choice applies at once and is
    - **Theme:** **Match device** follows your phone or computer, or choose **Light** or **Dark**.
    - **Text size:** **100%**, **125%**, **150%** or **175%**.
    - **Reduce motion:** **Match device**, **On** or **Off**. On stops animations, such as panels sliding in.
-   - **High contrast:** switch on for stronger colours that are easier to tell apart.
-   - **Underline links:** switch on to underline every link.
-   - **Wider text spacing:** switch on for more space between letters, words and lines.
+   - **High contrast:** activate it for stronger colours that are easier to tell apart.
+   - **Underline links:** activate it to underline every link.
+   - **Wider text spacing:** activate it for more space between letters, words and lines.
    - **Design:** the design of the Apps page. Read [Choose a design for the Apps page](choose-a-design.md).
 3. Select **Done**.
 

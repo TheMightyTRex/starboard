@@ -21,7 +21,7 @@ Radarr. You see what will change before anything is copied.
 4. Select **Check what will be copied**. For each part, Starboard lists every item as **Will be added**,
    **Already there** or **Will be replaced**.
 5. Under **Passwords the old app keeps hidden**, type each download client's password. Leave one empty to add
-   that client switched off.
+   that client inactive.
 6. Select **Copy**. Starboard shows **Copied**, with what it did, or **Copied, with problems**, with what went
    wrong.
 
@@ -32,7 +32,7 @@ Radarr. You see what will change before anything is copied.
 - **Root folders** must exist inside the new app's container.
 - Indexers (the sites your apps search) are not copied. Add the new app in Prowlarr instead, in **Settings**,
   **Apps**, which keeps them in step.
-- A download client added switched off needs its password typed in the new app before it works.
+- A download client added inactive needs its password typed in the new app before it works.
 
 ## If it does not work
 

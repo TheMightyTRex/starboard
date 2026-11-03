@@ -52,7 +52,7 @@ running, the address is wrong, or Starboard is set to open on the server only.
 5. Try on the server itself, at `http://127.0.0.1:8095`. If it opens there but not on a phone, carry on to
    the next step.
 6. Check that other devices are allowed in. On the server, go to **Settings**, then **Security**, and check
-   that **Phones and other computers on your home network** is on. If the server has no monitor,
+   that **Phones and other computers on your home network** is active. If the server has no monitor,
    [Choose who can open Starboard](choose-who-can-open-starboard.md) explains how to reach the setting from
    your own computer.
 7. Check the server's firewall. A firewall is a program that blocks connections the server has not allowed.
@@ -87,7 +87,7 @@ running, the address is wrong, or Starboard is set to open on the server only.
 - The phone or computer must be on the same home network as the server. Mobile data and guest Wi-Fi networks
   cannot reach it.
 - If the page says "This dashboard only accepts connections from the computer it runs on", home network
-  access is off. Follow step 6 on the server.
+  access is inactive. Follow step 6 on the server.
 - If the page says "Starboard does not answer to the name", you used a name Starboard does not know. Use the
   server's address, such as `http://192.168.1.20:8095`, or read
   [Put Starboard behind a reverse proxy](reverse-proxy.md).

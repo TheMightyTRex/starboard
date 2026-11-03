@@ -1,9 +1,9 @@
 [Help centre](../README.md) · Alerts · how-to
 
-# Turn on alerts
+# Activate alerts
 
 Starboard can send a message to your phone when an app stops answering, a disk has a problem or fills up, a
-download is stuck, a backup fails or a certificate runs out. Alerts are off until you turn them on.
+download is stuck, a backup fails or a certificate runs out. Alerts are inactive until you activate them.
 
 ## Before you begin
 
@@ -17,10 +17,10 @@ Choose where alerts go. Starboard can send them to one of these:
 
 ## Steps
 
-### Turn on watching
+### Activate watching
 
 1. Go to **Settings**, then **Alerts**.
-2. Under **Watching**, switch on **Watch in the background**. Starboard now checks your apps with no page open.
+2. Under **Watching**, activate **Watch in the background**. Starboard now checks your apps with no page open.
 3. In **How often**, choose how often it checks. **Every 5 minutes** is plenty for a home server.
 
 ### Choose where alerts go
@@ -30,13 +30,13 @@ Choose where alerts go. Starboard can send them to one of these:
    `https://ntfy.sh/` followed by your topic's name.
 3. In **Token**, paste the token if you have one. Gotify needs an application token. For ntfy and webhooks it
    is optional.
-4. Select **Save where alerts go**. Starboard shows **Saved where alerts go**.
-5. Select **Send a test alert**. Starboard shows **Test alert sent. Check that it arrived.**
+4. Select **Save where alerts go**. Beside the button, Starboard shows the time it saved, such as "Saved at 16:31".
+5. Select **Send a test alert**. Starboard shows **Test alert sent**, and reminds you to check that it arrived.
 6. Check your phone. The test message says that alerts from Starboard reach you there.
 
 ### Choose what to alert on
 
-Under **What to alert on**, switch on each alert you want. Each one applies at once.
+Under **What to alert on**, activate each alert you want. Each one applies at once.
 
 - **An app stops answering:** after two checks in a row, so a restart does not alert. Another message comes
   when it answers again.
@@ -64,8 +64,8 @@ Under **What to alert on**, switch on each alert you want. Each one applies at o
 
 - **Not sent** and a message: Starboard could not reach the address. Check the address and token, select
   **Save where alerts go**, then send another test.
-- **No alerts arrive, but the test works:** check that **Watch in the background** is on. Then check the
-  alert you want is switched on under **What to alert on**.
+- **No alerts arrive, but the test works:** check that **Watch in the background** is active. Then check the
+  alert you want is active under **What to alert on**.
 - **A disk or folder alert never comes:** Disk health or the Storage folders may not be set up. Read
   [Check your disks' health](check-disk-health.md) and [Check free space and what is using it](check-storage.md).
 

@@ -158,7 +158,7 @@ async function loadServer() {
       announce("Server backup started");
       await loadServer();
       $("#server-run")?.focus();
-    } catch (e) { toast(e.message); }
+    } catch (e) { problem(e.message); }
   });
   const rows = [];
   if (s && s.status) {

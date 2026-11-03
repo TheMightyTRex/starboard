@@ -28,7 +28,7 @@ ready for [Connect to your server from another computer](connect-with-ssh.md).
    - **Username and password:** the account you sign in to the Pi with. Write the password down somewhere
      safe.
    - **Wireless LAN:** your Wi-Fi name and password, and your country. Leave it empty if you use a cable.
-   - On the **Services** tab, turn on **Enable SSH** and choose **Use password authentication**.
+   - On the **Services** tab, activate **Enable SSH** and choose **Use password authentication**.
 8. Save the settings, choose **Yes** to apply them, and confirm that the card may be erased.
 9. When Imager says it has finished, take the card out, put it in the Pi and connect the power.
 

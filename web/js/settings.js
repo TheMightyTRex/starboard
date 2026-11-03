@@ -63,6 +63,16 @@ function section(id, title, description, ...content) {
     ...content);
 }
 
+// A settings page confirms a save beside its button ("Saved at 16:31"), not in a toast (CONTENT-DESIGN.md).
+// The note has a fixed id, so it can be shown after a save that redraws the page.
+function savedNote(id) {
+  return el("span", { class: "saved-note", id, hidden: true });
+}
+function showSaved(id, text) {
+  const note = document.getElementById(id);
+  if (note) window.SharedComponents.savedNote(note, text);
+}
+
 async function saveGeneral(body, message) {
   config = await api("/api/config/general", { method: "PUT", body });
   if (message) toast(message);
@@ -198,7 +208,7 @@ async function moveService(s, by) {
     config = await api("/api/services/order", { method: "POST", body: { ids } });
     renderServices();
     announce(`${s.name} moved ${by < 0 ? "up" : "down"}, now ${at + by + 1} of ${peers.length}`);
-  } catch (e) { toast(e.message); }
+  } catch (e) { problem(e.message); }
 }
 
 async function setShown(s, shown) {
@@ -207,7 +217,7 @@ async function setShown(s, shown) {
     config = saved.config;
     renderServices();
     announce(shown ? `${s.name} is shown on the dashboard` : `${s.name} is hidden from the dashboard`);
-  } catch (e) { toast(e.message); }
+  } catch (e) { problem(e.message); }
 }
 
 async function removeService(s, { fromPanel } = {}) {
@@ -228,7 +238,7 @@ async function removeService(s, { fromPanel } = {}) {
     target?.focus();
     toast(`Removed ${s.name}`);
     return true;
-  } catch (e) { toast(e.message); return false; }
+  } catch (e) { problem(e.message); return false; }
 }
 
 // The add and edit slide-out: Connection first, then Adding options for apps that are searched.
@@ -448,7 +458,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
         heading,
         loadState,
         el("div", { class: "form-grid" }, field("Quality profile", quality), field("Folder", root), metaField),
-        el("div", { class: "switch-list" }, switchRow("Search as soon as something is added", `On: ${current.name} looks for ${kind} straight away.`, searchOnAdd))));
+        el("div", { class: "switch-list" }, switchRow("Search as soon as something is added", `Active: ${current.name} looks for ${kind} straight away.`, searchOnAdd))));
     form.replaceWith(optionsForm);
     const saveOptions = el("button", { type: "submit", form: "options-form", class: "btn btn--primary", text: "Save adding options" });
     panel.setFoot([saveOptions, el("button", { type: "button", class: "btn btn--quiet", "data-closes": true, text: "Skip for now" })]);
@@ -496,7 +506,7 @@ function startManageApps() {
   const editId = params.get("edit");
   const editing = editId && config.services.find((s) => s.id === editId);
   if (editing) openService(editing, $(`#app-sections [data-key="${CSS.escape(editing.id)}"] .row__title button`));
-  else if (editId) { setAddress(null, false); toast("That app is not in your list any more"); }
+  else if (editId) { setAddress(null, false); problem("That app is not in your list any more"); }
   else if (params.get("add") === "background") openService(null, $("#add-service"), { background: true });
   else if (params.get("add") === "jellyfin") openService(null, $("#add-service"), { preset: { type: "jellyfin", name: "Jellyfin", url: params.get("url") || "" } });
   else if (params.has("add") || !config.services.length) openService(null, $("#add-service"));
@@ -554,7 +564,7 @@ async function saveGroups(groups, message, moveApps = null) {
     renderCategories();
     if (message) announce(message);
     return true;
-  } catch (e) { toast(e.message); return false; }
+  } catch (e) { problem(e.message); return false; }
 }
 
 async function moveCategory(index, by) {
@@ -574,7 +584,7 @@ async function renameCategory(name) {
   });
   const to = input.value.trim();
   if (!ok || !to || to === name) return;
-  if (config.groups.includes(to)) { toast(`There is already a category called ${to}`); return; }
+  if (config.groups.includes(to)) { problem(`There is already a category called ${to}`); return; }
   if (!(await saveGroups(config.groups.map((g) => (g === name ? to : g)), null, { from: name, to }))) return;
   toast(`Renamed ${name} to ${to}`);
   $(`#category-list [data-key="${CSS.escape(to)}"] .btn`)?.focus();
@@ -603,13 +613,14 @@ function startGeneral() {
   // Dashboard name
   const siteName = el("input", { class: "input", name: "site_name", maxlength: "60", required: true, value: config.site_name });
   const nameForm = el("form", { novalidate: true, class: "inline-save" }, field("Dashboard name", siteName),
-    el("button", { type: "submit", class: "btn", text: "Save name" }));
+    el("button", { type: "submit", class: "btn", text: "Save name" }), savedNote("name-saved"));
   nameForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     setError(siteName, "");
     if (!siteName.value.trim()) { setError(siteName, "Enter a name for the dashboard"); siteName.focus(); return; }
     try {
-      await saveGeneral({ site_name: siteName.value }, "Name saved");
+      await saveGeneral({ site_name: siteName.value });
+      showSaved("name-saved");
       document.title = document.title.replace(/ · [^·]*$/, ` · ${config.site_name}`);
     } catch (err) { setError(siteName, err.message); siteName.focus(); }
   });
@@ -631,16 +642,16 @@ function startGeneral() {
   const uxInput = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "ux-notes-l", checked: config.ux_notes });
   uxInput.addEventListener("change", async () => {
     try {
-      await saveGeneral({ ux_notes: uxInput.checked }, uxInput.checked ? "Note an issue is on, on every page" : "Note an issue is off");
+      await saveGeneral({ ux_notes: uxInput.checked }, uxInput.checked ? "Note an issue activated on every page" : "Note an issue deactivated");
       if (uxInput.checked) startUxNotes(); else window.UxNotes?.stop();
-    } catch (err) { uxInput.checked = !uxInput.checked; toast(err.message); }
+    } catch (err) { uxInput.checked = !uxInput.checked; problem(err.message); }
   });
   const uxSwitch = el("label", { class: "switch" }, uxInput);
   const cardSwitch = (key, labelId, on, off) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked: config[key] });
     input.addEventListener("change", async () => {
       try { await saveGeneral({ [key]: input.checked }, input.checked ? on : off); }
-      catch (err) { input.checked = !input.checked; toast(err.message); }
+      catch (err) { input.checked = !input.checked; problem(err.message); }
     });
     return el("label", { class: "switch" }, input);
   };
@@ -654,7 +665,7 @@ function startGeneral() {
   designForm.addEventListener("change", async () => {
     const before = config.design;
     try { await saveGeneral({ design: designForm.design.value }, `Default design: ${DESIGNS[designForm.design.value][0]}`); }
-    catch (err) { designForm.design.value = before; toast(err.message); }
+    catch (err) { designForm.design.value = before; problem(err.message); }
   });
 
   // Coming up: selects that apply at once.
@@ -664,7 +675,7 @@ function startGeneral() {
     select.addEventListener("change", async () => {
       const before = config[key];
       try { await saveGeneral({ [key]: key === "upcoming_days" ? Number(select.value) : select.value }, message(select.selectedOptions[0].text)); }
-      catch (err) { select.value = String(before); toast(err.message); }
+      catch (err) { select.value = String(before); problem(err.message); }
     });
     return select;
   };
@@ -680,7 +691,7 @@ function startGeneral() {
       try {
         await saveGeneral({ download_hours: { [key]: Number(select.value) } },
           `Downloads now run from ${hoursText(config.download_hours.start)} to ${hoursText(config.download_hours.end)}`);
-      } catch (err) { select.value = String(before); toast(err.message); }
+      } catch (err) { select.value = String(before); problem(err.message); }
     });
     return select;
   };
@@ -689,9 +700,9 @@ function startGeneral() {
   hoursOn.addEventListener("change", async () => {
     try {
       await saveGeneral({ download_hours: { enabled: hoursOn.checked } }, hoursOn.checked
-        ? `Download hours on: downloads run from ${hoursText(config.download_hours.start)} to ${hoursText(config.download_hours.end)}`
-        : "Download hours off: downloads run at any time");
-    } catch (err) { hoursOn.checked = !hoursOn.checked; toast(err.message); }
+        ? `Download hours activated. Downloads run from ${hoursText(config.download_hours.start)} to ${hoursText(config.download_hours.end)}`
+        : "Download hours deactivated. Downloads run at any time");
+    } catch (err) { hoursOn.checked = !hoursOn.checked; problem(err.message); }
   });
   const clients = config.services.filter((s) => ["qbittorrent", "sabnzbd"].includes(s.type) && s.has_api_key);
 
@@ -713,7 +724,7 @@ function startGeneral() {
     el("div", { id: "download-hours" }, section("gn-dh", "Download hours", "Starboard pauses qBittorrent and SABnzbd outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
       clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent or SABnzbd with its API key in Manage apps, so Starboard can pause and resume them."),
       el("ul", { class: "settings-rows" },
-        settingRow("Only download between set hours", withCost("Off: downloads run at any time.", "hours"), el("label", { class: "switch" }, hoursOn), "dh-on-l"),
+        settingRow("Only download between set hours", withCost("Inactive: downloads run at any time.", "hours"), el("label", { class: "switch" }, hoursOn), "dh-on-l"),
         settingRow("Start", "Downloads start at this hour.", hoursSelect("start", "dh-start-l"), "dh-start-l"),
         settingRow("End", "Downloads pause at this hour. An end before the start runs overnight.", hoursSelect("end", "dh-end-l"), "dh-end-l")))),
     section("gn-guide", "Set-up guide", "Finds your apps and walks through what Starboard can do. Running it again changes nothing until you press Continue.",
@@ -725,7 +736,7 @@ function startGeneral() {
           logPick("lg-keep-l", [[7, "7 days"], [14, "14 days"], [30, "30 days"], [60, "60 days"], [90, "90 days"], [180, "180 days"], [365, "A year"]], config.logs.keep_days,
             (v, t) => saveGeneral({ logs: { keep_days: Number(v) } }, `Logs kept for ${t.toLowerCase()}`)), "lg-keep-l"),
         settingRow("Detailed logging", withCost("For reporting a problem: adds every page request and every call to your apps, and the full detail of errors. Personal details are still removed.", "logDetail"),
-          logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I turn it off"]], config.logs.detail,
+          logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I deactivate it"]], config.logs.detail,
             (v, t) => saveGeneral({ logs: { detail: v } }, `Detailed logging: ${t.toLowerCase()}`)), "lg-detail-l")),
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")))),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
@@ -745,7 +756,7 @@ async function renderAccess() {
   // On or off as an icon beside the name: a tick or an empty ring (never colour alone), with the word in
   // hidden text and in the tooltip. Rows with a switch show their state in the switch itself.
   const stateIcon = (on) => el("span", { class: "status-icon", "data-tone": on ? "success" : "muted", title: on ? "On" : "Off" },
-    icon(on ? "circle-check" : "circle"), el("span", { class: "visually-hidden", text: on ? ", on" : ", off" }));
+    icon(on ? "circle-check" : "circle"), el("span", { class: "visually-hidden", text: on ? ", active" : ", inactive" }));
   const row = (a, control, withIcon) => {
     const labelId = `acc-${a.key}-l`;
     return el("li", { class: "setting" },
@@ -758,15 +769,15 @@ async function renderAccess() {
     if (a.change === "setting" && a.setting && a.setting !== "update_check") {
       const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": `acc-${a.key}-l`, checked: config[a.setting] });
       input.addEventListener("change", async () => {
-        try { await saveGeneral({ [a.setting]: input.checked }, `${a.title}: ${input.checked ? "on" : "off"}`); }
-        catch (err) { input.checked = !input.checked; toast(err.message); }
+        try { await saveGeneral({ [a.setting]: input.checked }, `${a.title} ${input.checked ? "activated" : "deactivated"}`); }
+        catch (err) { input.checked = !input.checked; problem(err.message); }
       });
       return row(a, el("label", { class: "switch" }, input), false);
     }
     if (a.change === "installer") {
       const command = `./install.sh ${a.on ? a.off_flag : a.on_flag}`;
       return row(a, el("div", { class: "access-change" },
-        el("span", { class: "small", text: a.on ? "To turn it off, run on the server:" : "To turn it on, run on the server:" }),
+        el("span", { class: "small", text: a.on ? "To deactivate it, run on the server:" : "To activate it, run on the server:" }),
         el("div", { class: "command" }, el("code", { class: "code-block", text: command }), copyButton(command, `the command for ${a.title}`))), true);
     }
     if (a.change === "readme") {
@@ -786,24 +797,24 @@ async function renderAccess() {
 const COSTS = {
   hours: "Costs about: one small check a minute, under 0.01% of the processor, no extra memory.",
   upcoming: "Costs about: one request to each app when Coming up opens, kept for 10 minutes. Further ahead means a bigger answer, still well under a second.",
-  watch: "Costs about: 0.02 seconds of processor per check (every 5 minutes, under 0.01% overall) and under 1 MB of memory for the history. Off saves that, and keeps nothing running in the background.",
+  watch: "Costs about: 0.02 seconds of processor per check (every 5 minutes, under 0.01% overall) and under 1 MB of memory for the history. Deactivating it saves that, and keeps nothing running in the background.",
   every: "Every minute costs five times as much as every 5 minutes; every hour, a twelfth.",
   weekly: "Costs about: one message a week. Nothing noticeable.",
-  livetv: "Costs about: under 2 seconds of processor a day to refresh the guides, and about a minute once a week (or when a channel list changes) to test every stream, using up to 35 MB more memory while it runs. Nothing in between. Off saves all of that.",
-  white: "Costs about: only when new channels arrive, a second or two per logo and up to 15 MB more memory while it runs. Off saves that; logos already made stay.",
-  importKeep: "Costs about: 1 second of processor and up to 40 MB more memory for about 20 seconds an hour, while it reads your Jellyfin library. Off saves that; Apply now still works.",
+  livetv: "Costs about: under 2 seconds of processor a day to refresh the guides, and about a minute once a week (or when a channel list changes) to test every stream, using up to 35 MB more memory while it runs. Nothing in between. Deactivating it saves all of that.",
+  white: "Costs about: only when new channels arrive, a second or two per logo and up to 15 MB more memory while it runs. Deactivating it saves that; logos already made stay.",
+  importKeep: "Costs about: 1 second of processor and up to 40 MB more memory for about 20 seconds an hour, while it reads your Jellyfin library. Deactivating it saves that; Apply now still works.",
   defaults: "Costs about: two small requests per Jellyfin user an hour. Nothing noticeable.",
-  listeningKeep: "Costs about: one reading of your Audiobookshelf library and users an hour, under a second of processor and a few MB more memory while it runs. Off saves that; Apply now still works.",
-  history: "Costs about: one reading of the server's own counters each time, under 0.01% of the processor, and up to 1.5 MB of memory for a day of readings. Off: the System charts have no history.",
+  listeningKeep: "Costs about: one reading of your Audiobookshelf library and users an hour, under a second of processor and a few MB more memory while it runs. Deactivating it saves that; Apply now still works.",
+  history: "Costs about: one reading of the server's own counters each time, under 0.01% of the processor, and up to 1.5 MB of memory for a day of readings. Inactive: the System charts have no history.",
   scheduleEvery: "Every minute catches a new download straight away; every 5 minutes uses a fifth of the requests.",
   downloadsRefresh: "Each update asks each download app once (shared for 10 seconds). Slower, or off, means fewer requests while Downloads is open.",
   monitorRefresh: "Each reading takes under a thousandth of a second on the server. Slower means fewer readings while Monitor is open.",
-  cardNumbers: "Costs about: one small request per app when Apps opens, shared for a minute. Off saves that.",
+  cardNumbers: "Costs about: one small request per app when Apps opens, shared for a minute. Deactivating it saves that.",
   usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory), and nothing between runs. Starboard skips the drives inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
   spaceLog: "Costs about: one size check of each folder a day, taken when a page or the history asks anyway, and a few kilobytes a year. Nothing noticeable.",
   logKeep: "Costs about: a few kilobytes a day on disk (about 100 KB a month for a quiet server). Nothing in memory.",
   logDetail: "Costs about: one short line per page request and per call to your apps, about 1 to 5 MB a day on a busy dashboard. For 24 hours turns itself off, so it cannot fill the disk.",
-  storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Off means only when you open the page or press Check again.",
+  storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Inactive means only when you open the page or press Check again.",
   posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
   icons: "Costs about: one download per app, once.",
 };
@@ -815,7 +826,7 @@ function logPick(labelId, options, value, onChange) {
   const select = el("select", { class: "select", "aria-labelledby": labelId },
     options.map(([v, t]) => el("option", { value: String(v), text: t, selected: String(v) === String(value) })));
   select.addEventListener("change", async () => {
-    try { await onChange(select.value, select.selectedOptions[0].text); } catch (e) { toast(e.message); }
+    try { await onChange(select.value, select.selectedOptions[0].text); } catch (e) { problem(e.message); }
   });
   return select;
 }
@@ -849,7 +860,7 @@ async function appFinder(onAdded) {
   const anyKey = fresh.some((i) => i.can_read_key);
   const add = async () => {
     const items = picks.filter((p) => p.input.checked).map((p) => ({ ...p.i, read_key: anyKey && readKeys.checked }));
-    if (!items.length) { toast("Tick the apps to add"); return null; }
+    if (!items.length) { problem("Tick the apps to add"); return null; }
     const r = await api("/api/discover/add", { method: "POST", body: { items } });
     config = r.config;
     toast(`Added ${r.added.length} ${r.added.length === 1 ? "app" : "apps"}`);
@@ -877,7 +888,7 @@ async function openFinder(opener) {
   go.hidden = !finder.add;
   go.addEventListener("click", async () => {
     go.disabled = true;
-    try { if (await finder.add()) panel.close(); } catch (e) { toast(e.message); } finally { go.disabled = false; }
+    try { if (await finder.add()) panel.close(); } catch (e) { problem(e.message); } finally { go.disabled = false; }
   });
 }
 
@@ -1033,7 +1044,7 @@ async function startGuide() {
       list.push({ id: "keys", title: "API keys", question: "Give Starboard their API keys?",
         intro: "With its key, Starboard can show an app's queue, calendar, updates and warnings. Each key stays on the server." });
     }
-    if (types(["jellyfin"]).length) list.push({ id: "jellyfin", title: "Jellyfin", question: "Use Starboard's Jellyfin extras?", intro: "Each one is off until you tick it. All are in Settings, Jellyfin later." });
+    if (types(["jellyfin"]).length) list.push({ id: "jellyfin", title: "Jellyfin", question: "Use Starboard's Jellyfin extras?", intro: "Each one is inactive until you tick it. All are in Settings, Jellyfin later." });
     if (types(["qbittorrent", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", title: "Download hours", question: "Only download at set hours?", intro: "Starboard pauses qBittorrent and SABnzbd outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", title: "Alerts", question: "Get an alert when something stops?", intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", title: "Storage", question: "How should Storage keep up to date?", intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
@@ -1055,7 +1066,7 @@ async function startGuide() {
         const button = e.currentTarget;  // the event forgets it once the save has been awaited
         button.disabled = true;
         try { if (await save()) { if (step.id === "finish") location.href = "/index.html"; else go(index + 1); } }
-        catch (err) { toast(err.message); }
+        catch (err) { problem(err.message); }
         finally { if (button.isConnected) button.disabled = false; }
       } });
     frame();
@@ -1116,7 +1127,7 @@ async function startUpgrade() {
       onContinue: async (e) => {
         const button = e.currentTarget;
         button.disabled = true;
-        try { if (await save()) { if (step.id === "done") await finish(); else go(index + 1); } } catch (err) { toast(err.message); }
+        try { if (await save()) { if (step.id === "done") await finish(); else go(index + 1); } } catch (err) { problem(err.message); }
         finally { if (button.isConnected) button.disabled = false; }
       } });
     frame();
@@ -1139,7 +1150,7 @@ async function startUpgrade() {
 function startAlerts() {
   const w = () => config.watch;
   const save = async (body, message) => {
-    try { await saveGeneral({ watch: body }, message); return true; } catch (err) { toast(err.message); return false; }
+    try { await saveGeneral({ watch: body }, message); return true; } catch (err) { problem(err.message); return false; }
   };
   const switchFor = (labelId, checked, onChange) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked });
@@ -1156,7 +1167,7 @@ function startAlerts() {
 
   // Watching
   const watching = el("ul", { class: "settings-rows" },
-    settingRow("Watch in the background", withCost("Checks your apps every few minutes with no page open, keeps their uptime history and sends the alerts below. Off: nothing runs in the background.", "watch"),
+    settingRow("Watch in the background", withCost("Checks your apps every few minutes with no page open, keeps their uptime history and sends the alerts below. Inactive: nothing runs in the background.", "watch"),
       switchFor("al-on-l", w().enabled, (on) => save({ enabled: on }, on ? "Watching in the background" : "No longer watching in the background")), "al-on-l"),
     settingRow("How often", withCost("Each check is a few small requests. Every 5 minutes is plenty for a home server.", "every"),
       selectFor("al-every-l", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w().every,
@@ -1179,11 +1190,11 @@ function startAlerts() {
   const channelForm = el("form", { novalidate: true },
     el("div", { class: "form-grid" }, field("Send alerts to", kind), field("Address", url, { hint: urlHint, span: true }), field("Token", token, { hint: tokenHint, span: true })),
     el("div", { class: "actions" },
-      el("button", { type: "submit", class: "btn", text: "Save where alerts go" }),
+      el("button", { type: "submit", class: "btn", text: "Save where alerts go" }), savedNote("channel-saved"),
       el("button", { type: "button", class: "btn", id: "alert-test", onclick: async (e) => {
         e.currentTarget.disabled = true;
         try { await api("/api/alerts/test", { method: "POST" }); toast("Test alert sent. Check that it arrived."); }
-        catch (err) { toast(`Not sent: ${err.message}`); }
+        catch (err) { problem(`Not sent: ${err.message}`); }
         finally { $("#alert-test").disabled = false; }
       } }, icon("send"), "Send a test alert")),
     channelError);
@@ -1191,15 +1202,16 @@ function startAlerts() {
     e.preventDefault();
     channelError.replaceChildren();
     try {
-      await saveGeneral({ watch: { channel: { kind: kind.value, url: url.value, token: token.value } } }, "Saved where alerts go");
+      await saveGeneral({ watch: { channel: { kind: kind.value, url: url.value, token: token.value } } });
       token.value = "";
       describe();
+      showSaved("channel-saved");
     } catch (err) { channelError.replaceChildren(notice("danger", "Not saved", err.message)); }
   });
 
   // What to alert on
   const a = () => w().alerts;
-  const onOff = (key, labelId, words) => switchFor(labelId, a()[key], (on) => save({ alerts: { [key]: on } }, `${words}: ${on ? "on" : "off"}`));
+  const onOff = (key, labelId, words) => switchFor(labelId, a()[key], (on) => save({ alerts: { [key]: on } }, `${words} ${on ? "activated" : "deactivated"}`));
   const alertRows = el("ul", { class: "settings-rows" },
     settingRow("An app stops answering", "After two checks in a row, so a restart does not alert. Another message when it answers again.", onOff("apps_down", "al-down-l", "App alerts"), "al-down-l"),
     settingRow("A disk reports a problem", "From Disk health: a failed health check, or reallocated, pending or uncorrectable sectors.", onOff("disk_problem", "al-disk-l", "Disk alerts"), "al-disk-l"),
@@ -1212,7 +1224,7 @@ function startAlerts() {
 
   const weekly = el("ul", { class: "settings-rows" },
     settingRow("Weekly summary", withCost("On Monday morning: how each app did, disk health and how full your folders are. Sent where alerts go.", "weekly"),
-      switchFor("al-week-l", w().weekly, (on) => save({ weekly: on }, on ? "Weekly summary on" : "Weekly summary off")), "al-week-l"));
+      switchFor("al-week-l", w().weekly, (on) => save({ weekly: on }, on ? "Weekly summary activated" : "Weekly summary deactivated")), "al-week-l"));
 
   $("#alerts-sections").removeAttribute("aria-busy");
   $("#alerts-sections").replaceChildren(
@@ -1241,7 +1253,7 @@ async function startJellyfin() {
   const jobs = Object.fromEntries(d.jobs.map((j) => [j.key, j]));
   const x = () => config.extras;
   const save = async (body, message) => {
-    try { await saveGeneral({ extras: body }, message); return true; } catch (err) { toast(err.message); return false; }
+    try { await saveGeneral({ extras: body }, message); return true; } catch (err) { problem(err.message); return false; }
   };
   const sw = (labelId, checked, onChange, disabled = false) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked, disabled });
@@ -1251,7 +1263,7 @@ async function startJellyfin() {
   const runNow = (key, label, text = `Run ${label} now`) => el("button", { type: "button", class: "btn", onclick: async (e) => {
     e.currentTarget.disabled = true;
     try { await api(`/api/extras/${key}/run`, { method: "POST" }); toast(`${label} started`); setTimeout(startJellyfin, 4000); }
-    catch (err) { toast(err.message); }
+    catch (err) { problem(err.message); }
   } }, icon("play"), text);
   const welcome = new URLSearchParams(location.search).has("welcome");
   const jfMissing = !d.history.jellyfin;
@@ -1272,13 +1284,16 @@ async function startJellyfin() {
   const address = el("input", { class: "input", inputmode: "url", autocomplete: "off", value: x().livetv_address, placeholder: d.self_url });
   const addressForm = el("form", { class: "inline-save", novalidate: true },
     field("Address Jellyfin uses to reach Starboard", address, { hint: `For channel logos and Pluto streams. Blank: ${d.self_url}. Jellyfin must be able to open it, so Starboard needs home network access on.` }),
-    el("button", { type: "submit", class: "btn", text: "Save address" }));
-  addressForm.addEventListener("submit", async (e) => { e.preventDefault(); if (await save({ livetv_address: address.value }, "Address saved")) startJellyfin(); });
+    el("button", { type: "submit", class: "btn", text: "Save address" }), savedNote("livetv-address-saved"));
+  addressForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (await save({ livetv_address: address.value })) { await startJellyfin(); showSaved("livetv-address-saved"); }
+  });
   const liveRows = el("ul", { class: "settings-rows" },
     settingRow("Build Live TV channels and guide", withCost(lt.what + ". Free channels only: Samsung TV Plus, Pluto TV and Free-TV, with Sky-style numbers.", "livetv"),
-      sw("lt-on-l", x().livetv, (on) => save({ livetv: on }, on ? "Live TV on" : "Live TV off")), "lt-on-l"),
-    settingRow("White channel logos", withCost(d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About). Off: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.", "white"),
-      sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }, on ? "White logos on" : "White logos off"), !d.pillow), "lt-white-l"));
+      sw("lt-on-l", x().livetv, (on) => save({ livetv: on }, on ? "Live TV activated" : "Live TV deactivated")), "lt-on-l"),
+    settingRow("White channel logos", withCost(d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About). Inactive: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.", "white"),
+      sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }, on ? "White logos activated" : "White logos deactivated"), !d.pillow), "lt-white-l"));
   const liveNeeds = lt.needs.length ? notice("warning", "Needs set-up on the server", `Starboard needs ${lt.needs.join(" and ")}. Run ./install.sh and say yes to Live TV.`) : null;
   const liveHelp = el("details", { class: "disclosure" }, el("summary", { text: "How Jellyfin uses these files" }),
     el("div", { class: "disclosure__body" }, el("p", { text: "In Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder Jellyfin sees them in." })));
@@ -1333,7 +1348,7 @@ async function startJellyfin() {
         el("option", { value: "", text: "Do not import" }), users.map((u) => el("option", { value: u, text: u, selected: (a.jellyfin_user || "") === u })));
       pick.addEventListener("change", async () => {
         try { await api("/api/import/mapping", { method: "PUT", body: { mapping: { [a.name]: pick.value } } }); toast(pick.value ? `${a.name} goes to ${pick.value}` : `${a.name} is not imported`); }
-        catch (err) { toast(err.message); }
+        catch (err) { problem(err.message); }
       });
       return el("tr", {}, el("th", { scope: "row", "data-label": "Account", text: a.name }),
         el("td", { "data-label": "Films", class: "numeric", text: String(a.films) }),
@@ -1349,7 +1364,7 @@ async function startJellyfin() {
   const imported = h.imported ? el("p", { class: "small muted", text: `${h.source}, read ${new Date(h.imported).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}. ${h.accounts.length} ${h.accounts.length === 1 ? "account" : "accounts"}.` }) : null;
   const result = d.import_result ? notice(d.import_result.ok ? "success" : "danger", d.import_result.ok ? "History read" : "The import did not work", d.import_result.message) : null;
   const applyRows = el("ul", { class: "settings-rows" },
-    settingRow("Keep applying every hour", withCost("History for films and episodes you do not have yet is applied when they arrive. Off: only when you choose Apply now.", "importKeep"),
+    settingRow("Keep applying every hour", withCost("History for films and episodes you do not have yet is applied when they arrive. Inactive: only when you choose Apply now.", "importKeep"),
       sw("im-keep-l", x().import_keep, (on) => save({ import_keep: on }, on ? "History is applied every hour" : "History is applied only when you ask")), "im-keep-l"));
 
   // Not found
@@ -1367,11 +1382,11 @@ async function startJellyfin() {
   const df = jobs.defaults;
   const defaultRows = el("ul", { class: "settings-rows" },
     settingRow("Give every Jellyfin user the defaults", withCost("Every hour, users who have not chosen otherwise get: Live TV opens on the Guide. New users get it too.", "defaults"),
-      sw("df-on-l", x().defaults, (on) => save({ defaults: on }, on ? "User defaults on" : "User defaults off")), "df-on-l"));
+      sw("df-on-l", x().defaults, (on) => save({ defaults: on }, on ? "User defaults activated" : "User defaults deactivated")), "df-on-l"));
 
   root.removeAttribute("aria-busy");
   root.replaceChildren(...[
-    welcome ? notice("success", "Starboard found Jellyfin", "These are all off. Turn on what you want; you can change them here at any time.") : null,
+    welcome ? notice("success", "Starboard found Jellyfin", "These are all inactive. Activate what you want; you can change them here at any time.") : null,
     top,
     section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV: guides refreshed daily, channels only when a list changes.", liveNeeds, liveRows, addressForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
     section("jf-import", "Import watch history", "Move what people watched, and where they stopped, from Plex, Emby or another Jellyfin into this Jellyfin.",
@@ -1450,7 +1465,7 @@ async function startListening() {
         el("option", { value: "", text: "Do not copy" }), users.map((u) => el("option", { value: u, text: u, selected: (a.abs_user || "") === u })));
       pick.addEventListener("change", async () => {
         try { await api("/api/listening/mapping", { method: "PUT", body: { mapping: { [a.name]: pick.value } } }); toast(pick.value ? `${a.name} goes to ${pick.value}` : `${a.name} is not copied`); }
-        catch (err) { toast(err.message); }
+        catch (err) { problem(err.message); }
       });
       return el("tr", {}, el("th", { scope: "row", "data-label": "Account", text: a.name }),
         el("td", { "data-label": "Books", class: "numeric", text: String(a.books) }),
@@ -1468,10 +1483,10 @@ async function startListening() {
   const keepInput = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "ls-keep-l", checked: config.extras.listening_keep });
   keepInput.addEventListener("change", async () => {
     try { await saveGeneral({ extras: { listening_keep: keepInput.checked } }, keepInput.checked ? "Listening progress applied every hour" : "Listening progress applied only when you ask"); }
-    catch (err) { keepInput.checked = !keepInput.checked; toast(err.message); }
+    catch (err) { keepInput.checked = !keepInput.checked; problem(err.message); }
   });
   const applyRows = el("ul", { class: "settings-rows" },
-    settingRow("Keep applying every hour", withCost("Books that are not in Audiobookshelf yet get their progress once they are scanned in. Off: only when you choose Apply now.", "listeningKeep"),
+    settingRow("Keep applying every hour", withCost("Books that are not in Audiobookshelf yet get their progress once they are scanned in. Inactive: only when you choose Apply now.", "listeningKeep"),
       el("label", { class: "switch" }, keepInput), "ls-keep-l"));
   const applyNow = d.accounts.length ? el("button", { type: "button", class: "btn", disabled: !d.abs || d.job.state === "running", onclick: async (e) => {
     e.currentTarget.disabled = true;
@@ -1479,7 +1494,7 @@ async function startListening() {
       await api("/api/extras/listening/run", { method: "POST" });
       toast("Applying listening progress");
       const wait = setInterval(async () => { const now = await api("/api/listening").catch(() => null); if (now && now.job.state !== "running") { clearInterval(wait); redraw(); } }, 3000);
-    } catch (err) { toast(err.message); }
+    } catch (err) { problem(err.message); }
   } }, icon("play"), "Apply now") : null;
   const rules = el("details", { class: "disclosure" }, el("summary", { text: "How Starboard copies progress" }),
     el("div", { class: "disclosure__body stack-2" },
@@ -1524,7 +1539,7 @@ async function startPerformance() {
   const perf = () => config.performance;
   const redraw = () => startPerformance();
   const save = async (body, message) => {
-    try { await saveGeneral(body, message); redraw(); return true; } catch (err) { toast(err.message); return false; }
+    try { await saveGeneral(body, message); redraw(); return true; } catch (err) { problem(err.message); return false; }
   };
   const sw = (labelId, checked, onChange) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked });
@@ -1569,28 +1584,28 @@ async function startPerformance() {
     settingRow("System history", withCost("Readings for the charts on System, Overview.", "history"),
       el("div", { class: "inline-save" }, pick("pf-hist-every", [[60, "Every minute"], [300, "Every 5 minutes"], [900, "Every 15 minutes"]], perf().history_every,
         (v, t) => save({ performance: { history_every: Number(v) } }, `History: ${t.toLowerCase()}`)),
-        sw("pf-hist-l", perf().history, (on) => save({ performance: { history: on } }, on ? "History on" : "History off"))), "pf-hist-l"),
+        sw("pf-hist-l", perf().history, (on) => save({ performance: { history: on } }, on ? "History activated" : "History deactivated"))), "pf-hist-l"),
     settingRow("Watching and alerts", withCost("Checks your apps with no page open and sends alerts. Where alerts go: Settings, Alerts.", "watch"),
       el("div", { class: "inline-save" }, pick("pf-watch-every", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w.every,
         (v, t) => save({ watch: { every: Number(v) } }, `Watching: ${t.toLowerCase()}`)),
-        sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }, on ? "Watching on" : "Watching off"))), "pf-watch-l"),
+        sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }, on ? "Watching activated" : "Watching deactivated"))), "pf-watch-l"),
     settingRow("Download hours check", withCost("How often Starboard checks qBittorrent and SABnzbd while download hours are on (Settings, General).", "scheduleEvery"),
       pick("pf-sched-l", [[60, "Every minute"], [300, "Every 5 minutes"]], perf().schedule_every,
         (v, t) => save({ performance: { schedule_every: Number(v) } }, `Download hours check: ${t.toLowerCase()}`)), "pf-sched-l"),
     settingRow("Live TV white logos", withCost("Only matters while Live TV is on (Settings, Jellyfin).", "white"),
-      sw("pf-white-l", x.white_logos, (on) => save({ extras: { white_logos: on } }, on ? "White logos on" : "White logos off")), "pf-white-l"),
+      sw("pf-white-l", x.white_logos, (on) => save({ extras: { white_logos: on } }, on ? "White logos activated" : "White logos deactivated")), "pf-white-l"),
     settingRow("Keep applying imported history", withCost("Settings, Jellyfin, Import watch history.", "importKeep"),
       sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } }, on ? "History applied every hour" : "History applied only when you ask")), "pf-imp-l"),
     settingRow("Jellyfin user defaults", withCost("Settings, Jellyfin, User defaults.", "defaults"),
-      sw("pf-def-l", x.defaults, (on) => save({ extras: { defaults: on } }, on ? "User defaults on" : "User defaults off")), "pf-def-l"),
+      sw("pf-def-l", x.defaults, (on) => save({ extras: { defaults: on } }, on ? "User defaults activated" : "User defaults deactivated")), "pf-def-l"),
     settingRow("Keep applying listening progress", withCost("Settings, Audiobookshelf, Copy listening progress.", "listeningKeep"),
       sw("pf-listen-l", x.listening_keep, (on) => save({ extras: { listening_keep: on } }, on ? "Listening progress applied every hour" : "Listening progress applied only when you ask")), "pf-listen-l"),
     settingRow("Work out what uses the space", withCost("Sorts your storage by type (TV, films, books and so on) for the charts on System, Storage.", "usage"),
       pick("pf-usage-l", USAGE_CHOICES, perf().usage_every, (v, t) => save({ performance: { usage_every: v } }, `What uses the space: ${t.toLowerCase()}`)), "pf-usage-l"),
     settingRow("Daily record of used space", withCost("For the Space used over time chart and its forecast on System, Storage.", "spaceLog"),
-      sw("pf-space-l", perf().space_log, (on) => save({ performance: { space_log: on } }, on ? "Daily record on" : "Daily record off")), "pf-space-l"),
-    settingRow("Posters on Coming up", withCost("Off: Coming up shows each app's icon.", "posters"),
-      sw("pf-post-l", config.show_posters, (on) => save({ show_posters: on }, on ? "Posters on" : "Posters off")), "pf-post-l"));
+      sw("pf-space-l", perf().space_log, (on) => save({ performance: { space_log: on } }, on ? "Daily record activated" : "Daily record deactivated")), "pf-space-l"),
+    settingRow("Posters on Coming up", withCost("Inactive: Coming up shows each app's icon.", "posters"),
+      sw("pf-post-l", config.show_posters, (on) => save({ show_posters: on }, on ? "Posters activated" : "Posters deactivated")), "pf-post-l"));
 
   // Pages
   const pages = el("ul", { class: "settings-rows" },
@@ -1603,7 +1618,7 @@ async function startPerformance() {
       pick("pf-mon-l", [[2, "Every 2 seconds"], [5, "Every 5 seconds"], [10, "Every 10 seconds"]], perf().monitor_refresh,
         (v, t) => save({ performance: { monitor_refresh: Number(v) } }, `Monitor: ${t.toLowerCase()}`)), "pf-mon-l"),
     settingRow("Numbers on app cards", withCost("Such as 3 in the queue or 120 wanted, on Apps.", "cardNumbers"),
-      sw("pf-num-l", perf().card_numbers, (on) => save({ performance: { card_numbers: on } }, on ? "Card numbers on" : "Card numbers off")), "pf-num-l"));
+      sw("pf-num-l", perf().card_numbers, (on) => save({ performance: { card_numbers: on } }, on ? "Card numbers activated" : "Card numbers deactivated")), "pf-num-l"));
 
   root.removeAttribute("aria-busy");
   root.replaceChildren(...[
@@ -1626,8 +1641,8 @@ async function startSecurity() {
   const showNetwork = () => {
     access.checked = network.network_access;
     result.textContent = network.network_access
-      ? "On: phones and other computers on your home network can reach the sign-in page."
-      : "Off: only the computer Starboard runs on can open it.";
+      ? "Active: phones and other computers on your home network can reach the sign-in page."
+      : "Inactive: only the computer Starboard runs on can open it.";
     const rows = [["This computer", `http://localhost:${network.port}`]];
     if (network.network_access) for (const a of network.addresses) rows.push(["Phones and other computers", `http://${a}:${network.port}`]);
     addresses.replaceChildren(...rows.flatMap(([label, u]) => [el("dt", { text: label }), el("dd", {}, el("code", { text: u }), copyButton(u, `the address for ${label.toLowerCase()}`))]));
@@ -1644,11 +1659,11 @@ async function startSecurity() {
     if (!want) {
       access.checked = true;
       const ok = await confirmDialog({
-        title: "Turn off access from your home network?",
+        title: "Deactivate access from your home network?",
         message: network.you_are_on_this_computer
           ? el("p", { text: "Phones and other computers lose access straight away. Only this computer, the server, can open Starboard after this." })
           : notice("warning", "You are using another device", "This phone or computer loses access straight away. Only the server itself can open Starboard after this."),
-        confirm: "Turn off network access", danger: true,
+        confirm: "Deactivate network access", danger: true,
       });
       if (!ok) { access.focus(); return; }
       access.checked = false;
@@ -1658,7 +1673,7 @@ async function startSecurity() {
       network.network_access = want;
       showNetwork();
       setTimeout(async () => { try { network = await api("/api/network"); showNetwork(); } catch { /* this device lost access */ } }, 1500);
-    } catch (e) { access.checked = !want; toast(e.message); }
+    } catch (e) { access.checked = !want; problem(e.message); }
   });
 
   // Password
@@ -1670,7 +1685,7 @@ async function startSecurity() {
       field("Current password", current),
       field("New password", fresh),
       field("Type the new password again", again)),
-    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Change password" })));
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Change password" }), savedNote("password-saved")));
   pwForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     [current, fresh, again].forEach((c) => setError(c, ""));
@@ -1680,7 +1695,7 @@ async function startSecurity() {
     try {
       await api("/api/password", { method: "POST", body: { current: current.value, new: fresh.value } });
       pwForm.reset();
-      toast("Password changed. Everyone else is signed out");
+      showSaved("password-saved", "Password changed. Everyone else is signed out");
     } catch (err) {
       if (err.status === 401 || err.status === 429) { setError(current, err.message); current.focus(); }
       else { setError(fresh, err.message); fresh.focus(); }
@@ -1693,7 +1708,7 @@ async function startSecurity() {
   const secure = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "secure-l", "aria-describedby": "secure-h", checked: config.secure_cookies });
   secure.addEventListener("change", async () => {
     try { await saveGeneral({ secure_cookies: secure.checked }, secure.checked ? "The sign-in cookie is now only sent over HTTPS" : "The sign-in cookie is sent over HTTP and HTTPS"); }
-    catch (err) { secure.checked = !secure.checked; toast(err.message); }
+    catch (err) { secure.checked = !secure.checked; problem(err.message); }
   });
   const daysForm = el("form", { novalidate: true, id: "session-form" });
   daysForm.addEventListener("submit", async (e) => {
@@ -1748,7 +1763,7 @@ async function startSecurity() {
               el("div", { class: "input-group days-group" }, days, el("span", { class: "input-group__unit", text: "days" })),
               el("button", { type: "submit", class: "btn" }, "Save", el("span", { class: "visually-hidden", text: " how long" }))),
             daysError))),
-        settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Turn on when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
+        settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Activate when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
         settingRow("Sign out", "This browser, or every browser and phone at once.", el("div", { class: "actions session-actions" }, signOut, everywhere), "signout-l")));
   showNetwork();
 }
@@ -1769,7 +1784,7 @@ async function startAbout() {
     if (latest && isNewer(latest, v.current)) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then run the update command on the server.`, notes);
     else if (latest) box = notice("success", "You have the newest version", `Version ${v.current}.`);
     else if (!repo) box = notice("info", `You have version ${v.current}`, "Starboard cannot look for new versions, because STARBOARD_REPO is not set on the server.");
-    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Looking for new versions is off. Turn it on below to see when one is out.");
+    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Looking for new versions is inactive. Activate it below to see when one is out.");
     else box = notice("info", `You have version ${v.current}`, "GitHub did not answer, so Starboard does not know yet whether a newer version is out.");
     box.classList.add("notice--page");
     top.replaceChildren(box);
@@ -1783,9 +1798,9 @@ async function startAbout() {
       await saveGeneral({ update_check: check.checked }, check.checked ? "Starboard looks for new versions" : "Starboard no longer looks for new versions");
       v = await api("/api/version");
       showVersion();
-    } catch (e) { check.checked = !check.checked; toast(e.message); }
+    } catch (e) { check.checked = !check.checked; problem(e.message); }
   });
-  $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "On: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
+  $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "Active: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
   $("#update-command").append(copyButton("./update.sh", "the update command"));
   renderAccess();
   try { v = await api("/api/version"); } catch { /* no notice */ }
@@ -1794,7 +1809,7 @@ async function startAbout() {
 
 startPage().then(async (session) => {
   if (!session) return;
-  try { config = await api("/api/config"); } catch (e) { toast(e.message); return; }
+  try { config = await api("/api/config"); } catch (e) { problem(e.message); return; }
   if ($("#app-sections")) startManageApps();
   if ($("#general-sections")) startGeneral();
   if ($("#security-sections")) startSecurity();

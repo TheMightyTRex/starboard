@@ -33,8 +33,8 @@ If these app names are new to you, read [The apps Starboard works with](the-apps
 Starboard is built for smaller servers, such as a Raspberry Pi or an old laptop. It uses about 16 MB of memory
 while it is idle, and very little of the processor, so your server's power goes to your apps.
 
-Nothing runs in the background unless you turn it on. **Settings**, then **Performance**, shows what Starboard
-uses and lets you switch off each piece of background work.
+Nothing runs in the background unless you activate it. **Settings**, then **Performance**, shows what Starboard
+uses and lets you deactivate each piece of background work.
 
 ## Safe by default
 

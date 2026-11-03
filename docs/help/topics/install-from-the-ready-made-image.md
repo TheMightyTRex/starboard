@@ -85,7 +85,7 @@ password.
 
 ## Optional extras
 
-The Compose file has some extra lines that start with `#`, which means they are switched off. Each has a comment
+The Compose file has some extra lines that start with `#`, which means they are inactive. Each has a comment
 that explains it. To switch one on, open the file with nano, remove the `#` and the space after it at the start of
 the line, save, and run the command in Step 8 again.
 

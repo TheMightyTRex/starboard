@@ -188,43 +188,202 @@
       button.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(button.dataset.copy);
-          toast("Copied.");
+          toast("Copied");
         } catch {
-          toast("Your browser did not allow copying. Select the text and copy it instead.");
+          toast("Your browser did not allow copying", { tone: "warning", detail: "Select the text and copy it instead." });
         }
       });
     });
   }
-  function toast(message) {
-    let region = document.getElementById("toast");
+  /* Toast (option C): toast("Follow saved", { detail, tone, action: { label, run } }).
+     Tones: "success" (the default), "info", "warning" and "danger" (an error). Up to three stack in the
+     corner, newest at the bottom; a new one pushes out the oldest that is not an error. Success and
+     information stay 5 seconds (10 with an action), a warning 10, and an error until it is closed. Each
+     waits while the pointer or keyboard focus is on it. Errors are read out at once (role="alert"), the
+     rest politely (role="status"). Shortcuts: toast.error(message, options), toast.warning(...).
+     Returns a function that closes it. Settings pages use savedNote() for success instead. */
+  // Icons come from the page's own sprite (<use href="#i-name">) unless the app names a sprite file:
+  // data-sprite="/icons/sprite.svg" on this script tag, or window.SharedComponentsSprite (Starboard sets it).
+  const scriptSprite = document.currentScript?.dataset.sprite || "";
+  const sprite = (name) =>
+    `<svg class="i" aria-hidden="true" focusable="false"><use href="${window.SharedComponentsSprite || scriptSprite}#i-${name}"/></svg>`;
+  const TONES = {
+    success: { icon: "circle-check", time: 5000 },
+    info: { icon: "info", time: 5000 },
+    warning: { icon: "triangle-alert", time: 10000 },
+    danger: { icon: "circle-alert", time: 0 },
+  };
+  function announcer(id, role) {
+    let region = document.getElementById(id);
     if (!region) {
       region = document.createElement("div");
-      region.id = "toast";
-      region.className = "toast";
-      region.setAttribute("role", "status");
+      region.id = id;
+      region.className = "visually-hidden";
+      region.setAttribute("role", role);
       document.body.append(region);
     }
-    region.hidden = false;
-    region.textContent = message;
-    clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => (region.hidden = true), 4000);
+    return region;
+  }
+  function toast(message, options = {}) {
+    let stack = document.getElementById("toast-stack");
+    if (!stack) {
+      stack = document.createElement("div");
+      stack.id = "toast-stack";
+      stack.className = "toasts";
+      document.body.append(stack);
+    }
+    const tone = TONES[options.tone] ? options.tone : "success";
+    const item = document.createElement("div");
+    item.className = "toast";
+    item.dataset.tone = tone;
+    item.innerHTML = `${sprite(TONES[tone].icon)}<span class="toast__text"><span class="toast__title"></span></span>`;
+    item.querySelector(".toast__title").textContent = message;
+    if (options.detail) {
+      const detail = document.createElement("span");
+      detail.className = "toast__detail";
+      detail.textContent = options.detail;
+      item.querySelector(".toast__text").append(detail);
+    }
+    if (options.action) {
+      const action = document.createElement("button");
+      action.type = "button";
+      action.className = "btn btn--quiet btn--compact toast__action";
+      action.textContent = options.action.label;
+      action.addEventListener("click", () => {
+        options.action.run?.();
+        close();
+      });
+      item.append(action);
+    }
+    const shut = document.createElement("button");
+    shut.type = "button";
+    shut.className = "icon-btn icon-btn--bare toast__close";
+    shut.setAttribute("aria-label", `Close message: ${message}`);
+    shut.innerHTML = sprite("x");
+    shut.addEventListener("click", () => close());
+    item.append(shut);
+    stack.append(item);
+    while (stack.children.length > 3)
+      (stack.querySelector('.toast:not([data-tone="danger"])') || stack.firstElementChild).remove();
+
+    // Read out through a separate region, so the toast's own buttons stay out of the announcement.
+    const region = announcer(tone === "danger" ? "toast-alert" : "toast-status", tone === "danger" ? "alert" : "status");
+    region.textContent = "";
+    setTimeout(() => (region.textContent = [message, options.detail].filter(Boolean).join(". ")), 50);
+
+    let left = tone === "danger" ? 0 : Math.max(TONES[tone].time, options.action ? 10000 : 0);
+    let started = Date.now();
+    let timer = left ? setTimeout(close, left) : null;
+    const pause = () => {
+      if (!timer) return;
+      clearTimeout(timer);
+      timer = null;
+      left -= Date.now() - started;
+    };
+    const resume = () => {
+      if (!left || timer || item.matches(":hover, :focus-within")) return;
+      started = Date.now();
+      timer = setTimeout(close, Math.max(left, 2000));
+    };
+    item.addEventListener("pointerenter", pause);
+    item.addEventListener("focusin", pause);
+    item.addEventListener("pointerleave", resume);
+    item.addEventListener("focusout", () => setTimeout(resume));
+    function close() {
+      clearTimeout(timer);
+      const hadFocus = item.contains(document.activeElement);
+      item.remove();
+      if (hadFocus) document.querySelector("main")?.focus();
+    }
+    return close;
+  }
+  toast.error = (message, options = {}) => toast(message, { ...options, tone: "danger" });
+  toast.warning = (message, options = {}) => toast(message, { ...options, tone: "warning" });
+
+  /* Saved note (option D): savedNote(note) shows "Saved at 16:31" in a .saved-note beside the button that
+     saved, and hides it at the next change in the same form or settings section. */
+  function savedNote(note, text) {
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    note.setAttribute("role", "status");
+    note.innerHTML = `${sprite("circle-check")}<span></span>`;
+    note.querySelector("span").textContent = text || `Saved at ${time}`;
+    note.hidden = false;
+    const scope = note.closest("form, .settings-section") || document;
+    const hide = () => {
+      note.hidden = true;
+      scope.removeEventListener("input", hide);
+      scope.removeEventListener("change", hide);
+    };
+    scope.addEventListener("input", hide);
+    scope.addEventListener("change", hide);
   }
 
-  /* Display settings: theme, text size and reading aids are classes on <html>. */
+  /* Display and accessibility: theme, text size and reading aids are classes on <html>. Inputs carry
+     data-display="theme|text|motion|contrast|underline|spacing". Theme "system" follows the device.
+     Reduce motion is a switch, or radios valued "device", "on" and "off" (the device setting still
+     applies unless the choice is "on"). A form with data-display-save="<key>" keeps the choices in
+     this browser and restores them; a [data-display-reset] button inside it, or one anywhere with
+     data-display-reset="<key>", goes back to the defaults written in the markup. An app that saves to the person's account leaves data-display-save off. */
+  function applyDisplay(input) {
+    const html = document.documentElement;
+    const kind = input.dataset.display;
+    if (input.type === "radio" && !input.checked) return;
+    if (kind === "theme") {
+      if (input.value === "system") html.removeAttribute("data-theme");
+      else html.dataset.theme = input.value;
+    }
+    if (kind === "text")
+      ["125", "150", "175"].forEach((size) =>
+        html.classList.toggle(`pref-text-${size}`, input.value === size),
+      );
+    if (kind === "motion" && input.type === "radio")
+      html.classList.toggle("pref-motion", input.value === "on");
+    else if (["contrast", "spacing", "motion", "underline"].includes(kind))
+      html.classList.toggle(`pref-${kind}`, input.checked);
+  }
   function setupDisplay(root = document) {
     root.querySelectorAll("[data-display]").forEach((input) => {
       if (input.dataset.ready) return;
       input.dataset.ready = "1";
-      input.addEventListener("change", () => {
-        const html = document.documentElement;
-        const kind = input.dataset.display;
-        if (kind === "theme") html.dataset.theme = input.value;
-        if (kind === "text")
-          ["125", "150", "175"].forEach((size) =>
-            html.classList.toggle(`pref-text-${size}`, input.value === size),
-          );
-        if (["contrast", "spacing", "motion", "underline"].includes(kind))
-          html.classList.toggle(`pref-${kind}`, input.checked);
+      input.addEventListener("change", () => applyDisplay(input));
+    });
+    root.querySelectorAll("[data-display-save]").forEach((form) => {
+      if (form.dataset.displayReady) return;
+      form.dataset.displayReady = "1";
+      const key = form.dataset.displaySave;
+      const inputs = [...form.querySelectorAll("[data-display]")];
+      const save = () => {
+        const prefs = {};
+        for (const el of inputs) {
+          if (el.type === "radio" && el.checked) prefs[el.dataset.display] = el.value;
+          if (el.type === "checkbox") prefs[el.dataset.display] = el.checked;
+        }
+        try {
+          localStorage.setItem(key, JSON.stringify(prefs));
+        } catch {}
+      };
+      let prefs = {};
+      try {
+        prefs = JSON.parse(localStorage.getItem(key) || "{}");
+      } catch {}
+      for (const el of inputs) {
+        const value = prefs[el.dataset.display];
+        if (value === undefined) continue;
+        if (el.type === "radio") el.checked = el.value === value;
+        if (el.type === "checkbox") el.checked = value;
+      }
+      inputs.forEach(applyDisplay);
+      form.addEventListener("change", save);
+      const reset =
+        form.querySelector("[data-display-reset]") ||
+        document.querySelector(`[data-display-reset="${key}"]`);
+      reset?.addEventListener("click", () => {
+        for (const el of inputs) el.checked = el.defaultChecked;
+        try {
+          localStorage.removeItem(key);
+        } catch {}
+        inputs.forEach(applyDisplay);
       });
     });
   }
@@ -269,7 +428,7 @@
     setupCopy(root);
     setupDisplay(root);
   }
-  window.SharedComponents = { setup, openLayer, toast };
+  window.SharedComponents = { setup, openLayer, toast, savedNote };
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");

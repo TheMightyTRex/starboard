@@ -20,7 +20,7 @@ sign in. The two safe ways are below.
 1. Choose a way: a VPN (simplest and safest) or a reverse proxy with HTTPS (for people with their own domain).
 2. Set it up.
 3. Open Starboard from your phone away from home.
-4. Turn on the outside address for your apps.
+4. Add the outside address for your apps.
 
 ```mermaid
 flowchart LR
@@ -48,12 +48,12 @@ flowchart LR
 
 ## Step 3: Open Starboard from your phone away from home
 
-Turn off Wi-Fi on your phone, so it uses mobile data, and open Starboard's address: the home address through
+Switch your phone to mobile data, with Wi-Fi deactivated, and open Starboard's address: the home address through
 the VPN, or your own address through the proxy.
 
 **It worked when** Starboard asks you to sign in.
 
-## Step 4: Turn on the outside address for your apps
+## Step 4: Add the outside address for your apps
 
 Each app can have an outside address, so its card opens the right link when you are away. Add it in the app's
 settings: [Change or remove an app](../topics/change-or-remove-an-app.md).
@@ -61,4 +61,4 @@ settings: [Change or remove an app](../topics/change-or-remove-an-app.md).
 ## What next
 
 - [Sign out everywhere](../topics/sign-out-everywhere.md) if you lose a phone.
-- [Turn on alerts](../topics/turn-on-alerts.md), so you hear about problems wherever you are.
+- [Activate alerts](../topics/activate-alerts.md), so you hear about problems wherever you are.

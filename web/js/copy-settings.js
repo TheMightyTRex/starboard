@@ -81,7 +81,7 @@ async function startCopy() {
       return { client: it.name, field: n.field, input, node: field(`${it.name}: ${n.label}`, input) };
     }));
     const secrets = secretInputs.length ? el("div", { class: "stack-2" }, el("h3", { text: "Passwords the old app keeps hidden" }),
-      el("p", { class: "small muted", text: "Apps never send these back. Type each one, or leave it empty: that client is added switched off, and you add the password in the new app later." }),
+      el("p", { class: "small muted", text: "Apps never send these back. Type each one, or leave it empty: that client is added inactive, and you add the password in the new app later." }),
       el("div", { class: "form-stack" }, secretInputs.map((s) => s.node))) : null;
     const adding = p.parts.some((part) => part.items.some((it) => it.state !== "there"));
     const copyButton = el("button", { type: "button", class: "btn btn--primary", disabled: !adding }, icon("copy"), "Copy");
@@ -94,7 +94,7 @@ async function startCopy() {
         secretInputs.forEach((s) => { s.input.value = ""; });
         resultBox.replaceChildren(notice(r.problems.length ? "warning" : "success", r.problems.length ? "Copied, with problems" : "Copied",
           [...r.lines, ...r.problems].join(". ") + "."));
-        toast(r.problems.length ? "Copied, with problems" : "Settings copied");
+        (r.problems.length ? problem : toast)(r.problems.length ? "Copied, with problems" : "Settings copied");
       } catch (err) { resultBox.replaceChildren(notice("danger", "Not copied", err.message)); copyButton.disabled = false; }
     });
     previewBox.replaceChildren(...[...tables, secrets, notice("info", "Indexers", p.note),

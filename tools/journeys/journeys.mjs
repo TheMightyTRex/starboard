@@ -43,7 +43,7 @@ await panel.locator("input[name=name]").fill("Journey App");
 await panel.locator("input[name=url]").fill("http://journey-app:8080");
 await page.getByRole("button", { name: "Add app" }).click();
 await page.waitForTimeout(800);
-check("USE-02", "added: the toast says so", (await page.locator("#toast").textContent())?.includes("Journey App added"));
+check("USE-02", "added: the toast says so", (await page.locator("#toast-stack").textContent())?.includes("Journey App added"));
 const row = () => page.locator("#app-sections .row__title button", { hasText: /^Journey/ });
 check("USE-02", "added: it is in the list", await row().count() === 1);
 await row().click();

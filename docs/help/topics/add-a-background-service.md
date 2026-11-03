@@ -27,8 +27,8 @@ unpacker or a clean-up job. Add one so Starboard shows whether it is running. It
 
 ## Things to note
 
-- You can also start from **Settings**, **Manage apps**, **Add an app**, then turn on **Background service**.
-- To make an existing app a background service, turn on **Background service** in its **Edit** panel.
+- You can also start from **Settings**, **Manage apps**, **Add an app**, then activate **Background service**.
+- To make an existing app a background service, activate **Background service** in its **Edit** panel.
 - In **Manage apps**, background services are listed under **Other services**.
 - **Apps**, **Other services** has **Check again** to check every service now.
 

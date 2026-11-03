@@ -124,7 +124,7 @@ async function load({ speak = false } = {}) {
 }
 
 startPage().then(async () => {
-  range = rangePicker(() => loadTraffic().catch((e) => toast(e.message)));
+  range = rangePicker(() => loadTraffic().catch((e) => problem(e.message)));
   $("#range-row").append(range.element);
   $("#refresh").addEventListener("click", () => { load({ speak: true }); AppDetails.load("status"); });
   try { await AppDetails.load("config"); } catch (e) { $("#network-summary").textContent = e.message; return; }

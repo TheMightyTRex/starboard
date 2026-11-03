@@ -44,7 +44,7 @@ check "Private key" 'BEGIN [A-Z ]*PRIVATE KEY'
 # Public names that may appear even though they contain a private word: the project's GitHub account and the
 # author name (in links, image addresses and the licence). They are taken out of a line before the check, so
 # anything else on that line is still caught.
-PUBLIC_NAMES='[Tt][Hh][Ee][Mm][Ii][Gg][Hh][Tt][Yy][Tt][Rr][Ee][Xx]([Uu][Kk])?'
+PUBLIC_NAMES='[Tt][Hh][Ee][Mm][Ii][Gg][Hh][Tt][Yy][Tt][Rr][Ee][Xx]([Uu][Kk])?|TRex'
 
 if [ -f .private-words ]; then
   while IFS= read -r word; do

@@ -389,7 +389,7 @@ def clean_logs(incoming, current):
         out["keep_days"] = days
     if "detail" in incoming:
         if incoming["detail"] not in DETAIL_CHOICES:
-            raise ConfigError("Choose Off, For 24 hours or Until I turn it off")
+            raise ConfigError("Choose Off, For 24 hours or Until I deactivate it")
         out["detail"] = incoming["detail"]
         out["detail_until"] = int(time.time()) + 86400 if out["detail"] == "day" else 0
     return out

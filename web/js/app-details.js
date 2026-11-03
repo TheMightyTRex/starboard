@@ -285,7 +285,7 @@ const AppDetails = (() => {
     if (!u) return el("p", { class: "muted", text: state.errors.uptime ? `Could not load the history: ${state.errors.uptime}` : "Loading…" });
     const row = u.items[s.id];
     if (!u.enabled && !row?.pct7 && row?.pct7 !== 0) {
-      return el("p", { class: "muted" }, "Starboard keeps uptime history only while it watches in the background. Turn it on in ",
+      return el("p", { class: "muted" }, "Starboard keeps uptime history only while it watches in the background. Activate it in ",
         el("a", { href: "/settings-alerts.html", text: "Settings, Alerts" }), ".");
     }
     if (!row || row.pct24 === null) return el("p", { class: "muted", text: "No history yet. It starts with the next check." });
@@ -315,7 +315,7 @@ const AppDetails = (() => {
         for (const row of r.items) state.status[row.id] = row;
         state.recent[s.id] = r.recent;
         state.checkedAt = new Date();
-      } catch (e) { toast(e.message); }
+      } catch (e) { problem(e.message); }
       const more = [...(UPDATE_TYPES.includes(s.type) ? ["updates", "health"] : []), ...(s.outside_link ? ["outside"] : [])];
       if (more.length) await checkAgain(...more);
       listeners.forEach((fn) => fn(["status"]));  // the card on the page follows the slide-out

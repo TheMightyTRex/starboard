@@ -245,7 +245,7 @@ async function queueAction(item, action, dialog) {
     await api("/api/queue/action", { method: "POST", body: { service: item.service, id: item.id, action: chosen } });
     toast({ remove: "Removed", block: "Removed and blocked", "block-search": "Blocked. Searching for another" }[chosen]);
     load({ announceIt: true });
-  } catch (e) { toast(`Not done: ${e.message}`); }
+  } catch (e) { problem(`Not done: ${e.message}`); }
 }
 
 function openDetails(key, opener) {
@@ -361,7 +361,7 @@ function renderSchedule(s) {
   box.dataset.tone = !s.enabled ? "neutral" : s.mode === "run" ? "success" : "warning";
   if (!s.enabled) {
     $("#schedule-chip").replaceChildren(chip("Off", "muted"));
-    $("#schedule-text").replaceChildren(`Downloads run at any time. To download only at night, turn on download hours in `, settings, ".");
+    $("#schedule-text").replaceChildren(`Downloads run at any time. To download only at night, activate download hours in `, settings, ".");
     $("#schedule-actions").replaceChildren();
     return;
   }
@@ -388,10 +388,10 @@ async function scheduleAct(action, button) {
     const s = await api("/api/schedule", { method: "POST", body: { action } });
     renderSchedule(s);
     const done = { resume: "Downloads resumed", pause: "Downloads paused", follow: "Following the download hours" }[action];
-    toast(s.errors?.length ? `${done}, with problems: ${s.errors.join("; ")}` : done);
+    (s.errors?.length ? problem : toast)(s.errors?.length ? `${done}, with problems: ${s.errors.join("; ")}` : done);
     $("#schedule-actions .btn")?.focus();
   } catch (e) {
-    toast(e.message);
+    problem(e.message);
     button.disabled = false;
   }
 }

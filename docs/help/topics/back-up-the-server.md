@@ -27,7 +27,7 @@ Starboard and the job talk through two folders on the server:
 | `STARBOARD_BACKUP_DIR` | Where the job saves its backup files | Read-only |
 
 1. When you select **Back up the server now**, Starboard creates an empty file in `requests`. It is named
-   `backup`, or `backup-with-prompt` when **Include a rebuild prompt** is on.
+   `backup`, or `backup-with-prompt` when **Include a rebuild prompt** is active.
 2. Your job notices the file, removes it and makes the backup.
 3. While it works and when it finishes, the job writes `backup.json` (or `backup-with-prompt.json`) in the
    jobs folder. Starboard reads it to show the result.
@@ -131,7 +131,7 @@ Starboard lists files in the backup folder that end in `.zip`, `.tar`, `.tar.gz`
    WantedBy=multi-user.target
    ```
 
-7. Turn the path unit on:
+7. Activate the path unit:
 
    ```bash
    sudo systemctl daemon-reload

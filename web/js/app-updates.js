@@ -115,12 +115,12 @@ function render() {
 }
 
 function showUnavailable() {
-  $("#updates-summary").textContent = "Updates need Docker access, which is off.";
+  $("#updates-summary").textContent = "Updates need Docker access, which is inactive.";
   $("#check-updates").disabled = true;
   $("#updates-notice").replaceChildren(el("div", { class: "notice", role: "status" }, icon("info"),
     el("div", { class: "notice__body" },
       el("span", { class: "notice__title", text: "Starboard cannot see your containers" }),
-      el("p", {}, "To check and install updates, Starboard needs access to Docker on the server. That access is full control of Docker, so it is off unless you choose it. ",
+      el("p", {}, "To check and install updates, Starboard needs access to Docker on the server. That access is full control of Docker, so it is inactive unless you choose it. ",
         el("a", { href: "/settings-updates.html#access", text: "See what Starboard can access and how to change it" }), "."))));
 }
 
@@ -163,7 +163,7 @@ async function runUpdate(rows) {
     render();
     announce(`Updating ${list}`);
   } catch (e) {
-    toast(`Not started: ${e.message}`);
+    problem(`Not started: ${e.message}`);
   }
 }
 

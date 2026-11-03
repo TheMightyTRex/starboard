@@ -4,7 +4,7 @@
 
 /* App cards (Tiles is the plain library card) ------------------------------------------------ */
 .app-groups { display: grid; gap: var(--space-6); }
-.app-group { display: grid; gap: var(--space-3); }
+.app-group { display: grid; gap: var(--space-3); min-width: 0; } /* a grid item: at 175% text it must shrink to the page, not push it wider */
 .app-group .group-heading { padding-top: 0; }
 .app-cards .apps-head { display: none; }
 .app-card .app-icon { width: 40px; height: 40px; }

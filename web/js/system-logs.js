@@ -2,7 +2,7 @@
 // an issue needs (personal details removed) and links to GitHub. Download and Delete logs sit in the page head.
 
 const LEVEL_WORDS = { error: ["Error", "danger"], warning: ["Warning", "warning"], info: ["Info", "neutral", "info"], detail: ["Detail", "muted"] };
-const DETAIL_WORDS = { off: "Off", day: "For 24 hours", on: "Until I turn it off" };
+const DETAIL_WORDS = { off: "Off", day: "For 24 hours", on: "Until I deactivate it" };
 let level = "all";
 let query = "";
 let entries = [];
@@ -38,9 +38,9 @@ function renderHead() {
   $("#logs-actions").replaceChildren(
     el("a", { class: "btn", href: "/api/logs/download", download: "" }, icon("download"), "Download"), del);
   $("#logs-notice").replaceChildren(...(state.detailed
-    ? [notice("info", "Detailed logging is on", state.settings.detail === "day"
+    ? [notice("info", "Detailed logging is active", state.settings.detail === "day"
       ? `Until ${new Date(state.settings.detail_until * 1000).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}. It records every page request and every call to your apps, to help find a problem.`
-      : "Until you turn it off. It records every page request and every call to your apps, to help find a problem.")]
+      : "Until you deactivate it. It records every page request and every call to your apps, to help find a problem.")]
     : []));
 }
 
@@ -51,7 +51,7 @@ function notice(tone, title, text) {
 
 async function setDetail(mode) {
   await api("/api/config/general", { method: "PUT", body: { logs: { detail: mode } } });
-  toast(mode === "off" ? "Detailed logging off" : mode === "day" ? "Detailed logging on for 24 hours" : "Detailed logging on");
+  toast(mode === "off" ? "Detailed logging deactivated" : mode === "day" ? "Detailed logging activated for 24 hours" : "Detailed logging activated");
   load();
 }
 
@@ -67,7 +67,7 @@ function renderReport() {
       const text = await (await fetch("/api/logs/report", { credentials: "same-origin" })).text();
       await navigator.clipboard.writeText(text);
       toast("Copied. Paste it into the issue");
-    } catch { toast("Could not copy. Use Download instead"); }
+    } catch { problem("Could not copy. Use Download instead"); }
   });
   const preview = el("pre", { class: "code-block", text: "Loading…" });
   const details = el("details", {}, el("summary", { text: "Show what will be copied" }), preview);
@@ -80,7 +80,7 @@ function renderReport() {
     : el("p", { class: "small muted", text: "Set STARBOARD_REPO on the server to link straight to the issue page." });
   box.replaceChildren(
     el("ol", { class: "steps-list" },
-      el("li", {}, el("strong", { text: state.detailed ? "Detailed logging is on. " : "Turn on detailed logging. " }),
+      el("li", {}, el("strong", { text: state.detailed ? "Detailed logging is active. " : "Activate detailed logging. " }),
         "It records every page request and every call to your apps.",
         el("div", { class: "field field--short" }, el("label", { for: "detail-choice", text: "Detailed logging" }), detailSelect)),
       el("li", {}, el("strong", { text: "Do the thing that went wrong again. " })),

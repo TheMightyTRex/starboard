@@ -17,7 +17,7 @@
    its rows from the grid (subgrid), so the rows line up and a row of cards is all one height. */
 :root:is([data-design="health"], [data-design="tiles"]) .app-card {
   grid-row: span 4; grid-template-rows: subgrid;
-  grid-template-columns: calc(var(--text-xs) * 11.5) minmax(0, 1fr) auto; /* just wide enough for "Update available"; the version gets the rest, the reply time only its width, on the right */
+  grid-template-columns: minmax(0, calc(var(--text-xs) * 11.5)) minmax(0, 1fr) auto; /* just wide enough for "Update available"; the version gets the rest, the reply time only its width, on the right */
   row-gap: var(--space-2); column-gap: var(--space-3);
 }
 :root[data-design="tiles"] .app-card { grid-row: span 5; }
@@ -28,6 +28,16 @@
 /* The status sits beside the name, on its line; the copy in .card__chips is for the other designs. */
 :root:is([data-design="health"], [data-design="tiles"]) .card__top { align-items: center; }
 :root:is([data-design="health"], [data-design="tiles"]) .card__top-state { display: inline-flex; flex: none; margin-left: auto; }
+/* When the name and the status do not fit on one line (a phone, or large text), the status goes under the name
+   instead of squeezing it into one letter per line (DASH-54). */
+:root:is([data-design="health"], [data-design="tiles"]) .card__top { flex-wrap: wrap; row-gap: var(--space-1); }
+:root:is([data-design="health"], [data-design="tiles"]) .card__top .card__title { flex: 1 1 auto; min-width: 0; }
+/* A card and its strip shrink to the column on a phone with large text, rather than pushing the page wider. */
+:root:is([data-design="health"], [data-design="tiles"]) .app-card { min-width: 0; }
+@media (max-width: 720px) {
+  /* One card a row: the strip's first column is only as wide as an "Update available" label, if there is one. */
+  :root:is([data-design="health"], [data-design="tiles"]) .app-card { grid-template-columns: auto minmax(0, 1fr) auto; }
+}
 :root:is([data-design="health"], [data-design="tiles"]) .card__state { display: none; }
 :root:is([data-design="health"], [data-design="tiles"]) .card__actions > .btn { display: none; }
 :root:is([data-design="health"], [data-design="tiles"]) .card__actions:not(:has(.copy-btn)) { display: none; }

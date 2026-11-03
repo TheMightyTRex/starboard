@@ -17,10 +17,10 @@ and Free-TV. At the end, Jellyfin shows the channels with a TV guide, numbered t
 
 ## Steps
 
-### Turn on Live TV in Starboard
+### Activate Live TV in Starboard
 
 1. Go to **Settings**, then **Jellyfin**.
-2. In **Live TV**, turn on **Build Live TV channels and guide**.
+2. In **Live TV**, activate **Build Live TV channels and guide**.
 3. Check **Address Jellyfin uses to reach Starboard**. Leave it blank to use the address Starboard shows in
    the field. If Jellyfin needs another address, type it, such as `http://192.168.1.20:8095`, and select
    **Save address**.
@@ -54,7 +54,7 @@ container. For example, if `/srv/jellyfin/config` on the server is `/config` for
   adult channels and anything that does not play from your connection.
 - Channels are numbered in blocks: 101 Entertainment, 401 Lifestyle, 451 Movies, 501 Music, 601 Sport,
   701 News, 801 Documentaries, 1001 Kids and 1101 Other.
-- **White channel logos** turns each logo white on a clear background. Turn it off to keep each channel's
+- **White channel logos** turns each logo white on a clear background. Deactivate it to keep each channel's
   own logo.
 - The page section **How Jellyfin uses these files** repeats the file names, so you can check them there.
 - To make Live TV open on the Guide for everyone, read
@@ -67,7 +67,7 @@ container. For example, if `/srv/jellyfin/config` on the server is `/config` for
 - **"Needs set-up on the server":** Starboard has no Live TV folder. Run `./install.sh` again and say yes to
   Live TV. Read [Change what Starboard can access](change-what-starboard-can-access.md).
 - **Channels have no logos, or Pluto TV channels do not play:** Jellyfin cannot reach Starboard. Check that
-  home network access is on, and that **Address Jellyfin uses to reach Starboard** opens from the computer
+  home network access is active, and that **Address Jellyfin uses to reach Starboard** opens from the computer
   Jellyfin runs on.
 - **"Last run failed":** read the reason next to it, then read [Read the log and report a problem](read-the-log.md).
 

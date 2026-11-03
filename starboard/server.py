@@ -576,7 +576,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, cfg.public())
             if path.startswith("/api/ux-notes"):
                 if not cfg.data.get("ux_notes"):
-                    return self.error(404, "Turn on Note issues in Settings, General first")
+                    return self.error(404, "Activate Note issues in Settings, General first")
                 if path == "/api/ux-notes" and method == "GET":
                     return self.json(200, {"notes": app.uxnotes.list()})
                 if path == "/api/ux-notes" and method == "POST":

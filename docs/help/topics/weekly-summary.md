@@ -8,12 +8,12 @@ health of your disks and how full your folders are. It goes to the same place as
 ## Before you begin
 
 - Alerts are set up, with **Watch in the background** on and somewhere for alerts to go. Read
-  [Turn on alerts](turn-on-alerts.md).
+  [Activate alerts](activate-alerts.md).
 
 ## Steps
 
 1. Go to **Settings**, then **Alerts**.
-2. Under **Weekly summary**, switch on **Weekly summary**. Starboard shows **Weekly summary on**.
+2. Under **Weekly summary**, activate **Weekly summary**. Starboard shows **Weekly summary activated**.
 
 The first summary comes on the next Monday, after 09:00 by the server's clock.
 
@@ -35,7 +35,7 @@ The first summary comes on the next Monday, after 09:00 by the server's clock.
 
 ## If it does not work
 
-- **No summary on Monday:** check **Watch in the background** is on in **Settings**, then **Alerts**, and that
+- **No summary on Monday:** check **Watch in the background** is active in **Settings**, then **Alerts**, and that
   **Send a test alert** reaches you.
 - **The summary says no history yet:** watching has not been on long enough. Wait a week.
 - If a summary cannot be sent, Starboard writes the reason in its log. Read
@@ -43,6 +43,6 @@ The first summary comes on the next Monday, after 09:00 by the server's clock.
 
 ## Find out more
 
-- [Turn on alerts](turn-on-alerts.md)
+- [Activate alerts](activate-alerts.md)
 - [Get told when something goes wrong](../guides/get-told-when-something-goes-wrong.md)
 - [Check your disks' health](check-disk-health.md)

@@ -189,7 +189,7 @@ async function goToMonth(start) {
     renderDays();
     $("#calendar .group-heading")?.focus?.();
     announce(`Showing ${start.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`);
-  } catch (e) { toast(e.message); }
+  } catch (e) { problem(e.message); }
 }
 
 function dayCell(d, month, first, last, groups, todayKey) {
@@ -247,7 +247,7 @@ function renderDays() {
   const ahead = days === 7 ? "this week" : `the next ${days} days`;
   if (!list.length) {
     const empty = el("p", { class: "empty", text: items.length
-      ? "Nothing matches these filters. Turn a filter off to see more."
+      ? "Nothing matches these filters. Deactivate a filter to see more."
       : `Nothing is due in ${ahead}. New episodes, films, albums and books from your apps appear here.` });
     if (view === "calendar") root.prepend(empty); else root.append(empty);
   }
@@ -270,7 +270,7 @@ async function chooseView(next) {
   try {
     await api("/api/config/general", { method: "PUT", body: { upcoming_view: next } });
   } catch (e) {
-    toast(`The view changed here but was not saved: ${e.message}`);
+    problem(`The view changed here but was not saved: ${e.message}`);
   }
 }
 

@@ -64,4 +64,4 @@ To see what will be copied before you share it, select **Show what will be copie
 
 - [Starboard does not open](starboard-does-not-open.md)
 - [An app shows as not responding](app-not-responding.md)
-- [Turn on alerts](turn-on-alerts.md)
+- [Activate alerts](activate-alerts.md)

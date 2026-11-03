@@ -11,7 +11,7 @@ Ubuntu 24.04, Debian 12 and Fedora 42.
 
 ## Before you begin
 
-- A computer running Linux that can stay switched on. Check it is big enough in
+- A computer running Linux that can stay powered on. Check it is big enough in
   [What you need to run Starboard](../topics/what-you-need.md).
 - The computer is connected to your home network, by cable or Wi-Fi.
 - You know the password you use to sign in to that computer. The terminal asks for it.

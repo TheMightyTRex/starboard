@@ -224,7 +224,7 @@ async function loadJobs() {
 
 async function runJob(j) {
   try { renderJobs(await api(`/api/jobs/${j.name}`, { method: "POST" })); announce(`${j.title} asked to run`); }
-  catch (e) { toast(`Not started: ${e.message}`); }
+  catch (e) { problem(`Not started: ${e.message}`); }
 }
 
 startPage().then(async () => {

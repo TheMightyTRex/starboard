@@ -112,7 +112,7 @@ class CopyTest(unittest.TestCase):
         self.assertEqual([f["path"] for f in state["rootfolder"]], ["/tv"])
         self.assertEqual(len(r["problems"]), 1)
         self.assertIn("/missing/anime", r["problems"][0])
-        self.assertIn("1 switched off until you add the password", " ".join(r["lines"]))
+        self.assertIn("1 inactive until you add the password", " ".join(r["lines"]))
 
         # A second copy adds nothing more
         before = len(self.new.posts)

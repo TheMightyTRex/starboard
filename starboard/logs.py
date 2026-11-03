@@ -221,7 +221,7 @@ def report(app, log):
         f"- Python {platform.python_version()} on {platform.system()} {platform.machine()}",
         f"- Running in {'a container' if os.path.exists('/.dockerenv') else 'a native install'}; Docker access {'on' if docker else 'off'}",
         f"- Preset: {perf.get('preset', 'custom')}; sorting storage by type: {perf.get('usage_every', 'ask')}",
-        f"- Switched on: {', '.join(on) or 'nothing optional'}",
+        f"- Active: {', '.join(on) or 'nothing optional'}",
         f"- Apps: {', '.join(f'{k} ({n})' for k, n in sorted(kinds.items())) or 'none'}",
         f"- Detailed logging: {'on' if log.detailed() else 'off'}",
         "",

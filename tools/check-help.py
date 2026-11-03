@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Checks the help centre (docs/help): every link goes somewhere, every article is in the index and has the
-right layout for its tier, and the writing rules in HOW-THIS-HELP-IS-WRITTEN.md hold. Exits 1 on a problem.
+right layout for its tier, and the writing rules of the design system's HELP-WRITING.md and CONTENT-DESIGN.md hold. Exits 1 on a problem.
 
     python3 tools/check-help.py
 """
@@ -17,7 +17,8 @@ RULES = [
     (r"\b(can't|won't|don't|doesn't|isn't|aren't|didn't|wasn't|haven't|hasn't|shouldn't|wouldn't|couldn't|you're|you'll|"
      r"you've|we're|they're|it's|that's|there's|let's|I'm)\b", "a contraction"),
     (r"\b(click|clicking|clicked|tap|tapping)\b", "click or tap (use select)"),
-    (r"\b(enable|enables|enabled|disable|disables|disabled|toggle|toggles)\b", "enable, disable or toggle (use turn on or off)"),
+    (r"\b(enable|enables|enabled|disable|disables|disabled|toggle|toggles)\b", "enable, disable or toggle (use activate or deactivate)"),
+    (r"\b(turn|turns|turned|turning|switch|switches|switched) (it |them |this |that )?(on|off)\b|\bon or off\b", "turn on or off (use activate or deactivate)"),
     (r"(?<!home )(?<!no )(?<!a )\bscreen\b(?! reader)(?! or keyboard)", "screen (use page)"),
     (r"\b(top right|top left|bottom right|bottom left|on the left|on the right|scroll down|scroll up)\b", "a position"),
     (r"!(?!\[)", "an exclamation mark"),

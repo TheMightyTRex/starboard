@@ -36,8 +36,8 @@ dashboard-icons collection, a web address of a picture, or a picture file of you
 
 - Leave **Icon** empty to go back to the icon Starboard picks from the app's name.
 - If Starboard finds no icon, the card shows two letters from the app's name instead.
-- Starboard downloads icons only while **The dashboard-icons collection, for app icons** is on in **Settings**, **About and
-  updates**. When it is off, only icons already saved and your own files are used. Read
+- Starboard downloads icons only while **The dashboard-icons collection, for app icons** is active in **Settings**, **About and
+  updates**. When it is inactive, only icons already saved and your own files are used. Read
   [Change what Starboard can access](change-what-starboard-can-access.md).
 - A downloaded icon can be up to 300 KB.
 

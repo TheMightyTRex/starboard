@@ -44,7 +44,7 @@ Each choice saves straight away.
 1. Select **Apply now**.
 2. When it ends, the **Applied** column shows how many books each account received.
 
-To keep applying progress as new books are scanned in, turn on **Keep applying every hour**.
+To keep applying progress as new books are scanned in, activate **Keep applying every hour**.
 
 ## Things to note
 

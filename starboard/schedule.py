@@ -196,7 +196,7 @@ class Schedule:
     def act(self, action):
         """resume, pause or follow (the hours)."""
         if not self.hours()["enabled"]:
-            raise ValueError("Turn on download hours in Settings, General first")
+            raise ValueError("Activate download hours in Settings, General first")
         h = self.hours()
         with self.lock:
             state = self.load()

@@ -43,7 +43,7 @@ Use this when a download is stuck or the wrong one.
 
 ### Pause or resume all downloads
 
-The **Download hours** panel on the Downloads page has these buttons while download hours are on.
+The **Download hours** panel on the Downloads page has these buttons while download hours are active.
 
 1. Go to **Downloads**, then **Queue**.
 2. In **Download hours**, select one of these:
@@ -68,7 +68,7 @@ The **Download hours** panel on the Downloads page has these buttons while downl
 - **Needs attention:** open the download and read **Messages from** the app. Then use **Find another**, or
   sort it out in the app's own queue.
 - **Not done** and a message: the app refused the action. Check the app is running and try again.
-- **Download hours says Off, with no buttons:** turn on download hours first. Read
+- **Download hours says Off, with no buttons:** activate download hours first. Read
   [Download only at certain hours](set-download-hours.md).
 - **The VPN tile says Not connected:** downloads may stop. Check Gluetun in its own app or on the Apps page.
 

@@ -58,7 +58,7 @@ async function startInstall() {
             if (step.id === "start") location.href = finishTo;
             else { const next = build(); go(next[next.findIndex((s) => s.id === step.id) + 1].id); }
           }
-        } catch (err) { toast(err.message); }
+        } catch (err) { problem(err.message); }
         finally { if (button.isConnected) button.disabled = false; }
       } });
     frame();
@@ -75,7 +75,7 @@ function memoryText(mb) { return mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `
 
 // The first problem found: shown by its field, which gets focus. Returns false so a save can return it.
 function stop(control, message) {
-  if (control.fieldError) setError(control, message); else toast(message);
+  if (control.fieldError) setError(control, message); else problem(message);
   control.focus();
   return false;
 }
@@ -337,7 +337,7 @@ async function installStep(id, state, data, apps, go) {
     const showAfter = async () => {
       const finder = await appFinder();
       const add = el("button", { type: "button", class: "btn btn--primary", hidden: !finder.add }, icon("plus"), "Add the ticked apps to Starboard");
-      add.addEventListener("click", async () => { add.disabled = true; try { if (await finder.add()) add.hidden = true; } catch (e) { toast(e.message); } finally { add.disabled = false; } });
+      add.addEventListener("click", async () => { add.disabled = true; try { if (await finder.add()) add.hidden = true; } catch (e) { problem(e.message); } finally { add.disabled = false; } });
       after.replaceChildren(el("h3", { text: "Add them to Starboard" }), finder.box, add, ...connectGuide(state, apps));
     };
     const poolFirst = state.pool ? notice("warning", "Make the pool first", `Run the pool commands from the Folders step on the server before you start, so ${state.pool.path} exists.`) : null;
@@ -365,7 +365,7 @@ async function installStep(id, state, data, apps, go) {
             break;
           }
         } catch (e) {
-          if (e.status === 401 || e.status === 429) stop(pw, e.message); else toast(e.message);
+          if (e.status === 401 || e.status === 429) stop(pw, e.message); else problem(e.message);
           startBtn.disabled = false;
         }
       });
@@ -401,7 +401,7 @@ async function poolDialog(drives, current) {
   const mounts = boxes.length ? boxes.filter((b) => b.input.checked).map((b) => b.d.mount) : typed.value.split("\n").map((s) => s.trim()).filter(Boolean);
   const where = path.value.trim();
   if (mounts.length < 2 || !mounts.every((m) => /^\/[\w./-]+$/.test(m)) || !/^\/[\w./-]+$/.test(where)) {
-    toast("Choose at least two drives, and a pool folder starting with /");
+    problem("Choose at least two drives, and a pool folder starting with /");
     return null;
   }
   const line = `${mounts.join(":")} ${where} fuse.mergerfs defaults,allow_other,use_ino,cache.files=off,moveonenospc=true,category.create=mfs,minfreespace=20G,fsname=mergerfs 0 0`;

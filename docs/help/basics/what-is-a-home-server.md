@@ -2,7 +2,7 @@
 
 # What a home server is
 
-A home server is a computer in your home that stays switched on and does jobs for everyone in the house, such
+A home server is a computer in your home that stays powered on and does jobs for everyone in the house, such
 as storing and playing films, series, music and books. It is like a pantry: everything is kept in one place,
 and anyone in the house can fetch what they want from it.
 
@@ -12,7 +12,7 @@ Most computers are used by one person sitting in front of them. A server is diff
 for things over your home network. Your television asks it for a film, your phone asks it for an audiobook, and
 your laptop asks it what is downloading.
 
-The word "server" sounds grand, but any computer can be one. It only needs to stay on and stay connected.
+The word "server" sounds grand, but any computer can be one. It only needs to stay powered on and stay connected.
 
 ## What can be a home server
 

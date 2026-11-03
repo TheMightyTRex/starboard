@@ -179,7 +179,7 @@ if [ "$LIVETV" = "-" ]; then
   if [ "$ASK" = 1 ]; then
     echo
     echo "Live TV for Jellyfin: Starboard can build free channel playlists and TV guides once a day (Settings,"
-    echo "  Jellyfin; off until you turn it on there). For that it needs to write in the folder Jellyfin reads its"
+    echo "  Jellyfin; inactive until you activate it there). For that it needs to write in the folder Jellyfin reads its"
     echo "  Live TV files from, and nowhere else. No: the Live TV switch says it needs this folder."
     [ -n "$LIVETV" ] && echo "  Now: $LIVETV"
     if yes_no "Give Starboard a Live TV folder?" "$([ -n "$LIVETV" ] && echo 1 || echo 0)"; then

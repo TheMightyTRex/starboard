@@ -40,7 +40,7 @@ To sort again later, select **Sort by type again**.
   schedule, go to **Settings**, then **Performance**, and change **Work out what uses the space**. Besides
   **Only when I press Sort by type**, you can choose **When I open Storage, if over a day old**, **Every night
   at 3 am**, **Every week, at 3 am** or **Off**.
-- **Space used over time** needs **Daily record of used space** switched on in **Settings**, then
+- **Space used over time** needs **Daily record of used space** active in **Settings**, then
   **Performance**. It shows a forecast of when the space runs out.
 - **Drives in the pool** lists each drive in a pool, fullest first, when several drives are joined into one.
 - **Drives in this computer** lists every drive and where it is used. It needs Disk health set up. Read
@@ -53,10 +53,10 @@ To sort again later, select **Sort by type again**.
 - **No folders set up yet:** Starboard has no folders to show. Give it some as in "Before you begin".
 - **Starboard cannot find this folder:** the folder is missing, or not shared with Starboard. Check the path,
   then run `./install.sh` again or check `compose.override.yaml`.
-- **Sorting by type is off:** **Work out what uses the space** is set to **Off**. Change it in **Settings**,
+- **Sorting by type is inactive:** **Work out what uses the space** is set to **Off**. Change it in **Settings**,
   then **Performance**.
 - **Nearly full:** free some space or add a drive before it fills. Downloads stop when there is no room. To be
-  told before this happens, read [Turn on alerts](turn-on-alerts.md).
+  told before this happens, read [Activate alerts](activate-alerts.md).
 
 ## Find out more
 

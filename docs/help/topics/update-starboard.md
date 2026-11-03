@@ -18,7 +18,7 @@ settings, installs the newest release and goes back to the version you had if th
 - On **About and updates**, a notice says "Version 0.8.0 is out", for example, with a **Release notes** button that
   says what changed.
 
-For this to work, **Check GitHub for new releases** must be on. It is on **About and updates**, under **Updates**.
+For this to work, **Check GitHub for new releases** must be active. It is on **About and updates**, under **Updates**.
 
 ## Steps if you used the installer
 

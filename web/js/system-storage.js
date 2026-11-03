@@ -153,7 +153,7 @@ function renderUsage(u) {
   $("span", button).textContent = u.running ? "Sorting by type…" : u.finished ? "Sort by type again" : "Sort by type now";
   $("#usage-when").textContent = off ? "Off in Settings, Performance" : u.running ? "Reading the folders now" : u.finished ? `Worked out ${formatDate(u.finished * 1000, true)}` : "Not worked out yet";
   $("#usage-about").textContent = off
-    ? "Working out what uses the space is off in Settings, Performance, so the charts show used and free space only."
+    ? "Working out what uses the space is inactive in Settings, Performance, so the charts show used and free space only."
     : `Starboard reads every folder to sort the space by type: ${USAGE_WORDS[u.every] || USAGE_WORDS.ask} A file shared by a download and the library counts once, for the library.`;
   clearTimeout(usageTimer);
   if (u.running) usageTimer = setTimeout(loadUsage, 5000);
@@ -178,7 +178,7 @@ const USAGE_WORDS = {
 
 async function runUsage() {
   try { renderUsage(await api("/api/usage", { method: "POST" })); announce("Working out what is using the space."); }
-  catch (e) { toast(e.message); }
+  catch (e) { problem(e.message); }
 }
 
 // The pool cards, the drives in each pool, space over time and the biggest folders.
@@ -194,7 +194,7 @@ function renderCharts() {
   const off = usage?.every === "off";
   box.replaceChildren(...main.map((d) => {
     const f = sorted.find((x) => x.label === d.label);
-    const when = f && usage.finished ? `Sorted by type ${formatDate(usage.finished * 1000, true)}` : off ? "Sorting by type is off" : "Not sorted by type yet";
+    const when = f && usage.finished ? `Sorted by type ${formatDate(usage.finished * 1000, true)}` : off ? "Sorting by type is inactive" : "Not sorted by type yet";
     const action = off ? null : el("button", { type: "button", class: "btn", disabled: !!usage?.running, onclick: runUsage },
       icon("refresh-cw"), usage?.running ? "Sorting by type…" : f ? "Sort by type again" : "Sort by type now");
     return poolCard(d, f ? f.types : null, when, action);

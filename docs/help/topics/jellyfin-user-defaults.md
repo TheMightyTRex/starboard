@@ -13,7 +13,7 @@ is one default: Live TV opens on the Guide.
 ## Steps
 
 1. Go to **Settings**, then **Jellyfin**.
-2. In **User defaults**, turn on **Give every Jellyfin user the defaults**.
+2. In **User defaults**, activate **Give every Jellyfin user the defaults**.
 3. To apply them straight away, select **Run Defaults now**. Otherwise, Starboard applies them within the
    hour.
 
@@ -23,7 +23,7 @@ Starboard shows **Last run worked** and what it did.
 
 - Starboard checks every hour, so people you add to Jellyfin later get the defaults too.
 - A user who has chosen something else in Jellyfin keeps their own choice.
-- Turn the switch off to stop. Choices already given stay as they are, and each person can change their own
+- Deactivate the switch to stop. Choices already given stay as they are, and each person can change their own
   in Jellyfin.
 - The hourly check makes two small requests to Jellyfin for each user, which is not noticeable.
 

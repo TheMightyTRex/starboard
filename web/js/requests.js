@@ -61,7 +61,7 @@ async function act(r, action, button) {
     await load(true);
     $("#requests button")?.focus();
   } catch (e) {
-    toast(`Not done: ${e.message}`);
+    problem(`Not done: ${e.message}`);
     button.disabled = false;
   }
 }

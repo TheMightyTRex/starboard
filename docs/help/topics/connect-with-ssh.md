@@ -8,8 +8,8 @@ the server and every command you type runs there.
 
 ## Before you begin
 
-- The server is switched on and connected to your home network.
-- SSH is turned on for it. On a Raspberry Pi you did this in [Prepare a Raspberry Pi](prepare-a-raspberry-pi.md).
+- The server is powered on and connected to your home network.
+- SSH is activated for it. On a Raspberry Pi you did this in [Prepare a Raspberry Pi](prepare-a-raspberry-pi.md).
 - You know the server's name (hostname) or address, and the user name and password you chose.
 
 ## Steps
@@ -37,7 +37,7 @@ To disconnect, type `exit` and press Enter. To connect again, repeat steps 1, 2 
 
 - **"Could not resolve hostname":** your computer cannot find the server by name. Use its address instead,
   for example `ssh sam@192.168.1.20`. Your router's settings page lists each device and its address.
-- **"Connection refused" or it waits and gives up:** the server is still starting, or SSH is not turned on.
+- **"Connection refused" or it waits and gives up:** the server is still starting, or SSH is not activated.
   Wait a few minutes and try again.
 - **"Permission denied":** the user name or password is wrong. Check them, including capital letters.
 

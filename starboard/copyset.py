@@ -246,7 +246,7 @@ def apply(source, target, parts, secrets=None):
                 mapped += 1
             except ServiceError as e:
                 remember("Remote path mapping", m.get("remotePath", ""), e)
-        lines.append(f"Download clients: added {added}" + (f", {off} switched off until you add the password" if off else "")
+        lines.append(f"Download clients: added {added}" + (f", {off} inactive until you add the password" if off else "")
                      + f"; remote path mappings: added {mapped}")
 
     # Naming and media management: one set of settings each, which replaces the new app's.

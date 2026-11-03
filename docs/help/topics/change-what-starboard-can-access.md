@@ -2,7 +2,7 @@
 
 # Change what Starboard can access
 
-Starboard lists everything it can reach on one page, says whether each is on, and tells you how to change it. Some
+Starboard lists everything it can reach on one page, says whether each is active, and tells you how to change it. Some
 are switches in Starboard. Others you change by running the installer again, which keeps your settings and password.
 
 ## Before you begin
@@ -16,7 +16,7 @@ are switches in Starboard. Others you change by running the installer again, whi
 1. Go to **Settings**, then **About and updates**.
 2. Find **What Starboard can access**.
 
-Each row names one kind of access, says what it is for and what it costs your server, and shows whether it is on. Each
+Each row names one kind of access, says what it is for and what it costs your server, and shows whether it is active. Each
 row also shows how to change it: a switch, a button such as **Change it**, or a command to run on the server.
 
 ## Change a switch in Starboard
@@ -75,7 +75,7 @@ The ready-made image has no installer. Instead, you change the Compose file.
    nano compose.image.yaml
    ```
 
-3. To switch on an extra, remove the `#` and the space after it at the start of its line. To switch it off, put the
+3. To activate an extra, remove the `#` and the space after it at the start of its line. To deactivate it, put the
    `#` back. Each extra has a comment that explains it.
 4. Save with **Ctrl** and **O**, then Enter. Leave nano with **Ctrl** and **X**.
 5. Start Starboard again with the new file:
@@ -88,7 +88,7 @@ The ready-made image has no installer. Instead, you change the Compose file.
 
 - Every kind of access is optional. If you say no, only that part of Starboard is missing, and its page says what it
   needs.
-- Docker access gives Starboard full control of Docker, which is the same as full control of the computer. Turn it on
+- Docker access gives Starboard full control of Docker, which is the same as full control of the computer. Activate it
   only if you want Starboard to update your other apps.
 - If you turn Disk health off, the job on the server stays installed. The installer prints the command that removes
   it: `sudo deploy/install-smart.sh --remove`.

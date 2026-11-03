@@ -32,9 +32,9 @@ disks. With one install option on, it also lists how much processor and memory e
 
 ## If it does not work
 
-- **No Apps list:** the per-app option is off. Run `./install.sh` again and answer Yes to **Show each app's
+- **No Apps list:** the per-app option is inactive. Run `./install.sh` again and answer Yes to **Show each app's
   processor and memory use?**
-- **The installer says per-app use stays off:** this computer does not support it, so Monitor shows the whole
+- **The installer says per-app use stays inactive:** this computer does not support it, so Monitor shows the whole
   server only.
 - **Could not read the server:** Starboard could not take a reading. Select **Pause** twice to try again, or
   reload the page.

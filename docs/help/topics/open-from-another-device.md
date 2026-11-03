@@ -9,7 +9,7 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
 
 - Starboard is installed and you have chosen a password. Read
   [Create your password and sign in](create-your-password.md).
-- Starboard lets your home network open it. This is on unless you turned it off. Read
+- Starboard lets your home network open it. This is active unless you deactivated it. Read
   [Choose who can open Starboard](choose-who-can-open-starboard.md).
 - The phone or computer is on the same home network as the server. For a phone, that means connected to your home
   Wi-Fi, not using mobile data.
@@ -55,7 +55,7 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
 - **It works on the server but not on the phone:** check the phone is on your home Wi-Fi, not mobile data or a guest
   network. Guest networks often cannot reach other devices.
 - **"This site cannot be reached" from every other device:** in Starboard on the server, go to **Settings**, then
-  **Security**, and check **Phones and other computers on your home network** is on.
+  **Security**, and check **Phones and other computers on your home network** is active.
 - **The server has a firewall:** a firewall on the server can block port 8095. Fedora often has one on, called
   firewalld. On the server, allow the port, then reload the firewall:
 
@@ -67,7 +67,7 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
   sudo firewall-cmd --reload
   ```
 
-  On Ubuntu, Debian or Linux Mint, if you turned on the firewall called ufw, allow the port with this command:
+  On Ubuntu, Debian or Linux Mint, if you activated the firewall called ufw, allow the port with this command:
 
   ```bash
   sudo ufw allow 8095/tcp

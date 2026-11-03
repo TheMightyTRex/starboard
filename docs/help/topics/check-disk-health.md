@@ -47,7 +47,7 @@ new reports arrive in about a minute.
 - **Temperature, last 30 days** in each report is a chart of hourly readings. Starboard takes them while Disk
   health is open, or while it watches in the background.
 - **Recent events** lists self-tests and changes, newest first.
-- To be told when a drive reports a problem, read [Turn on alerts](turn-on-alerts.md).
+- To be told when a drive reports a problem, read [Activate alerts](activate-alerts.md).
 - With the ready-made image, Disk health is set up by hand. The README in the Starboard repository explains how.
 
 ## If it does not work
@@ -63,6 +63,6 @@ new reports arrive in about a minute.
 ## Find out more
 
 - [Check free space and what is using it](check-storage.md)
-- [Turn on alerts](turn-on-alerts.md)
+- [Activate alerts](activate-alerts.md)
 - [Back up the whole server](back-up-the-server.md)
 - [The terminal: typing commands](../basics/the-terminal.md)

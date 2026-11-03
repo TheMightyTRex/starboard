@@ -23,7 +23,7 @@ time. You can follow either: this guide also tells you where each choice lives a
 3. Put your apps into categories.
 4. Choose a design and display settings.
 5. Choose how much Starboard does in the background.
-6. Turn on alerts.
+6. Activate alerts.
 
 ```mermaid
 flowchart LR
@@ -66,10 +66,10 @@ right for you. Follow [Choose a design for the Apps page](../topics/choose-a-des
 On a small server, such as a Raspberry Pi, choose the **Small server** preset. Follow
 [Make Starboard use less of your server](../topics/make-starboard-lighter.md).
 
-## Step 6: Turn on alerts
+## Step 6: Activate alerts
 
-Alerts tell your phone when an app stops answering or a disk has a problem. They are off until you turn them
-on. Follow [Turn on alerts](../topics/turn-on-alerts.md).
+Alerts tell your phone when an app stops answering or a disk has a problem. They are inactive until you activate
+them. Follow [Activate alerts](../topics/activate-alerts.md).
 
 ## What next
 

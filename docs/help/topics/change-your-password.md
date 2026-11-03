@@ -20,7 +20,7 @@ device you use, and every other browser and phone is signed out.
 5. In **Type the new password again**, type the new password a second time.
 6. Select **Change password**.
 
-Starboard shows "Password changed. Everyone else is signed out". The form empties.
+Beside the button, Starboard shows "Password changed. Everyone else is signed out". The form empties.
 
 ## Things to note
 

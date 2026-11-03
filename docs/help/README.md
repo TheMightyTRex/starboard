@@ -76,7 +76,7 @@ Each guide is a journey through several topics, in order.
 
 ### Alerts
 
-- [Turn on alerts](topics/turn-on-alerts.md)
+- [Activate alerts](topics/activate-alerts.md)
 - [Get a weekly summary](topics/weekly-summary.md)
 
 ### Security

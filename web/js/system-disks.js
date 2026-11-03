@@ -133,7 +133,7 @@ async function readNow() {
     $("span", b).textContent = "Reading the disks…";
     announce("Asked the server to read the disks. New reports arrive in about a minute.");
     setTimeout(async () => { await load(); }, 60000);
-  } catch (e) { toast(`Not asked: ${e.message}`); b.disabled = false; }
+  } catch (e) { problem(`Not asked: ${e.message}`); b.disabled = false; }
 }
 
 function openReport(d, opener) {

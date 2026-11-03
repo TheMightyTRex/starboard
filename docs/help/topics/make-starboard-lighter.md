@@ -3,7 +3,7 @@
 # Make Starboard use less of your server
 
 Starboard is built to be light, but some of its features do work in the background. The Performance page shows
-what Starboard uses now, and lets you choose a preset or switch off each piece of work one by one.
+what Starboard uses now, and lets you choose a preset or deactivate each piece of work one by one.
 
 ## Steps
 
@@ -31,10 +31,10 @@ This runs with no page open.
 - **System history:** readings for the charts on System, Overview. Under 0.01% of the processor and up to 1.5 MB
   of memory.
 - **Watching and alerts:** checks your apps and sends alerts. About 0.02 seconds of processor per check, and
-  under 1 MB of memory. Read [Turn on alerts](turn-on-alerts.md).
-- **Download hours check:** every minute or every 5 minutes, only while download hours are on. Every 5 minutes
+  under 1 MB of memory. Read [Activate alerts](activate-alerts.md).
+- **Download hours check:** every minute or every 5 minutes, only while download hours are active. Every 5 minutes
   uses a fifth of the requests.
-- **Live TV white logos:** only while Live TV is on. A second or two per new logo, and up to 15 MB more memory
+- **Live TV white logos:** only while Live TV is active. A second or two per new logo, and up to 15 MB more memory
   while it runs.
 - **Keep applying imported history:** up to 40 MB more memory for about 20 seconds an hour.
 - **Jellyfin user defaults:** two small requests per Jellyfin user an hour.
@@ -64,6 +64,6 @@ This runs only while the page is open and in view. A hidden tab asks for nothing
 ## Find out more
 
 - [Find out what each app is using](monitor-apps.md)
-- [Turn on alerts](turn-on-alerts.md)
+- [Activate alerts](activate-alerts.md)
 - [What you need to run Starboard](what-you-need.md)
 - [What a home server is](../basics/what-is-a-home-server.md)

@@ -24,7 +24,7 @@ signs you in and opens a short set-up guide that finds your apps.
 4. In **Choose a password**, type a password of at least 10 characters. A short sentence is easy to remember, such
    as "the kettle is always on".
 5. In **Type it again**, type the same password again.
-6. Choose whether to turn on **Remember me on this device**. On, you stay signed in on this device for a week. Leave
+6. Choose whether to activate **Remember me on this device**. On, you stay signed in on this device for a week. Leave
    it off on a shared computer.
 7. Select **Save password and continue**.
 
@@ -39,7 +39,7 @@ signs you in and opens a short set-up guide that finds your apps.
 Next time, Starboard shows **Sign in to Starboard**.
 
 1. In **Password**, type your password.
-2. Choose whether to turn on **Remember me on this device**.
+2. Choose whether to activate **Remember me on this device**.
 3. Select **Sign in**.
 
 ## Things to note
