@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.7.4 (3 November 2026)
+
+- **Help centre** (`docs/help`): 53 topics, 8 guides and 7 basics articles for people new to home servers, with
+  install guides for a Linux computer and a Raspberry Pi, and what you need for each set-up. Help in the footer
+  of every page opens it.
+- **Reset a forgotten password:** `./reset-password.sh` on the server (or `touch data/reset-password` and a
+  restart with the ready-made image) removes the password, signs everyone out and starts with a new setup code.
+- **Watch history:** applying it lists the films and episodes not in Jellyfin yet, and a second run no longer
+  counts episodes it applied before as missing. A history file over 512 MB is refused before it uploads.
+- **Restore:** backups from before 0.6.0 are brought up to date; a design or choice that no longer exists goes
+  to the default; an app of a kind Starboard no longer knows becomes a plain link.
+- **Messages:** confirmations are cards in the corner (up to three, with Close); problems use the information
+  style. Settings pages show "Saved at" and the time beside Save name, Save where alerts go, Save address and
+  Change password. Words follow the shared content guide: settings are activated and deactivated.
+- **Security:** Pillow 13.0.0 (58 known problems in 11.3.0), no pip in the image, logos read only as PNG, JPEG,
+  GIF, WebP, BMP or ICO. The sign-in form posts, so the password never lands in the address. New
+  Cross-Origin-Resource-Policy and Cross-Origin-Opener-Policy headers. Live TV stream checks never open a
+  `file:` link from a playlist. `tools/security-scan.sh` runs Trivy, ZAP, Gitleaks, Bandit, ShellCheck and
+  Hadolint; results in `docs/SECURITY-AND-TESTS.md`.
+- **Fixed:** the Disk health page script (broken since 0.7.0); the Apps page at 175% text on a phone; the
+  ready-made image's Docker access, which needs the socket's group (`group_add` in `compose.image.yaml`); the
+  address hint in Manage apps now suggests 127.0.0.1 and the port.
+- **Tests:** backup and migration round trips, browser journeys (`tools/journeys.sh`), install tests in VMs on
+  Ubuntu, Debian, Fedora and 64-bit ARM (`tools/vm/vm.sh`), and `docs/TESTING.md` with measured system use.
+- **Testing aid:** Note issues (Settings, General) adds the shared Note an issue button to every page.
+
 ## 0.7.3 (2 November 2026)
 
 - **App cards:** the reply time sits on the right and takes only its own width, with a gap between the cells, so
