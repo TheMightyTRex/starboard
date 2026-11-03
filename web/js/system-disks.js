@@ -99,7 +99,7 @@ function reportBody(d) {
         el("tbody", {}, d.attributes.map((a) => el("tr", {},
           el("td", { "data-label": "ID", class: "numeric", text: a.id ?? "" }), el("th", { scope: "row", "data-label": "Attribute", text: a.name }),
           el("td", { "data-label": "Value", class: "numeric", text: a.value ?? "" }), el("td", { "data-label": "Worst", class: "numeric", text: a.worst ?? "" }),
-          el("td", { "data-label": "Threshold", class: "numeric", text: a.threshold ?? "" }), el("td", { "data-label": "Raw", class: "numeric", text: a.raw }))))))))) : null,
+          el("td", { "data-label": "Threshold", class: "numeric", text: a.threshold ?? "" }), el("td", { "data-label": "Raw", class: "numeric", text: a.raw })))))))) : null,
     d.report ? el("a", { class: "btn", href: `/api/disk-health/report?file=${encodeURIComponent(d.report)}`, download: "" }, icon("download"), "Download the full report") : null,
   ].filter(Boolean);
 }

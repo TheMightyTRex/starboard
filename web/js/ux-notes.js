@@ -297,7 +297,7 @@
     count = h("span", { class: "ux-dock__count", text: "0" });
     dock = h("div", { class: "ux-dock", role: "region", "aria-label": "UX notes" },
       h("button", { type: "button", class: "btn btn--primary", onclick: startPicking }, svg("note"), "Note an issue"),
-      h("button", { type: "button", class: "btn", onclick: openList }, svg("list"), h("span", { "aria-hidden": "true" }, count)));
+      h("button", { type: "button", class: "btn", "aria-label": "UX notes", onclick: openList }, svg("list"), h("span", { "aria-hidden": "true" }, count)));
     document.body.append(dock);
     refreshCount();
   }
