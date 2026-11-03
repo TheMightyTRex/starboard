@@ -151,7 +151,8 @@ raised 19 alerts:
 | 1 | Server-side request forgery in the app check | By design: signed-in people point Starboard at their own apps, at `http://` or `https://` addresses only (see "Left as they are, on purpose") |
 | 1 | A password stored in clear text | Not Starboard: the screenshot tool's made-up password for its example server |
 
-Each fix has a test. On GitHub, the alerts that are not real are dismissed with these reasons.
+Each fix has a test. On GitHub, the 15 alerts that need no change are dismissed with these reasons; the 4 fixed
+alerts close when CodeQL scans the fix.
 
 ## Security checks for each release
 
@@ -160,7 +161,7 @@ fixes under Security.
 
 | Release | Unit and API tests | Browser journeys | Security scans | CodeQL | Install tests | Notes |
 |---|---|---|---|---|---|---|
-| 0.7.4 (3 November 2026) | 117 passed | 19 passed | Trivy 0, ZAP no failures, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | First run after release: 19 alerts, 3 fixed for the next release | Ubuntu, Debian, Fedora, 64-bit ARM: 17 of 17 each | Pillow 13.0.0; see the Security section of the 0.7.4 notes |
+| 0.7.4 (3 November 2026) | 117 passed | 19 passed | Trivy 0, ZAP no failures, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | First run after release: 19 alerts; 4 fixed for the next release (3 problems), 15 explained and dismissed | Ubuntu, Debian, Fedora, 64-bit ARM: 17 of 17 each | Pillow 13.0.0; see the Security section of the 0.7.4 notes |
 
 ## Other free checks you can run
 
