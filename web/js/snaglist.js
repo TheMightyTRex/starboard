@@ -1,5 +1,5 @@
 /*
- * Snaglist 0.3.1: feedback for any website or app. People report bugs and UX problems, or suggest features and
+ * Snaglist 0.3.2: feedback for any website or app. People report bugs and UX problems, or suggest features and
  * improvements, tagged with the page and the part of it, with the technical detail needed to act on it and
  * without personal information. One file, no libraries, MIT licence.
  * https://github.com/TheMightyTRex/snaglist
@@ -15,7 +15,7 @@
   "use strict";
   if (window.Snaglist) return;
 
-  const VERSION = "0.3.1";
+  const VERSION = "0.3.2";
   const KEY = "snaglist:";
 
   // What people can send. Each type is a problem or a suggestion, asks its own questions and records the
