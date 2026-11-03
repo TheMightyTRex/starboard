@@ -336,6 +336,9 @@ function showVersion(version, repo, latest) {
       label, el("span", { class: "visually-hidden", text: ", release notes" }));
     document.body.append(el("footer", { class: "site-footer" }, button,
       newer ? el("a", { class: "upgrade-available", href: "/settings-updates.html" }, el("span", { class: "update-dot", "aria-hidden": "true" }), `Upgrade available: ${latest}`) : null,
+      // The help centre is plain pages in the repository (docs/help), so it opens on GitHub.
+      el("a", { href: `https://github.com/${repo || "TheMightyTRex/starboard"}/blob/main/docs/help/README.md`, target: "_blank", rel: "noopener noreferrer" },
+        "Help", el("span", { class: "visually-hidden", text: " centre (opens in a new tab)" })),
       repo ? el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "GitHub repository", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null,
       el("a", { href: "/settings-updates.html", text: "About and updates" })));
   }
