@@ -100,10 +100,12 @@ the setup code.
 
 ## Latest results
 
+From release 0.7.5 (3 November 2026). Debian, Fedora and ARM at 512 MB are from 0.7.4.
+
 | | Result |
 |---|---|
-| Unit and API tests | 117 passed |
-| Browser journeys | 19 passed |
+| Unit and API tests | 123 passed |
+| Browser journeys | 29 passed |
 | Install tests, Ubuntu 24.04 | 17 passed |
 | Install tests, Debian 12 | 17 passed |
 | Install tests, Fedora 42 | 17 passed |

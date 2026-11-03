@@ -168,6 +168,7 @@ fixes under Security.
 | Release | Unit and API tests | Browser journeys | Security scans | CodeQL | Install tests | Notes |
 |---|---|---|---|---|---|---|
 | 0.7.4 (3 November 2026) | 117 passed | 19 passed | Trivy 0, ZAP no failures, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | First run after release: 19 alerts; 4 fixed for the next release (3 problems), 15 explained and dismissed | Ubuntu, Debian, Fedora, 64-bit ARM: 17 of 17 each | Pillow 13.0.0; see the Security section of the 0.7.4 notes |
+| 0.7.5 (3 November 2026) | 123 passed | 29 passed | Trivy 0, ZAP no failures signed out (58 passed) and signed in (111 passed), Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | 0 open: the 15 explained alerts stay dismissed; the new Snaglist file raised none | Ubuntu 24.04 and 64-bit ARM: 17 of 17 each | Docker Bench's finding fixed (memory and process limits); the 3 CodeQL problems fixed; Send feedback's key and stylesheet hash tested (SEC-24) |
 
 ## Other free checks you can run
 
