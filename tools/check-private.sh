@@ -18,10 +18,16 @@ fi
 exclude=(-- . ':!tools/check-private.sh' ':!tests/' ':!web/fonts/')
 found=0
 
+# The made-up examples the help centre uses (docs/help/HOW-THIS-HELP-IS-WRITTEN.md, rule 14). They are taken out
+# of a line before the check, so anything else on that line is still caught, and .private-words below still
+# checks them: if one of these is ever a real address of yours, list it there.
+EXAMPLES='192\.168\.1\.2[01]([^0-9]|$)|sam@starboard-pi\.local'
+
 check() {
   local label="$1" pattern="$2"
   local hits
-  hits="$("${grep_cmd[@]}" "$pattern" "${exclude[@]}" 2>/dev/null | grep -v -E 'noreply@anthropic\.com|users\.noreply\.github\.com' || true)"
+  hits="$("${grep_cmd[@]}" "$pattern" "${exclude[@]}" 2>/dev/null | grep -v -E 'noreply@anthropic\.com|users\.noreply\.github\.com' \
+    | while IFS= read -r line; do printf '%s\n' "$line" | sed -E "s/$EXAMPLES/ /g" | grep -q -E "$pattern" && printf '%s\n' "$line"; done || true)"
   if [ -n "$hits" ]; then
     printf '\n%s:\n%s\n' "$label" "$hits"
     found=1

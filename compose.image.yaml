@@ -29,6 +29,10 @@ services:
       # Optional: Apps, Updates (check for and install new app images) and reading API keys in Search for new
       # apps. This gives Starboard full control of Docker, so of the computer. Leave it out if unsure.
       # - /var/run/docker.sock:/var/run/docker.sock
+    # With the Docker socket, also the group that owns it (run: stat -c %g /var/run/docker.sock), so your user can
+    # use it:
+    # group_add:
+    #   - "999"
     read_only: true
     tmpfs:
       - /tmp

@@ -1,0 +1,77 @@
+[Help centre](../README.md) · Apps · how-to
+
+# Install apps with Starboard
+
+**Install apps** sets up a media server for you: it picks the apps for what you want, writes their set-up files
+and starts them. At the end, the apps are running and Starboard shows how to connect them. It takes about
+15 minutes, and the first downloads take longer.
+
+## Before you begin
+
+- Docker is installed on the server. Read [Install Docker](install-docker.md), and [What Docker is](../basics/what-is-docker.md) if it is new to you.
+- You have a folder or drive with room for your media, such as `/srv/media`.
+- Optional: an account with a VPN (virtual private network) provider, to keep your downloads private.
+- Optional: Docker access lets Starboard start the apps itself. Without it, you run one command. Read
+  [Change what Starboard can access](change-what-starboard-can-access.md).
+- If you are not sure what each app does, read [The apps Starboard works with](../basics/the-apps.md).
+
+## Steps
+
+1. Go to **Settings**, then **Manage apps**, and select **Install apps**.
+2. On **Start here**, read how the apps work together. Tick **Advanced settings** only if you want to choose
+   each app and folder yourself. Select **Begin**.
+3. On **What to set up**, tick what you want your server to do, such as **Movies**, **TV**, **Watching** and
+   **Downloads**. Starboard shows how many apps that is and how much memory they use. Select **Continue**.
+4. On **Folders**, type your **Media folder**, such as `/srv/media`. If your other apps already use a media
+   folder, Starboard offers it. Select **Continue**.
+5. If you ticked **VPN**, the **VPN** step asks for your **VPN provider** and the details from its website.
+   Select **Continue**.
+6. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
+   you want, then select **Continue**.
+7. On **Check**, read the summary. Select **Change** beside anything you want to change. When it is right,
+   select **Write the files**.
+8. On **Start**, type **Your Starboard password**, then select **Start the apps**. Starboard downloads and starts
+   each app. This can take several minutes the first time.
+9. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
+10. Follow **Connect your apps, in this order**. It gives each app's address, folders and settings to type.
+11. Select **Go to Apps**.
+
+### If Starboard has no Docker access
+
+On **Start**, Starboard shows **Run one command** instead of a password. Select **Copy the command**, then
+paste it into a terminal on the server. It looks like this, with your own Starboard folder:
+
+```bash
+cd /home/sam/starboard/data/stack && docker compose -p media-stack up -d
+```
+
+Then go back to Starboard and select **Find the new apps**. Continue from Step 9.
+
+## Things to note
+
+- Nothing is written until you select **Write the files**, and nothing starts until you select **Start the
+  apps** or run the command.
+- Starboard writes two files into `data/stack`: `compose.yaml` lists the apps, and `.env` holds your settings
+  and VPN details. Older copies are kept.
+- Starboard makes `movies`, `tv`, `books` and `downloads` folders, and others you need, inside your media folder.
+- If a port is already in use, the app uses the next free one, and the **Check** step says so.
+- Some apps, such as Unpackerr, need their own settings file first. Starboard writes them but does not start
+  them yet.
+- Several drives? On **Folders**, select **Join several drives into one** to make a pool. Starboard gives you
+  commands to run on the server first. Nothing on the drives is erased.
+- Starboard only starts apps from its own list, and only with folders it has checked.
+
+## If it does not work
+
+- **Nothing to download with:** tick **Downloads** too, or select **Continue** again to go on without it.
+- **Enter the full path of a folder, starting with /:** type the whole path, such as `/srv/media`.
+- **Something did not start:** read the log Starboard shows, change what it says, then run **Install apps**
+  again.
+
+## Find out more
+
+- [Build a media server from nothing](../guides/build-a-media-server-from-nothing.md)
+- [Add an app](add-an-app.md)
+- [Copy settings from one app to another](copy-app-settings.md)
+- [Update your apps](update-your-apps.md)
+- [The terminal: typing commands](../basics/the-terminal.md)

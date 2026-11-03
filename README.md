@@ -5,6 +5,11 @@ memory (about 18 MB while idle), so your server's power goes to your apps. It sh
 running, searches Sonarr, Radarr, Lidarr and Readarr at once and adds what you find, and lists downloads, what
 is coming up and how the server is doing.
 
+**New to home servers?** The [help centre](docs/help/README.md) explains everything in plain steps: start with
+[Install Starboard on a Linux computer](docs/help/guides/install-on-a-linux-computer.md) or
+[on a Raspberry Pi](docs/help/guides/install-on-a-raspberry-pi.md), and check
+[what you need to run Starboard](docs/help/topics/what-you-need.md).
+
 ![Apps, in the Health first design](docs/screenshots/apps.png)
 
 ## Screenshots
@@ -280,6 +285,8 @@ STARBOARD_DATA=./data python3 -m starboard     # http://127.0.0.1:8095
 python3 -m unittest discover -s tests
 python3 tools/apply_shell.py                   # after changing the header or menu
 tools/screenshots.sh                           # retake the README screenshots from example data
+tools/journeys.sh                              # browser journeys against example data
+python3 tools/check-help.py                    # the help centre's links, layout and writing rules
 ```
 
 The header and Display panel are written into every page by `tools/apply_shell.py`. Design tokens are in

@@ -1,0 +1,44 @@
+[Help centre](../README.md) · Security · how-to
+
+# Change your password
+
+Change Starboard's password from the Security page when you know the current one. You stay signed in on the
+device you use, and every other browser and phone is signed out.
+
+## Before you begin
+
+- You know the current password. If you have forgotten it, read
+  [Reset a forgotten password](reset-a-forgotten-password.md) instead.
+
+## Steps
+
+1. Go to **Settings**, then **Security**.
+2. Find **Password**.
+3. In **Current password**, type the password you use now.
+4. In **New password**, type the new one. It must have at least 10 characters. A short sentence is easy to
+   remember.
+5. In **Type the new password again**, type the new password a second time.
+6. Select **Change password**.
+
+Starboard shows "Password changed. Everyone else is signed out". The form empties.
+
+## Things to note
+
+- Starboard has one password, shared by everyone who uses the dashboard. Tell the other people in your home
+  the new one.
+- Everyone signed in on another browser or phone needs the new password to sign in again.
+- A backup of Starboard's settings never holds the password, so changing it does not affect your backups.
+
+## If it does not work
+
+- **"Your current password is not right":** check Caps Lock and type it again.
+- **"Use at least 10 characters":** the new password is too short. Add more characters.
+- **"The two new passwords are different":** type the new password again in both fields.
+- **"Too many attempts. Wait 15 minutes and try again":** after five wrong passwords, Starboard waits 15
+  minutes before it accepts another try from the same device.
+
+## Find out more
+
+- [Sign out everywhere](sign-out-everywhere.md)
+- [Reset a forgotten password](reset-a-forgotten-password.md)
+- [Create your password and sign in](create-your-password.md)
