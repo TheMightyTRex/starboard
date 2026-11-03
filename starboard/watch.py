@@ -77,6 +77,7 @@ def cert_days_left(url):
     if parts.scheme != "https" or not parts.hostname:
         return None
     ctx = ssl.create_default_context()
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
     try:
         with socket.create_connection((parts.hostname, parts.port or 443), timeout=8) as sock:
             with ctx.wrap_socket(sock, server_hostname=parts.hostname) as tls:

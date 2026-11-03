@@ -9,6 +9,7 @@ guide and the notes on GitHub, so they always say the same thing.
 2. **Release entry.** Add the release to the end of `RELEASES` in `starboard/releases.py`:
    - `added`, `changed` and `fixed`: one short title and one sentence each, in the content rules (British
      English, sentence case, no em dashes, no contractions).
+   - `security`: every security fix, one title and one sentence each, written so a person can judge it.
    - `review`: the upgrade guide steps worth choosing after this upgrade, from `apps`, `keys`, `jellyfin`,
      `hours`, `alerts`, `preset` and `names`. Leave it empty when nothing needs choosing: the upgrade then
      finishes on its own and the notes wait under the version in the footer.
@@ -25,8 +26,11 @@ guide and the notes on GitHub, so they always say the same thing.
    the screens must match what changed, and only example data may appear (no real names, addresses, titles or
    folders). A screen that is new or changed a lot gets its own shot: add it to the list in
    `tools/screenshots/shoot.mjs` and to the Screenshots table in the README.
-7. **Commit and tag** on `main`: `git tag vX.Y.Z`.
-8. **Publish** (David runs this himself, after his OK to push):
+7. **Security record.** List every security fix in the release's `security` entry (the notes show it under
+   Security). Check CodeQL on GitHub has no open alerts that are not explained. Add a row for the release to
+   "Security checks for each release" in `docs/SECURITY-AND-TESTS.md`: which checks ran and what they found.
+8. **Commit and tag** on `main`: `git tag vX.Y.Z`.
+9. **Publish** (David runs this himself, after his OK to push):
 
    ```bash
    gh release create vX.Y.Z --notes-file docs/releases/vX.Y.Z.md

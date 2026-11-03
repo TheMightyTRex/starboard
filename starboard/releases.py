@@ -123,13 +123,18 @@ RELEASES = [
                ("Not in Jellyfin yet", "Importing watch history now lists the films and episodes Jellyfin does not have yet, in Settings, Jellyfin."),
                ("Note issues", "For testing: activate it in Settings, General to note a problem with any page as you find it.")],
      "changed": [("Messages", "Confirmations appear as cards in the corner, and a settings page shows Saved at and the time beside the button instead."),
-                 ("Words", "Settings are activated and deactivated, and show as active or inactive."),
-                 ("Security", "Pillow 13.0.0, with 58 known problems in the old version fixed. The image no longer includes pip, and logos are read only in the formats logos use.")],
+                 ("Words", "Settings are activated and deactivated, and show as active or inactive.")],
      "fixed": [("Disk health", "The page shows again: a mistake in its script had stopped it since 0.7.0."),
                ("Restoring old backups", "A backup from before 0.6.0 is brought up to date, and a design that no longer exists goes back to the default instead of stopping the restore."),
                ("Large text on phones", "At 175% the Apps page fits the screen, and an app's status goes under its name when they do not fit side by side."),
-               ("Sign-in", "The password is never put in the page address, even if Enter is pressed before the page has loaded."),
                ("Docker access with the ready-made image", "compose.image.yaml now has the line that lets Starboard use the Docker socket. Add your socket's group number there, as the file explains.")],
+     "security": [("Pillow 13.0.0", "The picture library for white Live TV logos had 58 known problems, 5 of them critical. Logos are now read only as PNG, JPEG, GIF, WebP, BMP or ICO."),
+                  ("Smaller image", "The image no longer includes pip, which Starboard does not need to run."),
+                  ("Sign-in", "The password is never put in the page address, even if Enter is pressed before the page has loaded."),
+                  ("Live TV playlists", "A stream check no longer opens a file: link written in a playlist from the internet."),
+                  ("Other sites", "New headers stop other sites loading Starboard's files into their pages. Live TV logos stay open to Jellyfin."),
+                  ("Exact addresses", "An address that only starts like one of Starboard's own, such as /api/containers - Copy, is now not found."),
+                  ("Checks", "Every release is scanned with Trivy, OWASP ZAP, Gitleaks, Bandit, ShellCheck and Hadolint. What each found is in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "No settings change. To go back, run ./update.sh --to v0.7.3."},
 ]
@@ -168,8 +173,8 @@ def pending(last_version, current, set_up):
 def markdown(release):
     """A release's notes for GitHub (docs/releases/vX.Y.Z.md)."""
     out = [f"# Starboard v{release['version']}", "", f"Released {release['date']}.", ""]
-    for heading, key in (("Added", "added"), ("Changed", "changed"), ("Fixed", "fixed")):
-        if release[key]:
+    for heading, key in (("Added", "added"), ("Changed", "changed"), ("Fixed", "fixed"), ("Security", "security")):
+        if release.get(key):
             out += [f"## {heading}", ""] + [f"- **{t}.** {s}" for t, s in release[key]] + [""]
     out += ["## Your settings and the way back", "", release["settings"], ""]
     return "\n".join(out)

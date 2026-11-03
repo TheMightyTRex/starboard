@@ -93,6 +93,29 @@ class SecurityTest(unittest.TestCase):
             self.assertEqual(self.call("GET", path, cookie=self.cookie)[0], 404, path)
         self.assertEqual(self.call("GET", "/api/containers", cookie=self.cookie)[0], 200)
 
+    def test_codeql_findings_stay_fixed(self):
+        # A header value with a line break is never sent (it could add headers of its own).
+        from types import SimpleNamespace
+        from starboard.server import Handler
+        sent = []
+        h = SimpleNamespace(send_response=lambda s: sent.append(("status", s)), send_header=lambda k, v: sent.append((k, v)),
+                            end_headers=lambda: None, wfile=SimpleNamespace(write=lambda b: None), command="GET",
+                            accepts_gzip=lambda: False, is_https=lambda: False)
+        Handler.send(h, 302, b"", "text/plain", {"Location": "https://x.pluto.tv/\r\nSet-Cookie: a=b"})
+        self.assertIn(("status", 500), sent)
+        self.assertFalse([v for k, v in sent if k == "Location"])
+        # Saved copy names: the pattern answers at once, even for a long run of hyphens.
+        import time
+        from starboard import backup
+        started = time.monotonic()
+        self.assertIsNone(backup.SAVED_RE.match("config-" + "-" * 5000 + "!"))
+        self.assertLess(time.monotonic() - started, 0.05)
+        self.assertTrue(backup.SAVED_RE.match("config-2026-11-03-110800-before-restore.json"))
+        # Certificate checks use TLS 1.2 or newer.
+        from starboard import watch
+        with open(watch.__file__, encoding="utf-8") as f:
+            self.assertIn("minimum_version = ssl.TLSVersion.TLSv1_2", f.read())
+
     def test_negative_content_length_is_refused(self):
         s = socket.create_connection(("127.0.0.1", self.port), timeout=5)
         s.sendall(b"POST /api/login HTTP/1.1\r\nHost: 127.0.0.1\r\nX-Starboard: 1\r\nContent-Length: -1\r\n\r\n")

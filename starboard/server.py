@@ -290,6 +290,9 @@ class Handler(BaseHTTPRequestHandler):
                 and "Content-Encoding" not in (extra or {})):
             body = gzip.compress(body, 5)
             extra = dict(extra or {}, **{"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
+        if any("\r" in str(v) or "\n" in str(v) for v in (extra or {}).values()) or "\n" in content_type:
+            # Python's server does not refuse a line break in a header, which would let a value add headers of its own.
+            status, body, content_type, extra = 500, b"A header held a line break", "text/plain; charset=utf-8", None
         self.send_response(status)
         for k, v in SECURITY_HEADERS.items():
             if k not in (extra or {}):  # a response may set a stricter or different policy of its own

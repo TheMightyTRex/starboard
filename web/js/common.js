@@ -349,14 +349,14 @@ function showVersion(version, repo, latest) {
   }
 }
 
-// Release notes: one look for every release (Added, Changed, Fixed, Your settings and the way back), in the
+// Release notes: one look for every release (Added, Changed, Fixed, Security, Your settings and the way back), in the
 // slide-out from the footer and on the upgrade guide's first step.
 function releaseNotes(rel, level = 3) {
-  const group = (title, items) => items.length ? [el(`h${level + 1}`, { text: title }),
+  const group = (title, items = []) => items.length ? [el(`h${level + 1}`, { text: title }),
     el("ul", {}, items.map(([t, sentence]) => el("li", {}, el("strong", { text: `${t}. ` }), sentence)))] : [];
   return el("section", { class: "release-notes", "aria-label": `Version ${rel.version}` },
     el(`h${level}`, { text: `Version ${rel.version}` }), el("p", { class: "small muted", text: `Released ${rel.date}` }),
-    ...group("Added", rel.added), ...group("Changed", rel.changed), ...group("Fixed", rel.fixed),
+    ...group("Added", rel.added), ...group("Changed", rel.changed), ...group("Fixed", rel.fixed), ...group("Security", rel.security),
     el(`h${level + 1}`, { text: "Your settings and the way back" }), el("p", { text: rel.settings }));
 }
 

@@ -137,11 +137,36 @@ private Docker network with no way out, so it can never reach other apps on the 
 - **A private address, signed in only:** `/api/network` lists the addresses you can open Starboard from, so it
   includes the server's home network address. The signed-out scan finds none.
 
+## CodeQL on GitHub, 3 November 2026
+
+GitHub's code scanning (CodeQL) checks the Python, JavaScript and workflow files on every push. Its first scan
+raised 19 alerts:
+
+| Alerts | What CodeQL saw | What it was |
+|---|---|---|
+| 1 | A slow pattern match on a saved copy's name | Real. A long name full of hyphens made the check slow. Fixed: the name is length-checked and the pattern can match only one way |
+| 2 | A line break in a header value | Real, though no value could carry one today. Fixed: a header value with a line break is never sent |
+| 1 | An old TLS version allowed | Real in principle. Fixed: certificate checks require TLS 1.2 or newer |
+| 13 | A file name from a request used in a path | Not real: each name is checked first, by a strict pattern with no `/`, or against the list of files that exist |
+| 1 | Server-side request forgery in the app check | By design: signed-in people point Starboard at their own apps, at `http://` or `https://` addresses only (see "Left as they are, on purpose") |
+| 1 | A password stored in clear text | Not Starboard: the screenshot tool's made-up password for its example server |
+
+Each fix has a test. On GitHub, the alerts that are not real are dismissed with these reasons.
+
+## Security checks for each release
+
+Every release runs the checks below before it is tagged, and adds a row here. A release's notes list its security
+fixes under Security.
+
+| Release | Unit and API tests | Browser journeys | Security scans | CodeQL | Install tests | Notes |
+|---|---|---|---|---|---|---|
+| 0.7.4 (3 November 2026) | 117 passed | 19 passed | Trivy 0, ZAP no failures, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | First run after release: 19 alerts, 3 fixed for the next release | Ubuntu, Debian, Fedora, 64-bit ARM: 17 of 17 each | Pillow 13.0.0; see the Security section of the 0.7.4 notes |
+
 ## Other free checks you can run
 
 These suit Starboard and cost nothing:
-- **On GitHub, free for public repositories:** Dependabot alerts, secret scanning with push protection, and
-  CodeQL code scanning. Each is a switch in the repository's settings, under Code security.
+- **On GitHub, free for public repositories:** secret scanning with push protection and CodeQL code scanning are
+  on for Starboard. Dependabot alerts add little, because Starboard has only one outside package.
 - **Nmap** from another computer on your network, to confirm which ports your server really has open.
 - **Lynis** and **Docker Bench for Security**, to audit the server itself and its Docker set-up rather than
   Starboard.

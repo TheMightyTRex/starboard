@@ -22,7 +22,7 @@ FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "design", "groups", "show_home_address", "show_outside_address",
                 "session_days", "secure_cookies", "update_check", "network_access", "upcoming_view", "upcoming_days", "download_hours",
                 "fetch_icons", "show_posters", "watch", "extras", "performance")
-SAVED_RE = re.compile(r"^config-[0-9-]+-[a-z-]+\.json$")
+SAVED_RE = re.compile(r"^config-\d{4}-\d{2}-\d{2}-\d{6}-[a-z]+(-[a-z]+)*\.json$")  # each part can match only one way
 
 
 def export(config, version):
@@ -93,7 +93,7 @@ def saved_copies(config):
 
 
 def _saved(config, name):
-    if not SAVED_RE.match(name or ""):
+    if len(name or "") > 80 or not SAVED_RE.match(name or ""):
         raise ConfigError("Choose a saved copy from the list")
     with open(os.path.join(config.data_dir, "backups", name), encoding="utf-8") as f:
         return json.load(f)
