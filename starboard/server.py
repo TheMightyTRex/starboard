@@ -299,10 +299,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header(k, v)
         if self.is_https():
             self.send_header("Strict-Transport-Security", "max-age=31536000")
-        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Type", content_type.replace("\r", "").replace("\n", ""))
         self.send_header("Content-Length", str(len(body)))
         for k, v in (extra or {}).items():
-            self.send_header(k, v)
+            self.send_header(k, str(v).replace("\r", "").replace("\n", ""))  # never a line break (refused above too)
         self.end_headers()
         if self.command != "HEAD":
             self.wfile.write(body)
