@@ -13,11 +13,11 @@ browser.
 
 | | Starboard needs | Measured |
 |---|---|---|
-| Memory | 32 MB | About 16 MB when idle, 37 MB at its busiest. It ran without problems when Docker limited it to 24 MB. |
+| Memory | 32 MB | 15 to 27 MB when idle, 37 MB at its busiest. It ran without problems when Docker limited it to 24 MB. |
 | Processor | Any | 2 seconds of processor time to open every page once. Close to nothing when nobody has it open. |
 | Disk space | 150 MB | The image is 117 MB. Settings, logs and history add about 3 MB. |
 | Download | 30 MB | 29 MB for 64-bit computers and 64-bit Raspberry Pi systems, 21 MB for 32-bit Raspberry Pi systems. |
-| System | Linux with Docker | Tested on clean Ubuntu 24.04, Debian 12 and Fedora 42. |
+| System | Linux with Docker | Tested on clean Ubuntu 24.04, Debian 12 and Fedora 42, and on 64-bit ARM with 1 GB and with 512 MB of memory. |
 
 Docker itself adds about 60 to 100 MB of memory, and the system needs its own share. So the smallest
 sensible computer for Starboard is one with **512 MB of memory**.
@@ -40,6 +40,8 @@ better than a Raspberry Pi.
 ## Raspberry Pi and other small devices
 
 - **64-bit Raspberry Pi OS** works on the Raspberry Pi 3, 4, 5 and Zero 2 W. Use it if your Pi can run it.
+  Starboard's install was tested on an emulated 64-bit ARM system with 1 GB of memory, like a Pi 3, and with
+  512 MB, like a Zero 2 W. Every check passed both times, with the installer and with the ready-made image.
 - **32-bit Raspberry Pi OS:** avoid it for a new install. Docker 28 was the last version made for it, so
   Docker gets no more updates there. Starboard's 32-bit image still works on it, for a Raspberry Pi 2 or a
   Pi you cannot reinstall, but it has no white Live TV logos.
