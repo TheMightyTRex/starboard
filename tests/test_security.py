@@ -7,6 +7,7 @@ import socket
 import tempfile
 import threading
 import unittest
+import unittest.mock
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -58,6 +59,39 @@ class SecurityTest(unittest.TestCase):
         self.assertEqual(ask("192.168.1.21"), "192.168.1.21")  # anyone else: their own address
         app.trust_proxy = False
         self.assertEqual(ask("127.0.0.1"), "127.0.0.1")  # proxy trust off: never believed
+
+    def test_stream_playlists_cannot_point_at_local_files(self):
+        # A playlist from the internet that names a file:// variant or segment is refused, not opened.
+        class Playlist(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_GET(self):
+                body = {"/main.m3u8": b"#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nfile:///etc/hostname\n",
+                        "/seg.m3u8": b"#EXTM3U\n#EXTINF:1,\nfile:///etc/hostname\n"}.get(self.path, b"")
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Playlist)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            base = f"http://127.0.0.1:{server.server_address[1]}"
+            opened = []
+            real = urllib.request.urlopen
+            with unittest.mock.patch.object(urllib.request, "urlopen", lambda req, **k: opened.append(getattr(req, "full_url", req)) or real(req, **k)):
+                self.assertFalse(livetv.plays(f"{base}/main.m3u8", "test"))
+                self.assertFalse(livetv.plays(f"{base}/seg.m3u8", "test"))
+            self.assertFalse([u for u in opened if str(u).startswith("file:")])
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_api_routes_match_exactly(self):
+        # A route with something added (ZAP tries "/api/containers - Copy") is not found, not answered.
+        for path in ("/api/containers%20-%20Copy", "/api/containers.bak", "/api/containersx"):
+            self.assertEqual(self.call("GET", path, cookie=self.cookie)[0], 404, path)
+        self.assertEqual(self.call("GET", "/api/containers", cookie=self.cookie)[0], 200)
 
     def test_negative_content_length_is_refused(self):
         s = socket.create_connection(("127.0.0.1", self.port), timeout=5)

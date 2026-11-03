@@ -45,7 +45,7 @@ def source(service):
 
 def _fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": "Starboard"})
-    with urllib.request.urlopen(req, timeout=8) as resp:
+    with urllib.request.urlopen(req, timeout=8) as resp:  # the icon collection's https address, or an icon address checked to start with https://  # nosec B310
         if resp.status != 200:
             return None
         data = resp.read(MAX_BYTES + 1)

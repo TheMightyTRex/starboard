@@ -104,8 +104,8 @@ Each check has an ID, which the test scripts print beside their results. The tes
 | SEC-16 | A history file over 512 MB is refused, before the upload | Unit test | Pass. The Live TV and picture limits have no test yet. |
 | SEC-17 | The setup code is needed, and works only once | Unit test | Pass. Guessing the code has no test yet. |
 | SEC-18 | A new password signs out every other browser | Unit test | Pass |
-| SEC-19 | Scan with OWASP ZAP | Not run yet | Planned for the release checklist |
-| SEC-20 | Known issues in the image and Pillow (Trivy, pip-audit) | Not run yet | Planned for the release checklist |
+| SEC-19 | Scan with OWASP ZAP, signed out and signed in (active) | `tools/security-scan.sh` | Pass: no failures; the warnings left are explained below |
+| SEC-20 | Known issues in the image and its libraries (Trivy) | `tools/security-scan.sh` | Pass: 0 after updating Pillow (see below) |
 | SEC-21 | With Docker access off, Starboard cannot reach Docker | Install tests | Pass |
 | SEC-22 | With home network off, nothing outside the computer can connect | Install tests on 5 systems | Pass |
 | SEC-23 | No personal details in the repository | `tools/check-private.sh` before every commit | Pass |
@@ -113,9 +113,42 @@ Each check has an ID, which the test scripts print beside their results. The tes
 The 5 systems are clean installs of Ubuntu 24.04, Debian 12 and Fedora 42, and 64-bit ARM with 1 GB and with
 512 MB of memory.
 
+## Security scans, 3 November 2026
+
+`tools/security-scan.sh` runs six free scanners, all in Docker from pinned images. ZAP scans a throwaway copy on a
+private Docker network with no way out, so it can never reach other apps on the same computer.
+
+| Scanner | What it checks | Found | Now |
+|---|---|---|---|
+| Trivy | Known problems in the image's system packages and Python libraries; the Dockerfile | Pillow 11.3.0 had 58 known problems (5 critical, 35 high), and pip 6 more. The system packages and the Dockerfile were clean. | 0. Pillow is 13.0.0, pip is removed from the image, and Pillow may open only the picture formats logos use. |
+| OWASP ZAP | The running dashboard, signed out (baseline) and signed in (active attacks on every page and API it finds) | No failures. The sign-in form could put the password in the address if Enter was pressed before the page script loaded. Two cross-origin headers were missing. Routes starting `/api/containers` answered any longer address too. | Fixed, each with a test. The warnings left are explained below. |
+| Gitleaks | Keys and passwords anywhere in the git history | One: a made-up key in the test that checks the log hides keys | Nothing real. The made-up key is listed in `.gitleaksignore`. |
+| Bandit | Risky patterns in the Python code | 21 places that open web addresses or listen on the network. One was real: a Live TV stream check followed `file:` links written inside a playlist from the internet. | Fixed, with a test. The other 20 were checked by hand and each is marked with its reason. |
+| ShellCheck | Mistakes in the shell scripts | 3 small warnings in test tools; the installer, updater and reset script were clean | Fixed |
+| Hadolint | The Dockerfile | It suggests pinning the exact `tzdata` version | Left on purpose: Alpine removes old versions, so a pin breaks builds. Trivy covers the risk. |
+
+**ZAP warnings left, on purpose**
+- **No anti-CSRF tokens:** every change needs Starboard's own header and a matching `Origin` (SEC-02), which does the
+  same job. The forms ZAP flags are the Display panel's, which send nothing to the server.
+- **Wildcard in the content policy:** `img-src https:`, so search results can show covers.
+- **No Cross-Origin-Embedder-Policy:** it would block those cover pictures too.
+- **Information only:** comments containing the word "from", times in API answers, answers that are not cached on
+  purpose, and display settings kept in the browser.
+- **A private address, signed in only:** `/api/network` lists the addresses you can open Starboard from, so it
+  includes the server's home network address. The signed-out scan finds none.
+
+## Other free checks you can run
+
+These suit Starboard and cost nothing:
+- **On GitHub, free for public repositories:** Dependabot alerts, secret scanning with push protection, and
+  CodeQL code scanning. Each is a switch in the repository's settings, under Code security.
+- **Nmap** from another computer on your network, to confirm which ports your server really has open.
+- **Lynis** and **Docker Bench for Security**, to audit the server itself and its Docker set-up rather than
+  Starboard.
+- **testssl.sh**, if you put Starboard behind a reverse proxy with HTTPS.
+
 ## Not tested yet
 
-- A scan with OWASP ZAP and Trivy (SEC-19, SEC-20).
 - Connection time-outs, HTTPS-only cookies, the Live TV and picture size limits, and guessing the setup code.
   Each is in the code, and was checked by hand in the review, but has no automatic test yet.
 - Windows and Mac, which Starboard does not support yet, and a physical Raspberry Pi.

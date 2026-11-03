@@ -46,7 +46,7 @@ def get(service, kind, item_id, folder):
     url = service["url"].rstrip("/") + KINDS[kind][1].format(id=item_id)
     req = urllib.request.Request(url, headers={"X-Api-Key": service.get("api_key", ""), "User-Agent": "Starboard"})
     try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
             if not (resp.headers.get("Content-Type") or "").startswith("image/"):
                 return None
             data = resp.read(MAX_BYTES + 1)

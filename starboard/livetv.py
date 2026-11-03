@@ -77,7 +77,7 @@ def fetch(url, ua="Starboard", timeout=120, limit=MAX_DOWNLOAD):
     """Downloads an http(s) address, refusing anything else or anything larger than the limit."""
     if not url.lower().startswith(("https://", "http://")):
         raise ValueError("Only http and https addresses")
-    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=timeout) as r:
+    with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=timeout) as r:  # checked to be http(s) above  # nosec B310
         data = r.read(limit + 1)
     if len(data) > limit:
         raise ValueError("The download is too large")
@@ -134,7 +134,7 @@ def plays(url, ua):
     if not str(url).lower().startswith(("https://", "http://")):
         return False
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=15) as r:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": ua}), timeout=15) as r:  # checked to be http(s) above  # nosec B310
             base, text = r.url, r.read(200000).decode("utf-8", "replace")
         if "#EXTM3U" not in text:
             return False
@@ -142,15 +142,21 @@ def plays(url, ua):
         variants = [lines[i + 1] for i, line in enumerate(lines[:-1]) if line.startswith("#EXT-X-STREAM-INF")]
         for v in (variants[:2] or [None]):
             if v:
-                with urllib.request.urlopen(urllib.request.Request(urllib.parse.urljoin(base, v), headers={"User-Agent": ua}), timeout=15) as r:
+                v = urllib.parse.urljoin(base, v)
+                if not v.lower().startswith(("https://", "http://")):  # a playlist line from the internet: never a file
+                    return False
+                with urllib.request.urlopen(urllib.request.Request(v, headers={"User-Agent": ua}), timeout=15) as r:  # checked to be http(s) above  # nosec B310
                     vbase, vtext = r.url, r.read(200000).decode("utf-8", "replace")
             else:
                 vbase, vtext = base, text
             segments = [line.strip() for line in vtext.splitlines() if line.strip() and not line.startswith("#")]
             if not segments:
                 continue
-            req = urllib.request.Request(urllib.parse.urljoin(vbase, segments[-1]), headers={"User-Agent": ua, "Range": "bytes=0-2047"})
-            with urllib.request.urlopen(req, timeout=15) as r:
+            segment = urllib.parse.urljoin(vbase, segments[-1])
+            if not segment.lower().startswith(("https://", "http://")):
+                return False
+            req = urllib.request.Request(segment, headers={"User-Agent": ua, "Range": "bytes=0-2047"})
+            with urllib.request.urlopen(req, timeout=15) as r:  # checked to be http(s) above  # nosec B310
                 if r.status in (200, 206) and r.read(2048):
                     return True
         return False
@@ -342,7 +348,9 @@ def whiten(data):
     Image.MAX_IMAGE_PIXELS = 16_000_000  # a logo is small; a huge image (a decompression bomb) is refused
     with warnings.catch_warnings():
         warnings.simplefilter("error", Image.DecompressionBombWarning)
-        im = Image.open(io.BytesIO(data))
+        # Only the formats logos use: Pillow's rarer decoders (TIFF, FlashPix and others) are where its worst flaws
+        # have been, and channel lists come from the internet.
+        im = Image.open(io.BytesIO(data), formats=["PNG", "JPEG", "GIF", "WEBP", "BMP", "ICO"])
         im.load()
     im = im.convert("RGBA")
     im.thumbnail((400, 400))

@@ -15,7 +15,6 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
-REPO="$PWD"
 DIR="${STARBOARD_VM_DIR:-$HOME/.cache/starboard-vm}"
 SSH_PORT="${VM_SSH_PORT:-2222}"
 WEB_PORT="${VM_WEB_PORT:-18095}"
@@ -44,6 +43,7 @@ if [ "$SYSTEM" = arm64 ]; then
   QEMU=qemu-system-aarch64
   FIRMWARE="$(ls /usr/share/qemu-efi-aarch64/QEMU_EFI.fd /usr/share/AAVMF/AAVMF_CODE.fd 2>/dev/null | head -n 1)"
   [ -n "$FIRMWARE" ] && command -v "$QEMU" >/dev/null || { echo "Install qemu-system-arm and qemu-efi-aarch64 first" >&2; exit 1; }
+  # shellcheck disable=SC2054  # the commas are inside one option value
   ACCEL=(-machine virt -accel tcg,thread=multi -cpu cortex-a72 -bios "$FIRMWARE"); SPEED="emulated 64-bit ARM (slow)"
   MEMORY="${MEMORY:-1024}"; WAIT=3600
 else

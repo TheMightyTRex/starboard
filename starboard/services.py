@@ -112,7 +112,7 @@ def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     started = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
             raw = resp.read(8_000_000)
             logs.detail("apps", f"{service['name']} {method} {path} {resp.status} in {round((time.time() - started) * 1000)} ms")
             return json.loads(raw) if raw else None
@@ -154,7 +154,7 @@ def _fetch(service, req, timeout):
     where = f"{service['name']} {req.get_method()} {urllib.parse.urlsplit(req.full_url).path}"  # no query: it can hold the key
     started = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
             raw = resp.read(8_000_000)
             logs.detail("apps", f"{where} {resp.status} in {round((time.time() - started) * 1000)} ms")
     except urllib.error.HTTPError as e:
@@ -210,18 +210,18 @@ def check(service):
             version = ""
         elif kind == "audiobookshelf":
             req = urllib.request.Request(service["url"].rstrip("/") + "/status", headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
                 version = json.loads(resp.read(200000)).get("serverVersion", "")
             if service.get("api_key"):
                 _api(service, "/libraries", timeout=5)  # an API key that is wrong shows as a problem
         elif kind == "jellyfin":
             req = urllib.request.Request(service["url"].rstrip("/") + "/System/Info/Public", headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
                 version = json.loads(resp.read(200000)).get("Version", "")
         else:
             req = urllib.request.Request(service["url"], headers={"User-Agent": USER_AGENT})
             try:
-                with urllib.request.urlopen(req, timeout=5):
+                with urllib.request.urlopen(req, timeout=5):  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
                     pass
             except urllib.error.HTTPError as e:
                 if e.code >= 500:
@@ -289,7 +289,7 @@ def _reach(url):
     started = time.monotonic()
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT}, method="GET")
     try:
-        with urllib.request.urlopen(req, timeout=6):
+        with urllib.request.urlopen(req, timeout=6):  # outside addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
             pass
     except urllib.error.HTTPError as e:
         if e.code >= 500:

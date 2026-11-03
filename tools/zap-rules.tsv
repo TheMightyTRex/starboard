@@ -1,0 +1,8 @@
+10027	IGNORE	(Suspicious comments: matches the word "from" in code comments)
+10031	IGNORE	(User controllable attribute: the pages are fixed files; nothing from the address is written into them)
+10049	IGNORE	(Non-storable content: redirects and private answers are not cached, on purpose)
+10055	IGNORE	(CSP wildcard: img-src https: lets search results show covers; see docs/SECURITY-AND-TESTS.md)
+10202	IGNORE	(Anti-CSRF tokens: changes need the X-Starboard header and a matching Origin; the flagged forms are Display panel forms that send nothing)
+90004	IGNORE	(Cross-Origin-Embedder-Policy: would block cover pictures from other sites; see docs/SECURITY-AND-TESTS.md)
+10096	IGNORE	(Timestamp disclosure: answers carry times, such as when an app was last checked; not secret)
+2	IGNORE	(Private IP disclosure: /api/network lists the addresses to open Starboard from, for signed-in people only; the signed-out scan finds none)

@@ -6,8 +6,9 @@ LABEL org.opencontainers.image.source="https://github.com/TheMightyTRex/starboar
 
 # tzdata: download hours follow the server's local time (TZ).
 RUN apk add --no-cache tzdata \
- && (pip install --no-cache-dir --only-binary=:all: "pillow==11.3.0" \
-     || echo "No ready-made Pillow for this processor: white logos are off")
+ && (pip install --no-cache-dir --only-binary=:all: "pillow==13.0.0" \
+     || echo "No ready-made Pillow for this processor: white logos are off") \
+ && pip uninstall -y -q pip  # not needed to run Starboard, and one less thing to keep patched
 
 RUN addgroup -S -g 10001 starboard && adduser -S -u 10001 -G starboard -H -h /app starboard \
  && mkdir -p /data && chown starboard:starboard /data && chmod 700 /data

@@ -40,6 +40,10 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "no-referrer",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
     "Cross-Origin-Opener-Policy": "same-origin",
+    # Other sites cannot load Starboard's files into their pages. The Live TV logos are the exception (iptv()):
+    # Jellyfin's pages may show them from another address. No Cross-Origin-Embedder-Policy: it would block the
+    # cover pictures that search results load from other sites.
+    "Cross-Origin-Resource-Policy": "same-origin",
 }
 
 mimetypes.add_type("font/woff2", ".woff2")
@@ -169,7 +173,7 @@ class App:
     def listen_host(self):
         if self.forced_host:
             return self.forced_host
-        return "0.0.0.0" if self.config.data.get("network_access", True) else "127.0.0.1"
+        return "0.0.0.0" if self.config.data.get("network_access", True) else "127.0.0.1"  # the home network, by the person's choice (Settings, Security)  # nosec B104
 
     def network_info(self, client_ip):
         addresses = []
@@ -216,7 +220,7 @@ class App:
                 req = urllib.request.Request(
                     f"https://api.github.com/repos/{self.repo}/tags?per_page=100",
                     headers={"Accept": "application/vnd.github+json", "User-Agent": "Starboard"})
-                with urllib.request.urlopen(req, timeout=6) as resp:
+                with urllib.request.urlopen(req, timeout=6) as resp:  # a fixed https address  # nosec B310
                     self._latest["tag"] = newest_tag(t.get("name", "") for t in json.loads(resp.read(500000)))
             except (OSError, ValueError):
                 pass
@@ -419,7 +423,7 @@ class Handler(BaseHTTPRequestHandler):
             if not found:
                 return self.send(404, b"", "text/plain; charset=utf-8")
             with open(found, "rb") as f:
-                return self.send(200, f.read(), "image/png", {"Cache-Control": "max-age=86400"})
+                return self.send(200, f.read(), "image/png", {"Cache-Control": "max-age=86400", "Cross-Origin-Resource-Policy": "cross-origin"})
         m = re.match(r"^/iptv/pluto/([A-Za-z0-9]{8,40})\.m3u8$", path)
         if m:
             try:
@@ -660,7 +664,7 @@ class Handler(BaseHTTPRequestHandler):
                 services.queue_action(service, int(data["id"]), str(data.get("action", "")))
                 logs.event("info", "downloads", f"{data.get('action')} for a download in {service['name']}")
                 return self.json(200, {"ok": True})
-            if path.startswith("/api/containers"):
+            if path in ("/api/containers", "/api/containers/check", "/api/containers/update"):
                 if not containers.available():
                     return self.json(200, {"available": False, "items": [], "containers": []})
                 ordered = cfg.data["services"]

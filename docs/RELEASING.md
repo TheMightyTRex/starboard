@@ -16,7 +16,8 @@ guide and the notes on GitHub, so they always say the same thing.
 3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`.
 4. **Changelog.** Add the same release to the top of `CHANGELOG.md`, with more detail if it helps.
 5. **Checks.** Run the tests (`python3 -m unittest discover -s tests`), the browser journeys
-   (`tools/journeys.sh`), the help centre check (`python3 tools/check-help.py`) and `tools/check-private.sh`.
+   (`tools/journeys.sh`), the help centre check (`python3 tools/check-help.py`), the security scans (`tools/security-scan.sh`) and
+   `tools/check-private.sh`.
    When the installer, `update.sh` or the image changed, also run `tools/vm/vm.sh test` on at least one PC system
    and `arm64`. Record the results and any change in system use in `docs/TESTING.md`
    ([Testing and system use](TESTING.md)).

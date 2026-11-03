@@ -189,7 +189,7 @@ def _registry(reg, repo, path, accept=ACCEPT):
         if _tokens.get((reg, repo)):
             headers["Authorization"] = f"Bearer {_tokens[(reg, repo)]}"
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20) as r:  # a registry address Starboard builds, always https  # nosec B310
                 return r.headers, r.read(4_000_000)
         except urllib.error.HTTPError as e:
             if e.code != 401 or attempt:
@@ -198,7 +198,7 @@ def _registry(reg, repo, path, accept=ACCEPT):
             if not params.get("realm", "").startswith("https://"):
                 raise
             q = urllib.parse.urlencode({"service": params.get("service", ""), "scope": params.get("scope", f"repository:{repo}:pull")})
-            with urllib.request.urlopen(f"{params['realm']}?{q}", timeout=20) as t:
+            with urllib.request.urlopen(f"{params['realm']}?{q}", timeout=20) as t:  # the realm is checked to start with https:// above  # nosec B310
                 j = json.load(t)
             _tokens[(reg, repo)] = j.get("token") or j.get("access_token")
     raise DockerError("The registry did not accept the sign-in")

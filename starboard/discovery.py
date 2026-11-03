@@ -83,7 +83,7 @@ TIMEOUT = 2.5
 
 def _get(url, limit=65536):
     req = urllib.request.Request(url, headers={"User-Agent": "Starboard"})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:  # http://127.0.0.1 and a port Docker reported  # nosec B310
         return r.status, r.read(limit).decode("utf-8", "replace")
 
 
@@ -135,7 +135,7 @@ def search(services):
             for c in containers.docker("GET", "/containers/json"):
                 all_names.append(c["Names"][0].lstrip("/"))
                 for port in c.get("Ports") or []:
-                    if port.get("PublicPort") and port.get("IP") in ("0.0.0.0", "::", "127.0.0.1", None):
+                    if port.get("PublicPort") and port.get("IP") in ("0.0.0.0", "::", "127.0.0.1", None):  # compares the address Docker reported, does not listen  # nosec B104
                         ports.add(port["PublicPort"])
                         docker_names.setdefault(port["PublicPort"], c["Names"][0].lstrip("/"))
         except containers.DockerError:

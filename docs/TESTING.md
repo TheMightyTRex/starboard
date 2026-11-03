@@ -27,10 +27,11 @@ costs.
 
 | Test | Command | Covers | Time |
 |---|---|---|---|
-| Unit and API tests | `python3 -m unittest discover -s tests` | 115 tests: the server and its API, security findings, backup and restore, moving history from other apps, storage, logs, Install apps, discovery, copying app settings | 25 seconds |
+| Unit and API tests | `python3 -m unittest discover -s tests` | 117 tests: the server and its API, security findings, backup and restore, moving history from other apps, storage, logs, Install apps, discovery, copying app settings | 25 seconds |
 | Browser journeys | `tools/journeys.sh` | 19 checks in a real browser against example data | 2 minutes |
 | Install tests in VMs | `tools/vm/vm.sh test <system>` | 17 checks of a fresh install on a clean system | 15 to 60 minutes each |
 | Help centre | `python3 tools/check-help.py` | Links, layout and writing rules of `docs/help` | 1 second |
+| Security scans | `tools/security-scan.sh` (`--full` adds ZAP's active scan) | Trivy, ZAP, Gitleaks, Bandit, ShellCheck, Hadolint ([Security](SECURITY-AND-TESTS.md)) | 10 minutes, or about an hour with `--full` |
 | Private details | `tools/check-private.sh` | Addresses, keys, email addresses and private words in tracked files | 1 second |
 | Screenshots | `tools/screenshots.sh` | Retakes the README pictures and fails if a page scrolls sideways | 2 minutes |
 
@@ -46,7 +47,7 @@ needed. By file:
 | `test_backup_migration.py` | 12 | Settings round trip to a fresh install, old and odd backups, saved copies, the server backup job and its alert, moving the data folder, password reset, watch history from a Plex database and another Jellyfin, history files, running an import twice, Plex audiobooks into Audiobookshelf |
 | `test_stack.py` | 9 | Install apps: only known apps, safe folders and VPN values, secrets kept off the page, free ports, VPN apps through Gluetun, old files kept |
 | `test_discovery.py` | 9 | Search for new apps, reading keys only from safe containers, finding the newest release, and which upgrade guide questions to ask |
-| `test_security.py` | 9 | The findings of the November 2026 security review, and forwarded addresses ([Security](SECURITY-AND-TESTS.md)) |
+| `test_security.py` | 11 | The findings of the November 2026 security review, and forwarded addresses ([Security](SECURITY-AND-TESTS.md)) |
 | `test_gaps.py` | 8 | App checks and history, queue actions, saved copies, server backup files |
 | `test_storage.py` | 8 | Storage: types from folder names, pools, the usage scan and when it runs, the daily space log |
 | `test_listening.py` | 6 | Listening progress from Jellyfin, Plex and Audiobookshelf |
@@ -96,7 +97,7 @@ the setup code.
 
 | | Result |
 |---|---|
-| Unit and API tests | 115 passed |
+| Unit and API tests | 117 passed |
 | Browser journeys | 19 passed |
 | Install tests, Ubuntu 24.04 | 17 passed |
 | Install tests, Debian 12 | 17 passed |
@@ -105,6 +106,7 @@ the setup code.
 | Install tests, 64-bit ARM, 512 MB | 17 passed |
 | Published ARM images (arm64, arm/v7) under emulation | Start and answer every request |
 | Help centre check | 70 articles, 0 problems |
+| Security scans | See [Security](SECURITY-AND-TESTS.md#security-scans-3-november-2026) |
 
 ## Not tested by machine
 

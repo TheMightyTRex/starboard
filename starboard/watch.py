@@ -63,7 +63,7 @@ def send(channel, title, message, level="info"):
         req = urllib.request.Request(url, data=json.dumps({"title": title, "message": message, "level": level,
                                                            "source": "Starboard"}).encode(), headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # alert addresses are checked to be http(s) when saved (config.clean_watch)  # nosec B310
             resp.read(1000)
     except urllib.error.HTTPError as e:
         raise ValueError(f"The alert address answered with error {e.code}") from None

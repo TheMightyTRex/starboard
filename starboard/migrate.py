@@ -387,7 +387,7 @@ def detect_jellyfin():
     for url in ("http://127.0.0.1:8096", "http://localhost:8096"):
         try:
             req = urllib.request.Request(f"{url}/System/Info/Public", headers={"User-Agent": USER_AGENT})
-            with urllib.request.urlopen(req, timeout=3) as r:
+            with urllib.request.urlopen(req, timeout=3) as r:  # a fixed local address  # nosec B310
                 info = json.loads(r.read(100000))
             if info.get("ProductName", "").lower().startswith("jellyfin") or info.get("Version"):
                 return {"url": url, "version": info.get("Version", ""), "name": info.get("ServerName", "Jellyfin")}

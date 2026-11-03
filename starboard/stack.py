@@ -121,7 +121,7 @@ APPS = {
     "tdarr": {"name": "Tdarr", "groups": ["transcoding"], "image": "ghcr.io/haveagitgat/tdarr:latest", "ports": ["8265:8265", "8266:8266"],
               "volumes": [f"{CFG}/tdarr/server:/app/server", f"{CFG}/tdarr/configs:/app/configs", f"{CFG}/tdarr/logs:/app/logs",
                           f"{DATA}/media:/media", f"{CFG}/tdarr/cache:/temp"],
-              "env": {**LSIO, "serverIP": "0.0.0.0", "serverPort": "8266", "webUIPort": "8265", "internalNode": "true", "nodeName": "starboard"},
+              "env": {**LSIO, "serverIP": "0.0.0.0", "serverPort": "8266", "webUIPort": "8265", "internalNode": "true", "nodeName": "starboard"},  # Tdarr's own setting inside its container  # nosec B104
               "memory": 500, "notes": "Uses a lot of processor time while it converts."},
 }
 

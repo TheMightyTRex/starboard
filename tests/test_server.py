@@ -157,6 +157,12 @@ class ServerTest(unittest.TestCase):
         self.assertIn("default-src 'self'", resp.getheader("Content-Security-Policy"))
         self.assertEqual(resp.getheader("X-Frame-Options"), "DENY")
         self.assertEqual(resp.getheader("Referrer-Policy"), "no-referrer")
+        self.assertEqual(resp.getheader("Cross-Origin-Resource-Policy"), "same-origin")
+        self.assertEqual(resp.getheader("Cross-Origin-Opener-Policy"), "same-origin")
+        # The password is posted, never put in the address, even if Enter is pressed before the script loads.
+        for page in ("login.html", "setup.html"):
+            with open(os.path.join(os.path.dirname(__file__), "..", "web", page), encoding="utf-8") as f:
+                self.assertRegex(f.read(), r'<form id="login-form"[^>]*method="post"')
 
     def test_06_changes_need_the_dashboard_header(self):
         self.sign_in()

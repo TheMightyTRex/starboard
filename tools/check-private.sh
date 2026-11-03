@@ -6,7 +6,7 @@
 #   tools/check-private.sh            check every tracked file
 #   tools/check-private.sh --staged   check what is about to be committed (used by the pre-commit hook)
 set -uo pipefail
-cd "$(git rev-parse --show-toplevel)"
+cd "$(git rev-parse --show-toplevel)" || exit 1
 
 if [ "${1:-}" = "--staged" ]; then
   grep_cmd=(git grep --cached -I -n -E)
