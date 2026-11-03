@@ -1,7 +1,7 @@
 # Starboard
 
 A lightweight, accessible dashboard for smaller home media servers. It uses very little processor time and
-memory (about 18 MB while idle), so your server's power goes to your apps. It shows every app and whether it is
+memory (about 16 MB while idle, measured in [Testing and system use](docs/TESTING.md)), so your server's power goes to your apps. It shows every app and whether it is
 running, searches Sonarr, Radarr, Lidarr and Readarr at once and adds what you find, and lists downloads, what
 is coming up and how the server is doing.
 
@@ -44,6 +44,8 @@ All made with example data (`tools/screenshots.sh`).
 Lightweight comes first. Every change to Starboard has to keep it small and quiet:
 
 1. **Very little processor time and memory.** Measure before and after a change; idle use must stay near zero.
+   Measured: 15 to 27 MB idle, 37 MB at its busiest, and it runs in a 24 MB memory limit. It installs and runs
+   on 64-bit ARM with 512 MB of memory, like a Raspberry Pi Zero 2 W ([Testing and system use](docs/TESTING.md)).
 2. **Almost no third-party packages.** Python's standard library and plain HTML, CSS and JavaScript. The one
    exception is Pillow, open source and credited, used only while Live TV's white logos are on.
 3. **Nothing runs unless it is needed.** Work happens when a page that shows it is open, or on a schedule you
@@ -287,7 +289,10 @@ python3 tools/apply_shell.py                   # after changing the header or me
 tools/screenshots.sh                           # retake the README screenshots from example data
 tools/journeys.sh                              # browser journeys against example data
 python3 tools/check-help.py                    # the help centre's links, layout and writing rules
+tools/vm/vm.sh test ubuntu                     # a fresh install on a clean system (also debian, fedora, arm64)
 ```
+
+What each test covers, and the latest results, are in [docs/TESTING.md](docs/TESTING.md).
 
 The header and Display panel are written into every page by `tools/apply_shell.py`. Design tokens are in
 `web/css/tokens.css`; the five designs in `web/css/designs.css`.

@@ -782,7 +782,7 @@ async function renderAccess() {
 
 // What a setting costs on the server, measured on a home server in November 2026 (an 8-core processor, about
 // 10,000 films and episodes). Shown under each switch that uses processor time or memory, so a small server
-// can keep only what it needs. Idle Starboard: about 19 MB and 0.01% of the processor.
+// can keep only what it needs. Idle Starboard: about 16 MB and 0.01% of the processor (docs/TESTING.md).
 const COSTS = {
   hours: "Costs about: one small check a minute, under 0.01% of the processor, no extra memory.",
   upcoming: "Costs about: one request to each app when Coming up opens, kept for 10 minutes. Further ahead means a bigger answer, still well under a second.",

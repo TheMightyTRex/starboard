@@ -58,7 +58,7 @@ This runs only while the page is open and in view. A hidden tab asks for nothing
 
 - Features you chose for what they do, such as Live TV and download hours, stay as they are when you choose a
   preset. A preset changes only how often and how much.
-- Starboard uses about 18 MB of memory while it is idle.
+- Starboard uses about 16 MB of memory while it is idle: [What you need to run Starboard](what-you-need.md) has the measurements.
 - To see what the rest of your server is doing, read [Find out what each app is using](monitor-apps.md).
 
 ## Find out more

@@ -1,0 +1,111 @@
+# Testing and system use
+
+How Starboard is tested, how to run each test, and what Starboard uses on a server. Lightweight comes first
+(README, Design principles), so system use is measured, not guessed, and checked again before each release.
+
+Latest results: 3 November 2026, at commit 97ff5b6.
+
+## What Starboard uses
+
+| | Measured | How |
+|---|---|---|
+| Memory, idle | 15 to 27 MB | `docker stats` on fresh installs in test VMs (Ubuntu 24.04, Debian 12, Fedora 42, 64-bit ARM). Docker's figure includes some file cache, so it varies between runs. |
+| Memory, at its busiest | 37 MB | The example server with 20 apps, while `tools/journeys.sh` opened every page (peak resident memory). |
+| Least memory it runs in | 24 MB | The published image under a Docker memory limit, with 20 apps and 45 page and API requests. At 16 MB it is stopped for lack of memory. |
+| Processor | 2 seconds | Processor time for the whole journey run, which opens every page. Close to nothing while no page is open. |
+| Disk | 117 MB image, about 3 MB of data | `docker image ls`, and `du` of a server's `data` folder. |
+| Download | 29 MB (amd64, arm64), 21 MB (arm/v7) | The layer sizes of the published image for each platform. |
+
+For a person choosing a computer, the help centre turns these into advice:
+[What you need to run Starboard](help/topics/what-you-need.md).
+
+Settings, Performance shows Starboard's own use on a running server, and what each piece of background work
+costs.
+
+## The tests
+
+| Test | Command | Covers | Time |
+|---|---|---|---|
+| Unit and API tests | `python3 -m unittest discover -s tests` | 113 tests: the server and its API, security findings, backup and restore, moving history from other apps, storage, logs, Install apps, discovery, copying app settings | 25 seconds |
+| Browser journeys | `tools/journeys.sh` | 16 checks in a real browser against example data | 2 minutes |
+| Install tests in VMs | `tools/vm/vm.sh test <system>` | 17 checks of a fresh install on a clean system | 15 to 60 minutes each |
+| Help centre | `python3 tools/check-help.py` | Links, layout and writing rules of `docs/help` | 1 second |
+| Private details | `tools/check-private.sh` | Addresses, keys, email addresses and private words in tracked files | 1 second |
+| Screenshots | `tools/screenshots.sh` | Retakes the README pictures and fails if a page scrolls sideways | 2 minutes |
+
+### Unit and API tests
+
+Python's own `unittest`, with no packages to install. Apps such as Sonarr, Jellyfin, Plex and Audiobookshelf
+are small made-up servers inside the tests, and a Plex database is built from scratch, so nothing real is
+needed. By file:
+
+| File | Tests | What it keeps working |
+|---|---|---|
+| `test_server.py` | 32 | Sign-in, setup, sessions, every API route, limits, settings, backup routes, UX notes |
+| `test_backup_migration.py` | 12 | Settings round trip to a fresh install, old and odd backups, saved copies, the server backup job and its alert, moving the data folder, password reset, watch history from a Plex database and another Jellyfin, history files, running an import twice, Plex audiobooks into Audiobookshelf |
+| `test_stack.py` | 9 | Install apps: only known apps, safe folders and VPN values, secrets kept off the page, free ports, VPN apps through Gluetun, old files kept |
+| `test_discovery.py` | 9 | Search for new apps, reading keys only from safe containers, finding the newest release, and which upgrade guide questions to ask |
+| `test_security.py` | 8 | The findings of the 2 November 2026 security check |
+| `test_gaps.py` | 8 | App checks and history, queue actions, saved copies, server backup files |
+| `test_storage.py` | 8 | Storage: types from folder names, pools, the usage scan and when it runs, the daily space log |
+| `test_listening.py` | 6 | Listening progress from Jellyfin, Plex and Audiobookshelf |
+| `test_logs.py` | 6 | The log: personal details removed, detailed logging that turns itself off, old days removed, Delete |
+| `test_jellyfin.py` | 4 | Watch history apply, user defaults, Live TV numbering |
+| `test_copyset.py` | 3 | Copying settings between two Sonarrs |
+| `test_performance.py` | 3 | Presets and background work that stops when turned off |
+| `test_pinned.py` | 3 | App updates for images pinned to a version |
+| `test_schedule.py` | 2 | Download hours: pause outside the hours, then resume only what Starboard paused |
+
+### Browser journeys
+
+`tools/journeys.sh` starts the example server (`tools/screenshots/example_server.py`, made-up data only) and
+runs `tools/journeys/journeys.mjs` in the Playwright image. It needs Docker. It checks:
+
+- every page script parses;
+- adding, changing, testing and removing an app through the page;
+- names, categories, descriptions and UX notes that look like code are shown as text, and nothing runs;
+- the content security policy is on all 26 pages and blocks nothing;
+- a saved API key appears in no page or answer;
+- no page scrolls sideways at 375 pixels wide;
+- no page has a script error.
+
+### Install tests in VMs
+
+`tools/vm/vm.sh` makes throwaway virtual machines with plain QEMU: no root, nothing on the home network. Run
+`prepare` once for each system, then `test` as often as needed; each test starts from a clean copy.
+
+```bash
+tools/vm/vm.sh prepare ubuntu
+tools/vm/vm.sh test ubuntu
+```
+
+Systems: `ubuntu` (24.04), `debian` (12), `fedora` (42) and `arm64` (Debian 12 for 64-bit ARM, like Raspberry
+Pi OS). `VM_MEMORY=512` sets the memory, for example to match a Raspberry Pi Zero 2 W. The arm64 system needs
+the `qemu-system-arm` and `qemu-efi-aarch64` packages. Without hardware speed-up (KVM) the PC systems are about
+ten times slower; arm64 is always emulated.
+
+The 17 checks: the installer with every question answered No (starts, first visit goes to set-up, setup code,
+`.env` and `data` private, no Docker socket, the API refuses without signing in, another host name is
+refused); the installer run again with Docker access (setup code kept, socket mounted); this computer only
+(answers inside the VM, refused from outside); `./update.sh --check`; the published image starts and prints
+the setup code.
+
+## Latest results
+
+| | Result |
+|---|---|
+| Unit and API tests | 113 passed |
+| Browser journeys | 16 passed |
+| Install tests, Ubuntu 24.04 | 17 passed |
+| Install tests, Debian 12 | 17 passed |
+| Install tests, Fedora 42 | 17 passed |
+| Install tests, 64-bit ARM, 1 GB | 17 passed |
+| Install tests, 64-bit ARM, 512 MB | 17 passed |
+| Published ARM images (arm64, arm/v7) under emulation | Start and answer every request |
+| Help centre check | 70 articles, 0 problems |
+
+## Not tested by machine
+
+Left for people: real apps and a real Plex, Windows and Mac, a physical Raspberry Pi, keyboard-only and screen
+reader passes, and how pages look and read. The Note issues switch (Settings, General, Testing) records
+problems found while testing by hand.
