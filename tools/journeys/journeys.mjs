@@ -1,5 +1,5 @@
 // Browser journeys against the example-data server (tools/journeys.sh runs this in the Playwright image).
-// TEST-PLAN USE-02, SEC-07, SEC-12 and SEC-13, plus no sideways scrolling at phone width on every page.
+// TEST-PLAN USE-02, SEC-05, SEC-07, SEC-12 and SEC-13, plus no sideways scrolling at phone width on every page.
 // Prints PASS or FAIL for each check and exits 1 if any failed. Everything it adds, it removes again.
 import { chromium } from "playwright";
 import fs from "fs";
@@ -109,6 +109,20 @@ check("SEC-12", `content policy on all ${PAGES.length} pages`, noPolicy.length =
 check("SEC-12", "no script or style blocked", blocked.length === 0, blocked.slice(0, 5).join(" | "));
 check("SEC-13", "the saved key is in no page or answer", leaks.length === 0, leaks.join(", "));
 await api(`/api/services/${keyed.id}`, { method: "DELETE" }).catch(() => {});
+
+// SEC-05: after signing in, the next address can only be a page on this dashboard
+console.log("\n== SEC-05 Sign-in goes only to this dashboard");
+for (const trick of ["//evil.example/", "/%09/evil.example", "https://evil.example/"]) {
+  const fresh = await browser.newContext();
+  const p = await fresh.newPage();
+  await p.goto(`${base}/login.html?next=${encodeURIComponent(trick)}`);
+  await p.fill("input[type=password]", password);
+  await p.keyboard.press("Enter");
+  await p.waitForLoadState("networkidle").catch(() => {});
+  await p.waitForTimeout(800);
+  check("SEC-05", `next=${trick} stays on the dashboard`, new URL(p.url()).origin === new URL(base).origin, p.url());
+  await fresh.close();
+}
 
 // Phone width: no page scrolls sideways
 console.log("\n== Phone width");

@@ -3,7 +3,8 @@
 How Starboard is tested, how to run each test, and what Starboard uses on a server. Lightweight comes first
 (README, Design principles), so system use is measured, not guessed, and checked again before each release.
 
-Latest results: 3 November 2026, at commit 97ff5b6.
+Latest results: 3 November 2026. Security has its own page: [Security: how Starboard protects you, and how it
+was tested](SECURITY-AND-TESTS.md).
 
 ## What Starboard uses
 
@@ -26,8 +27,8 @@ costs.
 
 | Test | Command | Covers | Time |
 |---|---|---|---|
-| Unit and API tests | `python3 -m unittest discover -s tests` | 113 tests: the server and its API, security findings, backup and restore, moving history from other apps, storage, logs, Install apps, discovery, copying app settings | 25 seconds |
-| Browser journeys | `tools/journeys.sh` | 16 checks in a real browser against example data | 2 minutes |
+| Unit and API tests | `python3 -m unittest discover -s tests` | 115 tests: the server and its API, security findings, backup and restore, moving history from other apps, storage, logs, Install apps, discovery, copying app settings | 25 seconds |
+| Browser journeys | `tools/journeys.sh` | 19 checks in a real browser against example data | 2 minutes |
 | Install tests in VMs | `tools/vm/vm.sh test <system>` | 17 checks of a fresh install on a clean system | 15 to 60 minutes each |
 | Help centre | `python3 tools/check-help.py` | Links, layout and writing rules of `docs/help` | 1 second |
 | Private details | `tools/check-private.sh` | Addresses, keys, email addresses and private words in tracked files | 1 second |
@@ -41,11 +42,11 @@ needed. By file:
 
 | File | Tests | What it keeps working |
 |---|---|---|
-| `test_server.py` | 32 | Sign-in, setup, sessions, every API route, limits, settings, backup routes, UX notes |
+| `test_server.py` | 33 | Sign-in, setup, sessions, a new password signing out other browsers, every API route, limits, settings, backup routes, UX notes |
 | `test_backup_migration.py` | 12 | Settings round trip to a fresh install, old and odd backups, saved copies, the server backup job and its alert, moving the data folder, password reset, watch history from a Plex database and another Jellyfin, history files, running an import twice, Plex audiobooks into Audiobookshelf |
 | `test_stack.py` | 9 | Install apps: only known apps, safe folders and VPN values, secrets kept off the page, free ports, VPN apps through Gluetun, old files kept |
 | `test_discovery.py` | 9 | Search for new apps, reading keys only from safe containers, finding the newest release, and which upgrade guide questions to ask |
-| `test_security.py` | 8 | The findings of the 2 November 2026 security check |
+| `test_security.py` | 9 | The findings of the November 2026 security review, and forwarded addresses ([Security](SECURITY-AND-TESTS.md)) |
 | `test_gaps.py` | 8 | App checks and history, queue actions, saved copies, server backup files |
 | `test_storage.py` | 8 | Storage: types from folder names, pools, the usage scan and when it runs, the daily space log |
 | `test_listening.py` | 6 | Listening progress from Jellyfin, Plex and Audiobookshelf |
@@ -63,6 +64,7 @@ runs `tools/journeys/journeys.mjs` in the Playwright image. It needs Docker. It 
 
 - every page script parses;
 - adding, changing, testing and removing an app through the page;
+- after signing in, the `next` address cannot send you to another site;
 - names, categories, descriptions and UX notes that look like code are shown as text, and nothing runs;
 - the content security policy is on all 26 pages and blocks nothing;
 - a saved API key appears in no page or answer;
@@ -94,8 +96,8 @@ the setup code.
 
 | | Result |
 |---|---|
-| Unit and API tests | 113 passed |
-| Browser journeys | 16 passed |
+| Unit and API tests | 115 passed |
+| Browser journeys | 19 passed |
 | Install tests, Ubuntu 24.04 | 17 passed |
 | Install tests, Debian 12 | 17 passed |
 | Install tests, Fedora 42 | 17 passed |

@@ -272,7 +272,9 @@ releases are made is in [docs/RELEASING.md](docs/RELEASING.md).
   proxy with HTTPS (set `STARBOARD_TRUST_PROXY=1` and turn on HTTPS-only cookies in Settings). Do not forward
   the port straight to the internet.
 
-See [SECURITY.md](SECURITY.md) to report a problem.
+See [SECURITY.md](SECURITY.md) to report a problem, and
+[Security: how Starboard protects you, and how it was tested](docs/SECURITY-AND-TESTS.md) for the review and
+the security tests.
 
 ## Keep your details out of the repository
 

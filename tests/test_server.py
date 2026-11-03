@@ -330,6 +330,22 @@ class ServerTest(unittest.TestCase):
         conn.close()
         self.assertFalse(self.app.importing)
 
+    def test_72_a_new_password_signs_out_every_other_browser(self):
+        # SEC-18: the browser that changed it stays signed in; every other one is signed out.
+        self.sign_in()
+        resp, _ = self.request("POST", "/api/login", {"password": "correct horse battery"}, cookie=False)
+        other = resp.getheader("Set-Cookie").split(";")[0]
+        resp, _ = self.request("GET", "/api/config", headers={"Cookie": other}, cookie=False)
+        self.assertEqual(resp.status, 200)
+        for old, new in (("correct horse battery", "another long made-up password"), ("another long made-up password", "correct horse battery")):
+            resp, _ = self.request("POST", "/api/password", {"current": old, "new": new})
+            self.assertEqual(resp.status, 200)
+            ServerTest.cookie = resp.getheader("Set-Cookie").split(";")[0]
+        resp, _ = self.request("GET", "/api/config", headers={"Cookie": other}, cookie=False)
+        self.assertEqual(resp.status, 401)
+        resp, _ = self.request("GET", "/api/config")
+        self.assertEqual(resp.status, 200)
+
     def test_70_ux_notes_only_while_turned_on(self):
         self.sign_in()
         resp, _ = self.request("GET", "/api/ux-notes")

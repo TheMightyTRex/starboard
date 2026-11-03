@@ -47,6 +47,18 @@ class SecurityTest(unittest.TestCase):
         data = r.read()
         return r.status, dict(r.getheaders()), data
 
+    def test_forwarded_address_is_believed_only_from_the_proxy(self):
+        # SEC-04: X-Forwarded-For from anyone but the proxy cannot pick the address that sign-in limits count.
+        from types import SimpleNamespace
+        from starboard.server import Handler
+        app = SimpleNamespace(trust_proxy=True, proxy_addresses={"127.0.0.1"})
+        ask = lambda sender: Handler.client_address_text(SimpleNamespace(app=app, client_address=(sender, 5000),
+                                                                         headers={"X-Forwarded-For": "203.0.113.9, 127.0.0.1"}))
+        self.assertEqual(ask("127.0.0.1"), "203.0.113.9")  # the proxy passes on who is really asking
+        self.assertEqual(ask("192.168.1.21"), "192.168.1.21")  # anyone else: their own address
+        app.trust_proxy = False
+        self.assertEqual(ask("127.0.0.1"), "127.0.0.1")  # proxy trust off: never believed
+
     def test_negative_content_length_is_refused(self):
         s = socket.create_connection(("127.0.0.1", self.port), timeout=5)
         s.sendall(b"POST /api/login HTTP/1.1\r\nHost: 127.0.0.1\r\nX-Starboard: 1\r\nContent-Length: -1\r\n\r\n")
