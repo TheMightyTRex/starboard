@@ -105,6 +105,7 @@ Each guide is a journey through several topics, in order.
 - [Starboard does not open](topics/starboard-does-not-open.md)
 - [An app shows as not responding](topics/app-not-responding.md)
 - [Read the log and report a problem](topics/read-the-log.md)
+- [Send feedback about a page](topics/send-feedback.md)
 
 ## The basics: ideas explained from the start
 

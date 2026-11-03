@@ -20,6 +20,9 @@ Latest results: 3 November 2026.
 - Sign-in cookies are `HttpOnly` and `SameSite=Strict`, and can be HTTPS-only behind a reverse proxy.
 - Changing the password, or **Sign out everywhere**, signs out every other browser.
 - A forgotten password is reset only on the server itself (`./reset-password.sh`), which also signs everyone out.
+- Send feedback (Snaglist) sends its reports without cookies, so **Save in Starboard** carries a key instead. The
+  key is given only to a signed-in browser, works only while that sign-in does and while Send feedback is active,
+  and needs Starboard's own header and `Origin` like every other change. A report is at most 512 KB.
 
 **Requests**
 - Every change needs a header only Starboard's own pages send, and a matching `Origin`, so another website
@@ -38,11 +41,13 @@ Latest results: 3 November 2026.
 
 **Pages**
 - A strict content security policy on every page: no inline scripts, nothing loaded from other sites except
-  cover pictures.
+  cover pictures. The one inline stylesheet allowed is Snaglist's, by its SHA-256 hash, worked out when
+  Starboard starts.
 - Pages build everything as text, never as HTML, so a name containing code is shown, never run.
 
 **Your computer**
 - The container runs as your user, read-only, with every Linux capability dropped and no new privileges.
+- It is capped at 512 MB of memory and 200 processes, so a fault cannot take the whole server's.
 - Every kind of access is optional and off unless you say yes: Docker, folders, per-app use, disk health,
   Live TV. **Settings, About and updates** lists each one and how to change it.
 - Data files are `0600` and data folders `0700`.
@@ -109,6 +114,7 @@ Each check has an ID, which the test scripts print beside their results. The tes
 | SEC-21 | With Docker access off, Starboard cannot reach Docker | Install tests | Pass |
 | SEC-22 | With home network off, nothing outside the computer can connect | Install tests on 5 systems | Pass |
 | SEC-23 | No personal details in the repository | `tools/check-private.sh` before every commit | Pass |
+| SEC-24 | Save in Starboard needs a key from a signed-in session, ends with it, and only while Send feedback is active; the policy lets in only Snaglist's stylesheet | Unit test, browser journey | Pass |
 
 The 5 systems are clean installs of Ubuntu 24.04, Debian 12 and Fedora 42, and 64-bit ARM with 1 GB and with
 512 MB of memory.

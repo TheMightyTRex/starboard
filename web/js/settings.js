@@ -642,8 +642,9 @@ function startGeneral() {
   const uxInput = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "ux-notes-l", checked: config.ux_notes });
   uxInput.addEventListener("change", async () => {
     try {
-      await saveGeneral({ ux_notes: uxInput.checked }, uxInput.checked ? "Note an issue activated on every page" : "Note an issue deactivated");
-      if (uxInput.checked) startUxNotes(); else window.UxNotes?.stop();
+      await saveGeneral({ ux_notes: uxInput.checked }, uxInput.checked ? "Send feedback activated on every page" : "Send feedback deactivated");
+      if (uxInput.checked) await startFeedback(); else stopFeedback();
+      renderFeedback();
     } catch (err) { uxInput.checked = !uxInput.checked; problem(err.message); }
   });
   const uxSwitch = el("label", { class: "switch" }, uxInput);
@@ -742,10 +743,58 @@ function startGeneral() {
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
     el("div", { id: "testing" }, section("gn-test", "Testing", "For trying Starboard out and reporting what could be better.",
       el("ul", { class: "settings-rows" },
-        settingRow("Note issues", "Adds Note an issue to the corner of every page: choose the part of the page and say what is wrong. Notes are kept on the server in data/ux-notes.json, and Notes beside the button lists them.",
-          uxSwitch, "ux-notes-l")))));
+        settingRow("Send feedback", "Adds Send feedback to the corner of every page, to report a problem, suggest something or check a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here.",
+          uxSwitch, "ux-notes-l")),
+      el("div", { id: "feedback-list" }))));
   renderCategories();
+  renderFeedback();
   if (["#categories", "#coming-up", "#download-hours", "#logs", "#testing"].includes(location.hash)) $(location.hash).scrollIntoView();
+}
+
+// Reports saved with Save in Starboard (and notes from the older Note an issue button), newest first.
+async function renderFeedback() {
+  const box = $("#feedback-list");
+  if (!box) return;
+  if (!config.ux_notes) { box.replaceChildren(); return; }
+  let notes;
+  try { notes = (await api("/api/ux-notes")).notes; } catch (e) { box.replaceChildren(notice("danger", "Could not load the saved reports", e.message)); return; }
+  if (!notes.length) { box.replaceChildren(el("p", { class: "muted", text: "No reports saved in Starboard yet." })); return; }
+  const open = notes.filter((n) => n.status !== "fixed").length;
+  const download = el("button", { type: "button", class: "btn" }, icon("download"), "Download all");
+  download.addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(notes, null, 2)], { type: "application/json" }));
+    const a = el("a", { href: url, download: `starboard-feedback-${new Date().toISOString().slice(0, 10)}.json` });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  const setStatus = async (n, status) => {
+    try { await api("/api/ux-notes/update", { method: "POST", body: { id: n.id, status } }); toast(status === "fixed" ? "Marked fixed" : "Marked open"); renderFeedback(); }
+    catch (e) { problem(e.message); }
+  };
+  const remove = async (n) => {
+    if (!(await confirmDialog({ title: "Remove this report?", message: n.title || n.what, confirm: "Remove report", danger: true }))) return;
+    try { await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } }); toast("Report removed"); renderFeedback(); }
+    catch (e) { problem(e.message); }
+  };
+  const row = (n) => {
+    const fixed = n.status === "fixed";
+    const title = n.title || String(n.what || "").split("\n")[0];
+    const meta = [n.page, n.part, n.when && formatDate(n.when, true), fixed ? "Fixed" : "Open"].filter(Boolean).join(" · ");
+    const body = n.markdown || n.what || "";
+    const details = body && body !== title ? el("details", {}, el("summary", { text: "The full report" }), el("pre", { class: "code-block", text: body })) : null;
+    const li = el("li", { class: "row" },
+      el("div", { class: "row__text" }, el("div", { class: "row__title", text: title }), el("div", { class: "row__meta", text: meta }), details),
+      el("div", { class: "row__side" },
+        el("button", { type: "button", class: "btn", onclick: () => setStatus(n, fixed ? "open" : "fixed") }, icon(fixed ? "rotate-ccw" : "check"), fixed ? "Mark open" : "Mark fixed"),
+        menuButton(`More actions for ${title}`, [{ label: "Remove", icon: "trash-2", danger: true, onSelect: () => later(() => remove(n)) }])));
+    li.dataset.key = n.id;
+    return li;
+  };
+  const list = el("ul", { class: "rows" });
+  redraw(list, notes.slice().reverse().map(row));
+  box.replaceChildren(
+    el("h3", { text: `Saved in Starboard: ${notes.length} ${notes.length === 1 ? "report" : "reports"}, ${open} open` }),
+    list, el("div", { class: "actions" }, download));
 }
 
 // What Starboard can access: a row per kind of access, with a switch, a link or the installer command.

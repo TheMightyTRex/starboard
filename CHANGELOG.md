@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **Send feedback** (Settings, General, Testing) replaces Note issues. It uses
+  [Snaglist](https://github.com/TheMightyTRex/snaglist): report a problem, suggest something or check a page for
+  accessibility problems, then open it as an issue on Starboard's GitHub page or save it in Starboard. Saved
+  reports, and the older notes, are listed under Testing with Mark fixed, Remove and Download all.
 - **Errors show where they happened:** a problem saving a setting, renaming a category or running an action
   now shows beside that control, in words, and clears on the next try. An error with nothing on the page to
   belong to is an error toast that stays until you close it (it used to fade like an information toast).

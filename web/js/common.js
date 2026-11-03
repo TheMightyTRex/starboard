@@ -474,20 +474,32 @@ function wireDialog(dialog) {
   $$("[data-dialog-close]", dialog).forEach((b) => b.addEventListener("click", () => dialog.close()));
 }
 
-// Testing (Settings, General): the shared library's Note an issue button, with the notes kept on the server in
-// data/ux-notes.json. The script loads only while it is on.
-async function startUxNotes(version) {
-  if (!version) version = (await api("/api/session").catch(() => ({}))).version;
-  const store = {
-    list: async () => (await api("/api/ux-notes")).notes,
-    add: (note) => api("/api/ux-notes", { method: "POST", body: note }),
-    update: (id, changes) => api("/api/ux-notes/update", { method: "POST", body: { id, ...changes } }),
-    remove: (id) => api("/api/ux-notes/remove", { method: "POST", body: { id } }),
-  };
-  const start = () => window.UxNotes?.start({ app: "Starboard", version, store });
-  if (window.UxNotes) return start();
-  document.head.append(el("script", { src: "/js/ux-notes.js", onload: start }));
+// Testing (Settings, General): Snaglist's Send feedback button (web/js/snaglist.js, from
+// github.com/TheMightyTRex/snaglist; copy a new version in, never edit it here). Each report goes as a GitHub
+// issue on Starboard's repository, or is saved in Starboard (data/ux-notes.json, listed in Settings, General).
+// It sends without cookies, so a key given while signed in stands in. The script loads only while it is on.
+async function startFeedback(session) {
+  if (!session?.version) session = await api("/api/session").catch(() => ({}));
+  const { key } = await api("/api/feedback/key");
+  const start = () => window.Snaglist?.start({
+    app: "Starboard", version: session.version || "", language: "en-GB", userToggle: false,
+    theme: document.documentElement.dataset.theme || "auto", // the theme chosen in Display, or the device's
+    types: ["bug", "ux", "visual", "accessibility", "performance", "content", "feature", "idea", "other", "check"],
+    send: {
+      github: session.repo ? { repo: session.repo } : null,
+      endpoint: { url: "/api/feedback", headers: { "X-Starboard": "1", "X-Starboard-Feedback": key } },
+      copy: true, download: true,
+    },
+    text: {
+      sendEndpoint: "Save in Starboard",
+      endpointNote: "Save in Starboard keeps the report on this server, listed in Settings, General, Testing.",
+      sent: "Saved in Starboard. It is listed in Settings, General, Testing.",
+    },
+  });
+  if (window.Snaglist) return start();
+  document.head.append(el("script", { src: "/js/snaglist.js", onload: start }));
 }
+function stopFeedback() { window.Snaglist?.destroy(); }
 
 async function startPage() {
   setUpHeader();
@@ -500,7 +512,7 @@ async function startPage() {
     document.title = document.title.replace(/ · [^·]*$/, ` · ${session.site_name}`);
     showVersion(session.version, session.repo, session.latest);
     upgradeNotice(session.upgrade);
-    if (session.ux_notes) startUxNotes(session.version);
+    if (session.ux_notes) startFeedback(session).catch(() => { /* the page works without it */ });
     return session;
   } catch { return null; }
 }

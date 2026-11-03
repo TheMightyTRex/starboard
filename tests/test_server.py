@@ -352,6 +352,43 @@ class ServerTest(unittest.TestCase):
         resp, _ = self.request("GET", "/api/config")
         self.assertEqual(resp.status, 200)
 
+    def test_73_snaglist_reports_need_the_key_from_a_signed_in_session(self):
+        self.sign_in()
+        report = {"title": "Apps: the button is hidden", "markdown": "## Hard to use\n\nThe button is hidden.",
+                  "report": {"type": "ux", "severity": "major", "page": {"path": "/index.html"}, "element": {"component": "Apps"}}}
+        send = lambda key, body=report: self.request("POST", "/api/feedback", body, {"X-Starboard-Feedback": key}, cookie=False)
+        resp, _ = self.request("GET", "/api/feedback/key")
+        self.assertEqual(resp.status, 404)  # Send feedback is inactive
+        self.request("PUT", "/api/config/general", {"ux_notes": True})
+        try:
+            _, data = self.request("GET", "/api/feedback/key")
+            key = data["key"]
+            self.assertEqual(send("")[0].status, 401)
+            self.assertEqual(send("made-up")[0].status, 401)
+            self.assertEqual(send(key, {"title": "x", "markdown": " "})[0].status, 400)
+            resp, data = send(key)
+            self.assertEqual(resp.status, 200)
+            _, listed = self.request("GET", "/api/ux-notes")
+            saved = next(n for n in listed["notes"] if n["id"] == data["id"])
+            self.assertEqual((saved["source"], saved["type"], saved["page"], saved["part"], saved["status"]),
+                             ("snaglist", "ux", "/index.html", "Apps", "open"))
+            self.assertEqual(self.request("GET", "/api/feedback/key")[1]["key"], key)  # one key for each session
+            # The key ends with the session it was given to.
+            other = self.app.sessions.create(1, self.app.session_version)
+            other_key = self.app.feedback_key(other)
+            self.assertEqual(send(other_key)[0].status, 200)
+            self.app.sessions.end(other)
+            self.assertEqual(send(other_key)[0].status, 401)
+            # The page lets in Snaglist's stylesheet by its hash, and no other inline style.
+            resp, _ = self.request("GET", "/login.html", cookie=False)
+            self.assertRegex(resp.getheader("Content-Security-Policy"), r"style-src 'self' 'sha256-[A-Za-z0-9+/]{43}='; ")
+            self.request("PUT", "/api/config/general", {"ux_notes": False})
+            self.assertEqual(send(key)[0].status, 401)
+        finally:
+            self.request("PUT", "/api/config/general", {"ux_notes": False})
+            for n in self.app.uxnotes.list():
+                self.app.uxnotes.remove(n["id"])
+
     def test_70_ux_notes_only_while_turned_on(self):
         self.sign_in()
         resp, _ = self.request("GET", "/api/ux-notes")

@@ -28,7 +28,7 @@ costs.
 | Test | Command | Covers | Time |
 |---|---|---|---|
 | Unit and API tests | `python3 -m unittest discover -s tests` | 117 tests: the server and its API, security findings, backup and restore, moving history from other apps, storage, logs, Install apps, discovery, copying app settings | 25 seconds |
-| Browser journeys | `tools/journeys.sh` | 24 checks in a real browser against example data | 2 minutes |
+| Browser journeys | `tools/journeys.sh` | 29 checks in a real browser against example data | 2 minutes |
 | Install tests in VMs | `tools/vm/vm.sh test <system>` | 17 checks of a fresh install on a clean system | 15 to 60 minutes each |
 | Help centre | `python3 tools/check-help.py` | Links, layout and writing rules of `docs/help` | 1 second |
 | Security scans | `tools/security-scan.sh` (`--full` adds ZAP's active scan) | Trivy, ZAP, Gitleaks, Bandit, ShellCheck, Hadolint ([Security](SECURITY-AND-TESTS.md)) | 10 minutes, or about an hour with `--full` |
@@ -43,7 +43,7 @@ needed. By file:
 
 | File | Tests | What it keeps working |
 |---|---|---|
-| `test_server.py` | 33 | Sign-in, setup, sessions, a new password signing out other browsers, every API route, limits, settings, backup routes, UX notes |
+| `test_server.py` | 33 | Sign-in, setup, sessions, a new password signing out other browsers, every API route, limits, settings, backup routes, saved reports and the Send feedback key |
 | `test_backup_migration.py` | 12 | Settings round trip to a fresh install, old and odd backups, saved copies, the server backup job and its alert, moving the data folder, password reset, watch history from a Plex database and another Jellyfin, history files, running an import twice, Plex audiobooks into Audiobookshelf |
 | `test_stack.py` | 9 | Install apps: only known apps, safe folders and VPN values, secrets kept off the page, free ports, VPN apps through Gluetun, old files kept |
 | `test_discovery.py` | 9 | Search for new apps, reading keys only from safe containers, finding the newest release, and which upgrade guide questions to ask |
@@ -68,8 +68,10 @@ runs `tools/journeys/journeys.mjs` in the Playwright image. It needs Docker. It 
 - an error shows beside what it belongs to (renaming a category to a name in use), the next try clears it, and
   an error with nothing on the page to belong to is an error toast;
 - the Updates button says Check until the first check;
+- Send feedback (Snaglist): it appears when activated, the content policy lets its styles in, a report saved
+  in Starboard is listed in Settings, General, and it is gone when deactivated;
 - after signing in, the `next` address cannot send you to another site;
-- names, categories, descriptions and UX notes that look like code are shown as text, and nothing runs;
+- names, categories, descriptions and saved reports that look like code are shown as text, and nothing runs;
 - the content security policy is on all 26 pages and blocks nothing;
 - a saved API key appears in no page or answer;
 - no page scrolls sideways at 375 pixels wide;
@@ -114,5 +116,5 @@ the setup code.
 ## Not tested by machine
 
 Left for people: real apps and a real Plex, Windows and Mac, a physical Raspberry Pi, keyboard-only and screen
-reader passes, and how pages look and read. The Note issues switch (Settings, General, Testing) records
-problems found while testing by hand.
+reader passes, and how pages look and read. Send feedback (Settings, General, Testing) records
+problems found while testing by hand, as GitHub issues or saved in Starboard.

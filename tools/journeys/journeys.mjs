@@ -85,6 +85,29 @@ const summary = await page.locator("#updates-summary").textContent();
 const label = (await page.locator("#check-updates").textContent()).trim();
 check("DASH-50", "the Updates button says Check until the first check", /Not checked/.test(summary) ? label === "Check" : /Last checked/.test(summary) ? label === "Check again" : true, `${label} / ${summary}`);
 
+// FB-01: Snaglist's Send feedback, saved in Starboard
+console.log("\n== FB-01 Send feedback (Snaglist)");
+const fbBefore = (await api("/api/config")).ux_notes;
+await api("/api/config/general", { method: "PUT", body: { ux_notes: true } });
+await open("index.html");
+const launcher = page.locator("snag-list button", { hasText: "Send feedback" });
+await launcher.waitFor({ timeout: 5000 }).catch(() => {});
+check("FB-01", "Send feedback is on the page", await launcher.count() === 1);
+check("FB-01", "its styles are let in by the content policy", await launcher.evaluate((b) => getComputedStyle(b).position === "fixed").catch(() => false));
+await page.evaluate(() => Snaglist.report(document.querySelector("main"), "other"));
+await page.locator("snag-list textarea").first().fill("A made-up journey report");
+await page.locator("snag-list button", { hasText: /^Review what is sent$/ }).click();
+await page.locator("snag-list button", { hasText: /^Save in Starboard$/ }).click();
+await page.locator("snag-list", { hasText: "Saved in Starboard" }).first().waitFor({ timeout: 5000 }).catch(() => {});
+const saved = ((await api("/api/ux-notes")).notes || []).filter((n) => n.source === "snaglist" && n.markdown.includes("A made-up journey report"));
+check("FB-01", "the report is saved in Starboard", saved.length === 1);
+await open("settings-general.html");
+check("FB-01", "Settings, General lists it", await page.locator("#feedback-list .row").count() >= 1);
+for (const n of saved) await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } });
+await api("/api/config/general", { method: "PUT", body: { ux_notes: fbBefore } });
+await open("index.html");
+check("FB-01", "deactivated, it is gone", await page.locator("snag-list").count() === 0);
+
 // SEC-07: names, categories, descriptions and UX notes that look like code are shown as text
 console.log("\n== SEC-07 Text that looks like code");
 const before = await api("/api/config");
@@ -94,10 +117,9 @@ const added = await api("/api/services", { method: "POST", body: { type: "link",
 await api("/api/ux-notes", { method: "POST", body: { what: `<img src=x onerror="window.__xss='note'">`, page: "/index.html", part: XSS } });
 for (const p of ["index.html", "apps-services.html", "settings.html", "settings-general.html"]) {
   await open(p);
-  if (p === "index.html") {
-    await page.locator(".ux-dock button").last().click();
-    await page.waitForTimeout(500);
-    check("SEC-07", "a UX note is shown as text", await page.locator("dialog[open]").getByText(`<img src=x onerror="window.__xss='note'">`).count() > 0);
+  if (p === "settings-general.html") {
+    await page.locator("#feedback-list .row").first().waitFor({ timeout: 5000 }).catch(() => {});
+    check("SEC-07", "a saved report is shown as text", await page.locator("#feedback-list").getByText(`<img src=x onerror="window.__xss='note'">`).count() > 0);
   }
   const ran = await page.evaluate(() => window.__xss);
   check("SEC-07", `${p}: nothing ran`, !ran, `window.__xss = ${ran}`);

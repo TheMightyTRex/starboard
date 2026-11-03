@@ -1,5 +1,6 @@
 """The web server: static pages, the JSON API and the security rules around both."""
 
+import base64
 import datetime as dt
 import gzip
 import hashlib
@@ -30,9 +31,22 @@ PUBLIC_PAGES = {"/login.html", "/setup.html"}
 PUBLIC_PREFIXES = ("/css/", "/js/", "/fonts/", "/icons/")
 PUBLIC_FILES = {"/favicon.svg", "/icon-app.svg", "/manifest.webmanifest"}
 
+
+
+def _snaglist_style():
+    """Snaglist (Settings, General, Testing) sets its styles with one <style> in its own shadow root. Its hash lets
+    exactly that stylesheet in, so the policy still refuses every other inline style."""
+    try:
+        with open(os.path.join(WEB, "js", "snaglist.js"), encoding="utf-8") as f:
+            css = re.search(r"const CSS_TEXT = `([^`\\$]*)`;", f.read())
+    except OSError:
+        return ""
+    return f" 'sha256-{base64.b64encode(hashlib.sha256(css.group(1).encode()).digest()).decode()}'" if css else ""
+
+
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
-        "default-src 'self'; img-src 'self' data: https:; style-src 'self'; script-src 'self'; "
+        f"default-src 'self'; img-src 'self' data: https:; style-src 'self'{_snaglist_style()}; script-src 'self'; "
         "font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
     ),
     "X-Content-Type-Options": "nosniff",
@@ -89,6 +103,8 @@ class App:
         self.data_dir = data_dir
         self.config = Config(data_dir)
         self.uxnotes = uxnotes.UxNotes(data_dir)
+        self._feedback_keys = {}  # Snaglist's key -> the session it was given to
+        self._feedback_lock = threading.Lock()
         self.log = logs.start(data_dir, lambda: self.config.data["logs"], lambda: [self.config.data.get("site_name", "")])
         self.sessions = auth.Sessions(data_dir)
         if os.path.exists(os.path.join(data_dir, "reset-password")):
@@ -158,6 +174,24 @@ class App:
             os.remove(os.path.join(data_dir, "setup-token"))
         except FileNotFoundError:
             pass
+
+    MAX_FEEDBACK_KEYS = 100
+
+    def feedback_key(self, token):
+        """A key for Snaglist's reports, good while the session it was given to is."""
+        with self._feedback_lock:
+            for k, t in list(self._feedback_keys.items()):
+                if t == token:
+                    return k
+            while len(self._feedback_keys) >= self.MAX_FEEDBACK_KEYS:
+                self._feedback_keys.pop(next(iter(self._feedback_keys)))
+            key = secrets.token_urlsafe(24)
+            self._feedback_keys[key] = token
+            return key
+
+    def feedback_key_valid(self, key):
+        token = self._feedback_keys.get(key) if key else None
+        return bool(token) and self.sessions.valid(token, self.session_version)
 
     def host_allowed(self, name):
         if not name or name in ("localhost",) or name.endswith(".localhost") or name in self.allowed_hosts:
@@ -536,6 +570,11 @@ class Handler(BaseHTTPRequestHandler):
                     "upgrade": self.upgrade_summary() if signed_in else None,
                     "ux_notes": bool(signed_in and app.config.data.get("ux_notes")),
                 })
+            if path == "/api/feedback" and method == "POST":
+                # Snaglist sends without cookies, so the key it was given while signed in stands in for them.
+                if not (app.config.data.get("ux_notes") and app.feedback_key_valid(self.headers.get("X-Starboard-Feedback", ""))):
+                    return self.error(401, "Sign in again, then send the report")
+                return self.json(200, {"id": app.uxnotes.add_report(self.body(uxnotes.MAX_REPORT))["id"]})
             if path == "/api/jellyfin/detect" and method == "GET":
                 if not (app.needs_setup or self.signed_in()):
                     return self.error(401, "Sign in first")
@@ -577,9 +616,13 @@ class Handler(BaseHTTPRequestHandler):
                     # Answer first, then move the listener.
                     threading.Timer(0.5, app.on_network_change).start()
                 return self.json(200, cfg.public())
+            if path == "/api/feedback/key" and method == "GET":
+                if not cfg.data.get("ux_notes"):
+                    return self.error(404, "Activate Send feedback in Settings, General first")
+                return self.json(200, {"key": app.feedback_key(self.token())})
             if path.startswith("/api/ux-notes"):
                 if not cfg.data.get("ux_notes"):
-                    return self.error(404, "Activate Note issues in Settings, General first")
+                    return self.error(404, "Activate Send feedback in Settings, General first")
                 if path == "/api/ux-notes" and method == "GET":
                     return self.json(200, {"notes": app.uxnotes.list()})
                 if path == "/api/ux-notes" and method == "POST":
