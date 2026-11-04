@@ -17,7 +17,7 @@ dashboard-icons collection, a web address of a picture, or a picture file of you
 
 1. Find the icon's name in the [dashboard-icons collection](https://github.com/homarr-labs/dashboard-icons). The
    name is the file name without its ending, such as `jellyfin` or `home-assistant`.
-2. Go to **Settings**, then **Manage apps**, and select **Edit** for the app.
+2. Go to **Settings**, then **Apps**, then **Manage apps**, and select **Edit** for the app.
 3. In **Icon**, type the name. Or type the full address of an SVG or PNG picture, starting with `https://`.
 4. Select **Save app**, or **Save and continue** for Sonarr, Radarr, Lidarr and Readarr. Starboard downloads
    the icon once and keeps a copy.
@@ -36,8 +36,7 @@ dashboard-icons collection, a web address of a picture, or a picture file of you
 
 - Leave **Icon** empty to go back to the icon Starboard picks from the app's name.
 - If Starboard finds no icon, the card shows two letters from the app's name instead.
-- Starboard downloads icons only while **The dashboard-icons collection, for app icons** is active in **Settings**, **About and
-  updates**. When it is inactive, only icons already saved and your own files are used. Read
+- Starboard downloads icons only while **The dashboard-icons collection, for app icons** is active in **Settings**, **Updates**. When it is inactive, only icons already saved and your own files are used. Read
   [Change what Starboard can access](change-what-starboard-can-access.md).
 - A downloaded icon can be up to 300 KB.
 

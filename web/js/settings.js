@@ -117,7 +117,7 @@ function sectionsOf(services) {
   for (const s of shown) if (s.group && !groups.includes(s.group)) groups.push(s.group);
   const out = groups.map((g) => ({ key: `group:${g}`, title: g, items: shown.filter((s) => s.group === g) }));
   out.push({ key: "group:", title: "Other", items: shown.filter((s) => !s.group) });
-  out.push({ key: "background", title: "Other services", hint: "Services with no web page. They appear under Apps, Other services.", items: services.filter((s) => s.background) });
+  out.push({ key: "background", title: "Other services", hint: "Services with no web page. They appear under System, Apps, Other services.", items: services.filter((s) => s.background) });
   return out.filter((g) => g.items.length);
 }
 
@@ -293,7 +293,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
   const formError = el("div", { role: "alert" });
   // Container for Updates: filled from Docker when Starboard has access; otherwise the field stays hidden.
   const container = el("select", { class: "select", name: "container" }, el("option", { value: "", text: "Find it by name" }));
-  const containerField = field("Container", container, { hint: "The container this app runs in, for Apps, Updates. Starboard finds it by the app's name unless you choose one.", span: true });
+  const containerField = field("Container", container, { hint: "The container this app runs in, for System, Apps, Updates. Starboard finds it by the app's name unless you choose one.", span: true });
   containerField.hidden = true;
   api("/api/containers").then((d) => {
     if (!d.available) return;
@@ -325,7 +325,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
         containerField),
       el("div", { class: "switch-list" },
         switchRow("Show on the dashboard", null, enabled),
-        switchRow("Background service", "It has no web page, so it is listed under Apps, Other services.", bg)),
+        switchRow("Background service", "It has no web page, so it is listed under System, Apps, Other services.", bg)),
       followsField),
     formError);
 
@@ -353,7 +353,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
     keyField.hidden = NO_KEY.includes(t);
     const where = { qbittorrent: "Options, Web UI, API key (version 5.2 or later)", sabnzbd: "Config, General, API Key",
       jellyfin: "Dashboard, API keys. Optional: it adds Jellyfin's state, what is playing and recently added to System",
-      audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Audiobookshelf)",
+      audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Apps, Audiobookshelf)",
       gluetun: "its control server settings. Optional: only if you gave its control server an API key" }[t] || "Settings, General";
     keyHint.textContent = `In ${config.types[t]?.label || "the app"}: ${where}.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
     followsField.hidden = !bg.checked;
@@ -629,7 +629,7 @@ function startGeneral() {
   const serverName = el("input", { class: "input", name: "server_name", maxlength: String(config.server_name_max || 10),
     value: config.server_name || "", autocomplete: "off", spellcheck: "false" });
   const serverForm = el("form", { novalidate: true, class: "inline-save" },
-    field("Server name", serverName, { hint: `Up to ${config.server_name_max || 10} characters, such as T-Rex. Shown at the start of the menu at the top of every page. Leave it empty to show no name.`, short: true }),
+    field("Server name", serverName, { hint: `Up to ${config.server_name_max || 10} characters, such as T-Rex. Shown at the start of the level 1 menu on every page. Leave it empty to show no name.`, short: true }),
     el("button", { type: "submit", class: "btn", text: "Save server name" }), savedNote("server-name-saved"));
   // A count under the box, read with the hint but not announced on every key.
   const max = config.server_name_max || 10;
@@ -1024,7 +1024,7 @@ async function stepContent(id, root) {
       return { key, input, node: el("label", { class: "check" }, input, el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: hint }))) };
     };
     const picks = [box("livetv", "Live TV channels and guide", "Free channels for Jellyfin's Live TV, with guides. Needs Jellyfin's Live TV folder (./install.sh asks)."),
-      box("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin. You choose where from in Settings, Jellyfin."),
+      box("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin. You choose where from in Settings, Apps, Jellyfin."),
       box("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone who has not chosen otherwise.")];
     nodes = [el("div", { class: "switch-list" }, picks.map((x) => x.node))];
     save = async () => { await saveGeneral({ extras: Object.fromEntries(picks.map((x) => [x.key, x.input.checked])) }); return true; };
@@ -1118,7 +1118,7 @@ async function startGuide() {
       list.push({ id: "keys", title: "API keys", question: "Give Starboard their API keys?",
         intro: "With its key, Starboard can show an app's queue, calendar, updates and warnings. Each key stays on the server." });
     }
-    if (types(["jellyfin"]).length) list.push({ id: "jellyfin", title: "Jellyfin", question: "Use Starboard's Jellyfin extras?", intro: "Each one is inactive until you tick it. All are in Settings, Jellyfin later." });
+    if (types(["jellyfin"]).length) list.push({ id: "jellyfin", title: "Jellyfin", question: "Use Starboard's Jellyfin extras?", intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
     if (types(["qbittorrent", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", title: "Download hours", question: "Only download at set hours?", intro: "Starboard pauses qBittorrent and SABnzbd outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", title: "Alerts", question: "Get an alert when something stops?", intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", title: "Storage", question: "How should Storage keep up to date?", intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
@@ -1292,7 +1292,7 @@ function startAlerts() {
     settingRow("A folder gets full", "For the folders on System, Storage.",
       selectFor("al-full-l", [[0, "Off"], [80, "At 80%"], [85, "At 85%"], [90, "At 90%"], [95, "At 95%"]], a().disk_full, (v, t) => save({ alerts: { disk_full: Number(v) } }, `Full folder alerts: ${t.toLowerCase()}`)), "al-full-l"),
     settingRow("A download needs attention", "When it has needed attention for 30 minutes.", onOff("download_stuck", "al-stuck-l", "Download alerts"), "al-stuck-l"),
-    settingRow("The server backup fails", "From System, Backup and restore.", onOff("backup_failed", "al-backup-l", "Backup alerts"), "al-backup-l"),
+    settingRow("The server backup fails", "From System, Backup.", onOff("backup_failed", "al-backup-l", "Backup alerts"), "al-backup-l"),
     settingRow("A certificate runs out soon", "For apps with an outside https:// address. Checked once a day.",
       selectFor("al-cert-l", [[0, "Off"], [7, "7 days before"], [14, "14 days before"], [30, "30 days before"]], a().cert_days, (v, t) => save({ alerts: { cert_days: Number(v) } }, `Certificate alerts: ${t.toLowerCase()}`)), "al-cert-l"));
 
@@ -1473,7 +1473,7 @@ async function startJellyfin() {
 
 // Audiobookshelf ------------------------------------------------------------
 // Listening progress from Plex, Jellyfin, Emby or another Audiobookshelf: read it, match each account to an
-// Audiobookshelf user, apply. Laid out like Settings, Jellyfin, Import watch history.
+// Audiobookshelf user, apply. Laid out like Settings, Apps, Jellyfin, Import watch history.
 
 const LISTEN_FROM = [["plex", "A Plex server"], ["jellyfin", "A Jellyfin server"], ["emby", "An Emby server"], ["audiobookshelf", "Another Audiobookshelf"]];
 const LISTEN_HINT = {
@@ -1666,13 +1666,13 @@ async function startPerformance() {
     settingRow("Download hours check", withCost("How often Starboard checks qBittorrent and SABnzbd while download hours are on (Settings, General).", "scheduleEvery"),
       pick("pf-sched-l", [[60, "Every minute"], [300, "Every 5 minutes"]], perf().schedule_every,
         (v, t) => save({ performance: { schedule_every: Number(v) } }, `Download hours check: ${t.toLowerCase()}`)), "pf-sched-l"),
-    settingRow("Live TV white logos", withCost("Only matters while Live TV is on (Settings, Jellyfin).", "white"),
+    settingRow("Live TV white logos", withCost("Only matters while Live TV is on (Settings, Apps, Jellyfin).", "white"),
       sw("pf-white-l", x.white_logos, (on) => save({ extras: { white_logos: on } }, on ? "White logos activated" : "White logos deactivated")), "pf-white-l"),
-    settingRow("Keep applying imported history", withCost("Settings, Jellyfin, Import watch history.", "importKeep"),
+    settingRow("Keep applying imported history", withCost("Settings, Apps, Jellyfin, Import watch history.", "importKeep"),
       sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } }, on ? "History applied every hour" : "History applied only when you ask")), "pf-imp-l"),
-    settingRow("Jellyfin user defaults", withCost("Settings, Jellyfin, User defaults.", "defaults"),
+    settingRow("Jellyfin user defaults", withCost("Settings, Apps, Jellyfin, User defaults.", "defaults"),
       sw("pf-def-l", x.defaults, (on) => save({ extras: { defaults: on } }, on ? "User defaults activated" : "User defaults deactivated")), "pf-def-l"),
-    settingRow("Keep applying listening progress", withCost("Settings, Audiobookshelf, Copy listening progress.", "listeningKeep"),
+    settingRow("Keep applying listening progress", withCost("Settings, Apps, Audiobookshelf, Copy listening progress.", "listeningKeep"),
       sw("pf-listen-l", x.listening_keep, (on) => save({ extras: { listening_keep: on } }, on ? "Listening progress applied every hour" : "Listening progress applied only when you ask")), "pf-listen-l"),
     settingRow("Work out what uses the space", withCost("Sorts your storage by type (TV, films, books and so on) for the charts on System, Storage.", "usage"),
       pick("pf-usage-l", USAGE_CHOICES, perf().usage_every, (v, t) => save({ performance: { usage_every: v } }, `What uses the space: ${t.toLowerCase()}`)), "pf-usage-l"),

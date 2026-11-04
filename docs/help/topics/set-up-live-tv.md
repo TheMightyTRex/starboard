@@ -19,7 +19,7 @@ and Free-TV. At the end, Jellyfin shows the channels with a TV guide, numbered t
 
 ### Activate Live TV in Starboard
 
-1. Go to **Settings**, then **Jellyfin**.
+1. Go to **Settings**, then **Apps**, then **Jellyfin**.
 2. In **Live TV**, activate **Build Live TV channels and guide**.
 3. Check **Address Jellyfin uses to reach Starboard**. Leave it blank to use the address Starboard shows in
    the field. If Jellyfin needs another address, type it, such as `http://192.168.1.20:8095`, and select

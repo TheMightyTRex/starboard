@@ -31,8 +31,7 @@ them on System, Overview, shows how each one went, and lets you start one with *
 ## Things to note
 
 - **Run now** cannot be selected while the job is waiting or running.
-- Starboard lists every job the runner reports, apart from the backups. Backups have their own page: **System**,
-  then **Backup and restore**.
+- Starboard lists every job the runner reports, apart from the backups. Backups have their own page: **System**, then **Backup**.
 - **Server jobs** appears only when the runner has reported at least one job.
 
 ## If it does not work

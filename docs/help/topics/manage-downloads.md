@@ -16,7 +16,7 @@ downloads, remove one download, or ask an app to find a different copy.
 
 ### See what is downloading
 
-1. Go to **Downloads**, then **Queue**. Each download shows its name, its app, its size, the time left and
+1. Go to **Activity**, then **Downloads**, then **Queue**. Each download shows its name, its app, its size, the time left and
    its state, such as **Downloading**, **Waiting** or **Needs attention**.
 2. Optional: to see only one state, select its filter, such as **Needs attention**. Select it again to see
    everything.
@@ -45,7 +45,7 @@ Use this when a download is stuck or the wrong one.
 
 The **Download hours** panel on the Downloads page has these buttons while download hours are active.
 
-1. Go to **Downloads**, then **Queue**.
+1. Go to **Activity**, then **Downloads**, then **Queue**.
 2. In **Download hours**, select one of these:
    - **Resume downloads now**: starts downloads outside your hours, until the next time they would pause.
    - **Pause downloads until** and a time: stops downloads until your hours start again.

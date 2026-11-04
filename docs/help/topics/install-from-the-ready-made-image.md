@@ -91,7 +91,7 @@ the line, save, and run the command in Step 8 again.
 
 - **Folders for System, Storage:** shows how full your drives are. You need two lines: the `STARBOARD_DISKS` line,
   and one line for each folder under `volumes`, such as `/mnt/media:/disks/media:ro`. The `:ro` means read-only.
-- **The Docker socket:** lets **Apps**, **Updates** update your other apps and lets Starboard find their API keys.
+- **The Docker socket:** lets **System**, **Apps**, **Updates** update your other apps and lets Starboard find their API keys.
   This gives Starboard full control of Docker, which is the same as full control of the computer. Leave it out if
   you are unsure. It needs three lines: the `docker.sock` line, and the `group_add:` line with the number under
   it. Put your own number there: this command prints it.

@@ -1,5 +1,5 @@
 """Listening progress into Audiobookshelf: where each person is in each audiobook, from Plex, Jellyfin, Emby or
-another Audiobookshelf (Settings, Audiobookshelf).
+another Audiobookshelf (Settings, Apps, Audiobookshelf).
 
 1. Read it into data/imports/listening.json (one list of books per account):
    - a Plex server, with its token: the token owner's account, from music libraries that hold audiobooks;

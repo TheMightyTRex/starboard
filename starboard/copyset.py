@@ -1,4 +1,4 @@
-"""Copying settings from one Sonarr, Radarr or Lidarr into another (Settings, Manage apps, Copy app settings).
+"""Copying settings from one Sonarr, Radarr or Lidarr into another (Settings, Apps, Manage apps, Copy app settings).
 
 For a new app next to an old one, or a second copy (a 4K Radarr, say). Both apps must be in Manage apps with their
 API keys, be the same kind and the same major version. What can be copied, in this order (later parts point at

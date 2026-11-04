@@ -1,4 +1,4 @@
-"""Finding apps on this server, for Search for new apps (Settings, Manage apps, and the set-up wizard).
+"""Finding apps on this server, for Search for new apps (Settings, Apps, Manage apps, and the set-up wizard).
 
 Only when asked. Starboard tries the usual port of each app it knows (and, with Docker access, every port a
 container publishes), on this computer, and recognises each app by its page title or a small status address.

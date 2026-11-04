@@ -1,4 +1,4 @@
-"""What Starboard can reach and control, in words, for Settings, About and updates.
+"""What Starboard can reach and control, in words, for Settings, Updates.
 
 Each item says what it is for, whether it is on now (read from what Starboard can actually see, not from what
 was asked for), and how to change it: a switch in Settings, or a question in ./install.sh.
@@ -35,17 +35,17 @@ def summary(app):
               + (f" to {d['watch']['channel']['kind']}" if d["watch"]["channel"].get("kind") else "") + ".",
               d["watch"]["enabled"], "setting", link="/settings-alerts.html", cost="About 0.02 seconds of processor every 5 minutes and under 1 MB of memory."),
         _item("docker", "Docker, for app updates",
-              "Lists your containers and installs new images on Apps, Updates. This is full control of Docker, "
+              "Lists your containers and installs new images on System, Apps, Updates. This is full control of Docker, "
               "which is the same as full control of the server.",
-              containers.available(), "installer", on_flag="--docker", off_flag="--no-docker", cost="Nothing until you open Apps, Updates; a check reads a few small files from each registry."),
+              containers.available(), "installer", on_flag="--docker", off_flag="--no-docker", cost="Nothing until you open System, Apps, Updates; a check reads a few small files from each registry."),
         _item("app_use", "Per-app processor and memory use",
-              "Reads two small files per container from the server's cgroup folder, read-only, while System, Monitor is open.",
+              "Reads two small files per container from the server's cgroup folder, read-only, while System, Overview, Monitor is open.",
               bool(sysinfo.cgroup_dir()) and os.path.isdir(os.path.join(sysinfo.cgroup_dir(), "system.slice")),
               "installer", on_flag="--app-use", off_flag="--no-app-use", cost="Two small files per container every 2 seconds, only while Monitor is open."),
         _item("livetv", "Jellyfin's Live TV folder",
-              "Starboard writes channel playlists, guides and logos there once a day while Live TV is on (Settings, Jellyfin). "
+              "Starboard writes channel playlists, guides and logos there once a day while Live TV is on (Settings, Apps, Jellyfin). "
               "Jellyfin can fetch logos and Pluto streams from Starboard without signing in, and only while Live TV is on.",
-              bool(os.environ.get("STARBOARD_IPTV_DIR")), "installer", on_flag="--livetv-folder /path", off_flag="--no-livetv", cost="See Settings, Jellyfin: under 2 seconds a day, about a minute a week."),
+              bool(os.environ.get("STARBOARD_IPTV_DIR")), "installer", on_flag="--livetv-folder /path", off_flag="--no-livetv", cost="See Settings, Apps, Jellyfin: under 2 seconds a day, about a minute a week."),
         _item("jellyfin_jobs", "Jellyfin: watch history import and user defaults",
               "With Jellyfin's API key, Starboard marks imported history as watched and sets defaults for users who have not chosen their own.",
               d["extras"].get("import_keep") or d["extras"].get("defaults"), "setting", link="/settings-jellyfin.html", cost="About 1 second of processor and up to 40 MB of memory for 20 seconds an hour (import); defaults, nothing noticeable."),

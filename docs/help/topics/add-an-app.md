@@ -18,7 +18,7 @@ may find it and fill in these details for you.
 
 ## Steps
 
-1. Go to **Settings**, then **Manage apps**.
+1. Go to **Settings**, then **Apps**, then **Manage apps**.
 2. Select **Add an app**. A side panel opens, called **Add an app**.
 3. In **Kind of app**, choose the app, such as **Sonarr**. For an app that is not in the list, choose
    **Other app**.

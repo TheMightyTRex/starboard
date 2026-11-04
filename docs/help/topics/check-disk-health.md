@@ -23,7 +23,7 @@ saves.
 
 ## Steps
 
-1. Go to **System**, then **Disk health**.
+1. Go to **System**, then **Storage**, then **Disk health**.
 2. Read the tiles: how many drives are **To check**, the **Hottest** drive and the **Oldest** drive.
 3. Find each drive in the table, most urgent first. Its **Status** is one of these:
    - **Healthy:** nothing to do.

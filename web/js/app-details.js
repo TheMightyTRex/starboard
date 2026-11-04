@@ -1,4 +1,4 @@
-// App details: the one slide-out for an app or a service, shared by Apps, Other services and Network.
+// App details: the one slide-out for an app or a service, shared by System, Apps, Other services and Network.
 // It shows the status, version and update, the addresses with copy buttons, the app's own warnings, Open as its
 // own button and Edit (Manage apps, /settings.html?edit=<id>). The page loads the data once through
 // AppDetails.load() and reads it back for its own rows, so the slide-out and the page always agree.

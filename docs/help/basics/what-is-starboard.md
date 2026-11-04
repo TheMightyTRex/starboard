@@ -21,12 +21,30 @@ puts them all in one place, behind one password.
   responding come first, so problems are easy to spot.
 - **Search once, add anywhere.** **Search** looks in Sonarr, Radarr, Lidarr and Readarr at the same time and adds
   what you choose to the right app.
-- **Follow downloads.** **Downloads** lists what is downloading, and can pause and resume it.
-- **See what is coming up.** **Coming up** lists new episodes, films and albums due soon, as a list or a calendar.
+- **Follow downloads.** **Activity**, **Downloads** lists what is downloading, and can pause and resume it.
+- **See what is coming up.** **Discover**, **Coming up** lists new episodes, films and albums due soon, as a list
+  or a calendar.
 - **Check the server.** **System** shows free space, disk health, what each app is using and the log.
 - **Get alerts.** Starboard can send you a message when an app stops answering or a disk gets full.
 
 If these app names are new to you, read [The apps Starboard works with](the-apps.md).
+
+## Find your way around
+
+Starboard's menu has three levels:
+
+1. **The side menu**, beside every page on a computer, has the Starboard logo, **Search** and five sections:
+   **Library**, **Discover**, **Activity**, **System** and **Settings**. The logo opens the **Apps** page.
+2. **The level 1 menu**, along the header, lists the pages in the section you chose. It starts with your
+   server's name, if you gave it one in **Settings**, then **General**.
+3. **The level 2 menu**, under the level 1 menu, lists a page's own tabs. Only pages with tabs have one.
+
+In this help, a place is written as its path: **Settings**, then **Apps**, then **Jellyfin** means the Settings
+section, its Apps page, then the Jellyfin tab.
+
+On a phone, select the **Menu** button in the header. It lists the five sections, each with its pages.
+
+The **Library** and a few other places say they come with Reelix. They fill in once Starboard reads Reelix.
 
 ## Light on your server
 

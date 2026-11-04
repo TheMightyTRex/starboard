@@ -29,7 +29,7 @@ add, rename, reorder and remove categories, and choose the category for each app
 
 ### Put an app in a category
 
-1. Go to **Settings**, then **Manage apps**, and select **Edit** for the app.
+1. Go to **Settings**, then **Apps**, then **Manage apps**, and select **Edit** for the app.
 2. In **Category**, choose a category. **Choose for me** puts well-known apps in their usual category and shows
    which one it picked.
 3. Select **Save app**, or **Save and continue** for Sonarr, Radarr, Lidarr and Readarr.
@@ -39,8 +39,7 @@ add, rename, reorder and remove categories, and choose the category for each app
 - Starboard starts with four categories: Watch, listen and request; Find and organise; Search and download;
   and Dashboards and tools.
 - You can have up to 20 categories, with names of up to 40 characters. The last category cannot be removed.
-- Apps with no category are shown under **Other**. Background services are listed under **Apps**, **Other
-  services** instead. Read [Add a background service](add-a-background-service.md).
+- Apps with no category are shown under **Other**. Background services are listed under **System**, **Apps**, **Other services** instead. Read [Add a background service](add-a-background-service.md).
 - Some apps may be in a category that is not in the list, for example after a restore. Starboard then
   offers **Add it to the list** or **Add them to the list**.
 

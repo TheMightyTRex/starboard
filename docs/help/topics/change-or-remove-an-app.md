@@ -13,7 +13,7 @@ remove it from Starboard. Removing an app from Starboard does not change the app
 
 ### Change an app's details
 
-1. Go to **Settings**, then **Manage apps**.
+1. Go to **Settings**, then **Apps**, then **Manage apps**.
 2. Find the app and select **Edit**, or select the app's name. A side panel opens, called **Edit** and the
    app's name.
 3. Change what you need, such as **Address Starboard uses** or **API key**. Leave **API key** empty to keep the

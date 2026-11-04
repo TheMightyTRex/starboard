@@ -12,7 +12,7 @@ is one default: Live TV opens on the Guide.
 
 ## Steps
 
-1. Go to **Settings**, then **Jellyfin**.
+1. Go to **Settings**, then **Apps**, then **Jellyfin**.
 2. In **User defaults**, activate **Give every Jellyfin user the defaults**.
 3. To apply them straight away, select **Run Defaults now**. Otherwise, Starboard applies them within the
    hour.

@@ -2,8 +2,7 @@
 
 # Back up the whole server
 
-Starboard can start a backup of your whole server and list the files it made, on **System**, **Backup and
-restore**. The backup itself is done by a job you set up on the server, so Starboard never needs to read the
+Starboard can start a backup of your whole server and list the files it made, on **System**, **Backup**. The backup itself is done by a job you set up on the server, so Starboard never needs to read the
 server's files.
 
 This article is for confident readers. You write a small script, set up a systemd service and change
@@ -172,7 +171,7 @@ Starboard lists files in the backup folder that end in `.zip`, `.tar`, `.tar.gz`
     docker compose up -d
     ```
 
-11. Go to **System**, then **Backup and restore**, and select **Back up the server now**.
+11. Go to **System**, then **Backup**, and select **Back up the server now**.
 
 The status shows **Starting**, then **Backing up now**, then **Complete** or **Failed**. The page checks
 again every 5 seconds while the backup runs. The new file appears in the list under it.
