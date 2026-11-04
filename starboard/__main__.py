@@ -21,7 +21,7 @@ class Runner:
         host = host or self.app.listen_host()
         self.server, _ = make_server(host, self.app.port, self.app)
         self.host = host
-        thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        thread = threading.Thread(target=self.server.serve_forever, kwargs={"poll_interval": 5}, daemon=True)  # wakes every 5 s, not twice a second, only to check for shutdown
         thread.start()
         where = "this computer only" if host.startswith("127.") else "your network"
         logs.event("info", "start", f"Starboard {self.app.version} listening on port {self.app.port} ({where})")

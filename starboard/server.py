@@ -76,26 +76,52 @@ _static = {}
 _static_lock = threading.Lock()
 
 
-def static_file(full):
+# Links to the styles, scripts, icons and font inside pages, scripts and styles. Each gets ?v= and the linked file's
+# own hash when it is served, so the browser can keep that file for a year and ask for it again only when it changes.
+_LINK = re.compile(rb"(?<![\w.])((?:/|\.\./)(?:css|js|icons|fonts)/[\w.-]+\.(?:css|js|svg|woff2))(?=[#\"')])")
+
+
+def _versioned(full, data, depth=0):
+    """data with each link to a file under web/ given ?v=<that file's hash>, and the files it depends on."""
+    deps = {}
+
+    def tag(match):
+        link = match.group(1).decode()
+        target = os.path.realpath(os.path.join(os.path.dirname(full), link) if link.startswith("..") else os.path.join(WEB, link.lstrip("/")))
+        if not target.startswith(WEB + os.sep) or not os.path.isfile(target) or depth > 2:
+            return match.group(1)
+        version = static_file(target, depth + 1)[2].strip('"')
+        deps[target] = version
+        return match.group(1) + b"?v=" + version.encode()
+
+    return _LINK.sub(tag, data), deps
+
+
+def static_file(full, depth=0):
     """(bytes, gzip bytes or None, ETag, content type) for a file under web/, read and compressed once and kept
-    until the file changes. The whole web folder is well under a megabyte."""
+    until the file, or a file it links to, changes. The whole web folder is well under a megabyte."""
     st = os.stat(full)
     key = (st.st_mtime_ns, st.st_size)
     with _static_lock:
         hit = _static.get(full)
-        if hit and hit[0] == key:
-            return hit[1]
+    if hit and hit[0] == key and all(static_file(d, depth + 1)[2].strip('"') == v for d, v in hit[2].items()):
+        return hit[1]
     with open(full, "rb") as f:
         data = f.read()
     kind = mimetypes.guess_type(full)[0] or "application/octet-stream"
     text = kind.startswith("text/") or kind in ("application/javascript", "image/svg+xml", "application/manifest+json")
+    deps = {}
     if text:
         kind += "; charset=utf-8"
+        if full.endswith((".html", ".js", ".css")):
+            data, deps = _versioned(full, data, depth)
+    # Only the compressed copy is kept when there is one; the rare browser without gzip gets it unpacked.
     packed = gzip.compress(data, 9) if text and len(data) > 1024 else None
     tag = '"' + hashlib.sha256(data).hexdigest()[:20] + '"'
+    value = (None if packed else data, packed, tag, kind)
     with _static_lock:
-        _static[full] = (key, (data, packed, tag, kind))
-    return data, packed, tag, kind
+        _static[full] = (key, value, deps)
+    return value
 
 
 class App:
@@ -283,8 +309,24 @@ def is_loopback(address):
         return False
 
 
+KEEP_ALIVE_IDLE = 10  # seconds a kept-alive connection waits for the browser's next request
+
+
 class Handler(BaseHTTPRequestHandler):
+    # HTTP/1.1 keeps the connection open for the page's styles, scripts and API calls, so a page costs one
+    # connection and one thread instead of about 15 (a page took a third of the processor time in testing).
+    protocol_version = "HTTP/1.1"
+    disable_nagle_algorithm = True  # without it, small answers on a kept-alive connection wait 40 ms
     timeout = 30  # an idle or slow connection is closed after 30 seconds, so it cannot hold a thread for ever
+
+    def handle(self):
+        """One request, then more on the same connection while the browser keeps it open. Between requests the
+        connection waits only KEEP_ALIVE_IDLE seconds, so idle connections do not hold threads."""
+        self.close_connection = True
+        self.handle_one_request()
+        while not self.close_connection:
+            self.connection.settimeout(KEEP_ALIVE_IDLE)
+            self.handle_one_request()
     server_version = "Starboard"
     sys_version = ""
     app: App = None  # set by make_server
@@ -335,6 +377,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Strict-Transport-Security", "max-age=31536000")
         self.send_header("Content-Type", content_type.replace("\r", "").replace("\n", ""))
         self.send_header("Content-Length", str(len(body)))
+        if getattr(self, "close_connection", False) and getattr(self, "request_version", "") == "HTTP/1.1":
+            self.send_header("Connection", "close")  # so the browser does not send another request on it
         for k, v in (extra or {}).items():
             self.send_header(k, str(v).replace("\r", "").replace("\n", ""))  # never a line break (refused above too)
         self.end_headers()
@@ -367,6 +411,7 @@ class Handler(BaseHTTPRequestHandler):
         if length > limit:
             raise ValueError("That request is too large")
         raw = self.rfile.read(length) if length else b"{}"
+        self._body_read = True
         data = json.loads(raw or b"{}")
         if not isinstance(data, dict):
             raise ValueError("Send a JSON object")
@@ -486,8 +531,20 @@ class Handler(BaseHTTPRequestHandler):
         if not path.startswith("/api/"):
             return self.error(405, "Not allowed")
         if not self.same_origin():
+            self.close_connection = True  # its body was not read, so the connection cannot carry another request
             return self.error(403, "Blocked: this request did not come from the dashboard")
-        self.api(method, path)
+        self._body_read = False
+        try:
+            self.api(method, path)
+        finally:
+            # A body nobody read would be taken for the next request on a kept-alive connection: read and drop a
+            # small one, and close the connection after a large one.
+            raw = (self.headers.get("Content-Length") or "0").strip()
+            if not self._body_read and raw not in ("", "0"):
+                if raw.isdigit() and int(raw) <= MAX_BODY and not self.close_connection:
+                    self.rfile.read(int(raw))
+                else:
+                    self.close_connection = True
 
     def static(self, path):
         if "/." in path or "\\" in path:  # no dot-dot or hidden files: the sign-in check reads the path as given
@@ -506,14 +563,19 @@ class Handler(BaseHTTPRequestHandler):
         if not full.startswith(WEB + os.sep) or not os.path.isfile(full):
             return self.send(404, b"Not found", "text/plain; charset=utf-8")
         data, packed, tag, kind = static_file(full)
-        # no-cache with an ETag: the browser asks each time and gets "304 Not Modified" (no body) until the
-        # file changes, so an update shows at once but pages cost almost nothing to open again.
-        extra = {"Cache-Control": "no-cache", "ETag": tag, "Vary": "Accept-Encoding"}
+        # A link with ?v= and this file's own hash never changes, so the browser keeps it for a year and does not
+        # ask again (pages link to their files that way). Anything else, pages included, is no-cache with an ETag:
+        # the browser asks each time and gets "304 Not Modified" until the file changes.
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        fixed = query.get("v", [""])[0] == tag.strip('"')
+        extra = {"Cache-Control": "public, max-age=31536000, immutable" if fixed else "no-cache", "ETag": tag, "Vary": "Accept-Encoding"}
         if self.headers.get("If-None-Match") == tag:
             return self.send(304, b"", kind, extra)
         if packed and self.accepts_gzip():
             data = packed
             extra["Content-Encoding"] = "gzip"
+        elif data is None:
+            data = gzip.decompress(packed)
         if path in ("/favicon.svg", "/icon-app.svg"):
             # The logo switches colours for dark mode with its own small style block, and runs nothing.
             extra["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
@@ -545,10 +607,16 @@ class Handler(BaseHTTPRequestHandler):
                 "defaults": {"config_dir": f"{base}/media-stack/config", "data_dir": data_dir, "puid": os.getuid() or 1000,
                              "pgid": os.getgid() or 1000, "tz": os.environ.get("TZ") or "Etc/UTC"}}
 
+    _upgrade = {}
+
     def upgrade_summary(self):
+        """Asked for on every page, and it changes only when the version finished or the set-up does: kept until then."""
         d = self.app.config.data
-        p = releases.pending(d.get("last_version", ""), self.app.version, not self.app.needs_setup)
-        return {"from": p["from"], "to": p["to"], "wizard": p["wizard"], "count": len(p["review"])}
+        key = (d.get("last_version", ""), self.app.version, self.app.needs_setup)
+        if Handler._upgrade.get("key") != key:
+            p = releases.pending(key[0], key[1], not key[2])
+            Handler._upgrade = {"key": key, "value": {"from": p["from"], "to": p["to"], "wizard": p["wizard"], "count": len(p["review"])}}
+        return Handler._upgrade["value"]
 
     def api(self, method, path):
         app = self.app
@@ -1149,8 +1217,10 @@ class Handler(BaseHTTPRequestHandler):
                     break
                 f.write(chunk)
                 left -= len(chunk)
+        self._body_read = not left
         if left:
             app.importing = None
+            self.close_connection = True
             return self.error(400, "The upload stopped before the end")
         app.importing = {"kind": kind, "started": time.time()}
 

@@ -93,11 +93,15 @@ def _cpu_times():
     return total, cores
 
 
+_model = []
+
+
 def _cpu_model():
-    for line in _read("/proc/cpuinfo").splitlines():
-        if line.startswith("model name"):
-            return line.split(":", 1)[1].strip()
-    return ""
+    """The processor's name, read once: it does not change while Starboard runs, and /proc/cpuinfo is long."""
+    if not _model:
+        _model.append(next((line.split(":", 1)[1].strip() for line in _read("/proc/cpuinfo").splitlines()
+                            if line.startswith("model name")), ""))
+    return _model[0]
 
 
 SKIP_IFACE = ("lo", "veth", "docker", "br-", "virbr", "tailscale", "tun", "wg")
@@ -125,13 +129,20 @@ def _disk_counters():
     return out
 
 
-def _temperatures():
-    temps = []
+_sensors = {"at": 0, "list": []}
+
+
+def _sensor_files():
+    """(chip name, label, file) for each temperature sensor. Found once and again every 10 minutes, so the Monitor's
+    reading every 2 seconds only opens the sensor files themselves."""
+    if time.monotonic() - _sensors["at"] < 600 and _sensors["at"]:
+        return _sensors["list"]
+    found = []
     base = "/sys/class/hwmon"
     try:
         chips = sorted(os.listdir(base))
     except OSError:
-        return temps
+        chips = []
     for chip in chips:
         folder = os.path.join(base, chip)
         name = _read(os.path.join(folder, "name")).strip() or chip
@@ -141,10 +152,18 @@ def _temperatures():
             continue
         for f in files:
             if f.startswith("temp") and f.endswith("_input"):
-                raw = _read(os.path.join(folder, f)).strip()
-                if raw.lstrip("-").isdigit():
-                    label = _read(os.path.join(folder, f.replace("_input", "_label"))).strip() or name
-                    temps.append({"chip": name, "label": label, "c": round(int(raw) / 1000, 1)})
+                label = _read(os.path.join(folder, f.replace("_input", "_label"))).strip() or name
+                found.append((name, label, os.path.join(folder, f)))
+    _sensors.update(at=time.monotonic(), list=found)
+    return found
+
+
+def _temperatures():
+    temps = []
+    for name, label, path in _sensor_files():
+        raw = _read(path).strip()
+        if raw.lstrip("-").isdigit():
+            temps.append({"chip": name, "label": label, "c": round(int(raw) / 1000, 1)})
     return temps[:24]
 
 

@@ -21,6 +21,7 @@ import io
 import json
 import os
 import re
+import tempfile
 import threading
 import time
 import urllib.parse
@@ -49,6 +50,7 @@ FREE_TV = {"CBBC": "Kids", "CBeebies": "Kids", "Pop": "Kids", "BBC News": "News"
            "WeatherNation": "News", "Great! Movies": "Movies", "True Crime": "Documentaries"}
 LOGO_VERSION = "v3"
 DAY = 20 * 3600  # "older than a day", with room for the hourly check
+RETRY = 12 * 3600  # a guide that failed is tried again after this, not every hour
 
 
 def _et():
@@ -93,12 +95,67 @@ def _gunzip(data):
     return out
 
 
+class _Capped(io.RawIOBase):
+    """Reads an unpacking guide a piece at a time: the first piece was already read to check it, and the whole
+    file may not unpack to more than MAX_UNPACKED."""
+    def __init__(self, head, rest):
+        self.head, self.rest, self.total = head, rest, len(head)
+
+    def readable(self):
+        return True
+
+    def readinto(self, buf):
+        if self.head:
+            n = min(len(buf), len(self.head))
+            buf[:n], self.head = self.head[:n], self.head[n:]
+            return n
+        data = self.rest.read(len(buf))
+        self.total += len(data)
+        if self.total > MAX_UNPACKED:
+            raise ValueError("The file unpacks to too much")
+        buf[:len(data)] = data
+        return len(data)
+
+
+def _check_head(head):
+    """A guide may start with a DOCTYPE line, as Samsung TV Plus and Pluto TV do, but may not define entities: no
+    entities, so no entity bombs. Entities can only be defined before the guide's first element, at the start."""
+    if b"<!ENTITY" in head:
+        raise ValueError("The guide defines entities, which Starboard does not accept")
+
+
 def _xml_events(data):
-    """Parses a gzip'd XMLTV guide, refusing any DOCTYPE (no entities, so no entity bombs)."""
+    """Parses gzip'd XMLTV guide bytes already in memory (small files and tests)."""
     raw = _gunzip(data)
-    if b"<!DOCTYPE" in raw[:4096] or b"<!ENTITY" in raw[:65536]:
-        raise ValueError("The guide has a DOCTYPE, which Starboard does not accept")
+    _check_head(raw[:65536])
     return _et().iterparse(io.BytesIO(raw))
+
+
+def _guide_events(url, timeout=300):
+    """Downloads a gzip'd XMLTV guide to a temporary file and parses it while it unpacks, so neither the download
+    nor the unpacked guide is held in memory (a 147 MB guide peaked at about 213 MB before, about 30 MB now).
+    The file goes away when parsing ends."""
+    if not url.lower().startswith(("https://", "http://")):
+        raise ValueError("Only http and https addresses")
+    tmp = tempfile.TemporaryFile()
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Starboard"}), timeout=timeout) as r:  # checked to be http(s) above  # nosec B310
+            copied = 0
+            while True:
+                chunk = r.read(1024 * 1024)
+                if not chunk:
+                    break
+                copied += len(chunk)
+                if copied > MAX_DOWNLOAD:
+                    raise ValueError("The download is too large")
+                tmp.write(chunk)
+        tmp.seek(0)
+        g = gzip.GzipFile(fileobj=tmp)
+        head = g.read(65536)
+        _check_head(head)
+        yield from _et().iterparse(io.BufferedReader(_Capped(head, g), 1024 * 1024))
+    finally:
+        tmp.close()
 
 
 def _clean(text, limit=200):
@@ -176,7 +233,7 @@ def _filtered_guide(sources, ids, out):
     root = ET.Element("tv", {"generator-info-name": "Starboard"})
     keep = []
     for url in sources:
-        for _, el in _xml_events(fetch(url, timeout=300)):
+        for _, el in _guide_events(url):
             if el.tag in ("channel", "programme") and (el.get("id") if el.tag == "channel" else el.get("channel")) in ids:
                 keep.append(el)
             elif el.tag in ("channel", "programme"):
@@ -204,7 +261,7 @@ def build_guide(d):
     root = ET.Element("tv", {"generator-info-name": "Starboard (from epgshare01)"})
     channels, programmes, seen = [], [], set()
     for url in GUIDES:
-        for _, el in _xml_events(fetch(url, timeout=300)):
+        for _, el in _guide_events(url):
             if el.tag == "channel" and el.get("id") in wanted and el.get("id") not in seen:
                 seen.add(el.get("id"))
                 channels.append(el)
@@ -544,8 +601,23 @@ def run(self_url, white, force=False):
             return False
 
     address_changed = state.get("self_url") != self_url
-    if force or _old(os.path.join(d, "guide.xml")):
-        step("Guide", lambda: build_guide(d))
+    failed = state.setdefault("failed", {})
+
+    def guide_due(name, path):
+        """A guide is due when it is a day old, unless it failed less than RETRY ago (a failing source is not
+        downloaded again every hour)."""
+        return force or (_old(path) and now - failed.get(name, 0) > RETRY)
+
+    def guide_step(name, label, fn):
+        ok = step(label, fn)
+        if ok:
+            failed.pop(name, None)
+        else:
+            failed[name] = now
+        return ok
+
+    if guide_due("guide", os.path.join(d, "guide.xml")):
+        guide_step("guide", "Guide", lambda: build_guide(d))
     # Free-TV: its source is a file in the folder.
     try:
         with open(os.path.join(d, "freetv-source.m3u"), "rb") as f:
@@ -559,8 +631,8 @@ def run(self_url, white, force=False):
     # Samsung TV Plus and Pluto TV: their channel lists are small; fetch them only when a guide is due.
     for name, service, build, guide in (("samsung", "SamsungTVPlus", build_samsung, samsung_guide),
                                         ("pluto", "PlutoTV", lambda dd, data: build_pluto(dd, self_url, data), pluto_guide)):
-        guide_due = force or _old(os.path.join(d, f"guide-{name}.xml"))
-        if not guide_due and not address_changed and now - state.get(name, {}).get("built", 0) <= WEEK:
+        due = guide_due(name, os.path.join(d, f"guide-{name}.xml"))
+        if not due and not address_changed and now - state.get(name, {}).get("built", 0) <= WEEK:
             continue
         try:
             data = _channels_json(service)
@@ -570,11 +642,11 @@ def run(self_url, white, force=False):
         chans = _samsung_channels(data) if name == "samsung" else {k: v.get("name") for k, v in data["regions"]["gb"]["channels"].items() if not adult(v)}
         fp = _fingerprint({r: sorted(c) for r, c in chans.items()} if name == "samsung" else sorted(chans))
         if due_list(name, fp):
-            if step(name, lambda: build(d, data)):  # builds the playlist and its guide
+            if guide_step(name, name, lambda: build(d, data)):  # builds the playlist and its guide
                 state[name] = {"fp": fp, "built": now}
                 rebuilt = True
-        elif guide_due:
-            step(f"{name} guide", lambda: guide(d))
+        elif due:
+            guide_step(name, f"{name} guide", lambda: guide(d))
     if rebuilt:
         done.append(number_and_logos(d, self_url, white))
     state["self_url"] = self_url

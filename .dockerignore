@@ -6,4 +6,5 @@ tests
 tools
 demo
 .github
-__pycache__
+**/__pycache__
+**/*.pyc
