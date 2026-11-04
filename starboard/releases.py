@@ -163,6 +163,17 @@ RELEASES = [
      "security": [("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. They found nothing to fix; ZAP's two warnings were false alarms, explained in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "Nothing to choose. A dashboard name of 10 characters or fewer becomes the server name, which you can change or clear in Settings, General. To go back, run ./update.sh --to v0.7.5."},
+    {"version": "0.7.7", "date": "4 November 2026",
+     "added": [],
+     "changed": [("Pages open faster", "A page and its files now share one connection, and the browser keeps the styles, scripts and icons until they change. Opening a page takes less than half the server's processor time, and a page you have opened before about a sixth."),
+                 ("Live TV uses far less memory", "TV guides are read as they unpack instead of all at once. A large guide peaked at 197 MB and now takes 36 MB."),
+                 ("Starting up", "Starboard's code is prepared when the image is built, so it starts in about half the time.")],
+     "fixed": [("Samsung TV Plus and Pluto TV guides", "They were refused because of a line at their start, and every stream was tested again every hour as a result. They now load, and the hourly check finds nothing to do."),
+               ("Failed guides", "A guide that fails is tried again after 12 hours, not every hour.")],
+     "security": [("Error answers", "Python's own error answers, such as for a request method Starboard does not handle, now carry the same security headers as every other answer (found by OWASP ZAP)."),
+                  ("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. ZAP's two signed-in warnings were false alarms, explained in docs/SECURITY-AND-TESTS.md.")],
+     "review": [],
+     "settings": "Nothing to choose, and no setting changes. Live TV builds its channels and guides once after the update. To go back, run ./update.sh --to v0.7.6."},
 ]
 
 

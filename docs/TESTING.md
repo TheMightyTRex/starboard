@@ -100,11 +100,11 @@ the setup code.
 
 ## Latest results
 
-From release 0.7.6 (4 November 2026). The install tests are from 0.7.5 (Ubuntu and ARM) and 0.7.4 (Debian, Fedora and ARM at 512 MB): the installer, update.sh and the image did not change.
+From release 0.7.7 (4 November 2026). Debian, Fedora and ARM at 512 MB are from 0.7.4.
 
 | | Result |
 |---|---|
-| Unit and API tests | 125 passed |
+| Unit and API tests | 135 passed |
 | Browser journeys | 29 passed |
 | Install tests, Ubuntu 24.04 | 17 passed |
 | Install tests, Debian 12 | 17 passed |
@@ -113,7 +113,7 @@ From release 0.7.6 (4 November 2026). The install tests are from 0.7.5 (Ubuntu a
 | Install tests, 64-bit ARM, 512 MB | 17 passed |
 | Published ARM images (arm64, arm/v7) under emulation | Start and answer every request |
 | Help centre check | 71 articles, 0 problems |
-| Security scans | See [Security](SECURITY-AND-TESTS.md#security-scans-4-november-2026-076) |
+| Security scans | See [Security](SECURITY-AND-TESTS.md#security-scans-4-november-2026-077) |
 
 ## Not tested by machine
 

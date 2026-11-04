@@ -319,6 +319,21 @@ class Handler(BaseHTTPRequestHandler):
     disable_nagle_algorithm = True  # without it, small answers on a kept-alive connection wait 40 ms
     timeout = 30  # an idle or slow connection is closed after 30 seconds, so it cannot hold a thread for ever
 
+    def send_error(self, code, message=None, explain=None):
+        """Python's own error answers (a method Starboard does not handle, a broken request) carry the same
+        security headers as every other answer, and close the connection."""
+        self.close_connection = True
+        body = (message or self.responses.get(code, ("Error",))[0]).encode("latin-1", "replace")
+        self.send_response(code, message)
+        for k, v in SECURITY_HEADERS.items():
+            self.send_header(k, v)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        if self.command != "HEAD" and code >= 200 and code not in (204, 304):
+            self.wfile.write(body)
+
     def handle(self):
         """One request, then more on the same connection while the browser keeps it open. Between requests the
         connection waits only KEEP_ALIVE_IDLE seconds, so idle connections do not hold threads."""

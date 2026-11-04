@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.7.7 (4 November 2026)
+
+Lighter, from the performance review (DASH-79); each change measured before and after.
+
+- **Pages open faster:** HTTP/1.1 keep-alive with Nagle off, so a page and its files share one connection, and
+  idle connections wait 10 seconds. Pages, scripts and styles link the CSS, scripts, icons and font with the
+  linked file's hash, added when served, and those links are kept by the browser for a year. A first visit took
+  10.5 ms of server processor and now 4.7 ms; a revisit 10.3 ms and 10 requests, now 1.7 ms and 3 requests.
+- **Live TV guides** are downloaded to a temporary file and read as they unpack, and each finished entry is
+  dropped: a made-up 147 MB guide peaked at 197 MB, now 36 MB. A DOCTYPE line is accepted (entity definitions are
+  still refused), so the Samsung TV Plus and Pluto TV guides load again. They had failed every hour, with every
+  stream tested again each time (559 seconds and 20 seconds of processor an hour); the hourly check now does
+  nothing. A guide that fails waits 12 hours before the next try.
+- **The image** compiles Starboard's code at build time (start-up about 430 ms to 204 ms), and every
+  `__pycache__` is left out of the build.
+- **Smaller:** the processor model is read once, the temperature sensors are found every 10 minutes, the upgrade
+  summary is kept until it changes, the listener wakes every 5 seconds instead of twice a second, and the health
+  check runs every 60 seconds.
+- **Security:** Python's own error answers (such as 501 for a request method Starboard does not handle) carry the
+  same security headers as every other answer, found by OWASP ZAP; with a test.
+- Measured, not done: the memory a weekly Live TV build leaves behind (25 MB to 54 MB) comes back once heavy jobs
+  run in their own short-lived process, the next step of DASH-79.
+
 ## 0.7.6 (4 November 2026)
 
 - **A new menu, in three levels.** A side menu beside every page has the Screen logo with Starboard underneath,

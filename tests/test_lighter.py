@@ -85,6 +85,16 @@ class LighterTest(unittest.TestCase):
         self.assertEqual(r2.status, 200)
         c.close()
 
+    def test_pythons_own_error_answers_carry_the_security_headers(self):
+        c = self.conn()
+        c.request("PATCH", "/setup.html", headers={"Host": f"127.0.0.1:{self.port}"})
+        r = c.getresponse()
+        r.read()
+        self.assertEqual(r.status, 501)
+        self.assertIn("default-src", r.getheader("Content-Security-Policy") or "")
+        self.assertTrue(r.will_close)
+        c.close()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -158,6 +158,17 @@ false alarms:
 
 `SCAN_REPORTS=folder tools/security-scan.sh --full` now keeps ZAP's reports, with each warning's address.
 
+## Security scans, 4 November 2026 (0.7.7)
+
+Trivy, Gitleaks, Bandit, ShellCheck and Hadolint found nothing. ZAP signed out found one new warning: Python's own
+error answer (501, for a request method Starboard does not handle) had no content policy or other security headers.
+Fixed: those answers now carry the same headers, with a test; ZAP signed out then passed 58 checks with no warnings.
+ZAP's active scan signed in passed 109 checks, with two warnings, both false alarms:
+
+- **SQL injection on `/api/history?hours=3-2`:** `hours` is picked from a fixed list (1, 6 or 24), and anything else
+  counts as 1. "3-2" happens to equal 1, so the answer matched; nothing is worked out, and there is no database.
+- **Path traversal on `server_name`:** as for 0.7.6, the name is never used as a path.
+
 ## CodeQL on GitHub, 3 November 2026
 
 GitHub's code scanning (CodeQL) checks the Python, JavaScript and workflow files on every push. Its first scan
@@ -185,6 +196,7 @@ fixes under Security.
 | 0.7.4 (3 November 2026) | 117 passed | 19 passed | Trivy 0, ZAP no failures, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | First run after release: 19 alerts; 4 fixed for the next release (3 problems), 15 explained and dismissed | Ubuntu, Debian, Fedora, 64-bit ARM: 17 of 17 each | Pillow 13.0.0; see the Security section of the 0.7.4 notes |
 | 0.7.5 (3 November 2026) | 123 passed | 29 passed | Trivy 0, ZAP no failures signed out (58 passed) and signed in (111 passed), Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | 0 open: the 15 explained alerts stay dismissed; the new Snaglist file raised none | Ubuntu 24.04 and 64-bit ARM: 17 of 17 each | Docker Bench's finding fixed (memory and process limits); the 3 CodeQL problems fixed; Send feedback's key and stylesheet hash tested (SEC-24) |
 | 0.7.6 (4 November 2026) | 125 passed | 29 passed | Trivy 0, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0, ZAP no failures signed out (58 passed) and signed in (110 passed; 2 warnings, both false alarms, explained above) | 0 open | Not needed: the installer, update.sh and the image did not change | The new menu and server name; help check 71 articles, 0 problems |
+| 0.7.7 (4 November 2026) | 135 passed | 29 passed | Trivy 0, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0, ZAP signed out 1 warning fixed then 58 passed, signed in 109 passed with 2 false alarms (explained above) | 0 open | Ubuntu 24.04 and 64-bit ARM: 17 of 17 each | Keep-alive, long-lived caching, streamed Live TV guides, bytecode built into the image |
 
 ## Other free checks you can run
 
