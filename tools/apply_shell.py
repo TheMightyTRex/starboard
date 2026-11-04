@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Writes the shared header, phone menu and Display panel into every page in web/, between the shell markers.
+"""Writes the shared header, side menu, phone menu and Display panel into every page in web/, between the shell markers.
 
 Edit the menus here, then run: python3 tools/apply_shell.py
 Each page is its own HTML file, so every page and sub-page has a real address you can link to.
-The header follows Storyarr's components: square tabs with icons for the main menu, the same tabs for a
-section's sub-menu in a second header row, and on phones a menu drawer that holds both.
+Three levels, named as in the design system (docs/DESIGN-SYSTEM.md): the side menu (the logo with Starboard
+underneath, Search and the five sections), the level 1 menu (header row 1, starting with the server name: a
+section's pages) and the level 2 menu (header row 2: a page's own tabs, only when it has them). On phones the
+side menu is hidden and the menu drawer holds the sections with their level 1 pages.
 """
 
 import pathlib
@@ -16,58 +18,64 @@ WEB = pathlib.Path(__file__).resolve().parent.parent / "web"
 # Icons come from web/icons/sprite.svg: the shared library's Lucide set plus Starboard's own (tools/lucide_icons.py).
 ICONS = dict(re.findall(r'<symbol id="i-([^"]+)"[^>]*>(.*?)</symbol>', (WEB / "icons" / "sprite.svg").read_text(encoding="utf-8"), re.S))
 
-# Main menu: (key, first page, label, icon)
-MAIN = [
-    ("apps", "index.html", "Apps", "layout-grid"),
-    ("search", "search.html", "Search", "search"),
-    ("downloads", "downloads.html", "Downloads", "download"),
-    ("upcoming", "upcoming.html", "Coming up", "calendar"),
-    ("system", "system.html", "System", "activity"),
-    ("settings", "settings.html", "Settings", "settings"),
+# The menu: side menu sections -> level 1 pages -> level 2 pages.
+# Section: (key, label, icon, [level 1 item]). Level 1 item: (label, icon, [(page, level 2 label, icon)]).
+# A level 1 item opens its first page; it has a level 2 menu only when it has more than one page.
+MENU = [
+    ("library", "Library", "library", [
+        ("TV", "tv", [("library-tv.html", "My library", "library"), ("library-tv-series.html", "Series", "layers")]),
+        ("Films", "film", [("library-films.html", "My library", "library"), ("library-films-collections.html", "Collections", "layers")]),
+        ("Radio", "radio", [("library-radio.html", "My library", "library"), ("library-radio-series.html", "Series", "layers"),
+                            ("library-radio-stations.html", "Stations", "radio")]),
+        ("Books", "book-open", [("library-books.html", "My library", "library"), ("library-books-series.html", "Series", "layers"),
+                                ("library-books-authors.html", "Authors", "users")]),
+        ("Audiobooks", "headphones", [("library-audiobooks.html", "My library", "library"),
+                                      ("library-audiobooks-series.html", "Series", "layers"),
+                                      ("library-audiobooks-authors.html", "Authors", "users")]),
+    ]),
+    ("discover", "Discover", "compass", [
+        ("Search", "search", [("search.html", "Search", "search")]),
+        ("Trending", "sparkles", [("discover-trending.html", "Trending", "sparkles")]),
+        ("Coming up", "calendar-days", [("upcoming.html", "Coming up", "calendar-days")]),
+    ]),
+    ("activity", "Activity", "activity", [
+        ("Downloads", "download", [("downloads.html", "Queue", "download"), ("downloads-finished.html", "Recently finished", "history")]),
+        ("Wanted", "list-checks", [("wanted.html", "Missing", "list-checks"), ("wanted-quality.html", "Below the quality wanted", "gauge")]),
+        ("Requests", "inbox", [("downloads-requests.html", "Requests", "inbox")]),
+        ("History", "history", [("history.html", "History", "history")]),
+    ]),
+    ("system", "System", "server", [
+        ("Overview", "layout-dashboard", [("system.html", "Overview", "layout-dashboard"), ("system-monitor.html", "Monitor", "gauge")]),
+        ("Apps", "layout-grid", [("index.html", "Apps", "layout-grid"), ("apps-services.html", "Other services", "server-cog"),
+                                 ("apps-updates.html", "Updates", "circle-arrow-up"), ("install-apps.html", "Install apps", "download")]),
+        ("Storage", "hard-drive", [("system-storage.html", "Storage", "hard-drive"), ("system-disks.html", "Disk health", "heart-pulse")]),
+        ("Network", "network", [("system-network.html", "Network", "network")]),
+        ("Backup", "archive-restore", [("system-backup.html", "Backup and restore", "archive-restore")]),
+        ("Logs", "scroll-text", [("system-logs.html", "Logs", "scroll-text")]),
+    ]),
+    ("settings", "Settings", "settings", [
+        ("General", "sliders-horizontal", [("settings-general.html", "General", "sliders-horizontal")]),
+        ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-reelix.html", "Reelix", "film"),
+                                ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones")]),
+        ("Alerts", "bell", [("settings-alerts.html", "Alerts", "bell")]),
+        ("Performance", "gauge", [("settings-performance.html", "Performance", "gauge")]),
+        ("Security", "shield-check", [("settings-security.html", "Security", "shield-check")]),
+        ("Updates", "circle-arrow-up", [("settings-updates.html", "About and updates", "info")]),
+    ]),
 ]
+HOME = "index.html"  # the logo opens it
 
-# Sub-menus: main key -> [(page, label, icon)]. They use the same tabs as the main menu.
-SUB = {
-    "downloads": [
-        ("downloads.html", "Queue", "download"),
-        ("downloads-requests.html", "Requests", "inbox"),
-    ],
-    "apps": [
-        ("index.html", "Apps", "layout-grid"),
-        ("apps-updates.html", "Updates", "circle-arrow-up"),
-        ("apps-services.html", "Other services", "server-cog"),
-    ],
-    "system": [
-        ("system.html", "Overview", "layout-dashboard"),
-        ("system-storage.html", "Storage", "hard-drive"),
-        ("system-disks.html", "Disk health", "heart-pulse"),
-        ("system-monitor.html", "Monitor", "gauge"),
-        ("system-network.html", "Network", "network"),
-        ("system-backup.html", "Backup and restore", "archive-restore"),
-        ("system-logs.html", "Logs", "scroll-text"),
-    ],
-    "settings": [
-        ("settings.html", "Manage apps", "app-window"),
-        ("settings-general.html", "General", "sliders-horizontal"),
-        ("settings-alerts.html", "Alerts", "bell"),
-        ("settings-jellyfin.html", "Jellyfin", "tv"),
-        ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
-        ("settings-performance.html", "Performance", "gauge"),
-        ("settings-security.html", "Security", "shield-check"),
-        ("settings-updates.html", "About and updates", "info"),
-    ],
-}
-
-# Every page and the main menu item it belongs to.
-PAGES = {page: key for key, page, _, _ in MAIN}
-for key, items in SUB.items():
-    for page, _, _ in items:
-        PAGES[page] = key
-# Pages that belong to a section but have no tab of their own (opened from a button).
-PAGES.update({"setup-guide.html": "settings", "upgrade.html": "settings", "install-apps.html": "settings", "copy-settings.html": "settings"})
-# Pages with no tab of their own show the tab they belong to as current: the guides open from Settings, General,
-# and Install apps from Manage apps.
-TAB_OF = {"setup-guide.html": "settings-general.html", "upgrade.html": "settings-general.html", "install-apps.html": "settings.html", "copy-settings.html": "settings.html"}
+# Every page: (section key, level 1 index).
+PAGES = {}
+for key, _, _, items in MENU:
+    for n, (_, _, pages) in enumerate(items):
+        for page, _, _ in pages:
+            PAGES[page] = (key, n)
+# Pages with no tab of their own show the page they open from as current: the guides open from Settings,
+# General, and Copy settings from Manage apps.
+TAB_OF = {"setup-guide.html": "settings-general.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html"}
+for page, parent in TAB_OF.items():
+    PAGES[page] = PAGES[parent]
 
 
 def icon(name, size=18):
@@ -80,73 +88,83 @@ def tab(href, label, icon_name, current):
     return f'<a href="/{href}"{here}>{icon(icon_name)}<span class="menu-tabs__label">{label}</span></a>'
 
 
-def search_form(id_, cls):
-    return (f'<form class="{cls}" action="/search.html" role="search">'
+def search_form(id_, cls, form_id=""):
+    form_id = f' id="{form_id}"' if form_id else ""
+    return (f'<form class="{cls}"{form_id} action="/search.html" role="search">'
             f'<label class="visually-hidden" for="{id_}">Search films, series, music and books</label>'
             f'<input class="input" id="{id_}" name="q" type="search" placeholder="Search films, series, music and books">'
             f'<button type="submit" class="visually-hidden">Search</button></form>')
 
 
-LOGO = ('<svg viewBox="0 0 32 32" width="{s}" height="{s}" aria-hidden="true" focusable="false"><rect x="3" y="3" width="12" height="12" fill="var(--color-logo-tile)"/>'
-        '<rect x="3" y="17" width="12" height="12" fill="var(--color-logo-tile)"/><rect x="17" y="17" width="12" height="12" fill="var(--color-logo-tile)"/>'
-        '<path d="M23 3.5l1.9 4.4 4.7.4-3.6 3.1 1.1 4.6-4.1-2.5-4.1 2.5 1.1-4.6-3.6-3.1 4.7-.4Z" fill="var(--color-logo-star)"/></svg>')
+# The Screen logo (DASH-73): a screen with four tiles and a star.
+LOGO = ('<svg viewBox="0 0 32 32" width="{s}" height="{s}" aria-hidden="true" focusable="false">'
+        '<path fill-rule="evenodd" fill="var(--color-logo-tile)" d="M1.5 6h26v19.5h-26z M3.8 8.3v14.9h21.4V8.3z"/>'
+        '<path fill="var(--color-logo-tile)" d="M9.5 26.6h10v2.2h-10z"/>'
+        '<path fill="var(--color-logo-tile)" d="M6.2 10.6h7.6v5.2H6.2z M15.2 10.6h7.6v5.2h-7.6z M6.2 17.4h7.6v3.9H6.2z M15.2 17.4h7.6v3.9h-7.6z"/>'
+        '<path fill="var(--color-logo-star)" d="M25.2 0.2L26.8 4.9L31.8 5.0L27.8 8.0L29.3 12.8L25.2 10.0L21.1 12.8L22.6 8.0L18.6 5.0L23.6 4.9Z"/></svg>')
 
 
 def shell(current):
-    section = PAGES[current]
+    key, at = PAGES[current]
     current = TAB_OF.get(current, current)
-    main_tabs = "\n        ".join(tab(page, label, ic, key == section) for key, page, label, ic in MAIN)
-    sub = ""
-    if section in SUB:
-        label = next(label for key, _, label, _ in MAIN if key == section)
-        sub_tabs = "\n      ".join(tab(page, l, ic, page == current) for page, l, ic in SUB[section])
-        sub = f'''
+    section = next(s for s in MENU if s[0] == key)
+    level1 = section[3]
+
+    rail_links = "".join(f'<a href="/{items[0][2][0][0]}"{" aria-current=\"page\"" if k == key else ""}>{icon(ic, 24)}<span>{label}</span></a>'
+                         for k, label, ic, items in MENU)
+    level1_tabs = "\n        ".join(tab(pages[0][0], label, ic, n == at) for n, (label, ic, pages) in enumerate(level1))
+    level2 = ""
+    label, _, pages = level1[at]
+    if len(pages) > 1:
+        tabs = "\n      ".join(tab(page, l, ic, page == current) for page, l, ic in pages)
+        level2 = f'''
   <div class="site-header__tabs">
     <nav class="menu-tabs" aria-label="{label}">
-      {sub_tabs}
+      {tabs}
     </nav>
   </div>'''
 
-    # Phone menu: the main menu with icons, then each section's pages as plain links.
+    # Phone menu: the five sections, each with its level 1 pages and their icons.
     phone_sections = []
-    for key, page, label, ic in MAIN:
-        mark = " data-current" if key == section else ""
-        if key in SUB:
-            links = "\n            ".join(
-                f'<li><a href="/{p}"{" aria-current=\"page\"" if p == current else ""}>{l}</a></li>' for p, l, _ in SUB[key])
-            open_ = key == section
-            phone_sections.append(f'''<div class="phone-menu__section"{mark}>
-          <button type="button" aria-expanded="{"true" if open_ else "false"}" aria-controls="phone-sub-{key}">{icon(ic, 20)}<span>{label}</span>{icon("chevron-right", 18).replace('aria-hidden', 'class="phone-menu__chevron" aria-hidden')}</button>
-          <ul id="phone-sub-{key}"{"" if open_ else " hidden"}>
+    for k, s_label, ic, items in MENU:
+        open_ = k == key
+        links = "\n            ".join(
+            f'<li><a href="/{pages[0][0]}"{" aria-current=\"page\"" if open_ and n == at else ""}>{icon(i2, 18)}<span>{l}</span></a></li>'
+            for n, (l, i2, pages) in enumerate(items))
+        phone_sections.append(f'''<div class="phone-menu__section"{" data-current" if open_ else ""}>
+          <button type="button" aria-expanded="{"true" if open_ else "false"}" aria-controls="phone-sub-{k}">{icon(ic, 20)}<span>{s_label}</span>{icon("chevron-right", 18).replace('aria-hidden', 'class="phone-menu__chevron" aria-hidden')}</button>
+          <ul id="phone-sub-{k}"{"" if open_ else " hidden"}>
             {links}
           </ul>
-        </div>''')
-        else:
-            here = ' aria-current="page"' if page == current else ""
-            phone_sections.append(f'''<div class="phone-menu__section"{mark}>
-          <a href="/{page}"{here}>{icon(ic, 20)}<span>{label}</span></a>
         </div>''')
     phone_sections = "\n        ".join(phone_sections)
 
     return f'''<a class="skip-link" href="#main">Skip to main content</a>
-<header class="site-header site-header--no-rail">
+<nav class="rail" aria-label="Side menu">
+  <a class="rail__brand" href="/{HOME}">{LOGO.format(s=32)}<span class="rail__name">Starboard</span></a>
+  <button type="button" class="rail__search" data-search-open aria-controls="header-search" aria-expanded="false">{icon("search", 24)}<span>Search</span></button>
+  {rail_links}
+</nav>
+<header class="site-header">
   <div class="site-header__bar">
     <button type="button" class="icon-btn phone-menu-button" data-phone-menu-open aria-expanded="false" aria-controls="phone-menu">{icon("menu", 20)}<span class="visually-hidden">Menu</span></button>
-    <a class="site-header__brand" href="/index.html">{LOGO.format(s=28)}<span data-site-name>Starboard</span></a>
-    <nav class="menu-tabs" id="main-nav" aria-label="Main">
-        {main_tabs}
+    <a class="site-header__brand" href="/{HOME}">{LOGO.format(s=28)}<span>Starboard</span></a>
+    <span class="site-header__server" data-server-name hidden></span>
+    <nav class="menu-tabs" id="main-nav" aria-label="{section[1]}">
+        {level1_tabs}
     </nav>
-    {search_form("header-search-input", "site-header__search search-field")}
+    {search_form("header-search-input", "site-header__search search-field", "header-search")}
     <div class="site-header__actions">
+      <button type="button" class="icon-btn site-header__search-btn" data-search-open aria-controls="header-search" aria-expanded="false">{icon("search", 20)}<span class="visually-hidden">Search</span></button>
       <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false">{icon("sun", 20)}<span class="label">Display</span></button>
     </div>
-  </div>{sub}
+  </div>{level2}
 </header>
 <div class="side-panel-layer" id="phone-menu" hidden>
   <div class="side-panel-backdrop"></div>
   <nav class="phone-menu" aria-label="Menu">
     <div class="panel-header">
-      <span class="panel-header__brand">{LOGO.format(s=24)}<span data-site-name>Starboard</span></span>
+      <span class="panel-header__brand">{LOGO.format(s=24)}<span>Starboard</span></span>
       <button type="button" class="icon-btn" data-closes aria-label="Close menu">{icon("x", 20)}</button>
     </div>
     {search_form("phone-search-input", "phone-menu__search search-field")}
@@ -203,6 +221,9 @@ def main():
         text = path.read_text(encoding="utf-8")
         if "shell:start" not in text:
             raise SystemExit(f"{page} has no shell markers")
+        # The side menu needs room on the left: with-rail joins the page's own classes on <body>.
+        text = re.sub(r'<body(?: class="([^"]*)")?>', lambda m: m.group(0) if "with-rail" in (m.group(1) or "").split()
+                      else f'<body class="{((m.group(1) or "") + " with-rail").strip()}">', text, count=1)
         block = f"<!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->\n{shell(page)}\n<!-- shell:end -->"
         path.write_text(pattern.sub(lambda _: block, text, count=1), encoding="utf-8")
         print(f"updated {page}")

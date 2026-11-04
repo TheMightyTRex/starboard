@@ -72,24 +72,7 @@
 :root[data-design="tiles"] .app-cards:has(.card__address) .app-card .card__notes { grid-row: 5; }
 :root[data-design="tiles"] .app-cards:has(.card__address) .app-card :is(.card__update, .card__version, .card__ms) { grid-row: 6; }
 
-/* 3. Shelf: an icon rail on the left (computers) and one app per row, like Storyarr. ---------------- */
-@media (min-width: 1100px) {
-  :root[data-design="shelf"] { --rail-w: 96px; }
-  :root[data-design="shelf"] #main-nav {
-    position: fixed; top: var(--header-h); bottom: 0; left: 0; z-index: var(--layer-header); width: var(--rail-w); height: auto;
-    flex-direction: column; overflow-y: auto; background: var(--color-header); border-right: 1px solid var(--color-divider); padding-top: var(--space-2);
-  }
-  :root[data-design="shelf"] #main-nav a {
-    flex-direction: column; justify-content: center; gap: var(--space-1); min-height: 68px; padding: var(--space-2);
-    font-size: var(--text-xs); text-align: center; white-space: normal;
-  }
-  :root[data-design="shelf"] #main-nav a svg { width: 24px; height: 24px; }
-  :root[data-design="shelf"] #main-nav .menu-tabs__label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
-  :root[data-design="shelf"] #main-nav a[aria-current="page"]::after { inset: 0 auto 0 0; width: var(--current-bar-w, 3px); height: auto; }
-  :root[data-design="shelf"] .site-header__tabs,
-  :root[data-design="shelf"] main,
-  :root[data-design="shelf"] .site-footer { margin-left: var(--rail-w); }
-}
+/* 3. Shelf: one app per row, like Storyarr. Every design now has the side menu, so Shelf no longer adds its own rail. */
 :root[data-design="shelf"] .app-cards { grid-template-columns: minmax(0, 1fr); gap: 0; border-top: 1px solid var(--color-divider); }
 :root[data-design="shelf"] .app-card {
   grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: var(--space-4);

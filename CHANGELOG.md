@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- **A new menu, in three levels.** A side menu on the left has the Screen logo with Starboard underneath,
+  Search, then five sections: Library, Discover, Activity, System and Settings. The level 1 menu along the
+  top holds a section's pages, and the level 2 menu under it holds a page's own tabs, only when it has them.
+  On phones the side menu is hidden and the menu drawer lists the sections with their pages. Every page
+  keeps its address.
+- **Server name:** a new setting in Settings, General, up to 10 characters, shown in bold at the start of
+  the level 1 menu (phones show only the logo). A dashboard name of 10 characters or fewer is copied across
+  once. The dashboard name still names the browser tab and alerts.
+- **Places for what Reelix will fill:** the Library (TV, Films, Radio, Books, Audiobooks), Trending,
+  Recently finished, Wanted, History and Settings, Reelix have their pages in the menu, saying they come
+  with Reelix.
+- **Shelf** no longer adds its own icon rail, because every design now has the side menu.
+
 ## 0.7.5 (3 November 2026)
 
 - **Send feedback** (Settings, General, Testing) replaces Note issues. It uses

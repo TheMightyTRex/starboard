@@ -22,7 +22,7 @@ function field(label, control, { hint, span, short } = {}) {
 
 function setError(control, message) {
   const error = control.fieldError;
-  const ids = [control.fieldHint?.id];
+  const ids = [control.fieldHint?.id, ...(control.moreHints || [])];
   if (message) {
     error.replaceChildren(icon("circle-alert"), el("span", { text: message }));
     error.hidden = false;
@@ -625,6 +625,31 @@ function startGeneral() {
     } catch (err) { setError(siteName, err.message); siteName.focus(); }
   });
 
+  // Server name: up to 10 characters, at the start of the level 1 menu
+  const serverName = el("input", { class: "input", name: "server_name", maxlength: String(config.server_name_max || 10),
+    value: config.server_name || "", autocomplete: "off", spellcheck: "false" });
+  const serverForm = el("form", { novalidate: true, class: "inline-save" },
+    field("Server name", serverName, { hint: `Up to ${config.server_name_max || 10} characters, such as T-Rex. Shown at the start of the menu at the top of every page. Leave it empty to show no name.`, short: true }),
+    el("button", { type: "submit", class: "btn", text: "Save server name" }), savedNote("server-name-saved"));
+  // A count under the box, read with the hint but not announced on every key.
+  const max = config.server_name_max || 10;
+  const count = el("span", { class: "hint", id: `${serverName.id}-count` });
+  const recount = () => { count.textContent = `${serverName.value.length} of ${max} characters`; };
+  serverName.after(count);
+  serverName.moreHints = [count.id];
+  serverName.setAttribute("aria-describedby", `${serverName.fieldHint.id} ${count.id}`);
+  serverName.addEventListener("input", recount);
+  recount();
+  serverForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setError(serverName, "");
+    try {
+      await saveGeneral({ server_name: serverName.value });
+      showSaved("server-name-saved");
+      showServerName(config.server_name);
+    } catch (err) { setError(serverName, err.message); serverName.focus(); }
+  });
+
   // Categories
   const newName = el("input", { class: "input", id: "category-name", maxlength: "40", placeholder: "For example: Home", autocomplete: "off" });
   const addForm = el("form", { class: "add-row", novalidate: true }, field("New category", newName),
@@ -709,7 +734,7 @@ function startGeneral() {
 
   $("#general-sections").removeAttribute("aria-busy");
   $("#general-sections").replaceChildren(
-    section("gn-name", "Dashboard", "Shown in the header and the browser tab.", nameForm),
+    section("gn-name", "Names", "The server name shows at the start of the menu. The dashboard name shows in the browser tab and in alerts.", serverForm, nameForm),
     el("div", { id: "categories" }, section("gn-cat", "Categories", "The headings apps sit under on the Apps page, in this order. Changes apply at once.",
       el("ul", { class: "rows", id: "category-list" }), el("div", { id: "category-loose" }), addForm)),
     section("gn-card", "App cards", "What everyone sees on each card. These apply at once.",

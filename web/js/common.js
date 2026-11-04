@@ -6,7 +6,7 @@ const DEFAULT_PREFS = { theme: "system", text: "100", contrast: false, motion: "
 const DESIGNS = {
   health: ["Health first", "Apps that are not responding at the top, with a coloured edge for status."],
   tiles: ["Tiles", "A grid of cards with a description, like a launcher."],
-  shelf: ["Shelf", "An icon rail on the left and one app per row."],
+  shelf: ["Shelf", "One app per row, with room for its details."],
   command: ["Command", "Search first, with apps as a compact icon grid."],
   board: ["Status board", "A dense table for checking everything at a glance."],
 };
@@ -349,6 +349,7 @@ function setUpHeader() {
   });
   fit();
   window.addEventListener("resize", fit);
+  SharedComponents.setupSearch();
   document.fonts?.ready.then(fit);
   $$("[data-sign-out]").forEach((b) => b.addEventListener("click", async () => {
     await api("/api/logout", { method: "POST" }).catch(() => {});
@@ -501,6 +502,14 @@ async function startFeedback(session) {
 }
 function stopFeedback() { window.Snaglist?.destroy(); }
 
+// The server's name at the start of the level 1 menu; nothing shows when it is empty.
+function showServerName(name) {
+  $$("[data-server-name]").forEach((n) => {
+    n.replaceChildren(el("span", { class: "visually-hidden", text: "Server: " }), name || "");
+    n.hidden = !name;
+  });
+}
+
 async function startPage() {
   setUpHeader();
   setUpDisplayPanel();
@@ -509,6 +518,7 @@ async function startPage() {
     serverDesign = session.design || "health";
     applyPrefs();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
+    showServerName(session.server_name);
     document.title = document.title.replace(/ · [^·]*$/, ` · ${session.site_name}`);
     showVersion(session.version, session.repo, session.latest);
     upgradeNotice(session.upgrade);
