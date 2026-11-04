@@ -26,6 +26,8 @@ SERVICE_TYPES = {
     "link": {"label": "Other app", "api": "", "searchable": False},
 }
 
+SERVER_NAME_MAX = 10
+
 DESIGNS = ["health", "tiles", "shelf", "command", "board"]
 
 UPCOMING_VIEWS = ("list", "calendar")
@@ -34,6 +36,8 @@ UPCOMING_DAYS = (7, 14, 30, 60, 90)
 DEFAULTS = {
     "schema": SCHEMA,
     "site_name": "Starboard",
+    # The server's own name, up to 10 characters, at the start of the level 1 menu. Empty shows nothing.
+    "server_name": "",
     "design": "health",
     "secure_cookies": False,
     "session_days": 7,
@@ -129,6 +133,9 @@ class Config:
             self.backup("before-migration")
             data = migrate(data)
             self._write(data)
+        if "server_name" not in data:  # added in 0.8: a short dashboard name becomes the server name
+            name = str(data.get("site_name", "")).strip()
+            data["server_name"] = name if name != "Starboard" and len(name) <= SERVER_NAME_MAX else ""
         for key, value in DEFAULTS.items():
             data.setdefault(key, json.loads(json.dumps(value)))
         for key, value in DEFAULTS["performance"].items():  # settings added in later versions
@@ -219,6 +226,8 @@ class Config:
         d = self.data
         return {
             "site_name": d["site_name"],
+            "server_name": d["server_name"],
+            "server_name_max": SERVER_NAME_MAX,
             "design": d["design"],
             "groups": d["groups"],
             "secure_cookies": d["secure_cookies"],
@@ -255,6 +264,11 @@ class Config:
                 if not name:
                     raise ConfigError("Enter a name for the dashboard")
                 d["site_name"] = name
+            if "server_name" in incoming:
+                name = re.sub(r"\s+", " ", str(incoming["server_name"])).strip()
+                if len(name) > SERVER_NAME_MAX:
+                    raise ConfigError(f"Use {SERVER_NAME_MAX} characters or fewer for the server name")
+                d["server_name"] = name
             if "design" in incoming:
                 if incoming["design"] not in DESIGNS:
                     raise ConfigError("Choose one of the designs")
