@@ -153,7 +153,17 @@ def _guide_events(url, timeout=300):
         g = gzip.GzipFile(fileobj=tmp)
         head = g.read(65536)
         _check_head(head)
-        yield from _et().iterparse(io.BufferedReader(_Capped(head, g), 1024 * 1024))
+        events = _et().iterparse(io.BufferedReader(_Capped(head, g), 1024 * 1024), events=("start", "end"))
+        _, root = next(events)
+        depth = 1
+        for event, el in events:
+            if event == "start":
+                depth += 1
+                continue
+            depth -= 1
+            yield event, el
+            if depth == 1:
+                root.remove(el)  # a finished channel or programme: the caller kept it or let it go, so the tree stays small
     finally:
         tmp.close()
 
