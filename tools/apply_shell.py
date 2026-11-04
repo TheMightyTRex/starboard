@@ -65,6 +65,17 @@ MENU = [
 ]
 HOME = "index.html"  # the logo opens it
 
+# Help for each section, from the Help button in the header. Placeholders while the new help centre is made and
+# tested: today they open the matching part of the help index on GitHub. Change them here, in one place.
+HELP_CENTRE = "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/README.md"
+HELP = {
+    "library": HELP_CENTRE,
+    "discover": f"{HELP_CENTRE}#everyday-use",
+    "activity": f"{HELP_CENTRE}#everyday-use",
+    "system": f"{HELP_CENTRE}#your-server",
+    "settings": f"{HELP_CENTRE}#apps",
+}
+
 # Every page: (section key, level 1 index).
 PAGES = {}
 for key, _, _, items in MENU:
@@ -156,6 +167,7 @@ def shell(current):
     {search_form("header-search-input", "site-header__search search-field", "header-search")}
     <div class="site-header__actions">
       <button type="button" class="icon-btn site-header__search-btn" data-search-open aria-controls="header-search" aria-expanded="false">{icon("search", 20)}<span class="visually-hidden">Search</span></button>
+      <a class="icon-btn" href="{HELP[key]}" target="_blank" rel="noopener noreferrer" data-help-link>{icon("circle-help", 20)}<span class="label">Help</span><span class="visually-hidden"> with {section[1]} (opens in a new tab)</span></a>
       <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false">{icon("sun", 20)}<span class="label">Display</span></button>
     </div>
   </div>{level2}

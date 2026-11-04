@@ -108,3 +108,6 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 .release-notes ul { margin: 0; }
 /* The time range beside a heading. */
 .range-picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin: 0; padding: 0; border: 0; min-width: 0; }
+
+/* The Help link in the header looks like the Display button beside it. */
+.site-header a.icon-btn { color: inherit; text-decoration: none; }

@@ -151,6 +151,18 @@ RELEASES = [
                   ("Checks", "Trivy, OWASP ZAP, Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. What each found is in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "If Note issues was active, Send feedback is active, and your notes are listed with the new reports. With Docker, the limits come with the update. Without Docker (--native), run ./install.sh --native again to add them. To go back, run ./update.sh --to v0.7.4."},
+    {"version": "0.7.6", "date": "4 November 2026",
+     "added": [("A menu in three levels", "A side menu beside every page has the Starboard logo, Search and five sections: Library, Discover, Activity, System and Settings. The level 1 menu along the header holds a section's pages, and the level 2 menu under it holds a page's own tabs. Every page keeps its address."),
+               ("Server name", "Give your server a name of up to 10 characters in Settings, General. It shows in bold at the start of the level 1 menu. Phones show only the logo."),
+               ("Help for each section", "A Help button beside Display opens the help for the section you are in, in a new tab."),
+               ("Places for Reelix", "The Library (TV, Films, Radio, Books and Audiobooks), Trending, Recently finished, Wanted, History and Settings, Reelix have their places in the menu. Each says it comes with Reelix.")],
+     "changed": [("A new logo", "The Screen logo: a screen with four tiles and a star."),
+                 ("Where things are", "Some pages moved in the menu. For example, Jellyfin and Audiobookshelf are under Settings, Apps; Updates and Other services are under System, Apps; Downloads and Requests are under Activity. The help says where each one is."),
+                 ("Shelf", "The Shelf design no longer adds its own icon rail, because every design now has the side menu.")],
+     "fixed": [],
+     "security": [("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. What each found is in docs/SECURITY-AND-TESTS.md.")],
+     "review": [],
+     "settings": "Nothing to choose. A dashboard name of 10 characters or fewer becomes the server name, which you can change or clear in Settings, General. To go back, run ./update.sh --to v0.7.5."},
 ]
 
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.6 (4 November 2026)
 
 - **A new menu, in three levels.** A side menu beside every page has the Screen logo with Starboard underneath,
   Search, then five sections: Library, Discover, Activity, System and Settings. The level 1 menu along the
@@ -10,6 +10,9 @@
 - **Server name:** a new setting in Settings, General, up to 10 characters, shown in bold at the start of
   the level 1 menu (phones show only the logo). A dashboard name of 10 characters or fewer is copied across
   once. The dashboard name still names the browser tab and alerts.
+- **Help for each section:** a Help button beside Display opens that section's help in a new tab. For now each
+  one opens the matching part of the help index, while a new help centre is made; the addresses are kept in
+  one place, `HELP` in `tools/apply_shell.py`.
 - **Places for what Reelix will fill:** the Library (TV, Films, Radio, Books, Audiobooks), Trending,
   Recently finished, Wanted, History and Settings, Reelix have their pages in the menu, saying they come
   with Reelix.
