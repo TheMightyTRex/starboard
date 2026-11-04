@@ -21,7 +21,7 @@ At the end, films and episodes show as watched in Jellyfin, with resume points f
 
 ### Read the history
 
-1. Go to **Settings**, then **Jellyfin**.
+1. Go to **Settings**, then **Apps**, then **Jellyfin**.
 2. In **Import watch history**, choose where the history comes from in **Import from**.
 3. For a server, type its **Server address**, such as `http://192.168.1.20:32400`, and its
    **Token or API key**.

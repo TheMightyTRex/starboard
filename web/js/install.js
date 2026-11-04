@@ -276,16 +276,16 @@ async function installStep(id, state, data, apps, go) {
     const has = (keys) => data.servers.filter((s) => keys.includes(s.key));
     const history = has(["plex", "emby"]);
     if (history.length && state.apps.has("jellyfin")) {
-      offers.push({ id: "history", title: "Watch history", text: `What everyone has watched in ${history.map((s) => s.name).join(" and ")}, into Jellyfin. Settings, Jellyfin, Import, once Jellyfin is set up.` });
+      offers.push({ id: "history", title: "Watch history", text: `What everyone has watched in ${history.map((s) => s.name).join(" and ")}, into Jellyfin. Settings, Apps, Jellyfin, Import, once Jellyfin is set up.` });
     }
     const listening = has(["plex", "jellyfin", "emby"]);
     if (listening.length && state.apps.has("audiobookshelf")) {
-      offers.push({ id: "listening", title: "Listening progress", text: `Where everyone is in each audiobook, from ${listening.map((s) => s.name).join(" and ")}, into Audiobookshelf. Settings, Audiobookshelf, once it has scanned in your books.` });
+      offers.push({ id: "listening", title: "Listening progress", text: `Where everyone is in each audiobook, from ${listening.map((s) => s.name).join(" and ")}, into Audiobookshelf. Settings, Apps, Audiobookshelf, once it has scanned in your books.` });
     }
     const arrs = has(["sonarr", "radarr", "lidarr"]);
     const newArrs = ["sonarr", "radarr", "lidarr"].filter((k) => state.apps.has(k));
     if (arrs.length && newArrs.length) {
-      offers.push({ id: "settings", title: "App settings", text: `Tags, quality settings, folders, download clients and naming from your ${arrs.map((s) => s.name).join(", ")} into the new ${newArrs.map((k) => apps[k].name).join(", ")}. Settings, Manage apps, Copy app settings, once they are running. Add the new apps in Prowlarr for search sites.` });
+      offers.push({ id: "settings", title: "App settings", text: `Tags, quality settings, folders, download clients and naming from your ${arrs.map((s) => s.name).join(", ")} into the new ${newArrs.map((k) => apps[k].name).join(", ")}. Settings, Apps, Manage apps, Copy app settings, once they are running. Add the new apps in Prowlarr for search sites.` });
     }
     if (!offers.length) offers.push({ id: "none", title: "Nothing to bring over", soon: true, text: "None of the apps you ticked can take anything from the ones you have." });
     const boxes = offers.map((o) => {
@@ -316,7 +316,7 @@ async function installStep(id, state, data, apps, go) {
         ...(data.servers.length ? row("Moving over", moving || "Nothing", "moving") : [])),
       p.moved.length ? notice("warning", "Some ports moved", p.moved.join(". ") + ".") : null,
       p.later.length ? notice("info", "Started later", `${p.later.join(", ")} ${p.later.length === 1 ? "needs its" : "need their"} own settings file first, so ${p.later.length === 1 ? "it is" : "they are"} written but not started.`) : null,
-      p.hooks?.length ? el("p", { class: "small muted", text: `Before Apps, Updates changes ${p.hooks.map((k) => apps[k].name).join(" or ")}, it backs up ${p.hooks.length === 1 ? "its" : "their"} database first. If the backup fails, the update stops.` }) : null,
+      p.hooks?.length ? el("p", { class: "small muted", text: `Before System, Apps, Updates changes ${p.hooks.map((k) => apps[k].name).join(" or ")}, it backs up ${p.hooks.length === 1 ? "its" : "their"} database first. If the backup fails, the update stops.` }) : null,
       el("details", { class: "disclosure", open: state.advanced }, el("summary", { text: "The files Starboard writes" }), el("div", { class: "disclosure__body stack-4" },
         el("p", { class: "small", text: "Two files in Starboard's data folder (data/stack): compose.yaml lists the apps; .env holds your settings and secrets. Older ones are kept." }),
         el("h3", { text: "Folders it makes" }), el("ul", {}, p.folders.map((f) => el("li", {}, el("code", { text: f })))),
@@ -462,9 +462,9 @@ function connectGuide(state, apps) {
     steps.push(el("li", {}, el("strong", { text: "Bazarr. " }), open("bazarr"), ". In Settings, connect Sonarr (", code("sonarr"), ", port 8989) and Radarr (", code("radarr"), ", port 7878) with their API keys, and choose your languages."));
   }
   steps.push(el("li", {}, el("strong", { text: "Starboard. " }), "In ", el("a", { href: "/settings.html", text: "Manage apps" }), ", give each app its API key, so Search, Downloads and Coming up work."));
-  if (state.moving.has("history")) steps.push(el("li", {}, "Import watch history: ", el("a", { href: "/settings-jellyfin.html", text: "Settings, Jellyfin" }), "."));
+  if (state.moving.has("history")) steps.push(el("li", {}, "Import watch history: ", el("a", { href: "/settings-jellyfin.html", text: "Settings, Apps, Jellyfin" }), "."));
   if (state.moving.has("settings")) steps.push(el("li", {}, "Copy settings from your old apps: ", el("a", { href: "/copy-settings.html", text: "Copy app settings" }), "."));
-  if (state.moving.has("listening")) steps.push(el("li", {}, "Copy listening progress once Audiobookshelf has scanned in your books: ", el("a", { href: "/settings-audiobookshelf.html", text: "Settings, Audiobookshelf" }), "."));
+  if (state.moving.has("listening")) steps.push(el("li", {}, "Copy listening progress once Audiobookshelf has scanned in your books: ", el("a", { href: "/settings-audiobookshelf.html", text: "Settings, Apps, Audiobookshelf" }), "."));
   return [el("h3", { text: "Connect your apps, in this order" }),
     el("p", { class: "small muted", text: "Inside Docker the apps find each other by name (such as sonarr), not by this computer's address. Every app sees your media at /data." }),
     el("ol", { class: "stack-4" }, steps)];

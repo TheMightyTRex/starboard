@@ -2,7 +2,7 @@
 
 # Update your apps
 
-**Apps**, **Updates** checks whether each app has a newer version and installs it for you. Each app restarts
+**System**, **Apps**, **Updates** checks whether each app has a newer version and installs it for you. Each app restarts
 for a moment while it updates, and anything that depends on it restarts too.
 
 ## Before you begin
@@ -14,7 +14,7 @@ for a moment while it updates, and anything that depends on it restarts too.
 
 ## Steps
 
-1. Go to **Apps**, then **Updates**. The page lists every app in the same categories as the Apps page, with its
+1. Go to **System**, then **Apps**, then **Updates**. The page lists every app in the same categories as the Apps page, with its
    **Image**, the **Installed** version, the **Latest** version and a **Status**.
 2. Select **Check** (it says **Check again** after the first check). Starboard asks the registry each app comes from, where its downloads live, for a newer version. This
    can take a minute.
@@ -33,7 +33,7 @@ for a moment while it updates, and anything that depends on it restarts too.
 - An app pinned to a version, such as `v1.4.2`, is offered the newest higher version. Starboard copies the
   Compose file before it changes the version in it, and adds `.bak-` and the date to the copy's name.
 - Starboard finds each app's container by its name. If it shows **No container found**, edit the app in
-  **Settings**, **Manage apps** and choose it in **Container**.
+  **Settings**, **Apps**, **Manage apps** and choose it in **Container**.
 - After an update, Starboard removes the old version's download if nothing else uses it.
 - **What the last update did** shows the log of the last update.
 

@@ -1,4 +1,4 @@
-// Settings, Manage apps, Copy app settings: choose the apps and the parts, check what would be copied (with a
+// Settings, Apps, Manage apps, Copy app settings: choose the apps and the parts, check what would be copied (with a
 // box for each password the old app keeps hidden), then Copy. Uses settings.js's field, notice and section.
 
 const PART_HINTS = {

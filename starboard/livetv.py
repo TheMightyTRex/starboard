@@ -1,6 +1,6 @@
 """Live TV for Jellyfin: free channel playlists, their TV guides, Sky-style numbering and clean logos.
 
-Optional (Settings, Jellyfin, Live TV; off until turned on). Works in the folder Jellyfin reads its Live TV
+Optional (Settings, Apps, Jellyfin, Live TV; off until turned on). Works in the folder Jellyfin reads its Live TV
 files from (STARBOARD_IPTV_DIR, which the installer asks about). The guides are refreshed once a day, because
 listings only cover the next few days. The channel lists are rebuilt (and every stream tested, the costly part)
 only when a source's list of channels has changed, or once a week to drop channels that stopped playing:

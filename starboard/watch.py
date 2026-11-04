@@ -252,7 +252,7 @@ class Watch:
                 status = (backup.server_status().get("status") or {})
                 key = f"backup:{status.get('started')}"
                 if status.get("status") == "failed":
-                    self.alert(key, "The server backup failed", f"{name}: {status.get('summary') or 'see System, Backup and restore'}.")
+                    self.alert(key, "The server backup failed", f"{name}: {status.get('summary') or 'see System, Backup'}.")
 
             # Certificates, once a day.
             days = int(on.get("cert_days", 0) or 0)

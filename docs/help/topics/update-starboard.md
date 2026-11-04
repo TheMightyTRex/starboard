@@ -14,7 +14,7 @@ settings, installs the newest release and goes back to the version you had if th
 ## Find out whether an update is out
 
 - The footer of every page shows Starboard's version. When a newer one is out, **Upgrade available** and the new
-  version number appear beside it. Select it to go to **Settings**, **About and updates**.
+  version number appear beside it. Select it to go to **Settings**, **Updates**.
 - On **About and updates**, a notice says "Version 0.8.0 is out", for example, with a **Release notes** button that
   says what changed.
 

@@ -17,7 +17,7 @@ and starts them. At the end, the apps are running and Starboard shows how to con
 
 ## Steps
 
-1. Go to **Settings**, then **Manage apps**, and select **Install apps**.
+1. Go to **Settings**, then **Apps**, then **Manage apps**, and select **Install apps**.
 2. On **Start here**, read how the apps work together. Tick **Advanced settings** only if you want to choose
    each app and folder yourself. Select **Begin**.
 3. On **What to set up**, tick what you want your server to do, such as **Movies**, **TV**, **Watching** and

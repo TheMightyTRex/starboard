@@ -13,7 +13,7 @@ are switches in Starboard. Others you change by running the installer again, whi
 
 ## See what Starboard can access now
 
-1. Go to **Settings**, then **About and updates**.
+1. Go to **Settings**, then **Updates**.
 2. Find **What Starboard can access**.
 
 Each row names one kind of access, says what it is for and what it costs your server, and shows whether it is active. Each
@@ -25,7 +25,7 @@ These apply at once:
 
 - **Your home network:** go to **Settings**, then **Security**, and use **Phones and other computers on your home
   network**. Read [Choose who can open Starboard](choose-who-can-open-starboard.md).
-- **Your apps:** add, change or remove apps and their API keys in **Settings**, **Manage apps**. The row's
+- **Your apps:** add, change or remove apps and their API keys in **Settings**, **Apps**, **Manage apps**. The row's
   **Manage apps** button goes there. Read
   [Change or remove an app](change-or-remove-an-app.md).
 - **The dashboard-icons collection, for app icons** and **Posters on Coming up:** use the switch in the row on

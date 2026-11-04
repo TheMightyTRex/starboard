@@ -1,9 +1,9 @@
 """Starboard's own background jobs: Live TV, applying imported watch history and user defaults (Jellyfin), and
 applying listening progress (Audiobookshelf).
 
-Each is off until turned on in Settings, Jellyfin or Settings, Audiobookshelf. One thread runs them, and it starts only when one is on:
+Each is off until turned on in Settings, Apps, Jellyfin or Settings, Apps, Audiobookshelf. One thread runs them, and it starts only when one is on:
 it wakes every 10 minutes and runs whatever is due (Live TV daily, the others hourly). Each job's last run
-is kept in data/jobs.json, for Apps, Other services and Settings.
+is kept in data/jobs.json, for System, Apps, Other services and Settings.
 """
 
 import json

@@ -22,7 +22,7 @@ Audiobookshelf into your Audiobookshelf. At the end, each person carries on from
 
 ### Read the progress
 
-1. Go to **Settings**, then **Audiobookshelf**.
+1. Go to **Settings**, then **Apps**, then **Audiobookshelf**.
 2. In **Copy listening progress**, choose where the progress comes from in **Read from**.
 3. Type the **Server address**, such as `http://192.168.1.20:8096`, and the **Token or API key**.
 4. Select **Read the progress**.

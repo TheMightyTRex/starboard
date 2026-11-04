@@ -13,7 +13,7 @@ and select **Add**, and the right app adds it and, if you like, starts looking f
 
 ## Steps
 
-1. Go to **Search**. You can also type in the search box in the header, **Search films, series, music and
+1. Go to **Discover**, then **Search**. You can also type in the search box in the header, **Search films, series, music and
    books**, on any page.
 2. In the search box, type at least two letters of the name, such as `Harbour Street`.
 3. Select **Search**. Starboard lists the results, with how many came from each app.

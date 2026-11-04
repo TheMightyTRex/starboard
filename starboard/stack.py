@@ -41,7 +41,7 @@ LSIO = {"PUID": "${PUID}", "PGID": "${PGID}", "TZ": "${TZ}"}
 CFG = "${CONFIG_DIR}"
 DATA = "${DATA_DIR}"
 
-# Storyarr is pinned to a version, so Apps, Updates offers each newer one (with a database backup first).
+# Storyarr is pinned to a version, so System, Apps, Updates offers each newer one (with a database backup first).
 # STARBOARD_STORYARR_IMAGE chooses another image, or none to leave Storyarr out.
 STORYARR_IMAGE = "ghcr.io/themightytrex/storyarr:v0.4.8"
 
@@ -310,11 +310,11 @@ def build(choice):
 
 
 def before_update(app):
-    """A database backup that Apps, Updates runs before it changes this app (containers.py runs
+    """A database backup that System, Apps, Updates runs before it changes this app (containers.py runs
     starboard-before-update/<service>.sh from the Compose folder). If the backup fails or is empty, the update stops."""
     db = app["db"]
     name = db["env"]["POSTGRES_DB"]
-    return ("#!/bin/sh\n# Written by Starboard's Install apps: backs up the database before Apps, Updates changes the app.\n"
+    return ("#!/bin/sh\n# Written by Starboard's Install apps: backs up the database before System, Apps, Updates changes the app.\n"
             "set -eu\nset -o pipefail\nmkdir -p starboard-before-update/backups\n"
             f"out=starboard-before-update/backups/{name}-db-$(date +%Y-%m-%d-%H%M).sql.gz\n"
             f"docker exec {db['service']} pg_dump -U {db['env']['POSTGRES_USER']} {name} | gzip > \"$out\"\n"

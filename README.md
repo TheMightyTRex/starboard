@@ -32,7 +32,7 @@ All made with example data (`tools/screenshots.sh`).
 | **After an upgrade** | **Settings, Performance:** what each part costs |
 | ![System, Logs: the log, Report a problem, Download and Delete logs](docs/screenshots/logs.png) | ![The log, newest first, with Everything, Problems and Detailed](docs/screenshots/logs-entries.png) |
 | **Logs**, with Report a problem | **The log**, newest first |
-| ![Settings, General: how long to keep logs, and detailed logging](docs/screenshots/logs-settings.png) | ![Settings, Audiobookshelf: each account, the Audiobookshelf user it goes to, and how many books were applied](docs/screenshots/audiobookshelf.png) |
+| ![Settings, General: how long to keep logs, and detailed logging](docs/screenshots/logs-settings.png) | ![Settings, Apps, Audiobookshelf: each account, the Audiobookshelf user it goes to, and how many books were applied](docs/screenshots/audiobookshelf.png) |
 | **Log settings** | **Listening progress** into Audiobookshelf |
 | ![Display and accessibility, a slide-out with the header in the page colour](docs/screenshots/display.png) | ![Copy app settings: what will be added, what is already there and what will be replaced](docs/screenshots/copy-settings.png) |
 | **Display and accessibility** | **Copy app settings** |
@@ -88,17 +88,17 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
   reads every file name, so it runs only when you choose (Settings, Performance).
 - **Server jobs** (such as a check of every app) with Run now; **Disk health** with 30-day temperatures;
   **Storage** with what is using the space and every drive; **Monitor** with each app's processor and memory.
-- **Jellyfin extras** (Settings, Jellyfin), each off until you turn it on: free **Live TV** channels and
+- **Jellyfin extras** (Settings, Apps, Jellyfin), each off until you turn it on: free **Live TV** channels and
   guides with Sky-style numbers and white logos; **import watch history** from Plex, Emby or another Jellyfin;
   **defaults for every user**. Set-up offers them when it finds Jellyfin.
-- **Copy app settings** (Settings, Manage apps): tags, quality profiles, folders, download clients and naming from
+- **Copy app settings** (Settings, Apps, Manage apps): tags, quality profiles, folders, download clients and naming from
   one Sonarr, Radarr or Lidarr into another, with a preview first and the hidden passwords asked for.
-- **Listening progress** (Settings, Audiobookshelf): copies where everyone is in each audiobook, and what they
+- **Listening progress** (Settings, Apps, Audiobookshelf): copies where everyone is in each audiobook, and what they
   finished, from Plex, Jellyfin, Emby or another Audiobookshelf. Books are matched by ASIN, ISBN, title and author,
   or folder; progress people already have is never changed, and books not found are listed. It needs an admin API
   key from Audiobookshelf (Settings, API Keys): Starboard uses it to make a key that acts as each person for a few
   minutes, and deletes that key straight after.
-- **Search for new apps** (Settings, Manage apps) finds apps on this computer and adds the ones you tick, with
+- **Search for new apps** (Settings, Apps, Manage apps) finds apps on this computer and adds the ones you tick, with
   their API keys if Starboard has Docker access. It runs only when you press it.
 - **Install apps: a complete *arr stack for beginners.** Never set one up? The guide explains what each app does,
   picks the apps for what you want (Movies, TV, Music, Ebooks, Audiobooks, Comics, Watching, Downloads, VPN and
@@ -129,7 +129,7 @@ docker compose -f compose.image.yaml up -d
 ```
 
 Open `http://<your server>:8095`. The setup code is in the log: `docker logs starboard`. The file explains each
-optional extra (Docker access for Apps, Updates; folders for System, Storage) as comments you can uncomment.
+optional extra (Docker access for System, Apps, Updates; folders for System, Storage) as comments you can uncomment.
 Update with `docker compose -f compose.image.yaml pull && docker compose -f compose.image.yaml up -d`.
 
 ### The installer
@@ -144,7 +144,7 @@ cd starboard
 
 The installer prints two addresses: one for this computer and one for phones and other computers on your
 home network, plus a one-time setup code. Open either address, enter the code and choose a password (at least
-10 characters). Then go to **Settings, Manage apps** and add your apps. Use `127.0.0.1` and each app's port
+10 characters). Then go to **Settings, Apps, Manage apps** and add your apps. Use `127.0.0.1` and each app's port
 (for example `http://127.0.0.1:8989` for Sonarr) as the address the server uses.
 
 ### What the installer does, and what it asks
@@ -162,9 +162,9 @@ computer. Every kind of access is optional: say no and only that part of Starboa
 | Access | What it is for | What it means for your computer | Default | Change it |
 |---|---|---|---|---|
 | Home network | Phones and computers on your network can open Starboard | Starboard listens on your network, behind your password | Yes | Settings, Security (`--local-only` on a new install) |
-| Docker | **Apps, Updates**: check for and install new app images | The Docker socket is mounted: full control of Docker, so of the computer | No | `--docker`, `--no-docker` |
-| Per-app use | **System, Monitor**: each app's processor and memory | `/sys/fs/cgroup` is mounted read-only; two small files per container are read while Monitor is open | No | `--app-use`, `--no-app-use` |
-| Live TV folder | **Settings, Jellyfin**: free channels and guides for Jellyfin | Jellyfin's Live TV folder is mounted read-write; Starboard writes playlists, guides and logos there once a day while Live TV is on | None | `--livetv-folder /path`, `--no-livetv` |
+| Docker | **System, Apps, Updates**: check for and install new app images | The Docker socket is mounted: full control of Docker, so of the computer | No | `--docker`, `--no-docker` |
+| Per-app use | **System, Overview, Monitor**: each app's processor and memory | `/sys/fs/cgroup` is mounted read-only; two small files per container are read while Monitor is open | No | `--app-use`, `--no-app-use` |
+| Live TV folder | **Settings, Apps, Jellyfin**: free channels and guides for Jellyfin | Jellyfin's Live TV folder is mounted read-write; Starboard writes playlists, guides and logos there once a day while Live TV is on | None | `--livetv-folder /path`, `--no-livetv` |
 | Folders | **System, Storage**: free space | Each folder is mounted read-only; Starboard reads sizes, not files | None | `--disk Name=/path`, `--no-disks` |
 | Disk health | **System, Disk health**: each drive's SMART report, and the drive list on Storage | Runs `deploy/install-smart.sh` with `sudo`: a systemd timer runs `deploy/starboard-smart.sh` (smartctl and lsblk, as root) every 30 minutes and saves reports in `./smart`. Starboard may write only to `./smart/requests`, to ask for a reading now | No | `--disk-health`, `--no-disk-health` |
 
@@ -173,16 +173,16 @@ health timer, run `sudo deploy/install-smart.sh --remove`.
 
 Some access is a switch in Settings instead, because it needs nothing from the installer:
 
-- **Your apps** (Settings, Manage apps): Starboard reads status, queues and calendars with the API keys you
+- **Your apps** (Settings, Apps, Manage apps): Starboard reads status, queues and calendars with the API keys you
   give it, and adds films, series and books only when you choose Add.
 - **Download hours** (Settings, General): pauses qBittorrent and SABnzbd outside the hours you choose. Off
   until you turn it on. It needs each client's API key (qBittorrent 5.2 or later).
-- **GitHub** (Settings, About and updates): looks for new Starboard releases, at most every 6 hours.
-- **The dashboard-icons collection** (Settings, About and updates): downloads each app's icon once.
-- **Posters** (Settings, About and updates): the server fetches small posters for Coming up from your own
+- **GitHub** (Settings, Updates): looks for new Starboard releases, at most every 6 hours.
+- **The dashboard-icons collection** (Settings, Updates): downloads each app's icon once.
+- **Posters** (Settings, Updates): the server fetches small posters for Coming up from your own
   apps and keeps copies for a week. Search results still show covers from the sites your apps use, such as TMDB.
 
-**Settings, About and updates, What Starboard can access** lists all of these, says which are on now, and
+**Settings, Updates, What Starboard can access** lists all of these, says which are on now, and
 gives the switch or the command to change each one.
 
 ### Home network or this computer only
@@ -194,7 +194,7 @@ so this works (Docker on Linux).
 
 ### App updates
 
-With Docker access, **Apps, Updates** lists every app on the Apps page in the same categories, with the
+With Docker access, **System, Apps, Updates** lists every app on the Apps page in the same categories, with the
 container it runs in, the version installed and the newest one. **Check again** asks each image's
 registry (only a few small files are downloaded). **Update** downloads the new image and runs
 `docker compose up -d` for the app's Compose project, in a short-lived `docker:cli` container, so anything
@@ -221,7 +221,7 @@ folders set up this way and leaves them as they are.
 
 ### Backup and restore
 
-**System, Backup and restore** downloads Starboard's settings as a file (your apps, API keys, categories and
+**System, Backup** downloads Starboard's settings as a file (your apps, API keys, categories and
 settings, never your password) and restores from one. Starboard also keeps copies of its settings in
 `./data/backups` before a restore or an update that changes them.
 
@@ -237,7 +237,7 @@ server itself. Point it at two folders in `compose.override.yaml` and `.env`:
 
 ### Other services
 
-Services with no web page of their own (a VPN, an unpacker, a clean-up job) go under **Apps, Other services**:
+Services with no web page of their own (a VPN, an unpacker, a clean-up job) go under **System, Apps, Other services**:
 tick **Background service** when you add them. A service with no address can follow another app's status.
 
 ## Update

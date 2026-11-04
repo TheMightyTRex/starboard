@@ -65,7 +65,7 @@ function openWarning(item, opener) {
       chip(item.word, item.tone),
       el("p", { class: "sys-message", text: item.message }),
       el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])),
-      item.kind === "error" ? el("p", { class: "small muted", text: "Check that the app is running and that its address in Settings, Manage apps is right." }) : null,
+      item.kind === "error" ? el("p", { class: "small muted", text: "Check that the app is running and that its address in Settings, Apps, Manage apps is right." }) : null,
     ],
     foot: [
       s?.link ? el("a", { class: "btn btn--primary", href: reachableUrl(s.link), target: "_blank", rel: "noopener noreferrer" },

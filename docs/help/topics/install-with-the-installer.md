@@ -75,10 +75,10 @@ your answer later.
    can. Most people answer yes. Asked on a new install only: after that, it is a switch in **Settings**,
    **Security**.
 3. **"Give Starboard access to Docker for app updates? [y/N]"**
-   Yes lets Starboard update your other apps for you on **Apps**, **Updates**, and find their API keys. This gives
+   Yes lets Starboard update your other apps for you on **System**, **Apps**, **Updates**, and find their API keys. This gives
    Starboard full control of Docker, which is the same as full control of the computer. If unsure, answer no.
 4. **"Show each app's processor and memory use? [y/N]"**
-   Yes lets **System**, **Monitor** show what each app is using. Starboard only reads, and only while that page is
+   Yes lets **System**, **Overview**, **Monitor** show what each app is using. Starboard only reads, and only while that page is
    open. No means Monitor shows the whole server only.
 5. **"Give Starboard a Live TV folder? [y/N]"**
    Only for Jellyfin users who want free Live TV channels. Yes asks for the folder Jellyfin reads its Live TV files
@@ -89,7 +89,7 @@ your answer later.
    sign and the folder, such as `Media=/mnt/media`, then press Enter on an empty line to finish. Starboard reads how
    full they are, never the files.
 7. **"Set up Disk health reports? [y/N]"**
-   Yes lets **System**, **Disk health** show each drive's health report, which can warn of a failing drive. It installs a small job that checks your
+   Yes lets **System**, **Storage**, **Disk health** show each drive's health report, which can warn of a failing drive. It installs a small job that checks your
    drives every 30 minutes, so it asks for your password. It needs a program called smartmontools.
 
 When you run the installer again later, it shows your last answers as the defaults.

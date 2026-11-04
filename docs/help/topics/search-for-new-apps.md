@@ -14,7 +14,7 @@ It saves you typing each address by hand, and with Docker access it can fill in 
 
 ## Steps
 
-1. Go to **Settings**, then **Manage apps**.
+1. Go to **Settings**, then **Apps**, then **Manage apps**.
 2. Select **Search for new apps**. A side panel opens and Starboard looks for apps. This takes a few seconds.
 3. Read the list. Each app shows its address and whether it needs an API key. Every app is ticked to start
    with.

@@ -27,7 +27,7 @@ Each change applies at once. There is no save button.
 
 ### Resume or pause by hand
 
-1. Go to **Downloads**, then **Queue**.
+1. Go to **Activity**, then **Downloads**, then **Queue**.
 2. In **Download hours**, select **Resume downloads now** or **Pause downloads until** and a time.
 3. To go back to your hours, select **Follow the hours**. Otherwise Starboard goes back to them at the next
    start or end time.
@@ -48,7 +48,7 @@ Each change applies at once. There is no save button.
 ## If it does not work
 
 - **No qBittorrent or SABnzbd with an API key is set up yet:** paste the app's API key. Edit the app in
-  **Settings**, then **Manage apps**. Read [Change or remove an app](change-or-remove-an-app.md).
+  **Settings**, then **Apps**, then **Manage apps**. Read [Change or remove an app](change-or-remove-an-app.md).
 - **qBittorrent has no API key:** update qBittorrent to version 5.2 or later.
 - **Downloads pause at the wrong hour:** the server's time zone may be wrong. With the ready-made image, check
   the `TZ` line in `compose.image.yaml`. Then, in the folder with that file, run this command to start

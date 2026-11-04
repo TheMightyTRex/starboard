@@ -14,7 +14,7 @@ disks. With one install option on, it also lists how much processor and memory e
 
 ## Steps
 
-1. Go to **System**, then **Monitor**. The charts start after a few seconds and show the last 3 minutes.
+1. Go to **System**, then **Overview**, then **Monitor**. The charts start after a few seconds and show the last 3 minutes.
 2. Read the charts: **Processor**, **Memory**, **Processor temperature**, **Network** and **Disk activity**.
 3. Find **Apps**. It lists the 12 busiest apps, with each one's **Processor** and **Memory**.
 4. Optional: select **Pause** to hold the charts still while you read them. Select **Pause** again to carry on.

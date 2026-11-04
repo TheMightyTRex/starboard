@@ -56,7 +56,7 @@ DEFAULTS = {
               "channel": {"kind": "", "url": "", "token": ""},
               "alerts": {"apps_down": True, "disk_problem": True, "disk_full": 90, "download_stuck": True,
                          "backup_failed": True, "cert_days": 14}},
-    # Hourly jobs (jobs.py): each off until turned on in Settings, Jellyfin or Settings, Audiobookshelf.
+    # Hourly jobs (jobs.py): each off until turned on in Settings, Apps, Jellyfin or Settings, Apps, Audiobookshelf.
     "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "import_keep": False, "defaults": False,
                "listening_keep": False},
     # How much Starboard does in the background and how often (Settings, Performance).

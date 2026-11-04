@@ -11,7 +11,7 @@ one of those copies back from the Backup and restore page, with no file to find.
 
 ## Steps
 
-1. Go to **System**, then **Backup and restore**.
+1. Go to **System**, then **Backup**.
 2. Find **Copies Starboard saved**. The newest copy comes first. Each one shows when it was made and why:
    **Before a restore** or **Before an update changed the settings**.
 3. Select the date of a copy to see what it holds: how many apps, its categories and the apps' names.

@@ -14,7 +14,7 @@ Radarr. You see what will change before anything is copied.
 
 ## Steps
 
-1. Go to **Settings**, then **Manage apps**, and select **Copy app settings**.
+1. Go to **Settings**, then **Apps**, then **Manage apps**, and select **Copy app settings**.
 2. In **Copy from**, choose the old app. In **Copy to**, choose the new one.
 3. Under **What to copy**, tick the parts you want. **Naming** and **Media management** are unticked to start
    with, because they replace the new app's settings.

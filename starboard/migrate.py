@@ -1,6 +1,6 @@
 """Moving to Jellyfin: watch history from Plex, Emby or another Jellyfin, and defaults for every Jellyfin user.
 
-Watch history (Settings, Jellyfin, Import watch history):
+Watch history (Settings, Apps, Jellyfin, Import watch history):
 1. Read it from one of these, into data/imports/history.json (one list of films and episodes per account):
    - a Plex database file (com.plexapp.plugins.library.db), uploaded or put in data/imports: every account;
    - a Plex server, with its token: the token owner's account;

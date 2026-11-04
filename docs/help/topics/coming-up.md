@@ -13,7 +13,7 @@ ahead as you choose. You can see them as a list by day or on a month calendar.
 
 ### See what is coming up
 
-1. Go to **Coming up**. The page says how many releases are due, how many are wanted and how many are already
+1. Go to **Discover**, then **Coming up**. The page says how many releases are due, how many are wanted and how many are already
    in the library.
 2. Choose **List** to see releases day by day, or **Calendar** to see them on a month.
 3. Optional: select **Wanted** to see only what you do not have yet, or **In library** to see only what you
