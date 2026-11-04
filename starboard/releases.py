@@ -156,11 +156,11 @@ RELEASES = [
                ("Server name", "Give your server a name of up to 10 characters in Settings, General. It shows in bold at the start of the level 1 menu. Phones show only the logo."),
                ("Help for each section", "A Help button beside Display opens the help for the section you are in, in a new tab."),
                ("Places for Reelix", "The Library (TV, Films, Radio, Books and Audiobooks), Trending, Recently finished, Wanted, History and Settings, Reelix have their places in the menu. Each says it comes with Reelix.")],
-     "changed": [("A new logo", "The Screen logo: a screen with four tiles and a star."),
+     "changed": [("A new logo", "The Screen logo, a screen with four tiles and a star, in the side menu and the header. The browser tab and the app icon keep the old one for now."),
                  ("Where things are", "Some pages moved in the menu. For example, Jellyfin and Audiobookshelf are under Settings, Apps; Updates and Other services are under System, Apps; Downloads and Requests are under Activity. The help says where each one is."),
                  ("Shelf", "The Shelf design no longer adds its own icon rail, because every design now has the side menu.")],
      "fixed": [],
-     "security": [("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. What each found is in docs/SECURITY-AND-TESTS.md.")],
+     "security": [("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. They found nothing to fix; ZAP's two warnings were false alarms, explained in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "Nothing to choose. A dashboard name of 10 characters or fewer becomes the server name, which you can change or clear in Settings, General. To go back, run ./update.sh --to v0.7.5."},
 ]

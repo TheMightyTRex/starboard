@@ -21,7 +21,8 @@ FULL=0
 TRIVY=aquasec/trivy:0.69.1
 ZAP=ghcr.io/zaproxy/zaproxy:stable
 work="$(mktemp -d)"
-trap 'docker rm -f starboard-scan >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; rm -rf "$work"' EXIT
+# SCAN_REPORTS=folder keeps ZAP's reports (each warning with its address) after the scan; otherwise they go with it.
+trap '[ -n "${SCAN_REPORTS:-}" ] && mkdir -p "$SCAN_REPORTS" && cp -r "$work/zap/." "$SCAN_REPORTS/"; docker rm -f starboard-scan >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; rm -rf "$work"' EXIT
 failed=0
 say() { printf '\n== %s\n' "$*"; }
 result() { if [ "$1" = 0 ]; then echo "PASS $2"; else echo "FAIL $2"; failed=1; fi; }
@@ -90,7 +91,7 @@ print(r.getheader("Set-Cookie").split(";")[0])'
     i=$((i + 1))
   done
   docker run --rm --network "$NET" -v "$work/zap:/zap/wrk:rw" "$ZAP" \
-    zap-full-scan.py -t "$TARGET/index.html" -j -m 5 -T 45 -c rules.tsv -z "$rules" > "$work/zap/full.txt" 2>&1
+    zap-full-scan.py -t "$TARGET/index.html" -j -m 5 -T 45 -c rules.tsv -J full.json -z "$rules" > "$work/zap/full.txt" 2>&1
   grep -E "^(FAIL|WARN)-NEW" "$work/zap/full.txt"
   grep -q "FAIL-NEW: 0.*WARN-NEW: 0" "$work/zap/full.txt"
   result $? "ZAP active scan, signed in"

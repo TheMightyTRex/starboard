@@ -143,6 +143,21 @@ private Docker network with no way out, so it can never reach other apps on the 
 - **A private address, signed in only:** `/api/network` lists the addresses you can open Starboard from, so it
   includes the server's home network address. The signed-out scan finds none.
 
+## Security scans, 4 November 2026 (0.7.6)
+
+The same six scanners. Trivy, Gitleaks, Bandit, ShellCheck, Hadolint and ZAP signed out found nothing new (ZAP
+signed out: 58 passed). ZAP's active scan signed in passed 110 checks and raised two warnings across two runs, both
+false alarms:
+
+- **SQL injection (first run only):** Starboard has no database; its settings are a JSON file. The check compares
+  answers to changed values, and the new server name, which refuses more than 10 characters, answers long and short
+  values differently. It did not come back in the second run.
+- **Path traversal on `server_name` (`PUT /api/config/general`, test value "general"):** the server name is only
+  stored, sent to signed-in pages and shown as text. Nothing reads a file with it. The check is not turned off for the
+  whole app, because it could find a real problem elsewhere.
+
+`SCAN_REPORTS=folder tools/security-scan.sh --full` now keeps ZAP's reports, with each warning's address.
+
 ## CodeQL on GitHub, 3 November 2026
 
 GitHub's code scanning (CodeQL) checks the Python, JavaScript and workflow files on every push. Its first scan
@@ -169,6 +184,7 @@ fixes under Security.
 |---|---|---|---|---|---|---|
 | 0.7.4 (3 November 2026) | 117 passed | 19 passed | Trivy 0, ZAP no failures, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | First run after release: 19 alerts; 4 fixed for the next release (3 problems), 15 explained and dismissed | Ubuntu, Debian, Fedora, 64-bit ARM: 17 of 17 each | Pillow 13.0.0; see the Security section of the 0.7.4 notes |
 | 0.7.5 (3 November 2026) | 123 passed | 29 passed | Trivy 0, ZAP no failures signed out (58 passed) and signed in (111 passed), Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | 0 open: the 15 explained alerts stay dismissed; the new Snaglist file raised none | Ubuntu 24.04 and 64-bit ARM: 17 of 17 each | Docker Bench's finding fixed (memory and process limits); the 3 CodeQL problems fixed; Send feedback's key and stylesheet hash tested (SEC-24) |
+| 0.7.6 (4 November 2026) | 125 passed | 29 passed | Trivy 0, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0, ZAP no failures signed out (58 passed) and signed in (110 passed; 2 warnings, both false alarms, explained above) | 0 open | Not needed: the installer, update.sh and the image did not change | The new menu and server name; help check 71 articles, 0 problems |
 
 ## Other free checks you can run
 
