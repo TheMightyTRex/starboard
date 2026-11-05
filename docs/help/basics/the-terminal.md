@@ -46,6 +46,30 @@ You can also paste with the right mouse button: press it inside the terminal and
 To copy text out of the terminal, highlight it and press **Ctrl**, **Shift** and **C**. Plain **Ctrl** and **C**
 does something else in a terminal: it stops the command that is running.
 
+## Symbols that are in different places on different keyboards
+
+Copying and pasting a command avoids this altogether. If you type a command, some symbols are not where the key
+says, and they move between keyboards. These are the ones Starboard's commands use. **AltGr** is the key to the
+right of the space bar.
+
+| Symbol | Name | US | UK and Ireland | German | French | Spanish |
+|---|---|---|---|---|---|---|
+| `\|` | Vertical bar, or pipe | **Shift** and `\` (above or beside **Enter**) | **Shift** and `\` (the key between the left **Shift** and **Z**) | **AltGr** and `<` (the key between the left **Shift** and **Y**) | **AltGr** and **6** | **AltGr** and **1** |
+| `~` | Tilde | **Shift** and the key to the left of **1** | **Shift** and `#` (the key to the left of **Enter**) | **AltGr** and `+` | **AltGr** and **2**, then **Space** | **AltGr** and **4** |
+| `\` | Backslash | The key above or beside **Enter** | The key between the left **Shift** and **Z** | **AltGr** and `ß` | **AltGr** and **8** | **AltGr** and the key to the left of **1** |
+| `"` | Double quote | **Shift** and `'` | **Shift** and **2** | **Shift** and **2** | The **3** key, without **Shift** | **Shift** and **2** |
+| `@` | At sign | **Shift** and **2** | **Shift** and `'` (next to the `#` key) | **AltGr** and **Q** | **AltGr** and **0** | **AltGr** and **2** |
+| `$` | Dollar | **Shift** and **4** | **Shift** and **4** | **Shift** and **4** | Its own key, to the left of **Enter** | **Shift** and **4** |
+| `&` | Ampersand | **Shift** and **7** | **Shift** and **7** | **Shift** and **6** | The **1** key, without **Shift** | **Shift** and **6** |
+
+Things to note:
+
+- **On a UK keyboard,** the key to the left of **1** shows a broken bar `¦`. That is a different character, and a
+  command with it in does not work. The vertical bar is **Shift** and the `\` key next to the left **Shift**.
+- **When the symbol does not appear,** your computer may be set to a different keyboard from the one in front of
+  you. Check the keyboard layout in the computer's settings, or copy and paste the command instead.
+- **Over SSH,** the keyboard that counts is the one on the computer you are typing on, not the server's.
+
 ## When a command asks for your password
 
 Commands that change the computer as a whole start with `sudo`, which means "do this as the administrator". The

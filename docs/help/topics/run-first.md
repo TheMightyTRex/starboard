@@ -22,6 +22,16 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
    curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
    ```
 
+   The `|` in the middle is the vertical bar, which is in a different place on different keyboards: on a UK
+   keyboard it is **Shift** and the `\` key next to the left **Shift**. Read
+   [Symbols that are in different places on different keyboards](../basics/the-terminal.md#symbols-that-are-in-different-places-on-different-keyboards).
+   With no `|` at all, these two commands do the same:
+
+   ```bash
+   curl -fsSL -o run-first.sh https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh
+   bash run-first.sh
+   ```
+
    If it says "curl: command not found", install curl first (see "If it does not work" below).
 
 2. The first question is about how it looks. Press Enter for the standard look, or type `a` and press Enter for

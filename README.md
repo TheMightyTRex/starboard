@@ -10,6 +10,16 @@ Start with the **Run first script**. On any Linux computer, with or without a de
 curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
 ```
 
+Typing it? The `|` (vertical bar) is in different places on different keyboards: on a UK keyboard it is **Shift**
+and the `\` key next to the left **Shift**, not the `¦` key. The help has
+[where each symbol is](docs/help/basics/the-terminal.md#symbols-that-are-in-different-places-on-different-keyboards)
+on US, UK, German, French and Spanish keyboards. Or use these two commands, which have no `|`:
+
+```bash
+curl -fsSL -o run-first.sh https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh
+bash run-first.sh
+```
+
 It checks the computer, installs Docker and anything else missing after you say yes, downloads Starboard and
 starts its installer. Type `a` at its first question for accessible mode, which carries on through the whole
 installation.
@@ -77,7 +87,7 @@ hidden), the apps for your media server with their folders and VPN details, and 
 
 | | |
 |---|---|
-| ![The terminal set-up at 80 by 24: the heading box and progress bar at the top, the menu on the bottom line, and the step between them](docs/screenshots/terminal-setup.jpg) | ![Feedback from the terminal: a QR code drawn in the terminal, with the link under it](docs/screenshots/terminal-feedback-qr.jpg) |
+| ![The terminal set-up at 80 by 24, step 2 of 10, How to start: the heading box and progress bar at the top, New install, Move from apps you already run and Restore a backup, each with a line under it, and the menu on the bottom line](docs/screenshots/terminal-setup.jpg) | ![Feedback from the terminal: a QR code drawn in the terminal, with the link under it](docs/screenshots/terminal-feedback-qr.jpg) |
 | **The terminal set-up** in an 80 by 24 window | **Feedback** as a QR code, in an 80 by 30 window |
 
 ## Reelix

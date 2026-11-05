@@ -689,10 +689,16 @@ class Terminal:
                 self.say(f"  {i}. {text}")
                 continue
             mark = self.accent("●") if i - 1 in defaults else " "
-            if isinstance(o, tuple):  # the about column wraps under itself, inside the width
+            if isinstance(o, tuple) and name_w <= 30:  # the about column wraps under itself, inside the width
                 about = textwrap.wrap(o[1], self.width - 8 - name_w) or [""]
                 text = o[0].ljust(name_w) + self.dim(about[0])
                 text += "".join("\n" + " " * (8 + name_w) + self.dim(more) for more in about[1:])
+            elif isinstance(o, tuple):  # long names: the name on its line, the about wrapped under it
+                about = textwrap.wrap(o[1], self.width - 10)
+                text = o[0] + "".join("\n" + " " * 8 + self.dim(more) for more in about)
+            else:  # plain text wraps inside the width, set in under itself
+                lines = textwrap.wrap(text, self.width - 8) or [""]
+                text = lines[0] + "".join("\n" + " " * 8 + more for more in lines[1:])
             text = re.sub(r"\(recommended[^)]*\)|\(your last answer\)", lambda m: self.good(m.group(0)), text)
             self.say(f"  {mark} {self.accent(str(i).rjust(2))}  {text}")
 
@@ -1133,7 +1139,7 @@ def step_start(api, term, state):
     keys = [c["key"] for c in choices]
     default = keys.index(state.get("start", found["recommended"])) + 1
     picked = term.choose("How do you want to start?",
-                         [c["title"] + (" (recommended)" if c["recommended"] else "") + ": " + c["about"] for c in choices],
+                         [(c["title"] + (" (recommended)" if c["recommended"] else ""), c["about"]) for c in choices],
                          default, help_key="start")
     state["start"] = keys[picked]
     if state["start"] == "restore":
@@ -1208,7 +1214,7 @@ def step_storage(api, term, state):
     default = keys.index(last.get("key", found["recommended"])) + 1 if last.get("key", found["recommended"]) in keys else 1
     while True:
         picked = choices[term.choose("Where should your media go?",
-                                     [c["title"] + (" (recommended)" if c["recommended"] else "") + ": " + c["about"] for c in choices],
+                                     [(c["title"] + (" (recommended)" if c["recommended"] else ""), c["about"]) for c in choices],
                                      default, help_key="storage")]
         if picked["key"] == "pool" and not picked.get("ready"):
             term.warn("The pool helper is not set up yet. Choose another place for now; make the pool later with "
@@ -1556,8 +1562,9 @@ def step_alerts(api, term, state):
     term.heading("Alerts and disk health", num("Alerts and disk health"))
     last = state.get("alerts", {})
     kind = term.choose("Get an alert when an app stops or a disk has a problem?",
-                       ["Not now", "ntfy: a free push service with a phone app", "Gotify: your own push server",
-                        "A webhook: Starboard posts to an address you choose"], last.get("kind", 1), help_key="alerts")
+                       [("Not now", "No alerts"), ("ntfy", "A free push service with a phone app"),
+                        ("Gotify", "Your own push server"), ("A webhook", "Starboard posts to an address you choose")],
+                       last.get("kind", 1), help_key="alerts")
     if kind == 0:
         api.call("PUT", "/api/config/general", {"watch": {"enabled": False}})
     else:
@@ -1618,7 +1625,7 @@ def step_preset(api, term, state):
     current = current if current in keys else recommended
     default = keys.index(state.get("preset", recommended if current == "balanced" else current)) + 1
     picked = term.choose("How much should Starboard do?",
-                         [config["presets"][k] + (" (recommended)" if k == recommended else "") + ": " + config["preset_about"][k]
+                         [(config["presets"][k] + (" (recommended)" if k == recommended else ""), config["preset_about"][k])
                           for k in keys], default, help_key="preset")
     api.call("PUT", "/api/config/general", {"preset": keys[picked]})
     state["preset"] = keys[picked]
