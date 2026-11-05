@@ -45,7 +45,7 @@ class DrivesStepTest(unittest.TestCase):
         # Yes; drives 1 and 2 (the biggest empty one is kept back for parity); keep 1's files; parity on drive 3;
         # serial endings for drives 2 and 3; yes; no balancing now.
         text, state = self.run_step(h, ["", "", "", "", "a81f", "55B0", "y", ""])
-        self.assertIn("step 2 of 6", text)
+        self.assertIn("step 3 of 8", text)  # after Your password and How to start
         self.assertIn("Check before anything changes", text)
         plans = [c for c in h.calls if c[0] == "plan"]
         self.assertEqual(plans[0], ["plan", "add", h.drives[0]["by_id"], "--as", "pool"])

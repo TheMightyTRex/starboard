@@ -64,6 +64,11 @@ HELP = {
     "check": "This is everything that will change. Nothing has changed yet: type b to go back and change an answer, or "
              "q to stop. The apps' files are written to Starboard's data folder, then the apps are downloaded and started.",
     "keep": "Your password is already saved. Change it later in Starboard, Settings, Security.",
+    "restore": "The backup file is the one downloaded from Starboard's System, Backup and restore, Download a copy of "
+               "the settings. Type where it is, such as ~/Downloads/starboard-settings.json. It is checked before "
+               "anything changes.",
+    "found": "These apps are running on this computer and are not in Starboard yet. Starboard adds the ones you "
+             "choose and reads their API keys where it can. Nothing in the apps changes.",
 }
 
 
@@ -346,7 +351,8 @@ class Api:
             raise self._failed(method, path, data.get("error") or f"Starboard answered {resp.status}")
         return data
 
-STEPS = ["Your password", "Your media server", "Your VPN", "Check before anything changes", "Download hours"]
+STEPS = ["Your password", "How to start", "Your media server", "Your VPN", "Check before anything changes",
+         "Download hours", "How much Starboard does"]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -1100,8 +1106,82 @@ def step_password(api, term, state):
     raise Problem("Too many wrong passwords. Run this again later")
 
 
+def step_start(api, term, state):
+    """How to start: the same question, answers and help as the browser's set-up guide (starboard/start.py)."""
+    found = api.call("GET", "/api/setup/start")
+    choices = found["choices"]
+    HELP["start"] = "\n\n".join(f"{c['title']}: {c['help']}" for c in choices)
+    term.heading("How to start", num("How to start"))
+    if found["found"]:
+        term.note("Found on this computer: " + ", ".join(found["found"]) + ".")
+    keys = [c["key"] for c in choices]
+    default = keys.index(state.get("start", found["recommended"])) + 1
+    picked = term.choose("How do you want to start?",
+                         [c["title"] + (" (recommended)" if c["recommended"] else "") + ": " + c["about"] for c in choices],
+                         default, help_key="start")
+    state["start"] = keys[picked]
+    if state["start"] == "restore":
+        return restore_backup(api, term, state)
+    if state["start"] == "move":
+        return add_found_apps(api, term, state)
+    return True
+
+
+def restore_backup(api, term, state):
+    """Restore a backup: a settings file, checked by Starboard, restored through its API."""
+    guess = ""
+    for folder in ("~/Downloads", "~"):
+        try:
+            names = sorted((n for n in os.listdir(os.path.expanduser(folder)) if n.startswith("starboard") and n.endswith(".json")),
+                           key=lambda n: os.path.getmtime(os.path.join(os.path.expanduser(folder), n)), reverse=True)
+        except OSError:
+            names = []
+        if names:
+            guess = os.path.join(folder, names[0])
+            break
+    while True:
+        path = os.path.expanduser(term.text("The backup file", state.get("backup_file", guess), help_key="restore"))
+        try:
+            with open(path, encoding="utf-8") as f:
+                backup = json.load(f)
+        except (OSError, ValueError) as e:
+            term.failed(f"That file could not be read: {e}. Type where the backup file is.", str(e))
+            continue
+        try:
+            done = api.call("POST", "/api/backup/restore", {"backup": backup, "password": state["password"]})
+        except Problem as e:
+            term.failed(f"Starboard did not restore it: {e}", str(e))
+            continue
+        state["backup_file"] = path
+        term.ok(f"Restored: {done['apps']} apps, with your categories, design and alerts.")
+        return True
+
+
+def add_found_apps(api, term, state):
+    """Move from apps you already run: the apps found on this computer, added to Starboard."""
+    items = api.call("GET", "/api/discover").get("items", [])
+    if not items:
+        term.say("No apps were found on this computer that are not in Starboard already. Add them later in "
+                 "Starboard, Settings, Manage apps, Search for new apps.")
+        term.text("Press Enter to carry on")
+        return True
+    picked = term.choose_many("Add these apps to Starboard?", [(i["name"], i.get("url", "")) for i in items],
+                              state.get("found_picked", list(range(len(items)))), help_key="found")
+    state["found_picked"] = picked
+    if picked:
+        added = api.call("POST", "/api/discover/add", {"items": [items[i] for i in picked]})
+        term.ok(f"Added {len(picked)} {'app' if len(picked) == 1 else 'apps'}.")
+        if added.get("missing_keys"):
+            term.note("Still without an API key: " + ", ".join(added["missing_keys"]) + ". Add them in Starboard, "
+                      "Settings, Manage apps.")
+    return True
+
+
 def step_apps(api, term, state):
     """Sets state["choice"] (the Install apps choice) and state["names"], or None to install nothing."""
+    if state.get("start", "new") != "new":
+        state["choice"] = None  # moving or restoring: the apps are there already
+        return False
     overview = state.get("overview") or api.call("GET", "/api/stack")
     state["overview"] = overview
     groups = overview["groups"]
@@ -1260,6 +1340,8 @@ def step_check(api, term, state, wait=2.0):
 
 
 def step_hours(api, term, state):
+    if state.get("start") == "restore":
+        return False  # the backup brought its own download hours
     last = state.get("hours", {})
     term.heading("Download hours", num("Download hours"))
     term.note("Downloading uses most of your internet connection while it runs, so other devices can slow down. "
@@ -1398,15 +1480,41 @@ def step_drives(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_apps, step_vpn, step_check, step_hours]
+def step_preset(api, term, state):
+    """How much Starboard does: the same presets and words as the browser's set-up guide."""
+    config = api.call("GET", "/api/config")
+    keys = ["small", "balanced", "everything"]
+    memory = 0
+    try:
+        with open("/proc/meminfo", encoding="utf-8") as f:
+            memory = int(f.readline().split()[1]) // 1024
+    except (OSError, ValueError, IndexError):
+        pass
+    recommended = "small" if memory and memory < 1024 else "balanced"
+    HELP["preset"] = "\n\n".join(f"{config['presets'][k]}: {config['preset_about'][k]}" for k in keys)
+    term.heading("How much Starboard does", num("How much Starboard does"))
+    term.note("How much Starboard does in the background. You can change each part later in Settings, Performance.")
+    current = config["performance"].get("preset", recommended)
+    current = current if current in keys else recommended
+    default = keys.index(state.get("preset", recommended if current == "balanced" else current)) + 1
+    picked = term.choose("How much should Starboard do?",
+                         [config["presets"][k] + (" (recommended)" if k == recommended else "") + ": " + config["preset_about"][k]
+                          for k in keys], default, help_key="preset")
+    api.call("PUT", "/api/config/general", {"preset": keys[picked]})
+    state["preset"] = keys[picked]
+    term.ok(f"{config['presets'][keys[picked]]}. Change it later in Settings, Performance.")
+    return True
+
+
+STEP_FUNCTIONS = [step_password, step_start, step_apps, step_vpn, step_check, step_hours, step_preset]
 
 
 def add_drives_step(available=None):
-    """Your drives goes after Your password when the pool helper is installed (DASH-87)."""
+    """Your drives goes after How to start when the pool helper is installed (DASH-87)."""
     available = os.path.exists(POOL_HELPER) if available is None else available
     if available and step_drives not in STEP_FUNCTIONS:
-        STEP_FUNCTIONS.insert(1, step_drives)
-        STEPS.insert(1, "Your drives")
+        STEP_FUNCTIONS.insert(2, step_drives)  # after How to start
+        STEPS.insert(2, "Your drives")
 
 
 def run(api, term, data_dir, port, address=""):

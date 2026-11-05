@@ -19,6 +19,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from . import start as how_to_start
 from . import access, auth, backup, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
@@ -880,6 +881,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, result)
                 except (ValueError, services.ServiceError) as e:
                     return self.error(400, str(e))
+            if path == "/api/setup/start" and method == "GET":
+                # How to start, for both set-ups: the same answers and help, recommended from what is here.
+                return self.json(200, how_to_start.options(cfg.data["services"], app.data_dir))
             if path == "/api/discover" and method == "GET":
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":

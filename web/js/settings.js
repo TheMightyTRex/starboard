@@ -1057,7 +1057,7 @@ async function stepContent(id, root) {
     const name = `preset-${Date.now()}`;
     const radios = ["small", "balanced", "everything"].map((k) => el("label", { class: "option-card" },
       el("input", { type: "radio", name, value: k, checked: (config.performance.preset === "custom" ? "balanced" : config.performance.preset) === k }),
-      el("strong", { text: config.presets[k] }), el("small", { text: PRESET_WORDS[k] })));
+      el("strong", { text: config.presets[k] }), el("small", { text: config.preset_about[k] })));
     nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Preset" }), el("div", { class: "option-cards" }, radios))];
     save = async () => { await saveGeneral({ preset: root.querySelector(`input[name="${name}"]:checked`).value }); return true; };
   } else if (id === "names") {
@@ -1600,10 +1600,8 @@ async function startListening() {
 // Performance ---------------------------------------------------------------
 // Presets set every optional piece of background work at once; changing one by hand makes it Custom.
 
+// small, balanced and everything come from the server (config.preset_about), shared with the terminal set-up.
 const PRESET_WORDS = {
-  small: "For a small or busy server: no history, no watching, no card numbers, no white logos or posters, no hourly Jellyfin or Audiobookshelf jobs, slower pages. Live TV and download hours stay as you set them.",
-  balanced: "The default: history every 5 minutes, card numbers, white logos, posters, normal page updates. Watching and the hourly Jellyfin and Audiobookshelf jobs stay as you set them.",
-  everything: "Everything on and as fresh as it goes: history every minute, watching every 5 minutes with a weekly summary, the hourly Jellyfin and Audiobookshelf jobs, faster Downloads.",
   custom: "Your own choices below. Changing anything here or on another Settings page makes it Custom.",
 };
 
@@ -1648,7 +1646,7 @@ async function startPerformance() {
     el("div", { class: "option-cards option-cards--row" }, ["small", "balanced", "everything", "custom"].map((k) => {
       const input = el("input", { type: "radio", name: "preset", value: k, checked: perf().preset === k });
       input.addEventListener("change", () => { if (k !== "custom") save({ preset: k }, `${config.presets[k]} preset in use`); });
-      return el("label", { class: "option-card" }, input, el("strong", { text: k === "custom" ? "Custom" : config.presets[k] }), el("small", { text: PRESET_WORDS[k] }));
+      return el("label", { class: "option-card" }, input, el("strong", { text: k === "custom" ? "Custom" : config.presets[k] }), el("small", { text: k === "custom" ? PRESET_WORDS.custom : config.preset_about[k] }));
     })));
 
   // Background work

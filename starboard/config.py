@@ -250,6 +250,7 @@ class Config:
             "ux_notes": d["ux_notes"],
             "last_version": d["last_version"],  # what the settings really match
             "presets": {k: v["title"] for k, v in PRESETS.items()},
+            "preset_about": PRESET_ABOUT,
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
             "category_of": CATEGORY_OF,
@@ -330,6 +331,15 @@ USAGE_CHOICES = ("off", "ask", "open", "nightly", "weekly")
 
 # Presets set every optional piece of background work at once. Features you choose for what they do (Live TV,
 # download hours, the import itself) are left as they are; only how often and how much changes.
+# What each preset does, in words: shown by the browser and terminal set-ups and Settings, Performance.
+PRESET_ABOUT = {
+    "small": "For a small or busy server: no history, no watching, no card numbers, no white logos or posters, no hourly "
+             "Jellyfin or Audiobookshelf jobs, slower pages. Live TV and download hours stay as you set them.",
+    "balanced": "The default: history every 5 minutes, card numbers, white logos, posters, normal page updates. Watching "
+                "and the hourly Jellyfin and Audiobookshelf jobs stay as you set them.",
+    "everything": "Everything on and as fresh as it goes: history every minute, watching every 5 minutes with a weekly "
+                  "summary, the hourly Jellyfin and Audiobookshelf jobs, faster Downloads.",
+}
 PRESETS = {
     "small": {"title": "Small server", "performance": {"history": False, "history_every": 900, "schedule_every": 300,
               "downloads_refresh": 30, "monitor_refresh": 5, "card_numbers": False,
