@@ -2,7 +2,7 @@
 
 All notable changes to Starboard are listed here, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with dates written as in the TRex Design System.
-Version numbers follow [Semantic Versioning](https://semver.org/). Before version 1.0.0, a patch release may also
+Version numbers follow [Semantic Versioning](https://semver.org/) loosely: before version 1.0.0, a patch release may also
 add features.
 
 ## [Unreleased]
