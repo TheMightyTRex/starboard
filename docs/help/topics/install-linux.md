@@ -84,6 +84,8 @@ choose Debian and finish set-up from a phone or laptop.
 - **"Secure Boot violation" or a similar message:** Debian, Mint and Ubuntu all work with Secure Boot. Write the
   stick again from a freshly downloaded file. If it still happens, deactivate Secure Boot in the computer's own
   settings.
+- **The server is not online after installing:** follow
+  [Connect to the internet from the terminal](connect-to-the-internet.md).
 - **Debian finds no network:** check the cable. Debian does not set up Wi-Fi without extra files, and a cable is
   more reliable for a server anyway.
 - **"sudo: command not found" or "is not in the sudoers file" on Debian:** you set a root password in Step 4.
@@ -91,6 +93,7 @@ choose Debian and finish set-up from a phone or laptop.
 
 ## Find out more
 
+- [Connect to the internet from the terminal](connect-to-the-internet.md)
 - [Install Docker](install-docker.md)
 - [Connect to your server from another computer](connect-with-ssh.md)
 - [The terminal: typing commands](../basics/the-terminal.md)

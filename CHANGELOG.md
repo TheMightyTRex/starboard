@@ -29,6 +29,9 @@ The Run first script, one order for both set-ups, and a security review of the s
 - **Keyboard help for commands:** The terminal: typing commands now says where `|`, `~`, `\`, `"`, `@`, `$` and `&` are
   on US, UK and Ireland, German, French and Spanish keyboards, and warns that the `¦` key on a UK keyboard is a
   different character. The Run first script's command also comes in a version without `|`.
+- **Connect to the internet from the terminal:** a help topic for a server with no desktop: check it is online,
+  connect a network cable (Debian included), or Wi-Fi with NetworkManager or on Ubuntu Server. The guide from a bare
+  computer links to it after installing Linux.
 
 ### Changed
 - **One order for every step,** the same in the browser and the terminal: your password, how to start, storage, your

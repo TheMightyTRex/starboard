@@ -10,7 +10,8 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 
 - A computer with Linux installed: Debian, Ubuntu, Linux Mint, Fedora or Raspberry Pi OS, with or without a desktop.
   Read [Install Linux on a computer](install-linux.md).
-- The computer is connected to the internet.
+- The computer is connected to the internet. Not sure? Read
+  [Connect to the internet from the terminal](connect-to-the-internet.md).
 - The password you use to sign in to that computer. It is asked for when something needs installing.
 - A terminal open on that computer, or connected to it. Read [The terminal: typing commands](../basics/the-terminal.md).
 

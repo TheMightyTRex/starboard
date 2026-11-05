@@ -30,6 +30,7 @@ Each guide is a journey through several topics, in order.
 - [Can I use Windows or a Mac?](topics/windows-and-mac.md)
 - [Ask an AI assistant to help you set up](topics/ask-an-ai-for-help.md)
 - [Install Linux on a computer](topics/install-linux.md)
+- [Connect to the internet from the terminal](topics/connect-to-the-internet.md)
 - [Prepare a Raspberry Pi](topics/prepare-a-raspberry-pi.md)
 - [Connect to your server from another computer](topics/connect-with-ssh.md)
 - [Install Docker](topics/install-docker.md)
