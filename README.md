@@ -47,7 +47,7 @@ hidden), the apps for your media server with their folders and VPN details, and 
 | | |
 |---|---|
 | ![The terminal set-up at 80 by 24: the heading box and progress bar at the top, the menu on the bottom line, and the step between them](docs/screenshots/terminal-setup.jpg) | ![Feedback from the terminal: a QR code drawn in the terminal, with the link under it](docs/screenshots/terminal-feedback-qr.jpg) |
-| **The terminal set-up** in an 80 by 24 window | **Feedback** sent as a QR code |
+| **The terminal set-up** in an 80 by 24 window | **Feedback** as a QR code, in an 80 by 30 window |
 
 ## Reelix
 
