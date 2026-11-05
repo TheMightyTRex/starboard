@@ -41,8 +41,11 @@ takes about 10 minutes, plus the time to download the apps.
   one.
 - Type `?` and press Enter for help with any question.
 - Type `q` and press Enter to stop. Nothing else changes, and you can finish in a browser later.
-- Every line is plain text, with no menus that fill the window, so it works over SSH and with software that reads
-  text aloud, such as Orca.
+- Headings have a border and a bar that shows how far through you are. Recommended answers are marked with a dot
+  and say "recommended" too, so nothing depends on colour.
+- If you use software that reads text aloud, such as Orca, start it with `STARBOARD_PLAIN=1 ./install.sh --terminal`.
+  It then prints plain lines with no borders or colour. It does the same by itself in a window narrower than 60
+  characters.
 
 ## Things to note
 

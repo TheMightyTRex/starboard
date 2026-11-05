@@ -109,6 +109,26 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("That did not work", out.getvalue())
         self.assertEqual(self.app.config.data["download_hours"], {"enabled": True, "start": 22, "end": 6})
 
+    def test_boxes_and_cards_line_up_and_plain_has_none(self):
+        out = io.StringIO()
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=70)
+        term.heading("Your media server", 2)
+        term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
+        term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
+        lines = out.getvalue().splitlines()
+        self.assertTrue(any("step 2 of 5" in l for l in lines))
+        self.assertTrue(any("█" in l and "20%" in l for l in lines))
+        boxed = [l for l in lines if l and l[0] in "┌│└╭╰"]
+        self.assertTrue(boxed)
+        self.assertEqual({len(l) for l in boxed}, {70})  # every box line ends at the same column
+        self.assertTrue(all(len(l) <= 70 for l in lines))  # long descriptions wrap inside the width
+        plain = io.StringIO()
+        term = terminal_setup.Terminal(out=plain, fancy=False)
+        term.heading("Your media server", 2)
+        term.card("What will change", [("Media folder", "/srv/media")])
+        self.assertNotRegex(plain.getvalue(), "[┌│└╭╰█●✔\x1b]")
+        self.assertIn("Media folder: /srv/media", plain.getvalue())
+
     def test_needs_a_terminal(self):
         import sys
         stdin = sys.stdin

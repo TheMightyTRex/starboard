@@ -5,9 +5,11 @@
 - **Set up in the terminal, with no browser** (DASH-86): `./install.sh --terminal` carries on once Starboard is
   running and asks the set-up questions in the same terminal: your password (typed hidden, with no setup code
   needed on the server itself), the apps for your media server (what you want, then the apps, folders and VPN
-  details) and download hours. Plain numbered lines with no full-screen menus, so it works over SSH and with a
-  screen reader; Enter takes the recommended answer, `?` shows help and `q` stops. It uses Starboard's own API, so
-  every answer is checked as the browser checks it. Run it again with `python3 -m starboard.terminal_setup`. With
+  details) and download hours. Numbered questions with no full-screen menus, so it works over SSH; Enter takes the recommended answer, `?` shows help and `q` stops. It uses Starboard's own API, so
+  every answer is checked as the browser checks it. Headings are boxed with a progress bar below, summaries
+  are cards and finished steps are ticked; with `STARBOARD_PLAIN=1`, `--plain`, a window under 60 characters or
+  no terminal, it prints plain lines, which suit software that reads text aloud. `NO_COLOR` keeps the boxes
+  without colour. Run it again with `python3 -m starboard.terminal_setup`. With
   tests, and a help article: Set up Starboard in the terminal, with no browser.
 
 ## 0.7.7 (4 November 2026)
