@@ -367,7 +367,7 @@ class Terminal:
         self.drawn = False        # whether the scroll area and menu are set up
         self.step = (None, "")    # (number, name) of the step shown, for feedback
         self.part = ""            # the question being asked, for feedback
-        self.typed = set()        # fingerprints of answers typed to the set-up and hidden ones: never in a report
+        self.typed = set()        # fingerprints of answers typed to the set-up (not hidden ones): never in a report
         self.problem = None       # the last thing that failed at this step: r reports it
         self.last_error = None    # Starboard's reply to the last failed call, or the apps' start log
         self.plain_asked = False  # plain lines because the person asked (STARBOARD_PLAIN or --plain)
@@ -736,7 +736,8 @@ class Terminal:
                 continue
             if keep and not answer:
                 return None
-            self.typed.add(fingerprint(answer))  # so it is taken out if it is ever pasted into feedback
+            # Not remembered at all: a hidden answer is never shown and never goes into a feedback report. If one is
+            # pasted into feedback, only the report's general checks (such as "password=...") can take it out.
             return answer
 
     def failed(self, line, problem):

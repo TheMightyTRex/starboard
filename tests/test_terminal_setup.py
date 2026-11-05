@@ -234,7 +234,8 @@ class TerminalSetupTest(unittest.TestCase):
 
     def test_nothing_typed_as_an_answer_is_in_the_report(self):
         media, settings = os.path.join(self.tmp.name, "my-own-media"), os.path.join(self.tmp.name, "config")
-        words = (f"It broke near {media} with {SIGN_IN_WORDS}, secret-wireguard-key and 192.168.1.20/32. "
+        # Hidden answers (the password and the WireGuard key) are not remembered, so they are not typed in here.
+        words = (f"It broke near {media} with 192.168.1.20/32. "
                  "Mail me at sam@example.org, token=abc123def456")
         # Downloads and VPN (Proton over WireGuard), then f at the check: Something is broken, the words, skip the
         # second question, save to a file; then write and downloads at any time.
