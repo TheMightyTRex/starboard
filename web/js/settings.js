@@ -1220,7 +1220,7 @@ async function startGuide() {
     if (types(["jellyfin"]).length) list.push({ id: "jellyfin", title: "Jellyfin", question: "Use Starboard's Jellyfin extras?", intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
     if (types(["qbittorrent", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", title: "Download hours", question: "Only download at set hours?", intro: "Starboard pauses qBittorrent and SABnzbd outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", title: "Alerts and disk health", question: "Get an alert when something stops?", intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
-    if (hasDisks) list.push({ id: "storage", title: "Storage", question: "How should Storage keep up to date?", intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
+    if (hasDisks) list.push({ id: "storage", title: "Storage page", question: "How should the Storage page keep up to date?", intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
     list.push({ id: "preset", title: "How much it does", question: "How much should Starboard do in the background?", intro: "You can change each part in Settings, Performance." });
     list.push({ id: "finish", title: "Finish", question: "Ready to go", skippable: false });
     return list;
