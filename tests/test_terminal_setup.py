@@ -111,7 +111,8 @@ class TerminalSetupTest(unittest.TestCase):
 
     def test_boxes_and_cards_line_up_and_plain_has_none(self):
         out = io.StringIO()
-        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=70)
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=70, rows=30)
+        term._page = lambda *a: None  # the screen clearing is tested on its own
         term.heading("Your media server", 2)
         term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
         term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
@@ -128,6 +129,57 @@ class TerminalSetupTest(unittest.TestCase):
         term.card("What will change", [("Media folder", "/srv/media")])
         self.assertNotRegex(plain.getvalue(), "[┌│└╭╰█●✔\x1b]")
         self.assertIn("Media folder: /srv/media", plain.getvalue())
+
+    def test_back_returns_with_the_last_answers(self):
+        media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
+        # Step 2 with Downloads and VPN; step 3 with Surfshark over WireGuard; then back from the check to step 3,
+        # where Enter keeps every answer, including the hidden key; then on.
+        typed = ["", "8,9", "", media, settings,            # step 2
+                 "4", "", "", "192.168.1.20/32",            # step 3: Surfshark, WireGuard, any country, the address
+                 "b",                                         # the check: back
+                 "", "", "", "",                              # step 3 again: every answer kept with Enter
+                 "y", "2"]                                    # write, then downloads at any time
+        term, out = self.term(typed, [PASSWORD, PASSWORD, "secret-wireguard-key", ""])
+        self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
+        text = out.getvalue()
+        prompts = "\n".join(term._ask.prompts + term._secret.prompts)
+        self.assertEqual(text.count("== Starboard | Your VPN"), 2)
+        self.assertIn("Your choice [4]", prompts)  # the provider chosen before is the default after Back
+        self.assertIn("[192.168.1.20/32]", prompts)
+        self.assertIn("Enter keeps the one you typed before", prompts)
+        with open(os.path.join(self.tmp.name, "stack", ".env")) as f:
+            env = f.read()
+        self.assertIn("VPN_SERVICE_PROVIDER=surfshark", env)
+        self.assertIn("secret-wireguard-key", env)  # kept from before, without typing it again
+
+    def test_b_on_the_first_step_and_the_password_is_kept_after_back(self):
+        term, out = self.term(["b", "2", "b", "", "2", "2"], ["b", PASSWORD, PASSWORD])
+        # b while choosing the password does nothing (first step); b at step 2 shows the saved password.
+        self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
+        self.assertIn("Your password is saved.", out.getvalue())
+
+    def test_screen_is_cleared_with_a_fixed_menu_and_given_back(self):
+        out = io.StringIO()
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=78, rows=30)
+        term.can_back = True
+        term.heading("Your VPN", 3)
+        term.finish()
+        raw = out.getvalue()
+        self.assertIn("\033[2J", raw)            # cleared
+        self.assertIn("\033[1;28r", raw)         # the scrolling area stops above the menu
+        self.assertIn("b Back   ? Help   q Stop", raw)
+        self.assertTrue(raw.endswith("\033[r\033[29;1H\033[2K\033[30;1H\033[2K\0338\n"))  # menu gone, window given back
+
+    def test_help_pop_up_draws_a_box_and_the_step_again(self):
+        out = io.StringIO()
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=78, rows=30, ask=Answers(["?", "", "2"]))
+        term._page = lambda *a: None
+        term.heading("Download hours", 5)
+        self.assertEqual(term.choose("When should downloads run?", ["Set hours", "Any time"], help_key="hours"), 1)
+        raw = out.getvalue()
+        self.assertIn("╭─ Help: when should downloads run", raw)
+        self.assertIn("Enter or Esc: close help", raw)
+        self.assertGreaterEqual(raw.count("When should downloads run?"), 2)  # drawn again after help closes
 
     def test_needs_a_terminal(self):
         import sys

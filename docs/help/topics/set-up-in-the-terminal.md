@@ -39,13 +39,17 @@ takes about 10 minutes, plus the time to download the apps.
 
 - Type a number and press Enter. Press Enter on its own to take the answer in the brackets, which is the recommended
   one.
-- Type `?` and press Enter for help with any question.
+- Type `b` and press Enter to go back a step. Your last answers are in the brackets, so Enter keeps each one. A
+  password or key you typed before is kept too, if you press Enter. Once the apps are written, you cannot go back
+  past the check: change them later in **Settings**, **Install apps**.
+- Type `?` and press Enter for help with any question. Help opens in a box over the step. Press Enter to close it.
 - Type `q` and press Enter to stop. Nothing else changes, and you can finish in a browser later.
+- Each step starts on a clear screen. The keys you can use are always on the bottom line.
 - Headings have a border and a bar that shows how far through you are. Recommended answers are marked with a dot
   and say "recommended" too, so nothing depends on colour.
 - If you use software that reads text aloud, such as Orca, start it with `STARBOARD_PLAIN=1 ./install.sh --terminal`.
-  It then prints plain lines with no borders or colour. It does the same by itself in a window narrower than 60
-  characters.
+  It then prints plain lines with no borders or colour, and never clears the screen or draws over it. It does the
+  same by itself in a window narrower than 60 characters or shorter than 20 lines.
 
 ## Things to note
 

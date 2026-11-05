@@ -9,7 +9,10 @@
   every answer is checked as the browser checks it. Headings are boxed with a progress bar below, summaries
   are cards and finished steps are ticked; with `STARBOARD_PLAIN=1`, `--plain`, a window under 60 characters or
   no terminal, it prints plain lines, which suit software that reads text aloud. `NO_COLOR` keeps the boxes
-  without colour. Run it again with `python3 -m starboard.terminal_setup`. With
+  without colour. Each step starts on a cleared screen with a menu fixed on the bottom line (b Back, ? Help,
+  q Stop, and what Enter does); `b` goes back a step with the last answers as the defaults (passwords and keys kept
+  on Enter, and nothing past the check once the apps are written), and help opens as a box over the dimmed step.
+  The plain lines never clear or redraw. Run it again with `python3 -m starboard.terminal_setup`. With
   tests, and a help article: Set up Starboard in the terminal, with no browser.
 
 ## 0.7.7 (4 November 2026)
