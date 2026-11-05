@@ -100,11 +100,11 @@ the setup code.
 
 ## Latest results
 
-From release 0.9.1 (5 November 2026); the install tests on 64-bit ARM and the Run first script are from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
+From release 0.9.2 (5 November 2026): unit tests, journeys, install tests on Ubuntu 24.04 and 64-bit ARM, and the Run first script on Ubuntu 24.04. The Run first script on Debian and Fedora is from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
 
 | | Result |
 |---|---|
-| Unit and API tests | 218 passed |
+| Unit and API tests | 219 passed |
 | Browser journeys | 36 passed |
 | Install tests, Ubuntu 24.04 | 17 passed |
 | Install tests, Debian 12 | 17 passed |

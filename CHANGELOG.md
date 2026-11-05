@@ -7,6 +7,10 @@ add features.
 
 ## [Unreleased]
 
+## [0.9.2] (5 November 2026)
+
+Releases and Restore in Settings, Help that opens the right article, and a calmer terminal.
+
 ### Added
 - **Releases:** Settings, Updates, Releases shows every version in its own section, newest first. The one you have is
   open; each shows how many changes of each type it has, then what was added, changed and fixed, in colour, and how to
@@ -791,7 +795,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.9.2...HEAD
+[0.9.2]: https://github.com/TheMightyTRex/starboard/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/TheMightyTRex/starboard/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/TheMightyTRex/starboard/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/TheMightyTRex/starboard/compare/v0.7.7...v0.8.0

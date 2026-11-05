@@ -208,6 +208,21 @@ RELEASES = [
      "security": [("Checks", "Trivy, OWASP ZAP (signed out), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release; only update.sh and the help changed since 0.9.0's full checks.")],
      "review": [],
      "settings": "Nothing to choose. Updating from 0.9.0 to 0.9.1 with ./update.sh works as before. To go back, run ./update.sh --to v0.9.0."},
+    {"version": "0.9.2", "date": "5 November 2026",
+     "added": [("Releases", "Settings, Updates, Releases shows every version in its own section, newest first: the one you have is open, each shows a count for each type of change, then what was added, changed and fixed, in colour."),
+               ("Restore", "Settings, Updates, Restore puts back a copy of your settings that Starboard saved, or one from a file, and shows the command to go back to the version before."),
+               ("Sign out on every Settings page", "A Sign out button now sits beside the title of every Settings page.")],
+     "changed": [("Update settings", "About and updates is now Update settings, one of three pages under Settings, Updates."),
+                 ("Help opens the right article", "The Help button at the top of each page opens the help centre article for that page, such as Check your disks' health on Disk health."),
+                 ("A wide terminal used evenly", "The Run first script and the terminal set-up draw in a column up to 100 characters wide, centred in a wider window, and move it when the window changes size."),
+                 ("Progress bars drawn once", "Each job has one bar, updated in place; when a job fails, its bar stays, marked, with the problem and Try again, Show the details or Stop below it. Install apps shows a moving bar and the time taken in the same way."),
+                 ("Choosing several answers in the terminal", "Up and Down move, Space ticks or unticks and Enter carries on. Typing a number still works, and plain mode keeps typed numbers.")],
+     "fixed": [("curl installed as a snap", "Docker's installer could not download on Ubuntu when curl was a snap. The Run first script now installs Ubuntu's usual curl beside it and explains the error in plain words."),
+               ("The quick start without curl", "Ubuntu Desktop does not include curl, so the README and the help give the same command with wget."),
+               ("Disk health installs what it needs", "Choosing disk health no longer stops with install smartmontools first: the installer installs it, and finds it in /usr/sbin.")],
+     "security": [("Checks", "Trivy, OWASP ZAP (signed out), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release and found nothing to fix. The new Restore page asks for your password before it restores, as on Backup.")],
+     "review": [],
+     "settings": "Nothing to choose. To go back, run ./update.sh --to v0.9.1. Restore your settings from a copy on Settings, Updates, Restore."},
 ]
 
 
