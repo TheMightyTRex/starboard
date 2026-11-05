@@ -18,8 +18,8 @@ on a server with no desktop, entirely in the terminal. Then you run everything f
   Docker, or with Python and systemd and no Docker at all.
 
 **New to home servers?** The [help centre](docs/help/README.md) explains everything in plain steps: start with
-[Install Starboard on a Linux computer](docs/help/guides/install-on-a-linux-computer.md) or
-[on a Raspberry Pi](docs/help/guides/install-on-a-raspberry-pi.md), and check
+[Get Starboard up and running, from a bare computer](docs/help/guides/get-up-and-running.md), which begins with
+installing Linux, and check
 [what you need to run Starboard](docs/help/topics/what-you-need.md).
 
 ![Apps, in the Health first design](docs/screenshots/apps.png)

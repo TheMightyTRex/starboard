@@ -43,6 +43,10 @@ Set up in the terminal, drive pools, and feedback with a QR code.
   After Reelix's version goes up, a notice on the Apps page and on Updates says so, with **What is new** for the
   versions it skipped. The changelog is downloaded only when you open What is new, and kept for 6 hours. Find
   out more in **Update your apps**.
+- **A guide from a bare computer:** the help centre's new guide, Get Starboard up and running, goes from
+  installing Linux to Docker, then splits into a path for the browser and one for the terminal only. New topics:
+  Install Linux on a computer, and Ask an AI assistant to help you set up, with prompts for a chat assistant and
+  for one on the server.
 
 ### Changed
 - **The terminal set-up fits the window:** the heading box, the progress bar and the menu stay in place and only

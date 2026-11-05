@@ -5,13 +5,14 @@ a guide if you have a goal in mind, use a topic for one task, and read the basic
 to you.
 
 **New to all this?** Read [What Starboard is](basics/what-is-starboard.md), then follow
-[Install Starboard on a Linux computer](guides/install-on-a-linux-computer.md) or
-[Install Starboard on a Raspberry Pi](guides/install-on-a-raspberry-pi.md).
+[Get Starboard up and running, from a bare computer](guides/get-up-and-running.md). It starts with installing
+Linux, and has a path for the browser and one for the terminal only.
 
 ## Guides: from start to finish
 
 Each guide is a journey through several topics, in order.
 
+- [Get Starboard up and running, from a bare computer](guides/get-up-and-running.md)
 - [Install Starboard on a Linux computer](guides/install-on-a-linux-computer.md)
 - [Install Starboard on a Raspberry Pi](guides/install-on-a-raspberry-pi.md)
 - [Set up your dashboard after installing](guides/set-up-your-dashboard.md)
@@ -27,6 +28,8 @@ Each guide is a journey through several topics, in order.
 
 - [What you need to run Starboard](topics/what-you-need.md)
 - [Can I use Windows or a Mac?](topics/windows-and-mac.md)
+- [Ask an AI assistant to help you set up](topics/ask-an-ai-for-help.md)
+- [Install Linux on a computer](topics/install-linux.md)
 - [Prepare a Raspberry Pi](topics/prepare-a-raspberry-pi.md)
 - [Connect to your server from another computer](topics/connect-with-ssh.md)
 - [Install Docker](topics/install-docker.md)
