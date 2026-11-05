@@ -102,6 +102,8 @@ All made with example data (`tools/screenshots.sh`).
 | **Display and accessibility** | **Copy app settings** |
 | ![Apps with the notice that Reelix is updated to 0.7.1, with What is new](docs/screenshots/reelix-notice.png) | ![What is new in Reelix: the waiting update's changes from its changelog, under Added and Fixed](docs/screenshots/reelix-whats-new.png) |
 | **After a Reelix update** | **What is new in Reelix** |
+| ![System, Storage, Pool: the drives in the pool, each with its space and role](docs/screenshots/pool.png) | ![Add a drive: the check before anything changes, with the exact steps](docs/screenshots/pool-add-3-check.png) |
+| **Pool:** the drives in the pool | **Add a drive:** the check before anything changes |
 | ![Apps on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) | |
 | **On a phone** | |
 
@@ -151,6 +153,10 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
   **weekly summary**. Off until you turn it on in Settings, Alerts.
 - **Jellyfin** on System, Overview: update or restart needed, Live TV guide, what is playing (and whether it
   is being converted) and what was added.
+- **Drive pools** (System, Storage, Pool): add a drive to one pool (keeping its files, or erasing and preparing
+  it), balance the files, take a drive out, and make a drive a backup with SnapRAID parity or a nightly copy.
+  Every change is checked first with the exact commands, and needs your password again. A small helper does the
+  work as root, installed only if you say yes in `./install.sh`.
 - **Storage charts:** each pool as a bar and a ring by type (TV, films, books and more) with free space, each
   drive in the pool, space used over time with a forecast, and the biggest series and films. Sorting by type
   reads every file name, so it runs only when you choose (Settings, Performance).

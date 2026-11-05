@@ -177,6 +177,17 @@ RELEASES = [
                   ("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. ZAP's two signed-in warnings were false alarms, explained in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "Nothing to choose, and no setting changes. Live TV builds its channels and guides once after the update. To go back, run ./update.sh --to v0.7.6."},
+    {"version": "0.8.0", "date": "5 November 2026",
+     "added": [("Set up in the terminal", "./install.sh --terminal asks every set-up question in the terminal, for a server with no desktop and no other device: your password, the apps for your media server and download hours, with Back, help and a plain mode for screen readers."),
+               ("Drive pools", "A new Pool tab on System, Storage adds drives to one pool, balances the files, takes a drive out, and makes a drive a backup, with a check of every change before it is made."),
+               ("Feedback from the terminal", "Press f at any question to report a problem with that step, and send it as a QR code to scan with your phone, as a link, or as a file."),
+               ("What is new in Reelix", "Apps, Updates shows the changes in a waiting Reelix update, from Reelix's own changelog, and says when Reelix has been updated.")],
+     "changed": [("The terminal fits the window", "The heading, the progress bar and the menu stay in place while the step scrolls between them, and the QR code holds more of a report in a larger window.")],
+     "security": [("The pool helper", "Drive pools need a small helper that runs as root, installed only if you say yes to it. Starboard can only ask it for a fixed set of jobs, each checked first, with your password again, and erasing a drive needs the end of its serial number."),
+                  ("Feedback reports", "A report never holds your answers to the set-up, passwords, VPN details or the setup code. Answers you type are kept only as keyed fingerprints for this run, and passwords are not kept at all."),
+                  ("Checks", "CHECKS_PLACEHOLDER")],
+     "review": [],
+     "settings": "Nothing to choose. To use drive pools, run ./install.sh again and say yes to the pool helper (it asks for your password, for sudo). To go back, run ./update.sh --to v0.7.7."},
 ]
 
 

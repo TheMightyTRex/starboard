@@ -7,6 +7,10 @@ add features.
 
 ## [Unreleased]
 
+## [0.8.0] (5 November 2026)
+
+Set up in the terminal, drive pools, and feedback with a QR code.
+
 ### Added
 - **Drive pools** (DASH-87): a new **Pool** tab on System, Storage, and a **Your drives** step in the terminal
   set-up. Add a drive to a mergerfs pool (keeping its files, or erasing and preparing it as ext4), balance the
@@ -34,16 +38,28 @@ add features.
   in it, and email and network addresses, user names in paths and anything like a key are replaced. Send it as a
   QR code drawn in the terminal (a new standard-library encoder, `starboard/qr.py`), as the link, or saved to a
   file. Plain mode never draws a QR code. After a failure, `r` reports it with the error filled in.
-- **The terminal set-up fits the window:** the heading box, the progress bar and the menu stay in place and only
-  the lines between them scroll; the window is measured at every step and when it changes size. The QR code holds
-  more of the report the larger the window is: the title in 80 by 24 (with a 2-module edge), a short report in
-  80 by 30, the report without its technical details in 140 by 60. The line above the code says what it holds,
-  and the whole report is always saved on the server.
 - **What is new in Reelix:** on **Apps**, **Updates**, **What is new** beside **Update** lists the changes in a
   waiting Reelix update, from Reelix's own changelog, under Added, Changed, Fixed and the other kinds of change.
   After Reelix's version goes up, a notice on the Apps page and on Updates says so, with **What is new** for the
   versions it skipped. The changelog is downloaded only when you open What is new, and kept for 6 hours. Find
   out more in **Update your apps**.
+
+### Changed
+- **The terminal set-up fits the window:** the heading box, the progress bar and the menu stay in place and only
+  the lines between them scroll; the window is measured at every step and when it changes size. The QR code holds
+  more of the report the larger the window is: the title in 80 by 24 (with a 2-module edge), a short report in
+  80 by 30, the report without its technical details in 140 by 60. The line above the code says what it holds,
+  and the whole report is always saved on the server.
+
+### Security
+- **The pool helper:** drive pools need a small helper that runs as root, installed only if you say yes in
+  `./install.sh`. Starboard can only ask it for a fixed set of jobs, each checked first (a dry run with the exact
+  commands), with the password again; erasing a drive needs the end of its serial number.
+- **Feedback reports:** a report never holds answers to the set-up, passwords, VPN details or the setup code.
+  Answers typed in the open are kept only as keyed fingerprints (HMAC-SHA-256 with a random key for each run), to
+  take them out of a report; hidden answers are not kept at all. CodeQL's alerts on this were fixed, and two in
+  the screenshot tool (values written into page scripts are now escaped beyond JSON).
+- CHECKS_PLACEHOLDER
 
 ## [0.7.7] (4 November 2026)
 
@@ -662,7 +678,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.7.7...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/TheMightyTRex/starboard/compare/v0.7.7...v0.8.0
 [0.7.7]: https://github.com/TheMightyTRex/starboard/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/TheMightyTRex/starboard/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/TheMightyTRex/starboard/compare/v0.7.4...v0.7.5
