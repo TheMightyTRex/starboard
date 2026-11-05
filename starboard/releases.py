@@ -186,7 +186,7 @@ RELEASES = [
      "changed": [("The terminal fits the window", "The heading, the progress bar and the menu stay in place while the step scrolls between them, and the QR code holds more of a report in a larger window.")],
      "security": [("The pool helper", "Drive pools need a small helper that runs as root, installed only if you say yes to it. Starboard can only ask it for a fixed set of jobs, each checked first, with your password again, and erasing a drive needs the end of its serial number."),
                   ("Feedback reports", "A report never holds your answers to the set-up, passwords, VPN details or the setup code. Answers you type are kept only as keyed fingerprints for this run, and passwords are not kept at all."),
-                  ("Checks", "CHECKS_PLACEHOLDER")],
+                  ("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. One download address is now also checked to be https; ZAP's one signed-in warning was a false alarm, explained in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "Nothing to choose. To use drive pools, run ./install.sh again and say yes to the pool helper (it asks for your password, for sudo). To go back, run ./update.sh --to v0.7.7."},
 ]

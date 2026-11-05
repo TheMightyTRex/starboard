@@ -117,8 +117,10 @@ def _fetch(url):
         hit = _cache.get(url)
     if hit and time.time() - hit[0] < KEEP:
         return hit[1]
+    if not url.startswith("https://"):
+        raise ValueError("A changelog address must start with https://")
     req = urllib.request.Request(url, headers={"User-Agent": "Starboard"})
-    with urllib.request.urlopen(req, timeout=10) as r:
+    with urllib.request.urlopen(req, timeout=10) as r:  # a fixed https address from the table above, checked  # nosec B310
         body = r.read(LIMIT + 1)
     if len(body) > LIMIT:
         raise ValueError("The changelog is larger than 1 MB")

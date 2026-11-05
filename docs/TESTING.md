@@ -100,20 +100,20 @@ the setup code.
 
 ## Latest results
 
-From release 0.7.7 (4 November 2026). Debian, Fedora and ARM at 512 MB are from 0.7.4.
+From release 0.8.0 (5 November 2026). Debian, Fedora and ARM at 512 MB are from 0.7.4.
 
 | | Result |
 |---|---|
-| Unit and API tests | 135 passed |
-| Browser journeys | 29 passed |
+| Unit and API tests | 206 passed |
+| Browser journeys | 36 passed |
 | Install tests, Ubuntu 24.04 | 17 passed |
 | Install tests, Debian 12 | 17 passed |
 | Install tests, Fedora 42 | 17 passed |
 | Install tests, 64-bit ARM, 1 GB | 17 passed |
 | Install tests, 64-bit ARM, 512 MB | 17 passed |
 | Published ARM images (arm64, arm/v7) under emulation | Start and answer every request |
-| Help centre check | 71 articles, 0 problems |
-| Security scans | See [Security](SECURITY-AND-TESTS.md#security-scans-4-november-2026-077) |
+| Help centre check | 81 articles, 0 problems |
+| Security scans | See [Security](SECURITY-AND-TESTS.md#security-scans-5-november-2026-080) |
 
 ## Not tested by machine
 

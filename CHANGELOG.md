@@ -63,7 +63,9 @@ Set up in the terminal, drive pools, and feedback with a QR code.
   Answers typed in the open are kept only as keyed fingerprints (HMAC-SHA-256 with a random key for each run), to
   take them out of a report; hidden answers are not kept at all. CodeQL's alerts on this were fixed, and two in
   the screenshot tool (values written into page scripts are now escaped beyond JSON).
-- CHECKS_PLACEHOLDER
+- **Checks:** Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint
+  and CodeQL ran on this release. One download address is now also checked to be https; ZAP's one signed-in
+  warning was a false alarm, explained in docs/SECURITY-AND-TESTS.md.
 
 ## [0.7.7] (4 November 2026)
 

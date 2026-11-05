@@ -158,6 +158,20 @@ false alarms:
 
 `SCAN_REPORTS=folder tools/security-scan.sh --full` now keeps ZAP's reports, with each warning's address.
 
+## Security scans, 5 November 2026 (0.8.0)
+
+Trivy, ShellCheck and Hadolint found nothing. ZAP signed out passed 58 checks with no warnings. Three findings, none
+of them a weakness:
+
+- **Gitleaks, a "generic API key" in `tests/test_terminal_setup.py`:** a made-up token in the test that checks a
+  feedback report never holds what was typed. Added to `.gitleaksignore` with a note; Gitleaks then found nothing.
+- **Bandit, B310 on the download of an app's changelog (`starboard/changes.py`):** the address only ever comes from
+  Starboard's fixed table of `https://` addresses. Now also checked to start with `https://` before it is opened;
+  Bandit then found nothing.
+- **ZAP signed in, SQL injection on `site_name` (`PUT /api/config/general`):** a false alarm. Starboard has no
+  database; its settings are a JSON file, and the answer repeats the name it was sent, so changed values give
+  changed answers. ZAP passed the other 110 checks.
+
 ## Security scans, 4 November 2026 (0.7.7)
 
 Trivy, Gitleaks, Bandit, ShellCheck and Hadolint found nothing. ZAP signed out found one new warning: Python's own
@@ -197,6 +211,7 @@ fixes under Security.
 | 0.7.5 (3 November 2026) | 123 passed | 29 passed | Trivy 0, ZAP no failures signed out (58 passed) and signed in (111 passed), Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0 | 0 open: the 15 explained alerts stay dismissed; the new Snaglist file raised none | Ubuntu 24.04 and 64-bit ARM: 17 of 17 each | Docker Bench's finding fixed (memory and process limits); the 3 CodeQL problems fixed; Send feedback's key and stylesheet hash tested (SEC-24) |
 | 0.7.6 (4 November 2026) | 125 passed | 29 passed | Trivy 0, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0, ZAP no failures signed out (58 passed) and signed in (110 passed; 2 warnings, both false alarms, explained above) | 0 open | Not needed: the installer, update.sh and the image did not change | The new menu and server name; help check 71 articles, 0 problems |
 | 0.7.7 (4 November 2026) | 135 passed | 29 passed | Trivy 0, Gitleaks 0, Bandit 0, ShellCheck 0, Hadolint 0, ZAP signed out 1 warning fixed then 58 passed, signed in 109 passed with 2 false alarms (explained above) | 0 open | Ubuntu 24.04 and 64-bit ARM: 17 of 17 each | Keep-alive, long-lived caching, streamed Live TV guides, bytecode built into the image |
+| 0.8.0 (5 November 2026) | 206 passed | 36 passed | Trivy 0, Gitleaks 0 (1 made-up test token ignored), Bandit 0 (1 fixed), ShellCheck 0, Hadolint 0, ZAP signed out 58 passed, signed in 110 passed with 1 false alarm (explained above) | 0 open | Ubuntu 24.04 and 64-bit ARM: 17 of 17 each | Terminal set-up, drive pools and the pool helper, feedback with a QR code; help check 81 articles, 0 problems |
 
 ## Other free checks you can run
 
