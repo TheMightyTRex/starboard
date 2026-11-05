@@ -46,6 +46,16 @@ You can also paste with the right mouse button: press it inside the terminal and
 To copy text out of the terminal, highlight it and press **Ctrl**, **Shift** and **C**. Plain **Ctrl** and **C**
 does something else in a terminal: it stops the command that is running.
 
+## Capital letters matter
+
+Linux treats capital and small letters as different: `Run-first.sh` and `run-first.sh` are two different files, and
+`Docker` is not the `docker` command. Type commands, file names and folder names exactly as the help shows them, with
+the same capitals, hyphens `-` and underscores `_`.
+
+Web addresses are partly the same. The website's name, such as `github.com`, can be in any case, but the rest of the
+address often cannot: in `https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh`, `main` and
+`run-first.sh` must be in small letters. A wrong capital usually gives "404", which means "not found".
+
 ## Symbols that are in different places on different keyboards
 
 Copying and pasting a command avoids this altogether. If you type a command, some symbols are not where the key

@@ -23,6 +23,10 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
    curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
    ```
 
+   Type it exactly, or better, copy and paste it: `main/run-first.sh` must be in small letters, with a hyphen, and
+   the GitHub account is `TheMightyTRex`. A typing mistake gives "error: 404", which means "not found". Read
+   [Capital letters matter](../basics/the-terminal.md#capital-letters-matter).
+
    The `|` in the middle is the vertical bar, which is in a different place on different keyboards: on a UK
    keyboard it is **Shift** and the `\` key next to the left **Shift**. Read
    [Symbols that are in different places on different keyboards](../basics/the-terminal.md#symbols-that-are-in-different-places-on-different-keyboards).
@@ -95,6 +99,8 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 
 ## If it does not work
 
+- **"The requested URL returned error: 404":** the address was typed with a difference. Copy and paste it instead,
+  or check that `main/run-first.sh` is in small letters with a hyphen and the account is `TheMightyTRex`.
 - **"curl: command not found":** install curl, then run the command again. On Debian, Ubuntu, Linux Mint and
   Raspberry Pi OS:
 

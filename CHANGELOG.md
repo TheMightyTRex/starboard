@@ -15,6 +15,8 @@ Updating works again after a long gap.
 - **Updating after a long gap:** `./update.sh` stopped just after "What changed" when more than 30 changes had come
   since your version. It now lists 30 and says how many more. Until you have this version, Update Starboard in the help
   has the steps to update by hand.
+- **Typing the Run first script's command:** the help and README now say that the address is case-sensitive after
+  the repository's name, and what a 404 means. The terminal basics page has a new section, Capital letters matter.
 
 ### Security
 - **Checks:** Trivy, OWASP ZAP (signed out), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release;

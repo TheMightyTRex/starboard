@@ -100,7 +100,7 @@ the setup code.
 
 ## Latest results
 
-From release 0.9.0 (5 November 2026). Debian, Fedora and ARM at 512 MB are from 0.7.4.
+From release 0.9.1 (5 November 2026); the install tests on 64-bit ARM and the Run first script are from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
 
 | | Result |
 |---|---|

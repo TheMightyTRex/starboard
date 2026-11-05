@@ -10,7 +10,9 @@ Start with the **Run first script**. On any Linux computer, with or without a de
 curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
 ```
 
-Typing it? The `|` (vertical bar) is in different places on different keyboards: on a UK keyboard it is **Shift**
+Typing it? Type it exactly: everything after `TheMightyTRex/starboard/` is case-sensitive, so `main/run-first.sh`
+must be in small letters with a hyphen, or GitHub answers 404 (not found). The `|` (vertical bar) is in different
+places on different keyboards: on a UK keyboard it is **Shift**
 and the `\` key next to the left **Shift**, not the `¦` key. The help has
 [where each symbol is](docs/help/basics/the-terminal.md#symbols-that-are-in-different-places-on-different-keyboards)
 on US, UK, German, French and Spanish keyboards. Or use these two commands, which have no `|`:
