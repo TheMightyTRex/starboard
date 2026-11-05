@@ -87,6 +87,9 @@ Type `q` at any feedback question to close it and go back to the step.
 - A feedback report never holds your answers to the set-up questions, your password, VPN details or the setup
   code. Email addresses, network addresses, user names in folder paths and anything that looks like a key are
   replaced. You see the whole report before you choose how to send it.
+- Do not type a password or key into your feedback. The report only takes out text that looks like one, such as
+  "password=…", so a password typed on its own could stay in it. You see the whole report before it is sent: if
+  something private is in it, type q to close it, and start again.
 - The QR code is made to fit your window, and a larger window fits more of the report in it. In a window 80
   characters wide and 24 lines tall, the usual size, it holds the title of the report. At 80 by 30 it holds a short
   report, and at 140 by 60 the report without its technical details. The line above the code says what it holds,
