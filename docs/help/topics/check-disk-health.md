@@ -11,8 +11,8 @@ trouble weeks before they fail, so a quick look here can save your files.
   [Change what Starboard can access](change-what-starboard-can-access.md).
 - The installer asks for your computer's password for this step, because reading a drive's report needs
   administrator rights. You type it in the terminal yourself.
-- The computer needs smartmontools, the program that reads the reports. On Ubuntu, Debian and Linux Mint,
-  this command installs it:
+- The computer needs smartmontools, the program that reads the reports. The installer installs it for you if it
+  is missing. To install it yourself first, on Ubuntu, Debian and Linux Mint:
 
   ```bash
   sudo apt install smartmontools

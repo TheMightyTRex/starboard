@@ -422,6 +422,7 @@ show_checks() {
 # animation; plain mode prints one line as each job starts and finishes. The log is kept for "Show the details".
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/starboard-run-first.XXXXXX")" || { echo "Stopped: no temporary folder" >&2; exit 1; }
 LOG="$WORK/run-first.log"
+DONE_JOBS=()
 KEEP=""
 SPIN=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
 
@@ -460,8 +461,24 @@ work() {
   done
   wait "$pid"; status=$?
   printf '\r\033[2K'
-  [ "$status" = 0 ] && ok "$name"
+  if [ "$status" = 0 ]; then
+    ok "$name"
+    DONE_JOBS+=("$name")
+  else
+    # The bar's line stays, marked, so the problem below it is about this job.
+    say "  $(c 33 "✘") $name did not finish."
+  fi
   return "$status"
+}
+
+# A job failed and the person chose Try again: the page is drawn afresh, with the jobs already done ticked and one
+# new bar for the job tried again, so bars never pile up under one another.
+jobs_page() {
+  local step="$1" intro="$2" done_job
+  page "$step"
+  para "$intro"
+  say ""
+  for done_job in "${DONE_JOBS[@]}"; do ok "$done_job"; done
 }
 
 # What went wrong, in plain words, from the end of the log; and what to try.
@@ -658,7 +675,7 @@ Answer n to install them yourself: the commands are printed so you can copy them
   for i in "${!FIX[@]}"; do
     until work "${FIX_NAME[$i]}" "${FIX[$i]//sudo /sudo -n }" $(( i + 1 )) ${#FIX[@]}; do
       problem "${FIX_NAME[$i]}"
-      say ""
+      jobs_page 3 "Please wait, this can take some time..."
     done
   done
   [[ " ${FIX[*]} " == *"usermod -aG docker"* ]] && NEW_GROUP=1
@@ -690,7 +707,7 @@ step_4() {
     until work "Downloading Starboard" "git clone -q $(printf '%q %q' "$REPO" "$DIR")" 1 1; do
       rm -rf "$DIR"
       problem "Downloading Starboard"
-      say ""
+      jobs_page 4 "Downloading Starboard into ${DIR/#$HOME/~}. Please wait, this can take a minute or two..."
     done
   fi
   ask "Press Enter to carry on" "" "Starboard's own files go in this folder, with your settings in its data folder. Updates come with ./update.sh, from the same folder." || return $?

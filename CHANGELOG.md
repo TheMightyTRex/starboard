@@ -7,6 +7,11 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **Disk health installs what it needs:** choosing disk health no longer stops with "install smartmontools first":
+  the installer installs smartmontools itself (sudo asks for the password), and finds it in /usr/sbin, which is not on
+  every user's path.
+
 ## [0.9.1] (5 November 2026)
 
 Updating works again after a long gap.

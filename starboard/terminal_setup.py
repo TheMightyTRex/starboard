@@ -759,9 +759,20 @@ class Terminal:
                 return int(answer) - 1
             self.say(f"Type a number from 1 to {len(options)}, ? for help or q to stop.")
 
+    def _keys_work(self):
+        """Arrow keys and Space can be read one at a time: the boxed way, in a real terminal (not plain mode, which
+        stays numbered for software that reads text aloud, and not a test's answers)."""
+        try:
+            return self.fancy and self._ask is input and sys.stdin.isatty() and sys.stdout.isatty()
+        except (AttributeError, ValueError):
+            return False
+
     def choose_many(self, question, options, defaults, help_key=None, allow_none=False):
         """Numbered options, several at once (1,3,4); returns the indexes chosen. A long list on a short screen
-        shows what fits, and m shows the rest. With allow_none, 0 (or Enter when none is ticked) chooses none."""
+        shows what fits, and m shows the rest. With allow_none, 0 (or Enter when none is ticked) chooses none.
+        In a real terminal with the boxed look, the arrow keys move and Space ticks (_pick_many)."""
+        if self._keys_work() and len(options) + 6 <= self._region():
+            return self._pick_many(question, options, defaults, help_key, allow_none)
         self.say("")
         self.note(f"{question} Type the numbers, separated by commas" + (", or 0 for none." if allow_none else "."))
         fits = len(options)
@@ -784,6 +795,76 @@ class Terminal:
             if parts and all(p.isdigit() and 1 <= int(p) <= len(options) for p in parts):
                 return sorted({int(p) - 1 for p in parts})
             self.say(f"Type numbers from 1 to {len(options)}, such as 1,2, or ? for help, or q to stop.")
+
+    def _pick_many(self, question, options, defaults, help_key, allow_none):
+        """Up and Down move, Space ticks or unticks, Enter carries on. A number ticks that line too. ? opens help,
+        b goes back and q stops, as everywhere. The list is drawn in place, so it never repeats down the window."""
+        import termios
+        import tty
+        ticked, at = set(defaults), 0
+        note = ["Up and Down move, Space ticks or unticks, Enter carries on."]
+
+        def render(width):
+            out = []
+            green = lambda s: re.sub(r"\(recommended[^)]*\)", lambda m: self.good(m.group(0)), s)  # noqa: E731
+            for i, o in enumerate(options):
+                name, about = o if isinstance(o, tuple) else (o, "")
+                mark = self.good("[x]") if i in ticked else "[ ]"
+                cursor = self.accent("›") if i == at else " "
+                first = textwrap.wrap(name, width - 10) or [""]
+                out.append(f"  {cursor} {mark} {green(first[0])}")
+                out += [" " * 8 + green(more) for more in first[1:]]
+                out += [" " * 8 + self.dim(more) for more in textwrap.wrap(about, width - 10)]
+            out += ["", "  " + self.dim(note[0])]
+            return out
+
+        self.say("")
+        self.note(question)
+        self.say("")
+        self._show(render)
+        self.pending = ""
+
+        def draw():
+            # Back to the list's first line and over it. Counted at the width now, so a change of window size
+            # (which draws the step again, the list last) does not throw it off.
+            lines = render(self.width)
+            self._write(f"\033[{len(lines)}A\r")
+            for line in lines:
+                self._write("\033[2K" + getattr(self, "pad", "") + line + "\n")
+
+        fd = sys.stdin.fileno()
+        saved = termios.tcgetattr(fd)
+        try:
+            tty.setcbreak(fd)
+            while True:
+                key = os.read(fd, 8).decode(errors="ignore")
+                if key in ("\x1b[A", "\x1bOA", "k"):
+                    at = (at - 1) % len(options)
+                elif key in ("\x1b[B", "\x1bOB", "j"):
+                    at = (at + 1) % len(options)
+                elif key == " ":
+                    ticked ^= {at}
+                elif key.isdigit() and 1 <= int(key) <= len(options):
+                    at = int(key) - 1
+                    ticked ^= {at}
+                elif key in ("\r", "\n"):
+                    if ticked or allow_none:
+                        return sorted(ticked)
+                    note[0] = "Tick at least one with Space, then press Enter."
+                elif key.lower() == "q":
+                    raise Stop()
+                elif key.lower() == "b":
+                    if self.can_back:
+                        raise Back()
+                    note[0] = "This is the first step, so there is nothing to go back to."
+                elif key == "?":
+                    termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+                    self.popup(f"Help: {self._title(question)}", HELP.get(help_key, "There is no more help for this question."))
+                    tty.setcbreak(fd)
+                    continue  # the help drew the step again, with the list last
+                draw()
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, saved)
 
     def yes_no(self, question, default=True, help_key=None):
         while True:
@@ -1112,11 +1193,13 @@ class Terminal:
             result = check()
             if result is not None:
                 if self.fancy:
-                    self._write("\r" + " " * (self.width - 1) + "\r")
+                    self._write("\r\033[2K")
                 return result
             if self.fancy:
                 secs = int(time.time() - began)
-                self._write(f"\r  {self.accent('◐◓◑◒'[turn % 4])} {text} {self.dim(f'{secs // 60} min {secs % 60:02d} s')}")
+                timer = f"{secs // 60} min {secs % 60:02d} s"
+                words = text[:max(self.width - len(timer) - 7, 10)]  # one line, never wrapped onto a second
+                self._write(f"\r\033[2K{getattr(self, 'pad', '')}  {self.accent('◐◓◑◒'[turn % 4])} {words} {self.dim(timer)}")
                 turn += 1
             time.sleep(wait)
 

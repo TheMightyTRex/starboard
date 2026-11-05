@@ -13,7 +13,17 @@ if [ "${1:-}" = "--remove" ]; then
   exit 0
 fi
 OUT="${1:?usage: sudo deploy/install-smart.sh FOLDER}"
-command -v smartctl >/dev/null || { echo "Install smartmontools first (apt install smartmontools)"; exit 1; }
+# smartmontools reads each disk's health report: installed here when it is missing (this runs as root already).
+if ! command -v smartctl >/dev/null && [ ! -x /usr/sbin/smartctl ]; then
+  echo "Installing smartmontools, which reads each disk's health report"
+  if command -v apt-get >/dev/null; then
+    apt-get install -y smartmontools || { apt-get update && apt-get install -y smartmontools; }
+  elif command -v dnf >/dev/null; then
+    dnf install -y smartmontools
+  else
+    false
+  fi || { echo "smartmontools did not install. Install it yourself (apt install smartmontools), then run this again"; exit 1; }
+fi
 install -m 755 "$(dirname "$0")/starboard-smart.sh" /usr/local/bin/starboard-smart
 cat > /etc/systemd/system/starboard-smart.service <<UNIT
 [Unit]

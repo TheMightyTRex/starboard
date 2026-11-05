@@ -407,7 +407,18 @@ if [ "$HEALTH" = 1 ]; then
   if [ -f /etc/systemd/system/starboard-smart.timer ]; then
     echo "The Disk health timer is already installed."
   else
-    command -v smartctl >/dev/null || fail "install smartmontools first (for example: sudo apt install smartmontools), then run ./install.sh again"
+    # smartmontools reads each disk's health report. It lives in /usr/sbin, which is not on every user's path.
+    if ! command -v smartctl >/dev/null && [ ! -x /usr/sbin/smartctl ]; then
+      echo "Disk health needs smartmontools, which reads each disk's health report. Installing it now (sudo asks for"
+      echo "  your password):"
+      if command -v apt-get >/dev/null; then
+        sudo apt-get install -y smartmontools || { sudo apt-get update && sudo apt-get install -y smartmontools; }
+      elif command -v dnf >/dev/null; then
+        sudo dnf install -y smartmontools
+      else
+        false
+      fi || fail "smartmontools did not install. Install it yourself (for example: sudo apt install smartmontools), then run ./install.sh again"
+    fi
     mkdir -p smart/requests
     echo "Running: sudo deploy/install-smart.sh $PWD/smart"
     sudo deploy/install-smart.sh "$PWD/smart"
@@ -441,14 +452,17 @@ if [ "$MODE" = docker ]; then
     # shellcheck disable=SC1003  # the four spinner characters, a backslash among them
     spin='|/-\'
     i=0
+    cols=$(tput cols 2>/dev/null || echo 80)
     while kill -0 "$build" 2>/dev/null; do
-      printf '\r  %s Building and starting Starboard. Please wait, this can take some time...' "${spin:i++%4:1}"
+      # One line, redrawn in place and cut to the window, so it never wraps onto a second line.
+      printf '\r\033[2K%s' "$(printf '  %s Building and starting Starboard. Please wait, this can take some time...' "${spin:i++%4:1}" | cut -c1-$(( cols - 1 )))"
       sleep 0.2
     done
     printf '\r\033[2K'
     if wait "$build"; then
       echo "  Built and started."
     else
+      echo "  Building and starting Starboard did not finish. The last lines of the build:"
       tail -n 15 "$build_log" | sed 's/^/    /'
       case "$(tail -n 40 "$build_log")" in
         *"no space left"*|*"No space left"*) fail "the disk is full. Free some space, then run this again" ;;
