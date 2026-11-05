@@ -19,3 +19,4 @@ __pycache__/
 compose.override.yaml
 compose.access.yaml
 /smart/
+/pool/

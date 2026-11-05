@@ -15,6 +15,17 @@ const jellyfin = `document.querySelector("#jellyfin-panel").hidden = false;
     added: [{ title: "Harbour Street", series: "", type: "Movie", when: new Date(Date.now() - 7200e3).toISOString() }] });
   ${top("#jellyfin-panel")}`;
 
+// System, Storage, Pool: steps through a job by pressing each step's first button (the pretend helper answers in
+// about half a second). Each shot starts again from the Pool page; the last add shot carries the job out.
+const wait = (ms) => `await new Promise((r) => setTimeout(r, ${ms}));`;
+// A value written into a page script: JSON, with <, >, / and the two Unicode line separators escaped as well, so
+// it can never end the script or start new code.
+const lit = (v) => JSON.stringify(v).replace(/[<>/\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+const poolSteps = (start, presses, extra = "") => `(async () => { document.querySelector(${lit(start)}).click(); ${wait(300)}
+  for (let i = 0; i < ${presses}; i++) { document.querySelector("#wizard-foot .btn").click(); ${wait(2500)} } ${extra} })()`;
+const poolConfirm = `document.querySelectorAll("[data-drive]").forEach((i) => { i.value = i.previousElementSibling.previousElementSibling.querySelector("strong").textContent; });
+  document.querySelector("#pool-password").value = ${lit(password)}; document.querySelector("#wizard-foot .btn").click(); ${wait(4000)}`;
+
 const desk = { width: 1280, height: 860 };
 const phone = { width: 390, height: 844 };
 // The upgrade shots come last: they set the example server back to 0.4.0, which adds the upgrade notice.
@@ -42,6 +53,17 @@ const SHOTS = [
   { file: "logs-settings.png", page: "settings-general.html", width: 1280, height: 700, run: top("#gn-logs-h") },
   { file: "apps-phone.png", page: "index.html", ...phone },
   { file: "storage-phone.png", page: "system-storage.html", ...phone },
+  { file: "pool.png", page: "system-pool.html", ...desk },
+  { file: "pool-dark.png", page: "system-pool.html", ...desk, scheme: "dark" },
+  { file: "pool-phone.png", page: "system-pool.html", ...phone },
+  { file: "pool-add-1-choose.png", page: "system-pool.html", ...desk, run: poolSteps("#add-drive", 0) },
+  { file: "pool-add-2-role.png", page: "system-pool.html", width: 1280, height: 1250, run: poolSteps("#add-drive", 1) },
+  { file: "pool-add-3-check.png", page: "system-pool.html", width: 1280, height: 1000, run: poolSteps("#add-drive", 2) },
+  { file: "pool-add-4-confirm.png", page: "system-pool.html", ...desk, run: poolSteps("#add-drive", 3) },
+  { file: "pool-add-5-done.png", page: "system-pool.html", width: 1280, height: 1000, run: poolSteps("#add-drive", 3, poolConfirm) },
+  { file: "pool-balance-1-how.png", page: "system-pool.html", width: 1280, height: 1150, run: poolSteps("#balance", 0) },
+  { file: "pool-balance-2-check.png", page: "system-pool.html", width: 1280, height: 1100, run: poolSteps("#balance", 1) },
+  { file: "pool-remove-check.png", page: "system-pool.html", width: 1280, height: 1000, run: `(async () => { document.querySelector("#in-pool .btn").click(); ${wait(2500)} })()` },
   { file: "upgrade-notice.png", page: "index.html", ...desk, before: 'api("/api/config/general", { method: "PUT", body: { last_version: "0.4.0" } })' },
   { file: "upgrade-guide.png", page: "upgrade.html", ...desk },
 ];

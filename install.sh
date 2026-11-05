@@ -17,6 +17,9 @@
 #   --no-livetv           Take that away
 #   --disk-health         Set up Disk health reports (installs a timer with sudo; asks for your password)
 #   --no-disk-health      Stop reading Disk health reports (and say how to remove the timer)
+#   --pool                Set up Drive pools: the pool helper, which joins drives into one folder and looks after
+#                         backup drives (installs it with sudo; asks for your password)
+#   --no-pool             Stop using the pool helper (and say how to remove it)
 #   --yes                 Do not ask: use the options above, and your last answers (or No) for the rest
 #   --terminal            Finish set-up here in the terminal (password, apps, download hours), with no browser:
 #                         for a server with no desktop. Run it again later with: python3 -m starboard.terminal_setup
@@ -31,6 +34,7 @@ NETWORK=1
 ASK=1
 DOCKER=""
 HEALTH=""
+POOL=""
 APPUSE=""
 LIVETV="-"
 TERMINAL=0
@@ -52,9 +56,11 @@ while [ $# -gt 0 ]; do
     --no-app-use) APPUSE=0 ;;
     --disk-health) HEALTH=1 ;;
     --no-disk-health) HEALTH=0 ;;
+    --pool) POOL=1 ;;
+    --no-pool) POOL=0 ;;
     --yes) ASK=0 ;;
     --terminal) TERMINAL=1 ;;
-    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,27p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -261,6 +267,25 @@ if [ -z "$HEALTH" ]; then
   fi
 fi
 
+# Drive pools (DASH-87).
+if [ -z "$POOL" ]; then
+  previous="$(env_value STARBOARD_ALLOW_POOL)"
+  POOL="${previous:-0}"
+  if [ -n "$(env_value STARBOARD_POOL_DIR)" ] && [ -z "$previous" ]; then
+    echo
+    echo "Drive pools: you set up the pool helper by hand (STARBOARD_POOL_DIR), so the installer leaves it as it is."
+    POOL=skip
+  elif [ "$ASK" = 1 ]; then
+    echo
+    echo "Drive pools: a pool joins several drives into one folder, /mnt/pool, and a backup drive protects it."
+    echo "  The pool helper (deploy/install-pool.sh) does that work as root; Starboard only asks it, and every"
+    echo "  change needs your Starboard password and is checked first. Setting it up runs sudo, so you are asked"
+    echo "  for this computer's password. It needs mergerfs, rsync and gdisk (and snapraid for a parity drive)."
+    echo "  No: System, Storage, Pool says the helper is not set up."
+    if yes_no "Set up Drive pools?" "$POOL"; then POOL=1; else POOL=0; fi
+  fi
+fi
+
 say "Step 3: saving your answers"
 [ -f .env ] || (umask 077 && cp example.env .env)
 set_env() {
@@ -286,6 +311,7 @@ else
   set_env STARBOARD_CGROUP ""
 fi
 if [ "$HEALTH" != skip ]; then set_env STARBOARD_ALLOW_HEALTH "$HEALTH"; fi
+if [ "$POOL" != skip ]; then set_env STARBOARD_ALLOW_POOL "$POOL"; fi
 if ! grep -q '^STARBOARD_REPO=.\+' .env; then
   origin="$(git remote get-url origin 2>/dev/null || true)"
   repo="$(printf '%s' "$origin" | sed -nE 's#.*github\.com[:/]([^/]+/[^/.]+)(\.git)?$#\1#p')"
@@ -319,6 +345,10 @@ chmod 700 data backups
     echo "      - ./smart:/smart:ro  # Disk health reports"
     echo "      - ./smart/requests:/smart/requests  # the one place Starboard writes: Read disks now"
   fi
+  if [ "$POOL" = 1 ]; then
+    echo "      - ./pool/status:/pool/status:ro  # Drive pools: the pool helper's answers"
+    echo "      - ./pool/requests:/pool/requests  # Drive pools: the one place Starboard asks the helper"
+  fi
 } > compose.access.yaml
 if [ "$DISKS_GIVEN" != skip ]; then
   paths=""; inside=""; i=0
@@ -336,6 +366,11 @@ if [ "$HEALTH" = 1 ]; then
   if [ "$MODE" = docker ]; then set_env STARBOARD_SMART_DIR /smart; else set_env STARBOARD_SMART_DIR "$PWD/smart"; fi
 elif [ "$HEALTH" = 0 ]; then
   set_env STARBOARD_SMART_DIR ""
+fi
+if [ "$POOL" = 1 ]; then
+  if [ "$MODE" = docker ]; then set_env STARBOARD_POOL_DIR /pool; else set_env STARBOARD_POOL_DIR "$PWD/pool"; fi
+elif [ "$POOL" = 0 ]; then
+  set_env STARBOARD_POOL_DIR ""
 fi
 # Your own extra mounts go in compose.override.yaml, which this installer never changes once it exists.
 if [ ! -f compose.override.yaml ]; then
@@ -358,6 +393,20 @@ if [ "$HEALTH" = 1 ]; then
 elif [ "$HEALTH" = 0 ] && [ -f /etc/systemd/system/starboard-smart.timer ]; then
   echo "Starboard no longer reads Disk health reports. The timer is still installed; to remove it, run:"
   echo "  sudo deploy/install-smart.sh --remove"
+fi
+
+if [ "$POOL" = 1 ]; then
+  say "Setting up Drive pools (sudo)"
+  if [ -f /etc/systemd/system/starboard-pool.path ] && cmp -s starboard/pool_helper.py /usr/local/bin/starboard-pool; then
+    echo "The pool helper is already installed."
+  else
+    mkdir -p pool/requests pool/status
+    echo "Running: sudo deploy/install-pool.sh $PWD/pool"
+    sudo deploy/install-pool.sh "$PWD/pool" || fail "the pool helper did not install; the message above says why"
+  fi
+elif [ "$POOL" = 0 ] && [ -f /etc/systemd/system/starboard-pool.path ]; then
+  echo "Starboard no longer uses the pool helper. It is still installed; to remove it, run:"
+  echo "  sudo deploy/install-pool.sh --remove"
 fi
 
 if [ "$MODE" = docker ]; then

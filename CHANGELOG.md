@@ -8,6 +8,15 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **Drive pools** (DASH-87): a new **Pool** tab on System, Storage, and a **Your drives** step in the terminal
+  set-up. Add a drive to a mergerfs pool (keeping its files, or erasing and preparing it as ext4), balance the
+  files by whole folders, take a drive out (its files move to the others first), and make a drive a backup drive:
+  parity with SnapRAID (recommended: one drive protects them all) or a nightly rsync copy, whose deleted files go
+  to a dated holding folder. A root helper, installed with sudo by `./install.sh`, does the work; Starboard only
+  asks. Every change is checked first (a dry run with the exact commands), needs the password again, and erasing
+  needs the end of the drive's serial number. `mergerfs.balance` can be chosen when it is installed, and is not
+  installed by default. Diagrams in the help explain balancing and what happens without it. Tested in a
+  throwaway VM with blank virtual drives (`tools/vm/vm.sh pool debian`). Find out more in **Add a drive to the pool**.
 - **Set up in the terminal, with no browser** (DASH-86): `./install.sh --terminal` carries on once Starboard is
   running and asks the set-up questions in the same terminal: your password (typed hidden, with no setup code
   needed on the server itself), the apps for your media server (what you want, then the apps, folders and VPN

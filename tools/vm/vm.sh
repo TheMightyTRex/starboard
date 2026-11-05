@@ -5,6 +5,11 @@
 #   tools/vm/vm.sh test ubuntu        Start a fresh copy of the ready system, install this checkout, run the checks
 #   tools/vm/vm.sh shell ubuntu       Start a fresh copy and open a shell in it (for trying things by hand)
 #   tools/vm/vm.sh clean ubuntu       Delete that system's files (the downloaded image stays)
+#   tools/vm/vm.sh pool debian        Drive pools (DASH-87): a fresh system with five blank virtual drives; adds,
+#                                     keeps, erases, balances, parity, take-out, requests, then a restart
+#
+# VM_TAG=name keeps this run's disk and process files apart, so two sessions can each test a copy of one system.
+# VM_DISKS="2G 3G 4G 2G 1G" adds blank virtual drives (serial numbers SBDISK0001 and up) to shell and test runs.
 #
 # Systems: ubuntu (24.04), debian (12), fedora (42), and arm64: Debian 12 for 64-bit ARM, like Raspberry Pi
 # OS (64-bit), with 1 GB of memory like a small Pi (VM_MEMORY=512 for a Pi Zero 2 W). arm64 needs the packages
@@ -34,9 +39,11 @@ mkdir -p "$DIR"
 chmod 700 "$DIR"
 BASE="$DIR/$SYSTEM-cloud.img"
 READY="$DIR/$SYSTEM-ready.qcow2"
-RUN="$DIR/$SYSTEM-run.qcow2"
+RUN="$DIR/$SYSTEM${VM_TAG:+-$VM_TAG}-run.qcow2"
+PID="$DIR/$SYSTEM${VM_TAG:+-$VM_TAG}.pid"
+VM_DISKS="${VM_DISKS:-}"
 KEY="$DIR/id_ed25519"
-LOG="$DIR/$SYSTEM-console.log"
+LOG="$DIR/$SYSTEM${VM_TAG:+-$VM_TAG}-console.log"
 [ -f "$KEY" ] || ssh-keygen -q -t ed25519 -N "" -C starboard-vm -f "$KEY"
 
 if [ "$SYSTEM" = arm64 ]; then
@@ -79,19 +86,30 @@ EOF
 boot() { # boot a disk in the background; extra arguments go to QEMU
   local disk="$1"; shift
   "$QEMU" "${ACCEL[@]}" -smp 2 -m "$MEMORY" -nographic -serial "file:$LOG" -monitor none \
-    -drive "file=$disk,if=virtio,format=qcow2" \
+    -drive "file=$disk,if=none,id=system,format=qcow2" -device virtio-blk-pci,drive=system,bootindex=0 \
     -nic "user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:$SSH_PORT-:22,hostfwd=tcp:127.0.0.1:$WEB_PORT-:8095" \
     "$@" >/dev/null 2>&1 &
-  echo $! > "$DIR/$SYSTEM.pid"
+  echo $! > "$PID"
 }
 
 stop() {
-  local pid; pid="$(cat "$DIR/$SYSTEM.pid" 2>/dev/null || true)"
+  local pid; pid="$(cat "$PID" 2>/dev/null || true)"
   [ -n "$pid" ] || return 0
   "${SSH[@]}" sudo poweroff >/dev/null 2>&1 || true
   for _ in $(seq 1 60); do kill -0 "$pid" 2>/dev/null || break; sleep 2; done
   kill "$pid" 2>/dev/null || true
-  rm -f "$DIR/$SYSTEM.pid"
+  rm -f "$PID"
+}
+
+spare_drives() { # blank virtual drives, made fresh for each run: QEMU options on stdout
+  local n=0 size file
+  for size in $VM_DISKS; do
+    n=$((n + 1))
+    file="$DIR/$SYSTEM${VM_TAG:+-$VM_TAG}-drive$n.qcow2"
+    rm -f "$file"
+    qemu-img create -q -f qcow2 "$file" "$size"
+    printf -- '-drive\nfile=%s,if=none,id=spare%d,format=qcow2\n-device\nvirtio-blk-pci,drive=spare%d,serial=SBDISK%04d\n' "$file" "$n" "$n" "$n"
+  done
 }
 
 wait_ssh() { # up to $1 seconds
@@ -106,8 +124,10 @@ fresh() { # a new copy of the ready system, started
   [ -f "$READY" ] || { echo "Run: tools/vm/vm.sh prepare $SYSTEM" >&2; exit 1; }
   rm -f "$RUN"
   qemu-img create -q -f qcow2 -F qcow2 -b "$READY" "$RUN"
-  say "Starting a fresh $SYSTEM ($SPEED)"
-  boot "$RUN"
+  say "Starting a fresh $SYSTEM ($SPEED)${VM_DISKS:+, with blank drives: $VM_DISKS}"
+  local extra=()
+  if [ -n "$VM_DISKS" ]; then mapfile -t extra < <(spare_drives); fi
+  boot "$RUN" "${extra[@]+"${extra[@]}"}"
   trap stop EXIT
   wait_ssh "$WAIT"
 }
@@ -189,10 +209,28 @@ case "$ACTION" in
     [ "$FAIL" = 0 ]
     ;;
 
+  pool)
+    VM_DISKS="${VM_DISKS:-2G 3G 4G 2G 1G}"
+    fresh
+    say "Copying this checkout ($(git rev-parse --short HEAD)) into the VM"
+    tar czf "$DIR/starboard-pool.tgz" --exclude=.git --exclude=data --exclude=docs/screenshots .
+    "${SCP[@]}" "$DIR/starboard-pool.tgz" tester@127.0.0.1:starboard.tgz
+    "${SSH[@]}" "mkdir -p starboard && tar xzf starboard.tgz -C starboard"
+    "${SSH[@]}" "cd starboard && bash tools/vm/pool-test.sh before" | tee "$DIR/pool-test.log"
+    say "Restarting the VM, to check the pool comes back by itself"
+    "${SSH[@]}" "sudo systemctl reboot" >/dev/null 2>&1 || true
+    sleep 20
+    wait_ssh "$WAIT"
+    "${SSH[@]}" "cd starboard && bash tools/vm/pool-test.sh after" | tee -a "$DIR/pool-test.log"
+    passed=$(grep -c '^PASS' "$DIR/pool-test.log"); failed=$(grep -c '^FAIL' "$DIR/pool-test.log" || true)
+    say "$SYSTEM pool: $passed passed, $failed failed (log: $DIR/pool-test.log)"
+    [ "$failed" = 0 ]
+    ;;
+
   clean)
-    rm -f "$READY" "$RUN" "$DIR/$SYSTEM-seed.iso" "$LOG"
+    rm -f "$READY" "$RUN" "$DIR/$SYSTEM-seed.iso" "$LOG" "$DIR/$SYSTEM"*-drive*.qcow2
     echo "Removed the $SYSTEM VM files (the downloaded image stays: $BASE)"
     ;;
 
-  *) sed -n '2,12p' "$0"; exit 2 ;;
+  *) sed -n '2,17p' "$0"; exit 2 ;;
 esac
