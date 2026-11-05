@@ -96,7 +96,16 @@ say() {
 # A paragraph, wrapped to the width and set in by two spaces.
 para() {
   if [ "$FANCY" = 0 ]; then say "$(printf '%s\n' "$1" | fold -s -w $(( COLS < 80 ? COLS - 1 : 79 )) | sed 's/ *$//')"; return; fi
-  say "$(printf '%s\n' "$1" | fold -s -w $(( W - 4 )) | sed 's/ *$//; s/^/  /')"
+  wrap_para "$1"
+  SCREEN+=($'\x01'"$1")  # kept as text, so a change of window size wraps it again at the new width
+}
+wrap_para() { printf '%s\n' "$1" | fold -s -w $(( W - 4 )) | sed 's/ *$//; s/^/  /'; }
+# The step's lines at the width now: paragraphs are wrapped again.
+screen_lines() {
+  local item
+  for item in "${SCREEN[@]}"; do
+    if [ "${item:0:1}" = $'\x01' ]; then wrap_para "${item:1}"; else printf '%s\n' "$item"; fi
+  done
 }
 ok() { if [ "$FANCY" = 1 ]; then say "  $(c 32 "✔") $1"; else say "Ready: $1"; fi; }
 bad() { if [ "$FANCY" = 1 ]; then say "  $(c 33 "✘") $1"; else say "Missing: $1"; fi; }
@@ -161,6 +170,7 @@ menu() {
     case "$k" in b) label="Back" ;; "?") label="Help" ;; q|Ctrl+C) label="Stop" ;; *) continue ;; esac
     line+="$(accent "$k") $label   "; plain+="$k $label   "
   done
+  [ $(( W - 4 - ${#plain} - ${#right} )) -ge 3 ] || right=""  # a narrow window: the keys matter more
   gap=$(( W - 4 - ${#plain} - ${#right} )); [ "$gap" -ge 1 ] || gap=1
   printf '\0337\033[%d;1H\033[2K%s\033[%d;1H\033[2K  %s%s%s\0338' $(( ROWS - 1 )) "$(dim "$(rep ─ "$W")")" \
     "$ROWS" "$line" "$(rep " " "$gap")" "$(dim "$right")"
@@ -202,7 +212,7 @@ resized() {
   measure
   [ "$COLS" -ge 60 ] && [ "$ROWS" -ge 20 ] || return 0
   header "${TITLES[$STEP]}" "$STEP"
-  local keep=$(( ROWS - 2 - ${#HEADER[@]} - 1 )) n=${#SCREEN[@]} i
+  local keep=$(( ROWS - 2 - ${#HEADER[@]} - 1 ))
   draw_page
   if [ "$STEP" = 1 ]; then
     SCREEN=()
@@ -211,7 +221,7 @@ resized() {
     printf '\n%s' "$PROMPT"
     return
   fi
-  for (( i = (n > keep ? n - keep : 0); i < n; i++ )); do printf '%s\n' "${SCREEN[$i]}"; done
+  screen_lines | tail -n "$keep"
   printf '%s' "$PROMPT"
 }
 # The handler only notes the change: the step is drawn again between read slices (tty_read), never inside the
@@ -255,9 +265,10 @@ popup_page() {
   local title="$1" foot="$2"; shift 2
   local body=("$@") bw=$(( W - 6 < 62 ? W - 6 : 62 )) left inner row=1 line top=3 i wrapped
   left=$(( (W - bw) / 2 )); inner=$(( bw - 4 ))
-  local keep=$(( ROWS - 2 - ${#HEADER[@]} )) n=${#SCREEN[@]}
+  local keep=$(( ROWS - 2 - ${#HEADER[@]} )) shown=()
+  mapfile -t shown < <(screen_lines | tail -n "$keep")
   printf '\033[r\033[2J'
-  for line in "${HEADER[@]}" "${SCREEN[@]:$(( n > keep ? n - keep : 0 ))}"; do
+  for line in "${HEADER[@]}" "${shown[@]}"; do
     [ "$row" -le $(( ROWS - 2 )) ] || break
     wrapped="$(printf '%s' "$line" | sed 's/\x1b\[[0-9;]*m//g')"
     printf '\033[%d;1H%s' "$row" "$(c "2;90" "$wrapped")"; row=$(( row + 1 ))

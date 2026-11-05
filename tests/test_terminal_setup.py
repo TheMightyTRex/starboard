@@ -159,6 +159,24 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         self.assertIn("Your password is saved.", out.getvalue())
 
+    def test_text_wraps_again_when_the_window_changes_size(self):
+        out = io.StringIO()
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=80, rows=30)
+        term._page = lambda *a: None
+        term.heading("How to start", 2)
+        term.note("A long paragraph of words that wraps inside the frame at whatever width the window has now. " * 3)
+        term.warn("A warning that is long enough to wrap onto a second and a third line at a narrow width. " * 2)
+        term._options([("Move from apps you already run (recommended)", "Starboard adds the apps already running " * 3),
+                       ("Short", "A short name in two columns " * 4), "Plain text option " * 8], {0})
+        term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4)])
+        for width in (80, 60, 100):
+            term.width = width
+            lines = [terminal_setup.ANSI.sub("", line) for line in term._lines()]
+            self.assertTrue(all(len(line) <= width for line in lines), width)
+            words = " ".join(lines)
+            self.assertIn("whatever width", words)  # whole words, never cut in the middle
+            self.assertNotRegex(words, r"wha\s+tever")
+
     def test_screen_is_cleared_with_a_fixed_menu_and_given_back(self):
         out = io.StringIO()
         term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=78, rows=30)

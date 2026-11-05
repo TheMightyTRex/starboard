@@ -432,6 +432,28 @@ class Terminal:
         if self.fancy:
             self.screen += str(text).split("\n")
 
+    def _show(self, render):
+        """Draws render(width), a function giving the lines for a width, and keeps the function, so a change of
+        window size draws the piece again wrapped to the new width instead of cutting its old lines."""
+        for line in render(self.width):
+            print(line, file=self.out, flush=True)
+        if self.fancy:
+            self.screen.append(render)
+
+    def _lines(self):
+        """The step's lines at the width now: kept pieces are wrapped again."""
+        out = []
+        for item in self.screen:
+            out += item(self.width) if callable(item) else [item]
+        return out
+
+    def _plain(self, text, indent=0):
+        """Plain lines wrapped between words to the window's width, for a terminal with no boxes."""
+        width = max(shutil.get_terminal_size((80, 24)).columns - 1, 20)
+        for para in str(text).split("\n"):
+            for line in textwrap.wrap(para, width, subsequent_indent=" " * indent) or [""]:
+                self.say(line)
+
     # The screen: a cleared page per step, with the menu fixed below a scrolling area ---------------------------
 
     def _measure(self):
@@ -460,6 +482,8 @@ class Terminal:
         """The two bottom lines: a rule, then the keys. Drawn outside the scrolling area, so they stay put."""
         line = "   ".join(f"{self.accent(k)} {label}" for k, label in keys)
         plain = "   ".join(f"{k} {label}" for k, label in keys)
+        if self.width - 4 - len(plain) - len(right) < 3:
+            right = ""  # a narrow window: the keys matter more than the hint
         gap = max(self.width - 4 - len(plain) - len(right), 1)
         self._write(f"\0337\033[{self.rows - 1};1H\033[2K{self.dim('─' * self.width)}"
                     f"\033[{self.rows};1H\033[2K  {line}{' ' * gap}{self.dim(right)}\0338")
@@ -500,7 +524,7 @@ class Terminal:
             self.say(("Type b to go back, ? for help, f to send feedback or q to stop." if self.can_back else
                       "Type ? for help, f to send feedback or q to stop.") if step else "")
             if self.came_back:
-                self.say("You came back to this step. Your last answers are in [brackets]: press Enter to keep each one.")
+                self._plain("You came back to this step. Your last answers are in [brackets]: press Enter to keep each one.")
             return
         if self.fixed_size == (None, None):
             self._measure()  # the window may have changed size since the last step
@@ -537,7 +561,7 @@ class Terminal:
         if getattr(self, "header_args", None):
             self.header = self._header(*self.header_args)  # the width may have changed
         self._page(*self.keys)
-        for line in self.screen[-self._region():]:
+        for line in self._lines()[-self._region():]:
             self._write(line + "\n")
 
     def popup(self, title, text):
@@ -567,7 +591,7 @@ class Terminal:
             body.pop()
         room = max(self.rows - 10, 4)
         pages = [body[i:i + room] for i in range(0, len(body), room)] or [[""]]
-        behind = [ANSI.sub("", line) for line in self.header + self.screen[-self._region():]]
+        behind = [ANSI.sub("", line) for line in self.header + self._lines()[-self._region():]]
         behind += [""] * (self.rows - 2 - len(behind))
         edge = lambda text: self._c("36", text)  # noqa: E731
         answer = ""
@@ -606,37 +630,43 @@ class Terminal:
         if not self.fancy:
             self.say(f"\n{title}")
             for label, value in rows:
-                self.say(f"{label}: {value}")
+                self._plain(f"{label}: {value}", indent=2)
             return
-        label_w = max(len(label) for label, _ in rows) + 2
-        inner = self.width - 4
-        top = f"─ {title} "
-        self.say("")
-        self.say(self._c(colour, "╭" + top + "─" * (inner + 2 - len(top)) + "╮"))
-        for label, value in rows:
-            lines = textwrap.wrap(str(value), inner - label_w) or [""]
-            for i, line in enumerate(lines):
-                left = (label if i == 0 else "").ljust(label_w)
-                self.say(self._c(colour, "│") + " " + self.dim(left) + line.ljust(inner - label_w) + " " + self._c(colour, "│"))
-        self.say(self._c(colour, "╰" + "─" * (inner + 2) + "╯"))
+
+        def render(width):
+            label_w = min(max(len(label) for label, _ in rows) + 2, max(width // 3, 8))
+            inner = width - 4
+            top = f"─ {title} "
+            out = ["", self._c(colour, "╭" + top + "─" * max(inner + 2 - len(top), 0) + "╮")]
+            for label, value in rows:
+                lines = textwrap.wrap(str(value), inner - label_w) or [""]
+                for i, line in enumerate(lines):
+                    left = (label[:label_w - 1] if i == 0 else "").ljust(label_w)
+                    out.append(self._c(colour, "│") + " " + self.dim(left) + line.ljust(inner - label_w) + " " + self._c(colour, "│"))
+            out.append(self._c(colour, "╰" + "─" * (inner + 2) + "╯"))
+            return out
+        self._show(render)
 
     def ok(self, text):
-        self.say(f"  {self.good('✔')} {text}" if self.fancy else text)
+        if not self.fancy:
+            self._plain(text)
+            return
+        self._show(lambda width: [(f"  {self.good('✔')} " if i == 0 else "    ") + line
+                                  for i, line in enumerate(textwrap.wrap(text, width - 6) or [""])])
 
     def warn(self, text):
         if not self.fancy:
-            self.say(text)
+            self._plain(text)
             return
-        for i, line in enumerate(textwrap.wrap(text, self.width - 6) or [""]):
-            self.say(f"  {self.warn_colour('⚠')} {line}" if i == 0 else f"    {line}")
+        self._show(lambda width: [(f"  {self.warn_colour('⚠')} " if i == 0 else "    ") + line
+                                  for i, line in enumerate(textwrap.wrap(text, width - 6) or [""])])
 
     def note(self, text):
         """A paragraph, wrapped to the width and set in from the box."""
         if not self.fancy:
-            self.say(text)
+            self._plain(text)
             return
-        for line in textwrap.wrap(text, self.width - 4):
-            self.say(f"  {line}")
+        self._show(lambda width: [f"  {line}" for line in textwrap.wrap(text, width - 4)])
 
     # Questions ----------------------------------------------------------------------------------------------
 
@@ -679,28 +709,31 @@ class Terminal:
         return False
 
     def _options(self, options, defaults, start=0):
-        """Options are text, or (name, about) pairs set in two columns."""
-        name_w = max((len(o[0]) for o in options if isinstance(o, tuple)), default=0) + 2
+        """Options are text, or (name, about) pairs: in two columns when the names are short, otherwise the name on
+        its line and the about under it. Each wraps inside the width, again whenever the window changes size."""
+        names = [o[0] for o in options if isinstance(o, tuple)]
         for i, o in enumerate(options, 1):
             if i <= start:
                 continue
-            text = f"{o[0]}: {o[1]}" if isinstance(o, tuple) else o
             if not self.fancy:
-                self.say(f"  {i}. {text}")
+                self._plain(f"  {i}. " + (f"{o[0]}: {o[1]}" if isinstance(o, tuple) else o), indent=5)
                 continue
             mark = self.accent("●") if i - 1 in defaults else " "
-            if isinstance(o, tuple) and name_w <= 30:  # the about column wraps under itself, inside the width
-                about = textwrap.wrap(o[1], self.width - 8 - name_w) or [""]
-                text = o[0].ljust(name_w) + self.dim(about[0])
-                text += "".join("\n" + " " * (8 + name_w) + self.dim(more) for more in about[1:])
-            elif isinstance(o, tuple):  # long names: the name on its line, the about wrapped under it
-                about = textwrap.wrap(o[1], self.width - 10)
-                text = o[0] + "".join("\n" + " " * 8 + self.dim(more) for more in about)
-            else:  # plain text wraps inside the width, set in under itself
-                lines = textwrap.wrap(text, self.width - 8) or [""]
-                text = lines[0] + "".join("\n" + " " * 8 + more for more in lines[1:])
-            text = re.sub(r"\(recommended[^)]*\)|\(your last answer\)", lambda m: self.good(m.group(0)), text)
-            self.say(f"  {mark} {self.accent(str(i).rjust(2))}  {text}")
+            self._show(lambda width, o=o, i=i, mark=mark: self._option_lines(o, i, mark, names, width))
+
+    def _option_lines(self, o, i, mark, names, width):
+        name_w = max((len(n) for n in names), default=0) + 2
+        green = lambda s: re.sub(r"\(recommended[^)]*\)|\(your last answer\)", lambda m: self.good(m.group(0)), s)  # noqa: E731
+        lead = f"  {mark} {self.accent(str(i).rjust(2))}  "
+        if isinstance(o, tuple) and name_w <= min(30, width // 3):  # two columns: the about wraps under itself
+            about = textwrap.wrap(o[1], width - 8 - name_w) or [""]
+            return [lead + green(o[0].ljust(name_w)) + self.dim(about[0])] + [" " * (8 + name_w) + self.dim(m) for m in about[1:]]
+        if isinstance(o, tuple):  # long names: the name on its line, the about wrapped under it
+            name = textwrap.wrap(o[0], width - 8) or [""]
+            return ([lead + green(name[0])] + [" " * 8 + green(m) for m in name[1:]]
+                    + [" " * 8 + self.dim(m) for m in textwrap.wrap(o[1], width - 10)])
+        lines = textwrap.wrap(o, width - 8) or [""]
+        return [lead + green(lines[0])] + [" " * 8 + green(m) for m in lines[1:]]
 
     def _title(self, question):
         self.part = question.strip()  # the question being asked, for feedback
@@ -708,7 +741,8 @@ class Terminal:
 
     def choose(self, question, options, default=1, help_key=None):
         """Numbered options; returns the index (0-based)."""
-        self.say(f"\n  {question}" if self.fancy else f"\n{question}")
+        self.say("")
+        self.note(question)
         self._options(options, {default - 1})
         while True:
             answer = self._read(f"Your choice [{default}]: ", help_key, self._title(question)) or str(default)
@@ -719,11 +753,11 @@ class Terminal:
     def choose_many(self, question, options, defaults, help_key=None, allow_none=False):
         """Numbered options, several at once (1,3,4); returns the indexes chosen. A long list on a short screen
         shows what fits, and m shows the rest. With allow_none, 0 (or Enter when none is ticked) chooses none."""
-        lead = "  " if self.fancy else ""
-        self.say(f"\n{lead}{question} Type the numbers, separated by commas" + (", or 0 for none." if allow_none else "."))
+        self.say("")
+        self.note(f"{question} Type the numbers, separated by commas" + (", or 0 for none." if allow_none else "."))
         fits = len(options)
         if self.fancy:
-            fits = max(min(len(options), self._region() - len(self.screen) - 4), 4)
+            fits = max(min(len(options), self._region() - len(self._lines()) - 4), 4)
         self._options(options[:fits], set(defaults))
         if fits < len(options):
             self.say("  " + self.dim(f"{len(options) - fits} more: type m to see them"))
@@ -907,8 +941,8 @@ class Terminal:
             self.say(line)
         url, short = report.link()
         self.say("")
-        self.say("To send it, open this link in a browser on any device. GitHub opens a new issue with the report "
-                 "filled in, and you send it from your own GitHub account:")
+        self.note("To send it, open this link in a browser on any device. GitHub opens a new issue with the report "
+                  "filled in, and you send it from your own GitHub account:")
         self.say(url)
         if short:
             self.say("The link holds a shorter report. Save to a file keeps the whole report.")
@@ -1183,7 +1217,7 @@ def add_found_apps(api, term, state):
     """Move from apps you already run: the apps found on this computer, added to Starboard."""
     items = api.call("GET", "/api/discover").get("items", [])
     if not items:
-        term.say("No apps were found on this computer that are not in Starboard already. Add them later in "
+        term.note("No apps were found on this computer that are not in Starboard already. Add them later in "
                  "Starboard, Settings, Manage apps, Search for new apps.")
         term.text("Press Enter to carry on")
         return True
@@ -1499,7 +1533,7 @@ def step_drives(api, term, state):
                 if re.sub(r"[^A-Za-z0-9]", "", typed).upper() == d["ends"]:
                     confirm[d["by_id"]] = d["ends"]
                     break
-                term.say(f"That is not {d['ends']}. Type it as it is on the drive's label, or q to stop.")
+                term.note(f"That is not {d['ends']}. Type it as it is on the drive's label, or q to stop.")
     if not term.yes_no("Make these changes now? sudo asks for this computer's password", False, help_key="pool"):
         term.note("Nothing was changed. Make the pool later on System, Storage, Pool.")
         return True
@@ -1573,8 +1607,9 @@ def step_alerts(api, term, state):
         last["url"] = url
     last["kind"] = kind + 1
     state["alerts"] = last
-    health = term.yes_no("Check each disk's health every 30 minutes? It is set up at the end and asks for this "
-                         "computer's password once.", state.get("host", {}).get("health", True), help_key="health")
+    term.note("Disk health: a small script reads each disk's health report every 30 minutes, so Starboard can warn you "
+              "before a disk fails. It is set up at the end and asks for this computer's password once.")
+    health = term.yes_no("Check each disk's health?", state.get("host", {}).get("health", True), help_key="health")
     state.setdefault("host", {})["health"] = health
     return True
 
