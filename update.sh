@@ -78,7 +78,10 @@ fi
 
 if git merge-base --is-ancestor "$CURRENT" "$WANT" 2>/dev/null; then
   say "What changed"
-  git log --oneline --no-decorate "$CURRENT..$WANT" | head -n 30
+  # -n, not | head: head stops reading early, and with pipefail git's broken pipe would stop the update.
+  git log --oneline --no-decorate -n 30 "$CURRENT..$WANT"
+  more=$(( $(git rev-list --count "$CURRENT..$WANT") - 30 ))
+  [ "$more" -le 0 ] || echo "... and $more more. The release notes list them in plain words."
 fi
 
 restart() {

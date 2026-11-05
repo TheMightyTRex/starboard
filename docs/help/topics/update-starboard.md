@@ -90,6 +90,23 @@ If you only want to know whether an update is out, without installing it, run `.
 ## If it does not work
 
 - **"Already up to date":** you have the newest release. Nothing changed.
+- **It stops just after "What changed", and nothing is updated:** versions up to 0.9.0 stop there when more than 30
+  changes came since your version. Nothing has changed yet. In the Starboard folder, save a copy of your settings,
+  then update by hand, with the version you want in place of `v0.9.0`:
+
+  ```bash
+  tar -czf backups/starboard-data-before-update.tar.gz data
+  ```
+
+  ```bash
+  git checkout --quiet v0.9.0
+  ```
+
+  ```bash
+  docker compose up -d --build
+  ```
+
+  Starboard is back within a minute. From the next version, `./update.sh` works again however much has changed.
 - **"Stopped: files in this folder have been changed":** a file that came with Starboard was edited. Move any changes
   you want to keep somewhere else, then put the files back as they were with this command, and run `./update.sh` again:
 

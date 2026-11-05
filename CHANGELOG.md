@@ -7,6 +7,11 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **Updating after a long gap:** `./update.sh` stopped just after "What changed" when more than 30 changes had come
+  since your version. It now lists 30 and says how many more. Until you have this version, Update Starboard in the help
+  has the steps to update by hand.
+
 ## [0.9.0] (5 November 2026)
 
 The Run first script, one order for both set-ups, and a security review of the set-up.
