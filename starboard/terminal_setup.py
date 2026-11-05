@@ -13,6 +13,7 @@ Standard library only.
 """
 import argparse
 import getpass
+import hashlib
 import http.client
 import json
 import os
@@ -112,11 +113,26 @@ PATTERNS = [
 ]
 
 
-def redact(text, secrets=()):
-    """Takes out what was typed as an answer (longest first), then anything that looks private."""
+def fingerprint(value):
+    """What the set-up keeps of an answer typed to it: its length and a SHA-256 hash, never the answer itself."""
+    return len(value), hashlib.sha256(value.encode()).hexdigest()
+
+
+def redact(text, typed=()):
+    """Takes out what was typed as an answer (longest first), then anything that looks private. typed holds
+    fingerprints (or plain values, which are fingerprinted here): every stretch of the text the length of an answer
+    is hashed and compared, so the answers themselves are never kept or searched for."""
     out = str(text or "")
-    for value in sorted({s for s in secrets if s and len(s) >= 4}, key=len, reverse=True):
-        out = out.replace(value, "[your answer]")
+    prints = {fingerprint(t) if isinstance(t, str) else t for t in typed if t}
+    for size in sorted({n for n, _ in prints if n >= 4}, reverse=True):
+        hashes = {h for n, h in prints if n == size}
+        i = 0
+        while i + size <= len(out):
+            if hashlib.sha256(out[i:i + size].encode()).hexdigest() in hashes:
+                out = out[:i] + "[your answer]" + out[i + size:]
+                i += len("[your answer]")
+            else:
+                i += 1
     for pattern, label in PATTERNS:
         out = re.sub(pattern, label, out)
     for name, label in ((_user(), "[user]"), (socket.gethostname().split(".")[0], "[computer]")):
@@ -361,7 +377,7 @@ class Terminal:
         self.drawn = False        # whether the scroll area and menu are set up
         self.step = (None, "")    # (number, name) of the step shown, for feedback
         self.part = ""            # the question being asked, for feedback
-        self.typed = set()        # answers typed to the set-up and hidden ones: never in a report
+        self.typed = set()        # fingerprints of answers typed to the set-up and hidden ones: never in a report
         self.problem = None       # the last thing that failed at this step: r reports it
         self.last_error = None    # Starboard's reply to the last failed call, or the apps' start log
         self.plain_asked = False  # plain lines because the person asked (STARBOARD_PLAIN or --plain)
@@ -628,7 +644,8 @@ class Terminal:
                 continue
             if low in extra:
                 return low
-            self.typed.add(answer)
+            if not re.fullmatch(r"[\d,\s]*|[ynq?bfmr]", answer.strip().lower()):  # menu numbers and keys are not private
+                self.typed.add(fingerprint(answer))
             return answer
 
     def _feedback_key(self, low):
@@ -729,7 +746,7 @@ class Terminal:
                 continue
             if keep and not answer:
                 return None
-            self.typed.add(answer)
+            self.typed.add(fingerprint(answer))
             return answer
 
     def failed(self, line, problem):
@@ -1042,7 +1059,7 @@ def step_password(api, term, state):
     if os.path.exists(token_file):
         with open(token_file) as f:
             token = f.read().strip()
-        term.typed.add(token)  # never in a feedback report
+        term.typed.add(fingerprint(token))  # never in a feedback report
         term.heading("Your password", num("Your password"))
         term.note("Choose the password for Starboard. You use it to sign in from any device. No setup code is needed: "
                   "you are on the server itself. Type ? for help.")
