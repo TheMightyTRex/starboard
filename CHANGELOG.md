@@ -7,6 +7,13 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **What is new in Reelix:** on **Apps**, **Updates**, **What is new** beside **Update** lists the changes in a
+  waiting Reelix update, from Reelix's own changelog, under Added, Changed, Fixed and the other kinds of change.
+  After Reelix's version goes up, a notice on the Apps page and on Updates says so, with **What is new** for the
+  versions it skipped. The changelog is downloaded only when you open What is new, and kept for 6 hours. Find
+  out more in **Update your apps**.
+
 ## [0.7.7] (4 November 2026)
 
 Lighter, from the performance review (DASH-79); each change measured before and after. Measured, not done: the

@@ -19,7 +19,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -418,6 +418,11 @@ class Handler(BaseHTTPRequestHandler):
             while chunk := f.read(1 << 20):
                 self.wfile.write(chunk)
 
+    def with_changes(self, result):
+        """Marks the apps whose changelog Starboard can read, and notes a newer version since the last look."""
+        changes.observe(self.app.config.data_dir, result.get("items", []))
+        return result
+
     def error(self, status, message, **extra):
         self.json(status, {"error": message, **extra})
 
@@ -799,14 +804,37 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, {"available": False, "items": [], "containers": []})
                 ordered = cfg.data["services"]
                 if path == "/api/containers" and method == "GET":
-                    return self.json(200, containers.apps(ordered))
+                    return self.json(200, self.with_changes(containers.apps(ordered)))
                 if path == "/api/containers/check" and method == "POST":
-                    return self.json(200, containers.check(ordered))
+                    return self.json(200, self.with_changes(containers.check(ordered)))
                 if path == "/api/containers/update" and method == "POST":
                     ids = self.body().get("ids")
                     if not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
                         return self.error(400, "Choose the apps to update")
-                    return self.json(200, containers.update(ordered, ids))
+                    return self.json(200, self.with_changes(containers.update(ordered, ids)))
+            # What is new in an app, from its own changelog (Reelix): before an update and after one.
+            if path == "/api/app-changes/notices" and method == "GET":
+                return self.json(200, {"notices": changes.notices(cfg.data_dir)})
+            if path == "/api/app-changes/seen" and method == "POST":
+                changes.seen(cfg.data_dir, str(self.body().get("app", "")))
+                return self.json(200, {"ok": True})
+            if path == "/api/app-changes" and method == "GET":
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                wanted = q.get("app", [""])[0]
+                notice = next((n for n in changes.notices(cfg.data_dir) if n["app"] == wanted), None)
+                image = notice and notice["image"]
+                if not image:
+                    service = cfg.service(wanted)
+                    found = service and containers.available() and containers.match(service, containers.containers())
+                    image = found and found["image"]
+                if not image:
+                    return self.error(404, "Starboard cannot find this app's container")
+                try:
+                    return self.json(200, changes.between(image, q.get("from", [""])[0], q.get("to", [""])[0]))
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except OSError:
+                    return self.error(502, "Starboard could not download the changelog. Try again later")
             if path == "/api/extras" and method == "GET":
                 return self.json(200, dict(app.jobs.status(), importing=app.importing, import_result=app.import_result,
                                            history=migrate.status(cfg.data_dir, cfg.data["services"])))

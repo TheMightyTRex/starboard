@@ -90,6 +90,35 @@ const summary = await page.locator("#updates-summary").textContent();
 const label = (await page.locator("#check-updates").textContent()).trim();
 check("DASH-50", "the Updates button says Check until the first check", /Not checked/.test(summary) ? label === "Check" : /Last checked/.test(summary) ? label === "Check again" : true, `${label} / ${summary}`);
 
+// APP-01: What is new in Reelix, from its changelog (the example server's made-up Reelix: seen at 0.7.0, now 0.7.1,
+// with 0.7.2 waiting)
+console.log("\n== APP-01 What is new in Reelix");
+await open("apps-updates.html");
+const rxNotice = page.locator(".app-change", { hasText: "Reelix is updated to 0.7.1" });
+check("APP-01", "Apps, Updates shows Reelix's notice after its version went up", await rxNotice.count() === 1);
+await open("index.html");
+check("APP-01", "and so does the Apps page", await page.locator(".app-change", { hasText: "Reelix is updated to 0.7.1" }).count() === 1);
+await page.locator(".app-change").getByRole("button", { name: "What is new in Reelix" }).click();
+const rxPanel = page.locator("#side-panel");
+await rxPanel.locator("h3").first().waitFor({ timeout: 5000 }).catch(() => {});
+const afterHeads = await rxPanel.locator("h3").allTextContents();
+check("APP-01", "the notice opens the changes from 0.7.0 to 0.7.1 only", afterHeads.join() === "Version 0.7.1", afterHeads.join());
+check("APP-01", "entries are text, with bold and code kept", await rxPanel.locator("li strong", { hasText: "Large libraries:" }).count() === 1);
+await page.keyboard.press("Escape");
+await open("apps-updates.html");
+await page.click("#check-updates");
+await page.locator("#updates").getByRole("button", { name: "What is new in Reelix" }).waitFor({ timeout: 5000 }).catch(() => {});
+await page.locator("#updates").getByRole("button", { name: "What is new in Reelix" }).click();
+await rxPanel.locator("h3").first().waitFor({ timeout: 5000 }).catch(() => {});
+const beforeHeads = await rxPanel.locator("h3").allTextContents();
+const types = await rxPanel.locator("h4").allTextContents();
+check("APP-01", "before updating, What is new lists the waiting 0.7.2", beforeHeads.join() === "Version 0.7.2", beforeHeads.join());
+check("APP-01", "under the change types, in order", types.join() === "Added,Fixed", types.join());
+await page.keyboard.press("Escape");
+await page.locator(".app-change").getByRole("button", { name: "Close the notice about Reelix" }).click();
+await open("apps-updates.html");
+check("APP-01", "a closed notice stays closed", await page.locator(".app-change").count() === 0);
+
 // FB-01: Snaglist's Send feedback, saved in Starboard
 console.log("\n== FB-01 Send feedback (Snaglist)");
 const fbBefore = (await api("/api/config")).ux_notes;

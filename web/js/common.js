@@ -410,6 +410,60 @@ async function openReleaseNotes(opener) {
   } catch (e) { panel.body.replaceChildren(el("p", { text: e.message })); }
 }
 
+// What is new in an app Starboard updates (Reelix), from the app's own changelog: the versions between the one
+// installed and the newest, in the same look as Starboard's release notes. Built as text, never as HTML.
+function changeParts(parts) {
+  return parts.map(([kind, text]) => kind === "strong" ? el("strong", { text }) : kind === "code" ? el("code", { text }) : text);
+}
+
+function changeItems(items) {
+  return el("ul", {}, items.map((i) => el("li", {}, ...changeParts(i.parts), i.items.length ? changeItems(i.items) : null)));
+}
+
+function appChanges(result, level = 3) {
+  if (!result.versions.length) return [el("p", { text: `Nothing in ${result.app}'s changelog for these versions.` })];
+  return result.versions.map((v) => el("section", { class: "release-notes", "aria-label": `${result.app} ${v.version}` },
+    el(`h${level}`, { text: `Version ${v.version}` }),
+    el("p", { class: "small muted", text: v.withdrawn ? `Released ${v.date}, then withdrawn` : `Released ${v.date}` }),
+    v.summary.length ? el("p", {}, ...changeParts(v.summary)) : null,
+    ...v.sections.flatMap((s) => [el(`h${level + 1}`, { text: s.type }), changeItems(s.items)])));
+}
+
+async function openAppChanges({ app, name, from = "", to = "", opener }) {
+  const title = `What is new in ${name}`;
+  const panel = sidePanel({ title, opener, wide: true, body: [el("p", { class: "muted", text: "Loading…" })] });
+  try {
+    const r = await api(`/api/app-changes?${new URLSearchParams({ app, from, to })}`);
+    const span = r.from && r.to ? `From ${r.from} to ${r.to}` : r.to ? `Version ${r.to}` : `Newer than ${r.from}`;
+    panel.body.replaceChildren(el("p", { class: "muted" }, `${span}, from ${r.app}'s changelog. `,
+      el("a", { href: r.source, target: "_blank", rel: "noopener noreferrer" }, "The whole changelog",
+        el("span", { class: "visually-hidden", text: " (opens in a new tab)" })), "."), ...appChanges(r));
+  } catch (e) { panel.body.replaceChildren(el("p", { text: e.message })); }
+}
+
+// After an app's version goes up (seen on Apps, Updates): a notice with What is new, until it is closed.
+async function appChangeNotices() {
+  const main = $("#main .page");
+  if (!main) return;
+  let list = [];
+  try { list = (await api("/api/app-changes/notices")).notices; } catch { return; }
+  for (const n of list) {
+    const id = `app-change-${n.app}`;
+    if (document.getElementById(id)) continue;
+    const box = el("div", { class: "notice app-change", id, role: "status" }, icon("circle-arrow-up"),
+      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${n.name} is updated to ${n.to}` }),
+        el("p", { text: `It was ${n.from}. Its changelog says what is new.` })),
+      el("div", { class: "app-change__actions" }, el("button", { type: "button", class: "btn", onclick: (e) => openAppChanges({ app: n.app, name: n.name, from: n.from, to: n.to, opener: e.currentTarget }) },
+        "What is new", el("span", { class: "visually-hidden", text: ` in ${n.name}` })),
+      el("button", { type: "button", class: "icon-btn", "aria-label": `Close the notice about ${n.name}`, onclick: () => {
+        api("/api/app-changes/seen", { method: "POST", body: { app: n.app } }).catch(() => {});
+        box.remove();
+        $("#main h1")?.focus?.();
+      } }, icon("x", 20))));
+    main.prepend(box);
+  }
+}
+
 // After an upgrade: with something to choose, a notice opens the upgrade guide (or waits, with Remind me later);
 // with nothing to choose, the upgrade is marked as seen and the notes stay under the version.
 function upgradeNotice(upgrade) {

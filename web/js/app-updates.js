@@ -48,8 +48,13 @@ function statusCell(row) {
 
 function actionCell(row) {
   if (!row.update || jobItem(row)) return null;
-  return el("button", { type: "button", class: "btn btn--compact", // in a dense table; "Update all" is the page's one primary
+  // What is new: the changes in the waiting update, from the app's own changelog (Reelix).
+  const news = row.changelog ? el("button", { type: "button", class: "btn btn--compact",
+    onclick: (e) => openAppChanges({ app: row.id, name: row.name, from: row.container?.version || "", to: row.latest || "", opener: e.currentTarget }) },
+    "What is new", el("span", { class: "visually-hidden", text: ` in ${row.name}` })) : null;
+  const update = el("button", { type: "button", class: "btn btn--compact", // in a dense table; "Update all" is the page's one primary
     disabled: busy(), onclick: () => runUpdate([row]) }, "Update", el("span", { class: "visually-hidden", text: ` ${row.name}` }));
+  return news ? el("div", { class: "updates-actions" }, news, update) : update;
 }
 
 function tableFor(rows, caption) {
@@ -130,6 +135,7 @@ async function refresh() {
     data = await api("/api/containers");
     if (!data.available) return showUnavailable();
     render();
+    if (!busy()) appChangeNotices(); // the versions were just compared, so a finished update shows its notice
   } catch (e) {
     $("#updates-summary").textContent = e.message;
   }

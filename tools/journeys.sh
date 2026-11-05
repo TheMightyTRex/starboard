@@ -2,7 +2,7 @@
 # Browser journeys against made-up data: tools/journeys.sh
 # Starts tools/screenshots/example_server.py (nothing real is read) and runs tools/journeys/journeys.mjs in the
 # Playwright image: Manage apps, text that looks like code, the content policy, a saved key that must never come
-# back, phone width on every page, and that every page script parses (TEST-PLAN USE-01, USE-02, SEC-07, SEC-12, SEC-13). Run it before each
+# back, phone width on every page, and that every page script parses (TEST-PLAN USE-01, USE-02, SEC-07, SEC-12, SEC-13, APP-01). Run it before each
 # release. Needs Docker and network access (the first run downloads the Playwright image).
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -11,7 +11,7 @@ PLAYWRIGHT="1.63.0"
 work="$(mktemp -d)"
 trap 'kill "$server" 2>/dev/null || true; rm -rf "$work"' EXIT
 
-python3 tools/screenshots/example_server.py "$work/data" "$PORT" > "$work/server.log" 2>&1 &
+EXAMPLE_CONTAINERS=1 python3 tools/screenshots/example_server.py "$work/data" "$PORT" > "$work/server.log" 2>&1 &
 server=$!
 for _ in $(seq 1 30); do grep -q READY "$work/server.log" 2>/dev/null && break; sleep 1; done
 grep -q READY "$work/server.log" || { cat "$work/server.log"; echo "The example server did not start" >&2; exit 1; }
