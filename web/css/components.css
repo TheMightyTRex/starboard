@@ -1407,6 +1407,36 @@
   .table .numeric {
     text-align: right;
   }
+  /* Tables that line up: several tables one after another (tasks by category, a menu by section) keep the
+     same columns, whatever their content. Give each table the same <colgroup>: the named widths below for
+     short columns, and no width for the column that takes the rest. */
+  .table--fixed {
+    table-layout: fixed;
+  }
+  .table--fixed th {
+    white-space: normal;
+  }
+  .table--fixed td {
+    overflow-wrap: anywhere;
+  }
+  .table--fixed .col-id {
+    width: 8rem;
+  }
+  .table--fixed .col-date {
+    width: 11rem;
+  }
+  .table--fixed .col-state {
+    width: 13rem;
+  }
+  .table--fixed .col-number {
+    width: 7rem;
+  }
+  .table--fixed .col-quarter {
+    width: 25%;
+  }
+  .table--fixed .col-third {
+    width: 33%;
+  }
   /* Notice: a message in the page. Icon and words, not colour alone. */
   .notice {
     display: grid;
