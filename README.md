@@ -1,9 +1,21 @@
 # Starboard
 
-A lightweight, accessible dashboard for smaller home media servers. It uses very little processor time and
-memory (about 16 MB while idle, measured in [Testing and system use](docs/TESTING.md)), so your server's power goes to your apps. It shows every app and whether it is
-running, searches Sonarr, Radarr, Lidarr and Readarr at once and adds what you find, and lists downloads, what
-is coming up and how the server is doing.
+**A complete media server, set up from one place, light enough for an old laptop or a Raspberry Pi.**
+
+Starboard sets up and runs a whole home media server: the apps that find, download and sort your films, series,
+music, books and audiobooks, the apps that play them, and the server underneath. You set it up in a browser or,
+on a server with no desktop, entirely in the terminal. Then you run everything from one accessible dashboard.
+
+- **Lightweight first.** Starboard itself idles in about 16 MB of memory and almost no processor time
+  ([Testing and system use](docs/TESTING.md)). A whole recommended media server, Starboard with qBittorrent,
+  SABnzbd, Jellyfin and Audiobookshelf, used about 290 MB at rest on a clean Debian test machine, before any
+  films were added. Every piece of background work can be switched off or slowed down.
+- **One simple set-up, complete.** The set-up asks what you want (films, series, music, books, audiobooks, Live TV),
+  picks the apps, folders and settings for it, checks every step, starts the apps and connects them to each other.
+- **Accessible to everyone.** Built to WCAG 2.2 AA: keyboard first, screen readers, text up to 175%, high contrast,
+  and a plain terminal mode for software that reads text aloud.
+- **Runs on what you have.** 64-bit Intel and AMD, 64-bit ARM such as a Raspberry Pi 4 or 5, and 32-bit ARM, with
+  Docker, or with Python and systemd and no Docker at all.
 
 **New to home servers?** The [help centre](docs/help/README.md) explains everything in plain steps: start with
 [Install Starboard on a Linux computer](docs/help/guides/install-on-a-linux-computer.md) or
@@ -11,6 +23,58 @@ is coming up and how the server is doing.
 [what you need to run Starboard](docs/help/topics/what-you-need.md).
 
 ![Apps, in the Health first design](docs/screenshots/apps.png)
+
+## Set it up your way: in the browser or in the terminal
+
+**In the browser.** Install Starboard with one command, open it from any phone or computer at home, and the
+set-up guide takes it from there. **Install apps** builds a complete media server for you: say what you want, and
+it chooses the apps, the folders and the ports, explains what each app does, writes one Compose file, starts the
+apps when you say so, and talks you through connecting them. It can join several drives into one pool, and point
+the new apps at the media folders your old ones already use.
+
+**In the terminal, with no browser at all.** For a server with no desktop and no second device, run
+`./install.sh --terminal`, and every set-up question is asked in the terminal instead: your password (typed
+hidden), the apps for your media server with their folders and VPN details, and the hours downloads may run.
+
+- Each step has a heading box, a progress bar and a menu on the bottom line, which stay in place while only the
+  lines between them scroll. It fits any window, and draws itself again when the window changes size.
+- Enter takes the recommended answer, **b** goes back a step with your answers kept, **?** opens help over the
+  step, and **q** stops with nothing changed.
+- **f** sends feedback about the step you are on. A computer that is not online yet can show the report as a QR
+  code drawn in the terminal: scan it with your phone to send it from there.
+- `STARBOARD_PLAIN=1` gives plain numbered lines that never redraw, for screen readers.
+
+| | |
+|---|---|
+| ![The terminal set-up at 80 by 24: the heading box and progress bar at the top, the menu on the bottom line, and the step between them](docs/screenshots/terminal-setup.jpg) | ![Feedback from the terminal: a QR code drawn in the terminal, with the link under it](docs/screenshots/terminal-feedback-qr.jpg) |
+| **The terminal set-up** in an 80 by 24 window | **Feedback** sent as a QR code |
+
+## Reelix
+
+[Reelix](https://github.com/demonzoned/Reelix) is one app that finds, downloads and sorts films, series, music and
+books, and takes requests: the work of Radarr, Sonarr, Lidarr, Readarr, Prowlarr and Seerr, in under 40 MB of
+memory. Starboard shows Reelix like any other app, with its queue, what is coming up and its health, and before
+Reelix updates, **What is new** lists the changes from Reelix's own changelog.
+
+The plan is for Starboard and Reelix to install together from one set-up: Starboard installs Reelix in its own
+container, sets it up through Reelix's own API, and then shows everything it does. Until then, add Reelix in
+**Settings, Apps, Manage apps** like any other app. Reelix is a separate project with its own licence (GPL-3.0);
+Starboard talks to it over its API only.
+
+## Works with the apps you already have
+
+Starboard finds the apps already running on your server and adds them, with their API keys when it may. **Install
+apps** can install any of the ones marked "can install".
+
+| What for | Apps |
+|---|---|
+| Finding and downloading | Reelix, Sonarr, Radarr, Lidarr, Readarr (and Bookshelf, its maintained version), Prowlarr, Kapowarr, Whisparr (can install Sonarr, Radarr, Lidarr, Bookshelf, Prowlarr and Kapowarr) |
+| Download apps and VPN | qBittorrent, SABnzbd, Transmission, Deluge, NZBGet, and Gluetun for a VPN (can install qBittorrent, SABnzbd and Gluetun) |
+| Watching and listening | Jellyfin, Plex, Emby, Audiobookshelf, Navidrome, Kavita, Komga, Calibre-Web, Storyarr (can install Jellyfin, Audiobookshelf and Storyarr) |
+| Requests and users | Seerr, Jellyseerr, Overseerr, Wizarr, Jellystat, Tautulli (can install Seerr, Wizarr and Jellystat) |
+| Subtitles and tidying | Bazarr, Profilarr, Decluttarr, Janitorr, Unpackerr, FlareSolverr, Tdarr (can install all) |
+| Live TV | Dispatcharr (can install), and Starboard's own free Live TV channels and guides for Jellyfin |
+| The rest of the server | Dozzle (can install), Portainer, Uptime Kuma, Homepage, Homarr, Grafana, Pi-hole, AdGuard Home, Home Assistant, Immich, Nextcloud, Paperless, Syncthing, Vaultwarden |
 
 ## Screenshots
 
@@ -61,6 +125,8 @@ Lightweight comes first. Every change to Starboard has to keep it small and quie
 7. **You choose what runs.** Settings, Performance shows Starboard's own use, offers presets (Small server,
    Balanced, Everything, Custom) and lets you switch off, or slow down, every piece of background work.
 8. **Accessible to everyone.** WCAG 2.2 AA, built on the shared component library.
+
+## Everything it does
 
 - **Every page has its own address:** `/index.html` (Apps), `/search.html`, `/downloads.html`,
   `/upcoming.html`, `/system.html`, and Settings as `/settings.html` (Apps), `/settings-general.html`,
