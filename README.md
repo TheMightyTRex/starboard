@@ -4,20 +4,22 @@
 
 ## Quick start
 
-Install Linux, with or without a desktop, then run one command: the **Run first script**. It checks the computer,
-installs Docker and anything else missing after you say yes, downloads Starboard and starts its installer. Type `a`
-at its first question for accessible mode, which carries on through the whole installation.
-
-**With a desktop: set up in the browser.** Open a terminal and run the command below. When the installer finishes,
-the set-up page opens in your browser by itself, with the setup code filled in:
+Start with the **Run first script**. On any Linux computer, with or without a desktop, open a terminal and run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
 ```
 
-**With no desktop: set up in the terminal.** On the server, or connected to it over SSH, run the same command. It
-sees there is no desktop and asks every set-up question in the terminal instead: your password, your apps and your
-download hours. To choose the terminal yourself:
+It checks the computer, installs Docker and anything else missing after you say yes, downloads Starboard and
+starts its installer. Type `a` at its first question for accessible mode, which carries on through the whole
+installation.
+
+**With a desktop: set up in the browser.** When the installer finishes, the set-up page opens in your browser by
+itself, with the setup code filled in.
+
+**With no desktop: set up in the terminal.** On the server, or connected to it over SSH, the script sees there is
+no desktop and asks every set-up question in the terminal instead: your password, your apps and your download
+hours. To choose the terminal yourself:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash -s -- --terminal
