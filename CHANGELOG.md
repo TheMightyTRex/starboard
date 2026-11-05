@@ -1,31 +1,52 @@
 # Changelog
 
-## 0.7.7 (4 November 2026)
+All notable changes to Starboard are listed here, newest first. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), with dates written as in the TRex Design System.
+Version numbers follow [Semantic Versioning](https://semver.org/). Before version 1.0.0, a patch release may also
+add features.
 
-Lighter, from the performance review (DASH-79); each change measured before and after.
+## [Unreleased]
+
+## [0.7.7] (4 November 2026)
+
+Lighter, from the performance review (DASH-79); each change measured before and after. Measured, not done: the
+memory a weekly Live TV build leaves behind (25 MB to 54 MB) comes back once heavy jobs run in their own
+short-lived process, the next step of DASH-79.
+
+### Changed
 
 - **Pages open faster:** HTTP/1.1 keep-alive with Nagle off, so a page and its files share one connection, and
   idle connections wait 10 seconds. Pages, scripts and styles link the CSS, scripts, icons and font with the
   linked file's hash, added when served, and those links are kept by the browser for a year. A first visit took
   10.5 ms of server processor and now 4.7 ms; a revisit 10.3 ms and 10 requests, now 1.7 ms and 3 requests.
 - **Live TV guides** are downloaded to a temporary file and read as they unpack, and each finished entry is
-  dropped: a made-up 147 MB guide peaked at 197 MB, now 36 MB. A DOCTYPE line is accepted (entity definitions are
-  still refused), so the Samsung TV Plus and Pluto TV guides load again. They had failed every hour, with every
-  stream tested again each time (559 seconds and 20 seconds of processor an hour); the hourly check now does
-  nothing. A guide that fails waits 12 hours before the next try.
+  dropped: a made-up 147 MB guide peaked at 197 MB, now 36 MB.
 - **The image** compiles Starboard's code at build time (start-up about 430 ms to 204 ms), and every
   `__pycache__` is left out of the build.
 - **Smaller:** the processor model is read once, the temperature sensors are found every 10 minutes, the upgrade
   summary is kept until it changes, the listener wakes every 5 seconds instead of twice a second, and the health
   check runs every 60 seconds.
-- **Security:** Python's own error answers (such as 501 for a request method Starboard does not handle) carry the
-  same security headers as every other answer, found by OWASP ZAP; with a test.
-- Measured, not done: the memory a weekly Live TV build leaves behind (25 MB to 54 MB) comes back once heavy jobs
-  run in their own short-lived process, the next step of DASH-79.
 
-## 0.7.6 (4 November 2026)
+### Fixed
 
-- **A new menu, in three levels.** A side menu beside every page has the Screen logo with Starboard underneath,
+- **Live TV guides:** a DOCTYPE line is accepted (entity definitions are still refused), so the Samsung TV Plus
+  and Pluto TV guides load again. They had failed every hour, with every stream tested again each time (559
+  seconds and 20 seconds of processor an hour); the hourly check now does nothing. A guide that fails waits 12
+  hours before the next try.
+
+### Security
+
+- **Error answers:** Python's own error answers (such as 501 for a request method Starboard does not handle)
+  carry the same security headers as every other answer, found by OWASP ZAP; with a test.
+- **Checks:** Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint
+  and CodeQL ran on this release. ZAP's two signed-in warnings were false alarms, explained in
+  `docs/SECURITY-AND-TESTS.md`.
+
+## [0.7.6] (4 November 2026)
+
+### Added
+
+- **A new menu, in three levels:** a side menu beside every page has the Screen logo with Starboard underneath,
   Search, then five sections: Library, Discover, Activity, System and Settings. The level 1 menu along the
   top holds a section's pages, and the level 2 menu under it holds a page's own tabs, only when it has them.
   On phones the side menu is hidden and the menu drawer lists the sections with their pages. Every page
@@ -39,61 +60,110 @@ Lighter, from the performance review (DASH-79); each change measured before and 
 - **Places for what Reelix will fill:** the Library (TV, Films, Radio, Books, Audiobooks), Trending,
   Recently finished, Wanted, History and Settings, Reelix have their pages in the menu, saying they come
   with Reelix.
+
+### Changed
+
 - **The help and the app's own text** name the new places, such as **Settings**, then **Apps**, then
   **Jellyfin**. What Starboard is has a new part, Find your way around.
+
+### Removed
+
 - **Shelf** no longer adds its own icon rail, because every design now has the side menu.
 
-## 0.7.5 (3 November 2026)
+### Security
+
+- **Checks:** Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint
+  and CodeQL ran on this release. They found nothing to fix; ZAP's two warnings were false alarms, explained in
+  `docs/SECURITY-AND-TESTS.md`.
+
+## [0.7.5] (3 November 2026)
+
+### Added
 
 - **Send feedback** (Settings, General, Testing) replaces Note issues. It uses
   [Snaglist](https://github.com/TheMightyTRex/snaglist): report a problem, suggest something or check a page for
   accessibility problems, then open it as an issue on Starboard's GitHub page or save it in Starboard. Saved
   reports, and the older notes, are listed under Testing with Mark fixed, Remove and Download all.
+
+### Changed
+
 - **Errors show where they happened:** a problem saving a setting, renaming a category or running an action
   now shows beside that control, in words, and clears on the next try. An error with nothing on the page to
   belong to is an error toast that stays until you close it (it used to fade like an information toast).
 - **Apps, Updates:** the button says Check until the first check, then Check again.
-- **Limits:** the compose files and the service for `--native` cap Starboard at 512 MB of memory and 200
-  processes, so a fault cannot take the whole server's (Docker Bench for Security, 3 November 2026). A watch
-  history file can now be up to 80 MB (was 512 MB): reading one takes about 4.5 times its size, and 80 MB is
-  more than 250,000 films and episodes.
-- **Security (CodeQL):** a saved copy's name is length-checked and matched only one way, so it cannot make the
-  check slow; a header value with a line break is never sent; certificate checks need TLS 1.2 or newer. Each has
-  a test. The other 15 alerts are explained in `docs/SECURITY-AND-TESTS.md` and dismissed with reasons.
+- **Watch history:** a watch history file can now be up to 80 MB (was 512 MB): reading one takes about 4.5 times
+  its size, and 80 MB is more than 250,000 films and episodes.
 
-## 0.7.4 (3 November 2026)
+### Removed
+
+- **Note issues:** Send feedback takes its place, and the older notes are listed with the new reports under
+  Testing.
+
+### Security
+
+- **Limits:** the compose files and the service for `--native` cap Starboard at 512 MB of memory and 200
+  processes, so a fault cannot take the whole server's (Docker Bench for Security, 3 November 2026).
+- **CodeQL:** a saved copy's name is length-checked and matched only one way, so it cannot make the check slow;
+  a header value with a line break is never sent; certificate checks need TLS 1.2 or newer. Each has a test.
+  The other 15 alerts are explained in `docs/SECURITY-AND-TESTS.md` and dismissed with reasons.
+- **Send feedback:** its reports are saved only with a key given to a signed-in browser, which stops working
+  when that browser signs out. The content policy lets in only Snaglist's own stylesheet.
+- **Checks:** Trivy, OWASP ZAP, Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. What each
+  found is in `docs/SECURITY-AND-TESTS.md`.
+
+## [0.7.4] (3 November 2026)
+
+### Added
 
 - **Help centre** (`docs/help`): 53 topics, 8 guides and 7 basics articles for people new to home servers, with
   install guides for a Linux computer and a Raspberry Pi, and what you need for each set-up. Help in the footer
   of every page opens it.
 - **Reset a forgotten password:** `./reset-password.sh` on the server (or `touch data/reset-password` and a
   restart with the ready-made image) removes the password, signs everyone out and starts with a new setup code.
-- **Watch history:** applying it lists the films and episodes not in Jellyfin yet, and a second run no longer
-  counts episodes it applied before as missing. A history file over 512 MB is refused before it uploads.
-- **Restore:** backups from before 0.6.0 are brought up to date; a design or choice that no longer exists goes
-  to the default; an app of a kind Starboard no longer knows becomes a plain link.
-- **Messages:** confirmations are cards in the corner (up to three, with Close); problems use the information
-  style. Settings pages show "Saved at" and the time beside Save name, Save where alerts go, Save address and
-  Change password. Words follow the shared content guide: settings are activated and deactivated.
-- **Security:** Pillow 13.0.0 (58 known problems in 11.3.0), no pip in the image, logos read only as PNG, JPEG,
-  GIF, WebP, BMP or ICO. The sign-in form posts, so the password never lands in the address. New
-  Cross-Origin-Resource-Policy and Cross-Origin-Opener-Policy headers. Live TV stream checks never open a
-  `file:` link from a playlist. `tools/security-scan.sh` runs Trivy, ZAP, Gitleaks, Bandit, ShellCheck and
-  Hadolint; results in `docs/SECURITY-AND-TESTS.md`.
-- **Fixed:** the Disk health page script (broken since 0.7.0); the Apps page at 175% text on a phone; the
-  ready-made image's Docker access, which needs the socket's group (`group_add` in `compose.image.yaml`); the
-  address hint in Manage apps now suggests 127.0.0.1 and the port.
+- **Watch history:** applying it lists the films and episodes not in Jellyfin yet. A history file over 512 MB is
+  refused before it uploads.
 - **Tests:** backup and migration round trips, browser journeys (`tools/journeys.sh`), install tests in VMs on
   Ubuntu, Debian, Fedora and 64-bit ARM (`tools/vm/vm.sh`), and `docs/TESTING.md` with measured system use.
 - **Testing aid:** Note issues (Settings, General) adds the shared Note an issue button to every page.
 
-## 0.7.3 (2 November 2026)
+### Changed
+
+- **Messages:** confirmations are cards in the corner (up to three, with Close); problems use the information
+  style. Settings pages show "Saved at" and the time beside Save name, Save where alerts go, Save address and
+  Change password. Words follow the shared content guide: settings are activated and deactivated.
+
+### Fixed
+
+- **Watch history:** a second run no longer counts episodes it applied before as missing.
+- **Restore:** backups from before 0.6.0 are brought up to date; a design or choice that no longer exists goes
+  to the default; an app of a kind Starboard no longer knows becomes a plain link.
+- The Disk health page script (broken since 0.7.0).
+- The Apps page at 175% text on a phone.
+- The ready-made image's Docker access, which needs the socket's group (`group_add` in `compose.image.yaml`).
+- The address hint in Manage apps now suggests 127.0.0.1 and the port.
+
+### Security
+
+- **Pillow 13.0.0** (58 known problems in 11.3.0), no pip in the image, logos read only as PNG, JPEG, GIF, WebP,
+  BMP or ICO.
+- **Sign-in:** the sign-in form posts, so the password never lands in the address.
+- **Other sites:** new Cross-Origin-Resource-Policy and Cross-Origin-Opener-Policy headers.
+- **Live TV playlists:** stream checks never open a `file:` link from a playlist.
+- **Exact addresses:** an address that only starts like one of Starboard's own is now not found.
+- **Checks:** `tools/security-scan.sh` runs Trivy, ZAP, Gitleaks, Bandit, ShellCheck and Hadolint; results in
+  `docs/SECURITY-AND-TESTS.md`.
+
+## [0.7.3] (2 November 2026)
+
+### Fixed
 
 - **App cards:** the reply time sits on the right and takes only its own width, with a gap between the cells, so
   long versions such as Prowlarr's 2.7.0.5723 no longer run into it. On a very narrow card a version breaks
   after a dot, never inside a number. An unknown version shows nothing; an app that does not answer shows N/A.
 
-## 0.7.2 (2 November 2026)
+## [0.7.2] (2 November 2026)
+
+### Changed
 
 - **App cards (Health first and Tiles):** every card has the same rows in the same places. The status sits beside
   the name; then what the app is doing ("3 in the queue", "Nobody playing", "Nothing to report", "Cannot reach
@@ -102,90 +172,109 @@ Lighter, from the performance review (DASH-79); each change measured before and 
   ("Not known" and "No reply" when the app does not answer). Each card takes its rows from the grid, so cards
   side by side are the same height. The Open button is in the app's details.
 - **App logos** are shown on their own, without a tile (shared library); initials keep their tile.
+
+### Fixed
+
 - **Updates for test builds:** an image pinned to a test build such as `v0.4.9-dev.6`, which is not in its
   registry, is now offered the newest release (a test build counts as older than its release).
 
-## 0.7.1 (2 November 2026)
+## [0.7.1] (2 November 2026)
+
+### Changed
+
+- **Updates:** each app has its logo beside its name (no tile, as tall as the name and the line under it);
+  Installed and Latest are left-aligned; every category's table has the same column widths, so the
+  columns line up down the page; and each row's cells sit on the middle of the row.
+
+### Fixed
 
 - **Long API keys:** keys were cut to 200 characters when saved, so Audiobookshelf (whose keys are about 211
   characters) refused its key. Keys up to 2000 characters are now kept whole. If Audiobookshelf says the key is
   wrong, paste it again in Settings, Manage apps.
-- **Updates:** each app has its logo beside its name (no tile, as tall as the name and the line under it);
-  Installed and Latest are left-aligned; every category's table has the same column widths, so the
-  columns line up down the page; and each row's cells sit on the middle of the row.
 - **Log:** a connection that stayed idle until it timed out no longer writes an error to Docker's log.
 
-## 0.7.0 (2 November 2026)
+## [0.7.0] (2 November 2026)
 
-### Install apps, for people who have never set up a media server
-- **Start here:** what each app does (find, choose, download, sort, watch), how long it takes and what you need.
-  **Advanced settings** (a tick, remembered) shows every app in each group, the settings folder, user and group
-  numbers, time zone and the files; without it, the guide picks the apps and folders.
-- **Every step is checked**, with the problem shown by its field: at least one thing ticked (and a warning when
-  nothing can download), a full media folder path, numbers and time zone in Advanced settings, and the VPN.
-- **VPN** is its own step: provider (with a list of common ones), WireGuard or OpenVPN as a segmented choice, and
-  only that connection's fields, each saying where to find it. Only those fields are written to .env, and they
-  are required.
-- **Pool drive:** "Join several drives into one" opens a pop-up listing the mounted drives (from Disk health's
-  drive list, or typed in), and writes the mergerfs commands to run on the server. The pool becomes the media
-  folder. Nothing is erased.
-- **Check** sums up every step with a Change link to it; the files are behind a disclosure (open in Advanced).
-- **Connect your apps:** after starting, numbered steps with the exact hosts, ports and folders for qBittorrent,
-  SABnzbd, Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr, Jellyfin, Seerr and Bazarr (gluetun when they go through
-  the VPN).
-- **Storyarr** is offered by default (`ghcr.io/themightytrex/storyarr`, pinned, so Updates offers newer versions;
-  `STARBOARD_STORYARR_IMAGE=none` leaves it out), and Install apps writes `starboard-before-update/storyarr.sh`, a
-  database backup that runs before each update.
+### Added
 
-### Copy app settings (Settings, Manage apps)
-- From one Sonarr, Radarr or Lidarr into another of the same kind and major version: tags, custom formats,
-  quality profiles (format scores matched by name), root folders, download clients and remote path mappings,
-  naming and media management. A preview says what will be added, what is already there and what will be
-  replaced. Passwords the old app hides are asked for; without them a client is added switched off. Indexers:
-  add the new app in Prowlarr.
+- **Install apps, for people who have never set up a media server:**
+  - **Start here:** what each app does (find, choose, download, sort, watch), how long it takes and what you
+    need. **Advanced settings** (a tick, remembered) shows every app in each group, the settings folder, user
+    and group numbers, time zone and the files; without it, the guide picks the apps and folders.
+  - **Every step is checked**, with the problem shown by its field: at least one thing ticked (and a warning
+    when nothing can download), a full media folder path, numbers and time zone in Advanced settings, and the
+    VPN.
+  - **VPN** is its own step: provider (with a list of common ones), WireGuard or OpenVPN as a segmented choice,
+    and only that connection's fields, each saying where to find it. Only those fields are written to .env, and
+    they are required.
+  - **Pool drive:** "Join several drives into one" opens a pop-up listing the mounted drives (from Disk health's
+    drive list, or typed in), and writes the mergerfs commands to run on the server. The pool becomes the media
+    folder. Nothing is erased.
+  - **Check** sums up every step with a Change link to it; the files are behind a disclosure (open in
+    Advanced).
+  - **Connect your apps:** after starting, numbered steps with the exact hosts, ports and folders for
+    qBittorrent, SABnzbd, Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr, Jellyfin, Seerr and Bazarr (gluetun
+    when they go through the VPN).
+  - **Storyarr** is offered by default (`ghcr.io/themightytrex/storyarr`, pinned, so Updates offers newer
+    versions; `STARBOARD_STORYARR_IMAGE=none` leaves it out), and Install apps writes
+    `starboard-before-update/storyarr.sh`, a database backup that runs before each update.
+- **Copy app settings (Settings, Manage apps):** from one Sonarr, Radarr or Lidarr into another of the same kind
+  and major version: tags, custom formats, quality profiles (format scores matched by name), root folders,
+  download clients and remote path mappings, naming and media management. A preview says what will be added,
+  what is already there and what will be replaced. Passwords the old app hides are asked for; without them a
+  client is added switched off. Indexers: add the new app in Prowlarr.
+- **More detail, from the API gaps (DASH-19):**
+  - Apps: Check again in a slide-out checks that app only; Recent checks (the last 20, in memory); "Not
+    responding for 12 minutes"; the app's own warnings carry its id, when first seen and a How to fix it link.
+  - Downloads: Remove (optionally blocking the release) and Find another; the added date; all messages.
+  - Coming up: each item's overview and a link to its page in the app; Earlier and Later move a month at a time.
+  - Search: In the library links open the item in its app.
+  - Storage: the folder path and the disk (or pool members) it is on.
+  - Disk health: rpm, the self-test history, every SMART attribute, events with their time and a status icon,
+    and Download the full report.
+  - Backups: what a saved copy holds, and downloading it (password first); downloading a server backup through
+    a one-time link (streamed); earlier runs, what went in and what could not be read, when the server job
+    reports them.
+  - Settings: About shows when this version started.
+- **Upgrade now from Storyarr:** `apps-updates.html?app=storyarr` checks at once and goes to that row.
 
-### The API gaps (DASH-19)
-- Apps: Check again in a slide-out checks that app only; Recent checks (the last 20, in memory); "Not responding
-  for 12 minutes"; the app's own warnings carry its id, when first seen and a How to fix it link.
-- Downloads: Remove (optionally blocking the release) and Find another; the added date; all messages.
-- Coming up: each item's overview and a link to its page in the app; Earlier and Later move a month at a time.
-- Search: In the library links open the item in its app.
-- Storage: the folder path and the disk (or pool members) it is on.
-- Disk health: rpm, the self-test history, every SMART attribute, events with their time and a status icon, and
-  Download the full report.
-- Backups: what a saved copy holds, and downloading it (password first); downloading a server backup through a
-  one-time link (streamed); earlier runs, what went in and what could not be read, when the server job reports them.
-- Settings: renaming or removing a category is one save; About shows when this version started.
-- A wrong password in a dialog (or Install apps' Start) stays on the page: the server says `reason: "password"`.
+### Changed
 
-### Look and feel
 - **Slide-outs:** Display and accessibility is a slide-out; every slide-out header (and the phone menu's) is in
   the page background over a white or dark-surface body (library token `--color-slide-header`).
+- **Categories:** renaming or removing a category is one save.
+- **Wrong passwords:** a wrong password in a dialog (or Install apps' Start) stays on the page: the server says
+  `reason: "password"`.
+- **Raspberry Pi:** images for 32-bit Raspberry Pi (linux/arm/v7). Pillow is installed only where a ready-made
+  build exists.
 
-### Other
-- Upgrade now from Storyarr: `apps-updates.html?app=storyarr` checks at once and goes to that row.
-- Images for 32-bit Raspberry Pi (linux/arm/v7). Pillow is installed only where a ready-made build exists.
+## [0.6.0] (2 November 2026)
 
-## 0.6.0 (2 November 2026)
+### Added
 
 - **Listening progress (Settings, Audiobookshelf):** reads where everyone is in each audiobook from a Plex server
   (your own account, from libraries with book in their name or the Audnexus agent), a Jellyfin or Emby server
   (every user, from Books libraries) or another Audiobookshelf (every user). A book in several files becomes one
   position. Match each account to an Audiobookshelf user, then Apply now, or keep applying every hour so books get
   their progress once they are scanned in.
-- **Matching:** ASIN, then ISBN, then title and author (first author, ignoring punctuation and a leading The),
-  then the book's folder. A position from a copy of a different length is scaled to fit. Books not found are
-  listed, with their account.
-- **Safe by default:** progress a person already has in Audiobookshelf is never changed, and each book is
-  written once. The admin key makes a key that acts as one person, ends by itself after 15 minutes, and is
-  deleted as soon as that person's progress is written.
+  - **Matching:** ASIN, then ISBN, then title and author (first author, ignoring punctuation and a leading The),
+    then the book's folder. A position from a copy of a different length is scaled to fit. Books not found are
+    listed, with their account.
+  - **Safe by default:** progress a person already has in Audiobookshelf is never changed, and each book is
+    written once. The admin key makes a key that acts as one person, ends by itself after 15 minutes, and is
+    deleted as soon as that person's progress is written.
+
+### Changed
+
 - **Audiobookshelf app type:** its version on Apps, and an optional API key. Apps named Audiobookshelf move to the
   new type when you upgrade (settings schema 2; a backup is made first). The upgrade guide asks for the key.
 - **Install apps:** the Listening progress offer is ready, and points to Settings, Audiobookshelf.
 
-## 0.5.6 (2 November 2026)
+## [0.5.6] (2 November 2026)
 
-From a design consistency review of Starboard and the shared component library (all 23 findings fixed):
+From a design consistency review of Starboard and the shared component library (all 23 findings fixed).
+
+### Changed
 
 - **Names:** "Check again" for every refresh (it was also Check now and Check for updates); Storage's job is
   "Sort by type". "Run now" stays for server jobs.
@@ -199,94 +288,102 @@ From a design consistency review of Starboard and the shared component library (
 - **Charts:** the pool bar's labels no longer stretch; chart and ring text follow Text size; the second line on
   System charts is dashed to match its legend; media colours come from the library's new series tokens, with a
   high contrast set.
-- **Layout:** no focus box on wizard headings; Performance's four presets in one row with their text lined up;
-  space in the Jellyfin panel; headings at one level are one size; the guides show their Settings tab as current;
-  an odd stat tile spans the row on phones; small legend rows no longer look muted.
 - **Code:** old copies of library rules removed (rows, notices, panel heads, charts, stacks, focus); settings
   helpers moved into the library; Performance's wording fixed ("1 minute", "1 answering a page").
 
-## 0.5.5 (2 November 2026)
+### Fixed
 
-### Logs
+- **Layout:** no focus box on wizard headings; Performance's four presets in one row with their text lined up;
+  space in the Jellyfin panel; headings at one level are one size; the guides show their Settings tab as current;
+  an odd stat tile spans the row on phones; small legend rows no longer look muted.
+
+## [0.5.5] (2 November 2026)
+
+### Added
 
 - **System, Logs:** what Starboard did (start-up, sign-ins, settings and apps changing, alerts, download hours,
   updates, storage readings, background jobs) and every problem it met, newest first, with Everything,
   Problems and Detailed, a search, Download and Delete logs.
+  - Personal details are removed before anything is written, in both modes: passwords, API keys and tokens, IP
+    addresses, host and computer names, email addresses, user names in folder paths and the dashboard's name.
 - **Settings, General, Logs:** keep logs for 7 days to a year (60 by default); older days are removed once a day,
   with no thread of its own. **Detailed logging** (Off, For 24 hours, Until I turn it off) adds each page request
   and each call to your apps, and the full detail of errors.
 - **Report a problem:** turn on detailed logging, do the thing again, then Copy the details (versions, how it
   runs, what is switched on, the kinds of apps, recent entries) and Open a new issue on GitHub, which uses a new
   issue template.
-- Personal details are removed before anything is written, in both modes: passwords, API keys and tokens, IP
-  addresses, host and computer names, email addresses, user names in folder paths and the dashboard's name.
-- Docker's own log now holds only start-up and problems, and both Compose files cap it at 3 files of 1 MB.
+
+### Changed
+
+- **Docker's own log** now holds only start-up and problems, and both Compose files cap it at 3 files of 1 MB.
 
 ### Fixed
 
-- System, Overview: the charts' history failed to load since 0.4.0 (found by the new log).
+- **System, Overview:** the charts' history failed to load since 0.4.0 (found by the new log).
 
-## 0.5.4 (2 November 2026)
+## [0.5.4] (2 November 2026)
 
-- System, Overview: Jellyfin's status chips sit beside its name, centred on the heading's line, with the
+### Changed
+
+- **System, Overview:** Jellyfin's status chips sit beside its name, centred on the heading's line, with the
   version on the right. The pattern (`.title-status`) and the status icon after a name (`.status-icon`) are now
   in the shared component library, with a "where status goes" rule for both apps.
 
-## 0.5.3 (2 November 2026)
+## [0.5.3] (2 November 2026)
+
+### Added
 
 - **Ready-made image** for amd64 and arm64 at `ghcr.io/themightytrex/starboard` (each version, its minor
-  version and `latest`), published by a workflow for every release tag. `compose.image.yaml` runs it with no build.
+  version and `latest`), published by a workflow for every release tag. `compose.image.yaml` runs it with no
+  build.
+
+### Changed
+
 - The README's clone address and the licence now name the GitHub account (TheMightyTRex) and author
   (TheMightyTRexUK). The privacy check allows those two names and still catches everything else.
 
-## 0.5.2 (2 November 2026)
+## [0.5.2] (2 November 2026)
+
+### Fixed
 
 - An upgrade from 0.4.0 or earlier now opens the upgrade guide with the 0.5.0 questions (new apps and Storage).
   Before, it assumed 0.5.0 and skipped them.
 
-## 0.5.1 (2 November 2026)
+## [0.5.1] (2 November 2026)
+
+### Fixed
 
 - Upgrade available looks for the newest version tag (what ./update.sh installs), and never offers an older
   version as an upgrade. Before, GitHub's last published release (0.1.8) could be offered.
 
-## 0.5.0 (2 November 2026)
+## [0.5.0] (2 November 2026)
 
-### Finding apps
+### Added
 
 - **Search for new apps** (Settings, Manage apps): Starboard tries the usual port of about 40 apps, and every
   port a container publishes, on this computer only. It recognises each app by its page, leaves out the ones you
   have, and adds the ones you tick. With Docker access it reads the API keys of Sonarr, Radarr, Lidarr, Readarr,
   Prowlarr, SABnzbd and Seerr from their own settings files, if you tick "Fill in API keys for me".
-- It runs only when you press the button: no background work.
-
-### Storage charts
-
+  - It runs only when you press the button: no background work.
 - **System, Storage** shows each pool as a bar (how full) and a ring (what fills it) by type: TV, films,
   audiobooks, music, books and comics, downloads waiting and everything else, with free space. Also each drive
   in the pool (fullest first), space used over time with a forecast of when it fills, and the biggest series and
   films. Every chart has a table view.
-- Sorting by type reads every file name, so Settings, Performance (and the set-up and upgrade guides) choose
-  when: only when you press Work it out (the default), when you open Storage if over a day old, every night or
-  every week at 3 am, or off. It now reads a pool once, skipping its drives, and stays on one file system: on
-  the test server, 105 seconds for 30 TB, down from reading it twice.
-- A daily record of used space (on; nothing noticeable) feeds the forecast. Storage page updates: only when you
-  press Check again (the default), or every minute or 5 minutes while the page is open.
-- The stat tiles count a pool once, not once for the pool and again for its drives.
-
-### Install apps
-
+  - Sorting by type reads every file name, so Settings, Performance (and the set-up and upgrade guides) choose
+    when: only when you press Work it out (the default), when you open Storage if over a day old, every night or
+    every week at 3 am, or off. It now reads a pool once, skipping its drives, and stays on one file system: on
+    the test server, 105 seconds for 30 TB, down from reading it twice.
+  - A daily record of used space (on; nothing noticeable) feeds the forecast. Storage page updates: only when you
+    press Check again (the default), or every minute or 5 minutes while the page is open.
 - **Install apps** (Settings, Manage apps, or the first step of the set-up guide): tick groups such as Movies,
   TV, Music, Ebooks, Audiobooks, Comics, Watching, Downloads, VPN and Subtitles, and change the apps inside each.
   Apps already running are left alone; ports in use move to the next free one; each app shows its memory use.
-- Starboard writes `data/stack/compose.yaml` and `.env` (private, with database passwords made up for you),
-  shows both, and keeps older copies. With Docker access, Start asks for your password, then makes the folders
-  and starts the apps; without it, it gives you the one command to run.
-- It finds the folders your other apps already use for media and offers them, so nothing is moved. It offers
-  watch history from Plex or Emby into a new Jellyfin; listening progress and copying app settings are next.
-- Apps that need their own settings file first (Unpackerr, Decluttarr, Janitorr) are written but not started.
-
-### Set-up and upgrades
-
+  - Starboard writes `data/stack/compose.yaml` and `.env` (private, with database passwords made up for you),
+    shows both, and keeps older copies. With Docker access, Start asks for your password, then makes the folders
+    and starts the apps; without it, it gives you the one command to run.
+  - It finds the folders your other apps already use for media and offers them, so nothing is moved. It offers
+    watch history from Plex or Emby into a new Jellyfin; listening progress and copying app settings are next.
+  - Apps that need their own settings file first (Unpackerr, Decluttarr, Janitorr) are written but not started.
 - **Set-up guide** after the first password: apps, API keys, Jellyfin extras, download hours, alerts and how
   much Starboard does, with a summary and Change links at the end. Steps that do not apply are left out. Run it
   again from Settings, General.
@@ -297,13 +394,22 @@ From a design consistency review of Starboard and the shared component library (
   with nothing to choose do not interrupt.
 - Releases follow one process, in `docs/RELEASING.md`; `tools/release_notes.py` writes the GitHub notes.
 
-## 0.4.0 (2 November 2026)
+### Fixed
 
-### Performance
+- **System, Storage:** the stat tiles count a pool once, not once for the pool and again for its drives.
+
+## [0.4.0] (2 November 2026)
+
+A full security check found no critical issues. Its fixes are listed under Security.
+
+### Added
 
 - **Settings, Performance:** Starboard's own memory, processor and threads, measured live; four presets (Small
   server, Balanced, Everything, Custom); and every piece of background work with a switch, how often it runs
   and what it costs. Changing anything by hand makes it Custom.
+
+### Changed
+
 - Background threads exist only while their feature is on: history, watching, download hours and the Jellyfin
   jobs each start when turned on and end when turned off. With Small server, Starboard runs only its web server.
 - System history can be off, or every 1, 5 or 15 minutes (5 by default, was 1), and no longer reads each
@@ -311,9 +417,7 @@ From a design consistency review of Starboard and the shared component library (
   you choose, or Downloads only when you press Check again. Card numbers can be switched off.
 - The Plex database and XML code are loaded only when an import or a Live TV run needs them.
 
-### Security fixes
-
-From a full security check. No critical issues; these are fixed:
+### Security
 
 - A request with a negative size could make Starboard read without end and use up memory, signed out. Refused now.
 - Password guesses sent all at once got past the 5-attempt limit. Attempts are now counted before the check, and
@@ -329,26 +433,39 @@ From a full security check. No critical issues; these are fixed:
 - Installer: names with characters that would break .env or Compose files are refused. The disk health job
   writes in a private folder and never follows a planted link.
 
-## 0.3.4 (2 November 2026)
+## [0.3.4] (2 November 2026)
+
+### Added
 
 - Every setting that uses processor time or memory says what it costs, measured on a home server, so a small
   server can keep only what it needs. The access list on About and updates says the same for each item.
 
-## 0.3.3 (2 November 2026)
+## [0.3.3] (2 November 2026)
+
+### Changed
 
 - Live TV: logos the folder already serves are used as they are, not processed again.
 
-## 0.3.2 (2 November 2026)
+## [0.3.2] (2 November 2026)
+
+### Changed
 
 - Live TV: the guides refresh daily, but the channel lists are rebuilt (and every stream tested) only when a
   source's channel list changes, or once a week. Numbers and logos are redone only when a playlist changed.
+
+### Fixed
+
 - Watch history import: Jellyfin and Emby libraries are read 1,000 items at a time, so big libraries work.
 
-## 0.3.1 (2 November 2026)
+## [0.3.1] (2 November 2026)
+
+### Fixed
 
 - Jellyfin jobs: send Jellyfin's API key the way newer Jellyfin versions need it.
 
-## 0.3.0 (2 November 2026)
+## [0.3.0] (2 November 2026)
+
+### Added
 
 - **Settings, Jellyfin:** jobs moved in from the old launcher, each off until you turn it on.
   - **Live TV:** free channels and guides for Jellyfin (Free-TV, Samsung TV Plus, Pluto TV), Sky-style
@@ -356,23 +473,20 @@ From a full security check. No critical issues; these are fixed:
   - **Import watch history** into Jellyfin from a Plex database file, a Plex server, Emby, another Jellyfin or a
     history file, with account matching; applied once per item, and every hour if you choose.
   - **User defaults** for every Jellyfin user.
+
+### Changed
+
 - **Apps, Other services** lists Starboard's own jobs and whether each is on.
 - **Set-up** offers the Jellyfin jobs when it finds Jellyfin.
 - Pillow and the data sources are credited in THIRD-PARTY.md.
 
-## 0.2.0 (2 November 2026)
+## [0.2.0] (2 November 2026)
 
 Lightweight first: a dashboard for smaller servers that uses very little processor time and memory (about
 14 MB while idle). Every page now uses the component library shared with Storyarr.
 
-- **Lighter:** pages are compressed and the browser keeps them until they change; several tabs or devices
-  share one answer from each app; hidden tabs stop refreshing; posters come from your own apps, kept for a
-  week; background work starts only when needed.
-- **Installer:** explains each step, and asks before each kind of access (home network, Docker for app
-  updates, per-app use, folders for free space, Disk health). Run it again to change your answers.
-  Settings, About and updates lists what Starboard can access, with the switch or command to change each.
-- **Settings:** one column; Manage apps and the access list show each state as an icon beside the name;
-  a new Alerts page; Coming up and Download hours settings in General.
+### Added
+
 - **Alerts:** to ntfy, Gotify or a webhook when an app stops answering, a disk has a problem or gets full, a
   download is stuck, a backup fails or a certificate runs out; uptime history for each app; a weekly
   summary. Off until you turn it on.
@@ -385,24 +499,46 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   temperatures and the drive's own log; Read disks now; what is using the space; every drive; each app's
   processor and memory on Monitor; certificate expiry on Network.
 
-## 0.1.8 (2 November 2026)
+### Changed
+
+- **Lighter:** pages are compressed and the browser keeps them until they change; several tabs or devices
+  share one answer from each app; hidden tabs stop refreshing; posters come from your own apps, kept for a
+  week; background work starts only when needed.
+- **Installer:** explains each step, and asks before each kind of access (home network, Docker for app
+  updates, per-app use, folders for free space, Disk health). Run it again to change your answers.
+  Settings, About and updates lists what Starboard can access, with the switch or command to change each.
+- **Settings:** one column; Manage apps and the access list show each state as an icon beside the name;
+  a new Alerts page; Coming up and Download hours settings in General.
+
+## [0.1.8] (2 November 2026)
+
+### Added
 
 - Backup and restore: an option to include a rebuild prompt for an AI assistant with the server backup
   (the job is asked for `backup-with-prompt`). The page says what the server backup covers.
 
-## 0.1.7 (2 November 2026)
+## [0.1.7] (2 November 2026)
+
+### Added
 
 - Storage: each folder has a tag with its filesystem, such as ext4, NTFS or mergerfs.
 
-## 0.1.6 (2 November 2026)
+## [0.1.6] (2 November 2026)
 
-- Apps: the running and external access counts sit on the same row as Check again and Add an app, at the
-  same height, with their coloured edge: "20/20 running at 23:47", "0/4 external access".
+### Added
+
 - System, Backup and restore: download Starboard's settings as a file, restore from a file or from a copy
   Starboard saved, and start the server's own backup job and see its result and files. Downloading or
   restoring needs your password again.
 
-## 0.1.5 (2 November 2026)
+### Changed
+
+- Apps: the running and external access counts sit on the same row as Check again and Add an app, at the
+  same height, with their coloured edge: "20/20 running at 23:47", "0/4 external access".
+
+## [0.1.5] (2 November 2026)
+
+### Added
 
 - Apps has a sub-menu: Apps, Updates (each app's version, and whether Sonarr, Radarr, Lidarr, Readarr and
   Prowlarr have an update) and Other services (services with no web page; a service with no address can follow
@@ -416,16 +552,17 @@ Lightweight first: a dashboard for smaller servers that uses very little process
 - Disk health reads SMART reports saved by a small job on the server (`deploy/install-smart.sh`).
 - Your own folders and disks go in `compose.override.yaml`, which updates leave alone.
 
-## 0.1.4 (1 November 2026)
+## [0.1.4] (1 November 2026)
+
+### Changed
 
 - New logo, Tile board: three tiles and a star. In dark mode the star is lighter. Used in the header, the
   phone menu, the browser tab and the home-screen icon.
 
-## 0.1.3 (1 November 2026)
+## [0.1.3] (1 November 2026)
 
-- Looks like Storyarr: its colours, its icons (Lucide) and its square tabs. The main menu and every sub-menu
-  use the same tabs; on phones a menu drawer holds both.
-- Settings is four pages with a sub-menu: Apps, General, Security and Updates. Old links still work.
+### Added
+
 - The installer and the setup page ask you to name your dashboard. Change it in Settings, General.
 - Each app's own icon on its card, from the dashboard-icons collection. Starboard keeps a copy, so icons
   still show without the internet. Choose another icon in the app's settings.
@@ -433,23 +570,41 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   Dashboards and tools. New apps get a category chosen for them; change it in the app's settings. Health
   first still puts apps that are not responding at the top.
 - A footer on every page: "Starboard: v" and the version, a link to the GitHub repository and to Updates.
+
+### Changed
+
+- Looks like Storyarr: its colours, its icons (Lucide) and its square tabs. The main menu and every sub-menu
+  use the same tabs; on phones a menu drawer holds both.
+- Settings is four pages with a sub-menu: Apps, General, Security and Updates. Old links still work.
+
+### Security
+
 - The version is only shown to people who have signed in.
 
-## 0.1.2 (1 November 2026)
+## [0.1.2] (1 November 2026)
 
-- Fixed: `./update.sh` made the new version's files readable by you only, so the container could not start
+### Fixed
+
+- `./update.sh` made the new version's files readable by you only, so the container could not start
   and the roll-back failed the same way. The image now makes its files readable whatever the host's
   permissions, and the updater only keeps the backup private.
 
-## 0.1.1 (1 November 2026)
+## [0.1.1] (1 November 2026)
 
-- Passwords need 10 characters or more (was 12).
+### Added
+
 - Remember me on the sign-in and setup pages. Without it, you are signed out when the browser closes, or after
   a day. With it, you stay signed in for the number of days set in Settings, Security.
+
+### Changed
+
+- Passwords need 10 characters or more (was 12).
 - The setup code stays the same when Starboard restarts or updates, so the code the installer printed keeps
   working until a password is set.
 
-## 0.1.0 (1 November 2026)
+## [0.1.0] (1 November 2026)
+
+### Added
 
 - Apps, Search, Downloads, Coming up, System and Settings, each on its own page.
 - Search Sonarr, Radarr, Lidarr and Readarr at once and add what you find.
@@ -464,3 +619,37 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   turn them off in Settings, General. Apps saved as 127.0.0.1 open on the address your browser used, so they
   work from a phone.
 - Downloads show the download client's own state, so a paused client shows Paused.
+
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.7.7...HEAD
+[0.7.7]: https://github.com/TheMightyTRex/starboard/compare/v0.7.6...v0.7.7
+[0.7.6]: https://github.com/TheMightyTRex/starboard/compare/v0.7.5...v0.7.6
+[0.7.5]: https://github.com/TheMightyTRex/starboard/compare/v0.7.4...v0.7.5
+[0.7.4]: https://github.com/TheMightyTRex/starboard/compare/v0.7.3...v0.7.4
+[0.7.3]: https://github.com/TheMightyTRex/starboard/compare/v0.7.2...v0.7.3
+[0.7.2]: https://github.com/TheMightyTRex/starboard/compare/v0.7.1...v0.7.2
+[0.7.1]: https://github.com/TheMightyTRex/starboard/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/TheMightyTRex/starboard/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/TheMightyTRex/starboard/compare/v0.5.6...v0.6.0
+[0.5.6]: https://github.com/TheMightyTRex/starboard/compare/v0.5.5...v0.5.6
+[0.5.5]: https://github.com/TheMightyTRex/starboard/compare/v0.5.4...v0.5.5
+[0.5.4]: https://github.com/TheMightyTRex/starboard/compare/v0.5.3...v0.5.4
+[0.5.3]: https://github.com/TheMightyTRex/starboard/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/TheMightyTRex/starboard/compare/v0.5.1...v0.5.2
+[0.5.1]: https://github.com/TheMightyTRex/starboard/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/TheMightyTRex/starboard/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/TheMightyTRex/starboard/compare/v0.3.4...v0.4.0
+[0.3.4]: https://github.com/TheMightyTRex/starboard/compare/v0.3.3...v0.3.4
+[0.3.3]: https://github.com/TheMightyTRex/starboard/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/TheMightyTRex/starboard/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/TheMightyTRex/starboard/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/TheMightyTRex/starboard/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/TheMightyTRex/starboard/compare/v0.1.8...v0.2.0
+[0.1.8]: https://github.com/TheMightyTRex/starboard/compare/v0.1.7...v0.1.8
+[0.1.7]: https://github.com/TheMightyTRex/starboard/compare/v0.1.6...v0.1.7
+[0.1.6]: https://github.com/TheMightyTRex/starboard/compare/v0.1.5...v0.1.6
+[0.1.5]: https://github.com/TheMightyTRex/starboard/compare/v0.1.4...v0.1.5
+[0.1.4]: https://github.com/TheMightyTRex/starboard/compare/v0.1.3...v0.1.4
+[0.1.3]: https://github.com/TheMightyTRex/starboard/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/TheMightyTRex/starboard/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/TheMightyTRex/starboard/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/TheMightyTRex/starboard/releases/tag/v0.1.0

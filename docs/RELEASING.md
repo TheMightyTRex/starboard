@@ -7,15 +7,28 @@ guide and the notes on GitHub, so they always say the same thing.
 
 1. **Version.** Put the new number in `VERSION` (for example `0.5.0`).
 2. **Release entry.** Add the release to the end of `RELEASES` in `starboard/releases.py`:
-   - `added`, `changed` and `fixed`: one short title and one sentence each, in the content rules (British
-     English, sentence case, no em dashes, no contractions).
+   - `added`, `changed`, `deprecated`, `removed` and `fixed`: one short title and one sentence each, in the
+     content rules (British English, sentence case, no em dashes, no contractions). They are the same types as
+     the changelog, and the notes show them in that order. Leave out a type with nothing in it.
    - `security`: every security fix, one title and one sentence each, written so a person can judge it.
    - `review`: the upgrade guide steps worth choosing after this upgrade, from `apps`, `keys`, `jellyfin`,
      `hours`, `alerts`, `preset` and `names`. Leave it empty when nothing needs choosing: the upgrade then
      finishes on its own and the notes wait under the version in the footer.
    - `settings`: what changes in people's settings, and the way back (`./update.sh --to v<previous>`).
 3. **Notes.** Run `python3 tools/release_notes.py`. It writes `docs/releases/vX.Y.Z.md`.
-4. **Changelog.** Add the same release to the top of `CHANGELOG.md`, with more detail if it helps.
+4. **Changelog.** `CHANGELOG.md` follows the design system's changelog rules (`docs/CHANGELOGS.md` in the
+   design system). Each change goes under `## [Unreleased]` as it is made, under Added, Changed, Deprecated,
+   Removed, Fixed or Security, in that order, with every security fix under Security. At release time:
+   - rename `## [Unreleased]` to `## [X.Y.Z] (4 November 2026)`, with the release date written that way, and
+     add a new, empty `## [Unreleased]` above it;
+   - check it says the same as the release entry in `starboard/releases.py`, in the same types;
+   - at the end of the file, change the Unreleased link to compare from the new tag, and add the new version's
+     link under it:
+
+     ```markdown
+     [Unreleased]: https://github.com/TheMightyTRex/starboard/compare/vX.Y.Z...HEAD
+     [X.Y.Z]: https://github.com/TheMightyTRex/starboard/compare/v<previous>...vX.Y.Z
+     ```
 5. **Checks.** Run the tests (`python3 -m unittest discover -s tests`), the browser journeys
    (`tools/journeys.sh`), the help centre check (`python3 tools/check-help.py`), the security scans (`tools/security-scan.sh`) and
    `tools/check-private.sh`.
