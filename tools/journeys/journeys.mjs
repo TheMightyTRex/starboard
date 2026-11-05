@@ -9,7 +9,7 @@ const password = fs.readFileSync(process.env.PASSWORD_FILE, "utf8").trim();
 const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.html", "downloads.html", "downloads-requests.html",
   "upcoming.html", "system.html", "system-storage.html", "system-disks.html", "system-monitor.html", "system-network.html",
   "system-logs.html", "system-backup.html", "settings.html", "settings-general.html", "settings-security.html",
-  "settings-alerts.html", "settings-updates.html", "settings-performance.html", "settings-jellyfin.html",
+  "settings-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-performance.html", "settings-jellyfin.html",
   "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "upgrade.html",
   // The places Reelix will fill (placeholders for now)
   "library-tv.html", "library-tv-series.html", "library-films.html", "library-films-collections.html", "library-radio.html",

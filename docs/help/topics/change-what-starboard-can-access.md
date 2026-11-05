@@ -29,7 +29,7 @@ These apply at once:
   **Manage apps** button goes there. Read
   [Change or remove an app](change-or-remove-an-app.md).
 - **The dashboard-icons collection, for app icons** and **Posters on Coming up:** use the switch in the row on
-  **About and updates**.
+  **Settings**, **Updates**, **Update settings**.
 - **GitHub, for new Starboard versions:** use **Check GitHub for new releases**, under **Updates** on the same page.
 - **Pausing and resuming downloads, Watching in the background and alerts, and the Jellyfin and Audiobookshelf
   extras:** select **Change it** in the row to go to the page with the switch.
@@ -55,7 +55,7 @@ your folders for free space, and Disk health reports.
    [Install Starboard with the installer](install-with-the-installer.md) for what each question means.
 4. Wait for "Starboard is running". Starboard restarts with the new access. Your settings and password stay.
 
-On **About and updates**, each row that needs the installer also shows the exact command, such as
+On **Update settings**, each row that needs the installer also shows the exact command, such as
 `./install.sh --no-docker`, with a copy button. Running that command changes that one answer straight away and asks the
 other questions as usual.
 

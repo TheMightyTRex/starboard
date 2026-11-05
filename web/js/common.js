@@ -351,6 +351,13 @@ function setUpHeader() {
   window.addEventListener("resize", fit);
   SharedComponents.setupSearch();
   document.fonts?.ready.then(fit);
+  // Sign out beside the title on every Settings page (design system, Sign out); the phone menu has it too.
+  const head = $("#main-nav")?.getAttribute("aria-label") === "Settings" ? $(".page-head") : null;
+  if (head && !head.querySelector("[data-sign-out]")) {
+    let actions = head.querySelector(".actions");
+    if (!actions) { actions = el("div", { class: "actions" }); head.append(actions); }
+    actions.append(el("button", { type: "button", class: "btn", "data-sign-out": "" }, icon("log-out"), "Sign out"));
+  }
   $$("[data-sign-out]").forEach((b) => b.addEventListener("click", async () => {
     await api("/api/logout", { method: "POST" }).catch(() => {});
     location.href = "/login.html";

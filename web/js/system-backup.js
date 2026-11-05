@@ -230,7 +230,7 @@ async function restoreFromFile(file) {
     run: (password) => api("/api/backup/restore", { method: "POST", body: { password, backup } }),
   });
   if (!result) return;
-  showSettingsMessage("success", "Settings restored", `${result.apps} ${result.apps === 1 ? "app" : "apps"} from ${file.name}. The settings from before are in the saved copies below.`);
+  showSettingsMessage("success", "Settings restored", `${result.apps} ${result.apps === 1 ? "app" : "apps"} from ${file.name}. The settings from before are in the saved copies.`);
   loadSaved();
 }
 
@@ -291,9 +291,21 @@ async function loadSaved() {
     : [el("li", { class: "empty", text: "No saved copies yet. Starboard makes one before every restore and before an update changes the settings." })]));
 }
 
+// Settings, Updates, Restore: the command to go back names the version before this one.
+async function showGoBack() {
+  const box = $("#back-command");
+  try {
+    const r = await api("/api/releases");
+    const before = r.all.find((rel) => isNewer(r.current, rel.version));
+    if (before) box.querySelector("code").textContent = `./update.sh --to v${before.version}`;
+  } catch { /* keeps the example version */ }
+  box.append(copyButton(box.querySelector("code").textContent, "the command to go back"));
+}
+
 startPage().then((session) => {
   if (!session) return;
-  $("#download").addEventListener("click", download);
+  // The same script runs System, Backup and restore and Settings, Updates, Restore (no download or server there).
+  if ($("#back-command")) { showGoBack(); loadSaved(); }
   const picker = $("#restore-input");
   $("#restore-file").addEventListener("click", () => picker.click());
   picker.addEventListener("change", async () => {
@@ -302,6 +314,8 @@ startPage().then((session) => {
     if (file) await restoreFromFile(file);
     $("#restore-file").focus();
   });
+  if ($("#back-command")) return;
+  $("#download").addEventListener("click", download);
   loadServer();
   loadSaved();
 });

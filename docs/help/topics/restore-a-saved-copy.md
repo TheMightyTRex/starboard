@@ -3,7 +3,8 @@
 # Restore a saved copy of your settings
 
 Starboard saves a copy of its settings before every restore and before an update changes them. You can put
-one of those copies back from the Backup and restore page, with no file to find.
+one of those copies back from **Settings**, **Updates**, **Restore**, or from **System**, **Backup**, with no file to
+find.
 
 ## Before you begin
 
@@ -11,8 +12,9 @@ one of those copies back from the Backup and restore page, with no file to find.
 
 ## Steps
 
-1. Go to **System**, then **Backup**.
-2. Find **Copies Starboard saved**. The newest copy comes first. Each one shows when it was made and why:
+1. Go to **Settings**, **Updates**, then **Restore**. **Restore your settings** is open at the top. (On **System**,
+   **Backup**, the same list is under **Copies Starboard saved**.)
+2. Find the list of saved copies. The newest copy comes first. Each one shows when it was made and why:
    **Before a restore** or **Before an update changed the settings**.
 3. Select the date of a copy to see what it holds: how many apps, its categories and the apps' names.
 4. Select **Restore this copy**. You can also select **Restore** straight from the list.

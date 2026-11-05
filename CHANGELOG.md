@@ -7,7 +7,16 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Releases:** Settings, Updates, Releases shows every version in its own section, newest first. The one you have is
+  open; each shows how many changes of each type it has, then what was added, changed and fixed, in colour, and how to
+  go back.
+- **Restore:** Settings, Updates, Restore puts back a copy of your settings that Starboard saved, or one from a file,
+  and shows the command to go back to the version before.
+- **Sign out on every Settings page,** beside the page title.
+
 ### Changed
+- **About and updates is now Update settings,** one of three pages under Settings, Updates.
 - **Help opens the right article:** the Help button at the top of each page now opens the help centre article for
   that page, such as Check your disks' health on Disk health, instead of a general part of the help centre.
 - **The terminal uses a wide window evenly:** the Run first script and the terminal set-up draw in a column up to 100

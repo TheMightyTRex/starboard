@@ -61,7 +61,9 @@ MENU = [
         ("Alerts", "bell", [("settings-alerts.html", "Alerts", "bell")]),
         ("Performance", "gauge", [("settings-performance.html", "Performance", "gauge")]),
         ("Security", "shield-check", [("settings-security.html", "Security", "shield-check")]),
-        ("Updates", "circle-arrow-up", [("settings-updates.html", "About and updates", "info")]),
+        ("Updates", "circle-arrow-up", [("settings-updates.html", "Update settings", "sliders-horizontal"),
+                                         ("settings-releases.html", "Releases", "scroll-text"),
+                                         ("settings-restore.html", "Restore", "archive-restore")]),
     ]),
 ]
 HOME = "index.html"  # the logo opens it
@@ -107,6 +109,8 @@ HELP = {
     "settings-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
     "settings-security.html": ("README.md#security", "security"),
     "settings-updates.html": ("topics/update-starboard.md", "updating Starboard"),
+    "settings-releases.html": ("topics/update-starboard.md", "updating Starboard"),
+    "settings-restore.html": ("topics/restore-a-saved-copy.md", "restoring a saved copy of your settings"),
     "setup-guide.html": ("guides/set-up-your-dashboard.md", "setting up your dashboard"),
     "upgrade.html": ("topics/update-starboard.md", "updating Starboard"),
     "copy-settings.html": ("topics/copy-app-settings.md", "copying settings from one app to another"),

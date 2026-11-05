@@ -15,10 +15,13 @@ settings, installs the newest release and goes back to the version you had if th
 
 - The footer of every page shows Starboard's version. When a newer one is out, **Upgrade available** and the new
   version number appear beside it. Select it to go to **Settings**, **Updates**.
-- On **About and updates**, a notice says "Version 0.8.0 is out", for example, with a **Release notes** button that
+- On **Settings**, **Updates**, **Update settings**, a notice says "Version 0.8.0 is out", for example, with a **Release notes** button that
   says what changed.
 
-For this to work, **Check GitHub for new releases** must be active. It is on **About and updates**, under **Updates**.
+For this to work, **Check GitHub for new releases** must be active. It is on **Update settings**, under **Updates**.
+
+What changed in every version is on **Settings**, **Updates**, **Releases**: each release opens to show what was
+added, changed and fixed, and how to go back.
 
 ## Steps if you used the installer
 

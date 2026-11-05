@@ -108,7 +108,7 @@ When Starboard is running, the last lines look like this, with your own address 
 == Starboard is running
 On this computer: http://localhost:8095
 On your phone or other computers: http://192.168.1.20:8095
-What Starboard can access, and how to change it: Settings, About and updates.
+What Starboard can access, and how to change it: Settings, Updates, Update settings.
 Setup code (you need it once, to choose your password): <your setup code>
 To update later: ./update.sh
 ```
