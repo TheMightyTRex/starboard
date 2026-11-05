@@ -23,6 +23,8 @@
 #   --yes                 Do not ask: use the options above, and your last answers (or No) for the rest
 #   --terminal            Finish set-up here in the terminal (password, apps, download hours), with no browser:
 #                         for a server with no desktop. Run it again later with: python3 -m starboard.terminal_setup
+#   --plain               Plain lines with no boxes, colour or redrawing in the terminal set-up, for software that
+#                         reads text aloud (the same as STARBOARD_PLAIN=1)
 #
 # Your settings go in ./data and .env, which git ignores.
 set -euo pipefail
@@ -60,7 +62,8 @@ while [ $# -gt 0 ]; do
     --no-pool) POOL=0 ;;
     --yes) ASK=0 ;;
     --terminal) TERMINAL=1 ;;
-    -h|--help) sed -n '2,27p' "$0"; exit 0 ;;
+    --plain) export STARBOARD_PLAIN=1 ;;
+    -h|--help) sed -n '2,29p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
   shift

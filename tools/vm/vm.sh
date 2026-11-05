@@ -7,6 +7,8 @@
 #   tools/vm/vm.sh clean ubuntu       Delete that system's files (the downloaded image stays)
 #   tools/vm/vm.sh pool debian        Drive pools (DASH-87): a fresh system with five blank virtual drives; adds,
 #                                     keeps, erases, balances, parity, take-out, requests, then a restart
+#   tools/vm/vm.sh first debian       The Run first script on a bare system with no Docker: checks, installs what
+#                                     is missing, downloads this checkout and starts Starboard; then runs it again
 #
 # VM_TAG=name keeps this run's disk and process files apart, so two sessions can each test a copy of one system.
 # VM_DISKS="2G 3G 4G 2G 1G" adds blank virtual drives (serial numbers SBDISK0001 and up) to shell and test runs.
@@ -62,8 +64,15 @@ SSH=(ssh -q -i "$KEY" -p "$SSH_PORT" -o StrictHostKeyChecking=no -o UserKnownHos
 SCP=(scp -q -i "$KEY" -P "$SSH_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
 say() { printf '\n== %s\n' "$*"; }
 
-seed() { # cloud-init: a tester user with the key, Docker and git
-  local user="$DIR/user-data" seediso="$DIR/$SYSTEM-seed.iso"
+seed() { # cloud-init: a tester user with the key, Docker and git (with "bare": the user only)
+  local user="$DIR/user-data" seediso="$DIR/$SYSTEM-seed${1:+-$1}.iso"
+  if [ "${1:-}" = bare ]; then
+    printf '%s\n' "#cloud-config" "hostname: starboard-test" "users:" "  - name: tester" \
+      "    sudo: ALL=(ALL) NOPASSWD:ALL" "    shell: /bin/bash" "    ssh_authorized_keys: [$(cat "$KEY.pub")]" > "$user"
+    cloud-localds "$seediso" "$user"
+    echo "$seediso"
+    return
+  fi
   cat > "$user" <<EOF
 #cloud-config
 hostname: starboard-test
@@ -227,8 +236,55 @@ case "$ACTION" in
     [ "$failed" = 0 ]
     ;;
 
+  first)
+    if [ ! -f "$BASE" ]; then say "Downloading the $SYSTEM cloud image"; curl -fL --progress-bar -o "$BASE.part" "$URL"; mv "$BASE.part" "$BASE"; fi
+    rm -f "$RUN"
+    qemu-img create -q -f qcow2 -F qcow2 -b "$BASE" "$RUN" 12G
+    say "Starting a bare $SYSTEM with no Docker ($SPEED)"
+    boot "$RUN" -drive "file=$(seed bare),if=virtio,format=raw,readonly=on"
+    trap stop EXIT
+    wait_ssh $((WAIT * 2))
+    "${SSH[@]}" "cloud-init status --wait >/dev/null 2>&1 || true"
+    PASS=0; FAIL=0
+    check() { # check ID "what" command...
+      local id="$1" what="$2"; shift 2
+      if "$@" >/dev/null 2>&1; then echo "PASS $id $what"; PASS=$((PASS + 1)); else echo "FAIL $id $what"; FAIL=$((FAIL + 1)); fi
+    }
+    vm() { "${SSH[@]}" "$@"; }
+    not_vm() { ! vm "$@"; }
+    web() { curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:$WEB_PORT$1"; }
+    wait_web() { for _ in $(seq 1 120); do [ "$(web /healthz)" = 200 ] && return 0; sleep 5; done; return 1; }
+    RF="STARBOARD_REPO=~/starboard.bundle bash run-first.sh"
+
+    say "Copying the Run first script and this checkout ($(git rev-parse --short HEAD)) into the VM"
+    git bundle create -q "$DIR/starboard.bundle" HEAD
+    "${SCP[@]}" "$DIR/starboard.bundle" run-first.sh tester@127.0.0.1:
+
+    say "FIRST-01 check only, on a bare system"
+    check FIRST-01 "--check says something is missing" not_vm "$RF --check"
+    check FIRST-01 "--check changed nothing" not_vm "command -v docker"
+
+    say "FIRST-02 install what is missing, download, start the installer"
+    vm "$RF --yes --browser -- --yes" | tail -n 12 || echo "     That step failed: the checks below show what it broke"
+    check FIRST-02 "Docker installed" vm "command -v docker"
+    check FIRST-02 "Docker Compose installed" vm "docker compose version"
+    check FIRST-02 "Docker running" vm "systemctl is-active --quiet docker"
+    check FIRST-02 "tester allowed to use Docker" vm "getent group docker | grep -qw tester"
+    check FIRST-02 "Starboard downloaded" vm "test -d starboard/.git"
+    check FIRST-02 "Starboard starts and answers /healthz" wait_web
+    check FIRST-02 "setup code written" vm "test -s starboard/data/setup-token"
+
+    say "FIRST-03 run it again: nothing to install"
+    check FIRST-03 "--check says everything is here" vm "$RF --check"
+    check FIRST-03 "a second run starts the installer again" vm "$RF --yes --browser -- --yes | grep -q 'Starboard is running'"
+    check FIRST-03 "and Starboard still answers" wait_web
+
+    say "$SYSTEM Run first script: $PASS passed, $FAIL failed"
+    [ "$FAIL" = 0 ]
+    ;;
+
   clean)
-    rm -f "$READY" "$RUN" "$DIR/$SYSTEM-seed.iso" "$LOG" "$DIR/$SYSTEM"*-drive*.qcow2
+    rm -f "$READY" "$RUN" "$DIR/$SYSTEM-seed.iso" "$DIR/$SYSTEM-seed-bare.iso" "$LOG" "$DIR/$SYSTEM"*-drive*.qcow2
     echo "Removed the $SYSTEM VM files (the downloaded image stays: $BASE)"
     ;;
 

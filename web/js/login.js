@@ -34,6 +34,13 @@ startPage().then((session) => {
   if (session && !setup && session.needs_setup) location.replace("/setup.html");
   if (session && session.signed_in) location.replace("/index.html");
   if (setup && session && form.site_name && !form.site_name.value) form.site_name.value = session.site_name;
+  // get-starboard.sh opens this page with the code after #, which never leaves the browser; fill it in, then
+  // take it out of the address bar.
+  const given = /^#code=([A-Za-z0-9_-]{4,64})$/.exec(location.hash);
+  if (given) {
+    if (setup && form.token) form.token.value = given[1];
+    history.replaceState(null, "", location.pathname + location.search);
+  }
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearErrors(form);
