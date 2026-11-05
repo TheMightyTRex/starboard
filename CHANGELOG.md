@@ -7,10 +7,18 @@ add features.
 
 ## [Unreleased]
 
+## [0.9.1] (5 November 2026)
+
+Updating works again after a long gap.
+
 ### Fixed
 - **Updating after a long gap:** `./update.sh` stopped just after "What changed" when more than 30 changes had come
   since your version. It now lists 30 and says how many more. Until you have this version, Update Starboard in the help
   has the steps to update by hand.
+
+### Security
+- **Checks:** Trivy, OWASP ZAP (signed out), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release;
+  only update.sh and the help changed since 0.9.0's full checks.
 
 ## [0.9.0] (5 November 2026)
 
@@ -750,7 +758,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/TheMightyTRex/starboard/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/TheMightyTRex/starboard/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/TheMightyTRex/starboard/compare/v0.7.7...v0.8.0
 [0.7.7]: https://github.com/TheMightyTRex/starboard/compare/v0.7.6...v0.7.7

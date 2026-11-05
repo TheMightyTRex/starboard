@@ -202,6 +202,12 @@ RELEASES = [
                   ("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release, after a security review of every set-up wizard. Its findings are fixed above; ZAP's two signed-in warnings were false alarms, explained in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "Nothing to choose. New installs use the Run first script; existing ones are not changed. To go back, run ./update.sh --to v0.8.0."},
+    {"version": "0.9.1", "date": "5 November 2026",
+     "added": [], "changed": [],
+     "fixed": [("Updating after a long gap", "./update.sh stopped after listing what changed when more than 30 changes had come since your version. It now lists 30 and says how many more.")],
+     "security": [("Checks", "Trivy, OWASP ZAP (signed out), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release; only update.sh and the help changed since 0.9.0's full checks.")],
+     "review": [],
+     "settings": "Nothing to choose. Updating from 0.9.0 to 0.9.1 with ./update.sh works as before. To go back, run ./update.sh --to v0.9.0."},
 ]
 
 
