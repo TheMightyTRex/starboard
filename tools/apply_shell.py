@@ -66,16 +66,60 @@ MENU = [
 ]
 HOME = "index.html"  # the logo opens it
 
-# Help for each section, from the Help button in the header. Placeholders while the new help centre is made and
-# tested: today they open the matching part of the help index on GitHub. Change them here, in one place.
-HELP_CENTRE = "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/README.md"
+# Help for each page, from the Help button in the header: the help centre article for what the page does, or the
+# help index's section when no one article covers the page. Page: (path in docs/help, what the help is about). Every
+# page with the header must be here (check_help_links below). Change them here, in one place.
+HELP_BASE = "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/"
+EVERYDAY = ("README.md#everyday-use", "everyday use")
 HELP = {
-    "library": HELP_CENTRE,
-    "discover": f"{HELP_CENTRE}#everyday-use",
-    "activity": f"{HELP_CENTRE}#everyday-use",
-    "system": f"{HELP_CENTRE}#your-server",
-    "settings": f"{HELP_CENTRE}#apps",
+    **{page: ("README.md#everyday-use", "your library") for page in (
+        "library-tv.html", "library-tv-series.html", "library-films.html", "library-films-collections.html",
+        "library-radio.html", "library-radio-series.html", "library-radio-stations.html", "library-books.html",
+        "library-books-series.html", "library-books-authors.html", "library-audiobooks.html",
+        "library-audiobooks-series.html", "library-audiobooks-authors.html")},
+    "search.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
+    "discover-trending.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
+    "upcoming.html": ("topics/coming-up.md", "finding out what is coming up"),
+    "downloads.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
+    "downloads-finished.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
+    "wanted.html": EVERYDAY,
+    "wanted-quality.html": EVERYDAY,
+    "downloads-requests.html": ("topics/approve-requests.md", "approving or declining requests"),
+    "history.html": EVERYDAY,
+    "system.html": ("README.md#your-server", "your server"),
+    "system-monitor.html": ("topics/monitor-apps.md", "finding out what each app is using"),
+    "index.html": ("README.md#apps", "apps"),
+    "apps-services.html": ("topics/add-a-background-service.md", "adding a background service"),
+    "apps-updates.html": ("topics/update-your-apps.md", "updating your apps"),
+    "install-apps.html": ("topics/install-apps.md", "installing apps with Starboard"),
+    "system-storage.html": ("topics/check-storage.md", "checking free space and what is using it"),
+    "system-pool.html": ("basics/what-is-a-drive-pool.md", "the drive pool"),
+    "system-disks.html": ("topics/check-disk-health.md", "checking your disks' health"),
+    "system-network.html": ("topics/open-from-another-device.md", "opening Starboard from another device"),
+    "system-backup.html": ("README.md#backup-and-restore", "backup and restore"),
+    "system-logs.html": ("topics/read-the-log.md", "reading the log and reporting a problem"),
+    "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
+    "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
+    "settings-reelix.html": ("basics/the-apps.md", "the apps Starboard works with"),
+    "settings-jellyfin.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
+    "settings-audiobookshelf.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
+    "settings-alerts.html": ("topics/activate-alerts.md", "activating alerts"),
+    "settings-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
+    "settings-security.html": ("README.md#security", "security"),
+    "settings-updates.html": ("topics/update-starboard.md", "updating Starboard"),
+    "setup-guide.html": ("guides/set-up-your-dashboard.md", "setting up your dashboard"),
+    "upgrade.html": ("topics/update-starboard.md", "updating Starboard"),
+    "copy-settings.html": ("topics/copy-app-settings.md", "copying settings from one app to another"),
 }
+
+
+def check_help_links(root):
+    """Every help link points at a file that exists in docs/help, and every page in the menu has one."""
+    missing = [page for page in PAGES if page not in HELP]
+    broken = [path for path, _ in HELP.values() if not (root / "docs/help" / path.split("#")[0]).is_file()]
+    if missing or broken:
+        raise SystemExit(f"Help links: pages with none {missing}, articles not found {sorted(set(broken))}")
+
 
 # Every page: (section key, level 1 index).
 PAGES = {}
@@ -118,6 +162,7 @@ LOGO = ('<svg viewBox="0 0 32 32" width="{s}" height="{s}" aria-hidden="true" fo
 
 def shell(current):
     key, at = PAGES[current]
+    help_path, help_about = HELP[current]
     current = TAB_OF.get(current, current)
     section = next(s for s in MENU if s[0] == key)
     level1 = section[3]
@@ -168,7 +213,7 @@ def shell(current):
     {search_form("header-search-input", "site-header__search search-field", "header-search")}
     <div class="site-header__actions">
       <button type="button" class="icon-btn site-header__search-btn" data-search-open aria-controls="header-search" aria-expanded="false">{icon("search", 20)}<span class="visually-hidden">Search</span></button>
-      <a class="icon-btn" href="{HELP[key]}" target="_blank" rel="noopener noreferrer" data-help-link>{icon("circle-help", 20)}<span class="label">Help</span><span class="visually-hidden"> with {section[1]} (opens in a new tab)</span></a>
+      <a class="icon-btn" href="{HELP_BASE}{help_path}" target="_blank" rel="noopener noreferrer" data-help-link>{icon("circle-help", 20)}<span class="label">Help</span><span class="visually-hidden"> with {help_about} (opens in a new tab)</span></a>
       <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false">{icon("sun", 20)}<span class="label">Display</span></button>
     </div>
   </div>{level2}
@@ -228,6 +273,7 @@ def shell(current):
 
 
 def main():
+    check_help_links(WEB.parent)
     pattern = re.compile(r"<!-- shell:start.*?-->.*?<!-- shell:end -->", re.S)
     for page in PAGES:
         path = WEB / page

@@ -8,6 +8,8 @@ add features.
 ## [Unreleased]
 
 ### Changed
+- **Help opens the right article:** the Help button at the top of each page now opens the help centre article for
+  that page, such as Check your disks' health on Disk health, instead of a general part of the help centre.
 - **The terminal uses a wide window evenly:** the Run first script and the terminal set-up draw in a column up to 100
   characters wide, centred in a wider window, and move it when the window changes size.
 - **Progress bars are drawn once:** each job has one bar, updated in place and cut to the window, so it never repeats
