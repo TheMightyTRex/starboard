@@ -112,8 +112,9 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
   wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
   ```
 
-  If `wget` is missing too, install curl, then run the first command again. On Debian, Ubuntu, Linux Mint and
-  Raspberry Pi OS:
+  If `wget` is missing too, install curl, then run the first command again. Use the command below, not the
+  `sudo snap install curl` that Ubuntu suggests: the snap version is sandboxed and cannot save the files the script
+  needs. On Debian, Ubuntu, Linux Mint and Raspberry Pi OS:
 
   ```bash
   sudo apt install curl
@@ -123,6 +124,14 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 
   ```bash
   sudo dnf install curl
+  ```
+
+- **"curl: (23) client returned ERROR on write", with a message about `curl.snap`:** curl was installed as a snap,
+  which cannot save files where the script needs them. Install the usual curl, then run the script again; it uses
+  that one from then on:
+
+  ```bash
+  sudo apt install curl
   ```
 
 - **"This Linux is not one this script knows how to install on":** install Docker by hand with

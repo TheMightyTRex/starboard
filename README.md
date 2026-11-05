@@ -10,7 +10,8 @@ Start with the **Run first script**. On any Linux computer, with or without a de
 curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
 ```
 
-If it says "Command 'curl' not found" (Ubuntu Desktop does not include curl), use `wget`, which it does include:
+If it says "Command 'curl' not found" (Ubuntu Desktop does not include curl), use `wget`, which it does include.
+Do not use the `sudo snap install curl` Ubuntu suggests: the snap version cannot save the files the script needs.
 
 ```bash
 wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash

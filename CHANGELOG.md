@@ -18,6 +18,9 @@ add features.
   number still works, and plain mode keeps typed numbers.
 
 ### Fixed
+- **curl installed as a snap:** Docker's installer failed to download ("curl: (23) error on write"), because a snap is
+  sandboxed. The Run first script now installs Ubuntu's usual curl beside it and explains the error in plain words;
+  Show the details shows more of the log, wrapped, not cut off.
 - **The quick start without curl:** Ubuntu Desktop does not include curl, so the README and the help now give the
   same command with `wget`, which Ubuntu, Linux Mint and Debian include.
 - **Disk health installs what it needs:** choosing disk health no longer stops with "install smartmontools first":

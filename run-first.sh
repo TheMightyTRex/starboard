@@ -349,7 +349,9 @@ NEW_GROUP=0  # the user was just added to the docker group: run the installer wi
 check() {
   NEED=(); FIX=(); FIX_NAME=()
   local base=()
-  has curl || base+=(curl)
+  # A curl installed only as a snap (Ubuntu suggests one) is sandboxed: it cannot save files where this script
+  # needs them, so Ubuntu's usual curl is installed beside it, and comes first on the path.
+  if ! has curl || [ "$(command -v curl)" = /snap/bin/curl ]; then base+=(curl); fi
   has git || base+=(git)
   has python3 || base+=(python3)
   if [ ${#base[@]} -gt 0 ]; then
@@ -485,6 +487,9 @@ jobs_page() {
 explain() {
   local tail; tail="$(tail -n 40 "$LOG" 2>/dev/null)"
   case "$tail" in
+    *"curl.snap"*|*"snap curl"*|*"curl: (23)"*)
+      WHY="curl is installed as a snap, which is sandboxed and cannot save Docker's installer where this script needs it."
+      TIP="Choose Stop, then run: sudo apt install curl. After that, run the Run first script again; it uses the usual curl." ;;
     *"Could not resolve"*|*"Temporary failure resolving"*|*"Failed to fetch"*|*"Could not connect"*|*"curl: (6)"*|*"curl: (7)"*|*"Network is unreachable"*|*"unable to access"*)
       WHY="This computer could not reach the internet to download it."
       TIP="Check the network cable or Wi-Fi, then try again." ;;
@@ -528,7 +533,7 @@ Show the details shows the last lines the job printed, which help if you ask som
 Stop leaves this computer as it is now. Run the script again at any time: it carries on from what is missing." || { [ $? = 11 ] && continue; }
     case "$ANSWER" in
       1) return 0 ;;
-      2) say ""; say "$(dim "$(tail -n 15 "$LOG" | cut -c1-$(( W - 4 )) | sed 's/^/    /')")"; say ""; para "The whole log is in $LOG" ;;
+      2) say ""; say "$(dim "$(tail -n 25 "$LOG" | fold -s -w $(( W - 6 )) | tail -n 30 | sed 's/^/    /')")"; say ""; para "The whole log is in $LOG" ;;
       3) finish; echo; echo "Stopped. The details are in $LOG"; echo "Help: $HELP_URL"; exit 1 ;;
     esac
   done
