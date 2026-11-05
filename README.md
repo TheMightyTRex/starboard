@@ -2,6 +2,36 @@
 
 **A complete media server, set up from one place, light enough for an old laptop or a Raspberry Pi.**
 
+## Quick start
+
+On a Linux computer with Docker and git installed.
+
+**In a browser.** Download Starboard and run the installer, then open the first address it prints, from this
+computer or any phone or computer at home, and enter the setup code it shows. The set-up guide takes it from there:
+
+```bash
+git clone https://github.com/TheMightyTRex/starboard.git
+cd starboard
+./install.sh
+```
+
+**In the terminal only.** For a server with no desktop and no other device. Download Starboard and run the
+installer with `--terminal`, and it asks every set-up question in the terminal: your password, your apps and your
+download hours:
+
+```bash
+git clone https://github.com/TheMightyTRex/starboard.git
+cd starboard
+./install.sh --terminal
+```
+
+**New to all this?** Follow the beginners' guide,
+[Get Starboard up and running, from a bare computer](docs/help/guides/get-up-and-running.md). It starts with
+installing Linux and Docker, then takes you through either path step by step. Check
+[what you need to run Starboard](docs/help/topics/what-you-need.md) first.
+
+## What Starboard does
+
 Starboard sets up and runs a whole home media server: the apps that find, download and sort your films, series,
 music, books and audiobooks, the apps that play them, and the server underneath. You set it up in a browser or,
 on a server with no desktop, entirely in the terminal. Then you run everything from one accessible dashboard.
@@ -9,7 +39,7 @@ on a server with no desktop, entirely in the terminal. Then you run everything f
 - **Lightweight first.** Starboard itself idles in about 16 MB of memory and almost no processor time
   ([Testing and system use](docs/TESTING.md)). A whole recommended media server, Starboard with qBittorrent,
   SABnzbd, Jellyfin and Audiobookshelf, used about 290 MB at rest on a clean Debian test machine, before any
-  films were added. Every piece of background work can be switched off or slowed down.
+  films were added. Every piece of background work can be stopped or slowed down.
 - **One simple set-up, complete.** The set-up asks what you want (films, series, music, books, audiobooks, Live TV),
   picks the apps, folders and settings for it, checks every step, starts the apps and connects them to each other.
 - **Accessible to everyone.** Built to WCAG 2.2 AA: keyboard first, screen readers, text up to 175%, high contrast,
@@ -17,10 +47,7 @@ on a server with no desktop, entirely in the terminal. Then you run everything f
 - **Runs on what you have.** 64-bit Intel and AMD, 64-bit ARM such as a Raspberry Pi 4 or 5, and 32-bit ARM, with
   Docker, or with Python and systemd and no Docker at all.
 
-**New to home servers?** The [help centre](docs/help/README.md) explains everything in plain steps: start with
-[Get Starboard up and running, from a bare computer](docs/help/guides/get-up-and-running.md), which begins with
-installing Linux, and check
-[what you need to run Starboard](docs/help/topics/what-you-need.md).
+The [help centre](docs/help/README.md) explains everything else in plain steps.
 
 ![Apps, in the Health first design](docs/screenshots/apps.png)
 
