@@ -18,10 +18,13 @@ const jellyfin = `document.querySelector("#jellyfin-panel").hidden = false;
 // System, Storage, Pool: steps through a job by pressing each step's first button (the pretend helper answers in
 // about half a second). Each shot starts again from the Pool page; the last add shot carries the job out.
 const wait = (ms) => `await new Promise((r) => setTimeout(r, ${ms}));`;
-const poolSteps = (start, presses, extra = "") => `(async () => { document.querySelector(${JSON.stringify(start)}).click(); ${wait(300)}
+// A value written into a page script: JSON, with <, >, / and the two Unicode line separators escaped as well, so
+// it can never end the script or start new code.
+const lit = (v) => JSON.stringify(v).replace(/[<>/\u2028\u2029]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+const poolSteps = (start, presses, extra = "") => `(async () => { document.querySelector(${lit(start)}).click(); ${wait(300)}
   for (let i = 0; i < ${presses}; i++) { document.querySelector("#wizard-foot .btn").click(); ${wait(2500)} } ${extra} })()`;
 const poolConfirm = `document.querySelectorAll("[data-drive]").forEach((i) => { i.value = i.previousElementSibling.previousElementSibling.querySelector("strong").textContent; });
-  document.querySelector("#pool-password").value = ${JSON.stringify(password)}; document.querySelector("#wizard-foot .btn").click(); ${wait(4000)}`;
+  document.querySelector("#pool-password").value = ${lit(password)}; document.querySelector("#wizard-foot .btn").click(); ${wait(4000)}`;
 
 const desk = { width: 1280, height: 860 };
 const phone = { width: 390, height: 844 };
