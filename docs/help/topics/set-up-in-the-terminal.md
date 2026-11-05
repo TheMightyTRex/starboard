@@ -43,13 +43,40 @@ takes about 10 minutes, plus the time to download the apps.
   password or key you typed before is kept too, if you press Enter. Once the apps are written, you cannot go back
   past the check: change them later in **Settings**, **Install apps**.
 - Type `?` and press Enter for help with any question. Help opens in a box over the step. Press Enter to close it.
+- Type `f` and press Enter to send feedback about the step you are on. See [Send feedback from the
+  terminal](#send-feedback-from-the-terminal).
 - Type `q` and press Enter to stop. Nothing else changes, and you can finish in a browser later.
-- Each step starts on an empty terminal window. The keys you can use are always on the bottom line.
+- Each step starts on an empty terminal window. The step's heading and progress bar always stay at the top, and
+  the keys you can use always stay on the bottom line. When a step is longer than the window, only the part in
+  between scrolls. If you make the window larger or smaller, the step is drawn again to fit.
 - Headings have a border and a bar that shows how far through you are. Recommended answers are marked with a dot
   and say "recommended" too, so nothing depends on colour.
 - If you use software that reads text aloud, such as Orca, start it with `STARBOARD_PLAIN=1 ./install.sh --terminal`.
   It then prints plain lines with no borders or colour, and never empties the window or draws over it. It does the
   same by itself in a window narrower than 60 characters or shorter than 20 lines.
+
+## Send feedback from the terminal
+
+1. At any question, type `f` and press Enter. A box opens over the step.
+2. Choose what it is about, such as **Something is broken** or **A new feature**, by typing its number.
+3. Answer the one or two questions. Press Enter to skip a question that says so.
+4. Read the whole report. It says which step you were on, Starboard's version, the system, the size of the
+   terminal window and the last error, if there was one.
+5. Choose how to send it:
+   - **Show as a QR code** draws a code in the terminal. Scan it with your phone's camera to open the report
+     there. It opens a new issue on Starboard's GitHub page with the report filled in, and you send it from your
+     own GitHub account. The code holds a short version of the report, so the whole report is saved in a file
+     in your home folder at the same time.
+   - **Show the link** shows the address of the same new issue, to open in a browser on any device.
+   - **Save to a file** saves the whole report and the link in your home folder, in a file called
+     `starboard-feedback-` followed by the date and time.
+   - **Cancel** sends nothing.
+6. Choose **Done: back to the set-up** to carry on. The step is shown again as you left it.
+
+When something fails, such as Starboard not answering or the apps not starting, the terminal shows **Type r to
+report this problem**. Type `r` and press Enter to send the same report with the error already filled in.
+
+Type `q` at any feedback question to close it and go back to the step.
 
 ## Things to note
 
@@ -57,6 +84,16 @@ takes about 10 minutes, plus the time to download the apps.
   `python3 -m starboard.terminal_setup --port 8095`. It asks for your password first.
 - Your answers are checked by Starboard exactly as the browser checks them, and saved in the same place.
 - VPN details are saved in `data/stack/.env`, which only you can read.
+- A feedback report never holds your answers to the set-up questions, your password, VPN details or the setup
+  code. Email addresses, network addresses, user names in folder paths and anything that looks like a key are
+  replaced. You see the whole report before you choose how to send it.
+- The QR code is made to fit your window, and a larger window fits more of the report in it. In a window 80
+  characters wide and 24 lines tall, the usual size, it holds the title of the report. At 80 by 30 it holds a short
+  report, and at 140 by 60 the report without its technical details. The line above the code says what it holds,
+  and the whole report is always saved on the server. To fit more in, make the window larger, or make the text
+  smaller, and choose **Show as a QR code** again.
+- With `STARBOARD_PLAIN=1`, feedback never draws a QR code, because software that reads text aloud cannot read
+  one. It shows the link, and offers **Save to a file**.
 - Starboard's help suggests some VPN providers. Some of them have affiliate links: if you sign up through one, the
   provider pays a small amount towards Starboard's development, at no extra cost to you.
 

@@ -37,6 +37,20 @@ for a moment while it updates, and anything that depends on it restarts too.
 - After an update, Starboard removes the old version's download if nothing else uses it.
 - **What the last update did** shows the log of the last update.
 
+### What is new in Reelix
+
+For Reelix, Starboard reads Reelix's own changelog, so you can read what an update brings.
+
+- Before you update, select **What is new** beside **Update** in Reelix's row. A panel lists the changes in
+  every version between the one installed and the newest, under **Added**, **Changed**, **Fixed** and the
+  other kinds of change.
+- After Reelix is updated, by Starboard or any other way, a notice on the **Apps** page and on **Updates** says
+  **Reelix is updated to** and the new version. Select **What is new** for the changes since the version it
+  had before, or select the close button to hide the notice.
+- Starboard downloads the changelog from GitHub only when you open **What is new**, and keeps it for 6 hours.
+- The notice appears once **Updates** or **Manage apps** has been opened after the update, because that is
+  when Starboard reads each container's version.
+
 ### Run a backup before an update
 
 You can make Starboard run a script before it updates an app, such as a database backup. Put a script called

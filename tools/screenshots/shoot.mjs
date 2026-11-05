@@ -28,6 +28,10 @@ const phone = { width: 390, height: 844 };
 // The upgrade shots come last: they set the example server back to 0.4.0, which adds the upgrade notice.
 const SHOTS = [
   { file: "apps.png", page: "index.html", ...desk },
+  // What is new in Reelix: the notice once Starboard sees its version went up, then the waiting update's changes.
+  { file: "reelix-notice.png", page: "index.html", ...desk, before: 'api("/api/containers")' },
+  { file: "reelix-whats-new.png", page: "apps-updates.html", ...desk, before: 'api("/api/app-changes/seen", { method: "POST", body: { app: "reelix" } })',
+    run: "check()", click: '#updates button:has-text("What is new")' },
   { file: "storage.png", page: "system-storage.html", ...desk },
   { file: "storage-dark.png", page: "system-storage.html", ...desk, scheme: "dark" },
   { file: "storage-drives.png", page: "system-storage.html", ...desk, run: top("#drives-panel") },

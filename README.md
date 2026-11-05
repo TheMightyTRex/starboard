@@ -36,6 +36,8 @@ All made with example data (`tools/screenshots.sh`).
 | **Log settings** | **Listening progress** into Audiobookshelf |
 | ![Display and accessibility, a slide-out with the header in the page colour](docs/screenshots/display.png) | ![Copy app settings: what will be added, what is already there and what will be replaced](docs/screenshots/copy-settings.png) |
 | **Display and accessibility** | **Copy app settings** |
+| ![Apps with the notice that Reelix is updated to 0.7.1, with What is new](docs/screenshots/reelix-notice.png) | ![What is new in Reelix: the waiting update's changes from its changelog, under Added and Fixed](docs/screenshots/reelix-whats-new.png) |
+| **After a Reelix update** | **What is new in Reelix** |
 | ![Apps on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) | |
 | **On a phone** | |
 

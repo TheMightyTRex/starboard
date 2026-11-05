@@ -222,6 +222,7 @@ startPage().then(async () => {
   }
   AppDetails.onChange(() => render());
   render();
+  appChangeNotices();
   AppDetails.openFromAddress();
   let typing;
   $("#app-filter").addEventListener("input", (e) => {

@@ -11,7 +11,7 @@ PLAYWRIGHT="1.63.0"
 work="$(mktemp -d)"
 trap 'kill "$server" 2>/dev/null || true; rm -rf "$work"' EXIT
 
-python3 tools/screenshots/example_server.py "$work/data" "$PORT" > "$work/server.log" 2>&1 &
+EXAMPLE_CONTAINERS=1 python3 tools/screenshots/example_server.py "$work/data" "$PORT" > "$work/server.log" 2>&1 &
 server=$!
 for _ in $(seq 1 30); do grep -q READY "$work/server.log" 2>/dev/null && break; sleep 1; done
 grep -q READY "$work/server.log" || { cat "$work/server.log"; echo "The example server did not start" >&2; exit 1; }

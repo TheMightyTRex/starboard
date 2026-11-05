@@ -24,7 +24,7 @@ os.environ["STARBOARD_HISTORY"] = "0"
 os.environ["STARBOARD_REPO"] = "TheMightyTRex/starboard"  # the public repository: release notes and Report a problem
 os.environ["STARBOARD_DISKS"] = ("Media pool=/disks/pool,System disk=/data,Drive 1=/disks/each/1,Drive 2=/disks/each/2,"
                                  "Drive 3=/disks/each/3,Drive 4=/disks/each/4")
-from starboard import containers, discovery, stack, sysinfo  # noqa: E402
+from starboard import changes, containers, discovery, stack, sysinfo  # noqa: E402
 from starboard.server import make_server  # noqa: E402
 
 GB, TB = 1024 ** 3, 1024 ** 4
@@ -44,6 +44,43 @@ def example_snapshot(disk_paths):
 
 sysinfo.snapshot = example_snapshot
 containers.available = lambda: False
+# EXAMPLE_CONTAINERS=1: a made-up Reelix container on 0.7.1 with 0.7.2 waiting, for What is new (journeys and
+# screenshots). Docker itself is never called: every other request to it fails as if Docker were busy.
+EXAMPLE_CONTAINERS = os.environ.get("EXAMPLE_CONTAINERS") == "1"
+REELIX = {"id": "example-reelix", "name": "reelix", "image": "ghcr.io/themightytrex/reelix:lite", "image_id": "sha256:example",
+          "state": "running", "status": "Up 2 hours", "version": "0.7.1", "created": dt.date.today().isoformat(),
+          "digests": ["ghcr.io/themightytrex/reelix@sha256:example"], "service": "reelix", "project": "media",
+          "folder": "", "files": ""}
+EXAMPLE_CHANGELOG = """# Changelog
+
+## [Unreleased]
+
+## [0.7.2] - 2026-11-06
+
+### Added
+- **Shelves for radio:** stations and series on one page, with **Follow** on each.
+
+### Fixed
+- **Imports** of a folder with `&` in its name no longer stop half way.
+
+## [0.7.1] - 2026-11-04
+
+### Fixed
+- **Large libraries:** the first scan lists every folder at once, then fills in matches in batches.
+
+## [0.7.0] - 2026-11-03
+
+### Added
+- **An installer** for Windows, with a choice of just you or everyone on the computer.
+"""
+if EXAMPLE_CONTAINERS:
+    def _no_docker(*a, **k):
+        raise containers.DockerError("Example data: Docker is not used")
+    containers.available = lambda: True
+    containers.docker = _no_docker
+    containers.containers = lambda light=False: [{"id": REELIX["id"], "name": REELIX["name"]}] if light else [dict(REELIX)]
+    containers._check_one = lambda c: {"latest": "0.7.2", "update": True, "unknown": False, "big_change": False}
+    changes._fetch = lambda url: changes.parse(EXAMPLE_CHANGELOG)
 stack._port_free = lambda port: True
 discovery.search = lambda services: {"docker": False, "items": [
     {"key": k, "name": n, "type": k, "url": f"http://127.0.0.1:{p}", "port": p, "needs_key": True, "background": False,
@@ -248,6 +285,13 @@ def main():
         for name, kind, group, path in APPS:
             url = f"http://127.0.0.1:{FAKE_PORT}/{path}" if path else "http://127.0.0.1:9/"
             call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": url, "api_key": KEY if kind != "link" else ""}, cookie)
+        if EXAMPLE_CONTAINERS:
+            # Reelix, seen at 0.7.0 before, so opening Apps, Updates finds it updated to 0.7.1.
+            call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": "Downloads",
+                                           "url": f"http://127.0.0.1:{FAKE_PORT}/reelix", "api_key": ""}, cookie)
+            _, body = call("GET", "/api/config", cookie=cookie)
+            rid = next(sv["id"] for sv in json.loads(body)["services"] if sv["name"] == "Reelix")
+            (DATA / "app-changes.json").write_text(json.dumps({"seen": {rid: "0.7.0"}, "notices": {}}))
     print("READY", flush=True)
     threading.Event().wait()
 

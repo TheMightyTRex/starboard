@@ -104,6 +104,16 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 
 /* Release notes (slide-out from the footer, and the upgrade guide's first step): one heading rhythm. */
 .release-notes { display: grid; gap: var(--space-2); }
+/* What is new in an app (Reelix): its notice after an update, and the buttons beside Update. */
+.app-change { align-items: center; }
+.app-change__actions { display: flex; align-items: center; gap: var(--space-2); }
+.app-change .btn { color: var(--color-text); }
+@media (max-width: 639px) {
+  .app-change { grid-template-columns: auto minmax(0, 1fr); }
+  .app-change__actions { grid-column: 2; }
+}
+.updates-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.release-notes li > ul { margin-top: var(--space-1); }
 .release-notes > :is(h4, h5) { margin-top: var(--space-2); }
 .release-notes ul { margin: 0; }
 /* The time range beside a heading. */
