@@ -6,7 +6,7 @@ import threading
 import unittest
 from unittest import mock
 
-from starboard import auth, terminal_setup
+from starboard import auth, qr, terminal_setup
 from starboard.server import make_server
 
 PASSWORD = "correct horse battery"
@@ -167,7 +167,7 @@ class TerminalSetupTest(unittest.TestCase):
         raw = out.getvalue()
         self.assertIn("\033[2J", raw)            # cleared
         self.assertIn("\033[1;28r", raw)         # the scrolling area stops above the menu
-        self.assertIn("b Back   ? Help   q Stop", raw)
+        self.assertIn("b Back   ? Help   f Feedback   q Stop", raw)
         self.assertTrue(raw.endswith("\033[r\033[29;1H\033[2K\033[30;1H\033[2K\0338\n"))  # menu gone, window given back
 
     def test_help_pop_up_draws_a_box_and_the_step_again(self):
@@ -180,6 +180,139 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("╭─ Help: when should downloads run", raw)
         self.assertIn("Enter or Esc: close help", raw)
         self.assertGreaterEqual(raw.count("When should downloads run?"), 2)  # drawn again after help closes
+
+    # Feedback (f) ------------------------------------------------------------------------------------------
+
+    def fancy(self, answers, width=78, rows=30):
+        out = io.StringIO()
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=width, rows=rows, ask=Answers(answers))
+        term.save_dir = self.tmp.name
+        return term, out
+
+    def test_f_opens_feedback_at_a_step_and_returns_to_it(self):
+        # f, Hard to use, the words, Enter after the whole report, Cancel; then the question again, answered 2.
+        term, out = self.fancy(["f", "2", "The list is hard to read", "", "4", "2"])
+        term.can_back = True
+        term.heading("Your media server", 2)
+        self.assertEqual(term.choose("Install the apps?", ["Yes", "No"]), 1)
+        raw = out.getvalue()
+        self.assertIn("f Feedback", raw)
+        self.assertIn("╭─ Send feedback", raw)
+        self.assertIn("6. Make something better", raw)
+        self.assertIn("╭─ The whole report", raw)
+        self.assertIn("Page: Terminal set-up, step 2: Your media server", raw)
+        self.assertIn("1. Show as a QR code (recommended)", raw)
+        self.assertEqual(term.screen[-1], "  › Your choice [1]: 2")  # the f is not left on the step
+        after = raw.rsplit("Show as a QR code", 1)[1]
+        self.assertIn("Install the apps?", after)  # the step drawn again as it was
+        self.assertIn("b Back   ? Help   f Feedback   q Stop", after)
+        self.assertFalse([n for n in os.listdir(self.tmp.name) if n.startswith("starboard-feedback-")])  # nothing saved
+
+    def test_q_closes_feedback_and_the_step_carries_on(self):
+        term, out = self.fancy(["f", "q", ""])
+        term.heading("Download hours", 5)
+        self.assertEqual(term.choose("When should downloads run?", ["Set hours", "Any time"]), 0)
+
+    def test_nothing_typed_as_an_answer_is_in_the_report(self):
+        media, settings = os.path.join(self.tmp.name, "my-own-media"), os.path.join(self.tmp.name, "config")
+        words = (f"It broke near {media} with {PASSWORD}, secret-wireguard-key and 192.168.1.20/32. "
+                 "Mail me at sam@example.org, token=abc123def456")
+        # Downloads and VPN (Proton over WireGuard), then f at the check: Something is broken, the words, skip the
+        # second question, save to a file; then write and downloads at any time.
+        typed = ["", "8,9", "", media, settings, "1", "1", "Netherlands", "192.168.1.20/32",
+                 "f", "1", words, "", "1", "y", "2"]
+        term, out = self.term(typed, [PASSWORD, PASSWORD, "secret-wireguard-key"])
+        term.save_dir = self.tmp.name
+        token = self.app.setup_token
+        self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
+        [name] = [n for n in os.listdir(self.tmp.name) if n.startswith("starboard-feedback-")]
+        with open(os.path.join(self.tmp.name, name)) as f:
+            saved = f.read()
+        report = out.getvalue().split("This is everything the report holds")[1].split("Back to the set-up")[0]
+        for text in (saved, report):
+            for private in (media, "my-own-media", PASSWORD, "secret-wireguard-key", "192.168.1.20", "Netherlands",
+                            "sam@example.org", "abc123def456", token):
+                self.assertNotIn(private, text)
+            self.assertIn("[your answer]", text)
+            self.assertIn("[email]", text)
+            self.assertIn("Terminal set-up, step 4: Check before anything changes", text)
+        self.assertIn("https://github.com/TheMightyTRex/starboard/issues/new?title=", saved)
+        self.assertIn("labels=feedback,problem,type:+bug", saved)
+        self.assertEqual(os.stat(os.path.join(self.tmp.name, name)).st_mode & 0o777, 0o600)
+
+    def test_report_this_problem_after_a_failure(self):
+        with open(os.path.join(self.tmp.name, "setup-token"), "w") as f:
+            f.write("made-up-setup-code")
+        self.server.shutdown()
+        self.server.server_close()
+        self.server = mock.Mock()  # tearDown has nothing left to stop
+        api = terminal_setup.Api(self.port)
+        # Both passwords, then Starboard is not answering: r, skip both questions, Done; then q.
+        term, out = self.term(["", "", "2"], [PASSWORD, PASSWORD, "r", "q"])
+        with self.assertRaises(terminal_setup.Stop):
+            terminal_setup.run(api, term, self.tmp.name, self.port)
+        text = out.getvalue()
+        self.assertIn("Type r to report this problem.", text)
+        self.assertIn("Starboard said:", text)
+        self.assertIn("Last error", text)
+        self.assertIn("POST /api/setup: Starboard is not answering", text)
+        self.assertNotIn("made-up-setup-code", text)
+        self.assertIn("title=Terminal+set-up,+step+1:+Starboard+is+not+answering", text)
+
+    def test_r_is_on_the_menu_after_a_failure(self):
+        out = io.StringIO()
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=78, rows=30)
+        term.heading("Download hours", 5)
+        term.failed("That did not work.", "Starboard answered 500")
+        keys, right = term.step_keys()
+        self.assertIn(("r", "Report this problem"), keys)
+        self.assertIn("r Report this problem", out.getvalue())
+        self.assertEqual(right, "Enter: recommended")
+        term.heading("Download hours", 5)
+        self.assertNotIn(("r", "Report this problem"), term.step_keys()[0])  # a new step clears it
+
+    def test_plain_mode_never_draws_a_qr_code(self):
+        term, out = self.term(["f", "7", "Thank you", "2", "2"], [])
+        term.heading("Download hours", 5)
+        self.assertEqual(term.choose("When should downloads run?", ["Set hours", "Any time"]), 1)
+        text = out.getvalue()
+        self.assertNotIn("QR", text)
+        self.assertNotRegex(text, "[▀▄█╭│\x1b]")
+        self.assertIn("https://github.com/TheMightyTRex/starboard/issues/new?title=", text)
+        self.assertIn("Save to a file", text)
+        self.assertIn("Back to the set-up.", text)
+
+    def test_the_qr_code_fits_the_window_or_the_link_is_shown(self):
+        term, out = self.fancy(["f", "1", "The apps list stops after Jellyfin", "", "", "1", "", "4", "1"],
+                               width=140, rows=60)
+        term.heading("Your media server", 2)
+        term.choose("Install the apps?", ["Yes", "No"])
+        raw = out.getvalue()
+        self.assertIn("Scan it with your phone's camera to open the report there.", raw)
+        self.assertIn("\033[38;5;16;48;5;231m", raw)  # dark on light, forced
+        self.assertIn("Full+report+saved+on+the+server+as", raw)
+        self.assertEqual(len([n for n in os.listdir(self.tmp.name) if n.startswith("starboard-feedback-")]), 1)
+        url, version = term.qr_fit(mock.Mock(tiny=lambda words: "x" * 200))
+        self.assertLessEqual(qr.width_of(version), 140)
+        self.assertLessEqual(qr.lines_of(version), 60 - 4)
+        # A small window: said so, and the link instead.
+        term, out = self.fancy(["f", "1", "The apps list stops after Jellyfin", "", "", "1", "", "4", "1"],
+                               width=80, rows=30)
+        term.heading("Your media server", 2)
+        term.choose("Install the apps?", ["Yes", "No"])
+        raw = out.getvalue()
+        self.assertIn("The QR code does not fit this window", raw)
+        self.assertNotIn("\033[38;5;16;48;5;231m", raw)
+        self.assertIn("The link to the report", raw)
+
+    def test_redact_takes_out_what_looks_private(self):
+        text = terminal_setup.redact("sam@example.org at 10.0.0.4 and fe80:0:0:0:1:2:3:4 in /home/sam/media, "
+                                     "key ghp_abcdefghijklmnop, WireGuard aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abcdefg=",
+                                     {"my folder answer"})
+        self.assertEqual(text, "[email] at [address] and [address] in /home/[user]/media, key [key], "
+                               "WireGuard [key]")
+        self.assertEqual(terminal_setup.redact("in my folder answer here", {"my folder answer"}),
+                         "in [your answer] here")
 
     def test_needs_a_terminal(self):
         import sys

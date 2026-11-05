@@ -14,6 +14,16 @@
   on Enter, and nothing past the check once the apps are written), and help opens as a box over the dimmed step.
   The plain lines never clear or redraw. Run it again with `python3 -m starboard.terminal_setup`. With
   tests, and a help article: Set up Starboard in the terminal, with no browser.
+- **Feedback from the terminal set-up:** `f` at any question sends Snaglist's report about that step, in a box
+  over it: what it is about (the same seven kinds as Snaglist), one or two of Snaglist's questions, then the
+  whole report on screen before any choice to send. It is a pre-filled GitHub issue holding the step, Starboard's
+  version, the system and processor, plain mode, the window size and the last error (Starboard's reply to the
+  last call that failed, or the apps' start log). Answers to the set-up, passwords, VPN details and the setup code
+  are never in it; email and network addresses, user names in paths and anything like a key are replaced. Send
+  it as a QR code drawn in the terminal (a new standard-library encoder, `starboard/qr.py`), as the link, or
+  saved to a file. The QR code is chosen to fit the window, holds a short report, and saves the whole one in the
+  home folder; a window too small says so and shows the link. Plain mode never draws a QR code. After a failure,
+  `r` reports it with the error filled in.
 
 ## 0.7.7 (4 November 2026)
 

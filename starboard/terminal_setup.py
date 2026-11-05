@@ -16,11 +16,16 @@ import getpass
 import http.client
 import json
 import os
+import platform
 import re
 import shutil
+import socket
 import sys
 import textwrap
 import time
+import urllib.parse
+
+from starboard import qr
 
 VPNS = [  # (Gluetun's provider name, shown name)
     ("protonvpn", "Proton VPN"),
@@ -50,6 +55,186 @@ HELP = {
 }
 
 
+
+# Feedback (f at any question): Snaglist's kinds and questions, sent as a pre-filled GitHub issue. Each kind is
+# (key, label, short name for the QR code, group, questions); a question is (label, hint, required, options).
+USING = ["Keyboard only", "A screen reader", "Zoom or large text", "Voice control", "Switch access",
+         "High contrast or forced colours", "Nothing special", "Something else"]
+KINDS = [
+    ("bug", "Something is broken", "Broken", "problem",
+     [("What happened", "", True, None), ("What you expected", "", False, None)]),
+    ("ux", "Hard to use", "Hard to use", "problem", [("What is wrong", "What did you expect, and what happened?", True, None)]),
+    ("content", "Words are wrong", "Wrong words", "problem",
+     [("What is wrong", "", True, None), ("Suggested wording", "", False, None)]),
+    ("accessibility", "Hard to use with my tools or needs", "Hard with my tools", "problem",
+     [("What is wrong", "", True, None), ("What were you using", "", False, USING)]),
+    ("feature", "A new feature", "New feature", "suggestion",
+     [("What would you like to be able to do", "", True, None),
+      ("What would it help you with", "The task or goal behind it, so the team can find the best way.", False, None),
+      ("How do you manage today", "A workaround, another app, or not at all.", False, None)]),
+    ("idea", "Make something better", "Could be better", "suggestion",
+     [("What could be better", "", True, None), ("Your suggestion", "", False, None)]),
+    ("other", "Something else", "Feedback", "suggestion", [("Your message", "", True, None)]),
+]
+SENDS = ["Show as a QR code (recommended)", "Show the link", "Save to a file", "Cancel"]
+REPO = "TheMightyTRex/starboard"
+QR_LIMIT = 1200    # bytes: the most a QR code holds and still scans reliably from a terminal
+LINK_LIMIT = 2000  # characters: a longer link is hard to copy from a terminal; the file has the whole report
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Anonymity, as Snaglist's: anything that looks like an email address, a key or token, an address or a long number.
+PATTERNS = [
+    (r"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}", "[email]"),
+    (r"\b(?:ghp|gho|github_pat|sk|pk|xox[bap])[-_][A-Za-z0-9_-]{8,}", "[key]"),
+    (r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+", "[key]"),
+    (r"\bAKIA[0-9A-Z]{16}\b", "[key]"),
+    (r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{6,}", "[key]"),
+    (r"(?i)(?:\b|_)(?:bearer|token|api[_-]?key|password|passwd|pwd|secret|private[_-]?key|session(?:[_-]?id)?|"
+     r"auth(?:orization)?)\s*[:=]\s*\S+", "[key]"),
+    (r"\b(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?\b", "[address]"),
+    (r"(?i)\b(?:[0-9a-f]{1,4}:){3,7}[0-9a-f]{1,4}\b", "[address]"),
+    (r"(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", "[id]"),
+    (r"\b[A-Za-z0-9_-]*\d[A-Za-z0-9_-]*[A-Za-z][A-Za-z0-9_-]{22,}\b", "[key]"),
+    (r"[A-Za-z0-9+/]{20,}={1,2}", "[key]"),
+    (r"\+?\d[\d ()-]{5,}\d", "[number]"),
+    (r"(/home/|/Users/|[A-Za-z]:\\Users\\)[^/\\\s]+", r"\1[user]"),
+]
+
+
+def redact(text, secrets=()):
+    """Takes out what was typed as an answer (longest first), then anything that looks private."""
+    out = str(text or "")
+    for value in sorted({s for s in secrets if s and len(s) >= 4}, key=len, reverse=True):
+        out = out.replace(value, "[your answer]")
+    for pattern, label in PATTERNS:
+        out = re.sub(pattern, label, out)
+    for name, label in ((_user(), "[user]"), (socket.gethostname().split(".")[0], "[computer]")):
+        if name and len(name) >= 3:
+            out = re.sub(rf"(?<![\w-]){re.escape(name)}(?![\w-])", label, out)
+    return out
+
+
+def _user():
+    try:
+        return getpass.getuser()
+    except Exception:  # no user name to be found: nothing to take out
+        return ""
+
+
+def clip(text, n):
+    return text if len(text) <= n else text[:max(n - 3, 0)].rstrip() + "..."
+
+
+def starboard_version():
+    try:
+        with open(os.path.join(ROOT, "VERSION"), encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return "unknown"
+
+
+def system_name():
+    try:
+        with open("/etc/os-release", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("PRETTY_NAME="):
+                    return line.split("=", 1)[1].strip().strip('"')
+    except OSError:
+        pass
+    return f"{platform.system()} {platform.release()}".strip() or "unknown"
+
+
+def issue_url(title, body, labels):
+    q = lambda text: urllib.parse.quote_plus(text, safe=":/,()!*';?")  # noqa: E731
+    return f"https://github.com/{REPO}/issues/new?title={q(title)}&body={q(body)}&labels={q(labels)}"
+
+
+class Report:
+    """One piece of feedback: the kind, the person's own words and what the set-up knows about where it happened.
+    Everything in it has been through redact() already; nothing typed as an answer to the set-up is in it."""
+
+    def __init__(self, kind, answers, step, part, window, plain, error):
+        self.kind, self.answers, self.step, self.part = kind, answers, step, part
+        self.window, self.plain, self.error = window, plain, error
+        self.version, self.system, self.processor = starboard_version(), system_name(), platform.machine() or "unknown"
+        self.created = time.strftime("%Y-%m-%d %H:%M")
+        self.file = None  # where Save to a file put it, as shown (~/...)
+
+    @property
+    def label(self):
+        return self.kind[1]
+
+    def page(self):
+        n, name = self.step
+        return f"Terminal set-up, step {n}: {name}" if n else f"Terminal set-up: {name}"
+
+    def title(self, n=90):
+        error = (self.error or "").strip().split("\n")[-1].split(": ", 1)[-1]
+        first = next((a for _, a in self.answers if len(a) > 8), error or self.label).split("\n")[0]
+        where = f"Terminal set-up, step {self.step[0]}" if self.step[0] else "Terminal set-up"
+        return clip(f"{where}: {first}", n)
+
+    def labels(self):
+        return f"feedback,{self.kind[3]},type: {self.kind[0]}"
+
+    def markdown(self, short=False):
+        cell = lambda v: str(v).replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ")  # noqa: E731
+        lines = []
+        for label, text in self.answers:
+            lines += [f"**{label}**", clip(text, 600) if short else text, ""]
+        n, name = self.step
+        rows = [("Report", self.label), ("App", f"Starboard {self.version}"), ("Page", self.page()),
+                ("Path", f"`terminal-setup/step-{n}`" if n else "`terminal-setup`"),
+                ("Part", f'"{self.part}"' if self.part else ""), ("Window", self.window),
+                ("System", f"{self.system}, {self.processor}"), ("Plain mode", self.plain), ("Reported", self.created)]
+        lines += ["| | |", "|---|---|"] + [f"| {k} | {cell(v)} |" for k, v in rows if v]
+        if self.error:
+            error = self.error
+            if short:
+                error = clip("\n".join(error.splitlines()[-4:]), 300)
+            lines += ["", "**Last error**", "", "```", error, "```"]
+        if short:
+            lines += ["", "_Shortened to fit. The whole report was saved on the server._"]
+        lines += ["", "<sub>Sent with Starboard's terminal set-up, which leaves out passwords, keys, VPN details, the "
+                      "setup code and the answers typed into the set-up.</sub>"]
+        # Nothing in a report may notify anyone on GitHub: an invisible space after @ stops a mention.
+        return re.sub(r"@(?=[A-Za-z0-9-])", "@\u200b", "\n".join(lines))
+
+    def text(self):
+        """The report as plain lines, as it is shown before sending."""
+        md = self.markdown()
+        md = re.sub(r"^\|---\|---\|$|^\| \| \|$", "", md, flags=re.M)
+        md = re.sub(r"^\| (.+?) \| (.*) \|$", r"\1: \2", md, flags=re.M)
+        md = re.sub(r"\*\*|`|</?sub>|\u200b", "", md)
+        md = re.sub(r"^_(.*)_$", r"\1", md, flags=re.M)
+        return re.sub(r"\n{3,}", "\n\n", md).strip().split("\n")
+
+    def link(self):
+        """The issue address with the whole report, or a shorter one when that is too long to copy; and whether it
+        was shortened."""
+        for short in (False, True):
+            url = issue_url(self.title(), self.markdown(short), self.labels())
+            if len(url) <= LINK_LIMIT:
+                return url, short
+        return self.tiny(400), True
+
+    def tiny(self, words):
+        """The smallest report: the title and one or two sentences, for a QR code that has to fit the window."""
+        n, name = self.step
+        said = " ".join(a.replace("\n", " ") for _, a in self.answers) or (self.error or "").split("\n")[-1]
+        body = f"{self.kind[2]} at step {n}: {name}." if n else f"{self.kind[2]} in the terminal set-up."
+        if said and words:
+            body += " " + clip(said, words).rstrip(".") + "."
+        body += f" Starboard {self.version}, {self.system}."
+        if self.file:
+            body += f" Full report saved on the server as {self.file}."
+        return issue_url(self.title(min(60, 30 + words)), body, self.labels())
+
+
+class Closed(Exception):
+    """The person typed q in the feedback: back to the step."""
+
+
 class Stop(Exception):
     """The person typed q."""
 
@@ -75,6 +260,14 @@ class Api:
 
     def __init__(self, port, host="127.0.0.1"):
         self.host, self.port, self.cookie = host, port, None
+        self.last_error = None   # Starboard's own reply to the last call that failed, for a feedback report
+        self.on_error = None
+
+    def _failed(self, method, path, message):
+        self.last_error = f"{method} {path}: {message}"
+        if self.on_error:
+            self.on_error(self.last_error)
+        return Problem(message)
 
     def call(self, method, path, body=None, timeout=30):
         conn = http.client.HTTPConnection(self.host, self.port, timeout=timeout)
@@ -88,7 +281,7 @@ class Api:
             resp = conn.getresponse()
             raw = resp.read()
         except OSError as e:
-            raise Problem(f"Starboard is not answering on port {self.port} ({e}). Is it running?") from e
+            raise self._failed(method, path, f"Starboard is not answering on port {self.port} ({e}). Is it running?") from e
         finally:
             conn.close()
         cookie = resp.getheader("Set-Cookie")
@@ -99,7 +292,7 @@ class Api:
         except ValueError:
             data = {}
         if resp.status >= 400:
-            raise Problem(data.get("error") or f"Starboard answered {resp.status}")
+            raise self._failed(method, path, data.get("error") or f"Starboard answered {resp.status}")
         return data
 
 STEPS = ["Your password", "Your media server", "Your VPN", "Check before anything changes", "Download hours"]
@@ -119,7 +312,8 @@ class Terminal:
     def __init__(self, out=sys.stdout, ask=input, secret=getpass.getpass, fancy=None, colour=None, width=None, rows=None):
         self.out, self._ask, self._secret = out, ask, secret
         size = shutil.get_terminal_size((80, 24))
-        self.width = min(width or size.columns, 78)
+        self.cols = width or size.columns   # the whole window, for a QR code
+        self.width = min(self.cols, 78)
         self.rows = rows or size.lines
         tty = hasattr(out, "isatty") and out.isatty()
         self.fancy = (tty and os.environ.get("TERM") != "dumb") if fancy is None else fancy
@@ -130,6 +324,13 @@ class Terminal:
         self.came_back = False    # this step was reached with b: the last answers are the defaults
         self.keys = []
         self.drawn = False        # whether the scroll area and menu are set up
+        self.step = (None, "")    # (number, name) of the step shown, for feedback
+        self.part = ""            # the question being asked, for feedback
+        self.typed = set()        # answers typed to the set-up and hidden ones: never in a report
+        self.problem = None       # the last thing that failed at this step: r reports it
+        self.last_error = None    # Starboard's reply to the last failed call, or the apps' start log
+        self.plain_asked = False  # plain lines because the person asked (STARBOARD_PLAIN or --plain)
+        self.save_dir = os.path.expanduser("~")
 
     # Marks ------------------------------------------------------------------------------------------------
 
@@ -183,14 +384,20 @@ class Terminal:
             self.drawn = False
 
     def step_keys(self):
-        keys = ([("b", "Back")] if self.can_back else []) + [("?", "Help"), ("q", "Stop")]
-        return keys, "Enter: keep" if self.came_back else "Enter: recommended"
+        right = "Enter: keep" if self.came_back else "Enter: recommended"
+        keys = ([("b", "Back")] if self.can_back else []) + [("?", "Help"), ("f", "Feedback"), ("q", "Stop")]
+        if self.problem:
+            keys.insert(-1, ("r", "Report this problem"))
+            if sum(len(k) + len(label) + 4 for k, label in keys) + len(right) + 4 > self.width:
+                keys.remove(("f", "Feedback"))  # f still works; r is feedback with the error filled in
+        return keys, right
 
     def heading(self, text, step=None):
+        self.step, self.problem = (step, text), None
         if not self.fancy:
             self.say(f"\n== Starboard | {text}" + (f" (step {step} of {len(STEPS)})" if step else ""))
-            self.say(("Type b to go back, ? for help or q to stop." if self.can_back else
-                      "Type ? for help or q to stop.") if step else "")
+            self.say(("Type b to go back, ? for help, f to send feedback or q to stop." if self.can_back else
+                      "Type ? for help, f to send feedback or q to stop.") if step else "")
             if self.came_back:
                 self.say("You came back to this step. Your last answers are in [brackets]: press Enter to keep each one.")
             return
@@ -228,32 +435,60 @@ class Terminal:
         if not self.fancy:
             self.note(text)
             return
+        self.box(title, text.split("\n\n"), close="Enter or Esc: close help", keys=[("Enter", "Close help")])
+        self._redraw()
+
+    def box(self, title, paras, prompt=None, close="", keys=()):
+        """A box over the dimmed step, as help is. paras are paragraphs to wrap, or (text,) for a line kept as it is,
+        set in under itself when it wraps. A long box shows a page at a time. With prompt, the last page asks it
+        inside the box and returns the answer; without, Enter closes it."""
         bw = min(62, self.width - 6)
         left, inner = (self.width - bw) // 2, bw - 4
         body = []
-        for para in text.split("\n\n"):
-            body += textwrap.wrap(para, inner) + [""]
+        for para in paras:
+            if isinstance(para, tuple):
+                line = para[0]
+                indent = len(line) - len(line.lstrip()) + (4 if re.match(r"\s*\d+\. ", line) else 0)
+                body += textwrap.wrap(line, inner, subsequent_indent=" " * indent, drop_whitespace=True) or [""]
+            else:
+                body += (textwrap.wrap(para, inner) if para else []) + [""]
+        while body and body[-1] == "":
+            body.pop()
         room = max(self.rows - 10, 4)
         pages = [body[i:i + room] for i in range(0, len(body), room)] or [[""]]
         behind = [ANSI.sub("", line) for line in self.screen[-(self.rows - 3):]]
         behind += [""] * (self.rows - 2 - len(behind))
+        edge = lambda text: self._c("36", text)  # noqa: E731
+        answer = ""
         for n, part in enumerate(pages):
             more = n < len(pages) - 1
-            close = "Enter: more below" if more else "Enter or Esc: close help"
-            box = [self._c("36", "╭─ ") + self.accent(title[:bw - 6]) + self._c("36", " " + "─" * max(bw - 5 - len(title[:bw - 6]), 0) + "╮")]
-            box += [self._c("36", "│") + " " + line.ljust(inner) + " " + self._c("36", "│") for line in [""] + part]
-            box += [self._c("36", "│") + " " + self.dim(close.rjust(inner)) + " " + self._c("36", "│"),
-                    self._c("36", "╰" + "─" * (bw - 2) + "╯")]
+            foot = "Enter: more below" if more else close
+            title_cut = title[:bw - 6]
+            box = [edge("╭─ ") + self.accent(title_cut) + edge(" " + "─" * max(bw - 5 - len(title_cut), 0) + "╮")]
+            box += [edge("│") + " " + line.ljust(inner) + " " + edge("│") for line in [""] + part + [""]]
+            asking = prompt is not None and not more
+            if asking:
+                box.append(edge("│") + " " * (bw - 2) + edge("│"))
+            if foot:
+                box.append(edge("│") + " " + self.dim(foot.rjust(inner)) + " " + edge("│"))
+            box.append(edge("╰" + "─" * (bw - 2) + "╯"))
             top = 3
-            self._write(f"\033[r\033[2J")
-            self._menu([("Enter", "Close help" if not more else "More")], "")
+            self._write("\033[r\033[2J")
+            self._menu(list(keys) if not more else [("Enter", "More")], "")
             for row, line in enumerate(behind[:self.rows - 2], 1):
                 self._write(f"\033[{row};1H" + self._c("2;90", line[:self.width]))
             for i, line in enumerate(box):
                 self._write(f"\033[{top + i};{left + 1}H{line}")
-            self._write(f"\033[{top + len(box) - 2};{left + bw - 1}H")  # inside the box, after "close help"
-            self._ask("")
-        self._redraw()
+            if asking:
+                at = top + len(box) - (3 if foot else 2)
+                self._write(f"\033[{at};{left + 3}H{self.accent('›')} {prompt}")
+                answer = self._ask("")
+            elif foot:
+                self._write(f"\033[{top + len(box) - 2};{left + bw - 1}H")  # inside the box, after the closing words
+                self._ask("")
+            else:
+                self._ask("")
+        return answer
 
     def card(self, title, rows, colour="36"):
         """A box of label and value rows, for reading rather than answering."""
@@ -278,7 +513,11 @@ class Terminal:
         self.say(f"  {self.good('✔')} {text}" if self.fancy else text)
 
     def warn(self, text):
-        self.say(f"  {self.warn_colour('⚠')} {text}" if self.fancy else text)
+        if not self.fancy:
+            self.say(text)
+            return
+        for i, line in enumerate(textwrap.wrap(text, self.width - 6) or [""]):
+            self.say(f"  {self.warn_colour('⚠')} {line}" if i == 0 else f"    {line}")
 
     def note(self, text):
         """A paragraph, wrapped to the width and set in from the box."""
@@ -294,13 +533,16 @@ class Terminal:
         return f"  {self.accent('›')} {text}" if self.fancy else text
 
     def _read(self, prompt, help_key, title="Help", extra=()):
-        """One answer. q stops, b goes back a step, ? opens help; anything in extra is returned as typed."""
+        """One answer. q stops, b goes back a step, ? opens help, f sends feedback and r reports what just failed;
+        anything in extra is returned as typed."""
         while True:
             shown = self._prompt(prompt)
             answer = self._ask(shown).strip()
+            low = answer.lower()
+            if self._feedback_key(low):
+                continue
             if self.fancy:
                 self.screen.append(shown + answer)
-            low = answer.lower()
             if low in ("q", "quit"):
                 raise Stop()
             if low == "b" and self.can_back:
@@ -313,7 +555,15 @@ class Terminal:
                 continue
             if low in extra:
                 return low
+            self.typed.add(answer)
             return answer
+
+    def _feedback_key(self, low):
+        """f opens feedback and r reports the problem shown; both come back to the question as it was."""
+        if low == "f" or (low == "r" and self.problem):
+            self.feedback(self.problem if low == "r" else None)
+            return True
+        return False
 
     def _options(self, options, defaults, start=0):
         """Options are text, or (name, about) pairs set in two columns."""
@@ -334,6 +584,7 @@ class Terminal:
             self.say(f"  {mark} {self.accent(str(i).rjust(2))}  {text}")
 
     def _title(self, question):
+        self.part = question.strip()  # the question being asked, for feedback
         return question.rstrip("?").rstrip(".")[:40].lower()
 
     def choose(self, question, options, default=1, help_key=None):
@@ -389,9 +640,12 @@ class Terminal:
             hint = "nothing shows as you type" + ("; Enter keeps the one you typed before" if keep else "")
             shown = self._prompt(f"{question} ({hint}): ")
             answer = self._secret(shown)
+            low = answer.strip().lower()
+            self.part = question
+            if self._feedback_key(low):
+                continue
             if self.fancy:
                 self.screen.append(shown)
-            low = answer.strip().lower()
             if low == "q":
                 raise Stop()
             if low == "b" and self.can_back:
@@ -401,7 +655,271 @@ class Terminal:
                 continue
             if keep and not answer:
                 return None
+            self.typed.add(answer)
             return answer
+
+    def failed(self, line, problem):
+        """Shows what failed and offers r, Report this problem, with the error filled in."""
+        self.problem = problem
+        self.record_error(problem)
+        self.warn(line)
+        self.note("Type r to report this problem.")
+        if self.fancy and self.drawn:
+            self.keys = self.step_keys()
+            self._menu(*self.keys)
+
+    def record_error(self, text):
+        if text and text not in (self.last_error or ""):
+            self.last_error = text
+
+    # Feedback: f at any question -------------------------------------------------------------------------
+
+    def feedback(self, problem=None):
+        """Snaglist's report from the terminal: the kind, a question or two, the whole report, then how to send it.
+        Then back to the step as it was. q closes it at any point."""
+        screen = list(self.screen)  # the step's own lines, to draw it again exactly as it was
+        try:
+            self._feedback(problem)
+        except Closed:
+            pass
+        self.screen = screen
+        if self.fancy:
+            self._redraw()
+        else:
+            self.say("Back to the set-up.")
+
+    def _ask_box(self, title, paras, prompt, keys=(("q", "Close feedback"),)):
+        """One feedback question: in a box over the step, or as plain lines."""
+        if self.fancy:
+            answer = self.box(title, paras, prompt=prompt, keys=keys)
+        else:
+            self.say("")
+            for p in paras:
+                if isinstance(p, tuple) or p:
+                    self.say(p[0] if isinstance(p, tuple) else p)
+            answer = self._ask(prompt)
+        answer = answer.strip()
+        if answer.lower() in ("q", "quit"):
+            raise Closed()
+        return answer
+
+    def _pick(self, title, lead, options, error, default=None):
+        paras, note = [lead], ""
+        while True:
+            lines = ([note, ""] if note else []) + paras + [(f"  {i}. {o}",) for i, o in enumerate(options, 1)]
+            hint = f" [{default}]" if default else ""
+            answer = self._ask_box(title, lines, f"Your choice{hint}: ") or (str(default) if default else "")
+            if answer.isdigit() and 1 <= int(answer) <= len(options):
+                return int(answer) - 1
+            if answer == "" and default is None and error is None:
+                return None
+            note = error or f"Type a number from 1 to {len(options)}, or q to close feedback."
+
+    def _feedback(self, problem):
+        secrets = self.typed
+        if problem:
+            kind = KINDS[0]
+            title = "Report this problem"
+        else:
+            kind = KINDS[self._pick("Send feedback", "What is it about? Type q to close this and go back.",
+                                    [k[1] for k in KINDS], "")]
+            title = f"Send feedback: {kind[1]}"
+        answers = []
+        for number, (label, hint, required, options) in enumerate(kind[4]):
+            required = required and not problem
+            if options:
+                lead = f"{label}. Press Enter to skip."
+                i = self._pick(title, lead, options, None if not required else "")
+                if i is not None:
+                    answers.append((label, options[i]))
+                continue
+            paras = []
+            if problem and number == 0:
+                paras += ["Starboard said:", (f"  {clip(redact(problem, secrets), 300)}",),
+                          "The report holds this error. Add a few words if you can."]
+            paras += [label + ("" if required else ". Press Enter to skip.")] + ([hint] if hint else [])
+            note = ""
+            while True:
+                answer = self._ask_box(title, ([note] if note else []) + paras, "")
+                if answer or not required:
+                    break
+                note = "Type a few words, or q to close feedback."
+            if answer:
+                answers.append((label, clip(redact(answer, secrets), 3000)))
+        n, name = self.step
+        if self.fancy:
+            plain = "off"
+        else:
+            plain = "on" if self.plain_asked else "on, because the window is small or there is no terminal"
+        error = redact(self.last_error or problem or "", secrets)
+        report = Report(kind, answers, self.step, redact(self.part, secrets), f"{self.cols} x {self.rows} characters, "
+                        f"{os.environ.get('TERM', 'no TERM')}", plain, error.strip()[-1500:])
+        self._send(report)
+
+    def _send(self, report):
+        """The whole report first, then the ways to send it."""
+        lead = ["This is everything the report holds. Nothing is sent until you choose how."]
+        lines = [(line,) for line in report.text()]
+        if self.fancy:
+            self.box("The whole report", lead + lines, close="Enter: choose how to send it",
+                     keys=[("Enter", "Next"), ("q", "Close feedback")])
+            options, done = list(SENDS), False
+            while True:
+                if done:
+                    options[3] = "Done: back to the set-up"
+                i = self._pick("Send the report", "How do you want to send it? It opens as a new issue on "
+                               "Starboard's GitHub page, sent from your own GitHub account.", options, None, 1)
+                if i == 0:
+                    self._show_qr(report)
+                elif i == 1:
+                    self._show_link(report)
+                elif i == 2:
+                    self._message("Saved", self._saved_words(report))
+                else:
+                    return
+                done = True
+        # Plain lines: never a QR code, which software that reads text aloud cannot read.
+        self.say("")
+        for line in lead + [line[0] for line in lines]:
+            self.say(line)
+        url, short = report.link()
+        self.say("")
+        self.say("To send it, open this link in a browser on any device. GitHub opens a new issue with the report "
+                 "filled in, and you send it from your own GitHub account:")
+        self.say(url)
+        if short:
+            self.say("The link holds a shorter report. Save to a file keeps the whole report.")
+        if self._pick("Send feedback", "Save the report to a file too?", ["Save to a file", "Done: back to the set-up"],
+                      None, 2) == 0:
+            self.say(self._saved_words(report))
+
+    def _save(self, report):
+        """Saves the whole report and the link in a file in the home folder, readable only by you."""
+        if report.file:
+            return report.file
+        stem, n = time.strftime("starboard-feedback-%Y-%m-%d-%H%M"), 1
+        name = f"{stem}.md"
+        while os.path.exists(os.path.join(self.save_dir, name)):
+            n += 1
+            name = f"{stem}-{n}.md"
+        path = os.path.join(self.save_dir, name)
+        report.file = "~/" + name if self.save_dir == os.path.expanduser("~") else path
+        url, _ = report.link()
+        body = (f"# {report.title()}\n\nTo send it, open this link in a browser:\n\n{url}\n\n"
+                f"Or open a new issue on https://github.com/{REPO}/issues and paste the report below.\n\n---\n\n"
+                f"{report.markdown()}\n")
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(body)
+        return report.file
+
+    def _saved_words(self, report):
+        try:
+            where = self._save(report)
+        except OSError as e:
+            return f"The report could not be saved ({e})."
+        return (f"Saved as {where}. It holds the whole report and the link. Copy it to another device and open the "
+                "link there.")
+
+    def _message(self, title, text):
+        if self.fancy:
+            self.box(title, [text], close="Enter: back", keys=[("Enter", "Back")])
+        else:
+            self.say(text)
+
+    def _full_page(self, keys):
+        self._write("\033[r\033[2J")
+        self._menu(keys, "")
+        self._write("\033[H")
+
+    def qr_fit(self, report):
+        """The largest code the window holds (a title line, the code, the menu), and the shortest address that
+        fits it: the title and a sentence or two. None when even that does not fit."""
+        version = qr.largest_version(self.cols, self.rows - 4)
+        if not version:
+            return None
+        room = min(qr.byte_capacity(version, "L"), QR_LIMIT)
+        for words in (300, 200, 140, 90, 50, 0):
+            url = report.tiny(words)
+            if len(url.encode()) <= room:
+                return url, version
+        return None
+
+    def _show_qr(self, report):
+        """The QR code on a page of its own: a title line, the code, the link under it when there is room, the
+        menu. The whole report is saved first, so the short one in the code can say where it is."""
+        try:
+            self._save(report)
+        except OSError:
+            pass
+        fit = self.qr_fit(report)
+        if not fit:
+            self._show_link(report, "The QR code does not fit this window. Make the window larger, or use Show the "
+                                    "link.")
+            return
+        url, version = fit
+        code = qr.encode(url, largest=version)
+        drawing = qr.draw(code)
+        width = qr.width_of(code.version)
+        left = max((self.cols - width) // 2, 0)
+        scan = "Scan it with your phone's camera to open the report there."
+        more = f"It holds a short report. The whole report is in {report.file}." if report.file else ""
+        beside = len(scan + more) + 1 <= self.cols
+        free = self.rows - 3 - len(drawing) - (0 if beside or not more else 1)  # lines left between code and menu
+        link_lines = -(-len(url) // self.cols)
+        link_below = free >= link_lines + 1
+        self._full_page([("Enter", "Back" if link_below else "Show the link")])
+        self._write("\033[1;1H" + self.accent(scan) + (" " + self.dim(more) if beside else ""))
+        for i, line in enumerate(drawing):
+            self._write(f"\033[{i + 2};{left + 1}H{line}")
+        below = len(drawing) + 2
+        if more and not beside:
+            self._write(f"\033[{below};1H" + self.dim(more[:self.cols]))
+            below += 1
+        if link_below:
+            self._write(f"\033[{below + 1};1H{url}")
+        self._write(f"\033[{self.rows};{len('  Enter ' + ('Back' if link_below else 'Show the link')) + 2}H")
+        self._ask("")
+        if not link_below:
+            self._show_link(report)
+
+    def _show_link(self, report, warning=None):
+        """The link as one line, so the terminal can wrap it and it copies whole."""
+        url, short = report.link()
+        screen = list(self.screen)
+        self._full_page([("Enter", "Back")])
+        if warning:
+            self.warn(warning)
+            self._write("\n")
+        self.say("  " + self.accent("The link to the report"))
+        self.note("Open it in a browser on any device. GitHub opens a new issue with the report filled in, and you "
+                  "send it from your own GitHub account.")
+        if short:
+            self.note("The link holds a shorter report. Save to a file keeps the whole report.")
+        if report.file:
+            self.note(f"The whole report is saved as {report.file}.")
+        self._write("\n" + url + "\n")
+        self.screen = screen
+        self._ask("")
+
+    def offer_report(self, message):
+        """After a stop: the error, and r to report it."""
+        try:
+            self.can_back, self.came_back = False, False
+            if self.fancy:
+                self.heading("Something went wrong")
+            self.problem = message
+            self.record_error(message)
+            if self.fancy:
+                self.keys = self.step_keys()
+                self._menu(*self.keys)
+                self.warn(f"Stopped: {message}")
+            self.note("Type r to report this problem.")
+            self._read("Press Enter to finish, or type r to report this problem: ", None)
+        except (Stop, Back, EOFError, KeyboardInterrupt):
+            pass
+        finally:
+            self.finish()
 
     def waiting(self, text, check, wait):
         """Shows a turning mark and the time taken until check() returns something, then returns it."""
@@ -432,6 +950,7 @@ def step_password(api, term, state):
     if os.path.exists(token_file):
         with open(token_file) as f:
             token = f.read().strip()
+        term.typed.add(token)  # never in a feedback report
         term.heading("Your password", 1)
         term.note("Choose the password for Starboard. You use it to sign in from any device. No setup code is needed: "
                   "you are on the server itself. Type ? for help.")
@@ -446,7 +965,7 @@ def step_password(api, term, state):
             try:
                 api.call("POST", "/api/setup", {"token": token, "password": first})
             except Problem as e:
-                term.say(f"Starboard said: {e}")
+                term.failed(f"Starboard said: {e}", str(e))
                 continue
             term.ok("Password saved. You are signed in.")
             state["password"] = first
@@ -614,9 +1133,13 @@ def step_check(api, term, state, wait=2.0):
     if job.get("ok"):
         term.ok(f"All {len(choice['apps'])} apps are running.")
         return True
+    lines = (job.get("log") or "").strip().splitlines()[-12:]
     term.warn("The apps did not all start. The last lines Docker wrote:")
-    for line in (job.get("log") or "").strip().splitlines()[-12:]:
+    for line in lines:
         term.say(f"  {line}")
+    term.last_error = "The apps did not all start. The last lines Docker wrote:\n" + "\n".join(lines)
+    term.failed("Starboard cannot carry on with the apps from here.", "The apps did not all start.")
+    term.text("Press Enter to carry on")
     return True
 
 
@@ -638,8 +1161,10 @@ def step_hours(api, term, state):
             term.ok(f"Download hours: {int(start):02d}:00 to {int(end):02d}:00. Change them later in Settings, General.")
             state["hours"] = {"when": 1, "start": int(start), "end": int(end)}
             return True
-        except (ValueError, Problem) as e:
+        except ValueError as e:
             term.say(f"That did not work: {e}. Type whole hours, such as 1 and 7.")
+        except Problem as e:
+            term.failed(f"That did not work: {e}. Type whole hours, such as 1 and 7.", str(e))
 
 
 STEP_FUNCTIONS = [step_password, step_apps, step_vpn, step_check, step_hours]
@@ -649,9 +1174,10 @@ def run(api, term, data_dir, port, address=""):
     if not term.fancy:
         term.say("\nStarboard set-up, in the terminal")
         term.note("Every question has a number or a word to type, and Enter takes the answer in [brackets]. "
-                  "Type ? at any question for help, b to go back a step, or q to stop. You can carry on later in a "
-                  "browser instead.")
+                  "Type ? at any question for help, b to go back a step, f to send feedback, or q to stop. You can "
+                  "carry on later in a browser instead.")
     state = {"data_dir": data_dir}
+    api.on_error = term.record_error
     shown, i = [], 0  # the steps shown so far, for Back
     try:
         while i < len(STEP_FUNCTIONS):
@@ -665,7 +1191,7 @@ def run(api, term, data_dir, port, address=""):
                 i = shown.pop() if shown else 0
                 term.came_back = True
             except GoTo as e:
-                term.warn(f"Starboard said: {e}")
+                term.failed(f"Starboard said: {e}", str(e))
                 term.text("Press Enter to change that answer")
                 while shown and shown[-1] >= e.step:
                     shown.pop()
@@ -694,15 +1220,22 @@ def main(argv=None):
     if not sys.stdin.isatty():
         print("Stopped: this needs a terminal to type in. Finish set-up in a browser instead.", file=sys.stderr)
         return 2
-    term = Terminal(fancy=False if args.plain or os.environ.get("STARBOARD_PLAIN") else None)
+    plain = bool(args.plain or os.environ.get("STARBOARD_PLAIN"))
+    term = Terminal(fancy=False if plain else None)
+    term.plain_asked = plain
     try:
         return run(Api(args.port), term, args.data, args.port, args.address)
     except Stop:
         term.say("\nStopped. Nothing else was changed. Carry on later in a browser, or run this again.")
         return 1
-    except (Problem, KeyboardInterrupt, EOFError) as e:
+    except Problem as e:
         term.finish()
-        term.say(f"\nStopped: {e}" if isinstance(e, Problem) else "\nStopped.")
+        term.say(f"\nStopped: {e}")
+        term.offer_report(str(e))
+        return 1
+    except (KeyboardInterrupt, EOFError):
+        term.finish()
+        term.say("\nStopped.")
         return 1
 
 
