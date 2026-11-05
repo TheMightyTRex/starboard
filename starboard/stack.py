@@ -135,7 +135,7 @@ _SAFE_PATH = re.compile(r"^/[A-Za-z0-9._/-]{1,200}$")
 _SYSTEM = ("/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var/run", "/var/lib/docker",
            "/var/spool")
 # Folders that hold others: fine to put media under, never to use (or hand to an app's user) themselves.
-_TOP = ("/home", "/var", "/var/lib", "/opt", "/srv", "/mnt", "/media", "/tmp")
+_TOP = ("/home", "/var", "/var/lib", "/opt", "/srv", "/mnt", "/media", "/tmp")  # nosec B108: folders refused, not used
 
 
 def clean_folder(path, what):

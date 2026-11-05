@@ -64,7 +64,9 @@ The Run first script, one order for both set-ups, and a security review of the s
   `.local`, which stops DNS rebinding against a native install.
 - **Disk health:** its report folder belongs to root, and the job never follows a link.
 - **The first password:** two requests at the same moment cannot both choose it.
-- **Checks:** CHECKS_PLACEHOLDER
+- **Checks:** Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint
+  and CodeQL ran on this release, after a security review of every set-up wizard. ZAP's two signed-in warnings
+  were false alarms, explained in docs/SECURITY-AND-TESTS.md.
 
 ## [0.8.0] (5 November 2026)
 

@@ -199,7 +199,7 @@ RELEASES = [
                  ("Text wraps at any size", "Everything in the terminal wraps between words, again when the window changes size, and in plain mode.")],
      "security": [("The set-up and the installer", "Only the options the set-up writes reach the installer, with every folder checked; the setup code is never read through a link; temporary files are private."),
                   ("Host names", "Starboard answers only to this computer's own name, alone or with a home-network ending, which stops DNS rebinding."),
-                  ("Checks", "CHECKS_PLACEHOLDER")],
+                  ("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release, after a security review of every set-up wizard. Its findings are fixed above; ZAP's two signed-in warnings were false alarms, explained in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "Nothing to choose. New installs use the Run first script; existing ones are not changed. To go back, run ./update.sh --to v0.8.0."},
 ]

@@ -102,7 +102,7 @@ def storage(main_folder, drives, pool_ready):
 SAFE_FOLDER = re.compile(r"/[A-Za-z0-9._/-]{1,250}")
 # Never offered to ./install.sh: the whole computer, or a system folder (the folder Starboard would mount).
 NOT_FOLDERS = ("/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var/spool")
-TOP_FOLDERS = ("/home", "/var", "/var/lib", "/opt", "/srv", "/mnt", "/media", "/tmp")
+TOP_FOLDERS = ("/home", "/var", "/var/lib", "/opt", "/srv", "/mnt", "/media", "/tmp")  # nosec B108: folders refused, not used
 
 
 def safe_folder(path):

@@ -158,6 +158,38 @@ false alarms:
 
 `SCAN_REPORTS=folder tools/security-scan.sh --full` now keeps ZAP's reports, with each warning's address.
 
+## Security review of the set-up wizards, 5 November 2026 (0.9.0)
+
+Two independent reviews read every set-up path: the Run first script, `install.sh`, the terminal set-up, the browser
+set-up guide, Install apps and the routes they use. Each finding was checked again in the code before it was fixed,
+and each fix has a test where code can test it:
+
+- **What the set-up hands to the installer (medium):** `data/setup-host.json` is in the data folder, which the
+  container can write to. The Run first script now passes on only `--disk Media=`, `--livetv-folder` and
+  `--disk-health`, each folder checked again by the same rule as the server, from a regular file only.
+- **The setup code (medium to low):** a link planted at `data/setup-token` could have sent a host file, such as an
+  SSH key, to the container. The code is now read only from a regular file, never through a link, and only as code
+  characters, in the terminal set-up, `install.sh` and the Run first script.
+- **Files the scripts write (low):** the hand-over is written to a new file and moved into place; Docker's installer
+  and the logs use private temporary files instead of fixed names in `/tmp`.
+- **Host names (low):** any name starting with the machine's name was allowed, which let DNS rebinding reach a native
+  install. Now only the machine's name, alone or with a home-network ending.
+- **Folders (low):** the installer's folder options must match whole and are never `/`, a system folder or a top
+  folder; Install apps also refuses `/var/spool` and top folders.
+- **Disk health (low, possible):** the root job's report folder now belongs to root, and `chown -h` never follows a
+  link.
+- **The first password (low):** checked and saved under one lock.
+
+The scans then found nothing new. Trivy, Gitleaks, ShellCheck and Hadolint passed; Bandit flagged the refused-folder
+lists (they name `/tmp` to refuse it), now marked. ZAP signed out passed 58 checks; ZAP signed in passed 109 with two
+false alarms:
+
+- **SQL injection on `/api/logs?level=`:** the level is picked from a fixed list (all, problems, detail), and anything
+  else counts as all, so a changed value gives the same answer. There is no database.
+- **Path traversal on `server_name`:** as for 0.7.6 and 0.7.7, the name is never used as a path.
+
+The full report, with the Reelix wizard's review, is kept with the project's notes.
+
 ## Security scans, 5 November 2026 (0.8.0)
 
 Trivy, ShellCheck and Hadolint found nothing. ZAP signed out passed 58 checks with no warnings. Three findings, none
