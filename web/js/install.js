@@ -335,7 +335,7 @@ async function installStep(id, state, data, apps, go) {
   } else if (id === "start") {
     const w = state.written || {};
     const log = el("pre", { class: "code-block", hidden: true });
-    const status = el("div", { "aria-live": "polite" });
+    const status = el("div", { class: "stack-2", "aria-live": "polite" });
     const after = el("div", { class: "stack-4" });
     const showAfter = async () => {
       const finder = await appFinder();
@@ -357,14 +357,55 @@ async function installStep(id, state, data, apps, go) {
         try {
           await api("/api/stack/start", { method: "POST", body: { password: pw.value } });
           form.hidden = true;
-          status.replaceChildren(el("p", { class: "muted", text: "Downloading and starting the apps…" }));
+          // One bar for the job, updated in place; a problem goes below it (WIZARD.md section 5, A job's progress).
+          const words = el("span", { text: "Downloading and starting the apps. Please wait, this can take some time…" });
+          const time = el("span", { class: "numeric", style: "white-space: nowrap", text: "0 min 00 s" });
+          const bar = el("div", { class: "progress progress--busy", role: "progressbar", "aria-label": "Starting the apps",
+            "aria-valuetext": "Working" }, el("span"));
+          status.replaceChildren(el("div", { class: "meter" }, el("div", { class: "meter__label" }, words, time), bar));
+          const began = Date.now();
           for (;;) {
             await new Promise((r) => setTimeout(r, 3000));
+            const secs = Math.round((Date.now() - began) / 1000);
+            time.textContent = `${Math.floor(secs / 60)} min ${String(secs % 60).padStart(2, "0")} s`;
             const j = await api("/api/stack/job");
             if (!j.finished) continue;
-            log.textContent = j.log; log.hidden = false;
-            status.replaceChildren(j.ok ? notice("success", "The apps are running", "Now connect them: the steps are below.") : notice("danger", "Something did not start", "Read the log below, change what it says, and run this guide again."));
-            if (j.ok) await showAfter();
+            log.textContent = j.log;
+            bar.classList.remove("progress--busy");
+            bar.firstChild.style.width = "100%";
+            if (j.ok) {
+              words.textContent = "The apps are running.";
+              bar.setAttribute("aria-valuetext", "Done");
+              status.append(notice("success", "The apps are running", "Now connect them: the steps are below."));
+              await showAfter();
+            } else {
+              // The bar stays where it stopped, marked; the problem and its choices are below it.
+              words.textContent = "Downloading and starting the apps did not finish.";
+              bar.dataset.tone = "danger";
+              bar.setAttribute("aria-valuetext", "Did not finish");
+              const again = el("button", { type: "button", class: "btn btn--primary" }, "Try again");
+              const details = el("button", { type: "button", class: "btn", "aria-expanded": "false" }, "Show the details");
+              const leave = el("a", { class: "btn btn--quiet", href: "/index.html" }, "Stop");
+              const problemBox = el("div", { class: "stack-2", id: "start-problem" },
+                notice("danger", "Something did not start", "Docker stopped before every app was running. Try again often works after a slow download; the details show the last lines Docker wrote."),
+                el("div", { class: "actions" }, again, details, leave));
+              bar.setAttribute("aria-describedby", "start-problem");
+              status.append(problemBox);
+              details.addEventListener("click", () => {
+                log.hidden = !log.hidden;
+                details.setAttribute("aria-expanded", String(!log.hidden));
+                details.textContent = log.hidden ? "Show the details" : "Hide the details";
+              });
+              again.addEventListener("click", () => {
+                status.replaceChildren();
+                log.hidden = true;
+                form.hidden = false;
+                startBtn.disabled = false;
+                pw.focus();
+              });
+              problemBox.querySelector(".notice__title, strong")?.setAttribute("tabindex", "-1");
+              problemBox.querySelector(".notice__title, strong")?.focus();
+            }
             break;
           }
         } catch (e) {

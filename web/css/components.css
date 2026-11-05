@@ -1289,6 +1289,29 @@
   .progress[data-tone="danger"] > span {
     background: var(--status-danger-fg);
   }
+  /* Busy: a job whose end is not known (WIZARD.md section 5, A job's progress). A band moves across; with less motion
+     asked for, the bar is shown half filled and still, and the words beside it say it is working. */
+  .progress--busy {
+    overflow: hidden;
+  }
+  .progress--busy > span {
+    width: 30%;
+    animation: progress-busy 1.4s ease-in-out infinite;
+  }
+  @keyframes progress-busy {
+    from { margin-left: -30%; }
+    to { margin-left: 100%; }
+  }
+  :root.pref-motion .progress--busy > span {
+    width: 50%;
+    animation: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .progress--busy > span {
+      width: 50%;
+      animation: none;
+    }
+  }
   .meter {
     display: grid;
     gap: var(--space-1);

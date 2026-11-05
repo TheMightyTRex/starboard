@@ -10,6 +10,12 @@ Start with the **Run first script**. On any Linux computer, with or without a de
 curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
 ```
 
+If it says "Command 'curl' not found" (Ubuntu Desktop does not include curl), use `wget`, which it does include:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
+```
+
 Typing it? Type it exactly: everything after `TheMightyTRex/starboard/` is case-sensitive, so `main/run-first.sh`
 must be in small letters with a hyphen, or GitHub answers 404 (not found). The `|` (vertical bar) is in different
 places on different keyboards: on a UK keyboard it is **Shift**

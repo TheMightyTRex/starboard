@@ -7,7 +7,19 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **The terminal uses a wide window evenly:** the Run first script and the terminal set-up draw in a column up to 100
+  characters wide, centred in a wider window, and move it when the window changes size.
+- **Progress bars are drawn once:** each job has one bar, updated in place and cut to the window, so it never repeats
+  down the page. When a job fails, its bar stays, marked "did not finish", and the problem and its choices (Try
+  again, Show the details, Stop) are below it. Install apps shows a moving bar and the time taken while the apps
+  start, in the same way.
+- **Choosing several answers in the terminal:** Up and Down move, Space ticks or unticks, Enter carries on. Typing a
+  number still works, and plain mode keeps typed numbers.
+
 ### Fixed
+- **The quick start without curl:** Ubuntu Desktop does not include curl, so the README and the help now give the
+  same command with `wget`, which Ubuntu, Linux Mint and Debian include.
 - **Disk health installs what it needs:** choosing disk health no longer stops with "install smartmontools first":
   the installer installs smartmontools itself (sudo asks for the password), and finds it in /usr/sbin, which is not on
   every user's path.

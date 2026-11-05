@@ -37,7 +37,12 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
    bash run-first.sh
    ```
 
-   If it says "curl: command not found", install curl first (see "If it does not work" below).
+   If it says "Command 'curl' not found" (Ubuntu Desktop does not include curl), use this command instead. It
+   does the same with `wget`, which Ubuntu, Linux Mint and Debian include:
+
+   ```bash
+   wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
+   ```
 
 2. The first question is about how it looks. Press Enter for the standard look, or type `a` and press Enter for
    **accessible mode**: plain lines with no boxes or colour, for software that reads text aloud. Your choice is kept
@@ -101,7 +106,13 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 
 - **"The requested URL returned error: 404":** the address was typed with a difference. Copy and paste it instead,
   or check that `main/run-first.sh` is in small letters with a hyphen and the account is `TheMightyTRex`.
-- **"curl: command not found":** install curl, then run the command again. On Debian, Ubuntu, Linux Mint and
+- **"Command 'curl' not found" or "curl: command not found":** use the same command with `wget` instead:
+
+  ```bash
+  wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
+  ```
+
+  If `wget` is missing too, install curl, then run the first command again. On Debian, Ubuntu, Linux Mint and
   Raspberry Pi OS:
 
   ```bash
