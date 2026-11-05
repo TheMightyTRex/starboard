@@ -86,7 +86,7 @@ EOF
 boot() { # boot a disk in the background; extra arguments go to QEMU
   local disk="$1"; shift
   "$QEMU" "${ACCEL[@]}" -smp 2 -m "$MEMORY" -nographic -serial "file:$LOG" -monitor none \
-    -drive "file=$disk,if=virtio,format=qcow2" \
+    -drive "file=$disk,if=none,id=system,format=qcow2" -device virtio-blk-pci,drive=system,bootindex=0 \
     -nic "user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:$SSH_PORT-:22,hostfwd=tcp:127.0.0.1:$WEB_PORT-:8095" \
     "$@" >/dev/null 2>&1 &
   echo $! > "$PID"

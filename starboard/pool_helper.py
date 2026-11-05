@@ -32,6 +32,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 VERSION = 1
@@ -44,7 +45,7 @@ MEMBER_FS = {"linux_raid_member": "RAID", "LVM2_member": "LVM", "zfs_member": "Z
              "bcache": "bcache", "ceph": "Ceph"}
 KEEPABLE = {"ext4", "ext3", "ext2", "xfs", "btrfs", "ntfs", "ntfs3", "exfat", "vfat"}
 POOL_OPTIONS = ("defaults,allow_other,category.create=mfs,moveonenospc=true,func.getattr=newest,cache.files=off,"
-                "dropcacheonclose=true,fsname=starboard-pool,nofail")
+                "dropcacheonclose=true,fsname=starboard-pool")  # no nofail: mergerfs 2.33 refuses it
 MOUNT_OPTIONS = "defaults,nofail,x-systemd.device-timeout=30s"
 ACTIONS = {"drives", "plan", "apply", "stop", "status"}
 REQUEST_MAX = 64 * 1024
@@ -319,21 +320,46 @@ def fstab_block(host, cfg):
     return lines
 
 
+def fstab_problems(block):
+    """Errors findmnt finds in Starboard's own lines only, so an unrelated line elsewhere in /etc/fstab never stops a
+    change. Warnings (such as fuse.mergerfs not being loaded yet) are not problems."""
+    if not block:
+        return ""
+    with tempfile.NamedTemporaryFile("w", suffix=".fstab", delete=False) as f:
+        f.write("\n".join(block) + "\n")
+    try:
+        p = subprocess.run(["findmnt", "--verify", "--tab-file", f.name], capture_output=True, text=True)
+    finally:
+        os.unlink(f.name)
+    out, errors, where = (p.stdout + p.stderr).splitlines(), [], ""
+    for line in out:
+        if line and not line.startswith(" "):
+            where = line.strip()
+        elif "[E]" in line:
+            errors.append(f"{where}: {line.split('[E]', 1)[1].strip()}")
+    return "; ".join(errors)
+
+
 def write_fstab(host, cfg):
-    """Replace only Starboard's own block: saved first, written to a new file, checked, then renamed into place."""
+    """Replace only Starboard's own block: the mount folders made first, the block checked, a copy of the old file
+    saved, the new one written to a new file, then renamed into place."""
     before, _, after = read_fstab(host)
     block = fstab_block(host, cfg)
+    for d in cfg["drives"]:
+        if d.get("own_line"):
+            os.makedirs(host.real(d["mount"]), exist_ok=True)
+    if any(d["role"] == "pool" for d in cfg["drives"]):
+        os.makedirs(host.real(host.pool), exist_ok=True)
+    if host.root == "/":
+        problems = fstab_problems(block)
+        if problems:
+            raise Refused(f"Starboard's new lines for /etc/fstab did not pass their check, so it was not changed: {problems}")
     lines = before + ([BEGIN] + block + [END] if block else []) + after
     text = "\n".join(lines).rstrip("\n") + "\n"
     save_copy(host, host.fstab)
     tmp = host.fstab + ".starboard-new"
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
-    if host.root == "/":
-        p = subprocess.run(["findmnt", "--verify", "--tab-file", tmp], capture_output=True, text=True)
-        if p.returncode != 0 and "error" in (p.stdout + p.stderr).lower():
-            os.unlink(tmp)
-            raise Refused("The new /etc/fstab did not pass its check, so nothing was changed: " + p.stdout.strip()[-300:])
     os.chmod(tmp, 0o644)
     os.replace(tmp, host.fstab)
     return block
@@ -740,6 +766,17 @@ def apply(host, plan_id, confirm=None, out=None):
 def apply_add(host, plan, job):
     cfg = host.config()
     e = dict(plan["entry"])
+    if host.root == "/":
+        # Check Starboard's new lines before anything is erased: only the new drive's ID is not known yet.
+        trial = dict(cfg, drives=cfg["drives"] + [dict(e, uuid=e.get("uuid") or "PENDING")])
+        for d in trial["drives"]:
+            if d.get("own_line"):
+                os.makedirs(host.real(d["mount"]), exist_ok=True)
+        if e["role"] == "pool":
+            os.makedirs(host.real(host.pool), exist_ok=True)
+        problems = fstab_problems([line for line in fstab_block(host, trial) if not line.startswith("UUID=PENDING ")])
+        if problems:
+            raise Refused(f"Starboard's new lines for /etc/fstab would not pass their check, so nothing was changed: {problems}")
     for s in plan["steps"]:
         if s["do"] == "unmount":
             for p in s["points"]:
@@ -757,6 +794,7 @@ def apply_add(host, plan, job):
             job.step(s["say"])
     if e.get("own_line"):
         os.makedirs(host.real(e["mount"]), exist_ok=True)
+        lock_empty(host, e["mount"])
     cfg["drives"].append(e)
     write_fstab(host, cfg)
     if e.get("own_line"):
@@ -776,6 +814,14 @@ def apply_add(host, plan, job):
     if e["role"] in ("parity", "copy"):
         host.run("systemctl", "enable", "--now", "starboard-pool-nightly.timer", check=False)
         job.step(f"The nightly {'check' if e['role'] == 'parity' else 'copy'} is set for {cfg['check_at']}")
+
+
+def lock_empty(host, path):
+    """Lock an empty mount folder (chattr +i), so nothing is written into it, or into the pool through it, while its
+    drive is not mounted. The lock stays on the folder underneath; the mounted drive is not affected."""
+    real = host.real(path)
+    if host.root == "/" and os.path.isdir(real) and not os.path.ismount(real) and not os.listdir(real):
+        host.run("chattr", "+i", real, check=False)
 
 
 def wait_for(host, path, seconds=30):

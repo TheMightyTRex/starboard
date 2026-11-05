@@ -2,6 +2,7 @@
 command it would run is recorded instead."""
 import json
 import os
+import shutil
 import tempfile
 import time
 import unittest
@@ -177,6 +178,17 @@ class PlanTest(unittest.TestCase):
             ph.plan_add(c.host, "sdc", "pool", erase=True)
         plan = ph.plan_add(c.host, "sdc", "pool")
         self.assertIn("/media/old", " ".join(s["say"] for s in plan["steps"]))
+
+
+@unittest.skipUnless(shutil.which("findmnt"), "needs findmnt")
+class FstabCheckTest(unittest.TestCase):
+    def test_a_missing_mount_folder_is_an_error_and_warnings_are_not(self):
+        with tempfile.TemporaryDirectory() as root:
+            os.makedirs(os.path.join(root, "disk1"))
+            line = f"{root}/disk1 {root}/pool fuse.mergerfs defaults,allow_other,nofail 0 0"
+            self.assertIn("unreachable", ph.fstab_problems([line]))
+            os.makedirs(os.path.join(root, "pool"))
+            self.assertEqual(ph.fstab_problems([line]), "")
 
 
 class BalanceTest(unittest.TestCase):

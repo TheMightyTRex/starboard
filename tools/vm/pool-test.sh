@@ -83,15 +83,15 @@ if [ "${1:-}" = before ]; then
   check POOL-07 "the nightly check protected every file" sudo grep -q '"state": "done"' /var/lib/starboard-pool/nightly.json
   check POOL-07 "a too small drive is refused as parity" bash -c "$J plan add $(drive 5) --as parity --erase | grep -q 'at least as big'"
 
-  echo "== add drive 4, then take it out again"
+  echo "== add drive 4, then take it out again (it is labelled disk3: the next free name)"
   apply "$(plan add "$(drive 4)" --as pool --erase)" --confirm "$(drive 4)=0004"
-  sudo mkdir -p "/mnt/disks/disk4/media/films/Example film (2020)"
-  sudo fallocate -l 50M "/mnt/disks/disk4/media/films/Example film (2020)/film.mkv"
-  sudo find /mnt/disks/disk4/media -exec touch -h -d '3 hours ago' {} +
-  P=$(plan remove disk4)
+  sudo mkdir -p "/mnt/disks/disk3/media/films/Example film (2020)"
+  sudo fallocate -l 50M "/mnt/disks/disk3/media/films/Example film (2020)/film.mkv"
+  sudo find /mnt/disks/disk3/media -exec touch -h -d '3 hours ago' {} +
+  P=$(plan remove disk3)
   apply "$P"
-  check POOL-08 "disk4 is out of fstab" bash -c "! grep -q disk4 /etc/fstab"
-  check POOL-08 "disk4 is unmounted" bash -c "! mountpoint -q /mnt/disks/disk4"
+  check POOL-08 "disk3 is out of fstab" bash -c "! grep -q disk3 /etc/fstab"
+  check POOL-08 "disk3 is unmounted" bash -c "! mountpoint -q /mnt/disks/disk3"
   check POOL-08 "its film moved to the other drives" test -f "/mnt/pool/media/films/Example film (2020)/film.mkv"
   check POOL-08 "the drive was not erased" sudo blkid -s LABEL -o value "$(drive 4)-part1"
   sudo python3 starboard/pool_helper.py nightly
