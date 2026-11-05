@@ -349,6 +349,12 @@ class TerminalSetupTest(unittest.TestCase):
                                "WireGuard [key]")
         self.assertEqual(terminal_setup.redact("in my folder answer here", {"my folder answer"}),
                          "in [your answer] here")
+        # Only fingerprints of typed answers are kept, never the answers themselves.
+        term = terminal_setup.Terminal(out=io.StringIO(), fancy=False, ask=Answers(["my secret folder"]))
+        term.text("Where?")
+        self.assertTrue(term.typed and all(isinstance(t, tuple) and len(t[1]) == 64 for t in term.typed))
+        self.assertNotIn("my secret folder", repr(term.typed))
+        self.assertEqual(terminal_setup.redact("it is my secret folder", term.typed), "it is [your answer]")
 
     def test_needs_a_terminal(self):
         import sys
