@@ -99,7 +99,16 @@ def storage(main_folder, drives, pool_ready):
                     "keeps media apart from the system; a pool joins several disks into one folder."}
 
 
-SAFE_FOLDER = re.compile(r"^/[A-Za-z0-9._/-]{0,250}$")
+SAFE_FOLDER = re.compile(r"/[A-Za-z0-9._/-]{1,250}")
+# Never offered to ./install.sh: the whole computer, or a system folder (the folder Starboard would mount).
+NOT_FOLDERS = ("/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var/spool")
+TOP_FOLDERS = ("/home", "/var", "/var/lib", "/opt", "/srv", "/mnt", "/media", "/tmp")
+
+
+def safe_folder(path):
+    path = path.rstrip("/")
+    return (bool(SAFE_FOLDER.fullmatch(path)) and "/../" not in path + "/" and "//" not in path
+            and path not in TOP_FOLDERS and not any(path == s or path.startswith(s + "/") for s in NOT_FOLDERS))
 
 
 def host_args(wanted):
@@ -108,10 +117,10 @@ def host_args(wanted):
     wanted = wanted if isinstance(wanted, dict) else {}
     args = []
     media = str(wanted.get("media") or "")
-    if media and SAFE_FOLDER.match(media):
+    if media and safe_folder(media):
         args += ["--disk", f"Media={media}"]
     livetv = str(wanted.get("livetv") or "")
-    if livetv and SAFE_FOLDER.match(livetv):
+    if livetv and safe_folder(livetv):
         args += ["--livetv-folder", livetv]
     if wanted.get("health"):
         args.append("--disk-health")

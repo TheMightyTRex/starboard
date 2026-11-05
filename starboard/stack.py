@@ -132,14 +132,17 @@ DATA_FOLDERS = {"movies": ["media/movies"], "tv": ["media/tv"], "music": ["media
 
 PROJECT = "media-stack"
 _SAFE_PATH = re.compile(r"^/[A-Za-z0-9._/-]{1,200}$")
-_SYSTEM = ("/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var/run", "/var/lib/docker")
+_SYSTEM = ("/bin", "/boot", "/dev", "/etc", "/lib", "/proc", "/root", "/run", "/sbin", "/sys", "/usr", "/var/run", "/var/lib/docker",
+           "/var/spool")
+# Folders that hold others: fine to put media under, never to use (or hand to an app's user) themselves.
+_TOP = ("/home", "/var", "/var/lib", "/opt", "/srv", "/mnt", "/media", "/tmp")
 
 
 def clean_folder(path, what):
     path = str(path or "").strip().rstrip("/")
     if not _SAFE_PATH.match(path) or "/../" in path + "/" or "/./" in path + "/" or "//" in path:
         raise ValueError(f"The {what} must be a full path such as /srv/media, with letters, numbers, dots, dashes and underscores")
-    if path == "" or any(path == s or path.startswith(s + "/") for s in _SYSTEM):
+    if path == "" or path in _TOP or any(path == s or path.startswith(s + "/") for s in _SYSTEM):
         raise ValueError(f"The {what} cannot be a system folder")
     return path
 

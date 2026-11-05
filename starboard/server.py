@@ -125,6 +125,11 @@ def static_file(full, depth=0):
     return value
 
 
+# Endings a home router or the computer itself gives a name: myserver.local, myserver.lan and so on.
+HOME_ENDINGS = ("local", "lan", "home", "home.arpa", "localdomain", "internal")
+# The first password is chosen once: two requests at the same moment cannot both choose it.
+FIRST_PASSWORD_LOCK = threading.Lock()
+
 class App:
     def __init__(self, data_dir):
         self.data_dir = data_dir
@@ -228,8 +233,11 @@ class App:
             return True
         except ValueError:
             pass
-        first = name.split(".", 1)[0]
-        return first == self.machine_name or any(name.endswith("." + h) for h in self.allowed_hosts if h.startswith("."))
+        # The machine's own name, alone or with a home-network ending. Not any name that starts with it, which a
+        # web page could point at this server (DNS rebinding), such as raspberrypi.attacker.example.
+        if self.machine_name and name in {self.machine_name} | {f"{self.machine_name}.{end}" for end in HOME_ENDINGS}:
+            return True
+        return any(name.endswith("." + h) for h in self.allowed_hosts if h.startswith("."))
 
     def listen_host(self):
         if self.forced_host:
@@ -1341,13 +1349,16 @@ class Handler(BaseHTTPRequestHandler):
         problem = auth.password_problem(password)
         if problem:
             return self.error(400, problem)
-        if "site_name" in data:
-            app.config.update_general({"site_name": data["site_name"]})
-        app.config.data["auth"]["password_hash"] = auth.hash_password(password)
-        app.config.data["last_version"] = app.version if re.match(r"^\d+\.\d+\.\d+$", app.version or "") else ""
-        app.config.save()
-        app.setup_token = None
-        App._remove_setup_token(app.config.data_dir)
+        with FIRST_PASSWORD_LOCK:
+            if not app.needs_setup or not app.setup_token:  # another request chose it while this one was checked
+                return self.error(409, "A password is already set. Sign in instead")
+            if "site_name" in data:
+                app.config.update_general({"site_name": data["site_name"]})
+            app.config.data["auth"]["password_hash"] = auth.hash_password(password)
+            app.config.data["last_version"] = app.version if re.match(r"^\d+\.\d+\.\d+$", app.version or "") else ""
+            app.config.save()
+            app.setup_token = None
+            App._remove_setup_token(app.config.data_dir)
         app.limits.clear(address)
         return self.json(200, {"ok": True}, self.new_session(bool(data.get("remember"))))
 

@@ -361,8 +361,8 @@ check() {
       [ "$PKG" = apt ] && [ ${#base[@]} -eq 0 ] && fix "Updating the list of software" "sudo apt-get update"
       fix "Installing Docker and Docker Compose" "sudo apt-get install -y docker.io docker-compose-v2"
     else
-      fix "Downloading Docker's installer" "curl -fsSL https://get.docker.com -o /tmp/get-docker.sh"
-      fix "Installing Docker and Docker Compose" "sudo sh /tmp/get-docker.sh"
+      fix "Downloading Docker's installer" "curl -fsSL https://get.docker.com -o $WORK/get-docker.sh"
+      fix "Installing Docker and Docker Compose" "sudo sh $WORK/get-docker.sh"
     fi
     has systemctl && fix "Starting Docker" "sudo systemctl enable --now docker"
   else
@@ -415,7 +415,8 @@ show_checks() {
 
 # Work happens quietly. What the commands print goes to this log, and the person sees a progress bar with an
 # animation; plain mode prints one line as each job starts and finishes. The log is kept for "Show the details".
-LOG="${TMPDIR:-/tmp}/starboard-run-first-$(id -u).log"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/starboard-run-first.XXXXXX")" || { echo "Stopped: no temporary folder" >&2; exit 1; }
+LOG="$WORK/run-first.log"
 KEEP=""
 SPIN=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
 
@@ -741,6 +742,16 @@ cmd=(./install.sh)
 cmd+=("${PASS[@]}")
 cd "$DIR" || exit 1
 
+# A folder the set-up may hand to ./install.sh: the same rule as starboard/start.py's safe_folder.
+safe_folder() {
+  local f="${1%/}"
+  [[ "$f" =~ ^/[A-Za-z0-9._/-]{1,250}$ ]] || return 1
+  case "$f/" in */../*|*//*) return 1 ;; esac
+  case "$f" in /home|/var|/var/lib|/opt|/srv|/mnt|/media|/tmp) return 1 ;; esac
+  case "$f/" in /bin/*|/boot/*|/dev/*|/etc/*|/lib/*|/proc/*|/root/*|/run/*|/sbin/*|/sys/*|/usr/*|/var/spool/*) return 1 ;; esac
+  return 0
+}
+
 # The hand-over: what is on this computer, for the set-up's recommended answers (How to start, Storage). The drive
 # list is in the same form as the disk health job's, so Starboard reads it the same way.
 handover() {
@@ -752,7 +763,7 @@ handover() {
   memory="$(awk '/MemTotal/ {printf "%d", $2 / 1024}' /proc/meminfo 2>/dev/null)"
   mkdir -p data && chmod 700 data
   printf '{"written": "%s", "memory_mb": %s, "apps": [%s], "lsblk": %s}\n' "$(date -Iseconds)" "${memory:-0}" "$apps" "$drives" \
-    > data/run-first.json
+    > data/.run-first.json.new && mv -f data/.run-first.json.new data/run-first.json
 }
 handover
 
@@ -776,17 +787,23 @@ if [ "$FINISH" = terminal ]; then
   [ "$status" = 0 ] || exit "$status"
   # The set-up's changes to this computer (free space for the media folder, the Live TV folder, disk health),
   # applied with the installer, which asks for the password itself where it needs sudo.
-  if [ -s data/setup-host.json ]; then
-    mapfile -t host < <(python3 -c 'import json; [print(a) for a in json.load(open("data/setup-host.json"))["args"]]' 2>/dev/null)
+  if [ -s data/setup-host.json ] && [ ! -L data/setup-host.json ]; then
+    mapfile -t host < <(python3 -I -c 'import json,sys; [print(a) for a in json.load(open(sys.argv[1]))["args"] if isinstance(a, str) and "\n" not in a]' data/setup-host.json 2>/dev/null)
     apply=()
     for (( i = 0; i < ${#host[@]}; i++ )); do
+      value="${host[$((i + 1))]:-}"
       case "${host[$i]}" in
+        --disk-health) apply+=(--disk-health) ;;
         --disk|--livetv-folder)
-          folder="${host[$((i + 1))]#*=}"
-          if [ -d "$folder" ]; then apply+=("${host[$i]}" "${host[$((i + 1))]}")
-          else echo "Not yet: $folder is made when the apps start. Run ./install.sh ${host[$i]} ${host[$((i + 1))]} after that."; fi
+          folder="${value#Media=}"
+          [ "${host[$i]}" = --livetv-folder ] && folder="$value"
+          if [ "${host[$i]}" = --disk ] && [ "${value:0:6}" != "Media=" ]; then folder=""; fi
+          if ! safe_folder "$folder"; then
+            echo "Left out: ${host[$i]} with a folder Starboard does not use. Run ./install.sh yourself to change it."
+          elif [ -d "$folder" ]; then apply+=("${host[$i]}" "$value")
+          else echo "Not yet: $folder is made when the apps start. Run ./install.sh ${host[$i]} $value after that."; fi
           i=$(( i + 1 )) ;;
-        *) apply+=("${host[$i]}") ;;
+        *) echo "Left out: ${host[$i]}, which the set-up never asks for."; apply=(); break ;;
       esac
     done
     if [ ${#apply[@]} -gt 0 ]; then
@@ -808,7 +825,7 @@ fi
 
 port="$(sed -n 's/^STARBOARD_PORT=//p' .env 2>/dev/null | tail -n 1)"; port="${port:-8095}"
 lan="$(hostname -I 2>/dev/null | awk '{print $1}')"
-code="$(cat data/setup-token 2>/dev/null)"
+code="$( { [ -f data/setup-token ] && [ ! -L data/setup-token ] && head -c 64 data/setup-token; } 2>/dev/null | tr -cd 'A-Za-z0-9_-')"
 url="http://localhost:$port/"
 [ -n "$code" ] && url="http://localhost:$port/setup.html#code=$code"
 

@@ -22,6 +22,7 @@ import re
 import shutil
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import textwrap
@@ -1114,6 +1115,20 @@ class Terminal:
 
 # The steps. Each takes what was answered before (state), so going back shows the last answers as the defaults.
 
+def read_setup_code(path):
+    """The setup code from Starboard's file, or "": a regular file only (never through a link, which could point at
+    a secret elsewhere on this computer), at most 64 bytes, and only the characters a code has."""
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError:
+        return ""
+    with os.fdopen(fd, "rb") as f:
+        if not stat.S_ISREG(os.fstat(f.fileno()).st_mode):
+            return ""
+        code = f.read(65).decode("ascii", "replace").strip()
+    return code if re.fullmatch(r"[A-Za-z0-9_-]{8,64}", code) else ""
+
+
 def step_password(api, term, state):
     if state.get("password"):
         term.heading("Your password", num("Your password"))
@@ -1121,10 +1136,8 @@ def step_password(api, term, state):
         term.note("Change it later in Starboard, Settings, Security.")
         term.text("Press Enter to carry on", help_key="keep")
         return True
-    token_file = os.path.join(state["data_dir"], "setup-token")
-    if os.path.exists(token_file):
-        with open(token_file) as f:
-            token = f.read().strip()
+    token = read_setup_code(os.path.join(state["data_dir"], "setup-token"))
+    if token:
         term.typed.add(fingerprint(token))  # never in a feedback report
         term.heading("Your password", num("Your password"))
         term.note("Choose the password for Starboard. You use it to sign in from any device. No setup code is needed: "

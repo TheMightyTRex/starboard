@@ -33,7 +33,8 @@ WantedBy=timers.target
 UNIT
 # Read now: Starboard drops an empty file in $OUT/requests (the only place it may write); this runs the job.
 mkdir -p "$OUT/requests"
-chown "${SUDO_UID:-0}:${SUDO_GID:-0}" "$OUT/requests"
+chown -h root:root "$OUT" && chmod 755 "$OUT"  # root's folder: only the requests folder inside is the user's
+chown -h "${SUDO_UID:-0}:${SUDO_GID:-0}" "$OUT/requests"
 cat > /etc/systemd/system/starboard-smart.path <<UNIT
 [Unit]
 Description=Read SMART reports when Starboard asks

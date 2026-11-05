@@ -435,9 +435,10 @@ if [ "$MODE" = docker ]; then
   say "Step 4: building and starting the container"
   if [ "${STARBOARD_QUIET_BUILD:-}" = 1 ] && [ -t 1 ]; then
     # From the Run first script: the build's own lines go to a log, and an animation shows it is working.
-    build_log="${TMPDIR:-/tmp}/starboard-build-$(id -u).log"
+    build_log="$(mktemp "${TMPDIR:-/tmp}/starboard-build.XXXXXX")"
     docker compose up -d --build > "$build_log" 2>&1 &
     build=$!
+    # shellcheck disable=SC1003  # the four spinner characters, a backslash among them
     spin='|/-\'
     i=0
     while kill -0 "$build" 2>/dev/null; do
@@ -493,8 +494,9 @@ if [ "$TERMINAL" = 1 ]; then
   python3 -m starboard.terminal_setup --port "$PORT" --data data --address "${lan:-}" || status=$?
   exit "$status"
 fi
-if [ -f data/setup-token ]; then
-  echo "Setup code (you need it once, to choose your password): $(cat data/setup-token)"
+code="$( { [ -f data/setup-token ] && [ ! -L data/setup-token ] && head -c 64 data/setup-token; } 2>/dev/null | tr -cd 'A-Za-z0-9_-')"
+if [ -n "$code" ]; then
+  echo "Setup code (you need it once, to choose your password): $code"
   echo "No browser here? Finish in the terminal instead: python3 -m starboard.terminal_setup --port $PORT"
 fi
 echo "To update later: ./update.sh"

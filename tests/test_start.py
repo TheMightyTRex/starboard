@@ -7,7 +7,8 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from starboard import start, sysinfo  # noqa: E402
+from starboard import start, sysinfo, terminal_setup  # noqa: E402
+from starboard.server import App  # noqa: E402
 
 TB = 10 ** 12
 
@@ -73,6 +74,45 @@ class StartTest(unittest.TestCase):
         os.environ.pop("STARBOARD_SMART_DIR", None)
         found = sysinfo.pool_candidates(self.tmp.name)
         self.assertEqual([d["mount"] for d in found], ["/mnt/data"])  # the system disk is left out
+
+
+class WizardSecurityTest(unittest.TestCase):
+    """The security review of 5 November 2026: what the set-ups hand to the installer, and what they read."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def test_only_safe_folders_reach_the_installer(self):
+        for bad in ("/", "/home", "/var", "/etc/cron.d", "/var/spool/cron", "/srv/m\n", "/a b", "relative", "/x/../etc", "--docker"):
+            self.assertFalse(start.safe_folder(bad), bad)
+        for good in ("/srv/media", "/home/sam/media", "/mnt/disks/media-1/media", "/mnt/pool/media"):
+            self.assertTrue(start.safe_folder(good), good)
+        self.assertEqual(start.host_args({"media": "/srv/m\n", "livetv": "/home", "health": True}), ["--disk-health"])
+        self.assertEqual(start.host_args({"media": "/srv/media"}), ["--disk", "Media=/srv/media"])
+
+    def test_the_setup_code_is_never_read_through_a_link(self):
+        secret = os.path.join(self.tmp.name, "secret")
+        with open(secret, "w") as f:
+            f.write("PRIVATE KEY that must stay on this computer")
+        code = os.path.join(self.tmp.name, "setup-token")
+        os.symlink(secret, code)
+        self.assertEqual(terminal_setup.read_setup_code(code), "")
+        os.remove(code)
+        with open(code, "w") as f:
+            f.write("not a code: spaces and a colon")
+        self.assertEqual(terminal_setup.read_setup_code(code), "")
+        with open(code, "w") as f:
+            f.write("Abc_def-12345678\n")
+        self.assertEqual(terminal_setup.read_setup_code(code), "Abc_def-12345678")
+
+    def test_only_this_computer_s_own_names_are_allowed(self):
+        app = App.__new__(App)
+        app.machine_name, app.allowed_hosts = "starboard-pi", set()
+        for name in ("starboard-pi", "starboard-pi.local", "starboard-pi.lan", "localhost", "192.168.1.20"):
+            self.assertTrue(app.host_allowed(name), name)
+        for name in ("starboard-pi.attacker.example", "starboard-pi.local.attacker.example", "evil.example"):
+            self.assertFalse(app.host_allowed(name), name)
 
 
 if __name__ == "__main__":

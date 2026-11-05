@@ -9,11 +9,16 @@ OUT="${1:?usage: starboard-smart.sh FOLDER}"
 # This runs as root in a folder its owner can write to, so it never follows a link someone planted there:
 # reports are made in a private temporary folder and renamed into place (a rename replaces a link, it does not
 # write through it), and the folders it writes in must be real folders.
-for d in "$OUT" "$OUT/current"; do
-  if [ -L "$d" ]; then echo "Stopped: $d is a link"; exit 1; fi
-done
+# The folder itself belongs to root, so nobody else can swap what is inside it for a link between a check and a
+# change below; chown -h changes a link, never what it points at.
+if [ -L "$OUT" ]; then echo "Stopped: $OUT is a link"; exit 1; fi
+mkdir -p "$OUT"
+chown -h root:root "$OUT"
+if [ -L "$OUT" ] || [ ! -d "$OUT" ]; then echo "Stopped: $OUT is not a folder"; exit 1; fi
+chmod 755 "$OUT"
+if [ -L "$OUT/current" ]; then echo "Stopped: $OUT/current is a link"; exit 1; fi
 mkdir -p "$OUT/current" "$OUT/requests"
-chown root:root "$OUT/current" && chmod 755 "$OUT/current"
+chown -h root:root "$OUT/current" && chmod 755 "$OUT/current"
 rm -f "$OUT/requests/read"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
