@@ -127,14 +127,17 @@ class Terminal:
 
     def heading(self, text, step=None):
         if not self.fancy:
-            self.say(f"\n== {text}" + (f" (step {step} of {len(STEPS)})" if step else ""))
+            self.say(f"\n== Starboard | {text}" + (f" (step {step} of {len(STEPS)})" if step else ""))
             return
         inner = self.width - 4
         right = f"step {step} of {len(STEPS)}" if step else ""
-        gap = max(inner - len(text) - len(right) - 2, 1)
+        # "Starboard | Your password": the product name in bold, then the step, then the count on the right.
+        left = f"Starboard | {text}"
+        gap = max(inner - len(left) - len(right) - 2, 1)
         self.say("")
         self.say(self.dim("┌" + "─" * (inner + 2) + "┐"))
-        self.say(self.dim("│") + "  " + self.accent(text) + " " * gap + self.dim(right) + "  " + self.dim("│"))
+        self.say(self.dim("│") + "  " + self._c("1", "Starboard") + self.dim(" | ") + self.accent(text) + " " * gap
+                 + self.dim(right) + "  " + self.dim("│"))
         self.say(self.dim("└" + "─" * (inner + 2) + "┘"))
         if step:
             bar = self.width - 12
