@@ -1,0 +1,109 @@
+[Help centre](../README.md) · Install and update · how-to
+
+# Set up everything with the Run first script
+
+Once Linux is installed, the Run first script sets up everything else: it checks the computer, installs Docker and
+anything else that is missing, downloads Starboard and starts its installer. Then the set-up opens in your browser
+if the computer has a desktop, or carries on in the terminal if it does not. It takes about 15 minutes.
+
+## Before you begin
+
+- A computer with Linux installed: Debian, Ubuntu, Linux Mint, Fedora or Raspberry Pi OS, with or without a desktop.
+  Read [Install Linux on a computer](install-linux.md).
+- The computer is connected to the internet.
+- The password you use to sign in to that computer. It is asked for when something needs installing.
+- A terminal open on that computer, or connected to it. Read [The terminal: typing commands](../basics/the-terminal.md).
+
+## Steps
+
+1. Copy this command into the terminal and press Enter:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
+   ```
+
+   If it says "curl: command not found", install curl first (see "If it does not work" below).
+
+2. The first question is about how it looks. Press Enter for the standard look, or type `a` and press Enter for
+   **accessible mode**: plain lines with no boxes or colour, for software that reads text aloud. Your choice is kept
+   for the whole installation.
+3. **Welcome:** choose how to finish setting up. **In a browser** is recommended when the computer has a desktop;
+   **Here in the terminal** when it has none, such as when you are connected over SSH. Press Enter for the
+   recommended answer.
+4. **Check this computer:** it lists what is already there, with a tick, and what is missing. This changes nothing.
+5. **Install what is missing:** it shows the commands it will run. Press Enter to install them. When it asks for
+   your password, type it and press Enter. Nothing shows as you type. If everything is already there, it says so.
+6. **Download Starboard:** it downloads Starboard into a folder called `starboard` in your home folder, or updates
+   it if it is already there.
+7. **Start the installer:** check the summary and press Enter. Starboard's installer asks a few questions about what
+   Starboard may access. If you are unsure, the answer in capitals is the safe one. Answer yes to Docker access if
+   you want Starboard to start your media apps for you.
+8. Finish setting up:
+   - **In a browser, on a computer with a desktop:** the set-up page opens by itself with the setup code filled in.
+     Choose your password. Read [Create your password and sign in](create-your-password.md).
+   - **In a browser, with no desktop:** open the address it prints on a phone or another computer at home, and
+     enter the setup code it shows.
+   - **Here in the terminal:** answer the set-up questions. Read
+     [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md).
+
+## How to answer
+
+- Press Enter on its own to take the recommended answer.
+- Type `b` and press Enter to go back a step, `?` for help with the step, or `q` to stop. Stopping changes nothing
+  more, and you can run the script again at any time.
+- Each step starts on an empty terminal window. The heading and progress bar stay at the top and the keys stay on
+  the bottom line.
+
+## Things to note
+
+- You can run it again at any time: it only installs what is missing, and updates Starboard if it is already
+  downloaded.
+- To only check the computer, with no changes, add `--check`:
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash -s -- --check
+  ```
+
+- Prefer to read a script before running it? Download it, read it, then run it:
+
+  ```bash
+  curl -fsSL -o run-first.sh https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh
+  less run-first.sh
+  bash run-first.sh
+  ```
+
+- It never runs as administrator by itself and never keeps your password: sudo asks for it, only when something is
+  being installed.
+- It allows your user to use Docker. This is the same as administrator control of the computer, so only run it as
+  your own user.
+- After it allows your user to use Docker, sign out and back in once, so ordinary `docker` commands work in new
+  terminals too. The installer itself does not need this.
+
+## If it does not work
+
+- **"curl: command not found":** install curl, then run the command again. On Debian, Ubuntu, Linux Mint and
+  Raspberry Pi OS:
+
+  ```bash
+  sudo apt install curl
+  ```
+
+  On Fedora:
+
+  ```bash
+  sudo dnf install curl
+  ```
+
+- **"This Linux is not one this script knows how to install on":** install Docker by hand with
+  [Install Docker](install-docker.md), then run the script again.
+- **A command fails while installing:** read the lines above the message. Most often the computer is not online, or
+  another update is running. Wait a few minutes and run the script again.
+- **"exists but is not a Starboard download":** a folder called `starboard` is already in your home folder. Move or
+  rename it, then run the script again.
+
+## Find out more
+
+- [Get Starboard up and running, from a bare computer](../guides/get-up-and-running.md)
+- [Install Linux on a computer](install-linux.md)
+- [Install Docker](install-docker.md), to do it by hand
+- [Install Starboard with the installer](install-with-the-installer.md), to do it by hand

@@ -5,6 +5,9 @@
 The installer downloads Starboard, asks what it may access on your computer, and starts it. At the end it prints the
 addresses to open Starboard and a one-time setup code for choosing your password. It takes about 10 minutes.
 
+The [Run first script](run-first.md) installs Docker and git if they are missing and then starts the installer for
+you. Use this page to do it by hand.
+
 ## Before you begin
 
 - A Linux computer that is big enough. Read [What you need to run Starboard](what-you-need.md).

@@ -4,31 +4,33 @@
 
 ## Quick start
 
-On a Linux computer with Docker and git installed.
+Install Linux, with or without a desktop, then run one command: the **Run first script**. It checks the computer,
+installs Docker and anything else missing after you say yes, downloads Starboard and starts its installer. Type `a`
+at its first question for accessible mode, which carries on through the whole installation.
 
-**In a browser.** Download Starboard and run the installer, then open the first address it prints, from this
-computer or any phone or computer at home, and enter the setup code it shows. The set-up guide takes it from there:
-
-```bash
-git clone https://github.com/TheMightyTRex/starboard.git
-cd starboard
-./install.sh
-```
-
-**In the terminal only.** For a server with no desktop and no other device. Download Starboard and run the
-installer with `--terminal`, and it asks every set-up question in the terminal: your password, your apps and your
-download hours:
+**With a desktop: set up in the browser.** Open a terminal and run the command below. When the installer finishes,
+the set-up page opens in your browser by itself, with the setup code filled in:
 
 ```bash
-git clone https://github.com/TheMightyTRex/starboard.git
-cd starboard
-./install.sh --terminal
+curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
 ```
+
+**With no desktop: set up in the terminal.** On the server, or connected to it over SSH, run the same command. It
+sees there is no desktop and asks every set-up question in the terminal instead: your password, your apps and your
+download hours. To choose the terminal yourself:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash -s -- --terminal
+```
+
+![The Run first script's welcome page in a terminal: the Starboard logo in blocks, what the script will do, and a choice to finish setting up in a browser (recommended, as this computer has a desktop) or here in the terminal](docs/screenshots/run-first.jpg)
 
 **New to all this?** Follow the beginners' guide,
 [Get Starboard up and running, from a bare computer](docs/help/guides/get-up-and-running.md). It starts with
-installing Linux and Docker, then takes you through either path step by step. Check
-[what you need to run Starboard](docs/help/topics/what-you-need.md) first.
+installing Linux, then takes you through either path step by step. Check
+[what you need to run Starboard](docs/help/topics/what-you-need.md) first. Already have Docker and git?
+`git clone https://github.com/TheMightyTRex/starboard.git && cd starboard && ./install.sh` (add `--terminal` for the
+terminal set-up).
 
 ## What Starboard does
 

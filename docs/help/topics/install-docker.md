@@ -5,6 +5,9 @@
 Install Docker, the program that runs Starboard in its own sealed box, by copying a few commands into the terminal.
 At the end, `docker compose version` prints a version number and you are ready to install Starboard.
 
+The [Run first script](run-first.md) does all of this for you, and installs Starboard too. Use this page to do it
+by hand.
+
 ## Before you begin
 
 - A Linux computer: Ubuntu, Linux Mint, Debian, Fedora or Raspberry Pi OS. Read

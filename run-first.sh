@@ -160,6 +160,7 @@ page() {
   measure
   header "${TITLES[$STEP]}" "$STEP"
   draw_page
+  say ""
 }
 draw_page() {
   local i top=$(( ${#HEADER[@]} + 1 ))
@@ -336,7 +337,6 @@ step_1() {
       "Starboard and starts its installer."
       ""
       "Nothing changes until you say yes.")
-    say ""
     for i in "${!LOGO[@]}"; do
       say "$(logo_line "$i")$(rep " " $(( 22 - ${#LOGO[$i]} + $(printf '%s' "${LOGO[$i]}" | grep -o '{[TSR]}' | wc -l) * 3 )))${text[$i]:-}"
     done

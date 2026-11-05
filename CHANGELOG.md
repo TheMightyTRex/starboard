@@ -7,6 +7,15 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **The Run first script:** once Linux is installed, one command sets up everything else. `run-first.sh` shows a
+  welcome wizard with the logo, in the terminal set-up's style (heading box, progress bar, menu, help over the
+  step), checks for git, Python, Docker, Docker Compose, Docker running and your user allowed to use Docker,
+  installs only what is missing after you say yes, downloads Starboard and starts the installer. With a desktop it
+  opens the set-up in your browser with the setup code filled in; with none, it carries on in the terminal.
+  Accessible mode is asked first, in plain words, and goes on to the installer (`./install.sh --plain`). `--check`
+  only reports. Find out more in **Set up everything with the Run first script**.
+
 ## [0.8.0] (5 November 2026)
 
 Set up in the terminal, drive pools, and feedback with a QR code.

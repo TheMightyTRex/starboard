@@ -36,6 +36,7 @@ Each guide is a journey through several topics, in order.
 
 ### Install and update
 
+- [Set up everything with the Run first script](topics/run-first.md)
 - [Install Starboard with the installer](topics/install-with-the-installer.md)
 - [Set up Starboard in the terminal, with no browser](topics/set-up-in-the-terminal.md)
 - [Install Starboard from the ready-made image](topics/install-from-the-ready-made-image.md)
