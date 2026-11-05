@@ -15,6 +15,30 @@ add features.
   opens the set-up in your browser with the setup code filled in; with none, it carries on in the terminal.
   Accessible mode is asked first, in plain words, and goes on to the installer (`./install.sh --plain`). `--check`
   only reports. Find out more in **Set up everything with the Run first script**.
+- **How to start, in both set-ups:** the browser set-up guide and the terminal set-up now start with the same
+  question, New install, Move from apps you already run, or Restore a backup, with the recommended answer chosen from
+  what Starboard finds on the computer. Restore takes a backup file and restores it after the password.
+- **Storage, in both set-ups:** for a new install, where your media goes: this computer's main disk, a separate disk
+  or a pool of several disks, with the media folder made for you when the apps start. Install apps uses the folder
+  chosen there.
+- **Alerts and disk health, and how much Starboard does, in the terminal set-up,** as in the browser.
+
+### Changed
+- **One order for every step,** the same in the browser and the terminal: your password, how to start, storage, your
+  apps, VPN, the check, connecting the apps, download hours, alerts and disk health, how much Starboard does. Each
+  thing is decided before what depends on it.
+- **The installer asks less on a new install:** only your home network and Docker access, and drive pools when there
+  is more than one drive. The dashboard's name moves into the set-up, beside the password. Free space for the media
+  folder, the Live TV folder and disk health are chosen in the set-up and applied at the end with one installer
+  command, which the Run first script runs for you.
+- **The Run first script fits the window:** the logo is drawn at the size that fits, or left out in a small window;
+  below 60 by 20 it uses plain lines and says why; help shows a page at a time; and a change of window size is drawn
+  again at once.
+- **It works quietly:** sudo asks for the password once, then a bar with an animation shows each job, and the
+  installer builds Starboard quietly too. When something fails, it says what happened in plain words and offers to
+  try again, show the details or stop.
+- **The installer runs inside the Run first script's frame,** as its step 6, and the browser path ends on a Done page
+  with the addresses and the setup code.
 
 ## [0.8.0] (5 November 2026)
 

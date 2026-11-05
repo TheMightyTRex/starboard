@@ -3,7 +3,7 @@
 # Create your password and sign in
 
 The first time you open Starboard, you enter the setup code, name your dashboard and choose a password. Starboard then
-signs you in and opens a short set-up guide that finds your apps.
+signs you in and opens a short set-up guide: how to start, where your media goes, and your apps.
 
 ## Before you begin
 
@@ -30,8 +30,10 @@ signs you in and opens a short set-up guide that finds your apps.
 
    Starboard signs you in and opens its set-up guide, also called **Set up Starboard**.
 
-8. Follow the guide. It asks one question per step, such as whether to add the apps it found. Select **Continue** to
-   save each step, or **Skip this step** to leave it.
+8. Follow the guide. It asks one question per step, in the same order as the set-up in the terminal: **How to
+   start** (a new install, the apps you already run, or a backup), **Storage** (where your media goes), your apps,
+   connecting them, download hours, alerts and disk health, and how much Starboard does. For a new install, Storage
+   takes you to **Install apps** and back. Select **Continue** to save each step, or **Skip this step** to leave it.
 9. On the last step, select **Go to Apps**.
 
 ## Sign in after that

@@ -730,6 +730,21 @@ cmd=(./install.sh)
 cmd+=("${PASS[@]}")
 cd "$DIR" || exit 1
 
+# The hand-over: what is on this computer, for the set-up's recommended answers (How to start, Storage). The drive
+# list is in the same form as the disk health job's, so Starboard reads it the same way.
+handover() {
+  local drives apps memory
+  drives="$(lsblk -J -b -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS,LABEL,MODEL,SERIAL 2>/dev/null || echo '{}')"
+  apps="$( { docker ps --format '{{.Names}}' 2>/dev/null || sudo -n docker ps --format '{{.Names}}' 2>/dev/null; } \
+           | grep -iE 'sonarr|radarr|lidarr|readarr|prowlarr|bazarr|jellyfin|emby|plex|seerr|qbittorrent|sabnzbd|transmission|deluge|nzbget|audiobookshelf' \
+           | sed 's/.*/"&"/' | paste -sd, -)"
+  memory="$(awk '/MemTotal/ {printf "%d", $2 / 1024}' /proc/meminfo 2>/dev/null)"
+  mkdir -p data && chmod 700 data
+  printf '{"written": "%s", "memory_mb": %s, "apps": [%s], "lsblk": %s}\n' "$(date -Iseconds)" "${memory:-0}" "$apps" "$drives" \
+    > data/run-first.json
+}
+handover
+
 # Step 6: the installer runs inside the same frame. Its questions and messages scroll between the heading and the
 # menu. On the terminal path, the terminal set-up then takes the window with its own frame.
 page 6
@@ -748,6 +763,27 @@ fi
 if [ "$FINISH" = terminal ]; then
   DRAWN=0  # the terminal set-up drew its own frame and gave the window back
   [ "$status" = 0 ] || exit "$status"
+  # The set-up's changes to this computer (free space for the media folder, the Live TV folder, disk health),
+  # applied with the installer, which asks for the password itself where it needs sudo.
+  if [ -s data/setup-host.json ]; then
+    mapfile -t host < <(python3 -c 'import json; [print(a) for a in json.load(open("data/setup-host.json"))["args"]]' 2>/dev/null)
+    apply=()
+    for (( i = 0; i < ${#host[@]}; i++ )); do
+      case "${host[$i]}" in
+        --disk|--livetv-folder)
+          folder="${host[$((i + 1))]#*=}"
+          if [ -d "$folder" ]; then apply+=("${host[$i]}" "${host[$((i + 1))]}")
+          else echo "Not yet: $folder is made when the apps start. Run ./install.sh ${host[$i]} ${host[$((i + 1))]} after that."; fi
+          i=$(( i + 1 )) ;;
+        *) apply+=("${host[$i]}") ;;
+      esac
+    done
+    if [ ${#apply[@]} -gt 0 ]; then
+      echo
+      echo "Applying the set-up's changes to this computer: ./install.sh ${apply[*]}"
+      ./install.sh --yes "${apply[@]}" < "${IN:-/dev/null}" && rm -f data/setup-host.json
+    fi
+  fi
   [ "$NEW_GROUP" = 1 ] && echo "Sign out and back in once, so ordinary docker commands work in new terminals too."
   exit 0
 fi

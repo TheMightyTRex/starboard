@@ -379,9 +379,14 @@ def _devices(folder):
     import json
     try:
         with open(os.path.join(folder, "lsblk.json"), encoding="utf-8") as f:
-            tree = json.load(f).get("blockdevices") or []
+            return _parse_devices(json.load(f))
     except (OSError, ValueError):
         return None
+
+
+def _parse_devices(listing):
+    """lsblk -J output as drives with their partitions."""
+    tree = (listing or {}).get("blockdevices") or []
     out = []
     for disk in tree:
         if disk.get("type") != "disk":
@@ -396,11 +401,24 @@ def _devices(folder):
     return out
 
 
-def pool_candidates():
-    """Mounted drives that could join a pool (for Install apps): from the SMART job's lsblk.json. The system disk
-    (mounted at / or /boot) is left out. None when Starboard has no drive list."""
+def handover_devices(data_dir):
+    """The drive list the Run first script handed over (data/run-first.json), when there is no disk health job."""
+    import json
+    try:
+        with open(os.path.join(data_dir, "run-first.json"), encoding="utf-8") as f:
+            return _parse_devices(json.load(f).get("lsblk"))
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def pool_candidates(data_dir=None):
+    """Mounted drives that could join a pool (for Install apps and Storage): from the SMART job's lsblk.json, or
+    from the Run first script's hand-over. The system disk (mounted at / or /boot) is left out. None when Starboard
+    has no drive list."""
     folder = smart_dir()
     devices = _devices(folder) if folder else None
+    if devices is None and data_dir:
+        devices = handover_devices(data_dir)
     if devices is None:
         return None
     out = []

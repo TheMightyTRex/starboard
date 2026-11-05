@@ -8,6 +8,7 @@ before it handed over (data/run-first.json).
 
 import json
 import os
+import re
 
 from . import discovery
 
@@ -54,3 +55,64 @@ def options(services, data_dir, search=None):
     recommended = "move" if media or named else "new"
     return {"choices": [{**c, "recommended": c["key"] == recommended} for c in CHOICES],
             "recommended": recommended, "found": [f.get("name", "") for f in media] or named}
+
+
+# Storage: where the media goes, for a new install. The same answers in both set-ups (DASH-103).
+GOOD_FS = {"ext4", "xfs", "btrfs"}
+
+
+def _tb(size):
+    try:
+        return f"{int(size) / 1e12:.1f} TB"
+    except (TypeError, ValueError):
+        return "unknown size"
+
+
+def storage(main_folder, drives, pool_ready):
+    """The answers for Storage: this computer's main disk, each separate disk, or a pool of them. drives are the
+    mounted drives that are not the system disk (sysinfo.pool_candidates), or None when there is no drive list."""
+    drives = drives or []
+    choices = [{"key": "main", "title": "This computer's main disk",
+                "about": "The media folder goes on the disk Linux is on. Fine for a start; a separate disk keeps "
+                         "media apart from the system.", "folder": main_folder}]
+    for d in sorted(drives, key=lambda d: -int(d.get("size") or 0)):
+        fs_note = "" if d.get("fs") in GOOD_FS else f" It uses {d.get('fs') or 'an unknown file system'}, which works, but ext4 is better on Linux."
+        choices.append({"key": "disk:" + d["mount"], "title": f"A separate disk: {d.get('label') or d.get('model') or d['device']}",
+                        "about": f"{_tb(d.get('size'))}, at {d['mount']}.{fs_note}",
+                        "folder": d["mount"].rstrip("/") + "/media"})
+    if len(drives) >= 2 or pool_ready:
+        choices.append({"key": "pool", "title": "A pool of several disks",
+                        "about": "Joins disks into one folder, /mnt/pool, so the media has one place however many disks "
+                                 "there are. Needs the pool helper" + ("." if pool_ready else ": run ./install.sh again and say yes to Drive pools."),
+                        "folder": "/mnt/pool/media", "ready": bool(pool_ready)})
+    if len(drives) >= 2 and pool_ready:
+        recommended = "pool"
+    elif drives:
+        recommended = choices[1]["key"]  # the biggest separate disk
+    else:
+        recommended = "main"
+    for c in choices:
+        c["recommended"] = c["key"] == recommended
+    return {"choices": choices, "recommended": recommended,
+            "help": "The media folder holds your films, series, books and downloads together, so a finished download "
+                    "moves into the library in an instant. It is made for you when the apps start. A separate disk "
+                    "keeps media apart from the system; a pool joins several disks into one folder."}
+
+
+SAFE_FOLDER = re.compile(r"^/[A-Za-z0-9._/-]{0,250}$")
+
+
+def host_args(wanted):
+    """./install.sh options for the set-up's changes to this computer. Folders are checked, so the command shown
+    is safe to copy: absolute, no quotes, no shell characters."""
+    wanted = wanted if isinstance(wanted, dict) else {}
+    args = []
+    media = str(wanted.get("media") or "")
+    if media and SAFE_FOLDER.match(media):
+        args += ["--disk", f"Media={media}"]
+    livetv = str(wanted.get("livetv") or "")
+    if livetv and SAFE_FOLDER.match(livetv):
+        args += ["--livetv-folder", livetv]
+    if wanted.get("health"):
+        args.append("--disk-health")
+    return args

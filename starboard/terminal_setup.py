@@ -28,7 +28,7 @@ import textwrap
 import time
 import urllib.parse
 
-from starboard import qr
+from starboard import qr, start
 
 VPNS = [  # (Gluetun's provider name, shown name)
     ("protonvpn", "Proton VPN"),
@@ -64,6 +64,16 @@ HELP = {
     "check": "This is everything that will change. Nothing has changed yet: type b to go back and change an answer, or "
              "q to stop. The apps' files are written to Starboard's data folder, then the apps are downloaded and started.",
     "keep": "Your password is already saved. Change it later in Starboard, Settings, Security.",
+    "storage": "The media folder holds your films, series, books and downloads together.",
+    "extras": "Live TV builds free channel playlists and TV guides for Jellyfin once a day. Watch history brings what "
+              "everyone has watched from Plex, Emby or another Jellyfin. Defaults set Jellyfin's options for users who "
+              "have not chosen their own.",
+    "alerts": "Starboard checks your apps every few minutes and sends an alert when one stops answering or a disk has a "
+              "problem. ntfy has a free phone app: choose a long private topic name, such as https://ntfy.sh/a-long-private-name.",
+    "health": "A small script reads each disk's health report (SMART) as root every 30 minutes, so Starboard can warn "
+              "you before a disk fails. Setting it up needs sudo once, so it is done at the end.",
+    "name": "The name is shown in the header of every page and in the browser tab, so you can tell this server "
+            "from another one. Change it later in Settings, General.",
     "restore": "The backup file is the one downloaded from Starboard's System, Backup and restore, Download a copy of "
                "the settings. Type where it is, such as ~/Downloads/starboard-settings.json. It is checked before "
                "anything changes.",
@@ -351,8 +361,9 @@ class Api:
             raise self._failed(method, path, data.get("error") or f"Starboard answered {resp.status}")
         return data
 
-STEPS = ["Your password", "How to start", "Your media server", "Your VPN", "Check before anything changes",
-         "Download hours", "How much Starboard does"]
+# The agreed order (DASH-103), the same as the browser set-up: each thing is decided before what depends on it.
+STEPS = ["Your password", "How to start", "Storage", "Your media server", "Your VPN", "Check before anything changes",
+         "Connect your apps", "Download hours", "Alerts and disk health", "How much Starboard does"]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -699,11 +710,11 @@ class Terminal:
                 return int(answer) - 1
             self.say(f"Type a number from 1 to {len(options)}, ? for help or q to stop.")
 
-    def choose_many(self, question, options, defaults, help_key=None):
+    def choose_many(self, question, options, defaults, help_key=None, allow_none=False):
         """Numbered options, several at once (1,3,4); returns the indexes chosen. A long list on a short screen
-        shows what fits, and m shows the rest."""
+        shows what fits, and m shows the rest. With allow_none, 0 (or Enter when none is ticked) chooses none."""
         lead = "  " if self.fancy else ""
-        self.say(f"\n{lead}{question} Type the numbers, separated by commas.")
+        self.say(f"\n{lead}{question} Type the numbers, separated by commas" + (", or 0 for none." if allow_none else "."))
         fits = len(options)
         if self.fancy:
             fits = max(min(len(options), self._region() - len(self.screen) - 4), 4)
@@ -718,6 +729,8 @@ class Terminal:
                     self._options(options, set(defaults), start=fits)
                     fits = len(options)
                 continue
+            if allow_none and answer in ("", "0"):
+                return []
             parts = [p.strip() for p in answer.replace(" ", ",").split(",") if p.strip()]
             if parts and all(p.isdigit() and 1 <= int(p) <= len(options) for p in parts):
                 return sorted({int(p) - 1 for p in parts})
@@ -1084,8 +1097,11 @@ def step_password(api, term, state):
             if term.hidden("Type it again") != first:
                 term.say("The two did not match. Try again.")
                 continue
+            name = term.text("Name your dashboard, shown in the header", state.get("site_name", "Starboard"),
+                             help_key="name").strip()[:60] or "Starboard"
+            state["site_name"] = name
             try:
-                api.call("POST", "/api/setup", {"token": token, "password": first})
+                api.call("POST", "/api/setup", {"token": token, "password": first, "site_name": name})
             except Problem as e:
                 term.failed(f"Starboard said: {e}", str(e))
                 continue
@@ -1177,6 +1193,37 @@ def add_found_apps(api, term, state):
     return True
 
 
+def step_storage(api, term, state):
+    """Storage: this computer's main disk, a separate disk or a pool. Only for a new install: moving keeps the apps'
+    folders, and a restore brings its own."""
+    if state.get("start", "new") != "new":
+        return False
+    found = api.call("GET", "/api/setup/storage")
+    choices = found["choices"]
+    HELP["storage"] = found["help"]
+    term.heading("Storage", num("Storage"))
+    term.note("Where your films, series, books and downloads go. The folder is made for you when the apps start.")
+    keys = [c["key"] for c in choices]
+    last = state.get("storage", {})
+    default = keys.index(last.get("key", found["recommended"])) + 1 if last.get("key", found["recommended"]) in keys else 1
+    while True:
+        picked = choices[term.choose("Where should your media go?",
+                                     [c["title"] + (" (recommended)" if c["recommended"] else "") + ": " + c["about"] for c in choices],
+                                     default, help_key="storage")]
+        if picked["key"] == "pool" and not picked.get("ready"):
+            term.warn("The pool helper is not set up yet. Choose another place for now; make the pool later with "
+                      "./install.sh and Drive pools, then System, Storage, Pool.")
+            continue
+        break
+    folder = term.text("Media folder", last.get("folder") if last.get("key") == picked["key"] else picked["folder"],
+                       help_key="storage")
+    state["storage"] = {"key": picked["key"], "folder": folder}
+    state["media_dir"] = folder
+    state.setdefault("host", {})["disk"] = f"Media={folder}"  # free space on System, Storage: applied at the end
+    term.ok(f"Media folder: {folder}")
+    return True
+
+
 def step_apps(api, term, state):
     """Sets state["choice"] (the Install apps choice) and state["names"], or None to install nothing."""
     if state.get("start", "new") != "new":
@@ -1221,11 +1268,8 @@ def step_apps(api, term, state):
         state["apps"], state["choice"] = last, None
         return True
     d = overview["defaults"]
-    term.say("")
-    data_dir = term.text("Media folder, for films, series, books and downloads", last.get("data_dir", state.get("pool_dir") or d["data_dir"]),
-                         help_key="folders")
-    config_dir = term.text("Settings folder, for each app's own settings", last.get("config_dir", d["config_dir"]),
-                           help_key="folders")
+    data_dir = state.get("media_dir") or (state["pool_dir"] + "/media" if state.get("pool_dir") else d["data_dir"])
+    config_dir = last.get("config_dir", d["config_dir"])  # shown in the check, where b changes it
     last.update(data_dir=data_dir, config_dir=config_dir)
     state["apps"] = last
     state["choice"] = {"apps": [a["key"] for a in chosen], "data_dir": data_dir, "config_dir": config_dir,
@@ -1388,6 +1432,8 @@ def step_drives(api, term, state):
     """Your drives (DASH-87): make a pool from the drives, keep or erase each, and choose a backup drive. Only shown
     when the pool helper is installed. Every change is planned and checked by the helper, then done with sudo."""
     run = state.get("pool_run") or pool_command
+    if state.get("storage", {}).get("key", "pool") != "pool":
+        return False
     term.heading("Your drives", num("Your drives"))
     try:
         listing = run(["drives"])
@@ -1480,6 +1526,80 @@ def step_drives(api, term, state):
     return True
 
 
+def step_connect(api, term, state):
+    """Connect your apps: Starboard's Jellyfin extras, once Jellyfin is there. Keys of apps Install apps started are
+    set by Starboard itself; apps added from Move get theirs read where Docker allows."""
+    config = api.call("GET", "/api/config")
+    has_jellyfin = any(s["type"] == "jellyfin" for s in config["services"]) or "jellyfin" in ((state.get("choice") or {}).get("apps") or [])
+    if not has_jellyfin:
+        return False
+    term.heading("Connect your apps", num("Connect your apps"))
+    extras = [("livetv", "Live TV channels and guide", "Free channels for Jellyfin's Live TV, with guides"),
+              ("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin"),
+              ("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone")]
+    picked = term.choose_many("Use Starboard's Jellyfin extras?", [(t, a) for _, t, a in extras],
+                              state.get("extras", [i for i, (k, _, _) in enumerate(extras) if config["extras"].get(k)]), help_key="extras",
+                              allow_none=True)
+    state["extras"] = picked
+    api.call("PUT", "/api/config/general", {"extras": {k: i in picked for i, (k, _, _) in enumerate(extras)}})
+    if 0 in picked and not env_value("STARBOARD_LIVETV_PATH"):
+        folder = (state.get("choice") or {}).get("config_dir", "")
+        if folder:
+            state.setdefault("host", {})["livetv"] = folder.rstrip("/") + "/jellyfin/iptv"
+        term.note("Live TV needs a folder Jellyfin reads; it is set up at the end, with your other changes to this computer.")
+    term.ok("Saved. Change them later in Settings, Apps, Jellyfin.")
+    return True
+
+
+def step_alerts(api, term, state):
+    """Alerts and disk health: a push service for alerts, and the disk health reports (set up at the end)."""
+    term.heading("Alerts and disk health", num("Alerts and disk health"))
+    last = state.get("alerts", {})
+    kind = term.choose("Get an alert when an app stops or a disk has a problem?",
+                       ["Not now", "ntfy: a free push service with a phone app", "Gotify: your own push server",
+                        "A webhook: Starboard posts to an address you choose"], last.get("kind", 1), help_key="alerts")
+    if kind == 0:
+        api.call("PUT", "/api/config/general", {"watch": {"enabled": False}})
+    else:
+        url = term.text("Its address", last.get("url", "https://ntfy.sh/" if kind == 1 else ""), help_key="alerts")
+        api.call("PUT", "/api/config/general", {"watch": {"enabled": True, "channel": {"kind": ["", "ntfy", "gotify", "webhook"][kind], "url": url}}})
+        last["url"] = url
+    last["kind"] = kind + 1
+    state["alerts"] = last
+    health = term.yes_no("Check each disk's health every 30 minutes? It is set up at the end and asks for this "
+                         "computer's password once.", state.get("host", {}).get("health", True), help_key="health")
+    state.setdefault("host", {})["health"] = health
+    return True
+
+
+def env_value(name):
+    """A value from the .env in the Starboard folder, where the installer saved it, or ""."""
+    try:
+        with open(".env", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith(name + "="):
+                    return line.split("=", 1)[1].strip().strip('"')
+    except OSError:
+        pass
+    return ""
+
+
+def host_changes(state, data_dir):
+    """What the set-up chose that changes this computer (free space for the media folder, the Live TV folder, disk
+    health), saved for the Run first script to apply with ./install.sh, and shown as the command to run. The same
+    options as the browser set-up (starboard/start.py)."""
+    host = state.get("host") or {}
+    args = start.host_args({"media": host.get("disk", "").split("=", 1)[-1], "livetv": host.get("livetv"),
+                            "health": host.get("health")})
+    if args:
+        try:
+            with open(os.path.join(data_dir, "setup-host.json"), "w", encoding="utf-8") as f:
+                json.dump({"args": args}, f)
+        except OSError:
+            pass
+    return args
+
+
 def step_preset(api, term, state):
     """How much Starboard does: the same presets and words as the browser's set-up guide."""
     config = api.call("GET", "/api/config")
@@ -1506,15 +1626,16 @@ def step_preset(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_start, step_apps, step_vpn, step_check, step_hours, step_preset]
+STEP_FUNCTIONS = [step_password, step_start, step_storage, step_apps, step_vpn, step_check, step_connect, step_hours,
+                  step_alerts, step_preset]
 
 
 def add_drives_step(available=None):
-    """Your drives goes after How to start when the pool helper is installed (DASH-87)."""
+    """Your drives goes after Storage when the pool helper is installed and the pool is chosen (DASH-87)."""
     available = os.path.exists(POOL_HELPER) if available is None else available
     if available and step_drives not in STEP_FUNCTIONS:
-        STEP_FUNCTIONS.insert(2, step_drives)  # after How to start
-        STEPS.insert(2, "Your drives")
+        STEP_FUNCTIONS.insert(3, step_drives)  # after Storage, when the pool was chosen
+        STEPS.insert(3, "Your drives")
 
 
 def run(api, term, data_dir, port, address=""):
@@ -1550,6 +1671,9 @@ def run(api, term, data_dir, port, address=""):
         rows = [("On this computer", f"http://localhost:{port}")]
         if address:
             rows.append(("On your other devices", f"http://{address}:{port}"))
+        args = host_changes(state, data_dir)
+        if args:
+            rows.append(("Changes to this computer", "./install.sh " + " ".join(args)))
         rows.append(("Ask these again", f"python3 -m starboard.terminal_setup --port {port}"))
         term.card("Starboard is ready", rows, colour="32")
         term.note("Everything here can be changed later in Starboard's Settings.")

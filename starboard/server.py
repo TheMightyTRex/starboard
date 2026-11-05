@@ -621,7 +621,7 @@ class Handler(BaseHTTPRequestHandler):
         if data_dir in ("/", ""):
             data_dir = f"{base}/media"
         return {**stack.catalogue(installed), "docker": containers.available(), "can_start": bool(host and containers.available()),
-                "existing_media": media, "drives": sysinfo.pool_candidates(),
+                "existing_media": media, "drives": sysinfo.pool_candidates(app.data_dir),
                 "servers": [{"key": i["key"], "name": i["name"]} for i in found
                             if i["key"] in ("plex", "emby", "jellyfin", "audiobookshelf", "sonarr", "radarr", "lidarr")],
                 "written": os.path.exists(os.path.join(stack.folder(app.data_dir), "compose.yaml")),
@@ -884,6 +884,25 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/setup/start" and method == "GET":
                 # How to start, for both set-ups: the same answers and help, recommended from what is here.
                 return self.json(200, how_to_start.options(cfg.data["services"], app.data_dir))
+            if path == "/api/setup/storage" and method == "GET":
+                # Storage, for both set-ups: the main disk, a separate disk or a pool, with the folder for each.
+                base = self.stack_overview()["defaults"]["data_dir"]
+                return self.json(200, how_to_start.storage(base, sysinfo.pool_candidates(app.data_dir), pool.status().get("set_up")))
+            if path == "/api/setup/host" and method in ("GET", "POST"):
+                # The set-up's changes to this computer (free space for the media folder, the Live TV folder, disk
+                # health): saved for ./install.sh, which the Run first script runs, or the person runs once.
+                target = os.path.join(app.data_dir, "setup-host.json")
+                if method == "POST":
+                    args = how_to_start.host_args(self.body())
+                    with open(target, "w", encoding="utf-8") as f:
+                        json.dump({"args": args}, f)
+                    return self.json(200, {"args": args, "command": "./install.sh " + " ".join(args) if args else ""})
+                try:
+                    with open(target, encoding="utf-8") as f:
+                        args = json.load(f).get("args", [])
+                except (OSError, ValueError):
+                    args = []
+                return self.json(200, {"args": args, "command": "./install.sh " + " ".join(args) if args else ""})
             if path == "/api/discover" and method == "GET":
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":

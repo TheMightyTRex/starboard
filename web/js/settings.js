@@ -983,6 +983,64 @@ async function stepContent(id, root) {
       location.href = "/install-apps.html?from=guide";
       return false;
     };
+  } else if (id === "start") {
+    // How to start: the same question, answers and help as the terminal set-up (starboard/start.py).
+    const found = await api("/api/setup/start");
+    const name = `start-${Date.now()}`;
+    const chosen = guideMemory().start || found.recommended;
+    const radios = found.choices.map((c) => ({ c, input: el("input", { type: "radio", name, value: c.key, checked: c.key === chosen }) }));
+    const file = el("input", { type: "file", class: "input", accept: ".json,application/json", id: "guide-backup-file" });
+    const password = el("input", { type: "password", class: "input", autocomplete: "current-password", id: "guide-backup-password" });
+    const restoreBox = el("div", { class: "form-stack", hidden: chosen !== "restore" },
+      field("Backup file", file, { hint: "From System, Backup and restore, Download a copy of the settings.", span: true }),
+      field("Your Starboard password", password, { hint: "The one you just chose. Starboard checks it before it restores.", span: true }));
+    radios.forEach(({ input }) => input.addEventListener("change", () => { restoreBox.hidden = input.value !== "restore" || !input.checked; }));
+    nodes = [found.found.length ? notice("info", "Found on this computer", found.found.join(", ")) : null,
+      el("fieldset", {}, el("legend", { class: "visually-hidden", text: "How to start" }),
+        el("div", { class: "option-cards" }, radios.map(({ c, input }) => el("label", { class: "option-card" }, input,
+          el("strong", { text: c.title + (c.recommended ? " (recommended)" : "") }), el("small", { text: c.about }))))),
+      restoreBox,
+      el("details", { class: "disclosure" }, el("summary", { text: "Which one is right for me?" }),
+        el("div", { class: "disclosure__body" }, found.choices.map((c) => el("p", {}, el("strong", { text: `${c.title}: ` }), c.help))))];
+    save = async () => {
+      const key = radios.find((r) => r.input.checked)?.input.value || found.recommended;
+      if (key === "restore") {
+        if (!file.files.length) { showProblemNear(file, "Choose the backup file."); return false; }
+        let backup;
+        try { backup = JSON.parse(await file.files[0].text()); } catch { showProblemNear(file, "That file is not a Starboard backup."); return false; }
+        const done = await api("/api/backup/restore", { method: "POST", body: { backup, password: password.value } });
+        config = done.config;
+        announce(`Restored: ${done.apps} apps, with your categories, design and alerts.`);
+      }
+      remember({ start: key });
+      return true;
+    };
+  } else if (id === "where") {
+    // Storage: the main disk, a separate disk or a pool; the folder is made when the apps start. As the terminal.
+    const found = await api("/api/setup/storage");
+    const name = `where-${Date.now()}`;
+    const mem = guideMemory();
+    const chosen = mem.where || found.recommended;
+    const folder = el("input", { class: "input", spellcheck: "false", autocomplete: "off", id: "guide-media-folder",
+      value: mem.media || (found.choices.find((c) => c.key === chosen) || found.choices[0]).folder });
+    const radios = found.choices.map((c) => ({ c, input: el("input", { type: "radio", name, value: c.key, checked: c.key === chosen }) }));
+    radios.forEach(({ c, input }) => input.addEventListener("change", () => { if (input.checked) folder.value = c.folder; }));
+    nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Where your media goes" }),
+      el("div", { class: "option-cards" }, radios.map(({ c, input }) => el("label", { class: "option-card" }, input,
+        el("strong", { text: c.title + (c.recommended ? " (recommended)" : "") }), el("small", { text: c.about }))))),
+      field("Media folder", folder, { hint: "Made for you when the apps start.", span: true }),
+      el("p", { class: "small muted", text: found.help })];
+    save = async () => {
+      const picked = radios.find((r) => r.input.checked)?.c || found.choices[0];
+      if (picked.key === "pool" && !picked.ready) {
+        showProblemNear(folder, "The pool helper is not set up yet. Choose another place for now, and make the pool later on System, Storage, Pool.");
+        return false;
+      }
+      remember({ where: picked.key, media: folder.value.trim(), at: "after-apps" });
+      await saveHost();
+      location.href = `/install-apps.html?from=guide&media=${encodeURIComponent(folder.value.trim())}`;
+      return false;
+    };
   } else if (id === "storage") {
     const p = config.performance;
     const radios = USAGE_CHOICES.map(([v, t]) => ({ v, input: el("input", { type: "radio", name: "usage-every", value: v, checked: p.usage_every === v }), t }));
@@ -1027,7 +1085,15 @@ async function stepContent(id, root) {
       box("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin. You choose where from in Settings, Apps, Jellyfin."),
       box("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone who has not chosen otherwise.")];
     nodes = [el("div", { class: "switch-list" }, picks.map((x) => x.node))];
-    save = async () => { await saveGeneral({ extras: Object.fromEntries(picks.map((x) => [x.key, x.input.checked])) }); return true; };
+    save = async () => {
+      await saveGeneral({ extras: Object.fromEntries(picks.map((x) => [x.key, x.input.checked])) });
+      if (picks[0].input.checked && !config.livetv_ready) {
+        const stack = await api("/api/stack");
+        remember({ livetv: `${stack.defaults.config_dir}/jellyfin/iptv` });
+        await saveHost();
+      }
+      return true;
+    };
   } else if (id === "hours") {
     const on = el("input", { type: "checkbox", checked: config.download_hours.enabled });
     const hour = (v) => el("select", { class: "select" }, Array.from({ length: 24 }, (_, h) => el("option", { value: String(h), text: `${String(h).padStart(2, "0")}:00`, selected: h === v })));
@@ -1046,11 +1112,16 @@ async function stepContent(id, root) {
     });
     const url = el("input", { class: "input", inputmode: "url", autocomplete: "off", value: config.watch.channel.url || "", placeholder: "https://ntfy.sh/a-long-private-name" });
     const token = el("input", { class: "input", type: "password", autocomplete: "off" });
+    const health = el("input", { type: "checkbox", checked: guideMemory().health !== false });
     nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Where alerts go" }), el("div", { class: "option-cards" }, radios)),
-      el("div", { class: "form-grid" }, field("Address", url, { span: true }), field("Token (if it needs one)", token, { span: true }))];
+      el("div", { class: "form-grid" }, field("Address", url, { span: true }), field("Token (if it needs one)", token, { span: true })),
+      el("label", { class: "check" }, health, el("span", { class: "check__text" }, el("strong", { text: "Check each disk's health every 30 minutes" }),
+        el("span", { class: "check__hint", text: "A small script reads each disk's health report as root, so Starboard can warn you before a disk fails. It is set up on the server with one command at the end." })))];
     save = async () => {
       const kind = root.querySelector(`input[name="${name}"]:checked`)?.value || "";
       await saveGeneral({ watch: kind ? { enabled: true, channel: { kind, url: url.value, token: token.value } } : { enabled: false } });
+      remember({ health: health.checked });
+      await saveHost();
       return true;
     };
   } else if (id === "preset") {
@@ -1067,6 +1138,22 @@ async function stepContent(id, root) {
   return { nodes, save };
 }
 // Set-up guide ----------------------------------------------------------------
+// What the guide chose, kept while it hands over to Install apps and back (this tab only).
+function guideMemory() {
+  try { return JSON.parse(sessionStorage.getItem("starboard-guide") || "{}"); } catch { return {}; }
+}
+function remember(values) {
+  try { sessionStorage.setItem("starboard-guide", JSON.stringify({ ...guideMemory(), ...values })); } catch { /* private window */ }
+}
+// The changes to this computer, for ./install.sh: the same options as the terminal set-up (starboard/start.py).
+async function saveHost() {
+  const m = guideMemory();
+  return api("/api/setup/host", { method: "POST", body: { media: m.media || "", livetv: m.livetv || "", health: m.health !== false } });
+}
+function showProblemNear(input, message) {
+  problem(message, input);
+  input.focus();
+}
 // The library's wizard: a step list, one question per step, Continue saves it, Back, Skip this step, and Keep the
 // defaults and finish at the top. Steps that do not apply (no Jellyfin, no download apps) are left out.
 // Opened after the first password, and from Settings, General, Set-up guide.
@@ -1108,19 +1195,31 @@ async function startGuide() {
   let hasDisks = false;
   try { hasDisks = (await api("/api/system")).disks.length > 0; } catch { /* leave the step out */ }
 
+  // The agreed order (DASH-103), the same as the terminal set-up: each thing is decided before what depends on it.
   const build = () => {
     const list = [];
-    list.push({ id: "install", title: "Your apps", question: "Do you have your apps already?",
-      intro: "Starboard can find the apps on this computer, or set up a media server for you first." });
-    list.push({ id: "apps", title: "Find your apps", question: "Add the apps on this computer?",
-      intro: "Starboard looked for apps it knows on this computer. Tick the ones to add; you can add others by hand later." });
+    const start = guideMemory().start || "new";
+    list.push({ id: "start", title: "How to start", question: "How do you want to start?", skippable: false,
+      intro: "A new media server, the apps you already run, or a backup of Starboard's settings." });
+    if (start === "restore") {
+      list.push({ id: "preset", title: "How much it does", question: "How much should Starboard do in the background?", intro: "You can change each part in Settings, Performance." });
+      list.push({ id: "finish", title: "Finish", question: "Ready to go", skippable: false });
+      return list;
+    }
+    if (start === "new") {
+      list.push({ id: "where", title: "Storage", question: "Where should your media go?", skippable: false,
+        intro: "Your films, series, books and downloads go in one media folder. Next, Install apps sets up the apps for it." });
+    } else {
+      list.push({ id: "apps", title: "Find your apps", question: "Add the apps on this computer?",
+        intro: "Starboard looked for apps it knows on this computer. Tick the ones to add; you can add others by hand later." });
+    }
     if (types(Object.keys(KEY_PLACE)).some((s) => !s.has_api_key)) {
       list.push({ id: "keys", title: "API keys", question: "Give Starboard their API keys?",
         intro: "With its key, Starboard can show an app's queue, calendar, updates and warnings. Each key stays on the server." });
     }
     if (types(["jellyfin"]).length) list.push({ id: "jellyfin", title: "Jellyfin", question: "Use Starboard's Jellyfin extras?", intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
     if (types(["qbittorrent", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", title: "Download hours", question: "Only download at set hours?", intro: "Starboard pauses qBittorrent and SABnzbd outside these hours, for example to keep the internet free in the day." });
-    list.push({ id: "alerts", title: "Alerts", question: "Get an alert when something stops?", intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
+    list.push({ id: "alerts", title: "Alerts and disk health", question: "Get an alert when something stops?", intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", title: "Storage", question: "How should Storage keep up to date?", intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
     list.push({ id: "preset", title: "How much it does", question: "How much should Starboard do in the background?", intro: "You can change each part in Settings, Performance." });
     list.push({ id: "finish", title: "Finish", question: "Ready to go", skippable: false });
@@ -1161,12 +1260,27 @@ async function startGuide() {
       ];
       step.nodes = [el("dl", { class: "facts" }, facts.flatMap(([k, v, href]) => [el("dt", { text: k }),
         el("dd", {}, v, " · ", el("a", { href }, "Change", el("span", { class: "visually-hidden", text: ` ${k.toLowerCase()}` })))]))];
+      try {
+        const host = await api("/api/setup/host");
+        if (host.command) {
+          step.nodes.push(el("h3", { text: "One change to make on the server" }),
+            el("p", { class: "muted", text: "Free space for your media folder, disk health and the Live TV folder need the installer on the server. In a terminal there, in the Starboard folder, run:" }),
+            el("pre", { class: "code-block", text: host.command }), copyButton(host.command, "Copy the command"));
+        }
+      } catch { /* nothing to change on the server */ }
     }
     loading = false;
     const { heading } = frame();
     heading.focus();
   };
-  go(0);
+  const mem = guideMemory();
+  if (mem.at === "after-apps") {
+    remember({ at: "" });
+    const list = build();
+    go(list.findIndex((s) => s.id === "where") + 1);
+  } else {
+    go(0);
+  }
 }
 
 // Upgrade guide -----------------------------------------------------------------

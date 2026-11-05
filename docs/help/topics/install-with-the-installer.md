@@ -70,32 +70,35 @@ you. Use this page to do it by hand.
 Every question is optional. If you are unsure, answer no: only that part of Starboard is missing, and you can change
 your answer later.
 
-1. **"Name your dashboard (shown in the header; change it later in Settings) [Starboard]"**
-   The name shown in the header of every page, such as "Sam's server". Press Enter to keep "Starboard". Asked on a new
-   install only.
-2. **"Let your home network open Starboard? [Y/n]"**
+On a new install the installer asks only what Starboard needs to start:
+
+1. **"Let your home network open Starboard? [Y/n]"**
    Yes means phones and other computers at home can open Starboard, with your password. No means only this computer
    can. Most people answer yes. Asked on a new install only: after that, it is a switch in **Settings**,
    **Security**.
-3. **"Give Starboard access to Docker for app updates? [y/N]"**
-   Yes lets Starboard update your other apps for you on **System**, **Apps**, **Updates**, and find their API keys. This gives
-   Starboard full control of Docker, which is the same as full control of the computer. If unsure, answer no.
-4. **"Show each app's processor and memory use? [y/N]"**
-   Yes lets **System**, **Overview**, **Monitor** show what each app is using. Starboard only reads, and only while that page is
-   open. No means Monitor shows the whole server only.
-5. **"Give Starboard a Live TV folder? [y/N]"**
-   Only for Jellyfin users who want free Live TV channels. Yes asks for the folder Jellyfin reads its Live TV files
-   from, for example `/srv/jellyfin/config/iptv`. Starboard writes only in that folder. If you do not use Jellyfin,
-   answer no.
-6. **"Choose folders to show? [y/N]"**
-   Yes lets **System**, **Storage** show how full your drives are. Type one folder per line as a name, an equals
-   sign and the folder, such as `Media=/mnt/media`, then press Enter on an empty line to finish. Starboard reads how
-   full they are, never the files.
-7. **"Set up Disk health reports? [y/N]"**
-   Yes lets **System**, **Storage**, **Disk health** show each drive's health report, which can warn of a failing drive. It installs a small job that checks your
-   drives every 30 minutes, so it asks for your password. It needs a program called smartmontools.
+2. **"Give Starboard access to Docker for app updates? [y/N]"**
+   Yes lets Starboard start your media apps, update them on **System**, **Apps**, **Updates**, and find their API keys.
+   This gives Starboard full control of Docker, which is the same as full control of the computer. Answer yes if you
+   want Starboard to set up your media server for you.
+3. **"Set up Drive pools? [y/N]"**, only when the computer has more than one drive besides the system drive.
+   Yes installs the pool helper, which can join drives into one folder. It runs on this computer with sudo, so it is
+   asked here, before the set-up.
 
-When you run the installer again later, it shows your last answers as the defaults.
+The dashboard's name, where your media goes, Live TV, disk health and alerts come next, in Starboard's set-up, in
+the browser or the terminal. Those that change this computer are applied at the end with one command, which the set-up
+shows (the [Run first script](run-first.md) runs it for you).
+
+When you run the installer again later, it also asks these, with your last answers as the defaults:
+
+- **"Show each app's processor and memory use? [y/N]"** Yes lets **System**, **Overview**, **Monitor** show what each
+  app is using. Starboard only reads, and only while that page is open.
+- **"Give Starboard a Live TV folder? [y/N]"** Only for Jellyfin users who want free Live TV channels: the folder
+  Jellyfin reads its Live TV files from, for example `/srv/media-stack/config/jellyfin/iptv`. Starboard writes only in that folder.
+- **"Choose folders to show? [y/N]"** Yes lets **System**, **Storage** show how full your drives are. Type one folder
+  per line as a name, an equals sign and the folder, such as `Media=/mnt/media`, then press Enter on an empty line.
+- **"Set up Disk health reports? [y/N]"** Yes lets **System**, **Storage**, **Disk health** show each drive's health
+  report, which can warn of a failing drive. It installs a small job that checks your drives every 30 minutes, so it
+  asks for your password. It needs a program called smartmontools.
 
 ## What it prints at the end
 

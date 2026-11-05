@@ -10,7 +10,10 @@ const VPN_PROVIDERS = ["airvpn", "cyberghost", "expressvpn", "fastestvpn", "ivpn
 async function startInstall() {
   const root = $("#install");
   root.removeAttribute("aria-busy");
-  const fromGuide = new URLSearchParams(location.search).get("from") === "guide";
+  const params = new URLSearchParams(location.search);
+  const fromGuide = params.get("from") === "guide";
+  // The set-up guide's Storage step chose the media folder already (DASH-103): use it, and skip Folders.
+  const chosenMedia = fromGuide && /^\/[A-Za-z0-9._/-]{0,250}$/.test(params.get("media") || "") ? params.get("media") : "";
   let data;
   try { data = await api("/api/stack"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); return; }
   const apps = Object.fromEntries(data.apps.map((a) => [a.key, a]));
@@ -20,7 +23,7 @@ async function startInstall() {
     advanced,
     groups: new Set(data.groups.filter((g) => g.default).map((g) => g.key)),
     apps: new Set(data.apps.filter((a) => a.default && !a.installed && a.groups.some((g) => data.groups.find((x) => x.key === g).default)).map((a) => a.key)),
-    config_dir: data.defaults.config_dir, data_dir: data.defaults.data_dir,
+    config_dir: data.defaults.config_dir, data_dir: chosenMedia || data.defaults.data_dir,
     puid: data.defaults.puid, pgid: data.defaults.pgid, tz: data.defaults.tz,
     vpn: { provider: "", type: "wireguard" }, moving: new Set(), written: null, pool: null,
   };
@@ -29,8 +32,8 @@ async function startInstall() {
     { id: "welcome", title: "Start here", question: "Set up a media server, step by step", skippable: false },
     { id: "groups", title: "What to set up", question: "What do you want your server to do?", skippable: false,
       intro: "Tick what you want. Starboard picks the apps for each one; you can see and change them with Advanced settings." },
-    { id: "folders", title: "Folders", question: "Where should your media live?", skippable: false,
-      intro: "One media folder holds your downloads and your library together, so a finished download moves into the library instantly." },
+    ...(chosenMedia ? [] : [{ id: "folders", title: "Folders", question: "Where should your media live?", skippable: false,
+      intro: "One media folder holds your downloads and your library together, so a finished download moves into the library instantly." }]),
     ...(state.apps.has("gluetun") ? [{ id: "vpn", title: "VPN", question: "Connect the VPN", skippable: false,
       intro: "Downloads go through your VPN, so your internet provider sees only the VPN. You need an account with a VPN provider." }] : []),
     ...(data.servers.length ? [{ id: "moving", title: "Moving over", question: "Bring things over from the apps you have?",

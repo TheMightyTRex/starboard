@@ -35,16 +35,19 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
    your password, type it and press Enter. Nothing shows as you type. If everything is already there, it says so.
 6. **Download Starboard:** it downloads Starboard into a folder called `starboard` in your home folder, or updates
    it if it is already there.
-7. **Start the installer:** check the summary and press Enter. Starboard's installer asks a few questions about what
-   Starboard may access. If you are unsure, the answer in capitals is the safe one. Answer yes to Docker access if
-   you want Starboard to start your media apps for you.
+7. **Install Starboard:** check the summary and press Enter. Starboard's installer asks about your home network and
+   Docker access, and about drive pools when there is more than one drive. If you are unsure, the answer in capitals
+   is the safe one. Answer yes to Docker access if you want Starboard to start your media apps for you. The script
+   tells Starboard what it found on this computer (drives, apps already running, memory), so the set-up can
+   recommend the right answers.
 8. Finish setting up:
    - **In a browser, on a computer with a desktop:** the set-up page opens by itself with the setup code filled in.
      Choose your password. Read [Create your password and sign in](create-your-password.md).
    - **In a browser, with no desktop:** open the address it prints on a phone or another computer at home, and
      enter the setup code it shows.
    - **Here in the terminal:** answer the set-up questions. Read
-     [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md).
+     [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md). At the end, the script makes the
+     set-up's changes to this computer, such as disk health, and asks for your password if it needs it.
 
 ## How to answer
 

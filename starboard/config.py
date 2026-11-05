@@ -251,6 +251,8 @@ class Config:
             "last_version": d["last_version"],  # what the settings really match
             "presets": {k: v["title"] for k, v in PRESETS.items()},
             "preset_about": PRESET_ABOUT,
+            # Whether the installer gave Starboard Jellyfin's Live TV folder (STARBOARD_IPTV_DIR), for the set-up.
+            "livetv_ready": bool(os.environ.get("STARBOARD_IPTV_DIR")) and os.path.isdir(os.environ.get("STARBOARD_IPTV_DIR", "")),
             "services": [public_service(s) for s in d["services"]],
             "types": {k: {"label": v["label"], "searchable": v["searchable"]} for k, v in SERVICE_TYPES.items()},
             "category_of": CATEGORY_OF,

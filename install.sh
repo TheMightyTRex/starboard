@@ -126,14 +126,27 @@ fi
 
 NAME=""
 if [ ! -f data/config.json ]; then
-  if [ "$ASK" = 1 ]; then
-    printf '\nName your dashboard (shown in the header; change it later in Settings) [Starboard]: '
-    read -r NAME || NAME=""
-  fi
+  # The name is asked in the set-up, beside the password, in the browser and the terminal alike.
   NAME="$(printf '%s' "${NAME:-Starboard}" | tr -d '\n\r=|&\\"' | cut -c1-60)"
 fi
 
 say "Step 2: what Starboard may access"
+
+# A new install asks only what Starboard needs to start: the home network and Docker. Everything that depends on
+# where the media goes (folders to show, Live TV, disk health) is asked in Starboard's set-up, after Storage, and
+# these questions come back when you run the installer again. Drive pools are offered here when there is more
+# than one extra drive, because the pool helper runs on this computer with sudo.
+FIRST=0
+[ -f data/config.json ] || FIRST=1
+LATER=1
+[ "$ASK" = 1 ] && [ "$FIRST" = 0 ] || LATER=0
+# Drives besides the one the system is on.
+extra_drives() {
+  command -v lsblk >/dev/null || { echo 0; return; }
+  lsblk -dn -o NAME,TYPE 2>/dev/null | awk '$2 == "disk" {print $1}' | while read -r d; do
+    lsblk -n -o MOUNTPOINTS "/dev/$d" 2>/dev/null | grep -qxE '/|/boot(/efi)?' || echo "$d"
+  done | wc -l
+}
 
 # Home network: asked on the first install only; after that it is a switch in Settings, Security.
 if [ "$ASK" = 1 ] && [ ! -f data/config.json ] && [ "$NETWORK" = 1 ]; then
@@ -174,7 +187,7 @@ fi
 if [ -z "$APPUSE" ]; then
   APPUSE="$(env_value STARBOARD_ALLOW_APPUSE)"
   APPUSE="${APPUSE:-0}"
-  if [ "$ASK" = 1 ]; then
+  if [ "$LATER" = 1 ]; then
     echo
     echo "Per-app use: System, Monitor can list each app's processor and memory use. Starboard reads two small"
     echo "  files per container from /sys/fs/cgroup, read-only, every 2 seconds while Monitor is open. With Docker"
@@ -190,7 +203,7 @@ fi
 # Live TV for Jellyfin.
 if [ "$LIVETV" = "-" ]; then
   LIVETV="$(env_value STARBOARD_LIVETV_PATH)"
-  if [ "$ASK" = 1 ]; then
+  if [ "$LATER" = 1 ]; then
     echo
     echo "Live TV for Jellyfin: Starboard can build free channel playlists and TV guides once a day (Settings,"
     echo "  Jellyfin; inactive until you activate it there). For that it needs to write in the folder Jellyfin reads its"
@@ -220,7 +233,7 @@ if [ "$DISKS_GIVEN" = 0 ]; then
     DISKS_GIVEN=skip
   else
     IFS=',' read -r -a DISKS <<< "$saved"
-    if [ "$ASK" = 1 ]; then
+    if [ "$LATER" = 1 ]; then
       echo
       echo "Free space: System, Storage can show how full your folders or drives are. Starboard reads them"
       echo "  read-only and does not open the files. No: Storage shows no folders."
@@ -260,7 +273,7 @@ if [ -z "$HEALTH" ]; then
     echo
     echo "Disk health: you set up reports by hand (STARBOARD_SMART_DIR), so the installer leaves them as they are."
     HEALTH=skip
-  elif [ "$ASK" = 1 ]; then
+  elif [ "$LATER" = 1 ]; then
     echo
     echo "Disk health: a small script (deploy/starboard-smart.sh) runs smartctl as root every 30 minutes,"
     echo "  through a systemd timer, and saves each drive's health report in ./smart. Starboard reads them"
@@ -278,7 +291,7 @@ if [ -z "$POOL" ]; then
     echo
     echo "Drive pools: you set up the pool helper by hand (STARBOARD_POOL_DIR), so the installer leaves it as it is."
     POOL=skip
-  elif [ "$ASK" = 1 ]; then
+  elif [ "$ASK" = 1 ] && { [ "$FIRST" = 0 ] || [ "$(extra_drives)" -ge 2 ]; }; then
     echo
     echo "Drive pools: a pool joins several drives into one folder, /mnt/pool, and a backup drive protects it."
     echo "  The pool helper (deploy/install-pool.sh) does that work as root; Starboard only asks it, and every"
@@ -287,6 +300,12 @@ if [ -z "$POOL" ]; then
     echo "  No: System, Storage, Pool says the helper is not set up."
     if yes_no "Set up Drive pools?" "$POOL"; then POOL=1; else POOL=0; fi
   fi
+fi
+
+if [ "$ASK" = 1 ] && [ "$FIRST" = 1 ]; then
+  echo
+  echo "Where your media goes, the folders Starboard shows, Live TV and disk health come next, in Starboard's"
+  echo "  set-up, once your media folder is chosen."
 fi
 
 say "Step 3: saving your answers"
