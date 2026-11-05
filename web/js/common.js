@@ -351,8 +351,9 @@ function setUpHeader() {
   window.addEventListener("resize", fit);
   SharedComponents.setupSearch();
   document.fonts?.ready.then(fit);
-  // Sign out beside the title on every Settings page (design system, Sign out); the phone menu has it too.
-  const head = $("#main-nav")?.getAttribute("aria-label") === "Settings" ? $(".page-head") : null;
+  // Sign out beside the title on every Settings page (design system, Sign out); the phone menu has it too. Not on the
+  // set-up and upgrade guides, which are wizards.
+  const head = $("#main-nav")?.getAttribute("aria-label") === "Settings" && !$("#guide, #upgrade") ? $(".page-head") : null;
   if (head && !head.querySelector("[data-sign-out]")) {
     let actions = head.querySelector(".actions");
     if (!actions) { actions = el("div", { class: "actions" }); head.append(actions); }

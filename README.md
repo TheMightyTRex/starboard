@@ -154,6 +154,8 @@ All made with example data (`tools/screenshots.sh`).
 | **After a Reelix update** | **What is new in Reelix** |
 | ![System, Storage, Pool: the drives in the pool, each with its space and role](docs/screenshots/pool.png) | ![Add a drive: the check before anything changes, with the exact steps](docs/screenshots/pool-add-3-check.png) |
 | **Pool:** the drives in the pool | **Add a drive:** the check before anything changes |
+| ![Settings, Updates, Releases: every version in its own section, the one you have open, with a count for each type of change](docs/screenshots/releases.png) | ![Settings, Updates, Restore: Restore your settings with the saved copies, and Go back to an earlier version](docs/screenshots/restore.png) |
+| **Releases**, one section each | **Restore** your settings |
 | ![Apps on a phone](docs/screenshots/apps-phone.png) ![Storage on a phone](docs/screenshots/storage-phone.png) | |
 | **On a phone** | |
 

@@ -66,6 +66,8 @@ const SHOTS = [
   { file: "pool-remove-check.png", page: "system-pool.html", width: 1280, height: 1000, run: `(async () => { document.querySelector("#in-pool .btn").click(); ${wait(2500)} })()` },
   { file: "upgrade-notice.png", page: "index.html", ...desk, before: 'api("/api/config/general", { method: "PUT", body: { last_version: "0.4.0" } })' },
   { file: "upgrade-guide.png", page: "upgrade.html", ...desk },
+  { file: "releases.png", page: "settings-releases.html", ...desk },
+  { file: "restore.png", page: "settings-restore.html", ...desk },
 ];
 
 fs.mkdirSync(out, { recursive: true });
