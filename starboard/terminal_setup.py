@@ -19,6 +19,7 @@ import os
 import platform
 import re
 import shutil
+import signal
 import socket
 import sys
 import textwrap
@@ -218,6 +219,24 @@ class Report:
                 return url, short
         return self.tiny(400), True
 
+    def compact(self, words):
+        """For a small window: the step and the person's first words as the title, and a body of one line saying
+        where the whole report is, with no labels."""
+        n, _ = self.step
+        said = " ".join(a.replace("\n", " ") for _, a in self.answers) or (self.error or "").split("\n")[-1]
+        title = f"{self.kind[2]}: step {n}" if n else f"{self.kind[2]}: terminal set-up"
+        if said and words:
+            title += ": " + clip(said, words).rstrip(".")
+        body = f"Starboard {self.version}." + (f" Whole report: {self.file}" if self.file else "")
+        q = urllib.parse.quote_plus
+        return f"https://github.com/{REPO}/issues/new?title={q(title)}&body={q(body)}"
+
+    def title_only(self):
+        """The smallest address of all, for the smallest windows: the title alone, with no body or labels."""
+        n, _ = self.step
+        title = f"{self.kind[2]}: terminal set-up" + (f", step {n}" if n else "")
+        return f"https://github.com/{REPO}/issues/new?title={urllib.parse.quote_plus(title)}"
+
     def tiny(self, words):
         """The smallest report: the title and one or two sentences, for a QR code that has to fit the window."""
         n, name = self.step
@@ -311,15 +330,15 @@ class Terminal:
 
     def __init__(self, out=sys.stdout, ask=input, secret=getpass.getpass, fancy=None, colour=None, width=None, rows=None):
         self.out, self._ask, self._secret = out, ask, secret
-        size = shutil.get_terminal_size((80, 24))
-        self.cols = width or size.columns   # the whole window, for a QR code
-        self.width = min(self.cols, 78)
-        self.rows = rows or size.lines
+        self.fixed_size = (width, rows)  # given by a test; otherwise the window is measured at every step
+        self._measure()
         tty = hasattr(out, "isatty") and out.isatty()
         self.fancy = (tty and os.environ.get("TERM") != "dumb") if fancy is None else fancy
         self.fancy = self.fancy and self.width >= 60 and self.rows >= 20
         self.colour = self.fancy and not os.environ.get("NO_COLOR") if colour is None else colour and self.fancy
-        self.screen = []          # what this step has shown, to draw it again after help
+        self.header = []          # the step's heading box and progress bar: kept at the top, never scrolled away
+        self.screen = []          # what this step has shown under the heading, to draw it again after help
+        self.pending = ""         # the question waiting for an answer, to write again after the window changes size
         self.can_back = False
         self.came_back = False    # this step was reached with b: the last answers are the defaults
         self.keys = []
@@ -360,6 +379,28 @@ class Terminal:
 
     # The screen: a cleared page per step, with the menu fixed below a scrolling area ---------------------------
 
+    def _measure(self):
+        """The window's size now: columns and lines (a test can fix them)."""
+        size = shutil.get_terminal_size((80, 24))
+        self.cols = self.fixed_size[0] or size.columns   # the whole window, for a QR code
+        self.width = min(self.cols, 78)
+        self.rows = self.fixed_size[1] or size.lines
+
+    def watch_size(self):
+        """Draws the step again when the window changes size, keeping the heading, the bar and the menu in place."""
+        if self.fancy and hasattr(signal, "SIGWINCH") and self.fixed_size == (None, None):
+            signal.signal(signal.SIGWINCH, lambda *_: self._resized())
+
+    def _resized(self):
+        self._measure()
+        if self.fancy and self.drawn and self.width >= 60 and self.rows >= 20:
+            self._redraw()
+            self._write(self.pending)
+
+    def _region(self):
+        """Lines between the fixed heading and the fixed menu: the only part that scrolls."""
+        return max(self.rows - 2 - len(self.header), 3)
+
     def _menu(self, keys, right=""):
         """The two bottom lines: a rule, then the keys. Drawn outside the scrolling area, so they stay put."""
         line = "   ".join(f"{self.accent(k)} {label}" for k, label in keys)
@@ -369,10 +410,15 @@ class Terminal:
                     f"\033[{self.rows};1H\033[2K  {line}{' ' * gap}{self.dim(right)}\0338")
 
     def _page(self, keys, right):
-        """Clears the screen, keeps the menu on the last two lines and lets the rest scroll above it."""
-        self._write(f"\033[r\033[2J\033[1;{self.rows - 2}r")
+        """Clears the screen and draws the step's heading box and progress bar at the top and the menu on the last
+        two lines. Only the lines between them scroll, so the heading, the bar and the menu are always in view."""
+        top = len(self.header) + 1
+        self._write(f"\033[r\033[2J")
+        for i, line in enumerate(self.header, 1):
+            self._write(f"\033[{i};1H{line}")
+        self._write(f"\033[{top};{self.rows - 2}r")
         self._menu(keys, right)
-        self._write("\033[H")
+        self._write(f"\033[{top};1H")
         self.drawn = True
 
     def finish(self):
@@ -401,32 +447,42 @@ class Terminal:
             if self.came_back:
                 self.say("You came back to this step. Your last answers are in [brackets]: press Enter to keep each one.")
             return
+        if self.fixed_size == (None, None):
+            self._measure()  # the window may have changed size since the last step
         self.screen = []
         self.keys = self.step_keys()
+        self.header_args = (text, step)
+        self.header = self._header(text, step)
         self._page(*self.keys)
-        inner = self.width - 4
-        right = f"step {step} of {len(STEPS)}" if step else ""
-        # "Starboard | Your password": the product name in bold, then the step, then the count on the right.
-        left = f"Starboard | {text}"
-        gap = max(inner - len(left) - len(right) - 2, 1)
-        self.say(self.dim("┌" + "─" * (inner + 2) + "┐"))
-        self.say(self.dim("│") + "  " + self._c("1", "Starboard") + self.dim(" | ") + self.accent(text) + " " * gap
-                 + self.dim(right) + "  " + self.dim("│"))
-        self.say(self.dim("└" + "─" * (inner + 2) + "┘"))
-        if step:
-            bar = self.width - 12
-            done = round(bar * (step - 1) / len(STEPS))
-            pct = f"{round(100 * (step - 1) / len(STEPS)):>3}%"
-            self.say("  " + self._c("36", "█" * done) + self.dim("░" * (bar - done)) + "  " + self.dim(pct))
         if self.came_back:
             self.say("")
             self.note("You came back to this step. Your last answers are in [brackets]: press Enter to keep each one.")
             self.say("")
 
+    def _header(self, text, step):
+        """The heading box ("Starboard | step" and "step n of 5") and the progress bar, fitted to the width now."""
+        inner = self.width - 4
+        right = f"step {step} of {len(STEPS)}" if step else ""
+        # "Starboard | Your password": the product name in bold, then the step, then the count on the right.
+        left = f"Starboard | {text}"
+        gap = max(inner - len(left) - len(right) - 2, 1)
+        lines = [self.dim("┌" + "─" * (inner + 2) + "┐"),
+                 self.dim("│") + "  " + self._c("1", "Starboard") + self.dim(" | ") + self.accent(text) + " " * gap
+                 + self.dim(right) + "  " + self.dim("│"),
+                 self.dim("└" + "─" * (inner + 2) + "┘")]
+        if step:
+            bar = self.width - 12
+            done = round(bar * (step - 1) / len(STEPS))
+            pct = f"{round(100 * (step - 1) / len(STEPS)):>3}%"
+            lines.append("  " + self._c("36", "█" * done) + self.dim("░" * (bar - done)) + "  " + self.dim(pct))
+        return lines
+
     def _redraw(self):
-        """The step as it was before help opened: the page again, then its last lines."""
+        """The step as it was: the heading, the bar and the menu in place, then the step's last lines between them."""
+        if getattr(self, "header_args", None):
+            self.header = self._header(*self.header_args)  # the width may have changed
         self._page(*self.keys)
-        for line in self.screen[-(self.rows - 3):]:
+        for line in self.screen[-self._region():]:
             self._write(line + "\n")
 
     def popup(self, title, text):
@@ -456,7 +512,7 @@ class Terminal:
             body.pop()
         room = max(self.rows - 10, 4)
         pages = [body[i:i + room] for i in range(0, len(body), room)] or [[""]]
-        behind = [ANSI.sub("", line) for line in self.screen[-(self.rows - 3):]]
+        behind = [ANSI.sub("", line) for line in self.header + self.screen[-self._region():]]
         behind += [""] * (self.rows - 2 - len(behind))
         edge = lambda text: self._c("36", text)  # noqa: E731
         answer = ""
@@ -537,6 +593,7 @@ class Terminal:
         anything in extra is returned as typed."""
         while True:
             shown = self._prompt(prompt)
+            self.pending = shown
             answer = self._ask(shown).strip()
             low = answer.lower()
             if self._feedback_key(low):
@@ -604,7 +661,7 @@ class Terminal:
         self.say(f"\n{lead}{question} Type the numbers, separated by commas.")
         fits = len(options)
         if self.fancy:
-            fits = max(min(len(options), self.rows - 2 - len(self.screen) - 4), 4)
+            fits = max(min(len(options), self._region() - len(self.screen) - 4), 4)
         self._options(options[:fits], set(defaults))
         if fits < len(options):
             self.say("  " + self.dim(f"{len(options) - fits} more: type m to see them"))
@@ -639,6 +696,7 @@ class Terminal:
         while True:
             hint = "nothing shows as you type" + ("; Enter keeps the one you typed before" if keep else "")
             shown = self._prompt(f"{question} ({hint}): ")
+            self.pending = shown
             answer = self._secret(shown)
             low = answer.strip().lower()
             self.part = question
@@ -833,16 +891,29 @@ class Terminal:
         self._write("\033[H")
 
     def qr_fit(self, report):
-        """The largest code the window holds (a title line, the code, the menu), and the shortest address that
-        fits it: the title and a sentence or two. None when even that does not fit."""
-        version = qr.largest_version(self.cols, self.rows - 4)
-        if not version:
-            return None
-        room = min(qr.byte_capacity(version, "L"), QR_LIMIT)
-        for words in (300, 200, 140, 90, 50, 0):
-            url = report.tiny(words)
-            if len(url.encode()) <= room:
-                return url, version
+        """What goes in the code, chosen from the window's size. The code takes every line but the title line and
+        the two menu lines; it keeps the standard 4-module edge when that leaves room for a useful report, and
+        drops to a 2-module edge (which phones still read) in a small window, such as 80 by 24. The more the
+        window holds, the more of the report goes in: the report without its technical parts, then the person's
+        words cut to fit, then a sentence or two, then the title alone. Returns (address, version, edge, what it
+        holds), or None when not even the title fits."""
+        lines = self.rows - 3
+        for edge in (qr.QUIET, 2):
+            version = qr.largest_version(self.cols, lines, edge)
+            if not version:
+                continue
+            room = min(qr.byte_capacity(version, "L"), QR_LIMIT)
+            if edge == qr.QUIET and room < 180 and qr.largest_version(self.cols, lines, 2) > version:
+                continue  # a smaller edge buys a code that holds a sentence, not just a title
+            fuller = issue_url(report.title(), report.markdown(short=True), report.labels())
+            choices = [(fuller, "the report without its technical details")]
+            choices += [(report.tiny(w), "a short report") for w in (300, 200, 140, 90, 50)]
+            choices += [(report.compact(w), "a short report") for w in (60, 40, 25)]
+            choices += [(report.compact(0), "the step, the version and where the whole report is"),
+                        (report.title_only(), "only the title")]
+            for url, holds in choices:
+                if len(url.encode()) <= room:
+                    return url, version, edge, holds
         return None
 
     def _show_qr(self, report):
@@ -857,13 +928,13 @@ class Terminal:
             self._show_link(report, "The QR code does not fit this window. Make the window larger, or use Show the "
                                     "link.")
             return
-        url, version = fit
+        url, version, edge, holds = fit
         code = qr.encode(url, largest=version)
-        drawing = qr.draw(code)
-        width = qr.width_of(code.version)
+        drawing = qr.draw(code, quiet=edge)
+        width = qr.width_of(code.version, edge)
         left = max((self.cols - width) // 2, 0)
         scan = "Scan it with your phone's camera to open the report there."
-        more = f"It holds a short report. The whole report is in {report.file}." if report.file else ""
+        more = f"It holds {holds}." + (f" The whole report is in {report.file}." if report.file else "")
         beside = len(scan + more) + 1 <= self.cols
         free = self.rows - 3 - len(drawing) - (0 if beside or not more else 1)  # lines left between code and menu
         link_lines = -(-len(url) // self.cols)
@@ -874,14 +945,19 @@ class Terminal:
             self._write(f"\033[{i + 2};{left + 1}H{line}")
         below = len(drawing) + 2
         if more and not beside:
-            self._write(f"\033[{below};1H" + self.dim(more[:self.cols]))
-            below += 1
+            if below <= self.rows - 2:  # only where it leaves the menu's lines alone
+                self._write(f"\033[{below};1H" + self.dim(more[:self.cols]))
+                below += 1
+                more = ""
+        else:
+            more = ""
+        self.qr_note = more  # said on the link's view instead, when there was no room for it here
         if link_below:
             self._write(f"\033[{below + 1};1H{url}")
         self._write(f"\033[{self.rows};{len('  Enter ' + ('Back' if link_below else 'Show the link')) + 2}H")
         self._ask("")
         if not link_below:
-            self._show_link(report)
+            self._show_link(report, getattr(self, "qr_note", "") or None)
 
     def _show_link(self, report, warning=None):
         """The link as one line, so the terminal can wrap it and it copies whole."""
@@ -1222,6 +1298,7 @@ def main(argv=None):
         return 2
     plain = bool(args.plain or os.environ.get("STARBOARD_PLAIN"))
     term = Terminal(fancy=False if plain else None)
+    term.watch_size()
     term.plain_asked = plain
     try:
         return run(Api(args.port), term, args.data, args.port, args.address)

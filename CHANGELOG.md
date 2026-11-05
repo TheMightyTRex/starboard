@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **The terminal set-up fits the window** (DASH-86, DASH-91): the heading box, the progress bar and the menu stay
+  in place at all times and only the lines between them scroll; the window is measured at every step and when it
+  changes size. The feedback QR code is made to fit it, holding more of the report the larger the window is: the
+  title in 80 by 24 (with a 2-module edge), a short report in 80 by 30, the report without its technical details
+  in 140 by 60. The line above the code says what it holds.
 - **Set up in the terminal, with no browser** (DASH-86): `./install.sh --terminal` carries on once Starboard is
   running and asks the set-up questions in the same terminal: your password (typed hidden, with no setup code
   needed on the server itself), the apps for your media server (what you want, then the apps, folders and VPN

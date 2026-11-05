@@ -311,32 +311,32 @@ def encode(text, level="L", boost=True, largest=40, mask=None):
     return Code(version, level, mask, grid.dark)
 
 
-def width_of(version):
+def width_of(version, quiet=QUIET):
     """Characters across, with the quiet zone."""
-    return size_of(version) + 2 * QUIET
+    return size_of(version) + 2 * quiet
 
 
-def lines_of(version):
+def lines_of(version, quiet=QUIET):
     """Text lines down, with the quiet zone: two module rows to a line."""
-    return (size_of(version) + 2 * QUIET + 1) // 2
+    return (size_of(version) + 2 * quiet + 1) // 2
 
 
-def largest_version(columns, lines):
+def largest_version(columns, lines, quiet=QUIET):
     """The largest version whose drawing fits columns by lines, or 0 when none does."""
     v = 0
-    while v < 40 and width_of(v + 1) <= columns and lines_of(v + 1) <= lines:
+    while v < 40 and width_of(v + 1, quiet) <= columns and lines_of(v + 1, quiet) <= lines:
         v += 1
     return v
 
 
-def draw(code, colour=True):
+def draw(code, colour=True, quiet=QUIET):
     """Text lines: dark modules on a light background, two module rows to a line with half blocks, a 4-module
     quiet zone all round. With colour, black on white is forced with ANSI codes, so the code is the right way round
     on a dark terminal too."""
-    n = code.size + 2 * QUIET
+    n = code.size + 2 * quiet
 
     def dark(x, y):
-        x, y = x - QUIET, y - QUIET
+        x, y = x - quiet, y - quiet
         return 0 <= x < code.size and 0 <= y < code.size and code.modules[y][x]
     out = []
     for y in range(0, n, 2):

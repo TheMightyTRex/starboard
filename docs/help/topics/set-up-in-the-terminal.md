@@ -46,7 +46,9 @@ takes about 10 minutes, plus the time to download the apps.
 - Type `f` and press Enter to send feedback about the step you are on. See [Send feedback from the
   terminal](#send-feedback-from-the-terminal).
 - Type `q` and press Enter to stop. Nothing else changes, and you can finish in a browser later.
-- Each step starts on an empty terminal window. The keys you can use are always on the bottom line.
+- Each step starts on an empty terminal window. The step's heading and progress bar always stay at the top, and
+  the keys you can use always stay on the bottom line. When a step is longer than the window, only the part in
+  between scrolls. If you make the window larger or smaller, the step is drawn again to fit.
 - Headings have a border and a bar that shows how far through you are. Recommended answers are marked with a dot
   and say "recommended" too, so nothing depends on colour.
 - If you use software that reads text aloud, such as Orca, start it with `STARBOARD_PLAIN=1 ./install.sh --terminal`.
@@ -85,8 +87,10 @@ Type `q` at any feedback question to close it and go back to the step.
 - A feedback report never holds your answers to the set-up questions, your password, VPN details or the setup
   code. Email addresses, network addresses, user names in folder paths and anything that looks like a key are
   replaced. You see the whole report before you choose how to send it.
-- A QR code needs a large window: about 80 characters wide and 40 lines tall for a short report. In a smaller
-  window it says the code does not fit and shows the link instead. Make the window larger, or make the text
+- The QR code is made to fit your window, and a larger window fits more of the report in it. In a window 80
+  characters wide and 24 lines tall, the usual size, it holds the title of the report. At 80 by 30 it holds a short
+  report, and at 140 by 60 the report without its technical details. The line above the code says what it holds,
+  and the whole report is always saved on the server. To fit more in, make the window larger, or make the text
   smaller, and choose **Show as a QR code** again.
 - With `STARBOARD_PLAIN=1`, feedback never draws a QR code, because software that reads text aloud cannot read
   one. It shows the link, and offers **Save to a file**.

@@ -1,6 +1,7 @@
 """The terminal-only set-up (DASH-86): answers typed in turn against a real Starboard on this computer."""
 import io
 import os
+import re
 import tempfile
 import threading
 import unittest
@@ -116,7 +117,7 @@ class TerminalSetupTest(unittest.TestCase):
         term.heading("Your media server", 2)
         term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
         term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
-        lines = out.getvalue().splitlines()
+        lines = term.header + out.getvalue().splitlines()  # the heading is drawn in place, not printed
         self.assertTrue(any("step 2 of 5" in l for l in lines))
         self.assertTrue(any("█" in l and "20%" in l for l in lines))
         boxed = [l for l in lines if l and l[0] in "┌│└╭╰"]
@@ -166,9 +167,27 @@ class TerminalSetupTest(unittest.TestCase):
         term.finish()
         raw = out.getvalue()
         self.assertIn("\033[2J", raw)            # cleared
-        self.assertIn("\033[1;28r", raw)         # the scrolling area stops above the menu
+        self.assertIn("\033[5;28r", raw)         # only the lines between the heading and the menu scroll
         self.assertIn("b Back   ? Help   f Feedback   q Stop", raw)
         self.assertTrue(raw.endswith("\033[r\033[29;1H\033[2K\033[30;1H\033[2K\0338\n"))  # menu gone, window given back
+
+    def test_heading_bar_and_menu_stay_put_and_the_window_is_measured_again(self):
+        out = io.StringIO()
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=80, rows=24)
+        term.heading("Your media server", 2)
+        for i in range(40):  # far more than the window holds: only the middle scrolls
+            term.say(f"line {i}")
+        raw = out.getvalue()
+        self.assertIn("\033[1;1H┌", raw)          # the heading box is drawn in place at the top
+        self.assertIn("\033[5;22r", raw)          # lines 5 to 22 scroll; the box, the bar and the menu do not
+        self.assertEqual(len(term.header), 4)
+        out.truncate(0); out.seek(0)
+        term.fixed_size, term.drawn, term.pending = (100, 40), True, "  › Your choice [1]: "
+        term._resized()                            # the window grew: drawn again to fit
+        raw = out.getvalue()
+        self.assertIn("\033[5;38r", raw)
+        self.assertIn("line 39", raw)
+        self.assertTrue(raw.endswith("  › Your choice [1]: "))
 
     def test_help_pop_up_draws_a_box_and_the_step_again(self):
         out = io.StringIO()
@@ -282,28 +301,45 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("Save to a file", text)
         self.assertIn("Back to the set-up.", text)
 
-    def test_the_qr_code_fits_the_window_or_the_link_is_shown(self):
-        term, out = self.fancy(["f", "1", "The apps list stops after Jellyfin", "", "", "1", "", "4", "1"],
-                               width=140, rows=60)
+    def test_the_qr_code_is_chosen_by_the_window_size(self):
+        # The more the window holds, the more of the report goes in, and the code always fits the window.
+        report = terminal_setup.Report(terminal_setup.KINDS[0], [("What happened", "The apps list stops after Jellyfin")],
+                                       (2, "Your media server"), "Install the apps?", "80 x 30", False, None)
+        report.file = "~/starboard-feedback-2026-11-05-1216.md"
+        expect = {(140, 60): "the report without its technical details", (100, 50): "a short report",
+                  (80, 40): "a short report", (80, 30): "a short report", (80, 24): "only the title"}
+        for (width, rows), holds in expect.items():
+            with self.subTest(window=f"{width} by {rows}"):
+                term = terminal_setup.Terminal(out=io.StringIO(), fancy=True, colour=False, width=width, rows=rows)
+                url, version, edge, got = term.qr_fit(report)
+                self.assertEqual(got, holds)
+                self.assertLessEqual(qr.width_of(version, edge), width)
+                self.assertLessEqual(qr.lines_of(version, edge), rows - 3)
+                self.assertLessEqual(len(url.encode()), qr.byte_capacity(version, "L"))
+                self.assertEqual(edge, 2 if rows <= 30 else qr.QUIET)
+
+    def test_the_qr_view_draws_inside_the_window(self):
+        # At 80 by 24 the whole report takes two pages, and the link has a view of its own after the code.
+        term, out = self.fancy(["f", "1", "The apps list stops after Jellyfin", "", "", "", "1", "", "", "4", "1"],
+                               width=80, rows=24)
         term.heading("Your media server", 2)
         term.choose("Install the apps?", ["Yes", "No"])
         raw = out.getvalue()
         self.assertIn("Scan it with your phone's camera to open the report there.", raw)
         self.assertIn("\033[38;5;16;48;5;231m", raw)  # dark on light, forced
-        self.assertIn("Full+report+saved+on+the+server+as", raw)
-        self.assertEqual(len([n for n in os.listdir(self.tmp.name) if n.startswith("starboard-feedback-")]), 1)
-        url, version = term.qr_fit(mock.Mock(tiny=lambda words: "x" * 200))
-        self.assertLessEqual(qr.width_of(version), 140)
-        self.assertLessEqual(qr.lines_of(version), 60 - 4)
-        # A small window: said so, and the link instead.
-        term, out = self.fancy(["f", "1", "The apps list stops after Jellyfin", "", "", "1", "", "4", "1"],
-                               width=80, rows=30)
-        term.heading("Your media server", 2)
-        term.choose("Install the apps?", ["Yes", "No"])
-        raw = out.getvalue()
-        self.assertIn("The QR code does not fit this window", raw)
-        self.assertNotIn("\033[38;5;16;48;5;231m", raw)
-        self.assertIn("The link to the report", raw)
+        rows = re.findall(r"\033\[(\d+);\d+H\033\[38;5;16;48;5;231m", raw)
+        self.assertTrue(rows and max(map(int, rows)) <= 24 - 2)  # never over the menu
+
+    def test_80_by_24_uses_a_2_module_edge_and_the_title(self):
+        term, _ = self.fancy([], width=80, rows=24)
+        report = mock.Mock(title=lambda *a: "Broken: the apps list stops after Jellyfin", markdown=lambda short=False: "x" * 900,
+                           labels=lambda: "feedback,problem", tiny=lambda words: "y" * (300 + words), compact=lambda words: "z" * (200 + words),
+                           title_only=lambda: "https://github.com/TheMightyTRex/starboard/issues/new?title=Broken%3A+terminal+set-up%2C+step+2")
+        url, version, edge, holds = term.qr_fit(report)
+        self.assertEqual((edge, holds), (2, "only the title"))
+        self.assertLessEqual(qr.lines_of(version, edge), 24 - 3)
+        self.assertLessEqual(qr.width_of(version, edge), 80)
+        self.assertIsNone(self.fancy([], width=60, rows=20)[0].qr_fit(report))  # too small even for the title
 
     def test_redact_takes_out_what_looks_private(self):
         text = terminal_setup.redact("sam@example.org at 10.0.0.4 and fe80:0:0:0:1:2:3:4 in /home/sam/media, "
