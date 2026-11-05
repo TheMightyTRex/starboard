@@ -159,6 +159,19 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         self.assertIn("Your password is saved.", out.getvalue())
 
+    def test_a_wide_window_centres_a_column_100_wide(self):
+        out = io.StringIO()
+        term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=200, rows=40)
+        self.assertEqual((term.width, term.left), (100, 50))
+        term.heading("How to start", 2)
+        term.note("A paragraph in the column.")
+        raw = out.getvalue()
+        self.assertIn("\033[1;51H┌", raw)                       # the heading box starts at the column's edge
+        self.assertIn(" " * 50 + "  A paragraph in the column.", raw)
+        self.assertIn("\033[40;51H", raw)                        # the menu too
+        narrow = terminal_setup.Terminal(out=io.StringIO(), fancy=True, colour=False, width=80, rows=24)
+        self.assertEqual((narrow.width, narrow.left), (80, 0))  # up to 100 wide, the column is the window
+
     def test_text_wraps_again_when_the_window_changes_size(self):
         out = io.StringIO()
         term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=80, rows=30)

@@ -363,6 +363,9 @@ class Api:
         return data
 
 # The agreed order (DASH-103), the same as the browser set-up: each thing is decided before what depends on it.
+# The frame and text sit in a column at most this wide, centred in a wider window.
+COLUMN_MAX = 100
+
 STEPS = ["Your password", "How to start", "Storage", "Your media server", "Your VPN", "Check before anything changes",
          "Connect your apps", "Download hours", "Alerts and disk health", "How much Starboard does"]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
@@ -391,6 +394,7 @@ class Terminal:
         tty = hasattr(out, "isatty") and out.isatty()
         self.fancy = (tty and os.environ.get("TERM") != "dumb") if fancy is None else fancy
         self.fancy = self.fancy and self.width >= 60 and self.rows >= 20
+        self._measure()  # again, now that it is known whether the column is centred
         self.colour = self.fancy and not os.environ.get("NO_COLOR") if colour is None else colour and self.fancy
         self.header = []          # the step's heading box and progress bar: kept at the top, never scrolled away
         self.screen = []          # what this step has shown under the heading, to draw it again after help
@@ -429,7 +433,8 @@ class Terminal:
         self.out.flush()
 
     def say(self, text=""):
-        print(text, file=self.out, flush=True)
+        pad = getattr(self, "pad", "") if self.fancy else ""
+        print("\n".join(pad + line for line in str(text).split("\n")), file=self.out, flush=True)
         if self.fancy:
             self.screen += str(text).split("\n")
 
@@ -437,7 +442,7 @@ class Terminal:
         """Draws render(width), a function giving the lines for a width, and keeps the function, so a change of
         window size draws the piece again wrapped to the new width instead of cutting its old lines."""
         for line in render(self.width):
-            print(line, file=self.out, flush=True)
+            print(getattr(self, "pad", "") + line, file=self.out, flush=True)
         if self.fancy:
             self.screen.append(render)
 
@@ -461,7 +466,9 @@ class Terminal:
         """The window's size now: columns and lines (a test can fix them)."""
         size = shutil.get_terminal_size((80, 24))
         self.cols = self.fixed_size[0] or size.columns   # the whole window, for a QR code
-        self.width = min(self.cols, 78)
+        self.width = min(self.cols, COLUMN_MAX)
+        self.left = (self.cols - self.width) // 2 if getattr(self, "fancy", False) else 0  # centred in a wide window
+        self.pad = " " * self.left
         self.rows = self.fixed_size[1] or size.lines
 
     def watch_size(self):
@@ -473,7 +480,7 @@ class Terminal:
         self._measure()
         if self.fancy and self.drawn and self.width >= 60 and self.rows >= 20:
             self._redraw()
-            self._write(self.pending)
+            self._write(getattr(self, "pad", "") + self.pending)
 
     def _region(self):
         """Lines between the fixed heading and the fixed menu: the only part that scrolls."""
@@ -486,8 +493,9 @@ class Terminal:
         if self.width - 4 - len(plain) - len(right) < 3:
             right = ""  # a narrow window: the keys matter more than the hint
         gap = max(self.width - 4 - len(plain) - len(right), 1)
-        self._write(f"\0337\033[{self.rows - 1};1H\033[2K{self.dim('─' * self.width)}"
-                    f"\033[{self.rows};1H\033[2K  {line}{' ' * gap}{self.dim(right)}\0338")
+        col = getattr(self, "left", 0) + 1
+        self._write(f"\0337\033[{self.rows - 1};1H\033[2K\033[{self.rows - 1};{col}H{self.dim('─' * self.width)}"
+                    f"\033[{self.rows};1H\033[2K\033[{self.rows};{col}H  {line}{' ' * gap}{self.dim(right)}\0338")
 
     def _page(self, keys, right):
         """Clears the screen and draws the step's heading box and progress bar at the top and the menu on the last
@@ -495,7 +503,7 @@ class Terminal:
         top = len(self.header) + 1
         self._write(f"\033[r\033[2J")
         for i, line in enumerate(self.header, 1):
-            self._write(f"\033[{i};1H{line}")
+            self._write(f"\033[{i};{getattr(self, 'left', 0) + 1}H{line}")
         self._write(f"\033[{top};{self.rows - 2}r")
         self._menu(keys, right)
         self._write(f"\033[{top};1H")
@@ -563,7 +571,7 @@ class Terminal:
             self.header = self._header(*self.header_args)  # the width may have changed
         self._page(*self.keys)
         for line in self._lines()[-self._region():]:
-            self._write(line + "\n")
+            self._write(getattr(self, "pad", "") + line + "\n")
 
     def popup(self, title, text):
         """Help over the step: the step is dimmed behind a box in the middle. Enter closes it (Esc then Enter too).
@@ -579,7 +587,7 @@ class Terminal:
         set in under itself when it wraps. A long box shows a page at a time. With prompt, the last page asks it
         inside the box and returns the answer; without, Enter closes it."""
         bw = min(62, self.width - 6)
-        left, inner = (self.width - bw) // 2, bw - 4
+        left, inner = getattr(self, "left", 0) + (self.width - bw) // 2, bw - 4
         body = []
         for para in paras:
             if isinstance(para, tuple):
@@ -612,7 +620,7 @@ class Terminal:
             self._write("\033[r\033[2J")
             self._menu(list(keys) if not more else [("Enter", "More")], "")
             for row, line in enumerate(behind[:self.rows - 2], 1):
-                self._write(f"\033[{row};1H" + self._c("2;90", line[:self.width]))
+                self._write(f"\033[{row};{getattr(self, 'left', 0) + 1}H" + self._c("2;90", line[:self.width]))
             for i, line in enumerate(box):
                 self._write(f"\033[{top + i};{left + 1}H{line}")
             if asking:
@@ -680,7 +688,7 @@ class Terminal:
         while True:
             shown = self._prompt(prompt)
             self.pending = shown
-            answer = self._ask(shown).strip()
+            answer = self._ask((getattr(self, "pad", "") if self.fancy else "") + shown).strip()
             low = answer.lower()
             if self._feedback_key(low):
                 continue
@@ -796,7 +804,7 @@ class Terminal:
             hint = "nothing shows as you type" + ("; Enter keeps the one you typed before" if keep else "")
             shown = self._prompt(f"{question} ({hint}): ")
             self.pending = shown
-            answer = self._secret(shown)
+            answer = self._secret((getattr(self, "pad", "") if self.fancy else "") + shown)
             low = answer.strip().lower()
             self.part = question
             if self._feedback_key(low):

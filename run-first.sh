@@ -63,7 +63,10 @@ measure() {
   local size
   size="$(stty size < "${IN:-/dev/null}" 2>/dev/null)" || size=""
   if [ -n "$size" ]; then ROWS="${size% *}"; COLS="${size#* }"; fi
-  W=$(( COLS < 78 ? COLS : 78 ))
+  W=$(( COLS < 100 ? COLS : 100 ))
+  # The frame and text sit in a column centred in a wider window; L is its left margin, PAD those spaces.
+  if [ "${FANCY:-0}" = 1 ]; then L=$(( (COLS - W) / 2 )); else L=0; fi
+  PAD="$(printf '%*s' "$L" "")"
 }
 measure
 FANCY=1
@@ -74,6 +77,7 @@ SMALL=0
 if [ "$FANCY" = 1 ] && { [ "$COLS" -lt 60 ] || [ "$ROWS" -lt 20 ]; }; then FANCY=0; SMALL=1; fi
 case "$(locale charmap 2>/dev/null)" in UTF-8|utf8) ;; *) FANCY=0 ;; esac
 [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != dumb ] || COLOUR=0
+measure  # again, now that it is known whether the column is centred
 
 c() { if [ "$COLOUR" = 1 ]; then printf '\033[%sm%s\033[0m' "$1" "$2"; else printf '%s' "$2"; fi; }
 accent() { c "1;36" "$1"; }
@@ -90,13 +94,13 @@ PROMPT=""
 # Everything shown on a step goes through say, so the step can be drawn again when the window changes size.
 say() {
   local line
-  printf '%s\n' "$1"
+  printf '%s\n' "$1" | sed "s/^/$PAD/"
   if [ "$FANCY" = 1 ]; then while IFS= read -r line; do SCREEN+=("$line"); done <<< "$1"; fi
 }
 # A paragraph, wrapped to the width and set in by two spaces.
 para() {
   if [ "$FANCY" = 0 ]; then say "$(printf '%s\n' "$1" | fold -s -w $(( COLS < 80 ? COLS - 1 : 79 )) | sed 's/ *$//')"; return; fi
-  wrap_para "$1"
+  wrap_para "$1" | sed "s/^/$PAD/"
   SCREEN+=($'\x01'"$1")  # kept as text, so a change of window size wraps it again at the new width
 }
 wrap_para() { printf '%s\n' "$1" | fold -s -w $(( W - 4 )) | sed 's/ *$//; s/^/  /'; }
@@ -172,8 +176,8 @@ menu() {
   done
   [ $(( W - 4 - ${#plain} - ${#right} )) -ge 3 ] || right=""  # a narrow window: the keys matter more
   gap=$(( W - 4 - ${#plain} - ${#right} )); [ "$gap" -ge 1 ] || gap=1
-  printf '\0337\033[%d;1H\033[2K%s\033[%d;1H\033[2K  %s%s%s\0338' $(( ROWS - 1 )) "$(dim "$(rep ─ "$W")")" \
-    "$ROWS" "$line" "$(rep " " "$gap")" "$(dim "$right")"
+  printf '\0337\033[%d;1H\033[2K\033[%d;%dH%s\033[%d;1H\033[2K\033[%d;%dH  %s%s%s\0338' $(( ROWS - 1 )) $(( ROWS - 1 )) \
+    $(( L + 1 )) "$(dim "$(rep ─ "$W")")" "$ROWS" "$ROWS" $(( L + 1 )) "$line" "$(rep " " "$gap")" "$(dim "$right")"
 }
 
 # A cleared page: the heading box and progress bar at the top, the menu on the last two lines, and only the lines
@@ -200,7 +204,7 @@ page() {
 draw_page() {
   local i top=$(( ${#HEADER[@]} + 1 ))
   printf '\033[r\033[2J'
-  for i in "${!HEADER[@]}"; do printf '\033[%d;1H%s' $(( i + 1 )) "${HEADER[$i]}"; done
+  for i in "${!HEADER[@]}"; do printf '\033[%d;%dH%s' $(( i + 1 )) $(( L + 1 )) "${HEADER[$i]}"; done
   printf '\033[%d;%dr' "$top" $(( ROWS - 2 ))
   menu
   printf '\033[%d;1H' "$top"
@@ -218,11 +222,11 @@ resized() {
     SCREEN=()
     say ""
     welcome
-    printf '\n%s' "$PROMPT"
+    printf '\n%s%s' "$PAD" "$PROMPT"
     return
   fi
-  screen_lines | tail -n "$keep"
-  printf '%s' "$PROMPT"
+  screen_lines | tail -n "$keep" | sed "s/^/$PAD/"
+  printf '%s%s' "$PAD" "$PROMPT"
 }
 # The handler only notes the change: the step is drawn again between read slices (tty_read), never inside the
 # handler, where a second change of size could arrive while the first is still being drawn.
@@ -264,14 +268,14 @@ popup() {
 popup_page() {
   local title="$1" foot="$2"; shift 2
   local body=("$@") bw=$(( W - 6 < 62 ? W - 6 : 62 )) left inner row=1 line top=3 i wrapped
-  left=$(( (W - bw) / 2 )); inner=$(( bw - 4 ))
+  left=$(( L + (W - bw) / 2 )); inner=$(( bw - 4 ))
   local keep=$(( ROWS - 2 - ${#HEADER[@]} )) shown=()
   mapfile -t shown < <(screen_lines | tail -n "$keep")
   printf '\033[r\033[2J'
   for line in "${HEADER[@]}" "${shown[@]}"; do
     [ "$row" -le $(( ROWS - 2 )) ] || break
     wrapped="$(printf '%s' "$line" | sed 's/\x1b\[[0-9;]*m//g')"
-    printf '\033[%d;1H%s' "$row" "$(c "2;90" "$wrapped")"; row=$(( row + 1 ))
+    printf '\033[%d;%dH%s' "$row" $(( L + 1 )) "$(c "2;90" "$wrapped")"; row=$(( row + 1 ))
   done
   local t="${title:0:$(( bw - 6 ))}"
   printf '\033[%d;%dH%s%s%s' "$top" $(( left + 1 )) "$(c 36 "╭─ ")" "$(accent "$t")" "$(c 36 " $(rep ─ $(( bw - 5 - ${#t} )))╮")"
@@ -283,7 +287,8 @@ popup_page() {
   done
   printf '\033[%d;%dH%s' $(( top + 1 + ${#body[@]} )) $(( left + 1 )) "$(c 36 "╰$(rep ─ $(( bw - 2 )))╯")"
   local key="Close help"; [ "$foot" = "Enter: more below" ] && key="More"
-  printf '\0337\033[%d;1H\033[2K%s\033[%d;1H\033[2K  %s %s\0338' $(( ROWS - 1 )) "$(dim "$(rep ─ "$W")")" "$ROWS" "$(accent Enter)" "$key"
+  printf '\0337\033[%d;1H\033[2K\033[%d;%dH%s\033[%d;1H\033[2K\033[%d;%dH  %s %s\0338' $(( ROWS - 1 )) $(( ROWS - 1 )) $(( L + 1 )) \
+    "$(dim "$(rep ─ "$W")")" "$ROWS" "$ROWS" $(( L + 1 )) "$(accent Enter)" "$key"
   tty_read || true
 }
 
@@ -307,9 +312,9 @@ ask() {
   local question="$1" default="$2" helptext="$3"
   if [ -z "$IN" ]; then ANSWER="$default"; return 0; fi
   PROMPT="  $(accent "›") $question "; [ "$FANCY" = 1 ] || PROMPT="$question "
-  printf '\n%s' "$PROMPT"; [ "$FANCY" = 1 ] && SCREEN+=("")
+  printf '\n%s%s' "$PAD" "$PROMPT"; [ "$FANCY" = 1 ] && SCREEN+=("")
   if tty_read; then ANSWER="$REPLY_LINE"; else ANSWER="q"; fi
-  [ "$FANCY" = 1 ] && SCREEN+=("$(printf '%s' "$PROMPT")$ANSWER")
+  [ "$FANCY" = 1 ] && SCREEN+=("$PROMPT$ANSWER")
   ANSWER="$(printf '%s' "$ANSWER" | sed 's/^ *//; s/ *$//')"
   case "$ANSWER" in
     q|Q) finish; echo; echo "Stopped. Nothing else was changed. Run it again at any time."; exit 1 ;;
@@ -432,7 +437,7 @@ frame() {
     elif [ "$i" -lt "$to" ]; then line+="▒"
     else line+="░"; fi
   done
-  printf '\r\033[2K  %s %s  %s' "$(c 36 "$line")" "$(c 36 "${SPIN[$(( tick % 10 ))]}")" "$(printf '%s' "$name" | cut -c1-$(( W - bar - 8 )))"
+  printf '\r\033[2K%s  %s %s  %s' "$PAD" "$(c 36 "$line")" "$(c 36 "${SPIN[$(( tick % 10 ))]}")" "$(printf '%s' "$name" | cut -c1-$(( W - bar - 8 )))"
 }
 
 # work "name" "command" n of: runs one job quietly. Returns the command's status.
@@ -721,7 +726,7 @@ if [ "$FANCY" = 1 ] && [ "$ASK" = 1 ] && [ "$CHECK" = 0 ]; then
   printf '\nStarboard: the Run first script.\n'
   printf 'Press Enter to start, or type a and press Enter for accessible mode: plain lines with no boxes or colour, for software that reads text aloud.\n> '
   tty_read || true; first="$REPLY_LINE"
-  case "$first" in a|A) FANCY=0; PLAIN=1 ;; q|Q) echo "Stopped. Nothing was changed."; exit 1 ;; esac
+  case "$first" in a|A) FANCY=0; PLAIN=1; measure ;; q|Q) echo "Stopped. Nothing was changed."; exit 1 ;; esac
 fi
 
 if [ "$SMALL" = 1 ]; then
