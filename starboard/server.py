@@ -1034,7 +1034,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, found if found else {"waiting": True})
             if path == "/api/pool/apply" and method == "POST":
                 data = self.body()
-                self.check_password(data)  # every change to a drive needs the password again (David, 5 Nov 2026)
+                self.check_password(data)  # every change to a drive needs the password again (TheMightyTRexUK, 5 Nov 2026)
                 fields = pool.apply_request(data)
                 logs.event("info", "pool", "Asked the pool helper to carry out a checked plan")
                 return self.json(200, {"request": pool.ask("apply", **fields)})

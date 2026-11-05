@@ -43,7 +43,7 @@ guide and the notes on GitHub, so they always say the same thing.
    Security). Check CodeQL on GitHub has no open alerts that are not explained. Add a row for the release to
    "Security checks for each release" in `docs/SECURITY-AND-TESTS.md`: which checks ran and what they found.
 8. **Commit and tag** on `main`: `git tag vX.Y.Z`.
-9. **Publish** (David runs this himself, after his OK to push):
+9. **Publish** (the owner, TheMightyTRexUK, runs this after giving the OK to push):
 
    ```bash
    gh release create vX.Y.Z --notes-file docs/releases/vX.Y.Z.md
