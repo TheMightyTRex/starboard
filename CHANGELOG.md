@@ -137,10 +137,10 @@ short-lived process, the next step of DASH-79.
 - **Watch history:** a second run no longer counts episodes it applied before as missing.
 - **Restore:** backups from before 0.6.0 are brought up to date; a design or choice that no longer exists goes
   to the default; an app of a kind Starboard no longer knows becomes a plain link.
-- The Disk health page script (broken since 0.7.0).
-- The Apps page at 175% text on a phone.
-- The ready-made image's Docker access, which needs the socket's group (`group_add` in `compose.image.yaml`).
-- The address hint in Manage apps now suggests 127.0.0.1 and the port.
+- **Disk health:** the page script works again (broken since 0.7.0).
+- **Apps on a phone:** the Apps page works at 175% text.
+- **Ready-made image:** Docker access works, as it needs the socket's group (`group_add` in `compose.image.yaml`).
+- **Address hint:** Manage apps now suggests 127.0.0.1 and the port.
 
 ### Security
 
@@ -155,11 +155,15 @@ short-lived process, the next step of DASH-79.
 
 ## [0.7.3] (2 November 2026)
 
+### Changed
+
+- **App cards:** the reply time sits on the right and takes only its own width, with a gap between the cells. An
+  unknown version shows nothing; an app that does not answer shows N/A.
+
 ### Fixed
 
-- **App cards:** the reply time sits on the right and takes only its own width, with a gap between the cells, so
-  long versions such as Prowlarr's 2.7.0.5723 no longer run into it. On a very narrow card a version breaks
-  after a dot, never inside a number. An unknown version shows nothing; an app that does not answer shows N/A.
+- **Long versions:** long versions such as Prowlarr's 2.7.0.5723 no longer run into the reply time. On a very
+  narrow card a version breaks after a dot, never inside a number.
 
 ## [0.7.2] (2 November 2026)
 
@@ -339,21 +343,21 @@ From a design consistency review of Starboard and the shared component library (
 
 ### Changed
 
-- The README's clone address and the licence now name the GitHub account (TheMightyTRex) and author
+- **Links:** the README's clone address and the licence now name the GitHub account (TheMightyTRex) and author
   (TheMightyTRexUK). The privacy check allows those two names and still catches everything else.
 
 ## [0.5.2] (2 November 2026)
 
 ### Fixed
 
-- An upgrade from 0.4.0 or earlier now opens the upgrade guide with the 0.5.0 questions (new apps and Storage).
+- **Upgrade guide:** an upgrade from 0.4.0 or earlier now opens the upgrade guide with the 0.5.0 questions (new apps and Storage).
   Before, it assumed 0.5.0 and skipped them.
 
 ## [0.5.1] (2 November 2026)
 
 ### Fixed
 
-- Upgrade available looks for the newest version tag (what ./update.sh installs), and never offers an older
+- **Upgrade available:** looks for the newest version tag (what ./update.sh installs), and never offers an older
   version as an upgrade. Before, GitHub's last published release (0.1.8) could be offered.
 
 ## [0.5.0] (2 November 2026)
@@ -392,7 +396,7 @@ From a design consistency review of Starboard and the shared component library (
 - **Upgrade guide:** after an upgrade that brings settings to choose, a notice opens a short guide with what is
   new and only those questions. "Remind me later" and "Keep the defaults and finish" are always there. Upgrades
   with nothing to choose do not interrupt.
-- Releases follow one process, in `docs/RELEASING.md`; `tools/release_notes.py` writes the GitHub notes.
+- **Releases:** one process, in `docs/RELEASING.md`; `tools/release_notes.py` writes the GitHub notes.
 
 ### Fixed
 
@@ -410,58 +414,58 @@ A full security check found no critical issues. Its fixes are listed under Secur
 
 ### Changed
 
-- Background threads exist only while their feature is on: history, watching, download hours and the Jellyfin
+- **Background threads** exist only while their feature is on: history, watching, download hours and the Jellyfin
   jobs each start when turned on and end when turned off. With Small server, Starboard runs only its web server.
-- System history can be off, or every 1, 5 or 15 minutes (5 by default, was 1), and no longer reads each
+- **System history** can be off, or every 1, 5 or 15 minutes (5 by default, was 1), and no longer reads each
   container's use. The download hours check can run every 5 minutes. Downloads and Monitor update at the rate
   you choose, or Downloads only when you press Check again. Card numbers can be switched off.
-- The Plex database and XML code are loaded only when an import or a Live TV run needs them.
+- **Plex code:** the Plex database and XML code are loaded only when an import or a Live TV run needs them.
 
 ### Security
 
-- A request with a negative size could make Starboard read without end and use up memory, signed out. Refused now.
-- Password guesses sent all at once got past the 5-attempt limit. Attempts are now counted before the check, and
+- **Request sizes:** a request with a negative size could make Starboard read without end and use up memory, signed out. Refused now.
+- **Password guesses** sent all at once got past the 5-attempt limit. Attempts are now counted before the check, and
   at most two password checks run at once. X-Forwarded-For is believed only from the proxy itself.
-- The sign-in page's "next" address could send you to another site. Only pages on this dashboard now.
-- A saved API key or alert token is not reused when an address points to a different server, and keys are not
+- **Sign-in redirect:** the sign-in page's "next" address could send you to another site. Only pages on this dashboard now.
+- **Saved keys:** a saved API key or alert token is not reused when an address points to a different server, and keys are not
   carried across a redirect to another server.
-- Apps, Updates: Compose details from container labels are strictly checked and quoted, the folder can never be
+- **Apps, Updates:** Compose details from container labels are strictly checked and quoted, the folder can never be
   /, and the helper image is pinned to one exact build.
-- Dot-dot paths, idle connections (closed after 30 seconds, 64 requests at most), malformed requests, unknown
+- **Requests:** dot-dot paths, idle connections (closed after 30 seconds, 64 requests at most), malformed requests, unknown
   host names (DNS rebinding; STARBOARD_ALLOWED_HOSTS adds names), size limits on uploads and downloads, Live TV
   channel data cleaned, Pluto's stream server checked, XML guides with a DOCTYPE refused, Pillow image limits.
-- Installer: names with characters that would break .env or Compose files are refused. The disk health job
+- **Installer:** names with characters that would break .env or Compose files are refused. The disk health job
   writes in a private folder and never follows a planted link.
 
 ## [0.3.4] (2 November 2026)
 
 ### Added
 
-- Every setting that uses processor time or memory says what it costs, measured on a home server, so a small
+- **Costs:** every setting that uses processor time or memory says what it costs, measured on a home server, so a small
   server can keep only what it needs. The access list on About and updates says the same for each item.
 
 ## [0.3.3] (2 November 2026)
 
 ### Changed
 
-- Live TV: logos the folder already serves are used as they are, not processed again.
+- **Live TV:** logos the folder already serves are used as they are, not processed again.
 
 ## [0.3.2] (2 November 2026)
 
 ### Changed
 
-- Live TV: the guides refresh daily, but the channel lists are rebuilt (and every stream tested) only when a
+- **Live TV:** the guides refresh daily, but the channel lists are rebuilt (and every stream tested) only when a
   source's channel list changes, or once a week. Numbers and logos are redone only when a playlist changed.
 
 ### Fixed
 
-- Watch history import: Jellyfin and Emby libraries are read 1,000 items at a time, so big libraries work.
+- **Watch history import:** Jellyfin and Emby libraries are read 1,000 items at a time, so big libraries work.
 
 ## [0.3.1] (2 November 2026)
 
 ### Fixed
 
-- Jellyfin jobs: send Jellyfin's API key the way newer Jellyfin versions need it.
+- **Jellyfin jobs:** send Jellyfin's API key the way newer Jellyfin versions need it.
 
 ## [0.3.0] (2 November 2026)
 
@@ -478,7 +482,7 @@ A full security check found no critical issues. Its fixes are listed under Secur
 
 - **Apps, Other services** lists Starboard's own jobs and whether each is on.
 - **Set-up** offers the Jellyfin jobs when it finds Jellyfin.
-- Pillow and the data sources are credited in THIRD-PARTY.md.
+- **Credits:** Pillow and the data sources are credited in THIRD-PARTY.md.
 
 ## [0.2.0] (2 November 2026)
 
@@ -514,78 +518,78 @@ Lightweight first: a dashboard for smaller servers that uses very little process
 
 ### Added
 
-- Backup and restore: an option to include a rebuild prompt for an AI assistant with the server backup
+- **Backup and restore:** an option to include a rebuild prompt for an AI assistant with the server backup
   (the job is asked for `backup-with-prompt`). The page says what the server backup covers.
 
 ## [0.1.7] (2 November 2026)
 
 ### Added
 
-- Storage: each folder has a tag with its filesystem, such as ext4, NTFS or mergerfs.
+- **Storage:** each folder has a tag with its filesystem, such as ext4, NTFS or mergerfs.
 
 ## [0.1.6] (2 November 2026)
 
 ### Added
 
-- System, Backup and restore: download Starboard's settings as a file, restore from a file or from a copy
+- **System, Backup and restore:** download Starboard's settings as a file, restore from a file or from a copy
   Starboard saved, and start the server's own backup job and see its result and files. Downloading or
   restoring needs your password again.
 
 ### Changed
 
-- Apps: the running and external access counts sit on the same row as Check again and Add an app, at the
+- **Apps:** the running and external access counts sit on the same row as Check again and Add an app, at the
   same height, with their coloured edge: "20/20 running at 23:47", "0/4 external access".
 
 ## [0.1.5] (2 November 2026)
 
 ### Added
 
-- Apps has a sub-menu: Apps, Updates (each app's version, and whether Sonarr, Radarr, Lidarr, Readarr and
+- **Apps has a sub-menu:** Apps, Updates (each app's version, and whether Sonarr, Radarr, Lidarr, Readarr and
   Prowlarr have an update) and Other services (services with no web page; a service with no address can follow
   another app's status).
-- The Apps page opens with two cards: how many apps are running, and how many outside addresses are reachable.
-- System has a sub-menu: Overview, Storage, Disk health, Monitor and Network.
-- Charts: Starboard records a reading every minute for 24 hours. Overview has tiles with trend lines and charts
+- **The Apps page opens with two cards:** how many apps are running, and how many outside addresses are reachable.
+- **System has a sub-menu:** Overview, Storage, Disk health, Monitor and Network.
+- **Charts:** Starboard records a reading every minute for 24 hours. Overview has tiles with trend lines and charts
   for processor, memory, network, disk activity and temperature over the last hour, 6 hours or 24 hours.
   Storage, Disk health and Network have their own charts. Every chart can be read with the arrow keys and
   shown as a table.
-- Disk health reads SMART reports saved by a small job on the server (`deploy/install-smart.sh`).
-- Your own folders and disks go in `compose.override.yaml`, which updates leave alone.
+- **Disk health:** reads SMART reports saved by a small job on the server (`deploy/install-smart.sh`).
+- **Your own folders and disks** go in `compose.override.yaml`, which updates leave alone.
 
 ## [0.1.4] (1 November 2026)
 
 ### Changed
 
-- New logo, Tile board: three tiles and a star. In dark mode the star is lighter. Used in the header, the
+- **New logo, Tile board:** three tiles and a star. In dark mode the star is lighter. Used in the header, the
   phone menu, the browser tab and the home-screen icon.
 
 ## [0.1.3] (1 November 2026)
 
 ### Added
 
-- The installer and the setup page ask you to name your dashboard. Change it in Settings, General.
-- Each app's own icon on its card, from the dashboard-icons collection. Starboard keeps a copy, so icons
+- **Dashboard name:** the installer and the setup page ask you to name your dashboard. Change it in Settings, General.
+- **App icons:** each app's own icon on its card, from the dashboard-icons collection. Starboard keeps a copy, so icons
   still show without the internet. Choose another icon in the app's settings.
-- Apps are grouped by category: Watch, listen and request; Find and organise; Search and download;
+- **Apps are grouped by category:** Watch, listen and request; Find and organise; Search and download;
   Dashboards and tools. New apps get a category chosen for them; change it in the app's settings. Health
   first still puts apps that are not responding at the top.
-- A footer on every page: "Starboard: v" and the version, a link to the GitHub repository and to Updates.
+- **A footer on every page:** "Starboard: v" and the version, a link to the GitHub repository and to Updates.
 
 ### Changed
 
-- Looks like Storyarr: its colours, its icons (Lucide) and its square tabs. The main menu and every sub-menu
+- **Looks like Storyarr:** its colours, its icons (Lucide) and its square tabs. The main menu and every sub-menu
   use the same tabs; on phones a menu drawer holds both.
-- Settings is four pages with a sub-menu: Apps, General, Security and Updates. Old links still work.
+- **Settings is four pages with a sub-menu:** Apps, General, Security and Updates. Old links still work.
 
 ### Security
 
-- The version is only shown to people who have signed in.
+- **The version** is only shown to people who have signed in.
 
 ## [0.1.2] (1 November 2026)
 
 ### Fixed
 
-- `./update.sh` made the new version's files readable by you only, so the container could not start
+- **Updates:** `./update.sh` made the new version's files readable by you only, so the container could not start
   and the roll-back failed the same way. The image now makes its files readable whatever the host's
   permissions, and the updater only keeps the backup private.
 
@@ -593,32 +597,32 @@ Lightweight first: a dashboard for smaller servers that uses very little process
 
 ### Added
 
-- Remember me on the sign-in and setup pages. Without it, you are signed out when the browser closes, or after
+- **Remember me** on the sign-in and setup pages. Without it, you are signed out when the browser closes, or after
   a day. With it, you stay signed in for the number of days set in Settings, Security.
 
 ### Changed
 
-- Passwords need 10 characters or more (was 12).
-- The setup code stays the same when Starboard restarts or updates, so the code the installer printed keeps
+- **Passwords** need 10 characters or more (was 12).
+- **The setup code** stays the same when Starboard restarts or updates, so the code the installer printed keeps
   working until a password is set.
 
 ## [0.1.0] (1 November 2026)
 
 ### Added
 
-- Apps, Search, Downloads, Coming up, System and Settings, each on its own page.
-- Search Sonarr, Radarr, Lidarr and Readarr at once and add what you find.
-- Five designs: Health first (the default), Tiles, Shelf, Command and Status board, plus the Display and
+- **Pages:** Apps, Search, Downloads, Coming up, System and Settings, each on its own page.
+- **Search:** Search Sonarr, Radarr, Lidarr and Readarr at once and add what you find.
+- **Five designs:** Health first (the default), Tiles, Shelf, Command and Status board, plus the Display and
   accessibility panel.
-- Installer (Docker or systemd) and updater with backup and automatic roll-back.
-- Password sign-in with a one-time setup code; API keys never reach the browser.
-- Open it from phones and other computers on your home network, or switch that off in Settings so only the
+- **Installer and updater:** installer (Docker or systemd) and updater with backup and automatic roll-back.
+- **Sign-in:** password sign-in with a one-time setup code; API keys never reach the browser.
+- **Home network:** open it from phones and other computers on your home network, or switch that off in Settings so only the
   computer it runs on can connect. Docker uses host networking for this.
-- Phone layout on every page; add it to your home screen.
-- Each app's home address and outside address on its card, each with a copy button. Both are on by default;
+- **Phones:** phone layout on every page; add it to your home screen.
+- **App addresses:** each app's home address and outside address on its card, each with a copy button. Both are on by default;
   turn them off in Settings, General. Apps saved as 127.0.0.1 open on the address your browser used, so they
   work from a phone.
-- Downloads show the download client's own state, so a paused client shows Paused.
+- **Downloads:** show the download client's own state, so a paused client shows Paused.
 
 [Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.7.7...HEAD
 [0.7.7]: https://github.com/TheMightyTRex/starboard/compare/v0.7.6...v0.7.7
