@@ -8,6 +8,28 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **Set up in the terminal, with no browser** (DASH-86): `./install.sh --terminal` carries on once Starboard is
+  running and asks the set-up questions in the same terminal: your password (typed hidden, with no setup code
+  needed on the server itself), the apps for your media server (what you want, then the apps, folders and VPN
+  details) and download hours. Enter takes the recommended answer, `?` shows help, `b` goes back a step with the
+  last answers as the defaults, and `q` stops. It uses Starboard's own API, so every answer is checked as the
+  browser checks it. Each step starts on a cleared screen with a heading box ("Starboard | step"), a progress bar
+  and a menu on the bottom line; help opens as a box over the dimmed step. With `STARBOARD_PLAIN=1`, `--plain`, a
+  small window or no terminal, it prints plain lines that never clear or redraw, which suit software that reads
+  text aloud; `NO_COLOR` keeps the boxes without colour. Run it again with `python3 -m starboard.terminal_setup`.
+  Find out more in **Set up Starboard in the terminal, with no browser**.
+- **Feedback from the terminal set-up** (DASH-91): `f` at any question sends Snaglist's report about that step,
+  in a box over it: what it is about (Snaglist's seven kinds), one or two of Snaglist's questions, then the whole
+  report before any choice to send. It is a pre-filled GitHub issue with the step, Starboard's version, the system,
+  the window size and the last error. Answers to the set-up, passwords, VPN details and the setup code are never
+  in it, and email and network addresses, user names in paths and anything like a key are replaced. Send it as a
+  QR code drawn in the terminal (a new standard-library encoder, `starboard/qr.py`), as the link, or saved to a
+  file. Plain mode never draws a QR code. After a failure, `r` reports it with the error filled in.
+- **The terminal set-up fits the window:** the heading box, the progress bar and the menu stay in place and only
+  the lines between them scroll; the window is measured at every step and when it changes size. The QR code holds
+  more of the report the larger the window is: the title in 80 by 24 (with a 2-module edge), a short report in
+  80 by 30, the report without its technical details in 140 by 60. The line above the code says what it holds,
+  and the whole report is always saved on the server.
 - **What is new in Reelix:** on **Apps**, **Updates**, **What is new** beside **Update** lists the changes in a
   waiting Reelix update, from Reelix's own changelog, under Added, Changed, Fixed and the other kinds of change.
   After Reelix's version goes up, a notice on the Apps page and on Updates says so, with **What is new** for the
