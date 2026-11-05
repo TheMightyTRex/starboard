@@ -3,7 +3,8 @@ the upgrade wizard, and the notes file of each GitHub release (tools/release_not
 
 Newest last. Each release:
   version, date
-  added, changed, fixed      lists of (title, sentence)
+  added, changed, deprecated, removed, fixed, security
+                             lists of (title, sentence), the same types as CHANGELOG.md; leave out the empty ones
   review                     upgrade wizard steps for settings worth choosing after this upgrade (ids the wizard
                              knows: "apps", "keys", "jellyfin", "hours", "alerts", "preset", "names", "storage"); empty when
                              the upgrade needs no choices, so it finishes on its own
@@ -34,8 +35,9 @@ RELEASES = [
     {"version": "0.4.0", "date": "2 November 2026",
      "added": [("Settings, Performance", "Starboard's own use, presets (Small server, Balanced, Everything) and a switch for every piece of background work.")],
      "changed": [("Background work", "Each thread runs only while its feature is on. System history every 5 minutes by default.")],
-     "fixed": [("Security", "Fixes from a full security check: request sizes, password limits, the sign-in redirect, saved keys, container updates and more."),
-               ("Host names", "Starboard answers only to IP addresses, localhost, the computer's name and STARBOARD_ALLOWED_HOSTS.")],
+     "fixed": [],
+     "security": [("Full security check", "Fixes from a full security check: request sizes, password limits, the sign-in redirect, saved keys, container updates and more."),
+                  ("Host names", "Starboard answers only to IP addresses, localhost, the computer's name and STARBOARD_ALLOWED_HOSTS.")],
      "review": ["preset", "names"],
      "settings": "Adds performance settings (the Balanced preset). To go back, run ./update.sh --to v0.3.4."},
     {"version": "0.5.0", "date": "2 November 2026",
@@ -49,8 +51,8 @@ RELEASES = [
      "review": ["apps", "storage"],
      "settings": "Adds a record of the set-up guide and the last upgrade, and three Storage settings in Settings, Performance (sorting by type only when you ask, a daily record of used space, and page updates only when you press Check again). To go back, run ./update.sh --to v0.4.0."},
     {"version": "0.5.1", "date": "2 November 2026",
-     "added": [], "changed": [("Upgrade available", "Looks for the newest version tag, which is what ./update.sh installs.")],
-     "fixed": [("Upgrade available", "No longer offers an older version as an upgrade.")],
+     "added": [], "changed": [],
+     "fixed": [("Upgrade available", "Looks for the newest version tag, which is what ./update.sh installs, and no longer offers an older version as an upgrade.")],
      "review": [], "settings": "No settings change. To go back, run ./update.sh --to v0.5.0."},
     {"version": "0.5.2", "date": "2 November 2026",
      "added": [], "changed": [],
@@ -142,6 +144,7 @@ RELEASES = [
      "changed": [("Errors where they happened", "A problem saving a setting or running an action shows beside that switch or button, and clears on your next try. An error with nothing on the page to belong to stays in the corner until you close it."),
                  ("Updates", "The button says Check until the first check, then Check again."),
                  ("Watch history files", "A history file can be up to 80 MB, which is more than 250,000 films and episodes. Reading one takes about four and a half times its size in memory.")],
+     "removed": [("Note issues", "Send feedback takes its place, and your notes are listed with the new reports.")],
      "fixed": [],
      "security": [("Memory and process limits", "Starboard is capped at 512 MB of memory and 200 processes, so a fault cannot take the whole server's. Docker Bench for Security found it had none."),
                   ("Slow name check", "A saved copy's name made of many hyphens could make one check slow. Names are now length-checked and matched only one way (found by CodeQL)."),
@@ -157,8 +160,8 @@ RELEASES = [
                ("Help for each section", "A Help button beside Display opens the help for the section you are in, in a new tab."),
                ("Places for Reelix", "The Library (TV, Films, Radio, Books and Audiobooks), Trending, Recently finished, Wanted, History and Settings, Reelix have their places in the menu. Each says it comes with Reelix.")],
      "changed": [("A new logo", "The Screen logo, a screen with four tiles and a star, in the side menu and the header. The browser tab and the app icon keep the old one for now."),
-                 ("Where things are", "Some pages moved in the menu. For example, Jellyfin and Audiobookshelf are under Settings, Apps; Updates and Other services are under System, Apps; Downloads and Requests are under Activity. The help says where each one is."),
-                 ("Shelf", "The Shelf design no longer adds its own icon rail, because every design now has the side menu.")],
+                 ("Where things are", "Some pages moved in the menu. For example, Jellyfin and Audiobookshelf are under Settings, Apps; Updates and Other services are under System, Apps; Downloads and Requests are under Activity. The help says where each one is.")],
+     "removed": [("Shelf", "The Shelf design no longer adds its own icon rail, because every design now has the side menu.")],
      "fixed": [],
      "security": [("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. They found nothing to fix; ZAP's two warnings were false alarms, explained in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
@@ -210,7 +213,8 @@ def pending(last_version, current, set_up):
 def markdown(release):
     """A release's notes for GitHub (docs/releases/vX.Y.Z.md)."""
     out = [f"# Starboard v{release['version']}", "", f"Released {release['date']}.", ""]
-    for heading, key in (("Added", "added"), ("Changed", "changed"), ("Fixed", "fixed"), ("Security", "security")):
+    for heading, key in (("Added", "added"), ("Changed", "changed"), ("Deprecated", "deprecated"), ("Removed", "removed"),
+                         ("Fixed", "fixed"), ("Security", "security")):
         if release.get(key):
             out += [f"## {heading}", ""] + [f"- **{t}.** {s}" for t, s in release[key]] + [""]
     out += ["## Your settings and the way back", "", release["settings"], ""]
