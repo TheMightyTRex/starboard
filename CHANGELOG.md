@@ -7,6 +7,10 @@ add features.
 
 ## [Unreleased]
 
+## [0.9.0] (5 November 2026)
+
+The Run first script, one order for both set-ups, and a security review of the set-up.
+
 ### Added
 - **The Run first script:** once Linux is installed, one command sets up everything else. `run-first.sh` shows a
   welcome wizard with the logo, in the terminal set-up's style (heading box, progress bar, menu, help over the
@@ -22,6 +26,9 @@ add features.
   or a pool of several disks, with the media folder made for you when the apps start. Install apps uses the folder
   chosen there.
 - **Alerts and disk health, and how much Starboard does, in the terminal set-up,** as in the browser.
+- **Keyboard help for commands:** The terminal: typing commands now says where `|`, `~`, `\`, `"`, `@`, `$` and `&` are
+  on US, UK and Ireland, German, French and Spanish keyboards, and warns that the `¦` key on a UK keyboard is a
+  different character. The Run first script's command also comes in a version without `|`.
 
 ### Changed
 - **One order for every step,** the same in the browser and the terminal: your password, how to start, storage, your
@@ -39,6 +46,22 @@ add features.
   try again, show the details or stop.
 - **The installer runs inside the Run first script's frame,** as its step 6, and the browser path ends on a Done page
   with the addresses and the setup code.
+- **Text in the terminal wraps at any window size:** paragraphs, questions, answers, cards and warnings wrap between
+  words, are wrapped again when the window changes size, and wrap in plain mode too. Long answers put their
+  description under the name. In a narrow window the menu leaves out its hint so the keys fit.
+
+### Security
+- **What the set-up hands to the installer:** the Run first script passes on only the three options the set-up
+  writes (free space for the media folder, the Live TV folder and disk health), each folder checked again, and never
+  `/`, a system folder or a top folder such as `/home`.
+- **The setup code:** read only from a regular file, never through a link, and only as the characters a code has.
+- **Files the scripts write:** the hand-over is written to a new file and moved into place; Docker's installer and
+  the logs go in private temporary files, not fixed names in `/tmp`.
+- **Host names:** Starboard answers only to this computer's own name, alone or with a home-network ending such as
+  `.local`, which stops DNS rebinding against a native install.
+- **Disk health:** its report folder belongs to root, and the job never follows a link.
+- **The first password:** two requests at the same moment cannot both choose it.
+- **Checks:** CHECKS_PLACEHOLDER
 
 ## [0.8.0] (5 November 2026)
 
@@ -717,7 +740,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/TheMightyTRex/starboard/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/TheMightyTRex/starboard/compare/v0.7.7...v0.8.0
 [0.7.7]: https://github.com/TheMightyTRex/starboard/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/TheMightyTRex/starboard/compare/v0.7.5...v0.7.6

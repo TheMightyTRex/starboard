@@ -189,6 +189,19 @@ RELEASES = [
                   ("Checks", "Trivy, OWASP ZAP (signed out, and an active scan signed in), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release. One download address is now also checked to be https; ZAP's one signed-in warning was a false alarm, explained in docs/SECURITY-AND-TESTS.md.")],
      "review": [],
      "settings": "Nothing to choose. To use drive pools, run ./install.sh again and say yes to the pool helper (it asks for your password, for sudo). To go back, run ./update.sh --to v0.7.7."},
+    {"version": "0.9.0", "date": "5 November 2026",
+     "added": [("The Run first script", "Once Linux is installed, one command sets up everything else: it checks the computer, installs what is missing after a yes, downloads Starboard and starts the installer, with accessible mode asked first."),
+               ("How to start", "Both set-ups start with the same question: New install, Move from apps you already run, or Restore a backup, recommended from what Starboard finds."),
+               ("Storage", "For a new install, where your media goes: the main disk, a separate disk or a pool, and the media folder is made for you."),
+               ("Keyboard help", "Help, The terminal: typing commands, says where the symbols in commands are on US, UK, German, French and Spanish keyboards.")],
+     "changed": [("One order for both set-ups", "The browser and the terminal ask the same questions in the same order, each decided before what depends on it."),
+                 ("The installer asks less", "A new install asks only about your home network and Docker access; the rest comes in the set-up."),
+                 ("Text wraps at any size", "Everything in the terminal wraps between words, again when the window changes size, and in plain mode.")],
+     "security": [("The set-up and the installer", "Only the options the set-up writes reach the installer, with every folder checked; the setup code is never read through a link; temporary files are private."),
+                  ("Host names", "Starboard answers only to this computer's own name, alone or with a home-network ending, which stops DNS rebinding."),
+                  ("Checks", "CHECKS_PLACEHOLDER")],
+     "review": [],
+     "settings": "Nothing to choose. New installs use the Run first script; existing ones are not changed. To go back, run ./update.sh --to v0.8.0."},
 ]
 
 
