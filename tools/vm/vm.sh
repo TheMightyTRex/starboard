@@ -9,6 +9,7 @@
 #                                     keeps, erases, balances, parity, take-out, requests, then a restart
 #   tools/vm/vm.sh first debian       The Run first script on a bare system with no Docker: checks, installs what
 #                                     is missing, downloads this checkout and starts Starboard; then runs it again
+#   tools/vm/vm.sh bare debian        A bare system with the Run first script copied in, left running to drive by hand
 #
 # VM_TAG=name keeps this run's disk and process files apart, so two sessions can each test a copy of one system.
 # VM_DISKS="2G 3G 4G 2G 1G" adds blank virtual drives (serial numbers SBDISK0001 and up) to shell and test runs.
@@ -281,6 +282,23 @@ case "$ACTION" in
 
     say "$SYSTEM Run first script: $PASS passed, $FAIL failed"
     [ "$FAIL" = 0 ]
+    ;;
+
+  bare)
+    # A bare system with this checkout and the Run first script copied in, left running for a person or a capture
+    # tool to drive over SSH (ssh -tt). Stops when this command is stopped.
+    if [ ! -f "$BASE" ]; then say "Downloading the $SYSTEM cloud image"; curl -fL --progress-bar -o "$BASE.part" "$URL"; mv "$BASE.part" "$BASE"; fi
+    rm -f "$RUN"
+    qemu-img create -q -f qcow2 -F qcow2 -b "$BASE" "$RUN" 12G
+    say "Starting a bare $SYSTEM with no Docker ($SPEED)"
+    boot "$RUN" -drive "file=$(seed bare),if=virtio,format=raw,readonly=on"
+    trap stop EXIT
+    wait_ssh $((WAIT * 2))
+    "${SSH[@]}" "cloud-init status --wait >/dev/null 2>&1 || true"
+    git bundle create -q "$DIR/starboard.bundle" HEAD
+    "${SCP[@]}" "$DIR/starboard.bundle" run-first.sh tester@127.0.0.1:
+    say "READY: ssh -tt -i $KEY -p $SSH_PORT tester@127.0.0.1"
+    while kill -0 "$(cat "$PID")" 2>/dev/null; do sleep 5; done
     ;;
 
   clean)

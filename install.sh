@@ -414,7 +414,32 @@ fi
 
 if [ "$MODE" = docker ]; then
   say "Step 4: building and starting the container"
-  docker compose up -d --build
+  if [ "${STARBOARD_QUIET_BUILD:-}" = 1 ] && [ -t 1 ]; then
+    # From the Run first script: the build's own lines go to a log, and an animation shows it is working.
+    build_log="${TMPDIR:-/tmp}/starboard-build-$(id -u).log"
+    docker compose up -d --build > "$build_log" 2>&1 &
+    build=$!
+    spin='|/-\'
+    i=0
+    while kill -0 "$build" 2>/dev/null; do
+      printf '\r  %s Building and starting Starboard. Please wait, this can take some time...' "${spin:i++%4:1}"
+      sleep 0.2
+    done
+    printf '\r\033[2K'
+    if wait "$build"; then
+      echo "  Built and started."
+    else
+      tail -n 15 "$build_log" | sed 's/^/    /'
+      case "$(tail -n 40 "$build_log")" in
+        *"no space left"*|*"No space left"*) fail "the disk is full. Free some space, then run this again" ;;
+        *"Could not resolve"*|*"dial tcp"*|*"TLS handshake"*|*"i/o timeout"*) fail "this computer could not reach the internet to download what Starboard is built from. Check the network, then run this again" ;;
+        *"permission denied"*) fail "your user is not allowed to use Docker yet. Sign out and back in, then run this again" ;;
+        *) fail "building Starboard did not work. The last lines of the build are above; the whole log is in $build_log" ;;
+      esac
+    fi
+  else
+    docker compose up -d --build
+  fi
 else
   say "Step 4: installing the systemd user service"
   unit_dir="$HOME/.config/systemd/user"
