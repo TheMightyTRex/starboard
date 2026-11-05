@@ -34,6 +34,7 @@ Each guide is a journey through several topics, in order.
 ### Install and update
 
 - [Install Starboard with the installer](topics/install-with-the-installer.md)
+- [Set up Starboard in the terminal, with no browser](topics/set-up-in-the-terminal.md)
 - [Install Starboard from the ready-made image](topics/install-from-the-ready-made-image.md)
 - [Find the setup code](topics/find-the-setup-code.md)
 - [Create your password and sign in](topics/create-your-password.md)

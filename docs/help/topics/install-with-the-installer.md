@@ -119,6 +119,8 @@ To update later: ./update.sh
   password are kept in the `data` folder. None of them leave your computer.
 - To change your answers later, go to the Starboard folder and run `./install.sh` again. Your settings and password
   stay. Read [Change what Starboard can access](change-what-starboard-can-access.md).
+- No browser to finish in? Run `./install.sh --terminal`, and the installer asks for your password, the apps and
+  your download hours in the terminal too. Read [Set up Starboard in the terminal](set-up-in-the-terminal.md).
 - Without Docker, the installer can run Starboard with the computer's own Python instead: `./install.sh --native`.
   This needs Python 3.10 or newer. When it finishes, it prints one more command to run so Starboard keeps running
   after you sign out.
@@ -142,6 +144,7 @@ To update later: ./update.sh
 ## Find out more
 
 - [Find the setup code](find-the-setup-code.md)
+- [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md)
 - [Create your password and sign in](create-your-password.md)
 - [Open Starboard from a phone or another computer](open-from-another-device.md)
 - [Install Starboard from the ready-made image](install-from-the-ready-made-image.md)

@@ -18,6 +18,8 @@
 #   --disk-health         Set up Disk health reports (installs a timer with sudo; asks for your password)
 #   --no-disk-health      Stop reading Disk health reports (and say how to remove the timer)
 #   --yes                 Do not ask: use the options above, and your last answers (or No) for the rest
+#   --terminal            Finish set-up here in the terminal (password, apps, download hours), with no browser:
+#                         for a server with no desktop. Run it again later with: python3 -m starboard.terminal_setup
 #
 # Your settings go in ./data and .env, which git ignores.
 set -euo pipefail
@@ -31,6 +33,7 @@ DOCKER=""
 HEALTH=""
 APPUSE=""
 LIVETV="-"
+TERMINAL=0
 DISKS_GIVEN=0
 DISKS=()
 
@@ -50,12 +53,14 @@ while [ $# -gt 0 ]; do
     --disk-health) HEALTH=1 ;;
     --no-disk-health) HEALTH=0 ;;
     --yes) ASK=0 ;;
-    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
+    --terminal) TERMINAL=1 ;;
+    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
   shift
 done
 [ -t 0 ] || ASK=0
+[ "$TERMINAL" = 0 ] || [ -t 0 ] || { echo "Stopped: --terminal needs a terminal to type in" >&2; exit 2; }
 
 say() { printf '\n== %s\n' "$*"; }
 fail() { printf 'Stopped: %s\n' "$*" >&2; exit 1; }
@@ -385,7 +390,15 @@ if [ -f data/config.json ] && grep -q '"network_access": true' data/config.json 
   echo "On your phone or other computers: http://$lan:$PORT"
 fi
 echo "What Starboard can access, and how to change it: Settings, About and updates."
+if [ "$TERMINAL" = 1 ]; then
+  echo "To update later: ./update.sh"
+  # The rest of set-up, here: the password, the apps and download hours (starboard/terminal_setup.py).
+  status=0
+  python3 -m starboard.terminal_setup --port "$PORT" --data data --address "${lan:-}" || status=$?
+  exit "$status"
+fi
 if [ -f data/setup-token ]; then
   echo "Setup code (you need it once, to choose your password): $(cat data/setup-token)"
+  echo "No browser here? Finish in the terminal instead: python3 -m starboard.terminal_setup --port $PORT"
 fi
 echo "To update later: ./update.sh"
