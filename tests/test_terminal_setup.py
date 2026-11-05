@@ -10,7 +10,7 @@ from unittest import mock
 from starboard import auth, qr, terminal_setup
 from starboard.server import make_server
 
-PASSWORD = "correct horse battery"
+SIGN_IN_WORDS = "correct horse battery"
 
 
 class Answers:
@@ -54,19 +54,19 @@ class TerminalSetupTest(unittest.TestCase):
     def test_whole_set_up_with_the_recommended_answers(self):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         typed = ["", "", "", media, settings, "y", "", "", ""]
-        term, out = self.term(typed, [PASSWORD, PASSWORD])
+        term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
         self.assertFalse(self.app.needs_setup)
-        self.assertTrue(auth.check_password(PASSWORD, self.app.config.data["auth"]["password_hash"]))
-        self.assertNotIn(PASSWORD, text)  # typed hidden, never shown
+        self.assertTrue(auth.check_password(SIGN_IN_WORDS, self.app.config.data["auth"]["password_hash"]))
+        self.assertNotIn(SIGN_IN_WORDS, text)  # typed hidden, never shown
         # No Docker access here: the files are written, and the command to start them is shown.
         self.assertTrue(os.path.exists(os.path.join(self.tmp.name, "stack", "compose.yaml")))
         self.assertIn("docker compose -p media-stack up -d", text)
         self.assertEqual(self.app.config.data["download_hours"], {"enabled": True, "start": 1, "end": 7})
 
     def test_help_mismatch_and_short_passwords_ask_again(self):
-        term, out = self.term(["2", "2"], ["?", "short", PASSWORD, "different words", PASSWORD, PASSWORD])
+        term, out = self.term(["2", "2"], ["?", "short", SIGN_IN_WORDS, "different words", SIGN_IN_WORDS, SIGN_IN_WORDS])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
         self.assertIn("a few unrelated words", text)
@@ -76,16 +76,16 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(self.tmp.name, "stack", "compose.yaml")))
 
     def test_wrong_number_and_question_mark_then_q_stops(self):
-        term, out = self.term(["9", "?", "q"], [PASSWORD, PASSWORD])
+        term, out = self.term(["9", "?", "q"], [SIGN_IN_WORDS, SIGN_IN_WORDS])
         with self.assertRaises(terminal_setup.Stop):
             terminal_setup.run(self.api, term, self.tmp.name, self.port)
         self.assertIn("Type a number from 1 to 2", out.getvalue())
         self.assertIn("Each kind of media installs", out.getvalue())
 
     def test_signs_in_when_a_password_is_set(self):
-        self.api.call("POST", "/api/setup", {"token": self.app.setup_token, "password": PASSWORD})
+        self.api.call("POST", "/api/setup", {"token": self.app.setup_token, "password": SIGN_IN_WORDS})
         api = terminal_setup.Api(self.port)
-        term, out = self.term(["2", "2"], ["wrong password here", PASSWORD])
+        term, out = self.term(["2", "2"], ["wrong password here", SIGN_IN_WORDS])
         self.assertEqual(terminal_setup.run(api, term, self.tmp.name, self.port), 0)
         self.assertIn("That password is not right", out.getvalue())
         self.assertIn("Signed in.", out.getvalue())
@@ -94,7 +94,7 @@ class TerminalSetupTest(unittest.TestCase):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # Downloads and VPN only, every default app; Proton VPN over WireGuard.
         typed = ["", "8,9", "", media, settings, "1", "1", "", "192.168.1.20/32", "y", "2"]
-        term, out = self.term(typed, [PASSWORD, PASSWORD, "secret-wireguard-key"])
+        term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
         self.assertIn("affiliate links", text)
@@ -105,7 +105,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("secret-wireguard-key", env)
 
     def test_bad_hours_ask_again(self):
-        term, out = self.term(["2", "", "5", "5", "22", "6"], [PASSWORD, PASSWORD])
+        term, out = self.term(["2", "", "5", "5", "22", "6"], [SIGN_IN_WORDS, SIGN_IN_WORDS])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         self.assertIn("That did not work", out.getvalue())
         self.assertEqual(self.app.config.data["download_hours"], {"enabled": True, "start": 22, "end": 6})
@@ -140,7 +140,7 @@ class TerminalSetupTest(unittest.TestCase):
                  "b",                                         # the check: back
                  "", "", "", "",                              # step 3 again: every answer kept with Enter
                  "y", "2"]                                    # write, then downloads at any time
-        term, out = self.term(typed, [PASSWORD, PASSWORD, "secret-wireguard-key", ""])
+        term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key", ""])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
         prompts = "\n".join(term._ask.prompts + term._secret.prompts)
@@ -154,7 +154,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("secret-wireguard-key", env)  # kept from before, without typing it again
 
     def test_b_on_the_first_step_and_the_password_is_kept_after_back(self):
-        term, out = self.term(["b", "2", "b", "", "2", "2"], ["b", PASSWORD, PASSWORD])
+        term, out = self.term(["b", "2", "b", "", "2", "2"], ["b", SIGN_IN_WORDS, SIGN_IN_WORDS])
         # b while choosing the password does nothing (first step); b at step 2 shows the saved password.
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         self.assertIn("Your password is saved.", out.getvalue())
@@ -234,13 +234,13 @@ class TerminalSetupTest(unittest.TestCase):
 
     def test_nothing_typed_as_an_answer_is_in_the_report(self):
         media, settings = os.path.join(self.tmp.name, "my-own-media"), os.path.join(self.tmp.name, "config")
-        words = (f"It broke near {media} with {PASSWORD}, secret-wireguard-key and 192.168.1.20/32. "
+        words = (f"It broke near {media} with {SIGN_IN_WORDS}, secret-wireguard-key and 192.168.1.20/32. "
                  "Mail me at sam@example.org, token=abc123def456")
         # Downloads and VPN (Proton over WireGuard), then f at the check: Something is broken, the words, skip the
         # second question, save to a file; then write and downloads at any time.
         typed = ["", "8,9", "", media, settings, "1", "1", "Netherlands", "192.168.1.20/32",
                  "f", "1", words, "", "1", "y", "2"]
-        term, out = self.term(typed, [PASSWORD, PASSWORD, "secret-wireguard-key"])
+        term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         term.save_dir = self.tmp.name
         token = self.app.setup_token
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
@@ -249,7 +249,7 @@ class TerminalSetupTest(unittest.TestCase):
             saved = f.read()
         report = out.getvalue().split("This is everything the report holds")[1].split("Back to the set-up")[0]
         for text in (saved, report):
-            for private in (media, "my-own-media", PASSWORD, "secret-wireguard-key", "192.168.1.20", "Netherlands",
+            for private in (media, "my-own-media", SIGN_IN_WORDS, "secret-wireguard-key", "192.168.1.20", "Netherlands",
                             "sam@example.org", "abc123def456", token):
                 self.assertNotIn(private, text)
             self.assertIn("[your answer]", text)
@@ -267,7 +267,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.server = mock.Mock()  # tearDown has nothing left to stop
         api = terminal_setup.Api(self.port)
         # Both passwords, then Starboard is not answering: r, skip both questions, Done; then q.
-        term, out = self.term(["", "", "2"], [PASSWORD, PASSWORD, "r", "q"])
+        term, out = self.term(["", "", "2"], [SIGN_IN_WORDS, SIGN_IN_WORDS, "r", "q"])
         with self.assertRaises(terminal_setup.Stop):
             terminal_setup.run(api, term, self.tmp.name, self.port)
         text = out.getvalue()
@@ -352,7 +352,7 @@ class TerminalSetupTest(unittest.TestCase):
         # Only fingerprints of typed answers are kept, never the answers themselves.
         term = terminal_setup.Terminal(out=io.StringIO(), fancy=False, ask=Answers(["my secret folder"]))
         term.text("Where?")
-        self.assertTrue(term.typed and all(isinstance(t, tuple) and len(t[1]) == 64 for t in term.typed))
+        self.assertTrue(term.typed and all(isinstance(t, tuple) and len(t[1]) == 64 for t in term.typed))  # HMAC-SHA-256
         self.assertNotIn("my secret folder", repr(term.typed))
         self.assertEqual(terminal_setup.redact("it is my secret folder", term.typed), "it is [your answer]")
 

@@ -13,7 +13,7 @@ Standard library only.
 """
 import argparse
 import getpass
-import hashlib
+import hmac
 import http.client
 import json
 import os
@@ -103,9 +103,15 @@ PATTERNS = [
 ]
 
 
+# A random key made for each run and kept only in memory: a fingerprint cannot be matched against a list of common
+# passwords, and none is kept or sent anywhere.
+_FINGERPRINT_KEY = os.urandom(32)
+
+
 def fingerprint(value):
-    """What the set-up keeps of an answer typed to it: its length and a SHA-256 hash, never the answer itself."""
-    return len(value), hashlib.sha256(value.encode()).hexdigest()
+    """What the set-up keeps of an answer typed to it: its length and a keyed hash (HMAC-SHA-256 with this run's
+    random key), never the answer itself. It is only used to find the answer in a feedback report and take it out."""
+    return len(value), hmac.new(_FINGERPRINT_KEY, value.encode(), "sha256").hexdigest()
 
 
 def redact(text, typed=()):
@@ -118,7 +124,7 @@ def redact(text, typed=()):
         hashes = {h for n, h in prints if n == size}
         i = 0
         while i + size <= len(out):
-            if hashlib.sha256(out[i:i + size].encode()).hexdigest() in hashes:
+            if fingerprint(out[i:i + size])[1] in hashes:
                 out = out[:i] + "[your answer]" + out[i + size:]
                 i += len("[your answer]")
             else:
@@ -730,7 +736,7 @@ class Terminal:
                 continue
             if keep and not answer:
                 return None
-            self.typed.add(fingerprint(answer))
+            self.typed.add(fingerprint(answer))  # so it is taken out if it is ever pasted into feedback
             return answer
 
     def failed(self, line, problem):
