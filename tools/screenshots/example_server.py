@@ -140,6 +140,67 @@ APPS = [
 ]
 
 
+def example_pool(data):
+    """System, Storage, Pool with made-up drives: a pretend pool helper on a pretend computer under DATA/pool-root,
+    answering Starboard's requests every half second. Nothing touches a real drive."""
+    from starboard import pool_helper as ph
+    root = data / "pool-root"
+    gb = 1000 ** 3
+    devices = [("sda", 250 * gb, "S2R5NX0H2E7A", "Samsung SSD 850 EVO", "/"), ("sdb", 4000 * gb, "WD-WCC7K1A7Q2K", "WDC WD40EFRX", None),
+               ("sdc", 3000 * gb, "ZDH1A81F", "ST3000VN007", None), ("sdd", 2000 * gb, "Z4Z00C3D", "TOSHIBA HDWD120", None),
+               ("sde", 4000 * gb, "WD-WX52D55B0", "WDC WD40EFZX", None), ("sdf", 4000 * gb, "WD-WX11D9KX1", "WDC WD40EFRX", None)]
+    byid = root / "dev/disk/by-id"
+    byid.mkdir(parents=True, exist_ok=True)
+    (root / "etc").mkdir(exist_ok=True)
+    (root / "etc/fstab").write_text("UUID=example-root / ext4 defaults 0 1\n")
+    tree = []
+    for name, size, serial, model, mount in devices:
+        (root / "dev" / name).touch()
+        link = byid / f"ata-{model.replace(' ', '_')}_{serial}"
+        if not link.exists():
+            link.symlink_to(f"../../{name}")
+        parts = [{"name": name + "1", "type": "part", "size": size, "fstype": "ext4", "uuid": "example-root", "mountpoints": ["/"]}] if mount else None
+        tree.append({"name": name, "type": "disk", "size": size, "serial": serial, "model": model, "tran": "sata", "rota": True,
+                     "rm": False, "mountpoints": [None], "children": parts})
+    exchange = data / "pool"
+    (exchange / "requests").mkdir(parents=True, exist_ok=True)
+    fill = {"/mnt/disks/disk1": 0.85, "/mnt/disks/disk2": 0.63, "/mnt/disks/disk3": 0.15, "/mnt/parity/parity1": 0.7}
+    host = ph.Host(root=str(root), exchange=str(exchange), run=lambda cmd: "", lsblk=lambda: {"blockdevices": tree}, mounts={})
+    sizes = {}
+
+    def statvfs(path):
+        size = sizes.get(path) or (4000 * gb if path.startswith("/mnt/disks/") else 0)
+        if not size:
+            return None
+        used = int(size * fill.get(path, 0.0))
+        return {"size": size, "used": used, "free": size - used}
+    host.statvfs = statvfs
+    ph.units = lambda branch, depth=3: {f"media/tv/Example series {branch[-1]}{n}": (int(90 * gb + n * 37 * gb), 0)
+                                        for n in range(12)} if branch.endswith(("disk1", "disk2")) else {}
+    for name, role in (("sdb", "pool"), ("sdc", "pool"), ("sdd", "pool"), ("sde", "parity")):
+        d = next(x for x in ph.drives(host) if x["name"] == name)
+        plan = ph.plan_add(host, name, role, erase=True)
+        ph.apply(host, plan["id"], {d["by_id"]: d["ends"]})
+        cfg = host.config()
+        sizes[next(x["mount"] for x in cfg["drives"] if x["by_id"] == d["by_id"])] = d["size"]
+    sizes[host.pool] = sum(v for k, v in sizes.items() if k.startswith("/mnt/disks"))
+    fill[host.pool] = 0.62
+    ph.write_json(str(root / "var/lib/starboard-pool/nightly.json"), {"at": dt.datetime.now().timestamp() - 30000,
+                  "results": [{"what": "parity", "state": "done", "say": "Every file is protected"}]})
+    ph.publish_status(host)
+    os.environ["STARBOARD_POOL_DIR"] = str(exchange)
+
+    def loop():
+        while True:
+            try:
+                if any(n.endswith(".json") for n in os.listdir(exchange / "requests")):
+                    ph.serve(host)
+            except Exception as e:  # noqa: BLE001 - an example: say what went wrong and carry on
+                print("pool example:", e, flush=True)
+            threading.Event().wait(0.5)
+    threading.Thread(target=loop, daemon=True).start()
+
+
 def main():
     fake = ThreadingHTTPServer(("127.0.0.1", FAKE_PORT), FakeArr)
     threading.Thread(target=fake.serve_forever, daemon=True).start()
@@ -176,6 +237,7 @@ def main():
                       {"account": "Alex", "title": "Harbour Street (2011)"}]}))
     (DATA / "jobs.json").write_text(json.dumps({"listening": {"started": now - 320, "finished": now - 300, "state": "done",
                                                                "summary": "Wrote 14 books; kept 1 that already had progress; 2 not found in Audiobookshelf"}}))
+    example_pool(DATA)
     server, app = make_server("127.0.0.1", PORT, str(DATA))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     if app.needs_setup:

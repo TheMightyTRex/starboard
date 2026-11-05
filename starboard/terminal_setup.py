@@ -18,6 +18,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
 import textwrap
 import time
@@ -30,6 +31,15 @@ VPNS = [  # (Gluetun's provider name, shown name)
     ("expressvpn", "ExpressVPN"),
 ]
 HELP = {
+    "pool": "A pool joins several drives into one folder, /mnt/pool, so your media has one place however many "
+            "drives you have. Each drive stays a normal drive that can be read on its own. Keeping a drive's files "
+            "puts them in the pool as they are; erasing prepares an empty drive. Nothing changes until you say yes.",
+    "backup": "A backup drive is not part of the pool: it protects it. Parity (SnapRAID) needs one drive at least "
+              "as big as the biggest pool drive and can rebuild any one failed drive; it is checked every night. A "
+              "copy (rsync) is a full, readable copy of your media folder and needs as much space as it. Neither is "
+              "a full backup on its own: keep a third copy of what matters somewhere else.",
+    "balance": "Balancing moves whole series, film and book folders from fuller drives to emptier ones, so the "
+               "drives fill evenly and each series stays on one drive. It runs at low priority and can be stopped.",
     "password": "Your password signs you in to Starboard from any device. Use 10 characters or more; a few unrelated "
                 "words are easy to remember and hard to guess. If you forget it, run ./reset-password.sh.",
     "groups": "Each kind of media installs the apps that look after it. Watching installs Jellyfin, to play everything. "
@@ -103,6 +113,12 @@ class Api:
         return data
 
 STEPS = ["Your password", "Your media server", "Your VPN", "Check before anything changes", "Download hours"]
+POOL_HELPER = "/usr/local/bin/starboard-pool"
+
+
+def num(name):
+    """A step's number, from the list: Your drives is only there when the pool helper is installed."""
+    return STEPS.index(name) + 1
 ANSI = re.compile(r"\033\[[0-9;]*[A-Za-z]|\0337|\0338")
 
 
@@ -423,7 +439,7 @@ class Terminal:
 
 def step_password(api, term, state):
     if state.get("password"):
-        term.heading("Your password", 1)
+        term.heading("Your password", num("Your password"))
         term.ok("Your password is saved.")
         term.note("Change it later in Starboard, Settings, Security.")
         term.text("Press Enter to carry on", help_key="keep")
@@ -432,7 +448,7 @@ def step_password(api, term, state):
     if os.path.exists(token_file):
         with open(token_file) as f:
             token = f.read().strip()
-        term.heading("Your password", 1)
+        term.heading("Your password", num("Your password"))
         term.note("Choose the password for Starboard. You use it to sign in from any device. No setup code is needed: "
                   "you are on the server itself. Type ? for help.")
         while True:
@@ -451,7 +467,7 @@ def step_password(api, term, state):
             term.ok("Password saved. You are signed in.")
             state["password"] = first
             return True
-    term.heading("Sign in", 1)
+    term.heading("Sign in", num("Your password"))
     term.note("Starboard already has a password. Type it to carry on (forgotten it? Stop with q and run ./reset-password.sh).")
     for _ in range(5):
         password = term.hidden("Your Starboard password")
@@ -470,7 +486,7 @@ def step_apps(api, term, state):
     overview = state.get("overview") or api.call("GET", "/api/stack")
     state["overview"] = overview
     groups = overview["groups"]
-    term.heading("Your media server", 2)
+    term.heading("Your media server", num("Your media server"))
     last = state.get("apps", {})
     if term.choose("Install the apps for your media server now?",
                    ["Yes (recommended)", "No: I have my apps already, or I will add them later in the browser"],
@@ -507,7 +523,7 @@ def step_apps(api, term, state):
         return True
     d = overview["defaults"]
     term.say("")
-    data_dir = term.text("Media folder, for films, series, books and downloads", last.get("data_dir", d["data_dir"]),
+    data_dir = term.text("Media folder, for films, series, books and downloads", last.get("data_dir", state.get("pool_dir") or d["data_dir"]),
                          help_key="folders")
     config_dir = term.text("Settings folder, for each app's own settings", last.get("config_dir", d["config_dir"]),
                            help_key="folders")
@@ -524,7 +540,7 @@ def step_vpn(api, term, state):
     if not choice or "gluetun" not in choice["apps"]:
         return False
     last = state.get("vpn_answers", {})
-    term.heading("Your VPN", 3)
+    term.heading("Your VPN", num("Your VPN"))
     term.note("Some of the VPN providers below have affiliate links in Starboard's help. If you sign up through one, the "
               "provider pays a small amount towards Starboard's development, at no extra cost to you.")
     pick = term.choose("Which VPN provider do you have?", [n for _, n in VPNS] + ["Another one that Gluetun supports"],
@@ -568,7 +584,7 @@ def step_check(api, term, state, wait=2.0):
         choice["vpn"] = state.get("vpn")
     else:
         choice.pop("vpn", None)
-    term.heading("Check before anything changes", 4)
+    term.heading("Check before anything changes", num("Check before anything changes"))
     names = state.get("names") or choice["apps"]
     rows = [("Install", ", ".join(names)), ("Media folder", choice["data_dir"]), ("Settings folder", choice["config_dir"])]
     if choice.get("vpn"):
@@ -584,7 +600,7 @@ def step_check(api, term, state, wait=2.0):
         preview = api.call("POST", "/api/stack/preview", choice)
     except Problem as e:
         low = str(e).lower()
-        raise GoTo(2 if any(w in low for w in ("vpn", "wireguard", "openvpn")) else 1, str(e)) from e
+        raise GoTo(STEP_FUNCTIONS.index(step_vpn if any(w in low for w in ("vpn", "wireguard", "openvpn")) else step_apps), str(e)) from e
     term.card("What will change", rows)
     for line in preview.get("moved", []):
         term.warn(line)
@@ -622,7 +638,7 @@ def step_check(api, term, state, wait=2.0):
 
 def step_hours(api, term, state):
     last = state.get("hours", {})
-    term.heading("Download hours", 5)
+    term.heading("Download hours", num("Download hours"))
     term.note("Downloading uses most of your internet connection while it runs, so other devices can slow down. "
               "Downloading at night keeps the day free.")
     if term.choose("When should downloads run?", ["Only at set hours (recommended)", "At any time"],
@@ -642,7 +658,130 @@ def step_hours(api, term, state):
             term.say(f"That did not work: {e}. Type whole hours, such as 1 and 7.")
 
 
+def pool_command(args):
+    """The pool helper, through sudo: sudo asks for the computer's password itself, so Starboard never sees it."""
+    p = subprocess.run(["sudo", POOL_HELPER, "--json", *args], stdout=subprocess.PIPE, text=True)
+    try:
+        data = json.loads(p.stdout or "{}")
+    except ValueError:
+        raise Problem("the pool helper did not answer") from None
+    if isinstance(data, dict) and data.get("error"):
+        raise Problem(data["error"])
+    if p.returncode not in (0, 1):
+        raise Problem("sudo did not run the pool helper")
+    return data
+
+
+def _size(n):
+    from .pool_helper import human
+    return human(n)
+
+
+def step_drives(api, term, state):
+    """Your drives (DASH-87): make a pool from the drives, keep or erase each, and choose a backup drive. Only shown
+    when the pool helper is installed. Every change is planned and checked by the helper, then done with sudo."""
+    run = state.get("pool_run") or pool_command
+    term.heading("Your drives", num("Your drives"))
+    try:
+        listing = run(["drives"])
+    except Problem as e:
+        term.warn(f"The pool helper did not answer ({e}). Make the pool later on System, Storage, Pool.")
+        return True
+    pool = [d for d in listing if d["use"] == "pool"]
+    free = [d for d in listing if d["use"] == "free"]
+    if pool:
+        state["pool_dir"] = "/mnt/pool"
+        term.ok(f"The pool is at /mnt/pool, with {len(pool)} drives.")
+    if not free:
+        term.note("There is no other drive to add. Add drives later on System, Storage, Pool.")
+        return True
+    name = lambda d: f"{d['model'] or d['name']} {_size(d['size'])}, serial ends {d['ends'] or 'unknown'}"  # noqa: E731
+    term.note(f"Starboard found {len(free)} drives besides the system drive and any drive in use. A pool joins "
+              "drives into one folder for your media; each drive stays readable on its own. Type ? for help.")
+    if term.choose("Make a pool from your drives now?" if not pool else "Add drives to the pool now?",
+                   ["Yes (recommended)", "No: later, on System, Storage, Pool"], help_key="pool") == 1:
+        return True
+    biggest_empty = max((d for d in free if not d.get("files")), key=lambda d: d["size"], default=None)
+    spare = biggest_empty if len(free) >= 3 and not pool else None
+    picked = term.choose_many("Which drives make the pool?",
+                              [(name(d), f"{_size(d['files'])} of files" if d.get("files") else "empty") for d in free],
+                              [i for i, d in enumerate(free) if d is not spare], help_key="pool")
+    chosen = [free[i] for i in picked]
+    keep = {d["by_id"]: term.yes_no(f"Keep the files on {name(d)}?", True, help_key="pool") if d.get("files") else False
+            for d in chosen}
+    rest = [d for d in free if d not in chosen]
+    biggest = max([d["size"] for d in chosen + pool] or [0])
+    backup = None
+    if rest:
+        options = [(f"Parity on {name(d)}", "one drive protects the whole pool") for d in rest if d["size"] >= biggest]
+        parity_ok = [d for d in rest if d["size"] >= biggest]
+        options += [(f"Copy on {name(d)}", "a full copy of your media folder") for d in rest]
+        options.append(("No backup drive", "add one later on System, Storage, Pool"))
+        pick = term.choose("Use one of the other drives as a backup drive?", options, 1, help_key="backup")
+        if pick < len(parity_ok):
+            backup = ("parity", parity_ok[pick])
+        elif pick < len(options) - 1:
+            backup = ("copy", rest[pick - len(parity_ok)])
+    erase = [d for d in chosen if not keep[d["by_id"]]] + ([backup[1]] if backup and (backup[0] == "parity" or not backup[1].get("files")) else [])
+    rows = [("Pool", "/mnt/pool from " + ", ".join(d["model"] or d["name"] for d in chosen + pool))]
+    rows += [("Keep", name(d) + ": files stay as they are") for d in chosen if keep[d["by_id"]]]
+    rows += [("Erase", name(d) + ", then ext4") for d in erase]
+    if backup:
+        rows.append(("Parity" if backup[0] == "parity" else "Copy", name(backup[1]) + ", checked every night at 02:00"))
+    rows.append(("Saved first", "/etc/fstab, in /var/lib/starboard-pool/saved"))
+    term.card("Check before anything changes", rows)
+    term.note("Nothing has changed yet. The pool helper checks each drive again just before it changes it.")
+    confirm = {}
+    if erase:
+        term.warn(f"This erases {len(erase)} drive{'s' if len(erase) > 1 else ''}. To confirm, type the end of each serial number.")
+        for d in erase:
+            while True:
+                typed = term.text(f"Last 4 characters of the serial number of {d['model'] or d['name']} ({d['ends']})")
+                if re.sub(r"[^A-Za-z0-9]", "", typed).upper() == d["ends"]:
+                    confirm[d["by_id"]] = d["ends"]
+                    break
+                term.say(f"That is not {d['ends']}. Type it as it is on the drive's label, or q to stop.")
+    if not term.yes_no("Make these changes now? sudo asks for this computer's password", False, help_key="pool"):
+        term.note("Nothing was changed. Make the pool later on System, Storage, Pool.")
+        return True
+    jobs = [(d, "pool") for d in chosen] + ([(backup[1], backup[0])] if backup else [])
+    try:
+        for d, role in jobs:
+            args = ["plan", "add", d["by_id"], "--as", role] + (["--erase"] if d["by_id"] in confirm else [])
+            if role == "copy":
+                args += ["--folders", "media"]
+            plan = run(args)
+            done = run(["apply", plan["id"]] + (["--confirm", f"{d['by_id']}={confirm[d['by_id']]}"] if d["by_id"] in confirm else []))
+            for s in done.get("steps", []):
+                (term.ok if s["state"] == "done" else term.warn)(s["say"])
+    except Problem as e:
+        term.warn(f"The pool helper stopped: {e}. Drives already done stay done; see System, Storage, Pool.")
+        return True
+    state["pool_dir"] = "/mnt/pool"
+    if len(chosen) + len(pool) >= 2 and term.yes_no("Balance the files across the drives now? It can take hours, "
+                                                    "at low priority", False, help_key="balance"):
+        try:
+            plan = run(["plan", "balance"])
+            term.say("  " + plan["steps"][0]["say"])
+            if plan.get("moves"):
+                run(["apply", plan["id"]])
+                term.ok("Balanced.")
+        except Problem as e:
+            term.warn(f"Balancing stopped: {e}")
+    else:
+        term.note("Balance later on System, Storage, Pool.")
+    return True
+
+
 STEP_FUNCTIONS = [step_password, step_apps, step_vpn, step_check, step_hours]
+
+
+def add_drives_step(available=None):
+    """Your drives goes after Your password when the pool helper is installed (DASH-87)."""
+    available = os.path.exists(POOL_HELPER) if available is None else available
+    if available and step_drives not in STEP_FUNCTIONS:
+        STEP_FUNCTIONS.insert(1, step_drives)
+        STEPS.insert(1, "Your drives")
 
 
 def run(api, term, data_dir, port, address=""):
@@ -652,6 +791,7 @@ def run(api, term, data_dir, port, address=""):
                   "Type ? at any question for help, b to go back a step, or q to stop. You can carry on later in a "
                   "browser instead.")
     state = {"data_dir": data_dir}
+    add_drives_step()
     shown, i = [], 0  # the steps shown so far, for Back
     try:
         while i < len(STEP_FUNCTIONS):

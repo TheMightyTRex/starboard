@@ -219,6 +219,35 @@ services:
 with `STARBOARD_DISKS=Media=/disks/media` and `STARBOARD_SMART_DIR=/smart` in `.env`. The installer sees
 folders set up this way and leaves them as they are.
 
+### Drive pools
+
+**System, Storage, Pool** joins drives into one folder, `/mnt/pool`, with mergerfs; balances the files across
+them by whole folders; and makes a drive a backup drive: parity with SnapRAID, or a nightly copy with rsync. It
+can also take a drive out of the pool, moving its files to the others first. `./install.sh --terminal` asks the
+same questions in its **Your drives** step.
+
+Starboard itself never runs as root and never touches a drive. The pool helper does, installed with sudo by
+`./install.sh` (answer Yes to **Set up Drive pools?**) or by hand:
+
+```bash
+sudo deploy/install-pool.sh "$PWD/pool"
+```
+
+It is one standard-library Python file, `starboard/pool_helper.py`, installed as `/usr/local/bin/starboard-pool`.
+Starboard drops a small request in `pool/requests` (the one folder it may write) and reads the answers in
+`pool/status`. The helper:
+
+- accepts only a fixed list of actions, and never runs a command taken from a request;
+- plans every change first (a dry run with the exact commands), and refuses the plan if a drive changed since or
+  the check is more than 15 minutes old;
+- erases a drive only with the last 4 characters of its serial number, and Starboard asks for the password again
+  before it sends any change;
+- never offers the system drive or a drive in RAID, LVM or ZFS, changes only its own lines in `/etc/fstab`
+  (saving a copy first) and only a `snapraid.conf` it wrote, and leaves a pool made by hand alone.
+
+Needs `mergerfs`, `rsync` and `gdisk` (and `snapraid` for a parity drive). Test it only in a throwaway virtual
+machine: `tools/vm/vm.sh pool debian` adds five blank virtual drives and runs every step, then restarts.
+
 ### Backup and restore
 
 **System, Backup** downloads Starboard's settings as a file (your apps, API keys, categories and

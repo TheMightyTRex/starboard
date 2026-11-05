@@ -19,7 +19,7 @@ import urllib.request
 from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import access, auth, backup, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -992,6 +992,26 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/disk-health/read" and method == "POST":
                 sysinfo.request_disk_read()
                 return self.json(200, {"ok": True})
+            if path == "/api/pool" and method == "GET":
+                return self.json(200, pool.status())
+            if path == "/api/pool/ask" and method == "POST":
+                data = self.body()
+                if data.get("action") == "drives":
+                    return self.json(200, {"request": pool.ask("drives")})
+                fields = pool.plan_request(data, cfg.data.get("download_hours"))
+                return self.json(200, {"request": pool.ask("plan", **fields)})
+            if path == "/api/pool/answer" and method == "GET":
+                rid = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("id", [""])[0]
+                found = pool.answer(rid)
+                return self.json(200, found if found else {"waiting": True})
+            if path == "/api/pool/apply" and method == "POST":
+                data = self.body()
+                self.check_password(data)  # every change to a drive needs the password again (David, 5 Nov 2026)
+                fields = pool.apply_request(data)
+                logs.event("info", "pool", "Asked the pool helper to carry out a checked plan")
+                return self.json(200, {"request": pool.ask("apply", **fields)})
+            if path == "/api/pool/stop" and method == "POST":
+                return self.json(200, {"request": pool.ask("stop")})
             if path == "/api/usage" and method == "GET":
                 return self.json(200, app.usage.get())
             if path == "/api/usage" and method == "POST":
