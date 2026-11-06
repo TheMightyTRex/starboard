@@ -116,6 +116,14 @@ From release 0.9.2 (5 November 2026): unit tests, journeys, install tests on Ubu
 | Help centre check | 83 articles, 0 problems |
 | Security scans | See [Security](SECURITY-AND-TESTS.md#security-review-of-the-set-up-wizards-5-november-2026-090) |
 
+## Test plans for each system
+
+From 6 November 2026, Starboard is built and tested for Linux Mint 22.3 (recommended), Debian 13, Ubuntu Server
+26.04 and Raspberry Pi OS (64-bit), or later versions of each. [Systems Starboard supports](test-plans/systems.md)
+gives the minimum and recommended hardware for each. Every step of the start is tested on each, in
+[Test plan: the Run first script](test-plans/setup.md) and
+[Test plan: the installer and the set-up wizards](test-plans/install.md).
+
 ## Not tested by machine
 
 Left for people: real apps and a real Plex, Windows and Mac, a physical Raspberry Pi, keyboard-only and screen
