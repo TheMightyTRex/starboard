@@ -75,7 +75,17 @@ done
 WRAP=$(( $( { tput cols || echo 80; } 2>/dev/null) - 1 )); [ "$WRAP" -ge 39 ] || WRAP=79
 echo() { if [ -t 1 ] && [ "$#" = 1 ]; then printf '%s\n' "$1" | fold -s -w "$WRAP"; else builtin echo "$@"; fi; }
 say() { printf '\n== %s\n' "$*"; }
-fail() { printf 'Stopped: %s\n' "$*" >&2; exit 1; }
+fail() { if [ -t 2 ]; then printf 'Stopped: %s\n' "$*" | fold -s -w "$WRAP" >&2; else printf 'Stopped: %s\n' "$*" >&2; fi; exit 1; }
+# Runs a command with its output kept out of the window (package managers write a lot). If it fails, the last
+# lines are shown, so the reason is on the screen.
+quietly() {
+  local log rc=0
+  log="$(mktemp)"
+  "$@" >"$log" 2>&1 || rc=$?
+  [ "$rc" = 0 ] || tail -n 8 "$log" | sed 's/^/    /'
+  rm -f "$log"
+  return "$rc"
+}
 # yes_no "Question" default: 1 for yes, 0 for no. An empty answer takes the default.
 yes_no() {
   local hint answer
@@ -412,19 +422,21 @@ if [ "$HEALTH" = 1 ]; then
   else
     # smartmontools reads each disk's health report. It lives in /usr/sbin, which is not on every user's path.
     if ! command -v smartctl >/dev/null && [ ! -x /usr/sbin/smartctl ]; then
-      echo "Disk health needs smartmontools, which reads each disk's health report. Installing it now (sudo asks for"
-      echo "  your password):"
+      echo "Disk health needs smartmontools, which reads each disk's health report. Installing it now (sudo asks for your password)."
+      sudo -v || fail "sudo did not accept the password, so smartmontools is not installed"
       if command -v apt-get >/dev/null; then
-        sudo apt-get install -y smartmontools || { sudo apt-get update && sudo apt-get install -y smartmontools; }
+        quietly sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q smartmontools \
+          || { quietly sudo apt-get update -q && quietly sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q smartmontools; }
       elif command -v dnf >/dev/null; then
-        sudo dnf install -y smartmontools
+        quietly sudo dnf install -y -q smartmontools
       else
         false
       fi || fail "smartmontools did not install. Install it yourself (for example: sudo apt install smartmontools), then run ./install.sh again"
     fi
     mkdir -p smart/requests
-    echo "Running: sudo deploy/install-smart.sh $PWD/smart"
-    sudo deploy/install-smart.sh "$PWD/smart"
+    sudo -v || fail "sudo did not accept the password, so Disk health is not set up"
+    quietly sudo deploy/install-smart.sh "$PWD/smart" || fail "Disk health did not set up; the lines above say why"
+    echo "Disk health is set up. Starboard reads each disk's report from $PWD/smart."
   fi
 elif [ "$HEALTH" = 0 ] && [ -f /etc/systemd/system/starboard-smart.timer ]; then
   echo "Starboard no longer reads Disk health reports. The timer is still installed; to remove it, run:"
@@ -437,8 +449,9 @@ if [ "$POOL" = 1 ]; then
     echo "The pool helper is already installed."
   else
     mkdir -p pool/requests pool/status
-    echo "Running: sudo deploy/install-pool.sh $PWD/pool"
-    sudo deploy/install-pool.sh "$PWD/pool" || fail "the pool helper did not install; the message above says why"
+    sudo -v || fail "sudo did not accept the password, so the pool helper is not installed"
+    quietly sudo deploy/install-pool.sh "$PWD/pool" || fail "the pool helper did not install; the lines above say why"
+    echo "The pool helper is installed."
   fi
 elif [ "$POOL" = 0 ] && [ -f /etc/systemd/system/starboard-pool.path ]; then
   echo "Starboard no longer uses the pool helper. It is still installed; to remove it, run:"

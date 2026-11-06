@@ -837,7 +837,13 @@ if [ "$FINISH" = terminal ]; then
     if [ ${#apply[@]} -gt 0 ]; then
       echo
       echo "Applying the set-up's changes to this computer: ./install.sh ${apply[*]}"
-      ./install.sh --yes "${apply[@]}" < "${IN:-/dev/null}" && rm -f data/setup-host.json
+      again=(./install.sh --yes "${apply[@]}")
+      if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
+        # The same as above: this sign-in does not know about the docker group yet.
+        sg docker -c "$(printf '%q ' "${again[@]}")" < "${IN:-/dev/null}" && rm -f data/setup-host.json
+      else
+        "${again[@]}" < "${IN:-/dev/null}" && rm -f data/setup-host.json
+      fi
     fi
   fi
   [ "$NEW_GROUP" = 1 ] && echo "Sign out and back in once, so ordinary docker commands work in new terminals too."
