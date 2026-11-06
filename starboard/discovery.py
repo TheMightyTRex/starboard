@@ -160,7 +160,8 @@ def search(services):
             out.append({"key": key, "name": name, "type": kind, "url": f"http://127.0.0.1:{port}", "port": port,
                         "needs_key": needs_key, "background": background, "container": own,
                         "already": already, "can_read_key": key in KEY_FILES and bool(own)})
-    return {"items": out, "docker": containers.available()}
+    # "known": every app this can recognise, so a set-up waiting for new apps knows which of them to wait for.
+    return {"items": out, "docker": containers.available(), "known": sorted(CATALOGUE)}
 
 
 def read_key(key, container_name):

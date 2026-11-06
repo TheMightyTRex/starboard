@@ -345,7 +345,7 @@ async function installStep(id, state, data, apps, go) {
     const showAfter = async (settle = false) => {
       const waiting = el("p", { class: "muted", "aria-live": "polite" });
       if (settle) after.replaceChildren(el("h3", { text: "Add them to Starboard" }), waiting);
-      const finder = await appFinder(undefined, { settle, shown: (t) => { waiting.textContent = t; } });
+      const finder = await appFinder(undefined, { expect: settle ? [...state.apps] : null, shown: (t) => { waiting.textContent = t; } });
       const add = el("button", { type: "button", class: "btn btn--primary", hidden: !finder.add }, icon("plus"), "Add the ticked apps to Starboard");
       add.addEventListener("click", async () => { add.disabled = true; try { if (await finder.add()) add.hidden = true; } catch (e) { problem(e.message); } finally { add.disabled = false; } });
       after.replaceChildren(el("h3", { text: "Add them to Starboard" }), finder.box, add, ...connectGuide(state, apps));

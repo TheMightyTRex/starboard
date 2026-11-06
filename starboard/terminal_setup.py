@@ -1603,18 +1603,17 @@ def step_check(api, term, state, wait=2.0):
     return True
 
 
-def found_when_settled(api, term, wait, least=30, most=180):
-    """The apps Starboard finds on this computer, once they have had time to answer: apps just started take a while
-    before they open their port, so it looks again until the list has stopped growing (or after most seconds)."""
-    began, last, same = time.time(), [], 0
+def found_when_settled(api, term, wait, expected, most=240):
+    """The apps Starboard finds on this computer, once the apps just started have answered: each opens its port a
+    while after it starts (Radarr and Sonarr can take over a minute). It looks again until every one it can
+    recognise is there, or after most seconds, and then takes what it has."""
+    began = time.time()
 
     def settled():
-        nonlocal last, same
-        items = api.call("GET", "/api/discover").get("items", [])
-        same = same + 1 if len(items) == len(last) else 0
-        last = items
-        spent = time.time() - began
-        return items if (spent >= least and same >= 3) or spent >= most else None
+        found = api.call("GET", "/api/discover")
+        items = found.get("items", [])
+        waiting_for = set(expected) & set(found.get("known", [])) - {i["key"] for i in items}
+        return items if not waiting_for or time.time() - began >= most else None
     return term.waiting("Waiting for the apps to answer, to add them to Starboard ...", settled, max(wait, 0.01) * 2.5)
 
 
@@ -1643,7 +1642,7 @@ def start_with_installer(api, term, state, choice, wait):
         term.failed("Some apps did not start. Start them again later with: ./install.sh --start-apps",
                     "The apps did not all start.")
     try:
-        items = found_when_settled(api, term, wait)
+        items = found_when_settled(api, term, wait, choice["apps"])
         if items:
             added = api.call("POST", "/api/discover/add", {"items": items})
             term.ok(f"Added {len(items)} {'app' if len(items) == 1 else 'apps'} to Starboard.")

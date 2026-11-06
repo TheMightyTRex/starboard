@@ -915,23 +915,19 @@ function withCost(hint, key) {
 // Finds apps on this computer that are not in Manage apps yet, and adds the ones you tick. Used by Manage apps
 // (a slide-out) and by the set-up wizard (a step). onAdded gets the server's answer.
 
-// With settle (apps just started), it looks again until the list stops growing: an app opens its port a while after
-// it starts, and one found too early would be left out.
-async function appFinder(onAdded, { settle = false, shown = null } = {}) {
+// With expect (the keys of apps just started), it looks again until each one it can recognise answers, for up to 4
+// minutes: an app opens its port a while after it starts (Radarr and Sonarr can take over a minute).
+async function appFinder(onAdded, { expect = null, shown = null } = {}) {
   const box = el("div", { class: "stack-4", "aria-live": "polite" }, el("p", { class: "muted", text: "Looking for apps on this computer…" }));
   let found;
   try {
     found = await api("/api/discover");
-    if (settle) {
-      const began = Date.now();
-      let same = 0;
-      while (Date.now() - began < 180000 && (Date.now() - began < 30000 || same < 3)) {
-        shown?.(`Waiting for the apps to answer: ${found.items.length} found so far…`);
-        await new Promise((r) => setTimeout(r, 5000));
-        const again = await api("/api/discover");
-        same = again.items.length === found.items.length ? same + 1 : 0;
-        found = again;
-      }
+    const began = Date.now();
+    const missing = () => (expect || []).filter((k) => (found.known || []).includes(k) && !found.items.some((i) => i.key === k));
+    while (expect && missing().length && Date.now() - began < 240000) {
+      shown?.(`Waiting for the apps to answer: ${found.items.length} found, ${missing().length} still starting…`);
+      await new Promise((r) => setTimeout(r, 5000));
+      found = await api("/api/discover");
     }
   } catch (e) { box.replaceChildren(notice("danger", "Could not look", e.message)); return { box, add: null }; }
   const fresh = found.items.filter((i) => !i.already);
