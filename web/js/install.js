@@ -17,6 +17,7 @@ async function startInstall() {
   let data;
   try { data = await api("/api/stack"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); return; }
   const apps = Object.fromEntries(data.apps.map((a) => [a.key, a]));
+  const T = await stepTable();  // the step names the terminal set-up uses too
   let advanced = false;
   try { advanced = localStorage.getItem("install-advanced") === "1"; } catch { /* private window */ }
   const state = {
@@ -30,18 +31,18 @@ async function startInstall() {
   // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd is, Moving over only when
   // there is something to move.
   const build = () => [
-    { id: "welcome", title: "Start here", question: "Set up a media server, step by step", skippable: false },
-    { id: "groups", title: "What to set up", question: "What do you want your server to do?", skippable: false,
+    { id: "welcome", ...stepNamed(T, "welcome"), skippable: false },
+    { id: "groups", ...stepNamed(T, "apps"), skippable: false,
       intro: "Tick what you want. Starboard picks the apps for each one; you can see and change them with Advanced settings." },
-    ...(chosenMedia ? [] : [{ id: "folders", title: "Folders", question: "Where should your media live?", skippable: false,
+    ...(chosenMedia ? [] : [{ id: "folders", ...stepNamed(T, "folders"), skippable: false,
       intro: "One media folder holds your downloads and your library together, so a finished download moves into the library instantly." }]),
-    ...(state.apps.has("gluetun") ? [{ id: "vpn", title: "VPN", question: "Connect the VPN", skippable: false,
+    ...(state.apps.has("gluetun") ? [{ id: "vpn", ...stepNamed(T, "vpn"), skippable: false,
       intro: "Downloads go through your VPN, so your internet provider sees only the VPN. You need an account with a VPN provider." }] : []),
-    ...(state.apps.has("sabnzbd") ? [{ id: "usenet", title: "Usenet", question: "Your Usenet provider", skippable: false }] : []),
-    ...(data.servers.length ? [{ id: "moving", title: "Moving over", question: "Bring things over from the apps you have?",
+    ...(state.apps.has("sabnzbd") ? [{ id: "usenet", ...stepNamed(T, "usenet"), skippable: false }] : []),
+    ...(data.servers.length ? [{ id: "moving", ...stepNamed(T, "moving"),
       intro: "Starboard found these on this computer. Nothing is copied or changed until the new apps are running and you choose." }] : []),
-    { id: "review", title: "Check", question: "Check everything before it is written", skippable: false },
-    { id: "start", title: "Start", question: "Start the apps", skippable: false },
+    { id: "review", ...stepNamed(T, "check"), skippable: false },
+    { id: "start", ...stepNamed(T, "start-apps"), skippable: false },
   ];
   const finishTo = fromGuide ? "/setup-guide.html" : "/index.html";
 

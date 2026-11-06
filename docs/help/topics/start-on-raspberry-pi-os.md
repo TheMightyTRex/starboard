@@ -49,7 +49,7 @@ minutes.
 ## Things to note
 
 - On a Pi with 2 GB of memory or less, choose the **Small server** preset when the set-up asks
-  **How much Starboard does**. Read [Make Starboard use less of your server](make-starboard-lighter.md).
+  **How much it does**. Read [Make Starboard use less of your server](make-starboard-lighter.md).
 - Keep media on a USB drive, not the microSD card. Cards wear out quickly with constant writing.
 
 ## If it does not work

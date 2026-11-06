@@ -133,7 +133,7 @@ class TerminalSetupTest(unittest.TestCase):
         out = io.StringIO()
         term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=70, rows=30)
         term._page = lambda *a: None  # the screen clearing is tested on its own
-        term.heading("Your media server", 2)
+        term.heading("What to set up", 2)
         term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
         term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
         lines = term.header + out.getvalue().splitlines()  # the heading is drawn in place, not printed
@@ -145,7 +145,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertTrue(all(len(l) <= 70 for l in lines))  # long descriptions wrap inside the width
         plain = io.StringIO()
         term = terminal_setup.Terminal(out=plain, fancy=False)
-        term.heading("Your media server", 2)
+        term.heading("What to set up", 2)
         term.card("What will change", [("Media folder", "/srv/media")])
         self.assertNotRegex(plain.getvalue(), "[┌│└╭╰█●✔\x1b]")
         self.assertIn("Media folder: /srv/media", plain.getvalue())
@@ -163,7 +163,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
         prompts = "\n".join(term._ask.prompts + term._secret.prompts)
-        self.assertEqual(text.count("== Starboard | Your VPN"), 2)
+        self.assertEqual(text.count("== Starboard | VPN"), 2)
         self.assertIn("Your choice [4]", prompts)  # the provider chosen before is the default after Back
         self.assertIn("[192.168.1.20/32]", prompts)
         self.assertIn("Enter keeps the one you typed before", prompts)
@@ -213,7 +213,7 @@ class TerminalSetupTest(unittest.TestCase):
         out = io.StringIO()
         term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=78, rows=30)
         term.can_back = True
-        term.heading("Your VPN", 3)
+        term.heading("VPN", 3)
         term.finish()
         raw = out.getvalue()
         self.assertIn("\033[2J", raw)            # cleared
@@ -224,7 +224,7 @@ class TerminalSetupTest(unittest.TestCase):
     def test_heading_bar_and_menu_stay_put_and_the_window_is_measured_again(self):
         out = io.StringIO()
         term = terminal_setup.Terminal(out=out, fancy=True, colour=False, width=80, rows=24)
-        term.heading("Your media server", 2)
+        term.heading("What to set up", 2)
         for i in range(40):  # far more than the window holds: only the middle scrolls
             term.say(f"line {i}")
         raw = out.getvalue()
@@ -262,14 +262,14 @@ class TerminalSetupTest(unittest.TestCase):
         # f, Hard to use, the words, Enter after the whole report, Cancel; then the question again, answered 2.
         term, out = self.fancy(["f", "2", "The list is hard to read", "", "4", "2"])
         term.can_back = True
-        term.heading("Your media server", 2)
+        term.heading("What to set up", 2)
         self.assertEqual(term.choose("Install the apps?", ["Yes", "No"]), 1)
         raw = out.getvalue()
         self.assertIn("f Feedback", raw)
         self.assertIn("╭─ Send feedback", raw)
         self.assertIn("6. Make something better", raw)
         self.assertIn("╭─ The whole report", raw)
-        self.assertIn("Page: Terminal set-up, step 2: Your media server", raw)
+        self.assertIn("Page: Terminal set-up, step 2: What to set up", raw)
         self.assertIn("1. Show as a QR code (recommended)", raw)
         self.assertEqual(term.screen[-1], "  › Your choice [1]: 2")  # the f is not left on the step
         after = raw.rsplit("Show as a QR code", 1)[1]
@@ -305,7 +305,7 @@ class TerminalSetupTest(unittest.TestCase):
                 self.assertNotIn(private, text)
             self.assertIn("[your answer]", text)
             self.assertIn("[email]", text)
-            self.assertIn("Terminal set-up, step 7: Check before anything changes", text)
+            self.assertIn("Terminal set-up, step 7: Check", text)
         self.assertIn("https://github.com/TheMightyTRex/starboard/issues/new?title=", saved)
         self.assertIn("labels=feedback,problem,type:+bug", saved)
         self.assertEqual(os.stat(os.path.join(self.tmp.name, name)).st_mode & 0o777, 0o600)
@@ -355,7 +355,7 @@ class TerminalSetupTest(unittest.TestCase):
     def test_the_qr_code_is_chosen_by_the_window_size(self):
         # The more the window holds, the more of the report goes in, and the code always fits the window.
         report = terminal_setup.Report(terminal_setup.KINDS[0], [("What happened", "The apps list stops after Jellyfin")],
-                                       (2, "Your media server"), "Install the apps?", "80 x 30", False, None)
+                                       (2, "What to set up"), "Install the apps?", "80 x 30", False, None)
         report.file = "~/starboard-feedback-2026-11-05-1216.md"
         expect = {(140, 60): "the report without its technical details", (100, 50): "a short report",
                   (80, 40): "a short report", (80, 30): "a short report", (80, 24): "only the title"}
@@ -373,7 +373,7 @@ class TerminalSetupTest(unittest.TestCase):
         # At 80 by 24 the whole report takes two pages, and the link has a view of its own after the code.
         term, out = self.fancy(["f", "1", "The apps list stops after Jellyfin", "", "", "", "1", "", "", "4", "1"],
                                width=80, rows=24)
-        term.heading("Your media server", 2)
+        term.heading("What to set up", 2)
         term.choose("Install the apps?", ["Yes", "No"])
         raw = out.getvalue()
         self.assertIn("Scan it with your phone's camera to open the report there.", raw)

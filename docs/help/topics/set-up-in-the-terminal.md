@@ -31,16 +31,16 @@ takes about 10 minutes, plus the time to download the apps.
 5. **Storage**, for a new install: choose where your media goes: this computer's main disk, a separate disk, or a
    pool of several disks. Press Enter to take the media folder shown; it is made for you when the apps start.
 6. **Your drives**, only when you chose the pool: which drives join it, and a backup drive.
-7. **Your media server:** choose what you want, such as Movies, TV and Watching, by typing their numbers separated
+7. **What to set up:** choose what you want, such as Movies, TV and Watching, by typing their numbers separated
    by commas. Press Enter to take the recommended ones.
-8. **Your VPN**, if you chose it: your provider and its details. The password or key does not show as you type.
-9. **Check before anything changes:** read the list, then type `y` to write the apps' files and start them.
+8. **VPN**, if you chose it: your provider and its details. The password or key does not show as you type.
+9. **Check:** read the list, then type `y` to write the apps' files and start them.
    Downloading them can take several minutes.
-10. **Connect your apps**, when you have Jellyfin: Starboard's Jellyfin extras, such as Live TV.
+10. **Jellyfin extras**, when you have Jellyfin: Starboard's Jellyfin extras, such as Live TV.
 11. **Download hours:** set hours are recommended, because downloading slows the internet for everyone else.
 12. **Alerts and disk health:** where alerts go, if anywhere, and whether to check each disk's health.
-13. **How much Starboard does:** Small server, Balanced or Everything. Small server is recommended on a computer
-    with less than 1 GB of memory.
+13. **How much it does:** Balanced, Small server or Everything, with the recommended one first. Small server is
+    recommended on a computer with less than 1 GB of memory.
 14. When it finishes, it prints the addresses to open Starboard from any device, and the one installer command for
     the changes to this computer, such as free space for your media folder and disk health. The
     [Run first script](run-first.md) runs that command for you.
@@ -107,7 +107,7 @@ Type `q` at any feedback question to close it and go back to the step.
   smaller, and choose **Show as a QR code** again.
 - With `STARBOARD_PLAIN=1`, feedback never draws a QR code, because software that reads text aloud cannot read
   one. It shows the link, and offers **Save to a file**.
-- When you choose SABnzbd, **Your Usenet provider** lists some Usenet providers with their full addresses. They are
+- When you choose SABnzbd, **Usenet** lists some Usenet providers with their full addresses. They are
   affiliate links: if you sign up through one, the provider pays a small commission towards Starboard's development,
   and you pay the same price. Use Usenet only for files you have the right to download.
 

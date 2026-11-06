@@ -52,16 +52,17 @@ class StartTest(unittest.TestCase):
     def test_storage_recommends_the_biggest_separate_disk(self):
         found = start.storage("/srv/media", [drive("/mnt/a", 2 * TB), drive("/mnt/b", 4 * TB, "ntfs")], False)
         keys = [c["key"] for c in found["choices"]]
-        self.assertEqual(keys, ["main", "disk:/mnt/b", "disk:/mnt/a", "pool"])
+        self.assertEqual(keys, ["disk:/mnt/b", "main", "disk:/mnt/a", "pool"])  # the recommended one first
         self.assertEqual(found["recommended"], "disk:/mnt/b")
-        self.assertIn("ext4 is better", found["choices"][1]["about"])
-        self.assertEqual(found["choices"][1]["folder"], "/mnt/b/media")
+        self.assertIn("ext4 is better", found["choices"][0]["about"])
+        self.assertEqual(found["choices"][0]["folder"], "/mnt/b/media")
         self.assertIn("run ./install.sh again", found["choices"][3]["about"])  # the pool helper is not set up
 
     def test_storage_recommends_the_pool_when_the_helper_is_there(self):
         found = start.storage("/srv/media", [drive("/mnt/a", 2 * TB), drive("/mnt/b", 4 * TB)], True)
         self.assertEqual(found["recommended"], "pool")
-        self.assertEqual(found["choices"][-1]["folder"], "/mnt/pool/media")
+        self.assertEqual(found["choices"][0]["key"], "pool")  # the recommended one first
+        self.assertEqual(found["choices"][0]["folder"], "/mnt/pool/media")
 
     def test_the_drive_list_from_the_hand_over(self):
         listing = {"blockdevices": [

@@ -53,7 +53,8 @@ def options(services, data_dir, search=None):
     media = [f for f in found if f.get("key") in MEDIA]
     named = [str(n) for n in handover(data_dir).get("apps", []) if isinstance(n, str)]
     recommended = "move" if media or named else "new"
-    return {"choices": [{**c, "recommended": c["key"] == recommended} for c in CHOICES],
+    # The recommended answer first, in both set-ups (the browser and the terminal show them in this order).
+    return {"choices": recommended_first([{**c, "recommended": c["key"] == recommended} for c in CHOICES]),
             "recommended": recommended, "found": [f.get("name", "") for f in media] or named}
 
 
@@ -93,7 +94,7 @@ def storage(main_folder, drives, pool_ready):
         recommended = "main"
     for c in choices:
         c["recommended"] = c["key"] == recommended
-    return {"choices": choices, "recommended": recommended,
+    return {"choices": recommended_first(choices), "recommended": recommended,
             "help": "The media folder holds your films, series, books and downloads together, so a finished download "
                     "moves into the library in an instant. It is made for you when the apps start. A separate disk "
                     "keeps media apart from the system; a pool joins several disks into one folder."}
@@ -125,3 +126,8 @@ def host_args(wanted):
     if wanted.get("health"):
         args.append("--disk-health")
     return args
+
+
+def recommended_first(choices):
+    """The same choices with the recommended one at the top: the rule for every list in both set-ups."""
+    return sorted(choices, key=lambda c: not c.get("recommended"))

@@ -1139,9 +1139,13 @@ async function stepContent(id, root) {
     };
   } else if (id === "preset") {
     const name = `preset-${Date.now()}`;
-    const radios = ["small", "balanced", "everything"].map((k) => el("label", { class: "option-card" },
-      el("input", { type: "radio", name, value: k, checked: (config.performance.preset === "custom" ? "balanced" : config.performance.preset) === k }),
-      el("strong", { text: config.presets[k] }), el("small", { text: config.preset_about[k] })));
+    // The recommended preset at the top and marked, as in the terminal set-up.
+    const rec = config.preset_recommended || "balanced";
+    const order = [rec, ...["small", "balanced", "everything"].filter((k) => k !== rec)];
+    const current = config.performance.preset === "custom" ? rec : config.performance.preset;
+    const radios = order.map((k) => el("label", { class: "option-card" },
+      el("input", { type: "radio", name, value: k, checked: current === k }),
+      el("strong", { text: config.presets[k] + (k === rec ? " (recommended)" : "") }), el("small", { text: config.preset_about[k] })));
     nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Preset" }), el("div", { class: "option-cards" }, radios))];
     save = async () => { await saveGeneral({ preset: root.querySelector(`input[name="${name}"]:checked`).value }); return true; };
   } else if (id === "names") {
@@ -1149,6 +1153,22 @@ async function stepContent(id, root) {
       el("p", { class: "small muted", text: "This stops a trick called DNS rebinding, where a web page reaches Starboard through a name it controls." })];
   }
   return { nodes, save };
+}
+// The set-up's step names and questions, the same file the terminal set-up reads (web/setup-steps.json), so a step
+// is called the same in both.
+let STEP_TABLE = null;
+async function stepTable() {
+  if (!STEP_TABLE) {
+    try {
+      const r = await fetch("/setup-steps.json", { cache: "no-cache" });
+      STEP_TABLE = Object.fromEntries((await r.json()).steps.map((x) => [x.id, x]));
+    } catch { STEP_TABLE = {}; }
+  }
+  return STEP_TABLE;
+}
+function stepNamed(table, id) {
+  const x = table[id] || {};
+  return { title: x.title || id, question: x.question || "" };
 }
 // Set-up guide ----------------------------------------------------------------
 // What the guide chose, kept while it hands over to Install apps and back (this tab only).
@@ -1203,6 +1223,7 @@ async function startGuide() {
   if (!$("#guide-finish", head)) {
     head.append(el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn--quiet", id: "guide-finish", onclick: () => go(steps.length - 1) }, "Keep the defaults and finish")));
   }
+  const T = await stepTable();
   let steps = [];
   let index = 0;
   let hasDisks = false;
@@ -1212,30 +1233,30 @@ async function startGuide() {
   const build = () => {
     const list = [];
     const start = guideMemory().start || "new";
-    list.push({ id: "start", title: "How to start", question: "How do you want to start?", skippable: false,
+    list.push({ id: "start", ...stepNamed(T, "start"), skippable: false,
       intro: "A new media server, the apps you already run, or a backup of Starboard's settings." });
     if (start === "restore") {
-      list.push({ id: "preset", title: "How much it does", question: "How much should Starboard do in the background?", intro: "You can change each part in Settings, Performance." });
-      list.push({ id: "finish", title: "Finish", question: "Ready to go", skippable: false });
+      list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+      list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
       return list;
     }
     if (start === "new") {
-      list.push({ id: "where", title: "Storage", question: "Where should your media go?", skippable: false,
+      list.push({ id: "where", ...stepNamed(T, "storage"), skippable: false,
         intro: "Your films, series, books and downloads go in one media folder. Next, Install apps sets up the apps for it." });
     } else {
-      list.push({ id: "apps", title: "Find your apps", question: "Add the apps on this computer?",
+      list.push({ id: "apps", ...stepNamed(T, "find"),
         intro: "Starboard looked for apps it knows on this computer. Tick the ones to add; you can add others by hand later." });
     }
     if (types(Object.keys(KEY_PLACE)).some((s) => !s.has_api_key)) {
-      list.push({ id: "keys", title: "API keys", question: "Give Starboard their API keys?",
+      list.push({ id: "keys", ...stepNamed(T, "keys"),
         intro: "With its key, Starboard can show an app's queue, calendar, updates and warnings. Each key stays on the server." });
     }
-    if (types(["jellyfin"]).length) list.push({ id: "jellyfin", title: "Jellyfin", question: "Use Starboard's Jellyfin extras?", intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
-    if (types(["qbittorrent", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", title: "Download hours", question: "Only download at set hours?", intro: "Starboard pauses qBittorrent and SABnzbd outside these hours, for example to keep the internet free in the day." });
-    list.push({ id: "alerts", title: "Alerts and disk health", question: "Get an alert when something stops?", intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
-    if (hasDisks) list.push({ id: "storage", title: "Storage page", question: "How should the Storage page keep up to date?", intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
-    list.push({ id: "preset", title: "How much it does", question: "How much should Starboard do in the background?", intro: "You can change each part in Settings, Performance." });
-    list.push({ id: "finish", title: "Finish", question: "Ready to go", skippable: false });
+    if (types(["jellyfin"]).length) list.push({ id: "jellyfin", ...stepNamed(T, "extras"), intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
+    if (types(["qbittorrent", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent and SABnzbd outside these hours, for example to keep the internet free in the day." });
+    list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
+    if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
+    list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+    list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
     return list;
   };
 

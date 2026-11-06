@@ -251,6 +251,8 @@ class Config:
             "last_version": d["last_version"],  # what the settings really match
             "presets": {k: v["title"] for k, v in PRESETS.items()},
             "preset_about": PRESET_ABOUT,
+            # The preset both set-ups recommend, and list first: Small server under 1 GB of memory, else Balanced.
+            "preset_recommended": recommended_preset(),
             # Whether the installer gave Starboard Jellyfin's Live TV folder (STARBOARD_IPTV_DIR), for the set-up.
             "livetv_ready": bool(os.environ.get("STARBOARD_IPTV_DIR")) and os.path.isdir(os.environ.get("STARBOARD_IPTV_DIR", "")),
             "services": [public_service(s) for s in d["services"]],
@@ -598,3 +600,15 @@ def new_setup_token(data_dir):
     with os.fdopen(fd, "w") as f:
         f.write(token + "\n")
     return token
+
+
+def recommended_preset(meminfo="/proc/meminfo"):
+    """Small server on a computer with less than 1 GB of memory, Balanced otherwise (and when it cannot tell)."""
+    try:
+        with open(meminfo, encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    return "small" if int(line.split()[1]) // 1024 < 1024 else "balanced"
+    except (OSError, ValueError, IndexError):
+        pass
+    return "balanced"

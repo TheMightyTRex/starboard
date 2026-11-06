@@ -31,6 +31,20 @@ import urllib.parse
 
 from starboard import qr, start
 
+def _read_keys(fd, read=os.read, ready=None):
+    """What was typed, as text. An arrow key's code can arrive in two reads (over SSH, or on a busy server): when a
+    read ends part way through one, it waits a moment for the rest, so the key is not taken as Escape and letters."""
+    import select
+    ready = ready or (lambda: select.select([fd], [], [], 0.05)[0])
+    data = read(fd, 64).decode(errors="ignore")
+    while data and re.search(r"\x1b(\[[0-9;]*|O)?$", data) and ready():
+        more = read(fd, 64).decode(errors="ignore")
+        if not more:
+            break
+        data += more
+    return data
+
+
 def _keys(chunk):
     """Splits what one read gave into single key presses: an arrow key is one escape code, everything else one
     character."""
@@ -398,9 +412,22 @@ class Api:
 # The frame and text sit in a column at most this wide, centred in a wider window.
 COLUMN_MAX = 100
 
-STEPS = ["Your password", "How to start", "Storage", "Your media server", "Your VPN", "Your Usenet provider",
-         "Check before anything changes",
-         "Connect your apps", "Download hours", "Alerts and disk health", "How much Starboard does"]
+def _step_table():
+    """Each step's name and question, from web/setup-steps.json, which the browser set-up reads too."""
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "setup-steps.json")
+    with open(path, encoding="utf-8") as f:
+        return {s["id"]: s for s in json.load(f)["steps"]}
+
+
+STEP_TABLE = _step_table()
+
+
+def title(step_id):
+    return STEP_TABLE[step_id]["title"]
+
+
+STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "check", "extras", "hours", "alerts",
+                            "preset")]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -884,7 +911,7 @@ class Terminal:
             while True:
                 # Keys typed quickly, or sent together over SSH, arrive in one read: take them one at a time.
                 if not queue:
-                    queue = _keys(os.read(fd, 64).decode(errors="ignore"))
+                    queue = _keys(_read_keys(fd))
                     if not queue:
                         continue
                 key = queue.pop(0)
@@ -1302,7 +1329,7 @@ def read_setup_code(path):
 
 def step_password(api, term, state):
     if state.get("password"):
-        term.heading("Your password", num("Your password"))
+        term.heading(title("password"), num(title("password")))
         term.ok("Your password is saved.")
         term.note("Change it later in Starboard, Settings, Security.")
         term.text("Press Enter to carry on", help_key="keep")
@@ -1310,7 +1337,7 @@ def step_password(api, term, state):
     token = read_setup_code(os.path.join(state["data_dir"], "setup-token"))
     if token:
         term.typed.add(fingerprint(token))  # never in a feedback report
-        term.heading("Your password", num("Your password"))
+        term.heading(title("password"), num(title("password")))
         term.note("Choose the password for Starboard. You use it to sign in from any device. No setup code is needed: "
                   "you are on the server itself. Type ? for help.")
         while True:
@@ -1332,7 +1359,7 @@ def step_password(api, term, state):
             term.ok("Password saved. You are signed in.")
             state["password"] = first
             return True
-    term.heading("Sign in", num("Your password"))
+    term.heading("Sign in", num(title("password")))
     term.note("Starboard already has a password. Type it to carry on (forgotten it? Stop with q and run ./reset-password.sh).")
     for _ in range(5):
         password = term.hidden("Your Starboard password")
@@ -1351,7 +1378,7 @@ def step_start(api, term, state):
     found = api.call("GET", "/api/setup/start")
     choices = found["choices"]
     HELP["start"] = "\n\n".join(f"{c['title']}: {c['help']}" for c in choices)
-    term.heading("How to start", num("How to start"))
+    term.heading(title("start"), num(title("start")))
     if found["found"]:
         term.note("Found on this computer: " + ", ".join(found["found"]) + ".")
     keys = [c["key"] for c in choices]
@@ -1425,7 +1452,7 @@ def step_storage(api, term, state):
     found = api.call("GET", "/api/setup/storage")
     choices = found["choices"]
     HELP["storage"] = found["help"]
-    term.heading("Storage", num("Storage"))
+    term.heading(title("storage"), num(title("storage")))
     term.note("Where your films, series, books and downloads go. The folder is made for you when the apps start.")
     keys = [c["key"] for c in choices]
     last = state.get("storage", {})
@@ -1456,7 +1483,7 @@ def step_apps(api, term, state):
     overview = state.get("overview") or api.call("GET", "/api/stack")
     state["overview"] = overview
     groups = overview["groups"]
-    term.heading("Your media server", num("Your media server"))
+    term.heading(title("apps"), num(title("apps")))
     last = state.get("apps", {})
     if term.choose("Install the apps for your media server now?",
                    ["Yes (recommended)", "No: I have my apps already, or I will add them later in the browser"],
@@ -1507,7 +1534,7 @@ def step_vpn(api, term, state):
     if not choice or "gluetun" not in choice["apps"]:
         return False
     last = state.get("vpn_answers", {})
-    term.heading("Your VPN", num("Your VPN"))
+    term.heading(title("vpn"), num(title("vpn")))
     pick = term.choose("Which VPN provider do you have?", [n for _, n in VPNS] + ["Another one that Gluetun supports"],
                        last.get("pick", 1), help_key="vpn")
     if pick < len(VPNS):
@@ -1546,7 +1573,7 @@ def step_usenet(api, term, state):
     choice = state.get("choice")
     if not choice or "sabnzbd" not in choice["apps"]:
         return False
-    term.heading("Your Usenet provider", num("Your Usenet provider"))
+    term.heading(title("usenet"), num(title("usenet")))
     term.say("")
     term.note(USENET_ABOUT)
     term.say("")
@@ -1574,7 +1601,7 @@ def step_check(api, term, state, wait=2.0):
         choice["vpn"] = state.get("vpn")
     else:
         choice.pop("vpn", None)
-    term.heading("Check before anything changes", num("Check before anything changes"))
+    term.heading(title("check"), num(title("check")))
     names = state.get("names") or choice["apps"]
     rows = [("Install", ", ".join(names)), ("Media folder", choice["data_dir"]), ("Settings folder", choice["config_dir"])]
     if choice.get("vpn"):
@@ -1702,7 +1729,7 @@ def step_hours(api, term, state):
     if state.get("start") == "restore":
         return False  # the backup brought its own download hours
     last = state.get("hours", {})
-    term.heading("Download hours", num("Download hours"))
+    term.heading(title("hours"), num(title("hours")))
     term.note("Downloading uses most of your internet connection while it runs, so other devices can slow down. "
               "Downloading at night keeps the day free.")
     if term.choose("When should downloads run?", ["Only at set hours (recommended)", "At any time"],
@@ -1749,7 +1776,7 @@ def step_drives(api, term, state):
     run = state.get("pool_run") or pool_command
     if state.get("storage", {}).get("key", "pool") != "pool":
         return False
-    term.heading("Your drives", num("Your drives"))
+    term.heading(title("drives"), num(title("drives")))
     try:
         listing = run(["drives"])
     except Problem as e:
@@ -1848,7 +1875,7 @@ def step_connect(api, term, state):
     has_jellyfin = any(s["type"] == "jellyfin" for s in config["services"]) or "jellyfin" in ((state.get("choice") or {}).get("apps") or [])
     if not has_jellyfin:
         return False
-    term.heading("Connect your apps", num("Connect your apps"))
+    term.heading(title("extras"), num(title("extras")))
     extras = [("livetv", "Live TV channels and guide", "Free channels for Jellyfin's Live TV, with guides"),
               ("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin"),
               ("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone")]
@@ -1868,7 +1895,7 @@ def step_connect(api, term, state):
 
 def step_alerts(api, term, state):
     """Alerts and disk health: a push service for alerts, and the disk health reports (set up at the end)."""
-    term.heading("Alerts and disk health", num("Alerts and disk health"))
+    term.heading(title("alerts"), num(title("alerts")))
     last = state.get("alerts", {})
     kind = term.choose("Get an alert when an app stops or a disk has a problem?",
                        [("Not now", "No alerts"), ("ntfy", "A free push service with a phone app"),
@@ -1921,15 +1948,10 @@ def step_preset(api, term, state):
     """How much Starboard does: the same presets and words as the browser's set-up guide."""
     config = api.call("GET", "/api/config")
     keys = ["small", "balanced", "everything"]
-    memory = 0
-    try:
-        with open("/proc/meminfo", encoding="utf-8") as f:
-            memory = int(f.readline().split()[1]) // 1024
-    except (OSError, ValueError, IndexError):
-        pass
-    recommended = "small" if memory and memory < 1024 else "balanced"
+    recommended = config.get("preset_recommended", "balanced")
+    keys = [recommended] + [k for k in keys if k != recommended]  # the recommended one at the top
     HELP["preset"] = "\n\n".join(f"{config['presets'][k]}: {config['preset_about'][k]}" for k in keys)
-    term.heading("How much Starboard does", num("How much Starboard does"))
+    term.heading(title("preset"), num(title("preset")))
     term.note("How much Starboard does in the background. You can change each part later in Settings, Performance.")
     current = config["performance"].get("preset", recommended)
     current = current if current in keys else recommended
@@ -1952,7 +1974,7 @@ def add_drives_step(available=None):
     available = os.path.exists(POOL_HELPER) if available is None else available
     if available and step_drives not in STEP_FUNCTIONS:
         STEP_FUNCTIONS.insert(3, step_drives)  # after Storage, when the pool was chosen
-        STEPS.insert(3, "Your drives")
+        STEPS.insert(3, title("drives"))
 
 
 def run(api, term, data_dir, port, address=""):

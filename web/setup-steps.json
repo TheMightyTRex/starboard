@@ -1,0 +1,25 @@
+{
+  "about": "The set-up's steps, in order, with the name and question each one shows. The browser set-up (settings.js, install.js) and the terminal set-up (starboard/terminal_setup.py) both read this file, so a step has the same name in both. Each set-up shows only the steps that apply to it.",
+  "steps": [
+    {"id": "password", "title": "Your password", "question": "Choose your password"},
+    {"id": "start", "title": "How to start", "question": "How do you want to start?"},
+    {"id": "find", "title": "Find your apps", "question": "Add the apps on this computer?"},
+    {"id": "keys", "title": "API keys", "question": "Give Starboard their API keys?"},
+    {"id": "storage", "title": "Storage", "question": "Where should your media go?"},
+    {"id": "drives", "title": "Your drives", "question": "Which drives go in the pool?"},
+    {"id": "welcome", "title": "Start here", "question": "Set up a media server, step by step"},
+    {"id": "apps", "title": "What to set up", "question": "What do you want your server to do?"},
+    {"id": "folders", "title": "Folders", "question": "Where should your media live?"},
+    {"id": "vpn", "title": "VPN", "question": "Connect the VPN"},
+    {"id": "usenet", "title": "Usenet", "question": "Your Usenet provider"},
+    {"id": "moving", "title": "Moving over", "question": "Bring things over from the apps you have?"},
+    {"id": "check", "title": "Check", "question": "Check everything before it is written"},
+    {"id": "start-apps", "title": "Start", "question": "Start the apps"},
+    {"id": "extras", "title": "Jellyfin extras", "question": "Use Starboard's Jellyfin extras?"},
+    {"id": "hours", "title": "Download hours", "question": "Only download at set hours?"},
+    {"id": "alerts", "title": "Alerts and disk health", "question": "Get an alert when something stops?"},
+    {"id": "storage-page", "title": "Storage page", "question": "How should the Storage page keep up to date?"},
+    {"id": "preset", "title": "How much it does", "question": "How much should Starboard do in the background?"},
+    {"id": "finish", "title": "Finish", "question": "Ready to go"}
+  ]
+}
