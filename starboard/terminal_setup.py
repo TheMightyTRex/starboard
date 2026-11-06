@@ -1574,9 +1574,8 @@ def step_check(api, term, state, wait=2.0):
     term.ok(f"{len(choice['apps'])} apps written.")
     if not written.get("can_start"):
         if os.environ.get("STARBOARD_STARTS_APPS") == "1":
-            # The installer that started this set-up downloads and starts them when it finishes.
-            term.note("The apps are downloaded and started when this set-up finishes.")
-            return True
+            # Run by the installer, which can use Docker: it downloads and starts them (./install.sh --start-apps).
+            return start_with_installer(api, term, state, choice, wait)
         term.note("Starboard cannot start apps itself, because it has no full Docker access. Start them with:")
         term.say(f"  {written['command']}")
         return True
@@ -1600,6 +1599,44 @@ def step_check(api, term, state, wait=2.0):
         term.say(f"  {line}")
     term.last_error = "The apps did not all start. The last lines Docker wrote:\n" + "\n".join(lines)
     term.failed("Starboard cannot carry on with the apps from here.", "The apps did not all start.")
+    term.text("Press Enter to carry on")
+    return True
+
+
+def start_with_installer(api, term, state, choice, wait):
+    """Starboard has no Docker access: ./install.sh --start-apps downloads and starts the apps, while the step shows
+    a turning mark and the time. Then the apps it finds are added to Starboard, so the dashboard shows them."""
+    if not term.yes_no("Start the apps now? They are downloaded first, which can take a few minutes.", True):
+        term.say("Start them later from the Starboard folder with:  ./install.sh --start-apps")
+        return True
+    import subprocess
+    import tempfile
+    folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as log:
+        job = subprocess.Popen([os.path.join(folder, "install.sh"), "--start-apps"], cwd=folder, stdin=subprocess.DEVNULL,
+                               stdout=log, stderr=subprocess.STDOUT)
+        code = term.waiting("Downloading and starting the apps ...", job.poll, wait)
+        log.seek(0)
+        lines = [line.rstrip() for line in log.read().splitlines() if line.strip() and not line.startswith("==")]
+    if code == 0:
+        term.ok(lines[-1] if lines else f"All {len(choice['apps'])} apps are running.")
+    else:
+        term.warn("The apps did not all start. The last lines Docker wrote:")
+        for line in lines[-8:]:
+            term.say(f"  {line}")
+        term.last_error = "The apps did not all start.\n" + "\n".join(lines[-12:])
+        term.failed("Some apps did not start. Start them again later with: ./install.sh --start-apps",
+                    "The apps did not all start.")
+    try:
+        items = api.call("GET", "/api/discover").get("items", [])
+        if items:
+            added = api.call("POST", "/api/discover/add", {"items": items})
+            term.ok(f"Added {len(items)} {'app' if len(items) == 1 else 'apps'} to Starboard.")
+            if added.get("missing_keys"):
+                term.note("Still without an API key: " + ", ".join(added["missing_keys"]) + ". Add them in Starboard, "
+                          "Settings, Manage apps.")
+    except Problem as e:
+        term.warn(f"The apps could not be added to Starboard: {e}. Add them in Settings, Manage apps, Search for new apps.")
     term.text("Press Enter to carry on")
     return True
 

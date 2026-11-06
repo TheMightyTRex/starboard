@@ -71,7 +71,7 @@ for (let n = 0; n < 250; n++) {
   // The main button of the step.
   const primary = page.locator("main .btn--primary:visible:not([disabled])").filter({ hasNotText: /^(Stop|Remove|Delete|Sign out)/ });
   const named = page.getByRole("button", { name: /^(Continue|Next|Begin|Finish|Write the files|Start the apps|Add the ticked apps|Save|Create|Sign in|Set up|Go to Apps|Keep the defaults)/ });
-  const start = page.getByRole("button", { name: /^Start the apps/ }).and(page.locator(":visible:not([disabled])"));
+  const start = page.getByRole("button", { name: /^(Start the apps|Add the ticked apps to Starboard)/ }).and(page.locator(":visible:not([disabled])"));
   const target = (await start.count()) ? start.first() : (await primary.count()) ? primary.last() : (await named.count()) ? named.last() : null;
   if (!target) {
     if (state.url.endsWith("/index.html") || state.url === "/") { steps.at(-1).note = "reached the dashboard"; break; }

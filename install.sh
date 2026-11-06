@@ -582,10 +582,10 @@ if [ "$TERMINAL" = 1 ]; then
   # The rest of set-up, here: the password, the apps and download hours (starboard/terminal_setup.py).
   status=0
   STARBOARD_STARTS_APPS=1 python3 -m starboard.terminal_setup --port "$PORT" --data data --address "${lan:-}" || status=$?
-  [ "$status" = 0 ] && { start_apps || true; }
   exit "$status"
 fi
-code="$( { [ -f data/setup-token ] && [ ! -L data/setup-token ] && head -c 64 data/setup-token; } 2>/dev/null | tr -cd 'A-Za-z0-9_-')"
+# No setup code once the set-up has finished: that is not a failure (set -e and pipefail would make it one).
+code="$( { [ -f data/setup-token ] && [ ! -L data/setup-token ] && head -c 64 data/setup-token; } 2>/dev/null | tr -cd 'A-Za-z0-9_-' || true)"
 if [ -n "$code" ]; then
   echo "Setup code (you need it once, to choose your password): $code"
   echo "No browser here? Finish in the terminal instead: python3 -m starboard.terminal_setup --port $PORT"
