@@ -65,6 +65,26 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("docker compose -p media-stack up -d", text)
         self.assertEqual(self.app.config.data["download_hours"], {"enabled": True, "start": 1, "end": 7})
 
+    def test_usenet_step_shows_the_affiliate_note_links_and_the_rules(self):
+        """Only with SABnzbd: the Ad note before the providers, each with its full affiliate address, then the rules."""
+        term, out = self.term([""], [])
+        self.assertFalse(terminal_setup.step_usenet(None, term, {"choice": {"apps": ["qbittorrent"]}}))
+        self.assertTrue(terminal_setup.step_usenet(None, term, {"choice": {"apps": ["sabnzbd"]}}))
+        text = " ".join(out.getvalue().split())
+        self.assertLess(text.index("Ad: these are affiliate links"), text.index("Newshosting: https://www.newshosting.com/?a_aid="))
+        for name, url in terminal_setup.USENET:
+            self.assertIn(f"{name}: {url}", out.getvalue())
+        self.assertIn("Use Usenet only for files you have the right to download", text)
+
+    def test_usenet_list_matches_the_browser(self):
+        """The browser wizard and Settings use the same providers and words (web/js/common.js)."""
+        js = open(os.path.join(os.path.dirname(__file__), "..", "web", "js", "common.js"), encoding="utf-8").read()
+        self.assertEqual(re.findall(r'\["([^"]+)", "(https://[^"]+)"\]', js), [list(x) for x in terminal_setup.USENET] and
+                         [tuple(x) for x in terminal_setup.USENET])
+        self.assertIn(terminal_setup.USENET_RIGHTS, js)
+        self.assertIn(terminal_setup.USENET_ABOUT, js)
+        self.assertIn(terminal_setup.USENET_AD.removeprefix("Ad: "), js)
+
     def test_help_mismatch_and_short_passwords_ask_again(self):
         term, out = self.term(["", "", "", "", "2", "2", "", "", ""], ["?", "short", SIGN_IN_WORDS, "different words", SIGN_IN_WORDS, SIGN_IN_WORDS])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
@@ -97,7 +117,6 @@ class TerminalSetupTest(unittest.TestCase):
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
-        self.assertIn("affiliate links", text)
         self.assertNotIn("secret-wireguard-key", text)
         with open(os.path.join(self.tmp.name, "stack", ".env")) as f:
             env = f.read()
@@ -118,8 +137,8 @@ class TerminalSetupTest(unittest.TestCase):
         term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
         term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
         lines = term.header + out.getvalue().splitlines()  # the heading is drawn in place, not printed
-        self.assertTrue(any("step 2 of 10" in l for l in lines))
-        self.assertTrue(any("█" in l and "10%" in l for l in lines))
+        self.assertTrue(any("step 2 of 11" in l for l in lines))
+        self.assertTrue(any("█" in l and " 9%" in l for l in lines))
         boxed = [l for l in lines if l and l[0] in "┌│└╭╰"]
         self.assertTrue(boxed)
         self.assertEqual({len(l) for l in boxed}, {70})  # every box line ends at the same column
@@ -286,7 +305,7 @@ class TerminalSetupTest(unittest.TestCase):
                 self.assertNotIn(private, text)
             self.assertIn("[your answer]", text)
             self.assertIn("[email]", text)
-            self.assertIn("Terminal set-up, step 6: Check before anything changes", text)
+            self.assertIn("Terminal set-up, step 7: Check before anything changes", text)
         self.assertIn("https://github.com/TheMightyTRex/starboard/issues/new?title=", saved)
         self.assertIn("labels=feedback,problem,type:+bug", saved)
         self.assertEqual(os.stat(os.path.join(self.tmp.name, name)).st_mode & 0o777, 0o600)

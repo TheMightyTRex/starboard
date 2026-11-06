@@ -27,7 +27,8 @@ async function startInstall() {
     puid: data.defaults.puid, pgid: data.defaults.pgid, tz: data.defaults.tz,
     vpn: { provider: "", type: "wireguard" }, moving: new Set(), written: null, pool: null,
   };
-  // The steps follow the choices: VPN only when Gluetun is ticked, Moving over only when there is something to move.
+  // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd is, Moving over only when
+  // there is something to move.
   const build = () => [
     { id: "welcome", title: "Start here", question: "Set up a media server, step by step", skippable: false },
     { id: "groups", title: "What to set up", question: "What do you want your server to do?", skippable: false,
@@ -36,6 +37,7 @@ async function startInstall() {
       intro: "One media folder holds your downloads and your library together, so a finished download moves into the library instantly." }]),
     ...(state.apps.has("gluetun") ? [{ id: "vpn", title: "VPN", question: "Connect the VPN", skippable: false,
       intro: "Downloads go through your VPN, so your internet provider sees only the VPN. You need an account with a VPN provider." }] : []),
+    ...(state.apps.has("sabnzbd") ? [{ id: "usenet", title: "Usenet", question: "Your Usenet provider", skippable: false }] : []),
     ...(data.servers.length ? [{ id: "moving", title: "Moving over", question: "Bring things over from the apps you have?",
       intro: "Starboard found these on this computer. Nothing is copied or changed until the new apps are running and you choose." }] : []),
     { id: "review", title: "Check", question: "Check everything before it is written", skippable: false },
@@ -274,6 +276,9 @@ async function installStep(id, state, data, apps, go) {
       try { await api("/api/stack/preview", { method: "POST", body: body(state) }); return true; }
       catch (e) { return stop(provider, e.message); }
     };
+  } else if (id === "usenet") {
+    // The same step as the terminal set-up's Your Usenet provider: nothing to answer, the providers and the rules.
+    nodes = [usenetProviders()];
   } else if (id === "moving") {
     const offers = [];
     const has = (keys) => data.servers.filter((s) => keys.includes(s.key));

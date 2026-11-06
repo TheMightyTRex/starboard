@@ -7,6 +7,17 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Usenet providers for SABnzbd:** when you choose SABnzbd, both set-ups have a step that lists some Usenet
+  providers. Manage apps lists them too. In the browser each name is a link that opens in a new tab; the terminal
+  shows each address in full. They are affiliate links, marked Ad before the list.
+- **What Usenet may be used for:** the Usenet step, Manage apps and About say to download only files you have the
+  right to, and that Starboard does not host or provide any files.
+
+### Changed
+- **No affiliate note on the VPN step:** the terminal set-up said some VPN providers had affiliate links in the help;
+  none do, so the note is gone.
+
 ## [0.9.2] (5 November 2026)
 
 Releases and Restore in Settings, Help that opens the right article, and a calmer terminal.

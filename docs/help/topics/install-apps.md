@@ -26,15 +26,18 @@ and starts them. At the end, the apps are running and Starboard shows how to con
    folder, Starboard offers it. Select **Continue**.
 5. If you ticked **VPN**, the **VPN** step asks for your **VPN provider** and the details from its website.
    Select **Continue**.
-6. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
+6. If you ticked **SABnzbd**, the **Usenet** step lists some Usenet providers. They are affiliate links: if you
+   sign up through one, the provider pays a small commission towards Starboard's development, and you pay the same
+   price. Use Usenet only for files you have the right to download. Select **Continue**.
+7. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
    you want, then select **Continue**.
-7. On **Check**, read the summary. Select **Change** beside anything you want to change. When it is right,
+8. On **Check**, read the summary. Select **Change** beside anything you want to change. When it is right,
    select **Write the files**.
-8. On **Start**, type **Your Starboard password**, then select **Start the apps**. Starboard downloads and starts
+9. On **Start**, type **Your Starboard password**, then select **Start the apps**. Starboard downloads and starts
    each app. This can take several minutes the first time.
-9. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
-10. Follow **Connect your apps, in this order**. It gives each app's address, folders and settings to type.
-11. Select **Go to Apps**.
+10. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
+11. Follow **Connect your apps, in this order**. It gives each app's address, folders and settings to type.
+12. Select **Go to Apps**.
 
 ### If Starboard has no Docker access
 

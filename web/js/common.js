@@ -366,6 +366,38 @@ function setUpHeader() {
 }
 
 // True when version a is newer than b ("v0.5.1" > "0.5.0"); an older or equal release is never an upgrade.
+// Usenet providers for SABnzbd, with affiliate links: the same list and words as USENET in
+// starboard/terminal_setup.py. The affiliate note comes before the links, and what Usenet may be used for after
+// them; Usenet is never shown as a way to get copyrighted films, series, music or books.
+const USENET = [
+  ["Newshosting", "https://www.newshosting.com/?a_aid=6aec3d712dec1"],
+  ["Easynews", "https://easynews.com/?a_aid=6aec3d712dec1"],
+  ["UsenetServer", "https://www.usenetserver.com/?a_aid=6aec3d712dec1&a_bid=ef245116"],
+  ["Pure Usenet", "https://www.pureusenet.nl/?a_aid=6aec3d712dec1&a_bid=9fa99e6a"],
+  ["XLned", "https://www.xlned.com/?a_aid=6aec3d712dec1&a_bid=dbc287fb"],
+];
+const USENET_ABOUT = "SABnzbd needs an account with a Usenet provider. Usenet is a worldwide network of discussion groups, running since 1980, that also carries files. Any provider works with SABnzbd.";
+const USENET_AD = "these are affiliate links. If you sign up through one, the provider pays a small commission towards Starboard's development. You pay the same price.";
+const USENET_RIGHTS_TITLE = "Download only what you have the right to";
+const USENET_RIGHTS = "Use Usenet only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.";
+
+// What Usenet may be used for, as a notice: in the wizard, on Manage apps and on About.
+function usenetRights() {
+  return el("div", { class: "notice" }, icon("info"), el("div", { class: "notice__body" },
+    el("span", { class: "notice__title", text: USENET_RIGHTS_TITLE }), el("p", { text: USENET_RIGHTS })));
+}
+
+// The providers: each name is the affiliate link, opening in a new tab, after the Ad note.
+function usenetProviders() {
+  return el("div", { class: "stack-2" },
+    el("p", { text: USENET_ABOUT }),
+    el("p", { class: "small" }, el("strong", { text: "Ad: " }), USENET_AD),
+    el("ul", { "aria-label": "Usenet providers (affiliate links)" }, USENET.map(([name, url]) => el("li", {},
+      el("a", { href: url, target: "_blank", rel: "noopener noreferrer sponsored" }, name,
+        el("span", { class: "visually-hidden", text: " (affiliate link, opens in a new tab)" }))))),
+    usenetRights());
+}
+
 function isNewer(a, b) {
   const parts = (v) => String(v || "").replace(/^v/, "").split(/[.-]/).slice(0, 3).map((n) => parseInt(n, 10) || 0);
   const [x, y] = [parts(a), parts(b)];

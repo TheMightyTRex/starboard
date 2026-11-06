@@ -500,6 +500,7 @@ function startManageApps() {
   const MOVED = { "#general": "/settings-general.html", "#security": "/settings-security.html", "#updates": "/settings-updates.html" };
   if (MOVED[location.hash]) { location.replace(MOVED[location.hash]); return; }
   renderServices();
+  $("#usenet-section")?.append(usenetProviders());
   $("#add-service").addEventListener("click", (e) => openService(null, e.currentTarget));
   $("#find-apps").addEventListener("click", (e) => openFinder(e.currentTarget));
   // Other pages link here: ?edit=<app id> opens that app; ?add=background starts a background service.
@@ -2053,4 +2054,5 @@ startPage().then(async (session) => {
   if ($("#install") && typeof startInstall === "function") startInstall();
   if ($("#copy-sections") && typeof startCopy === "function") startCopy();
   if ($("#version-notice")) startAbout();
+  $("#usenet-rights")?.append(usenetRights());
 });

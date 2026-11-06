@@ -38,6 +38,24 @@ VPNS = [  # (Gluetun's provider name, shown name)
     ("surfshark", "Surfshark"),
     ("expressvpn", "ExpressVPN"),
 ]
+# Usenet providers for SABnzbd, with affiliate links (the same list and words as USENET in web/js/common.js).
+# Usenet is never shown as a way to get copyrighted films, series, music or books.
+USENET = [
+    ("Newshosting", "https://www.newshosting.com/?a_aid=6aec3d712dec1"),
+    ("Easynews", "https://easynews.com/?a_aid=6aec3d712dec1"),
+    ("UsenetServer", "https://www.usenetserver.com/?a_aid=6aec3d712dec1&a_bid=ef245116"),
+    ("Pure Usenet", "https://www.pureusenet.nl/?a_aid=6aec3d712dec1&a_bid=9fa99e6a"),
+    ("XLned", "https://www.xlned.com/?a_aid=6aec3d712dec1&a_bid=dbc287fb"),
+]
+USENET_ABOUT = ("SABnzbd needs an account with a Usenet provider. Usenet is a worldwide network of discussion groups, "
+                "running since 1980, that also carries files. Any provider works with SABnzbd.")
+USENET_AD = ("Ad: these are affiliate links. If you sign up through one, the provider pays a small commission towards "
+             "Starboard's development. You pay the same price.")
+USENET_RIGHTS_TITLE = "Download only what you have the right to"
+USENET_RIGHTS = ("Use Usenet only for files you have the right to download, such as open-source software, works in the "
+                 "public domain and your own backups. Downloading films, series, music or books without the copyright "
+                 "holder's permission is against the law in the UK and most other countries. Starboard does not host "
+                 "or provide any files, and you are responsible for what you download.")
 HELP = {
     "pool": "A pool joins several drives into one folder, /mnt/pool, so your media has one place however many "
             "drives you have. Each drive stays a normal drive that can be read on its own. Keeping a drive's files "
@@ -58,7 +76,9 @@ HELP = {
                "instant. The settings folder holds each app's own settings. Both are made for you if they are missing.",
     "vpn": "A VPN sends the torrent app's traffic through your VPN provider, so sites see its address, not yours. "
            "Gluetun connects it. WireGuard is faster; OpenVPN works with every provider. Your provider's website shows "
-           "the details to type here. Some providers we suggest have affiliate links: see Starboard's help, VPN.",
+           "the details to type here.",
+    "usenet": "SABnzbd downloads from Usenet through a provider's servers. Make an account with any provider, then type "
+              "its server name, user name and password in SABnzbd's first-run wizard. " + USENET_RIGHTS,
     "hours": "Downloading uses most of your internet connection while it runs, so streaming, video calls and games on "
              "other devices can slow down. With download hours, Starboard pauses the download apps outside them and "
              "starts them again when they begin. Nothing is lost.",
@@ -366,7 +386,8 @@ class Api:
 # The frame and text sit in a column at most this wide, centred in a wider window.
 COLUMN_MAX = 100
 
-STEPS = ["Your password", "How to start", "Storage", "Your media server", "Your VPN", "Check before anything changes",
+STEPS = ["Your password", "How to start", "Storage", "Your media server", "Your VPN", "Your Usenet provider",
+         "Check before anything changes",
          "Connect your apps", "Download hours", "Alerts and disk health", "How much Starboard does"]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
@@ -1428,8 +1449,6 @@ def step_vpn(api, term, state):
         return False
     last = state.get("vpn_answers", {})
     term.heading("Your VPN", num("Your VPN"))
-    term.note("Some of the VPN providers below have affiliate links in Starboard's help. If you sign up through one, the "
-              "provider pays a small amount towards Starboard's development, at no extra cost to you.")
     pick = term.choose("Which VPN provider do you have?", [n for _, n in VPNS] + ["Another one that Gluetun supports"],
                        last.get("pick", 1), help_key="vpn")
     if pick < len(VPNS):
@@ -1459,6 +1478,26 @@ def step_vpn(api, term, state):
         last["user"] = vpn["openvpn_user"]
     last.update(kind=kind_i + 1, countries=countries)
     state["vpn_answers"], state["vpn"] = last, vpn
+    return True
+
+
+def step_usenet(api, term, state):
+    """Your Usenet provider: only when SABnzbd is chosen. The providers' addresses in full (a terminal shows the link
+    itself), the affiliate note before them and what Usenet may be used for after them."""
+    choice = state.get("choice")
+    if not choice or "sabnzbd" not in choice["apps"]:
+        return False
+    term.heading("Your Usenet provider", num("Your Usenet provider"))
+    term.note(USENET_ABOUT)
+    term.say("")
+    term.note(USENET_AD)
+    for name, url in USENET:
+        term.say(f"  {name}: {term.accent(url)}")
+    term.say("")
+    term.note(term.accent(USENET_RIGHTS_TITLE))
+    term.note(USENET_RIGHTS)
+    term.say("")
+    term.text("Press Enter to carry on", help_key="usenet")
     return True
 
 
@@ -1772,7 +1811,7 @@ def step_preset(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_start, step_storage, step_apps, step_vpn, step_check, step_connect, step_hours,
+STEP_FUNCTIONS = [step_password, step_start, step_storage, step_apps, step_vpn, step_usenet, step_check, step_connect, step_hours,
                   step_alerts, step_preset]
 
 

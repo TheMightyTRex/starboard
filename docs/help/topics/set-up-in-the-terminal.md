@@ -107,8 +107,9 @@ Type `q` at any feedback question to close it and go back to the step.
   smaller, and choose **Show as a QR code** again.
 - With `STARBOARD_PLAIN=1`, feedback never draws a QR code, because software that reads text aloud cannot read
   one. It shows the link, and offers **Save to a file**.
-- Starboard's help suggests some VPN providers. Some of them have affiliate links: if you sign up through one, the
-  provider pays a small amount towards Starboard's development, at no extra cost to you.
+- When you choose SABnzbd, **Your Usenet provider** lists some Usenet providers with their full addresses. They are
+  affiliate links: if you sign up through one, the provider pays a small commission towards Starboard's development,
+  and you pay the same price. Use Usenet only for files you have the right to download.
 
 ## If it does not work
 
