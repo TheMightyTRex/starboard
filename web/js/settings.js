@@ -1264,7 +1264,10 @@ async function startGuide() {
         el("dd", {}, v, " · ", el("a", { href }, "Change", el("span", { class: "visually-hidden", text: ` ${k.toLowerCase()}` })))]))];
       try {
         const host = await api("/api/setup/host");
-        if (host.command) {
+        if (host.command && host.starter) {
+          step.nodes.push(el("h3", { text: "One change to the server, made for you" }),
+            el("p", { class: "muted", text: "Free space for your media folder, disk health and the Live TV folder need the installer on the server. The Run first window on the server is making this change now. If it asks for the server's password, type it there." }));
+        } else if (host.command) {
           step.nodes.push(el("h3", { text: "One change to make on the server" }),
             el("p", { class: "muted", text: "Free space for your media folder, disk health and the Live TV folder need the installer on the server. In a terminal there, in the Starboard folder, run:" }),
             el("pre", { class: "code-block", text: host.command }), copyButton(host.command, "Copy the command"));

@@ -154,7 +154,8 @@ def main():
             last_out = time.time()
             continue
 
-        if "still working:" in low:  # the apps are downloading: a person waits
+        if "still working:" in low or ("keep this window open" in text.lower() and "close this window." not in low):
+            # The apps are downloading, or the window waits for the browser set-up: a person waits
             last_out = time.time()
             continue
         # The answer, as a person would give it.

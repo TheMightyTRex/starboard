@@ -767,6 +767,41 @@ while [ "$n" -lt "$STEPS" ]; do
     *) ;;
   esac
 done
+# The set-up's changes to this computer (free space for the media folder, the Live TV folder, disk health),
+# applied with the installer, which asks for the password itself where it needs sudo. Both routes use it.
+apply_host() {
+  if [ -s data/setup-host.json ] && [ ! -L data/setup-host.json ]; then
+    mapfile -t host < <(python3 -I -c 'import json,sys; [print(a) for a in json.load(open(sys.argv[1]))["args"] if isinstance(a, str) and "\n" not in a]' data/setup-host.json 2>/dev/null)
+    apply=()
+    for (( i = 0; i < ${#host[@]}; i++ )); do
+      value="${host[$((i + 1))]:-}"
+      case "${host[$i]}" in
+        --disk-health) apply+=(--disk-health) ;;
+        --disk|--livetv-folder)
+          folder="${value#Media=}"
+          [ "${host[$i]}" = --livetv-folder ] && folder="$value"
+          if [ "${host[$i]}" = --disk ] && [ "${value:0:6}" != "Media=" ]; then folder=""; fi
+          if ! safe_folder "$folder"; then
+            echo "Left out: ${host[$i]} with a folder Starboard does not use. Run ./install.sh yourself to change it."
+          elif [ -d "$folder" ]; then apply+=("${host[$i]}" "$value")
+          else echo "Not yet: $folder is made when the apps start. Run ./install.sh ${host[$i]} $value after that."; fi
+          i=$(( i + 1 )) ;;
+        *) echo "Left out: ${host[$i]}, which the set-up never asks for."; apply=(); break ;;
+      esac
+    done
+    if [ ${#apply[@]} -gt 0 ]; then
+      echo
+      echo "Applying the set-up's changes to this computer: ./install.sh ${apply[*]}"
+      again=(./install.sh --yes "${apply[@]}")
+      if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
+        # This sign-in does not know about the docker group yet.
+        sg docker -c "$(printf '%q ' "${again[@]}")" < "${IN:-/dev/null}" && rm -f data/setup-host.json
+      else
+        "${again[@]}" < "${IN:-/dev/null}" && rm -f data/setup-host.json
+      fi
+    fi
+  fi
+}
 cmd=(./install.sh)
 [ "$FINISH" = terminal ] && cmd+=(--terminal)
 [ -n "$PLAIN" ] && cmd+=(--plain)
@@ -816,39 +851,7 @@ fi
 if [ "$FINISH" = terminal ]; then
   DRAWN=0  # the terminal set-up drew its own frame and gave the window back
   [ "$status" = 0 ] || exit "$status"
-  # The set-up's changes to this computer (free space for the media folder, the Live TV folder, disk health),
-  # applied with the installer, which asks for the password itself where it needs sudo.
-  if [ -s data/setup-host.json ] && [ ! -L data/setup-host.json ]; then
-    mapfile -t host < <(python3 -I -c 'import json,sys; [print(a) for a in json.load(open(sys.argv[1]))["args"] if isinstance(a, str) and "\n" not in a]' data/setup-host.json 2>/dev/null)
-    apply=()
-    for (( i = 0; i < ${#host[@]}; i++ )); do
-      value="${host[$((i + 1))]:-}"
-      case "${host[$i]}" in
-        --disk-health) apply+=(--disk-health) ;;
-        --disk|--livetv-folder)
-          folder="${value#Media=}"
-          [ "${host[$i]}" = --livetv-folder ] && folder="$value"
-          if [ "${host[$i]}" = --disk ] && [ "${value:0:6}" != "Media=" ]; then folder=""; fi
-          if ! safe_folder "$folder"; then
-            echo "Left out: ${host[$i]} with a folder Starboard does not use. Run ./install.sh yourself to change it."
-          elif [ -d "$folder" ]; then apply+=("${host[$i]}" "$value")
-          else echo "Not yet: $folder is made when the apps start. Run ./install.sh ${host[$i]} $value after that."; fi
-          i=$(( i + 1 )) ;;
-        *) echo "Left out: ${host[$i]}, which the set-up never asks for."; apply=(); break ;;
-      esac
-    done
-    if [ ${#apply[@]} -gt 0 ]; then
-      echo
-      echo "Applying the set-up's changes to this computer: ./install.sh ${apply[*]}"
-      again=(./install.sh --yes "${apply[@]}")
-      if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
-        # The same as above: this sign-in does not know about the docker group yet.
-        sg docker -c "$(printf '%q ' "${again[@]}")" < "${IN:-/dev/null}" && rm -f data/setup-host.json
-      else
-        "${again[@]}" < "${IN:-/dev/null}" && rm -f data/setup-host.json
-      fi
-    fi
-  fi
+  apply_host
   [ "$NEW_GROUP" = 1 ] && echo "Sign out and back in once, so ordinary docker commands work in new terminals too."
   exit 0
 fi
@@ -928,11 +931,22 @@ json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(s
         "$req" "$status" data/stack/start.log "$result" && mv -f "$result.new" "$result"
       tail -n 1 data/stack/start.log | fold -s -w $(( COLS > 1 ? COLS - 1 : 79 ))
       if [ "$status" = 0 ]; then
-        rm -f data/starter
-        echo "Your apps are running. You can close this window."
-        return 0
+        echo "Your apps are running. Keep this window open until the set-up in the browser has finished."
+      else
+        echo "Waiting: select Try again in the browser, or press q to close this window."
       fi
-      echo "Waiting: select Try again in the browser, or press q to close this window."
+    fi
+    # The set-up in the browser has finished: make its changes to this computer, then this window is done.
+    if grep -q '"setup_guide_done": *true' data/config.json 2>/dev/null; then
+      rm -f data/starter
+      if [ -s data/setup-host.json ]; then
+        echo
+        echo "The set-up has finished. Making its changes to this computer (sudo may ask for your password):"
+        apply_host
+      fi
+      echo
+      echo "Done. You can close this window."
+      return 0
     fi
     if [ -n "$IN" ]; then
       key=""

@@ -904,13 +904,15 @@ class Handler(BaseHTTPRequestHandler):
                     args = how_to_start.host_args(self.body())
                     with open(target, "w", encoding="utf-8") as f:
                         json.dump({"args": args}, f)
-                    return self.json(200, {"args": args, "command": "./install.sh " + " ".join(args) if args else ""})
+                    return self.json(200, {"args": args, "command": "./install.sh " + " ".join(args) if args else "",
+                                           "starter": stack.starter_waiting(app.data_dir)})
                 try:
                     with open(target, encoding="utf-8") as f:
                         args = json.load(f).get("args", [])
                 except (OSError, ValueError):
                     args = []
-                return self.json(200, {"args": args, "command": "./install.sh " + " ".join(args) if args else ""})
+                return self.json(200, {"args": args, "command": "./install.sh " + " ".join(args) if args else "",
+                                       "starter": stack.starter_waiting(app.data_dir)})
             if path == "/api/discover" and method == "GET":
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":

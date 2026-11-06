@@ -34,13 +34,15 @@ for (let n = 0; n < 250; n++) {
     const current = document.querySelector('[aria-current="step"]')?.textContent.trim() || "";
     const danger = [...document.querySelectorAll('.notice[data-tone="danger"], [role="alert"]')].filter(vis).map((e) => e.textContent.trim()).filter(Boolean);
     return { url: location.pathname, head, current, danger, sideways: document.documentElement.scrollWidth > innerWidth + 1,
-             busy: !!document.querySelector('[aria-busy="true"]:not([hidden])') };
+             busy: !!document.querySelector('[aria-busy="true"]:not([hidden])'),
+             working: [...document.querySelectorAll(".progress--busy")].some(vis) };
   });
   const key = state.url + state.head + state.current;
   steps.push({ n, ...state });
   await page.screenshot({ path: `${out}/${String(n).padStart(3, "0")}.png`, fullPage: true }).catch(() => {});
   if (state.sideways) fault("page scrolls sideways", `${state.url} ${state.head}`);
   for (const d of state.danger) fault("error shown", `${state.url} ${state.head}: ${d.slice(0, 300)}`);
+  if (state.working) { steps.at(-1).note = "waiting for the progress bar"; await page.waitForTimeout(10000); continue; }
   if (key === lastKey) { same++; } else { same = 0; lastKey = key; }
   if (same >= 4) { fault("stuck", `${state.url} ${state.head} ${state.current}`); break; }
   if (state.busy && same < 3) { await page.waitForTimeout(5000); continue; }
@@ -68,7 +70,8 @@ for (let n = 0; n < 250; n++) {
   // The main button of the step.
   const primary = page.locator("main .btn--primary:visible:not([disabled])").filter({ hasNotText: /^(Stop|Remove|Delete|Sign out)/ });
   const named = page.getByRole("button", { name: /^(Continue|Next|Begin|Finish|Write the files|Start the apps|Add the ticked apps|Save|Create|Sign in|Set up|Go to Apps|Keep the defaults)/ });
-  const target = (await primary.count()) ? primary.last() : (await named.count()) ? named.last() : null;
+  const start = page.getByRole("button", { name: /^Start the apps/ }).and(page.locator(":visible:not([disabled])"));
+  const target = (await start.count()) ? start.first() : (await primary.count()) ? primary.last() : (await named.count()) ? named.last() : null;
   if (!target) {
     if (state.url.endsWith("/index.html") || state.url === "/") { steps.at(-1).note = "reached the dashboard"; break; }
     fault("no button to carry on", `${state.url} ${state.head}`);
