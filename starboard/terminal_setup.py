@@ -31,6 +31,12 @@ import urllib.parse
 
 from starboard import qr, start
 
+def _wrap(text, width, **kw):
+    """Lines of text between words only: never at a hyphen ("open-source" stays whole) and never inside a long word,
+    such as an address, which gets a line of its own."""
+    return textwrap.wrap(text, width, break_on_hyphens=False, break_long_words=False, **kw)
+
+
 VPNS = [  # (Gluetun's provider name, shown name)
     ("protonvpn", "Proton VPN"),
     ("airvpn", "AirVPN"),
@@ -478,7 +484,7 @@ class Terminal:
         """Plain lines wrapped between words to the window's width, for a terminal with no boxes."""
         width = max(shutil.get_terminal_size((80, 24)).columns - 1, 20)
         for para in str(text).split("\n"):
-            for line in textwrap.wrap(para, width, subsequent_indent=" " * indent) or [""]:
+            for line in _wrap(para, width, subsequent_indent=" " * indent) or [""]:
                 self.say(line)
 
     # The screen: a cleared page per step, with the menu fixed below a scrolling area ---------------------------
@@ -614,9 +620,9 @@ class Terminal:
             if isinstance(para, tuple):
                 line = para[0]
                 indent = len(line) - len(line.lstrip()) + (4 if re.match(r"\s*\d+\. ", line) else 0)
-                body += textwrap.wrap(line, inner, subsequent_indent=" " * indent, drop_whitespace=True) or [""]
+                body += _wrap(line, inner, subsequent_indent=" " * indent, drop_whitespace=True) or [""]
             else:
-                body += (textwrap.wrap(para, inner) if para else []) + [""]
+                body += (_wrap(para, inner) if para else []) + [""]
         while body and body[-1] == "":
             body.pop()
         room = max(self.rows - 10, 4)
@@ -669,7 +675,7 @@ class Terminal:
             top = f"─ {title} "
             out = ["", self._c(colour, "╭" + top + "─" * max(inner + 2 - len(top), 0) + "╮")]
             for label, value in rows:
-                lines = textwrap.wrap(str(value), inner - label_w) or [""]
+                lines = _wrap(str(value), inner - label_w) or [""]
                 for i, line in enumerate(lines):
                     left = (label[:label_w - 1] if i == 0 else "").ljust(label_w)
                     out.append(self._c(colour, "│") + " " + self.dim(left) + line.ljust(inner - label_w) + " " + self._c(colour, "│"))
@@ -682,21 +688,21 @@ class Terminal:
             self._plain(text)
             return
         self._show(lambda width: [(f"  {self.good('✔')} " if i == 0 else "    ") + line
-                                  for i, line in enumerate(textwrap.wrap(text, width - 6) or [""])])
+                                  for i, line in enumerate(_wrap(text, width - 6) or [""])])
 
     def warn(self, text):
         if not self.fancy:
             self._plain(text)
             return
         self._show(lambda width: [(f"  {self.warn_colour('⚠')} " if i == 0 else "    ") + line
-                                  for i, line in enumerate(textwrap.wrap(text, width - 6) or [""])])
+                                  for i, line in enumerate(_wrap(text, width - 6) or [""])])
 
     def note(self, text):
         """A paragraph, wrapped to the width and set in from the box."""
         if not self.fancy:
             self._plain(text)
             return
-        self._show(lambda width: [f"  {line}" for line in textwrap.wrap(text, width - 4)])
+        self._show(lambda width: [f"  {line}" for line in _wrap(text, width - 4)])
 
     # Questions ----------------------------------------------------------------------------------------------
 
@@ -756,13 +762,13 @@ class Terminal:
         green = lambda s: re.sub(r"\(recommended[^)]*\)|\(your last answer\)", lambda m: self.good(m.group(0)), s)  # noqa: E731
         lead = f"  {mark} {self.accent(str(i).rjust(2))}  "
         if isinstance(o, tuple) and name_w <= min(30, width // 3):  # two columns: the about wraps under itself
-            about = textwrap.wrap(o[1], width - 8 - name_w) or [""]
+            about = _wrap(o[1], width - 8 - name_w) or [""]
             return [lead + green(o[0].ljust(name_w)) + self.dim(about[0])] + [" " * (8 + name_w) + self.dim(m) for m in about[1:]]
         if isinstance(o, tuple):  # long names: the name on its line, the about wrapped under it
-            name = textwrap.wrap(o[0], width - 8) or [""]
+            name = _wrap(o[0], width - 8) or [""]
             return ([lead + green(name[0])] + [" " * 8 + green(m) for m in name[1:]]
-                    + [" " * 8 + self.dim(m) for m in textwrap.wrap(o[1], width - 10)])
-        lines = textwrap.wrap(o, width - 8) or [""]
+                    + [" " * 8 + self.dim(m) for m in _wrap(o[1], width - 10)])
+        lines = _wrap(o, width - 8) or [""]
         return [lead + green(lines[0])] + [" " * 8 + green(m) for m in lines[1:]]
 
     def _title(self, question):
@@ -832,10 +838,10 @@ class Terminal:
                 name, about = o if isinstance(o, tuple) else (o, "")
                 mark = self.good("[x]") if i in ticked else "[ ]"
                 cursor = self.accent("›") if i == at else " "
-                first = textwrap.wrap(name, width - 10) or [""]
+                first = _wrap(name, width - 10) or [""]
                 out.append(f"  {cursor} {mark} {green(first[0])}")
                 out += [" " * 8 + green(more) for more in first[1:]]
-                out += [" " * 8 + self.dim(more) for more in textwrap.wrap(about, width - 10)]
+                out += [" " * 8 + self.dim(more) for more in _wrap(about, width - 10)]
             out += ["", "  " + self.dim(note[0])]
             return out
 
@@ -1488,12 +1494,17 @@ def step_usenet(api, term, state):
     if not choice or "sabnzbd" not in choice["apps"]:
         return False
     term.heading("Your Usenet provider", num("Your Usenet provider"))
+    term.say("")
     term.note(USENET_ABOUT)
     term.say("")
     term.note(USENET_AD)
-    for name, url in USENET:
-        term.say(f"  {name}: {term.accent(url)}")
     term.say("")
+    # One bullet each, the name then the whole address on its own line, so a long address is never cut.
+    bullet = "•" if term.fancy else "-"
+    for name, url in USENET:
+        term.say(f"  {bullet} {name}")
+        term.say(f"    {term.accent(url)}")
+        term.say("")
     term.note(term.accent(USENET_RIGHTS_TITLE))
     term.note(USENET_RIGHTS)
     term.say("")

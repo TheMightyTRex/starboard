@@ -71,9 +71,9 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertFalse(terminal_setup.step_usenet(None, term, {"choice": {"apps": ["qbittorrent"]}}))
         self.assertTrue(terminal_setup.step_usenet(None, term, {"choice": {"apps": ["sabnzbd"]}}))
         text = " ".join(out.getvalue().split())
-        self.assertLess(text.index("Ad: these are affiliate links"), text.index("Newshosting: https://www.newshosting.com/?a_aid="))
+        self.assertLess(text.index("Ad: these are affiliate links"), text.index("Newshosting https://www.newshosting.com/?a_aid="))
         for name, url in terminal_setup.USENET:
-            self.assertIn(f"{name}: {url}", out.getvalue())
+            self.assertIn(f"- {name}\n    {url}\n", out.getvalue())  # a bullet each, the whole address on its own line
         self.assertIn("Use Usenet only for files you have the right to download", text)
 
     def test_usenet_list_matches_the_browser(self):
