@@ -119,15 +119,24 @@ start_apps() {
   total="$(grep -c '^    container_name:' "$file" || true)"
   echo "Downloading $total apps and starting them. On a slow connection this can take 20 minutes or more."
   log="$(mktemp)"
-  docker compose -p media-stack -f "$file" --env-file "$env" up -d --quiet-pull >"$log" 2>&1 &
-  pid=$!
-  while kill -0 "$pid" 2>/dev/null; do
-    sleep 5; n=$(( n + 5 ))
-    [ -t 1 ] && printf '\r  Still working: %d min %02d s ' $(( n / 60 )) $(( n % 60 ))
+  # A download that breaks off (the connection reset, a timeout) is tried again, twice, after a pause: Docker keeps
+  # what it has, so each try carries on from there.
+  local try
+  for try in 1 2 3; do
+    docker compose -p media-stack -f "$file" --env-file "$env" up -d --quiet-pull >"$log" 2>&1 &
+    pid=$!
+    while kill -0 "$pid" 2>/dev/null; do
+      sleep 5; n=$(( n + 5 ))
+      [ -t 1 ] && printf '\r  Still working: %d min %02d s ' $(( n / 60 )) $(( n % 60 ))
+    done
+    status=0
+    wait "$pid" || status=$?
+    [ "$status" != 0 ] && [ "$try" -lt 3 ] && grep -qiE 'connection reset|timeout|timed out|TLS handshake|unexpected EOF|i/o timeout|no such host|temporary failure|503|502|429 Too Many' "$log" || break
+    [ -t 1 ] && printf '\r%40s\r' ""
+    echo "The download broke off. Trying again in 20 seconds (try $(( try + 1 )) of 3)."
+    sleep 20
   done
   [ -t 1 ] && printf '\r%40s\r' ""
-  status=0
-  wait "$pid" || status=$?
   # Folders Docker made for the apps are owned by root: give them to the apps' user, as Starboard's helper does.
   # Not a database's folder (jellystat-db, storyarr-db): the database owns it, and changing it while the database
   # sets itself up leaves it unfinished ("no pg_hba.conf entry").

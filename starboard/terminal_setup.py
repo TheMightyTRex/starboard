@@ -1237,7 +1237,37 @@ class Terminal:
             self.finish()
 
     def waiting(self, text, check, wait):
-        """Shows a turning mark and the time taken until check() returns something, then returns it."""
+        """Shows a turning mark and the time taken until check() returns something, then returns it. Keys pressed
+        meanwhile are not shown and are thrown away, so Enter does not push the line down the window."""
+        quiet = self._quiet_keys()
+        try:
+            return self._waiting(text, check, wait)
+        finally:
+            quiet()
+
+    def _quiet_keys(self):
+        """Stops the terminal showing keys; returns how to put it back (after throwing away what was typed)."""
+        try:
+            import termios
+            fd = sys.stdin.fileno()
+            if not (self.fancy and self._ask is input and os.isatty(fd)):
+                return lambda: None
+            saved = termios.tcgetattr(fd)
+            quiet = termios.tcgetattr(fd)
+            quiet[3] &= ~(termios.ECHO | termios.ICANON)
+            termios.tcsetattr(fd, termios.TCSADRAIN, quiet)
+        except (ImportError, OSError, ValueError, AttributeError):
+            return lambda: None
+
+        def back():
+            try:
+                termios.tcflush(fd, termios.TCIFLUSH)
+                termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+            except OSError:
+                pass
+        return back
+
+    def _waiting(self, text, check, wait):
         began, turn = time.time(), 0
         while True:
             result = check()
@@ -1617,10 +1647,10 @@ def found_when_settled(api, term, wait, expected, most=240):
     return term.waiting("Waiting for the apps to answer, to add them to Starboard ...", settled, max(wait, 0.01) * 2.5)
 
 
-def start_with_installer(api, term, state, choice, wait):
+def start_with_installer(api, term, state, choice, wait, asked=False):
     """Starboard has no Docker access: ./install.sh --start-apps downloads and starts the apps, while the step shows
     a turning mark and the time. Then the apps it finds are added to Starboard, so the dashboard shows them."""
-    if not term.yes_no("Start the apps now? They are downloaded first, which can take a few minutes.", True):
+    if not asked and not term.yes_no("Start the apps now? They are downloaded first, which can take a few minutes.", True):
         term.say("Start them later from the Starboard folder with:  ./install.sh --start-apps")
         return True
     import subprocess
@@ -1637,10 +1667,18 @@ def start_with_installer(api, term, state, choice, wait):
     else:
         term.warn("The apps did not all start. The last lines Docker wrote:")
         for line in lines[-8:]:
-            term.say(f"  {line}")
+            # Docker's lines can hold long addresses with no spaces: cut those too, so nothing passes the edge.
+            for part in textwrap.wrap(line, max(term.width - 8, 20), break_on_hyphens=False) or [""]:
+                term.say(f"    {part}")
         term.last_error = "The apps did not all start.\n" + "\n".join(lines[-12:])
-        term.failed("Some apps did not start. Start them again later with: ./install.sh --start-apps",
-                    "The apps did not all start.")
+        term.failed("Some apps did not start.", "The apps did not all start.")
+        again = term.choose("What do you want to do?", ["Try again (recommended)", "Carry on without them: start them "
+                            "later with ./install.sh --start-apps"], 1, help_key="apps")
+        if again == 0:
+            return start_with_installer(api, term, state, choice, wait, asked=True)
+        if not any(not line.startswith("0 of") for line in lines if " of " in line and "apps are running" in line):
+            term.text("Press Enter to carry on")
+            return True
     try:
         items = found_when_settled(api, term, wait, choice["apps"])
         if items:
