@@ -26,7 +26,7 @@ These apply to every step on every system, as well as the step's own test.
 | GEN-01 | As little typing as possible | The start is one short command, copied from the README or the help. After that, every question can be answered with Enter alone, and the only things a person must type are their password and details only they know, such as a VPN key |
 | GEN-02 | The recommended answer comes first and is chosen already | In every list, in the terminal and in the browser, the recommended answer is at the top, marked "(recommended)" with its reason, and already selected or ticked. Enter (terminal) or Continue (browser) accepts it |
 | GEN-03 | The terminal's layout is never broken | Nothing from apt, Docker or another program prints into the frame: their output goes to the log. No line repeats down the window, nothing runs past the edge, the menu stays on the bottom line, and a resize draws the step again whole. Checked at 80 by 24, at 120 by 40 and while the window changes size |
-| GEN-04 | A computer with a desktop always goes to the browser | The terminal hands over to the browser set-up, with the setup code filled in, as soon as Starboard answers. The terminal then says the set-up continues in the browser, and how to open it again |
+| GEN-04 | The hand-over has two branches, and the right one is recommended | With a desktop (a graphical session on this computer), the browser set-up is recommended: the terminal hands over as soon as Starboard answers, with the setup code filled in, then says the set-up continues in the browser and how to open it again. With no desktop (a server, Raspberry Pi OS Lite, or a sign-in over SSH), the terminal set-up is recommended and carries on in the same window. Either way the other branch is offered second, and the person never has to choose if they press Enter |
 | GEN-05 | Everything else just works | No step asks the person to fix something by hand that the script could do itself after a yes |
 
 ## 1. Getting the script
@@ -87,11 +87,14 @@ These apply to every step on every system, as well as the step's own test.
 
 | ID | Test | Systems | How | Passes when |
 |---|---|---|---|---|
-| SET-50 | A computer with a desktop | Mint | Machine (virtual screen), and by hand | The browser opens the set-up page with the setup code filled in |
-| SET-51 | Raspberry Pi OS with a desktop | Pi | By hand | The same as SET-50, in Chromium |
-| SET-52 | A computer with no desktop | Debian, Ubuntu, Pi Lite | Machine | The terminal set-up starts, and the address to use from another device is shown |
-| SET-53 | Run again once everything is there | All | Machine | Nothing to install; it starts the installer again and Starboard still answers |
-| SET-54 | Starboard answers after a restart | All | Machine | `/healthz` answers after a reboot |
+| SET-50 | Browser branch: a computer with a desktop | Mint | Machine (virtual screen), and by hand | "In a browser (recommended)" is first and chosen; Enter opens the set-up page with the setup code filled in; the terminal says the set-up continues in the browser |
+| SET-51 | Browser branch on Raspberry Pi OS with a desktop | Pi | By hand | The same as SET-50, in Chromium |
+| SET-52 | Terminal branch: a computer with no desktop | Debian, Ubuntu, Pi Lite | Machine | "Here in the terminal (recommended)" is first and chosen; Enter starts the terminal set-up in the same frame, with nothing left over from the script on the screen |
+| SET-53 | Terminal branch on a desktop computer signed in over SSH | Mint | Machine | No desktop is found for this sign-in, so the terminal is recommended; the address to open in a browser on another computer is shown too |
+| SET-54 | The other branch, chosen on purpose | All | Machine | Choosing the second answer, or `--browser` or `--terminal`, takes that branch; with a flag the question is not asked |
+| SET-55 | The browser cannot be opened (no browser installed, or it fails) | Mint | Machine | The address with the setup code is shown, and the terminal set-up is offered instead; nothing stops |
+| SET-56 | Run again once everything is there | All | Machine | Nothing to install; it starts the installer again and Starboard still answers |
+| SET-57 | Starboard answers after a restart | All | Machine | `/healthz` answers after a reboot |
 
 ## 7. Speed and memory
 
@@ -114,6 +117,6 @@ The script does most of this today. These tests describe behaviour still to buil
 
 ## What already exists
 
-FIRST-01 to FIRST-03 in `tools/vm/vm.sh` cover SET-20, SET-30 to SET-34, SET-40, SET-52 and SET-53 on Debian 12,
+FIRST-01 to FIRST-03 in `tools/vm/vm.sh` cover SET-20, SET-30 to SET-34, SET-40, SET-52 and SET-56 on Debian 12,
 Ubuntu 24.04 and Fedora 42 (12 checks). The new systems in [Systems](systems.md) carry them over; the other tests
 are new.

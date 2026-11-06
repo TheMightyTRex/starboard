@@ -26,7 +26,7 @@ These apply to every step on every system, as well as the step's own test.
 | GEN-01 | As little typing as possible | The start is one short command, copied from the README or the help. After that, every question can be answered with Enter alone, and the only things a person must type are their password and details only they know, such as a VPN key |
 | GEN-02 | The recommended answer comes first and is chosen already | In every list, in the terminal and in the browser, the recommended answer is at the top, marked "(recommended)" with its reason, and already selected or ticked. Enter (terminal) or Continue (browser) accepts it |
 | GEN-03 | The terminal's layout is never broken | Nothing from apt, Docker or another program prints into the frame: their output goes to the log. No line repeats down the window, nothing runs past the edge, the menu stays on the bottom line, and a resize draws the step again whole. Checked at 80 by 24, at 120 by 40 and while the window changes size |
-| GEN-04 | A computer with a desktop always goes to the browser | The terminal hands over to the browser set-up, with the setup code filled in, as soon as Starboard answers. The terminal then says the set-up continues in the browser, and how to open it again |
+| GEN-04 | The hand-over has two branches, and the right one is recommended | With a desktop (a graphical session on this computer), the browser set-up is recommended: the terminal hands over as soon as Starboard answers, with the setup code filled in, then says the set-up continues in the browser and how to open it again. With no desktop (a server, Raspberry Pi OS Lite, or a sign-in over SSH), the terminal set-up is recommended and carries on in the same window. Either way the other branch is offered second, and the person never has to choose if they press Enter |
 | GEN-05 | Everything else just works | No step asks the person to fix something by hand that the script could do itself after a yes |
 
 ## 1. The installer
@@ -46,9 +46,10 @@ These apply to every step on every system, as well as the step's own test.
 
 | ID | Test | Systems | Wizard | How | Passes when |
 |---|---|---|---|---|---|
-| WIZ-01 | The set-up page opens with the setup code filled in | Mint, Pi | B | Machine, and by hand | The code from the link is used; it never appears in the page address after it is read |
-| WIZ-02 | The setup code typed by hand, from the server's screen | Debian, Ubuntu | B | Machine | Accepted; a wrong code is refused with the help link to find it |
-| WIZ-03 | The terminal set-up starts | Debian, Ubuntu, Pi | T | Machine | The first step, with the menu fixed on the bottom line |
+| WIZ-01 | Browser branch: the set-up page opens with the setup code filled in | Mint, Pi | B | Machine, and by hand | The code from the link is used; it never appears in the page address after it is read |
+| WIZ-02 | Browser from another computer, for a server with no desktop | Debian, Ubuntu, Pi Lite | B | Machine | The setup code typed by hand from the server's screen is accepted; a wrong code is refused with the help link to find it |
+| WIZ-03 | Terminal branch: the terminal set-up starts | Debian, Ubuntu, Pi Lite, and Mint over SSH | T | Machine | The first step, in the same frame as the script, with the menu fixed on the bottom line |
+| WIZ-05 | Both branches give the same result | All | B and T | Machine | The same answers in the browser and in the terminal write the same settings, compared file by file |
 | WIZ-04 | Plain mode in the terminal | All | T | Machine | Numbered lines only; nothing redrawn |
 
 ## 3. Every step of the set-up
