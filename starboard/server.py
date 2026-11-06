@@ -348,39 +348,64 @@ def add_found(app, items):
     return {"added": added, "missing_keys": missing_keys, "config": cfg.public()}
 
 
-def adopt_started_apps(app, keys, wait=5.0, most=300):
-    """After Install apps started its apps: waits for them to answer, then adds them to Starboard, so they reach the
-    dashboard even when the person has left the page. An app opens its port a while after it starts (Radarr and
-    Sonarr can take over a minute), so it looks again until each one it can recognise is there, or for most seconds."""
-    def run():
+ADOPT_FOR = 1800  # seconds Starboard keeps looking for the apps Install apps started
+
+
+def adopt_started_apps(app, keys, after_job=True, wait=5.0):
+    """After Install apps started its apps: adds them to Starboard as each one answers, so they reach the dashboard
+    even when the person has left the page. An app opens its port a while after it starts (with every app starting
+    at once on a small server, Radarr took over 4 minutes), so it keeps looking for up to 30 minutes. What is still
+    to add is kept in data/stack/adopt.json, so a restart of Starboard (the installer rebuilds it at the end of the
+    set-up) carries on where it was (resume_adopting)."""
+    keys = sorted(set(keys) & set(discovery.CATALOGUE))
+    if not keys:
+        return
+    stack.want_adopted(app.data_dir, keys, time.time() + ADOPT_FOR)
+    threading.Thread(target=_adopt, args=(app, after_job, wait), name="adopt-apps", daemon=True).start()
+
+
+def resume_adopting(app):
+    """At start: carries on adding the apps a set-up started, if there are any left (see adopt_started_apps)."""
+    if stack.adopting(app.data_dir):
+        threading.Thread(target=_adopt, args=(app, False, 5.0), name="adopt-apps", daemon=True).start()
+
+
+def _adopt(app, after_job, wait):
+    if after_job:
         began = time.time()
-        while True:
-            job = stack.job()
-            if job.get("finished"):
-                break
+        while not stack.job().get("finished"):
             if time.time() - began > 3600:
                 return
             time.sleep(wait)
-        if not job.get("ok"):
+        if not stack.job().get("ok"):
+            # Some may still run: look for those, the rest are started again by hand.
+            pass
+    while True:
+        want = stack.adopting(app.data_dir)
+        if not want:
             return
-        began = time.time()
-        while True:
-            try:
-                items = discovery.search(app.config.data["services"])["items"]
-            except Exception:  # discovery is best effort; the person can still add them by hand
-                items = []
-            missing = set(keys) & set(discovery.CATALOGUE) - {i["key"] for i in items}
-            if not missing or time.time() - began >= most:
-                break
-            time.sleep(wait)
-        fresh = [i for i in items if not i.get("already")]
+        keys, until = want
+        try:
+            items = discovery.search(app.config.data["services"])["items"]
+        except Exception:  # discovery is best effort; the person can still add them by hand
+            items = []
+        fresh = [i for i in items if i["key"] in keys and not i.get("already")]
         if fresh:
             try:
                 added = add_found(app, [{**i, "read_key": i.get("can_read_key", False)} for i in fresh])
-                logs.event("info", "install apps", f"Added the new apps to Starboard: {', '.join(added['added'])}")
+                logs.event("info", "install apps", f"Added to Starboard as they answered: {', '.join(added['added'])}")
             except Exception as e:  # noqa: BLE001  (logged; the person can add them in Manage apps)
                 logs.event("warning", "install apps", f"Could not add the new apps to Starboard: {e}")
-    threading.Thread(target=run, name="adopt-apps", daemon=True).start()
+        there = {i["key"] for i in items if i["key"] in keys}
+        left = [k for k in keys if k not in there]
+        if not left or time.time() >= until:
+            stack.want_adopted(app.data_dir, [], 0)
+            if left:
+                logs.event("info", "install apps", f"Not answering after 30 minutes, so not added: {', '.join(left)}. "
+                           "Add them in Settings, Manage apps, Search for new apps.")
+            return
+        stack.want_adopted(app.data_dir, left, until)
+        time.sleep(wait)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -1008,6 +1033,10 @@ class Handler(BaseHTTPRequestHandler):
                     started = stack.start(host, f.read())
                     adopt_started_apps(app, stack.chosen_keys(app.data_dir))
                     return self.json(200, started)
+            if path == "/api/stack/adopt" and method == "POST":
+                # The terminal set-up started the apps through the installer: Starboard adds them as they answer.
+                adopt_started_apps(app, stack.chosen_keys(app.data_dir), after_job=False)
+                return self.json(200, {"keys": (stack.adopting(app.data_dir) or ([], 0))[0]})
             if path == "/api/stack/job" and method == "GET":
                 return self.json(200, stack.job())
             # Starboard's own log (System, Logs)
@@ -1477,6 +1506,7 @@ class BoundedServer(ThreadingHTTPServer):
 def make_server(host, port, data_dir_or_app):
     app = data_dir_or_app if isinstance(data_dir_or_app, App) else App(data_dir_or_app)
     handler = type("BoundHandler", (Handler,), {"app": app})
+    resume_adopting(app)
     server = BoundedServer((host, port), handler)
     server.daemon_threads = True
     return server, app

@@ -70,8 +70,9 @@ Then go back to Starboard and select **Find the new apps**. Continue from Step 9
 - Several drives? On **Folders**, select **Join several drives into one** to make a pool. Starboard gives you
   commands to run on the server first. Nothing on the drives is erased.
 - Starboard only starts apps from its own list, and only with folders it has checked.
-- After **The apps are running**, Starboard waits for each app to answer, which takes a minute or two, then adds
-  it to your apps. You can carry on with the set-up meanwhile.
+- After **The apps are running**, Starboard adds each app to your apps as soon as it answers. That can take
+  several minutes when many apps start at once on a small server. Starboard keeps looking for 30 minutes, even if
+  you carry on with the set-up or it restarts.
 
 ## If it does not work
 
@@ -82,7 +83,7 @@ Then go back to Starboard and select **Find the new apps**. Continue from Step 9
 - **Gluetun shows as unhealthy, and qBittorrent or SABnzbd do not open:** the VPN details are not right. Both
   download apps go through the VPN, so they wait for it. Check the provider, the private key and the address
   (ending in /32) in **Settings, Install apps**, then start the apps again.
-- **An app is missing from your apps after a few minutes:** it had not answered yet. Go to **Settings, Manage
+- **An app is missing from your apps after 30 minutes:** it had not answered by then. Go to **Settings, Manage
   apps**, select **Search for new apps**, then tick it.
 - **Jellystat keeps restarting, and its log says "no pg_hba.conf entry":** its database did not finish setting
   up, which happened with Starboard 0.9.2 and earlier. Stop Jellystat and jellystat-db, move the `jellystat-db`

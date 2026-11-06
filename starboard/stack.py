@@ -385,6 +385,33 @@ def chosen_keys(data_dir):
         return []
 
 
+def want_adopted(data_dir, keys, until):
+    """Keeps the apps still to add to Starboard (server.adopt_started_apps), or none."""
+    target = os.path.join(folder(data_dir), "adopt.json")
+    if not keys:
+        try:
+            os.remove(target)
+        except FileNotFoundError:
+            pass
+        return
+    os.makedirs(folder(data_dir), mode=0o700, exist_ok=True)
+    with open(target + ".new", "w", encoding="utf-8") as f:
+        json.dump({"keys": list(keys), "until": until}, f)
+    os.replace(target + ".new", target)
+
+
+def adopting(data_dir):
+    """(keys, until) for the apps still to add, or None when there are none or the time is up."""
+    try:
+        with open(os.path.join(folder(data_dir), "adopt.json"), encoding="utf-8") as f:
+            data = json.load(f)
+        keys = [k for k in data.get("keys", []) if isinstance(k, str)]
+        until = float(data.get("until", 0))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+    return (keys, until) if keys and until > time.time() else None
+
+
 def job():
     with _lock:
         if _job.get("via") and not _job.get("finished"):

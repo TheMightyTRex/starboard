@@ -1633,7 +1633,7 @@ def step_check(api, term, state, wait=2.0):
     return True
 
 
-def found_when_settled(api, term, wait, expected, most=240):
+def found_when_settled(api, term, wait, expected, most=120):
     """The apps Starboard finds on this computer, once the apps just started have answered: each opens its port a
     while after it starts (Radarr and Sonarr can take over a minute). It looks again until every one it can
     recognise is there, or after most seconds, and then takes what it has."""
@@ -1687,6 +1687,11 @@ def start_with_installer(api, term, state, choice, wait, asked=False):
             if added.get("missing_keys"):
                 term.note("Still without an API key: " + ", ".join(added["missing_keys"]) + ". Add them in Starboard, "
                           "Settings, Manage apps.")
+        # Apps that have not answered yet: Starboard adds them itself as they do, for up to 30 minutes.
+        later = api.call("POST", "/api/stack/adopt", {}).get("keys", [])
+        if later:
+            term.note(f"{len(later)} more {'app is' if len(later) == 1 else 'apps are'} still starting. Starboard adds "
+                      "them to your apps as they answer.")
     except Problem as e:
         term.warn(f"The apps could not be added to Starboard: {e}. Add them in Settings, Manage apps, Search for new apps.")
     term.text("Press Enter to carry on")
