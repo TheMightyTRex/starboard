@@ -18,21 +18,30 @@ itself and you can sign in with your own user name and password. It takes about 
 
 Choose by how you will finish setting up Starboard:
 
-| You will set up | Install | Why |
+Starboard supports four systems, in the version named here or any later one. Choose by how you will use the server:
+
+| You want | Install | Why |
 |---|---|---|
-| In the terminal only, or from a phone or laptop | **Debian 13**, with no desktop | The lightest: it leaves the most memory for your apps, and is supported until 2030 |
-| In a browser on the server itself | **Linux Mint 22** or **Ubuntu Desktop 24.04** | A desktop that looks familiar, with a browser |
-| Either, on a Raspberry Pi | **Raspberry Pi OS Lite, 64-bit** | Follow [Prepare a Raspberry Pi](prepare-a-raspberry-pi.md) instead of this page |
+| A screen on the server, and the set-up in its browser | **Linux Mint 22.3 (recommended)** | A desktop that looks familiar; the set-up opens in its browser by itself |
+| No screen: the set-up in the terminal, or from a phone or laptop | **Debian 13** | The lightest: it leaves the most memory for your apps |
+| No screen, with 5 years of updates | **Ubuntu Server 26.04 LTS** | Long support, and many guides online |
+| A Raspberry Pi | **Raspberry Pi OS (64-bit)** | Follow [Prepare a Raspberry Pi](prepare-a-raspberry-pi.md) instead of this page |
 
 A desktop uses 500 MB to 1.5 GB of memory even when nobody uses it. On a computer with 4 GB of memory or less,
-choose Debian and finish set-up from a phone or laptop.
+choose Debian and finish set-up from a phone or laptop. Read [What you need to run Starboard](what-you-need.md) for
+the minimum and recommended computer for each.
 
 ## Steps
 
 1. On your other computer, download the installer file (it ends in `.iso`):
+   - Linux Mint 22.3: the **Cinnamon Edition** from [linuxmint.com](https://linuxmint.com/download.php).
+     [Linux Mint's installation guide](https://linuxmint-installation-guide.readthedocs.io/en/latest/) shows
+     every step with pictures.
    - Debian 13: the **netinst** file for 64-bit PC (amd64) from [debian.org](https://www.debian.org/download).
-   - Linux Mint 22: the **Cinnamon Edition** from [linuxmint.com](https://linuxmint.com/download.php).
-   - Ubuntu Desktop 24.04 LTS from [ubuntu.com](https://ubuntu.com/download/desktop).
+     [Debian's installation guide](https://www.debian.org/releases/trixie/installmanual) explains every question.
+   - Ubuntu Server 26.04 LTS from [ubuntu.com](https://ubuntu.com/download/server).
+     [Ubuntu's guide to installing Ubuntu Server](https://ubuntu.com/tutorials/install-ubuntu-server) shows every
+     step.
 2. Write the file to the USB stick with [balenaEtcher](https://etcher.balena.io/): select **Flash from file**,
    choose the `.iso` file, choose the USB stick, then select **Flash**. On Windows, [Rufus](https://rufus.ie/)
    also works.
@@ -46,11 +55,13 @@ choose Debian and finish set-up from a phone or laptop.
    - Choose your user name and a password you will remember. The terminal asks for it later.
    - At **Software selection**, deselect **Debian desktop environment** and **GNOME**, and select only **SSH
      server** and **standard system utilities**. Press the space bar to select or deselect, and Enter to go on.
-5. For Linux Mint or Ubuntu Desktop, choose **Install**, then **Erase disk and install**, and choose your user
+5. For Linux Mint, choose **Install Linux Mint**, then **Erase disk and install Linux Mint**, and choose your user
    name and password. Accept the other suggested answers.
+   For Ubuntu Server, select **Install OpenSSH server**, select nothing under **Featured server snaps**, and choose
+   your user name and password. Accept the other suggested answers.
 6. When the installer says it has finished, remove the USB stick and let the computer restart.
-7. Sign in with your user name and password. On Debian, you see a line ending in `$`: that is the terminal,
-   ready for commands.
+7. Sign in with your user name and password. On Debian and Ubuntu Server, you see a line ending in `$`: that is
+   the terminal, ready for commands. On Linux Mint, open a terminal from **Menu**, **Terminal**.
 8. Install the updates that came out after your installer file. It asks for your password:
 
    ```bash
@@ -81,11 +92,11 @@ choose Debian and finish set-up from a phone or laptop.
 - **The computer never shows the USB stick:** write the stick again, or try another USB port. On some computers,
   the start-up menu only lists the stick after you activate **USB boot** in the computer's own settings, opened
   with F2 or Delete at start-up.
-- **"Secure Boot violation" or a similar message:** Debian, Mint and Ubuntu all work with Secure Boot. Write the
+- **"Secure Boot violation" or a similar message:** Linux Mint, Debian and Ubuntu all work with Secure Boot. Write the
   stick again from a freshly downloaded file. If it still happens, deactivate Secure Boot in the computer's own
   settings.
 - **The server is not online after installing:** follow
-  [Connect to the internet from the terminal](connect-to-the-internet.md).
+  [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md).
 - **Debian finds no network:** check the cable. Debian does not set up Wi-Fi without extra files, and a cable is
   more reliable for a server anyway.
 - **"sudo: command not found" or "is not in the sudoers file" on Debian:** you set a root password in Step 4.
@@ -93,8 +104,10 @@ choose Debian and finish set-up from a phone or laptop.
 
 ## Find out more
 
-- [Connect to the internet from the terminal](connect-to-the-internet.md)
+- [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md)
 - [Install Docker](install-docker.md)
 - [Connect to your server from another computer](connect-with-ssh.md)
 - [The terminal: typing commands](../basics/the-terminal.md)
+- [Start Starboard on Linux Mint](start-on-linux-mint.md), [on Debian](start-on-debian.md) or
+  [on Ubuntu Server](start-on-ubuntu-server.md)
 - [Get Starboard up and running, from a bare computer](../guides/get-up-and-running.md)

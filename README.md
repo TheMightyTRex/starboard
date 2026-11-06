@@ -4,13 +4,25 @@
 
 ## Quick start
 
-Start with the **Run first script**. On any Linux computer, with or without a desktop, open a terminal and run:
+Starboard runs on four Linux systems, in the version named or any later one:
+
+| System | Minimum | Recommended | Step by step |
+|---|---|---|---|
+| **Linux Mint 22.3 (recommended)** | 2 cores, 4 GB of memory, 40 GB disk | 4 cores, 8 GB, 120 GB SSD | [Start Starboard on Linux Mint](docs/help/topics/start-on-linux-mint.md) |
+| Debian 13 | 2 cores, 2 GB, 20 GB | 4 cores, 4 GB or more, 64 GB SSD | [Start Starboard on Debian](docs/help/topics/start-on-debian.md) |
+| Ubuntu Server 26.04 LTS | 2 cores, 3 GB, 20 GB | 4 cores, 8 GB, 64 GB SSD | [Start Starboard on Ubuntu Server](docs/help/topics/start-on-ubuntu-server.md) |
+| Raspberry Pi OS (64-bit), Trixie | Raspberry Pi 4 with 4 GB | Raspberry Pi 5 with 8 GB, on an SSD | [Start Starboard on Raspberry Pi OS](docs/help/topics/start-on-raspberry-pi-os.md) |
+
+The figures are for a whole media server. Keep your media on a separate drive. More in
+[What you need to run Starboard](docs/help/topics/what-you-need.md).
+
+Start with the **Run first script**. On one of these systems, with or without a desktop, open a terminal and run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
 ```
 
-If it says "Command 'curl' not found" (Ubuntu Desktop does not include curl), use `wget`, which it does include.
+If it says "Command 'curl' not found" (a new Debian does not include curl), use `wget`, which every system here includes.
 Do not use the `sudo snap install curl` Ubuntu suggests: the snap version cannot save the files the script needs.
 
 ```bash
@@ -67,8 +79,8 @@ on a server with no desktop, entirely in the terminal. Then you run everything f
   picks the apps, folders and settings for it, checks every step, starts the apps and connects them to each other.
 - **Accessible to everyone.** Built to WCAG 2.2 AA: keyboard first, screen readers, text up to 175%, high contrast,
   and a plain terminal mode for software that reads text aloud.
-- **Runs on what you have.** 64-bit Intel and AMD, 64-bit ARM such as a Raspberry Pi 4 or 5, and 32-bit ARM, with
-  Docker, or with Python and systemd and no Docker at all.
+- **Runs on what you have.** Linux Mint, Debian, Ubuntu Server and Raspberry Pi OS, on 64-bit Intel and AMD or 64-bit
+  ARM such as a Raspberry Pi 4 or 5, with Docker, or with Python and systemd and no Docker at all.
 
 The [help centre](docs/help/README.md) explains everything else in plain steps.
 

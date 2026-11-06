@@ -6,8 +6,10 @@ This guide takes you from a Linux computer with nothing on it to Starboard open 
 own password. It is for anyone, including people who have never used a terminal. It takes about 30 minutes,
 most of it waiting for downloads.
 
-It works on Ubuntu, Linux Mint, Debian and Fedora. Starboard's installer has been tested on clean copies of
-Ubuntu 24.04, Debian 12 and Fedora 42.
+It works on Linux Mint 22.3 (recommended), Debian 13 and Ubuntu Server 26.04, or a later version of each. For a
+Raspberry Pi, follow [Install Starboard on a Raspberry Pi](install-on-a-raspberry-pi.md). Each system has its own
+page with the computer it needs and its common problems: [Linux Mint](../topics/start-on-linux-mint.md),
+[Debian](../topics/start-on-debian.md) and [Ubuntu Server](../topics/start-on-ubuntu-server.md).
 
 ## Before you begin
 

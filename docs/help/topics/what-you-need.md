@@ -2,9 +2,28 @@
 
 # What you need to run Starboard
 
-Starboard itself is very small: it needs about 30 MB of memory and 120 MB of disk space, so almost any
-computer that runs Linux and Docker is big enough. What you need depends more on the other apps you run
-beside it.
+Starboard runs on four Linux systems, each in the version named here or any later one. Starboard itself is very
+small, so what your computer needs depends on the media apps you run beside it. The figures below are for a whole
+media server: Starboard, Reelix, Jellyfin, Audiobookshelf and a download app.
+
+## The four systems
+
+| System | Best for | Minimum | Recommended | Start here |
+|---|---|---|---|---|
+| **Linux Mint 22.3 (recommended)** | A computer with a screen: the set-up opens in its browser | 2 cores, 4 GB of memory, 40 GB for the system | 4 cores, 8 GB, an SSD of 120 GB or more | [Start Starboard on Linux Mint](start-on-linux-mint.md) |
+| Debian 13 | A server with no screen, or an older or smaller computer | 2 cores, 2 GB, 20 GB | 4 cores, 4 GB or more, an SSD of 64 GB or more | [Start Starboard on Debian](start-on-debian.md) |
+| Ubuntu Server 26.04 LTS | A server with no screen, with 5 years of updates | 2 cores, 3 GB, 20 GB | 4 cores, 8 GB, an SSD of 64 GB or more | [Start Starboard on Ubuntu Server](start-on-ubuntu-server.md) |
+| Raspberry Pi OS (64-bit), Trixie | A small, quiet server on a Raspberry Pi | Raspberry Pi 4 with 4 GB, a 32 GB card | Raspberry Pi 5 with 8 GB, starting from an SSD | [Start Starboard on Raspberry Pi OS](start-on-raspberry-pi-os.md) |
+
+Every system needs a 64-bit processor. Keep your media on a separate drive of 1 TB or more. To convert video for
+phones and browsers, choose an Intel processor from 2018 or later, which has video hardware (Quick Sync).
+
+Downloads:
+
+- Linux Mint: [linuxmint.com](https://linuxmint.com/download.php), the Cinnamon Edition
+- Debian: [debian.org](https://www.debian.org/download), the netinst file for 64-bit PC
+- Ubuntu Server: [ubuntu.com](https://ubuntu.com/download/server)
+- Raspberry Pi OS: [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
 
 ## Starboard on its own
 
@@ -17,10 +36,11 @@ browser.
 | Processor | Any | 2 seconds of processor time to open every page once. Close to nothing when nobody has it open. |
 | Disk space | 150 MB | The image is 117 MB. Settings, logs and history add about 3 MB. |
 | Download | 30 MB | 29 MB for 64-bit computers and 64-bit Raspberry Pi systems, 21 MB for 32-bit Raspberry Pi systems. |
-| System | Linux with Docker | Tested on clean Ubuntu 24.04, Debian 12 and Fedora 42, and on 64-bit ARM with 1 GB and with 512 MB of memory. |
+| System | One of the four systems above | Tested on clean copies of each, and on 64-bit ARM with 1 GB and with 512 MB of memory. |
 
-Docker itself adds about 60 to 100 MB of memory, and the system needs its own share. So the smallest
-sensible computer for Starboard is one with **512 MB of memory**.
+Docker itself adds about 60 to 100 MB of memory, and the system needs its own share. So Starboard on its own runs
+on a computer with **512 MB of memory**, such as a Raspberry Pi Zero 2 W, but a whole media server needs the
+minimum in **The four systems**.
 
 ## Which computer for which set-up
 
@@ -39,14 +59,14 @@ better than a Raspberry Pi.
 
 ## Raspberry Pi and other small devices
 
-- **64-bit Raspberry Pi OS** works on the Raspberry Pi 3, 4, 5 and Zero 2 W. Use it if your Pi can run it.
-  Starboard's install was tested on an emulated 64-bit ARM system with 1 GB of memory, like a Pi 3, and with
-  512 MB, like a Zero 2 W. Every check passed both times, with the installer and with the ready-made image.
-- **32-bit Raspberry Pi OS:** avoid it for a new install. Docker 28 was the last version made for it, so
-  Docker gets no more updates there. Starboard's 32-bit image still works on it, for a Raspberry Pi 2 or a
-  Pi you cannot reinstall, but it has no white Live TV logos.
-- The Raspberry Pi 1 and the original Zero and Zero W are not supported, because Docker does not support
-  their processor.
+- **A whole media server** needs a Raspberry Pi 4 with 4 GB of memory or more, and a Raspberry Pi 5 with 8 GB is
+  recommended. Read [Start Starboard on Raspberry Pi OS](start-on-raspberry-pi-os.md).
+- **A Raspberry Pi 3 or Zero 2 W** runs Starboard on its own, watching apps on other computers. Starboard's
+  install was tested on an emulated 64-bit ARM system with 1 GB of memory, like a Pi 3, and with 512 MB, like a
+  Zero 2 W.
+- **Only 64-bit Raspberry Pi OS is supported.** Docker no longer updates the 32-bit system, and many apps no
+  longer publish 32-bit versions.
+- The Raspberry Pi 1, 2 and the original Zero and Zero W are not supported.
 - Keep media on a USB disk, not the microSD card. Cards wear out quickly with constant writing.
 - On a Pi with 1 GB of memory or less, choose the **Small server** preset:
   [Make Starboard use less of your server](make-starboard-lighter.md).
@@ -60,5 +80,6 @@ better than a Raspberry Pi.
 ## Find out more
 
 - [What a home server is](../basics/what-is-a-home-server.md)
+- [Install Linux on a computer](install-linux.md)
 - [Install Starboard on a Linux computer](../guides/install-on-a-linux-computer.md)
 - [Install Starboard on a Raspberry Pi](../guides/install-on-a-raspberry-pi.md)

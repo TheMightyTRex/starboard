@@ -17,17 +17,10 @@ you. Use this page to do it by hand.
 
 ## Steps
 
-1. Install git, the tool that downloads Starboard and later updates it. It asks for your password. On Ubuntu, Linux
-   Mint, Debian and Raspberry Pi OS:
+1. Install git, the tool that downloads Starboard and later updates it. It asks for your password:
 
    ```bash
    sudo apt install git
-   ```
-
-   On Fedora:
-
-   ```bash
-   sudo dnf install git
    ```
 
 2. Go to your home folder:
@@ -143,7 +136,7 @@ To update later: ./update.sh
 - **"Stopped: there is no folder":** a folder you typed does not exist. Check the spelling, including capitals, and
   run the installer again.
 - **"install smartmontools first":** for Disk health, install smartmontools with `sudo apt install smartmontools`
-  (Fedora: `sudo dnf install smartmontools`), then run `./install.sh` again.
+  then run `./install.sh` again.
 - **"Stopped: Starboard did not start":** read what went wrong with `docker compose logs starboard`, then read
   [Starboard does not open](starboard-does-not-open.md).
 

@@ -10,13 +10,13 @@ by hand.
 
 ## Before you begin
 
-- A Linux computer: Ubuntu, Linux Mint, Debian, Fedora or Raspberry Pi OS. Read
+- A computer with Linux Mint 22.3, Debian 13, Ubuntu Server 26.04 or Raspberry Pi OS (64-bit), or a later version. Read
   [What you need to run Starboard](what-you-need.md).
 - The password you use to sign in to that computer. The terminal asks for it.
 - A terminal open on that computer. Read [The terminal: typing commands](../basics/the-terminal.md).
 - Not sure what Docker is? Read [What Docker is](../basics/what-is-docker.md).
 
-## Steps for Ubuntu, Debian, Fedora and Raspberry Pi OS
+## Steps for Debian, Ubuntu Server and Raspberry Pi OS
 
 1. Download and run Docker's own install script. It asks for your password and takes a few minutes:
 
@@ -30,15 +30,9 @@ by hand.
    sudo usermod -aG docker $USER
    ```
 
-3. **Fedora only:** start Docker now and every time the computer starts:
-
-   ```bash
-   sudo systemctl enable --now docker
-   ```
-
-4. Sign out of the computer and sign back in. On a computer you reach over SSH (secure shell), close the
+3. Sign out of the computer and sign back in. On a computer you reach over SSH (secure shell), close the
    connection and connect again. This is what makes Step 2 take effect.
-5. Open a terminal again and check that Docker works:
+4. Open a terminal again and check that Docker works:
 
    ```bash
    docker compose version
@@ -82,16 +76,10 @@ Docker's install script does not support Linux Mint, so install Docker from Mint
 ## If it does not work
 
 - **"curl: command not found":** the computer does not have curl, the tool that downloads the script. Install it,
-  then run Step 1 again. On Ubuntu, Debian and Raspberry Pi OS:
+  then run Step 1 again:
 
   ```bash
   sudo apt install curl
-  ```
-
-  On Fedora:
-
-  ```bash
-  sudo dnf install curl
   ```
 
 - **"permission denied" when you run a docker command:** you have not signed out and back in since Step 2. Sign out,

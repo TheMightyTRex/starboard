@@ -56,18 +56,9 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
   network. Guest networks often cannot reach other devices.
 - **"This site cannot be reached" from every other device:** in Starboard on the server, go to **Settings**, then
   **Security**, and check **Phones and other computers on your home network** is active.
-- **The server has a firewall:** a firewall on the server can block port 8095. Fedora often has one on, called
-  firewalld. On the server, allow the port, then reload the firewall:
-
-  ```bash
-  sudo firewall-cmd --permanent --add-port=8095/tcp
-  ```
-
-  ```bash
-  sudo firewall-cmd --reload
-  ```
-
-  On Ubuntu, Debian or Linux Mint, if you activated the firewall called ufw, allow the port with this command:
+- **The server has a firewall:** a firewall on the server can block port 8095. Linux Mint and Ubuntu Server
+  include one, called ufw, which is inactive until someone activates it. If it is active, allow the port on the
+  server with this command:
 
   ```bash
   sudo ufw allow 8095/tcp

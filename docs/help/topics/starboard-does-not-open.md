@@ -91,17 +91,6 @@ running, the address is wrong, or Starboard is set to open on the server only.
 - If the page says "Starboard does not answer to the name", you used a name Starboard does not know. Use the
   server's address, such as `http://192.168.1.20:8095`, or read
   [Put Starboard behind a reverse proxy](reverse-proxy.md).
-- On Fedora, the firewall is firewalld rather than ufw. These two commands allow port 8095 and apply the
-  change:
-
-  ```bash
-  sudo firewall-cmd --permanent --add-port=8095/tcp
-  ```
-
-  ```bash
-  sudo firewall-cmd --reload
-  ```
-
 - If you installed with the installer's `--native` option, Starboard runs without Docker. Instead of step 1,
   check it with this command:
 

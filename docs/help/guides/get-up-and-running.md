@@ -55,10 +55,10 @@ open Starboard in a browser later.
 
 ## Step 2: Install Linux
 
-Install Debian 13 without a desktop for the lightest server, or Linux Mint or Ubuntu Desktop to set up in a
-browser on the server itself. Follow [Install Linux on a computer](../topics/install-linux.md). For a Raspberry Pi,
+Install Linux Mint 22.3 (recommended) to set up in a browser on the server itself, or Debian 13 or Ubuntu Server
+26.04 with no desktop for a lighter server. Follow [Install Linux on a computer](../topics/install-linux.md). For a Raspberry Pi,
 follow [Prepare a Raspberry Pi](../topics/prepare-a-raspberry-pi.md) instead. Then check the server is online, and
-connect it by cable or Wi-Fi if it is not: follow [Connect to the internet from the terminal](../topics/connect-to-the-internet.md).
+connect it by cable or Wi-Fi if it is not: follow [Connect to the internet, by cable or Wi-Fi](../topics/connect-to-the-internet.md).
 
 **It worked when** the computer starts Linux by itself, you can sign in, and `ping -c 3 debian.org` shows replies.
 

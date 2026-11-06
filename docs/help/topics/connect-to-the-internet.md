@@ -1,15 +1,15 @@
 [Help centre](../README.md) · Before you install · how-to
 
-# Connect to the internet from the terminal
+# Connect to the internet, by cable or Wi-Fi
 
-Check that your server is online, and connect it by network cable or Wi-Fi, by typing commands in its terminal. You
-need this on a server with no desktop, where there is no network icon to select. At the end, the server can reach the
-internet and you are ready to run the Run first script.
+Check that your server is online, and connect it by network cable or Wi-Fi: with the network icon on a computer
+with a desktop, or by typing commands in the terminal on one without. At the end, the server can reach the internet
+and you are ready to run the Run first script.
 
 ## Before you begin
 
 - Linux is installed on the server. Read [Install Linux on a computer](install-linux.md).
-- A terminal open on the server itself, with a monitor and keyboard. Read
+- A monitor and keyboard on the server. With no desktop, a terminal open on it: read
   [The terminal: typing commands](../basics/the-terminal.md).
 - For Wi-Fi: your Wi-Fi network's name and password.
 - Some commands below have quotes `"` and other symbols in them. If a symbol is not where you expect on your
@@ -29,6 +29,17 @@ internet and you are ready to run the Run first script.
      the rest of this page.
    - **"Temporary failure in name resolution" or "Network is unreachable":** the server is not online. Carry on
      below.
+
+## Connect with Wi-Fi on a desktop
+
+On Linux Mint and on Raspberry Pi OS with the desktop, the network icon shows the Wi-Fi networks nearby.
+
+1. Select the network icon: in the panel on Linux Mint, in the taskbar on Raspberry Pi OS.
+2. Select your Wi-Fi network's name.
+3. Type its password and select **Connect**. On Raspberry Pi OS, select **OK**.
+4. When the icon shows the Wi-Fi signal, the computer is online. It connects by itself every time it starts.
+
+To check from a terminal, use the `ping` command in **Check whether the server is online**.
 
 ## Connect with a network cable (recommended)
 
@@ -60,9 +71,10 @@ A cable is faster and more reliable than Wi-Fi for a server.
 
 6. Check again with the `ping` command above.
 
-## Connect with Wi-Fi on Linux Mint, Ubuntu Desktop, Fedora or Raspberry Pi OS
+## Connect with Wi-Fi in the terminal on Linux Mint or Raspberry Pi OS
 
-These use a program called NetworkManager, which you control with the `nmcli` command.
+These use a program called NetworkManager, which you control with the `nmcli` command. On Raspberry Pi OS Lite,
+`sudo raspi-config` also sets up Wi-Fi, under **System Options** then **Wireless LAN**.
 
 1. List the Wi-Fi networks the server can see:
 
@@ -79,7 +91,7 @@ These use a program called NetworkManager, which you control with the `nmcli` co
 3. When it asks for the password, type it and press Enter. Nothing shows as you type.
 4. Check again with the `ping` command above. The server connects by itself every time it starts.
 
-## Connect with Wi-Fi on Ubuntu Server
+## Connect with Wi-Fi in the terminal on Ubuntu Server
 
 Ubuntu Server keeps its network settings in a file. If you set up Wi-Fi while installing Ubuntu, it is set up
 already.
@@ -123,7 +135,7 @@ already.
 
 6. Check again with the `ping` command above.
 
-## Wi-Fi on Debian with no desktop
+## Connect with Wi-Fi in the terminal on Debian
 
 A minimal Debian has no Wi-Fi tools unless you set up Wi-Fi while installing it. Connect a network cable for now, as
 above, then install NetworkManager:
@@ -132,7 +144,7 @@ above, then install NetworkManager:
 sudo apt install network-manager
 ```
 
-After that, the Wi-Fi steps for Linux Mint and the others work on Debian too. Keep the cable plugged in until Wi-Fi
+After that, the Wi-Fi steps in the terminal for Linux Mint and Raspberry Pi OS work on Debian too. Keep the cable plugged in until Wi-Fi
 works.
 
 ## Things to note

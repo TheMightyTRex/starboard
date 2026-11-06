@@ -29,8 +29,8 @@ How big it needs to be depends on what you run. For Starboard itself, read
 ## Why most home servers run Linux
 
 Linux is a free operating system, like Windows or macOS. Most home servers use it because it is free, runs well
-on older or smaller computers, and is what most media apps are built for. Ubuntu, Linux Mint, Debian, Fedora and
-Raspberry Pi OS are all kinds of Linux.
+on older or smaller computers, and is what most media apps are built for. Linux Mint, Debian, Ubuntu and
+Raspberry Pi OS are all kinds of Linux, and Starboard supports each of them.
 
 You do not need to know Linux well. You mostly use it by typing a few commands, which
 [The terminal: typing commands](the-terminal.md) explains.

@@ -8,10 +8,13 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 
 ## Before you begin
 
-- A computer with Linux installed: Debian, Ubuntu, Linux Mint, Fedora or Raspberry Pi OS, with or without a desktop.
-  Read [Install Linux on a computer](install-linux.md).
+- A computer with Linux installed: Linux Mint 22.3 (recommended), Debian 13, Ubuntu Server 26.04 or Raspberry Pi
+  OS (64-bit), or a later version, with or without a desktop. Read [Install Linux on a computer](install-linux.md).
+  Each system has its own page, with the computer it needs and its common problems:
+  [Linux Mint](start-on-linux-mint.md), [Debian](start-on-debian.md), [Ubuntu Server](start-on-ubuntu-server.md)
+  and [Raspberry Pi OS](start-on-raspberry-pi-os.md).
 - The computer is connected to the internet. Not sure? Read
-  [Connect to the internet from the terminal](connect-to-the-internet.md).
+  [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md).
 - The password you use to sign in to that computer. It is asked for when something needs installing.
 - A terminal open on that computer, or connected to it. Read [The terminal: typing commands](../basics/the-terminal.md).
 
@@ -37,8 +40,8 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
    bash run-first.sh
    ```
 
-   If it says "Command 'curl' not found" (Ubuntu Desktop does not include curl), use this command instead. It
-   does the same with `wget`, which Ubuntu, Linux Mint and Debian include:
+   If it says "Command 'curl' not found" (a new Debian does not include curl), use this command instead. It does
+   the same with `wget`, which Linux Mint, Debian, Ubuntu Server and Raspberry Pi OS include:
 
    ```bash
    wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
@@ -114,16 +117,10 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 
   If `wget` is missing too, install curl, then run the first command again. Use the command below, not the
   `sudo snap install curl` that Ubuntu suggests: the snap version is sandboxed and cannot save the files the script
-  needs. On Debian, Ubuntu, Linux Mint and Raspberry Pi OS:
+  needs:
 
   ```bash
   sudo apt install curl
-  ```
-
-  On Fedora:
-
-  ```bash
-  sudo dnf install curl
   ```
 
 - **"curl: (23) client returned ERROR on write", with a message about `curl.snap`:** curl was installed as a snap,
