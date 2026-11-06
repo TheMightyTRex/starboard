@@ -29,7 +29,8 @@ does not, and what to do afterwards.
    anything.
 
 Reelix then looks through your folders and links each file to its film or episode. For a large library this takes
-a while: about two seconds for each series.
+a while: on a pool of hard drives, about 20 seconds for each series, so over an hour for 200 series. Your library
+works in Reelix while it runs.
 
 ## What moves
 
@@ -50,6 +51,9 @@ a while: about two seconds for each series.
 - Indexers that Reelix has no definition for (such as Knaben). Update the definitions in **Settings**,
   **Indexers**, then move Prowlarr again.
 - Disc images, such as `.iso` Blu-ray copies. Reelix does not see them as films, so those films show as missing.
+- Video in `.wmv` format. Reelix does not see those files, so the episodes show as missing. Convert them first, for
+  example with Tdarr.
+- Some specials and pilots (season 0, or names such as `S07E00`). Link them by hand in Reelix after the move.
 - Storyarr. Reelix cannot read Storyarr's books, reading lists, wanted releases or radio. Add your books folders in
   Reelix instead: read "Books and audiobooks" below.
 
