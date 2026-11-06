@@ -545,7 +545,7 @@ Stop leaves this computer as it is now. Run the script again at any time: it car
 # sudo asks for the password once, before the quiet part, so the question is never hidden.
 sudo_once() {
   sudo -n true 2>/dev/null && return 0
-  para "First, sudo asks for the password you use to sign in to this computer. Nothing shows as you type."
+  para "First, sudo asks for the password you use to sign in to this computer. On most systems nothing shows as you type; on some, a star for each letter."
   say ""
   # shellcheck disable=SC2024  # the redirect is for sudo itself: it reads the password from the terminal
   while ! sudo -v < "${IN:-/dev/null}"; do

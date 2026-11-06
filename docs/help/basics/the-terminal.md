@@ -89,9 +89,16 @@ first time, the terminal asks for your password:
 [sudo] password for sam:
 ```
 
-Type the password you use to sign in to the computer, then press Enter. **Nothing appears while you type**, not
-even dots or stars. That is normal: the terminal hides it so nobody can count the letters. If you make a mistake,
-it says "Sorry, try again" and asks once more.
+On Ubuntu 26.04, it looks like this instead:
+
+```
+[sudo: authenticate] Password:
+```
+
+Type the password you use to sign in to the computer, then press Enter. On most systems **nothing appears while
+you type**, not even dots or stars. That is normal: the terminal hides it so nobody can count the letters. On
+Ubuntu 26.04, a star appears for each letter instead. If you make a mistake, it says so ("Sorry, try again", or on
+Ubuntu 26.04 "Authentication failed, try again") and asks once more.
 
 For a few minutes after that, other `sudo` commands do not ask again.
 

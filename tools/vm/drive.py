@@ -159,7 +159,7 @@ def main():
             last_out = time.time()
             continue
         # The answer, as a person would give it.
-        if "[sudo] password" in low or re.search(r"password for \w+:", low):
+        if "[sudo] password" in low or "[sudo: authenticate] password" in low or re.search(r"password for \w+:", low):
             send(a.password + "\r", "the computer's password")
         elif re.search(r"choose a password|type it again|your starboard password|^\W*password:", low):
             send(a.starboard_password + "\r", "Starboard's password")
