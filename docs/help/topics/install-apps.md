@@ -112,4 +112,5 @@ Then go back to Starboard and select **Find the new apps**. Continue from Step 1
 - [Copy settings from one app to another](copy-app-settings.md)
 - [Update your apps](update-your-apps.md)
 - [Switch between the two versions of Reelix](switch-reelix-version.md)
+- [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md)
 - [The terminal: typing commands](../basics/the-terminal.md)

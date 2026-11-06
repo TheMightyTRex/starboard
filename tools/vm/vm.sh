@@ -16,6 +16,8 @@
 #                                     stand-in browser so the browser route can be tested
 #
 # VM_TAG=name keeps this run's disk and process files apart, so two sessions can each test a copy of one system.
+# VM_SHARE=/mnt/pool shares a host folder read-only (9p, tag "share"): mount -t 9p -o trans=virtio,ro share /mnt/x.
+# Used for the migration test, so the test machine sees real media but cannot change it.
 # VM_DISKS="2G 3G 4G 2G 1G" adds blank virtual drives (serial numbers SBDISK0001 and up) to shell and test runs.
 #
 # Supported systems (docs/test-plans/systems.md): mint (Linux Mint 22.3 identity on Ubuntu 24.04's cloud image),
@@ -163,6 +165,7 @@ boot() { # boot a disk in the background; extra arguments go to QEMU
   "$QEMU" "${ACCEL[@]}" -smp "${VM_CPUS:-2}" -m "$MEMORY" -nographic -serial "file:$LOG" -monitor none \
     -drive "file=$disk,if=none,id=system,format=qcow2" -device virtio-blk-pci,drive=system,bootindex=0 \
     -nic "user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:$SSH_PORT-:22,hostfwd=tcp:127.0.0.1:$WEB_PORT-:8095" \
+    ${VM_SHARE:+-virtfs "local,path=$VM_SHARE,mount_tag=share,security_model=none,readonly=on"} \
     "$@" >/dev/null 2>&1 &
   echo $! > "$PID"
 }
