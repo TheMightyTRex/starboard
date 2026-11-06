@@ -496,6 +496,9 @@ explain() {
     *"Could not get lock"*|*"is held by process"*|*"dpkg was interrupted"*|*"Waiting for cache lock"*|*"another process"*)
       WHY="Another program is installing updates on this computer right now. This often happens just after Linux is installed."
       TIP="Wait a few minutes for it to finish, then try again." ;;
+    *"is not signed"*|*"NO_PUBKEY"*|*"signature verification failed"*|*"EXPKEYSIG"*)
+      WHY="One of this computer's software sources has a signing key that Linux no longer accepts, so the list of software could not be updated."
+      TIP="Choose Show the details to see which source. Install that source's new key, or turn the source off, then try again. The help pages for each system explain how." ;;
     *"No space left"*)
       WHY="The disk is full."
       TIP="Free some space, then try again." ;;

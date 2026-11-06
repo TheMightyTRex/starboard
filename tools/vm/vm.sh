@@ -115,17 +115,14 @@ runcmd:
   - [touch, /var/lib/starboard-new]
 EOF
         ;;
-      pios) # Raspberry Pi's own repository and the file Raspberry Pi OS is recognised by
+      pios) # The file Raspberry Pi OS is recognised by. Raspberry Pi's own software source is left out: its signing key
+        # fails Debian 13's checks on this emulated system (see os-tests/FINDINGS.md), which a real Pi may not share.
         cat >> "$user" <<'EOF'
 write_files:
   - path: /etc/rpi-issue
     content: |
       Raspberry Pi reference 2026-10-01 (emulated for Starboard tests)
-  - path: /etc/apt/sources.list.d/raspi.list
-    content: |
-      deb [signed-by=/usr/share/keyrings/raspberrypi-archive-keyring.gpg] http://archive.raspberrypi.com/debian/ trixie main
 runcmd:
-  - [sh, -c, "curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key | gpg --dearmor -o /usr/share/keyrings/raspberrypi-archive-keyring.gpg"]
   - [touch, /var/lib/starboard-new]
 EOF
         ;;

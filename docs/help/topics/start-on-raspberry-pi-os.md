@@ -58,6 +58,10 @@ minutes.
   Write **Raspberry Pi OS (64-bit)** with Raspberry Pi Imager and start again.
 - **"Could not get lock" or "Waiting for cache lock":** Raspberry Pi OS installs updates in the first minutes after
   it starts. Wait 10 minutes, then select **Try again**.
+- **"Updating the list of software did not finish", and the details say "is not signed" or "SHA1 is not considered
+  secure":** the signing key of Raspberry Pi's own software source is older than the checks in Debian 13 allow. Type
+  `sudo apt install raspberrypi-archive-keyring`. If that fails too, write a newer Raspberry Pi OS with Raspberry Pi
+  Imager. Then select **Try again**.
 - **The Pi restarts or slows down while Docker downloads, or a lightning bolt shows on the monitor:** the power
   supply is too weak. Use the official Raspberry Pi power supply, and give a USB drive its own power.
 - **Downloads are very slow, or files go missing:** the microSD card is too slow or wearing out. Start the Pi from an
