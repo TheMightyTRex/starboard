@@ -10,6 +10,7 @@ optional extras: "later" (needs its own settings file first, so it is left out o
 "vpn" (runs through Gluetun when the VPN group is on), "db" (a database that comes with it), "notes".
 """
 
+import json
 import os
 import re
 import secrets
@@ -377,7 +378,56 @@ def host_folder(data_dir):
 
 def job():
     with _lock:
-        return dict(_job)
+        if _job.get("via") and not _job.get("finished"):
+            _starter_result(_job)
+        return {k: v for k, v in _job.items() if k not in ("via", "request")}
+
+
+# Without Docker access, the Run first window can start the apps (run-first.sh, starter): Starboard leaves a request
+# in data/stack and reads the result the window leaves next to it. data/starter, touched every few seconds by that
+# window, says it is open.
+STARTER_FRESH = 15  # seconds
+
+
+def starter_waiting(data_dir):
+    try:
+        return time.time() - os.path.getmtime(os.path.join(data_dir, "starter")) < STARTER_FRESH
+    except OSError:
+        return False
+
+
+def start_via_starter(data_dir):
+    with _lock:
+        if _job and not _job.get("finished"):
+            raise ValueError("The apps are already starting")
+        request = f"{time.time():.3f}"
+        path = folder(data_dir)
+        for name in ("start-result.json",):
+            try:
+                os.remove(os.path.join(path, name))
+            except FileNotFoundError:
+                pass
+        target = os.path.join(path, "start-request")
+        with open(target + ".new", "w", encoding="utf-8") as f:
+            f.write(request)
+        os.replace(target + ".new", target)
+        _job.clear()
+        _job.update(started=time.time(), finished=False, ok=None, log="", via=path, request=request)
+    return job()
+
+
+def _starter_result(j):
+    """Called with _lock held: the window's result, or a problem when the window closed before it answered."""
+    try:
+        with open(os.path.join(j["via"], "start-result.json"), encoding="utf-8") as f:
+            result = json.load(f)
+    except (OSError, ValueError):
+        result = None
+    if isinstance(result, dict) and result.get("request") == j["request"]:
+        j.update(ok=bool(result.get("ok")), log=str(result.get("log", ""))[-6000:], finished=True, ended=time.time())
+    elif not starter_waiting(os.path.dirname(j["via"])) and time.time() - j["started"] > STARTER_FRESH:
+        j.update(ok=False, finished=True, ended=time.time(),
+                 log="The Run first window closed before the apps started. Run ./install.sh --start-apps in the Starboard folder.")
 
 
 def start(host_stack, built_env):

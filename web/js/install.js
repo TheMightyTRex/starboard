@@ -349,11 +349,13 @@ async function installStep(id, state, data, apps, go) {
       after.replaceChildren(el("h3", { text: "Add them to Starboard" }), finder.box, add, ...connectGuide(state, apps));
     };
     const poolFirst = state.pool ? notice("warning", "Make the pool first", `Run the pool commands from the Folders step on the server before you start, so ${state.pool.path} exists.`) : null;
-    if (w.can_start) {
+    if (w.can_start || w.starter) {
       const pw = el("input", { class: "input", type: "password", autocomplete: "current-password" });
       const startBtn = el("button", { type: "button", class: "btn btn--primary" }, icon("play"), "Start the apps");
       const form = el("div", { class: "form-stack" },
-        el("p", { text: "Starboard asks Docker to download each app and start it, using a short-lived helper. This can take several minutes on the first run." }),
+        el("p", { text: w.can_start
+          ? "Starboard asks Docker to download each app and start it, using a short-lived helper. This can take several minutes on the first run."
+          : "The Run first window on this computer downloads each app and starts it, so keep that window open. This can take several minutes on the first run." }),
         field("Your Starboard password", pw, { hint: "Starting apps changes this computer, so Starboard checks it is you." }), el("div", { class: "actions" }, startBtn));
       startBtn.addEventListener("click", async () => {
         clearError(pw);

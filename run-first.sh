@@ -898,3 +898,52 @@ else
 fi
 [ "$NEW_GROUP" = 1 ] && para "Sign out and back in once, so ordinary docker commands work in new terminals too."
 finish
+
+# The browser set-up starts the apps through this window. Starboard has no Docker access of its own (the safe
+# default), so when the person selects Start the apps, it leaves a request in data/stack, and this window runs
+# ./install.sh --start-apps for it and leaves the result next to the request. data/starter, touched every few
+# seconds, tells Starboard this window is open.
+starter() {
+  local key req status result=data/stack/start-result.json
+  echo
+  printf '%s\n' "Keep this window open until the set-up in the browser says your apps are running: they are downloaded and started from here. Press q to close it." \
+    | fold -s -w $(( COLS > 1 ? COLS - 1 : 79 ))
+  mkdir -p data/stack
+  while :; do
+    : > data/starter
+    if [ -f data/stack/start-request ] && [ ! -L data/stack/start-request ]; then
+      req="$(head -c 40 data/stack/start-request | tr -cd '0-9.')"
+      rm -f data/stack/start-request
+      echo
+      echo "Downloading and starting your apps, as the set-up asked. The browser shows how it goes."
+      status=0
+      if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
+        sg docker -c "./install.sh --start-apps" > data/stack/start.log 2>&1 < /dev/null || status=$?
+      else
+        ./install.sh --start-apps > data/stack/start.log 2>&1 < /dev/null || status=$?
+      fi
+      python3 -I -c 'import json, sys
+log = open(sys.argv[3], errors="replace").read()[-6000:]
+json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(sys.argv[4] + ".new", "w"))' \
+        "$req" "$status" data/stack/start.log "$result" && mv -f "$result.new" "$result"
+      tail -n 1 data/stack/start.log | fold -s -w $(( COLS > 1 ? COLS - 1 : 79 ))
+      if [ "$status" = 0 ]; then
+        rm -f data/starter
+        echo "Your apps are running. You can close this window."
+        return 0
+      fi
+      echo "Waiting: select Try again in the browser, or press q to close this window."
+    fi
+    if [ -n "$IN" ]; then
+      key=""
+      read -r -s -t 3 -n 1 key < "$IN" || true
+      case "$key" in q|Q) break ;; esac
+    else
+      sleep 3
+    fi
+  done
+  rm -f data/starter
+}
+if [ "$FINISH" = browser ] && ! grep -qx 'STARBOARD_ALLOW_DOCKER=1' .env 2>/dev/null; then
+  starter
+fi

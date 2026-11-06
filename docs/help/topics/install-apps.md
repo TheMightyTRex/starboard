@@ -41,12 +41,19 @@ and starts them. At the end, the apps are running and Starboard shows how to con
 
 ### If Starboard has no Docker access
 
-On **Start**, Starboard shows **Run one command** instead of a password. Select **Copy the command**, then
-paste it into a terminal on the server. It looks like this, with your own Starboard folder:
+Docker access is off unless you said yes to it in the installer. Then the Run first window starts the apps for
+Starboard: keep it open until Starboard shows **The apps are running**. The password and **Start the apps** work
+as above.
+
+If you closed that window, Starboard shows **Run one command** instead of a password. Select **Copy the command**,
+then paste it into a terminal on the server. It makes the apps' folders, downloads the apps and starts them:
 
 ```bash
-cd /home/sam/starboard/data/stack && docker compose -p media-stack up -d
+cd ~/starboard && ./install.sh --start-apps
 ```
+
+If Starboard is in another folder, use that folder instead of `~/starboard`. If the terminal says your user is not
+allowed to use Docker yet, sign out of the server and back in, then paste it again.
 
 Then go back to Starboard and select **Find the new apps**. Continue from Step 9.
 

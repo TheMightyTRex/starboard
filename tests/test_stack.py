@@ -99,3 +99,55 @@ class StackTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StarterTest(unittest.TestCase):
+    """Without Docker access, the Run first window starts the apps: a request file, then the result next to it."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.data = self.tmp.name
+        os.makedirs(os.path.join(self.data, "stack"))
+        stack._job.clear()
+
+    def tearDown(self):
+        stack._job.clear()
+        self.tmp.cleanup()
+
+    def test_waiting_only_while_the_window_touches_its_file(self):
+        self.assertFalse(stack.starter_waiting(self.data))
+        open(os.path.join(self.data, "starter"), "w").close()
+        self.assertTrue(stack.starter_waiting(self.data))
+        old = os.path.getmtime(os.path.join(self.data, "starter")) - 60
+        os.utime(os.path.join(self.data, "starter"), (old, old))
+        self.assertFalse(stack.starter_waiting(self.data))
+
+    def test_request_then_result(self):
+        open(os.path.join(self.data, "starter"), "w").close()
+        job = stack.start_via_starter(self.data)
+        self.assertFalse(job["finished"])
+        self.assertNotIn("request", job)
+        with open(os.path.join(self.data, "stack", "start-request")) as f:
+            request = f.read()
+        self.assertFalse(stack.job()["finished"])
+        with self.assertRaises(ValueError):
+            stack.start_via_starter(self.data)
+        with open(os.path.join(self.data, "stack", "start-result.json"), "w") as f:
+            json.dump({"request": "an older one", "ok": True, "log": ""}, f)
+        self.assertFalse(stack.job()["finished"])  # not the answer to this request
+        with open(os.path.join(self.data, "stack", "start-result.json"), "w") as f:
+            json.dump({"request": request, "ok": True, "log": "18 of 18 apps are running."}, f)
+        job = stack.job()
+        self.assertTrue(job["finished"])
+        self.assertTrue(job["ok"])
+        self.assertIn("18 of 18", job["log"])
+
+    def test_window_closed_before_it_answered(self):
+        open(os.path.join(self.data, "starter"), "w").close()
+        stack.start_via_starter(self.data)
+        os.remove(os.path.join(self.data, "starter"))
+        stack._job["started"] -= 60
+        job = stack.job()
+        self.assertTrue(job["finished"])
+        self.assertFalse(job["ok"])
+        self.assertIn("--start-apps", job["log"])

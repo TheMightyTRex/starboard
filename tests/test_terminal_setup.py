@@ -62,7 +62,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertNotIn(SIGN_IN_WORDS, text)  # typed hidden, never shown
         # No Docker access here: the files are written, and the command to start them is shown.
         self.assertTrue(os.path.exists(os.path.join(self.tmp.name, "stack", "compose.yaml")))
-        self.assertIn("docker compose -p media-stack up -d", text)
+        self.assertIn("./install.sh --start-apps", text)
         self.assertEqual(self.app.config.data["download_hours"], {"enabled": True, "start": 1, "end": 7})
 
     def test_usenet_step_shows_the_affiliate_note_links_and_the_rules(self):

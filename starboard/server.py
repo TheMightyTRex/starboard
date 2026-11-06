@@ -925,12 +925,16 @@ class Handler(BaseHTTPRequestHandler):
                 stack.write(app.data_dir, built)
                 host = stack.host_folder(app.data_dir)
                 return self.json(200, {"host_folder": host, "can_start": bool(host and containers.available()),
-                                       "command": f"cd {host or '<Starboard folder>/data/stack'} && docker compose -p {stack.PROJECT} up -d",
+                                       "starter": stack.starter_waiting(app.data_dir),
+                                       "command": "cd ~/starboard && ./install.sh --start-apps",
                                        "moved": built["moved"], "later": built["later"]})
             if path == "/api/stack/start" and method == "POST":
                 self.check_password(self.body())  # starting containers changes the computer: the password again
                 host = stack.host_folder(app.data_dir)
                 env_file = os.path.join(stack.folder(app.data_dir), ".env")
+                if os.path.exists(env_file) and not (host and containers.available()) and stack.starter_waiting(app.data_dir):
+                    logs.event("info", "install apps", "Asked the Run first window to start the apps in data/stack")
+                    return self.json(200, stack.start_via_starter(app.data_dir))
                 if not host or not containers.available() or not os.path.exists(env_file):
                     raise ValueError("Starboard cannot start apps here. Run the command instead")
                 with open(env_file) as f:
