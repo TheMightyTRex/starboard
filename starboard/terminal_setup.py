@@ -1603,6 +1603,21 @@ def step_check(api, term, state, wait=2.0):
     return True
 
 
+def found_when_settled(api, term, wait, least=30, most=180):
+    """The apps Starboard finds on this computer, once they have had time to answer: apps just started take a while
+    before they open their port, so it looks again until the list has stopped growing (or after most seconds)."""
+    began, last, same = time.time(), [], 0
+
+    def settled():
+        nonlocal last, same
+        items = api.call("GET", "/api/discover").get("items", [])
+        same = same + 1 if len(items) == len(last) else 0
+        last = items
+        spent = time.time() - began
+        return items if (spent >= least and same >= 3) or spent >= most else None
+    return term.waiting("Waiting for the apps to answer, to add them to Starboard ...", settled, max(wait, 0.01) * 2.5)
+
+
 def start_with_installer(api, term, state, choice, wait):
     """Starboard has no Docker access: ./install.sh --start-apps downloads and starts the apps, while the step shows
     a turning mark and the time. Then the apps it finds are added to Starboard, so the dashboard shows them."""
@@ -1628,7 +1643,7 @@ def start_with_installer(api, term, state, choice, wait):
         term.failed("Some apps did not start. Start them again later with: ./install.sh --start-apps",
                     "The apps did not all start.")
     try:
-        items = api.call("GET", "/api/discover").get("items", [])
+        items = found_when_settled(api, term, wait)
         if items:
             added = api.call("POST", "/api/discover/add", {"items": items})
             term.ok(f"Added {len(items)} {'app' if len(items) == 1 else 'apps'} to Starboard.")

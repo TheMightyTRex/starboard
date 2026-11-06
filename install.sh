@@ -113,7 +113,7 @@ start_apps() {
   # Each app's own settings folder too, before it starts: an app given a folder owned by root can stop at once
   # (Seerr does: "EACCES: permission denied, mkdir '/app/config/logs/'").
   local subs
-  subs="$(grep -o '\${CONFIG_DIR}/[A-Za-z0-9._-]*' "$file" | sort -u | sed "s#^\${CONFIG_DIR}#${dirs[0]}#; s#.*#'&'#" | paste -sd' ' -)"
+  subs="$(grep -o '\${CONFIG_DIR}/[A-Za-z0-9._-]*' "$file" | grep -v -- '-db$' | sort -u | sed "s#^\${CONFIG_DIR}#${dirs[0]}#; s#.*#'&'#" | paste -sd' ' -)"
   quietly helped "mkdir -p '${dirs[0]}' '${dirs[1]}' $subs && chown $puid:$pgid '${dirs[0]}' '${dirs[1]}' $subs" \
     || { echo "Could not make the apps' folders, ${dirs[*]}."; return 1; }
   total="$(grep -c '^    container_name:' "$file" || true)"
@@ -129,7 +129,9 @@ start_apps() {
   status=0
   wait "$pid" || status=$?
   # Folders Docker made for the apps are owned by root: give them to the apps' user, as Starboard's helper does.
-  quietly helped "for d in '${dirs[0]}'/* '${dirs[1]}'/media '${dirs[1]}'/downloads; do [ -d \"\$d\" ] && chown $puid:$pgid \"\$d\"; done; true" || true
+  # Not a database's folder (jellystat-db, storyarr-db): the database owns it, and changing it while the database
+  # sets itself up leaves it unfinished ("no pg_hba.conf entry").
+  quietly helped "for d in '${dirs[0]}'/* '${dirs[1]}'/media '${dirs[1]}'/downloads; do case \"\$d\" in *-db) continue ;; esac; [ -d \"\$d\" ] && chown $puid:$pgid \"\$d\"; done; true" || true
   if [ "$status" != 0 ]; then
     running="$(docker compose -p media-stack -f "$file" --env-file "$env" ps -q --status running 2>/dev/null | wc -l)"
     echo "$running of $total apps are running. Some did not start. The last lines Docker wrote:"

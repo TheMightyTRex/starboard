@@ -342,8 +342,10 @@ async function installStep(id, state, data, apps, go) {
     const log = el("pre", { class: "code-block", hidden: true });
     const status = el("div", { class: "stack-2", "aria-live": "polite" });
     const after = el("div", { class: "stack-4" });
-    const showAfter = async () => {
-      const finder = await appFinder();
+    const showAfter = async (settle = false) => {
+      const waiting = el("p", { class: "muted", "aria-live": "polite" });
+      if (settle) after.replaceChildren(el("h3", { text: "Add them to Starboard" }), waiting);
+      const finder = await appFinder(undefined, { settle, shown: (t) => { waiting.textContent = t; } });
       const add = el("button", { type: "button", class: "btn btn--primary", hidden: !finder.add }, icon("plus"), "Add the ticked apps to Starboard");
       add.addEventListener("click", async () => { add.disabled = true; try { if (await finder.add()) add.hidden = true; } catch (e) { problem(e.message); } finally { add.disabled = false; } });
       after.replaceChildren(el("h3", { text: "Add them to Starboard" }), finder.box, add, ...connectGuide(state, apps));
@@ -384,7 +386,7 @@ async function installStep(id, state, data, apps, go) {
               words.textContent = "The apps are running.";
               bar.setAttribute("aria-valuetext", "Done");
               status.append(notice("success", "The apps are running", "Now connect them: the steps are below."));
-              await showAfter();
+              await showAfter(true);
             } else {
               // The bar stays where it stopped, marked; the problem and its choices are below it.
               words.textContent = "Downloading and starting the apps did not finish.";

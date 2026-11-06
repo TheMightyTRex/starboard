@@ -852,7 +852,7 @@ if [ "$FINISH" = terminal ]; then
   DRAWN=0  # the terminal set-up drew its own frame and gave the window back
   [ "$status" = 0 ] || exit "$status"
   apply_host
-  [ "$NEW_GROUP" = 1 ] && echo "Sign out and back in once, so ordinary docker commands work in new terminals too."
+  [ "$NEW_GROUP" = 1 ] && echo "Sign out and back in once, so docker commands work in new terminals too."
   exit 0
 fi
 if [ "$status" != 0 ]; then
@@ -899,7 +899,7 @@ if [ "$DESKTOP" = 1 ]; then
 else
   para "Finish setting up in a browser on a phone or another computer at home: open the address for other devices and enter the setup code."
 fi
-[ "$NEW_GROUP" = 1 ] && para "Sign out and back in once, so ordinary docker commands work in new terminals too."
+[ "$NEW_GROUP" = 1 ] && para "Sign out and back in once, so docker commands work in new terminals too."
 finish
 
 # The browser set-up starts the apps through this window. Starboard has no Docker access of its own (the safe

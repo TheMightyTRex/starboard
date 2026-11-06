@@ -452,7 +452,10 @@ def _start(host_stack, env):
         f"chown {int(env['PUID'])}:{int(env['PGID'])} {q(cfg)} {q(data)}",
         f"docker compose -p {PROJECT} --env-file .env -f compose.yaml pull 2>&1 | tail -n 20",
         f"docker compose -p {PROJECT} --env-file .env -f compose.yaml up -d 2>&1",
-        f"for d in {q(cfg)}/* {q(data)}/media {q(data)}/downloads; do [ -d \"$d\" ] && chown {int(env['PUID'])}:{int(env['PGID'])} \"$d\"; done; true",
+        # Not a database's folder (jellystat-db, storyarr-db): the database owns it, and changing it while the
+        # database sets itself up leaves it unfinished ("no pg_hba.conf entry for host").
+        f"for d in {q(cfg)}/* {q(data)}/media {q(data)}/downloads; do case \"$d\" in *-db) continue ;; esac; "
+        f"[ -d \"$d\" ] && chown {int(env['PUID'])}:{int(env['PGID'])} \"$d\"; done; true",
     ])
     try:
         try:
