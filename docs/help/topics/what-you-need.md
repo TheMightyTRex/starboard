@@ -57,6 +57,16 @@ own documentation has the final word.
 A Raspberry Pi is fine for the first three rows. For converting video, a PC with an Intel processor does much
 better than a Raspberry Pi.
 
+### Every app at once
+
+Ticking every app in Install apps (22 apps with Starboard) was tested on a newly installed copy of each system:
+
+- **Memory:** about 3.5 GB in use when the apps are idle. With 4 GB, everything starts, but almost nothing is left
+  over, so choose 6 GB or more, or 8 GB on a Raspberry Pi.
+- **Disk:** about 20 GB for the apps, before any media.
+- **Time:** about 25 minutes on a fast connection, most of it downloading. On a Raspberry Pi, or a slow
+  connection, allow an hour or more.
+
 ## Raspberry Pi and other small devices
 
 - **A whole media server** needs a Raspberry Pi 4 with 4 GB of memory or more, and a Raspberry Pi 5 with 8 GB is
