@@ -93,7 +93,7 @@ quietly() {
 # or with --start-apps when the browser set-up asks the Run first window. Folders are made, and given to the apps'
 # user, with Starboard's own helper image, the same way Starboard does it, so no sudo is needed.
 start_apps() {
-  local env=data/stack/.env file=data/stack/compose.yaml key dir top puid pgid log pid n=0 total running helper status
+  local env=data/stack/.env file=data/stack/compose.yaml key dir top puid pgid log pid n=0 total running helper status quiet_keys
   [ -s "$file" ] && [ -s "$env" ] || { echo "There are no apps to start: the set-up has not written them."; return 0; }
   puid="$(sed -n 's/^PUID=//p' "$env" | tail -n 1)"; pgid="$(sed -n 's/^PGID=//p' "$env" | tail -n 1)"
   [[ "$puid" =~ ^[0-9]+$ ]] || puid="$(id -u)"; [[ "$pgid" =~ ^[0-9]+$ ]] || pgid="$(id -g)"
@@ -125,10 +125,16 @@ start_apps() {
   for try in 1 2 3; do
     docker compose -p media-stack -f "$file" --env-file "$env" up -d --quiet-pull >"$log" 2>&1 &
     pid=$!
+    quiet_keys=""
+    if [ -t 0 ] && [ -t 1 ]; then quiet_keys="$(stty -g 2>/dev/null)" && stty -echo -icanon 2>/dev/null; fi
     while kill -0 "$pid" 2>/dev/null; do
       sleep 5; n=$(( n + 5 ))
       [ -t 1 ] && printf '\r  Still working: %d min %02d s ' $(( n / 60 )) $(( n % 60 ))
     done
+    if [ -n "$quiet_keys" ]; then
+      while read -r -t 0.05 -n 64 _ 2>/dev/null; do :; done
+      stty "$quiet_keys" 2>/dev/null
+    fi
     status=0
     wait "$pid" || status=$?
     [ "$status" != 0 ] && [ "$try" -lt 3 ] && grep -qiE 'connection reset|timeout|timed out|TLS handshake|unexpected EOF|i/o timeout|no such host|temporary failure|503|502|429 Too Many' "$log" || break
@@ -540,11 +546,18 @@ if [ "$MODE" = docker ]; then
     spin='|/-\'
     i=0
     cols=$(tput cols 2>/dev/null || echo 80)
+    # Keys pressed meanwhile are not shown, so Enter cannot push the line down; what was typed is thrown away after.
+    quiet_keys=""
+    if [ -t 0 ]; then quiet_keys="$(stty -g 2>/dev/null)" && stty -echo -icanon 2>/dev/null; fi
     while kill -0 "$build" 2>/dev/null; do
       # One line, redrawn in place and cut to the window, so it never wraps onto a second line.
       printf '\r\033[2K%s' "$(printf '  %s Building and starting Starboard. Please wait, this can take some time...' "${spin:i++%4:1}" | cut -c1-$(( cols - 1 )))"
       sleep 0.2
     done
+    if [ -n "$quiet_keys" ]; then
+      while read -r -t 0.05 -n 64 _ 2>/dev/null; do :; done
+      stty "$quiet_keys" 2>/dev/null
+    fi
     printf '\r\033[2K'
     if wait "$build"; then
       echo "  Built and started."
