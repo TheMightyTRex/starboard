@@ -1562,6 +1562,10 @@ def step_check(api, term, state, wait=2.0):
     state["written"] = True
     term.ok(f"{len(choice['apps'])} apps written.")
     if not written.get("can_start"):
+        if os.environ.get("STARBOARD_STARTS_APPS") == "1":
+            # The installer that started this set-up downloads and starts them when it finishes.
+            term.note("The apps are downloaded and started when this set-up finishes.")
+            return True
         term.note("Starboard cannot start apps itself, because it has no full Docker access. Start them with:")
         term.say(f"  {written['command']}")
         return True

@@ -501,6 +501,45 @@ else
   echo "To keep it running after you sign out: loginctl enable-linger $USER"
 fi
 
+# The apps the terminal set-up wrote (data/stack): their folders, then Docker Compose. Starboard starts them itself
+# only when it has Docker access, which is off unless the person says yes, so the installer does it here.
+start_apps() {
+  local env=data/stack/.env file=data/stack/compose.yaml key dir puid pgid log pid n=0 total running
+  [ "$MODE" = docker ] && [ -s "$file" ] && [ -s "$env" ] || return 0
+  [ -z "$(docker compose -p media-stack -f "$file" --env-file "$env" ps -q 2>/dev/null)" ] || return 0
+  puid="$(sed -n 's/^PUID=//p' "$env" | tail -n 1)"; pgid="$(sed -n 's/^PGID=//p' "$env" | tail -n 1)"
+  [[ "$puid" =~ ^[0-9]+$ ]] || puid="$(id -u)"; [[ "$pgid" =~ ^[0-9]+$ ]] || pgid="$(id -g)"
+  say "Starting your apps"
+  for key in DATA_DIR CONFIG_DIR; do
+    dir="$(sed -n "s/^$key=//p" "$env" | tail -n 1)"
+    [[ "$dir" =~ ^/[A-Za-z0-9._/-]{1,250}$ ]] && [[ "$dir/" != *"/../"* ]] || fail "the apps' folder in $env is not one Starboard can use: $dir"
+    [ -d "$dir" ] && continue
+    if mkdir -p "$dir" 2>/dev/null; then continue; fi
+    echo "Making $dir for the apps, owned by your user (sudo asks for your password)."
+    sudo mkdir -p "$dir" && sudo chown "$puid:$pgid" "$dir" || fail "could not make $dir. Make it yourself, then run: ./install.sh --terminal"
+  done
+  total="$(grep -c '^    container_name:' "$file" || true)"
+  echo "Downloading $total apps and starting them. On a slow connection this can take 20 minutes or more."
+  log="$(mktemp)"
+  docker compose -p media-stack -f "$file" --env-file "$env" up -d --quiet-pull >"$log" 2>&1 &
+  pid=$!
+  while kill -0 "$pid" 2>/dev/null; do
+    sleep 5; n=$(( n + 5 ))
+    [ -t 1 ] && printf '\r  Still working: %d min %02d s' $(( n / 60 )) $(( n % 60 ))
+  done
+  [ -t 1 ] && printf '\r%40s\r' ""
+  if ! wait "$pid"; then
+    echo "Some apps did not start. The last lines Docker wrote:"
+    tail -n 8 "$log" | fold -s -w $(( WRAP - 4 )) | sed 's/^/    /'
+    rm -f "$log"
+    echo "Fix what it says, then start them again with: cd data/stack && docker compose -p media-stack up -d"
+    return 1
+  fi
+  rm -f "$log"
+  running="$(docker compose -p media-stack -f "$file" --env-file "$env" ps -q --status running 2>/dev/null | wc -l)"
+  echo "$running of $total apps are running. Open Starboard to see them."
+}
+
 say "Waiting for Starboard to start"
 for _ in $(seq 1 30); do
   if python3 -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:$PORT/healthz', timeout=2)" 2>/dev/null; then
@@ -521,7 +560,8 @@ if [ "$TERMINAL" = 1 ]; then
   echo "To update later: ./update.sh"
   # The rest of set-up, here: the password, the apps and download hours (starboard/terminal_setup.py).
   status=0
-  python3 -m starboard.terminal_setup --port "$PORT" --data data --address "${lan:-}" || status=$?
+  STARBOARD_STARTS_APPS=1 python3 -m starboard.terminal_setup --port "$PORT" --data data --address "${lan:-}" || status=$?
+  [ "$status" = 0 ] && start_apps
   exit "$status"
 fi
 code="$( { [ -f data/setup-token ] && [ ! -L data/setup-token ] && head -c 64 data/setup-token; } 2>/dev/null | tr -cd 'A-Za-z0-9_-')"

@@ -176,6 +176,10 @@ def main():
                 shown_more = False
                 nums = list(range(1, max(nums) + 1)) if nums else nums
                 send(",".join(map(str, nums)) + "\r", "every number: " + ",".join(map(str, nums)))
+        elif a.apps == "all" and "Install these?" in text and "your choice" in low:
+            send("2\r", "2 (choose app by app)")
+        elif a.apps == "all" and re.search(r"install [^?]+\? \[y/n\]", low):
+            send("y\r", "y (install this app)")
         elif a.plain and answers == 0:
             send("a\r", "a (accessible mode)")
         elif "press enter to finish, or type r" in low:
