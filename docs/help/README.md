@@ -64,6 +64,7 @@ Each guide is a journey through several topics, in order.
 - [Change an app's icon](topics/change-an-icon.md)
 - [Update your apps](topics/update-your-apps.md)
 - [Install apps with Starboard](topics/install-apps.md)
+- [Switch between the two versions of Reelix](topics/switch-reelix-version.md)
 - [Copy settings from one app to another](topics/copy-app-settings.md)
 
 ### Everyday use

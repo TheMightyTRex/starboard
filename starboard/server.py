@@ -1043,22 +1043,29 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/stack/start" and method == "POST":
                 start_body = self.body()
                 self.check_password(start_body)  # starting containers changes the computer: the password again
-                host = stack.host_folder(app.data_dir)
-                env_file = os.path.join(stack.folder(app.data_dir), ".env")
-                if os.path.exists(env_file) and not (host and containers.available()) and stack.starter_waiting(app.data_dir):
-                    logs.event("info", "install apps", "Asked the Run first window to start the apps in data/stack")
-                    started = stack.start_via_starter(app.data_dir)
-                    adopt_started_apps(app, stack.chosen_keys(app.data_dir))
-                    reelix_after_start(app, start_body.get("password", ""))
-                    return self.json(200, started)
-                if not host or not containers.available() or not os.path.exists(env_file):
-                    raise ValueError("Starboard cannot start apps here. Run the command instead")
-                with open(env_file) as f:
-                    logs.event("info", "install apps", "Starting the apps in data/stack")
-                    started = stack.start(host, f.read())
-                    adopt_started_apps(app, stack.chosen_keys(app.data_dir))
-                    reelix_after_start(app, start_body.get("password", ""))
-                    return self.json(200, started)
+                started = self.start_stack()
+                adopt_started_apps(app, stack.chosen_keys(app.data_dir))
+                reelix_after_start(app, start_body.get("password", ""))
+                return self.json(200, started)
+            if path == "/api/reelix/editions" and method == "GET":
+                # Reelix or Reelix with YouTube and Spotify downloads: for both set-ups and Settings, Reelix.
+                image = stack.reelix_in_stack(app.data_dir)
+                return self.json(200, {"editions": stack.reelix_editions(), "image": image,
+                                       "current": stack.edition_of(image), "can_switch": bool(image),
+                                       "can_start": bool(stack.host_folder(app.data_dir) and containers.available()),
+                                       "starter": stack.starter_waiting(app.data_dir),
+                                       "command": "cd ~/starboard && ./install.sh --start-apps"})
+            if path == "/api/reelix/edition" and method == "POST":
+                # Switch Reelix between the two versions, either way: a new image, the same settings folder.
+                body = self.body()
+                self.check_password(body)
+                old, new = stack.switch_reelix(app.data_dir, str(body.get("edition", "")))
+                logs.event("info", "reelix", f"Reelix changed from {old} to {new}")
+                try:
+                    started = self.start_stack()
+                except ValueError:
+                    return self.json(200, {"image": new, "started": None, "command": "cd ~/starboard && ./install.sh --start-apps"})
+                return self.json(200, {"image": new, "started": started})
             if path == "/api/reelix/setup" and method == "POST":
                 # The terminal set-up, after the installer started the apps: Reelix's admin account with Starboard's
                 # password (used for these calls only), a manager key for Starboard, folders, qBittorrent, the dashboard.
@@ -1322,6 +1329,21 @@ class Handler(BaseHTTPRequestHandler):
         days = app.config.data["session_days"] if remember else auth.FORGET_AFTER_DAYS
         token = app.sessions.create(days, app.session_version, remember)
         return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
+
+    def start_stack(self):
+        """Starts the apps in data/stack: through Docker when Starboard has access, else through the Run first window
+        when it is open. Raises ValueError when neither can, so the page shows the one command instead."""
+        app = self.app
+        host = stack.host_folder(app.data_dir)
+        env_file = os.path.join(stack.folder(app.data_dir), ".env")
+        if os.path.exists(env_file) and not (host and containers.available()) and stack.starter_waiting(app.data_dir):
+            logs.event("info", "install apps", "Asked the Run first window to start the apps in data/stack")
+            return stack.start_via_starter(app.data_dir)
+        if not host or not containers.available() or not os.path.exists(env_file):
+            raise ValueError("Starboard cannot start apps here. Run the command instead")
+        with open(env_file) as f:
+            logs.event("info", "install apps", "Starting the apps in data/stack")
+            return stack.start(host, f.read())
 
     def add_found(self, items):
         return add_found(self.app, items)

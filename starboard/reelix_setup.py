@@ -10,7 +10,7 @@ is copied. What it does, in order:
    never an admin key: admin changes later ask for the password again.
 3. Library folders for what was chosen (films, series, books, audiobooks, music), in the shared media folder.
 4. qBittorrent as Reelix's download app, when it was installed: its temporary first password is replaced with one
-   of its own, kept in Reelix.
+   of its own, kept in Reelix, and it saves into /data/downloads/torrents in the shared media folder.
 5. Reelix on Starboard's dashboard: Reelix answers on Radarr's, Sonarr's, Readarr's and Lidarr's addresses as well
    (/radarr/api/v3 and so on), so Starboard's own support for those shows its queue, calendar and wanted lists,
    with the manager key.
@@ -212,6 +212,7 @@ def qbit_lasting_password(base="http://127.0.0.1:8080", opener=None):
         if "Ok" not in post("auth/login", {"username": "admin", "password": temporary}):
             raise ReelixError("qBittorrent did not accept its temporary password")
         lasting = secrets.token_urlsafe(18)
-        post("app/setPreferences", {"json": json.dumps({"web_ui_password": lasting})})
+        # The save path inside the shared media folder, so a finished download moves into the library at once.
+        post("app/setPreferences", {"json": json.dumps({"web_ui_password": lasting, "save_path": "/data/downloads/torrents"})})
         return lasting
     return change

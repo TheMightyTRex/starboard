@@ -138,7 +138,9 @@ def main():
         text = "\n".join(lines)
         check(lines)
         here = lines[screen.r] if 0 <= screen.r < len(lines) else ""
-        low = here.lower()
+        # A question can wrap onto two lines in a narrow window: read the line before the cursor's too.
+        before = lines[screen.r - 1] if 0 < screen.r < len(lines) else ""
+        low = (before + " " + here).lower() if not here.lstrip().startswith(("›", "Your choice")) else here.lower()
         heading = next((m.group(1).strip() for l in lines[:4] for m in [re.search(r"Starboard \| ([^│]+?)\s{2,}", l)] if m), "")
         shots.append({"title": heading or here.strip()[:80], "html": screen.html(), "size": f"{cols} x {rows}"})
         if a.stop_after and a.stop_after in text:

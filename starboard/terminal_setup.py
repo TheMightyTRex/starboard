@@ -103,6 +103,9 @@ HELP = {
     "vpn": "A VPN sends the torrent app's traffic through your VPN provider, so sites see its address, not yours. "
            "Gluetun connects it. WireGuard is faster; OpenVPN works with every provider. Your provider's website shows "
            "the details to type here.",
+    "reelix-edition": "Reelix looks after films, series, books, audiobooks, music and radio. The other version adds "
+                      "downloads straight from YouTube and Spotify, and takes about 600 MB more disk. Both keep the same "
+                      "settings, so you can switch either way later in Starboard, Settings, Reelix.",
     "usenet": "SABnzbd downloads from Usenet through a provider's servers. Make an account with any provider, then type "
               "its server name, user name and password in SABnzbd's first-run wizard. " + USENET_RIGHTS,
     "hours": "Downloading uses most of your internet connection while it runs, so streaming, video calls and games on "
@@ -1518,15 +1521,37 @@ def step_apps(api, term, state):
         term.say("No apps chosen. Nothing to install.")
         state["apps"], state["choice"] = last, None
         return True
+    edition = "lite"
+    if any(a["key"] == "reelix" for a in chosen):
+        edition = ask_reelix_edition(api, term, last)
     d = overview["defaults"]
     data_dir = state.get("media_dir") or (state["pool_dir"] + "/media" if state.get("pool_dir") else d["data_dir"])
     config_dir = last.get("config_dir", d["config_dir"])  # shown in the check, where b changes it
     last.update(data_dir=data_dir, config_dir=config_dir)
     state["apps"] = last
     state["choice"] = {"apps": [a["key"] for a in chosen], "groups": sorted(keys), "data_dir": data_dir, "config_dir": config_dir,
-                       "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"]}
+                       "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"], "reelix_edition": edition}
     state["names"] = [a["name"] for a in chosen]
     return True
+
+
+def ask_reelix_edition(api, term, last):
+    """Reelix, or Reelix with YouTube and Spotify downloads (the browser set-up asks the same). Reelix comes first: it
+    is the recommended one. The other is offered only when it can be downloaded now."""
+    try:
+        editions = api.call("GET", "/api/reelix/editions").get("editions", [])
+    except Exception:  # noqa: BLE001  Reelix it is, as before
+        return "lite"
+    offered = [e for e in editions if e["available"]]
+    if len(offered) < 2:
+        return "lite"
+    offered.sort(key=lambda e: not e["recommended"])
+    options = [(e["name"] + (" (recommended)" if e["recommended"] else ""), e["about"]) for e in offered]
+    keys = [e["key"] for e in offered]
+    was = last.get("reelix_edition", "lite")
+    pick = term.choose("Which Reelix?", options, keys.index(was) + 1 if was in keys else 1, help_key="reelix-edition")
+    last["reelix_edition"] = keys[pick]
+    return keys[pick]
 
 
 def step_vpn(api, term, state):
@@ -1604,6 +1629,8 @@ def step_check(api, term, state, wait=2.0):
     term.heading(title("check"), num(title("check")))
     names = state.get("names") or choice["apps"]
     rows = [("Install", ", ".join(names)), ("Media folder", choice["data_dir"]), ("Settings folder", choice["config_dir"])]
+    if "reelix" in choice["apps"] and choice.get("reelix_edition") == "full":
+        rows.append(("Reelix", "With YouTube and Spotify downloads"))
     if choice.get("vpn"):
         rows.append(("VPN", f"{dict(VPNS).get(choice['vpn']['provider'], choice['vpn']['provider'])}, "
                             f"{'WireGuard' if choice['vpn']['type'] == 'wireguard' else 'OpenVPN'}"))

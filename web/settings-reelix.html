@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/css/designs.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
-<script src="/js/placeholder.js" defer></script>
+<script src="/js/settings.js" defer></script>
 </head>
 <body class="page-placeholder with-rail">
 <!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
@@ -42,7 +42,7 @@
     <form class="site-header__search search-field" id="header-search" action="/search.html" role="search"><label class="visually-hidden" for="header-search-input">Search films, series, music and books</label><input class="input" id="header-search-input" name="q" type="search" placeholder="Search films, series, music and books"><button type="submit" class="visually-hidden">Search</button></form>
     <div class="site-header__actions">
       <button type="button" class="icon-btn site-header__search-btn" data-search-open aria-controls="header-search" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span class="visually-hidden">Search</span></button>
-      <a class="icon-btn" href="https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/the-apps.md" target="_blank" rel="noopener noreferrer" data-help-link><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="label">Help</span><span class="visually-hidden"> with the apps Starboard works with (opens in a new tab)</span></a>
+      <a class="icon-btn" href="https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/switch-reelix-version.md" target="_blank" rel="noopener noreferrer" data-help-link><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="label">Help</span><span class="visually-hidden"> with switching between the two versions of Reelix (opens in a new tab)</span></a>
       <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><span class="label">Display</span></button>
     </div>
   </div>
@@ -157,11 +157,12 @@
 <div id="announcer" class="visually-hidden" aria-live="polite"></div>
 <!-- shell:end -->
 <main id="main" tabindex="-1">
-<div class="page">
+<div class="page page--settings">
   <div class="page-head">
-    <div class="page-head__text"><h1>Reelix</h1><p class="page-head__summary">Sites to search, download apps, quality, folders, media servers and users, set through Reelix's own API.</p></div>
+    <div class="page-head__text"><h1>Reelix</h1><p class="page-head__summary">Which Reelix runs, and Reelix's own settings.</p></div>
   </div>
-  <div class="notice" role="note"><div class="notice__body"><span class="notice__title">Coming with Reelix.</span><p>This page fills in once Starboard reads Reelix. Until then it holds its place in the menu.</p></div></div>
+  <div id="settings-message"></div>
+  <div class="settings-sections" id="reelix-sections" aria-busy="true"></div>
 </div>
 </main>
 </body>

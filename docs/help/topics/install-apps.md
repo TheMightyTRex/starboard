@@ -21,23 +21,30 @@ and starts them. At the end, the apps are running and Starboard shows how to con
 2. On **Start here**, read how the apps work together. Tick **Advanced settings** only if you want to choose
    each app and folder yourself. Select **Begin**.
 3. On **What to set up**, tick what you want your server to do, such as **Movies**, **TV**, **Watching** and
-   **Downloads**. Starboard shows how many apps that is and how much memory they use. Select **Continue**.
-4. On **Folders**, type your **Media folder**, such as `/srv/media`. If your other apps already use a media
+   **Downloads**. Starboard shows how many apps that is and how much memory they use. For films, series, books,
+   audiobooks and music, Starboard installs **Reelix**, one app that finds, chooses and sorts all of them.
+4. Under **Which Reelix?**, keep **Reelix (recommended)**, or choose **Reelix with YouTube and Spotify downloads**
+   if you want to download from those too. It takes about 600 MB more disk. You can switch either way later: read
+   [Switch between the two versions of Reelix](switch-reelix-version.md). Select **Continue**.
+5. On **Folders**, type your **Media folder**, such as `/srv/media`. If your other apps already use a media
    folder, Starboard offers it. Select **Continue**.
-5. If you ticked **VPN**, the **VPN** step asks for your **VPN provider** and the details from its website.
+6. If you ticked **VPN**, the **VPN** step asks for your **VPN provider** and the details from its website.
    Select **Continue**.
-6. If you ticked **SABnzbd**, the **Usenet** step lists some Usenet providers. They are affiliate links: if you
+7. If you ticked **SABnzbd**, the **Usenet** step lists some Usenet providers. They are affiliate links: if you
    sign up through one, the provider pays a small commission towards Starboard's development, and you pay the same
    price. Use Usenet only for files you have the right to download. Select **Continue**.
-7. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
+8. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
    you want, then select **Continue**.
-8. On **Check**, read the summary. Select **Change** beside anything you want to change. When it is right,
+9. On **Check**, read the summary. Select **Change** beside anything you want to change. When it is right,
    select **Write the files**.
-9. On **Start**, type **Your Starboard password**, then select **Start the apps**. Starboard downloads and starts
+10. On **Start**, type **Your Starboard password**, then select **Start the apps**. Starboard downloads and starts
    each app. This can take several minutes the first time.
-10. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
-11. Follow **Connect your apps, in this order**. It gives each app's address, folders and settings to type.
-12. Select **Go to Apps**.
+11. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
+12. Starboard sets Reelix up for you: its admin account (`admin`, with your Starboard password), the library
+    folders, and qBittorrent as its download app.
+13. Follow **Connect your apps, in this order**. It gives each app's address, folders and settings to type. In
+    Reelix, add a TMDB API key (films and series need it) and the sites to search.
+14. Select **Go to Apps**.
 
 ### If Starboard has no Docker access
 
@@ -55,7 +62,7 @@ cd ~/starboard && ./install.sh --start-apps
 If Starboard is in another folder, use that folder instead of `~/starboard`. If the terminal says your user is not
 allowed to use Docker yet, sign out of the server and back in, then paste it again.
 
-Then go back to Starboard and select **Find the new apps**. Continue from Step 9.
+Then go back to Starboard and select **Find the new apps**. Continue from Step 11.
 
 ## Things to note
 
@@ -70,6 +77,9 @@ Then go back to Starboard and select **Find the new apps**. Continue from Step 9
 - Several drives? On **Folders**, select **Join several drives into one** to make a pool. Starboard gives you
   commands to run on the server first. Nothing on the drives is erased.
 - Starboard only starts apps from its own list, and only with folders it has checked.
+- Reelix replaces Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr and Seerr for new installs. A server that already
+  runs them keeps them: Starboard does not remove anything.
+- Starboard keeps a manager key for Reelix, not an admin key, to show its queue and calendar on your dashboard.
 - After **The apps are running**, Starboard adds each app to your apps as soon as it answers. That can take
   several minutes when many apps start at once on a small server. Starboard keeps looking for 30 minutes, even if
   you carry on with the set-up or it restarts.
@@ -90,10 +100,16 @@ Then go back to Starboard and select **Find the new apps**. Continue from Step 9
   folder from the apps' settings folder to a holding folder, then start the apps again. The database sets itself
   up afresh. Jellystat had no history yet, so nothing is lost.
 
+- **Reelix stops at once, and its log says "disk I/O error" (code 5386):** its settings folder is on a pool made
+  with mergerfs, which cannot share memory the way Reelix's database needs. Put the apps' settings folder on the
+  system disk or another single disk, such as `/srv/config`, and keep only the media on the pool. A fix that lets
+  Reelix run there, more slowly, has been offered to Reelix.
+
 ## Find out more
 
 - [Build a media server from nothing](../guides/build-a-media-server-from-nothing.md)
 - [Add an app](add-an-app.md)
 - [Copy settings from one app to another](copy-app-settings.md)
 - [Update your apps](update-your-apps.md)
+- [Switch between the two versions of Reelix](switch-reelix-version.md)
 - [The terminal: typing commands](../basics/the-terminal.md)

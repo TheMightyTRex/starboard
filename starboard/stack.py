@@ -50,6 +50,19 @@ STORYARR_IMAGE = "ghcr.io/themightytrex/storyarr:v0.4.8"
 # films, series, books, audiobooks, music and radio, with its own sites to search and requests. STARBOARD_REELIX_IMAGE
 # chooses another image (such as upstream's ghcr.io/mvanhare/reelix:latest).
 REELIX_IMAGE = "ghcr.io/themightytrex/reelix:lite"
+# The full version of Reelix adds YouTube and Spotify downloads (yt-dlp, Deno and Debian's full FFmpeg, about 600 MB
+# more on disk). Lite is the default (owner, 6 November 2026); the full version is a choice, and System, Apps switches
+# between the two either way. Upstream's own image comes first; the fork's unchanged copy of it is the fallback while
+# upstream's cannot be downloaded without signing in (the case on 6 November 2026). STARBOARD_REELIX_FULL_IMAGE
+# chooses another.
+REELIX_FULL_IMAGES = ["ghcr.io/demonzoned/reelix:latest", "ghcr.io/themightytrex/reelix:full"]
+REELIX_EDITIONS = {
+    "lite": {"name": "Reelix", "extra_mb": 0,
+             "about": "Films, series, books, audiobooks, music and radio. The smaller download, for most servers."},
+    "full": {"name": "Reelix with YouTube and Spotify downloads", "extra_mb": 600,
+             "about": "Everything in Reelix, and downloads straight from YouTube and Spotify. About 600 MB more disk."},
+}
+_pullable = {}
 # The apps Reelix replaces. They are no longer offered for new installs, but a stack written with them before still
 # builds, so nothing someone already runs breaks.
 REPLACED_BY_REELIX = {"radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr", "profilarr", "decluttarr", "unpackerr",
@@ -233,8 +246,110 @@ def _next_free(port, used):
     return port
 
 
+def can_download(ref, check=None):
+    """Whether an image can be downloaded without signing in (asked of its registry; remembered for an hour)."""
+    seen = _pullable.get(ref)
+    if seen and time.time() - seen[1] < 3600:
+        return seen[0]
+    try:
+        (check or containers.remote)(ref)
+        ok = True
+    except Exception:  # noqa: BLE001  any registry, network or parsing failure means it cannot be downloaded now
+        ok = False
+    _pullable[ref] = (ok, time.time())
+    return ok
+
+
+def reelix_image(edition, check=None):
+    """The image for "lite" or "full". The full one is the first of REELIX_FULL_IMAGES that can be downloaded."""
+    if edition not in REELIX_EDITIONS:
+        raise ValueError("Choose Reelix or Reelix with YouTube and Spotify downloads")
+    if edition == "lite":
+        return APPS["reelix"]["image"]
+    own = os.environ.get("STARBOARD_REELIX_FULL_IMAGE")
+    for ref in [own] if own else REELIX_FULL_IMAGES:
+        if can_download(ref, check):
+            return ref
+    raise ValueError("Reelix with YouTube and Spotify downloads cannot be downloaded at the moment. Choose Reelix for "
+                     "now: you can switch later in Settings, Reelix")
+
+
+def reelix_editions(check=None):
+    """Both versions for the set-ups and Settings, with whether each can be downloaded now."""
+    out = []
+    for key, e in REELIX_EDITIONS.items():
+        try:
+            reelix_image(key, check)
+            available = True
+        except ValueError:
+            available = False
+        out.append({"key": key, **e, "available": available, "recommended": key == "lite"})
+    return out
+
+
+def edition_of(image):
+    """"lite" or "full" for a Reelix image, or None for an image Starboard does not know."""
+    if not image:
+        return None
+    if image == APPS["reelix"]["image"] or image.endswith(":lite") or "-lite" in image.rsplit(":", 1)[-1]:
+        return "lite"
+    if image in REELIX_FULL_IMAGES or image == os.environ.get("STARBOARD_REELIX_FULL_IMAGE") or "/reelix:" in image:
+        return "full"
+    return None
+
+
+_REELIX_IMAGE_LINE = re.compile(r"^(  reelix:\n    image: )(\S+)$", re.M)
+
+
+def reelix_in_stack(data_dir):
+    """The image Reelix runs from in data/stack/compose.yaml, or None when Starboard did not install it."""
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            m = _REELIX_IMAGE_LINE.search(f.read())
+    except OSError:
+        return None
+    return m.group(2) if m else None
+
+
+def _version(ref, check=None):
+    """The (major, minor, patch) an image's version label gives, or None."""
+    try:
+        v = str(((check or containers.remote)(ref) or {}).get("version") or "")
+    except Exception:  # noqa: BLE001  unknown is fine: the switch then goes ahead
+        return None
+    m = re.match(r"^v?(\d+)\.(\d+)\.(\d+)", v)
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def switch_reelix(data_dir, edition, check=None):
+    """Changes Reelix's image in data/stack/compose.yaml to the other version; the old file is kept next to it.
+    Reelix keeps its settings folder, so its library, users and settings stay. Returns (old image, new image)."""
+    path = os.path.join(folder(data_dir), "compose.yaml")
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    m = _REELIX_IMAGE_LINE.search(text)
+    if not m:
+        raise ValueError("Reelix was not installed by Install apps, so Starboard cannot change it. Change its image in "
+                         "your own Compose file instead")
+    new = reelix_image(edition, check)
+    if m.group(2) == new:
+        raise ValueError("Reelix is that version already")
+    # Reelix updates its database when a newer version starts, and an older one cannot read it after that. So the
+    # switch waits when the other version is behind (Lite follows each release within a day).
+    have, want = _version(m.group(2), check), _version(new, check)
+    if have and want and want < have:
+        raise ValueError(f"{REELIX_EDITIONS[edition]['name']} is on {'.'.join(map(str, want))} and you run "
+                         f"{'.'.join(map(str, have))}. It cannot go back to an older version, so try again once it has "
+                         "caught up, usually within a day")
+    os.replace(path, path + f".before-{time.strftime('%Y%m%d-%H%M%S')}")
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644), "w", encoding="utf-8") as f:
+        f.write(text[:m.start(2)] + new + text[m.end(2):])
+    return m.group(2), new
+
+
 def build(choice):
-    """The Compose file and .env for the ticked apps. choice: {apps, config_dir, data_dir, puid, pgid, tz, vpn}.
+    """The Compose file and .env for the ticked apps. choice: {apps, config_dir, data_dir, puid, pgid, tz, vpn,
+    reelix_edition ("lite", the default, or "full")}.
     Returns {compose, env, env_shown, folders, moved, later}."""
     keys = [k for k in choice.get("apps", []) if k in offered(replaced=True)]
     if not keys:
@@ -276,7 +391,8 @@ def build(choice):
     for key in keys:
         a = APPS[key]
         through_vpn = vpn and a.get("vpn")
-        lines += [f"  {key}:", f"    image: {a['image']}", f"    container_name: {key}", "    restart: unless-stopped"]
+        image = reelix_image(choice.get("reelix_edition") or "lite") if key == "reelix" else a["image"]
+        lines += [f"  {key}:", f"    image: {image}", f"    container_name: {key}", "    restart: unless-stopped"]
         if a.get("later"):
             lines.append('    profiles: ["later"]  # needs its own settings file first: docker compose --profile later up -d')
             later.append(a["name"])

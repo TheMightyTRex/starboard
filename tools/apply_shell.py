@@ -102,7 +102,7 @@ HELP = {
     "system-logs.html": ("topics/read-the-log.md", "reading the log and reporting a problem"),
     "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
-    "settings-reelix.html": ("basics/the-apps.md", "the apps Starboard works with"),
+    "settings-reelix.html": ("topics/switch-reelix-version.md", "switching between the two versions of Reelix"),
     "settings-jellyfin.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-audiobookshelf.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-alerts.html": ("topics/activate-alerts.md", "activating alerts"),

@@ -18,6 +18,11 @@ async function startInstall() {
   try { data = await api("/api/stack"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); return; }
   const apps = Object.fromEntries(data.apps.map((a) => [a.key, a]));
   const T = await stepTable();  // the step names the terminal set-up uses too
+  // Reelix, or Reelix with YouTube and Spotify downloads: the second only when it can be downloaded now.
+  let editions = [];
+  try { editions = (await api("/api/reelix/editions")).editions.filter((e) => e.available); } catch { /* Reelix it is */ }
+  editions.sort((a, b) => b.recommended - a.recommended);
+  data.reelix_editions = editions;
   let advanced = false;
   try { advanced = localStorage.getItem("install-advanced") === "1"; } catch { /* private window */ }
   const state = {
@@ -26,7 +31,7 @@ async function startInstall() {
     apps: new Set(data.apps.filter((a) => a.default && !a.installed && a.groups.some((g) => data.groups.find((x) => x.key === g).default)).map((a) => a.key)),
     config_dir: data.defaults.config_dir, data_dir: chosenMedia || data.defaults.data_dir,
     puid: data.defaults.puid, pgid: data.defaults.pgid, tz: data.defaults.tz,
-    vpn: { provider: "", type: "wireguard" }, moving: new Set(), written: null, pool: null,
+    vpn: { provider: "", type: "wireguard" }, moving: new Set(), written: null, pool: null, reelix_edition: "lite",
   };
   // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd is, Moving over only when
   // there is something to move.
@@ -100,12 +105,11 @@ async function installStep(id, state, data, apps, go) {
     nodes = [
       el("p", { text: "A media server is a few apps that work together. Each one does one job, and they pass work to each other:" }),
       el("ol", { class: "stack-1" },
-        el("li", {}, el("strong", { text: "Find. " }), "Prowlarr knows the sites that list films and series, and shares them with the other apps."),
-        el("li", {}, el("strong", { text: "Choose. " }), "Radarr (films), Sonarr (TV) and the others keep a list of what you want, and pick the best copy when it appears."),
+        el("li", {}, el("strong", { text: "Find and choose. " }), "Reelix keeps a list of the films, series, books, music and radio you want, searches the sites that list them, and picks the best copy when it appears. The people you share with can ask for things in it too."),
         el("li", {}, el("strong", { text: "Download. " }), "qBittorrent (or SABnzbd) downloads it, through your VPN if you have one."),
-        el("li", {}, el("strong", { text: "Sort. " }), "The app renames the finished file and moves it into your library."),
-        el("li", {}, el("strong", { text: "Watch. " }), "Jellyfin plays your library on TVs, phones and browsers. Seerr lets the people you share with ask for things.")),
-      el("p", { text: "This guide picks the apps for what you want, sets up the folders, writes the set-up file and starts the apps. Then it shows you, step by step, how to connect them. It takes about 15 minutes; the downloads take longer." }),
+        el("li", {}, el("strong", { text: "Sort. " }), "Reelix renames the finished file and moves it into your library."),
+        el("li", {}, el("strong", { text: "Watch and listen. " }), "Jellyfin plays your films and series on TVs, phones and browsers; Audiobookshelf plays audiobooks.")),
+      el("p", { text: "This guide picks the apps for what you want, sets up the folders, writes the set-up file and starts the apps. Starboard sets Reelix up and connects it to the download apps for you; the rest it shows you step by step. It takes about 15 minutes; the downloads take longer." }),
       el("h3", { text: "You need" }),
       el("ul", {}, el("li", { text: "A folder or drive with room for your media." }),
         el("li", { text: "Docker on this computer (it is, if Starboard runs in Docker)." }),
@@ -120,7 +124,9 @@ async function installStep(id, state, data, apps, go) {
     };
   } else if (id === "groups") {
     const total = el("p", { class: "small muted", "aria-live": "polite" });
+    let afterCount = () => {};
     const count = () => {
+      afterCount();
       const mb = [...state.apps].reduce((n, k) => n + apps[k].memory, 0);
       total.textContent = `${state.apps.size} ${state.apps.size === 1 ? "app" : "apps"}, using about ${memoryText(mb)} of memory together when idle.`;
     };
@@ -163,12 +169,22 @@ async function installStep(id, state, data, apps, go) {
         el("label", { class: "option-card" }, groupBox, el("strong", { text: g.name }), el("small", { text: g.about }), includes), list);
     };
     const kinds = [["media", "Media"], ["core", "Watching and downloading"], ["extras", "Extras"]];
+    // Which Reelix, shown while Reelix is ticked. Both keep the same settings, so Settings, Reelix switches later.
+    const which = el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: "Which Reelix?" }),
+      el("div", { class: "option-cards" }, data.reelix_editions.map((e) => {
+        const radio = el("input", { type: "radio", name: "reelix-edition", value: e.key, checked: state.reelix_edition === e.key });
+        radio.addEventListener("change", () => { state.reelix_edition = e.key; });
+        return el("label", { class: "option-card" }, radio,
+          el("strong", { text: e.name + (e.recommended ? " (recommended)" : "") }), el("small", { text: e.about }));
+      })), el("p", { class: "small muted", text: "You can switch either way later in Settings, Reelix. Your library and settings stay." }));
+    const showWhich = () => { which.hidden = data.reelix_editions.length < 2 || !state.apps.has("reelix"); };
+    afterCount = showWhich;
     nodes = [...kinds.map(([kind, name]) => el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: name }),
-      el("div", { class: "option-cards" }, data.groups.filter((g) => g.kind === kind).map(groupRow)))), total, error];
+      el("div", { class: "option-cards" }, data.groups.filter((g) => g.kind === kind).map(groupRow)))), which, total, error];
     count();
     save = async () => {
       if (!state.apps.size) { error.replaceChildren(notice("danger", "Nothing ticked", "Tick at least one thing for your server to do.")); return false; }
-      const findable = ["radarr", "sonarr", "lidarr", "bookshelf", "storyarr", "kapowarr"].some((k) => state.apps.has(k));
+      const findable = ["reelix", "radarr", "sonarr", "lidarr", "bookshelf", "storyarr", "kapowarr"].some((k) => state.apps.has(k));
       const downloader = ["qbittorrent", "sabnzbd"].some((k) => state.apps.has(k) || apps[k]?.installed);
       if (findable && !downloader && !state.warnedDownloads) {
         state.warnedDownloads = true;
@@ -318,6 +334,7 @@ async function installStep(id, state, data, apps, go) {
       el("dl", { class: "facts" },
         ...row("What it does", picked, "groups"),
         ...row("Apps", [...state.apps].map((k) => apps[k].name).join(", "), "groups"),
+        ...(state.apps.has("reelix") && state.reelix_edition === "full" ? row("Reelix", "With YouTube and Spotify downloads", "groups") : []),
         ...row("Media folder", el("code", { text: state.data_dir }), "folders"),
         ...(state.pool ? row("Pool", `${state.pool.path}, from ${state.pool.mounts.length} drives (run its commands first)`, "folders") : []),
         ...(state.advanced ? row("Settings folder", el("code", { text: state.config_dir }), "folders") : []),
@@ -489,7 +506,20 @@ function connectGuide(state, apps) {
   const code = (t) => el("code", { text: t });
   const arrs = [["radarr", "/data/media/movies", 7878], ["sonarr", "/data/media/tv", 8989], ["lidarr", "/data/media/music", 8686], ["bookshelf", "/data/media/books", 8787]].filter(([k]) => has(k));
   const steps = [];
-  if (has("qbittorrent")) {
+  if (has("reelix")) {
+    steps.push(el("li", {}, el("strong", { text: "Reelix. " }), open("reelix"), ". Starboard has set it up: sign in as ", code("admin"),
+      " with your Starboard password. Your library folders are added", has("qbittorrent") ? ", and qBittorrent is connected" : "", ". Then:",
+      el("ul", {}, ...[
+        el("li", {}, "Settings, Metadata: add a TMDB API key. Films and series need it; you get one free from themoviedb.org."),
+        el("li", {}, "Settings, Indexers: add the sites to search."),
+        has("sabnzbd") ? el("li", {}, "Settings, Download Clients, add SABnzbd: host ", code(host("sabnzbd")), ", port ", code("8080"), ", with its API key.") : null,
+        has("jellyfin") ? el("li", {}, "Settings, Media Servers: add Jellyfin at ", code("http://jellyfin:8096"), " with an API key from Jellyfin, so new things show up there at once.") : null,
+      ].filter(Boolean))));
+  }
+  if (has("qbittorrent") && has("reelix")) {
+    steps.push(el("li", {}, el("strong", { text: "qBittorrent. " }), open("qbittorrent"), ". Starboard gave it a password of its own and saved it in Reelix, so nothing to do. ",
+      "To sign in to qBittorrent yourself, choose a new password in its Options, Web UI, then type it in Reelix too: Settings, Download Clients, qBittorrent."));
+  } else if (has("qbittorrent")) {
     steps.push(el("li", {}, el("strong", { text: "qBittorrent. " }), open("qbittorrent"), ". Its first password is in its log (on the server: ", code("docker logs qbittorrent"),
       "). Sign in as ", code("admin"), ", then choose your own password in Options, Web UI. In Options, Downloads, set the default save path to ", code("/data/downloads/torrents"), "."));
   }
@@ -531,5 +561,5 @@ function connectGuide(state, apps) {
 }
 
 function body(state) {
-  return { apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn };
+  return { apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn, reelix_edition: state.apps.has("reelix") ? state.reelix_edition : "lite" };
 }

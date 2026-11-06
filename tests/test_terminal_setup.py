@@ -37,6 +37,9 @@ class TerminalSetupTest(unittest.TestCase):
         patcher = mock.patch("starboard.server.discovery.search", return_value={"items": []})
         patcher.start()
         self.addCleanup(patcher.stop)
+        offline = mock.patch("starboard.stack.can_download", return_value=False)  # no registry calls in tests
+        offline.start()
+        self.addCleanup(offline.stop)
         self.server, self.app = make_server("127.0.0.1", 0, self.tmp.name)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.port = self.server.server_address[1]
@@ -50,6 +53,21 @@ class TerminalSetupTest(unittest.TestCase):
     def term(self, typed, hidden):
         out = io.StringIO()
         return terminal_setup.Terminal(out=out, ask=Answers(typed), secret=Answers(hidden)), out
+
+    def test_which_reelix_is_asked_only_when_both_can_be_downloaded(self):
+        self.api.call("POST", "/api/setup", {"token": self.app.setup_token, "password": SIGN_IN_WORDS})  # asked after sign-in
+        last = {}
+        with mock.patch("starboard.stack.can_download", return_value=True):
+            term, out = self.term(["2"], [])
+            self.assertEqual(terminal_setup.ask_reelix_edition(self.api, term, last), "full")
+            self.assertIn("Reelix (recommended)", out.getvalue())
+            self.assertEqual(last["reelix_edition"], "full")
+            term, out = self.term([""], [])  # Enter keeps the earlier answer
+            self.assertEqual(terminal_setup.ask_reelix_edition(self.api, term, last), "full")
+        with mock.patch("starboard.stack.can_download", return_value=False):
+            term, out = self.term([], [])
+            self.assertEqual(terminal_setup.ask_reelix_edition(self.api, term, {}), "lite")
+            self.assertNotIn("Which Reelix", out.getvalue())
 
     def test_whole_set_up_with_the_recommended_answers(self):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
