@@ -114,6 +114,12 @@ start_apps() {
   # (Seerr does: "EACCES: permission denied, mkdir '/app/config/logs/'").
   local subs
   subs="$(grep -o '\${CONFIG_DIR}/[A-Za-z0-9._-]*' "$file" | grep -v -- '-db$' | sort -u | sed "s#^\${CONFIG_DIR}#${dirs[0]}#; s#.*#'&'#" | paste -sd' ' -)"
+  # And every folder the apps use inside the media folder (data/stack/folders.txt, from Install apps): Reelix does not
+  # make its library folders itself.
+  local more
+  more="$(grep -E '^/[A-Za-z0-9._/-]{1,250}$' data/stack/folders.txt 2>/dev/null | grep -v -- '/\.\./' | grep -F -- "${dirs[1]}/" \
+    | sed "s#.*#'&'#" | paste -sd' ' - || true)"
+  subs="$subs $more"
   quietly helped "mkdir -p '${dirs[0]}' '${dirs[1]}' $subs && chown $puid:$pgid '${dirs[0]}' '${dirs[1]}' $subs" \
     || { echo "Could not make the apps' folders, ${dirs[*]}."; return 1; }
   total="$(grep -c '^    container_name:' "$file" || true)"
@@ -153,11 +159,41 @@ start_apps() {
     tail -n 8 "$log" | fold -s -w $(( WRAP - 4 )) | sed 's/^/    /'
     rm -f "$log"
     echo "Fix what it says, then try again. From this folder: ./install.sh --start-apps"
+    reelix_tokens  # Reelix may be running even when another app is not
     return 1
   fi
   rm -f "$log"
+  reelix_tokens
   running="$(docker compose -p media-stack -f "$file" --env-file "$env" ps -q --status running 2>/dev/null | wc -l)"
   echo "$running of $total apps are running. Open Starboard to see them."
+}
+# Reelix's one-time set-up token and qBittorrent's first password are only in their logs, which only Docker can read:
+# they go into data/stack/reelix-setup.json (only your user can read it) for Starboard's Reelix set-up, which then
+# makes Reelix's admin account and gives qBittorrent a lasting password. Starboard removes the file when it is done.
+reelix_tokens() {
+  local note=data/stack/reelix-setup.json token="" qb="" i
+  [ -s "$note" ] || return 0
+  for i in $(seq 1 40); do
+    token="$(docker logs reelix 2>&1 | grep -o 'setup token: [A-Za-z0-9_-]*' | tail -n 1 | awk '{print $NF}')"
+    [ -n "$token" ] && break
+    sleep 3
+  done
+  qb="$(docker logs qbittorrent 2>&1 | grep -o 'temporary password is provided for this session: [^ ]*' | tail -n 1 | awk '{print $NF}')"
+  python3 -I - "$note" "$token" "$qb" <<'PY'
+import json, os, sys
+path, token, qb = sys.argv[1:4]
+with open(path, encoding="utf-8") as f:
+    info = json.load(f)
+if token:
+    info["token"] = token
+if qb:
+    info["qbittorrent_password"] = qb
+fd = os.open(path + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+with os.fdopen(fd, "w", encoding="utf-8") as f:
+    json.dump(info, f)
+os.replace(path + ".new", path)
+PY
+  [ -n "$token" ] && echo "Reelix is ready to be set up." || echo "Reelix has not printed its set-up token yet."
 }
 if [ "${START_APPS:-0}" = 1 ]; then
   start_apps

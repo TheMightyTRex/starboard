@@ -28,8 +28,8 @@ GROUPS = [
     ("ebooks", "Ebooks", "Books to read", "media", False),
     ("audiobooks", "Audiobooks", "Books to listen to, with progress on every device", "media", False),
     ("comics", "Comics", "Comics and graphic novels", "media", False),
-    ("watching", "Watching", "Play everything, and let people ask for more", "core", True),
-    ("downloads", "Downloads", "Download clients and the sites to search", "core", True),
+    ("watching", "Watching", "Play everything, with friends invited", "core", True),
+    ("downloads", "Downloads", "The apps Reelix sends downloads to", "core", True),
     ("vpn", "VPN", "Send downloads through a VPN", "core", False),
     ("subtitles", "Subtitles", "Subtitles for films and series", "core", False),
     ("tidy", "Tidy-up", "Clear stuck downloads and old media, sync quality settings", "extras", False),
@@ -46,7 +46,19 @@ DATA = "${DATA_DIR}"
 # STARBOARD_STORYARR_IMAGE chooses another image, or none to leave Storyarr out.
 STORYARR_IMAGE = "ghcr.io/themightytrex/storyarr:v0.4.8"
 
+# Reelix Lite (the fork's lite image of Reelix) is the one media manager for new installs (owner, 6 November 2026):
+# films, series, books, audiobooks, music and radio, with its own sites to search and requests. STARBOARD_REELIX_IMAGE
+# chooses another image (such as upstream's ghcr.io/mvanhare/reelix:latest).
+REELIX_IMAGE = "ghcr.io/themightytrex/reelix:lite"
+# The apps Reelix replaces. They are no longer offered for new installs, but a stack written with them before still
+# builds, so nothing someone already runs breaks.
+REPLACED_BY_REELIX = {"radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr", "profilarr", "decluttarr", "unpackerr",
+                      "janitorr"}
 APPS = {
+    "reelix": {"name": "Reelix", "groups": ["movies", "tv", "music", "ebooks", "audiobooks"],
+               "image": os.environ.get("STARBOARD_REELIX_IMAGE") or REELIX_IMAGE, "ports": ["7700:7700"],
+               "volumes": [f"{CFG}/reelix:/config", f"{DATA}:/data"], "env": {**LSIO, "UMASK": "002"}, "memory": 60,
+               "notes": "One app for films, series, books, audiobooks, music and radio, with requests and its own sites to search."},
     "radarr": {"name": "Radarr", "groups": ["movies"], "image": "lscr.io/linuxserver/radarr:latest",
                "ports": ["7878:7878"], "volumes": [f"{CFG}/radarr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200},
     "sonarr": {"name": "Sonarr", "groups": ["tv"], "image": "lscr.io/linuxserver/sonarr:latest",
@@ -187,9 +199,10 @@ def existing_media():
     return [{"path": p, "used_by": sorted(n)} for p, n in sorted(outer.items())]
 
 
-def offered():
-    """Apps with an image to install. STARBOARD_STORYARR_IMAGE=none leaves Storyarr out."""
-    return {k: a for k, a in APPS.items() if a["image"] and a["image"] != "none"}
+def offered(replaced=False):
+    """Apps with an image to install. STARBOARD_STORYARR_IMAGE=none leaves Storyarr out. The apps Reelix replaces are
+    left out unless `replaced` (writing or checking a stack that has them already)."""
+    return {k: a for k, a in APPS.items() if a["image"] and a["image"] != "none" and (replaced or k not in REPLACED_BY_REELIX)}
 
 
 def catalogue(installed_keys):
@@ -203,7 +216,9 @@ def catalogue(installed_keys):
         apps.append({"key": key, "name": a["name"], "groups": a["groups"], "image": a["image"], "notes": a.get("notes", ""),
                      "default": defaults_for(a), "later": bool(a.get("later")), "memory": a.get("memory", 100),
                      "installed": key in installed_keys, "ports": ports})
-    return {"groups": [{"key": k, "name": n, "about": t, "kind": kind, "default": d} for k, n, t, kind, d in GROUPS], "apps": apps}
+    used = {g for a in apps for g in a["groups"]}  # a group with no app left (Tidy-up, now in Reelix) is not shown
+    return {"groups": [{"key": k, "name": n, "about": t, "kind": kind, "default": d} for k, n, t, kind, d in GROUPS if k in used],
+            "apps": apps}
 
 
 def _yaml_value(v):
@@ -221,7 +236,7 @@ def _next_free(port, used):
 def build(choice):
     """The Compose file and .env for the ticked apps. choice: {apps, config_dir, data_dir, puid, pgid, tz, vpn}.
     Returns {compose, env, env_shown, folders, moved, later}."""
-    keys = [k for k in choice.get("apps", []) if k in offered()]
+    keys = [k for k in choice.get("apps", []) if k in offered(replaced=True)]
     if not keys:
         raise ValueError("Tick at least one app to install")
     config_dir = clean_folder(choice.get("config_dir"), "settings folder")
@@ -350,6 +365,9 @@ def write(data_dir, built):
         fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
         with os.fdopen(fd, "w") as f:
             f.write(text)
+    # Every folder the apps use, for the installer to make before they start (Reelix needs its library folders to exist).
+    with open(os.path.join(path, "folders.txt"), "w", encoding="utf-8") as f:
+        f.write("\n".join(built.get("folders", [])) + "\n")
     hooks = os.path.join(path, "starboard-before-update")
     for key, script in (built.get("hooks") or {}).items():
         os.makedirs(hooks, mode=0o700, exist_ok=True)
@@ -383,6 +401,30 @@ def chosen_keys(data_dir):
             return re.findall(r"^    container_name: ([A-Za-z0-9._-]+)$", f.read(), re.M)
     except OSError:
         return []
+
+
+def note_reelix(data_dir, choice, built):
+    """When the stack has Reelix, notes what its set-up needs (server.reelix_after_start, reelix_setup): its address
+    with the port it was given, what was chosen, and how qBittorrent is reached. The installer adds the one-time
+    set-up token and qBittorrent's first password once they have started. Removed when Reelix is not in the stack."""
+    target = os.path.join(folder(data_dir), "reelix-setup.json")
+    apps = set(choice.get("apps") or [])
+    if "reelix" not in apps:
+        try:
+            os.remove(target)
+        except FileNotFoundError:
+            pass
+        return
+    port = re.search(r'"(\d+):7700"', built["compose"])
+    vpn = "gluetun" in apps
+    info = {"url": f"http://127.0.0.1:{port.group(1) if port else 7700}",
+            "groups": [g for g in (choice.get("groups") or APPS["reelix"]["groups"]) if g in APPS["reelix"]["groups"]],
+            "qbittorrent_host": "gluetun" if vpn and "qbittorrent" in apps else "qbittorrent",
+            "sabnzbd": "sabnzbd" in apps}
+    fd = os.open(target + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(info, f)
+    os.replace(target + ".new", target)
 
 
 def want_adopted(data_dir, keys, until):

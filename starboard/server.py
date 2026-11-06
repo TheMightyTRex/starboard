@@ -20,7 +20,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
-from . import access, auth, backup, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, reelix_setup, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -362,6 +362,27 @@ def adopt_started_apps(app, keys, after_job=True, wait=5.0):
         return
     stack.want_adopted(app.data_dir, keys, time.time() + ADOPT_FOR)
     threading.Thread(target=_adopt, args=(app, after_job, wait), name="adopt-apps", daemon=True).start()
+
+
+def reelix_after_start(app, password):
+    """Once the apps Install apps started are running, sets Reelix up (reelix_setup), if it was among them. The password
+    is the one just checked; it is used for these calls and dropped when they finish."""
+    if not reelix_setup.read_setup(app.data_dir):
+        return
+
+    def run():
+        began = time.time()
+        while not stack.job().get("finished"):
+            if time.time() - began > 3600:
+                return
+            time.sleep(5)
+        try:
+            done = reelix_setup.set_up(app.config, app.data_dir, password, qbit=reelix_setup.qbit_lasting_password())
+            services.forget()
+            logs.event("info", "install apps", "Reelix set up: " + "; ".join(done))
+        except reelix_setup.ReelixError as e:
+            logs.event("warning", "install apps", f"Reelix is not set up yet: {e}")
+    threading.Thread(target=run, name="reelix-setup", daemon=True).start()
 
 
 def resume_adopting(app):
@@ -1010,21 +1031,25 @@ class Handler(BaseHTTPRequestHandler):
                 built = stack.build(self.body())
                 return self.json(200, {**{k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")}, "hooks": sorted(built["hooks"])})
             if path == "/api/stack/write" and method == "POST":
-                built = stack.build(self.body())
+                choice = self.body()
+                built = stack.build(choice)
                 stack.write(app.data_dir, built)
+                stack.note_reelix(app.data_dir, choice, built)  # what the Reelix set-up needs once the apps run
                 host = stack.host_folder(app.data_dir)
                 return self.json(200, {"host_folder": host, "can_start": bool(host and containers.available()),
                                        "starter": stack.starter_waiting(app.data_dir),
                                        "command": "cd ~/starboard && ./install.sh --start-apps",
                                        "moved": built["moved"], "later": built["later"]})
             if path == "/api/stack/start" and method == "POST":
-                self.check_password(self.body())  # starting containers changes the computer: the password again
+                start_body = self.body()
+                self.check_password(start_body)  # starting containers changes the computer: the password again
                 host = stack.host_folder(app.data_dir)
                 env_file = os.path.join(stack.folder(app.data_dir), ".env")
                 if os.path.exists(env_file) and not (host and containers.available()) and stack.starter_waiting(app.data_dir):
                     logs.event("info", "install apps", "Asked the Run first window to start the apps in data/stack")
                     started = stack.start_via_starter(app.data_dir)
                     adopt_started_apps(app, stack.chosen_keys(app.data_dir))
+                    reelix_after_start(app, start_body.get("password", ""))
                     return self.json(200, started)
                 if not host or not containers.available() or not os.path.exists(env_file):
                     raise ValueError("Starboard cannot start apps here. Run the command instead")
@@ -1032,7 +1057,18 @@ class Handler(BaseHTTPRequestHandler):
                     logs.event("info", "install apps", "Starting the apps in data/stack")
                     started = stack.start(host, f.read())
                     adopt_started_apps(app, stack.chosen_keys(app.data_dir))
+                    reelix_after_start(app, start_body.get("password", ""))
                     return self.json(200, started)
+            if path == "/api/reelix/setup" and method == "POST":
+                # The terminal set-up, after the installer started the apps: Reelix's admin account with Starboard's
+                # password (used for these calls only), a manager key for Starboard, folders, qBittorrent, the dashboard.
+                body = self.body()
+                self.check_password(body)
+                done = reelix_setup.set_up(app.config, app.data_dir, body["password"],
+                                           qbit=reelix_setup.qbit_lasting_password())
+                services.forget()
+                logs.event("info", "install apps", "Reelix set up: " + "; ".join(done))
+                return self.json(200, {"done": done})
             if path == "/api/stack/adopt" and method == "POST":
                 # The terminal set-up started the apps through the installer: Starboard adds them as they answer.
                 adopt_started_apps(app, stack.chosen_keys(app.data_dir), after_job=False)

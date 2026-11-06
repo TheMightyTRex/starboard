@@ -1523,7 +1523,7 @@ def step_apps(api, term, state):
     config_dir = last.get("config_dir", d["config_dir"])  # shown in the check, where b changes it
     last.update(data_dir=data_dir, config_dir=config_dir)
     state["apps"] = last
-    state["choice"] = {"apps": [a["key"] for a in chosen], "data_dir": data_dir, "config_dir": config_dir,
+    state["choice"] = {"apps": [a["key"] for a in chosen], "groups": sorted(keys), "data_dir": data_dir, "config_dir": config_dir,
                        "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"]}
     state["names"] = [a["name"] for a in chosen]
     return True
@@ -1660,6 +1660,30 @@ def step_check(api, term, state, wait=2.0):
     return True
 
 
+def set_up_reelix(api, term, state, wait):
+    """Reelix's admin account (with Starboard's password), Starboard's manager key, its library folders, qBittorrent and
+    its place on the dashboard: Starboard does it over Reelix's API (reelix_setup), while the turning mark shows."""
+    import threading
+    result = {}
+
+    def work():
+        try:
+            result["done"] = api.call("POST", "/api/reelix/setup", {"password": state["password"]}, timeout=300).get("done", [])
+        except Problem as e:
+            result["problem"] = str(e)
+    job = threading.Thread(target=work, daemon=True)
+    job.start()
+    term.waiting("Setting up Reelix ...", lambda: True if not job.is_alive() else None, wait)
+    if "problem" in result:
+        term.warn(f"Reelix is not set up yet: {result['problem']}")
+        term.note("Starboard tries again when you run ./install.sh --start-apps. Reelix's own pages also work: sign in "
+                  "as admin with your Starboard password.")
+        return
+    for line in result.get("done", []):
+        term.ok(line)
+    term.note("Reelix's own pages are there if you need them: sign in as admin with your Starboard password.")
+
+
 def found_when_settled(api, term, wait, expected, most=120):
     """The apps Starboard finds on this computer, once the apps just started have answered: each opens its port a
     while after it starts (Radarr and Sonarr can take over a minute). It looks again until every one it can
@@ -1706,6 +1730,8 @@ def start_with_installer(api, term, state, choice, wait, asked=False):
         if not any(not line.startswith("0 of") for line in lines if " of " in line and "apps are running" in line):
             term.text("Press Enter to carry on")
             return True
+    if "reelix" in choice["apps"]:
+        set_up_reelix(api, term, state, wait)
     try:
         items = found_when_settled(api, term, wait, choice["apps"])
         if items:

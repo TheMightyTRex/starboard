@@ -531,5 +531,5 @@ function connectGuide(state, apps) {
 }
 
 function body(state) {
-  return { apps: [...state.apps], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn };
+  return { apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn };
 }
