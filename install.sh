@@ -71,6 +71,9 @@ done
 [ -t 0 ] || ASK=0
 [ "$TERMINAL" = 0 ] || [ -t 0 ] || { echo "Stopped: --terminal needs a terminal to type in" >&2; exit 2; }
 
+# Text is written for a wide window. In a narrower one, wrap it at spaces before the edge, so no word is cut in two.
+WRAP=$(( $( { tput cols || echo 80; } 2>/dev/null) - 1 )); [ "$WRAP" -ge 39 ] || WRAP=79
+echo() { if [ -t 1 ] && [ "$#" = 1 ]; then printf '%s\n' "$1" | fold -s -w "$WRAP"; else builtin echo "$@"; fi; }
 say() { printf '\n== %s\n' "$*"; }
 fail() { printf 'Stopped: %s\n' "$*" >&2; exit 1; }
 # yes_no "Question" default: 1 for yes, 0 for no. An empty answer takes the default.
@@ -94,7 +97,7 @@ env_value() {
 command -v git >/dev/null || fail "install git first"
 [ -d .git ] || fail "run this inside a git clone of Starboard, so ./update.sh can update it later"
 
-cat <<'TEXT'
+{ [ -t 1 ] && fold -s -w "$WRAP" || cat; } <<'TEXT'
 
 Starboard installer
 

@@ -746,7 +746,8 @@ Afterwards, update with ./update.sh in the same folder." || return $?
 # Accessible mode is asked before anything is drawn, in plain words, so software that reads text aloud reads it.
 if [ "$FANCY" = 1 ] && [ "$ASK" = 1 ] && [ "$CHECK" = 0 ]; then
   printf '\nStarboard: the Run first script.\n'
-  printf 'Press Enter to start, or type a and press Enter for accessible mode: plain lines with no boxes or colour, for software that reads text aloud.\n> '
+  printf 'Press Enter to start, or type a and press Enter for accessible mode: plain lines with no boxes or colour, for software that reads text aloud.\n' | fold -s -w "$(( $( { tput cols || echo 80; } 2>/dev/null) - 1 ))"
+  printf '> '
   tty_read || true; first="$REPLY_LINE"
   case "$first" in a|A) FANCY=0; PLAIN=1; measure ;; q|Q) echo "Stopped. Nothing was changed."; exit 1 ;; esac
 fi

@@ -31,6 +31,12 @@ import urllib.parse
 
 from starboard import qr, start
 
+def _keys(chunk):
+    """Splits what one read gave into single key presses: an arrow key is one escape code, everything else one
+    character."""
+    return re.findall(r"\x1b(?:\[[0-9;]*[A-Za-z~]|O[A-Za-z])|\x1b|[\s\S]", chunk)
+
+
 def _wrap(text, width, **kw):
     """Lines of text between words only: never at a hyphen ("open-source" stays whole) and never inside a long word,
     such as an address, which gets a line of its own."""
@@ -863,8 +869,14 @@ class Terminal:
         saved = termios.tcgetattr(fd)
         try:
             tty.setcbreak(fd)
+            queue = []
             while True:
-                key = os.read(fd, 8).decode(errors="ignore")
+                # Keys typed quickly, or sent together over SSH, arrive in one read: take them one at a time.
+                if not queue:
+                    queue = _keys(os.read(fd, 64).decode(errors="ignore"))
+                    if not queue:
+                        continue
+                key = queue.pop(0)
                 if key in ("\x1b[A", "\x1bOA", "k"):
                     at = (at - 1) % len(options)
                 elif key in ("\x1b[B", "\x1bOB", "j"):

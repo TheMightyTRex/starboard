@@ -10,12 +10,18 @@
 #   tools/vm/vm.sh first debian       The Run first script on a bare system with no Docker: checks, installs what
 #                                     is missing, downloads this checkout and starts Starboard; then runs it again
 #   tools/vm/vm.sh bare debian        A bare system with the Run first script copied in, left running to drive by hand
+#   tools/vm/vm.sh new mint           As just installed: a user with a password whose sudo asks for it (on pios, as on
+#                                     Raspberry Pi OS, it does not), the Run first script and this checkout copied in,
+#                                     left running for tools/vm/drive.py to drive over SSH. VM_DESKTOP=1 adds a
+#                                     stand-in browser so the browser route can be tested
 #
 # VM_TAG=name keeps this run's disk and process files apart, so two sessions can each test a copy of one system.
 # VM_DISKS="2G 3G 4G 2G 1G" adds blank virtual drives (serial numbers SBDISK0001 and up) to shell and test runs.
 #
-# Systems: ubuntu (24.04), debian (12), fedora (42), and arm64: Debian 12 for 64-bit ARM, like Raspberry Pi
-# OS (64-bit), with 1 GB of memory like a small Pi (VM_MEMORY=512 for a Pi Zero 2 W). arm64 needs the packages
+# Supported systems (docs/test-plans/systems.md): mint (Linux Mint 22.3 identity on Ubuntu 24.04's cloud image),
+# debian13, ubuntu2604 (Ubuntu Server 26.04), and pios (Raspberry Pi OS: Debian 13 for 64-bit ARM with Raspberry
+# Pi's apt repository and /etc/rpi-issue, 4 GB). Older: ubuntu (24.04), debian (12), fedora (42), and arm64 (Debian
+# 12 for 64-bit ARM, 1 GB like a small Pi; VM_MEMORY=512 for a Pi Zero 2 W). arm64 needs the packages
 # qemu-system-arm and qemu-efi-aarch64, and is always emulated, so slow. Plain QEMU with user networking: no root, no libvirt,
 # nothing on the home network. Hardware speed-up (KVM) is used when /dev/kvm exists; without it everything
 # still works, about ten times slower. Files live in ~/.cache/starboard-vm (STARBOARD_VM_DIR), never in the repo.
@@ -35,7 +41,11 @@ case "$SYSTEM" in
   debian) URL="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2" ;;
   fedora) URL="https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-42-1.1.x86_64.qcow2" ;;
   arm64) URL="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-arm64.qcow2" ;;
-  *) echo "Choose ubuntu, debian, fedora or arm64" >&2; exit 2 ;;
+  mint) URL="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img" ;;
+  debian13) URL="https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2" ;;
+  ubuntu2604) URL="https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-amd64.img" ;;
+  pios) URL="https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-arm64.qcow2" ;;
+  *) echo "Choose mint, debian13, ubuntu2604, pios, or the older ubuntu, debian, fedora or arm64" >&2; exit 2 ;;
 esac
 
 mkdir -p "$DIR"
@@ -49,13 +59,13 @@ KEY="$DIR/id_ed25519"
 LOG="$DIR/$SYSTEM${VM_TAG:+-$VM_TAG}-console.log"
 [ -f "$KEY" ] || ssh-keygen -q -t ed25519 -N "" -C starboard-vm -f "$KEY"
 
-if [ "$SYSTEM" = arm64 ]; then
+if [ "$SYSTEM" = arm64 ] || [ "$SYSTEM" = pios ]; then
   QEMU=qemu-system-aarch64
   FIRMWARE="$(ls /usr/share/qemu-efi-aarch64/QEMU_EFI.fd /usr/share/AAVMF/AAVMF_CODE.fd 2>/dev/null | head -n 1)"
   [ -n "$FIRMWARE" ] && command -v "$QEMU" >/dev/null || { echo "Install qemu-system-arm and qemu-efi-aarch64 first" >&2; exit 1; }
   # shellcheck disable=SC2054  # the commas are inside one option value
   ACCEL=(-machine virt -accel tcg,thread=multi -cpu cortex-a72 -bios "$FIRMWARE"); SPEED="emulated 64-bit ARM (slow)"
-  MEMORY="${MEMORY:-1024}"; WAIT=3600
+  if [ "$SYSTEM" = pios ]; then MEMORY="${MEMORY:-4096}"; else MEMORY="${MEMORY:-1024}"; fi; WAIT=3600
 else
   QEMU=qemu-system-x86_64
   if [ -w /dev/kvm ]; then ACCEL=(-accel kvm -cpu host); SPEED="KVM"; else ACCEL=(-accel tcg -cpu max); SPEED="software only (slow)"; fi
@@ -65,8 +75,66 @@ SSH=(ssh -q -i "$KEY" -p "$SSH_PORT" -o StrictHostKeyChecking=no -o UserKnownHos
 SCP=(scp -q -i "$KEY" -P "$SSH_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
 say() { printf '\n== %s\n' "$*"; }
 
-seed() { # cloud-init: a tester user with the key, Docker and git (with "bare": the user only)
+seed() { # cloud-init: a tester user with the key, Docker and git (with "bare": the user only; "new": as just installed)
   local user="$DIR/user-data" seediso="$DIR/$SYSTEM-seed${1:+-$1}.iso"
+  if [ "${1:-}" = new ]; then
+    # As just installed: the user's sudo asks for the password, except on Raspberry Pi OS, whose first user's does
+    # not. The password is a test value for these throwaway machines only.
+    local sudo_rule="ALL=(ALL) ALL"; [ "$SYSTEM" = pios ] && sudo_rule="ALL=(ALL) NOPASSWD:ALL"
+    cat > "$user" <<EOF
+#cloud-config
+hostname: starboard-test
+users:
+  - name: tester
+    sudo: "$sudo_rule"
+    shell: /bin/bash
+    lock_passwd: false
+    ssh_authorized_keys: [$(cat "$KEY.pub")]
+chpasswd:
+  expire: false
+  users:
+    - {name: tester, password: ${VM_PASSWORD:-starboard-test-pw}, type: text}
+EOF
+    case "$SYSTEM" in
+      mint) # Linux Mint 22.3's identity on its Ubuntu 24.04 base, and no snaps, as on Mint
+        cat >> "$user" <<'EOF'
+write_files:
+  - path: /usr/lib/os-release.mint
+    content: |
+      NAME="Linux Mint"
+      VERSION="22.3 (Zena)"
+      ID=linuxmint
+      ID_LIKE="ubuntu debian"
+      PRETTY_NAME="Linux Mint 22.3"
+      VERSION_ID="22.3"
+      VERSION_CODENAME=zena
+      UBUNTU_CODENAME=noble
+runcmd:
+  - [sh, -c, "mv /usr/lib/os-release.mint /usr/lib/os-release && ln -sf ../usr/lib/os-release /etc/os-release"]
+  - [sh, -c, "snap list 2>/dev/null | awk 'NR>1 {print $1}' | xargs -r -n1 snap remove --purge; apt-get purge -y snapd || true"]
+  - [touch, /var/lib/starboard-new]
+EOF
+        ;;
+      pios) # Raspberry Pi's own repository and the file Raspberry Pi OS is recognised by
+        cat >> "$user" <<'EOF'
+write_files:
+  - path: /etc/rpi-issue
+    content: |
+      Raspberry Pi reference 2026-10-01 (emulated for Starboard tests)
+  - path: /etc/apt/sources.list.d/raspi.list
+    content: |
+      deb [signed-by=/usr/share/keyrings/raspberrypi-archive-keyring.gpg] http://archive.raspberrypi.com/debian/ trixie main
+runcmd:
+  - [sh, -c, "curl -fsSL https://archive.raspberrypi.com/debian/raspberrypi.gpg.key | gpg --dearmor -o /usr/share/keyrings/raspberrypi-archive-keyring.gpg"]
+  - [touch, /var/lib/starboard-new]
+EOF
+        ;;
+      *) printf '%s\n' "runcmd:" "  - [touch, /var/lib/starboard-new]" >> "$user" ;;
+    esac
+    cloud-localds "$seediso" "$user"
+    echo "$seediso"
+    return
+  fi
   if [ "${1:-}" = bare ]; then
     printf '%s\n' "#cloud-config" "hostname: starboard-test" "users:" "  - name: tester" \
       "    sudo: ALL=(ALL) NOPASSWD:ALL" "    shell: /bin/bash" "    ssh_authorized_keys: [$(cat "$KEY.pub")]" > "$user"
@@ -95,7 +163,7 @@ EOF
 
 boot() { # boot a disk in the background; extra arguments go to QEMU
   local disk="$1"; shift
-  "$QEMU" "${ACCEL[@]}" -smp 2 -m "$MEMORY" -nographic -serial "file:$LOG" -monitor none \
+  "$QEMU" "${ACCEL[@]}" -smp "${VM_CPUS:-2}" -m "$MEMORY" -nographic -serial "file:$LOG" -monitor none \
     -drive "file=$disk,if=none,id=system,format=qcow2" -device virtio-blk-pci,drive=system,bootindex=0 \
     -nic "user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:$SSH_PORT-:22,hostfwd=tcp:127.0.0.1:$WEB_PORT-:8095" \
     "$@" >/dev/null 2>&1 &
@@ -282,6 +350,27 @@ case "$ACTION" in
 
     say "$SYSTEM Run first script: $PASS passed, $FAIL failed"
     [ "$FAIL" = 0 ]
+    ;;
+
+  new)
+    # As just installed, with the user just signed in: no Docker, no git, the Run first script and this checkout
+    # copied in. VM_DESKTOP=1 adds a stand-in browser (xdg-open writes the address it was given to ~/opened-urls),
+    # as on a desktop computer. Stops when this command is stopped.
+    if [ ! -f "$BASE" ]; then say "Downloading the $SYSTEM cloud image"; curl -fL --progress-bar -o "$BASE.part" "$URL"; mv "$BASE.part" "$BASE"; fi
+    rm -f "$RUN"
+    qemu-img create -q -f qcow2 -F qcow2 -b "$BASE" "$RUN" "${VM_SIZE:-64G}"
+    say "Starting a newly installed $SYSTEM ($SPEED, $MEMORY MB)"
+    boot "$RUN" -drive "file=$(seed new),if=virtio,format=raw,readonly=on"
+    trap stop EXIT
+    wait_ssh $((WAIT * 2))
+    until "${SSH[@]}" test -f /var/lib/starboard-new 2>/dev/null; do sleep 10; done
+    git bundle create -q "$DIR/starboard.bundle" HEAD
+    "${SCP[@]}" "$DIR/starboard.bundle" run-first.sh tester@127.0.0.1:
+    if [ "${VM_DESKTOP:-0}" = 1 ]; then
+      "${SSH[@]}" 'mkdir -p ~/.local/bin && printf "%s\n" "#!/bin/sh" "echo \"\$*\" >> \$HOME/opened-urls" > ~/.local/bin/xdg-open && chmod +x ~/.local/bin/xdg-open'
+    fi
+    say "READY: ssh -tt -i $KEY -p $SSH_PORT tester@127.0.0.1"
+    while kill -0 "$(cat "$PID")" 2>/dev/null; do sleep 5; done
     ;;
 
   bare)
