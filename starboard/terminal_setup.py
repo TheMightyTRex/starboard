@@ -713,7 +713,18 @@ class Terminal:
     # Questions ----------------------------------------------------------------------------------------------
 
     def _prompt(self, text):
-        return f"  {self.accent('›')} {text}" if self.fancy else text
+        """The question before the cursor. In the boxed look, a question longer than the window is wrapped at spaces:
+        its first lines are written above, so the line the answer is typed on fits."""
+        if not self.fancy:
+            return text
+        room = max(self.width - 6, 20)
+        if len(text) <= room:
+            return f"  {self.accent('›')} {text}"
+        lines = _wrap(text, room)
+        self.say(f"  {self.accent('›')} {lines[0]}")
+        for line in lines[1:-1]:
+            self.say(f"    {line}")
+        return f"    {lines[-1]}" + (" " if text.endswith(" ") else "")
 
     def _read(self, prompt, help_key, title="Help", extra=()):
         """One answer. q stops, b goes back a step, ? opens help, f sends feedback and r reports what just failed;

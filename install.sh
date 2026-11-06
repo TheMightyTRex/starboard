@@ -93,7 +93,7 @@ quietly() {
 # or with --start-apps when the browser set-up asks the Run first window. Folders are made, and given to the apps'
 # user, with Starboard's own helper image, the same way Starboard does it, so no sudo is needed.
 start_apps() {
-  local env=data/stack/.env file=data/stack/compose.yaml key dir top puid pgid log pid n=0 total running helper
+  local env=data/stack/.env file=data/stack/compose.yaml key dir top puid pgid log pid n=0 total running helper status
   [ -s "$file" ] && [ -s "$env" ] || { echo "There are no apps to start: the set-up has not written them."; return 0; }
   puid="$(sed -n 's/^PUID=//p' "$env" | tail -n 1)"; pgid="$(sed -n 's/^PGID=//p' "$env" | tail -n 1)"
   [[ "$puid" =~ ^[0-9]+$ ]] || puid="$(id -u)"; [[ "$pgid" =~ ^[0-9]+$ ]] || pgid="$(id -g)"
@@ -110,7 +110,11 @@ start_apps() {
     for d in "${dirs[@]}"; do top="$d"; while [ ! -e "$top" ]; do top="$(dirname "$top")"; done; binds+=(-v "$top:$top"); done
     docker run --rm "${binds[@]}" --entrypoint sh "$helper" -c "$1"
   }
-  quietly helped "mkdir -p '${dirs[0]}' '${dirs[1]}' && chown $puid:$pgid '${dirs[0]}' '${dirs[1]}'" \
+  # Each app's own settings folder too, before it starts: an app given a folder owned by root can stop at once
+  # (Seerr does: "EACCES: permission denied, mkdir '/app/config/logs/'").
+  local subs
+  subs="$(grep -o '\${CONFIG_DIR}/[A-Za-z0-9._-]*' "$file" | sort -u | sed "s#^\${CONFIG_DIR}#${dirs[0]}#; s#.*#'&'#" | paste -sd' ' -)"
+  quietly helped "mkdir -p '${dirs[0]}' '${dirs[1]}' $subs && chown $puid:$pgid '${dirs[0]}' '${dirs[1]}' $subs" \
     || { echo "Could not make the apps' folders, ${dirs[*]}."; return 1; }
   total="$(grep -c '^    container_name:' "$file" || true)"
   echo "Downloading $total apps and starting them. On a slow connection this can take 20 minutes or more."
@@ -122,16 +126,19 @@ start_apps() {
     [ -t 1 ] && printf '\r  Still working: %d min %02d s ' $(( n / 60 )) $(( n % 60 ))
   done
   [ -t 1 ] && printf '\r%40s\r' ""
-  if ! wait "$pid"; then
-    echo "Some apps did not start. The last lines Docker wrote:"
+  status=0
+  wait "$pid" || status=$?
+  # Folders Docker made for the apps are owned by root: give them to the apps' user, as Starboard's helper does.
+  quietly helped "for d in '${dirs[0]}'/* '${dirs[1]}'/media '${dirs[1]}'/downloads; do [ -d \"\$d\" ] && chown $puid:$pgid \"\$d\"; done; true" || true
+  if [ "$status" != 0 ]; then
+    running="$(docker compose -p media-stack -f "$file" --env-file "$env" ps -q --status running 2>/dev/null | wc -l)"
+    echo "$running of $total apps are running. Some did not start. The last lines Docker wrote:"
     tail -n 8 "$log" | fold -s -w $(( WRAP - 4 )) | sed 's/^/    /'
     rm -f "$log"
     echo "Fix what it says, then try again. From this folder: ./install.sh --start-apps"
     return 1
   fi
   rm -f "$log"
-  # Folders Docker made for the apps are owned by root: give them to the apps' user, as Starboard's helper does.
-  quietly helped "for d in '${dirs[0]}'/* '${dirs[1]}'/media '${dirs[1]}'/downloads; do [ -d \"\$d\" ] && chown $puid:$pgid \"\$d\"; done; true" || true
   running="$(docker compose -p media-stack -f "$file" --env-file "$env" ps -q --status running 2>/dev/null | wc -l)"
   echo "$running of $total apps are running. Open Starboard to see them."
 }

@@ -154,6 +154,9 @@ def main():
             last_out = time.time()
             continue
 
+        if "still working:" in low:  # the apps are downloading: a person waits
+            last_out = time.time()
+            continue
         # The answer, as a person would give it.
         if "[sudo] password" in low or re.search(r"password for \w+:", low):
             send(a.password + "\r", "the computer's password")
@@ -178,7 +181,8 @@ def main():
                 send(",".join(map(str, nums)) + "\r", "every number: " + ",".join(map(str, nums)))
         elif a.apps == "all" and "Install these?" in text and "your choice" in low:
             send("2\r", "2 (choose app by app)")
-        elif a.apps == "all" and re.search(r"install [^?]+\? \[y/n\]", low):
+        elif a.apps == "all" and re.search(r"install [^?]+\? \[y/n\]", " ".join(l.strip() for l in lines[max(screen.r - 3, 0):screen.r + 1]).lower()) \
+                and re.search(r"\[y/n\]: ?$", low.rstrip() + " "):
             send("y\r", "y (install this app)")
         elif a.plain and answers == 0:
             send("a\r", "a (accessible mode)")
