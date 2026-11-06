@@ -376,6 +376,15 @@ def host_folder(data_dir):
     return None if os.path.exists("/.dockerenv") else os.path.abspath(folder(data_dir))
 
 
+def chosen_keys(data_dir):
+    """The apps in data/stack/compose.yaml, by their container names (which are the catalogue's keys)."""
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            return re.findall(r"^    container_name: ([A-Za-z0-9._-]+)$", f.read(), re.M)
+    except OSError:
+        return []
+
+
 def job():
     with _lock:
         if _job.get("via") and not _job.get("finished"):

@@ -343,8 +343,14 @@ async function installStep(id, state, data, apps, go) {
     const status = el("div", { class: "stack-2", "aria-live": "polite" });
     const after = el("div", { class: "stack-4" });
     const showAfter = async (settle = false) => {
-      const waiting = el("p", { class: "muted", "aria-live": "polite" });
-      if (settle) after.replaceChildren(el("h3", { text: "Add them to Starboard" }), waiting);
+      const waiting = el("span", { text: "Waiting for the apps to answer…" });
+      if (settle) {
+        // One bar while the apps open their ports; Starboard adds them by itself too, so leaving the page is fine.
+        after.replaceChildren(el("h3", { text: "Add them to Starboard" }),
+          el("div", { class: "meter" }, el("div", { class: "meter__label", "aria-live": "polite" }, waiting),
+            el("div", { class: "progress progress--busy", role: "progressbar", "aria-label": "Waiting for the apps to answer", "aria-valuetext": "Working" }, el("span"))),
+          el("p", { class: "small muted", text: "Starboard adds them when they answer, even if you carry on with the set-up." }));
+      }
       const finder = await appFinder(undefined, { expect: settle ? [...state.apps] : null, shown: (t) => { waiting.textContent = t; } });
       const add = el("button", { type: "button", class: "btn btn--primary", hidden: !finder.add }, icon("plus"), "Add the ticked apps to Starboard");
       add.addEventListener("click", async () => { add.disabled = true; try { if (await finder.add()) add.hidden = true; } catch (e) { problem(e.message); } finally { add.disabled = false; } });

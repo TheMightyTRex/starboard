@@ -321,6 +321,68 @@ def is_loopback(address):
 KEEP_ALIVE_IDLE = 10  # seconds a kept-alive connection waits for the browser's next request
 
 
+def add_found(app, items):
+    """Adds apps that Search for new apps found. Each one's API key is read from its own settings file through
+    Docker when asked and possible; otherwise it is added without one, to fill in later."""
+    if not isinstance(items, list) or not items:
+        raise ValueError("Choose the apps to add")
+    cfg = app.config
+    added, missing_keys = [], []
+    for it in items[:60]:
+        if not isinstance(it, dict) or it.get("key") not in discovery.CATALOGUE:
+            continue
+        name, kind, _, _, needs_key, background = discovery.CATALOGUE[it["key"]]
+        url = str(it.get("url", ""))
+        if not re.match(r"^http://127\.0\.0\.1:\d{2,5}$", url):
+            continue  # only what discovery itself found on this computer
+        key = discovery.read_key(it["key"], str(it.get("container", ""))) if it.get("read_key") else None
+        service = {"name": name, "type": kind, "url": url, "background": background, "icon": it["key"],
+                   "container": str(it.get("container", "")) if it.get("container") else ""}
+        if key:
+            service["api_key"] = key
+        cfg.upsert_service(service)
+        added.append(name)
+        if needs_key and not key:
+            missing_keys.append(name)
+    services.forget()
+    return {"added": added, "missing_keys": missing_keys, "config": cfg.public()}
+
+
+def adopt_started_apps(app, keys, wait=5.0, most=300):
+    """After Install apps started its apps: waits for them to answer, then adds them to Starboard, so they reach the
+    dashboard even when the person has left the page. An app opens its port a while after it starts (Radarr and
+    Sonarr can take over a minute), so it looks again until each one it can recognise is there, or for most seconds."""
+    def run():
+        began = time.time()
+        while True:
+            job = stack.job()
+            if job.get("finished"):
+                break
+            if time.time() - began > 3600:
+                return
+            time.sleep(wait)
+        if not job.get("ok"):
+            return
+        began = time.time()
+        while True:
+            try:
+                items = discovery.search(app.config.data["services"])["items"]
+            except Exception:  # discovery is best effort; the person can still add them by hand
+                items = []
+            missing = set(keys) & set(discovery.CATALOGUE) - {i["key"] for i in items}
+            if not missing or time.time() - began >= most:
+                break
+            time.sleep(wait)
+        fresh = [i for i in items if not i.get("already")]
+        if fresh:
+            try:
+                added = add_found(app, [{**i, "read_key": i.get("can_read_key", False)} for i in fresh])
+                logs.event("info", "install apps", f"Added the new apps to Starboard: {', '.join(added['added'])}")
+            except Exception as e:  # noqa: BLE001  (logged; the person can add them in Manage apps)
+                logs.event("warning", "install apps", f"Could not add the new apps to Starboard: {e}")
+    threading.Thread(target=run, name="adopt-apps", daemon=True).start()
+
+
 class Handler(BaseHTTPRequestHandler):
     # HTTP/1.1 keeps the connection open for the page's styles, scripts and API calls, so a page costs one
     # connection and one thread instead of about 15 (a page took a third of the processor time in testing).
@@ -936,12 +998,16 @@ class Handler(BaseHTTPRequestHandler):
                 env_file = os.path.join(stack.folder(app.data_dir), ".env")
                 if os.path.exists(env_file) and not (host and containers.available()) and stack.starter_waiting(app.data_dir):
                     logs.event("info", "install apps", "Asked the Run first window to start the apps in data/stack")
-                    return self.json(200, stack.start_via_starter(app.data_dir))
+                    started = stack.start_via_starter(app.data_dir)
+                    adopt_started_apps(app, stack.chosen_keys(app.data_dir))
+                    return self.json(200, started)
                 if not host or not containers.available() or not os.path.exists(env_file):
                     raise ValueError("Starboard cannot start apps here. Run the command instead")
                 with open(env_file) as f:
                     logs.event("info", "install apps", "Starting the apps in data/stack")
-                    return self.json(200, stack.start(host, f.read()))
+                    started = stack.start(host, f.read())
+                    adopt_started_apps(app, stack.chosen_keys(app.data_dir))
+                    return self.json(200, started)
             if path == "/api/stack/job" and method == "GET":
                 return self.json(200, stack.job())
             # Starboard's own log (System, Logs)
@@ -1193,30 +1259,7 @@ class Handler(BaseHTTPRequestHandler):
         return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
 
     def add_found(self, items):
-        """Adds apps that Search for new apps found. Each one's API key is read from its own settings file
-        through Docker when asked and possible; otherwise it is added without one, to fill in later."""
-        if not isinstance(items, list) or not items:
-            raise ValueError("Choose the apps to add")
-        cfg = self.app.config
-        added, missing_keys = [], []
-        for it in items[:60]:
-            if not isinstance(it, dict) or it.get("key") not in discovery.CATALOGUE:
-                continue
-            name, kind, _, _, needs_key, background = discovery.CATALOGUE[it["key"]]
-            url = str(it.get("url", ""))
-            if not re.match(r"^http://127\.0\.0\.1:\d{2,5}$", url):
-                continue  # only what discovery itself found on this computer
-            key = discovery.read_key(it["key"], str(it.get("container", ""))) if it.get("read_key") else None
-            service = {"name": name, "type": kind, "url": url, "background": background, "icon": it["key"],
-                       "container": str(it.get("container", "")) if it.get("container") else ""}
-            if key:
-                service["api_key"] = key
-            cfg.upsert_service(service)
-            added.append(name)
-            if needs_key and not key:
-                missing_keys.append(name)
-        services.forget()
-        return {"added": added, "missing_keys": missing_keys, "config": cfg.public()}
+        return add_found(self.app, items)
 
     # Watch history import --------------------------------------------------------------
 
