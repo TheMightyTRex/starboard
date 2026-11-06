@@ -77,7 +77,10 @@ def handler_for(fake):
             if not user:
                 return self.reply(401, {"message": "sign in"})
             if path == "/users/roles":
-                return self.reply(200, [{"name": "admin", "permissions": 1}, {"name": "manager", "permissions": MANAGER_BITS}])
+                # As Reelix 0.8.6 answers: presets with an id, and the permission catalogue.
+                return self.reply(200, {"roles": [{"id": "admin", "name": "Admin", "permissions": 1},
+                                                  {"id": "manager", "name": "Manager", "permissions": MANAGER_BITS}],
+                                        "permissions": [{"bit": 1, "key": "ADMIN", "label": "Admin", "description": ""}]})
             if path == "/users" and method == "GET":
                 return self.reply(200, [{"id": u["id"], "username": u["username"]} for u in fake.users])
             if path == "/users":
@@ -87,7 +90,7 @@ def handler_for(fake):
             if path == "/auth/apikeys":
                 key = f"key-{user['username']}"
                 fake.keys[key] = user
-                return self.reply(201, {"api_key": key})
+                return self.reply(201, {"api_key": {"id": 1, "name": body["name"], "prefix": key[:4]}, "key": key})  # as Reelix 0.8.6
             if not user.get("admin"):
                 return self.reply(403, {"message": "admin only"})
             if path in fake.folders and method == "GET":

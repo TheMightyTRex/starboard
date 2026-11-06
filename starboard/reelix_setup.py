@@ -136,8 +136,9 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     # 2. The manager user and its key, unless Starboard has one already.
     key = next((s.get("api_key") for s in cfg.data["services"] if s.get("icon") == "reelix" and s.get("api_key")), None)
     if not key:
-        _, roles = admin.call("GET", "/users/roles")
-        role = next((r for r in (roles or []) if str(r.get("name", "")).lower() == "manager"), None)
+        _, roles = admin.call("GET", "/users/roles")  # {"roles": [{"id": "manager", "name", "permissions"}], "permissions": [...]}
+        presets = roles.get("roles", []) if isinstance(roles, dict) else (roles or [])
+        role = next((r for r in presets if isinstance(r, dict) and "manager" in (str(r.get("id", "")).lower(), str(r.get("name", "")).lower())), None)
         if not role:
             raise ReelixError("Reelix has no manager role to give Starboard")
         manager_password = secrets.token_urlsafe(24)
@@ -149,7 +150,9 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         manager = Session(base, opener=opener)
         manager.call("POST", "/auth/login", {"username": name, "password": manager_password, "remember_me": False})
         _, made = manager.call("POST", "/auth/apikeys", {"name": "Starboard"})
-        key = (made or {}).get("api_key") or (made or {}).get("key")
+        key = (made or {}).get("key")  # the full key, shown once; "api_key" describes it
+        if not isinstance(key, str):
+            key = (made or {}).get("api_key") if isinstance((made or {}).get("api_key"), str) else None
         if not key:
             raise ReelixError("Reelix did not give Starboard a key")
         done.append("Made a manager key for Starboard (not an admin key)")
