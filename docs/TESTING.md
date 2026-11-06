@@ -100,7 +100,7 @@ the setup code.
 
 ## Latest results
 
-From release 0.9.2 (5 November 2026): unit tests, journeys, install tests on Ubuntu 24.04 and 64-bit ARM, and the Run first script on Ubuntu 24.04. The Run first script on Debian and Fedora is from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
+From release 0.10.0 (7 November 2026): unit tests, journeys, and fresh installs on Debian 13, Ubuntu 26.04, Linux Mint 22.3 and the emulated Raspberry Pi OS, through the terminal and the browser. From 0.9.2: install tests on Ubuntu 24.04 and 64-bit ARM, and the Run first script on Ubuntu 24.04. The Run first script on Debian and Fedora is from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
 
 | | Result |
 |---|---|

@@ -2,3 +2,5 @@
 09652c38c436007ef040927e16c88018f28ae1da:tests/test_logs.py:generic-api-key:16
 # A made-up token in the test that checks feedback reports hide what was typed (tests/test_terminal_setup.py), not a real one.
 99eca9cb824091fb11492ec18004299763b38669:tests/test_terminal_setup.py:generic-api-key:219
+# A made-up WireGuard key the test driver types into the VPN step (tools/vm/drive.py), not a real one.
+cd3fb88af79c1a0607d77dc614a6f5d6102b52e8:tools/vm/drive.py:generic-api-key:36

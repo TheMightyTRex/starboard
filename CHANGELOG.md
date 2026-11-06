@@ -7,16 +7,35 @@ add features.
 
 ## [Unreleased]
 
+## [0.10.0] (7 November 2026)
+
+Reelix in place of the separate media apps, set up for you, and the fixes from testing on four systems.
+
 ### Added
-- **Usenet providers for SABnzbd:** when you choose SABnzbd, both set-ups have a step that lists some Usenet
-  providers. Manage apps lists them too. In the browser each name is a link that opens in a new tab; the terminal
-  shows each address in full. They are affiliate links, marked Ad before the list.
-- **What Usenet may be used for:** the Usenet step, Manage apps and About say to download only files you have the
-  right to, and that Starboard does not host or provide any files.
+- **Reelix in Install apps:** For a new server, Install apps installs Reelix, one app for films, series, books, audiobooks, music and radio, in place of Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr and Seerr. Servers that run those keep them.
+- **Reelix set up for you:** After the apps start, Starboard makes Reelix's admin account with your Starboard password, a manager key for itself, the library folders, and qBittorrent with a password of its own, then shows Reelix's queue and calendar on your dashboard.
+- **Which Reelix:** Both set-ups ask which Reelix to install: Reelix (recommended), or Reelix with YouTube and Spotify downloads, which needs about 600 MB more disk.
+- **Settings, Reelix:** Shows which Reelix runs and switches to the other one with your password. Your library, users and settings stay, and it will not go back to an older Reelix.
+- **Usenet providers for SABnzbd:** When you choose SABnzbd, both set-ups list some Usenet providers. They are affiliate links, marked Ad, and the step says to download only files you have the right to.
+- **Help for moving to Reelix:** A new help page says what moves from Radarr, Sonarr and the others into Reelix, what does not, and what to type in afterwards.
 
 ### Changed
-- **No affiliate note on the VPN step:** the terminal set-up said some VPN providers had affiliate links in the help;
-  none do, so the note is gone.
+- **One step list for both set-ups:** The browser and terminal set-ups read the same step names and order, and offer the recommended answer first.
+- **Install apps explains Reelix:** Start here and the connect guide describe Reelix, a TMDB key and the sites to search, instead of the separate apps.
+- **No affiliate note on the VPN step:** The terminal set-up said some VPN providers had affiliate links in the help; none do, so the note is gone.
+
+### Fixed
+- **A fresh install ended with no apps running:** Without Docker access for Starboard, the apps were written but never started. The installer now starts them, and the browser set-up asks the Run first window to.
+- **Only some apps reached the dashboard:** Starboard looked for new apps the moment they started. Both set-ups now keep looking until the list stops growing.
+- **Sign out and back in:** On a fresh system the installer's second pass ran outside the new docker group and stopped. It now runs inside it.
+- **Keys pressed together:** Over SSH, several key presses could arrive at once and the tick list ignored them. Each key is now read in turn.
+- **Text cut at 80 columns:** The installer's explanations, long questions and Docker's messages now wrap at spaces.
+- **Jellystat's database:** Starboard changed the owner of the database's folder while it was setting up, so Jellystat could never connect. Database folders are now left alone.
+- **A download that broke off:** A broken download stopped every app. The installer tries again twice, and the terminal set-up offers Try again or Carry on without them.
+- **Ubuntu 26.04's sudo:** Ubuntu 26.04 shows a star for each letter of the password; the help said nothing shows.
+
+### Security
+- **Checks:** Tests, browser journeys, the help check and the private details check ran on this release. Reelix gets a manager key, never an admin key, and its one-time set-up token is deleted once used.
 
 ## [0.9.2] (5 November 2026)
 
@@ -806,7 +825,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.9.2...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/TheMightyTRex/starboard/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/TheMightyTRex/starboard/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/TheMightyTRex/starboard/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/TheMightyTRex/starboard/compare/v0.8.0...v0.9.0

@@ -84,7 +84,7 @@ suggests an author for each folder from Open Library.
 
 ## If it does not work
 
-- **TMDB isn't configured:** add a TMDB API key in **Settings**, **Metadata**, then move the app again.
+- **Reelix says TMDB is not configured:** add a TMDB API key in **Settings**, **Metadata**, then move the app again.
 - **A quality profile named "Any" already exists:** Lidarr's and Radarr's profiles share a name. Rename the profile
   in Lidarr (for example to **Music Any**), then move Lidarr again. The artists that use it come across then.
 - **"invalid type: map, expected a string"** when adding an author: some of the author's works on Open Library are
