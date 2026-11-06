@@ -907,7 +907,7 @@ finish
 # ./install.sh --start-apps for it and leaves the result next to the request. data/starter, touched every few
 # seconds, tells Starboard this window is open.
 starter() {
-  local key req status result=data/stack/start-result.json
+  local key req status job result=data/stack/start-result.json
   echo
   printf '%s\n' "Keep this window open until the set-up in the browser says your apps are running: they are downloaded and started from here. Press q to close it." \
     | fold -s -w $(( COLS > 1 ? COLS - 1 : 79 ))
@@ -921,10 +921,14 @@ starter() {
       echo "Downloading and starting your apps, as the set-up asked. The browser shows how it goes."
       status=0
       if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
-        sg docker -c "./install.sh --start-apps" > data/stack/start.log 2>&1 < /dev/null || status=$?
+        sg docker -c "./install.sh --start-apps" > data/stack/start.log 2>&1 < /dev/null &
       else
-        ./install.sh --start-apps > data/stack/start.log 2>&1 < /dev/null || status=$?
+        ./install.sh --start-apps > data/stack/start.log 2>&1 < /dev/null &
       fi
+      job=$!
+      # Still open while it works: Starboard reads a quiet window as a closed one.
+      while kill -0 "$job" 2>/dev/null; do : > data/starter; sleep 3; done
+      wait "$job" || status=$?
       python3 -I -c 'import json, sys
 log = open(sys.argv[3], errors="replace").read()[-6000:]
 json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(sys.argv[4] + ".new", "w"))' \

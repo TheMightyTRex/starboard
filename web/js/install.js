@@ -366,7 +366,7 @@ async function installStep(id, state, data, apps, go) {
           form.hidden = true;
           // One bar for the job, updated in place; a problem goes below it (WIZARD.md section 5, A job's progress).
           const words = el("span", { text: "Downloading and starting the apps. Please wait, this can take some time…" });
-          const time = el("span", { class: "numeric", style: "white-space: nowrap", text: "0 min 00 s" });
+          const time = el("span", { class: "numeric nowrap", text: "0 min 00 s" });
           const bar = el("div", { class: "progress progress--busy", role: "progressbar", "aria-label": "Starting the apps",
             "aria-valuetext": "Working" }, el("span"));
           status.replaceChildren(el("div", { class: "meter" }, el("div", { class: "meter__label" }, words, time), bar));

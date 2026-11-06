@@ -121,3 +121,6 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 
 /* The Help link in the header looks like the Display button beside it. */
 .site-header a.icon-btn { color: inherit; text-decoration: none; }
+
+/* Keeps a short value, such as a running time, on one line. */
+.nowrap { white-space: nowrap; }

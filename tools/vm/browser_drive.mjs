@@ -47,6 +47,7 @@ for (let n = 0; n < 250; n++) {
   if (same >= 4) { fault("stuck", `${state.url} ${state.head} ${state.current}`); break; }
   if (state.busy && same < 3) { await page.waitForTimeout(5000); continue; }
 
+  if (state.url === "/index.html" && steps.some((s) => s.pressed === "Go to Apps")) { steps.at(-1).note = "reached the dashboard"; break; }
   // Fill what a person would fill.
   for (const input of await page.locator('main input[type="password"]:visible').all()) {
     if (!(await input.inputValue())) await input.fill(pw);
