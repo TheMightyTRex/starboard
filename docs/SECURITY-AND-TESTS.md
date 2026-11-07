@@ -142,6 +142,10 @@ private Docker network with no way out, so it can never reach other apps on the 
   purpose, and display settings kept in the browser.
 - **A private address, signed in only:** `/api/network` lists the addresses you can open Starboard from, so it
   includes the server's home network address. The signed-out scan finds none.
+- **Two false alarms, checked on 7 November 2026 and left out for those addresses only:** "SQL injection" on
+  `/api/history?hours=`, where `hours` is only looked up in a fixed list (1, 6 or 24) and Starboard has no SQL
+  database; the answers differed because the history grew between ZAP's two requests. "Path traversal" on
+  `/api/config/general`, where the server name is free text that is saved and shown back, never used as a path.
 
 ## Security scans, 4 November 2026 (0.7.6)
 
