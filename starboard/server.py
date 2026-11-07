@@ -1268,7 +1268,7 @@ class Handler(BaseHTTPRequestHandler):
                 since = stack.seconds_since_start(app.data_dir)
                 return self.json(200, {"starting": since is not None and since < stack.STARTING_FOR})
             if path == "/api/stack/job" and method == "GET":
-                return self.json(200, stack.job())
+                return self.json(200, stack.job(app.data_dir))
             # Starboard's own log (System, Logs)
             if path == "/api/logs" and method == "GET":
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)

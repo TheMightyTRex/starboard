@@ -546,15 +546,22 @@ async function installStep(id, state, data, apps, go) {
           // One bar for the job, updated in place; a problem goes below it (WIZARD.md section 5, A job's progress).
           const words = el("span", { text: "Downloading and starting the apps. Please wait, this can take some time…" });
           const time = el("span", { class: "numeric nowrap", text: "0 min 00 s" });
+          // After the timer: how many apps are on the computer, then how many are running (from Docker).
+          const count = el("span", { class: "numeric nowrap" });
+          const counted = (p) => !p ? "" : p.installed < p.total ? `${p.installed} of ${p.total} installed` : `${p.running} of ${p.total} running`;
           const bar = el("div", { class: "progress progress--busy", role: "progressbar", "aria-label": "Starting the apps",
             "aria-valuetext": "Working" }, el("span"));
-          status.replaceChildren(el("div", { class: "meter" }, el("div", { class: "meter__label" }, words, time), bar));
+          status.replaceChildren(el("div", { class: "meter" }, el("div", { class: "meter__label" }, words,
+            el("span", { class: "nowrap" }, time, count)), bar));
           const began = Date.now();
           for (;;) {
             await new Promise((r) => setTimeout(r, 3000));
             const secs = Math.round((Date.now() - began) / 1000);
             time.textContent = `${Math.floor(secs / 60)} min ${String(secs % 60).padStart(2, "0")} s`;
             const j = await api("/api/stack/job");
+            const n = counted(j.progress);
+            count.textContent = n ? ` · ${n}` : "";
+            if (n) bar.setAttribute("aria-valuetext", n);
             if (!j.finished) continue;
             log.textContent = j.log;
             bar.classList.remove("progress--busy");

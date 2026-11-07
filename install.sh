@@ -197,6 +197,16 @@ sa_seed() {
     rm -f data/stack/want-sab-servers
   fi
 }
+# How far Downloading and starting has got, after the timer: apps whose image is on this computer, then apps
+# running (the same words as the browser set-up's Start step).
+sa_count() {
+  local have=0 img running
+  for img in $SA_IMAGES; do docker image inspect "$img" > /dev/null 2>&1 && have=$(( have + 1 )); done
+  [ "${SA_NOW:-0}" -gt 0 ] || return 0
+  if [ "$have" -lt "$SA_NOW" ]; then echo "$have of $SA_NOW installed"; return; fi
+  running="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps -q --status running 2>/dev/null | wc -l)"
+  echo "$running of $SA_NOW running"
+}
 sa_up() {
   # A download that breaks off (the connection reset, a timeout) is tried again, twice, after a pause: Docker keeps
   # what it has, so each try carries on from there.
@@ -280,7 +290,12 @@ start_apps() {
   JOB_N=0; JOB_OF=3
   job "Making the apps' folders" sa_folders
   job "Giving the apps their first settings" sa_seed
+  # One line per app that starts now (not the "later" ones), so two apps on one image both count.
+  SA_IMAGES="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" config --images 2>/dev/null)"
+  SA_NOW="$(printf '%s\n' "$SA_IMAGES" | grep -c . || true)"
+  JOB_COUNT=sa_count
   job "Downloading and starting $SA_TOTAL apps" sa_up
+  JOB_COUNT=""; COUNT_NOW=""
   running="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps -q --status running 2>/dev/null | wc -l)"
   say ""
   ok "$running of $SA_TOTAL apps are running. Open Starboard to see them."

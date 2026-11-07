@@ -883,11 +883,68 @@ def seconds_since_start(data_dir):
     return time.time() - max(times) if times else None
 
 
-def job():
+def job(data_dir=None):
     with _lock:
         if _job.get("via") and not _job.get("finished"):
             _starter_result(_job)
-        return {k: v for k, v in _job.items() if k not in ("via", "request")}
+        out = {k: v for k, v in _job.items() if k not in ("via", "request")}
+    # How far it has got, from Docker itself ("5 of 12 installed", then "12 of 12 running"): the helper's own output
+    # only arrives at the end. Left out when Docker cannot be asked (the Run first window starts the apps then).
+    if data_dir and out.get("started"):
+        counts = progress(data_dir)
+        if counts:
+            out["progress"] = counts
+    return out
+
+
+def _services(data_dir):
+    """(name, image) for each app in data/stack/compose.yaml that starts now: not the "later" ones."""
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return []
+    found, inside = [], False
+    for line in text.splitlines():
+        if re.match(r"^\S", line):
+            inside = line.startswith("services:")
+            continue
+        if not inside:
+            continue
+        m = re.match(r"^  ([\w.-]+):\s*$", line)
+        if m:
+            found.append({"name": m.group(1), "image": "", "later": False})
+        elif found and (m := re.match(r"^    image:\s*(\S+)", line)):
+            found[-1]["image"] = m.group(1).strip("'\"")
+        elif found and line.startswith("    profiles:") and "later" in line:
+            found[-1]["later"] = True
+    return [(f["name"], f["image"]) for f in found if f["image"] and not f["later"]]
+
+
+def _tagged(image):
+    """An image name as Docker lists it: with :latest when it has no tag."""
+    return image if "@" in image or ":" in image.rsplit("/", 1)[-1] else image + ":latest"
+
+
+def progress(data_dir):
+    """{total, installed, running} for the apps being started, or None when Docker cannot be asked."""
+    services = _services(data_dir)
+    if not services:
+        return None
+    try:
+        images = containers.docker("GET", "/images/json", timeout=5)
+        query = containers.urllib.parse.quote(json.dumps({"label": [f"com.docker.compose.project={PROJECT}"], "status": ["running"]}))
+        running = containers.docker("GET", f"/containers/json?filters={query}", timeout=5)
+    except (containers.DockerError, OSError):
+        return None
+    have = set()
+    for img in images or []:
+        have.update(img.get("RepoTags") or [])
+        have.update(img.get("RepoDigests") or [])
+    up = {(c.get("Labels") or {}).get("com.docker.compose.service") for c in running or []}
+    return {"total": len(services),
+            "installed": sum(_tagged(i) in have or any(d.endswith(i.split("@", 1)[-1]) for d in have if "@" in i) for _, i in services),
+            "running": sum(n in up for n, _ in services)}
 
 
 # Without Docker access, the Run first window can start the apps (run-first.sh, starter): Starboard leaves a request

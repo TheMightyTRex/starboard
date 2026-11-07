@@ -417,14 +417,18 @@ frame() {
 # The words beside a job's bar: its name, which job of how many, what it is doing now when the job says (JOB_DETAIL,
 # such as "step 3 of 8" while Starboard builds), and the time so far, so a long job never looks stuck.
 JOB_DETAIL=""
+# JOB_COUNT names a function that prints how far a job has got, such as "5 of 12 installed": shown after the timer.
+JOB_COUNT=""
 JOB_START=0
 DETAIL_NOW=""
 job_words() {
   local name="$1" n="$2" of="$3" tick="$4" t=$(( SECONDS - JOB_START )) words
   if [ -n "$JOB_DETAIL" ] && [ $(( tick % 8 )) = 0 ]; then DETAIL_NOW="$("$JOB_DETAIL" 2>/dev/null)"; fi
+  if [ -n "$JOB_COUNT" ] && [ $(( tick % 8 )) = 0 ]; then COUNT_NOW="$("$JOB_COUNT" 2>/dev/null)"; fi
   words="$name ($n of $of)"
   [ -z "$DETAIL_NOW" ] || words+=", $DETAIL_NOW"
   if [ "$t" -ge 60 ]; then words+=" · $(( t / 60 )) min $(printf '%02d' $(( t % 60 ))) s"; elif [ "$t" -ge 3 ]; then words+=" · $t s"; fi
+  [ -z "$JOB_COUNT" ] || [ -z "$COUNT_NOW" ] || words+=" · $COUNT_NOW"
   printf '%s' "$words"
 }
 
