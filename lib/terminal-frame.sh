@@ -1,11 +1,17 @@
 # shellcheck shell=bash
-# The terminal frame shared by Starboard's terminal scripts: the Run first script (run-first.sh, which has a copy of
-# this file between its "terminal-frame" lines, because it arrives on its own through curl) and the installer
-# (install.sh, which reads this file). The rules are in the design system's docs/TERMINAL.md: a heading box and
+# The terminal frame for an app's terminal scripts. Its source is the design system (terminal/terminal-frame.sh in
+# TheMightyTRex/design-system; tools/sync.py copies it): change it there. In Starboard, the Run first script
+# (run-first.sh, which has a copy of this file between its "terminal-frame" lines, because it arrives on its own
+# through curl) and the installer (install.sh, which reads this file). The rules are in docs/TERMINAL.md: a heading box and
 # progress bar at the top, the menu on the bottom two lines, only the lines between them scrolling; numbered answers
 # with the recommended one first; help as a box over the step; one bar for a job; plain lines for screen readers.
 # A script sets IN (the terminal to read, or empty), PLAIN, STEPS, TITLES, LOG and an err function, then sources it.
+# For its own name and feedback it sets APP_NAME, APP_VERSION, ISSUES (the repository for the feedback link, owner/name)
+# and, when it has its own feedback flow, a function called app_feedback.
 # tests/test_terminal_frame.py checks that run-first.sh's copy is the same. 7 November 2026.
+
+APP_NAME="${APP_NAME:-Starboard}"
+ISSUES="${ISSUES:-TheMightyTRex/starboard}"
 
 # The page ------------------------------------------------------------------------------------------------------
 
@@ -103,10 +109,10 @@ note() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "⚠") " "" "$1"; else say "No
 header() {
   local title="$1" step="$2" inner=$(( W - 4 )) right="" left gap bar filled pct
   [ "$step" -gt 0 ] && [ "$step" -le "$STEPS" ] && right="step $step of $STEPS"
-  left="Starboard | $title"
+  left="$APP_NAME | $title"
   gap=$(( inner - ${#left} - ${#right} - 2 )); [ "$gap" -ge 1 ] || gap=1
   HEADER=("$(dim "┌$(rep ─ $(( inner + 2 )))┐")"
-          "$(dim "│")  $(c 1 Starboard)$(dim " | ")$(accent "$title")$(rep " " "$gap")$(dim "$right")  $(dim "│")"
+          "$(dim "│")  $(c 1 "$APP_NAME")$(dim " | ")$(accent "$title")$(rep " " "$gap")$(dim "$right")  $(dim "│")"
           "$(dim "└$(rep ─ $(( inner + 2 )))┘")")
   bar=$(( W - 8 ))  # with its two spaces either side and the percentage, the bar ends where the box does
   filled=$(( bar * (step - 1) / STEPS )); [ "$filled" -le "$bar" ] || filled=$bar
@@ -138,11 +144,11 @@ page() {
   MENU_RIGHT=""
   SCREEN=()
   if [ "$FANCY" = 0 ] && [ "$STEP" -gt "$STEPS" ]; then
-    printf '\n== Starboard | %s\n' "${TITLES[$STEP]}"
+    printf '\n== %s | %s\n' "$APP_NAME" "${TITLES[$STEP]}"
     return
   fi
   if [ "$FANCY" = 0 ]; then
-    printf '\n== Starboard | %s (step %d of %d)\n' "${TITLES[$STEP]}" "$STEP" "$STEPS"
+    printf '\n== %s | %s (step %d of %d)\n' "$APP_NAME" "${TITLES[$STEP]}" "$STEP" "$STEPS"
     if [ -z "$IN" ]; then :
     elif [ "$STEP" -gt "${FIRST_BACK:-1}" ]; then echo "Type b to go back, ? for help, f to send feedback or q to stop."
     else echo "Type ? for help, f to send feedback or q to stop."; fi
@@ -324,25 +330,18 @@ redraw_step() {
   screen_lines | tail -n $(( ROWS - 3 - ${#HEADER[@]} )) | sed "s/^/$PAD/"
 }
 
-# Feedback, from any question: f, or r for Report this problem after a job failed. Starboard's terminal set-up has
-# the whole flow (the kinds, a question or two, the report, then a QR code, the link or a file): it is used when
-# Starboard is on this computer. Before it is (the Run first script's first steps), the report is a link to type
-# or copy. Nothing typed as an answer goes in either.
-FEEDBACK_WHO="${FEEDBACK_WHO:-Starboard}"
+# Feedback, from any question: f, or r for Report this problem after a job failed. An app with its own feedback flow
+# (the kinds, a question or two, the report, then a QR code, the link or a file: docs/TERMINAL.md section 7) defines
+# app_feedback, which returns non-zero when it cannot run yet. Otherwise, or before the app is on the computer, the
+# report is a link to type or copy. Nothing typed as an answer goes in either.
+FEEDBACK_WHO="${FEEDBACK_WHO:-$APP_NAME}"
 feedback() {
-  local problem="$1" dir="${FEEDBACK_DIR:-.}" title link words
-  if command -v python3 >/dev/null && [ -f "$dir/starboard/terminal_setup.py" ]; then
-    finish
-    local extra=()
-    [ -z "$problem" ] || extra+=(--problem "$problem")
-    [ "$FANCY" = 1 ] || extra+=(--plain)
-    ( cd "$dir" && python3 -m starboard.terminal_setup --feedback "$FEEDBACK_WHO|$STEP|${TITLES[$STEP]}" "${extra[@]}" < "$IN" )
-    return 0
-  fi
+  local problem="$1" title link words
+  if declare -F app_feedback >/dev/null && app_feedback "$problem"; then return 0; fi
   title="$FEEDBACK_WHO, step $STEP: ${TITLES[$STEP]}"
   [ -z "$problem" ] || title="$title: $problem"
-  words="Starboard $(printf '%s' "${APP_VERSION:-}" | tr -cd '0-9A-Za-z.-'), $(. /etc/os-release 2>/dev/null; printf '%s' "${PRETTY_NAME:-Linux}"), $(uname -m)."
-  link="https://github.com/TheMightyTRex/starboard/issues/new?title=$(urlencode "$title")&body=$(urlencode "$words")&labels=feedback"
+  words="$APP_NAME $(printf '%s' "${APP_VERSION:-}" | tr -cd '0-9A-Za-z.-'), $(. /etc/os-release 2>/dev/null; printf '%s' "${PRETTY_NAME:-Linux}"), $(uname -m)."
+  link="https://github.com/$ISSUES/issues/new?title=$(urlencode "$title")&body=$(urlencode "$words")&labels=feedback"
   popup "Send feedback" "Open this link on your phone or another computer to write your report on GitHub. It already says where you are and which system this is. Nothing you typed here is in it.
 
 $link"

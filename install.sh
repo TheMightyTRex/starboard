@@ -92,6 +92,17 @@ APP_VERSION="$(cat VERSION 2>/dev/null || echo unknown)"
 STEPS=1
 TITLES=("" "Starboard installer")
 FEEDBACK_WHO="Installer"
+# Starboard's own feedback flow (starboard/terminal_setup.py --feedback), used by the shared frame's f and r keys once
+# Starboard is on this computer; before that, the frame shows a link instead.
+app_feedback() {
+  local dir="${FEEDBACK_DIR:-.}" extra=()
+  command -v python3 >/dev/null && [ -f "$dir/starboard/terminal_setup.py" ] || return 1
+  finish
+  [ -z "$1" ] || extra+=(--problem "$1")
+  [ "$FANCY" = 1 ] || extra+=(--plain)
+  ( cd "$dir" && python3 -m starboard.terminal_setup --feedback "$FEEDBACK_WHO|$STEP|${TITLES[$STEP]}" "${extra[@]}" < "$IN" )
+  return 0
+}
 # shellcheck source=lib/terminal-frame.sh
 . lib/terminal-frame.sh
 

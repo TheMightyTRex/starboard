@@ -25,6 +25,17 @@ DIR="${STARBOARD_DIR:-$HOME/starboard}"
 # Feedback (f): the terminal set-up's report and QR code once Starboard is downloaded here; a link before that.
 FEEDBACK_WHO="Run first"
 FEEDBACK_DIR="$DIR"
+# Starboard's own feedback flow (starboard/terminal_setup.py --feedback), used by the shared frame's f and r keys once
+# Starboard is on this computer; before that, the frame shows a link instead.
+app_feedback() {
+  local dir="${FEEDBACK_DIR:-.}" extra=()
+  command -v python3 >/dev/null && [ -f "$dir/starboard/terminal_setup.py" ] || return 1
+  finish
+  [ -z "$1" ] || extra+=(--problem "$1")
+  [ "$FANCY" = 1 ] || extra+=(--plain)
+  ( cd "$dir" && python3 -m starboard.terminal_setup --feedback "$FEEDBACK_WHO|$STEP|${TITLES[$STEP]}" "${extra[@]}" < "$IN" )
+  return 0
+}
 # Every way this script can stop has an error number (RF-01 and so on). The help page Run first error numbers says
 # what each means and how to put it right; keep the two in step (tests/test_run_first_errors.py checks).
 ERR_URL="https://themightytrex.github.io/starboard/help/topics/run-first-errors.html"
@@ -64,13 +75,19 @@ TITLES=("" "Welcome" "Check this computer" "Install what is missing" "Download S
 
 # terminal-frame: start (a copy of lib/terminal-frame.sh; change that file, then copy it here)
 # shellcheck shell=bash
-# The terminal frame shared by Starboard's terminal scripts: the Run first script (run-first.sh, which has a copy of
-# this file between its "terminal-frame" lines, because it arrives on its own through curl) and the installer
-# (install.sh, which reads this file). The rules are in the design system's docs/TERMINAL.md: a heading box and
+# The terminal frame for an app's terminal scripts. Its source is the design system (terminal/terminal-frame.sh in
+# TheMightyTRex/design-system; tools/sync.py copies it): change it there. In Starboard, the Run first script
+# (run-first.sh, which has a copy of this file between its "terminal-frame" lines, because it arrives on its own
+# through curl) and the installer (install.sh, which reads this file). The rules are in docs/TERMINAL.md: a heading box and
 # progress bar at the top, the menu on the bottom two lines, only the lines between them scrolling; numbered answers
 # with the recommended one first; help as a box over the step; one bar for a job; plain lines for screen readers.
 # A script sets IN (the terminal to read, or empty), PLAIN, STEPS, TITLES, LOG and an err function, then sources it.
+# For its own name and feedback it sets APP_NAME, APP_VERSION, ISSUES (the repository for the feedback link, owner/name)
+# and, when it has its own feedback flow, a function called app_feedback.
 # tests/test_terminal_frame.py checks that run-first.sh's copy is the same. 7 November 2026.
+
+APP_NAME="${APP_NAME:-Starboard}"
+ISSUES="${ISSUES:-TheMightyTRex/starboard}"
 
 # The page ------------------------------------------------------------------------------------------------------
 
@@ -168,10 +185,10 @@ note() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "⚠") " "" "$1"; else say "No
 header() {
   local title="$1" step="$2" inner=$(( W - 4 )) right="" left gap bar filled pct
   [ "$step" -gt 0 ] && [ "$step" -le "$STEPS" ] && right="step $step of $STEPS"
-  left="Starboard | $title"
+  left="$APP_NAME | $title"
   gap=$(( inner - ${#left} - ${#right} - 2 )); [ "$gap" -ge 1 ] || gap=1
   HEADER=("$(dim "┌$(rep ─ $(( inner + 2 )))┐")"
-          "$(dim "│")  $(c 1 Starboard)$(dim " | ")$(accent "$title")$(rep " " "$gap")$(dim "$right")  $(dim "│")"
+          "$(dim "│")  $(c 1 "$APP_NAME")$(dim " | ")$(accent "$title")$(rep " " "$gap")$(dim "$right")  $(dim "│")"
           "$(dim "└$(rep ─ $(( inner + 2 )))┘")")
   bar=$(( W - 8 ))  # with its two spaces either side and the percentage, the bar ends where the box does
   filled=$(( bar * (step - 1) / STEPS )); [ "$filled" -le "$bar" ] || filled=$bar
@@ -203,11 +220,11 @@ page() {
   MENU_RIGHT=""
   SCREEN=()
   if [ "$FANCY" = 0 ] && [ "$STEP" -gt "$STEPS" ]; then
-    printf '\n== Starboard | %s\n' "${TITLES[$STEP]}"
+    printf '\n== %s | %s\n' "$APP_NAME" "${TITLES[$STEP]}"
     return
   fi
   if [ "$FANCY" = 0 ]; then
-    printf '\n== Starboard | %s (step %d of %d)\n' "${TITLES[$STEP]}" "$STEP" "$STEPS"
+    printf '\n== %s | %s (step %d of %d)\n' "$APP_NAME" "${TITLES[$STEP]}" "$STEP" "$STEPS"
     if [ -z "$IN" ]; then :
     elif [ "$STEP" -gt "${FIRST_BACK:-1}" ]; then echo "Type b to go back, ? for help, f to send feedback or q to stop."
     else echo "Type ? for help, f to send feedback or q to stop."; fi
@@ -389,25 +406,18 @@ redraw_step() {
   screen_lines | tail -n $(( ROWS - 3 - ${#HEADER[@]} )) | sed "s/^/$PAD/"
 }
 
-# Feedback, from any question: f, or r for Report this problem after a job failed. Starboard's terminal set-up has
-# the whole flow (the kinds, a question or two, the report, then a QR code, the link or a file): it is used when
-# Starboard is on this computer. Before it is (the Run first script's first steps), the report is a link to type
-# or copy. Nothing typed as an answer goes in either.
-FEEDBACK_WHO="${FEEDBACK_WHO:-Starboard}"
+# Feedback, from any question: f, or r for Report this problem after a job failed. An app with its own feedback flow
+# (the kinds, a question or two, the report, then a QR code, the link or a file: docs/TERMINAL.md section 7) defines
+# app_feedback, which returns non-zero when it cannot run yet. Otherwise, or before the app is on the computer, the
+# report is a link to type or copy. Nothing typed as an answer goes in either.
+FEEDBACK_WHO="${FEEDBACK_WHO:-$APP_NAME}"
 feedback() {
-  local problem="$1" dir="${FEEDBACK_DIR:-.}" title link words
-  if command -v python3 >/dev/null && [ -f "$dir/starboard/terminal_setup.py" ]; then
-    finish
-    local extra=()
-    [ -z "$problem" ] || extra+=(--problem "$problem")
-    [ "$FANCY" = 1 ] || extra+=(--plain)
-    ( cd "$dir" && python3 -m starboard.terminal_setup --feedback "$FEEDBACK_WHO|$STEP|${TITLES[$STEP]}" "${extra[@]}" < "$IN" )
-    return 0
-  fi
+  local problem="$1" title link words
+  if declare -F app_feedback >/dev/null && app_feedback "$problem"; then return 0; fi
   title="$FEEDBACK_WHO, step $STEP: ${TITLES[$STEP]}"
   [ -z "$problem" ] || title="$title: $problem"
-  words="Starboard $(printf '%s' "${APP_VERSION:-}" | tr -cd '0-9A-Za-z.-'), $(. /etc/os-release 2>/dev/null; printf '%s' "${PRETTY_NAME:-Linux}"), $(uname -m)."
-  link="https://github.com/TheMightyTRex/starboard/issues/new?title=$(urlencode "$title")&body=$(urlencode "$words")&labels=feedback"
+  words="$APP_NAME $(printf '%s' "${APP_VERSION:-}" | tr -cd '0-9A-Za-z.-'), $(. /etc/os-release 2>/dev/null; printf '%s' "${PRETTY_NAME:-Linux}"), $(uname -m)."
+  link="https://github.com/$ISSUES/issues/new?title=$(urlencode "$title")&body=$(urlencode "$words")&labels=feedback"
   popup "Send feedback" "Open this link on your phone or another computer to write your report on GitHub. It already says where you are and which system this is. Nothing you typed here is in it.
 
 $link"
@@ -615,7 +625,7 @@ card_end() { [ "$FANCY" = 0 ] || say "  $(c 36 "╰$(rep ─ $(( CARD_W - 1 )))�
 # terminal-frame: end
 
 # The logo: the monitor with four tiles, and the star, in the logo's two colours (tile and star).
-LOGO=(
+LOGO_ART=(
 "               {S}▄{R}"
 "             {S}▄▄█▄▄{R}"
 " {T}███████████{S}▀█████▀{R}"
@@ -628,7 +638,7 @@ LOGO=(
 "      {T}██████{R}"
 )
 # The same logo at 14 characters by 7 lines, for a window of 24 to 27 lines.
-LOGO_SMALL=(
+LOGO_ART_SMALL=(
 "          {S}▄{R}"
 " {T}▄▄▄▄▄▄▄{S}▀████{R}"
 " {T}█ ▄▄▄ ▄▄{S}█▀█{R}"
@@ -646,7 +656,7 @@ logo_size() {
 logo_line() {
   local t="" s="" r="" art
   if [ "$COLOUR" = 1 ]; then t=$'\033[38;5;105m'; s=$'\033[38;5;209m'; r=$'\033[0m'; fi
-  if [ "$2" = small ]; then art="${LOGO_SMALL[$1]}"; else art="${LOGO[$1]}"; fi
+  if [ "$2" = small ]; then art="${LOGO_ART_SMALL[$1]}"; else art="${LOGO_ART[$1]}"; fi
   local line="${art//\{T\}/$t}"
   line="${line//\{S\}/$s}"
   printf '%s' "${line//\{R\}/$r}"
@@ -660,9 +670,11 @@ redraw_step_1() { welcome; }
 
 OS_ID=""; OS_NAME="Linux"
 if [ -r /etc/os-release ]; then
+  # Read in a shell of its own: the file sets names such as LOGO, NAME and VERSION that would replace this script's.
   # shellcheck disable=SC1091
-  . /etc/os-release
-  OS_ID="${ID:-}"; OS_NAME="${PRETTY_NAME:-Linux}"
+  OS_ID="$(. /etc/os-release; printf '%s' "${ID:-}")"
+  # shellcheck disable=SC1091
+  OS_NAME="$(. /etc/os-release; printf '%s' "${PRETTY_NAME:-Linux}")"
 fi
 PKG=""
 if command -v apt-get >/dev/null; then PKG=apt; elif command -v dnf >/dev/null; then PKG=dnf; fi
@@ -850,11 +862,11 @@ welcome() {
     para "$([ "$FANCY" = 0 ] && printf 'Welcome to Starboard. ')This sets up everything else for you: it checks this computer, installs what is missing when you say yes, downloads Starboard and starts its installer. Nothing changes until you say yes."
   else
     if [ "$size" = big ]; then
-      art=("${LOGO[@]}"); col=22
+      art=("${LOGO_ART[@]}"); col=22
       text=("" "$(c 1 "Welcome to Starboard")" "" "This sets up everything else for you:" "it checks this computer, installs what"
             "is missing when you say yes, downloads" "Starboard and starts its installer." "" "Nothing changes until you say yes.")
     else
-      art=("${LOGO_SMALL[@]}"); col=18
+      art=("${LOGO_ART_SMALL[@]}"); col=18
       text=("$(c 1 "Welcome to Starboard")" "" "This checks this computer, installs" "what is missing when you say yes,"
             "downloads Starboard and starts its" "installer. Nothing changes until" "you say yes.")
     fi
