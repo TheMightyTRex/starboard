@@ -1355,6 +1355,11 @@
     gap: var(--space-3);
     font-size: var(--text-sm);
   }
+  /* The right-hand words (the timer and the count) stay on one line; the words on the left wrap instead. */
+  .meter__label > :last-child:not(:first-child) {
+    flex: none;
+    white-space: nowrap;
+  }
   /* Rows: a list where each row has a title, a meta line and actions at the end. */
   .rows {
     display: grid;
@@ -3011,6 +3016,9 @@
     height: 32px;
   }
   /* Two or three lines, then an ellipsis (overviews in rows). */
+  .nowrap {
+    white-space: nowrap;
+  }
   .clamp-2,
   .clamp-3 {
     display: -webkit-box;
