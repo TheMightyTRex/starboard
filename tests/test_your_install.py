@@ -148,6 +148,14 @@ class YourInstallTest(unittest.TestCase):
         s = next(x for x in self.app.config.data["services"] if x.get("url") == "http://127.0.0.1:6789")
         self.assertTrue(s.get("api_key", "").startswith("starboard:"))
 
+    def test_apps_count_as_starting_for_a_while_after_they_start(self):
+        self.assertFalse(self.api.call("GET", "/api/stack/starting")["starting"])
+        stack.want_adopted(self.tmp.name, ["jellyfin"], 9e12)
+        self.assertTrue(self.api.call("GET", "/api/stack/starting")["starting"])
+        old = os.path.join(stack.folder(self.tmp.name), "adopt.json")
+        os.utime(old, (1, 1))
+        self.assertFalse(self.api.call("GET", "/api/stack/starting")["starting"])
+
 
 if __name__ == "__main__":
     unittest.main()

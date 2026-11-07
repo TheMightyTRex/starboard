@@ -290,9 +290,39 @@ def nzbget_rpc(key, base="http://127.0.0.1:6789", opener=None):
             time.sleep(3)
 
 
+NZBGET_FOLDERS = {"MainDir": "/data/downloads/usenet", "DestDir": "/data/downloads/usenet/completed",
+                  "InterDir": "/data/downloads/usenet/intermediate"}
+
+
+def nzbget_options(options):
+    """NZBGet's settings changed for Reelix, or None when nothing needs changing. linuxserver's image writes the
+    finished and unfinished folders as fixed paths (/downloads/completed), so each is set, not only MainDir. Reelix
+    sends films to "movies" and series to "tv": NZBGet's own "Series" category becomes "tv" (names are matched
+    without regard to capitals, so "Movies" already works)."""
+    values = {o["Name"]: o.get("Value", "") for o in options if isinstance(o, dict) and "Name" in o}
+    want = dict(NZBGET_FOLDERS)
+    names = {k: v for k, v in values.items() if k.startswith("Category") and k.endswith(".Name")}
+    lower = {v.lower() for v in names.values()}
+    if "tv" not in lower:
+        series = next((k for k, v in names.items() if v.lower() == "series"), None)
+        if series:
+            want[series] = "tv"
+        else:
+            n = 1 + max([int(k[8:-5]) for k in names if k[8:-5].isdigit()] or [0])
+            want[f"Category{n}.Name"] = "tv"
+    if "movies" not in lower:
+        n = 1 + max([int(k[8:-5]) for k in [*names, *[k for k in want if k.startswith("Category")]] if k[8:-5].isdigit()] or [0])
+        want[f"Category{n}.Name"] = "movies"
+    if all(values.get(k) == v for k, v in want.items()):
+        return None
+    merged = [{"Name": o["Name"], "Value": want.get(o["Name"], o.get("Value", ""))} for o in options if "Name" in o]
+    merged += [{"Name": k, "Value": v} for k, v in want.items() if k not in values]
+    return merged
+
+
 def nzbget_ready(base="http://127.0.0.1:6789", opener=None):
-    """Sets NZBGet's download folder inside the shared media folder, so a finished download moves into the library
-    at once; returns a function giving (user, password) from data/stack/.env."""
+    """Sets NZBGet's download folders inside the shared media folder, so a finished download moves into the library
+    at once, and the categories Reelix uses; returns a function giving (user, password) from data/stack/.env."""
     def prepare(data_dir):
         from . import stack
         key = stack.nzbget_key(data_dir)
@@ -300,12 +330,9 @@ def nzbget_ready(base="http://127.0.0.1:6789", opener=None):
             raise ReelixError("NZBGet's sign-in is not in data/stack/.env")
         user, _, pw = key.partition(":")
         rpc = nzbget_rpc(key, base, opener)
-        options = rpc("config") or []
-        if not any(o.get("Name") == "MainDir" and o.get("Value") == "/data/downloads/usenet" for o in options):
-            changed = [{"Name": o["Name"], "Value": "/data/downloads/usenet" if o["Name"] == "MainDir" else o["Value"]}
-                       for o in options]
-            if rpc("saveconfig", [changed]):
-                rpc("reload")
+        changed = nzbget_options(rpc("config") or [])
+        if changed and rpc("saveconfig", [changed]):
+            rpc("reload")
         return user, pw
     return prepare
 

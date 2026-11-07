@@ -1220,6 +1220,11 @@ class Handler(BaseHTTPRequestHandler):
                 # The terminal set-up started the apps through the installer: Starboard adds them as they answer.
                 adopt_started_apps(app, stack.chosen_keys(app.data_dir), after_job=False)
                 return self.json(200, {"keys": (stack.adopting(app.data_dir) or ([], 0))[0]})
+            if path == "/api/stack/starting" and method == "GET":
+                # The apps page calls an app that does not answer "still starting", not "not responding", for a while
+                # after the apps start: on a small server some take minutes to answer the first time.
+                since = stack.seconds_since_start(app.data_dir)
+                return self.json(200, {"starting": since is not None and since < stack.STARTING_FOR})
             if path == "/api/stack/job" and method == "GET":
                 return self.json(200, stack.job())
             # Starboard's own log (System, Logs)

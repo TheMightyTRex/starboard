@@ -828,6 +828,20 @@ def adopting(data_dir):
     return (keys, until) if keys and until > time.time() else None
 
 
+STARTING_FOR = 900  # seconds after apps are started in which an app that does not answer is "still starting"
+
+
+def seconds_since_start(data_dir):
+    """Seconds since Starboard, the Run first window or the installer last started the apps, or None when unknown:
+    the start job's own time, else when data/stack/adopt.json was written (the terminal set-up)."""
+    times = [_job["started"]] if _job.get("started") else []
+    try:
+        times.append(os.path.getmtime(os.path.join(folder(data_dir), "adopt.json")))
+    except OSError:
+        pass
+    return time.time() - max(times) if times else None
+
+
 def job():
     with _lock:
         if _job.get("via") and not _job.get("finished"):

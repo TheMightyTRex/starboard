@@ -201,6 +201,27 @@ class ReelixSetupTest(unittest.TestCase):
         with self.assertRaises(reelix_setup.ReelixError):
             reelix_setup.set_up(Services(), self.tmp.name, "x")
 
+class NzbgetOptionsTest(unittest.TestCase):
+    """NZBGet as linuxserver's image writes it (fixed /downloads folders, a "Series" category) made ready for Reelix."""
+    LSIO = [{"Name": "MainDir", "Value": "/data/downloads/usenet"}, {"Name": "DestDir", "Value": "/downloads/completed"},
+            {"Name": "InterDir", "Value": "/downloads/intermediate"}, {"Name": "Category1.Name", "Value": "Movies"},
+            {"Name": "Category2.Name", "Value": "Series"}, {"Name": "Category3.Name", "Value": "Music"}]
+
+    def test_folders_go_in_the_media_folder_and_series_becomes_tv(self):
+        from starboard.reelix_setup import nzbget_options
+        got = {o["Name"]: o["Value"] for o in nzbget_options(self.LSIO)}
+        self.assertEqual(got["DestDir"], "/data/downloads/usenet/completed")
+        self.assertEqual(got["InterDir"], "/data/downloads/usenet/intermediate")
+        self.assertEqual(got["Category2.Name"], "tv")
+        self.assertEqual(got["Category1.Name"], "Movies")  # Reelix matches names without regard to capitals
+
+    def test_nothing_changes_the_second_time_and_missing_categories_are_added(self):
+        from starboard.reelix_setup import nzbget_options
+        self.assertIsNone(nzbget_options(nzbget_options(self.LSIO)))
+        bare = [o for o in self.LSIO if not o["Name"].startswith("Category")]
+        names = {o["Value"] for o in nzbget_options(bare) if o["Name"].endswith(".Name")}
+        self.assertEqual(names, {"tv", "movies"})
+
 
 if __name__ == "__main__":
     unittest.main()

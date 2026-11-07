@@ -134,13 +134,21 @@ function summaryText(services) {
   return parts.join(" · ");
 }
 
+// True for a while after the apps were started (Install apps, Your install): an app that does not answer then is
+// most likely still starting, so the notice says so instead of showing an error.
+let startedRecently = false;
+
 function renderNotice(services) {
   const box = $("#attention");
   const down = services.filter((s) => AppDetails.status(s).state === "down");
   if (!down.length) { box.replaceChildren(); box.dataset.sig = ""; box.hidden = true; return; }
   const one = down.length === 1 ? down[0] : null;
-  const title = one ? `${one.name} is not responding` : `${down.length} apps are not responding`;
-  const text = one ? `${AppDetails.sentence(AppDetails.state.status[one.id]?.message || "It did not answer")} Check that its container is running.`
+  const starting = startedRecently;
+  const title = starting ? (one ? `${one.name} is still starting` : `${down.length} apps are still starting`)
+    : one ? `${one.name} is not responding` : `${down.length} apps are not responding`;
+  const text = starting
+    ? `${down.map((s) => s.name).join(", ")} ${one ? "has" : "have"} not answered yet. Apps can take a few minutes to answer after they start, longer on a small server. This clears when they do.`
+    : one ? `${AppDetails.sentence(AppDetails.state.status[one.id]?.message || "It did not answer")} Check that its container is running.`
     : `${down.map((s) => s.name).join(", ")}. Check that their containers are running.`;
   const sig = `${title}|${text}`;
   if (box.dataset.sig === sig) return; // keep the button, and focus on it, when nothing changed
@@ -148,7 +156,7 @@ function renderNotice(services) {
   const action = one
     ? el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(one.id, e.currentTarget) }, `View ${one.name}`)
     : el("button", { type: "button", class: "btn", onclick: () => { pressed.clear(); pressed.add("down"); setShowInAddress(); render({ announceCount: true }); } }, "Show them");
-  box.replaceChildren(el("div", { class: "notice", "data-tone": "danger" }, icon("circle-alert"),
+  box.replaceChildren(el("div", { class: "notice", "data-tone": starting ? "muted" : "danger" }, icon(starting ? "hourglass" : "circle-alert"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action));
   box.hidden = false;
 }
@@ -220,6 +228,8 @@ startPage().then(async () => {
     $("#apps-summary").textContent = `Could not load your apps: ${e.message}`;
     return;
   }
+  try { startedRecently = (await api("/api/stack/starting")).starting; } catch { startedRecently = false; }
+  if (startedRecently) setTimeout(() => { startedRecently = false; render(); }, 15 * 60 * 1000);
   AppDetails.onChange(() => render());
   render();
   appChangeNotices();
