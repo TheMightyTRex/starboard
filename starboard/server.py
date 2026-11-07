@@ -1011,9 +1011,14 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/queue/action" and method == "POST":
                 data = self.body()
                 service = cfg.service(str(data.get("service", "")))
-                if not service or service["type"] not in ("sonarr", "radarr", "lidarr", "readarr") or not str(data.get("id", "")).isdigit():
-                    return self.error(400, "Choose a download in Sonarr, Radarr, Lidarr or Readarr")
-                services.queue_action(service, int(data["id"]), str(data.get("action", "")))
+                radio = next((r for r in services.reelix_native(cfg.data["services"]) if service and r["id"] == service["id"]), None)
+                if not service or (service["type"] not in ("sonarr", "radarr", "lidarr", "readarr") and not radio) \
+                        or not str(data.get("id", "")).isdigit():
+                    return self.error(400, "Choose a download in Reelix, Sonarr, Radarr, Lidarr or Readarr")
+                if radio:  # the Reelix link entry: a radio download, through Reelix's own queue
+                    services.radio_queue_action(radio, int(data["id"]), str(data.get("action", "")))
+                else:
+                    services.queue_action(service, int(data["id"]), str(data.get("action", "")))
                 logs.event("info", "downloads", f"{data.get('action')} for a download in {service['name']}")
                 return self.json(200, {"ok": True})
             if path in ("/api/containers", "/api/containers/check", "/api/containers/update"):

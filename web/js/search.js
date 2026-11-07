@@ -89,6 +89,18 @@ function renderResults() {
   $("#results-section").hidden = !results.length;
 }
 
+// Radio shows and podcasts are followed in Reelix itself: a link to its radio search, with the same words.
+async function radioLink(q) {
+  const box = $("#radio-search");
+  const reelix = (await getConfig().catch(() => ({ services: [] }))).services
+    .find((s) => s.icon === "reelix" && s.type === "link" && s.enabled !== false && s.link);
+  box.hidden = !reelix;
+  if (!reelix) return;
+  box.replaceChildren("Looking for a radio show or podcast? ",
+    el("a", { href: `${reachableUrl(reelix.link)}/radio/add?term=${encodeURIComponent(q)}`, target: "_blank", rel: "noopener noreferrer" },
+      `Search for "${q}" in Reelix radio`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })), ".");
+}
+
 async function runSearch(query) {
   const q = query.trim();
   const summary = $("#search-summary");
@@ -113,6 +125,7 @@ async function runSearch(query) {
     renderFilters();
     $("#results").replaceChildren();
     renderResults();
+    radioLink(q);
   } catch (e) {
     summary.textContent = e.message;
     announce(e.message);

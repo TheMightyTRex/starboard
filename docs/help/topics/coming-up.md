@@ -2,12 +2,13 @@
 
 # Find out what is coming up
 
-The Coming up page lists the new episodes, films, albums and books your apps expect, from yesterday to as far
+The Coming up page lists the new episodes, films, albums, books and radio episodes your apps expect, from yesterday to as far
 ahead as you choose. You can see them as a list by day or on a month calendar.
 
 ## Before you begin
 
-- At least one of Sonarr, Radarr, Lidarr or Readarr is in Starboard. Read [Add an app](add-an-app.md).
+- Reelix, or at least one of Sonarr, Radarr, Lidarr or Readarr, is in Starboard. Read [Add an app](add-an-app.md).
+  Radio comes from the shows you follow in Reelix. Read [Follow radio shows and podcasts](follow-radio-shows.md).
 
 ## Steps
 

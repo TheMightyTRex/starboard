@@ -37,6 +37,7 @@ FOLDERS = [
     ("ebooks", "/bookrootfolders", {"kind": "ebook"}, "/data/media/books"),
     ("audiobooks", "/bookrootfolders", {"kind": "audiobook"}, "/data/media/audiobooks"),
     ("music", "/musicrootfolders", {"kind": "music"}, "/data/media/music"),
+    ("radio", "/radio/rootfolders", {"kind": "radio"}, "/data/media/radio"),
 ]
 # Starboard's dashboard entries for Reelix: (service type, name, compatible address, the groups that need it).
 COMPAT = [
@@ -249,7 +250,9 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         if groups & needs:
             cfg.upsert_service({"name": name, "type": kind, "url": host + prefix, "api_key": key, "icon": "reelix",
                                 "link": host, "description": "Reelix"})
-    cfg.upsert_service({"name": "Reelix", "type": "link", "url": host, "icon": "reelix",
+    # The link entry keeps the manager key too: radio has no compatible address, so Coming up and Downloads read
+    # Reelix's own radio pages with it (services.reelix_native).
+    cfg.upsert_service({"name": "Reelix", "type": "link", "url": host, "icon": "reelix", "api_key": key,
                         "description": "Films, series, books, music and radio"})
     done.append("Added Reelix to your apps")
 

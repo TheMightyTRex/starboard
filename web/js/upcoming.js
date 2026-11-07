@@ -9,7 +9,7 @@ let status = null; // "Wanted", "In library" or null
 let app = null; // an app name or null
 let services = new Map(); // app name -> app from /api/config (type for the icon, link for "Open in")
 let month = null; // Calendar view, moved to another month: { start: Date (the 1st), items } or null for the normal window
-const ICONS = { sonarr: "tv", radarr: "film", lidarr: "music", readarr: "book" };
+const ICONS = { sonarr: "tv", radarr: "film", lidarr: "music", readarr: "book", radio: "radio" };
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -25,7 +25,7 @@ function dayHeading(date) {
   return diff === 0 ? `Today, ${words}` : diff === 1 ? `Tomorrow, ${words}` : diff === -1 ? `Yesterday, ${words}` : words;
 }
 
-function hasTime(i) { return services.get(i.service_name)?.type === "sonarr"; }
+function hasTime(i) { return i.kind === "radio" || services.get(i.service_name)?.type === "sonarr"; }
 const timeOf = (i) => new Date(i.when).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 // Sonarr sends the series as the title and "S02E03 · Episode name" as the detail.
@@ -42,7 +42,7 @@ function describe(i) {
 
 // The item's poster or cover; the app's icon when there is none or it does not load.
 function cover(i, extra = "") {
-  const type = services.get(i.service_name)?.type;
+  const type = i.kind === "radio" ? "radio" : services.get(i.service_name)?.type;
   const box = el("div", { class: `cover ${extra}`.trim(), "aria-hidden": "true" });
   const fallback = () => box.replaceChildren(icon(ICONS[type] || "calendar", extra ? 18 : 24));
   if (i.image) {
@@ -78,7 +78,7 @@ function renderFilters() {
       statusBox.append(b);
     }
     for (const name of [...new Set(items.map((i) => i.service_name))].sort((a, b) => a.localeCompare(b, "en-GB"))) {
-      const b = chipButton("", false, () => { app = app === name ? null : name; update(); }, ICONS[services.get(name)?.type] || "calendar");
+      const b = chipButton("", false, () => { app = app === name ? null : name; update(); }, ICONS[services.get(name)?.type] || (items.some((i) => i.service_name === name && i.kind === "radio") ? "radio" : "calendar"));
       b.append(el("span"));
       b.dataset.value = name;
       $("#app-filters").append(b);
@@ -279,6 +279,7 @@ async function chooseView(next) {
 // The item's own page in its app, from the slug the app gave (Sonarr /series/x, Radarr /movie/x, and so on).
 function itemPage(svc, i) {
   if (!i.slug || !/^[\w.-]+$/.test(i.slug)) return "";
+  if (i.kind === "radio") return `/radio/shows/${i.slug}`; // the show's page in Reelix
   const base = { sonarr: "/series/", radarr: "/movie/", lidarr: "/artist/", readarr: "/author/" }[svc?.type];
   return base ? base + i.slug : "";
 }
@@ -290,7 +291,7 @@ function openItem(i, opener) {
   const svc = services.get(i.service_name);
   const past = date < new Date();
   const facts = [
-    [svc?.type === "sonarr" ? "Airs" : "Released", hasTime(i) ? `${day} at ${timeOf(i)}` : day],
+    [svc?.type === "sonarr" ? "Airs" : i.kind === "radio" ? "Broadcast" : "Released", hasTime(i) ? `${day} at ${timeOf(i)}` : day],
     ["App", i.service_name],
     ["Status", i.have ? "In the library" : past
       ? `Wanted. ${i.service_name} has not found it yet.`

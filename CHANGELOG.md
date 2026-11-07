@@ -7,6 +7,12 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Radio in Starboard:** Install apps has a Radio group, which makes the radio folder and sets it up in Reelix. Episodes of the radio shows and podcasts you follow in Reelix show in Coming up, and radio downloads show in Downloads, where you can remove them or find another copy. Discover's Search links to the same words in Reelix radio. A new help page explains how to follow a show and listen in Audiobookshelf.
+
+### Changed
+- **Storage counts radio with audiobooks:** A folder named radio or podcasts now counts as Audiobooks and radio, not Everything else.
+
 ## [0.10.0] (7 November 2026)
 
 Reelix in place of the separate media apps, set up for you; Basics, Full install or Everything; NZBGet; and the fixes from testing on four systems.

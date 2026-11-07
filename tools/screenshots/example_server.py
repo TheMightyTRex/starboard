@@ -110,6 +110,8 @@ class FakeArr(BaseHTTPRequestHandler):
             if p.startswith("/abs/api/users"):
                 return self.send_json({"users": [{"id": "u1", "username": "sam"}, {"id": "u2", "username": "alex"}, {"id": "u3", "username": "jo"}]})
             return self.send_json({"libraries": []})
+        if p.startswith("/reelix/api/v1/"):  # a made-up Reelix: radio, read from its own API (Coming up, Downloads)
+            return self.send_json(example_reelix(p[len("/reelix/api/v1"):].split("?")[0]))
         film = "/films" in p
         if "/system/status" in p:
             return self.send_json({"version": "6.0.4" if film else "4.0.16"})
@@ -152,6 +154,30 @@ class FakeArr(BaseHTTPRequestHandler):
             return self.send_json([{"path": "/media", "freeSpace": 10**12}])
         return self.send_json([], 200)
 
+
+
+def example_reelix(path):
+    """Reelix's own radio and queue answers, with made-up shows."""
+    shows = [{"id": 1, "title": "The Example Hour"}, {"id": 2, "title": "Sample Science Weekly"}]
+    if path == "/radio/shows":
+        return {"items": shows, "total": len(shows), "page": 1, "page_size": 20}
+    if path.startswith("/radio/shows/") and path.endswith("/episodes"):
+        show = int(path.split("/")[3])
+        eps = []
+        for n, day in enumerate(range(-1, 30, 7 if show == 1 else 10)):
+            when = (today + dt.timedelta(days=day)).isoformat() + ("T19:00:00Z" if show == 1 else "T07:30:00Z")
+            eps.append({"id": show * 100 + n, "series_number": 4 if show == 1 else None, "number": n + 1,
+                        "title": ["Tides", "Lighthouses", "Harbours", "Storms", "Islands"][n % 5] if show == 1 else f"Ask a scientist {n + 1}",
+                        "first_broadcast": when, "monitored": True, "status": "in_library" if day < 0 else "not_released",
+                        "synopsis": "A made-up episode for the preview."})
+        return {"series": [], "episodes": eps}
+    if path == "/queue":
+        return {"items": [{"id": 31, "title": "The.Example.Hour.S04E02.mp3", "download_client": "NZBGet", "download_id": "ex31",
+                           "state": "downloading", "client_state": "downloading", "progress": 0.35, "size": 60_000_000,
+                           "remaining": 39_000_000, "eta_secs": 240, "messages": [], "added": today.isoformat() + "T09:00:00Z",
+                           "media": {"kind": "radio_episode", "id": 101, "title": "Lighthouses", "subtitle": "The Example Hour"}}],
+                "total": 1, "page": 1, "page_size": 0}
+    return []
 
 
 def call(method, path, body=None, cookie=None):
@@ -293,10 +319,11 @@ def main():
         for name, kind, group, path in APPS:
             url = f"http://127.0.0.1:{FAKE_PORT}/{path}" if path else "http://127.0.0.1:9/"
             call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": url, "api_key": KEY if kind != "link" else ""}, cookie)
+        # Reelix, as Install apps adds it: a link with the manager key, so radio shows in Coming up and Downloads.
+        call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": "Downloads", "icon": "reelix",
+                                       "url": f"http://127.0.0.1:{FAKE_PORT}/reelix", "api_key": KEY}, cookie)
         if EXAMPLE_CONTAINERS:
             # Reelix, seen at 0.7.0 before, so opening Apps, Updates finds it updated to 0.7.1.
-            call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": "Downloads",
-                                           "url": f"http://127.0.0.1:{FAKE_PORT}/reelix", "api_key": ""}, cookie)
             _, body = call("GET", "/api/config", cookie=cookie)
             rid = next(sv["id"] for sv in json.loads(body)["services"] if sv["name"] == "Reelix")
             (DATA / "app-changes.json").write_text(json.dumps({"seen": {rid: "0.7.0"}, "notices": {}}))

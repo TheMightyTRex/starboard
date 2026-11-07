@@ -27,6 +27,7 @@ GROUPS = [
     ("music", "Music", "Albums and artists", "media", False),
     ("ebooks", "Ebooks", "Books to read", "media", False),
     ("audiobooks", "Audiobooks", "Books to listen to, with progress on every device", "media", False),
+    ("radio", "Radio", "Radio shows and podcasts, followed in Reelix and played in Audiobookshelf", "media", False),
     ("comics", "Comics", "Comics and graphic novels", "media", False),
     ("watching", "Watching", "Play everything, with friends invited", "core", True),
     ("downloads", "Downloads", "The apps Reelix sends downloads to", "core", True),
@@ -68,7 +69,7 @@ _pullable = {}
 REPLACED_BY_REELIX = {"radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr", "profilarr", "decluttarr", "unpackerr",
                       "janitorr"}
 APPS = {
-    "reelix": {"name": "Reelix", "groups": ["movies", "tv", "music", "ebooks", "audiobooks"],
+    "reelix": {"name": "Reelix", "groups": ["movies", "tv", "music", "ebooks", "audiobooks", "radio"],
                "image": os.environ.get("STARBOARD_REELIX_IMAGE") or REELIX_IMAGE, "ports": ["7700:7700"],
                "volumes": [f"{CFG}/reelix:/config", f"{DATA}:/data"], "env": {**LSIO, "UMASK": "002"}, "memory": 60,
                "notes": "One app for films, series, books, audiobooks, music and radio, with requests and its own sites to search."},
@@ -89,7 +90,7 @@ APPS = {
                         "env": {"POSTGRES_DB": "storyarr", "POSTGRES_USER": "storyarr", "POSTGRES_PASSWORD": "${STORYARR_DB_PASSWORD}"},
                         "secret": "STORYARR_DB_PASSWORD"},
                  "default": False, "notes": "Ebooks and audiobooks in one place, with series and reading lists."},
-    "audiobookshelf": {"name": "Audiobookshelf", "groups": ["audiobooks"], "image": "ghcr.io/advplyr/audiobookshelf:latest",
+    "audiobookshelf": {"name": "Audiobookshelf", "groups": ["audiobooks", "radio"], "image": "ghcr.io/advplyr/audiobookshelf:latest",
                        "ports": ["13378:80"], "env": {"TZ": "${TZ}"}, "memory": 150,
                        "volumes": [f"{CFG}/audiobookshelf/config:/config", f"{CFG}/audiobookshelf/metadata:/metadata", f"{DATA}/media:/media"]},
     "kapowarr": {"name": "Kapowarr", "groups": ["comics"], "image": "mrcas/kapowarr:latest", "ports": ["5656:5656"], "memory": 100,
@@ -163,7 +164,7 @@ APPS = {
 
 # Folders made inside the data folder, so downloads and the library share one disk and moves are instant.
 DATA_FOLDERS = {"movies": ["media/movies"], "tv": ["media/tv"], "music": ["media/music"], "ebooks": ["media/books"],
-                "audiobooks": ["media/audiobooks"], "comics": ["media/comics", "downloads/comics"],
+                "audiobooks": ["media/audiobooks"], "radio": ["media/radio"], "comics": ["media/comics", "downloads/comics"],
                 "downloads": ["downloads/torrents", "downloads/usenet"]}
 
 PROJECT = "media-stack"

@@ -47,7 +47,8 @@ and starts them. At the end, the apps are running and Starboard shows how to con
    each app. This can take several minutes the first time.
 11. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
 12. Starboard sets Reelix up for you: its admin account (`admin`, with your Starboard password), the library
-    folders, and qBittorrent as its download app.
+    folders (radio included, when you chose it), and qBittorrent as its download app. To follow radio shows and
+    podcasts, read [Follow radio shows and podcasts](follow-radio-shows.md).
 13. Follow **Connect your apps, in this order**. It gives each app's address, folders and settings to type. In
     Reelix, add a TMDB API key (films and series need it) and the sites to search.
 14. Select **Go to Apps**.

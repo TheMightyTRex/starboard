@@ -5,7 +5,7 @@
 // a legend or labels, a description and a table, and every part can be reached with Tab for its value.
 
 const MEDIA = [
-  { key: "tv", name: "TV" }, { key: "movies", name: "Films" }, { key: "audiobooks", name: "Audiobooks" },
+  { key: "tv", name: "TV" }, { key: "movies", name: "Films" }, { key: "audiobooks", name: "Audiobooks and radio" },
   { key: "music", name: "Music" }, { key: "books", name: "Books and comics" },
   { key: "downloads", name: "Downloads waiting" }, { key: "other", name: "Everything else" },
 ];

@@ -85,6 +85,7 @@ Each guide is a journey through several topics, in order.
 - [Download only at certain hours](topics/set-download-hours.md)
 - [Approve or decline requests](topics/approve-requests.md)
 - [Find out what is coming up](topics/coming-up.md)
+- [Follow radio shows and podcasts](topics/follow-radio-shows.md)
 - [Choose a design for the Apps page](topics/choose-a-design.md)
 - [Change text size, theme and other display settings](topics/display-and-accessibility.md)
 

@@ -497,7 +497,7 @@ MEDIA_TYPES = ("tv", "movies", "audiobooks", "music", "books", "downloads", "oth
 _TYPE_NAMES = {
     "tv": ("tv", "tv shows", "shows", "series", "television", "anime"),
     "movies": ("movies", "movie", "films", "film"),
-    "audiobooks": ("audiobooks", "audiobook", "audio books"),
+    "audiobooks": ("audiobooks", "audiobook", "audio books", "radio", "podcasts"),  # radio and podcasts play in Audiobookshelf too
     "music": ("music", "albums"),
     "books": ("books", "ebooks", "comics", "manga", "magazines"),
     "downloads": ("torrents", "usenet", "downloads", "download", "temp_downloads", "incomplete", "complete", "nzb"),

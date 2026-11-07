@@ -79,6 +79,100 @@
         7
       ],
       "alt": "The Add an app panel, with API key (step 6) and Test connection (step 7) outlined, and Connected shown under it"
+    },
+    {
+      "topic": "follow-radio-shows",
+      "file": "follow-radio-shows-1-search-link.png",
+      "page": "search.html?q=The%20Example%20Hour",
+      "width": 1280,
+      "height": 900,
+      "marks": [
+        {
+          "t": "$.rail a[href='/search.html']",
+          "step": 1,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "$#q",
+          "step": 2,
+          "side": "bottom",
+          "tail": 70
+        },
+        {
+          "t": "$#radio-search a",
+          "step": 3,
+          "side": "top",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        1,
+        2,
+        3
+      ],
+      "alt": "The Search page with example data, with Discover (step 1), the search box (step 2) and Search for \"The Example Hour\" in Reelix radio (step 3) outlined"
+    },
+    {
+      "topic": "follow-radio-shows",
+      "file": "follow-radio-shows-2-coming-up.png",
+      "page": "upcoming.html",
+      "width": 1280,
+      "height": 900,
+      "run": "const li = [...document.querySelectorAll('li.row')].find((x) => x.textContent.includes('The Example Hour')); li.dataset.shot = 'radio';",
+      "marks": [
+        {
+          "t": "$.rail a[href='/search.html']",
+          "step": 1,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "$#app-filters [data-value=\"Reelix\"]",
+          "step": 2,
+          "side": "bottom",
+          "tail": 70
+        },
+        {
+          "t": "$li[data-shot=radio]",
+          "step": 3,
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        1,
+        2,
+        3
+      ],
+      "alt": "The Coming up page with example data, with Discover (step 1), the Reelix filter (step 2) and The Example Hour, Series 4, episode 1, Tides (step 3) outlined"
+    },
+    {
+      "topic": "follow-radio-shows",
+      "file": "follow-radio-shows-3-downloads.png",
+      "page": "downloads.html",
+      "width": 1280,
+      "height": 900,
+      "run": "const li = [...document.querySelectorAll('li.row')].find((x) => x.textContent.includes('The Example Hour')); li.dataset.shot = 'radio'; li.scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$.rail a[href='/downloads.html']",
+          "step": 4,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "$li[data-shot=radio]",
+          "step": 5,
+          "side": "top",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        4,
+        5
+      ],
+      "alt": "The Downloads page with example data, with Activity (step 4) and The Example Hour, Lighthouses, downloading in Reelix (step 5) outlined"
     }
   ]
 }

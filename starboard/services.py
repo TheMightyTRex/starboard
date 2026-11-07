@@ -60,7 +60,7 @@ POOL = _LazyPool()
 
 
 class ServiceError(Exception):
-    pass
+    status = None  # the app's HTTP status, when it answered with an error
 
 
 # Shared answers ----------------------------------------------------------------
@@ -130,7 +130,9 @@ def _api(service, path, params=None, method="GET", body=None, timeout=TIMEOUT):
             pass
         if e.code in (401, 403):
             raise ServiceError(f"{service['name']} refused the API key") from None
-        raise ServiceError(detail or f"{service['name']} answered with error {e.code}") from None
+        err = ServiceError(detail or f"{service['name']} answered with error {e.code}")
+        err.status = e.code
+        raise err from None
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         logs.detail("apps", f"{service['name']} {method} {path} not reached: {e}")
         raise ServiceError(f"Cannot reach {service['name']}") from None
@@ -614,7 +616,9 @@ def _gather(services, fn):
 
 
 def queue(services):
-    rows, errors = _gather(_arrs(services), _queue_one)
+    # Reelix's radio (its own API, as a "link") is asked at the same time as the other apps.
+    rows, errors = _gather(_arrs(services) + reelix_native(services),
+                           lambda s: _radio_queue_one(s) if s["type"] == "link" else _queue_one(s))
     return {"items": rows, "errors": errors}
 
 
@@ -634,6 +638,110 @@ def queue_action(service, item_id, action):
     forget("queue")
 
 
+# Reelix radio -------------------------------------------------------------------
+# Radio has no Sonarr-style address in Reelix, so it is read from Reelix's own API (/api/v1) with the manager key
+# that Install apps gave Starboard. Reelix is found from its entries: the "Reelix" link entry (its address is the
+# base), or an entry at a compatible address (base/radarr and so on). Rows carry the link entry's name, so they open
+# in Reelix like any other row.
+
+COMPAT_SUFFIXES = ("/radarr", "/sonarr", "/readarr", "/lidarr")
+RADIO_SHOWS = 20  # followed shows read for Coming up, newest first: one small call each, every 10 minutes at most
+_TRACKED = {"import_pending": "importPending", "importing": "importing", "failed_pending": "failedPending"}
+_CLIENT = {"post_processing": "importing", "warning": "downloading"}
+
+
+def reelix_native(services):
+    """Each Reelix server once: {"id", "name", "url" (its /api/v1), "api_key", "link"}. Needs a saved key."""
+    found = {}
+    entries = [s for s in services if s.get("enabled", True) and s.get("icon") == "reelix"]
+    for s in entries:
+        url = str(s.get("url", "")).rstrip("/")
+        base = next((url[:-len(x)] for x in COMPAT_SUFFIXES if url.endswith(x)), url) if s["type"] != "link" else url
+        if not base:
+            continue
+        here = found.setdefault(base, {"id": s["id"], "name": "Reelix", "type": "link", "url": base + "/api/v1",
+                                       "api_key": "", "link": s.get("link") or base})
+        if s["type"] == "link":  # the link entry names the rows, so they open Reelix itself
+            here.update({"id": s["id"], "name": s.get("name") or "Reelix", "link": s.get("link") or base})
+        here["api_key"] = here["api_key"] or s.get("api_key", "")
+    return [r for r in found.values() if r["api_key"]]
+
+
+def _without_radio(fn):
+    """A Reelix from before radio (or a full version without it) answers 404: no radio rows, and no error."""
+    def run(*args):
+        try:
+            return fn(*args)
+        except ServiceError as e:
+            if e.status == 404:
+                return []
+            raise
+    return run
+
+
+@_without_radio
+def _radio_calendar_one(reelix, start, end):
+    page = _api(reelix, "/radio/shows", {"followed": "true", "sort": "refreshed", "dir": "desc", "page": 1,
+                                         "page_size": RADIO_SHOWS}) or {}
+    first, last = start.isoformat(), (end + dt.timedelta(days=1)).isoformat()
+    out = []
+    shows, failed = (page.get("items") or [])[:RADIO_SHOWS], []
+    for show in shows:
+        try:
+            episodes = (_api(reelix, f"/radio/shows/{int(show['id'])}/episodes") or {}).get("episodes") or []
+        except ServiceError as e:  # one busy or missing show: the others still show
+            failed.append(e)
+            continue
+        for e in episodes:
+            when = e.get("first_broadcast") or ""
+            if not (first <= when[:10] < last) or not e.get("monitored", True):
+                continue
+            number = f"Series {e['series_number']}, episode {e['number']}" if e.get("series_number") and e.get("number") \
+                else f"Episode {e['number']}" if e.get("number") else ""
+            overview = e.get("synopsis") or ""
+            out.append({"service": reelix["id"], "service_name": reelix["name"], "kind": "radio",
+                        "title": show.get("title", ""), "detail": " · ".join(x for x in (number, e.get("title", "")) if x),
+                        "when": when, "have": e.get("status") == "in_library", "image": "", "item_id": show["id"],
+                        "slug": str(int(show["id"])), "overview": overview[:300] + ("…" if len(overview) > 300 else "")})
+    if failed and len(failed) == len(shows):
+        raise failed[0]
+    return out
+
+
+@_without_radio
+def _radio_queue_one(reelix):
+    page = _api(reelix, "/queue", {"page": 1, "page_size": 0}) or {}
+    rows = []
+    for r in page.get("items") or []:
+        media = r.get("media") or {}
+        if media.get("kind") != "radio_episode":
+            continue
+        size = r.get("size") or 0
+        eta = r.get("eta_secs")
+        status = _TRACKED.get(r.get("state") or "") or _CLIENT.get(r.get("client_state") or "", r.get("client_state") or r.get("state") or "")
+        rows.append({
+            "id": r.get("id"), "service": reelix["id"], "service_name": reelix["name"], "kind": "radio",
+            "download_id": r.get("download_id") or "", "added": r.get("added") or "",
+            "title": " · ".join(x for x in (media.get("subtitle"), media.get("title")) if x) or r.get("title") or "Unknown",
+            "status": status, "problem": r.get("client_state") == "warning" or bool(r.get("messages") and r.get("state") != "downloading"),
+            "messages": [str(m) for m in r.get("messages") or []][:20],
+            "progress": round(float(r.get("progress") or 0) * 100, 1), "size": size,
+            "time_left": f"{eta // 86400}.{eta % 86400 // 3600:02d}:{eta % 3600 // 60:02d}:{eta % 60:02d}" if isinstance(eta, int) else "",
+            "client": r.get("download_client") or "",
+        })
+    return rows
+
+
+def radio_queue_action(reelix, item_id, action):
+    """Queue actions for a radio download, through Reelix's own queue (the same three as the other apps)."""
+    if action not in QUEUE_ACTIONS:
+        raise ServiceError("Choose remove, block or block-search")
+    params = {"remove_from_client": "true", "blocklist": "true" if action != "remove" else "false",
+              "skip_redownload": "true" if action == "block" else "false"}
+    _api(reelix, f"/queue/{int(item_id)}", params, method="DELETE")
+    forget("queue")
+
+
 def calendar(services, days=14, start=None, end=None):
     """From yesterday for days, or from start to end (dates; at most 62 days, for a month view)."""
     if start and end:
@@ -641,7 +749,8 @@ def calendar(services, days=14, start=None, end=None):
     else:
         start = dt.date.today() - dt.timedelta(days=1)
         end = start + dt.timedelta(days=days + 1)
-    rows, errors = _gather(_arrs(services), lambda s: _calendar_one(s, start, end))
+    rows, errors = _gather(_arrs(services) + reelix_native(services),
+                           lambda s: _radio_calendar_one(s, start, end) if s["type"] == "link" else _calendar_one(s, start, end))
     rows.sort(key=lambda r: r["when"])
     return {"items": rows, "errors": errors}
 
