@@ -1168,7 +1168,7 @@ async function stepTable() {
 }
 function stepNamed(table, id) {
   const x = table[id] || {};
-  return { title: x.title || id, question: x.question || "" };
+  return { title: x.title || id, question: x.question || "", help: x.help || "" };
 }
 // Set-up guide ----------------------------------------------------------------
 // What the guide chose, kept while it hands over to Install apps and back (this tab only).
@@ -1210,7 +1210,10 @@ function wizardFrame({ root, steps, index, onBack, onSkip, onContinue, continueT
     step.skippable === false ? null : el("button", { type: "button", class: "btn btn--quiet", onclick: onSkip }, "Skip this step"));
   const heading = el("h2", { id: "wiz-h", tabindex: "-1", text: step.question });
   root.replaceChildren(list, short, el("section", { class: "panel", "aria-labelledby": "wiz-h" },
-    el("div", { class: "stack-1" }, heading, step.intro ? el("p", { class: "muted", text: step.intro }) : null),
+    el("div", { class: "stack-1" }, heading, step.intro ? el("p", { class: "muted", text: step.intro }) : null,
+      // Each step's own article in the help centre (web/setup-steps.json, the same for the terminal set-up).
+      step.help ? el("p", {}, el("a", { class: "help-link", href: helpPage(step.help), target: "_blank", rel: "noopener noreferrer" },
+        icon("circle-help"), el("span", { text: "Help with this step" }), el("span", { class: "visually-hidden", text: ` (${step.title}, opens in a new tab)` }))) : null),
     ...step.nodes, foot));
   return { heading, cont };
 }

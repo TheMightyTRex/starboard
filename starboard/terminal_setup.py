@@ -82,6 +82,20 @@ USENET_RIGHTS = ("Use Usenet only for files you have the right to download, such
                  "public domain and your own backups. Downloading films, series, music or books without the copyright "
                  "holder's permission is against the law in the UK and most other countries. Starboard does not host "
                  "or provide any files, and you are responsible for what you download.")
+# Each question's article in the help centre (tools/build_help.py), shown under its ? help.
+HELP_CENTRE = "https://themightytrex.github.io/starboard/help/"
+HELP_PAGES = {
+    "pool": "topics/add-a-drive-to-the-pool.html", "backup": "topics/use-a-drive-as-a-backup-drive.html",
+    "balance": "topics/balance-the-files.html", "password": "topics/create-your-password.html",
+    "groups": "topics/install-apps.html", "apps": "topics/install-apps.html", "usenet-app": "topics/change-your-install.html",
+    "installs": "topics/install-types.html", "folders": "topics/install-apps.html", "vpn": "topics/install-apps.html",
+    "reelix-edition": "topics/switch-reelix-version.html", "usenet": "topics/install-apps.html",
+    "hours": "topics/set-download-hours.html", "check": "topics/install-apps.html", "keep": "topics/install-apps.html",
+    "storage": "topics/check-storage.html", "extras": "topics/set-up-live-tv.html", "alerts": "topics/activate-alerts.html",
+    "health": "topics/check-disk-health.html", "name": "guides/set-up-your-dashboard.html",
+    "restore": "topics/restore-a-saved-copy.html", "found": "topics/search-for-new-apps.html",
+}
+
 HELP = {
     "pool": "A pool joins several drives into one folder, /mnt/pool, so your media has one place however many "
             "drives you have. Each drive stays a normal drive that can be read on its own. Keeping a drive's files "
@@ -784,7 +798,9 @@ class Terminal:
                 self.say("This is the first step, so there is nothing to go back to.")
                 continue
             if answer == "?":
-                self.popup(f"Help: {title}", HELP.get(help_key, "There is no more help for this question."))
+                more = HELP_PAGES.get(help_key)
+                self.popup(f"Help: {title}", HELP.get(help_key, "There is no more help for this question.")
+                           + (f"\n\nMore in the help centre: {HELP_CENTRE}{more}" if more else ""))
                 continue
             if low in extra:
                 return low

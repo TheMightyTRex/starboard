@@ -1,25 +1,125 @@
 {
-  "about": "The set-up's steps, in order, with the name and question each one shows. The browser set-up (settings.js, install.js) and the terminal set-up (starboard/terminal_setup.py) both read this file, so a step has the same name in both. Each set-up shows only the steps that apply to it.",
+  "about": "The set-up's steps, in order, with the name and question each one shows. The browser set-up (settings.js, install.js) and the terminal set-up (starboard/terminal_setup.py) both read this file, so a step has the same name in both. Each set-up shows only the steps that apply to it. Each step's help is its help centre article (docs/help path), opened from Help with this step.",
   "steps": [
-    {"id": "password", "title": "Your password", "question": "Choose your password"},
-    {"id": "start", "title": "How to start", "question": "How do you want to start?"},
-    {"id": "find", "title": "Find your apps", "question": "Add the apps on this computer?"},
-    {"id": "keys", "title": "API keys", "question": "Give Starboard their API keys?"},
-    {"id": "storage", "title": "Storage", "question": "Where should your media go?"},
-    {"id": "drives", "title": "Your drives", "question": "Which drives go in the pool?"},
-    {"id": "welcome", "title": "Start here", "question": "Set up a media server, step by step"},
-    {"id": "apps", "title": "What to set up", "question": "What do you want your server to do?"},
-    {"id": "folders", "title": "Folders", "question": "Where should your media live?"},
-    {"id": "vpn", "title": "VPN", "question": "Connect the VPN"},
-    {"id": "usenet", "title": "Usenet", "question": "Your Usenet provider"},
-    {"id": "moving", "title": "Moving over", "question": "Bring things over from the apps you have?"},
-    {"id": "check", "title": "Check", "question": "Check everything before it is written"},
-    {"id": "start-apps", "title": "Start", "question": "Start the apps"},
-    {"id": "extras", "title": "Jellyfin extras", "question": "Use Starboard's Jellyfin extras?"},
-    {"id": "hours", "title": "Download hours", "question": "Only download at set hours?"},
-    {"id": "alerts", "title": "Alerts and disk health", "question": "Get an alert when something stops?"},
-    {"id": "storage-page", "title": "Storage page", "question": "How should the Storage page keep up to date?"},
-    {"id": "preset", "title": "How much it does", "question": "How much should Starboard do in the background?"},
-    {"id": "finish", "title": "Finish", "question": "Ready to go"}
+    {
+      "id": "password",
+      "title": "Your password",
+      "question": "Choose your password",
+      "help": "topics/create-your-password.md"
+    },
+    {
+      "id": "start",
+      "title": "How to start",
+      "question": "How do you want to start?",
+      "help": "guides/set-up-your-dashboard.md"
+    },
+    {
+      "id": "find",
+      "title": "Find your apps",
+      "question": "Add the apps on this computer?",
+      "help": "topics/search-for-new-apps.md"
+    },
+    {
+      "id": "keys",
+      "title": "API keys",
+      "question": "Give Starboard their API keys?",
+      "help": "topics/find-an-api-key.md"
+    },
+    {
+      "id": "storage",
+      "title": "Storage",
+      "question": "Where should your media go?",
+      "help": "topics/check-storage.md"
+    },
+    {
+      "id": "drives",
+      "title": "Your drives",
+      "question": "Which drives go in the pool?",
+      "help": "topics/add-a-drive-to-the-pool.md"
+    },
+    {
+      "id": "welcome",
+      "title": "Start here",
+      "question": "Set up a media server, step by step",
+      "help": "topics/install-apps.md"
+    },
+    {
+      "id": "apps",
+      "title": "What to set up",
+      "question": "What do you want your server to do?",
+      "help": "topics/install-types.md"
+    },
+    {
+      "id": "folders",
+      "title": "Folders",
+      "question": "Where should your media live?",
+      "help": "topics/install-apps.md"
+    },
+    {
+      "id": "vpn",
+      "title": "VPN",
+      "question": "Connect the VPN",
+      "help": "topics/install-apps.md"
+    },
+    {
+      "id": "usenet",
+      "title": "Usenet",
+      "question": "Your Usenet provider",
+      "help": "topics/change-your-install.md"
+    },
+    {
+      "id": "moving",
+      "title": "Moving over",
+      "question": "Bring things over from the apps you have?",
+      "help": "topics/move-your-apps-to-reelix.md"
+    },
+    {
+      "id": "check",
+      "title": "Check",
+      "question": "Check everything before it is written",
+      "help": "topics/install-apps.md"
+    },
+    {
+      "id": "start-apps",
+      "title": "Start",
+      "question": "Start the apps",
+      "help": "topics/install-apps.md"
+    },
+    {
+      "id": "extras",
+      "title": "Jellyfin extras",
+      "question": "Use Starboard's Jellyfin extras?",
+      "help": "topics/set-up-live-tv.md"
+    },
+    {
+      "id": "hours",
+      "title": "Download hours",
+      "question": "Only download at set hours?",
+      "help": "topics/set-download-hours.md"
+    },
+    {
+      "id": "alerts",
+      "title": "Alerts and disk health",
+      "question": "Get an alert when something stops?",
+      "help": "topics/activate-alerts.md"
+    },
+    {
+      "id": "storage-page",
+      "title": "Storage page",
+      "question": "How should the Storage page keep up to date?",
+      "help": "topics/check-storage.md"
+    },
+    {
+      "id": "preset",
+      "title": "How much it does",
+      "question": "How much should Starboard do in the background?",
+      "help": "topics/make-starboard-lighter.md"
+    },
+    {
+      "id": "finish",
+      "title": "Finish",
+      "question": "Ready to go",
+      "help": "guides/set-up-your-dashboard.md"
+    }
   ]
 }
