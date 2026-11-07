@@ -19,7 +19,8 @@ mkdir -p "$OUT"
 KEY="$STARBOARD_VM_DIR/id_ed25519"
 
 one() {
-  local name="$1" slot="$2" port=$(( 2240 + slot )) web=$(( 18110 + slot )) opts=() desktop=0 vm log
+  local name="$1" slot="$2" port web opts=() desktop=0 vm log
+  port=$(( 2240 + slot )); web=$(( 18110 + slot ))
   case "$name" in
     t*x*) local size="${name#t}"; opts=(--cols "${size%x*}" --rows "${size#*x}") ;;
     plain) opts=(--plain) ;;
