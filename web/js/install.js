@@ -25,6 +25,7 @@ async function startInstall() {
   data.reelix_editions = editions;
   let advanced = false;
   try { advanced = localStorage.getItem("install-advanced") === "1"; } catch { /* private window */ }
+  let heldPassword = "";  // the password typed on the Check step, reused by Start the apps; this page only
   const state = {
     advanced,
     groups: new Set(data.groups.filter((g) => g.default).map((g) => g.key)),
@@ -412,7 +413,8 @@ async function installStep(id, state, data, apps, go) {
         ...row("Install", state.install === "custom" ? "Your own choice" : (state.installName || "Basics"), "groups"),
         ...row("What it does", picked, "groups"),
         ...row("Apps", [...state.apps].map((k) => apps[k].name).join(", "), "groups"),
-        ...(state.apps.has("reelix") && state.reelix_edition === "full" ? row("Reelix", "With YouTube and Spotify downloads", "groups") : []),
+        ...(state.apps.has("reelix") && state.reelix_edition === "full" ? row("Reelix", "With YouTube and Spotify downloads", "groups")
+          : state.apps.has("reelix") && state.installNote ? row("Reelix", state.installNote, "groups") : []),
         ...row("Media folder", el("code", { text: state.data_dir }), "folders"),
         ...(state.pool ? row("Pool", `${state.pool.path}, from ${state.pool.mounts.length} drives (run its commands first)`, "folders") : []),
         ...(state.advanced ? row("Settings folder", el("code", { text: state.config_dir }), "folders") : []),
@@ -436,6 +438,7 @@ async function installStep(id, state, data, apps, go) {
       if (!writePassword.value) { setError(writePassword, "Enter your Starboard password"); writePassword.focus(); return false; }
       try {
         state.written = await api("/api/stack/write", { method: "POST", body: { ...body(state), password: writePassword.value } });
+        heldPassword = writePassword.value;  // for Start the apps a minute later; kept in this page only, never stored
       } catch (e) {
         if (e.status === 401 || e.status === 429) { setError(writePassword, e.message); writePassword.focus(); return false; }
         throw e;
@@ -464,19 +467,22 @@ async function installStep(id, state, data, apps, go) {
     };
     const poolFirst = state.pool ? notice("warning", "Make the pool first", `Run the pool commands from the Folders step on the server before you start, so ${state.pool.path} exists.`) : null;
     if (w.can_start || w.starter) {
-      const pw = el("input", { class: "input", type: "password", autocomplete: "current-password" });
+      const pw = el("input", { class: "input", type: "password", autocomplete: "current-password", value: heldPassword });
       const startBtn = el("button", { type: "button", class: "btn btn--primary" }, icon("play"), "Start the apps");
       const form = el("div", { class: "form-stack" },
         el("p", { text: w.can_start
           ? "Starboard asks Docker to download each app and start it, using a short-lived helper. This can take several minutes on the first run."
           : "The Run first window on this computer downloads each app and starts it, so keep that window open. This can take several minutes on the first run." }),
-        field("Your Starboard password", pw, { hint: "Starting apps changes this computer, so Starboard checks it is you." }), el("div", { class: "actions" }, startBtn));
+        field("Your Starboard password", pw, { hint: heldPassword ? "Filled in from the Check step. Starting apps changes this computer, so Starboard checks it is you."
+          : "Starting apps changes this computer, so Starboard checks it is you." }),
+        el("div", { class: "actions" }, startBtn));
       startBtn.addEventListener("click", async () => {
         clearError(pw);
         if (!pw.value) { stop(pw, "Enter your Starboard password"); return; }
         startBtn.disabled = true;
         try {
           await api("/api/stack/start", { method: "POST", body: { password: pw.value } });
+          heldPassword = "";
           form.hidden = true;
           // One bar for the job, updated in place; a problem goes below it (WIZARD.md section 5, A job's progress).
           const words = el("span", { text: "Downloading and starting the apps. Please wait, this can take some time…" });
