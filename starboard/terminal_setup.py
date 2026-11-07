@@ -82,6 +82,21 @@ USENET_RIGHTS = ("Use Usenet only for files you have the right to download, such
                  "public domain and your own backups. Downloading films, series, music or books without the copyright "
                  "holder's permission is against the law in the UK and most other countries. Starboard does not host "
                  "or provide any files, and you are responsible for what you download.")
+# The Usenet step's help, for SABnzbd: usenet_words() puts in the name of the Usenet app chosen.
+USENET_HELP = ("SABnzbd downloads from Usenet through a provider's servers. Make an account with any provider, then type "
+               "its server name, user name and password in SABnzbd's first-run wizard. " + USENET_RIGHTS)
+
+
+def usenet_app(state):
+    """The Usenet app chosen: NZBGet or SABnzbd, so the step names the one that is being installed."""
+    apps = set((state.get("choice") or {}).get("apps") or [])
+    return "NZBGet" if "nzbget" in apps and "sabnzbd" not in apps else "SABnzbd"
+
+
+def usenet_words(text, app):
+    return text.replace("SABnzbd", app)
+
+
 # Each question's article in the help centre (the design system's help centre builder (tools/help_centre)), shown under its ? help.
 HELP_CENTRE = "https://themightytrex.github.io/starboard/help/"
 HELP_PAGES = {
@@ -128,8 +143,7 @@ HELP = {
     "reelix-edition": "Reelix looks after films, series, books, audiobooks, music and radio. The other version adds "
                       "downloads straight from YouTube and Spotify, and takes about 600 MB more disk. Both keep the same "
                       "settings, so you can switch either way later in Starboard, Settings, Reelix.",
-    "usenet": "SABnzbd downloads from Usenet through a provider's servers. Make an account with any provider, then type "
-              "its server name, user name and password in SABnzbd's first-run wizard. " + USENET_RIGHTS,
+    "usenet": USENET_HELP,
     "hours": "Downloading uses most of your internet connection while it runs, so streaming, video calls and games on "
              "other devices can slow down. With download hours, Starboard pauses the download apps outside them and "
              "starts them again when they begin. Nothing is lost.",
@@ -149,6 +163,9 @@ HELP = {
     "restore": "The backup file is the one downloaded from Starboard's System, Backup and restore, Download a copy of "
                "the settings. Type where it is, such as ~/Downloads/starboard-settings.json. It is checked before "
                "anything changes.",
+    "job": "Try again runs the job once more. Show the details shows the last lines the job wrote. Report this "
+           "problem opens feedback with the error already in the report. Stop ends the set-up here: what is done "
+           "stays done, and you can run the set-up again later.",
     "found": "These apps are running on this computer and are not in Starboard yet. Starboard adds the ones you "
              "choose and reads their API keys where it can. Nothing in the apps changes.",
 }
@@ -454,6 +471,11 @@ def title(step_id):
     return STEP_TABLE[step_id]["title"]
 
 
+def question(step_id):
+    """A step's question, in the same words as the browser set-up (web/setup-steps.json)."""
+    return STEP_TABLE[step_id]["question"]
+
+
 STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "check", "extras", "hours", "alerts",
                             "preset")]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
@@ -462,6 +484,13 @@ POOL_HELPER = "/usr/local/bin/starboard-pool"
 def num(name):
     """A step's number, from the list: Your drives is only there when the pool helper is installed."""
     return STEPS.index(name) + 1
+
+
+FIRST_STEP = "This is the first step, so there is nothing to go back to."
+WRITTEN = ("The apps' files are written, so Back stops here. Change earlier answers in Starboard's settings now: "
+           "Settings, Install apps.")
+
+
 ANSI = re.compile(r"\033\[[0-9;]*[A-Za-z]|\0337|\0338")
 
 
@@ -498,6 +527,10 @@ class Terminal:
         self.last_error = None    # Starboard's reply to the last failed call, or the apps' start log
         self.plain_asked = False  # plain lines because the person asked (STARBOARD_PLAIN or --plain)
         self.save_dir = os.path.expanduser("~")
+        self.total = None         # how many steps the chosen job has (job_steps); None: every step
+        self.no_back = FIRST_STEP # what b says when there is no step to go back to
+        self.enter = None         # what Enter does at the question waiting, on the menu's right (None: the default)
+        self.resize_due = False   # the window changed size: drawn again at the next read, never inside the signal
 
     # Marks ------------------------------------------------------------------------------------------------
 
@@ -562,7 +595,18 @@ class Terminal:
     def watch_size(self):
         """Draws the step again when the window changes size, keeping the heading, the bar and the menu in place."""
         if self.fancy and hasattr(signal, "SIGWINCH") and self.fixed_size == (None, None):
-            signal.signal(signal.SIGWINCH, lambda *_: self._resized())
+            # Only a flag here: drawing inside the signal handler could draw over an open help box or QR code, or
+            # in the middle of another line. The step is drawn again at the next read (catch_up).
+            signal.signal(signal.SIGWINCH, lambda *_: setattr(self, "resize_due", True))
+
+    def catch_up(self):
+        """Draws the step again if the window changed size since the last read, to fit the new size."""
+        if not self.resize_due:
+            return
+        self.resize_due = False
+        self._measure()
+        if self.fancy and self.drawn and self.width >= 60 and self.rows >= 20:
+            self._redraw()
 
     def _resized(self):
         self._measure()
@@ -606,7 +650,7 @@ class Terminal:
             self.drawn = False
 
     def step_keys(self):
-        right = "Enter: keep" if self.came_back else "Enter: recommended"
+        right = self.enter if self.enter is not None else "Enter: keep" if self.came_back else "Enter: recommended"
         keys = ([("b", "Back")] if self.can_back else []) + [("?", "Help"), ("f", "Feedback"), ("q", "Stop")]
         if self.problem:
             keys.insert(-1, ("r", "Report this problem"))
@@ -615,9 +659,9 @@ class Terminal:
         return keys, right
 
     def heading(self, text, step=None):
-        self.step, self.problem = (step, text), None
+        self.step, self.problem, self.enter = (step, text), None, None
         if not self.fancy:
-            self.say(f"\n== Starboard | {text}" + (f" (step {step} of {len(STEPS)})" if step else ""))
+            self.say(f"\n== Starboard | {text}" + (f" (step {step} of {self.steps_total()})" if step else ""))
             self.say(("Type b to go back, ? for help, f to send feedback or q to stop." if self.can_back else
                       "Type ? for help, f to send feedback or q to stop.") if step else "")
             if self.came_back:
@@ -635,10 +679,21 @@ class Terminal:
             self.note("You came back to this step. Your last answers are in [brackets]: press Enter to keep each one.")
             self.say("")
 
+    def steps_total(self):
+        """The chosen job's number of steps: only its own steps count (WIZARD.md section 5)."""
+        return self.total or len(STEPS)
+
+    def stop_back(self, words=WRITTEN):
+        """Back stops at this step from now on (the files are written): b says so, and the menu drops b Back."""
+        self.can_back, self.no_back = False, words
+        if self.fancy and self.drawn:
+            self.keys = self.step_keys()
+            self._menu(*self.keys)
+
     def _header(self, text, step):
         """The heading box ("Starboard | step" and "step n of 5") and the progress bar, fitted to the width now."""
         inner = self.width - 4
-        right = f"step {step} of {len(STEPS)}" if step else ""
+        right = f"step {step} of {self.steps_total()}" if step else ""
         # "Starboard | Your password": the product name in bold, then the step, then the count on the right.
         left = f"Starboard | {text}"
         gap = max(inner - len(left) - len(right) - 2, 1)
@@ -648,13 +703,16 @@ class Terminal:
                  self.dim("└" + "─" * (inner + 2) + "┘")]
         if step:
             bar = self.width - 8
-            done = round(bar * (step - 1) / len(STEPS))
-            pct = f"{round(100 * (step - 1) / len(STEPS)):>3}%"
+            done = round(bar * (step - 1) / self.steps_total())
+            pct = f"{round(100 * (step - 1) / self.steps_total()):>3}%"
             lines.append("  " + self._c("36", "█" * done) + self.dim("░" * (bar - done)) + "  " + self.dim(pct))
         return lines
 
     def _redraw(self):
         """The step as it was: the heading, the bar and the menu in place, then the step's last lines between them."""
+        if self.resize_due:
+            self.resize_due = False
+            self._measure()
         if getattr(self, "header_args", None):
             self.header = self._header(*self.header_args)  # the width may have changed
         self._page(*self.keys)
@@ -681,9 +739,10 @@ class Terminal:
             if isinstance(para, tuple):
                 line = para[0]
                 indent = len(line) - len(line.lstrip()) + (4 if re.match(r"\s*\d+\. ", line) else 0)
-                body += _wrap(line, inner, subsequent_indent=" " * indent, drop_whitespace=True) or [""]
+                body += textwrap.wrap(line, inner, subsequent_indent=" " * indent, break_on_hyphens=False) or [""]
             else:
-                body += (_wrap(para, inner) if para else []) + [""]
+                # Between words; only a word longer than the box (an address) is broken, so nothing passes its edge.
+                body += (textwrap.wrap(para, inner, break_on_hyphens=False) if para else []) + [""]
         while body and body[-1] == "":
             body.pop()
         room = max(self.rows - 10, 4)
@@ -695,7 +754,7 @@ class Terminal:
         for n, part in enumerate(pages):
             more = n < len(pages) - 1
             foot = "Enter: more below" if more else close
-            title_cut = title[:bw - 6]
+            title_cut = clip(title, bw - 6)
             box = [edge("╭─ ") + self.accent(title_cut) + edge(" " + "─" * max(bw - 5 - len(title_cut), 0) + "╮")]
             box += [edge("│") + " " + line.ljust(inner) + " " + edge("│") for line in [""] + part + [""]]
             asking = prompt is not None and not more
@@ -731,16 +790,18 @@ class Terminal:
             return
 
         def render(width):
+            # Set in by 2, as every other line, and fitted to the column: width - 4 in all.
             label_w = min(max(len(label) for label, _ in rows) + 2, max(width // 3, 8))
-            inner = width - 4
+            inner = width - 8
             top = f"─ {title} "
-            out = ["", self._c(colour, "╭" + top + "─" * max(inner + 2 - len(top), 0) + "╮")]
+            out = ["", "  " + self._c(colour, "╭" + top + "─" * max(inner + 2 - len(top), 0) + "╮")]
             for label, value in rows:
                 lines = _wrap(str(value), inner - label_w) or [""]
                 for i, line in enumerate(lines):
                     left = (label[:label_w - 1] if i == 0 else "").ljust(label_w)
-                    out.append(self._c(colour, "│") + " " + self.dim(left) + line.ljust(inner - label_w) + " " + self._c(colour, "│"))
-            out.append(self._c(colour, "╰" + "─" * (inner + 2) + "╯"))
+                    out.append("  " + self._c(colour, "│") + " " + self.dim(left) + line.ljust(inner - label_w) + " "
+                               + self._c(colour, "│"))
+            out.append("  " + self._c(colour, "╰" + "─" * (inner + 2) + "╯"))
             return out
         self._show(render)
 
@@ -757,6 +818,14 @@ class Terminal:
             return
         self._show(lambda width: [(f"  {self.warn_colour('⚠')} " if i == 0 else "    ") + line
                                   for i, line in enumerate(_wrap(text, width - 6) or [""])])
+
+    def link(self, url, indent=0):
+        """An address on a line of its own, never wrapped or cut, so it copies whole. It is set in only when it still
+        fits the column; a longer one starts at the column's edge."""
+        if not self.fancy:
+            self.say(url)
+            return
+        self._show(lambda width: [(" " * indent if len(url) + indent <= width else "") + self.accent(url)])
 
     def note(self, text):
         """A paragraph, wrapped to the width and set in from the box."""
@@ -781,10 +850,12 @@ class Terminal:
             self.say(f"    {line}")
         return f"    {lines[-1]}" + (" " if text.endswith(" ") else "")
 
-    def _read(self, prompt, help_key, title="Help", extra=()):
+    def _read(self, prompt, help_key, title="Help", extra=(), enter=None):
         """One answer. q stops, b goes back a step, ? opens help, f sends feedback and r reports what just failed;
-        anything in extra is returned as typed."""
+        anything in extra is returned as typed. enter is what Enter does, for the menu (set_enter)."""
+        self.set_enter(enter)
         while True:
+            self.catch_up()
             shown = self._prompt(prompt)
             self.pending = shown
             answer = self._ask((getattr(self, "pad", "") if self.fancy else "") + shown).strip()
@@ -798,18 +869,33 @@ class Terminal:
             if low == "b" and self.can_back:
                 raise Back()
             if low == "b":
-                self.say("This is the first step, so there is nothing to go back to.")
+                self.note(self.no_back)
                 continue
             if answer == "?":
-                more = HELP_PAGES.get(help_key)
-                self.popup(f"Help: {title}", HELP.get(help_key, "There is no more help for this question.")
-                           + (f"\n\nMore in the help centre: {HELP_CENTRE}{more}" if more else ""))
+                self.help(help_key, title)
                 continue
             if low in extra:
                 return low
             if not re.fullmatch(r"[\d,\s]*|[ynq?bfmr]", answer.strip().lower()):  # menu numbers and keys are not private
                 self.typed.add(fingerprint(answer))
             return answer
+
+    def set_enter(self, right):
+        """The menu's right side says what Enter does at this question: None for the recommended answer (or "Enter:
+        keep" after Back), "" for nothing."""
+        if right == self.enter:
+            return
+        self.enter = right
+        if self.fancy and self.drawn and getattr(self, "keys", None):
+            self.keys = self.step_keys()
+            self._menu(*self.keys)
+
+    def help(self, help_key, title):
+        """Help over the step, titled "Help: " and the question in its own words."""
+        more = HELP_PAGES.get(help_key)
+        self.popup(f"Help: {title}" if title and title != "Help" else "Help",
+                   HELP.get(help_key, "There is no more help for this question.")
+                   + (f"\n\nMore in the help centre: {HELP_CENTRE}{more}" if more else ""))
 
     def _feedback_key(self, low):
         """f opens feedback and r reports the problem shown; both come back to the question as it was."""
@@ -847,18 +933,7 @@ class Terminal:
 
     def _title(self, question):
         self.part = question.strip()  # the question being asked, for feedback
-        return question.rstrip("?").rstrip(".")[:40].lower()
-
-    def choose(self, question, options, default=1, help_key=None):
-        """Numbered options; returns the index (0-based)."""
-        self.say("")
-        self.note(question)
-        self._options(options, {default - 1})
-        while True:
-            answer = self._read(f"Your choice [{default}]: ", help_key, self._title(question)) or str(default)
-            if answer.isdigit() and 1 <= int(answer) <= len(options):
-                return int(answer) - 1
-            self.say(f"Type a number from 1 to {len(options)}, ? for help or q to stop.")
+        return question.strip().rstrip(":").strip()
 
     def _keys_work(self):
         """Arrow keys and Space can be read one at a time: the boxed way, in a real terminal (not plain mode, which
@@ -924,6 +999,7 @@ class Terminal:
         self.say("")
         self._show(render)
         self.pending = ""
+        self.set_enter("Enter: carry on")
 
         def draw():
             # Back to the list's first line and over it. Counted at the width now, so a change of window size
@@ -939,6 +1015,8 @@ class Terminal:
             tty.setcbreak(fd)
             queue = []
             while True:
+                if self.resize_due:
+                    self.catch_up()  # the step drawn again to the new size, with the list last
                 # Keys typed quickly, or sent together over SSH, arrive in one read: take them one at a time.
                 if not queue:
                     queue = _keys(_read_keys(fd))
@@ -963,32 +1041,56 @@ class Terminal:
                 elif key.lower() == "b":
                     if self.can_back:
                         raise Back()
-                    note[0] = "This is the first step, so there is nothing to go back to."
-                elif key == "?":
+                    note[0] = self.no_back
+                elif key == "?" or key.lower() == "f" or (key.lower() == "r" and self.problem):
+                    # Help and feedback read whole lines: the terminal goes back to normal while they are open.
                     termios.tcsetattr(fd, termios.TCSADRAIN, saved)
-                    self.popup(f"Help: {self._title(question)}", HELP.get(help_key, "There is no more help for this question."))
+                    if key == "?":
+                        self.help(help_key, self._title(question))
+                    else:
+                        self._feedback_key(key.lower())
                     tty.setcbreak(fd)
-                    continue  # the help drew the step again, with the list last
+                    continue  # the help or feedback drew the step again, with the list last
                 draw()
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, saved)
 
-    def yes_no(self, question, default=True, help_key=None):
+    def choose(self, question, options, default=1, help_key=None, words=None):
+        """Numbered options; returns the index (0-based). words maps typed words (such as y and n) to an index."""
+        words = words or {}
+        self.say("")
+        self.note(question)
+        self._options(options, {default - 1})
         while True:
-            answer = self._read(f"{question} [{'Y/n' if default else 'y/N'}]: ", help_key, self._title(question)).lower()
-            if not answer:
-                return default
-            if answer[0] in "yn":
-                return answer[0] == "y"
-            self.say("Type y for yes or n for no.")
+            answer = self._read(f"Your choice [{default}]: ", help_key, self._title(question), extra=tuple(words)) or str(default)
+            if answer in words:
+                return words[answer]
+            if answer.isdigit() and 1 <= int(answer) <= len(options):
+                return int(answer) - 1
+            self.say(f"Type a number from 1 to {len(options)}, ? for help or q to stop.")
+
+    def yes_no(self, question, default=True, help_key=None):
+        """Yes or no as numbered answers, the default first and marked recommended. y and n work too."""
+        if default:
+            options, yes = ["Yes (recommended)", "No"], 0
+        else:
+            options, yes = ["No (recommended)", "Yes"], 1
+        words = {w: yes for w in ("y", "yes")} | {w: 1 - yes for w in ("n", "no")}
+        return self.choose(question, options, 1, help_key, words) == yes
 
     def text(self, question, default="", help_key=None):
         shown = f" [{default}]" if default else ""
-        return self._read(f"{question}{shown}: ", help_key, self._title(question)) or default
+        if question.startswith("Press Enter to "):
+            enter = "Enter: " + question[len("Press Enter to "):]
+        else:
+            enter = None if default else ""
+        return self._read(f"{question}{shown}: ", help_key, self._title(question), enter=enter) or default
 
     def hidden(self, question, keep=False, help_key="password"):
         """Typed without showing it. With keep, Enter on its own keeps the one typed before (returns None)."""
+        self.set_enter("Enter: keep" if keep else "")
         while True:
+            self.catch_up()
             hint = "nothing shows as you type" + ("; Enter keeps the one you typed before" if keep else "")
             shown = self._prompt(f"{question} ({hint}): ")
             self.pending = shown
@@ -1003,8 +1105,11 @@ class Terminal:
                 raise Stop()
             if low == "b" and self.can_back:
                 raise Back()
+            if low == "b":
+                self.note(self.no_back)
+                continue
             if answer.strip() == "?":
-                self.popup("Help", HELP.get(help_key, "There is no more help for this question."))
+                self.help(help_key, self._title(question))
                 continue
             if keep and not answer:
                 return None
@@ -1025,6 +1130,43 @@ class Terminal:
     def record_error(self, text):
         if text and text not in (self.last_error or ""):
             self.last_error = text
+
+    def job_failed(self, summary, details=(), also=()):
+        """A job did not finish: the problem in plain words under its line, then the standard choices (WIZARD.md
+        section 5): Try again (recommended), Show the details, Report this problem or Stop, with any in also before
+        Report this problem. Returns "again", or the choice from also."""
+        self.problem = summary
+        self.record_error(summary)
+        details = [line for line in details if line.strip()]
+        if details:
+            self.last_error = summary + "\n" + "\n".join(details)
+        self.warn(summary)
+        if self.fancy and self.drawn:
+            self.keys = self.step_keys()
+            self._menu(*self.keys)
+        options = ["Try again (recommended)", "Show the details", *also, "Report this problem", "Stop"]
+        while True:
+            pick = options[self.choose("What do you want to do?", options, 1, help_key="job")]
+            if pick == "Try again (recommended)":
+                return "again"
+            if pick == "Show the details":
+                self.details(details or ["There are no more details."])
+            elif pick == "Report this problem":
+                self.feedback(summary)
+            elif pick == "Stop":
+                raise Stop()
+            else:
+                return pick
+
+    def details(self, lines):
+        """Lines a job wrote, such as Docker's: wrapped to the width, and long addresses cut too, so nothing passes
+        the edge."""
+        if not self.fancy:
+            for line in lines:
+                self._plain(line, indent=4)
+            return
+        self._show(lambda width: ["    " + part for line in lines
+                                  for part in (textwrap.wrap(line, max(width - 8, 20), break_on_hyphens=False) or [""])])
 
     # Feedback: f at any question -------------------------------------------------------------------------
 
@@ -1236,7 +1378,8 @@ class Terminal:
         free = self.rows - 3 - len(drawing) - (0 if beside or not more else 1)  # lines left between code and menu
         link_lines = -(-len(url) // self.cols)
         link_below = free >= link_lines + 1
-        self._full_page([("Enter", "Back" if link_below else "Show the link")])
+        menu = [("Enter", "Done"), ("l", "Show the link")]
+        self._full_page(menu)
         self._write("\033[1;1H" + self.accent(scan) + (" " + self.dim(more) if beside else ""))
         for i, line in enumerate(drawing):
             self._write(f"\033[{i + 2};{left + 1}H{line}")
@@ -1251,9 +1394,8 @@ class Terminal:
         self.qr_note = more  # said on the link's view instead, when there was no room for it here
         if link_below:
             self._write(f"\033[{below + 1};1H{url}")
-        self._write(f"\033[{self.rows};{len('  Enter ' + ('Back' if link_below else 'Show the link')) + 2}H")
-        self._ask("")
-        if not link_below:
+        self._write(f"\033[{self.rows};{len('  ' + '   '.join(f'{k} {label}' for k, label in menu)) + 2}H")
+        if self._ask("").strip().lower() == "l":
             self._show_link(report, getattr(self, "qr_note", "") or None)
 
     def _show_link(self, report, warning=None):
@@ -1288,20 +1430,46 @@ class Terminal:
                 self._menu(*self.keys)
                 self.warn(f"Stopped: {message}")
             self.note("Type r to report this problem.")
-            self._read("Press Enter to finish, or type r to report this problem: ", None)
+            self._read("Press Enter to finish, or type r to report this problem: ", None, enter="Enter: finish")
         except (Stop, Back, EOFError, KeyboardInterrupt):
             pass
         finally:
             self.finish()
 
-    def waiting(self, text, check, wait):
-        """Shows a turning mark and the time taken until check() returns something, then returns it. Keys pressed
-        meanwhile are not shown and are thrown away, so Enter does not push the line down the window."""
+    def waiting(self, text, check, wait, job=None, ok=None):
+        """One line for a job that takes time: a turning mark, what is happening, which job of how many, "Please wait,
+        this can take some time..." and the time taken, drawn in place until check() returns something, which it
+        returns. ok(result) says whether the job finished: if not, the line stays, marked "did not finish", and the
+        problem and its choices go below it (job_failed). Plain lines get a line at the start and one at the end, so
+        a screen reader is never silent. Keys pressed meanwhile are not shown and are thrown away, and the menu shows
+        only Ctrl+C."""
+        of = f"Job {job[0]} of {job[1]}: " if job else ""
+        words = f"{of}{text}. Please wait, this can take some time..."
+        if not self.fancy:
+            self._plain(words)
+        menu = self.fancy and self.drawn and getattr(self, "keys", None)
+        if menu:
+            self._menu([("Ctrl+C", "Stop")], "")
+        began = time.time()
         quiet = self._quiet_keys()
         try:
-            return self._waiting(text, check, wait)
+            result = self._waiting(words, check, wait, began)
         finally:
             quiet()
+            if menu:
+                self._menu(*self.keys)
+        secs = int(time.time() - began)
+        timer = f"{secs // 60} min {secs % 60:02d} s"
+        finished = ok(result) if ok else True
+        if not self.fancy:
+            self._plain(f"{'Done' if finished else 'Did not finish'}: {of}{text} ({timer}).")
+        elif finished:
+            self._write("\r\033[2K")
+        else:
+            line = clip(f"{of}{text}: did not finish ({timer})", max(self.width - 6, 10))
+            self._write(f"\r\033[2K{getattr(self, 'pad', '')}  {self.warn_colour('✖')} {line}\n")
+            self.screen.append(f"  {self.warn_colour('✖')} {line}")  # kept, so a redraw shows it where it was
+        return result
 
     def _quiet_keys(self):
         """Stops the terminal showing keys; returns how to put it back (after throwing away what was typed)."""
@@ -1325,14 +1493,14 @@ class Terminal:
                 pass
         return back
 
-    def _waiting(self, text, check, wait):
-        began, turn = time.time(), 0
+    def _waiting(self, text, check, wait, began):
+        turn = 0
         while True:
             result = check()
             if result is not None:
-                if self.fancy:
-                    self._write("\r\033[2K")
                 return result
+            if self.resize_due:
+                self.catch_up()  # the step drawn again to the new size; the line follows on the next turn
             if self.fancy:
                 secs = int(time.time() - began)
                 timer = f"{secs // 60} min {secs % 60:02d} s"
@@ -1343,6 +1511,44 @@ class Terminal:
 
 
 # The steps. Each takes what was answered before (state), so going back shows the last answers as the defaults.
+
+def job_steps(state):
+    """The steps of the chosen job, in order, as step ids: "step n of m" counts only these (WIZARD.md section 5), so
+    a restore goes from step 2 to step 3, not to step 9. A step a choice leaves out is not counted; one that depends
+    on an answer not given yet is counted until it is answered."""
+    job = state.get("start", "new")
+    apps = None if "choice" not in state else set((state.get("choice") or {}).get("apps") or [])
+    ids = ["password", "start"]
+    if job == "new":
+        ids.append("storage")
+        if step_drives in STEP_FUNCTIONS and state.get("storage", {}).get("key", "pool") == "pool":
+            ids.append("drives")
+        ids.append("apps")
+        if apps is None or "gluetun" in apps:
+            ids.append("vpn")
+        if apps is None or apps & {"sabnzbd", "nzbget"}:
+            ids.append("usenet")
+        if apps is None or apps:
+            ids.append("check")
+    if not state.get("no_extras"):
+        ids.append("extras")
+    if job != "restore":
+        ids.append("hours")
+    return ids + ["alerts", "preset"]
+
+
+def head(term, state, step_id, text=None):
+    """The step's heading, with its number among the chosen job's steps."""
+    ids = job_steps(state)
+    term.total = len(ids)
+    term.heading(text or title(step_id), ids.index(step_id) + 1 if step_id in ids else None)
+
+
+def refused(term, e):
+    """Starboard refused an answer: its own words, on the next lines, and r to report it. The question is asked
+    again by the caller."""
+    term.failed(f"Starboard said: {e}", str(e))
+
 
 def read_setup_code(path):
     """The setup code from Starboard's file, or "": a regular file only (never through a link, which could point at
@@ -1360,7 +1566,7 @@ def read_setup_code(path):
 
 def step_password(api, term, state):
     if state.get("password"):
-        term.heading(title("password"), num(title("password")))
+        head(term, state, "password")
         term.ok("Your password is saved.")
         term.note("Change it later in Starboard, Settings, Security.")
         term.text("Press Enter to carry on", help_key="keep")
@@ -1368,11 +1574,11 @@ def step_password(api, term, state):
     token = read_setup_code(os.path.join(state["data_dir"], "setup-token"))
     if token:
         term.typed.add(fingerprint(token))  # never in a feedback report
-        term.heading(title("password"), num(title("password")))
+        head(term, state, "password")
         term.note("Choose the password for Starboard. You use it to sign in from any device. No setup code is needed: "
                   "you are on the server itself. Type ? for help.")
         while True:
-            first = term.hidden("Choose a password, 10 characters or more")
+            first = term.hidden(f"{question('password')}, 10 characters or more")
             if len(first) < 10:
                 term.say("Use at least 10 characters.")
                 continue
@@ -1390,7 +1596,7 @@ def step_password(api, term, state):
             term.ok("Password saved. You are signed in.")
             state["password"] = first
             return True
-    term.heading("Sign in", num(title("password")))
+    head(term, state, "password", "Sign in")
     term.note("Starboard already has a password. Type it to carry on (forgotten it? Stop with q and run ./reset-password.sh).")
     for _ in range(5):
         password = term.hidden("Your Starboard password")
@@ -1400,7 +1606,7 @@ def step_password(api, term, state):
             state["password"] = password
             return True
         except Problem as e:
-            term.say(f"Starboard said: {e}")
+            term.note(f"Starboard said: {e}")
     raise Problem("Too many wrong passwords. Run this again later")
 
 
@@ -1409,12 +1615,12 @@ def step_start(api, term, state):
     found = api.call("GET", "/api/setup/start")
     choices = found["choices"]
     HELP["start"] = "\n\n".join(f"{c['title']}: {c['help']}" for c in choices)
-    term.heading(title("start"), num(title("start")))
+    head(term, state, "start")
     if found["found"]:
         term.note("Found on this computer: " + ", ".join(found["found"]) + ".")
     keys = [c["key"] for c in choices]
     default = keys.index(state.get("start", found["recommended"])) + 1
-    picked = term.choose("How do you want to start?",
+    picked = term.choose(question("start"),
                          [(c["title"] + (" (recommended)" if c["recommended"] else ""), c["about"]) for c in choices],
                          default, help_key="start")
     state["start"] = keys[picked]
@@ -1463,11 +1669,18 @@ def add_found_apps(api, term, state):
                  "Starboard, Settings, Manage apps, Search for new apps.")
         term.text("Press Enter to carry on")
         return True
-    picked = term.choose_many("Add these apps to Starboard?", [(i["name"], i.get("url", "")) for i in items],
-                              state.get("found_picked", list(range(len(items)))), help_key="found")
-    state["found_picked"] = picked
+    while True:
+        picked = term.choose_many(question("find"), [(i["name"], i.get("url", "")) for i in items],
+                                  state.get("found_picked", list(range(len(items)))), help_key="found")
+        state["found_picked"] = picked
+        if not picked:
+            return True
+        try:
+            added = api.call("POST", "/api/discover/add", {"items": [items[i] for i in picked]})
+            break
+        except Problem as e:
+            refused(term, e)
     if picked:
-        added = api.call("POST", "/api/discover/add", {"items": [items[i] for i in picked]})
         term.ok(f"Added {len(picked)} {'app' if len(picked) == 1 else 'apps'}.")
         if added.get("missing_keys"):
             term.note("Still without an API key: " + ", ".join(added["missing_keys"]) + ". Add them in Starboard, "
@@ -1483,13 +1696,13 @@ def step_storage(api, term, state):
     found = api.call("GET", "/api/setup/storage")
     choices = found["choices"]
     HELP["storage"] = found["help"]
-    term.heading(title("storage"), num(title("storage")))
+    head(term, state, "storage")
     term.note("Where your films, series, books and downloads go. The folder is made for you when the apps start.")
     keys = [c["key"] for c in choices]
     last = state.get("storage", {})
     default = keys.index(last.get("key", found["recommended"])) + 1 if last.get("key", found["recommended"]) in keys else 1
     while True:
-        picked = choices[term.choose("Where should your media go?",
+        picked = choices[term.choose(question("storage"),
                                      [(c["title"] + (" (recommended)" if c["recommended"] else ""), c["about"]) for c in choices],
                                      default, help_key="storage")]
         if picked["key"] == "pool" and not picked.get("ready"):
@@ -1514,7 +1727,7 @@ def step_apps(api, term, state):
     overview = state.get("overview") or api.call("GET", "/api/stack")
     state["overview"] = overview
     groups = overview["groups"]
-    term.heading(title("apps"), num(title("apps")))
+    head(term, state, "apps")
     last = state.get("apps", {})
     if term.choose("Install the apps for your media server now?",
                    ["Yes (recommended)", "No: I have my apps already, or I will add them later in the browser"],
@@ -1524,45 +1737,51 @@ def step_apps(api, term, state):
     last["install"] = 1
     # Basics, Full install or Everything (the browser set-up asks the same), or the groups one by one.
     installs = overview.get("installs") or []
-    if installs:
+    while installs:
         options = [(i["name"] + (" (recommended)" if i["recommended"] else ""), i["about"]) for i in installs]
         options.append(("Let me choose", "Pick each group, and each app if you like."))
-        pick = term.choose("What do you want to install?", options, last.get("which", 1), help_key="installs")
+        pick = term.choose(question("apps"), options, last.get("which", 1), help_key="installs")
         last["which"] = pick + 1
-        if pick < len(installs):
-            usenet = "nzbget"
-            if installs[pick].get("usenet_choice"):
-                u = term.choose("Which app downloads from Usenet?",
-                                [("NZBGet (recommended)", "Light on memory and processor."),
-                                 ("SABnzbd", "If you know it already, or want its own extras.")],
-                                last.get("usenet", 1), help_key="usenet-app")
-                last["usenet"] = u + 1
-                usenet = ("nzbget", "sabnzbd")[u]
+        if pick >= len(installs):
+            break
+        usenet = "nzbget"
+        if installs[pick].get("usenet_choice"):
+            u = term.choose("Which app downloads from Usenet?",
+                            [("NZBGet (recommended)", "Light on memory and processor."),
+                             ("SABnzbd", "If you know it already, or want its own extras.")],
+                            last.get("usenet", 1), help_key="usenet-app")
+            last["usenet"] = u + 1
+            usenet = ("nzbget", "sabnzbd")[u]
+        try:
             c = api.call("POST", "/api/stack/install", {"install": installs[pick]["key"], "usenet": usenet})
-            names = {a["key"]: a["name"] for a in overview["apps"]}
-            rows = [("Apps", ", ".join(names.get(k, k) for k in c["apps"])), ("Memory", f"about {c['memory']:,} MB")]
-            if c.get("note"):
-                rows.append(("Reelix", c["note"]))
-            term.card(c["name"], rows)
-            if term.choose("Install these?", ["Yes (recommended)", "Let me choose app by app"], help_key="apps") == 0:
-                state.setdefault("host", {}).setdefault("health", bool(c["disk_health"]))
-                d = overview["defaults"]
-                data_dir = state.get("media_dir") or (state["pool_dir"] + "/media" if state.get("pool_dir") else d["data_dir"])
-                config_dir = last.get("config_dir", d["config_dir"])
-                last.update(data_dir=data_dir, config_dir=config_dir, chosen=c["apps"], groups=None)
-                state["apps"] = last
-                state["choice"] = {"apps": c["apps"], "groups": c["groups"], "data_dir": data_dir, "config_dir": config_dir,
-                                   "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"], "reelix_edition": c["reelix_edition"]}
-                state["names"] = [names.get(k, k) for k in c["apps"]]
-                return True
-            last["chosen"] = c["apps"]
+        except Problem as e:
+            refused(term, e)
+            continue
+        names = {a["key"]: a["name"] for a in overview["apps"]}
+        rows = [("Apps", ", ".join(names.get(k, k) for k in c["apps"])), ("Memory", f"about {c['memory']:,} MB")]
+        if c.get("note"):
+            rows.append(("Reelix", c["note"]))
+        term.card(c["name"], rows)
+        if term.choose("Install these?", ["Yes (recommended)", "Let me choose app by app"], help_key="apps") == 0:
+            state.setdefault("host", {}).setdefault("health", bool(c["disk_health"]))
+            d = overview["defaults"]
+            data_dir = state.get("media_dir") or (state["pool_dir"] + "/media" if state.get("pool_dir") else d["data_dir"])
+            config_dir = last.get("config_dir", d["config_dir"])
+            last.update(data_dir=data_dir, config_dir=config_dir, chosen=c["apps"], groups=None)
+            state["apps"] = last
+            state["choice"] = {"apps": c["apps"], "groups": c["groups"], "data_dir": data_dir, "config_dir": config_dir,
+                               "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"], "reelix_edition": c["reelix_edition"]}
+            state["names"] = [names.get(k, k) for k in c["apps"]]
+            return True
+        last["chosen"] = c["apps"]
+        break
     picked = term.choose_many("What do you want?", [(g["name"], g["about"]) for g in groups],
                               last.get("groups") or [i for i, g in enumerate(groups) if g["default"]], help_key="groups")
     last["groups"] = picked
     keys = {groups[i]["key"] for i in picked}
     apps = [a for a in overview["apps"] if set(a["groups"]) & keys and not a["installed"]]
     if not apps:
-        term.say("Every app for that is running already. Nothing to install.")
+        term.note("Every app for that is running already. Nothing to install.")
         state["apps"], state["choice"] = last, None
         return True
     before = last.get("chosen")
@@ -1621,7 +1840,7 @@ def step_vpn(api, term, state):
     if not choice or "gluetun" not in choice["apps"]:
         return False
     last = state.get("vpn_answers", {})
-    term.heading(title("vpn"), num(title("vpn")))
+    head(term, state, "vpn")
     pick = term.choose("Which VPN provider do you have?", [n for _, n in VPNS] + ["Another one that Gluetun supports"],
                        last.get("pick", 1), help_key="vpn")
     if pick < len(VPNS):
@@ -1655,14 +1874,17 @@ def step_vpn(api, term, state):
 
 
 def step_usenet(api, term, state):
-    """Your Usenet provider: only when SABnzbd is chosen. The providers' addresses in full (a terminal shows the link
-    itself), the affiliate note before them and what Usenet may be used for after them."""
+    """Your Usenet provider: only when a Usenet app (NZBGet or SABnzbd) is chosen, and named. The providers' addresses
+    in full (a terminal shows the link itself), the affiliate note before them and what Usenet may be used for after
+    them."""
     choice = state.get("choice")
     if not choice or not ({"sabnzbd", "nzbget"} & set(choice["apps"])):
         return False
-    term.heading(title("usenet"), num(title("usenet")))
+    app = usenet_app(state)
+    HELP["usenet"] = usenet_words(USENET_HELP, app)
+    head(term, state, "usenet")
     term.say("")
-    term.note(USENET_ABOUT)
+    term.note(usenet_words(USENET_ABOUT, app))
     # DASH-142: asked first; the providers are listed only for someone who has none.
     have = term.choose("Do you have a Usenet provider?",
                        ["No, show me some providers", "Yes, I have one", "Not now: torrents are enough for now"],
@@ -1676,16 +1898,20 @@ def step_usenet(api, term, state):
         bullet = "•" if term.fancy else "-"
         for name, url in USENET:
             term.say(f"  {bullet} {name}")
-            term.say(f"    {term.accent(url)}")
+            if term.fancy:
+                term.link(url, 4)
+            else:
+                term.say(f"    {url}")
             term.say("")
     elif have == 1:
-        term.note("Add its server to the Usenet app once the apps are running: its address, port, user name, password "
+        term.note(f"Add its server to {app} once the apps are running: its address, port, user name, password "
                   "and connections.")
         term.say("")
     else:
-        term.note("The Usenet app is installed anyway. Add a provider whenever you like.")
+        term.note(f"{app} is installed anyway. Add a provider whenever you like.")
         term.say("")
-    term.note(f"How to add a provider's server: {HELP_CENTRE}topics/choose-a-usenet-provider.html")
+    term.note("How to add a provider's server:")
+    term.link(f"{HELP_CENTRE}topics/choose-a-usenet-provider.html")
     term.say("")
     term.note(term.accent(USENET_RIGHTS_TITLE))
     term.note(USENET_RIGHTS)
@@ -1694,8 +1920,22 @@ def step_usenet(api, term, state):
     return True
 
 
+def preview_step(message):
+    """Which earlier step an answer refused by the preview belongs to: the VPN's details, a folder (the media folder
+    is chosen in Storage), or the apps."""
+    low = message.lower()
+    if any(w in low for w in ("vpn", "wireguard", "openvpn")):
+        return step_vpn
+    if "settings folder" in low or "config" in low:
+        return step_apps
+    if any(w in low for w in ("folder", "directory", "path", "media", "disk", "space", "writ", "permission")):
+        return step_storage
+    return step_apps
+
+
 def step_check(api, term, state, wait=2.0):
-    """Shows what will be written, writes it once confirmed, and starts the apps when Starboard may."""
+    """Shows what will be written, writes it once confirmed, and starts the apps when Starboard may. Once the files
+    are written, Back stops here: earlier answers are changed in Starboard's settings from then on."""
     choice = state.get("choice")
     if not choice:
         return False
@@ -1703,7 +1943,7 @@ def step_check(api, term, state, wait=2.0):
         choice["vpn"] = state.get("vpn")
     else:
         choice.pop("vpn", None)
-    term.heading(title("check"), num(title("check")))
+    head(term, state, "check")
     names = state.get("names") or choice["apps"]
     rows = [("Install", ", ".join(names)), ("Media folder", choice["data_dir"]), ("Settings folder", choice["config_dir"])]
     if "reelix" in choice["apps"] and choice.get("reelix_edition") == "full":
@@ -1712,83 +1952,110 @@ def step_check(api, term, state, wait=2.0):
         rows.append(("VPN", f"{dict(VPNS).get(choice['vpn']['provider'], choice['vpn']['provider'])}, "
                             f"{'WireGuard' if choice['vpn']['type'] == 'wireguard' else 'OpenVPN'}"))
     if state.get("written"):
+        term.stop_back()
         term.card("Written already", rows)
         term.ok("The apps' files are written.")
-        term.note("Earlier answers cannot change here any more. Change the apps later in Starboard, Settings, Install apps.")
+        term.note(WRITTEN)
         term.text("Press Enter to carry on", help_key="check")
         return True
     try:
         preview = api.call("POST", "/api/stack/preview", choice)
     except Problem as e:
-        low = str(e).lower()
-        raise GoTo(STEP_FUNCTIONS.index(step_vpn if any(w in low for w in ("vpn", "wireguard", "openvpn")) else step_apps), str(e)) from e
+        raise GoTo(STEP_FUNCTIONS.index(preview_step(str(e))), str(e)) from e
     term.card("What will change", rows)
     for line in preview.get("moved", []):
         term.warn(line)
     term.say("")
     term.note("Nothing has changed yet. Type b to go back and change an answer.")
-    if not term.yes_no("Write the apps' files now?", True, help_key="check"):
-        term.say("Nothing written.")
-        return True
-    written = api.call("POST", "/api/stack/write", {**choice, "password": state.get("password", "")})
+    while True:
+        if not term.yes_no("Write the apps' files now?", True, help_key="check"):
+            term.note("Nothing written.")
+            return True
+        try:
+            written = api.call("POST", "/api/stack/write", {**choice, "password": state.get("password", "")})
+            break
+        except Problem as e:
+            refused(term, e)
     state["written"] = True
+    term.stop_back()
     term.ok(f"{len(choice['apps'])} apps written.")
+    term.note(WRITTEN)
     if not written.get("can_start"):
         if os.environ.get("STARBOARD_STARTS_APPS") == "1":
             # Run by the installer, which can use Docker: it downloads and starts them (./install.sh --start-apps).
             return start_with_installer(api, term, state, choice, wait)
         term.note("Starboard cannot start apps itself, because it has no full Docker access. Start them with:")
-        term.say(f"  {written['command']}")
+        term.note(written["command"])
         return True
-    if not term.yes_no("Start the apps now? They are downloaded first, which can take a few minutes.", True):
-        term.say(f"Start them later with:  {written['command']}")
+    asked = False
+    while True:
+        if not asked and not term.yes_no("Start the apps now? They are downloaded first, which can take a few minutes.", True):
+            term.note(f"Start them later with: {written['command']}")
+            return True
+        try:
+            api.call("POST", "/api/stack/start", {"password": state["password"]})
+        except Problem as e:
+            refused(term, e)
+            asked = False
+            continue
+
+        def finished():
+            try:
+                job = api.call("GET", "/api/stack/job")
+            except Problem as e:
+                return {"finished": True, "ok": False, "log": str(e)}
+            return job if job.get("finished") else None
+        job = term.waiting("Downloading and starting the apps", finished, wait, (1, 1), ok=lambda j: j.get("ok"))
+        if job.get("ok"):
+            term.ok(f"All {len(choice['apps'])} apps are running.")
+            return True
+        lines = (job.get("log") or "").strip().splitlines()[-12:]
+        if term.job_failed("The apps did not all start.", lines, also=["Carry on without them"]) == "again":
+            asked = True
+            continue
+        term.note(f"Start them later with: {written['command']}")
         return True
-    api.call("POST", "/api/stack/start", {"password": state["password"]})
-    if not term.fancy:
-        term.say("Downloading and starting the apps ...")
-
-    def finished():
-        job = api.call("GET", "/api/stack/job")
-        return job if job.get("finished") else None
-    job = term.waiting("Downloading and starting the apps ...", finished, wait)
-    if job.get("ok"):
-        term.ok(f"All {len(choice['apps'])} apps are running.")
-        return True
-    lines = (job.get("log") or "").strip().splitlines()[-12:]
-    term.warn("The apps did not all start. The last lines Docker wrote:")
-    for line in lines:
-        term.say(f"  {line}")
-    term.last_error = "The apps did not all start. The last lines Docker wrote:\n" + "\n".join(lines)
-    term.failed("Starboard cannot carry on with the apps from here.", "The apps did not all start.")
-    term.text("Press Enter to carry on")
-    return True
 
 
-def set_up_reelix(api, term, state, wait):
-    """Reelix's admin account (with Starboard's password), Starboard's manager key, its library folders, qBittorrent and
-    its place on the dashboard: Starboard does it over Reelix's API (reelix_setup), while the turning mark shows."""
+def in_background(term, text, work, wait, job=None):
+    """Runs work() while the job's line turns, and returns what it gave. A Problem it raised is raised here, after the
+    line is marked "did not finish"."""
     import threading
     result = {}
 
-    def work():
+    def run_it():
         try:
-            result["done"] = api.call("POST", "/api/reelix/setup", {"password": state["password"]}, timeout=300).get("done", [])
-        except Problem as e:
-            result["problem"] = str(e)
-    job = threading.Thread(target=work, daemon=True)
-    job.start()
-    term.waiting("Setting up Reelix ...", lambda: True if not job.is_alive() else None, wait)
+            result["value"] = work()
+        except Exception as e:  # noqa: BLE001  shown under the job's line, never over the screen
+            result["problem"] = str(e) or e.__class__.__name__
+    thread = threading.Thread(target=run_it, daemon=True)
+    thread.start()
+    term.waiting(text, lambda: True if not thread.is_alive() else None, wait, job, ok=lambda _: "problem" not in result)
     if "problem" in result:
-        term.warn(f"Reelix is not set up yet: {result['problem']}")
-        term.note("Starboard tries again when you run ./install.sh --start-apps. Reelix's own pages also work: sign in "
-                  "as admin with your Starboard password.")
-        return
-    for line in result.get("done", []):
+        raise Problem(result["problem"])
+    return result.get("value")
+
+
+def set_up_reelix(api, term, state, wait, job=None):
+    """Reelix's admin account (with Starboard's password), Starboard's manager key, its library folders, qBittorrent and
+    its place on the dashboard: Starboard does it over Reelix's API (reelix_setup), while the job's line shows."""
+    while True:
+        try:
+            done = in_background(term, "Setting up Reelix", lambda: api.call(
+                "POST", "/api/reelix/setup", {"password": state["password"]}, timeout=300).get("done", []), wait, job)
+            break
+        except Problem as e:
+            if term.job_failed(f"Reelix is not set up yet: {e}", [str(e)], also=["Carry on without it"]) == "again":
+                continue
+            term.note("Starboard tries again when you run ./install.sh --start-apps. Reelix's own pages also work: "
+                      "sign in as admin with your Starboard password.")
+            return
+    for line in done or []:
         term.ok(line)
     term.note("Reelix's own pages are there if you need them: sign in as admin with your Starboard password.")
 
 
-def found_when_settled(api, term, wait, expected, most=120):
+def found_when_settled(api, term, wait, expected, most=120, job=None):
     """The apps Starboard finds on this computer, once the apps just started have answered: each opens its port a
     while after it starts (Radarr and Sonarr can take over a minute). It looks again until every one it can
     recognise is there, or after most seconds, and then takes what it has."""
@@ -1799,45 +2066,39 @@ def found_when_settled(api, term, wait, expected, most=120):
         items = found.get("items", [])
         waiting_for = set(expected) & set(found.get("known", [])) - {i["key"] for i in items}
         return items if not waiting_for or time.time() - began >= most else None
-    return term.waiting("Waiting for the apps to answer, to add them to Starboard ...", settled, max(wait, 0.01) * 2.5)
+    return term.waiting("Waiting for the apps to answer, to add them to Starboard", settled, max(wait, 0.01) * 2.5, job)
 
 
-def start_with_installer(api, term, state, choice, wait, asked=False):
-    """Starboard has no Docker access: ./install.sh --start-apps downloads and starts the apps, while the step shows
-    a turning mark and the time. Then the apps it finds are added to Starboard, so the dashboard shows them."""
-    if not asked and not term.yes_no("Start the apps now? They are downloaded first, which can take a few minutes.", True):
-        term.say("Start them later from the Starboard folder with:  ./install.sh --start-apps")
+def start_with_installer(api, term, state, choice, wait):
+    """Starboard has no Docker access: ./install.sh --start-apps downloads and starts the apps, while the job's line
+    shows the time. Then Reelix is set up, and the apps found are added to Starboard, so the dashboard shows them."""
+    if not term.yes_no("Start the apps now? They are downloaded first, which can take a few minutes.", True):
+        term.note("Start them later from the Starboard folder with: ./install.sh --start-apps")
         return True
-    import subprocess
     import tempfile
+    jobs = 2 + ("reelix" in choice["apps"])
     folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as log:
-        job = subprocess.Popen([os.path.join(folder, "install.sh"), "--start-apps"], cwd=folder, stdin=subprocess.DEVNULL,
-                               stdout=log, stderr=subprocess.STDOUT)
-        code = term.waiting("Downloading and starting the apps ...", job.poll, wait)
-        log.seek(0)
-        lines = [line.rstrip() for line in log.read().splitlines() if line.strip() and not line.startswith("==")]
-    if code == 0:
-        term.ok(lines[-1] if lines else f"All {len(choice['apps'])} apps are running.")
-    else:
-        term.warn("The apps did not all start. The last lines Docker wrote:")
-        for line in lines[-8:]:
-            # Docker's lines can hold long addresses with no spaces: cut those too, so nothing passes the edge.
-            for part in textwrap.wrap(line, max(term.width - 8, 20), break_on_hyphens=False) or [""]:
-                term.say(f"    {part}")
-        term.last_error = "The apps did not all start.\n" + "\n".join(lines[-12:])
-        term.failed("Some apps did not start.", "The apps did not all start.")
-        again = term.choose("What do you want to do?", ["Try again (recommended)", "Carry on without them: start them "
-                            "later with ./install.sh --start-apps"], 1, help_key="apps")
-        if again == 0:
-            return start_with_installer(api, term, state, choice, wait, asked=True)
+    while True:
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as log:
+            job = subprocess.Popen([os.path.join(folder, "install.sh"), "--start-apps"], cwd=folder,
+                                   stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
+            code = term.waiting("Downloading and starting the apps", job.poll, wait, (1, jobs), ok=lambda c: c == 0)
+            log.seek(0)
+            lines = [line.rstrip() for line in log.read().splitlines() if line.strip() and not line.startswith("==")]
+        if code == 0:
+            term.ok(lines[-1] if lines else f"All {len(choice['apps'])} apps are running.")
+            break
+        if term.job_failed("The apps did not all start.", lines[-12:], also=["Carry on without them"]) == "again":
+            continue
+        term.note("Start them later from the Starboard folder with: ./install.sh --start-apps")
         if not any(not line.startswith("0 of") for line in lines if " of " in line and "apps are running" in line):
             term.text("Press Enter to carry on")
             return True
+        break
     if "reelix" in choice["apps"]:
-        set_up_reelix(api, term, state, wait)
+        set_up_reelix(api, term, state, wait, (2, jobs))
     try:
-        items = found_when_settled(api, term, wait, choice["apps"])
+        items = found_when_settled(api, term, wait, choice["apps"], job=(jobs, jobs))
         if items:
             added = api.call("POST", "/api/discover/add", {"items": items})
             term.ok(f"Added {len(items)} {'app' if len(items) == 1 else 'apps'} to Starboard.")
@@ -1859,12 +2120,18 @@ def step_hours(api, term, state):
     if state.get("start") == "restore":
         return False  # the backup brought its own download hours
     last = state.get("hours", {})
-    term.heading(title("hours"), num(title("hours")))
+    head(term, state, "hours")
     term.note("Downloading uses most of your internet connection while it runs, so other devices can slow down. "
               "Downloading at night keeps the day free.")
-    if term.choose("When should downloads run?", ["Only at set hours (recommended)", "At any time"],
-                   last.get("when", 1), help_key="hours") == 1:
-        api.call("PUT", "/api/config/general", {"download_hours": {"enabled": False}})
+    while True:
+        if term.choose(question("hours"), ["Yes, only at set hours (recommended)", "No, download at any time"],
+                       last.get("when", 1), help_key="hours") == 0:
+            break
+        try:
+            api.call("PUT", "/api/config/general", {"download_hours": {"enabled": False}})
+        except Problem as e:
+            refused(term, e)
+            continue
         state["hours"] = {"when": 2}
         return True
     while True:
@@ -1876,7 +2143,7 @@ def step_hours(api, term, state):
             state["hours"] = {"when": 1, "start": int(start), "end": int(end)}
             return True
         except ValueError as e:
-            term.say(f"That did not work: {e}. Type whole hours, such as 1 and 7.")
+            term.note(f"That did not work: {e}. Type whole hours, such as 1 and 7.")
         except Problem as e:
             term.failed(f"That did not work: {e}. Type whole hours, such as 1 and 7.", str(e))
 
@@ -1906,7 +2173,7 @@ def step_drives(api, term, state):
     run = state.get("pool_run") or pool_command
     if state.get("storage", {}).get("key", "pool") != "pool":
         return False
-    term.heading(title("drives"), num(title("drives")))
+    head(term, state, "drives")
     try:
         listing = run(["drives"])
     except Problem as e:
@@ -1928,7 +2195,7 @@ def step_drives(api, term, state):
         return True
     biggest_empty = max((d for d in free if not d.get("files")), key=lambda d: d["size"], default=None)
     spare = biggest_empty if len(free) >= 3 and not pool else None
-    picked = term.choose_many("Which drives make the pool?",
+    picked = term.choose_many(question("drives"),
                               [(name(d), f"{_size(d['files'])} of files" if d.get("files") else "empty") for d in free],
                               [i for i, d in enumerate(free) if d is not spare], help_key="pool")
     chosen = [free[i] for i in picked]
@@ -1969,30 +2236,47 @@ def step_drives(api, term, state):
     if not term.yes_no("Make these changes now? sudo asks for this computer's password", False, help_key="pool"):
         term.note("Nothing was changed. Make the pool later on System, Storage, Pool.")
         return True
+    if run is pool_command:
+        subprocess.run(["sudo", "-v"])  # sudo asks for the password now, before the job lines start turning
     jobs = [(d, "pool") for d in chosen] + ([(backup[1], backup[0])] if backup else [])
-    try:
-        for d, role in jobs:
-            args = ["plan", "add", d["by_id"], "--as", role] + (["--erase"] if d["by_id"] in confirm else [])
-            if role == "copy":
-                args += ["--folders", "media"]
+    k = 0
+    while k < len(jobs):
+        d, role = jobs[k]
+        args = ["plan", "add", d["by_id"], "--as", role] + (["--erase"] if d["by_id"] in confirm else [])
+        if role == "copy":
+            args += ["--folders", "media"]
+        what = (f"Adding {d['model'] or d['name']} to the pool" if role == "pool" else
+                f"Setting up {d['model'] or d['name']} as the backup drive")
+        try:
             plan = run(args)
-            done = run(["apply", plan["id"]] + (["--confirm", f"{d['by_id']}={confirm[d['by_id']]}"] if d["by_id"] in confirm else []))
-            for s in done.get("steps", []):
-                (term.ok if s["state"] == "done" else term.warn)(s["say"])
-    except Problem as e:
-        term.warn(f"The pool helper stopped: {e}. Drives already done stay done; see System, Storage, Pool.")
-        return True
+            apply = ["apply", plan["id"]] + (["--confirm", f"{d['by_id']}={confirm[d['by_id']]}"] if d["by_id"] in confirm else [])
+            done = in_background(term, what, lambda apply=apply: run(apply), 0.1, (k + 1, len(jobs)))
+        except Problem as e:
+            if term.job_failed(f"The pool helper stopped: {e}", [str(e)], also=["Carry on without the rest"]) == "again":
+                continue
+            term.note("Drives already done stay done. See System, Storage, Pool.")
+            return True
+        for s in done.get("steps", []):
+            (term.ok if s["state"] == "done" else term.warn)(s["say"])
+        k += 1
     state["pool_dir"] = "/mnt/pool"
     if len(chosen) + len(pool) >= 2 and term.yes_no("Balance the files across the drives now? It can take hours, "
                                                     "at low priority", False, help_key="balance"):
-        try:
-            plan = run(["plan", "balance"])
-            term.say("  " + plan["steps"][0]["say"])
-            if plan.get("moves"):
-                run(["apply", plan["id"]])
-                term.ok("Balanced.")
-        except Problem as e:
-            term.warn(f"Balancing stopped: {e}")
+        if run is pool_command:
+            subprocess.run(["sudo", "-v"])
+        while True:
+            try:
+                plan = run(["plan", "balance"])
+                term.note(plan["steps"][0]["say"])
+                if plan.get("moves"):
+                    in_background(term, "Balancing the files across the drives", lambda: run(["apply", plan["id"]]), 0.1, (1, 1))
+                    term.ok("Balanced.")
+                break
+            except Problem as e:
+                if term.job_failed(f"Balancing stopped: {e}", [str(e)], also=["Carry on: balance later"]) == "again":
+                    continue
+                term.note("Balance later on System, Storage, Pool.")
+                break
     else:
         term.note("Balance later on System, Storage, Pool.")
     return True
@@ -2004,16 +2288,23 @@ def step_connect(api, term, state):
     config = api.call("GET", "/api/config")
     has_jellyfin = any(s["type"] == "jellyfin" for s in config["services"]) or "jellyfin" in ((state.get("choice") or {}).get("apps") or [])
     if not has_jellyfin:
+        state["no_extras"] = True  # left out of the step count
         return False
-    term.heading(title("extras"), num(title("extras")))
+    state.pop("no_extras", None)
+    head(term, state, "extras")
     extras = [("livetv", "Live TV channels and guide", "Free channels for Jellyfin's Live TV, with guides"),
               ("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin"),
               ("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone")]
-    picked = term.choose_many("Use Starboard's Jellyfin extras?", [(t, a) for _, t, a in extras],
-                              state.get("extras", [i for i, (k, _, _) in enumerate(extras) if config["extras"].get(k)]), help_key="extras",
-                              allow_none=True)
-    state["extras"] = picked
-    api.call("PUT", "/api/config/general", {"extras": {k: i in picked for i, (k, _, _) in enumerate(extras)}})
+    while True:
+        picked = term.choose_many(question("extras"), [(t, a) for _, t, a in extras],
+                                  state.get("extras", [i for i, (k, _, _) in enumerate(extras) if config["extras"].get(k)]),
+                                  help_key="extras", allow_none=True)
+        state["extras"] = picked
+        try:
+            api.call("PUT", "/api/config/general", {"extras": {k: i in picked for i, (k, _, _) in enumerate(extras)}})
+            break
+        except Problem as e:
+            refused(term, e)
     if 0 in picked and not env_value("STARBOARD_LIVETV_PATH"):
         folder = (state.get("choice") or {}).get("config_dir", "")
         if folder:
@@ -2025,19 +2316,25 @@ def step_connect(api, term, state):
 
 def step_alerts(api, term, state):
     """Alerts and disk health: a push service for alerts, and the disk health reports (set up at the end)."""
-    term.heading(title("alerts"), num(title("alerts")))
+    head(term, state, "alerts")
     last = state.get("alerts", {})
-    kind = term.choose("Get an alert when an app stops or a disk has a problem?",
-                       [("Not now", "No alerts"), ("ntfy", "A free push service with a phone app"),
-                        ("Gotify", "Your own push server"), ("A webhook", "Starboard posts to an address you choose")],
-                       last.get("kind", 1), help_key="alerts")
-    if kind == 0:
-        api.call("PUT", "/api/config/general", {"watch": {"enabled": False}})
-    else:
-        url = term.text("Its address", last.get("url", "https://ntfy.sh/" if kind == 1 else ""), help_key="alerts")
-        api.call("PUT", "/api/config/general", {"watch": {"enabled": True, "channel": {"kind": ["", "ntfy", "gotify", "webhook"][kind], "url": url}}})
-        last["url"] = url
-    last["kind"] = kind + 1
+    while True:
+        kind = term.choose(question("alerts"),
+                           [("Not now", "No alerts"), ("ntfy", "A free push service with a phone app"),
+                            ("Gotify", "Your own push server"), ("A webhook", "Starboard posts to an address you choose")],
+                           last.get("kind", 1), help_key="alerts")
+        last["kind"] = kind + 1
+        try:
+            if kind == 0:
+                api.call("PUT", "/api/config/general", {"watch": {"enabled": False}})
+            else:
+                url = term.text("Its address", last.get("url", "https://ntfy.sh/" if kind == 1 else ""), help_key="alerts")
+                last["url"] = url
+                api.call("PUT", "/api/config/general", {"watch": {"enabled": True, "channel": {
+                    "kind": ["", "ntfy", "gotify", "webhook"][kind], "url": url}}})
+            break
+        except Problem as e:
+            refused(term, e)
     state["alerts"] = last
     term.note("Disk health: a small script reads each disk's health report every 30 minutes, so Starboard can warn you "
               "before a disk fails. It is set up at the end and asks for this computer's password once.")
@@ -2081,15 +2378,21 @@ def step_preset(api, term, state):
     recommended = config.get("preset_recommended", "balanced")
     keys = [recommended] + [k for k in keys if k != recommended]  # the recommended one at the top
     HELP["preset"] = "\n\n".join(f"{config['presets'][k]}: {config['preset_about'][k]}" for k in keys)
-    term.heading(title("preset"), num(title("preset")))
+    head(term, state, "preset")
     term.note("How much Starboard does in the background. You can change each part later in Settings, Performance.")
     current = config["performance"].get("preset", recommended)
     current = current if current in keys else recommended
     default = keys.index(state.get("preset", recommended if current == "balanced" else current)) + 1
-    picked = term.choose("How much should Starboard do?",
-                         [(config["presets"][k] + (" (recommended)" if k == recommended else ""), config["preset_about"][k])
-                          for k in keys], default, help_key="preset")
-    api.call("PUT", "/api/config/general", {"preset": keys[picked]})
+    while True:
+        picked = term.choose(question("preset"),
+                             [(config["presets"][k] + (" (recommended)" if k == recommended else ""), config["preset_about"][k])
+                              for k in keys], default, help_key="preset")
+        try:
+            api.call("PUT", "/api/config/general", {"preset": keys[picked]})
+            break
+        except Problem as e:
+            refused(term, e)
+            default = picked + 1
     state["preset"] = keys[picked]
     term.ok(f"{config['presets'][keys[picked]]}. Change it later in Settings, Performance.")
     return True
@@ -2117,12 +2420,17 @@ def run(api, term, data_dir, port, address=""):
     api.on_error = term.record_error
     add_drives_step()
     shown, i = [], 0  # the steps shown so far, for Back
+    floor = 0  # Back stops here: once the apps' files are written, at the step that wrote them
     try:
         while i < len(STEP_FUNCTIONS):
-            term.can_back = bool(shown)
+            term.can_back = len(shown) > floor
+            term.no_back = WRITTEN if floor else FIRST_STEP
             try:
+                written = state.get("written")
                 if STEP_FUNCTIONS[i](api, term, state):
                     shown.append(i)
+                if state.get("written") and not written:
+                    floor = len(shown) - 1 if shown and shown[-1] == i else len(shown)
                 i += 1
                 term.came_back = False
             except Back:
@@ -2135,8 +2443,7 @@ def run(api, term, data_dir, port, address=""):
                     shown.pop()
                 i = e.step
         term.can_back = False
-        if term.fancy:
-            term.heading("Done")
+        term.heading("Done")
         rows = [("On this computer", f"http://localhost:{port}")]
         if address:
             rows.append(("On your other devices", f"http://{address}:{port}"))

@@ -169,6 +169,9 @@ class TerminalSetupTest(unittest.TestCase):
         boxed = [l for l in lines if l and l[0] in "┌│└╭╰"]
         self.assertTrue(boxed)
         self.assertEqual({len(l) for l in boxed}, {70})  # every box line ends at the same column
+        cards = [l for l in lines if l.startswith(("  ╭", "  │", "  ╰"))]
+        self.assertTrue(cards)
+        self.assertEqual({len(l) for l in cards}, {68})  # a card is set in by 2 and fits the column (width - 4)
         self.assertTrue(all(len(l) <= 70 for l in lines))  # long descriptions wrap inside the width
         plain = io.StringIO()
         term = terminal_setup.Terminal(out=plain, fancy=False)
@@ -275,7 +278,7 @@ class TerminalSetupTest(unittest.TestCase):
         term.heading("Download hours", 5)
         self.assertEqual(term.choose("When should downloads run?", ["Set hours", "Any time"], help_key="hours"), 1)
         raw = out.getvalue()
-        self.assertIn("╭─ Help: when should downloads run", raw)
+        self.assertIn("╭─ Help: When should downloads run?", raw)  # the question in its own case
         self.assertIn("Enter or Esc: close help", raw)
         self.assertGreaterEqual(raw.count("When should downloads run?"), 2)  # drawn again after help closes
 
@@ -400,12 +403,15 @@ class TerminalSetupTest(unittest.TestCase):
 
     def test_the_qr_view_draws_inside_the_window(self):
         # At 80 by 24 the whole report takes two pages, and the link has a view of its own after the code.
-        term, out = self.fancy(["f", "1", "The apps list stops after Jellyfin", "", "", "", "1", "", "", "4", "1"],
+        # l on the QR view shows the link; Enter closes it; Done; then the question.
+        term, out = self.fancy(["f", "1", "The apps list stops after Jellyfin", "", "", "", "1", "l", "", "4", "1"],
                                width=80, rows=24)
         term.heading("What to set up", 2)
         term.choose("Install the apps?", ["Yes", "No"])
         raw = out.getvalue()
         self.assertIn("Scan it with your phone's camera to open the report there.", raw)
+        self.assertIn("Enter Done   l Show the link", raw)  # the QR view's menu
+        self.assertIn("The link to the report", raw)
         self.assertIn("\033[38;5;16;48;5;231m", raw)  # dark on light, forced
         rows = re.findall(r"\033\[(\d+);\d+H\033\[38;5;16;48;5;231m", raw)
         self.assertTrue(rows and max(map(int, rows)) <= 24 - 2)  # never over the menu
