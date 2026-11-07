@@ -2084,7 +2084,7 @@ async function startReelix() {
   let body;
   if (!d.can_switch) {
     body = [notice("info", "Reelix was not installed here by Starboard",
-      "Starboard switches the version only for a Reelix that Install apps set up. For your own Reelix, change its image in your Compose file: ghcr.io/themightytrex/reelix:lite, or ghcr.io/demonzoned/reelix:latest for YouTube and Spotify downloads.")];
+      "Starboard switches the version only for a Reelix that Install apps set up. For your own Reelix, change its image in your Compose file: ghcr.io/themightytrex/reelix:lite, or ghcr.io/themightytrex/reelix:full for YouTube and Spotify downloads.")];
   } else {
     let want = d.editions.find((e) => e.key !== d.current && e.available)?.key || "";
     const now = el("strong", { text: names[d.current] || d.image });

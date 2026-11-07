@@ -6,7 +6,7 @@ import unittest
 from starboard import stack
 
 LITE = stack.REELIX_IMAGE
-OFFICIAL, FORK = stack.REELIX_FULL_IMAGES
+FORK, OFFICIAL = stack.REELIX_FULL_IMAGES
 
 
 def registry(public, versions=None):
@@ -43,11 +43,12 @@ class EditionTest(unittest.TestCase):
         built = stack.build(self.choice)
         self.assertIn(f"image: {LITE}", built["compose"])
 
-    def test_the_official_image_comes_first(self):
-        self.assertEqual(stack.reelix_image("full", registry({OFFICIAL, FORK})), OFFICIAL)
+    def test_the_forks_image_comes_first(self):
+        # Built from the fork's main branch, so it has the same fixes as Lite.
+        self.assertEqual(stack.reelix_image("full", registry({OFFICIAL, FORK})), FORK)
 
-    def test_the_forks_copy_when_the_official_one_is_private(self):
-        self.assertEqual(stack.reelix_image("full", registry({FORK})), FORK)
+    def test_upstreams_image_when_the_forks_cannot_be_downloaded(self):
+        self.assertEqual(stack.reelix_image("full", registry({OFFICIAL})), OFFICIAL)
 
     def test_full_cannot_be_chosen_when_neither_can_be_downloaded(self):
         with self.assertRaises(ValueError) as e:

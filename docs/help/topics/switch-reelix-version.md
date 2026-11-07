@@ -11,7 +11,7 @@ same settings folder, so your library, users and settings stay as they are.
 
 - Reelix was installed by [Install apps](install-apps.md). For a Reelix you set up yourself, change its image in
   your own Compose file instead: `ghcr.io/themightytrex/reelix:lite` for Reelix, or
-  `ghcr.io/demonzoned/reelix:latest` for the version with YouTube and Spotify downloads.
+  `ghcr.io/themightytrex/reelix:full` for the version with YouTube and Spotify downloads.
 - You know your Starboard password.
 
 ## Steps
@@ -36,8 +36,8 @@ If the Run first window is still open, Starboard asks it to start Reelix instead
 ## Things to note
 
 - Starboard keeps the old set-up file next to the new one in `data/stack`, named `compose.yaml.before-` and the date.
-- The version with YouTube and Spotify downloads comes from Reelix's own project. While that cannot be downloaded
-  without signing in, Starboard uses an unchanged copy published with Reelix Lite.
+- Both versions come from the same place, TheMightyTRex's copy of Reelix, so they have the same fixes. If the version
+  with YouTube and Spotify downloads cannot be downloaded from there, Starboard uses Reelix's own.
 - Reelix updates its database when a newer release starts, and an older release cannot read it afterwards. So
   Starboard does not switch to a version that is behind the one you run. Reelix follows each release within a day.
 

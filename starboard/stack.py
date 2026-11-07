@@ -51,11 +51,11 @@ STORYARR_IMAGE = "ghcr.io/themightytrex/storyarr:v0.4.8"
 # chooses another image (such as upstream's ghcr.io/mvanhare/reelix:latest).
 REELIX_IMAGE = "ghcr.io/themightytrex/reelix:lite"
 # The full version of Reelix adds YouTube and Spotify downloads (yt-dlp, Deno and Debian's full FFmpeg, about 600 MB
-# more on disk). Lite is the default (owner, 6 November 2026); the full version is a choice, and System, Apps switches
-# between the two either way. Upstream's own image comes first; the fork's unchanged copy of it is the fallback while
-# upstream's cannot be downloaded without signing in (the case on 6 November 2026). STARBOARD_REELIX_FULL_IMAGE
+# more on disk). Lite is the default (owner, 6 November 2026); the full version is a choice, and Settings, Reelix
+# switches between the two either way. The fork's full image comes first: it is built from the fork's main branch, so
+# it has the same fixes as Lite (7 November 2026). Upstream's own image is the fallback. STARBOARD_REELIX_FULL_IMAGE
 # chooses another.
-REELIX_FULL_IMAGES = ["ghcr.io/demonzoned/reelix:latest", "ghcr.io/themightytrex/reelix:full"]
+REELIX_FULL_IMAGES = ["ghcr.io/themightytrex/reelix:full", "ghcr.io/demonzoned/reelix:latest"]
 REELIX_EDITIONS = {
     "lite": {"name": "Reelix", "extra_mb": 0,
              "about": "Films, series, books, audiobooks, music and radio. The smaller download, for most servers."},
