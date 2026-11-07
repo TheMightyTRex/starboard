@@ -237,23 +237,24 @@ env_value() {
 command -v git >/dev/null || fail "install git first"
 [ -d .git ] || fail "run this inside a git clone of Starboard, so ./update.sh can update it later"
 
-{ [ -t 1 ] && fold -s -w "$WRAP" || cat; } <<'TEXT'
-
-Starboard installer
-
-What this does, in order:
-  1. Checks that Docker (or, with --native, Python and systemd) is installed. It changes nothing.
-  2. Asks what Starboard may access on this computer. Each one is optional: say no and only that part of
-     Starboard is missing. Change your answers later by running ./install.sh again. Settings, About and
-     updates shows what Starboard can access now.
-  3. Writes your answers to .env and compose.access.yaml in this folder (only you can read .env).
-  4. Builds and starts Starboard: with Docker, `docker compose up -d --build`; with --native, a systemd
-     service for your user only. Neither needs sudo. Disk health is the one step that does, and only if
-     you say yes to it.
-
-Starboard runs as your user, in a read-only container with no extra privileges, and keeps its settings
-in ./data. It never sends your settings anywhere.
-TEXT
+# Each item is one line here and wraps to the window, with the lines after the first indented under it.
+item() { if [ -t 1 ]; then printf '%s\n' "$1" | fold -s -w $(( WRAP > 20 ? WRAP - 5 : 15 )) | sed '1s/^/  /;2,$s/^/     /'; else printf '  %s\n' "$1"; fi; }
+para() { if [ -t 1 ]; then printf '%s\n' "$1" | fold -s -w "$WRAP"; else printf '%s\n' "$1"; fi; }
+echo
+if [ "$ASK" = 0 ]; then
+  # --yes: the person answered already (the Run first window's second run, or a script), so one line is enough.
+  echo "Starboard installer, with your earlier answers (--yes)."
+else
+  echo "Starboard installer"
+  echo
+  echo "What this does, in order:"
+  item "1. Checks that Docker (or, with --native, Python and systemd) is installed. It changes nothing."
+  item "2. Asks what Starboard may access on this computer. Each one is optional: say no and only that part of Starboard is missing. Change your answers later by running ./install.sh again. Settings, About and updates shows what Starboard can access now."
+  item "3. Writes your answers to .env and compose.access.yaml in this folder (only you can read .env)."
+  item "4. Builds and starts Starboard: with Docker, \`docker compose up -d --build\`; with --native, a systemd service for your user only. Neither needs sudo. Disk health is the one step that does, and only if you say yes to it."
+  echo
+  para "Starboard runs as your user, in a read-only container with no extra privileges, and keeps its settings in ./data. It never sends your settings anywhere."
+fi
 
 say "Step 1: checking what is installed"
 if [ "$MODE" = docker ]; then
