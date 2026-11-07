@@ -876,6 +876,7 @@
   .segmented {
     display: inline-flex;
     flex-wrap: wrap;
+    gap: 0;              /* the buttons touch, with a line between them, even when it is a fieldset */
     width: fit-content;
     max-width: 100%;
     border: 1px solid var(--color-border);
@@ -906,8 +907,13 @@
     background: var(--color-accent);
     color: var(--color-accent-text);
   }
-  .segmented input:checked + span::before {
+  /* Every button keeps room for the tick, so nothing moves when the choice changes. */
+  .segmented span::before {
     content: "✓";
+    visibility: hidden;
+  }
+  .segmented input:checked + span::before {
+    visibility: visible;
   }
   .segmented input:focus-visible + span {
     outline: var(--focus-w) solid var(--color-focus);
