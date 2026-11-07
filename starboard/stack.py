@@ -45,7 +45,7 @@ DATA = "${DATA_DIR}"
 
 # Storyarr is pinned to a version, so System, Apps, Updates offers each newer one (with a database backup first).
 # STARBOARD_STORYARR_IMAGE chooses another image, or none to leave Storyarr out.
-STORYARR_IMAGE = "ghcr.io/themightytrex/storyarr:v0.6.1"
+STORYARR_IMAGE = "ghcr.io/themightytrex/storyarr:v0.7.0"
 
 # Reelix Lite (the fork's lite image of Reelix) is the one media manager for new installs (owner, 6 November 2026):
 # films, series, books, audiobooks, music and radio, with its own sites to search and requests. STARBOARD_REELIX_IMAGE
