@@ -139,6 +139,15 @@ start_apps() {
       return 1
     fi
   }
+  # Settings, Your install moving from SABnzbd to NZBGet when Starboard has no Docker access: it cannot read
+  # SABnzbd's settings itself, so they are copied for it into data/stack (only your user can read the copy), and
+  # Starboard moves the Usenet servers into NZBGet, then removes the copy.
+  if [ -f data/stack/want-sab-servers ]; then
+    if [ -s "${dirs[0]}/sabnzbd/sabnzbd.ini" ]; then
+      (umask 077; helped "cat '${dirs[0]}/sabnzbd/sabnzbd.ini'" > data/stack/sab-servers.ini) 2>/dev/null || rm -f data/stack/sab-servers.ini
+    fi
+    rm -f data/stack/want-sab-servers
+  fi
   total="$(grep -c '^    container_name:' "$file" || true)"
   echo "Downloading $total apps and starting them. On a slow connection this can take 20 minutes or more."
   log="$(mktemp)"
@@ -166,6 +175,7 @@ start_apps() {
     sleep 20
   done
   [ -t 1 ] && printf '\r%40s\r' ""
+  date +%s > data/stack/started-at  # Starboard waits for this to finish a change made in Settings, Your install
   # Folders Docker made for the apps are owned by root: give them to the apps' user, as Starboard's helper does.
   # Not a database's folder (jellystat-db, storyarr-db): the database owns it, and changing it while the database
   # sets itself up leaves it unfinished ("no pg_hba.conf entry").

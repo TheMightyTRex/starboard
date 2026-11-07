@@ -47,6 +47,11 @@ terminal on the server:
 cd ~/starboard && ./install.sh --start-apps
 ```
 
+Once the apps have started, Starboard finishes off by itself within a minute: it updates the dashboard and Reelix,
+and moves your Usenet servers if you went from SABnzbd to NZBGet. For that move, the command copies SABnzbd's
+settings into `data/stack` for Starboard, which removes the copy once it has used it. Open **Your install** again to
+see what was done.
+
 If the Run first window is still open, Starboard asks it to start the apps instead.
 
 ## How changing works

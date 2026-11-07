@@ -156,6 +156,28 @@ class YourInstallTest(unittest.TestCase):
         os.utime(old, (1, 1))
         self.assertFalse(self.api.call("GET", "/api/stack/starting")["starting"])
 
+    def test_without_docker_access_the_follow_up_waits_for_the_installer(self):
+        import time
+        self.write()
+        folder = stack.folder(self.tmp.name)
+        r = self.api.call("POST", "/api/install/change", {"password": WORDS, "install": "full"})
+        self.assertIsNone(r["started"])
+        result = os.path.join(folder, "change-result.json")
+        time.sleep(6)
+        self.assertFalse(os.path.exists(result))  # nothing is finished before the apps start
+        with open(os.path.join(folder, "started-at"), "w") as f:
+            f.write(str(int(time.time())))
+        for _ in range(30):
+            if os.path.exists(result):
+                break
+            time.sleep(1)
+        self.assertTrue(os.path.exists(result))
+
+    def test_moving_from_sabnzbd_without_docker_asks_the_installer_for_its_settings(self):
+        self.write(install="full", usenet="sabnzbd")
+        self.api.call("POST", "/api/install/change", {"password": WORDS, "install": "full", "usenet": "nzbget"})
+        self.assertTrue(os.path.exists(os.path.join(stack.folder(self.tmp.name), "want-sab-servers")))
+
 
 if __name__ == "__main__":
     unittest.main()

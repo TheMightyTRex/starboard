@@ -387,18 +387,44 @@ def reelix_after_start(app, password):
     threading.Thread(target=run, name="reelix-setup", daemon=True).start()
 
 
-def after_install_change(app, password, plan, sab_ini):
+def _installer_started_since(app, since):
+    try:
+        return os.path.getmtime(os.path.join(stack.folder(app.data_dir), "started-at")) >= since
+    except OSError:
+        return False
+
+
+def after_install_change(app, password, plan, sab_ini, by_installer=None, sab_from_installer=False):
     """Once the changed apps run: adds the new ones to the dashboard, takes away the ones removed, and when the Usenet
     app changed, moves SABnzbd's servers into NZBGet and swaps Reelix's download app. The password (just checked) is
     used for Reelix's sign-in and dropped when this finishes."""
     def run():
         began = time.time()
-        while not stack.job().get("finished"):
-            if time.time() - began > 3600:
+        ini = sab_ini
+        if by_installer:
+            while not _installer_started_since(app, by_installer):
+                if time.time() - began > 3600:
+                    return
+                time.sleep(5)
+            if sab_from_installer and not ini:
+                copy = os.path.join(stack.folder(app.data_dir), "sab-servers.ini")
+                try:
+                    with open(copy, encoding="utf-8", errors="replace") as f:
+                        ini = f.read(1_000_000)
+                except OSError:
+                    ini = None
+                finally:
+                    try:
+                        os.remove(copy)  # it holds the Usenet passwords: kept no longer than needed
+                    except OSError:
+                        pass
+        else:
+            while not stack.job().get("finished"):
+                if time.time() - began > 3600:
+                    return
+                time.sleep(5)
+            if not stack.job().get("ok"):
                 return
-            time.sleep(5)
-        if not stack.job().get("ok"):
-            return
         notes = []
         cfg = app.config
         for key in plan["remove"]:
@@ -411,9 +437,9 @@ def after_install_change(app, password, plan, sab_ini):
             try:
                 if after == "nzbget":
                     creds = reelix_setup.nzbget_ready()(app.data_dir)
-                    if sab_ini:
+                    if ini:
                         moved = usenet_move.write_to_nzbget(reelix_setup.nzbget_rpc(stack.nzbget_key(app.data_dir)),
-                                                            usenet_move.parse_sab_servers(sab_ini))
+                                                            usenet_move.parse_sab_servers(ini))
                         notes.append(f"Moved {moved} Usenet {'server' if moved == 1 else 'servers'} from SABnzbd to NZBGet")
                     if "reelix" in plan["choice"]["apps"]:
                         notes += reelix_setup.switch_usenet(stack.reelix_url(app.data_dir), password, "nzbget", "gluetun" if vpn else "nzbget", creds=creds)
@@ -1156,6 +1182,13 @@ class Handler(BaseHTTPRequestHandler):
                 try:
                     started = self.start_stack()
                 except ValueError:
+                    # No Docker access and no Run first window: the person runs the command, and the installer marks
+                    # data/stack/started-at when the apps are up. The follow-up waits for that (for an hour at most).
+                    moving = plan["usenet"][0] == "sabnzbd" and plan["usenet"][1] == "nzbget" and not sab_ini
+                    if moving:  # the installer copies SABnzbd's settings for the server move
+                        open(os.path.join(stack.folder(app.data_dir), "want-sab-servers"), "w").close()
+                    after_install_change(app, body.get("password", ""), plan, sab_ini, by_installer=time.time(),
+                                         sab_from_installer=moving)
                     return self.json(200, {"started": None, "command": "cd ~/starboard && ./install.sh --start-apps",
                                            "add": plan["add"], "remove": plan["remove"]})
                 after_install_change(app, body.get("password", ""), plan, sab_ini)

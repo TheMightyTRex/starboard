@@ -2246,7 +2246,8 @@ async function startYourInstall() {
     password.value = "";
     if (!r.started) {
       status.replaceChildren(notice("info", "One step on the server", "Starboard wrote the new set-up but cannot start apps itself. Run this in a terminal on the server:"),
-        el("pre", { class: "code-block", text: r.command }), copyButton(r.command, "Copy the command"));
+        el("pre", { class: "code-block", text: r.command }), copyButton(r.command, "Copy the command"),
+        el("p", { class: "muted", text: "Once the apps have started, Starboard finishes off by itself within a minute: it updates the dashboard and Reelix, and moves Usenet servers if you changed the Usenet app. Keep this page open, or come back to it, to see what was done." }));
       return;
     }
     status.replaceChildren(el("p", { class: "muted", text: "Downloading and starting the apps…" }));
