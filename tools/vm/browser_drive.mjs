@@ -67,7 +67,10 @@ for (let n = 0; n < 250; n++) {
   }
   for (const label of [install, usenet].filter(Boolean)) {
     const radio = page.getByRole("radio", { name: new RegExp("^" + label) }).and(page.locator(":visible"));
-    if (await radio.count() && !(await radio.first().isChecked())) await radio.first().check().catch((e) => fault("could not choose", `${label}: ${e.message.split("\n")[0]}`));
+    if (await radio.count() && !(await radio.first().isChecked())) {
+      await radio.first().check().catch((e) => fault("could not choose", `${label}: ${e.message.split("\n")[0]}`));
+      await page.waitForTimeout(500);  // choosing an install can add the Usenet choice below it
+    }
   }
   if (allApps) {
     for (const box of await page.locator('main input[type="checkbox"]:visible').all()) {
