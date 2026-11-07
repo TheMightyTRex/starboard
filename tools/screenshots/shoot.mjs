@@ -41,6 +41,7 @@ const SHOTS = [
   { file: "storage-history.png", page: "system-storage.html", width: 1280, height: 760, run: top("#growth-panel") },
   { file: "jellyfin.png", page: "system.html", width: 1280, height: 560, run: jellyfin },
   { file: "install-apps.png", page: "install-apps.html", ...desk },
+  { file: "your-install.png", page: "settings-install.html", ...desk },
   { file: "setup-guide.png", page: "setup-guide.html", ...desk },
   { file: "performance.png", page: "settings-performance.html", ...desk },
   { file: "search-new-apps.png", page: "settings.html", ...desk, click: "#find-apps" },

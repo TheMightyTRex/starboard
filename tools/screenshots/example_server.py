@@ -275,6 +275,14 @@ def main():
     (DATA / "jobs.json").write_text(json.dumps({"listening": {"started": now - 320, "finished": now - 300, "state": "done",
                                                                "summary": "Wrote 14 books; kept 1 that already had progress; 2 not found in Audiobookshelf"}}))
     example_pool(DATA)
+    # A Basics install, as Install apps writes it, for Settings, Apps, Your install. Nothing is started.
+    stack.can_download = lambda ref, check=None: True
+    if not (DATA / "stack" / "compose.yaml").exists():
+        basics = stack.install_choice("basics")
+        stack.write(str(DATA), stack.build({"apps": basics["apps"], "config_dir": "/srv/media-stack/config",
+                                            "data_dir": "/srv/media", "reelix_edition": "lite",
+                                            "vpn": {"provider": "mullvad", "type": "wireguard",
+                                                    "wireguard_private_key": "made-up", "wireguard_addresses": "192.168.1.20/32"}}))
     server, app = make_server("127.0.0.1", PORT, str(DATA))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     if app.needs_setup:
