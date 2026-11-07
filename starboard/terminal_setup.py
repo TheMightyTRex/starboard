@@ -58,13 +58,22 @@ def _wrap(text, width, **kw):
     return textwrap.wrap(text, width, break_on_hyphens=False, break_long_words=False, **kw)
 
 
-VPNS = [  # (Gluetun's provider name, shown name)
-    ("protonvpn", "Proton VPN"),
-    ("airvpn", "AirVPN"),
-    ("private internet access", "Private Internet Access"),
-    ("surfshark", "Surfshark"),
-    ("expressvpn", "ExpressVPN"),
-]
+def _vpn_table():
+    """VPN providers as (Gluetun's name, the provider's own spelling, site), from web/vpn-providers.json, which the
+    browser set-up reads too."""
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "vpn-providers.json")
+    with open(path, encoding="utf-8") as f:
+        return [(v["id"], v["name"], v["site"]) for v in json.load(f)["providers"]]
+
+
+VPNS = _vpn_table()
+
+
+def _vpn_default(last):
+    """The last answer's place in the list (1-based), the "Another one" line for a name not in the list, or 0."""
+    ids = [v[0] for v in VPNS]
+    old = last.get("provider", "")
+    return ids.index(old) + 1 if old in ids else (len(VPNS) + 1 if old else 0)
 # Usenet providers for SABnzbd, with affiliate links (the same list and words as USENET in web/js/common.js).
 # Usenet is never shown as a way to get copyrighted films, series, music or books.
 USENET = [
@@ -1081,13 +1090,30 @@ class Terminal:
             termios.tcsetattr(fd, termios.TCSADRAIN, saved)
 
     def choose(self, question, options, default=1, help_key=None, words=None):
-        """Numbered options; returns the index (0-based). words maps typed words (such as y and n) to an index."""
+        """Numbered options; returns the index (0-based). words maps typed words (such as y and n) to an index.
+        default=0 means no default: Enter asks again. A long list on a short screen shows what fits, and m shows
+        the rest (as choose_many)."""
         words = words or {}
         self.say("")
         self.note(question)
-        self._options(options, {default - 1})
+        fits = len(options)
+        if self.fancy:
+            fits = max(min(len(options), self._region() - len(self._lines()) - 4), 4)
+        self._options(options[:fits], {default - 1})
+        if fits < len(options):
+            self.say("  " + self.dim(f"{len(options) - fits} more: type m to see them"))
+        extra = tuple(words) + (("m",) if fits < len(options) else ())
+        prompt = f"Your choice [{default}]: " if default else "Your choice: "
         while True:
-            answer = self._read(f"Your choice [{default}]: ", help_key, self._title(question), extra=tuple(words)) or str(default)
+            answer = self._read(prompt, help_key, self._title(question), extra=extra) or (str(default) if default else "")
+            if answer == "m" and fits < len(options):
+                self._options(options, {default - 1}, start=fits)
+                fits = len(options)
+                extra = tuple(words)
+                continue
+            if not answer:
+                self.say(f"Type a number from 1 to {len(options)}.")
+                continue
             if answer in words:
                 return words[answer]
             if answer.isdigit() and 1 <= int(answer) <= len(options):
@@ -1866,15 +1892,18 @@ def step_vpn(api, term, state):
         return False
     last = state.get("vpn_answers", {})
     head(term, state, "vpn")
-    pick = term.choose("Which VPN provider do you have?", [n for _, n in VPNS] + ["Another one that Gluetun supports"],
-                       last.get("pick", 1), help_key="vpn")
+    # The same list as the browser set-up, each with its site; nothing is chosen for you the first time.
+    pick = term.choose("Which VPN provider do you have?",
+                       [(n, site.split("//")[1].rstrip("/").removeprefix("www.")) for _, n, site in VPNS]
+                       + ["Another one that Gluetun supports"], _vpn_default(last), help_key="vpn")
     if pick < len(VPNS):
         provider = VPNS[pick][0]
     else:
         provider = term.text("Its name, as Gluetun's list writes it (for example: mullvad)", last.get("other", ""),
                              help_key="vpn").lower()
         last["other"] = provider
-    last["pick"] = pick + 1
+    last["provider"] = provider
+    last.pop("pick", None)
     kind_i = term.choose("How should it connect?", ["WireGuard (recommended: faster)", "OpenVPN"],
                          last.get("kind", 1), help_key="vpn")
     kind = ["wireguard", "openvpn"][kind_i]
@@ -1974,7 +2003,7 @@ def step_check(api, term, state, wait=2.0):
     if "reelix" in choice["apps"] and choice.get("reelix_edition") == "full":
         rows.append(("Reelix", "With YouTube and Spotify downloads"))
     if choice.get("vpn"):
-        rows.append(("VPN", f"{dict(VPNS).get(choice['vpn']['provider'], choice['vpn']['provider'])}, "
+        rows.append(("VPN", f"{ {v[0]: v[1] for v in VPNS}.get(choice['vpn']['provider'], choice['vpn']['provider'])}, "
                             f"{'WireGuard' if choice['vpn']['type'] == 'wireguard' else 'OpenVPN'}"))
     if state.get("written"):
         term.stop_back()

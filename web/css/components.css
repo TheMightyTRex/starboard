@@ -714,6 +714,25 @@
     color: var(--color-text-muted);
     font-size: var(--text-sm);
   }
+  /* A link that opens a new tab: its words, then the external-link icon (LIBRARY.md, Links). */
+  a[target="_blank"] > .i:last-child {
+    margin-left: 0.25em;
+    vertical-align: -0.15em;
+  }
+  /* Required fields: a * after the label (hidden from screen readers, which hear the control's required state),
+     and "* = Required" at the bottom of the help slide-out, not in the form (LIBRARY.md, Fields). */
+  .field__required {
+    margin-left: 0.2em;
+    color: var(--status-danger-fg);
+  }
+  .required-key {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .required-key .field__required {
+    margin: 0 0.2em 0 0;
+  }
   .field-error {
     display: flex;
     gap: var(--space-1);
@@ -926,6 +945,7 @@
     grid-column: 2;
     color: var(--color-text-muted);
     font-size: var(--text-sm);
+    overflow-wrap: anywhere;   /* a long address wraps inside the card */
   }
   .option-card:has(input:checked) {
     border-color: var(--color-accent);
@@ -1422,6 +1442,19 @@
     padding: var(--space-2) var(--space-3);
     border-top: 1px solid var(--color-divider);
     vertical-align: top;
+  }
+  /* A row's own heading (th scope="row") reads like its cells, in bold: no header shading, lined up with them. */
+  .table tbody th {
+    position: static;
+    background: none;
+    border-top: 1px solid var(--color-divider);
+    vertical-align: top;
+    white-space: normal;
+  }
+  /* A summary with a button on each row (such as Change): every cell on the row's middle line. */
+  .table--middle td,
+  .table--middle tbody th {
+    vertical-align: middle;
   }
   .table th[aria-sort] button {
     display: inline-flex;
@@ -2795,14 +2828,15 @@
     inset: 0 0 0 auto;
     display: flex;
     flex-direction: column;
-    width: min(var(--panel-w), 100vw);
+    width: min(max(var(--panel-w), 33.333vw), 100vw);   /* about a third of the screen */
     background: var(--color-surface-raised);
     border-left: 1px solid var(--color-border);
     box-shadow: var(--shadow-raised);
     animation: slide-in-right var(--motion-panel);
   }
+  /* Release notes and help: about half the screen (LIBRARY.md, Slide-out widths). */
   .side-panel--wide {
-    width: min(640px, 100vw);
+    width: min(max(640px, 50vw), 100vw);
   }
   .side-panel__body {
     flex: 1;
@@ -4307,6 +4341,10 @@
   }
   .prose > * {
     margin: 0;
+    min-width: 0;      /* a long line (code, a table) scrolls inside itself instead of widening the text */
+  }
+  .prose pre {
+    overflow-x: auto;
   }
   .prose h1 {
     font-size: var(--text-2xl);

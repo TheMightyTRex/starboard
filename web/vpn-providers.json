@@ -1,0 +1,35 @@
+{
+ "about": "VPN providers for both set-ups (browser: web/js/install.js; terminal: starboard/terminal_setup.py). id is Gluetun's VPN_SERVICE_PROVIDER name (github.com/qdm12/gluetun, internal/constants/providers); name is spelt as on the provider's own site; checked 7 November 2026. Six of the best known, with PrivadoVPN (TheMightyTRexUK, 7 November 2026); any other Gluetun provider is typed under Another one.",
+ "providers": [
+  {
+   "id": "expressvpn",
+   "name": "ExpressVPN",
+   "site": "https://www.expressvpn.com/"
+  },
+  {
+   "id": "nordvpn",
+   "name": "NordVPN",
+   "site": "https://nordvpn.com/"
+  },
+  {
+   "id": "privado",
+   "name": "PrivadoVPN",
+   "site": "https://privadovpn.com/"
+  },
+  {
+   "id": "private internet access",
+   "name": "Private Internet Access",
+   "site": "https://www.privateinternetaccess.com/"
+  },
+  {
+   "id": "protonvpn",
+   "name": "Proton VPN",
+   "site": "https://protonvpn.com/"
+  },
+  {
+   "id": "surfshark",
+   "name": "Surfshark",
+   "site": "https://surfshark.com/"
+  }
+ ]
+}

@@ -4,8 +4,15 @@
 // them. "Advanced settings" shows every app, the settings folder, user and group numbers, and the files themselves.
 // Loaded only by install-apps.html, after settings.js (it uses field, setError, notice, wizardFrame and appFinder).
 
-const VPN_PROVIDERS = ["airvpn", "cyberghost", "expressvpn", "fastestvpn", "ivpn", "mullvad", "nordvpn", "perfect privacy",
-  "privado", "private internet access", "privatevpn", "protonvpn", "purevpn", "surfshark", "torguard", "windscribe"];
+// VPN providers, the same file the terminal set-up reads (web/vpn-providers.json): Gluetun's name, the provider's
+// own spelling and its site.
+let vpnProviders = null;
+async function loadVpnProviders() {
+  if (!vpnProviders) {
+    try { vpnProviders = (await (await fetch("/vpn-providers.json", { cache: "no-cache" })).json()).providers; } catch { vpnProviders = []; }
+  }
+  return vpnProviders;
+}
 
 async function startInstall() {
   const root = $("#install");
@@ -301,16 +308,16 @@ async function installStep(id, state, data, apps, go) {
           el("strong", { text: m.path }), el("small", { text: `Used by ${m.used_by.join(", ")}` }))),
           el("label", { class: "option-card" }, otherRadio, el("strong", { text: "Another folder" }), el("small", { text: "Type it below." }))))
         : null,
-      field(radios.length ? "Other media folder" : "Media folder", other, { span: true,
+      field(radios.length ? "Other media folder" : "Media folder", other, { required: !radios.length, span: true,
         hint: "A folder on the drive with the most room, such as /srv/media. Starboard makes movies, tv, books and downloads folders inside it." }),
       el("div", { class: "stack-2" },
         el("p", { class: "small muted", text: "Several drives? A pool joins them into one folder, so the apps see one big drive. Nothing on them is erased." }),
         el("div", { class: "actions" }, poolButton), poolBox),
-      state.advanced ? field("Settings folder", cfg, { span: true, hint: "Each app gets its own folder inside it, such as …/config/sonarr. Back this folder up." }) : null,
+      state.advanced ? field("Settings folder", cfg, { required: true, span: true, hint: "Each app gets its own folder inside it, such as …/config/sonarr. Back this folder up." }) : null,
       state.advanced ? el("fieldset", { class: "form-stack" }, el("legend", { text: "User, group and time zone" }),
-        field("User number (PUID)", puid, { short: true, hint: "The apps run as this user, so you own their files. Starboard's own user by default." }),
-        field("Group number (PGID)", pgid, { short: true }),
-        field("Time zone", tz, { hint: "Such as Europe/London." })) : null),
+        field("User number (PUID)", puid, { required: true, short: true, hint: "The apps run as this user, so you own their files. Starboard's own user by default." }),
+        field("Group number (PGID)", pgid, { required: true, short: true }),
+        field("Time zone", tz, { required: true, hint: "Such as Europe/London." })) : null),
     ];
     save = async () => {
       [cfg, other, puid, pgid, tz].forEach(clearError);
@@ -330,8 +337,26 @@ async function installStep(id, state, data, apps, go) {
       catch (e) { return stop(other, e.message); }
     };
   } else if (id === "vpn") {
-    const provider = el("input", { class: "input", value: state.vpn.provider, list: "vpn-providers", autocomplete: "off", placeholder: "such as mullvad" });
-    const list = el("datalist", { id: "vpn-providers" }, VPN_PROVIDERS.map((p) => el("option", { value: p })));
+    // One card per provider with its site (opens in a new tab), then "Another one". Nothing is chosen for you.
+    const providers = await loadVpnProviders();
+    const known = providers.some((v) => v.id === state.vpn.provider);
+    const pickName = `vpn-provider-${Date.now()}`;
+    const other = el("input", { class: "input", autocomplete: "off", spellcheck: "false", value: known ? "" : (state.vpn.provider || ""), id: "vpn-other" });
+    const otherBox = el("div", { class: "form-stack" }, field("Its name, as Gluetun's list writes it", other, { required: true },
+      { hint: "Gluetun's list of providers is on its wiki, under Providers. Type the name in small letters, such as mullvad." }));
+    const card = (id, name, site) => el("label", { class: "option-card" },
+      el("input", { type: "radio", name: pickName, value: id, checked: id === "other" ? (!known && !!state.vpn.provider) : state.vpn.provider === id }),
+      el("strong", { text: name }),
+      site ? el("small", {}, newTabLink(site, new URL(site).host.replace(/^www\./, ""), { about: `${name}'s site` }))
+        : el("small", { text: "Type its name below" }));
+    const provider = el("fieldset", { "aria-required": "true" }, el("legend", { class: "field__label" }, "VPN provider", requiredMark()),
+      el("p", { class: "hint", text: "Choose the one you have an account with. Each link opens the provider's site in a new tab." }),
+      el("div", { class: "option-cards option-cards--row" }, providers.map((v) => card(v.id, v.name, v.site)),
+        card("other", "Another one that Gluetun supports", "")));
+    const picked = () => $(`input[name="${pickName}"]:checked`, provider)?.value || "";
+    const showOther = () => { otherBox.hidden = picked() !== "other"; };
+    provider.addEventListener("change", showOther);
+    showOther();
     const type = el("fieldset", { class: "segmented" }, el("legend", { class: "visually-hidden", text: "Connection" }),
       [["wireguard", "WireGuard"], ["openvpn", "OpenVPN"]].map(([v, t]) => el("label", {},
         el("input", { type: "radio", name: "vpn-type", value: v, checked: (state.vpn.type || "wireguard") === v }), el("span", { text: t }))));
@@ -343,33 +368,34 @@ async function installStep(id, state, data, apps, go) {
     };
     const countries = el("input", { class: "input", placeholder: "such as Netherlands", value: state.vpn.countries || "" });
     const wg = el("div", { class: "form-stack" },
-      field("WireGuard private key", inputs.wireguard_private_key, { hint: "On your provider's site, make a WireGuard configuration (sometimes called a config file or a device). Copy the PrivateKey line." }),
-      field("WireGuard address", inputs.wireguard_addresses, { hint: "The Address line from the same configuration, ending /32." }));
+      field("WireGuard private key", inputs.wireguard_private_key, { required: true, hint: "On your provider's site, make a WireGuard configuration (sometimes called a config file or a device). Copy the PrivateKey line." }),
+      field("WireGuard address", inputs.wireguard_addresses, { required: true, hint: "The Address line from the same configuration, ending /32." }));
     const ovpn = el("div", { class: "form-stack" },
-      field("OpenVPN user name", inputs.openvpn_user, { hint: "Your provider's OpenVPN or service user name. It is often not the one you sign in to their website with." }),
-      field("OpenVPN password", inputs.openvpn_password));
+      field("OpenVPN user name", inputs.openvpn_user, { required: true, hint: "Your provider's OpenVPN or service user name. It is often not the one you sign in to their website with." }),
+      field("OpenVPN password", inputs.openvpn_password, { required: true }));
     const kind = () => $("input:checked", type)?.value || "wireguard";
     const showType = () => { wg.hidden = kind() !== "wireguard"; ovpn.hidden = kind() !== "openvpn"; };
     type.addEventListener("change", showType);
     showType();
-    nodes = [el("div", { class: "form-stack" },
-      field("VPN provider", provider, { hint: "Its name as Gluetun knows it. Start typing to choose from the list." }), list,
+    nodes = [provider, el("div", { class: "form-stack" },
+      otherBox,
       el("div", { class: "field" }, el("span", { class: "field__label", text: "Connection" }),
         el("span", { class: "hint", text: "WireGuard is quicker and simpler. Use OpenVPN only if your provider has no WireGuard." }), type),
       wg, ovpn,
       field("Countries", countries, { hint: "Optional. Where the VPN connects; a nearby country is fastest." }),
       el("p", { class: "small muted", text: "These go in the .env file on this computer only, never in Starboard's settings or its logs." }))];
     save = async () => {
-      [provider, ...Object.values(inputs)].forEach(clearError);
-      const p = provider.value.trim().toLowerCase();
-      if (!/^[a-z0-9 _-]{2,40}$/.test(p)) return stop(provider, "Enter your VPN provider, such as mullvad");
+      [other, ...Object.values(inputs)].forEach(clearError);
+      if (!picked()) return stop($("input", provider), "Choose your VPN provider");
+      const p = picked() === "other" ? other.value.trim().toLowerCase() : picked();
+      if (!/^[a-z0-9 _-]{2,40}$/.test(p)) return stop(other, "Enter your VPN provider's name, such as mullvad");
       const need = kind() === "wireguard" ? ["wireguard_private_key", "wireguard_addresses"] : ["openvpn_user", "openvpn_password"];
       for (const k of need) if (!inputs[k].value.trim()) return stop(inputs[k], "Enter this from your VPN provider");
       if (kind() === "wireguard" && !/\/\d{1,3}$/.test(inputs.wireguard_addresses.value.trim())) return stop(inputs.wireguard_addresses, "Enter the address with its /32 at the end");
       state.vpn = { provider: p, type: kind(), countries: countries.value.trim(),
         ...Object.fromEntries(need.map((k) => [k, inputs[k].value.trim()])) };
       try { await api("/api/stack/preview", { method: "POST", body: body(state) }); return true; }
-      catch (e) { return stop(provider, e.message); }
+      catch (e) { return stop($("input", provider), e.message); }
     };
   } else if (id === "usenet") {
     // The same step as the terminal set-up's Usenet step (DASH-142): it asks first, and shows the providers only to
@@ -378,8 +404,7 @@ async function installStep(id, state, data, apps, go) {
     const more = el("div", { class: "stack-2", "aria-live": "polite" });
     const show = (v) => {
       state.usenetHave = v;
-      const how = el("p", {}, el("a", { class: "help-link", href: helpPage("topics/choose-a-usenet-provider.md"), target: "_blank", rel: "noopener noreferrer" },
-        icon("circle-help"), el("span", { text: "How to add a provider's server" }), el("span", { class: "visually-hidden", text: " (opens in a new tab)" })));
+      const how = el("p", { class: "help-links" }, helpButton("How to add a provider's server", { page: "topics/choose-a-usenet-provider.md" }));
       more.replaceChildren(...(v === "none" ? [
         el("p", { class: "small" }, el("strong", { text: "Ad: " }), USENET_AD),
         el("ul", { "aria-label": "Usenet providers (affiliate links)" }, USENET.map(([name, url]) => el("li", {},
@@ -425,12 +450,20 @@ async function installStep(id, state, data, apps, go) {
     catch (e) { return { nodes: [notice("danger", "Something needs changing", e.message)], save: async () => false }; }
     const change = (step, what) => el("button", { type: "button", class: "btn btn--quiet", onclick: () => go(step) }, "Change",
       el("span", { class: "visually-hidden", text: ` ${what}` }));
-    const row = (label, value, step) => [el("dt", { text: label }), el("dd", {}, value, " ", change(step, label.toLowerCase()))];
+    // One table: what, your answer, and Change to go back to that step (stacks into cards on phones).
+    const row = (label, value, step) => [el("tr", {}, el("th", { scope: "row", "data-label": "What", text: label }),
+      el("td", { "data-label": "Your answer" }, value), el("td", { "data-label": "" }, change(step, label.toLowerCase())))];
+    const vpnName = (await loadVpnProviders()).find((v) => v.id === state.vpn.provider)?.name || state.vpn.provider;
     const picked = data.groups.filter((g) => state.groups.has(g.key)).map((g) => g.name).join(", ") || "None";
     const moving = [...state.moving].map((m) => ({ history: "Watch history", listening: "Listening progress", settings: "App settings" })[m]).filter(Boolean).join(", ");
     nodes = [
       el("p", { text: "Nothing is written or started until you choose Write the files. You can change anything first." }),
-      el("dl", { class: "facts" },
+      el("div", { class: "table-wrap", "data-stack": "" }, el("table", { class: "table table--fixed table--middle" },
+        el("caption", { class: "visually-hidden", text: "What will be set up" }),
+        el("colgroup", {}, el("col", { class: "col-quarter" }), el("col"), el("col", { class: "col-state" })),
+        el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "What" }), el("th", { scope: "col", text: "Your answer" }),
+          el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Change" })))),
+        el("tbody", {},
         ...row("Install", state.install === "custom" ? "Your own choice" : (state.installName || "Basics"), "groups"),
         ...row("What it does", picked, "groups"),
         ...row("Apps", [...state.apps].map((k) => apps[k].name).join(", "), "groups"),
@@ -439,8 +472,8 @@ async function installStep(id, state, data, apps, go) {
         ...row("Media folder", el("code", { text: state.data_dir }), "folders"),
         ...(state.pool ? row("Pool", `${state.pool.path}, from ${state.pool.mounts.length} drives (run its commands first)`, "folders") : []),
         ...(state.advanced ? row("Settings folder", el("code", { text: state.config_dir }), "folders") : []),
-        ...(state.apps.has("gluetun") ? row("VPN", `${state.vpn.provider}, ${state.vpn.type === "openvpn" ? "OpenVPN" : "WireGuard"}${state.vpn.countries ? `, ${state.vpn.countries}` : ""}`, "vpn") : []),
-        ...(data.servers.length ? row("Moving over", moving || "Nothing", "moving") : [])),
+        ...(state.apps.has("gluetun") ? row("VPN", `${vpnName}, ${state.vpn.type === "openvpn" ? "OpenVPN" : "WireGuard"}${state.vpn.countries ? `, ${state.vpn.countries}` : ""}`, "vpn") : []),
+        ...(data.servers.length ? row("Moving over", moving || "Nothing", "moving") : [])))),
       p.moved.length ? notice("warning", "Some ports moved", p.moved.join(". ") + ".") : null,
       p.later.length ? notice("info", "Started later", `${p.later.join(", ")} ${p.later.length === 1 ? "needs its" : "need their"} own settings file first, so ${p.later.length === 1 ? "it is" : "they are"} written but not started.`) : null,
       p.hooks?.length ? el("p", { class: "small muted", text: `Before System, Apps, Updates changes ${p.hooks.map((k) => apps[k].name).join(" or ")}, it backs up ${p.hooks.length === 1 ? "its" : "their"} database first. If the backup fails, the update stops.` }) : null,
@@ -448,12 +481,17 @@ async function installStep(id, state, data, apps, go) {
         el("p", { class: "small", text: "Two files in Starboard's data folder (data/stack): compose.yaml lists the apps; .env holds your settings and secrets. Older ones are kept." }),
         el("h3", { text: "Folders it makes" }), el("ul", {}, p.folders.map((f) => el("li", {}, el("code", { text: f })))),
         el("h3", { text: "Settings (.env)" }),
-        el("dl", { class: "facts" }, Object.entries(p.env_shown).flatMap(([k, v]) => [el("dt", {}, el("code", { text: k })), el("dd", { text: v || "(empty)" })])),
+        el("div", { class: "table-wrap", "data-stack": "" }, el("table", { class: "table table--fixed" },
+          el("caption", { class: "visually-hidden", text: "Settings in the .env file" }),
+          el("colgroup", {}, el("col", { class: "col-third" }), el("col")),
+          el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "Setting" }), el("th", { scope: "col", text: "Value" }))),
+          el("tbody", {}, Object.entries(p.env_shown).map(([k, v]) => el("tr", {},
+            el("th", { scope: "row", "data-label": "Setting" }, el("code", { text: k })), el("td", { "data-label": "Value", text: v || "(empty)" })))))),
         el("h3", { text: "compose.yaml" }), el("pre", { class: "code-block", text: p.compose }))),
     ].filter(Boolean);
     // Writing decides which apps run, so it asks for the password, as starting does.
     const writePassword = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true, id: "write-password" });
-    nodes.push(field("Your Starboard password", writePassword, { hint: "Needed to write the files: they decide which apps run on this computer." }));
+    nodes.push(field("Your Starboard password", writePassword, { required: true, hint: "Needed to write the files: they decide which apps run on this computer." }));
     save = async () => {
       setError(writePassword, "");
       if (!writePassword.value) { setError(writePassword, "Enter your Starboard password"); writePassword.focus(); return false; }
@@ -494,7 +532,7 @@ async function installStep(id, state, data, apps, go) {
         el("p", { text: w.can_start
           ? "Starboard asks Docker to download each app and start it, using a short-lived helper. This can take several minutes on the first run."
           : "The Run first window on this computer downloads each app and starts it, so keep that window open. This can take several minutes on the first run." }),
-        field("Your Starboard password", pw, { hint: heldPassword ? "Filled in from the Check step. Starting apps changes this computer, so Starboard checks it is you."
+        field("Your Starboard password", pw, { required: true, hint: heldPassword ? "Filled in from the Check step. Starting apps changes this computer, so Starboard checks it is you."
           : "Starting apps changes this computer, so Starboard checks it is you." }),
         el("div", { class: "actions" }, startBtn));
       startBtn.addEventListener("click", async () => {
@@ -586,7 +624,7 @@ async function poolDialog(drives, current) {
   const ok = await confirmDialog({
     title: "Join several drives into one",
     message: "A pool (mergerfs) shows several drives as one folder. New files go to the drive with the most room. Nothing on the drives is erased or moved.",
-    fields: [choose, field("Pool folder", path, { hint: "Where the joined folder appears, such as /srv/pool. This becomes your media folder." })],
+    fields: [choose, field("Pool folder", path, { required: true, hint: "Where the joined folder appears, such as /srv/pool. This becomes your media folder." })],
     confirm: "Use these drives",
   });
   if (!ok) return null;

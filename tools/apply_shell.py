@@ -226,7 +226,7 @@ def shell(current):
     {search_form("header-search-input", "site-header__search search-field", "header-search")}
     <div class="site-header__actions">
       <button type="button" class="icon-btn site-header__search-btn" data-search-open aria-controls="header-search" aria-expanded="false">{icon("search", 20)}<span class="visually-hidden">Search</span></button>
-      <a class="icon-btn" href="{HELP_BASE}{help_page(help_path)}" target="_blank" rel="noopener noreferrer" data-help-link>{icon("circle-help", 20)}<span class="label">Help</span><span class="visually-hidden"> with {help_about} (opens in a new tab)</span></a>
+      <a class="icon-btn" href="{HELP_BASE}{help_page(help_path)}" target="_blank" rel="noopener noreferrer" data-help-link>{icon("help-new-tab", 20)}<span class="label">Help</span><span class="visually-hidden"> with {help_about} (opens in a new tab)</span></a>
       <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false">{icon("sun", 20)}<span class="label">Display</span></button>
     </div>
   </div>{level2}

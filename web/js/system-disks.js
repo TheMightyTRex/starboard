@@ -138,7 +138,7 @@ async function readNow() {
 
 function openReport(d, opener) {
   const again = el("button", { type: "button", class: "btn" }, icon("refresh-cw"), el("span", { text: "Check again" }));
-  const panel = sidePanel({ title: `${nameOf(d)}, SMART report`, opener, wide: true, body: reportBody(d), foot: [again] });
+  const panel = sidePanel({ title: `${nameOf(d)}, SMART report`, opener, body: reportBody(d), foot: [again] });
   again.addEventListener("click", async () => {
     await load();
     const now = data?.disks.find((x) => keyOf(x) === keyOf(d));

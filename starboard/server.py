@@ -20,7 +20,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
-from . import access, auth, backup, reelix_setup, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, helpdocs, reelix_setup, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1288,6 +1288,13 @@ class Handler(BaseHTTPRequestHandler):
                 removed = app.log.clear()
                 logs.event("info", "logs", f"Logs deleted ({removed} {'day' if removed == 1 else 'days'})")
                 return self.json(200, {"removed": removed})
+            if path == "/api/help" and method == "GET":
+                # A help centre article for the help slide-out, as data (helpdocs.py).
+                page = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("page", [""])[0]
+                try:
+                    return self.json(200, helpdocs.article(page))
+                except helpdocs.HelpError as e:
+                    return self.json(400 if not helpdocs.PAGE.match(page) else 502, {"error": str(e), "url": helpdocs.HELP_CENTRE})
             if path == "/api/releases" and method == "GET":
                 d = cfg.data
                 return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo,

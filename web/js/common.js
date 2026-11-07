@@ -9,6 +9,92 @@ function helpPage(path) {
 }
 // Data from the server is always written with textContent, never as HTML.
 
+// A link that opens a new tab: its words, then the new-tab icon, and "(opens in a new tab)" for screen readers
+// (LIBRARY.md, Links). `about` adds words for screen readers only, such as whose site it is.
+function newTabLink(href, text, { about = "", className = "" } = {}) {
+  return el("a", { href, target: "_blank", rel: "noopener noreferrer", class: className || null }, text,
+    el("span", { class: "visually-hidden", text: ` (${about ? `${about}, ` : ""}opens in a new tab)` }), icon("external-link", 16));
+}
+
+// Required fields (LIBRARY.md, Fields): a * after the label. The key, "* = Required", is in the help slide-out, not
+// in the form: most people know the star, and the help is where it is explained.
+function requiredMark() {
+  return el("span", { class: "field__required", "aria-hidden": "true", text: "*" });
+}
+// The key for the stars, at the bottom of a help slide-out opened from a form or step that has a required field.
+function requiredKey() {
+  return el("p", { class: "required-key" }, el("span", { class: "field__required", text: "*" }), "= Required");
+}
+
+// In-page help (LIBRARY.md, Help links): a link-styled button with the square help icon that opens a slide-out
+// titled with its question. `body` is help written in the page; `page` is a help centre article
+// ("topics/x.md#part"), fetched by Starboard (/api/help) and drawn here from data. With an article, the foot has
+// "Read it in the help centre", with the new-tab help icon. `back` names a button that closes it ("Back to set-up").
+function helpButton(question, { body = null, page = "", title = "", back = "" } = {}) {
+  const button = el("button", { type: "button", class: "help-link", "aria-haspopup": "dialog" }, icon("help"), el("span", { text: question }));
+  button.addEventListener("click", () => openHelp(title || question, { body, page, back, opener: button }));
+  return button;
+}
+
+function helpCentreLink(page, text = "Read it in the help centre") {
+  return el("a", { class: "help-link", href: helpPage(page), target: "_blank", rel: "noopener noreferrer" },
+    icon("help-new-tab"), el("span", { text }), el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
+}
+
+async function openHelp(title, { body = null, page = "", back = "", opener } = {}) {
+  const close = back ? el("button", { type: "button", class: "btn", text: back }) : null;
+  const panel = sidePanel({ title, opener, wide: true, body: body ? [].concat(body) : [el("p", { class: "muted", text: "Loading…" })],
+    foot: [close, page ? helpCentreLink(page) : null].filter(Boolean) });
+  close?.addEventListener("click", () => panel.close());
+  // The star's key when the form or step this help belongs to has a required field.
+  const keyed = !!opener?.closest?.("form, .panel, .side-panel__body, main")?.querySelector(".field__required");
+  if (keyed) panel.body.append(requiredKey());
+  if (body || !page) return panel;
+  const [file, anchor] = page.split("#");
+  try {
+    const found = await api(`/api/help?page=${encodeURIComponent(file)}`);
+    panel.body.replaceChildren(el("div", { class: "prose" }, helpNodes(found.body, panel)), keyed ? requiredKey() : "");
+    if (anchor) panel.body.querySelector(`[id="help-${CSS.escape(anchor)}"]`)?.scrollIntoView({ block: "start" });
+  } catch (e) {
+    panel.body.replaceChildren(el("p", { text: e.message }), keyed ? requiredKey() : "");
+  }
+  return panel;
+}
+
+// An article from /api/help as nodes: only these tags, text always as text, headings one level down (the
+// slide-out's title is the h2), ids kept apart from the page's with "help-", links to the help centre in a new tab.
+const HELP_TAGS = new Set(["h2", "h3", "h4", "p", "ul", "ol", "li", "strong", "em", "code", "pre", "kbd", "br", "blockquote",
+  "a", "img", "figure", "figcaption", "table", "thead", "tbody", "tr", "th", "td"]);
+const HELP_LEVEL = { h2: "h3", h3: "h4", h4: "h5" };
+function helpNodes(list, panel) {
+  return (list || []).map((n) => {
+    if (typeof n === "string") return document.createTextNode(n);
+    const [tag, attrs = {}, kids = []] = n;
+    if (!HELP_TAGS.has(tag)) return el("span", {}, helpNodes(kids, panel));
+    const node = document.createElement(HELP_LEVEL[tag] || tag);
+    if (attrs.id) node.id = `help-${attrs.id}`;
+    if (tag === "a") {
+      const href = attrs.href || "";
+      if (href.startsWith("#")) {
+        node.href = href;
+        node.addEventListener("click", (e) => {
+          e.preventDefault();
+          panel.body.querySelector(`[id="help-${CSS.escape(href.slice(1))}"]`)?.scrollIntoView({ block: "start" });
+        });
+      } else if (href.startsWith("https://")) {
+        node.href = href; node.target = "_blank"; node.rel = "noopener noreferrer";
+      }
+    }
+    if (tag === "img") {
+      if (!(attrs.src || "").startsWith("https://")) return document.createTextNode("");
+      node.src = attrs.src; node.alt = attrs.alt || ""; node.loading = "lazy";
+    }
+    node.append(...helpNodes(kids, panel));
+    if (tag === "a" && node.target) node.append(el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
+    return node;
+  });
+}
+
 const PREF_KEY = "starboard.display";
 const DEFAULT_PREFS = { theme: "system", text: "100", contrast: false, motion: "device", underline: false, spacing: false, design: "" };
 const DESIGNS = {

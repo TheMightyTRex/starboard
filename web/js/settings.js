@@ -10,15 +10,16 @@ const NO_KEY = ["link"];
 
 // A field with its label, hint and an error tied to the control.
 let fieldCount = 0;
-function field(label, control, { hint, span, short } = {}) {
+function field(label, control, { hint, span, short, required } = {}) {
   if (!control.id) control.id = `field-${++fieldCount}`;
+  if (required) control.required = true;
   const hintNode = hint ? el("span", { class: "hint", id: `${control.id}-hint` }, hint) : null;
   const error = el("span", { class: "field-error", id: `${control.id}-error`, hidden: true });
   if (hintNode) control.setAttribute("aria-describedby", hintNode.id);
   control.fieldError = error;
   control.fieldHint = hintNode;
   return el("div", { class: short ? "field field--short" : "field", "data-span": span ? "all" : null },
-    el("label", { for: control.id, text: label }), hintNode, control, error);
+    el("label", { for: control.id }, label, control.required ? requiredMark() : null), hintNode, control, error);
 }
 
 function setError(control, message) {
@@ -310,8 +311,8 @@ function openService(s = null, opener = null, { background = false, preset = nul
       el("h3", { id: "svc-conn-h", tabindex: "-1", text: "Connection" }),
       el("div", { class: "form-grid" },
         field("Kind of app", type),
-        field("Name", name),
-        field("Address Starboard uses", url, { hint: "For an app on this computer, 127.0.0.1 and the app's port, such as http://127.0.0.1:8989. For another computer, its address. Optional for a background service.", span: true }),
+        field("Name", name, { required: true }),
+        field("Address Starboard uses", url, { required: true, hint: "For an app on this computer, 127.0.0.1 and the app's port, such as http://127.0.0.1:8989. For another computer, its address. Optional for a background service.", span: true }),
         keyField),
       el("div", { class: "actions" }, testButton),
       testResult),
@@ -581,7 +582,7 @@ async function renameCategory(name) {
   const ok = await confirmDialog({
     title: `Rename ${name}`,
     message: n ? `The ${appsWord(n)} in it move with it.` : "No apps are in it yet.",
-    fields: [field("New name", input)],
+    fields: [field("New name", input, { required: true })],
     confirm: "Rename category",
   });
   const to = input.value.trim();
@@ -614,7 +615,7 @@ async function removeCategory(name) {
 function startGeneral() {
   // Dashboard name
   const siteName = el("input", { class: "input", name: "site_name", maxlength: "60", required: true, value: config.site_name });
-  const nameForm = el("form", { novalidate: true, class: "inline-save" }, field("Dashboard name", siteName),
+  const nameForm = el("form", { novalidate: true, class: "inline-save" }, field("Dashboard name", siteName, { required: true }),
     el("button", { type: "submit", class: "btn", text: "Save name" }), savedNote("name-saved"));
   nameForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -654,7 +655,7 @@ function startGeneral() {
 
   // Categories
   const newName = el("input", { class: "input", id: "category-name", maxlength: "40", placeholder: "For example: Home", autocomplete: "off" });
-  const addForm = el("form", { class: "add-row", novalidate: true }, field("New category", newName),
+  const addForm = el("form", { class: "add-row", novalidate: true }, field("New category", newName, { required: true }),
     el("button", { type: "submit", class: "btn", id: "category-add" }, icon("plus"), "Add category"));
   addForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -966,7 +967,7 @@ async function appFinder(onAdded, { expect = null, shown = null } = {}) {
 
 async function openFinder(opener) {
   const go = el("button", { type: "button", class: "btn btn--primary" }, icon("plus"), "Add the ticked apps");
-  const panel = sidePanel({ title: "Search for new apps", opener, wide: true, body: [el("p", { class: "muted", text: "Looking…" })], foot: [go] });
+  const panel = sidePanel({ title: "Search for new apps", opener, body: [el("p", { class: "muted", text: "Looking…" })], foot: [go] });
   const finder = await appFinder((r) => {
     renderServices();
     if (r.missing_keys.length) toast(`Added. Give these their API keys in Edit: ${r.missing_keys.join(", ")}`);
@@ -1005,16 +1006,16 @@ async function stepContent(id, root) {
     const file = el("input", { type: "file", class: "input", accept: ".json,application/json", id: "guide-backup-file" });
     const password = el("input", { type: "password", class: "input", autocomplete: "current-password", id: "guide-backup-password" });
     const restoreBox = el("div", { class: "form-stack", hidden: chosen !== "restore" },
-      field("Backup file", file, { hint: "From System, Backup and restore, Download a copy of the settings.", span: true }),
-      field("Your Starboard password", password, { hint: "The one you just chose. Starboard checks it before it restores.", span: true }));
+      field("Backup file", file, { required: true, hint: "From System, Backup and restore, Download a copy of the settings.", span: true }),
+      field("Your Starboard password", password, { required: true, hint: "The one you just chose. Starboard checks it before it restores.", span: true }));
     radios.forEach(({ input }) => input.addEventListener("change", () => { restoreBox.hidden = input.value !== "restore" || !input.checked; }));
     nodes = [found.found.length ? notice("info", "Found on this computer", found.found.join(", ")) : null,
       el("fieldset", {}, el("legend", { class: "visually-hidden", text: "How to start" }),
         el("div", { class: "option-cards" }, radios.map(({ c, input }) => el("label", { class: "option-card" }, input,
           el("strong", { text: c.title + (c.recommended ? " (recommended)" : "") }), el("small", { text: c.about }))))),
       restoreBox,
-      el("details", { class: "disclosure" }, el("summary", { text: "Which one is right for me?" }),
-        el("div", { class: "disclosure__body" }, found.choices.map((c) => el("p", {}, el("strong", { text: `${c.title}: ` }), c.help))))];
+      el("p", { class: "help-links" }, helpButton("Which one is right for me?", { back: "Back to set-up",
+        body: found.choices.map((c) => el("p", {}, el("strong", { text: `${c.title}: ` }), c.help)) }))];
     save = async () => {
       const key = radios.find((r) => r.input.checked)?.input.value || found.recommended;
       if (key === "restore") {
@@ -1041,7 +1042,7 @@ async function stepContent(id, root) {
     nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Where your media goes" }),
       el("div", { class: "option-cards" }, radios.map(({ c, input }) => el("label", { class: "option-card" }, input,
         el("strong", { text: c.title + (c.recommended ? " (recommended)" : "") }), el("small", { text: c.about }))))),
-      field("Media folder", folder, { hint: "Made for you when the apps start.", span: true }),
+      field("Media folder", folder, { required: true, hint: "Made for you when the apps start.", span: true }),
       el("p", { class: "small muted", text: found.help })];
     save = async () => {
       const picked = radios.find((r) => r.input.checked)?.c || found.choices[0];
@@ -1210,12 +1211,18 @@ function wizardFrame({ root, steps, index, onBack, onSkip, onContinue, continueT
     step.skippable === false ? null : el("button", { type: "button", class: "btn btn--quiet", onclick: onSkip }, "Skip this step"));
   const heading = el("h2", { id: "wiz-h", tabindex: "-1", text: step.question });
   root.replaceChildren(list, short, el("section", { class: "panel", "aria-labelledby": "wiz-h" },
-    el("div", { class: "stack-1" }, heading, step.intro ? el("p", { class: "muted", text: step.intro }) : null,
-      // Each step's own article in the help centre (web/setup-steps.json, the same for the terminal set-up).
-      step.help ? el("p", {}, el("a", { class: "help-link", href: helpPage(step.help), target: "_blank", rel: "noopener noreferrer" },
-        icon("circle-help"), el("span", { text: "Help with this step" }), el("span", { class: "visually-hidden", text: ` (${step.title}, opens in a new tab)` }))) : null),
-    ...step.nodes, foot));
+    el("div", { class: "stack-1" }, heading, step.intro ? el("p", { class: "muted", text: step.intro }) : null),
+    ...step.nodes.filter((n) => !n?.classList?.contains("help-links")), stepHelp(step), foot));
   return { heading, cont };
+}
+
+// The step's help at the bottom of the step, above the buttons (LIBRARY.md, Help links): the step's own help
+// ("Which one is right for me?") first, then its article in the help centre (web/setup-steps.json, the same for
+// the terminal set-up), in one row.
+function stepHelp(step) {
+  const links = step.nodes.filter((n) => n?.classList?.contains("help-links")).flatMap((n) => [...n.childNodes]);
+  if (step.help) links.push(helpButton("Help with this step", { page: step.help, title: `Help: ${step.question}`, back: "Back to set-up" }));
+  return links.length ? el("p", { class: "help-links" }, links) : null;
 }
 
 async function startGuide() {
@@ -1523,8 +1530,7 @@ async function startJellyfin() {
     settingRow("White channel logos", withCost(d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About). Inactive: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.", "white"),
       sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }, on ? "White logos activated" : "White logos deactivated"), !d.pillow), "lt-white-l"));
   const liveNeeds = lt.needs.length ? notice("warning", "Needs set-up on the server", `Starboard needs ${lt.needs.join(" and ")}. Run ./install.sh and say yes to Live TV.`) : null;
-  const liveHelp = el("details", { class: "disclosure" }, el("summary", { text: "How Jellyfin uses these files" }),
-    el("div", { class: "disclosure__body" }, el("p", { text: "In Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder Jellyfin sees them in." })));
+  const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "In Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder Jellyfin sees them in." }) }));
 
   // Import watch history
   const h = d.history;
@@ -1724,11 +1730,11 @@ async function startListening() {
       const wait = setInterval(async () => { const now = await api("/api/listening").catch(() => null); if (now && now.job.state !== "running") { clearInterval(wait); redraw(); } }, 3000);
     } catch (err) { problem(err.message); }
   } }, icon("play"), "Apply now") : null;
-  const rules = el("details", { class: "disclosure" }, el("summary", { text: "How Starboard copies progress" }),
-    el("div", { class: "disclosure__body stack-2" },
+  const rules = el("p", { class: "help-links" }, helpButton("How Starboard copies progress", { body: [
       el("p", { text: "Each book is matched by its ASIN, then its ISBN, then its title and author, then its folder. A book in several files becomes one position: the earlier files plus the place in the current one. If the two copies differ in length, the position is scaled to fit." }),
       el("p", { text: "Progress a person already has in Audiobookshelf is never changed, and each book is copied once." }),
-      el("p", { text: "Audiobookshelf keeps progress per person. Starboard uses the admin key to make a key that acts as each person, writes their progress with it, and deletes it straight away. Any key left behind stops working after 15 minutes." })));
+      el("p", { text: "Audiobookshelf keeps progress per person. Starboard uses the admin key to make a key that acts as each person, writes their progress with it, and deletes it straight away. Any key left behind stops working after 15 minutes." }),
+    ] }));
 
   // Not found
   const last = d.last;
@@ -1908,9 +1914,9 @@ async function startSecurity() {
   const again = el("input", { class: "input", type: "password", autocomplete: "new-password", required: true });
   const pwForm = el("form", { novalidate: true },
     el("div", { class: "form-stack" },
-      field("Current password", current),
-      field("New password", fresh),
-      field("Type the new password again", again)),
+      field("Current password", current, { required: true }),
+      field("New password", fresh, { required: true }),
+      field("Type the new password again", again, { required: true })),
     el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Change password" }), savedNote("password-saved")));
   pwForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -2101,7 +2107,7 @@ async function startReelix() {
     const password = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true });
     const button = el("button", { type: "submit", class: "btn btn--primary", text: "Switch", disabled: true });
     const form = el("form", { novalidate: true }, el("div", { class: "form-stack" }, cards,
-      field("Your password", password, { hint: "Switching downloads the other version and restarts Reelix, which takes a minute or two." })),
+      field("Your password", password, { required: true, hint: "Switching downloads the other version and restarts Reelix, which takes a minute or two." })),
       el("div", { class: "actions" }, button));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -2228,7 +2234,7 @@ async function startYourInstall() {
   const password = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true });
   const button = el("button", { type: "submit", class: "btn btn--primary", text: "Change my install", disabled: true });
   const form = el("form", { novalidate: true }, summary, el("div", { class: "form-stack" },
-    field("Your password", password, { hint: "Changing downloads and starts apps, and stops the ones taken away. It takes a few minutes." })),
+    field("Your password", password, { required: true, hint: "Changing downloads and starts apps, and stops the ones taken away. It takes a few minutes." })),
     el("div", { class: "actions" }, button));
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
