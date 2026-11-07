@@ -329,8 +329,18 @@ def _yaml_value(v):
     return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def _next_free(port, used):
-    while port in used or not _port_free(port):
+def compose_ports(data_dir):
+    """The host ports data/stack/compose.yaml already maps. Writing that file again treats them as free: they are
+    Starboard's own apps, which keep their ports instead of moving to the next one up."""
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            return sorted({int(m) for m in re.findall(r'(?m)^\s+- "(\d{2,5}):\d{2,5}(?:/udp)?"', f.read())})
+    except OSError:
+        return []
+
+
+def _next_free(port, used, own=()):
+    while port in used or (port not in own and not _port_free(port)):
         port += 1
     used.add(port)
     return port
@@ -477,6 +487,7 @@ def build(choice):
             env[k] = v
             shown[k] = "(hidden)" if v and k in ("WIREGUARD_PRIVATE_KEY", "OPENVPN_PASSWORD") else v
     used, moved, later = set(), [], []
+    own_ports = set(choice.get("own_ports") or [])  # set by Starboard itself from the file it is replacing
     lines = ["# Written by Starboard's Install apps guide. Change it by hand if you like; Starboard does not overwrite",
              "# it unless you run the guide again. Your settings and secrets are in .env next to it.", "services:"]
     vpn_ports = []
@@ -493,7 +504,7 @@ def build(choice):
         ports = []
         for p in a.get("ports", []):
             host, inside = p.split(":", 1)
-            new = _next_free(int(host), used) if "/udp" not in inside else int(host)
+            new = _next_free(int(host), used, own_ports) if "/udp" not in inside else int(host)
             if new != int(host):
                 moved.append(f"{a['name']} uses port {new}, because {host} is taken")
             ports.append(f"{new}:{inside}")
@@ -703,7 +714,7 @@ def plan_change(data_dir, install=None, usenet=None, edition=None, check=None):
     if usenet and usenet in USENET_APPS and usenet != next((k for k in USENET_APPS if k in apps), usenet):
         apps = [usenet if k in USENET_APPS else k for k in apps]
     apps, _ = with_needs(apps)
-    choice = {**now, "apps": apps, "reelix_edition": edition or now["reelix_edition"]}
+    choice = {**now, "apps": apps, "reelix_edition": edition or now["reelix_edition"], "own_ports": compose_ports(data_dir)}
     if choice["reelix_edition"] == "full" and "reelix" in apps:
         reelix_image("full", check)  # raises when the full Reelix cannot be downloaded
     return {"choice": choice, "own": own_services(data_dir), "add": [k for k in apps if k not in now["apps"]],

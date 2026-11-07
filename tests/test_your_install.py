@@ -205,6 +205,22 @@ class YourInstallTest(unittest.TestCase):
                 inside = re.findall(r'"\d+:(\d+)"', gluetun)
                 self.assertEqual(len(inside), len(set(inside)), f"{install} with {usenet}: {inside}")
 
+    def test_a_change_keeps_each_apps_port_while_the_apps_run(self):
+        import socket
+        self.write()
+        compose = os.path.join(stack.folder(self.tmp.name), "compose.yaml")
+        # Jellyfin is running on 8096: something answers there, as it would on the server.
+        s = socket.socket()
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            s.bind(("127.0.0.1", 8096))
+        except OSError:
+            self.skipTest("port 8096 is in use on this computer")
+        s.listen()
+        self.addCleanup(s.close)
+        self.api.call("POST", "/api/install/change", {"password": WORDS, "install": "full"})
+        self.assertIn('"8096:8096"', open(compose).read())
+
 
 if __name__ == "__main__":
     unittest.main()

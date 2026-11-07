@@ -1197,13 +1197,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"started": started, "add": plan["add"], "remove": plan["remove"],
                                        "sab_servers": len(usenet_move.parse_sab_servers(sab_ini)) if sab_ini else 0})
             if path == "/api/stack/preview" and method == "POST":
-                built = stack.build(self.body())
+                preview = {k: v for k, v in self.body().items() if k != "own_ports"}
+                built = stack.build({**preview, "own_ports": stack.compose_ports(app.data_dir)})
                 return self.json(200, {**{k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")}, "hooks": sorted(built["hooks"])})
             if path == "/api/stack/write" and method == "POST":
                 choice = self.body()
                 # Writing decides which apps the next start keeps (it removes the rest), so the password again.
                 self.check_password(choice)
-                choice = {k: v for k, v in choice.items() if k != "password"}
+                choice = {k: v for k, v in choice.items() if k not in ("password", "own_ports")}
+                choice["own_ports"] = stack.compose_ports(app.data_dir)  # running Install apps again keeps the ports
                 built = stack.build(choice)
                 own = stack.own_services(app.data_dir)  # apps added by hand stay, so starting does not remove them
                 if own:
