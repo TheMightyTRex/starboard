@@ -19,6 +19,7 @@ import json
 import os
 import platform
 import re
+import select
 import shutil
 import signal
 import socket
@@ -505,7 +506,9 @@ class Terminal:
     loses its place when a screen is redrawn). NO_COLOR keeps the boxes without colour."""
 
     def __init__(self, out=sys.stdout, ask=input, secret=getpass.getpass, fancy=None, colour=None, width=None, rows=None):
-        self.out, self._ask, self._secret = out, ask, secret
+        self.out, self._secret = out, secret
+        self._real_input = ask is input  # the real terminal: questions are read in slices (_sliced_input)
+        self._ask = self._sliced_input if self._real_input else ask
         self.fixed_size = (width, rows)  # given by a test; otherwise the window is measured at every step
         self._measure()
         tty = hasattr(out, "isatty") and out.isatty()
@@ -598,6 +601,28 @@ class Terminal:
             # Only a flag here: drawing inside the signal handler could draw over an open help box or QR code, or
             # in the middle of another line. The step is drawn again at the next read (catch_up).
             signal.signal(signal.SIGWINCH, lambda *_: setattr(self, "resize_due", True))
+
+    def _sliced_input(self, prompt):
+        """input(), read in slices of a third of a second, so a change of window size is drawn while a question
+        waits rather than after the next Enter. What the person has typed so far waits in the terminal meanwhile."""
+        try:
+            tty = sys.stdin.isatty()
+        except (AttributeError, ValueError):
+            tty = False
+        if not tty:
+            return input(prompt)
+        self.out.write(prompt)
+        self.out.flush()
+        while True:
+            ready, _, _ = select.select([sys.stdin], [], [], 0.3)
+            if ready:
+                line = sys.stdin.readline()
+                if not line:
+                    raise EOFError
+                return line.rstrip("\n")
+            if self.resize_due and self.fancy:
+                self.resize_due = False
+                self._resized()
 
     def catch_up(self):
         """Draws the step again if the window changed size since the last read, to fit the new size."""
@@ -939,7 +964,7 @@ class Terminal:
         """Arrow keys and Space can be read one at a time: the boxed way, in a real terminal (not plain mode, which
         stays numbered for software that reads text aloud, and not a test's answers)."""
         try:
-            return self.fancy and self._ask is input and sys.stdin.isatty() and sys.stdout.isatty()
+            return self.fancy and self._real_input and sys.stdin.isatty() and sys.stdout.isatty()
         except (AttributeError, ValueError):
             return False
 
@@ -1476,7 +1501,7 @@ class Terminal:
         try:
             import termios
             fd = sys.stdin.fileno()
-            if not (self.fancy and self._ask is input and os.isatty(fd)):
+            if not (self.fancy and self._real_input and os.isatty(fd)):
                 return lambda: None
             saved = termios.tcgetattr(fd)
             quiet = termios.tcgetattr(fd)
