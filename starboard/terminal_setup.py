@@ -273,12 +273,15 @@ class Report:
     """One piece of feedback: the kind, the person's own words and what the set-up knows about where it happened.
     Everything in it has been through redact() already; nothing typed as an answer to the set-up is in it."""
 
-    def __init__(self, kind, answers, step, part, window, plain, error):
-        self.kind, self.answers, self.step, self.part = kind, answers, step, part
+    def __init__(self, kind, answers, step, part, window, plain, error, where="Terminal set-up"):
+        self.kind, self.answers, self.step, self.part, self.where = kind, answers, step, part, where
         self.window, self.plain, self.error = window, plain, error
         self.version, self.system, self.processor = starboard_version(), system_name(), platform.machine() or "unknown"
         self.created = time.strftime("%Y-%m-%d %H:%M")
         self.file = None  # where Save to a file put it, as shown (~/...)
+
+    def slug(self):
+        return re.sub(r"[^a-z0-9]+", "-", self.where.lower()).strip("-")
 
     @property
     def label(self):
@@ -286,12 +289,12 @@ class Report:
 
     def page(self):
         n, name = self.step
-        return f"Terminal set-up, step {n}: {name}" if n else f"Terminal set-up: {name}"
+        return f"{self.where}, step {n}: {name}" if n else f"{self.where}: {name}"
 
     def title(self, n=90):
         error = (self.error or "").strip().split("\n")[-1].split(": ", 1)[-1]
         first = next((a for _, a in self.answers if len(a) > 8), error or self.label).split("\n")[0]
-        where = f"Terminal set-up, step {self.step[0]}" if self.step[0] else "Terminal set-up"
+        where = f"{self.where}, step {self.step[0]}" if self.step[0] else self.where
         return clip(f"{where}: {first}", n)
 
     def labels(self):
@@ -304,7 +307,7 @@ class Report:
             lines += [f"**{label}**", clip(text, 600) if short else text, ""]
         n, name = self.step
         rows = [("Report", self.label), ("App", f"Starboard {self.version}"), ("Page", self.page()),
-                ("Path", f"`terminal-setup/step-{n}`" if n else "`terminal-setup`"),
+                ("Path", f"`{self.slug()}/step-{n}`" if n else f"`{self.slug()}`"),
                 ("Part", f'"{self.part}"' if self.part else ""), ("Window", self.window),
                 ("System", f"{self.system}, {self.processor}"), ("Plain mode", self.plain), ("Reported", self.created)]
         lines += ["| | |", "|---|---|"] + [f"| {k} | {cell(v)} |" for k, v in rows if v]
@@ -343,7 +346,7 @@ class Report:
         where the whole report is, with no labels."""
         n, _ = self.step
         said = " ".join(a.replace("\n", " ") for _, a in self.answers) or (self.error or "").split("\n")[-1]
-        title = f"{self.kind[2]}: step {n}" if n else f"{self.kind[2]}: terminal set-up"
+        title = f"{self.kind[2]}: step {n}" if n else f"{self.kind[2]}: {self.where.lower()}"
         if said and words:
             title += ": " + clip(said, words).rstrip(".")
         body = f"Starboard {self.version}." + (f" Whole report: {self.file}" if self.file else "")
@@ -353,14 +356,14 @@ class Report:
     def title_only(self):
         """The smallest address of all, for the smallest windows: the title alone, with no body or labels."""
         n, _ = self.step
-        title = f"{self.kind[2]}: terminal set-up" + (f", step {n}" if n else "")
+        title = f"{self.kind[2]}: {self.where.lower()}" + (f", step {n}" if n else "")
         return f"https://github.com/{REPO}/issues/new?title={urllib.parse.quote_plus(title)}"
 
     def tiny(self, words):
         """The smallest report: the title and one or two sentences, for a QR code that has to fit the window."""
         n, name = self.step
         said = " ".join(a.replace("\n", " ") for _, a in self.answers) or (self.error or "").split("\n")[-1]
-        body = f"{self.kind[2]} at step {n}: {name}." if n else f"{self.kind[2]} in the terminal set-up."
+        body = f"{self.kind[2]} at step {n}: {name}." if n else f"{self.kind[2]} in the {self.where.lower()}."
         if said and words:
             body += " " + clip(said, words).rstrip(".") + "."
         body += f" Starboard {self.version}, {self.system}."
@@ -644,7 +647,7 @@ class Terminal:
                  + self.dim(right) + "  " + self.dim("│"),
                  self.dim("└" + "─" * (inner + 2) + "┘")]
         if step:
-            bar = self.width - 12
+            bar = self.width - 8
             done = round(bar * (step - 1) / len(STEPS))
             pct = f"{round(100 * (step - 1) / len(STEPS)):>3}%"
             lines.append("  " + self._c("36", "█" * done) + self.dim("░" * (bar - done)) + "  " + self.dim(pct))
@@ -1104,7 +1107,8 @@ class Terminal:
             plain = "on" if self.plain_asked else "on, because the window is small or there is no terminal"
         error = redact(self.last_error or problem or "", secrets)
         report = Report(kind, answers, self.step, redact(self.part, secrets), f"{self.cols} x {self.rows} characters, "
-                        f"{os.environ.get('TERM', 'no TERM')}", plain, error.strip()[-1500:])
+                        f"{os.environ.get('TERM', 'no TERM')}", plain, error.strip()[-1500:],
+                        getattr(self, "where", "Terminal set-up"))
         self._send(report)
 
     def _send(self, report):
@@ -2147,13 +2151,38 @@ def run(api, term, data_dir, port, address=""):
     return 0
 
 
+def feedback_only(where, problem, plain):
+    """Feedback for another of Starboard's terminal scripts (run-first.sh and install.sh, which have no QR code of
+    their own): the same kinds, questions, report and ways to send it, on a page of its own. The script draws its
+    step again afterwards."""
+    who, n, name = (where.split("|") + ["", ""])[:3]
+    term = Terminal(fancy=False if plain else None)
+    term.watch_size()
+    term.plain_asked = plain
+    term.where = who.strip() or "Terminal set-up"
+    try:
+        term.heading("Report this problem" if problem else "Send feedback")
+        term.step = (int(n) if n.isdigit() else None, name.strip())
+        term.feedback(problem or None)
+    except (Stop, KeyboardInterrupt, EOFError):
+        pass
+    finally:
+        term.finish()
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Set Starboard up in the terminal.")
     parser.add_argument("--port", type=int, default=int(os.environ.get("STARBOARD_PORT", "8095")))
     parser.add_argument("--data", default="data", help="Starboard's data folder (default: ./data)")
     parser.add_argument("--address", default="", help="This computer's address on the home network, to show at the end")
     parser.add_argument("--plain", action="store_true", help="Plain lines with no boxes, colour or redrawing, for a screen reader")
+    parser.add_argument("--feedback", metavar="WHERE", help="Only send feedback, for the Run first script or the installer: "
+                        "'Run first|3|Install what is missing' (who, the step's number and name)")
+    parser.add_argument("--problem", default="", help="With --feedback: the error to report (Report this problem)")
     args = parser.parse_args(argv)
+    if args.feedback and sys.stdin.isatty():
+        return feedback_only(args.feedback, args.problem, bool(args.plain or os.environ.get("STARBOARD_PLAIN")))
     if not sys.stdin.isatty():
         print("Stopped: this needs a terminal to type in. Finish set-up in a browser instead.", file=sys.stderr)
         return 2

@@ -22,6 +22,9 @@ set -uo pipefail
 
 REPO="${STARBOARD_REPO:-https://github.com/TheMightyTRex/starboard.git}"
 DIR="${STARBOARD_DIR:-$HOME/starboard}"
+# Feedback (f): the terminal set-up's report and QR code once Starboard is downloaded here; a link before that.
+FEEDBACK_WHO="Run first"
+FEEDBACK_DIR="$DIR"
 # Every way this script can stop has an error number (RF-01 and so on). The help page Run first error numbers says
 # what each means and how to put it right; keep the two in step (tests/test_run_first_errors.py checks).
 ERR_URL="https://themightytrex.github.io/starboard/help/topics/run-first-errors.html"
@@ -59,6 +62,16 @@ STEPS=6
 TITLES=("" "Welcome" "Check this computer" "Install what is missing" "Download Starboard" "Ready to install"
         "Install Starboard" "Done")
 
+# terminal-frame: start (a copy of lib/terminal-frame.sh; change that file, then copy it here)
+# shellcheck shell=bash
+# The terminal frame shared by Starboard's terminal scripts: the Run first script (run-first.sh, which has a copy of
+# this file between its "terminal-frame" lines, because it arrives on its own through curl) and the installer
+# (install.sh, which reads this file). The rules are in the design system's docs/TERMINAL.md: a heading box and
+# progress bar at the top, the menu on the bottom two lines, only the lines between them scrolling; numbered answers
+# with the recommended one first; help as a box over the step; one bar for a job; plain lines for screen readers.
+# A script sets IN (the terminal to read, or empty), PLAIN, STEPS, TITLES, LOG and an err function, then sources it.
+# tests/test_terminal_frame.py checks that run-first.sh's copy is the same. 7 November 2026.
+
 # The page ------------------------------------------------------------------------------------------------------
 
 ROWS=24
@@ -78,9 +91,13 @@ COLOUR=1
 [ -z "$PLAIN" ] || FANCY=0
 [ -n "$IN" ] && [ -t 1 ] || FANCY=0
 SMALL=0
+# SMALL: the scripts say why they show plain lines.
+# shellcheck disable=SC2034
 if [ "$FANCY" = 1 ] && { [ "$COLS" -lt 60 ] || [ "$ROWS" -lt 20 ]; }; then FANCY=0; SMALL=1; fi
 case "$(locale charmap 2>/dev/null)" in UTF-8|utf8) ;; *) FANCY=0 ;; esac
+[ "${TERM:-dumb}" != dumb ] || FANCY=0
 [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != dumb ] || COLOUR=0
+[ "$FANCY" = 1 ] || COLOUR=0  # plain lines are read aloud: no colour codes in them
 measure  # again, now that it is known whether the column is centred
 
 c() { if [ "$COLOUR" = 1 ]; then printf '\033[%sm%s\033[0m' "$1" "$2"; else printf '%s' "$2"; fi; }
@@ -108,54 +125,45 @@ para() {
   SCREEN+=($'\x01'"$1")  # kept as text, so a change of window size wraps it again at the new width
 }
 wrap_para() { printf '%s\n' "$1" | fold -s -w $(( W - 4 )) | sed 's/ *$//; s/^/  /'; }
-# The step's lines at the width now: paragraphs are wrapped again.
+# A hanging line: a lead (such as "  ● 1  " or "  ✔ "), then text wrapped under itself. Style
+# "dim" dims the text; "(recommended)" and "(your last answer)" are shown in green. Kept as text, so a change of
+# window size wraps it again.
+hang() {
+  local lead="$1" style="$2" text="$3"
+  if [ "$FANCY" = 0 ]; then say "$lead$text"; return; fi
+  wrap_hang "$lead" "$style" "$text" | sed "s/^/$PAD/"
+  SCREEN+=($'\x02'"$lead"$'\x03'"$style"$'\x04'"$text")
+}
+wrap_hang() {
+  local lead="$1" style="$2" text="$3" first=1 line out vis indent
+  vis="$(printf '%s' "$lead" | sed 's/\x1b\[[0-9;]*m//g')"
+  indent="$(printf '%*s' "${#vis}" "")"
+  while IFS= read -r line; do
+    line="${line% }"
+    [ "$style" = dim ] && line="$(dim "$line")"
+    if [ "$COLOUR" = 1 ]; then
+      line="${line//(recommended)/$(c 32 "(recommended)")}"
+      line="${line//(your last answer)/$(c 32 "(your last answer)")}"
+    fi
+    if [ "$first" = 1 ]; then out="$lead$line"; first=0; else out="$indent$line"; fi
+    printf '%s\n' "$out"
+  done < <(printf '%s\n' "$text" | fold -s -w $(( W - ${#vis} - 2 > 20 ? W - ${#vis} - 2 : 20 )))
+}
+# The step's lines at the width now: paragraphs and answers are wrapped again.
 screen_lines() {
-  local item
+  local item rest
   for item in "${SCREEN[@]}"; do
-    if [ "${item:0:1}" = $'\x01' ]; then wrap_para "${item:1}"; else printf '%s\n' "$item"; fi
+    case "${item:0:1}" in
+      $'\x01') wrap_para "${item:1}" ;;
+      $'\x02') rest="${item:1}"; wrap_hang "${rest%%$'\x03'*}" "$(printf '%s' "${rest#*$'\x03'}" | sed 's/\x04.*//')" "${rest#*$'\x04'}" ;;
+      *) printf '%s\n' "$item" ;;
+    esac
   done
 }
-ok() { if [ "$FANCY" = 1 ]; then say "  $(c 32 "✔") $1"; else say "Ready: $1"; fi; }
-bad() { if [ "$FANCY" = 1 ]; then say "  $(c 33 "✘") $1"; else say "Missing: $1"; fi; }
-note() { if [ "$FANCY" = 1 ]; then say "  $(c 33 "⚠") $1"; else say "Note: $1"; fi; }
+ok() { if [ "$FANCY" = 1 ]; then hang "  $(c 32 "✔") " "" "$1"; else say "Ready: $1"; fi; }
+bad() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "✘") " "" "$1"; else say "Missing: $1"; fi; }
+note() { if [ "$FANCY" = 1 ]; then hang "  $(c 33 "⚠") " "" "$1"; else say "Note: $1"; fi; }
 
-# The logo: the monitor with four tiles, and the star, in the logo's two colours (tile and star).
-LOGO=(
-"               {S}▄{R}"
-"             {S}▄▄█▄▄{R}"
-" {T}███████████{S}▀█████▀{R}"
-" {T}█  ▄▄▄▄  ▄▄▄{S}▄█▀█▄{R}"
-" {T}█  ████ ████{S}▀  {T}█{S}▀{R}"
-" {T}█  ▀▀▀▀ ▀▀▀▀▀  █{R}"
-" {T}█  ████ █████  █{R}"
-" {T}█  ▀▀▀▀  ▀▀▀▀  █{R}"
-" {T}████████████████{R}"
-"      {T}██████{R}"
-)
-# The same logo at 14 characters by 7 lines, for a window of 24 to 27 lines.
-LOGO_SMALL=(
-"          {S}▄{R}"
-" {T}▄▄▄▄▄▄▄{S}▀████{R}"
-" {T}█ ▄▄▄ ▄▄{S}█▀█{R}"
-" {T}█ ███ ██▀ █{R}"
-" {T}█ ███ ██▄ █{R}"
-" {T}█▄▄▄▄▄▄▄▄▄█{R}"
-"    {T}▄▄▄▄{R}"
-)
-# Which logo fits the window now: big from 28 lines (and 66 columns), small from 24, none below that.
-logo_size() {
-  if [ "$ROWS" -ge 28 ] && [ "$W" -ge 66 ]; then echo big
-  elif [ "$ROWS" -ge 24 ]; then echo small
-  else echo none; fi
-}
-logo_line() {
-  local t="" s="" r="" art
-  if [ "$COLOUR" = 1 ]; then t=$'\033[38;5;105m'; s=$'\033[38;5;209m'; r=$'\033[0m'; fi
-  if [ "$2" = small ]; then art="${LOGO_SMALL[$1]}"; else art="${LOGO[$1]}"; fi
-  local line="${art//\{T\}/$t}"
-  line="${line//\{S\}/$s}"
-  printf '%s' "${line//\{R\}/$r}"
-}
 
 header() {
   local title="$1" step="$2" inner=$(( W - 4 )) right="" left gap bar filled pct
@@ -165,17 +173,20 @@ header() {
   HEADER=("$(dim "┌$(rep ─ $(( inner + 2 )))┐")"
           "$(dim "│")  $(c 1 Starboard)$(dim " | ")$(accent "$title")$(rep " " "$gap")$(dim "$right")  $(dim "│")"
           "$(dim "└$(rep ─ $(( inner + 2 )))┘")")
-  bar=$(( W - 12 ))
+  bar=$(( W - 8 ))  # with its two spaces either side and the percentage, the bar ends where the box does
   filled=$(( bar * (step - 1) / STEPS )); [ "$filled" -le "$bar" ] || filled=$bar
   pct=$(( 100 * (step - 1) / STEPS )); [ "$pct" -le 100 ] || pct=100
   HEADER+=("  $(c 36 "$(rep █ "$filled")")$(dim "$(rep ░ $(( bar - filled )))")  $(dim "$(printf '%3d%%' "$pct")")")
 }
 
 menu() {
-  local line="" plain="" k label gap right="${MENU_RIGHT:-Enter: recommended}" keys
+  local line="" plain="" k label gap right keys
+  right="${MENU_RIGHT:-Enter: recommended}"
+  [ "${CAME_BACK:-0}" = 1 ] && [ -z "$MENU_RIGHT" ] && right="Enter: keep"
   read -ra keys <<< "$KEYS"  # read, not $KEYS, so ? is never taken as a file name pattern
   for k in "${keys[@]}"; do
-    case "$k" in b) label="Back" ;; "?") label="Help" ;; q|Ctrl+C) label="Stop" ;; *) continue ;; esac
+    case "$k" in b) label="Back" ;; "?") label="Help" ;; f) label="Feedback" ;; r) label="Report this problem" ;;
+      q|Ctrl+C) label="Stop" ;; *) continue ;; esac
     line+="$(accent "$k") $label   "; plain+="$k $label   "
   done
   [ $(( W - 4 - ${#plain} - ${#right} )) -ge 3 ] || right=""  # a narrow window: the keys matter more
@@ -188,7 +199,7 @@ menu() {
 # between them scrolling. Plain mode prints a heading line instead.
 page() {
   STEP="$1"
-  KEYS="? q"; [ "$STEP" -gt 1 ] && KEYS="b ? q"
+  KEYS="? f q"; [ "$STEP" -gt "${FIRST_BACK:-1}" ] && KEYS="b ? f q"
   MENU_RIGHT=""
   SCREEN=()
   if [ "$FANCY" = 0 ] && [ "$STEP" -gt "$STEPS" ]; then
@@ -197,13 +208,20 @@ page() {
   fi
   if [ "$FANCY" = 0 ]; then
     printf '\n== Starboard | %s (step %d of %d)\n' "${TITLES[$STEP]}" "$STEP" "$STEPS"
-    if [ "$STEP" -gt 1 ]; then echo "Type b to go back, ? for help or q to stop."; else echo "Type ? for help or q to stop."; fi
+    if [ -z "$IN" ]; then :
+    elif [ "$STEP" -gt "${FIRST_BACK:-1}" ]; then echo "Type b to go back, ? for help, f to send feedback or q to stop."
+    else echo "Type ? for help, f to send feedback or q to stop."; fi
+    [ "${CAME_BACK:-0}" = 1 ] && echo "You came back to this step. Your last answer is in [brackets]: press Enter to keep it."
     return
   fi
   measure
   header "${TITLES[$STEP]}" "$STEP"
   draw_page
   say ""
+  if [ "${CAME_BACK:-0}" = 1 ]; then
+    note "You came back to this step. Your last answer is marked: press Enter to keep it."
+    say ""
+  fi
 }
 draw_page() {
   local i top=$(( ${#HEADER[@]} + 1 ))
@@ -218,14 +236,19 @@ draw_page() {
 resized() {
   [ "$FANCY" = 1 ] && [ "$DRAWN" = 1 ] || return 0
   measure
-  [ "$COLS" -ge 60 ] && [ "$ROWS" -ge 20 ] || return 0
+  if [ "$COLS" -lt 60 ] || [ "$ROWS" -lt 20 ]; then
+    # Too small for the frame: say so on a cleared window, and draw the step again when it is larger.
+    printf '\033[r\033[2J\033[1;1H%s\n%s' "This window is too small for the boxed look. Make it at least 60 by 20." "$PROMPT"
+    return 0
+  fi
   header "${TITLES[$STEP]}" "$STEP"
   local keep=$(( ROWS - 2 - ${#HEADER[@]} - 1 ))
   draw_page
-  if [ "$STEP" = 1 ]; then
+  # A step that draws itself (Run first's welcome, with the logo) does so again at the new size.
+  if declare -F "redraw_step_$STEP" >/dev/null; then
     SCREEN=()
     say ""
-    welcome
+    "redraw_step_$STEP"
     printf '\n%s%s' "$PAD" "$PROMPT"
     return
   fi
@@ -249,7 +272,8 @@ finish() {
   fi
 }
 trap 'finish' EXIT
-trap 'finish; echo; echo "Stopped. Nothing else was changed."; exit 130' INT
+STOP_WORDS="Stopped. Nothing else was changed."
+trap 'finish; echo; echo "$STOP_WORDS"; exit 130' INT
 
 # Help over the step: a box in the middle, the step dimmed behind it. Enter closes it.
 popup() {
@@ -315,21 +339,316 @@ tty_read() {
 # ask "question" "default" "help": sets ANSWER. Returns 0 for an answer, 10 for Back, 11 to draw the step again.
 ANSWER=""
 ask() {
-  local question="$1" default="$2" helptext="$3"
-  if [ -z "$IN" ]; then ANSWER="$default"; return 0; fi
+  local question="$1" default="$2" helptext="$3" title
+  if [ -z "$IN" ] || [ "${ASK:-1}" = 0 ]; then ANSWER="$default"; return 0; fi  # --yes: never stop to ask
+  # The menu's right side says what Enter does here.
+  if [ "$FANCY" = 1 ]; then
+    case "$question" in
+      "Press Enter"*) [ "$MENU_RIGHT" = "Enter: carry on" ] || { MENU_RIGHT="Enter: carry on"; menu; } ;;
+    esac
+  fi
   PROMPT="  $(accent "›") $question "; [ "$FANCY" = 1 ] || PROMPT="$question "
   printf '\n%s%s' "$PAD" "$PROMPT"; [ "$FANCY" = 1 ] && SCREEN+=("")
   if tty_read; then ANSWER="$REPLY_LINE"; else ANSWER="q"; fi
   [ "$FANCY" = 1 ] && SCREEN+=("$PROMPT$ANSWER")
   ANSWER="$(printf '%s' "$ANSWER" | sed 's/^ *//; s/ *$//')"
   case "$ANSWER" in
-    q|Q) finish; echo; echo "Stopped. Nothing else was changed. Run it again at any time."; exit 1 ;;
-    b|B) [ "$STEP" -gt 1 ] && return 10; ANSWER="$default" ;;
-    "?") popup "Help: ${TITLES[$STEP]}" "$helptext"; [ "$FANCY" = 1 ] && return 11; ask "$@"; return $? ;;
+    q|Q) finish; echo; echo "$STOP_WORDS Run it again at any time."; exit 1 ;;
+    b|B)
+      [ "$STEP" -gt "${FIRST_BACK:-1}" ] && return 10
+      forget_prompt
+      if [ "$STEP" -le 1 ]; then say "  This is the first step: there is nothing to go back to."
+      else say "  Your answers are saved from here on. To change one, run this again when it has finished."; fi
+      ask "$@"; return $? ;;
+    "?")
+      forget_prompt
+      # The help's title is the question being asked, as it is written (HELP_TITLE when choose asks it).
+      title="${HELP_TITLE:-$question}"; title="${title%:}"; title="${title% \[*\]}"
+      popup "Help: $title" "$helptext"
+      redraw_step
+      ask "$@"; return $? ;;
+    f|F) forget_prompt; feedback ""; redraw_step; ask "$@"; return $? ;;
+    r|R)
+      if [ -n "${LAST_PROBLEM:-}" ]; then forget_prompt; feedback "$LAST_PROBLEM"; redraw_step; ask "$@"; return $?; fi ;;
     "") ANSWER="$default" ;;
   esac
   return 0
 }
+# The prompt and the answer typed to it (?, f) leave the step's lines, so drawing it again shows the prompt once.
+forget_prompt() {
+  [ "$FANCY" = 1 ] || return 0
+  local n=${#SCREEN[@]}
+  [ "$n" -ge 2 ] && SCREEN=("${SCREEN[@]:0:$(( n - 2 ))}")
+}
+# The step exactly as it was, after help or feedback: the heading, the bar, the menu and its last lines.
+redraw_step() {
+  [ "$FANCY" = 1 ] || return 0
+  measure
+  header "${TITLES[$STEP]}" "$STEP"
+  draw_page
+  screen_lines | tail -n $(( ROWS - 3 - ${#HEADER[@]} )) | sed "s/^/$PAD/"
+}
+
+# Feedback, from any question: f, or r for Report this problem after a job failed. Starboard's terminal set-up has
+# the whole flow (the kinds, a question or two, the report, then a QR code, the link or a file): it is used when
+# Starboard is on this computer. Before it is (the Run first script's first steps), the report is a link to type
+# or copy. Nothing typed as an answer goes in either.
+FEEDBACK_WHO="${FEEDBACK_WHO:-Starboard}"
+feedback() {
+  local problem="$1" dir="${FEEDBACK_DIR:-.}" title link words
+  if command -v python3 >/dev/null && [ -f "$dir/starboard/terminal_setup.py" ]; then
+    finish
+    local extra=()
+    [ -z "$problem" ] || extra+=(--problem "$problem")
+    [ "$FANCY" = 1 ] || extra+=(--plain)
+    ( cd "$dir" && python3 -m starboard.terminal_setup --feedback "$FEEDBACK_WHO|$STEP|${TITLES[$STEP]}" "${extra[@]}" < "$IN" )
+    return 0
+  fi
+  title="$FEEDBACK_WHO, step $STEP: ${TITLES[$STEP]}"
+  [ -z "$problem" ] || title="$title: $problem"
+  words="Starboard $(printf '%s' "${APP_VERSION:-}" | tr -cd '0-9A-Za-z.-'), $(. /etc/os-release 2>/dev/null; printf '%s' "${PRETTY_NAME:-Linux}"), $(uname -m)."
+  link="https://github.com/TheMightyTRex/starboard/issues/new?title=$(urlencode "$title")&body=$(urlencode "$words")&labels=feedback"
+  popup "Send feedback" "Open this link on your phone or another computer to write your report on GitHub. It already says where you are and which system this is. Nothing you typed here is in it.
+
+$link"
+}
+urlencode() {
+  local s="$1" i ch out=""
+  for (( i = 0; i < ${#s}; i++ )); do
+    ch="${s:i:1}"
+    case "$ch" in [A-Za-z0-9.~_-]) out+="$ch" ;; " ") out+="+" ;; *) out+="$(printf '%%%02X' "'$ch")" ;; esac
+  done
+  printf '%s' "$out"
+}
+
+
+# choose "question" default "help" "answer" "answer|what it means" ...: numbered answers, the default marked with
+# a dot, the recommended one first and saying so. Sets CHOICE (1, 2 ...). Returns as ask does: 10 for Back, 11 to
+# draw the step again.
+CHOICE=""
+choose() {
+  local question="$1" default="$2" helptext="$3"; shift 3
+  local opts=("$@") i name about mark
+  say ""
+  para "$question"
+  if [ "$FANCY" = 1 ]; then
+    case "${opts[$(( default - 1 ))]}" in
+      *"(your last answer)"*) MENU_RIGHT="Enter: keep" ;;
+      *) MENU_RIGHT="Enter: recommended" ;;
+    esac
+    menu
+  fi
+  for i in "${!opts[@]}"; do
+    name="${opts[$i]%%|*}"; about=""
+    [[ "${opts[$i]}" == *"|"* ]] && about="${opts[$i]#*|}"
+    if [ "$FANCY" = 1 ]; then
+      mark=" "; [ $(( i + 1 )) = "$default" ] && mark="$(accent "●")"
+      hang "  $mark $(accent "$(printf '%2d' $(( i + 1 )))")  " "" "$name"
+      [ -z "$about" ] || hang "        " dim "$about"
+    else
+      say "  $(( i + 1 )). $name${about:+: $about}"
+    fi
+  done
+  while :; do
+    HELP_TITLE="$question"
+    ask "Your choice [$default]:" "$default" "$helptext" || { local rc=$?; HELP_TITLE=""; return "$rc"; }
+    HELP_TITLE=""
+    if [[ "$ANSWER" =~ ^[0-9]+$ ]] && [ "$ANSWER" -ge 1 ] && [ "$ANSWER" -le "${#opts[@]}" ]; then
+      CHOICE="$ANSWER"
+      return 0
+    fi
+    say "  Type a number from 1 to ${#opts[@]}, ? for help or q to stop."
+  done
+}
+
+KEEP=""
+SPIN=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+
+# One frame: the bar fills job by job, a lighter band moves through the job that is running, then the job's name.
+frame() {
+  local n="$1" of="$2" name="$3" tick="$4" bar=$(( W - 30 < 40 ? W - 30 : 40 )) filled from to i line=""
+  [ "$bar" -ge 10 ] || bar=10
+  filled=$(( bar * (n - 1) / of ))
+  from=$filled; to=$(( bar * n / of ))
+  for (( i = 0; i < bar; i++ )); do
+    if [ "$i" -lt "$filled" ]; then line+="█"
+    elif [ "$i" -lt "$to" ] && [ $(( (i - from + tick) % 6 )) -lt 2 ]; then line+="▓"
+    elif [ "$i" -lt "$to" ]; then line+="▒"
+    else line+="░"; fi
+  done
+  printf '\r\033[2K%s  %s %s  %s' "$PAD" "$(c 36 "$line")" "$(c 36 "${SPIN[$(( tick % 10 ))]}")" "$(printf '%s' "$name" | cut -c1-$(( W - bar - 8 )))"
+  BAR_LINE="  $line  $name"
+}
+# The words beside a job's bar: its name, which job of how many, what it is doing now when the job says (JOB_DETAIL,
+# such as "step 3 of 8" while Starboard builds), and the time so far, so a long job never looks stuck.
+JOB_DETAIL=""
+JOB_START=0
+DETAIL_NOW=""
+job_words() {
+  local name="$1" n="$2" of="$3" tick="$4" t=$(( SECONDS - JOB_START )) words
+  if [ -n "$JOB_DETAIL" ] && [ $(( tick % 8 )) = 0 ]; then DETAIL_NOW="$("$JOB_DETAIL" 2>/dev/null)"; fi
+  words="$name ($n of $of)"
+  [ -z "$DETAIL_NOW" ] || words+=", $DETAIL_NOW"
+  if [ "$t" -ge 60 ]; then words+=" · $(( t / 60 )) min $(printf '%02d' $(( t % 60 ))) s"; elif [ "$t" -ge 3 ]; then words+=" · $t s"; fi
+  printf '%s' "$words"
+}
+
+# A job is a shell command, or the name of one of the script's own functions (run in a subshell).
+run_job() { if declare -F "$1" >/dev/null; then ( "$1" ); else bash -c "$1"; fi; }
+
+# work "name" "command" n of: runs one job quietly. Returns the command's status.
+work() {
+  local name="$1" cmd="$2" n="$3" of="$4" pid tick=0 status
+  printf '\n== %s\n$ %s\n' "$name" "$cmd" >> "$LOG"
+  if [ "$FANCY" = 0 ]; then
+    say "$name ($n of $of). Please wait..."
+    run_job "$cmd" >> "$LOG" 2>&1 < /dev/null; status=$?
+    if [ "$status" = 0 ]; then say "Done: $name."; else say "Did not finish: $name."; fi
+    return "$status"
+  fi
+  run_job "$cmd" >> "$LOG" 2>&1 < /dev/null &
+  pid=$!
+  JOB_START=$SECONDS; DETAIL_NOW=""
+  # While a job runs, only Ctrl+C works: the menu says so.
+  local keys_were="$KEYS" right_were="$MENU_RIGHT"
+  KEYS="Ctrl+C"; MENU_RIGHT="Please wait"; menu
+  # Keys pressed while the bar moves (Enter, out of impatience) would print new lines under it and repeat the bar
+  # down the window: they are not shown until the job ends, and dropped then.
+  ECHO_WAS="$(stty -g < "${IN:-/dev/tty}" 2>/dev/null)" && stty -echo < "${IN:-/dev/tty}" 2>/dev/null
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$RESIZED" = 1 ]; then RESIZED=0; PROMPT=""; resized; fi
+    frame "$n" "$of" "$(job_words "$name" "$n" "$of" "$tick")" "$tick"
+    tick=$(( tick + 1 ))
+    sleep 0.12
+  done
+  wait "$pid"; status=$?
+  if [ -n "$ECHO_WAS" ]; then
+    while read -r -t 0.01 -n 1000 _ < "${IN:-/dev/tty}" 2>/dev/null; do :; done
+    stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""
+  fi
+  KEYS="$keys_were"; MENU_RIGHT="$right_were"; menu
+  if [ "$status" = 0 ]; then
+    printf '\r\033[2K'
+    ok "$name"
+    DONE_JOBS+=("$name")
+  else
+    # The bar stays where it stopped, marked, so the problem below it is about this job.
+    frame "$n" "$of" "$name ($n of $of): did not finish" 0
+    printf '\n'
+    SCREEN+=("$BAR_LINE")
+  fi
+  return "$status"
+}
+
+# A job failed and the person chose Try again: the page is drawn afresh, with the jobs already done ticked and one
+# new bar for the job tried again, so bars never pile up under one another.
+jobs_page() {
+  local step="$1" intro="$2" done_job
+  page "$step"
+  para "$intro"
+  say ""
+  for done_job in "${DONE_JOBS[@]}"; do ok "$done_job"; done
+}
+
+# A job did not finish: the problem in plain words under its bar, with the error number, then Try again
+# (recommended), Show the details or Stop. job_failed "name" "why" "what to try" "code": returns 0 to try again,
+# stops the script otherwise.
+job_failed() {
+  local name="$1" why="$2" tip="$3" code="$4"
+  say ""
+  note "$name did not work. Error $code."
+  para "$why${tip:+ $tip}"
+  printf 'Error %s while %s\n' "$code" "${name,}" >> "$LOG"
+  [ -z "$IN" ] || [ "${ASK:-1}" = 0 ] && { finish; echo "The details are in $LOG"; err "$code"; exit 1; }
+  LAST_PROBLEM="Error $code: $name did not work. $why"
+  local keys_were="$KEYS"
+  KEYS="${KEYS/f/f r}"
+  [ "$FANCY" = 1 ] && menu
+  while :; do
+    choose "What do you want to do?" 1 \
+"Try again runs the same job again. Nothing that already worked is undone.
+
+Show the details shows the last lines the job printed, which help if you ask someone for help or report a problem.
+
+Report this problem makes a report with the error already in it, to send from your phone or as a link.
+
+Stop leaves this computer as it is now. Run it again at any time: it carries on from what is missing." \
+      "Try again (recommended)" "Show the details" "Report this problem" "Stop" || continue  # Back: ask again
+    case "$CHOICE" in
+      1) KEYS="$keys_were"; LAST_PROBLEM=""; return 0 ;;
+      2) say ""; say "$(dim "$(tail -n 25 "$LOG" | fold -s -w $(( W - 6 )) | tail -n 30 | sed 's/^/    /')")"; say ""; para "The whole log is in $LOG" ;;
+      3) forget_prompt; feedback "$LAST_PROBLEM"; redraw_step ;;
+      4) finish; echo; echo "Stopped. The details are in $LOG"; err "$code"; exit 1 ;;
+    esac
+  done
+}
+
+# A card: a title, then rows of a label and a value, in a box the column's width. A long value wraps inside it.
+CARD_W=0
+card() {
+  local title="$1"
+  if [ "$FANCY" = 0 ]; then say "$title"; [ $# -lt 3 ] || card_row "$2" "$3"; return; fi
+  CARD_W=$(( W - 4 ))
+  say "  $(c 36 "╭─ $title ")$(c 36 "$(rep ─ $(( CARD_W - ${#title} - 4 )))╮")"
+  [ $# -lt 3 ] || card_row "$2" "$3"
+}
+card_row() {
+  local label="$1" value="$2" first=1 piece width
+  if [ "$FANCY" = 0 ]; then say "$label: $value"; return; fi
+  width=$(( CARD_W - 20 ))
+  while IFS= read -r piece; do
+    piece="${piece% }"
+    if [ "$first" = 1 ]; then
+      say "  $(c 36 "│") $(dim "$(printf '%-18s' "$label")")$piece$(rep " " $(( width - ${#piece} )))$(c 36 "│")"; first=0
+    else
+      say "  $(c 36 "│") $(printf '%-18s' "")$piece$(rep " " $(( width - ${#piece} )))$(c 36 "│")"
+    fi
+  done < <(printf '%s\n' "$value" | fold -s -w "$width")
+}
+card_end() { [ "$FANCY" = 0 ] || say "  $(c 36 "╰$(rep ─ $(( CARD_W - 1 )))╯")"; }
+# terminal-frame: end
+
+# The logo: the monitor with four tiles, and the star, in the logo's two colours (tile and star).
+LOGO=(
+"               {S}▄{R}"
+"             {S}▄▄█▄▄{R}"
+" {T}███████████{S}▀█████▀{R}"
+" {T}█  ▄▄▄▄  ▄▄▄{S}▄█▀█▄{R}"
+" {T}█  ████ ████{S}▀  {T}█{S}▀{R}"
+" {T}█  ▀▀▀▀ ▀▀▀▀▀  █{R}"
+" {T}█  ████ █████  █{R}"
+" {T}█  ▀▀▀▀  ▀▀▀▀  █{R}"
+" {T}████████████████{R}"
+"      {T}██████{R}"
+)
+# The same logo at 14 characters by 7 lines, for a window of 24 to 27 lines.
+LOGO_SMALL=(
+"          {S}▄{R}"
+" {T}▄▄▄▄▄▄▄{S}▀████{R}"
+" {T}█ ▄▄▄ ▄▄{S}█▀█{R}"
+" {T}█ ███ ██▀ █{R}"
+" {T}█ ███ ██▄ █{R}"
+" {T}█▄▄▄▄▄▄▄▄▄█{R}"
+"    {T}▄▄▄▄{R}"
+)
+# Which logo fits the window now: big from 28 lines (and 66 columns), small from 24, none below that.
+logo_size() {
+  if [ "$ROWS" -ge 28 ] && [ "$W" -ge 66 ]; then echo big
+  elif [ "$ROWS" -ge 24 ]; then echo small
+  else echo none; fi
+}
+logo_line() {
+  local t="" s="" r="" art
+  if [ "$COLOUR" = 1 ]; then t=$'\033[38;5;105m'; s=$'\033[38;5;209m'; r=$'\033[0m'; fi
+  if [ "$2" = small ]; then art="${LOGO_SMALL[$1]}"; else art="${LOGO[$1]}"; fi
+  local line="${art//\{T\}/$t}"
+  line="${line//\{S\}/$s}"
+  printf '%s' "${line//\{R\}/$r}"
+}
+
+
+# The welcome draws itself again when the window changes size (resized, in the frame).
+redraw_step_1() { welcome; }
 
 # This computer --------------------------------------------------------------------------------------------------
 
@@ -431,71 +750,6 @@ show_checks() {
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/starboard-run-first.XXXXXX")" || { echo "Stopped: no temporary folder" >&2; err RF-04 >&2; exit 1; }
 LOG="$WORK/run-first.log"
 DONE_JOBS=()
-KEEP=""
-SPIN=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
-
-# One frame: the bar fills job by job, a lighter band moves through the job that is running, then the job's name.
-frame() {
-  local n="$1" of="$2" name="$3" tick="$4" bar=$(( W - 30 < 40 ? W - 30 : 40 )) filled from to i line=""
-  [ "$bar" -ge 10 ] || bar=10
-  filled=$(( bar * (n - 1) / of ))
-  from=$filled; to=$(( bar * n / of ))
-  for (( i = 0; i < bar; i++ )); do
-    if [ "$i" -lt "$filled" ]; then line+="█"
-    elif [ "$i" -lt "$to" ] && [ $(( (i - from + tick) % 6 )) -lt 2 ]; then line+="▓"
-    elif [ "$i" -lt "$to" ]; then line+="▒"
-    else line+="░"; fi
-  done
-  printf '\r\033[2K%s  %s %s  %s' "$PAD" "$(c 36 "$line")" "$(c 36 "${SPIN[$(( tick % 10 ))]}")" "$(printf '%s' "$name" | cut -c1-$(( W - bar - 8 )))"
-}
-
-# work "name" "command" n of: runs one job quietly. Returns the command's status.
-work() {
-  local name="$1" cmd="$2" n="$3" of="$4" pid tick=0 status
-  printf '\n== %s\n$ %s\n' "$name" "$cmd" >> "$LOG"
-  if [ "$FANCY" = 0 ]; then
-    say "$name ($n of $of). Please wait..."
-    bash -c "$cmd" >> "$LOG" 2>&1 < /dev/null; status=$?
-    [ "$status" = 0 ] && say "Done: $name."
-    return "$status"
-  fi
-  bash -c "$cmd" >> "$LOG" 2>&1 < /dev/null &
-  pid=$!
-  # Keys pressed while the bar moves (Enter, out of impatience) would print new lines under it and repeat the bar
-  # down the window: they are not shown until the job ends, and dropped then.
-  ECHO_WAS="$(stty -g < "${IN:-/dev/tty}" 2>/dev/null)" && stty -echo < "${IN:-/dev/tty}" 2>/dev/null
-  while kill -0 "$pid" 2>/dev/null; do
-    if [ "$RESIZED" = 1 ]; then RESIZED=0; PROMPT=""; resized; fi
-    frame "$n" "$of" "$name" "$tick"
-    tick=$(( tick + 1 ))
-    sleep 0.12
-  done
-  wait "$pid"; status=$?
-  if [ -n "$ECHO_WAS" ]; then
-    while read -r -t 0.01 -n 1000 _ < "${IN:-/dev/tty}" 2>/dev/null; do :; done
-    stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""
-  fi
-  printf '\r\033[2K'
-  if [ "$status" = 0 ]; then
-    ok "$name"
-    DONE_JOBS+=("$name")
-  else
-    # The bar's line stays, marked, so the problem below it is about this job.
-    say "  $(c 33 "✘") $name did not finish."
-  fi
-  return "$status"
-}
-
-# A job failed and the person chose Try again: the page is drawn afresh, with the jobs already done ticked and one
-# new bar for the job tried again, so bars never pile up under one another.
-jobs_page() {
-  local step="$1" intro="$2" done_job
-  page "$step"
-  para "$intro"
-  say ""
-  for done_job in "${DONE_JOBS[@]}"; do ok "$done_job"; done
-}
-
 # What went wrong, in plain words, from the end of the log; and what to try.
 explain() {
   local tail; tail="$(tail -n 40 "$LOG" 2>/dev/null)"
@@ -542,30 +796,8 @@ explain() {
 # Something failed: say what, in plain words, and offer to try again, show the details, or stop.
 # Returns 0 to try again; stops the script otherwise.
 problem() {
-  local name="$1"
-  explain "$name"
-  say ""
-  note "$name did not work. Error $CODE."
-  para "$WHY $TIP"
-  printf 'Error %s while %s\n' "$CODE" "${name,}" >> "$LOG"
-  [ -z "$IN" ] && { finish; echo "The details are in $LOG"; err "$CODE"; exit 1; }
-  while :; do
-    say ""
-    say "  1. Try again (recommended)"
-    say "  2. Show the details"
-    say "  3. Stop"
-    ask "What do you want to do? [1]" "1" \
-"Try again runs the same job again. Nothing that already worked is undone.
-
-Show the details shows the last lines the job printed, which help if you ask someone for help or report a problem.
-
-Stop leaves this computer as it is now. Run the script again at any time: it carries on from what is missing." || { [ $? = 11 ] && continue; }
-    case "$ANSWER" in
-      1) return 0 ;;
-      2) say ""; say "$(dim "$(tail -n 25 "$LOG" | fold -s -w $(( W - 6 )) | tail -n 30 | sed 's/^/    /')")"; say ""; para "The whole log is in $LOG" ;;
-      3) finish; echo; echo "Stopped. The details are in $LOG"; err "$CODE"; exit 1 ;;
-    esac
-  done
+  explain "$1"
+  job_failed "$1" "$WHY" "$TIP" "$CODE"
 }
 
 # Runs a command, reading from $IN, in the docker group this sign-in was only just given, so nobody has to sign out
@@ -627,30 +859,28 @@ welcome() {
   else
     para "No desktop found (for example, you are connected over SSH), so set-up can carry on here in the terminal. Or finish in a browser on a phone or another computer at home."
   fi
-  say ""
-  local b="" t=""
-  [ "$FINISH" = browser ] && b=" (recommended)" || t=" (recommended)"
-  say "  1. In a browser$b"
-  say "  2. Here in the terminal$t"
 }
 
 step_1() {
   page 1
   welcome
-  local def=1; [ "$FINISH" = terminal ] && def=2
-  ask "How do you want to finish setting up? [$def]" "$def" \
-"Both ways ask the same questions: your password, what you want to watch, listen to and read, and when downloads may run.
+  local help="Both ways ask the same questions: your password, what you want to watch, listen to and read, and when downloads may run.
 
 In a browser: the set-up guide opens by itself on this computer's desktop. With no desktop, open the address it prints on a phone or another computer at home.
 
 Here in the terminal: every question is asked in this window. For a server with no desktop and nothing else to finish on.
 
-You can change your mind later: the terminal set-up can be run again, and the browser always works." || return $?
-  case "$ANSWER" in
-    1) FINISH=browser ;;
-    2) FINISH=terminal ;;
-    *) return 11 ;;
-  esac
+You can change your mind later: the terminal set-up can be run again, and the browser always works."
+  # The recommended way comes first: the browser with a desktop, the terminal without one.
+  if [ "$FINISH" = browser ]; then
+    choose "How do you want to finish setting up?" 1 "$help" "In a browser (recommended)|The set-up opens by itself at the end." \
+      "Here in the terminal|Every question in this window." || return $?
+    if [ "$CHOICE" = 1 ]; then FINISH=browser; else FINISH=terminal; fi
+  else
+    choose "How do you want to finish setting up?" 1 "$help" "Here in the terminal (recommended)|Every question in this window." \
+      "In a browser|On a phone or another computer at home, at the address shown at the end." || return $?
+    if [ "$CHOICE" = 1 ]; then FINISH=terminal; else FINISH=browser; fi
+  fi
 }
 
 step_2() {
@@ -660,7 +890,9 @@ step_2() {
   check
   show_checks
   say ""
-  if [ ${#NEED[@]} -eq 0 ]; then para "Everything Starboard needs is here."; else para "Not everything is here yet. The next step asks before it installs anything."; fi
+  if [ ${#NEED[@]} -eq 0 ]; then para "Everything Starboard needs is here."
+  elif [ "$CHECK" = 1 ]; then para "Not everything is here yet. Run this again without --check to install it: it asks before it installs anything."
+  else para "Not everything is here yet. The next step asks before it installs anything."; fi
   [ "$CHECK" = 1 ] && { finish; [ ${#NEED[@]} -eq 0 ]; exit $?; }
   ask "Press Enter to carry on" "" \
 "Starboard runs each app in its own sealed box with Docker, so they cannot change the rest of the computer. Docker Compose starts them together. git downloads Starboard and its updates. Python checks Starboard has started.
@@ -698,19 +930,20 @@ step_3() {
   para "${list:-Nothing to install.}$start$allow"
   say ""
   local i
-  for i in "${!FIX_NAME[@]}"; do say "  $(dim "$(( i + 1 )).") ${FIX_NAME[$i]}"; done
+  # Each job with the exact command it runs, so nothing is done that was not shown first.
+  for i in "${!FIX_NAME[@]}"; do
+    hang "  $(( i + 1 )). " "" "${FIX_NAME[$i]}"
+    hang "     " dim "${FIX[$i]}"
+  done
   say ""
-  para "sudo asks for the password you use to sign in to this computer, once. Then it works quietly: it can take a few minutes."
-  local def=y
-  if [ "$ASK" = 1 ]; then
-    ask "Install them now? [Y/n]" "y" \
+  para "sudo asks for the password you use to sign in to this computer, once (nothing shows as you type). Then it works quietly: it can take a few minutes."
+  choose "Install them now?" 1 \
 "These are the same steps as Starboard's help page, Install Docker. Docker's own install script is used on Debian, Ubuntu, Fedora and Raspberry Pi OS; Linux Mint uses its own packages.
 
-Answer n to install them yourself: the commands are printed so you can copy them. Then run this script again." || return $?
-    def="$ANSWER"
-  fi
-  case "$def" in
-    n|N|no|No)
+Choose No to install them yourself: the commands are printed so you can copy them. Then run this script again." \
+    "Yes, install them (recommended)|sudo asks for your password once." "No, I will do it myself|The commands are printed to copy." || return $?
+  case "$CHOICE" in
+    2)
       finish
       echo "Nothing was installed. To do it yourself, run these, then run this script again:"
       printf '  %s\n' "${FIX[@]}"
@@ -767,19 +1000,12 @@ step_5() {
   page 5
   local look="Standard"; [ "$FANCY" = 0 ] && look="Accessible: plain lines"
   local how="In a browser"; [ "$FINISH" = terminal ] && how="Here in the terminal"
-  if [ "$FANCY" = 1 ]; then
-    say "  $(c 36 "╭─ Ready ")$(c 36 "$(rep ─ $(( W - 12 )))╮")"
-    local label value
-    for label in "Finish set-up" "Look" "Folder"; do
-      case "$label" in "Finish set-up") value="$how" ;; Look) value="$look" ;; Folder) value="${DIR/#$HOME/~}" ;; esac
-      say "  $(c 36 "│") $(dim "$(printf '%-15s' "$label")")$value$(rep " " $(( W - 20 - ${#value} )))$(c 36 "│")"
-    done
-    say "  $(c 36 "╰$(rep ─ $(( W - 4 )))╯")"
-  else
-    say "Finish set-up: $how"; say "Look: $look"; say "Folder: ${DIR/#$HOME/~}"
-  fi
+  card "Ready" "Finish set-up" "$how"
+  card_row "Look" "$look"
+  card_row "Folder" "${DIR/#$HOME/~}"
+  card_end
   say ""
-  para "Starboard's installer asks a few questions of its own first, about what Starboard may access. If you are unsure, the answer in capitals is the safe one."
+  para "Next, Starboard's installer asks what Starboard may access, one question at a time. If you are unsure, take the recommended answer: press Enter."
   ask "Press Enter to start the installer" "" \
 "The installer builds and starts Starboard with Docker. Answer yes to Docker access if you want Starboard to start your media apps for you.
 
@@ -794,7 +1020,7 @@ if [ "$FANCY" = 1 ] && [ "$ASK" = 1 ] && [ "$CHECK" = 0 ]; then
   printf 'Press Enter to start, or type a and press Enter for accessible mode: plain lines with no boxes or colour, for software that reads text aloud.\n' | fold -s -w "$(( $( { tput cols || echo 80; } 2>/dev/null) - 1 ))"
   printf '> '
   tty_read || true; first="$REPLY_LINE"
-  case "$first" in a|A) FANCY=0; PLAIN=1; measure ;; q|Q) echo "Stopped. Nothing was changed."; exit 1 ;; esac
+  case "$first" in a|A) FANCY=0; PLAIN=1; COLOUR=0; measure ;; q|Q) echo "Stopped. Nothing was changed."; exit 1 ;; esac
 fi
 
 if [ "$SMALL" = 1 ]; then
@@ -804,8 +1030,8 @@ if [ "$CHECK" = 1 ]; then n=2; else n=1; fi
 while [ "$n" -lt "$STEPS" ]; do
   "step_$n"; rc=$?
   case "$rc" in
-    0) n=$(( n + 1 )) ;;
-    10) n=$(( n - 1 )) ;;
+    0) n=$(( n + 1 )); CAME_BACK=0 ;;
+    10) n=$(( n - 1 )); CAME_BACK=1 ;;
     *) ;;
   esac
 done
@@ -869,6 +1095,7 @@ cmd=(./install.sh)
 [ -n "$PLAIN" ] && cmd+=(--plain)
 cmd+=("${PASS[@]}")
 cd "$DIR" || { err RF-31 >&2; exit 1; }
+APP_VERSION="$(cat VERSION 2>/dev/null || echo unknown)"
 
 # A folder the set-up may hand to ./install.sh: the same rule as starboard/start.py's safe_folder.
 safe_folder() {
@@ -896,35 +1123,31 @@ handover() {
 }
 handover
 
-# Step 6: the installer runs inside the same frame. Its questions and messages scroll between the heading and the
-# menu. On the terminal path, the terminal set-up then takes the window with its own frame.
+# Step 6: Starboard's installer takes the window and draws the same frame (lib/terminal-frame.sh): what Starboard may
+# access, one question at a time, then a bar for each job. On the terminal path, the terminal set-up follows it.
 page 6
-KEYS="Ctrl+C"; MENU_RIGHT="Enter: the answer in capitals"
-[ "$FANCY" = 1 ] && menu
-para "Starboard's installer asks a few questions about what Starboard may access. Press Enter for the answer in capitals, which is the safe one."
-say ""
+para "Starting Starboard's installer. It asks what Starboard may access, one question at a time, then builds and starts Starboard."
+finish
+export STARBOARD_FROM_RUN_FIRST=1
+[ "$FANCY" = 0 ] && cmd+=(--plain)
 status=0
-[ "$FANCY" = 1 ] && export STARBOARD_QUIET_BUILD=1
 if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
   # Just allowed to use Docker: run the installer within that group now, so nobody has to sign out first.
   with_docker_group "${cmd[@]}" || status=$?
 else
   "${cmd[@]}" < "${IN:-/dev/null}" || status=$?
 fi
+DRAWN=0  # the installer (and the terminal set-up) drew their own frames and gave the window back
+if [ "$status" != 0 ]; then
+  echo
+  echo "The installer stopped. Error RF-40. The reason and its own error number are just above."
+  err RF-40
+  exit "$status"
+fi
 if [ "$FINISH" = terminal ]; then
-  DRAWN=0  # the terminal set-up drew its own frame and gave the window back
-  [ "$status" = 0 ] || { echo; err RF-40; exit "$status"; }
   apply_host
   [ "$NEW_GROUP" = 1 ] && echo "Sign out and back in once, so docker commands work in new terminals too."
   exit 0
-fi
-if [ "$status" != 0 ]; then
-  say ""
-  note "The installer stopped. Error RF-40."
-  para "The reason is in the lines just above. Put it right, then run this script again: it carries on from where it stopped."
-  finish
-  err RF-40
-  exit "$status"
 fi
 
 port="$(sed -n 's/^STARBOARD_PORT=//p' .env 2>/dev/null | tail -n 1)"; port="${port:-8095}"
@@ -939,23 +1162,12 @@ KEYS=""; MENU_RIGHT=""
 [ "$FANCY" = 1 ] && menu
 ok "Starboard is installed and running."
 say ""
-if [ "$FANCY" = 1 ]; then
-  rows=("On this computer|http://localhost:$port")
-  [ -n "$lan" ] && rows+=("On other devices|http://$lan:$port")
-  [ -n "$code" ] && rows+=("Setup code|$code")
-  rows+=("Update later|cd ${DIR/#$HOME/~} && ./update.sh")
-  say "  $(c 36 "╭─ Open Starboard ")$(c 36 "$(rep ─ $(( W - 21 )))╮")"
-  for r in "${rows[@]}"; do
-    label="${r%%|*}"; value="${r#*|}"
-    say "  $(c 36 "│") $(dim "$(printf '%-18s' "$label")")$value$(rep " " $(( W - 23 - ${#value} )))$(c 36 "│")"
-  done
-  say "  $(c 36 "╰$(rep ─ $(( W - 4 )))╯")"
-else
-  say "On this computer: http://localhost:$port"
-  [ -n "$lan" ] && say "On other devices: http://$lan:$port"
-  [ -n "$code" ] && say "Setup code: $code"
-  say "Update later: cd ${DIR/#$HOME/~} && ./update.sh"
-fi
+card "Open Starboard" "On this computer" "http://localhost:$port"
+[ -n "$lan" ] && card_row "On other devices" "http://$lan:$port"
+[ -n "$code" ] && card_row "Setup code" "$code"
+card_row "Ask again" "cd ${DIR/#$HOME/~} && ./install.sh"
+card_row "Update later" "cd ${DIR/#$HOME/~} && ./update.sh"
+card_end
 say ""
 if [ "$DESKTOP" = 1 ]; then
   para "Opening the set-up in your browser, with the setup code filled in. If it does not open, go to http://localhost:$port"
