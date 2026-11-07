@@ -154,6 +154,7 @@ there is no download app.
 
 ## Find out more
 
+- [Choose a Usenet provider and add it](choose-a-usenet-provider.md)
 - [Install apps with Starboard](install-apps.md)
 - [Change your install](change-your-install.md)
 - [What you need](what-you-need.md)

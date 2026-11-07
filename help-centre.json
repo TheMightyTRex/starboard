@@ -4,9 +4,27 @@
   "site": "https://themightytrex.github.io/starboard/help/",
   "help_dir": "docs/help",
   "logo_file": "docs/help/images/logo.svg",
-  "leave_out": ["HOW-THIS-HELP-IS-WRITTEN.md"],
-  "sections": {"guides": "Guides", "topics": "Topics", "basics": "Basics"},
+  "leave_out": [
+    "HOW-THIS-HELP-IS-WRITTEN.md"
+  ],
+  "sections": {
+    "guides": "Guides",
+    "topics": "Topics",
+    "basics": "Basics"
+  },
   "footer_starts": "Download only what you have the right to",
   "search_example": "Type what you want to do, such as \"add a drive\" or \"forgotten password\".",
-  "front_door": true
+  "front_door": true,
+  "footer_note": "**Download only what you have the right to.** Use the download apps only for files you have the right to download, such as open-source software, works in the public domain and your own backups. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download.",
+  "strip_between": [
+    "<!-- footer: download rights -->",
+    "<!-- /footer -->"
+  ],
+  "banner": {
+    "label": "Ad",
+    "markdown": "Need a Usenet provider for NZBGet or SABnzbd? [Newshosting](https://www.newshosting.com/?a_aid=6aec3d712dec1) works with Starboard. [See every provider](topics/choose-a-usenet-provider.html)\n\nThis is an affiliate link: if you sign up through it, Newshosting pays a small commission towards Starboard's development, and you pay the same price. Download only what you have the right to."
+  },
+  "sponsored_links": [
+    "a_aid="
+  ]
 }

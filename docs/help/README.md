@@ -58,6 +58,7 @@ Each guide is a journey through several topics, in order.
 ### Apps
 
 - [Add an app](topics/add-an-app.md)
+- [Choose a Usenet provider and add it](topics/choose-a-usenet-provider.md)
 - [Find an app's API key](topics/find-an-api-key.md)
 - [Search for apps already on your server](topics/search-for-new-apps.md)
 - [Change or remove an app](topics/change-or-remove-an-app.md)
