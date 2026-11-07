@@ -159,7 +159,7 @@ def main():
             last_out = time.time()
             continue
 
-        if any(m in here for m in "◐◓◑◒") or "still working:" in low or ("keep this window open" in text.lower() and "close this window." not in low):
+        if any(m in here for m in "◐◓◑◒⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏") or "still working:" in low or ("keep this window open" in text.lower() and "close this window." not in low):
             # The apps are downloading, or the window waits for the browser set-up: a person waits
             last_out = time.time()
             continue

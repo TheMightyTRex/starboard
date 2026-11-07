@@ -235,8 +235,10 @@ POPUP=0
 trap 'RESIZED=1' WINCH
 
 # Gives the whole window back: no scrolling area, the menu gone, the cursor under the last thing shown.
+ECHO_WAS=""
 finish() {
   [ -z "${KEEP:-}" ] || { kill "$KEEP" 2>/dev/null; KEEP=""; }
+  [ -z "$ECHO_WAS" ] || { stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""; }
   if [ "$FANCY" = 1 ] && [ "$DRAWN" = 1 ]; then
     printf '\0337\033[r\033[%d;1H\033[2K\033[%d;1H\033[2K\0338\n' $(( ROWS - 1 )) "$ROWS"
     DRAWN=0
@@ -455,6 +457,9 @@ work() {
   fi
   bash -c "$cmd" >> "$LOG" 2>&1 < /dev/null &
   pid=$!
+  # Keys pressed while the bar moves (Enter, out of impatience) would print new lines under it and repeat the bar
+  # down the window: they are not shown until the job ends, and dropped then.
+  ECHO_WAS="$(stty -g < "${IN:-/dev/tty}" 2>/dev/null)" && stty -echo < "${IN:-/dev/tty}" 2>/dev/null
   while kill -0 "$pid" 2>/dev/null; do
     if [ "$RESIZED" = 1 ]; then RESIZED=0; PROMPT=""; resized; fi
     frame "$n" "$of" "$name" "$tick"
@@ -462,6 +467,10 @@ work() {
     sleep 0.12
   done
   wait "$pid"; status=$?
+  if [ -n "$ECHO_WAS" ]; then
+    while read -r -t 0.01 -n 1000 _ < "${IN:-/dev/tty}" 2>/dev/null; do :; done
+    stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""
+  fi
   printf '\r\033[2K'
   if [ "$status" = 0 ]; then
     ok "$name"
