@@ -1,0 +1,84 @@
+{
+  "about": "The help centre's screenshots (tools/help-screenshots.sh): at least 3 for every topic, marked with the article's step numbers. Made-up data only (tools/screenshots/example_server.py).",
+  "shots": [
+    {
+      "topic": "add-an-app",
+      "file": "add-an-app-1-manage-apps.png",
+      "page": "settings.html",
+      "marks": [
+        {
+          "t": "$.site-header__tabs a[href*='settings.html']",
+          "step": 1,
+          "side": "bottom"
+        },
+        {
+          "t": "$#add-service",
+          "step": 2,
+          "side": "left"
+        }
+      ],
+      "steps": [
+        1,
+        2
+      ],
+      "alt": "Settings, Apps, Manage apps, with Manage apps (step 1) and Add an app (step 2) outlined"
+    },
+    {
+      "topic": "add-an-app",
+      "file": "add-an-app-2-connection.png",
+      "page": "settings.html",
+      "run": "document.querySelector('#add-service').click(); await new Promise(r => setTimeout(r, 600)); const f = document.querySelector('#service-form'); f.type.value = 'sonarr'; f.type.dispatchEvent(new Event('change', { bubbles: true })); f.name.value = 'Sonarr'; f.url.value = 'http://127.0.0.1:' + (Number(location.port) + 1) + '/tv';",
+      "marks": [
+        {
+          "t": "$#service-form [name=type]",
+          "step": 3,
+          "side": "bottom",
+          "tail": 70
+        },
+        {
+          "t": "$#service-form [name=name]",
+          "step": 4,
+          "side": "bottom",
+          "tail": 70
+        },
+        {
+          "t": "$#service-form [name=url]",
+          "step": 5,
+          "side": "left",
+          "tail": 120
+        }
+      ],
+      "steps": [
+        3,
+        4,
+        5
+      ],
+      "alt": "The Add an app panel, with Kind of app set to Sonarr (step 3), Name (step 4) and Address Starboard uses (step 5) outlined"
+    },
+    {
+      "topic": "add-an-app",
+      "file": "add-an-app-3-test.png",
+      "page": "settings.html",
+      "run": "document.querySelector('#add-service').click(); await new Promise(r => setTimeout(r, 600)); const f = document.querySelector('#service-form'); f.type.value = 'sonarr'; f.type.dispatchEvent(new Event('change', { bubbles: true })); f.name.value = 'Sonarr'; f.url.value = 'http://127.0.0.1:' + (Number(location.port) + 1) + '/tv'; f.api_key.value = 'example-key'; [...document.querySelectorAll('#service-form button')].find(b => b.textContent.includes('Test connection')).click(); await new Promise(r => setTimeout(r, 2000));",
+      "marks": [
+        {
+          "t": "$#service-form [name=api_key]",
+          "step": 6,
+          "side": "left",
+          "tail": 120
+        },
+        {
+          "t": "Test connection",
+          "step": 7,
+          "side": "left",
+          "tail": 120
+        }
+      ],
+      "steps": [
+        6,
+        7
+      ],
+      "alt": "The Add an app panel, with API key (step 6) and Test connection (step 7) outlined, and Connected shown under it"
+    }
+  ]
+}

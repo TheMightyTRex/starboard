@@ -20,16 +20,25 @@ may find it and fill in these details for you.
 
 1. Go to **Settings**, then **Apps**, then **Manage apps**.
 2. Select **Add an app**. A side panel opens, called **Add an app**.
+
+   ![Settings, Apps, Manage apps, with Manage apps (step 1) and Add an app (step 2) outlined](../images/add-an-app-1-manage-apps.png)
+
 3. In **Kind of app**, choose the app, such as **Sonarr**. For an app that is not in the list, choose
    **Other app**.
 4. In **Name**, type the name you want on its card, such as `Sonarr`.
 5. In **Address Starboard uses**, type the address with `http://` and the port. For an app on the same
    computer as Starboard, use `127.0.0.1` and the app's port, such as `http://127.0.0.1:8989`. For an app on
    another computer, use that computer's address, such as `http://192.168.1.20:8989`.
+
+   ![The Add an app panel, with Kind of app set to Sonarr (step 3), Name (step 4) and Address Starboard uses (step 5) outlined](../images/add-an-app-2-connection.png)
+
 6. In **API key**, paste the app's API key. The hint under the field says where the key is kept in that app.
    **Other app** has no API key field.
 7. Select **Test connection**. Starboard shows **Connected**, with the app's version, when the address and key
    are right.
+
+   ![The Add an app panel, with API key (step 6) and Test connection (step 7) outlined, and Connected shown under it](../images/add-an-app-3-test.png)
+
 8. Optional: under **On the dashboard**, choose a **Category** and an **Icon**. Read
    [Organise apps into categories](organise-categories.md) and [Change an app's icon](change-an-icon.md).
 9. Select **Add app**. For Sonarr, Radarr, Lidarr and Readarr the button is **Save and continue** instead,
