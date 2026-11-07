@@ -20,11 +20,17 @@ Reelix in place of the separate media apps, set up for you; Basics, Full install
 - **Usenet providers for SABnzbd:** When you choose SABnzbd, both set-ups list some Usenet providers. They are affiliate links, marked Ad, and the step says to download only files you have the right to.
 - **Help for moving to Reelix:** A new help page says what moves from Radarr, Sonarr and the others into Reelix, what does not, and what to type in afterwards.
 - **Passwords kept when the set-up is written again:** Running Install apps again, or changing your install, keeps the passwords Starboard made up for databases and NZBGet, so they keep working.
+- **Help centre on the web.** The help is now web pages, one for each article, with search, a menu of every article, On this page beside each article and the same display settings as the app, at themightytrex.github.io/starboard/help. Help buttons, the set-ups' Help with this step and the terminal's ? help open the article for what you are doing.
+- **New help pages.** How Starboard keeps your server safe, What Reelix is, Everything Starboard does, and What the installer asks.
+- **Still starting.** For 15 minutes after apps start, the Apps page says they are still starting instead of showing them as not responding.
 
 ### Changed
 - **One step list for both set-ups:** The browser and terminal set-ups read the same step names and order, and offer the recommended answer first.
 - **Install apps explains Reelix:** Start here and the connect guide describe Reelix, a TMDB key and the sites to search, instead of the separate apps.
 - **No affiliate note on the VPN step:** The terminal set-up said some VPN providers had affiliate links in the help; none do, so the note is gone.
+- **A shorter README.** The README now has the quick start, what Starboard does, the three installs, Reelix, installing and security, each linked to the help centre.
+- **Storyarr 0.6.1.** Install apps installs Storyarr 0.6.1 instead of 0.4.8.
+- **One password in the browser set-up.** The password you type to write the files is used again to start the apps.
 
 ### Fixed
 - **A fresh install ended with no apps running:** Without Docker access for Starboard, the apps were written but never started. The installer now starts them, and the browser set-up asks the Run first window to.
@@ -35,9 +41,20 @@ Reelix in place of the separate media apps, set up for you; Basics, Full install
 - **Jellystat's database:** Starboard changed the owner of the database's folder while it was setting up, so Jellystat could never connect. Database folders are now left alone.
 - **A download that broke off:** A broken download stopped every app. The installer tries again twice, and the terminal set-up offers Try again or Carry on without them.
 - **Ubuntu 26.04's sudo:** Ubuntu 26.04 shows a star for each letter of the password; the help said nothing shows.
+- **qBittorrent 5.1.** Reelix is connected to qBittorrent again: qBittorrent 5.1 answers a right password differently, so the set-up said it was wrong.
+- **NZBGet on the dashboard and in Reelix.** NZBGet is found and added to the dashboard, its downloads finish in the media folder, and series go to a tv category Reelix uses.
+- **SABnzbd.** SABnzbd works as the Usenet app: its own port 8085 beside qBittorrent behind the VPN, the names Reelix uses, downloads in the media folder, a key Starboard made up, and its newer address for Starboard's checks.
+- **Changes without Docker access.** After you run the command Settings, Your install shows, Starboard finishes the change: Reelix, the dashboard and moving your Usenet servers.
+- **Ports kept.** Changing your install, or running Install apps again, keeps every app on its port instead of moving it to the next one up.
+- **Keys pressed while Run first works.** Pressing Enter while a step runs no longer repeats the progress bar down the window.
 
 ### Security
 - **Checks:** Tests, browser journeys, the help check and the private details check ran on this release. Reelix gets a manager key, never an admin key, and its one-time set-up token is deleted once used.
+- **A password to write the set-up.** Writing the set-up file needs your password, as starting the apps does, because it decides which apps run on the computer.
+- **The set-up file is checked before it starts.** The Run first window and ./install.sh --start-apps check the set-up file with Starboard's own rules before starting anything: only the apps Starboard offers, no privileged containers, and folders inside your settings and media folders.
+- **One change at a time, and smaller reads.** Writing, starting and changing the install take turns; Docker answers over 64 MB are refused; old copies of the set-up are capped at ten; qBittorrent's temporary password is removed once used; NZBGet's sign-in goes only to the NZBGet Starboard set up.
+- **Scans.** The six security scanners ran on this release; two warnings from the signed-in web scan were checked and found to be false alarms.
+
 
 ## [0.9.2] (5 November 2026)
 
