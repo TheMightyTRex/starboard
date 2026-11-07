@@ -27,6 +27,7 @@ Each guide is a journey through several topics, in order.
 ### Before you install
 
 - [What you need to run Starboard](topics/what-you-need.md)
+- [Everything Starboard does](topics/everything-starboard-does.md)
 - [Can I use Windows or a Mac?](topics/windows-and-mac.md)
 - [Ask an AI assistant to help you set up](topics/ask-an-ai-for-help.md)
 - [Install Linux on a computer](topics/install-linux.md)
@@ -43,6 +44,7 @@ Each guide is a journey through several topics, in order.
 
 - [Set up everything with the Run first script](topics/run-first.md)
 - [Install Starboard with the installer](topics/install-with-the-installer.md)
+- [What the installer asks, and what each answer means](topics/what-the-installer-asks.md)
 - [Set up Starboard in the terminal, with no browser](topics/set-up-in-the-terminal.md)
 - [Install Starboard from the ready-made image](topics/install-from-the-ready-made-image.md)
 - [Find the setup code](topics/find-the-setup-code.md)
@@ -100,6 +102,7 @@ Each guide is a journey through several topics, in order.
 
 ### Security
 
+- [How Starboard keeps your server safe](basics/how-starboard-keeps-you-safe.md)
 - [Choose who can open Starboard](topics/choose-who-can-open-starboard.md)
 - [Change your password](topics/change-your-password.md)
 - [Reset a forgotten password](topics/reset-a-forgotten-password.md)
@@ -129,6 +132,8 @@ Each guide is a journey through several topics, in order.
 ## The basics: ideas explained from the start
 
 - [What Starboard is](basics/what-is-starboard.md)
+- [What Reelix is](basics/what-is-reelix.md)
+- [How Starboard keeps your server safe](basics/how-starboard-keeps-you-safe.md)
 - [What a home server is](basics/what-is-a-home-server.md)
 - [The terminal: typing commands](basics/the-terminal.md)
 - [What Docker is](basics/what-is-docker.md)

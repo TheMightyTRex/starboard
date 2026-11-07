@@ -1,0 +1,50 @@
+name: Help centre
+# Builds the help centre's web pages from docs/help (tools/build_help.py) and publishes them on GitHub Pages:
+# https://themightytrex.github.io/starboard/help/
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/help/**"
+      - "tools/build_help.py"
+      - "tools/help_site.*"
+      - "web/css/tokens.css"
+      - "web/css/components.css"
+      - ".github/workflows/help.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check the help
+        run: python tools/check-help.py
+      - name: Build the pages
+        run: |
+          pip install markdown==3.5.2
+          python tools/build_help.py --out _site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}help/
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

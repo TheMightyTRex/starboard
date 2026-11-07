@@ -1,4 +1,12 @@
 // Shared by every page: display settings, the header, the API helper and small DOM helpers.
+// The help centre: one page for each article in docs/help, with search (tools/build_help.py, .github/workflows/help.yml).
+const HELP_CENTRE = "https://themightytrex.github.io/starboard/help/";
+/** docs/help path ("topics/x.md#part") -> its help centre page. */
+function helpPage(path) {
+  const [file, anchor] = path.split("#");
+  const page = file.endsWith("README.md") ? file.replace(/README\.md$/, "index.html") : file.replace(/\.md$/, ".html");
+  return HELP_CENTRE + page + (anchor ? `#${anchor}` : "");
+}
 // Data from the server is always written with textContent, never as HTML.
 
 const PREF_KEY = "starboard.display";
@@ -416,8 +424,8 @@ function showVersion(version, repo, latest) {
       label, el("span", { class: "visually-hidden", text: ", release notes" }));
     document.body.append(el("footer", { class: "site-footer" }, button,
       newer ? el("a", { class: "upgrade-available", href: "/settings-updates.html" }, el("span", { class: "update-dot", "aria-hidden": "true" }), `Upgrade available: ${latest}`) : null,
-      // The help centre is plain pages in the repository (docs/help), so it opens on GitHub.
-      el("a", { href: `https://github.com/${repo || "TheMightyTRex/starboard"}/blob/main/docs/help/README.md`, target: "_blank", rel: "noopener noreferrer" },
+      // The help centre's pages, built from docs/help and published on GitHub Pages (tools/build_help.py).
+      el("a", { href: `${HELP_CENTRE}index.html`, target: "_blank", rel: "noopener noreferrer" },
         "Help", el("span", { class: "visually-hidden", text: " centre (opens in a new tab)" })),
       repo ? el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "GitHub repository", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null,
       el("a", { href: "/settings-updates.html", text: "About and updates" })));

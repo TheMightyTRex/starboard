@@ -50,7 +50,7 @@ if ! { : < /dev/tty; } 2>/dev/null; then
 fi
 [ "$(id -u)" -ne 0 ] || { echo "Stopped: run this as your normal user, not root or sudo. It asks for your password when it needs it." >&2; exit 1; }
 
-HELP_URL="https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first.md"
+HELP_URL="https://themightytrex.github.io/starboard/help/topics/run-first.html"
 STEPS=6
 TITLES=("" "Welcome" "Check this computer" "Install what is missing" "Download Starboard" "Ready to install"
         "Install Starboard" "Done")
@@ -645,7 +645,7 @@ step_3() {
   fi
   if [ -z "$PKG" ] || [ ${#FIX[@]} -eq 0 ]; then
     note "This Linux is not one this script knows how to install on. It knows Debian, Ubuntu, Linux Mint, Fedora and Raspberry Pi OS."
-    para "Install Docker by hand, then run this again: https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-docker.md"
+    para "Install Docker by hand, then run this again: https://themightytrex.github.io/starboard/help/topics/install-docker.html"
     finish; exit 1
   fi
   local items=() item list="" start="" allow=""

@@ -72,7 +72,14 @@ HOME = "index.html"  # the logo opens it
 # Help for each page, from the Help button in the header: the help centre article for what the page does, or the
 # help index's section when no one article covers the page. Page: (path in docs/help, what the help is about). Every
 # page with the header must be here (check_help_links below). Change them here, in one place.
-HELP_BASE = "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/"
+HELP_BASE = "https://themightytrex.github.io/starboard/help/"  # the help centre's pages (tools/build_help.py)
+
+
+def help_page(path):
+    """docs/help/topics/x.md#part -> topics/x.html#part on the help centre; README.md is its index page."""
+    file, _, anchor = path.partition("#")
+    page = file[:-len("README.md")] + "index.html" if file.endswith("README.md") else file[:-3] + ".html"
+    return page + ("#" + anchor if anchor else "")
 EVERYDAY = ("README.md#everyday-use", "everyday use")
 HELP = {
     **{page: ("README.md#everyday-use", "your library") for page in (
@@ -219,7 +226,7 @@ def shell(current):
     {search_form("header-search-input", "site-header__search search-field", "header-search")}
     <div class="site-header__actions">
       <button type="button" class="icon-btn site-header__search-btn" data-search-open aria-controls="header-search" aria-expanded="false">{icon("search", 20)}<span class="visually-hidden">Search</span></button>
-      <a class="icon-btn" href="{HELP_BASE}{help_path}" target="_blank" rel="noopener noreferrer" data-help-link>{icon("circle-help", 20)}<span class="label">Help</span><span class="visually-hidden"> with {help_about} (opens in a new tab)</span></a>
+      <a class="icon-btn" href="{HELP_BASE}{help_page(help_path)}" target="_blank" rel="noopener noreferrer" data-help-link>{icon("circle-help", 20)}<span class="label">Help</span><span class="visually-hidden"> with {help_about} (opens in a new tab)</span></a>
       <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false">{icon("sun", 20)}<span class="label">Display</span></button>
     </div>
   </div>{level2}

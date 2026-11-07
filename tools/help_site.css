@@ -1,0 +1,28 @@
+/* The help centre's own layout (tools/build_help.py), on top of the design system's tokens.css and
+   components.css. Only what the library has no class for. */
+body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font); }
+.help-bar { flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); height: auto; min-height: var(--header-h); }
+.help-bar .site-header__brand { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 700; color: var(--color-text); text-decoration: none; }
+.help-search { display: flex; gap: var(--space-2); flex: 1 1 18rem; max-width: 34rem; margin-left: auto; }
+.help-search .input { flex: 1; min-width: 0; }
+.help-page { padding: var(--space-6) var(--space-4) var(--space-12); max-width: 60rem; margin-inline: auto; box-sizing: border-box; }
+.breadcrumbs ol { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); list-style: none; margin: 0 0 var(--space-4); padding: 0; font-size: var(--text-sm); color: var(--color-text-muted); }
+.breadcrumbs li + li::before { content: "›"; margin-right: var(--space-2); color: var(--color-text-muted); }
+.help-page .prose { max-width: 75ch; }
+.help-page .prose img { max-width: 100%; height: auto; }
+.help-page .prose table { display: block; overflow-x: auto; border-collapse: collapse; }
+.help-page .prose th, .help-page .prose td { border: 1px solid var(--color-divider); padding: var(--space-2) var(--space-3); vertical-align: top; text-align: left; }
+.help-page .prose pre { overflow-x: auto; padding: var(--space-3); background: var(--color-surface-sunken); border-radius: var(--radius); }
+.help-page .prose hr { border: 0; border-top: 1px solid var(--color-divider); margin-block: var(--space-6); }
+.help-source { margin-top: var(--space-8); }
+.help-results { list-style: none; padding: 0; display: grid; gap: var(--space-4); }
+.help-results li { padding: var(--space-3) var(--space-4); border: 1px solid var(--color-divider); border-radius: var(--radius); background: var(--color-surface); }
+.help-results a { font-weight: 700; font-size: var(--text-lg); }
+.help-results .help-meta { font-size: var(--text-sm); color: var(--color-text-muted); margin: var(--space-1) 0; }
+.help-results p { margin: var(--space-1) 0 0; }
+.help-results mark { background: var(--color-accent-soft); color: inherit; border-radius: 2px; }
+.help-footer { padding: var(--space-6) var(--space-4); border-top: 1px solid var(--color-divider); font-size: var(--text-sm); }
+@media (max-width: 40rem) {
+  .help-search { flex-basis: 100%; margin-left: 0; max-width: none; }
+}
+.help-bar .site-header__brand span { display: inline; }

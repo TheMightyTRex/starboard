@@ -13,7 +13,7 @@ const nameOf = (d) => `${d.model || d.name} ${formatBytes(d.size)}`;
 const serialOf = (d) => (d.ends ? `serial ends ${d.ends}` : "no serial number");
 
 function helpLink(text, page) {
-  return el("a", { class: "help-link", href: `https://github.com/TheMightyTRex/starboard/blob/main/docs/help/${page}`, target: "_blank", rel: "noopener noreferrer" },
+  return el("a", { class: "help-link", href: helpPage(page), target: "_blank", rel: "noopener noreferrer" },
     icon("circle-help"), el("span", { text }), el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
 }
 
