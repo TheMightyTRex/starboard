@@ -338,6 +338,8 @@ def add_found(app, items):
         key = discovery.read_key(it["key"], str(it.get("container", ""))) if it.get("read_key") else None
         if it["key"] == "nzbget" and not key and url == stack.app_url(app.data_dir, "nzbget", 6789):
             key = stack.nzbget_key(app.data_dir)  # the sign-in Install apps made up, only for the NZBGet it set up
+        if it["key"] == "sabnzbd" and not key and url == stack.app_url(app.data_dir, "sabnzbd", stack.SABNZBD_PORT):
+            key = stack.sabnzbd_key(app.data_dir)  # the API key Install apps made up, only for the SABnzbd it set up
         service = {"name": name, "type": kind, "url": url, "background": background, "icon": it["key"],
                    "container": str(it.get("container", "")) if it.get("container") else ""}
         if key:
@@ -444,7 +446,7 @@ def after_install_change(app, password, plan, sab_ini, by_installer=None, sab_fr
                     if "reelix" in plan["choice"]["apps"]:
                         notes += reelix_setup.switch_usenet(stack.reelix_url(app.data_dir), password, "nzbget", "gluetun" if vpn else "nzbget", creds=creds)
                 elif "reelix" in plan["choice"]["apps"]:
-                    sab_key = discovery.read_key("sabnzbd", "sabnzbd")
+                    sab_key = stack.sabnzbd_key(app.data_dir) or discovery.read_key("sabnzbd", "sabnzbd")
                     notes += reelix_setup.switch_usenet(stack.reelix_url(app.data_dir), password, "sabnzbd", "gluetun" if vpn else "sabnzbd", sab_key=sab_key)
                     notes.append("Add your Usenet servers in SABnzbd, Config, Servers: they are not moved from NZBGet")
             except (reelix_setup.ReelixError, OSError, ValueError) as e:

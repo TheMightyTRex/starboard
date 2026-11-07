@@ -178,6 +178,33 @@ class YourInstallTest(unittest.TestCase):
         self.api.call("POST", "/api/install/change", {"password": WORDS, "install": "full", "usenet": "nzbget"})
         self.assertTrue(os.path.exists(os.path.join(stack.folder(self.tmp.name), "want-sab-servers")))
 
+    def test_sabnzbd_gets_its_own_port_names_folders_and_key(self):
+        import re
+        self.write(install="full", usenet="sabnzbd")
+        folder = stack.folder(self.tmp.name)
+        compose = open(os.path.join(folder, "compose.yaml")).read()
+        gluetun = re.search(r"(?ms)^  gluetun:\n(.*?)(?=^  \S|\Z)", compose).group(1)
+        inside = re.findall(r'"\d+:(\d+)"', gluetun)
+        self.assertEqual(len(inside), len(set(inside)), f"two apps share a port inside the VPN: {inside}")
+        seed = open(os.path.join(folder, "seed", "sabnzbd", "sabnzbd.ini")).read()
+        key = stack.sabnzbd_key(self.tmp.name)
+        self.assertRegex(key, r"^[0-9a-f]{32}$")
+        for line in ("port = 8085", "host_whitelist = sabnzbd, gluetun", "complete_dir = /data/downloads/usenet/completed",
+                     f"api_key = {key}"):
+            self.assertIn(line, seed)
+        self.write(install="full", usenet="sabnzbd")  # written again: the same key, which SABnzbd already has
+        self.assertEqual(stack.sabnzbd_key(self.tmp.name), key)
+
+    def test_no_install_puts_two_apps_on_one_port_inside_the_vpn(self):
+        import re
+        for install in ("basics", "full", "all"):
+            for usenet in ("nzbget", "sabnzbd"):
+                self.write(install=install, usenet=usenet)
+                compose = open(os.path.join(stack.folder(self.tmp.name), "compose.yaml")).read()
+                gluetun = re.search(r"(?ms)^  gluetun:\n(.*?)(?=^  \S|\Z)", compose).group(1)
+                inside = re.findall(r'"\d+:(\d+)"', gluetun)
+                self.assertEqual(len(inside), len(set(inside)), f"{install} with {usenet}: {inside}")
+
 
 if __name__ == "__main__":
     unittest.main()

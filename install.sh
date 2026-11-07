@@ -139,6 +139,18 @@ start_apps() {
       return 1
     fi
   }
+  # First settings files Starboard wrote (data/stack/seed/<app>/<file>, such as SABnzbd's port and folders): each
+  # goes in the app's settings folder only when the app has none yet, so your own settings are never replaced.
+  local seed app_dir name
+  for seed in data/stack/seed/*/*; do
+    [ -f "$seed" ] || continue
+    app_dir="$(basename "$(dirname "$seed")")"; name="$(basename "$seed")"
+    [[ "$app_dir" =~ ^[a-z0-9-]+$ ]] && [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]] || continue
+    top="${dirs[0]}/$app_dir"
+    docker run --rm -i -v "${dirs[0]}:${dirs[0]}" --entrypoint sh "$helper" -c \
+      "[ -e '$top/$name' ] || { mkdir -p '$top' && cat > '$top/$name' && chmod 600 '$top/$name' && chown $puid:$pgid '$top' '$top/$name'; }" \
+      < "$seed" >/dev/null 2>&1 || echo "Could not give $app_dir its first settings; it starts with its own."
+  done
   # Settings, Your install moving from SABnzbd to NZBGet when Starboard has no Docker access: it cannot read
   # SABnzbd's settings itself, so they are copied for it into data/stack (only your user can read the copy), and
   # Starboard moves the Usenet servers into NZBGet, then removes the copy.

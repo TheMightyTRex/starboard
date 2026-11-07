@@ -72,6 +72,9 @@ If the Run first window is still open, Starboard asks it to start the apps inste
 - **NZBGet or SABnzbd:** both download from Usenet through your provider's servers. NZBGet is written in C++ and
   uses far less memory and processor. SABnzbd is written in Python and has more extras. Reelix works with either.
   Basics always uses NZBGet.
+- **SABnzbd's address:** Starboard sets SABnzbd up on port 8085, not its usual 8080, because through the VPN it
+  shares an address with qBittorrent, which has 8080. If you already had SABnzbd settings in the settings folder,
+  Starboard leaves them as they are: check its port is 8085 in SABnzbd, **Config**, **General**.
 - **NZBGet's sign-in:** Starboard makes up NZBGet's password and keeps it in `data/stack/.env` (`NZBGET_USER` and
   `NZBGET_PASS`), so Starboard and Reelix can use it.
 - **Going back to Reelix Lite** works when Lite is on the same release as the full version or a newer one. Starboard

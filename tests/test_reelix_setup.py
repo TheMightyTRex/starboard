@@ -181,6 +181,17 @@ class ReelixSetupTest(unittest.TestCase):
         self.assertEqual(self.fake.profiles[0]["preferred_protocol"], "usenet")
         self.assertIn("Connected Reelix to NZBGet", done)
 
+    def test_sabnzbd_is_connected_on_8085_with_the_made_up_key(self):
+        os.makedirs(os.path.join(self.tmp.name, "stack"), exist_ok=True)
+        with open(os.path.join(self.tmp.name, "stack", ".env"), "a") as f:
+            f.write("SABNZBD_API_KEY=" + "a" * 32 + "\n")
+        self.write({"url": self.base, "token": "TOKEN123", "groups": ["movies"], "usenet": "sabnzbd",
+                    "usenet_host": "gluetun"})
+        done = reelix_setup.set_up(Services(), self.tmp.name, "correct horse battery")
+        sab = next(c for c in self.fake.clients if c["implementation"] == "sabnzbd")
+        self.assertEqual((sab["settings"]["host"], sab["settings"]["port"], sab["settings"]["api_key"]), ("gluetun", 8085, "a" * 32))
+        self.assertIn("Connected Reelix to SABnzbd", done)
+
     def test_running_it_again_changes_nothing_twice(self):
         cfg = Services()
         reelix_setup.set_up(cfg, self.tmp.name, "correct horse battery", qbit=lambda t: "lasting-pw")

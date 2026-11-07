@@ -118,8 +118,12 @@ APPS = {
                "volumes": [f"{CFG}/nzbget:/config", f"{DATA}:/data"],
                "env": {**LSIO, "NZBGET_USER": "starboard", "NZBGET_PASS": "${NZBGET_PASS}"}, "secrets": ["NZBGET_PASS"],
                "vpn": True, "memory": 40, "notes": "For Usenet, which needs a paid provider. Lighter than SABnzbd."},
-    "sabnzbd": {"name": "SABnzbd", "groups": ["downloads"], "image": "lscr.io/linuxserver/sabnzbd:latest", "ports": ["8085:8080"],
+    # SABnzbd listens on 8085, not its usual 8080: through the VPN it shares Gluetun's network with qBittorrent, which
+    # has 8080. Its first settings file (sabnzbd_seed) sets that, the names Reelix reaches it by, the media folder
+    # and an API key Starboard made up, so Starboard and Reelix can use it without reading its files.
+    "sabnzbd": {"name": "SABnzbd", "groups": ["downloads"], "image": "lscr.io/linuxserver/sabnzbd:latest", "ports": ["8085:8085"],
                 "volumes": [f"{CFG}/sabnzbd:/config", f"{DATA}:/data"], "env": LSIO, "vpn": True, "memory": 150, "default": False,
+                "secrets": ["SABNZBD_API_KEY"],
                 "notes": "For Usenet, in place of NZBGet. A choice in Full install and Everything."},
     "prowlarr": {"name": "Prowlarr", "groups": ["downloads"], "image": "lscr.io/linuxserver/prowlarr:latest", "ports": ["9696:9696"],
                  "volumes": [f"{CFG}/prowlarr:/config"], "env": LSIO, "vpn": True, "memory": 150,
@@ -510,7 +514,7 @@ def build(choice):
             lines += [f"      - {_yaml_value(v)}" for v in a["volumes"]]
         db = a.get("db")
         for name in a.get("secrets", []):  # made up once per write; the app reads it from .env
-            env[name] = secrets.token_urlsafe(18)
+            env[name] = secrets.token_hex(16) if name.endswith("_API_KEY") else secrets.token_urlsafe(18)
             shown[name] = "(made up for you)"
         if db:
             for s in ("secret", "secret2"):
@@ -721,6 +725,24 @@ def keep_made_up(env_text, old_text, shown):
     return "\n".join(out) + "\n"
 
 
+SABNZBD_PORT = 8085
+
+
+def sabnzbd_seed(api_key):
+    """SABnzbd's first settings file. SABnzbd fills in the rest when it starts. Used only when it has none yet."""
+    return ("[misc]\n"
+            f"port = {SABNZBD_PORT}\n"
+            "host_whitelist = sabnzbd, gluetun, localhost\n"
+            "download_dir = /data/downloads/usenet/incomplete\n"
+            "complete_dir = /data/downloads/usenet/completed\n"
+            f"api_key = {api_key}\n")
+
+
+def sabnzbd_key(data_dir):
+    """SABnzbd's API key as Install apps made it up (data/stack/.env), or None."""
+    return env_values(data_dir).get("SABNZBD_API_KEY") or None
+
+
 def write(data_dir, built):
     path = folder(data_dir)
     os.makedirs(path, mode=0o700, exist_ok=True)
@@ -740,6 +762,13 @@ def write(data_dir, built):
     # Every folder the apps use, for the installer to make before they start (Reelix needs its library folders to exist).
     with open(os.path.join(path, "folders.txt"), "w", encoding="utf-8") as f:
         f.write("\n".join(built.get("folders", [])) + "\n")
+    # First settings files, for the installer to put in an app's settings folder when that app has none yet.
+    seed = os.path.join(path, "seed")
+    key = next((l.split("=", 1)[1].strip().strip("'\"") for l in built["env"].splitlines() if l.startswith("SABNZBD_API_KEY=")), "")
+    if key and re.fullmatch(r"[0-9a-f]{32}", key):
+        os.makedirs(os.path.join(seed, "sabnzbd"), mode=0o700, exist_ok=True)
+        with os.fdopen(os.open(os.path.join(seed, "sabnzbd", "sabnzbd.ini"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+            f.write(sabnzbd_seed(key))
     hooks = os.path.join(path, "starboard-before-update")
     for key, script in (built.get("hooks") or {}).items():
         os.makedirs(hooks, mode=0o700, exist_ok=True)

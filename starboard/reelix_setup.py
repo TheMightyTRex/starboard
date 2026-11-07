@@ -221,6 +221,28 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"NZBGet is not connected yet ({e}). Add it in Reelix, Settings, Download Clients")
 
+    # 4c. SABnzbd, when chosen in place of NZBGet: on port 8085, with the API key Install apps made up (its first
+    # settings file has the same key, data/stack/seed/sabnzbd/sabnzbd.ini).
+    if info.get("usenet") == "sabnzbd":
+        from . import stack
+        key = stack.sabnzbd_key(data_dir)
+        try:
+            if not key:
+                raise ReelixError("its API key is not in data/stack/.env")
+            _, clients = admin.call("GET", "/downloadclients")
+            if not any(c.get("implementation") == "sabnzbd" for c in (clients or [])):
+                admin.call("POST", "/downloadclients", {
+                    "implementation": "sabnzbd", "name": "SABnzbd", "enabled": True, "priority": 1, "tags": [],
+                    "settings": {"host": info.get("usenet_host", "sabnzbd"), "port": stack.SABNZBD_PORT, "use_ssl": False,
+                                 "api_key": key}})
+                done.append("Connected Reelix to SABnzbd")
+            _, profiles = admin.call("GET", "/delayprofiles")
+            default = next((p for p in (profiles or []) if not p.get("tags")), None)
+            if default and default.get("preferred_protocol") != "usenet":
+                admin.call("PUT", f"/delayprofiles/{default['id']}", {**default, "preferred_protocol": "usenet"})
+        except (ReelixError, OSError, ValueError) as e:
+            done.append(f"SABnzbd is not connected yet ({e}). Add it in Reelix, Settings, Download Clients")
+
     # 5. Reelix on the dashboard, through its compatible addresses, with the manager key.
     host = base
     for kind, name, prefix, needs in COMPAT:
@@ -258,7 +280,7 @@ def switch_usenet(base, password, to, host, creds=None, sab_key=None, opener=Non
         if to == "nzbget" and creds:
             settings = {"host": host, "port": 6789, "use_ssl": False, "username": creds[0], "password": creds[1]}
         elif to == "sabnzbd" and sab_key:
-            settings = {"host": host, "port": 8080, "use_ssl": False, "api_key": sab_key}
+            settings = {"host": host, "port": 8085, "use_ssl": False, "api_key": sab_key}
         else:
             return done + [f"Add {'NZBGet' if to == 'nzbget' else 'SABnzbd'} in Reelix, Settings, Download Clients"]
         admin.call("POST", "/downloadclients", {"implementation": to, "name": "NZBGet" if to == "nzbget" else "SABnzbd",
