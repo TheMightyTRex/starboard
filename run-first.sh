@@ -551,6 +551,22 @@ Stop leaves this computer as it is now. Run the script again at any time: it car
   done
 }
 
+# Runs a command, reading from $IN, in the docker group this sign-in was only just given, so nobody has to sign out
+# first. sg does it on most systems. Newer Ubuntu (25.10 on) has no sg, only util-linux's newgrp, which takes the
+# command on its input instead. sudo, as you with the group, is the last resort.
+with_docker_group() {
+  local line
+  line="$(printf '%q ' "$@")"
+  if command -v sg >/dev/null 2>&1; then
+    sg docker -c "$line" < "${IN:-/dev/null}"
+  elif command -v newgrp >/dev/null 2>&1; then
+    printf 'exec %s < %q\n' "$line" "${IN:-/dev/null}" | newgrp docker
+  else
+    # shellcheck disable=SC2024  # the input is for the command; sudo reads a password from the terminal
+    sudo --preserve-env -u "$(id -un)" -g docker -- "$@" < "${IN:-/dev/null}"
+  fi
+}
+
 # sudo asks for the password once, before the quiet part, so the question is never hidden.
 sudo_once() {
   sudo -n true 2>/dev/null && return 0
@@ -824,7 +840,7 @@ apply_host() {
       again=(./install.sh --yes "${apply[@]}")
       if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
         # This sign-in does not know about the docker group yet.
-        sg docker -c "$(printf '%q ' "${again[@]}")" < "${IN:-/dev/null}" && rm -f data/setup-host.json
+        with_docker_group "${again[@]}" && rm -f data/setup-host.json
       else
         "${again[@]}" < "${IN:-/dev/null}" && rm -f data/setup-host.json
       fi
@@ -874,7 +890,7 @@ status=0
 [ "$FANCY" = 1 ] && export STARBOARD_QUIET_BUILD=1
 if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
   # Just allowed to use Docker: run the installer within that group now, so nobody has to sign out first.
-  sg docker -c "$(printf '%q ' "${cmd[@]}")" < "${IN:-/dev/null}" || status=$?
+  with_docker_group "${cmd[@]}" || status=$?
 else
   "${cmd[@]}" < "${IN:-/dev/null}" || status=$?
 fi
@@ -888,7 +904,7 @@ fi
 if [ "$status" != 0 ]; then
   say ""
   note "The installer stopped."
-  para "The reason is on the line that starts with Stopped, above. Put it right, then run this script again: it carries on from where it stopped."
+  para "The reason is in the lines just above. Put it right, then run this script again: it carries on from where it stopped."
   finish
   exit "$status"
 fi
@@ -951,7 +967,7 @@ starter() {
       echo "Downloading and starting your apps, as the set-up asked. The browser shows how it goes."
       status=0
       if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
-        STARTER_RUN=1 sg docker -c "./install.sh --start-apps" > data/stack/start.log 2>&1 < /dev/null &
+        IN=/dev/null STARTER_RUN=1 with_docker_group ./install.sh --start-apps > data/stack/start.log 2>&1 &
       else
         STARTER_RUN=1 ./install.sh --start-apps > data/stack/start.log 2>&1 < /dev/null &
       fi
