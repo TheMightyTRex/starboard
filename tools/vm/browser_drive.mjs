@@ -10,6 +10,8 @@ const start = process.env.START || "/";               // the path and #code the 
 const out = process.env.OUT || "/out";
 const pw = process.env.SB_PASSWORD || "correct horse battery staple";
 const allApps = process.env.ALL_APPS === "1";
+const install = { basics: "Basics", full: "Full install", all: "Everything", choose: "Choose myself" }[process.env.INSTALL || ""] || "";
+const usenet = { nzbget: "NZBGet", sabnzbd: "SABnzbd" }[process.env.USENET || ""] || "";
 const width = Number(process.env.WIDTH || 1280);
 fs.mkdirSync(out, { recursive: true });
 
@@ -62,6 +64,10 @@ for (let n = 0; n < 250; n++) {
     }
     const key = page.locator('main input[type="password"]:visible').first();
     if (await key.count()) await key.fill("c3RhcmJvYXJkLXRlc3Qta2V5LW5vdC1yZWFsLTAwMDA=");
+  }
+  for (const label of [install, usenet].filter(Boolean)) {
+    const radio = page.getByRole("radio", { name: new RegExp("^" + label) }).and(page.locator(":visible"));
+    if (await radio.count() && !(await radio.first().isChecked())) await radio.first().check().catch((e) => fault("could not choose", `${label}: ${e.message.split("\n")[0]}`));
   }
   if (allApps) {
     for (const box of await page.locator('main input[type="checkbox"]:visible').all()) {

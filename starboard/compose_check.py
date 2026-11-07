@@ -7,7 +7,8 @@ there, with the docker group. So the window checks the file first, with Starboar
 - no privileged containers, host network, host processes or extra capabilities, apart from Gluetun's NET_ADMIN and
   /dev/net/tun, which a VPN needs;
 - every folder a service mounts is inside the settings folder or the media folder from .env, and those two pass the
-  same rules as Install apps (no system folders, no top folders, no home folder itself).
+  same rules as Install apps (no system folders, no top folders, no home folder itself); the one exception is a
+  fixed path the app's own catalogue entry mounts, such as Dozzle's read-only Docker socket, for that app only.
 
 Usage: docker compose ... config --format json | python3 -m starboard.compose_check data/stack/.env
 Prints one problem a line; exits 1 when there are any.
@@ -23,6 +24,16 @@ ALLOWED_DEVICES = {"gluetun": {"/dev/net/tun"}}
 ALLOWED_CAPS = {"gluetun": {"NET_ADMIN"}}
 
 
+def allowed_binds():
+    """Fixed host paths an app's own entry in stack.APPS mounts (Dozzle reads Docker's socket), for that app only."""
+    out = {}
+    for key, a in stack.APPS.items():
+        for v in a.get("volumes", []):
+            if not v.startswith("${"):
+                out.setdefault(key, set()).add(os.path.normpath(v.split(":", 1)[0]))
+    return out
+
+
 def allowed_images():
     images = {a["image"] for a in stack.APPS.values() if a.get("image") and a["image"] != "none"}
     images |= {a["db"]["image"] for a in stack.APPS.values() if a.get("db")}
@@ -31,6 +42,14 @@ def allowed_images():
         if os.environ.get(name):
             images.add(os.environ[name])
     return images
+
+
+def repository(image):
+    """"ghcr.io/x/app:v1" and "ghcr.io/x/app@sha256:..." give "ghcr.io/x/app": System, Apps, Updates moves a pinned app
+    such as Storyarr to a newer tag of the same image, which stays allowed."""
+    image = image.split("@", 1)[0]
+    head, _, tail = image.rpartition(":")
+    return head if head and "/" not in tail else image
 
 
 def problems(config, env):
@@ -42,7 +61,8 @@ def problems(config, env):
             dirs.append(stack.clean_folder(env.get(key, ""), what))
         except ValueError as e:
             out.append(f"{key}: {e}")
-    images = allowed_images()
+    images = {repository(i) for i in allowed_images()}
+    binds = allowed_binds()
 
     def inside(path):
         p = os.path.normpath(path)
@@ -50,7 +70,7 @@ def problems(config, env):
 
     for name, svc in sorted((config.get("services") or {}).items()):
         image = str(svc.get("image", ""))
-        if image not in images:
+        if repository(image) not in images:
             out.append(f"{name}: the image {image or '(none)'} is not one Starboard installs")
         if svc.get("privileged"):
             out.append(f"{name}: runs privileged, with full control of this computer")
@@ -73,7 +93,7 @@ def problems(config, env):
                 kind, source = vol.get("type", "bind"), str(vol.get("source", ""))
             else:
                 kind, source = "bind", str(vol).split(":", 1)[0]
-            if kind == "bind" and not inside(source):
+            if kind == "bind" and not inside(source) and os.path.normpath(source) not in binds.get(name, set()):
                 out.append(f"{name}: mounts {source}, outside the settings and media folders")
     return out
 

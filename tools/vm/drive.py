@@ -50,6 +50,9 @@ def main():
     ap.add_argument("--password", default=os.environ.get("VM_PASSWORD", "starboard-test-pw"))
     ap.add_argument("--starboard-password", default="correct horse battery staple")
     ap.add_argument("--apps", default="all", choices=["all", "recommended"])
+    ap.add_argument("--install", default="", choices=["", "basics", "full", "all", "choose"],
+                    help="the answer to 'What do you want to install?' (default: the recommended one)")
+    ap.add_argument("--usenet", default="", choices=["", "nzbget", "sabnzbd"], help="the Usenet app for Full and Everything")
     ap.add_argument("--timeout", type=int, default=5400)
     ap.add_argument("--command", default="", help="run this instead of the quick start")
     a = ap.parse_args()
@@ -169,6 +172,13 @@ def main():
             send(FAKE_WG_KEY + "\r", "a made-up WireGuard key")
         elif "wireguard address" in low:
             send("192.0.2.2/32\r", "192.0.2.2/32")
+        elif a.usenet and "which app downloads from usenet?" in text.lower() and "your choice" in low:
+            num = "1" if a.usenet == "nzbget" else "2"
+            send(num + "\r", f"{num} ({a.usenet})")
+        elif a.install and "what do you want to install?" in text.lower() and "your choice" in low:
+            label = {"basics": "Basics", "full": "Full install", "all": "Everything", "choose": "Let me choose"}[a.install]
+            num = next((m.group(1) for l in lines for m in [re.match(r"\s*(?:●\s+)?(\d+)\s+" + re.escape(label), l)] if m), "")
+            send((num or "") + "\r", f"{num or 'Enter'} ({label})")
         elif a.apps == "all" and "Space ticks" in text and re.search(r"(?i)apps|what do you want|media server|use starboard's", text):
             keys, label = tick_all(lines)
             send(keys, label)

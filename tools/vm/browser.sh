@@ -13,7 +13,7 @@ url="$(ssh -q -i "$DIR/id_ed25519" -p "$SSH_PORT" -o StrictHostKeyChecking=no -o
 start="/${url#*://*/}"
 echo "The browser was asked to open: ${url%%#*}#… (the code is not printed)"
 docker run --rm --network host -u "$(id -u):$(id -g)" -e HOME=/tmp \
-  -e BASE="http://127.0.0.1:$WEB_PORT" -e START="$start" -e OUT=/out -e ALL_APPS="${ALL_APPS:-1}" -e WIDTH="${WIDTH:-1280}" \
+  -e BASE="http://127.0.0.1:$WEB_PORT" -e START="$start" -e OUT=/out -e ALL_APPS="${ALL_APPS:-1}" -e INSTALL="${INSTALL:-}" -e USENET="${USENET:-}" -e WIDTH="${WIDTH:-1280}" \
   -v "$OUT:/out" -v "$PWD/tools/vm/browser_drive.mjs:/j/browser_drive.mjs:ro" \
   "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
   sh -c "mkdir -p /tmp/j && cp /j/browser_drive.mjs /tmp/j/ && cd /tmp/j && npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT >/dev/null && node browser_drive.mjs"
