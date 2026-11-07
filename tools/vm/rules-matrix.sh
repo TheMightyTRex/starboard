@@ -29,6 +29,7 @@ one() {
     again) opts=(--command 'cat run-first.sh | STARBOARD_REPO=$HOME/starboard.bundle bash -s -- --yes --browser -- --yes >/dev/null 2>&1; cd starboard && ./install.sh') ;;
   esac
   log="$OUT/$name.vm.log"
+  [ "$slot" = 0 ] || sleep 90  # the two machines start apart: both write the same git bundle when they start
   VM_TAG="rules$slot" VM_SSH_PORT=$port VM_WEB_PORT=$web VM_MEMORY=3584 VM_DESKTOP=$desktop \
     tools/vm/vm.sh new "$SYSTEM" > "$log" 2>&1 &
   vm=$!
