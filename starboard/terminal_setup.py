@@ -89,7 +89,7 @@ HELP_PAGES = {
     "balance": "topics/balance-the-files.html", "password": "topics/create-your-password.html",
     "groups": "topics/install-apps.html", "apps": "topics/install-apps.html", "usenet-app": "topics/change-your-install.html",
     "installs": "topics/install-types.html", "folders": "topics/install-apps.html", "vpn": "topics/install-apps.html",
-    "reelix-edition": "topics/switch-reelix-version.html", "usenet": "topics/install-apps.html",
+    "reelix-edition": "topics/switch-reelix-version.html", "usenet": "topics/choose-a-usenet-provider.html",
     "hours": "topics/set-download-hours.html", "check": "topics/install-apps.html", "keep": "topics/install-apps.html",
     "storage": "topics/check-storage.html", "extras": "topics/set-up-live-tv.html", "alerts": "topics/activate-alerts.html",
     "health": "topics/check-disk-health.html", "name": "guides/set-up-your-dashboard.html",
@@ -1659,15 +1659,30 @@ def step_usenet(api, term, state):
     term.heading(title("usenet"), num(title("usenet")))
     term.say("")
     term.note(USENET_ABOUT)
+    # DASH-142: asked first; the providers are listed only for someone who has none.
+    have = term.choose("Do you have a Usenet provider?",
+                       ["No, show me some providers", "Yes, I have one", "Not now: torrents are enough for now"],
+                       state.get("usenet_have", 1), help_key="usenet")
+    state["usenet_have"] = have + 1
     term.say("")
-    term.note(USENET_AD)
-    term.say("")
-    # One bullet each, the name then the whole address on its own line, so a long address is never cut.
-    bullet = "•" if term.fancy else "-"
-    for name, url in USENET:
-        term.say(f"  {bullet} {name}")
-        term.say(f"    {term.accent(url)}")
+    if have == 0:
+        term.note(USENET_AD)
         term.say("")
+        # One bullet each, the name then the whole address on its own line, so a long address is never cut.
+        bullet = "•" if term.fancy else "-"
+        for name, url in USENET:
+            term.say(f"  {bullet} {name}")
+            term.say(f"    {term.accent(url)}")
+            term.say("")
+    elif have == 1:
+        term.note("Add its server to the Usenet app once the apps are running: its address, port, user name, password "
+                  "and connections.")
+        term.say("")
+    else:
+        term.note("The Usenet app is installed anyway. Add a provider whenever you like.")
+        term.say("")
+    term.note(f"How to add a provider's server: {HELP_CENTRE}topics/choose-a-usenet-provider.html")
+    term.say("")
     term.note(term.accent(USENET_RIGHTS_TITLE))
     term.note(USENET_RIGHTS)
     term.say("")

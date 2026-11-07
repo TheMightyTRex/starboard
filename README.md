@@ -76,7 +76,7 @@ installing Linux, then takes you through either path step by step. Check
 `git clone https://github.com/TheMightyTRex/starboard.git && cd starboard && ./install.sh` (add `--terminal` for the
 terminal set-up).
 
-In the help centre: [Start here](https://themightytrex.github.io/starboard/help/guides/get-up-and-running.html) · [What you need](https://themightytrex.github.io/starboard/help/topics/what-you-need.html) · [The Run first script](https://themightytrex.github.io/starboard/help/topics/run-first.html) · [Set up in the terminal](https://themightytrex.github.io/starboard/help/topics/set-up-in-the-terminal.html)
+In the help centre: [Quick start guide](https://themightytrex.github.io/starboard/help/guides/quick-start.html) · [From a bare computer](https://themightytrex.github.io/starboard/help/guides/get-up-and-running.html) · [What you need](https://themightytrex.github.io/starboard/help/topics/what-you-need.html) · [The Run first script](https://themightytrex.github.io/starboard/help/topics/run-first.html) · [Set up in the terminal](https://themightytrex.github.io/starboard/help/topics/set-up-in-the-terminal.html)
 
 ## What Starboard does
 

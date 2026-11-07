@@ -4,6 +4,9 @@ Help for installing and using Starboard, written for people who have never run a
 a guide if you have a goal in mind, use a topic for one task, and read the basics for anything that is new
 to you.
 
+**Start here: [Quick start: one command sets up everything](guides/quick-start.md).** Once Linux is on the
+computer, the Run first script sets up everything else in about 15 minutes.
+
 **New to all this?** Read [What Starboard is](basics/what-is-starboard.md), then follow
 [Get Starboard up and running, from a bare computer](guides/get-up-and-running.md). It starts with installing
 Linux, and has a path for the browser and one for the terminal only.
@@ -12,6 +15,7 @@ Linux, and has a path for the browser and one for the terminal only.
 
 Each guide is a journey through several topics, in order.
 
+- [Quick start: one command sets up everything](guides/quick-start.md)
 - [Get Starboard up and running, from a bare computer](guides/get-up-and-running.md)
 - [Install Starboard on a Linux computer](guides/install-on-a-linux-computer.md)
 - [Install Starboard on a Raspberry Pi](guides/install-on-a-raspberry-pi.md)

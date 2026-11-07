@@ -372,8 +372,29 @@ async function installStep(id, state, data, apps, go) {
       catch (e) { return stop(provider, e.message); }
     };
   } else if (id === "usenet") {
-    // The same step as the terminal set-up's Your Usenet provider: nothing to answer, the providers and the rules.
-    nodes = [usenetProviders()];
+    // The same step as the terminal set-up's Usenet step (DASH-142): it asks first, and shows the providers only to
+    // someone who has none. The rules for what Usenet may be used for show whatever the answer.
+    const choices = [["none", "No, show me some providers"], ["have", "Yes, I have one"], ["later", "Not now: torrents are enough for now"]];
+    const more = el("div", { class: "stack-2", "aria-live": "polite" });
+    const show = (v) => {
+      state.usenetHave = v;
+      const how = el("p", {}, el("a", { class: "help-link", href: helpPage("topics/choose-a-usenet-provider.md"), target: "_blank", rel: "noopener noreferrer" },
+        icon("circle-help"), el("span", { text: "How to add a provider's server" }), el("span", { class: "visually-hidden", text: " (opens in a new tab)" })));
+      more.replaceChildren(...(v === "none" ? [
+        el("p", { class: "small" }, el("strong", { text: "Ad: " }), USENET_AD),
+        el("ul", { "aria-label": "Usenet providers (affiliate links)" }, USENET.map(([name, url]) => el("li", {},
+          el("a", { href: url, target: "_blank", rel: "noopener noreferrer sponsored" }, name,
+            el("span", { class: "visually-hidden", text: " (affiliate link, opens in a new tab)" }))))), how]
+        : v === "have" ? [el("p", { text: "Add its server to the Usenet app once the apps are running: its address, port, user name, password and connections." }), how]
+        : [el("p", { text: "The Usenet app is installed anyway. Add a provider whenever you like." }), how]),
+      usenetRights());
+    };
+    const fieldset = el("fieldset", {}, el("legend", { text: "Do you have a Usenet provider?" }),
+      el("div", { class: "option-cards" }, choices.map(([v, t]) => el("label", { class: "option-card" },
+        el("input", { type: "radio", name: "usenet-have", value: v, checked: v === (state.usenetHave || "none") }), el("strong", { text: t })))));
+    fieldset.addEventListener("change", (e) => show(e.target.value));
+    show(state.usenetHave || "none");
+    nodes = [el("p", { text: USENET_ABOUT }), fieldset, more];
   } else if (id === "moving") {
     const offers = [];
     const has = (keys) => data.servers.filter((s) => keys.includes(s.key));

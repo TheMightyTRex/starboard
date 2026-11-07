@@ -72,8 +72,8 @@ class TerminalSetupTest(unittest.TestCase):
     def test_whole_set_up_with_the_recommended_answers(self):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # name, start, storage, folder; install now, Basics (recommended), install these; the VPN (Basics has one):
-        # provider, WireGuard, any country, the address; Usenet, Enter; then write, extras, hours, alerts, health, preset
-        typed = ["", "", "", media, "", "", "", "", "", "", "192.168.1.20/32", "", "", "y", "", "", "", "", "", "", ""]
+        # provider, WireGuard, any country, the address; Usenet: no provider yet, Enter; then write, extras, hours, alerts, health, preset
+        typed = ["", "", "", media, "", "", "", "", "", "", "192.168.1.20/32", "", "", "", "y", "", "", "", "", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -87,7 +87,7 @@ class TerminalSetupTest(unittest.TestCase):
 
     def test_usenet_step_shows_the_affiliate_note_links_and_the_rules(self):
         """Only with SABnzbd: the Ad note before the providers, each with its full affiliate address, then the rules."""
-        term, out = self.term([""], [])
+        term, out = self.term(["", ""], [])  # no provider yet (the list), then Enter
         self.assertFalse(terminal_setup.step_usenet(None, term, {"choice": {"apps": ["qbittorrent"]}}))
         self.assertTrue(terminal_setup.step_usenet(None, term, {"choice": {"apps": ["sabnzbd"]}}))
         text = " ".join(out.getvalue().split())
@@ -95,6 +95,13 @@ class TerminalSetupTest(unittest.TestCase):
         for name, url in terminal_setup.USENET:
             self.assertIn(f"- {name}\n    {url}\n", out.getvalue())  # a bullet each, the whole address on its own line
         self.assertIn("Use Usenet only for files you have the right to download", text)
+
+    def test_someone_with_a_usenet_provider_is_not_shown_the_list(self):
+        term, out = self.term(["2", ""], [])  # Yes, I have one; then Enter
+        self.assertTrue(terminal_setup.step_usenet(None, term, {"choice": {"apps": ["nzbget"]}}))
+        self.assertNotIn("a_aid=", out.getvalue())
+        self.assertIn("choose-a-usenet-provider", out.getvalue())
+        self.assertIn("Use Usenet only for files you have the right to download", " ".join(out.getvalue().split()))
 
     def test_usenet_list_matches_the_browser(self):
         """The browser wizard and Settings use the same providers and words (web/js/common.js)."""
@@ -133,7 +140,7 @@ class TerminalSetupTest(unittest.TestCase):
     def test_vpn_details_are_asked_and_kept_out_of_the_screen(self):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # Downloads and VPN only, every default app; Proton VPN over WireGuard.
-        typed = ["", "", "", media, "", "4", "8,9", "", "1", "1", "", "192.168.1.20/32", "", "y", "2", "", "", ""]
+        typed = ["", "", "", media, "", "4", "8,9", "", "1", "1", "", "192.168.1.20/32", "", "", "y", "2", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -176,10 +183,10 @@ class TerminalSetupTest(unittest.TestCase):
         # where Enter keeps every answer, including the hidden key; then on.
         typed = ["", "", "", media, "", "4", "8,9", "",     # name, start, storage and folder, Let me choose, the apps
                  "4", "", "", "192.168.1.20/32",            # step 3: Surfshark, WireGuard, any country, the address
-                 "",                                          # Usenet (NZBGet comes with Downloads): Enter
+                 "", "",                                      # Usenet (NZBGet comes with Downloads): no provider, Enter
                  "b", "b",                                    # the check: back to Usenet, back again to the VPN
                  "", "", "", "",                              # step 3 again: every answer kept with Enter
-                 "",                                          # Usenet again
+                 "", "",                                      # Usenet again
                  "y", "2", "", "", ""]                        # write, any time, no alerts, disk health, Balanced
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key", ""])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
@@ -311,7 +318,7 @@ class TerminalSetupTest(unittest.TestCase):
                  "Mail me at sam@example.org, token=abc123def456")
         # Downloads and VPN (Proton over WireGuard), then f at the check: Something is broken, the words, skip the
         # second question, save to a file; then write and downloads at any time.
-        typed = ["", "", "", media, "", "4", "8,9", "", "1", "1", "Netherlands", "192.168.1.20/32", "",
+        typed = ["", "", "", media, "", "4", "8,9", "", "1", "1", "Netherlands", "192.168.1.20/32", "", "",
                  "f", "1", words, "", "1", "y", "2", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         term.save_dir = self.tmp.name

@@ -453,7 +453,10 @@ async function openReleaseNotes(opener) {
       newer ? el("div", { class: "notice", role: "status" }, icon("circle-arrow-up"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: `Version ${r.latest} is out` }),
         el("p", {}, `You have ${r.current}. `, el("a", { href: "/settings-updates.html", text: "How to update" }), "."))) : null,
-      ...r.all.map((rel) => releaseNotes(rel, 3)),
+      // The newest 3, newest first; the rest are on Settings, Updates, Releases (DASH-110).
+      ...r.all.slice(0, 3).map((rel) => releaseNotes(rel, 3)),
+      r.all.length > 3 ? el("p", {}, el("a", { href: "/settings-releases.html", text: "Read previous releases" }),
+        el("span", { class: "muted", text: ` (${r.all.length - 3} more)` })) : null,
     ].filter(Boolean));
   } catch (e) { panel.body.replaceChildren(el("p", { text: e.message })); }
 }

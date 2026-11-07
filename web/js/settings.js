@@ -2251,6 +2251,23 @@ async function startYourInstall() {
       status.replaceChildren(notice("info", "One step on the server", "Starboard wrote the new set-up but cannot start apps itself. Run this in a terminal on the server:"),
         el("pre", { class: "code-block", text: r.command }), copyButton(r.command, "Copy the command"),
         el("p", { class: "muted", text: "Once the apps have started, Starboard finishes off by itself within a minute: it updates the dashboard and Reelix, and moves Usenet servers if you changed the Usenet app. Keep this page open, or come back to it, to see what was done." }));
+      // DASH-141: the page shows when the command has run and Starboard is finishing off, then what was done,
+      // so it never looks stuck. Starboard writes change-result.json when it has finished (data/stack).
+      const waiting = el("div", { class: "meter", role: "status" },
+        el("div", { class: "meter__label" }, el("span", { text: "Waiting for the command to be run on the server…" })),
+        el("div", { class: "progress progress--busy", role: "progressbar", "aria-label": "Waiting for the command", "aria-valuetext": "Waiting" }, el("span")));
+      status.append(waiting);
+      const asked = Date.now() / 1000;
+      for (let n = 0; n < 720; n++) { // an hour, as long as Starboard waits for the command itself
+        await new Promise((res) => setTimeout(res, 5000));
+        const d = await api("/api/install").catch(() => null);
+        const done = d && d.last_change && d.last_change.finished >= asked;
+        if (!done) continue;
+        waiting.replaceWith(notice("success", "Your install is changed", (d.last_change.notes || []).join(". ") || "Finished: nothing else needed doing."));
+        announce("Your install is changed");
+        return;
+      }
+      waiting.replaceWith(notice("warning", "Not finished yet", "Starboard has not seen the apps start in the last hour. Run the command above on the server, then open this page again."));
       return;
     }
     status.replaceChildren(el("p", { class: "muted", text: "Downloading and starting the apps…" }));
