@@ -522,6 +522,8 @@ work() {
   while kill -0 "$pid" 2>/dev/null; do
     if [ "$RESIZED" = 1 ]; then RESIZED=0; PROMPT=""; resized; fi
     frame "$n" "$of" "$(job_words "$name" "$n" "$of" "$tick")" "$tick"
+    # A job can set the terminal back to showing keys (apt and Docker's installer do): hide them again.
+    if [ -n "$ECHO_WAS" ] && [ $(( tick % 8 )) = 0 ]; then stty -echo < "${IN:-/dev/tty}" 2>/dev/null; fi
     tick=$(( tick + 1 ))
     sleep 0.12
   done
@@ -687,7 +689,7 @@ check() {
     NEED+=("${base[@]}")
     case "$PKG" in
       apt) fix "Updating the list of software" "sudo apt-get update"
-           fix "Installing $(words "${base[@]}")" "sudo apt-get install -y ${base[*]} ca-certificates" ;;
+           fix "Installing $(words "${base[@]}")" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y ${base[*]} ca-certificates" ;;
       dnf) fix "Installing $(words "${base[@]}")" "sudo dnf install -y ${base[*]}" ;;
     esac
   fi
@@ -695,7 +697,7 @@ check() {
     NEED+=("Docker" "Docker Compose" "Docker running")
     if [ "$MINT" = 1 ]; then
       [ "$PKG" = apt ] && [ ${#base[@]} -eq 0 ] && fix "Updating the list of software" "sudo apt-get update"
-      fix "Installing Docker and Docker Compose" "sudo apt-get install -y docker.io docker-compose-v2"
+      fix "Installing Docker and Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2"
     else
       fix "Downloading Docker's installer" "curl -fsSL https://get.docker.com -o $WORK/get-docker.sh"
       fix "Installing Docker and Docker Compose" "sudo sh $WORK/get-docker.sh"
@@ -705,8 +707,8 @@ check() {
     if ! docker compose version >/dev/null 2>&1; then
       NEED+=("Docker Compose")
       case "$PKG" in
-        apt) if [ "$MINT" = 1 ] || [ "$OS_ID" = ubuntu ]; then fix "Installing Docker Compose" "sudo apt-get install -y docker-compose-v2"
-             else fix "Installing Docker Compose" "sudo apt-get install -y docker-compose-plugin"; fi ;;
+        apt) if [ "$MINT" = 1 ] || [ "$OS_ID" = ubuntu ]; then fix "Installing Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-v2"
+             else fix "Installing Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin"; fi ;;
         dnf) fix "Installing Docker Compose" "sudo dnf install -y docker-compose-plugin" ;;
       esac
     fi

@@ -457,6 +457,8 @@ work() {
   while kill -0 "$pid" 2>/dev/null; do
     if [ "$RESIZED" = 1 ]; then RESIZED=0; PROMPT=""; resized; fi
     frame "$n" "$of" "$(job_words "$name" "$n" "$of" "$tick")" "$tick"
+    # A job can set the terminal back to showing keys (apt and Docker's installer do): hide them again.
+    if [ -n "$ECHO_WAS" ] && [ $(( tick % 8 )) = 0 ]; then stty -echo < "${IN:-/dev/tty}" 2>/dev/null; fi
     tick=$(( tick + 1 ))
     sleep 0.12
   done

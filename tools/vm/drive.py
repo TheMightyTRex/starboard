@@ -166,7 +166,7 @@ def main():
         # The answer, as a person would give it.
         if "[sudo] password" in low or "[sudo: authenticate] password" in low or re.search(r"password for \w+:", low):
             send(a.password + "\r", "the computer's password")
-        elif re.search(r"choose a password|type it again|your starboard password|^\W*password:", low):
+        elif re.search(r"choose (?:a|your) password|type it again|your starboard password|^\W*password:", low):
             send(a.starboard_password + "\r", "Starboard's password")
         elif "wireguard private key" in low:
             send(FAKE_WG_KEY + "\r", "a made-up WireGuard key")
