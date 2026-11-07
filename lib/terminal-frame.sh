@@ -464,7 +464,13 @@ work() {
   printf '\n== %s\n$ %s\n' "$name" "$cmd" >> "$LOG"
   if [ "$FANCY" = 0 ]; then
     say "$name ($n of $of). Please wait..."
+    # Keys pressed meanwhile are not shown (each Enter would push the words above off the screen) and are dropped.
+    ECHO_WAS="$(stty -g < "${IN:-/dev/tty}" 2>/dev/null)" && stty -echo < "${IN:-/dev/tty}" 2>/dev/null
     run_job "$cmd" >> "$LOG" 2>&1 < /dev/null; status=$?
+    if [ -n "$ECHO_WAS" ]; then
+      while read -r -t 0.01 -n 1000 _ < "${IN:-/dev/tty}" 2>/dev/null; do :; done
+      stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""
+    fi
     if [ "$status" = 0 ]; then say "Done: $name."; else say "Did not finish: $name."; fi
     return "$status"
   fi
