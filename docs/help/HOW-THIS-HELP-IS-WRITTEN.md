@@ -26,6 +26,9 @@ Starboard's help follows the shared guides in the design system, which Starboard
 - **Made-up examples:** use `192.168.1.20` or `192.168.1.21` for addresses, `starboard-pi` for a Raspberry Pi,
   and names such as Sam and Alex. `tools/check-private.sh` allows exactly these, and refuses any other home
   network address.
+- **Screenshots: at least 3 in every topic** (tier one), made from the example server with made-up data and marked
+  up to the design system's screenshot rules. Retake them whenever the page or the help changes.
+  `python3 tools/check-help.py --list-screenshots` lists the topics that still have fewer.
 - **Check before committing:** `python3 tools/check-help.py` checks every link, the layout of each tier and the
   writing rules that a machine can check.
 

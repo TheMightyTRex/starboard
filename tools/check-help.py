@@ -10,6 +10,7 @@ import re
 import sys
 
 HELP = pathlib.Path(__file__).resolve().parent.parent / "docs" / "help"
+SCREENSHOTS_PER_TOPIC = 3
 TIERS = {"topics": ["## Find out more"], "guides": ["## Before you begin", "## The steps at a glance", "## What next"],
          "basics": ["## Find out more"]}
 RULES = [
@@ -82,6 +83,14 @@ def main():
             problems.append(f"README.md: the index lists {target}, which does not exist yet")
     for p in problems:
         print(p)
+    # Every topic (tier one) has at least 3 marked-up screenshots (owner, 7 November 2026). Reported, not yet a
+    # failure, until the backlog is done: then move it into problems.
+    few = [str(f.relative_to(HELP)) for f in files if f.parent.name == "topics"
+           and len(re.findall(r"!\[[^\]]+\]\(", f.read_text())) < SCREENSHOTS_PER_TOPIC]
+    if few:
+        print(f"{len(few)} topics have fewer than {SCREENSHOTS_PER_TOPIC} screenshots (python3 tools/check-help.py --list-screenshots lists them)")
+        if "--list-screenshots" in sys.argv:
+            print("\n".join("  " + f for f in few))
     print(f"{len(files)} articles checked, {len(problems)} problems")
     return 1 if problems else 0
 
