@@ -78,6 +78,8 @@ def main():
     answers, last_out, started = 0, time.time(), time.time()
     resized = False
     shown_more = False
+    repeats, last_same = 0, None
+    heading = here = text = ""
     ended = "timeout"
     seen_faults = set()
 
@@ -103,7 +105,11 @@ def main():
         screen.unknown.clear()
 
     def send(text, label=None):
-        nonlocal answers
+        nonlocal answers, repeats, last_same
+        same = (heading, here.strip(), label or repr(text))
+        # Enter pressed while a job runs (the menu says Please wait) is a person being impatient, not a stuck question.
+        repeats = repeats + 1 if same == last_same and "Please wait" not in text else 0
+        last_same = same
         os.write(fd, text.encode())
         typed.append(label or repr(text))
         answers += 1
@@ -146,6 +152,12 @@ def main():
         low = (before + " " + here).lower() if not here.lstrip().startswith(("›", "Your choice")) else here.lower()
         heading = next((m.group(1).strip() for l in lines[:4] for m in [re.search(r"Starboard \| ([^│]+?)\s{2,}", l)] if m), "")
         shots.append({"title": heading or here.strip()[:80], "html": screen.html(), "size": f"{cols} x {rows}"})
+        # The same question given the same answer 40 times over means the driver does not know its answer: stop, so
+        # one unknown question cannot use up the whole run. Only typed answers count, never a long wait.
+        if repeats >= 40:
+            ended = f"stuck at '{last_same[1][:80]}'"
+            faults.append({"kind": "stuck", "detail": last_same[1][:120], "after_answers": answers, "screen": len(shots) - 1})
+            break
         if a.stop_after and a.stop_after in text:
             ended = f"stopped at '{a.stop_after}'"
             break
