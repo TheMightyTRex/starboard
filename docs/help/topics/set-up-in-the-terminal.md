@@ -31,9 +31,13 @@ takes about 10 minutes, plus the time to download the apps.
 5. **Storage**, for a new install: choose where your media goes: this computer's main disk, a separate disk, or a
    pool of several disks. Press Enter to take the media folder shown; it is made for you when the apps start.
 6. **Your drives**, only when you chose the pool: which drives join it, and a backup drive.
-7. **What to set up:** choose what you want, such as Movies, TV and Watching, by typing their numbers separated
-   by commas. Press Enter to take the recommended ones.
-8. **VPN**, if you chose it: your provider and its details. The password or key does not show as you type.
+7. **What to set up:** choose **Basics** (recommended), **Full install**, **Everything** or **Let me choose**.
+   Full install and Everything then ask **Which app downloads from Usenet?**: NZBGet (recommended) or SABnzbd.
+   Starboard lists the apps and memory; press Enter to install them. With **Let me choose**, type the numbers of
+   what you want, such as Movies, TV and Watching, separated by commas. Read
+   [Change your install](change-your-install.md) for what each install has.
+8. **VPN**, if you chose it (every install has one): your provider and its details. The password or key does not
+   show as you type. Then **Usenet**, for NZBGet or SABnzbd: some providers, and what Usenet may be used for.
 9. **Check:** read the list, then type `y` to write the apps' files and start them.
    Downloading them can take several minutes.
 10. **Jellyfin extras**, when you have Jellyfin: Starboard's Jellyfin extras, such as Live TV.

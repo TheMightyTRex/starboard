@@ -17,6 +17,7 @@ is copied. What it does, in order:
 
 Every step can run again: what exists already is left as it is. 6 November 2026.
 """
+import base64
 import http.cookiejar
 import json
 import os
@@ -111,7 +112,7 @@ def wait_until_up(base, seconds=180, opener=None):
             time.sleep(3)
 
 
-def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=None):
+def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=None, nzbget=None):
     """Runs every step; returns a list of what was done. Raises ReelixError when Reelix cannot be set up at all."""
     info = read_setup(data_dir)
     if not info:
@@ -180,10 +181,29 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
                 done.append("Connected Reelix to qBittorrent")
             _, profiles = admin.call("GET", "/delayprofiles")
             default = next((p for p in (profiles or []) if not p.get("tags")), None)
-            if default and default.get("preferred_protocol") != "torrent" and not info.get("sabnzbd"):
+            if default and default.get("preferred_protocol") != "torrent" and not info.get("usenet") and not info.get("sabnzbd"):
                 admin.call("PUT", f"/delayprofiles/{default['id']}", {**default, "preferred_protocol": "torrent"})
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"qBittorrent is not connected yet ({e}). Add it in Reelix, Settings, Download apps")
+
+    # 4b. NZBGet, the default Usenet app: its downloads go in the shared media folder, and Reelix signs in with the
+    # password Install apps made up (data/stack/.env).
+    if info.get("usenet") == "nzbget" and nzbget:
+        try:
+            user, pw = nzbget(data_dir)
+            _, clients = admin.call("GET", "/downloadclients")
+            if not any(c.get("implementation") == "nzbget" for c in (clients or [])):
+                admin.call("POST", "/downloadclients", {
+                    "implementation": "nzbget", "name": "NZBGet", "enabled": True, "priority": 1, "tags": [],
+                    "settings": {"host": info.get("usenet_host", "nzbget"), "port": 6789, "use_ssl": False,
+                                 "username": user, "password": pw}})
+                done.append("Connected Reelix to NZBGet")
+            _, profiles = admin.call("GET", "/delayprofiles")
+            default = next((p for p in (profiles or []) if not p.get("tags")), None)
+            if default and default.get("preferred_protocol") != "usenet":
+                admin.call("PUT", f"/delayprofiles/{default['id']}", {**default, "preferred_protocol": "usenet"})
+        except (ReelixError, OSError, ValueError) as e:
+            done.append(f"NZBGet is not connected yet ({e}). Add it in Reelix, Settings, Download Clients")
 
     # 5. Reelix on the dashboard, through its compatible addresses, with the manager key.
     host = base
@@ -201,6 +221,77 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     except OSError:
         pass
     return done
+
+
+def switch_usenet(cfg, password, to, host, creds=None, sab_key=None, opener=None):
+    """After Settings, Your install swapped the Usenet app: Reelix's download apps get the new one and lose the other.
+    `creds` (user, password) for NZBGet, `sab_key` for SABnzbd. Returns what was done."""
+    link = next((s for s in cfg.data["services"] if s.get("icon") == "reelix" and s.get("type") == "link"), None)
+    if not link:
+        raise ReelixError("Reelix is not on your dashboard, so Starboard cannot reach it")
+    admin = Session(link["url"], opener=opener)
+    admin.call("POST", "/auth/login", {"username": ADMIN, "password": password, "remember_me": False})
+    _, clients = admin.call("GET", "/downloadclients")
+    done = []
+    other = "sabnzbd" if to == "nzbget" else "nzbget"
+    for c in clients or []:
+        if c.get("implementation") == other:
+            admin.call("DELETE", f"/downloadclients/{c['id']}", ok=(200, 204))
+            done.append(f"Took {c.get('name', other)} out of Reelix")
+    if not any(c.get("implementation") == to for c in clients or []):
+        if to == "nzbget" and creds:
+            settings = {"host": host, "port": 6789, "use_ssl": False, "username": creds[0], "password": creds[1]}
+        elif to == "sabnzbd" and sab_key:
+            settings = {"host": host, "port": 8080, "use_ssl": False, "api_key": sab_key}
+        else:
+            return done + [f"Add {'NZBGet' if to == 'nzbget' else 'SABnzbd'} in Reelix, Settings, Download Clients"]
+        admin.call("POST", "/downloadclients", {"implementation": to, "name": "NZBGet" if to == "nzbget" else "SABnzbd",
+                                                "enabled": True, "priority": 1, "tags": [], "settings": settings})
+        done.append(f"Connected Reelix to {'NZBGet' if to == 'nzbget' else 'SABnzbd'}")
+    return done
+
+
+def nzbget_rpc(key, base="http://127.0.0.1:6789", opener=None):
+    """A function calling NZBGet's JSON-RPC as `key` ("user:password"), waiting up to 3 minutes for it to answer."""
+    token = base64.b64encode(key.encode()).decode()
+    jar = opener or urllib.request.build_opener()
+
+    def rpc(method, params=None):
+        req = urllib.request.Request(base + "/jsonrpc", data=json.dumps({"method": method, "params": params or [], "id": 1}).encode(),
+                                     headers={"Authorization": f"Basic {token}", "Content-Type": "application/json",
+                                              "User-Agent": "Starboard"})
+        with jar.open(req, timeout=20) as resp:  # NZBGet on this computer, from the stack Starboard wrote  # nosec B310
+            return json.loads(resp.read(2_000_000)).get("result")
+
+    began = time.time()
+    while True:
+        try:
+            rpc("version")
+            return rpc
+        except (urllib.error.URLError, OSError, ValueError):
+            if time.time() - began > 180:
+                raise ReelixError("NZBGet did not answer") from None
+            time.sleep(3)
+
+
+def nzbget_ready(base="http://127.0.0.1:6789", opener=None):
+    """Sets NZBGet's download folder inside the shared media folder, so a finished download moves into the library
+    at once; returns a function giving (user, password) from data/stack/.env."""
+    def prepare(data_dir):
+        from . import stack
+        key = stack.nzbget_key(data_dir)
+        if not key:
+            raise ReelixError("NZBGet's sign-in is not in data/stack/.env")
+        user, _, pw = key.partition(":")
+        rpc = nzbget_rpc(key, base, opener)
+        options = rpc("config") or []
+        if not any(o.get("Name") == "MainDir" and o.get("Value") == "/data/downloads/usenet" for o in options):
+            changed = [{"Name": o["Name"], "Value": "/data/downloads/usenet" if o["Name"] == "MainDir" else o["Value"]}
+                       for o in options]
+            if rpc("saveconfig", [changed]):
+                rpc("reload")
+        return user, pw
+    return prepare
 
 
 def qbit_lasting_password(base="http://127.0.0.1:8080", opener=None):

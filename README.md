@@ -89,8 +89,9 @@ The [help centre](docs/help/README.md) explains everything else in plain steps.
 ## Set it up your way: in the browser or in the terminal
 
 **In the browser.** Install Starboard with one command, open it from any phone or computer at home, and the
-set-up guide takes it from there. **Install apps** builds a complete media server for you: say what you want, and
-it chooses the apps, the folders and the ports, explains what each app does, writes one Compose file, starts the
+set-up guide takes it from there. **Install apps** builds a complete media server for you: choose **Basics**
+(Reelix Lite, Jellyfin, Audiobookshelf, subtitles, and torrent and Usenet downloads through a VPN), **Full install**
+(the full Reelix and more) or **Everything**, or choose yourself, and it chooses the apps, the folders and the ports, explains what each app does, writes one Compose file, starts the
 apps when you say so, and talks you through connecting them. It can join several drives into one pool, and point
 the new apps at the media folders your old ones already use.
 
@@ -118,10 +119,11 @@ books, and takes requests: the work of Radarr, Sonarr, Lidarr, Readarr, Prowlarr
 memory. Starboard shows Reelix like any other app, with its queue, what is coming up and its health, and before
 Reelix updates, **What is new** lists the changes from Reelix's own changelog.
 
-The plan is for Starboard and Reelix to install together from one set-up: Starboard installs Reelix in its own
-container, sets it up through Reelix's own API, and then shows everything it does. Until then, add Reelix in
-**Settings, Apps, Manage apps** like any other app. Reelix is a separate project with its own licence (GPL-3.0);
-Starboard talks to it over its API only.
+Starboard and Reelix install together: Install apps installs Reelix (Lite, or the full version with YouTube and
+Spotify downloads) in its own container, sets it up through Reelix's own API (admin account, a manager key for
+Starboard, library folders, qBittorrent and NZBGet), and then shows what it does. **Settings, Your install** changes
+the install later, either way: a bigger or smaller install, NZBGet or SABnzbd, Reelix Lite or full. Reelix is a
+separate project with its own licence (GPL-3.0); Starboard talks to it over its API only.
 
 ## Works with the apps you already have
 
@@ -131,7 +133,7 @@ apps** can install any of the ones marked "can install".
 | What for | Apps |
 |---|---|
 | Finding and downloading | Reelix, Sonarr, Radarr, Lidarr, Readarr (and Bookshelf, its maintained version), Prowlarr, Kapowarr, Whisparr (can install Sonarr, Radarr, Lidarr, Bookshelf, Prowlarr and Kapowarr) |
-| Download apps and VPN | qBittorrent, SABnzbd, Transmission, Deluge, NZBGet, and Gluetun for a VPN (can install qBittorrent, SABnzbd and Gluetun) |
+| Download apps and VPN | qBittorrent, NZBGet, SABnzbd, Transmission, Deluge, and Gluetun for a VPN (can install qBittorrent, NZBGet, SABnzbd and Gluetun) |
 | Watching and listening | Jellyfin, Plex, Emby, Audiobookshelf, Navidrome, Kavita, Komga, Calibre-Web, Storyarr (can install Jellyfin, Audiobookshelf and Storyarr) |
 | Requests and users | Seerr, Jellyseerr, Overseerr, Wizarr, Jellystat, Tautulli (can install Seerr, Wizarr and Jellystat) |
 | Subtitles and tidying | Bazarr, Profilarr, Decluttarr, Janitorr, Unpackerr, FlareSolverr, Tdarr (can install all) |

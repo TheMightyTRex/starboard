@@ -20,6 +20,8 @@ SERVICE_TYPES = {
     "jellyfin": {"label": "Jellyfin", "api": "", "searchable": False},
     "qbittorrent": {"label": "qBittorrent", "api": "/api/v2", "searchable": False},
     "sabnzbd": {"label": "SABnzbd", "api": "/sabnzbd/api", "searchable": False},
+    # NZBGet signs in with its control user name and password, kept as "user:password" in the API key field.
+    "nzbget": {"label": "NZBGet", "api": "/jsonrpc", "searchable": False},
     "gluetun": {"label": "Gluetun (VPN)", "api": "", "searchable": False},
     "seerr": {"label": "Seerr, Jellyseerr or Overseerr", "api": "/api/v1", "searchable": False},
     "audiobookshelf": {"label": "Audiobookshelf", "api": "/api", "searchable": False},

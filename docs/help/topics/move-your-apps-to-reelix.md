@@ -68,7 +68,8 @@ Your old apps hide passwords and API keys, so Reelix cannot copy them:
 
 - **Usenet indexers** from Prowlarr (such as NZBgeek or NZBFinder): the preview says **Some passwords or API keys
   are hidden**. Type each indexer's API key below it, then select **Preview migration** again.
-- **SABnzbd** in an app that hides its API key: type the key from SABnzbd's **Config**, **General**.
+- **SABnzbd** in an app that hides its API key: type the key from SABnzbd's **Config**, **General**. To use NZBGet
+  instead, change the Usenet app in Starboard, **Settings**, **Your install**: your Usenet servers move across.
 - **qBittorrent's password.** If your old apps reached qBittorrent without a password (qBittorrent lets chosen
   addresses in without one), Reelix cannot, as it has its own address. Type qBittorrent's user name and password in
   Reelix: **Settings**, **Download Clients**, **qBittorrent**.

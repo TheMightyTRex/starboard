@@ -36,7 +36,7 @@ CATALOGUE = {
     "sabnzbd": ("SABnzbd", "sabnzbd", [8080, 8085, 8090], ("title", "sabnzbd"), True, False),
     "transmission": ("Transmission", "link", [9091], ("body", "transmission"), False, False),
     "deluge": ("Deluge", "link", [8112], ("title", "deluge"), False, False),
-    "nzbget": ("NZBGet", "link", [6789], ("title", "nzbget"), False, False),
+    "nzbget": ("NZBGet", "nzbget", [6789], ("title", "nzbget"), True, False),
     "gluetun": ("Gluetun (VPN)", "gluetun", [8000], ("json", "/v1/publicip/ip", "public_ip"), False, True),
     "flaresolverr": ("FlareSolverr", "link", [8191], ("body", "flaresolverr"), False, True),
     "tautulli": ("Tautulli", "link", [8181], ("title", "tautulli"), False, False),

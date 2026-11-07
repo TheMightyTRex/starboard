@@ -112,9 +112,15 @@ APPS = {
     "qbittorrent": {"name": "qBittorrent", "groups": ["downloads"], "image": "lscr.io/linuxserver/qbittorrent:latest",
                     "ports": ["8080:8080", "6881:6881", "6881:6881/udp"], "volumes": [f"{CFG}/qbittorrent:/config", f"{DATA}:/data"],
                     "env": {**LSIO, "WEBUI_PORT": "8080"}, "vpn": True, "memory": 150},
+    # NZBGet is the default Usenet app (owner, 7 November 2026): written in C++, it uses far less memory and processor
+    # than SABnzbd. Its sign-in is made up here (NZBGET_PASS in .env), so Starboard and Reelix can use it.
+    "nzbget": {"name": "NZBGet", "groups": ["downloads"], "image": "lscr.io/linuxserver/nzbget:latest", "ports": ["6789:6789"],
+               "volumes": [f"{CFG}/nzbget:/config", f"{DATA}:/data"],
+               "env": {**LSIO, "NZBGET_USER": "starboard", "NZBGET_PASS": "${NZBGET_PASS}"}, "secrets": ["NZBGET_PASS"],
+               "vpn": True, "memory": 40, "notes": "For Usenet, which needs a paid provider. Lighter than SABnzbd."},
     "sabnzbd": {"name": "SABnzbd", "groups": ["downloads"], "image": "lscr.io/linuxserver/sabnzbd:latest", "ports": ["8085:8080"],
                 "volumes": [f"{CFG}/sabnzbd:/config", f"{DATA}:/data"], "env": LSIO, "vpn": True, "memory": 150, "default": False,
-                "notes": "For Usenet, which needs a paid provider."},
+                "notes": "For Usenet, in place of NZBGet. A choice in Full install and Everything."},
     "prowlarr": {"name": "Prowlarr", "groups": ["downloads"], "image": "lscr.io/linuxserver/prowlarr:latest", "ports": ["9696:9696"],
                  "volumes": [f"{CFG}/prowlarr:/config"], "env": LSIO, "vpn": True, "memory": 150,
                  "notes": "One list of sites to search, shared with every app."},
@@ -218,6 +224,82 @@ def offered(replaced=False):
     return {k: a for k, a in APPS.items() if a["image"] and a["image"] != "none" and (replaced or k not in REPLACED_BY_REELIX)}
 
 
+# What each app needs to work. A tuple means "one of these"; the first is added when none is chosen. A database that
+# comes with an app (APPS[...]["db"]) is part of that app, so it is not listed. Both set-ups add these for you.
+NEEDS = {
+    "reelix": [("qbittorrent", "nzbget", "sabnzbd")],
+    "kapowarr": [("qbittorrent", "nzbget", "sabnzbd")],
+    "storyarr": [("qbittorrent", "nzbget", "sabnzbd")],
+    "gluetun": [("qbittorrent", "nzbget", "sabnzbd")],
+    "flaresolverr": ["reelix"],
+    "bazarr": ["reelix"],
+    "jellystat": ["jellyfin"],
+    "wizarr": ["jellyfin"],
+    "dispatcharr": ["jellyfin"],
+}
+
+# The three installs both set-ups offer first (owner, 7 November 2026, from the install choices page): Basics is
+# built on Reelix Lite, Full install on the full Reelix, and All is everything. Disk health is the installer's own
+# check, not an app. "Choose myself" keeps the groups and app-by-app ticks. NZBGet is the Usenet app in all three;
+# Full install and Everything may use SABnzbd instead (USENET_APPS).
+INSTALLS = {
+    "basics": {"name": "Basics", "reelix_edition": "lite", "disk_health": False,
+               "about": "Reelix Lite, Jellyfin, Audiobookshelf, subtitles, and torrent and Usenet downloads through a VPN.",
+               "apps": ["reelix", "qbittorrent", "jellyfin", "audiobookshelf", "bazarr", "gluetun", "nzbget"],
+               "usenet_choice": False},
+    "full": {"name": "Full install", "reelix_edition": "full", "disk_health": True,
+             "about": "Everything in Basics with the full Reelix (YouTube and Spotify downloads), plus disk health, "
+                      "watch statistics, invites, live TV, logs, FlareSolverr and Tdarr.",
+             "apps": ["reelix", "qbittorrent", "jellyfin", "audiobookshelf", "bazarr", "gluetun", "nzbget",
+                      "flaresolverr", "jellystat", "wizarr", "dozzle", "dispatcharr", "tdarr"], "usenet_choice": True},
+    "all": {"name": "Everything", "reelix_edition": "full", "disk_health": True,
+            "about": "Every app Starboard offers, Storyarr and Kapowarr included.", "apps": None, "usenet_choice": True},
+}
+USENET_APPS = ("nzbget", "sabnzbd")
+
+
+def with_needs(keys):
+    """`keys` and everything they need (NEEDS), in catalogue order. Returns (keys, added)."""
+    chosen = list(dict.fromkeys(keys))
+    added = []
+    i = 0
+    while i < len(chosen):
+        for need in NEEDS.get(chosen[i], []):
+            options = need if isinstance(need, tuple) else (need,)
+            if not any(o in chosen for o in options):
+                chosen.append(options[0])
+                added.append(options[0])
+        i += 1
+    order = list(APPS)
+    return sorted(chosen, key=lambda k: order.index(k) if k in order else len(order)), added
+
+
+def install_choice(key, installed_keys=(), check=None, usenet="nzbget"):
+    """The apps, groups and answers for one of INSTALLS. Apps already running are left out. The full Reelix falls back
+    to Lite when it cannot be downloaded, and says so. `usenet` picks NZBGet or SABnzbd where the install allows it."""
+    if key not in INSTALLS:
+        raise ValueError("Choose Basics, Full install or Everything")
+    spec = INSTALLS[key]
+    if usenet not in USENET_APPS or not spec["usenet_choice"]:
+        usenet = "nzbget"
+    apps = [k for k in (spec["apps"] or offered()) if k in offered()]
+    if any(k in USENET_APPS for k in apps):  # one Usenet app: the chosen one
+        apps = [k for k in apps if k not in USENET_APPS] + [usenet]
+    apps, _ = with_needs(apps)
+    edition, note = spec["reelix_edition"], ""
+    if edition == "full":
+        try:
+            reelix_image("full", check)
+        except ValueError:
+            edition, note = "lite", "Reelix with YouTube and Spotify downloads cannot be downloaded at the moment, so this installs Reelix Lite. Switch later in Settings, Reelix."
+    keys = [k for k in apps if k not in installed_keys]
+    groups = sorted({g for k in keys for g in APPS[k]["groups"]})
+    return {"key": key, "name": spec["name"], "about": spec["about"], "apps": keys, "groups": groups,
+            "usenet": usenet, "usenet_choice": spec["usenet_choice"],
+            "reelix_edition": edition, "disk_health": spec["disk_health"], "note": note,
+            "memory": sum(APPS[k].get("memory", 100) for k in keys)}
+
+
 def catalogue(installed_keys):
     """Groups and apps for the guide; apps found running are marked and left unticked."""
     apps = []
@@ -231,7 +313,9 @@ def catalogue(installed_keys):
                      "installed": key in installed_keys, "ports": ports})
     used = {g for a in apps for g in a["groups"]}  # a group with no app left (Tidy-up, now in Reelix) is not shown
     return {"groups": [{"key": k, "name": n, "about": t, "kind": kind, "default": d} for k, n, t, kind, d in GROUPS if k in used],
-            "apps": apps}
+            "apps": apps, "needs": {k: [list(n) if isinstance(n, tuple) else [n] for n in v] for k, v in NEEDS.items()},
+            "installs": [{"key": k, "name": v["name"], "about": v["about"], "recommended": k == "basics",
+                          "usenet_choice": v["usenet_choice"]} for k, v in INSTALLS.items()]}
 
 
 def _yaml_value(v):
@@ -352,6 +436,7 @@ def build(choice):
     reelix_edition ("lite", the default, or "full")}.
     Returns {compose, env, env_shown, folders, moved, later}."""
     keys = [k for k in choice.get("apps", []) if k in offered(replaced=True)]
+    keys, _ = with_needs(keys)  # what the chosen apps need comes too
     if not keys:
         raise ValueError("Tick at least one app to install")
     config_dir = clean_folder(choice.get("config_dir"), "settings folder")
@@ -421,6 +506,9 @@ def build(choice):
             lines.append("    volumes:")
             lines += [f"      - {_yaml_value(v)}" for v in a["volumes"]]
         db = a.get("db")
+        for name in a.get("secrets", []):  # made up once per write; the app reads it from .env
+            env[name] = secrets.token_urlsafe(18)
+            shown[name] = "(made up for you)"
         if db:
             for s in ("secret", "secret2"):
                 if db.get(s):
@@ -471,9 +559,106 @@ def folder(data_dir):
     return os.path.join(data_dir, "stack")
 
 
+def env_values(data_dir):
+    """The values in data/stack/.env, for Starboard's own use (NZBGet's sign-in)."""
+    try:
+        with open(os.path.join(folder(data_dir), ".env"), encoding="utf-8") as f:
+            return {k: v.strip().strip("'\"") for k, v in (l.split("=", 1) for l in f.read().splitlines()
+                                                         if "=" in l and not l.startswith("#"))}
+    except OSError:
+        return {}
+
+
+def nzbget_key(data_dir):
+    """NZBGet's sign-in as Starboard keeps it ("user:password"), when Install apps made it; else None."""
+    pw = env_values(data_dir).get("NZBGET_PASS")
+    return f"{APPS['nzbget']['env']['NZBGET_USER']}:{pw}" if pw else None
+
+
+# Your install: what runs now, and changing it (Settings, Your install) ------------------------------------------
+
+VPN_ENV = {"VPN_SERVICE_PROVIDER": "provider", "VPN_TYPE": "type", "SERVER_COUNTRIES": "countries",
+           "WIREGUARD_PRIVATE_KEY": "wireguard_private_key", "WIREGUARD_ADDRESSES": "wireguard_addresses",
+           "OPENVPN_USER": "openvpn_user", "OPENVPN_PASSWORD": "openvpn_password"}
+
+
+def current_choice(data_dir):
+    """The Install apps choice that wrote data/stack, read back from compose.yaml and .env; None when there is none."""
+    keys = chosen_keys(data_dir)
+    env = env_values(data_dir)
+    if not keys or not env.get("CONFIG_DIR"):
+        return None
+    image = reelix_in_stack(data_dir)
+    choice = {"apps": [k for k in keys if k in APPS], "config_dir": env["CONFIG_DIR"], "data_dir": env["DATA_DIR"],
+              "puid": int(env.get("PUID", 1000)), "pgid": int(env.get("PGID", 1000)), "tz": env.get("TZ", "Etc/UTC"),
+              "reelix_edition": edition_of(image) or "lite"}
+    vpn = {field: env[name] for name, field in VPN_ENV.items() if env.get(name)}
+    if vpn:
+        choice["vpn"] = vpn
+    return choice
+
+
+def which_install(apps, edition=None):
+    """"basics", "full" or "all" when the apps are one of INSTALLS (with either Usenet app where allowed), else "custom".
+    The Reelix version is not part of it."""
+    have = set(apps)
+    for key in ("all", "full", "basics"):
+        for usenet in USENET_APPS:
+            spec = INSTALLS[key]
+            want = [k for k in (spec["apps"] or offered()) if k in offered()]
+            if any(k in USENET_APPS for k in want):
+                want = [k for k in want if k not in USENET_APPS] + [usenet if spec["usenet_choice"] else "nzbget"]
+            want, _ = with_needs(want)
+            if set(want) == have:  # which Reelix runs is shown on its own: Full falls back to Lite when it must
+                return key
+    return "custom"
+
+
+def plan_change(data_dir, install=None, usenet=None, edition=None, check=None):
+    """What changing to another install, Usenet app or Reelix means: the new choice, and the apps added and taken
+    away. Raises ValueError when Install apps did not write this server's apps."""
+    now = current_choice(data_dir)
+    if not now:
+        raise ValueError("Install apps did not set up the apps here, so Starboard cannot change them. Use Install apps first")
+    apps = list(now["apps"])
+    usenet_now = next((k for k in USENET_APPS if k in apps), None)
+    if install:
+        c = install_choice(install, check=check, usenet=usenet or usenet_now or "nzbget")
+        apps = c["apps"]
+        edition = edition or c["reelix_edition"]
+    if usenet and usenet in USENET_APPS and usenet != next((k for k in USENET_APPS if k in apps), usenet):
+        apps = [usenet if k in USENET_APPS else k for k in apps]
+    apps, _ = with_needs(apps)
+    choice = {**now, "apps": apps, "reelix_edition": edition or now["reelix_edition"]}
+    if choice["reelix_edition"] == "full" and "reelix" in apps:
+        reelix_image("full", check)  # raises when the full Reelix cannot be downloaded
+    return {"choice": choice, "add": [k for k in apps if k not in now["apps"]],
+            "remove": [k for k in now["apps"] if k not in apps],
+            "reelix": (now["reelix_edition"], choice["reelix_edition"]) if "reelix" in apps else None,
+            "usenet": (usenet_now, next((k for k in USENET_APPS if k in apps), None))}
+
+
+def keep_made_up(env_text, old_text, shown):
+    """Values made up for this write (database passwords, NZBGet's sign-in) keep their earlier value when the old .env
+    had one: a database and the apps using it already know the old one."""
+    old = dict(line.split("=", 1) for line in (old_text or "").splitlines() if "=" in line and not line.startswith("#"))
+    out = []
+    for line in env_text.splitlines():
+        key = line.split("=", 1)[0] if "=" in line and not line.startswith("#") else None
+        if key and shown.get(key) == "(made up for you)" and old.get(key):
+            line = f"{key}={old[key]}"
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
 def write(data_dir, built):
     path = folder(data_dir)
     os.makedirs(path, mode=0o700, exist_ok=True)
+    try:
+        with open(os.path.join(path, ".env"), encoding="utf-8") as f:
+            built = {**built, "env": keep_made_up(built["env"], f.read(), built.get("env_shown", {}))}
+    except OSError:
+        pass
     for name, text, mode in (("compose.yaml", built["compose"], 0o644), (".env", built["env"], 0o600)):
         target = os.path.join(path, name)
         if os.path.exists(target):
@@ -536,7 +721,9 @@ def note_reelix(data_dir, choice, built):
     info = {"url": f"http://127.0.0.1:{port.group(1) if port else 7700}",
             "groups": [g for g in (choice.get("groups") or APPS["reelix"]["groups"]) if g in APPS["reelix"]["groups"]],
             "qbittorrent_host": "gluetun" if vpn and "qbittorrent" in apps else "qbittorrent",
-            "sabnzbd": "sabnzbd" in apps}
+            "sabnzbd": "sabnzbd" in apps,
+            "usenet": next((k for k in USENET_APPS if k in apps), None),
+            "usenet_host": ("gluetun" if vpn else next((k for k in USENET_APPS if k in apps), "nzbget"))}
     fd = os.open(target + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(info, f)
@@ -645,7 +832,9 @@ def _start(host_stack, env):
         f"mkdir -p {q(cfg)} {q(data)}",
         f"chown {int(env['PUID'])}:{int(env['PGID'])} {q(cfg)} {q(data)}",
         f"docker compose -p {PROJECT} --env-file .env -f compose.yaml pull 2>&1 | tail -n 20",
-        f"docker compose -p {PROJECT} --env-file .env -f compose.yaml up -d 2>&1",
+        # --remove-orphans: an app taken out of compose.yaml (a smaller install, NZBGet in place of SABnzbd) stops and
+        # goes; its settings folder stays.
+        f"docker compose -p {PROJECT} --env-file .env -f compose.yaml up -d --remove-orphans 2>&1",
         # Not a database's folder (jellystat-db, storyarr-db): the database owns it, and changing it while the
         # database sets itself up leaves it unfinished ("no pg_hba.conf entry for host").
         f"for d in {q(cfg)}/* {q(data)}/media {q(data)}/downloads; do case \"$d\" in *-db) continue ;; esac; "

@@ -98,6 +98,14 @@ HELP = {
               "Downloads installs the download apps and the sites to search. You can add more later in Starboard, "
               "Settings, Install apps.",
     "apps": "These are the apps for what you chose. Apps already running on this computer are left out.",
+    "usenet-app": "Both download from Usenet through your provider's servers. NZBGet is written in C++ and uses far less "
+                  "memory and processor; SABnzbd is written in Python and has more extras. Reelix works with either. "
+                  "You can switch later in Starboard, Settings, Your install, and your Usenet servers come across.",
+    "installs": "Basics is Starboard with Reelix Lite, Jellyfin, Audiobookshelf, subtitles, and torrent and Usenet "
+                "downloads through a VPN, with NZBGet for Usenet. Full install uses the full Reelix, with YouTube and Spotify downloads, and adds "
+                "disk health, watch statistics, invites, live TV, logs, FlareSolverr and Tdarr. Everything installs every "
+                "app Starboard offers. Whatever you choose, an app also brings what it needs, such as Jellyfin for "
+                "Jellystat. You can add or remove apps later in Starboard, Settings, Install apps.",
     "folders": "The media folder holds your films, series, books and downloads, all in one place so files move in an "
                "instant. The settings folder holds each app's own settings. Both are made for you if they are missing.",
     "vpn": "A VPN sends the torrent app's traffic through your VPN provider, so sites see its address, not yours. "
@@ -1494,8 +1502,42 @@ def step_apps(api, term, state):
         last["install"], state["apps"], state["choice"] = 2, last, None
         return True
     last["install"] = 1
+    # Basics, Full install or Everything (the browser set-up asks the same), or the groups one by one.
+    installs = overview.get("installs") or []
+    if installs:
+        options = [(i["name"] + (" (recommended)" if i["recommended"] else ""), i["about"]) for i in installs]
+        options.append(("Let me choose", "Pick each group, and each app if you like."))
+        pick = term.choose("What do you want to install?", options, last.get("which", 1), help_key="installs")
+        last["which"] = pick + 1
+        if pick < len(installs):
+            usenet = "nzbget"
+            if installs[pick].get("usenet_choice"):
+                u = term.choose("Which app downloads from Usenet?",
+                                [("NZBGet (recommended)", "Light on memory and processor."),
+                                 ("SABnzbd", "If you know it already, or want its own extras.")],
+                                last.get("usenet", 1), help_key="usenet-app")
+                last["usenet"] = u + 1
+                usenet = ("nzbget", "sabnzbd")[u]
+            c = api.call("POST", "/api/stack/install", {"install": installs[pick]["key"], "usenet": usenet})
+            names = {a["key"]: a["name"] for a in overview["apps"]}
+            rows = [("Apps", ", ".join(names.get(k, k) for k in c["apps"])), ("Memory", f"about {c['memory']:,} MB")]
+            if c.get("note"):
+                rows.append(("Reelix", c["note"]))
+            term.card(c["name"], rows)
+            if term.choose("Install these?", ["Yes (recommended)", "Let me choose app by app"], help_key="apps") == 0:
+                state.setdefault("host", {}).setdefault("health", bool(c["disk_health"]))
+                d = overview["defaults"]
+                data_dir = state.get("media_dir") or (state["pool_dir"] + "/media" if state.get("pool_dir") else d["data_dir"])
+                config_dir = last.get("config_dir", d["config_dir"])
+                last.update(data_dir=data_dir, config_dir=config_dir, chosen=c["apps"], groups=None)
+                state["apps"] = last
+                state["choice"] = {"apps": c["apps"], "groups": c["groups"], "data_dir": data_dir, "config_dir": config_dir,
+                                   "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"], "reelix_edition": c["reelix_edition"]}
+                state["names"] = [names.get(k, k) for k in c["apps"]]
+                return True
+            last["chosen"] = c["apps"]
     picked = term.choose_many("What do you want?", [(g["name"], g["about"]) for g in groups],
-                              last.get("groups", [i for i, g in enumerate(groups) if g["default"]]), help_key="groups")
+                              last.get("groups") or [i for i, g in enumerate(groups) if g["default"]], help_key="groups")
     last["groups"] = picked
     keys = {groups[i]["key"] for i in picked}
     apps = [a for a in overview["apps"] if set(a["groups"]) & keys and not a["installed"]]
@@ -1596,7 +1638,7 @@ def step_usenet(api, term, state):
     """Your Usenet provider: only when SABnzbd is chosen. The providers' addresses in full (a terminal shows the link
     itself), the affiliate note before them and what Usenet may be used for after them."""
     choice = state.get("choice")
-    if not choice or "sabnzbd" not in choice["apps"]:
+    if not choice or not ({"sabnzbd", "nzbget"} & set(choice["apps"])):
         return False
     term.heading(title("usenet"), num(title("usenet")))
     term.say("")

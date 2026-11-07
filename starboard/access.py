@@ -15,7 +15,7 @@ def _item(key, title, what, on, change, **extra):
 
 def summary(app):
     d = app.config.data
-    clients = [s["name"] for s in d["services"] if s["type"] in ("qbittorrent", "sabnzbd") and s.get("api_key")]
+    clients = [s["name"] for s in d["services"] if s["type"] in ("qbittorrent", "sabnzbd", "nzbget") and s.get("api_key")]
     jobs = os.environ.get("STARBOARD_JOBS_DIR", "")
     smart = os.environ.get("STARBOARD_SMART_DIR", "")
     return [

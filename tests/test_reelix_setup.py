@@ -170,6 +170,17 @@ class ReelixSetupTest(unittest.TestCase):
         self.assertFalse(os.path.exists(reelix_setup.setup_file(self.tmp.name)))  # the token file is gone
         self.assertTrue(done)
 
+    def test_nzbget_is_connected_with_the_made_up_sign_in(self):
+        self.write({"url": self.base, "token": "TOKEN123", "groups": ["movies"], "usenet": "nzbget",
+                    "usenet_host": "gluetun"})
+        cfg = Services()
+        done = reelix_setup.set_up(cfg, self.tmp.name, "correct horse battery", nzbget=lambda d: ("starboard", "made-up"))
+        nz = next(c for c in self.fake.clients if c["implementation"] == "nzbget")
+        self.assertEqual((nz["settings"]["host"], nz["settings"]["port"]), ("gluetun", 6789))
+        self.assertEqual((nz["settings"]["username"], nz["settings"]["password"]), ("starboard", "made-up"))
+        self.assertEqual(self.fake.profiles[0]["preferred_protocol"], "usenet")
+        self.assertIn("Connected Reelix to NZBGet", done)
+
     def test_running_it_again_changes_nothing_twice(self):
         cfg = Services()
         reelix_setup.set_up(cfg, self.tmp.name, "correct horse battery", qbit=lambda t: "lasting-pw")

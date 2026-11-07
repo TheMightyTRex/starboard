@@ -63,7 +63,7 @@ class Schedule:
 
     def clients(self):
         return [s for s in self.config.data["services"]
-                if s["type"] in ("qbittorrent", "sabnzbd") and s.get("enabled", True) and s.get("url") and s.get("api_key")]
+                if s["type"] in ("qbittorrent", "sabnzbd", "nzbget") and s.get("enabled", True) and s.get("url") and s.get("api_key")]
 
     def wanted(self, state, now):
         """("run" or "pause", "manual" or "hours")"""
@@ -83,6 +83,8 @@ class Schedule:
             try:
                 if client["type"] == "qbittorrent":
                     self._qbit(client, mine, action, manual, enforcing)
+                elif client["type"] == "nzbget":
+                    self._nzbget(client, mine, action, enforcing)
                 else:
                     self._sab(client, mine, action, enforcing)
             except ServiceError as e:
@@ -112,6 +114,17 @@ class Schedule:
             yours = set()
         present = {t["hash"] for t in torrents}
         mine["stopped"], mine["started_by_you"] = sorted(ours & present), sorted(yours & present)
+
+    def _nzbget(self, client, mine, action, enforcing):
+        paused = bool((services.nzbget(client, "status") or {}).get("DownloadPaused"))
+        if action == "pause" and not paused:
+            if not (enforcing and mine.get("nzbget_paused")):  # paused by Starboard and running again: leave it
+                services.nzbget(client, "pausedownload")
+                mine["nzbget_paused"] = True
+        elif action == "run":
+            if paused:
+                services.nzbget(client, "resumedownload")
+            mine["nzbget_paused"] = False
 
     def _sab(self, client, mine, action, enforcing):
         paused = services.sab(client, "queue", limit=0)["queue"]["paused"]

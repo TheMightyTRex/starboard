@@ -20,7 +20,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
-from . import access, auth, backup, reelix_setup, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, reelix_setup, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -336,6 +336,8 @@ def add_found(app, items):
         if not re.match(r"^http://127\.0\.0\.1:\d{2,5}$", url):
             continue  # only what discovery itself found on this computer
         key = discovery.read_key(it["key"], str(it.get("container", ""))) if it.get("read_key") else None
+        if it["key"] == "nzbget" and not key:
+            key = stack.nzbget_key(app.data_dir)  # the sign-in Install apps made up
         service = {"name": name, "type": kind, "url": url, "background": background, "icon": it["key"],
                    "container": str(it.get("container", "")) if it.get("container") else ""}
         if key:
@@ -377,12 +379,56 @@ def reelix_after_start(app, password):
                 return
             time.sleep(5)
         try:
-            done = reelix_setup.set_up(app.config, app.data_dir, password, qbit=reelix_setup.qbit_lasting_password())
+            done = reelix_setup.set_up(app.config, app.data_dir, password, qbit=reelix_setup.qbit_lasting_password(), nzbget=reelix_setup.nzbget_ready())
             services.forget()
             logs.event("info", "install apps", "Reelix set up: " + "; ".join(done))
         except reelix_setup.ReelixError as e:
             logs.event("warning", "install apps", f"Reelix is not set up yet: {e}")
     threading.Thread(target=run, name="reelix-setup", daemon=True).start()
+
+
+def after_install_change(app, password, plan, sab_ini):
+    """Once the changed apps run: adds the new ones to the dashboard, takes away the ones removed, and when the Usenet
+    app changed, moves SABnzbd's servers into NZBGet and swaps Reelix's download app. The password (just checked) is
+    used for Reelix's sign-in and dropped when this finishes."""
+    def run():
+        began = time.time()
+        while not stack.job().get("finished"):
+            if time.time() - began > 3600:
+                return
+            time.sleep(5)
+        if not stack.job().get("ok"):
+            return
+        notes = []
+        cfg = app.config
+        for key in plan["remove"]:
+            for s in [s for s in cfg.data["services"] if s.get("icon") == key or s.get("container") == key]:
+                cfg.remove_service(s["id"])
+                notes.append(f"Took {s['name']} off your apps")
+        before, after = plan["usenet"]
+        vpn = "gluetun" in plan["choice"]["apps"]
+        if after and after != before:
+            try:
+                if after == "nzbget":
+                    creds = reelix_setup.nzbget_ready()(app.data_dir)
+                    if sab_ini:
+                        moved = usenet_move.write_to_nzbget(reelix_setup.nzbget_rpc(stack.nzbget_key(app.data_dir)),
+                                                            usenet_move.parse_sab_servers(sab_ini))
+                        notes.append(f"Moved {moved} Usenet {'server' if moved == 1 else 'servers'} from SABnzbd to NZBGet")
+                    if "reelix" in plan["choice"]["apps"]:
+                        notes += reelix_setup.switch_usenet(cfg, password, "nzbget", "gluetun" if vpn else "nzbget", creds=creds)
+                elif "reelix" in plan["choice"]["apps"]:
+                    sab_key = discovery.read_key("sabnzbd", "sabnzbd")
+                    notes += reelix_setup.switch_usenet(cfg, password, "sabnzbd", "gluetun" if vpn else "sabnzbd", sab_key=sab_key)
+                    notes.append("Add your Usenet servers in SABnzbd, Config, Servers: they are not moved from NZBGet")
+            except (reelix_setup.ReelixError, OSError, ValueError) as e:
+                notes.append(f"Switching the Usenet app is not finished: {e}")
+        services.forget()
+        adopt_started_apps(app, plan["add"], after_job=False)
+        logs.event("info", "your install", "; ".join(notes) or "Your install changed")
+        with open(os.path.join(stack.folder(app.data_dir), "change-result.json"), "w", encoding="utf-8") as f:
+            json.dump({"notes": notes, "finished": time.time()}, f)
+    threading.Thread(target=run, name="install-change", daemon=True).start()
 
 
 def resume_adopting(app):
@@ -1027,6 +1073,63 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, self.add_found(self.body().get("items")))
             if path == "/api/stack" and method == "GET":
                 return self.json(200, self.stack_overview())
+            if path == "/api/stack/install" and method == "POST":
+                # Basics, Full install or Everything: the apps (with what they need), groups and answers, for both set-ups.
+                overview = self.stack_overview()
+                installed = {a["key"] for a in overview["apps"] if a["installed"]}
+                body = self.body()
+                return self.json(200, stack.install_choice(str(body.get("install", "")), installed,
+                                                           usenet=str(body.get("usenet") or "nzbget")))
+            if path == "/api/install" and method == "GET":
+                # Settings, Your install: what runs now, and the three installs with what each adds or takes away.
+                now = stack.current_choice(app.data_dir)
+                names = {k: a["name"] for k, a in stack.APPS.items()}
+                out = {"written": bool(now), "installs": [], "usenet_apps": [{"key": k, "name": names[k]} for k in stack.USENET_APPS],
+                       "editions": stack.reelix_editions(), "can_start": bool(stack.host_folder(app.data_dir) and containers.available()),
+                       "starter": stack.starter_waiting(app.data_dir), "command": "cd ~/starboard && ./install.sh --start-apps"}
+                if now:
+                    usenet = next((k for k in stack.USENET_APPS if k in now["apps"]), None)
+                    current = stack.which_install(now["apps"], now["reelix_edition"])
+                    out["current"] = {"install": current, "apps": [names.get(k, k) for k in now["apps"]],
+                                      "reelix_edition": now["reelix_edition"] if "reelix" in now["apps"] else None,
+                                      "usenet": usenet, "memory": sum(stack.APPS[k].get("memory", 100) for k in now["apps"])}
+                    for key, spec in stack.INSTALLS.items():
+                        try:
+                            plan = stack.plan_change(app.data_dir, install=key, usenet=usenet)
+                        except ValueError as e:
+                            out["installs"].append({"key": key, "name": spec["name"], "about": spec["about"], "error": str(e)})
+                            continue
+                        out["installs"].append({"key": key, "name": spec["name"], "about": spec["about"],
+                                                "add": [names[k] for k in plan["add"]], "remove": [names[k] for k in plan["remove"]],
+                                                "reelix_edition": plan["choice"]["reelix_edition"],
+                                                "memory": sum(stack.APPS[k].get("memory", 100) for k in plan["choice"]["apps"])})
+                try:
+                    with open(os.path.join(stack.folder(app.data_dir), "change-result.json"), encoding="utf-8") as f:
+                        out["last_change"] = json.load(f)
+                except (OSError, ValueError):
+                    pass
+                return self.json(200, out)
+            if path == "/api/install/change" and method == "POST":
+                # Change to another install, Usenet app or Reelix: rewrite the set-up file and start the apps.
+                body = self.body()
+                self.check_password(body)
+                plan = stack.plan_change(app.data_dir, install=body.get("install") or None,
+                                         usenet=body.get("usenet") or None, edition=body.get("reelix_edition") or None)
+                if not (plan["add"] or plan["remove"] or (plan["reelix"] and plan["reelix"][0] != plan["reelix"][1])):
+                    raise ValueError("That is what runs already")
+                sab_ini = usenet_move.read_sab_ini() if plan["usenet"][0] == "sabnzbd" and plan["usenet"][1] == "nzbget" else None
+                built = stack.build(plan["choice"])
+                stack.write(app.data_dir, built)
+                logs.event("info", "your install", f"Changing: adding {', '.join(plan['add']) or 'nothing'}; "
+                                                   f"taking away {', '.join(plan['remove']) or 'nothing'}")
+                try:
+                    started = self.start_stack()
+                except ValueError:
+                    return self.json(200, {"started": None, "command": "cd ~/starboard && ./install.sh --start-apps",
+                                           "add": plan["add"], "remove": plan["remove"]})
+                after_install_change(app, body.get("password", ""), plan, sab_ini)
+                return self.json(200, {"started": started, "add": plan["add"], "remove": plan["remove"],
+                                       "sab_servers": len(usenet_move.parse_sab_servers(sab_ini)) if sab_ini else 0})
             if path == "/api/stack/preview" and method == "POST":
                 built = stack.build(self.body())
                 return self.json(200, {**{k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")}, "hooks": sorted(built["hooks"])})
@@ -1072,7 +1175,7 @@ class Handler(BaseHTTPRequestHandler):
                 body = self.body()
                 self.check_password(body)
                 done = reelix_setup.set_up(app.config, app.data_dir, body["password"],
-                                           qbit=reelix_setup.qbit_lasting_password())
+                                           qbit=reelix_setup.qbit_lasting_password(), nzbget=reelix_setup.nzbget_ready())
                 services.forget()
                 logs.event("info", "install apps", "Reelix set up: " + "; ".join(done))
                 return self.json(200, {"done": done})

@@ -129,7 +129,7 @@ start_apps() {
   # what it has, so each try carries on from there.
   local try
   for try in 1 2 3; do
-    docker compose -p media-stack -f "$file" --env-file "$env" up -d --quiet-pull >"$log" 2>&1 &
+    docker compose -p media-stack -f "$file" --env-file "$env" up -d --quiet-pull --remove-orphans >"$log" 2>&1 &
     pid=$!
     quiet_keys=""
     if [ -t 0 ] && [ -t 1 ]; then quiet_keys="$(stty -g 2>/dev/null)" && stty -echo -icanon 2>/dev/null; fi

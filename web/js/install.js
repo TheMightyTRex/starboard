@@ -32,6 +32,7 @@ async function startInstall() {
     config_dir: data.defaults.config_dir, data_dir: chosenMedia || data.defaults.data_dir,
     puid: data.defaults.puid, pgid: data.defaults.pgid, tz: data.defaults.tz,
     vpn: { provider: "", type: "wireguard" }, moving: new Set(), written: null, pool: null, reelix_edition: "lite",
+    install: "basics", installApplied: false, usenet: "nzbget",
   };
   // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd is, Moving over only when
   // there is something to move.
@@ -43,7 +44,7 @@ async function startInstall() {
       intro: "One media folder holds your downloads and your library together, so a finished download moves into the library instantly." }]),
     ...(state.apps.has("gluetun") ? [{ id: "vpn", ...stepNamed(T, "vpn"), skippable: false,
       intro: "Downloads go through your VPN, so your internet provider sees only the VPN. You need an account with a VPN provider." }] : []),
-    ...(state.apps.has("sabnzbd") ? [{ id: "usenet", ...stepNamed(T, "usenet"), skippable: false }] : []),
+    ...(state.apps.has("sabnzbd") || state.apps.has("nzbget") ? [{ id: "usenet", ...stepNamed(T, "usenet"), skippable: false }] : []),
     ...(data.servers.length ? [{ id: "moving", ...stepNamed(T, "moving"),
       intro: "Starboard found these on this computer. Nothing is copied or changed until the new apps are running and you choose." }] : []),
     { id: "review", ...stepNamed(T, "check"), skippable: false },
@@ -123,6 +124,21 @@ async function installStep(id, state, data, apps, go) {
       return true;
     };
   } else if (id === "groups") {
+    // Basics, Full install or Everything (stack.INSTALLS), or Choose myself. The first time, Basics is applied.
+    const applyInstall = async (key) => {
+      const c = await api("/api/stack/install", { method: "POST", body: { install: key, usenet: state.usenet } });
+      state.install = key;
+      state.installName = c.name;
+      state.apps = new Set(c.apps);
+      state.groups = new Set(c.groups.filter((g) => data.groups.some((x) => x.key === g)));
+      state.reelix_edition = c.reelix_edition;
+      state.installNote = c.note || "";
+      remember({ health: !!c.disk_health });  // the set-up guide's disk health answer starts from this
+      state.installApplied = true;
+    };
+    if (!state.installApplied && state.install !== "custom") {
+      try { await applyInstall(state.install); } catch { state.install = "custom"; }
+    }
     const total = el("p", { class: "small muted", "aria-live": "polite" });
     let afterCount = () => {};
     const count = () => {
@@ -132,6 +148,33 @@ async function installStep(id, state, data, apps, go) {
     };
     const appBoxes = {};
     const error = el("div", { role: "alert" });
+    const needsNote = el("div", { "aria-live": "polite" });
+    // Ticks what the ticked apps need (stack.NEEDS); a list of options means one of them, the first if none.
+    const addNeeds = () => {
+      const added = [];
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const k of [...state.apps]) {
+          for (const opts of (data.needs || {})[k] || []) {
+            if (opts.some((o) => state.apps.has(o) || apps[o]?.installed)) continue;
+            const pick = opts.find((o) => apps[o]) || opts[0];
+            if (!apps[pick]) continue;
+            state.apps.add(pick); added.push([pick, k]); changed = true;
+            if (appBoxes[pick]) appBoxes[pick].checked = true;
+            apps[pick].groups.forEach((g) => state.groups.add(g));
+          }
+        }
+      }
+      needsNote.replaceChildren(...(added.length ? [notice("info", "Also ticked", added.map(([p, k]) => `${apps[p].name}, which ${apps[k].name} needs`).join("; ") + ".")] : []));
+      return added;
+    };
+    const chooseMyself = () => {
+      if (state.install === "custom") return;
+      state.install = "custom";
+      const r = document.getElementById("install-custom");
+      if (r) r.checked = true;
+    };
     const groupRow = (g) => {
       const own = data.apps.filter((a) => a.groups[0] === g.key);
       const shared = data.apps.filter((a) => a.groups.includes(g.key) && a.groups[0] !== g.key);
@@ -144,7 +187,11 @@ async function installStep(id, state, data, apps, go) {
       const list = el("div", { class: "switch-list install-apps", hidden: !(state.advanced && state.groups.has(g.key)) }, own.map((a) => {
         const box = el("input", { type: "checkbox", checked: state.apps.has(a.key), disabled: a.installed });
         appBoxes[a.key] = box;
-        box.addEventListener("change", () => { if (box.checked) state.apps.add(a.key); else state.apps.delete(a.key); count(); showIncludes(); });
+        box.addEventListener("change", () => {
+          chooseMyself();
+          if (box.checked) state.apps.add(a.key); else state.apps.delete(a.key);
+          addNeeds(); count(); showIncludes();
+        });
         const busyPort = a.ports.find((p) => !p.free);
         const hint = [a.installed ? "Already running here" : "", a.notes,
           a.groups.length > 1 ? `Also for ${a.groups.slice(1).map((k) => groupName(k).toLowerCase()).join(", ")}` : "",
@@ -153,6 +200,7 @@ async function installStep(id, state, data, apps, go) {
         return el("label", { class: "check" }, box, el("span", { class: "check__text" }, el("strong", { text: a.name }), el("span", { class: "check__hint", text: hint })));
       }), shared.map((a) => el("p", { class: "small muted", text: `${a.name} is under ${groupName(a.groups[0])}.` })));
       groupBox.addEventListener("change", () => {
+        chooseMyself();
         error.replaceChildren();
         list.hidden = !(state.advanced && groupBox.checked);
         if (groupBox.checked) state.groups.add(g.key); else state.groups.delete(g.key);
@@ -161,6 +209,7 @@ async function installStep(id, state, data, apps, go) {
           appBoxes[a.key].checked = on;
           if (on) state.apps.add(a.key); else state.apps.delete(a.key);
         });
+        addNeeds();
         count();
         showIncludes();
       });
@@ -179,13 +228,41 @@ async function installStep(id, state, data, apps, go) {
       })), el("p", { class: "small muted", text: "You can switch either way later in Settings, Reelix. Your library and settings stay." }));
     const showWhich = () => { which.hidden = data.reelix_editions.length < 2 || !state.apps.has("reelix"); };
     afterCount = showWhich;
-    nodes = [...kinds.map(([kind, name]) => el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: name }),
-      el("div", { class: "option-cards" }, data.groups.filter((g) => g.kind === kind).map(groupRow)))), which, total, error];
+    const installs = [...(data.installs || []), { key: "custom", name: "Choose myself", about: "Tick each group below, and with Advanced settings each app." }];
+    const whatToInstall = el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: "What to install" }),
+      el("div", { class: "option-cards" }, installs.map((i) => {
+        const radio = el("input", { type: "radio", name: "install", id: `install-${i.key}`, value: i.key, checked: state.install === i.key });
+        radio.addEventListener("change", async () => {
+          if (i.key === "custom") { state.install = "custom"; return; }
+          try { await applyInstall(i.key); } catch (e) { error.replaceChildren(notice("danger", "Could not choose that", e.message)); return; }
+          go("groups");
+        });
+        return el("label", { class: "option-card" }, radio,
+          el("strong", { text: i.name + (i.recommended ? " (recommended)" : "") }), el("small", { text: i.about }));
+      })),
+      ...(state.installNote ? [notice("info", "Reelix Lite for now", state.installNote)] : []),
+      // Full install and Everything: NZBGet (lighter) or SABnzbd for Usenet. Basics always has NZBGet.
+      ...((data.installs || []).find((i) => i.key === state.install)?.usenet_choice ? [el("fieldset", { class: "stack-2" },
+        el("legend", { class: "h3", text: "Usenet app" }),
+        el("div", { class: "option-cards option-cards--row" }, [
+          { k: "nzbget", n: "NZBGet (recommended)", t: "Light on memory and processor." },
+          { k: "sabnzbd", n: "SABnzbd", t: "If you know it already, or want its own extras." }].map(({ k, n, t }) => {
+          const r = el("input", { type: "radio", name: "usenet", id: `usenet-${k}`, value: k, checked: state.usenet === k });
+          r.addEventListener("change", async () => {
+            state.usenet = k;
+            try { await applyInstall(state.install); } catch (e) { error.replaceChildren(notice("danger", "Could not choose that", e.message)); return; }
+            go("groups");
+          });
+          return el("label", { class: "option-card" }, r, el("strong", { text: n }), el("small", { text: t }));
+        })))] : []),
+      el("p", { class: "small muted", text: "The groups below show what is ticked. Changing any of them makes it your own choice." }));
+    nodes = [whatToInstall, ...kinds.map(([kind, name]) => el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: name }),
+      el("div", { class: "option-cards" }, data.groups.filter((g) => g.kind === kind).map(groupRow)))), which, needsNote, total, error];
     count();
     save = async () => {
       if (!state.apps.size) { error.replaceChildren(notice("danger", "Nothing ticked", "Tick at least one thing for your server to do.")); return false; }
       const findable = ["reelix", "radarr", "sonarr", "lidarr", "bookshelf", "storyarr", "kapowarr"].some((k) => state.apps.has(k));
-      const downloader = ["qbittorrent", "sabnzbd"].some((k) => state.apps.has(k) || apps[k]?.installed);
+      const downloader = ["qbittorrent", "nzbget", "sabnzbd"].some((k) => state.apps.has(k) || apps[k]?.installed);
       if (findable && !downloader && !state.warnedDownloads) {
         state.warnedDownloads = true;
         error.replaceChildren(notice("warning", "Nothing to download with", "Tick Downloads too, so the apps have something to download with. Or choose Continue again to go on without it."));
@@ -332,6 +409,7 @@ async function installStep(id, state, data, apps, go) {
     nodes = [
       el("p", { text: "Nothing is written or started until you choose Write the files. You can change anything first." }),
       el("dl", { class: "facts" },
+        ...row("Install", state.install === "custom" ? "Your own choice" : (state.installName || "Basics"), "groups"),
         ...row("What it does", picked, "groups"),
         ...row("Apps", [...state.apps].map((k) => apps[k].name).join(", "), "groups"),
         ...(state.apps.has("reelix") && state.reelix_edition === "full" ? row("Reelix", "With YouTube and Spotify downloads", "groups") : []),
@@ -499,7 +577,7 @@ async function poolDialog(drives, current) {
 function connectGuide(state, apps) {
   const has = (k) => state.apps.has(k);
   const vpn = has("gluetun");
-  const host = (k) => (vpn && ["qbittorrent", "sabnzbd", "prowlarr", "flaresolverr"].includes(k) ? "gluetun" : k);
+  const host = (k) => (vpn && ["qbittorrent", "nzbget", "sabnzbd", "prowlarr", "flaresolverr"].includes(k) ? "gluetun" : k);
   const hostPort = (k) => Number(String(apps[k]?.ports?.[0]?.port || "0"));
   const open = (k) => el("a", { href: `${location.protocol}//${location.hostname}:${hostPort(k)}`, target: "_blank", rel: "noopener noreferrer" },
     `Open ${apps[k].name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
@@ -522,6 +600,12 @@ function connectGuide(state, apps) {
   } else if (has("qbittorrent")) {
     steps.push(el("li", {}, el("strong", { text: "qBittorrent. " }), open("qbittorrent"), ". Its first password is in its log (on the server: ", code("docker logs qbittorrent"),
       "). Sign in as ", code("admin"), ", then choose your own password in Options, Web UI. In Options, Downloads, set the default save path to ", code("/data/downloads/torrents"), "."));
+  }
+  if (has("nzbget")) {
+    steps.push(el("li", {}, el("strong", { text: "NZBGet. " }), open("nzbget"), ". Starboard set it up: it signs in as ", code("starboard"),
+      " with a password Starboard made up (", code("NZBGET_PASS"), " in ", code("data/stack/.env"), "), its downloads go in ",
+      code("/data/downloads/usenet"), ", and Reelix is connected to it", has("reelix") ? "" : " once Reelix is installed",
+      ". Add your Usenet provider in its Settings, News-Servers."));
   }
   if (has("sabnzbd")) {
     steps.push(el("li", {}, el("strong", { text: "SABnzbd. " }), open("sabnzbd"), ". Its first-run wizard asks for your Usenet provider. In Config, Folders, set the completed folder to ", code("/data/downloads/usenet"), ". Copy its API key from Config, General."));

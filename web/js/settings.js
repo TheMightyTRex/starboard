@@ -2139,9 +2139,134 @@ async function startReelix() {
     body = [el("p", {}, "Now: ", now), form];
   }
   root.replaceChildren(
-    section("rx-version", "Version", "Reelix, or Reelix with YouTube and Spotify downloads. You can switch either way; the library, users and settings stay.", ...body, status),
+    section("rx-version", "Version", "Which Reelix runs is part of your install: change it, and the rest of your install, on Settings, Your install.",
+      el("p", {}, "Now: ", el("strong", { text: names[d.current] || d.image || "Not installed by Starboard" })),
+      el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-install.html" }, icon("layers"), "Open Your install"))),
     section("rx-more", "More settings", "", notice("info", "Coming with Reelix", "Sites to search, download apps, quality, folders, media servers and users come here once Starboard reads them from Reelix.")));
   root.removeAttribute("aria-busy");
+}
+
+// Settings, Your install: what Starboard installed (Basics, Full install, Everything or your own choice), and changing
+// it either way, with the Usenet app and which Reelix (stack.plan_change, /api/install/change). 7 November 2026.
+async function startYourInstall() {
+  const root = $("#install-sections");
+  const facts = (pairs) => el("dl", { class: "facts" }, ...pairs.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })]));
+  let d;
+  try { d = await api("/api/install"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); root.removeAttribute("aria-busy"); return; }
+  root.removeAttribute("aria-busy");
+  const status = el("div", { class: "stack-2", "aria-live": "polite" });
+  const how = section("in-how", "How changing works", "The same steps for a bigger install or a smaller one.",
+    el("ol", { class: "stack-1" },
+      el("li", { text: "Starboard keeps a copy of the set-up file in data/stack, named compose.yaml.before- and the date, so you can go back." }),
+      el("li", { text: "It writes the new set-up file, with the same folders, user, time zone and VPN details, and the same passwords it made up before." }),
+      el("li", { text: "It downloads the apps being added and starts them. Apps taken away stop and are removed; their settings folders stay, so adding one back later carries on where it left off." }),
+      el("li", { text: "From SABnzbd to NZBGet, your Usenet servers move across: address, port, user name, password, connections and SSL. The queue and history do not. From NZBGet to SABnzbd, add your servers in SABnzbd." }),
+      el("li", { text: "Reelix is given the new download app in place of the old one, and new apps are added to your dashboard as they answer." }),
+      el("li", { text: "Going from the full Reelix to Lite works when Lite is on the same release or newer; Starboard says when it has to wait." })));
+  if (!d.written) {
+    root.replaceChildren(section("in-now", "Your install", "", notice("info", "Nothing installed by Starboard yet",
+      "Install apps sets up your media server. Once it has, this page shows what is installed and changes it."),
+      el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/install-apps.html" }, icon("download"), "Install apps"))), how);
+    return;
+  }
+  const cur = d.current;
+  const names = { basics: "Basics", full: "Full install", all: "Everything", custom: "Your own choice" };
+  const editionName = (k) => (d.editions.find((e) => e.key === k) || {}).name || k;
+  const usenetName = (k) => (d.usenet_apps.find((u) => u.key === k) || {}).name || "None";
+  const want = { install: null, usenet: cur.usenet, reelix_edition: cur.reelix_edition };
+  const now = section("in-now", "Your install now", "",
+    facts([["Install", names[cur.install] || cur.install], ["Reelix", cur.reelix_edition ? editionName(cur.reelix_edition) : "Not installed"],
+      ["Usenet app", usenetName(cur.usenet)], ["Apps", cur.apps.join(", ")], ["Memory when idle", `about ${(cur.memory / 1000).toFixed(1)} GB`]]),
+    ...(d.last_change ? [notice("info", "Last change", (d.last_change.notes || []).join(". ") || "Finished")] : []));
+
+  const summary = el("p", { class: "muted", "aria-live": "polite" });
+  const describe = () => {
+    const parts = [];
+    const pick = d.installs.find((i) => i.key === want.install);
+    if (pick && !pick.error) {
+      if (pick.add.length) parts.push(`adds ${pick.add.join(", ")}`);
+      if (pick.remove.length) parts.push(`takes away ${pick.remove.join(", ")}`);
+    }
+    if (want.usenet && want.usenet !== cur.usenet) parts.push(`uses ${usenetName(want.usenet)} for Usenet in place of ${usenetName(cur.usenet)}`);
+    if (want.reelix_edition && want.reelix_edition !== cur.reelix_edition) parts.push(`switches Reelix to ${editionName(want.reelix_edition)}`);
+    summary.textContent = parts.length ? `This change ${parts.join("; ")}.` : "Choose a change above.";
+    button.disabled = !parts.length;
+  };
+  const installCards = el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Install" }),
+    el("div", { class: "option-cards" }, d.installs.map((i) => {
+      const r = el("input", { type: "radio", name: "your-install", id: `your-install-${i.key}`, value: i.key, checked: cur.install === i.key, disabled: !!i.error });
+      r.addEventListener("change", () => { want.install = i.key; want.reelix_edition = i.reelix_edition; reelixRadios(); describe(); });
+      const lines = i.error ? [i.error] : [i.about,
+        cur.install === i.key ? "In use now" : [i.add.length ? `Adds ${i.add.join(", ")}` : "", i.remove.length ? `Takes away ${i.remove.join(", ")}` : ""].filter(Boolean).join(". ") || "Nothing to add or take away",
+        `About ${(i.memory / 1000).toFixed(1)} GB of memory`];
+      return el("label", { class: "option-card" }, r, el("strong", { text: i.name }), ...lines.map((t) => el("small", { text: t })));
+    })));
+  const usenetCards = cur.usenet ? el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Usenet app" }),
+    el("div", { class: "option-cards option-cards--row" }, d.usenet_apps.map((u) => {
+      const r = el("input", { type: "radio", name: "your-usenet", id: `your-usenet-${u.key}`, value: u.key, checked: cur.usenet === u.key });
+      r.addEventListener("change", () => { want.usenet = u.key; describe(); });
+      return el("label", { class: "option-card" }, r, el("strong", { text: u.name + (u.key === "nzbget" ? " (recommended)" : "") }),
+        el("small", { text: u.key === "nzbget" ? "Light on memory and processor." : "More extras; uses more memory." }),
+        cur.usenet === u.key ? el("small", { class: "muted", text: "In use now" }) : null);
+    }))) : el("p", { class: "muted", text: "No Usenet app is installed. Full install and Everything add NZBGet." });
+  const reelixBox = el("div");
+  const reelixRadios = () => {
+    if (!cur.reelix_edition && !want.install) { reelixBox.replaceChildren(el("p", { class: "muted", text: "Reelix is not installed." })); return; }
+    reelixBox.replaceChildren(el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Reelix" }),
+      el("div", { class: "option-cards option-cards--row" }, d.editions.map((e) => {
+        const r = el("input", { type: "radio", name: "your-reelix", id: `your-reelix-${e.key}`, value: e.key, checked: want.reelix_edition === e.key, disabled: !e.available && e.key !== cur.reelix_edition });
+        r.addEventListener("change", () => { want.reelix_edition = e.key; describe(); });
+        return el("label", { class: "option-card" }, r, el("strong", { text: e.name }), el("small", { text: e.about }),
+          el("small", { class: "muted", text: e.key === cur.reelix_edition ? "In use now" : !e.available ? "Cannot be downloaded at the moment" : "" }));
+      }))));
+  };
+  reelixRadios();
+
+  const password = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true });
+  const button = el("button", { type: "submit", class: "btn btn--primary", text: "Change my install", disabled: true });
+  const form = el("form", { novalidate: true }, summary, el("div", { class: "form-stack" },
+    field("Your password", password, { hint: "Changing downloads and starts apps, and stops the ones taken away. It takes a few minutes." })),
+    el("div", { class: "actions" }, button));
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    setError(password, "");
+    if (!password.value) { setError(password, "Enter your password"); password.focus(); return; }
+    button.disabled = true;
+    status.replaceChildren(el("p", { class: "muted", text: "Writing the new set-up…" }));
+    let r;
+    try {
+      r = await api("/api/install/change", { method: "POST", body: { password: password.value, install: want.install,
+        usenet: want.usenet !== cur.usenet ? want.usenet : null, reelix_edition: want.reelix_edition !== cur.reelix_edition ? want.reelix_edition : null } });
+    } catch (err) {
+      button.disabled = false; status.replaceChildren();
+      if (err.status === 401 || err.status === 429) { setError(password, err.message); password.focus(); }
+      else status.replaceChildren(notice("danger", "Nothing was changed", err.message));
+      return;
+    }
+    password.value = "";
+    if (!r.started) {
+      status.replaceChildren(notice("info", "One step on the server", "Starboard wrote the new set-up but cannot start apps itself. Run this in a terminal on the server:"),
+        el("pre", { class: "code-block", text: r.command }), copyButton(r.command, "Copy the command"));
+      return;
+    }
+    status.replaceChildren(el("p", { class: "muted", text: "Downloading and starting the apps…" }));
+    for (;;) {
+      await new Promise((res) => setTimeout(res, 3000));
+      const j = await api("/api/stack/job").catch(() => ({}));
+      if (!j.finished) continue;
+      status.replaceChildren(j.ok ? notice("success", "Your install is changed", "Finishing off: the dashboard and Reelix are being updated. This page shows what was done.")
+        : notice("danger", "The apps did not all start", "The details are below. The old set-up file is kept in data/stack."), j.ok ? "" : el("pre", { class: "code-block", text: j.log || "" }));
+      if (j.ok) setTimeout(() => startYourInstall(), 20000);
+      return;
+    }
+  });
+
+  root.replaceChildren(now,
+    section("in-change", "Change your install", "Bigger or smaller, either way. Apps you added yourself outside Starboard are not touched.", installCards),
+    section("in-usenet", "Usenet app", "The app that downloads from Usenet. Your Usenet servers move across from SABnzbd to NZBGet.", usenetCards),
+    section("in-reelix", "Reelix", "Reelix, or Reelix with YouTube and Spotify downloads. The library, users and settings stay.", reelixBox),
+    section("in-confirm", "Make the change", "", form, status), how);
+  describe();
 }
 
 startPage().then(async (session) => {
@@ -2156,6 +2281,7 @@ startPage().then(async (session) => {
   if ($("#listening-sections")) startListening();
   if ($("#performance-sections")) startPerformance();
   if ($("#reelix-sections")) startReelix();
+  if ($("#install-sections")) startYourInstall();
   if ($("#guide")) startGuide();
   if ($("#upgrade")) startUpgrade();
   if ($("#install") && typeof startInstall === "function") startInstall();

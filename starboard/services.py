@@ -5,6 +5,7 @@ API keys stay on the server. Every call goes to an address an administrator save
 
 import collections
 import datetime as dt
+import base64
 import json
 import threading
 import time
@@ -186,6 +187,22 @@ def sab(service, mode, timeout=TIMEOUT, **params):
     return result
 
 
+def nzbget(service, method, params=None, timeout=TIMEOUT):
+    """One NZBGet JSON-RPC call; the API key field holds "user:password" (NZBGet's ControlUsername and ControlPassword)."""
+    user, _, password = (service.get("api_key") or "").partition(":")
+    body = json.dumps({"method": method, "params": params or [], "id": 1}).encode()
+    token = base64.b64encode(f"{user}:{password}".encode()).decode()
+    req = urllib.request.Request(service["url"].rstrip("/") + "/jsonrpc", data=body,
+                                 headers={"Authorization": f"Basic {token}", "Content-Type": "application/json",
+                                          "User-Agent": USER_AGENT})
+    result = _fetch(service, req, timeout)
+    if not isinstance(result, dict):
+        raise ServiceError(f"{service['name']} sent something that is not JSON")
+    if result.get("error"):
+        raise ServiceError(f"{service['name']}: {(result['error'] or {}).get('message', result['error'])}")
+    return result.get("result")
+
+
 def check(service):
     started = time.monotonic()
     kind = service["type"]
@@ -198,6 +215,8 @@ def check(service):
             version = (info.get("data") or {}).get("bazarr_version", "")
         elif kind == "qbittorrent":
             version = str(qbit(service, "app/version", timeout=5)).strip()
+        elif kind == "nzbget":
+            version = str(nzbget(service, "version", timeout=5) or "")
         elif kind == "sabnzbd":
             version = sab(service, "version", timeout=5).get("version", "")
             sab(service, "queue", timeout=5, limit=0)  # "version" works without a key; this one does not
@@ -764,6 +783,14 @@ def transfer(services):
             t = qbit(s, "transfer/info") or {}
             return "clients", {"name": s["name"], "kind": "torrent", "down": t.get("dl_info_speed", 0), "up": t.get("up_info_speed", 0),
                                "down_text": _speed(t.get("dl_info_speed")), "up_text": _speed(t.get("up_info_speed"))}
+        if s["type"] == "nzbget" and s.get("api_key"):
+            st = nzbget(s, "status") or {}
+            groups = nzbget(s, "listgroups", [0]) or []
+            down = float(st.get("DownloadRate") or 0)
+            left = int(st.get("RemainingSizeMB") or 0)
+            return "clients", {"name": s["name"], "kind": "usenet", "down": down, "down_text": _speed(down),
+                               "paused": bool(st.get("DownloadPaused")), "left": f"{left / 1024:.1f} GB" if left else "",
+                               "count": len(groups)}
         if s["type"] == "sabnzbd" and s.get("api_key"):
             q = (sab(s, "queue", limit=0) or {}).get("queue") or {}
             down = float(q.get("kbpersec") or 0) * 1000
@@ -773,7 +800,7 @@ def transfer(services):
             return "vpn", vpn_one(s)
         return None
 
-    targets = [s for s in on if s["type"] in ("qbittorrent", "sabnzbd", "gluetun")]
+    targets = [s for s in on if s["type"] in ("qbittorrent", "sabnzbd", "nzbget", "gluetun")]
     for s, f in [(s, POOL.submit(one, s)) for s in targets]:
         try:
             r = f.result(timeout=TIMEOUT + 2)
@@ -803,7 +830,7 @@ def _numbers_one(s, queue_counts, speeds, playing):
         now = dt.datetime.now(dt.timezone.utc).isoformat()
         failing = [i for i in _api(s, "/indexerstatus") or [] if (i.get("disabledTill") or "") > now]
         parts.append(f"{len(indexers)} indexers" + (f", {len(failing)} failing" if failing else ""))
-    elif kind in ("qbittorrent", "sabnzbd") and s["name"] in speeds:
+    elif kind in ("qbittorrent", "sabnzbd", "nzbget") and s["name"] in speeds:
         c = speeds[s["name"]]
         if c.get("paused"):
             parts.append("Paused")
@@ -823,7 +850,7 @@ def numbers(services):
     if kinds & {"sonarr", "radarr", "lidarr", "readarr"}:
         for item in cached("queue", 10, lambda: queue(services))["items"]:
             queue_counts[item["service_name"]] = queue_counts.get(item["service_name"], 0) + 1
-    if kinds & {"qbittorrent", "sabnzbd"}:
+    if kinds & {"qbittorrent", "sabnzbd", "nzbget"}:
         speeds = {c["name"]: c for c in cached("transfer", 5, lambda: transfer(services))["clients"]}
     if "jellyfin" in kinds:
         try:
@@ -831,7 +858,7 @@ def numbers(services):
             playing = len(j["playing"]) if j.get("configured") else None
         except ServiceError:
             playing = None
-    targets = [s for s in on if s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr", "qbittorrent", "sabnzbd", "jellyfin")]
+    targets = [s for s in on if s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr", "qbittorrent", "sabnzbd", "nzbget", "jellyfin")]
     out = {}
     for s, f in [(s, POOL.submit(_numbers_one, s, queue_counts, speeds, playing)) for s in targets]:
         try:

@@ -16,9 +16,9 @@ same settings folder, so your library, users and settings stay as they are.
 
 ## Steps
 
-1. Go to **Settings**, then **Apps**, then **Reelix**.
-2. Under **Version**, choose the version you want. **In use now** marks the one that runs.
-3. Type **Your password**, then select **Switch to** and the version's name.
+1. Go to **Settings**, then **Apps**, then **Your install**.
+2. Under **Reelix**, choose the version you want. **In use now** marks the one that runs.
+3. Under **Make the change**, type **Your password**, then select **Change my install**.
 4. Wait until Starboard shows that the version is running. Reelix is unavailable for a minute or two while the new
    version downloads and starts.
 
