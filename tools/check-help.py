@@ -22,7 +22,7 @@ RULES = [
     (r"\b(turn|turns|turned|turning|switch|switches|switched) (it |them |this |that )?(on|off)\b|\bon or off\b", "turn on or off (use activate or deactivate)"),
     (r"(?<!home )(?<!no )(?<!a )\bscreen\b(?! reader)(?! or keyboard)", "screen (use page)"),
     (r"\b(top right|top left|bottom right|bottom left|on the left|on the right|scroll down|scroll up)\b", "a position"),
-    (r"!(?!\[)", "an exclamation mark"),
+    (r"(?<!\[)!(?!\[)", "an exclamation mark"),  # not GitHub's callouts, "> [!TIP]"
     (r"\b(click here|read more)\b", "a vague link"),
 ]
 
