@@ -10,7 +10,11 @@ add features.
 ### Added
 - **Radio in Starboard:** Install apps has a Radio group, which makes the radio folder and sets it up in Reelix. Episodes of the radio shows and podcasts you follow in Reelix show in Coming up, and radio downloads show in Downloads, where you can remove them or find another copy. Discover's Search links to the same words in Reelix radio. A new help page explains how to follow a show and listen in Audiobookshelf.
 
+### Fixed
+- **Run first on newer Ubuntu:** The script stopped with "sg: command not found" straight after allowing your user to use Docker. It now works without sg.
+
 ### Changed
+- **Error numbers in Run first:** Every way the Run first script can stop has an error number, such as RF-11, with a link to the new help page Run first error numbers, which says what each means and how to put it right.
 - **Storage counts radio with audiobooks:** A folder named radio or podcasts now counts as Audiobooks and radio, not Everything else.
 
 ## [0.10.0] (7 November 2026)

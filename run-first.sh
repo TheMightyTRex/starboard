@@ -22,6 +22,11 @@ set -uo pipefail
 
 REPO="${STARBOARD_REPO:-https://github.com/TheMightyTRex/starboard.git}"
 DIR="${STARBOARD_DIR:-$HOME/starboard}"
+# Every way this script can stop has an error number (RF-01 and so on). The help page Run first error numbers says
+# what each means and how to put it right; keep the two in step (tests/test_run_first_errors.py checks).
+ERR_URL="https://themightytrex.github.io/starboard/help/topics/run-first-errors.html"
+err() { printf 'Error %s. What it means and how to fix it: %s#%s\n' "$1" "$ERR_URL" "$(printf '%s' "$1" | tr 'A-Z' 'a-z')"; }
+
 CHECK=0
 ASK=1
 FINISH=""
@@ -37,7 +42,7 @@ while [ $# -gt 0 ]; do
     --dir) DIR="${2:?--dir needs a folder}"; shift ;;
     --) shift; PASS=("$@"); break ;;
     -h|--help) sed -n '2,21p' "$0" 2>/dev/null || echo "See https://github.com/TheMightyTRex/starboard"; exit 0 ;;
-    *) echo "Unknown option: $1" >&2; exit 2 ;;
+    *) echo "Unknown option: $1" >&2; err RF-01 >&2; exit 2 ;;
   esac
   shift
 done
@@ -46,11 +51,10 @@ done
 IN=/dev/tty
 if ! { : < /dev/tty; } 2>/dev/null; then
   IN=""
-  [ "$ASK" = 0 ] || [ "$CHECK" = 1 ] || { echo "Stopped: no terminal to type in. Run it in a terminal, or add --yes." >&2; exit 2; }
+  [ "$ASK" = 0 ] || [ "$CHECK" = 1 ] || { echo "Stopped: no terminal to type in. Run it in a terminal, or add --yes." >&2; err RF-02 >&2; exit 2; }
 fi
-[ "$(id -u)" -ne 0 ] || { echo "Stopped: run this as your normal user, not root or sudo. It asks for your password when it needs it." >&2; exit 1; }
+[ "$(id -u)" -ne 0 ] || { echo "Stopped: run this as your normal user, not root or sudo. It asks for your password when it needs it." >&2; err RF-03 >&2; exit 1; }
 
-HELP_URL="https://themightytrex.github.io/starboard/help/topics/run-first.html"
 STEPS=6
 TITLES=("" "Welcome" "Check this computer" "Install what is missing" "Download Starboard" "Ready to install"
         "Install Starboard" "Done")
@@ -424,7 +428,7 @@ show_checks() {
 
 # Work happens quietly. What the commands print goes to this log, and the person sees a progress bar with an
 # animation; plain mode prints one line as each job starts and finishes. The log is kept for "Show the details".
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/starboard-run-first.XXXXXX")" || { echo "Stopped: no temporary folder" >&2; exit 1; }
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/starboard-run-first.XXXXXX")" || { echo "Stopped: no temporary folder" >&2; err RF-04 >&2; exit 1; }
 LOG="$WORK/run-first.log"
 DONE_JOBS=()
 KEEP=""
@@ -497,27 +501,39 @@ explain() {
   local tail; tail="$(tail -n 40 "$LOG" 2>/dev/null)"
   case "$tail" in
     *"curl.snap"*|*"snap curl"*|*"curl: (23)"*)
+      CODE=RF-10
       WHY="curl is installed as a snap, which is sandboxed and cannot save Docker's installer where this script needs it."
       TIP="Choose Stop, then run: sudo apt install curl. After that, run the Run first script again; it uses the usual curl." ;;
     *"Could not resolve"*|*"Temporary failure resolving"*|*"Failed to fetch"*|*"Could not connect"*|*"curl: (6)"*|*"curl: (7)"*|*"Network is unreachable"*|*"unable to access"*)
+      CODE=RF-11
       WHY="This computer could not reach the internet to download it."
       TIP="Check the network cable or Wi-Fi, then try again." ;;
     *"Could not get lock"*|*"is held by process"*|*"dpkg was interrupted"*|*"Waiting for cache lock"*|*"another process"*)
+      CODE=RF-12
       WHY="Another program is installing updates on this computer right now. This often happens just after Linux is installed."
       TIP="Wait a few minutes for it to finish, then try again." ;;
     *"is not signed"*|*"NO_PUBKEY"*|*"signature verification failed"*|*"EXPKEYSIG"*)
+      CODE=RF-13
       WHY="One of this computer's software sources has a signing key that Linux no longer accepts, so the list of software could not be updated."
       TIP="Choose Show the details to see which source. Install that source's new key, or turn the source off, then try again. The help pages for each system explain how." ;;
     *"No space left"*)
+      CODE=RF-14
       WHY="The disk is full."
       TIP="Free some space, then try again." ;;
     *"Unable to locate package"*|*"No match for argument"*|*"has no installation candidate"*)
+      CODE=RF-15
       WHY="This version of Linux does not offer one of the things to install."
       TIP="Update Linux to its newest version, or install Docker by hand with the help page Install Docker." ;;
+    *"password was not accepted"*)
+      CODE=RF-17
+      WHY="sudo did not accept the password."
+      TIP="Type the password you use to sign in to this computer, then try again." ;;
     *"a password is required"*|*"incorrect password"*|*"not in the sudoers"*|*"may not run sudo"*)
+      CODE=RF-16
       WHY="Your user is not allowed to install software on this computer."
       TIP="Run this as the user you made when installing Linux, or ask whoever looks after this computer." ;;
     *)
+      CODE=RF-19
       WHY="Something went wrong while ${1,}."
       TIP="Try again. If it happens again, choose Show the details." ;;
   esac
@@ -529,9 +545,10 @@ problem() {
   local name="$1"
   explain "$name"
   say ""
-  note "$name did not work."
+  note "$name did not work. Error $CODE."
   para "$WHY $TIP"
-  [ -z "$IN" ] && { finish; echo "The details are in $LOG"; exit 1; }
+  printf 'Error %s while %s\n' "$CODE" "${name,}" >> "$LOG"
+  [ -z "$IN" ] && { finish; echo "The details are in $LOG"; err "$CODE"; exit 1; }
   while :; do
     say ""
     say "  1. Try again (recommended)"
@@ -546,7 +563,7 @@ Stop leaves this computer as it is now. Run the script again at any time: it car
     case "$ANSWER" in
       1) return 0 ;;
       2) say ""; say "$(dim "$(tail -n 25 "$LOG" | fold -s -w $(( W - 6 )) | tail -n 30 | sed 's/^/    /')")"; say ""; para "The whole log is in $LOG" ;;
-      3) finish; echo; echo "Stopped. The details are in $LOG"; echo "Help: $HELP_URL"; exit 1 ;;
+      3) finish; echo; echo "Stopped. The details are in $LOG"; err "$CODE"; exit 1 ;;
     esac
   done
 }
@@ -662,7 +679,7 @@ step_3() {
   if [ -z "$PKG" ] || [ ${#FIX[@]} -eq 0 ]; then
     note "This Linux is not one this script knows how to install on. It knows Debian, Ubuntu, Linux Mint, Fedora and Raspberry Pi OS."
     para "Install Docker by hand, then run this again: https://themightytrex.github.io/starboard/help/topics/install-docker.html"
-    finish; exit 1
+    finish; err RF-05; exit 1
   fi
   local items=() item list="" start="" allow=""
   for item in "${NEED[@]}"; do
@@ -716,8 +733,8 @@ Answer n to install them yourself: the commands are printed so you can copy them
   say ""
   if [ ${#NEED[@]} -gt 0 ]; then
     note "Still missing: $(words "${NEED[@]}")."
-    para "The jobs finished, but these are still not in place. Run the script again; if it happens again, the details are in $LOG and the help is at $HELP_URL"
-    finish; exit 1
+    para "The jobs finished, but these are still not in place. Run the script again; if it happens again, the details are in $LOG."
+    finish; err RF-20; exit 1
   fi
   ok "Everything is installed."
   ask "Press Enter to carry on" "" "Docker is installed and running. You do not need to sign out: the installer runs with your new Docker access straight away." || return $?
@@ -732,7 +749,7 @@ step_4() {
     if work "Updating Starboard" "git -C $(printf '%q' "$DIR") pull --ff-only -q" 1 1; then :; else note "It could not be updated, so it carries on with the version you have."; fi
   elif [ -e "$DIR" ]; then
     note "$where exists but is not a Starboard download. Move it or choose another folder with --dir, then run this again."
-    finish; exit 1
+    finish; err RF-30; exit 1
   else
     para "Downloading Starboard into $where. Please wait, this can take a minute or two..."
     say ""
@@ -851,7 +868,7 @@ cmd=(./install.sh)
 [ "$FINISH" = terminal ] && cmd+=(--terminal)
 [ -n "$PLAIN" ] && cmd+=(--plain)
 cmd+=("${PASS[@]}")
-cd "$DIR" || exit 1
+cd "$DIR" || { err RF-31 >&2; exit 1; }
 
 # A folder the set-up may hand to ./install.sh: the same rule as starboard/start.py's safe_folder.
 safe_folder() {
@@ -896,16 +913,17 @@ else
 fi
 if [ "$FINISH" = terminal ]; then
   DRAWN=0  # the terminal set-up drew its own frame and gave the window back
-  [ "$status" = 0 ] || exit "$status"
+  [ "$status" = 0 ] || { echo; err RF-40; exit "$status"; }
   apply_host
   [ "$NEW_GROUP" = 1 ] && echo "Sign out and back in once, so docker commands work in new terminals too."
   exit 0
 fi
 if [ "$status" != 0 ]; then
   say ""
-  note "The installer stopped."
+  note "The installer stopped. Error RF-40."
   para "The reason is in the lines just above. Put it right, then run this script again: it carries on from where it stopped."
   finish
+  err RF-40
   exit "$status"
 fi
 
@@ -983,6 +1001,8 @@ json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(s
       if [ "$status" = 0 ]; then
         echo "Your apps are running. Keep this window open until the set-up in the browser has finished."
       else
+        echo "Error RF-50: the apps did not start. The reason is in the line above."
+        err RF-50
         echo "Waiting: select Try again in the browser, or press q to close this window."
       fi
     fi

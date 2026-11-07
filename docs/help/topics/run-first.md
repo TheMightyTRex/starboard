@@ -107,6 +107,8 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 
 ## If it does not work
 
+- **An error number, such as "Error RF-11":** look it up in [Run first error numbers](run-first-errors.md),
+  which says what each one means and how to put it right.
 - **"The requested URL returned error: 404":** the address was typed with a difference. Copy and paste it instead,
   or check that `main/run-first.sh` is in small letters with a hyphen and the account is `TheMightyTRex`.
 - **"Command 'curl' not found" or "curl: command not found":** use the same command with `wget` instead:
@@ -140,6 +142,7 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 
 ## Find out more
 
+- [Run first error numbers](run-first-errors.md)
 - [Get Starboard up and running, from a bare computer](../guides/get-up-and-running.md)
 - [Install Linux on a computer](install-linux.md)
 - [Install Docker](install-docker.md), to do it by hand
