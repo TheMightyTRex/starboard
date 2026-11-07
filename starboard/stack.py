@@ -614,6 +614,30 @@ def which_install(apps, edition=None):
     return "custom"
 
 
+def own_services(data_dir):
+    """Services someone added to data/stack/compose.yaml by hand (not Starboard's apps or their databases), as the
+    text of each block, so a change keeps them. Raises ValueError when the file has other top-level sections, which
+    Starboard would not know how to keep."""
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return []
+    ours = set(APPS) | {a["db"]["service"] for a in APPS.values() if a.get("db")}
+    tops = re.findall(r"^([A-Za-z_][\w-]*):", text, re.M)
+    if any(t != "services" for t in tops):
+        raise ValueError("Your set-up file (data/stack/compose.yaml) has sections Starboard did not write ("
+                         + ", ".join(t for t in tops if t != "services") + "), so it changes nothing. Move them to "
+                         "their own Compose file first")
+    blocks = re.split(r"(?m)^(?=  [A-Za-z0-9_.-]+:\s*$)", text.split("services:", 1)[1]) if "services:" in text else []
+    out = []
+    for b in blocks:
+        m = re.match(r"  ([A-Za-z0-9_.-]+):", b)
+        if m and m.group(1) not in ours:
+            out.append(b.rstrip() + "\n")
+    return out
+
+
 def plan_change(data_dir, install=None, usenet=None, edition=None, check=None):
     """What changing to another install, Usenet app or Reelix means: the new choice, and the apps added and taken
     away. Raises ValueError when Install apps did not write this server's apps."""
@@ -632,7 +656,7 @@ def plan_change(data_dir, install=None, usenet=None, edition=None, check=None):
     choice = {**now, "apps": apps, "reelix_edition": edition or now["reelix_edition"]}
     if choice["reelix_edition"] == "full" and "reelix" in apps:
         reelix_image("full", check)  # raises when the full Reelix cannot be downloaded
-    return {"choice": choice, "add": [k for k in apps if k not in now["apps"]],
+    return {"choice": choice, "own": own_services(data_dir), "add": [k for k in apps if k not in now["apps"]],
             "remove": [k for k in now["apps"] if k not in apps],
             "reelix": (now["reelix_edition"], choice["reelix_edition"]) if "reelix" in apps else None,
             "usenet": (usenet_now, next((k for k in USENET_APPS if k in apps), None))}

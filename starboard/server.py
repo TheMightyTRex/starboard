@@ -1117,8 +1117,13 @@ class Handler(BaseHTTPRequestHandler):
                                          usenet=body.get("usenet") or None, edition=body.get("reelix_edition") or None)
                 if not (plan["add"] or plan["remove"] or (plan["reelix"] and plan["reelix"][0] != plan["reelix"][1])):
                     raise ValueError("That is what runs already")
+                job = stack.job()
+                if job and not job.get("finished"):
+                    raise ValueError("The apps are already starting. Wait until they finish, then change your install")
                 sab_ini = usenet_move.read_sab_ini() if plan["usenet"][0] == "sabnzbd" and plan["usenet"][1] == "nzbget" else None
                 built = stack.build(plan["choice"])
+                if plan["own"]:  # apps added by hand stay in the file, so they are not removed
+                    built = {**built, "compose": built["compose"].rstrip() + "\n" + "".join(plan["own"])}
                 stack.write(app.data_dir, built)
                 logs.event("info", "your install", f"Changing: adding {', '.join(plan['add']) or 'nothing'}; "
                                                    f"taking away {', '.join(plan['remove']) or 'nothing'}")
@@ -1136,6 +1141,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/stack/write" and method == "POST":
                 choice = self.body()
                 built = stack.build(choice)
+                own = stack.own_services(app.data_dir)  # apps added by hand stay, so starting does not remove them
+                if own:
+                    built = {**built, "compose": built["compose"].rstrip() + "\n" + "".join(own)}
                 stack.write(app.data_dir, built)
                 stack.note_reelix(app.data_dir, choice, built)  # what the Reelix set-up needs once the apps run
                 host = stack.host_folder(app.data_dir)
