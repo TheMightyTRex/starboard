@@ -106,40 +106,126 @@ TEMPLATE = """<!doctype html>
 <link rel="stylesheet" href="{root}assets/css/tokens.css">
 <link rel="stylesheet" href="{root}assets/css/components.css">
 <link rel="stylesheet" href="{root}assets/css/help.css">
-<script>try{{var t=localStorage.getItem("help-theme");if(t)document.documentElement.dataset.theme=t}}catch(e){{}}</script>
+<script>{prefs_js}</script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to main content</a>
 <header class="site-header site-header--no-rail">
   <div class="site-header__bar help-bar">
-    <a class="site-header__brand" href="{root}index.html">{logo}<span>Starboard help centre</span></a>
+    <button class="icon-btn help-menu-btn" type="button" aria-expanded="false" aria-controls="help-nav">{icon_menu}<span class="label">Menu</span></button>
+    <a class="site-header__brand" href="{root}index.html" aria-label="Starboard help centre home">{logo}<span aria-hidden="true">Starboard help centre</span></a>
     <form class="help-search" role="search" action="{root}search.html">
       <label class="visually-hidden" for="help-q">Search the help</label>
       <input class="input" type="search" id="help-q" name="q" placeholder="Search the help" autocomplete="off" value="{query}">
       <button class="btn" type="submit">Search</button>
     </form>
-    <button class="btn btn--quiet help-theme" type="button" aria-pressed="false" hidden>Dark theme</button>
+    <button class="icon-btn" type="button" data-opens="help-display" aria-haspopup="dialog" aria-expanded="false">{icon_display}<span class="label">Display</span></button>
   </div>
 </header>
-<main id="main" tabindex="-1" class="page page--narrow help-page">
+<div class="help-layout{layout_class}">
+<nav class="help-nav" id="help-nav" aria-label="Help centre">
+  <button class="btn btn--quiet help-nav__hide" type="button" aria-expanded="true" aria-controls="help-nav-groups">{icon_hide}<span>Hide the menu</span></button>
+  <div id="help-nav-groups" class="help-nav__groups">
+{nav}
+  </div>
+</nav>
+<button class="btn btn--quiet help-nav__show" type="button" aria-expanded="false" aria-controls="help-nav-groups" hidden>{icon_show}<span>Show the menu</span></button>
+<main id="main" tabindex="-1" class="help-page">
 {crumbs}
+{toc_inline}
 <article class="prose">
 {kind}{body}
 </article>
 {edit}
 </main>
+{toc}
+</div>
 <footer class="site-footer help-footer">
   <p><a href="{root}index.html">Help centre</a> · <a href="{repo}">Starboard on GitHub</a> · <a href="{repo}/issues">Report a problem with this help</a></p>
 </footer>
+<div class="side-panel-layer" id="help-display" hidden>
+  <div class="side-panel-backdrop"></div>
+  <aside class="side-panel" role="dialog" aria-modal="true" aria-labelledby="help-display-h">
+    <div class="panel-header"><h2 class="panel-header__title" id="help-display-h">Display and accessibility</h2><button class="icon-btn" type="button" data-closes aria-label="Close display and accessibility">{icon_x}</button></div>
+    <form class="side-panel__body form-stack" id="help-display-form">
+      <fieldset><legend>Theme</legend><div class="segmented"><label><input type="radio" name="theme" value="system"><span>Match device</span></label><label><input type="radio" name="theme" value="light"><span>Light</span></label><label><input type="radio" name="theme" value="dark"><span>Dark</span></label></div></fieldset>
+      <fieldset><legend>Text size</legend><div class="segmented"><label><input type="radio" name="text" value="100"><span>100%</span></label><label><input type="radio" name="text" value="125"><span>125%</span></label><label><input type="radio" name="text" value="150"><span>150%</span></label><label><input type="radio" name="text" value="175"><span>175%</span></label></div></fieldset>
+      <fieldset><legend>Reduce motion</legend><div class="segmented"><label><input type="radio" name="motion" value="device"><span>Match device</span></label><label><input type="radio" name="motion" value="on"><span>On</span></label><label><input type="radio" name="motion" value="off"><span>Off</span></label></div></fieldset>
+      <label class="switch" for="help-pref-contrast"><span>High contrast</span><input type="checkbox" role="switch" id="help-pref-contrast" name="contrast"></label>
+      <label class="switch" for="help-pref-underline"><span>Underline links</span><input type="checkbox" role="switch" id="help-pref-underline" name="underline"></label>
+      <label class="switch" for="help-pref-spacing"><span>Wider text spacing</span><input type="checkbox" role="switch" id="help-pref-spacing" name="spacing"></label>
+      <p class="small muted">Choices apply at once and are kept in this browser.</p>
+    </form>
+    <div class="side-panel__foot"><button class="btn btn--primary" type="button" data-closes>Done</button><button class="btn" type="button" id="help-display-reset">Reset</button></div>
+  </aside>
+</div>
+<div id="help-announcer" class="visually-hidden" aria-live="polite"></div>
+<script>window.SharedComponentsSprite = "{root}assets/icons/sprite.svg";</script>
+<script src="{root}assets/components.js"></script>
 <script src="{root}assets/help.js"></script>
 </body>
 </html>
 """
 
+# Display and accessibility: the same choices and classes as the app (web/js/common.js), applied before the page
+# draws so it never flashes. Kept in this browser only.
+PREFS_JS = ("try{var p=JSON.parse(localStorage.getItem('help-display')||'{}'),r=document.documentElement;"
+            "if(p.theme&&p.theme!=='system')r.dataset.theme=p.theme;if(p.text&&p.text!=='100')r.classList.add('pref-text-'+p.text);"
+            "if(p.contrast)r.classList.add('pref-contrast');if(p.motion==='on')r.classList.add('pref-motion');"
+            "if(p.motion==='off')r.classList.add('pref-motion-off');if(p.underline)r.classList.add('pref-underline');"
+            "if(p.spacing)r.classList.add('pref-spacing');if(localStorage.getItem('help-nav')==='hidden')r.classList.add('help-nav-hidden')}catch(e){}")
 
-def page(title, body, root, *, description="", crumbs="", kind="", edit="", canonical="", query=""):
+
+def icon(name, root, size=20):
+    return (f'<svg class="i{" i-lg" if size >= 20 else ""}" width="{size}" height="{size}" aria-hidden="true" focusable="false">'
+            f'<use href="{root}assets/icons/sprite.svg#i-{name}"/></svg>')
+
+
+def nav_groups():
+    """The left menu, from the help centre home's own lists: each heading with links becomes a group."""
+    groups, current = [], None
+    for line in (HELP / "README.md").read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^#{2,3} (.+)", line)
+        if m:
+            current = {"title": re.split(r":", m.group(1))[0].strip(), "items": []}
+            groups.append(current)
+            continue
+        m = re.match(r"^- \[([^\]]+)\]\(([^)#]+\.md)\)", line)
+        if m and current is not None:
+            current["items"].append((m.group(1), page_path(HELP / m.group(2)).as_posix()))
+    return [g for g in groups if g["items"]]
+
+
+def nav_html(groups, here, root):
+    out = []
+    for n, g in enumerate(groups):
+        has = any(url == here for _, url in g["items"])
+        items = "".join(f'<li><a href="{root}{url}"{" aria-current=\"page\"" if url == here else ""}>{html.escape(t)}</a></li>'
+                        for t, url in g["items"])
+        out.append(f'<div class="help-nav__group"><h2 class="help-nav__heading"><button type="button" aria-expanded="{"true" if has else "false"}" '
+                   f'aria-controls="help-nav-{n}">{html.escape(g["title"])}</button></h2>'
+                   f'<ul id="help-nav-{n}"{"" if has else " hidden"}>{items}</ul></div>')
+    return "\n".join(out)
+
+
+def toc_html(body):
+    """The article's sections, for On this page: (the menu that follows the article, the one inside it on phones)."""
+    heads = [(i, plain(t)) for i, t in re.findall(r'<h2 id="([^"]+)">(.*?)</h2>', body, re.S)]
+    if len(heads) < 2:
+        return "", ""
+    links = "".join(f'<li><a href="#{i}">{html.escape(t)}</a></li>' for i, t in heads)
+    side = f'<nav class="help-toc" aria-labelledby="help-toc-h"><h2 class="help-toc__heading" id="help-toc-h">On this page</h2><ul>{links}</ul></nav>'
+    inline = f'<details class="disclosure help-toc-inline"><summary>On this page</summary><div class="disclosure__body"><ul>{links}</ul></div></details>'
+    return side, inline
+
+
+def page(title, body, root, *, description="", crumbs="", kind="", edit="", canonical="", query="", nav="", toc=("", "")):
     return TEMPLATE.format(title=html.escape(title), description=html.escape(description[:200]), canonical=canonical,
-                           root=root, logo=LOGO, crumbs=crumbs, kind=kind, body=body, edit=edit, repo=REPO, query=query)
+                           root=root, logo=LOGO, crumbs=crumbs, kind=kind, body=body, edit=edit, repo=REPO, query=query,
+                           prefs_js=PREFS_JS, nav=nav, toc=toc[0], toc_inline=toc[1],
+                           layout_class="" if toc[0] else " help-layout--no-toc",
+                           icon_menu=icon("menu", root), icon_display=icon("sun", root), icon_x=icon("x", root),
+                           icon_hide=icon("chevron-left", root, 18), icon_show=icon("chevron-right", root, 18))
 
 
 def build(out):
@@ -154,6 +240,10 @@ def build(out):
         shutil.copy(f, site / "assets" / "fonts" / f.name)
     shutil.copy(pathlib.Path(__file__).with_name("help_site.css"), site / "assets" / "css" / "help.css")
     shutil.copy(pathlib.Path(__file__).with_name("help_site.js"), site / "assets" / "help.js")
+    shutil.copy(ROOT / "web" / "js" / "components.js", site / "assets" / "components.js")
+    (site / "assets" / "icons").mkdir()
+    shutil.copy(ROOT / "web" / "icons" / "sprite.svg", site / "assets" / "icons" / "sprite.svg")
+    groups = nav_groups()
     if (HELP / "images").is_dir():
         shutil.copytree(HELP / "images", site / "images")
 
@@ -190,7 +280,8 @@ def build(out):
         target = site / rel_out
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(page(title, body, root, description=description, crumbs=crumbs, kind=kind_html, edit=edit,
-                               canonical=SITE + rel_out.as_posix()), encoding="utf-8")
+                               canonical=SITE + rel_out.as_posix(), nav=nav_html(groups, rel_out.as_posix(), root),
+                               toc=toc_html(body) if rel_out.name != "index.html" else ("", "")), encoding="utf-8")
         headings = [plain(h) for h in re.findall(r"<h[23][^>]*>(.*?)</h[23]>", body, re.S)]
         words = plain(re.sub(r"<h1[^>]*>.*?</h1>", "", body, flags=re.S))
         words = words.split("Download only what you have the right to")[0]  # the footer on every page
@@ -204,7 +295,7 @@ def build(out):
                    '<noscript><p>Search needs JavaScript. Every article is listed on the <a href="index.html">help centre '
                    'home</a>.</p></noscript>')
     (site / "search.html").write_text(page("Search the help", search_body, "", description="Search the Starboard help centre.",
-                                           canonical=SITE + "search.html"), encoding="utf-8")
+                                           canonical=SITE + "search.html", nav=nav_html(groups, "search.html", "")), encoding="utf-8")
     # The site's own front door goes to the help centre.
     (out / "index.html").write_text('<!doctype html><meta charset="utf-8"><title>Starboard help centre</title>'
                                     '<meta http-equiv="refresh" content="0; url=help/index.html">'
