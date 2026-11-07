@@ -168,6 +168,11 @@ def build(out):
         conv = markdown.Markdown(extensions=["tables", "fenced_code", "sane_lists", "toc"],
                                  extension_configs={"toc": {"slugify": slug}}, output_format="html")
         body = fix_links(conv.convert(rest), md)
+        # Mermaid flowcharts (the guides' steps) are drawn in the browser, as GitHub draws them.
+        body, charts = re.subn(r'<pre><code class="language-mermaid">(.*?)</code></pre>', r'<pre class="mermaid">\1</pre>', body, flags=re.S)
+        if charts:
+            body += ('\n<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";'
+                     'mermaid.initialize({startOnLoad: true, theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default"});</script>')
         title_m = re.search(r"<h1[^>]*>(.*?)</h1>", body, re.S)
         title = plain(title_m.group(1)) if title_m else "Starboard help centre"
         first_p = re.search(r"<p>(.*?)</p>", body, re.S)

@@ -5,6 +5,10 @@ Starboard's help follows the shared guides in the design system, which Starboard
 - [Help writing guide](https://github.com/TheMightyTRex/design-system/blob/main/docs/HELP-WRITING.md): the three
   tiers (topics, guides and the basics), the layout of each, the rules for help, screenshots, and how to get an AI
   to write instructions.
+- [Screenshots in help](https://github.com/TheMightyTRex/design-system/blob/main/docs/SCREENSHOTS.md): when a
+  screenshot earns its place, made-up data only, the red outline, curved arrow and step-number mark-up, and a short
+  version to give an AI tool. Mark screenshots up with the design system's `tools/annotate.js`, from a preview with
+  example data (`tools/screenshots.sh`), and keep them in `docs/help/images`.
 - [Content design guide](https://github.com/TheMightyTRex/design-system/blob/main/docs/CONTENT-DESIGN.md): voice,
   words and punctuation for everything on screen and in the help. For example, settings are activated and
   deactivated, never turned on or off.
@@ -15,7 +19,10 @@ Starboard's help follows the shared guides in the design system, which Starboard
   [help centre home](README.md), and the footer of every Starboard page links to it.
 - **The first line** of every article is `[Help centre](../README.md) · <Area>`, followed by the kind for a topic
   (how-to, reference or troubleshooting).
-- **Guides** show their steps as a Mermaid flowchart, which GitHub draws.
+- **Guides** show their steps as a Mermaid flowchart, which GitHub and the help centre's pages draw.
+- **The help centre's pages** at https://themightytrex.github.io/starboard/help/ are built from these files by
+  `tools/build_help.py` and published when a change reaches main. Each article is its own page; the app's Help
+  buttons open them (`tools/apply_shell.py`).
 - **Made-up examples:** use `192.168.1.20` or `192.168.1.21` for addresses, `starboard-pi` for a Raspberry Pi,
   and names such as Sam and Alex. `tools/check-private.sh` allows exactly these, and refuses any other home
   network address.
