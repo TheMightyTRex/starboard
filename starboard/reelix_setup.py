@@ -318,8 +318,10 @@ def qbit_lasting_password(base="http://127.0.0.1:8080", opener=None):
             req = urllib.request.Request(base + "/api/v2/" + path, data=urllib.parse.urlencode(form).encode(),
                                          headers={"Referer": base, "User-Agent": "Starboard"})
             with jar.open(req, timeout=15) as resp:  # qBittorrent on this computer, from the stack Starboard wrote  # nosec B310
-                return resp.read(2000).decode(errors="replace")
-        if "Ok" not in post("auth/login", {"username": "admin", "password": temporary}):
+                return resp.status, resp.read(2000).decode(errors="replace")
+        # qBittorrent 5.1 and later answer a right password with 204 and no text; earlier ones with 200 and "Ok."
+        status, text = post("auth/login", {"username": "admin", "password": temporary})
+        if not (status == 204 or (status == 200 and "Ok" in text)):
             raise ReelixError("qBittorrent did not accept its temporary password")
         lasting = secrets.token_urlsafe(18)
         # The save path inside the shared media folder, so a finished download moves into the library at once.

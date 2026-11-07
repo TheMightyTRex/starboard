@@ -94,6 +94,11 @@ def _probe(port):
         _, page = _get(base + "/")
     except urllib.error.HTTPError as e:
         page = (e.read(65536) or b"").decode("utf-8", "replace")
+        # An app that asks for a sign-in before any page (NZBGet: 401, Basic realm="NZBGet", no text) names itself
+        # in the sign-in request: read that as its title.
+        realm = re.search(r'realm="([^"]{1,60})"', e.headers.get("WWW-Authenticate", "") if e.headers else "")
+        if realm and "<title>" not in page.lower():
+            page = f"<title>{realm.group(1)}</title>" + page
     except Exception:  # anything that is not a web page (another protocol, a closed port): nothing here
         return []
     title = (re.search(r"<title>([^<]*)</title>", page, re.I) or [None, ""])[1].lower()

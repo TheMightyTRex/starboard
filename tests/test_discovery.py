@@ -20,6 +20,62 @@ class FakeSonarr(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+class FakeNzbget(BaseHTTPRequestHandler):
+    """As NZBGet 26 answers before a sign-in: 401, a Basic realm and no text."""
+    def log_message(self, *a):
+        pass
+
+    def do_GET(self):
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="NZBGet"')
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+
+class FakeQbit(BaseHTTPRequestHandler):
+    """qBittorrent's sign-in: 204 for the right password (5.1 and later), or 200 "Ok." when ANSWER is "old"."""
+    answer = "new"
+
+    def log_message(self, *a):
+        pass
+
+    def do_POST(self):
+        form = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
+        if "auth/login" in self.path and "password=temp" not in form:
+            body = b"Fails."
+            self.send_response(200)
+        elif "auth/login" in self.path and self.answer == "new":
+            body = b""
+            self.send_response(204)
+        else:
+            body = b"Ok."
+            self.send_response(200)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+class SignInTest(unittest.TestCase):
+    def serve(self, handler):
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        return server.server_address[1]
+
+    def test_nzbget_is_known_by_its_sign_in_realm(self):
+        self.assertEqual(discovery._probe(self.serve(FakeNzbget)), ["nzbget"])
+
+    def test_qbittorrents_temporary_password_works_with_both_answers(self):
+        from starboard import reelix_setup
+        for answer in ("new", "old"):
+            handler = type("Q", (FakeQbit,), {"answer": answer})
+            change = reelix_setup.qbit_lasting_password(f"http://127.0.0.1:{self.serve(handler)}")
+            self.assertTrue(change("temp"))
+            with self.assertRaises(reelix_setup.ReelixError):
+                change("wrong")
+
+
 class DiscoveryTest(unittest.TestCase):
     def setUp(self):
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), FakeSonarr)
