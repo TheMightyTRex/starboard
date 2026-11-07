@@ -179,9 +179,26 @@ def qbit(service, path, data=None, timeout=TIMEOUT):
 
 
 def sab(service, mode, timeout=TIMEOUT, **params):
+    """One SABnzbd API call. SABnzbd 4 and later answer on /api (with no URL base, /sabnzbd/api only redirects);
+    older ones and those with the URL base /sabnzbd answer on /sabnzbd/api, which is tried second."""
     query = urllib.parse.urlencode({"apikey": service.get("api_key", ""), "output": "json", "mode": mode, **params})
-    req = urllib.request.Request(f"{service['url'].rstrip('/')}/sabnzbd/api?{query}", headers={"User-Agent": USER_AGENT})
-    result = _fetch(service, req, timeout)
+    base = service["url"].rstrip("/")
+    result, error = None, None
+    for path in ("/api", "/sabnzbd/api"):
+        req = urllib.request.Request(f"{base}{path}?{query}", headers={"User-Agent": USER_AGENT})
+        try:
+            result = _fetch(service, req, timeout)
+        except ServiceError as e:
+            if str(e).startswith("Cannot reach"):
+                raise  # nothing answers at all: the other path will not either
+            error = error or e
+            continue
+        if isinstance(result, (dict, list)):
+            break
+    else:
+        if error:
+            raise error
+    result = result if isinstance(result, (dict, list)) else {}
     if isinstance(result, dict) and result.get("error"):
         raise ServiceError(f"{service['name']}: {result['error']}")
     return result

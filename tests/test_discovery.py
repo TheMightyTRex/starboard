@@ -55,7 +55,31 @@ class FakeQbit(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+class FakeSab(BaseHTTPRequestHandler):
+    """SABnzbd answers on /api (4 and later) or only on /sabnzbd/api (older, or URL base /sabnzbd); the other path
+    redirects with a page, as SABnzbd 5 does."""
+    path_ok = "/api"
+
+    def log_message(self, *a):
+        pass
+
+    def do_GET(self):
+        ok = self.path.split("?")[0] == self.path_ok
+        body = b'{"version": "5.1.3"}' if ok else b"<html><script>location.href = '/';</script></html>"
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
 class SignInTest(unittest.TestCase):
+    def test_sabnzbd_is_asked_on_both_api_paths(self):
+        from starboard import services
+        for path_ok in ("/api", "/sabnzbd/api"):
+            port = self.serve(type("S", (FakeSab,), {"path_ok": path_ok}))
+            service = {"name": "SABnzbd", "type": "sabnzbd", "url": f"http://127.0.0.1:{port}", "api_key": "k"}
+            self.assertEqual(services.sab(service, "version")["version"], "5.1.3")
+
     def serve(self, handler):
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
         threading.Thread(target=server.serve_forever, daemon=True).start()
