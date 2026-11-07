@@ -1,0 +1,12 @@
+{
+  "name": "Starboard",
+  "repo": "https://github.com/TheMightyTRex/starboard",
+  "site": "https://themightytrex.github.io/starboard/help/",
+  "help_dir": "docs/help",
+  "logo_file": "docs/help/images/logo.svg",
+  "leave_out": ["HOW-THIS-HELP-IS-WRITTEN.md"],
+  "sections": {"guides": "Guides", "topics": "Topics", "basics": "Basics"},
+  "footer_starts": "Download only what you have the right to",
+  "search_example": "Type what you want to do, such as \"add a drive\" or \"forgotten password\".",
+  "front_door": true
+}

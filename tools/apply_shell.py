@@ -72,7 +72,7 @@ HOME = "index.html"  # the logo opens it
 # Help for each page, from the Help button in the header: the help centre article for what the page does, or the
 # help index's section when no one article covers the page. Page: (path in docs/help, what the help is about). Every
 # page with the header must be here (check_help_links below). Change them here, in one place.
-HELP_BASE = "https://themightytrex.github.io/starboard/help/"  # the help centre's pages (tools/build_help.py)
+HELP_BASE = "https://themightytrex.github.io/starboard/help/"  # the help centre's pages (the design system's help centre builder (tools/help_centre))
 
 
 def help_page(path):

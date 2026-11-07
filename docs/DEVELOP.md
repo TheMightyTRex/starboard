@@ -28,11 +28,11 @@ The header and Display panel are written into every page by `tools/apply_shell.p
 
 ## The help centre
 
-The help is written in Markdown in `docs/help`, to the rules in `docs/help/HOW-THIS-HELP-IS-WRITTEN.md`. Its web pages are built
-by `tools/build_help.py` (needs `pip install markdown==3.5.2`) and published on GitHub Pages by
-`.github/workflows/help.yml` when a change reaches main:
+The help is written in Markdown in `docs/help`, to the rules in `docs/help/HOW-THIS-HELP-IS-WRITTEN.md`. Its web pages are
+built by the design system's help centre builder, with the settings in `help-centre.json`, and published on GitHub
+Pages by `.github/workflows/help.yml` when a change reaches main. To build them here:
 
 ```bash
 python3 tools/check-help.py
-python3 tools/build_help.py --out _site      # then open _site/help/index.html
+../design-system/tools/help_centre/build.sh _site      # then open _site/help/index.html
 ```

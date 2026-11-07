@@ -1,5 +1,5 @@
 // Shared by every page: display settings, the header, the API helper and small DOM helpers.
-// The help centre: one page for each article in docs/help, with search (tools/build_help.py, .github/workflows/help.yml).
+// The help centre: one page for each article in docs/help, with search (the design system's help centre builder (tools/help_centre), .github/workflows/help.yml).
 const HELP_CENTRE = "https://themightytrex.github.io/starboard/help/";
 /** docs/help path ("topics/x.md#part") -> its help centre page. */
 function helpPage(path) {
@@ -424,7 +424,7 @@ function showVersion(version, repo, latest) {
       label, el("span", { class: "visually-hidden", text: ", release notes" }));
     document.body.append(el("footer", { class: "site-footer" }, button,
       newer ? el("a", { class: "upgrade-available", href: "/settings-updates.html" }, el("span", { class: "update-dot", "aria-hidden": "true" }), `Upgrade available: ${latest}`) : null,
-      // The help centre's pages, built from docs/help and published on GitHub Pages (tools/build_help.py).
+      // The help centre's pages, built from docs/help and published on GitHub Pages (the design system's help centre builder (tools/help_centre)).
       el("a", { href: `${HELP_CENTRE}index.html`, target: "_blank", rel: "noopener noreferrer" },
         "Help", el("span", { class: "visually-hidden", text: " centre (opens in a new tab)" })),
       repo ? el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "GitHub repository", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null,

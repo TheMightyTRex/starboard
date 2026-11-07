@@ -21,7 +21,7 @@ Starboard's help follows the shared guides in the design system, which Starboard
   (how-to, reference or troubleshooting).
 - **Guides** show their steps as a Mermaid flowchart, which GitHub and the help centre's pages draw.
 - **The help centre's pages** at https://themightytrex.github.io/starboard/help/ are built from these files by
-  `tools/build_help.py` and published when a change reaches main. Each article is its own page; the app's Help
+  `the design system's help centre builder (tools/help_centre)` and published when a change reaches main. Each article is its own page; the app's Help
   buttons open them (`tools/apply_shell.py`).
 - **Made-up examples:** use `192.168.1.20` or `192.168.1.21` for addresses, `starboard-pi` for a Raspberry Pi,
   and names such as Sam and Alex. `tools/check-private.sh` allows exactly these, and refuses any other home

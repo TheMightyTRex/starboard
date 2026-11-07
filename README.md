@@ -173,7 +173,7 @@ In the help centre: [How Starboard keeps your server safe](https://themightytrex
 ## Develop, credits and licence
 
 How to run it from a checkout, test it and keep your details out of the repository: [docs/DEVELOP.md](docs/DEVELOP.md).
-The help centre is built from [docs/help](docs/help) by `tools/build_help.py`.
+The help centre is built from [docs/help](docs/help) by the design system's help centre builder, with the settings in [help-centre.json](help-centre.json).
 
 Pillow, Lucide, Atkinson Hyperlegible Next and the data sources Starboard uses are listed, with their licences, in
 [THIRD-PARTY.md](THIRD-PARTY.md). Starboard is MIT licensed, by TheMightyTRexUK and contributors. Atkinson

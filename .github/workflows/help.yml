@@ -1,15 +1,13 @@
 name: Help centre
-# Builds the help centre's web pages from docs/help (tools/build_help.py) and publishes them on GitHub Pages:
+# Builds the help centre's web pages from docs/help with the design system's help centre builder
+# (tools/help_centre in TheMightyTRex/design-system, settings in help-centre.json) and publishes them on GitHub Pages:
 # https://themightytrex.github.io/starboard/help/
 on:
   push:
     branches: [main]
     paths:
       - "docs/help/**"
-      - "tools/build_help.py"
-      - "tools/help_site.*"
-      - "web/css/tokens.css"
-      - "web/css/components.css"
+      - "help-centre.json"
       - ".github/workflows/help.yml"
   workflow_dispatch:
 permissions:
@@ -29,10 +27,15 @@ jobs:
           python-version: "3.12"
       - name: Check the help
         run: python tools/check-help.py
+      - uses: actions/checkout@v4
+        with:
+          repository: TheMightyTRex/design-system
+          path: _design-system
+          persist-credentials: false
       - name: Build the pages
         run: |
-          pip install markdown==3.5.2
-          python tools/build_help.py --out _site
+          pip install markdown==3.7 pymdown-extensions==10.9
+          python _design-system/tools/help_centre/build.py --config help-centre.json --out _site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

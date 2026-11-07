@@ -82,7 +82,7 @@ USENET_RIGHTS = ("Use Usenet only for files you have the right to download, such
                  "public domain and your own backups. Downloading films, series, music or books without the copyright "
                  "holder's permission is against the law in the UK and most other countries. Starboard does not host "
                  "or provide any files, and you are responsible for what you download.")
-# Each question's article in the help centre (tools/build_help.py), shown under its ? help.
+# Each question's article in the help centre (the design system's help centre builder (tools/help_centre)), shown under its ? help.
 HELP_CENTRE = "https://themightytrex.github.io/starboard/help/"
 HELP_PAGES = {
     "pool": "topics/add-a-drive-to-the-pool.html", "backup": "topics/use-a-drive-as-a-backup-drive.html",
