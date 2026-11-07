@@ -65,6 +65,7 @@ Each guide is a journey through several topics, in order.
 - [Update your apps](topics/update-your-apps.md)
 - [Install apps with Starboard](topics/install-apps.md)
 - [Change your install: Basics, Full install or Everything](topics/change-your-install.md)
+- [Basics, Full install and Everything: what each one has](topics/install-types.md)
 - [Switch between the two versions of Reelix](topics/switch-reelix-version.md)
 - [Move from Radarr, Sonarr and the others to Reelix](topics/move-your-apps-to-reelix.md)
 - [Copy settings from one app to another](topics/copy-app-settings.md)

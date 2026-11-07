@@ -116,6 +116,7 @@ Then go back to Starboard and select **Find the new apps**. Continue from Step 1
 
 ## Find out more
 
+- [Basics, Full install and Everything: what each one has](install-types.md)
 - [Build a media server from nothing](../guides/build-a-media-server-from-nothing.md)
 - [Add an app](add-an-app.md)
 - [Copy settings from one app to another](copy-app-settings.md)

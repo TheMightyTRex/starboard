@@ -84,6 +84,7 @@ If the Run first window is still open, Starboard asks it to start the apps inste
 
 ## Find out more
 
+- [Basics, Full install and Everything: what each one has](install-types.md)
 - [Install apps with Starboard](install-apps.md)
 - [Switch between the two versions of Reelix](switch-reelix-version.md)
 - [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md)
