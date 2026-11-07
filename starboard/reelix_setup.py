@@ -21,6 +21,7 @@ import base64
 import http.cookiejar
 import json
 import os
+import re
 import secrets
 import time
 import urllib.error
@@ -98,6 +99,17 @@ def read_setup(data_dir):
         return info if isinstance(info, dict) and info.get("url") else None
     except (OSError, ValueError):
         return None
+
+
+def _rewrite_setup(data_dir, info):
+    path = setup_file(data_dir)
+    try:
+        tmp = path + ".new"
+        with os.fdopen(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+            json.dump(info, f)
+        os.replace(tmp, path)
+    except OSError:
+        pass
 
 
 def wait_until_up(base, seconds=180, opener=None):
@@ -186,6 +198,10 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"qBittorrent is not connected yet ({e}). Add it in Reelix, Settings, Download apps")
 
+    # qBittorrent's temporary password has done its job, whatever happened: it leaves the file now.
+    if info.pop("qbittorrent_password", None) is not None:
+        _rewrite_setup(data_dir, info)
+
     # 4b. NZBGet, the default Usenet app: its downloads go in the shared media folder, and Reelix signs in with the
     # password Install apps made up (data/stack/.env).
     if info.get("usenet") == "nzbget" and nzbget:
@@ -223,13 +239,13 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     return done
 
 
-def switch_usenet(cfg, password, to, host, creds=None, sab_key=None, opener=None):
+def switch_usenet(base, password, to, host, creds=None, sab_key=None, opener=None):
     """After Settings, Your install swapped the Usenet app: Reelix's download apps get the new one and lose the other.
-    `creds` (user, password) for NZBGet, `sab_key` for SABnzbd. Returns what was done."""
-    link = next((s for s in cfg.data["services"] if s.get("icon") == "reelix" and s.get("type") == "link"), None)
-    if not link:
-        raise ReelixError("Reelix is not on your dashboard, so Starboard cannot reach it")
-    admin = Session(link["url"], opener=opener)
+    `base` is Reelix's address from data/stack (stack.reelix_url), never a dashboard entry: the admin password goes
+    there. `creds` (user, password) for NZBGet, `sab_key` for SABnzbd. Returns what was done."""
+    if not base or not re.match(r"^http://127\.0\.0\.1:\d{2,5}$", base):
+        raise ReelixError("Reelix was not installed by Install apps, so Starboard cannot reach it")
+    admin = Session(base, opener=opener)
     admin.call("POST", "/auth/login", {"username": ADMIN, "password": password, "remember_me": False})
     _, clients = admin.call("GET", "/downloadclients")
     done = []

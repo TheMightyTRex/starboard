@@ -1695,7 +1695,7 @@ def step_check(api, term, state, wait=2.0):
     if not term.yes_no("Write the apps' files now?", True, help_key="check"):
         term.say("Nothing written.")
         return True
-    written = api.call("POST", "/api/stack/write", choice)
+    written = api.call("POST", "/api/stack/write", {**choice, "password": state.get("password", "")})
     state["written"] = True
     term.ok(f"{len(choice['apps'])} apps written.")
     if not written.get("can_start"):

@@ -336,8 +336,8 @@ def add_found(app, items):
         if not re.match(r"^http://127\.0\.0\.1:\d{2,5}$", url):
             continue  # only what discovery itself found on this computer
         key = discovery.read_key(it["key"], str(it.get("container", ""))) if it.get("read_key") else None
-        if it["key"] == "nzbget" and not key:
-            key = stack.nzbget_key(app.data_dir)  # the sign-in Install apps made up
+        if it["key"] == "nzbget" and not key and url == stack.app_url(app.data_dir, "nzbget", 6789):
+            key = stack.nzbget_key(app.data_dir)  # the sign-in Install apps made up, only for the NZBGet it set up
         service = {"name": name, "type": kind, "url": url, "background": background, "icon": it["key"],
                    "container": str(it.get("container", "")) if it.get("container") else ""}
         if key:
@@ -416,10 +416,10 @@ def after_install_change(app, password, plan, sab_ini):
                                                             usenet_move.parse_sab_servers(sab_ini))
                         notes.append(f"Moved {moved} Usenet {'server' if moved == 1 else 'servers'} from SABnzbd to NZBGet")
                     if "reelix" in plan["choice"]["apps"]:
-                        notes += reelix_setup.switch_usenet(cfg, password, "nzbget", "gluetun" if vpn else "nzbget", creds=creds)
+                        notes += reelix_setup.switch_usenet(stack.reelix_url(app.data_dir), password, "nzbget", "gluetun" if vpn else "nzbget", creds=creds)
                 elif "reelix" in plan["choice"]["apps"]:
                     sab_key = discovery.read_key("sabnzbd", "sabnzbd")
-                    notes += reelix_setup.switch_usenet(cfg, password, "sabnzbd", "gluetun" if vpn else "sabnzbd", sab_key=sab_key)
+                    notes += reelix_setup.switch_usenet(stack.reelix_url(app.data_dir), password, "sabnzbd", "gluetun" if vpn else "sabnzbd", sab_key=sab_key)
                     notes.append("Add your Usenet servers in SABnzbd, Config, Servers: they are not moved from NZBGet")
             except (reelix_setup.ReelixError, OSError, ValueError) as e:
                 notes.append(f"Switching the Usenet app is not finished: {e}")
@@ -437,7 +437,20 @@ def resume_adopting(app):
         threading.Thread(target=_adopt, args=(app, False, 5.0), name="adopt-apps", daemon=True).start()
 
 
+_ADOPTING = threading.Lock()  # one thread adds started apps at a time; a second one would only repeat its work
+_CHANGING = threading.Lock()  # writing the set-up file and starting it, one request at a time
+
+
 def _adopt(app, after_job, wait):
+    if not _ADOPTING.acquire(blocking=False):
+        return  # the running one reads data/stack/adopt.json each round, so it picks up the new apps
+    try:
+        _adopt_run(app, after_job, wait)
+    finally:
+        _ADOPTING.release()
+
+
+def _adopt_run(app, after_job, wait):
     if after_job:
         began = time.time()
         while not stack.job().get("finished"):
@@ -801,7 +814,20 @@ class Handler(BaseHTTPRequestHandler):
             Handler._upgrade = {"key": key, "value": {"from": p["from"], "to": p["to"], "wizard": p["wizard"], "count": len(p["review"])}}
         return Handler._upgrade["value"]
 
+    CHANGES_STACK = {"/api/install/change", "/api/stack/write", "/api/stack/start", "/api/reelix/edition"}
+
     def api(self, method, path):
+        if method == "POST" and path in self.CHANGES_STACK:
+            # Writing the set-up file and starting it, one request at a time: two at once could start a half-written file.
+            if not _CHANGING.acquire(blocking=False):
+                return self.json(409, {"error": "Another change to your apps is being made. Try again in a moment"})
+            try:
+                return self._api(method, path)
+            finally:
+                _CHANGING.release()
+        return self._api(method, path)
+
+    def _api(self, method, path):
         app = self.app
         fresh = "fresh=1" in urllib.parse.urlparse(self.path).query  # "Check again": skip the shared answers
         if method != "GET":
@@ -1140,6 +1166,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {**{k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")}, "hooks": sorted(built["hooks"])})
             if path == "/api/stack/write" and method == "POST":
                 choice = self.body()
+                # Writing decides which apps the next start keeps (it removes the rest), so the password again.
+                self.check_password(choice)
+                choice = {k: v for k, v in choice.items() if k != "password"}
                 built = stack.build(choice)
                 own = stack.own_services(app.data_dir)  # apps added by hand stay, so starting does not remove them
                 if own:

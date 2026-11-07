@@ -176,6 +176,8 @@ def clean_folder(path, what):
         raise ValueError(f"The {what} must be a full path such as /srv/media, with letters, numbers, dots, dashes and underscores")
     if path == "" or path in _TOP or any(path == s or path.startswith(s + "/") for s in _SYSTEM):
         raise ValueError(f"The {what} cannot be a system folder")
+    if re.match(r"^/home/[^/]+$", path):  # a home folder itself: its owner's files, keys and settings
+        raise ValueError(f"The {what} cannot be a home folder itself; use a folder inside it, such as {path}/media")
     return path
 
 
@@ -426,6 +428,7 @@ def switch_reelix(data_dir, edition, check=None):
                          f"{'.'.join(map(str, have))}. It cannot go back to an older version, so try again once it has "
                          "caught up, usually within a day")
     os.replace(path, path + f".before-{time.strftime('%Y%m%d-%H%M%S')}")
+    keep_recent_copies(path)
     with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644), "w", encoding="utf-8") as f:
         f.write(text[:m.start(2)] + new + text[m.end(2):])
     return m.group(2), new
@@ -559,6 +562,49 @@ def folder(data_dir):
     return os.path.join(data_dir, "stack")
 
 
+def app_url(data_dir, service, inner):
+    """The address on this computer of a service Install apps wrote, from the port data/stack/compose.yaml maps to
+    its `inner` port (on the service, or on Gluetun when it runs through the VPN); None when there is none."""
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return None
+    for name in (service, "gluetun"):
+        block = re.search(rf"(?ms)^  {name}:\n(.*?)(?=^  \S|\Z)", text)
+        port = re.search(rf'"(\d{{2,5}}):{inner}"', block.group(1)) if block else None
+        if port:
+            return f"http://127.0.0.1:{port.group(1)}"
+    return None
+
+
+KEEP_BEFORE = 10  # older copies of the set-up files that Starboard keeps in data/stack
+
+
+def keep_recent_copies(target, keep=KEEP_BEFORE):
+    """Removes all but the newest `keep` "<file>.before-<date>" copies, so changes do not pile them up."""
+    folder_, name = os.path.split(target)
+    old = sorted(f for f in os.listdir(folder_) if f.startswith(name + ".before-"))
+    for f in old[:-keep] if keep else old:
+        try:
+            os.remove(os.path.join(folder_, f))
+        except OSError:
+            pass
+
+
+def reelix_url(data_dir):
+    """Reelix's address on this computer, from the port data/stack/compose.yaml maps to its 7700; None when Install
+    apps did not install it. Never taken from the dashboard's entries, which a signed-in session can edit."""
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return None
+    block = re.search(r"(?ms)^  reelix:\n(.*?)(?=^  \S|\Z)", text)
+    port = re.search(r'"(\d{2,5}):7700"', block.group(1)) if block else None
+    return f"http://127.0.0.1:{port.group(1)}" if port else None
+
+
 def env_values(data_dir):
     """The values in data/stack/.env, for Starboard's own use (NZBGet's sign-in)."""
     try:
@@ -687,6 +733,7 @@ def write(data_dir, built):
         target = os.path.join(path, name)
         if os.path.exists(target):
             os.replace(target, target + f".before-{time.strftime('%Y%m%d-%H%M%S')}")  # the old one is kept
+            keep_recent_copies(target)
         fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
         with os.fdopen(fd, "w") as f:
             f.write(text)

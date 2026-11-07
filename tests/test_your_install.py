@@ -106,7 +106,7 @@ class YourInstallTest(unittest.TestCase):
         with open(path, "a") as f:
             f.write("  mystery:\n    image: example/mystery:1\n    container_name: mystery\n")
         c = stack.install_choice("basics")
-        self.api.call("POST", "/api/stack/write", {"apps": c["apps"], "config_dir": "/srv/config", "data_dir": "/srv/media", "vpn": VPN})
+        self.api.call("POST", "/api/stack/write", {"apps": c["apps"], "config_dir": "/srv/config", "data_dir": "/srv/media", "vpn": VPN, "password": WORDS})
         self.assertIn("container_name: mystery", open(path).read())
 
     def test_a_set_up_file_with_sections_starboard_did_not_write_is_left_alone(self):
@@ -123,6 +123,30 @@ class YourInstallTest(unittest.TestCase):
         full = next(i for i in d["installs"] if i["key"] == "full")
         self.assertIn("Tdarr", full["add"])
         self.assertEqual(next(i for i in d["installs"] if i["key"] == "basics")["add"], [])
+
+    def test_only_the_newest_ten_old_copies_are_kept(self):
+        for _ in range(3):
+            self.write()
+        folder = stack.folder(self.tmp.name)
+        for i in range(15):
+            open(os.path.join(folder, f"compose.yaml.before-2020010{i:02d}"), "w").close()
+        stack.keep_recent_copies(os.path.join(folder, "compose.yaml"))
+        self.assertEqual(len([f for f in os.listdir(folder) if f.startswith("compose.yaml.before-")]), stack.KEEP_BEFORE)
+
+    def test_nzbgets_address_is_read_from_the_vpn_when_it_runs_through_it(self):
+        self.write()
+        self.assertEqual(stack.app_url(self.tmp.name, "nzbget", 6789), "http://127.0.0.1:6789")
+        self.assertIsNone(stack.app_url(self.tmp.name, "nzbget", 9999))
+
+    def test_nzbgets_sign_in_goes_only_to_the_nzbget_install_apps_set_up(self):
+        self.write()
+        from starboard import server
+        server.add_found(self.app, [{"key": "nzbget", "url": "http://127.0.0.1:7777"}])
+        s = next(x for x in self.app.config.data["services"] if x.get("icon") == "nzbget")
+        self.assertFalse(s.get("api_key"))
+        server.add_found(self.app, [{"key": "nzbget", "url": "http://127.0.0.1:6789"}])
+        s = next(x for x in self.app.config.data["services"] if x.get("icon") == "nzbget")
+        self.assertTrue(s.get("api_key", "").startswith("starboard:"))
 
 
 if __name__ == "__main__":

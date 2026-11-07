@@ -109,7 +109,8 @@ TOP_FOLDERS = ("/home", "/var", "/var/lib", "/opt", "/srv", "/mnt", "/media", "/
 def safe_folder(path):
     path = path.rstrip("/")
     return (bool(SAFE_FOLDER.fullmatch(path)) and "/../" not in path + "/" and "//" not in path
-            and path not in TOP_FOLDERS and not any(path == s or path.startswith(s + "/") for s in NOT_FOLDERS))
+            and path not in TOP_FOLDERS and not any(path == s or path.startswith(s + "/") for s in NOT_FOLDERS)
+            and not re.match(r"^/home/[^/]+$", path))  # a home folder itself
 
 
 def host_args(wanted):

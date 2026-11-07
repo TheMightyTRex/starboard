@@ -64,13 +64,18 @@ class _UnixConnection(http.client.HTTPConnection):
         self.sock.connect(socket_path())
 
 
+DOCKER_READ_LIMIT = 64 * 1024 * 1024  # an answer bigger than this is refused, not read into memory
+
+
 def docker(method, path, body=None, raw=False, timeout=30):
     c = _UnixConnection(timeout)
     try:
         c.request(method, path, body=json.dumps(body) if body is not None else None,
                   headers={"Content-Type": "application/json"} if body is not None else {})
         r = c.getresponse()
-        data = r.read()
+        data = r.read(DOCKER_READ_LIMIT + 1)
+        if len(data) > DOCKER_READ_LIMIT:
+            raise DockerError("Docker's answer was too big to read")
     except OSError as e:
         raise DockerError(f"Cannot reach Docker: {e}") from None
     finally:

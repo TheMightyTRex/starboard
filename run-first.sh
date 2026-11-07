@@ -789,6 +789,26 @@ apply_host() {
         *) echo "Left out: ${host[$i]}, which the set-up never asks for."; apply=(); break ;;
       esac
     done
+    if [ ${#apply[@]} -gt 0 ] && [ "${1:-}" = ask ]; then
+      # From the browser set-up: the person at this window says yes first. A browser session alone (which does not
+      # need the password) must not change this computer.
+      echo
+      echo "The set-up in the browser asks to change this computer:"
+      for (( i = 0; i < ${#apply[@]}; i++ )); do
+        case "${apply[$i]}" in
+          --disk-health) echo "  - Check each disk's health every 30 minutes (installs smartmontools; sudo asks for your password)" ;;
+          --disk) echo "  - Watch the free space of the media folder, ${apply[$((i + 1))]#Media=}"; i=$(( i + 1 )) ;;
+          --livetv-folder) echo "  - Let Starboard write Live TV files into ${apply[$((i + 1))]}"; i=$(( i + 1 )) ;;
+        esac
+      done
+      local answer=""
+      [ -n "$IN" ] && read -r -p "Make these changes? Only if you chose them in the set-up. [y/N] " answer < "$IN"
+      if ! [[ "$answer" =~ ^[Yy] ]]; then
+        echo "Nothing was changed. To make them later, run ./install.sh ${apply[*]} in the Starboard folder."
+        rm -f data/setup-host.json
+        return 0
+      fi
+    fi
     if [ ${#apply[@]} -gt 0 ]; then
       echo
       echo "Applying the set-up's changes to this computer: ./install.sh ${apply[*]}"
@@ -814,6 +834,7 @@ safe_folder() {
   [[ "$f" =~ ^/[A-Za-z0-9._/-]{1,250}$ ]] || return 1
   case "$f/" in */../*|*//*) return 1 ;; esac
   case "$f" in /home|/var|/var/lib|/opt|/srv|/mnt|/media|/tmp) return 1 ;; esac
+  [[ "$f" =~ ^/home/[^/]+$ ]] && return 1  # a home folder itself: its owner's files, keys and settings
   case "$f/" in /bin/*|/boot/*|/dev/*|/etc/*|/lib/*|/proc/*|/root/*|/run/*|/sbin/*|/sys/*|/usr/*|/var/spool/*) return 1 ;; esac
   return 0
 }
@@ -921,9 +942,9 @@ starter() {
       echo "Downloading and starting your apps, as the set-up asked. The browser shows how it goes."
       status=0
       if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
-        sg docker -c "./install.sh --start-apps" > data/stack/start.log 2>&1 < /dev/null &
+        STARTER_RUN=1 sg docker -c "./install.sh --start-apps" > data/stack/start.log 2>&1 < /dev/null &
       else
-        ./install.sh --start-apps > data/stack/start.log 2>&1 < /dev/null &
+        STARTER_RUN=1 ./install.sh --start-apps > data/stack/start.log 2>&1 < /dev/null &
       fi
       job=$!
       # Still open while it works: Starboard reads a quiet window as a closed one.
@@ -945,8 +966,8 @@ json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(s
       rm -f data/starter
       if [ -s data/setup-host.json ]; then
         echo
-        echo "The set-up has finished. Making its changes to this computer (sudo may ask for your password):"
-        apply_host
+        echo "The set-up has finished."
+        apply_host ask
       fi
       echo
       echo "Done. You can close this window."

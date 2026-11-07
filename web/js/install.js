@@ -428,8 +428,18 @@ async function installStep(id, state, data, apps, go) {
         el("dl", { class: "facts" }, Object.entries(p.env_shown).flatMap(([k, v]) => [el("dt", {}, el("code", { text: k })), el("dd", { text: v || "(empty)" })])),
         el("h3", { text: "compose.yaml" }), el("pre", { class: "code-block", text: p.compose }))),
     ].filter(Boolean);
+    // Writing decides which apps run, so it asks for the password, as starting does.
+    const writePassword = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true, id: "write-password" });
+    nodes.push(field("Your Starboard password", writePassword, { hint: "Needed to write the files: they decide which apps run on this computer." }));
     save = async () => {
-      state.written = await api("/api/stack/write", { method: "POST", body: body(state) });
+      setError(writePassword, "");
+      if (!writePassword.value) { setError(writePassword, "Enter your Starboard password"); writePassword.focus(); return false; }
+      try {
+        state.written = await api("/api/stack/write", { method: "POST", body: { ...body(state), password: writePassword.value } });
+      } catch (e) {
+        if (e.status === 401 || e.status === 429) { setError(writePassword, e.message); writePassword.focus(); return false; }
+        throw e;
+      }
       toast("Files written");
       return true;
     };

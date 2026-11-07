@@ -122,6 +122,23 @@ start_apps() {
   subs="$subs $more"
   quietly helped "mkdir -p '${dirs[0]}' '${dirs[1]}' $subs && chown $puid:$pgid '${dirs[0]}' '${dirs[1]}' $subs" \
     || { echo "Could not make the apps' folders, ${dirs[*]}."; return 1; }
+  # The Starboard container can write data/stack, so the file is checked with Starboard's own rules before anything
+  # starts: catalogue images only, no privileged containers or host access, folders inside the settings and media
+  # folders (starboard/compose_check.py). From a terminal, a person can still choose to start what it lists.
+  local problems
+  problems="$(docker compose -p media-stack -f "$file" --env-file "$env" config --format json 2>/dev/null \
+    | python3 -m starboard.compose_check "$env" 2>&1)" || {
+    echo "The set-up file (data/stack/compose.yaml) has things Starboard did not write:"
+    printf '%s\n' "$problems" | sed 's/^/  - /'
+    if [ -t 0 ] && [ -z "${STARTER_RUN:-}" ]; then
+      local answer
+      read -r -p "Start it anyway? Only if you added these yourself. [y/N] " answer
+      [[ "$answer" =~ ^[Yy] ]] || { echo "Nothing was started."; return 1; }
+    else
+      echo "Nothing was started. If you added these yourself, run ./install.sh --start-apps in a terminal to choose."
+      return 1
+    fi
+  }
   total="$(grep -c '^    container_name:' "$file" || true)"
   echo "Downloading $total apps and starting them. On a slow connection this can take 20 minutes or more."
   log="$(mktemp)"
