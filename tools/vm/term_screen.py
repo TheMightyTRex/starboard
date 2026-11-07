@@ -76,7 +76,13 @@ class Screen:
                 self.c = min((self.c // 8 + 1) * 8, self.cols - 1)
             elif ch >= " ":
                 if self.c >= self.cols:
-                    self.wrapped += 1
+                    # An address runs on by design (it is never cut, so it copies whole): not a fault.
+                    row = "".join(cell[0] for cell in self.cells[self.r])
+                    words = row.split()
+                    self.url_run = bool(words and (re.match(r"https?://", words[-1])
+                                                   or (getattr(self, "url_run", False) and len(words) == 1)))
+                    if not self.url_run:
+                        self.wrapped += 1
                     self.c = 0
                     self._down()
                 self.cells[self.r][self.c] = (ch, self.style)

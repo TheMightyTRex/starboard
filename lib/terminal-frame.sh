@@ -5,7 +5,8 @@
 # through curl) and the installer (install.sh, which reads this file). The rules are in docs/TERMINAL.md: a heading box and
 # progress bar at the top, the menu on the bottom two lines, only the lines between them scrolling; numbered answers
 # with the recommended one first; help as a box over the step; one bar for a job; plain lines for screen readers.
-# A script sets IN (the terminal to read, or empty), PLAIN, STEPS, TITLES, LOG and an err function, then sources it.
+# A script sets IN (the terminal to read answers from, or empty), TTY (the window to draw in when there are no
+# questions to ask, such as with --yes; it defaults to IN), PLAIN, STEPS, TITLES, LOG and an err function, then sources it.
 # For its own name and feedback it sets APP_NAME, APP_VERSION, ISSUES (the repository for the feedback link, owner/name)
 # and, when it has its own feedback flow, a function called app_feedback.
 # tests/test_terminal_frame.py checks that run-first.sh's copy is the same. 7 November 2026.
@@ -19,7 +20,7 @@ ROWS=24
 COLS=80
 measure() {
   local size
-  size="$(stty size < "${IN:-/dev/null}" 2>/dev/null)" || size=""
+  size="$(stty size < "${TTY:-${IN:-/dev/null}}" 2>/dev/null)" || size=""
   if [ -n "$size" ]; then ROWS="${size% *}"; COLS="${size#* }"; fi
   W=$(( COLS < 100 ? COLS : 100 ))
   # The frame and text sit in a column centred in a wider window; L is its left margin, PAD those spaces.
@@ -30,7 +31,7 @@ measure
 FANCY=1
 COLOUR=1
 [ -z "$PLAIN" ] || FANCY=0
-[ -n "$IN" ] && [ -t 1 ] || FANCY=0
+[ -n "${TTY:-$IN}" ] && [ -t 1 ] || FANCY=0
 SMALL=0
 # SMALL: the scripts say why they show plain lines.
 # shellcheck disable=SC2034
@@ -71,7 +72,13 @@ wrap_para() { printf '%s\n' "$1" | fold -s -w $(( W - 4 )) | sed 's/ *$//; s/^/ 
 # window size wraps it again.
 hang() {
   local lead="$1" style="$2" text="$3"
-  if [ "$FANCY" = 0 ]; then say "$lead$text"; return; fi
+  if [ "$FANCY" = 0 ]; then
+    # Plain lines wrap between words inside the window too, the rest of the text set in under the lead.
+    local w=$(( COLS < 80 ? COLS - 1 : 79 )) pad
+    pad="$(printf '%*s' "${#lead}" "")"
+    say "$(printf '%s\n' "$lead$text" | fold -s -w $(( w - ${#pad} )) | sed 's/ *$//' | sed "2,\$s/^/$pad/")"
+    return
+  fi
   wrap_hang "$lead" "$style" "$text" | sed "s/^/$PAD/"
   SCREEN+=($'\x02'"$lead"$'\x03'"$style"$'\x04'"$text")
 }
@@ -141,6 +148,7 @@ menu() {
 page() {
   STEP="$1"
   KEYS="? f q"; [ "$STEP" -gt "${FIRST_BACK:-1}" ] && KEYS="b ? f q"
+  [ -n "$IN" ] || KEYS="Ctrl+C"  # drawn without questions (--yes): only stopping works
   MENU_RIGHT=""
   SCREEN=()
   if [ "$FANCY" = 0 ] && [ "$STEP" -gt "$STEPS" ]; then
@@ -288,8 +296,24 @@ ask() {
       "Press Enter"*) [ "$MENU_RIGHT" = "Enter: carry on" ] || { MENU_RIGHT="Enter: carry on"; menu; } ;;
     esac
   fi
-  PROMPT="  $(accent "›") $question "; [ "$FANCY" = 1 ] || PROMPT="$question "
-  printf '\n%s%s' "$PAD" "$PROMPT"; [ "$FANCY" = 1 ] && SCREEN+=("")
+  # A question longer than the column is wrapped between words: its first lines go above, so the line the answer
+  # is typed on fits.
+  local room lead="  $(accent "›") " rest=() i
+  if [ "$FANCY" = 1 ]; then room=$(( W - 6 )); else room=$(( COLS < 80 ? COLS - 2 : 78 )); lead=""; fi
+  if [ "${#question}" -gt "$room" ]; then
+    mapfile -t rest < <(printf '%s\n' "$question" | fold -s -w "$room" | sed 's/ *$//')
+    printf '\n'
+    for (( i = 0; i < ${#rest[@]} - 1; i++ )); do
+      printf '%s%s%s\n' "$PAD" "$lead" "${rest[$i]}"; [ "$FANCY" = 1 ] && SCREEN+=("$lead${rest[$i]}")
+      [ "$FANCY" = 1 ] && lead="    "
+    done
+    question="${rest[-1]}"
+    PROMPT="$lead$question "; [ "$FANCY" = 1 ] || PROMPT="$question "
+    printf '%s%s' "$PAD" "$PROMPT"
+  else
+    PROMPT="$lead$question "; [ "$FANCY" = 1 ] || PROMPT="$question "
+    printf '\n%s%s' "$PAD" "$PROMPT"; [ "$FANCY" = 1 ] && SCREEN+=("")
+  fi
   if tty_read; then ANSWER="$REPLY_LINE"; else ANSWER="q"; fi
   [ "$FANCY" = 1 ] && SCREEN+=("$PROMPT$ANSWER")
   ANSWER="$(printf '%s' "$ANSWER" | sed 's/^ *//; s/ *$//')"

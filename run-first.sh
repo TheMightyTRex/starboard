@@ -81,7 +81,8 @@ TITLES=("" "Welcome" "Check this computer" "Install what is missing" "Download S
 # through curl) and the installer (install.sh, which reads this file). The rules are in docs/TERMINAL.md: a heading box and
 # progress bar at the top, the menu on the bottom two lines, only the lines between them scrolling; numbered answers
 # with the recommended one first; help as a box over the step; one bar for a job; plain lines for screen readers.
-# A script sets IN (the terminal to read, or empty), PLAIN, STEPS, TITLES, LOG and an err function, then sources it.
+# A script sets IN (the terminal to read answers from, or empty), TTY (the window to draw in when there are no
+# questions to ask, such as with --yes; it defaults to IN), PLAIN, STEPS, TITLES, LOG and an err function, then sources it.
 # For its own name and feedback it sets APP_NAME, APP_VERSION, ISSUES (the repository for the feedback link, owner/name)
 # and, when it has its own feedback flow, a function called app_feedback.
 # tests/test_terminal_frame.py checks that run-first.sh's copy is the same. 7 November 2026.
@@ -95,7 +96,7 @@ ROWS=24
 COLS=80
 measure() {
   local size
-  size="$(stty size < "${IN:-/dev/null}" 2>/dev/null)" || size=""
+  size="$(stty size < "${TTY:-${IN:-/dev/null}}" 2>/dev/null)" || size=""
   if [ -n "$size" ]; then ROWS="${size% *}"; COLS="${size#* }"; fi
   W=$(( COLS < 100 ? COLS : 100 ))
   # The frame and text sit in a column centred in a wider window; L is its left margin, PAD those spaces.
@@ -106,7 +107,7 @@ measure
 FANCY=1
 COLOUR=1
 [ -z "$PLAIN" ] || FANCY=0
-[ -n "$IN" ] && [ -t 1 ] || FANCY=0
+[ -n "${TTY:-$IN}" ] && [ -t 1 ] || FANCY=0
 SMALL=0
 # SMALL: the scripts say why they show plain lines.
 # shellcheck disable=SC2034
@@ -147,7 +148,13 @@ wrap_para() { printf '%s\n' "$1" | fold -s -w $(( W - 4 )) | sed 's/ *$//; s/^/ 
 # window size wraps it again.
 hang() {
   local lead="$1" style="$2" text="$3"
-  if [ "$FANCY" = 0 ]; then say "$lead$text"; return; fi
+  if [ "$FANCY" = 0 ]; then
+    # Plain lines wrap between words inside the window too, the rest of the text set in under the lead.
+    local w=$(( COLS < 80 ? COLS - 1 : 79 )) pad
+    pad="$(printf '%*s' "${#lead}" "")"
+    say "$(printf '%s\n' "$lead$text" | fold -s -w $(( w - ${#pad} )) | sed 's/ *$//' | sed "2,\$s/^/$pad/")"
+    return
+  fi
   wrap_hang "$lead" "$style" "$text" | sed "s/^/$PAD/"
   SCREEN+=($'\x02'"$lead"$'\x03'"$style"$'\x04'"$text")
 }
@@ -217,6 +224,7 @@ menu() {
 page() {
   STEP="$1"
   KEYS="? f q"; [ "$STEP" -gt "${FIRST_BACK:-1}" ] && KEYS="b ? f q"
+  [ -n "$IN" ] || KEYS="Ctrl+C"  # drawn without questions (--yes): only stopping works
   MENU_RIGHT=""
   SCREEN=()
   if [ "$FANCY" = 0 ] && [ "$STEP" -gt "$STEPS" ]; then
@@ -364,8 +372,24 @@ ask() {
       "Press Enter"*) [ "$MENU_RIGHT" = "Enter: carry on" ] || { MENU_RIGHT="Enter: carry on"; menu; } ;;
     esac
   fi
-  PROMPT="  $(accent "›") $question "; [ "$FANCY" = 1 ] || PROMPT="$question "
-  printf '\n%s%s' "$PAD" "$PROMPT"; [ "$FANCY" = 1 ] && SCREEN+=("")
+  # A question longer than the column is wrapped between words: its first lines go above, so the line the answer
+  # is typed on fits.
+  local room lead="  $(accent "›") " rest=() i
+  if [ "$FANCY" = 1 ]; then room=$(( W - 6 )); else room=$(( COLS < 80 ? COLS - 2 : 78 )); lead=""; fi
+  if [ "${#question}" -gt "$room" ]; then
+    mapfile -t rest < <(printf '%s\n' "$question" | fold -s -w "$room" | sed 's/ *$//')
+    printf '\n'
+    for (( i = 0; i < ${#rest[@]} - 1; i++ )); do
+      printf '%s%s%s\n' "$PAD" "$lead" "${rest[$i]}"; [ "$FANCY" = 1 ] && SCREEN+=("$lead${rest[$i]}")
+      [ "$FANCY" = 1 ] && lead="    "
+    done
+    question="${rest[-1]}"
+    PROMPT="$lead$question "; [ "$FANCY" = 1 ] || PROMPT="$question "
+    printf '%s%s' "$PAD" "$PROMPT"
+  else
+    PROMPT="$lead$question "; [ "$FANCY" = 1 ] || PROMPT="$question "
+    printf '\n%s%s' "$PAD" "$PROMPT"; [ "$FANCY" = 1 ] && SCREEN+=("")
+  fi
   if tty_read; then ANSWER="$REPLY_LINE"; else ANSWER="q"; fi
   [ "$FANCY" = 1 ] && SCREEN+=("$PROMPT$ANSWER")
   ANSWER="$(printf '%s' "$ANSWER" | sed 's/^ *//; s/ *$//')"
@@ -1041,7 +1065,7 @@ Afterwards, update with ./update.sh in the same folder." || return $?
 # Accessible mode is asked before anything is drawn, in plain words, so software that reads text aloud reads it.
 if [ "$FANCY" = 1 ] && [ "$ASK" = 1 ] && [ "$CHECK" = 0 ]; then
   printf '\nStarboard: the Run first script.\n'
-  printf 'Press Enter to start, or type a and press Enter for accessible mode: plain lines with no boxes or colour, for software that reads text aloud.\n' | fold -s -w "$(( $( { tput cols || echo 80; } 2>/dev/null) - 1 ))"
+  printf 'Press Enter to start, or type a and press Enter for accessible mode: plain lines with no boxes or colour, for software that reads text aloud.\n' | fold -s -w "$(( COLS - 1 ))" | sed 's/ *$//'
   printf '> '
   tty_read || true; first="$REPLY_LINE"
   case "$first" in a|A) FANCY=0; PLAIN=1; COLOUR=0; measure ;; q|Q) echo "Stopped. Nothing was changed."; exit 1 ;; esac
@@ -1061,6 +1085,8 @@ while [ "$n" -lt "$STEPS" ]; do
 done
 # The set-up's changes to this computer (free space for the media folder, the Live TV folder, disk health),
 # applied with the installer, which asks for the password itself where it needs sudo. Both routes use it.
+# A line after the frame has gone: wrapped between words to the window.
+tell() { printf '%s\n' "$1" | fold -s -w "$(( COLS - 1 ))" | sed 's/ *$//'; }
 apply_host() {
   if [ -s data/setup-host.json ] && [ ! -L data/setup-host.json ]; then
     mapfile -t host < <(python3 -I -c 'import json,sys; [print(a) for a in json.load(open(sys.argv[1]))["args"] if isinstance(a, str) and "\n" not in a]' data/setup-host.json 2>/dev/null)
@@ -1074,11 +1100,11 @@ apply_host() {
           [ "${host[$i]}" = --livetv-folder ] && folder="$value"
           if [ "${host[$i]}" = --disk ] && [ "${value:0:6}" != "Media=" ]; then folder=""; fi
           if ! safe_folder "$folder"; then
-            echo "Left out: ${host[$i]} with a folder Starboard does not use. Run ./install.sh yourself to change it."
+            tell "Left out: ${host[$i]} with a folder Starboard does not use. Run ./install.sh yourself to change it."
           elif [ -d "$folder" ]; then apply+=("${host[$i]}" "$value")
-          else echo "Not yet: $folder is made when the apps start. Run ./install.sh ${host[$i]} $value after that."; fi
+          else tell "Not yet: $folder is made when the apps start. Run ./install.sh ${host[$i]} $value after that."; fi
           i=$(( i + 1 )) ;;
-        *) echo "Left out: ${host[$i]}, which the set-up never asks for."; apply=(); break ;;
+        *) tell "Left out: ${host[$i]}, which the set-up never asks for."; apply=(); break ;;
       esac
     done
     if [ ${#apply[@]} -gt 0 ] && [ "${1:-}" = ask ]; then
@@ -1096,14 +1122,14 @@ apply_host() {
       local answer=""
       [ -n "$IN" ] && read -r -p "Make these changes? Only if you chose them in the set-up. [y/N] " answer < "$IN"
       if ! [[ "$answer" =~ ^[Yy] ]]; then
-        echo "Nothing was changed. To make them later, run ./install.sh ${apply[*]} in the Starboard folder."
+        tell "Nothing was changed. To make them later, run ./install.sh ${apply[*]} in the Starboard folder."
         rm -f data/setup-host.json
         return 0
       fi
     fi
     if [ ${#apply[@]} -gt 0 ]; then
       echo
-      echo "Applying the set-up's changes to this computer: ./install.sh ${apply[*]}"
+      tell "Applying the set-up's changes to this computer: ./install.sh ${apply[*]}"
       again=(./install.sh --yes "${apply[@]}")
       if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
         # This sign-in does not know about the docker group yet.

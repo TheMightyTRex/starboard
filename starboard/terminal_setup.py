@@ -870,6 +870,16 @@ class Terminal:
 
     # Questions ----------------------------------------------------------------------------------------------
 
+    def refuse(self, text):
+        """An answer the app refuses, said on the line under the question. Refused again with the same words, the
+        last message and the question under it are taken back first, so the step never fills with the same two
+        lines (TERMINAL.md, Questions)."""
+        if self.fancy and self.drawn and len(self.screen) >= 2 and self.screen[-2] == getattr(self, "refused", None):
+            self._write("\033[1A\033[2K" * 2 + "\r")
+            del self.screen[-2:]
+        self.say(text)
+        self.refused = text
+
     def _prompt(self, text):
         """The question before the cursor. In the boxed look, a question longer than the window is wrapped at spaces:
         its first lines are written above, so the line the answer is typed on fits."""
@@ -1004,7 +1014,7 @@ class Terminal:
             parts = [p.strip() for p in answer.replace(" ", ",").split(",") if p.strip()]
             if parts and all(p.isdigit() and 1 <= int(p) <= len(options) for p in parts):
                 return sorted({int(p) - 1 for p in parts})
-            self.say(f"Type numbers from 1 to {len(options)}, such as 1,2, or ? for help, or q to stop.")
+            self.refuse(f"Type numbers from 1 to {len(options)}, such as 1,2, or ? for help, or q to stop.")
 
     def _pick_many(self, question, options, defaults, help_key, allow_none):
         """Up and Down move, Space ticks or unticks, Enter carries on. A number ticks that line too. ? opens help,
@@ -1105,20 +1115,22 @@ class Terminal:
         extra = tuple(words) + (("m",) if fits < len(options) else ())
         prompt = f"Your choice [{default}]: " if default else "Your choice: "
         while True:
-            answer = self._read(prompt, help_key, self._title(question), extra=extra) or (str(default) if default else "")
+            # With no default, Enter does nothing, so the menu does not say "Enter: recommended".
+            answer = self._read(prompt, help_key, self._title(question), extra=extra,
+                                enter=None if default else "") or (str(default) if default else "")
             if answer == "m" and fits < len(options):
                 self._options(options, {default - 1}, start=fits)
                 fits = len(options)
                 extra = tuple(words)
                 continue
             if not answer:
-                self.say(f"Type a number from 1 to {len(options)}.")
+                self.refuse(f"Choose one: type a number from 1 to {len(options)}.")
                 continue
             if answer in words:
                 return words[answer]
             if answer.isdigit() and 1 <= int(answer) <= len(options):
                 return int(answer) - 1
-            self.say(f"Type a number from 1 to {len(options)}, ? for help or q to stop.")
+            self.refuse(f"Type a number from 1 to {len(options)}, ? for help or q to stop.")
 
     def yes_no(self, question, default=True, help_key=None):
         """Yes or no as numbered answers, the default first and marked recommended. y and n work too."""
@@ -1631,10 +1643,10 @@ def step_password(api, term, state):
         while True:
             first = term.hidden(f"{question('password')}, 10 characters or more")
             if len(first) < 10:
-                term.say("Use at least 10 characters.")
+                term.refuse("Use at least 10 characters.")
                 continue
             if term.hidden("Type it again") != first:
-                term.say("The two did not match. Try again.")
+                term.refuse("The two did not match. Try again.")
                 continue
             name = term.text("Name your dashboard, shown in the header", state.get("site_name", "Starboard"),
                              help_key="name").strip()[:60] or "Starboard"

@@ -211,6 +211,9 @@ def main():
             send("y\r", "y (install this app)")
         elif a.plain and answers == 0:
             send("a\r", "a (accessible mode)")
+        elif re.search(r"your choice: ?$", low.rstrip() + " ") and "[" not in here:
+            # A question with no default (a VPN provider, say): a person picks one.
+            send("1\r", "1 (no default)")
         elif "press enter to finish, or type r" in low:
             send("\r", "Enter (finish)")
         else:

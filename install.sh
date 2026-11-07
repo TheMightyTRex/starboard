@@ -84,6 +84,8 @@ done
 # The frame: answers come from the terminal; with --yes, or with no terminal, nothing is asked and plain lines are
 # written (the Run first window keeps them in its log).
 IN=""; [ "$ASK" = 1 ] && IN=/dev/tty
+# With --yes there are no questions, but a real window still gets the boxed frame and its job bars.
+TTY=""; [ -t 1 ] && [ -r /dev/tty ] && { : < /dev/tty; } 2>/dev/null && TTY=/dev/tty
 PLAIN="${STARBOARD_PLAIN:+1}"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/starboard-install.XXXXXX")" || { echo "Stopped: no temporary folder" >&2; exit 1; }
 LOG="$WORK/install.log"
