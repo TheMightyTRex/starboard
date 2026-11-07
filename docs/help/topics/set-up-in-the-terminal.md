@@ -130,3 +130,14 @@ Type `q` at any feedback question to close it and go back to the step.
 - [Create your password and sign in](create-your-password.md)
 - [Connect to your server with SSH](connect-with-ssh.md)
 - [The terminal: typing commands](../basics/the-terminal.md)
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

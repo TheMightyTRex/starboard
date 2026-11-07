@@ -21,3 +21,10 @@ Starboard's help follows the shared guides in the design system, which Starboard
   network address.
 - **Check before committing:** `python3 tools/check-help.py` checks every link, the layout of each tier and the
   writing rules that a machine can check.
+
+## The footer on every page
+
+Every page ends with the same footer: download only what you have the right to. The README has it too. Do not write
+it by hand: run `python3 tools/help_footer.py` after adding or changing a page, and it adds or refreshes the footer
+between its two markers. `tools/check-help.py` fails when a page has no footer or an old one. The wording follows the
+installer's Usenet note, widened to every download app; change it in `tools/help_footer.py` only.

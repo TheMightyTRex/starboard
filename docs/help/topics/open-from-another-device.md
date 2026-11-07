@@ -74,3 +74,14 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
 - [Choose who can open Starboard](choose-who-can-open-starboard.md)
 - [Use Starboard away from home safely](../guides/use-starboard-away-from-home.md)
 - [Change text size, theme and other display settings](display-and-accessibility.md)
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

@@ -129,3 +129,14 @@ Read [Change what Starboard can access](change-what-starboard-can-access.md) for
 - [Update Starboard](update-starboard.md)
 - [Install Starboard with the installer](install-with-the-installer.md)
 - [What Docker is](../basics/what-is-docker.md)
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

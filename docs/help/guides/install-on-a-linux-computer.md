@@ -76,3 +76,14 @@ installer printed while the phone is on the same Wi-Fi. Follow
 - [Set up your dashboard after installing](set-up-your-dashboard.md): add your apps and make it yours.
 - No media apps yet? [Build a media server from nothing](build-a-media-server-from-nothing.md).
 - Keep it current with [Update Starboard](../topics/update-starboard.md).
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

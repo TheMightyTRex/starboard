@@ -39,3 +39,14 @@ not erased. Do this before you replace an old drive or move it to another comput
 
 - [Balance the files](balance-the-files.md)
 - [A pool drive has failed](a-pool-drive-has-failed.md)
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

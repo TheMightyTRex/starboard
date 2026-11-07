@@ -29,6 +29,7 @@ RULES = [
 def text_only(md):
     """The words a reader reads: no code blocks, inline code, link targets or Mermaid."""
     md = re.sub(r"```.*?```", "", md, flags=re.S)
+    md = re.sub(r"<!--.*?-->", "", md, flags=re.S)  # markers such as the footer's, not read
     md = re.sub(r"`[^`]*`", "", md)
     md = re.sub(r"\]\([^)]*\)", "]", md)
     return md
@@ -68,6 +69,14 @@ def main():
                     if what.startswith("enable") and re.search(r"\*\*Enable SSH\*\*", line):
                         continue  # Raspberry Pi Imager's own label, copied exactly
                     problems.append(f"{rel}: {what}: {line.strip()[:90]}")
+    # The download rights footer (tools/help_footer.py) on every page and the README, as it is written there.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("help_footer", pathlib.Path(__file__).with_name("help_footer.py"))
+    footer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(footer)
+    for path in footer.pages():
+        if footer.FOOTER not in path.read_text():
+            problems.append(f"{path.relative_to(HELP.parent.parent)}: no download rights footer, or an old one (run tools/help_footer.py)")
     for target in re.findall(r"\]\(([^)#\s]+)\)", index):
         if not (HELP / target).exists():
             problems.append(f"README.md: the index lists {target}, which does not exist yet")

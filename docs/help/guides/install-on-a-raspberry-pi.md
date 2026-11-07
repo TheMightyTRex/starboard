@@ -80,3 +80,14 @@ Pi's address instead, as in [Open Starboard from a phone or another computer](..
 - [Set up your dashboard after installing](set-up-your-dashboard.md).
 - On a smaller Pi, choose the **Small server** preset: [Make Starboard use less of your server](../topics/make-starboard-lighter.md).
 - Keep it current with [Update Starboard](../topics/update-starboard.md).
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

@@ -52,3 +52,14 @@ dashboard-icons collection, a web address of a picture, or a picture file of you
 - [Change or remove an app](change-or-remove-an-app.md)
 - [Choose a design for the Apps page](choose-a-design.md)
 - [Organise apps into categories](organise-categories.md)
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

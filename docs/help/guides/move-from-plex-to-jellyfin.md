@@ -60,3 +60,14 @@ Follow [Give every Jellyfin user the same defaults](../topics/jellyfin-user-defa
 - [Set up free Live TV in Jellyfin](../topics/set-up-live-tv.md).
 - When everyone is happy with Jellyfin, you can stop Plex. Keep its folder for a while, in case you need it
   again.
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->
