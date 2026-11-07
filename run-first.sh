@@ -821,11 +821,14 @@ sudo_once() {
   sudo -n true 2>/dev/null && return 0
   para "First, sudo asks for the password you use to sign in to this computer. On most systems nothing shows as you type; on some, a star for each letter."
   say ""
+  local keys_were="$KEYS"
+  KEYS="Ctrl+C"; MENU_RIGHT="Enter: send the password"; [ "$FANCY" = 1 ] && menu
   # shellcheck disable=SC2024  # the redirect is for sudo itself: it reads the password from the terminal
   while ! sudo -v < "${IN:-/dev/null}"; do
     printf 'sudo: the password was not accepted\n' >> "$LOG"
     problem "Checking your password" || return 1
   done
+  KEYS="$keys_were"; MENU_RIGHT=""; [ "$FANCY" = 1 ] && menu
   # Keep it fresh while the jobs run, and stop when the script ends.
   ( while sleep 50; do sudo -n -v 2>/dev/null || exit; done ) &
   KEEP=$!
@@ -930,20 +933,23 @@ step_3() {
   para "${list:-Nothing to install.}$start$allow"
   say ""
   local i
-  # Each job with the exact command it runs, so nothing is done that was not shown first.
-  for i in "${!FIX_NAME[@]}"; do
-    hang "  $(( i + 1 )). " "" "${FIX_NAME[$i]}"
-    hang "     " dim "${FIX[$i]}"
-  done
+  for i in "${!FIX_NAME[@]}"; do hang "  $(dim "$(( i + 1 )).") " "" "${FIX_NAME[$i]}"; done
   say ""
   para "sudo asks for the password you use to sign in to this computer, once (nothing shows as you type). Then it works quietly: it can take a few minutes."
-  choose "Install them now?" 1 \
+  # The exact commands, before anything runs: shown when asked for, so the list and the question fit the window.
+  while :; do
+    choose "Install them now?" 1 \
 "These are the same steps as Starboard's help page, Install Docker. Docker's own install script is used on Debian, Ubuntu, Fedora and Raspberry Pi OS; Linux Mint uses its own packages.
 
-Choose No to install them yourself: the commands are printed so you can copy them. Then run this script again." \
-    "Yes, install them (recommended)|sudo asks for your password once." "No, I will do it myself|The commands are printed to copy." || return $?
+Show the commands first lists the exact command for each job. Choose No to install them yourself: the commands are printed so you can copy them. Then run this script again." \
+      "Yes, install them (recommended)|sudo asks for your password once." "Show the commands first|The exact command for each job." \
+      "No, I will do it myself|The commands are printed to copy." || return $?
+    [ "$CHOICE" = 2 ] || break
+    say ""
+    for i in "${!FIX[@]}"; do hang "  $(dim "$(( i + 1 )).") " dim "${FIX[$i]}"; done
+  done
   case "$CHOICE" in
-    2)
+    3)
       finish
       echo "Nothing was installed. To do it yourself, run these, then run this script again:"
       printf '  %s\n' "${FIX[@]}"

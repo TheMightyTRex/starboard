@@ -405,37 +405,36 @@ No: only this computer can open Starboard. You can change this later in Settings
 }
 
 step_docker() {
-  local def; def="$(yes_or_no "$DOCKER")"
-  [ "$FIRST" = 1 ] && def=2
   page "$STEP"
   para "Starboard can list your apps' containers and, when you choose Update, download the new version and restart the app. For that it needs the Docker socket, which is full control of Docker, and so of this computer."
-  # The recommended answer comes first: No, on a new install.
-  if [ "$FIRST" = 1 ]; then
-    choose "Give Starboard access to Docker for app updates?" 1 "$DOCKER_HELP" \
-      "No (recommended)|Apps, Updates says that updates are off, and the Run first window starts your apps. Nothing else changes." \
-      "Yes, for app updates|Full control of Docker, and so of this computer." || return $?
-    if [ "$CHOICE" = 2 ]; then DOCKER=1; else DOCKER=0; fi
-  else
-    choose "Give Starboard access to Docker for app updates?" "$def" "$DOCKER_HELP" \
-      "Yes, for app updates$(last "$def" 1)|Full control of Docker, and so of this computer." \
-      "No$(last "$def" 2)|Apps, Updates says that updates are off. Nothing else changes." || return $?
-    if [ "$CHOICE" = 1 ]; then DOCKER=1; else DOCKER=0; fi
-  fi
+  yes_no_step "Give Starboard access to Docker for app updates?" "$DOCKER_HELP" STARBOARD_ALLOW_DOCKER "$DOCKER" \
+    "Full control of Docker, and so of this computer." \
+    "Apps, Updates says that updates are off, and the Run first window starts your apps. Nothing else changes." || return $?
+  DOCKER=$YES
   if [ "$DOCKER" = 1 ] && [ ! -S /var/run/docker.sock ]; then fail IN-11 "there is no Docker socket at /var/run/docker.sock"; fi
 }
 DOCKER_HELP="Yes gives Starboard the Docker socket. It then lists your containers, updates them when you choose Update, and starts your media apps for you. Anyone who can sign in to Starboard could then control Docker, so keep your password safe.
 
 No: Apps, Updates says that updates are off, and the Run first window starts your apps instead. Nothing else changes. Run ./install.sh again to change this."
 
-# The later questions: Yes first, the answer you gave last time marked with the dot and "(your last answer)".
+# A yes or no question. With no earlier answer saved (KEY empty in .env), No is recommended and comes first; with
+# one, Yes comes first and the earlier answer is marked "(your last answer)". Sets YES to 1 or 0.
+yes_no_step() {
+  local question="$1" help="$2" key="$3" now="$4" yes_about="$5" no_about="$6" def
+  if [ -z "$(env_value "$key")" ]; then
+    choose "$question" 1 "$help" "No (recommended)|$no_about" "Yes|$yes_about" || return $?
+    if [ "$CHOICE" = 2 ]; then YES=1; else YES=0; fi
+  else
+    def="$(yes_or_no "$now")"
+    choose "$question" "$def" "$help" "Yes$(last "$def" 1)|$yes_about" "No$(last "$def" 2)|$no_about" || return $?
+    if [ "$CHOICE" = 1 ]; then YES=1; else YES=0; fi
+  fi
+}
 step_appuse() {
-  local def; def="$(yes_or_no "$APPUSE")"
   page "$STEP"
   para "System, Monitor can list each app's processor and memory use. Starboard reads two small read-only folders for that; with Docker access it also shows the apps' names, without it their short IDs."
-  choose "Show each app's processor and memory use?" "$def" \
-"No: Monitor shows the whole server only. Run ./install.sh again to change this." \
-    "Yes$(last "$def" 1)|Read-only." "No$(last "$def" 2)|Monitor shows the whole server only." || return $?
-  if [ "$CHOICE" = 1 ]; then APPUSE=1; else APPUSE=0; fi
+  yes_no_step "Show each app's processor and memory use?" "No: Monitor shows the whole server only. Run ./install.sh again to change this." STARBOARD_ALLOW_APPUSE "$APPUSE" "Read-only." "Monitor shows the whole server only." || return $?
+  APPUSE=$YES
 }
 
 step_livetv() {
@@ -481,23 +480,17 @@ step_disks() {
 }
 
 step_health() {
-  local def; def="$(yes_or_no "$HEALTH")"
   page "$STEP"
   para "A small script (deploy/starboard-smart.sh) runs smartctl as root every 30 minutes, through a systemd timer, and saves each drive's health report in ./smart. Starboard reads them read-only. It needs smartmontools."
-  choose "Set up Disk health reports?" "$def" \
-"Setting it up runs deploy/install-smart.sh with sudo, so you are asked for this computer's password. No: System, Disk health says reports are not set up." \
-    "Yes$(last "$def" 1)|sudo asks for your password." "No$(last "$def" 2)|Disk health says reports are not set up." || return $?
-  if [ "$CHOICE" = 1 ]; then HEALTH=1; else HEALTH=0; fi
+  yes_no_step "Set up Disk health reports?" "Setting it up runs deploy/install-smart.sh with sudo, so you are asked for this computer's password. No: System, Disk health says reports are not set up." STARBOARD_ALLOW_HEALTH "$HEALTH" "sudo asks for your password." "Disk health says reports are not set up." || return $?
+  HEALTH=$YES
 }
 
 step_pool() {
-  local def; def="$(yes_or_no "$POOL")"
   page "$STEP"
   para "A pool joins several drives into one folder, /mnt/pool, and a backup drive protects it. The pool helper (deploy/install-pool.sh) does that work as root; Starboard only asks it, and every change needs your Starboard password and is checked first. It needs mergerfs, rsync and gdisk (and snapraid for a parity drive)."
-  choose "Set up Drive pools?" "$def" \
-"Setting it up runs sudo, so you are asked for this computer's password. No: System, Storage, Pool says the helper is not set up." \
-    "Yes$(last "$def" 1)|sudo asks for your password." "No$(last "$def" 2)|Pool says the helper is not set up." || return $?
-  if [ "$CHOICE" = 1 ]; then POOL=1; else POOL=0; fi
+  yes_no_step "Set up Drive pools?" "Setting it up runs sudo, so you are asked for this computer's password. No: System, Storage, Pool says the helper is not set up." STARBOARD_ALLOW_POOL "$POOL" "sudo asks for your password." "Pool says the helper is not set up." || return $?
+  POOL=$YES
 }
 
 # The jobs ---------------------------------------------------------------------------------------------------------
@@ -684,10 +677,12 @@ step_install() {
     if [ -z "$IN" ]; then fail IN-16 "Disk health and Drive pools need sudo, and there is no terminal to type the password in. Run ./install.sh in a terminal"; fi
     para "sudo asks for the password you use to sign in to this computer, once (nothing shows as you type)."
     say ""
+    KEYS="Ctrl+C"; MENU_RIGHT="Enter: send the password"; [ "$FANCY" = 1 ] && menu
     # shellcheck disable=SC2024  # the input is for sudo itself: it reads the password from the terminal
     sudo -v < "$IN" || fail IN-16 "sudo did not accept the password"
     ( while sleep 50; do sudo -n -v 2>/dev/null || exit; done ) &
     KEEP=$!
+    KEYS="? f q"; MENU_RIGHT=""; [ "$FANCY" = 1 ] && menu
   fi
   para "$JOBS_INTRO"
   say ""
@@ -732,6 +727,10 @@ step_done() {
     para "You need the setup code once, to choose your password. No browser here? Finish in the terminal instead: python3 -m starboard.terminal_setup --port $PORT"
   fi
   para "What Starboard can access, and how to change it: Settings, About and updates."
+  if [ "$TERMINAL" = 1 ]; then
+    ask "Press Enter to set up the rest here: your password, your apps and download hours" "" \
+"The terminal set-up asks the same questions as the set-up in a browser. Run it again later with: python3 -m starboard.terminal_setup" || true
+  fi
 }
 
 # Run it ----------------------------------------------------------------------------------------------------------

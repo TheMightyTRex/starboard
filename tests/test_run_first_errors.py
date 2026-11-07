@@ -1,4 +1,4 @@
-"""Every error number Run first prints is on the help page Run first error numbers, and the page has no others."""
+"""Every error number Run first and the installer print is on the help page, and the page has no others."""
 
 import pathlib
 import re
@@ -11,8 +11,9 @@ class RunFirstErrorsTest(unittest.TestCase):
     def test_script_and_help_page_list_the_same_numbers(self):
         script = (ROOT / "run-first.sh").read_text()
         page = (ROOT / "docs/help/topics/run-first-errors.md").read_text()
-        used = set(re.findall(r"\bRF-\d\d\b", script))
-        explained = set(re.findall(r"^### (RF-\d\d)$", page, re.M))
+        installer = (ROOT / "install.sh").read_text()
+        used = set(re.findall(r"\bRF-\d\d\b", script)) | set(re.findall(r"\bIN-\d\d\b", installer))
+        explained = set(re.findall(r"^### ((?:RF|IN)-\d\d)$", page, re.M))
         self.assertTrue(used)
         self.assertEqual(used, explained)
 

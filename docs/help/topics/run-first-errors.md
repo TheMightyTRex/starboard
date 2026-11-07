@@ -1,9 +1,10 @@
 [Help centre](../README.md) · When something is wrong · reference
 
-# Run first error numbers
+# Run first and installer error numbers
 
-When the Run first script stops, it shows an error number, such as `Error RF-11`, with a link to this page. Find
-the number below to see what it means and how to put it right. Then run the script again: it carries on from what
+When the Run first script or Starboard's installer (`./install.sh`) stops, it shows an error number, such as
+`Error RF-11` or `Error IN-21`, with a link to this page. RF numbers come from the Run first script, IN numbers from
+the installer. Find the number below to see what it means and how to put it right. Then run the script again: it carries on from what
 is missing, and nothing that already worked is done twice.
 
 If you ask for help or report a problem, give the error number. The script's log has it too: the message gives
@@ -113,8 +114,8 @@ permissions were changed. Move it aside, then run the script again to download a
 
 ### RF-40
 
-**Starboard's installer stopped.** The installer says why on the lines just above the error number, often on a
-line that starts with `Stopped`. Put that right, then run the script again.
+**Starboard's installer stopped.** The installer gives its own error number, starting IN, just above. Look that
+number up below. Put that right, then run the script again.
 
 If the line above says `sg: command not found`, your copy of the script is from before 7 November 2026. Run the
 script again: the current one works without `sg`.
@@ -124,6 +125,149 @@ script again: the current one works without `sg`.
 **The apps did not start.** The set-up in the browser asked this window to download and start your apps, and
 that did not finish. The line just above the error number says why. Most often this computer could not reach the
 internet, or the disk is full. Put that right, then select **Try again** in the browser.
+
+## Starboard's installer
+
+The installer is `./install.sh`, in the Starboard folder. The Run first script starts it for you; you can also run it
+yourself to change what Starboard may access.
+
+### IN-01
+
+**An option the installer does not know.** Run `./install.sh --help` to see the options, then run it again.
+
+### IN-02
+
+**--terminal needs a terminal to type in.** Run it in a terminal window, or leave out `--terminal` and finish in a
+browser.
+
+### IN-03
+
+**The port is not a number from 1 to 65535.** Give `--port` a number such as `8095`.
+
+### IN-04
+
+**Run as root.** Run it as your normal user, without `sudo` in front.
+
+### IN-05
+
+**git is not installed.** Install git (`sudo apt install git`), then run it again. The Run first script does this
+for you.
+
+### IN-06
+
+**Not in a Starboard download.** Run `./install.sh` from the folder git downloaded Starboard into, usually
+`~/starboard`, so `./update.sh` can update it later.
+
+### IN-07
+
+**Docker is not installed.** Install it with [Install Docker](install-docker.md), or run the Run first script,
+which installs it for you.
+
+### IN-08
+
+**Docker Compose is not installed.** Install the Docker Compose plugin with [Install Docker](install-docker.md).
+
+### IN-09
+
+**Python 3.10 or newer is missing.** Only `--native` needs it. Install Python 3.10 or newer, or leave out
+`--native` to run Starboard with Docker.
+
+### IN-10
+
+**--native needs systemd.** This computer does not use systemd. Leave out `--native` to run Starboard with Docker.
+
+### IN-11
+
+**No Docker socket.** You said yes to app updates, but Docker's socket is not at `/var/run/docker.sock`. Start
+Docker (`sudo systemctl start docker`), or answer No to app updates.
+
+### IN-12
+
+**The Live TV folder does not exist.** Make the folder Jellyfin reads its Live TV files from, or type another.
+
+### IN-13
+
+**You cannot write in the Live TV folder.** Give your user that folder, for example
+`sudo chown -R $USER /srv/jellyfin/config/iptv`, then run the installer again.
+
+### IN-14
+
+**A character Starboard cannot use.** A folder's name or path has one of `| & \ " ' $` or a backtick. Rename the
+folder, or move Starboard to a folder without them.
+
+### IN-15
+
+**A folder to show is written wrongly or does not exist.** Write each one as `Name=/path`, such as
+`Media=/mnt/media`, with no commas, and check the folder exists.
+
+### IN-16
+
+**sudo did not accept the password, or there is nowhere to type it.** Disk health and Drive pools need sudo. Run
+`./install.sh` in a terminal and type the password you use to sign in to this computer.
+
+### IN-17
+
+**smartmontools did not install.** Disk health needs it. Install it yourself (`sudo apt install smartmontools`),
+then run the installer again.
+
+### IN-18
+
+**Disk health did not set up.** Choose **Show the details** to see why, put it right, then choose **Try again**.
+
+### IN-19
+
+**The pool helper did not install.** Choose **Show the details** to see why, put it right, then choose **Try
+again**.
+
+### IN-20
+
+**The disk is full.** Building Starboard needs space. Free some, then choose **Try again**.
+
+### IN-21
+
+**No internet while building.** This computer could not download what Starboard is built from. Check the network,
+then choose **Try again**.
+
+### IN-22
+
+**Your user is not allowed to use Docker yet.** Sign out and back in, so your new Docker access counts, then run
+the installer again.
+
+### IN-23
+
+**Starboard did not build or start.** Choose **Show the details** for the last lines of the build. Most often it is
+the network or the disk. Put it right, then choose **Try again**.
+
+### IN-24
+
+**Starboard did not answer after starting.** Read what it says with `docker compose logs starboard` in the
+Starboard folder (or `journalctl --user -u starboard` with `--native`). See also
+[Starboard does not open](starboard-does-not-open.md).
+
+### IN-29
+
+**Something else went wrong in a job.** Choose **Show the details**, and give the last lines when you ask for help.
+
+### IN-30
+
+**The apps' folder is not one Starboard can use.** The set-up wrote a folder Starboard does not accept. Run the
+set-up again and choose another media folder.
+
+### IN-31
+
+**Starboard could not make the apps' folders.** Check the disk is not full and is mounted, then choose **Try
+again**.
+
+### IN-32
+
+**The apps' file has things Starboard did not write.** Starboard checks it before starting the apps. If you
+changed it yourself, run `./install.sh --start-apps` in a terminal and choose to start it anyway. If not, run the
+set-up again to write it afresh.
+
+### IN-33
+
+**Some apps did not start.** Choose **Show the details** for the last lines Docker wrote, put that right, then
+choose **Try again**.
 
 ## Find out more
 
