@@ -145,7 +145,7 @@ class YourInstallTest(unittest.TestCase):
         s = next(x for x in self.app.config.data["services"] if x.get("icon") == "nzbget")
         self.assertFalse(s.get("api_key"))
         server.add_found(self.app, [{"key": "nzbget", "url": "http://127.0.0.1:6789"}])
-        s = next(x for x in self.app.config.data["services"] if x.get("icon") == "nzbget")
+        s = next(x for x in self.app.config.data["services"] if x.get("url") == "http://127.0.0.1:6789")
         self.assertTrue(s.get("api_key", "").startswith("starboard:"))
 
 
