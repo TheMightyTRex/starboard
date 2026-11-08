@@ -199,6 +199,20 @@ class IndexTest(unittest.TestCase):
         self.assertEqual([(g["name"], g["count"], g["letter"]) for g in library.groups(index, "films")], [("The Saga", 2, "S")])
         self.assertEqual(library.wall(index, "films", group="the saga")["shown"], 2)
 
+    def test_episodes_are_grouped_by_season_newest_open_specials_last(self):
+        row = lambda s, e, have: {"season_number": s, "episode_number": e, "title": f"S{s}E{e}", "air_date": "2020-01-01",
+                                  "has_file": have}
+        episodes = [row(2, 1, False), row(0, 1, True), row(1, 2, True), row(1, 1, True)]
+        def api(_r, path, *a, **k):
+            return episodes if path.endswith("/episodes") else {"id": 5, "title": "Show", "statistics": {}}
+        with mock.patch.object(services, "_api", api):
+            page = library.item(self.data, REELIX, "tv", "5")
+        groups = page["lists"][0]["groups"]
+        self.assertEqual([(g["heading"], g["meta"], g["open"]) for g in groups],
+                         [("Season 1", "2 of 2 in your library", False), ("Season 2", "0 of 1 in your library", True),
+                          ("Specials", "1 of 1 in your library", False)])
+        self.assertEqual([r["number"] for r in groups[0]["rows"]], ["E1", "E2"])
+
     def test_a_stale_index_is_refreshed_in_the_background_and_served_meanwhile(self):
         with mock.patch.object(services, "_api", FakeReelix(films=[film(1, "Old")])):
             library.refresh(self.data, REELIX, "films")

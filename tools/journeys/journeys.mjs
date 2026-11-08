@@ -15,7 +15,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
   "library-radio.html", "library-radio-stations.html", "library-books.html", "library-books-series.html",
   "library-books-authors.html", "library-audiobooks.html", "library-audiobooks-series.html", "library-audiobooks-authors.html",
-  "library-film.html?id=3", "library-tv-show.html?id=2", "library-artist.html?id=1", "library-radio-show.html?id=1",
+  "library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=1", "library-radio-show.html?id=1",
   "library-book.html?id=4", "library-audiobook.html?id=6",
   "discover-trending.html", "downloads-finished.html", "wanted.html", "wanted-quality.html", "history.html", "settings-reelix.html"];
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
@@ -202,6 +202,11 @@ check("LIB-01", "an item page has its name as the heading", (await page.locator(
 check("LIB-01", "and its episodes with a status", await page.locator("#panel-episodes .chip").count() > 3);
 await page.locator('[role="tab"]', { hasText: "About" }).focus();
 check("LIB-01", "About is a tab", await page.locator('[role="tab"]', { hasText: "About" }).count() === 1);
+await open("library-tv-show.html?id=8");
+await page.locator("#panel-episodes details").first().waitFor({ timeout: 8000 }).catch(() => {});
+const seasons = await page.locator("#panel-episodes details").evaluateAll((ds) => ds.map((d) => [d.querySelector("summary").textContent, d.open]));
+check("LIB-01", "a series of two seasons shows each season, only the newest open",
+  seasons.length === 2 && !seasons[0][1] && seasons[1][1] && /Season 2/.test(seasons[1][0]), JSON.stringify(seasons));
 await open("library-books-series.html");
 await page.locator("#groups .row__title a").first().click();
 await page.waitForLoadState("networkidle");

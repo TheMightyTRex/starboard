@@ -14,6 +14,14 @@ function rowList(rows) {
     el("div", { class: "row__side" }, r.status ? chip(r.status, r.tone) : null))));
 }
 
+// A long list in groups (a series' seasons): one disclosure each, the newest open. One group stays a plain list.
+function groupList(list) {
+  if (!list.groups || list.groups.length < 2) return rowList(list.rows);
+  return el("div", { class: "lib-seasons" }, ...list.groups.map((g) => el("details", { class: "disclosure", open: g.open || null },
+    el("summary", {}, el("span", { text: g.heading }), el("span", { class: "disclosure__meta", text: g.meta })),
+    el("div", { class: "disclosure__body" }, rowList(g.rows)))));
+}
+
 function about(item) {
   return el("div", { class: "stack-4" },
     item.overview ? el("p", { class: "prose", text: item.overview }) : null,
@@ -93,7 +101,7 @@ startPage().then(async () => {
   try {
     const item = await api(`/api/library/item?tab=${ITEM_TAB}&id=${id}`);
     document.title = `${item.title} · ${document.title}`;
-    const parts = item.lists.filter((l) => l.rows.length).map((l) => ({ key: l.key, label: l.label, heading: l.heading, body: rowList(l.rows) }));
+    const parts = item.lists.filter((l) => l.rows.length).map((l) => ({ key: l.key, label: l.label, heading: l.heading, body: groupList(l) }));
     parts.push({ key: "about", label: "About", heading: "", body: about(item) });
     if (ITEM_TAB === "films") parts.unshift(parts.pop()); // a film opens on About, then its collection
     box.replaceChildren(head(item), ...(parts.length > 1 ? tabs(parts) : [parts[0].body]));

@@ -528,6 +528,20 @@ def _open(reelix, path):
     return {"label": "Open in Reelix", "href": reelix["link"].rstrip("/") + path}
 
 
+def _seasons(seasons):
+    """Episodes grouped by season, numbered seasons first, then Specials (season 0). The newest season opens; the
+    page shows the others closed, so a long series is not one long list."""
+    order = sorted(n for n in seasons if n) + ([0] if 0 in seasons else [])
+    newest = max((n for n in seasons if n), default=0)
+    out = []
+    for n in order:
+        rows = seasons[n]
+        have = sum(1 for r in rows if r["status"] == STATUS["in_library"][0])
+        out.append({"heading": f"Season {n}" if n else "Specials",
+                    "meta": f"{have:,} of {len(rows):,} in your library", "open": n == newest, "rows": rows})
+    return out
+
+
 def item(data_dir, reelix, tab, item_id):
     """One item's page: header, facts and its list (episodes, reading order, albums, collection)."""
     item_id = int(item_id)
@@ -561,12 +575,14 @@ def item(data_dir, reelix, tab, item_id):
         e = _series(s)
         st = s.get("statistics") or {}
         have, total = int(st.get("episode_file_count") or 0), int(st.get("episode_count") or 0)
-        rows = []
+        rows, seasons = [], {}
         for ep in sorted(episodes, key=lambda x: (x.get("season_number") or 0, x.get("episode_number") or 0)):
             aired = ep.get("air_date") or ""
             status = "in_library" if ep.get("has_file") else "not_released" if (not aired or aired > today) else \
                 "wanted" if ep.get("monitored", True) else "not_monitored"
-            rows.append(_row(f"S{ep.get('season_number', 0)} E{ep.get('episode_number', 0)}", ep.get("title"), aired, status))
+            row = _row(f"E{ep.get('episode_number', 0)}", ep.get("title"), aired, status)
+            rows.append(row)
+            seasons.setdefault(int(ep.get("season_number") or 0), []).append(row)
         out = {"title": s.get("title"), "meta": [x for x in (s.get("network") or "", e["m"].split(" · ")[-1] if e["m"] else "",
                                                              {"continuing": "Continuing", "ended": "Ended", "upcoming": "Coming soon"}.get(s.get("status"), ""))
                                                  if x],
@@ -576,7 +592,7 @@ def item(data_dir, reelix, tab, item_id):
         facts = [("Network", s.get("network")), ("First aired", _date(s.get("first_aired"))), ("Last aired", _date(s.get("last_aired"))),
                  ("Next airing", _date(s.get("next_airing"))), ("Seasons", st.get("season_count")),
                  ("Genres", ", ".join(s.get("genres") or [])), ("Certificate", s.get("certification"))]
-        lists = [{"key": "episodes", "label": "Episodes", "heading": "Episodes", "rows": rows}]
+        lists = [{"key": "episodes", "label": "Episodes", "heading": "Episodes", "rows": rows, "groups": _seasons(seasons)}]
     elif tab in ("books", "audiobooks"):
         b = services._api(reelix, f"/books/{item_id}") or {}
         fmt = "ebook" if tab == "books" else "audiobook"

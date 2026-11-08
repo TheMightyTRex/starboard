@@ -560,7 +560,7 @@
     {
       "topic": "browse-your-library",
       "file": "browse-your-library-3-item.png",
-      "page": "library-tv-show.html?id=2",
+      "page": "library-tv-show.html?id=8",
       "width": 1280,
       "height": 900,
       "run": "for (let i = 0; i < 40 && !document.querySelector('#item h1'); i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 600)); window.scrollTo(0, 0);",
@@ -568,8 +568,8 @@
         {
           "t": "$#item h1",
           "step": 7,
-          "side": "right",
-          "tail": 90
+          "side": "top",
+          "tail": 30
         },
         {
           "t": "$#item-back",

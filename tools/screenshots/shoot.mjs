@@ -55,7 +55,7 @@ const SHOTS = [
   { file: "apps-phone.png", page: "index.html", ...phone },
   // The Library and Search from the made-up Reelix (DASH-163, DASH-162).
   { file: "library.png", page: "library-films.html", ...desk, run: '(async () => { for (let i = 0; i < 40 && !document.querySelector("#lib-wall .media-card img"); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 800)); })()' },
-  { file: "library-item.png", page: "library-tv-show.html?id=2", ...desk, run: '(async () => { for (let i = 0; i < 40 && !document.querySelector("#item h1"); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 800)); })()' },
+  { file: "library-item.png", page: "library-tv-show.html?id=8", ...desk, run: '(async () => { for (let i = 0; i < 40 && !document.querySelector("#item h1"); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 800)); })()' },
   { file: "library-search.png", page: "search.html?q=harbour", ...desk, run: '(async () => { for (let i = 0; i < 40 && !document.querySelector("#lookup [data-kind=films] button"); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 800)); })()' },
   { file: "library-phone-dark.png", page: "library-books.html", ...phone, scheme: "dark", run: '(async () => { for (let i = 0; i < 40 && !document.querySelector("#lib-wall .media-card img"); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 800)); })()' },
   { file: "storage-phone.png", page: "system-storage.html", ...phone },

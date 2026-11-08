@@ -30,7 +30,9 @@ albums or reading order.
 ![A series page with example data, with its name (step 7) and TV, the way back to the wall (step 8) outlined](../images/browse-your-library-3-item.png)
 
 7. Select a title to open its page. It shows the name, what it is, how much of it you have, and:
-   - **Episodes** for a series or radio show, with each one's number, date and whether you have it.
+   - **Episodes** for a series or radio show, with each one's number, date and whether you have it. A series
+     with more than one season shows each season on its own, with how many of its episodes you have. The newest
+     season is open; select another season's name to open it.
    - **Reading order** for a book in a series.
    - **Albums** for an artist.
    - **Collection** for a film in a collection.
