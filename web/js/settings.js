@@ -2084,7 +2084,7 @@ async function startReleases(repo) {
 }
 
 // Settings, Reelix: which version runs, and switching either way (stack.switch_reelix). Both versions use the same
-// settings folder, so the library, users and settings stay. The rest of Reelix's settings come later (MAIN-DESIGN.md).
+// settings folder, so the library, users and settings stay. Reelix's own settings are in reelix-settings.js.
 async function startReelix() {
   const root = $("#reelix-sections");
   let d;
@@ -2184,7 +2184,7 @@ async function startReelix() {
     section("rx-version", "Version", "Which Reelix runs is part of your install: change it, and the rest of your install, on Settings, Your install.",
       el("p", {}, "Now: ", el("strong", { text: names[d.current] || d.image || "Not installed by Starboard" })),
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-install.html" }, icon("layers"), "Open Your install"))),
-    section("rx-more", "More settings", "", notice("info", "Coming with Reelix", "Sites to search, download apps, quality, folders, media servers and users come here once Starboard reads them from Reelix.")));
+    reelixAdminSections());  // sites to search, media servers and download apps (reelix-settings.js)
   root.removeAttribute("aria-busy");
 }
 

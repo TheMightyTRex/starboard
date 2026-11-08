@@ -20,7 +20,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
-from . import access, auth, backup, helpdocs, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, helpdocs, reelix_admin, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -960,6 +960,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.error(401, "Sign in first")
 
             cfg = app.config
+            if path.startswith("/api/reelix/admin/"):  # Reelix's admin settings, password each time (reelix_admin.py)
+                return reelix_admin.route(self, method, path)
             if path == "/api/config" and method == "GET":
                 return self.json(200, cfg.public())
             if path == "/api/config/general" and method == "PUT":

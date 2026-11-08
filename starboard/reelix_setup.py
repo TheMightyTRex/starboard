@@ -10,7 +10,9 @@ is copied. What it does, in order:
    never an admin key: admin changes later ask for the password again.
 3. Library folders for what was chosen (films, series, books, audiobooks, music), in the shared media folder.
 4. qBittorrent as Reelix's download app, when it was installed: its temporary first password is replaced with one
-   of its own, kept in Reelix, and it saves into /data/downloads/torrents in the shared media folder.
+   of its own, kept in Reelix, and it saves into /data/downloads/torrents in the shared media folder. Then searches
+   through the VPN when Gluetun is installed, the sites to search chosen in the set-up, and Jellyfin and
+   Audiobookshelf when Starboard has their keys (reelix_sites.py).
 5. Reelix on Starboard's dashboard: Reelix answers on Radarr's, Sonarr's, Readarr's and Lidarr's addresses as well
    (/radarr/api/v3 and so on), so Starboard's own support for those shows its queue, calendar and wanted lists,
    with the manager key.
@@ -288,6 +290,27 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
                 admin.call("PUT", f"/delayprofiles/{default['id']}", {**default, "preferred_protocol": "usenet"})
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"SABnzbd is not connected yet ({e}). Add it in Reelix, Settings, Download Clients")
+
+    # 4d. Searches through the VPN (DASH-133), as Prowlarr's were when it ran inside Gluetun.
+    from . import reelix_sites
+    if info.get("vpn"):
+        try:
+            reelix_sites.set_vpn(admin, data_dir, True)
+            done.append("Reelix searches through the VPN")
+        except (ReelixError, OSError, ValueError) as e:
+            done.append(f"Reelix does not search through the VPN yet ({e}). Turn it on in Settings, Reelix, Sites to search")
+
+    # 4e. The sites to search chosen in the set-up (DASH-155): nothing unless chosen.
+    try:
+        done += reelix_sites.add_sites(admin, reelix_sites.clean_choice(info.get("sites")))
+    except (ReelixError, OSError, ValueError) as e:
+        done.append(f"The sites to search were not added ({e}). Add them in Settings, Reelix, Sites to search")
+
+    # 4f. Jellyfin and Audiobookshelf (DASH-156), with the keys Starboard already has, so new files show at once.
+    try:
+        done += reelix_sites.connect_media_servers(admin, cfg.data["services"], data_dir)
+    except (ReelixError, OSError, ValueError) as e:
+        done.append(f"Jellyfin and Audiobookshelf are not connected to Reelix yet ({e}). Connect them in Settings, Reelix, Media servers")
 
     # 5. Reelix on the dashboard, through its compatible addresses, with the manager key.
     host = base
