@@ -7,6 +7,10 @@
 // VPN providers, the same file the terminal set-up reads (web/vpn-providers.json): Gluetun's name, the provider's
 // own spelling and its site.
 let vpnProviders = null;
+// The note for providers whose link is an affiliate link (the same words as vpn_ad in starboard/terminal_setup.py).
+function vpnAd(names) {
+  return `the ${names.join(" and ")} link is an affiliate link. If you sign up through it, ${names.join(" or ")} pays a small commission towards Starboard's development. You pay the same price.`;
+}
 async function loadVpnProviders() {
   if (!vpnProviders) {
     try { vpnProviders = (await (await fetch("/vpn-providers.json", { cache: "no-cache" })).json()).providers; } catch { vpnProviders = []; }
@@ -346,14 +350,21 @@ async function installStep(id, state, data, apps, go) {
     const other = el("input", { class: "input", autocomplete: "off", spellcheck: "false", value: known ? "" : (state.vpn.provider || ""), id: "vpn-other" });
     const otherBox = el("div", { class: "form-stack" }, field("Its name, as Gluetun's list writes it", other, { required: true },
       { hint: "Gluetun's list of providers is on its wiki, under Providers. Type the name in small letters, such as mullvad." }));
-    const card = (id, name, site) => el("label", { class: "option-card" },
-      el("input", { type: "radio", name: pickName, value: id, checked: id === "other" ? (!known && !!state.vpn.provider) : state.vpn.provider === id }),
-      el("strong", { text: name }),
-      site ? el("small", {}, newTabLink(site, new URL(site).host.replace(/^www\./, ""), { about: `${name}'s site` }))
-        : el("small", { text: "Type its name below" }));
+    // An affiliate link (affiliate: true) is marked as paid and says so: "Ad" on the card, and the note under the hint.
+    const card = (id, name, site, affiliate) => {
+      const link = site ? newTabLink(site, new URL(site).host.replace(/^www\./, ""), { about: `${name}'s site${affiliate ? ", affiliate link" : ""}` }) : null;
+      if (link && affiliate) link.rel = "noopener noreferrer sponsored";
+      return el("label", { class: "option-card" },
+        el("input", { type: "radio", name: pickName, value: id, checked: id === "other" ? (!known && !!state.vpn.provider) : state.vpn.provider === id }),
+        el("strong", { text: name }),
+        link ? el("small", {}, link) : el("small", { text: "Type its name below" }),
+        affiliate ? el("small", { class: "muted", "aria-hidden": "true", text: "Ad: affiliate link" }) : null);
+    };
+    const paid = providers.filter((v) => v.affiliate).map((v) => v.name);
     const provider = el("fieldset", { "aria-required": "true" }, el("legend", { class: "field__label" }, "VPN provider", requiredMark()),
       el("p", { class: "hint", text: "Choose the one you have an account with. Each link opens the provider's site in a new tab." }),
-      el("div", { class: "option-cards option-cards--row" }, providers.map((v) => card(v.id, v.name, v.site)),
+      paid.length ? el("p", { class: "small" }, el("strong", { text: "Ad: " }), vpnAd(paid)) : null,
+      el("div", { class: "option-cards option-cards--row" }, providers.map((v) => card(v.id, v.name, v.site, v.affiliate)),
         card("other", "Another one that Gluetun supports", "")));
     const picked = () => $(`input[name="${pickName}"]:checked`, provider)?.value || "";
     const showOther = () => { otherBox.hidden = picked() !== "other"; };

@@ -1,5 +1,5 @@
 {
- "about": "VPN providers for both set-ups (browser: web/js/install.js; terminal: starboard/terminal_setup.py). id is Gluetun's VPN_SERVICE_PROVIDER name (github.com/qdm12/gluetun, internal/constants/providers); name is spelt as on the provider's own site; checked 7 November 2026. Six of the best known, with PrivadoVPN (TheMightyTRexUK, 7 November 2026); any other Gluetun provider is typed under Another one.",
+ "about": "VPN providers for both set-ups (browser: web/js/install.js; terminal: starboard/terminal_setup.py). id is Gluetun's VPN_SERVICE_PROVIDER name (github.com/qdm12/gluetun, internal/constants/providers); name is spelt as on the provider's own site; checked 7 November 2026. Six of the best known, with PrivadoVPN (TheMightyTRexUK, 7 November 2026; its link is an affiliate link, marked affiliate: true, so both set-ups show the Ad note, 8 November 2026); any other Gluetun provider is typed under Another one.",
  "providers": [
   {
    "id": "expressvpn",
@@ -14,7 +14,8 @@
   {
    "id": "privado",
    "name": "PrivadoVPN",
-   "site": "https://privadovpn.com/"
+   "site": "https://privadovpn.com/getprivadovpn/#a_aid=themightytrexuk",
+   "affiliate": true
   },
   {
    "id": "private internet access",

@@ -39,7 +39,9 @@ and starts them. At the end, the apps are running and Starboard shows how to con
    folder, Starboard offers it. Select **Continue**.
 6. If your install has a VPN, the **VPN** step asks which **VPN provider** you have an account with. Choose it
    from the list: each name has a link to the provider's site, which opens in a new tab. If yours is not listed,
-   choose **Another one that Gluetun supports** and type its name as Gluetun's list writes it. Then choose
+   choose **Another one that Gluetun supports** and type its name as Gluetun's list writes it. The PrivadoVPN link is
+   an affiliate link, marked **Ad**: if you sign up through it, PrivadoVPN pays a small commission towards Starboard's
+   development, and you pay the same price. Then choose
    **WireGuard** (quicker and simpler) or **OpenVPN**, and type the details from the provider's site. Fields marked
    with a star (*) are required. Select **Continue**.
 

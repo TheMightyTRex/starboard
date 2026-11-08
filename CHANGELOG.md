@@ -7,6 +7,10 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **PrivadoVPN's link:** In both set-ups, the VPN step's PrivadoVPN link now goes to PrivadoVPN's sign-up page. It is an affiliate link, so the step says so in an Ad note before the list, and PrivadoVPN's line is marked Ad.
+- **Adverts in the help centre take turns:** The help centre's advert now shows Newshosting on one page and PrivadoVPN on the next, in turn. Nothing changes while a page is open, and Hide hides both.
+
 ### Fixed
 - **Live TV channels that would not play:** Jellyfin's FFmpeg refuses Live TV pieces whose address has no file ending, such as the ad links on Samsung TV Plus channels like U&Laughs, so 107 channels stopped playing. Install apps now runs Jellyfin's FFmpeg through a small Starboard file, `jellyfin/ffmpeg-wrap/ffmpeg` in your settings folder, which allows those addresses for Live TV only. Your library files and On demand links are played as before. Starting the apps, from Starboard, from the installer or by taking over your apps, puts the file in place, so running the guide again keeps the fix (DASH-169).
 - **Error IN-34:** If the installer cannot put that file in Jellyfin's settings folder, it stops with error IN-34 rather than start a Jellyfin that cannot find FFmpeg.

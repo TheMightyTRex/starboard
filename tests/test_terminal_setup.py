@@ -149,6 +149,19 @@ class TerminalSetupTest(unittest.TestCase):
             env = f.read()
         self.assertIn("VPN_SERVICE_PROVIDER=protonvpn", env)
         self.assertIn("secret-wireguard-key", env)
+        # PrivadoVPN's link is an affiliate link: the Ad note comes before the list, and its line says Ad.
+        flat = " ".join(text.split())
+        self.assertLess(flat.index("Ad: the PrivadoVPN link is an affiliate link"), flat.index("Which VPN provider do you have?"))
+        self.assertIn("privadovpn.com/getprivadovpn/#a_aid=themightytrexuk (Ad)", flat)
+
+    def test_vpn_affiliate_note_matches_the_browser(self):
+        """The browser set-up says the same about an affiliate VPN link (vpnAd in web/js/install.js)."""
+        js = open(os.path.join(os.path.dirname(__file__), "..", "web", "js", "install.js"), encoding="utf-8").read()
+        self.assertEqual(terminal_setup.VPN_AFFILIATE, {"privado"})
+        for words in ("link is an affiliate link. If you sign up through it,",
+                      "pays a small commission towards Starboard's development. You pay the same price."):
+            self.assertIn(words, terminal_setup.vpn_ad())
+            self.assertIn(words, js)
 
     def test_bad_hours_ask_again(self):
         term, out = self.term(["", "", "", "", "2", "", "5", "5", "22", "6", "", "", ""], [SIGN_IN_WORDS, SIGN_IN_WORDS])

@@ -20,10 +20,16 @@
     "<!-- footer: download rights -->",
     "<!-- /footer -->"
   ],
-  "banner": {
-    "label": "Ad",
-    "markdown": "Need a Usenet provider for NZBGet or SABnzbd? [Newshosting](https://www.newshosting.com/?a_aid=6aec3d712dec1) works with Starboard. [See every provider](topics/choose-a-usenet-provider.html)\n\nThis is an affiliate link: if you sign up through it, Newshosting pays a small commission towards Starboard's development, and you pay the same price. Download only what you have the right to."
-  },
+  "banners": [
+    {
+      "label": "Ad",
+      "markdown": "Need a Usenet provider for NZBGet or SABnzbd? [Newshosting](https://www.newshosting.com/?a_aid=6aec3d712dec1) works with Starboard. [See every provider](topics/choose-a-usenet-provider.html)\n\nThis is an affiliate link: if you sign up through it, Newshosting pays a small commission towards Starboard's development, and you pay the same price. Download only what you have the right to."
+    },
+    {
+      "label": "Ad",
+      "markdown": "Want your downloads kept private? [PrivadoVPN](https://privadovpn.com/getprivadovpn/#a_aid=themightytrexuk) works with Starboard through Gluetun. [How to add a VPN](topics/install-apps.html)\n\nThis is an affiliate link: if you sign up through it, PrivadoVPN pays a small commission towards Starboard's development, and you pay the same price. Download only what you have the right to."
+    }
+  ],
   "sponsored_links": [
     "a_aid="
   ],
