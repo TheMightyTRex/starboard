@@ -8,6 +8,7 @@ does not know (they could show as stray characters). tools/vm/drive.py uses it. 
 import html
 import re
 
+PART = re.compile(r"\x1b(?:[()78]?|\[[0-9;?<=>]*|\][^\x07\x1b]*\x1b?)")
 CSI = re.compile(r"\x1b\[([?>=]?)([0-9;]*)([@-~])")
 OSC = re.compile(r"\x1b\][^\x07\x1b]*(\x07|\x1b\\)")
 
@@ -22,6 +23,7 @@ class Screen:
         self.saved = (0, 0)
         self.wrapped = 0       # characters that ran past the right edge
         self.unknown = set()   # escape codes this emulator does not follow
+        self.pending = ""      # an escape code cut off at the end of one read, finished by the next
 
     def _blank(self):
         return [(" ", "") for _ in range(self.cols)]
@@ -40,6 +42,7 @@ class Screen:
             self.r = min(self.r + 1, self.rows - 1)
 
     def feed(self, data):
+        data, self.pending = self.pending + data, ""
         i = 0
         while i < len(data):
             ch = data[i]
@@ -59,6 +62,9 @@ class Screen:
                     i += 3
                     continue
                 m = CSI.match(data, i)
+                if not m and PART.fullmatch(data, i):
+                    self.pending = data[i:]   # the rest of this code comes in the next read
+                    break
                 if not m:
                     self.unknown.add(repr(data[i:i + 4]))
                     i += 1

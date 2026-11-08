@@ -15,6 +15,7 @@ ended). The test machine comes from tools/vm/vm.sh new <system>. 6 November 2026
 """
 import argparse
 import fcntl
+import codecs
 import html
 import json
 import os
@@ -125,11 +126,12 @@ def main():
                 cur = n
         return keys + "\r", f"ticked every unticked line ({sum('[ ]' in lines[i] for i in items)}), then Enter"
 
+    utf8 = codecs.getincrementaldecoder("utf-8")("replace")  # a character split between two reads stays whole
     while time.time() - started < a.timeout:
         r, _, _ = select.select([fd], [], [], 0.3)
         if r:
             try:
-                chunk = os.read(fd, 65536).decode(errors="replace")
+                chunk = utf8.decode(os.read(fd, 65536))
             except OSError:
                 ended = "finished"
                 break
