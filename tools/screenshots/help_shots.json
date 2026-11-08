@@ -385,8 +385,8 @@
       "topic": "run-first-errors",
       "file": "run-first-errors-3-choices.png",
       "page": "terminal/errors-choices.html",
-      "width": 1400,
-      "height": 880,
+      "width": 1100,
+      "height": 780,
       "marks": [
         {
           "t": "$#choices",
@@ -398,7 +398,7 @@
       "steps": [
         3
       ],
-      "alt": "A job that did not finish, with What do you want to do? and its answers (step 3) outlined"
+      "alt": "A job that did not finish, with its error number IN-33, the address of its help and What do you want to do? (step 3) outlined"
     }
   ]
 }

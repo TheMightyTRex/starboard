@@ -26,7 +26,7 @@ where the log is, a file called `run-first.log` in a `starboard-run-first` folde
    number and the address of its help, as when it stops. Then it asks what to do: **Try again** is recommended. **Show the details** shows the last lines of the job's log, and **Report this problem** helps you send a
    report about it (read [Send feedback](send-feedback.md)).
 
-   ![A job that did not finish, with What do you want to do? and its answers (step 3) outlined](../images/run-first-errors-3-choices.png)
+   ![A job that did not finish, with its error number IN-33, the address of its help and What do you want to do? (step 3) outlined](../images/run-first-errors-3-choices.png)
 
 ## Before it starts
 
