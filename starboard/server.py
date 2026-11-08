@@ -20,7 +20,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
-from . import access, auth, backup, helpdocs, reelix_setup, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, helpdocs, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -394,6 +394,51 @@ def _installer_started_since(app, since):
         return os.path.getmtime(os.path.join(stack.folder(app.data_dir), "started-at")) >= since
     except OSError:
         return False
+
+
+def after_takeover(app, password, p, sab_ini):
+    """Once Starboard's stack runs with the apps it took over: SABnzbd's servers into NZBGet, Reelix's download apps
+    by their names on Starboard's stack (gluetun when they run through the VPN), and the apps on the dashboard. The
+    password (just checked) signs in to Reelix and is dropped when this finishes. Returns notes for the page."""
+    def finish(ok):
+        if not ok:
+            return ["Nothing was changed: the old apps run again as they were"]
+        notes = []
+        apps = p["choice"]["apps"]
+        vpn = "gluetun" in apps
+        if sab_ini and "nzbget" in apps:
+            try:
+                moved = usenet_move.write_to_nzbget(reelix_setup.nzbget_rpc(stack.nzbget_key(app.data_dir)),
+                                                    usenet_move.parse_sab_servers(sab_ini))
+                notes.append(f"Moved {moved} Usenet {'server' if moved == 1 else 'servers'} from SABnzbd to NZBGet")
+            except (reelix_setup.ReelixError, OSError, ValueError) as e:
+                notes.append(f"SABnzbd's servers did not move into NZBGet ({e}). Add them in NZBGet, Settings, News-servers")
+        base = stack.reelix_url(app.data_dir)
+        if base and "reelix" in apps:
+            try:
+                reelix_setup.wait_until_up(base)
+                if "nzbget" in apps:
+                    creds = reelix_setup.nzbget_ready()(app.data_dir)
+                    notes += reelix_setup.switch_usenet(base, password, "nzbget", "gluetun" if vpn else "nzbget", creds=creds)
+                admin = reelix_move._admin(base, password)
+                for c in admin.call("GET", "/downloadclients")[1] or []:
+                    want = "gluetun" if vpn and c.get("implementation") in ("qbittorrent", "nzbget") else None
+                    if want and (c.get("settings") or {}).get("host") != want:
+                        body = {f: c.get(f) for f in ("implementation", "name", "enabled", "priority", "tags")}
+                        body["settings"] = {**(c.get("settings") or {}), "host": want}
+                        admin.call("PUT", f"/downloadclients/{c['id']}", body)
+                        notes.append(f"Reelix now reaches {c.get('name')} at {want}")
+            except (reelix_setup.ReelixError, OSError, ValueError) as e:
+                notes.append(f"Reelix's download apps are not changed yet ({e}). Check them in Reelix, Settings, Download Clients")
+        services.forget()
+        adopt_started_apps(app, [t["key"] for t in p["take"]] + ["reelix", "nzbget"], after_job=False)
+        for r in p["replace"]:
+            for s in [s for s in app.config.data["services"] if s.get("icon") == r["key"] or s.get("container") == r["name"]]:
+                app.config.remove_service(s["id"])
+                notes.append(f"Took {s['name']} off your apps")
+        logs.event("info", "take over", "; ".join(notes) or "Took over your apps")
+        return notes
+    return finish
 
 
 def after_install_change(app, password, plan, sab_ini, by_installer=None, sab_from_installer=False):
@@ -831,6 +876,14 @@ class Handler(BaseHTTPRequestHandler):
                 "defaults": {"config_dir": f"{base}/media-stack/config", "data_dir": data_dir, "puid": os.getuid() or 1000,
                              "pgid": os.getgid() or 1000, "tz": os.environ.get("TZ") or "Etc/UTC"}}
 
+    def takeover_defaults(self):
+        """The folders a takeover offers first: the same as Install apps (stack_overview)."""
+        host = stack.host_folder(self.app.data_dir)
+        base = os.path.dirname(os.path.dirname(os.path.dirname(host))) if host else "/srv"
+        media = stack.existing_media()
+        data_dir = os.path.commonpath([m["path"] for m in media]) if media else f"{base}/media"
+        return {"config_dir": f"{base}/media-stack/config", "data_dir": data_dir if data_dir not in ("/", "") else f"{base}/media"}
+
     _upgrade = {}
 
     def upgrade_summary(self):
@@ -842,7 +895,8 @@ class Handler(BaseHTTPRequestHandler):
             Handler._upgrade = {"key": key, "value": {"from": p["from"], "to": p["to"], "wizard": p["wizard"], "count": len(p["review"])}}
         return Handler._upgrade["value"]
 
-    CHANGES_STACK = {"/api/install/change", "/api/stack/write", "/api/stack/start", "/api/reelix/edition"}
+    CHANGES_STACK = {"/api/install/change", "/api/stack/write", "/api/stack/start", "/api/reelix/edition",
+                     "/api/takeover/start", "/api/takeover/rollback", "/api/takeover/clear"}
 
     def api(self, method, path):
         if method == "POST" and path in self.CHANGES_STACK:
@@ -1269,6 +1323,95 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"starting": since is not None and since < stack.STARTING_FOR})
             if path == "/api/stack/job" and method == "GET":
                 return self.json(200, stack.job(app.data_dir))
+            # Taking over apps someone runs from their own Compose file (Settings, Your install; takeover.py)
+            if path == "/api/takeover" and method == "GET":
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                out = {"record": takeover.read_record(app.data_dir), "job": takeover.job(),
+                       "moved": reelix_move.moved(app.data_dir), "docker": containers.available(),
+                       "can_start": bool(stack.host_folder(app.data_dir) and containers.available()),
+                       "defaults": self.takeover_defaults()}
+                try:
+                    p = takeover.plan(app.data_dir, q.get("install", ["full"])[0], q.get("usenet", ["nzbget"])[0],
+                                      config_dir=q.get("config_dir", [out["defaults"]["config_dir"]])[0],
+                                      media_dir=q.get("media_dir", [out["defaults"]["data_dir"]])[0])
+                    out["plan"] = takeover.summary(p)
+                    out["plan"]["unmoved"] = [r["name"] for r in p["replace"] if r["by"] == "Reelix" and r["name"] not in out["moved"]]
+                except (ValueError, containers.DockerError) as e:
+                    out["error"] = str(e)
+                return self.json(200, out)
+            if path == "/api/takeover/start" and method == "POST":
+                body = self.body()
+                self.check_password(body)
+                host = stack.host_folder(app.data_dir)
+                if not host or not containers.available():
+                    raise ValueError("Starboard needs Docker access to take over your apps")
+                if stack.job().get("started") and not stack.job().get("finished"):
+                    raise ValueError("The apps are already starting. Wait until they finish")
+                p = takeover.plan(app.data_dir, str(body.get("install") or "full"), str(body.get("usenet") or "nzbget"),
+                                  config_dir=body.get("config_dir"), media_dir=body.get("media_dir"))
+                unmoved = [r["app"] for r in p["replace"] if r["by"] == "Reelix" and r["name"] not in reelix_move.moved(app.data_dir)]
+                if unmoved and not body.get("unmoved_ok"):
+                    raise ValueError("Move " + ", ".join(unmoved) + " into Reelix first (Settings, Reelix, Move your apps "
+                                     "into Reelix), or tick that you do not need them moved")
+                sab_ini = usenet_move.read_sab_ini() if p["sab"] else None
+                logs.event("info", "take over", "Taking over " + ", ".join(t["name"] for t in p["take"]) +
+                           "; stopping " + (", ".join(r["name"] for r in p["replace"]) or "nothing"))
+                return self.json(200, takeover.start(app.data_dir, host, p, after_takeover(app, body.get("password", ""), p, sab_ini)))
+            if path == "/api/takeover/rollback" and method == "POST":
+                body = self.body()
+                self.check_password(body)
+                host = stack.host_folder(app.data_dir)
+                if not host or not containers.available():
+                    raise ValueError("Starboard needs Docker access to roll back")
+                logs.event("info", "take over", "Rolling back: the old apps start again from their own Compose files")
+                def after(ok):
+                    services.forget()
+                    return ["Your old apps run again as they were before the takeover"] if ok else \
+                        ["Rolling back did not finish. See the log below, and the help topic Roll back a takeover"]
+                return self.json(200, takeover.roll_back(app.data_dir, host, after))
+            if path == "/api/takeover/clear" and method == "POST":
+                body = self.body()
+                self.check_password(body)
+                takeover.clear(app.data_dir)
+                logs.event("info", "take over", "Kept the takeover: the rollback point was moved aside")
+                return self.json(200, {"cleared": True})
+            if path == "/api/takeover/job" and method == "GET":
+                return self.json(200, takeover.job())
+            # Moving the old apps into Reelix (Settings, Reelix; reelix_move.py)
+            if path == "/api/reelix/move" and method == "GET":
+                out = {"job": reelix_move.job(), "last": reelix_move.last_result(app.data_dir)}
+                try:
+                    out["sources"] = [reelix_move.public(s) for s in reelix_move.sources()]
+                except (ValueError, containers.DockerError) as e:
+                    out["error"] = str(e)
+                return self.json(200, out)
+            if path == "/api/reelix/move/preview" and method == "POST":
+                body = self.body()
+                self.check_password(body)
+                typed = {str(k): str(v) for k, v in (body.get("secrets") or {}).items() if v}
+                return self.json(200, {"apps": reelix_move.preview(stack.reelix_url(app.data_dir), body["password"],
+                                                                    reelix_move.sources(), typed)})
+            if path == "/api/reelix/move/run" and method == "POST":
+                body = self.body()
+                self.check_password(body)
+                typed = {str(k): str(v) for k, v in (body.get("secrets") or {}).items() if v}
+                qpw = str(body.get("qbittorrent_password") or "")
+                if qpw and not reelix_move.qbit_check(qpw):
+                    raise ValueError("qBittorrent did not accept that password")
+                vpn = "gluetun" in (stack.chosen_keys(app.data_dir) or []) or any(
+                    c["name"] == "gluetun" for c in takeover.found() if c["running"])
+                logs.event("info", "reelix", "Moving the old apps into Reelix")
+                return self.json(200, reelix_move.start(app.data_dir, body["password"], typed, hold=bool(body.get("hold", True)),
+                                                        qbit_password=qpw or None, qbit_host="gluetun" if vpn else "qbittorrent"))
+            if path == "/api/reelix/move/job" and method == "GET":
+                return self.json(200, reelix_move.job())
+            if path == "/api/reelix/indexers" and method == "POST":
+                # The indexers held after the move: switched on when the old apps are no longer searching.
+                body = self.body()
+                self.check_password(body)
+                admin = reelix_move._admin(stack.reelix_url(app.data_dir), body["password"])
+                changed = reelix_move.set_indexers(admin, bool(body.get("on")))
+                return self.json(200, {"changed": changed})
             # Starboard's own log (System, Logs)
             if path == "/api/logs" and method == "GET":
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -1493,6 +1636,8 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             return self.error(404, "That file is not there any more")
         except services.ServiceError as e:
+            return self.error(502, str(e))
+        except reelix_setup.ReelixError as e:  # Reelix answered with a problem, or not at all: said as it is
             return self.error(502, str(e))
         except containers.DockerError as e:
             return self.error(502, str(e))

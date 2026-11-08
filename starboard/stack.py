@@ -330,6 +330,37 @@ def _yaml_value(v):
     return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+_ENV_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,80}$")
+
+
+def _kept_env(keep, kept_vars):
+    """An app's own settings from before Starboard took it over (takeover.py), as Compose environment lines. Each is
+    {"value", "var"}: with a .env name (its secrets), the value goes in .env and Compose reads ${name}; without one,
+    the value is written as it is (Compose's $ doubled), as it was in the old Compose file."""
+    out = {}
+    for name, spec in (keep.get("env") or {}).items():
+        if not _ENV_NAME.match(name) or not isinstance(spec, dict) or "value" not in spec:
+            continue
+        var = spec.get("var")
+        if var and _ENV_NAME.match(var):
+            kept_vars[var] = spec["value"]
+            out[name] = _yaml_value("${" + var + "}")
+        else:
+            out[name] = _yaml_value(str(spec["value"]).replace("$", "$$"))
+    return out
+
+
+def _with_kept_volumes(volumes, kept):
+    """Starboard's volumes for an app, with the ones it had before Starboard took it over: a kept volume replaces
+    Starboard's for the same place inside the container, and the others are added."""
+    def inside(v):
+        parts = v.split(":")
+        return parts[1] if len(parts) > 1 else parts[0]
+    kept = [v for v in kept if isinstance(v, str) and v]
+    places = {inside(v) for v in kept}
+    return [v for v in volumes if inside(v) not in places] + kept
+
+
 def compose_ports(data_dir):
     """The host ports data/stack/compose.yaml already maps. Writing that file again treats them as free: they are
     Starboard's own apps, which keep their ports instead of moving to the next one up."""
@@ -492,23 +523,37 @@ def build(choice):
     lines = ["# Written by Starboard's Install apps guide. Change it by hand if you like; Starboard does not overwrite",
              "# it unless you run the guide again. Your settings and secrets are in .env next to it.", "services:"]
     vpn_ports = []
+    keep_all = choice.get("keep") or {}
+    kept_vars = {}
     for key in keys:
         a = APPS[key]
-        through_vpn = vpn and a.get("vpn")
-        image = reelix_image(choice.get("reelix_edition") or "lite") if key == "reelix" else a["image"]
+        keep = keep_all.get(key) or {}
+        through_vpn = vpn and (keep["vpn"] if isinstance(keep.get("vpn"), bool) else a.get("vpn"))
+        image = keep.get("image") or (reelix_image(choice.get("reelix_edition") or "lite") if key == "reelix" else a["image"])
         lines += [f"  {key}:", f"    image: {image}", f"    container_name: {key}", "    restart: unless-stopped"]
         if a.get("later"):
             lines.append('    profiles: ["later"]  # needs its own settings file first: docker compose --profile later up -d')
             later.append(a["name"])
+        devices = (["/dev/net/tun:/dev/net/tun"] if a.get("gluetun") else []) + list(keep.get("devices") or [])
         if a.get("gluetun"):
-            lines += ["    cap_add:", "      - NET_ADMIN", "    devices:", "      - /dev/net/tun:/dev/net/tun"]
+            lines += ["    cap_add:", "      - NET_ADMIN"]
+        if devices:
+            lines += ["    devices:"] + [f"      - {_yaml_value(d)}" for d in dict.fromkeys(devices)]
         ports = []
+        port_map = keep.get("port_map") or {}
         for p in a.get("ports", []):
             host, inside = p.split(":", 1)
+            if str(port_map.get(inside, "")).isdigit():  # the port it had before Starboard took it over: never moved
+                used.add(int(port_map[inside]))
+                ports.append(f"{int(port_map[inside])}:{inside}")
+                continue
             new = _next_free(int(host), used, own_ports) if "/udp" not in inside else int(host)
             if new != int(host):
                 moved.append(f"{a['name']} uses port {new}, because {host} is taken")
             ports.append(f"{new}:{inside}")
+        for p in keep.get("ports") or []:  # ports the app had before Starboard took it over, kept as they were
+            used.add(int(p.split(":", 1)[0]))
+            ports.append(p)
         depends = (["gluetun"] if through_vpn else []) + ([a["db"]["service"]] if a.get("db") else [])
         if depends:
             lines += ["    depends_on:"] + [f"      - {d}" for d in depends]
@@ -518,12 +563,16 @@ def build(choice):
         elif ports:
             lines.append("    ports:")
             lines += [f"      - {_yaml_value(p)}" for p in ports]
-        if a.get("env"):
+        app_env = {k: _yaml_value(v) for k, v in (a.get("env") or {}).items()}
+        app_env.update(_kept_env(keep, kept_vars))
+        if app_env:
             lines.append("    environment:")
-            lines += [f"      {k}: {_yaml_value(v)}" for k, v in a["env"].items()]
-        if a.get("volumes"):
+            lines += [f"      {k}: {v}" for k, v in app_env.items()]
+        volumes = _with_kept_volumes(a.get("volumes") or [], keep.get("volumes") or [])
+        if volumes:
             lines.append("    volumes:")
-            lines += [f"      - {_yaml_value(v)}" for v in a["volumes"]]
+            lines += [f"      - {_yaml_value(v)}" for v in volumes]
+        kept_vars.update(keep.get("vars") or {})
         db = a.get("db")
         for name in a.get("secrets", []):  # made up once per write; the app reads it from .env
             env[name] = secrets.token_hex(16) if name.endswith("_API_KEY") else secrets.token_urlsafe(18)
@@ -533,10 +582,19 @@ def build(choice):
                 if db.get(s):
                     env[db[s]] = secrets.token_urlsafe(24)
                     shown[db[s]] = "(made up for you)"
-            lines += [f"  {db['service']}:", f"    image: {db['image']}", f"    container_name: {db['service']}",
-                      "    restart: unless-stopped", "    environment:"]
-            lines += [f"      {k}: {_yaml_value(v)}" for k, v in db["env"].items()]
-            lines += ["    volumes:", f"      - {_yaml_value(db['volume'])}"]
+            dkeep = keep_all.get(db["service"]) or {}
+            lines += [f"  {db['service']}:", f"    image: {dkeep.get('image') or db['image']}",
+                      f"    container_name: {db['service']}", "    restart: unless-stopped", "    environment:"]
+            db_env = {k: _yaml_value(v) for k, v in db["env"].items()}
+            db_env.update(_kept_env(dkeep, kept_vars))
+            lines += [f"      {k}: {v}" for k, v in db_env.items()]
+            lines += ["    volumes:"] + [f"      - {_yaml_value(v)}" for v in _with_kept_volumes([db["volume"]], dkeep.get("volumes") or [])]
+            kept_vars.update(dkeep.get("vars") or {})
+    # Values an app had before Starboard took it over (takeover.py): its database password, its VPN details. They
+    # replace what was made up, so the app and its database still match.
+    for name, value in kept_vars.items():
+        env[name] = str(value)
+        shown[name] = "(kept from your old set-up)"
     if vpn and vpn_ports:
         i = lines.index("  gluetun:") + 1
         while i < len(lines) and lines[i].startswith("    "):
@@ -657,7 +715,54 @@ def current_choice(data_dir):
     vpn = {field: env[name] for name, field in VPN_ENV.items() if env.get(name)}
     if vpn:
         choice["vpn"] = vpn
+    keep = read_keep(data_dir, env)
+    if keep:
+        choice["keep"] = keep
     return choice
+
+
+KEEP_FILE = "kept.json"
+
+
+def save_keep(data_dir, keep):
+    """Keeps what each taken-over app had before (takeover.py) in data/stack/kept.json, so every later change keeps it
+    too. Secret values are not in this file: only their .env names, and .env holds the values."""
+    out = {}
+    for service, k in (keep or {}).items():
+        entry = {f: k[f] for f in ("image", "vpn", "ports", "port_map", "devices", "volumes") if k.get(f) not in (None, [], "", {})}
+        env = {}
+        for name, spec in (k.get("env") or {}).items():
+            env[name] = {"var": spec["var"]} if spec.get("var") else {"value": spec.get("value", "")}
+        if env:
+            entry["env"] = env
+        if k.get("vars"):
+            entry["vars"] = sorted(k["vars"])
+        out[service] = entry
+    path = os.path.join(folder(data_dir), KEEP_FILE)
+    os.makedirs(folder(data_dir), mode=0o700, exist_ok=True)
+    with os.fdopen(os.open(path + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=1)
+    os.replace(path + ".new", path)
+
+
+def read_keep(data_dir, env=None):
+    """data/stack/kept.json with the secret values filled in from .env, ready for build(); {} when there is none."""
+    try:
+        with open(os.path.join(folder(data_dir), KEEP_FILE), encoding="utf-8") as f:
+            saved = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    env = env_values(data_dir) if env is None else env
+    keep = {}
+    for service, k in (saved or {}).items():
+        if not isinstance(k, dict):
+            continue
+        entry = {f: k[f] for f in ("image", "vpn", "ports", "port_map", "devices", "volumes") if f in k}
+        entry["env"] = {name: ({"var": s["var"], "value": env.get(s["var"], "")} if s.get("var") else {"value": s.get("value", "")})
+                        for name, s in (k.get("env") or {}).items() if isinstance(s, dict)}
+        entry["vars"] = {name: env[name] for name in k.get("vars") or [] if name in env}
+        keep[service] = entry
+    return keep
 
 
 def which_install(apps, edition=None):

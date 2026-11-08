@@ -2175,7 +2175,7 @@ async function startYourInstall() {
   if (!d.written) {
     root.replaceChildren(section("in-now", "Your install", "", notice("info", "Nothing installed by Starboard yet",
       "Install apps sets up your media server. Once it has, this page shows what is installed and changes it."),
-      el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/install-apps.html" }, icon("download"), "Install apps"))), how);
+      el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/install-apps.html" }, icon("download"), "Install apps"))), takeoverSection(), how);
     return;
   }
   const cur = d.current;
@@ -2292,8 +2292,169 @@ async function startYourInstall() {
     section("in-change", "Change your install", "Bigger or smaller, either way. Apps you added yourself outside Starboard are not touched.", installCards),
     section("in-usenet", "Usenet app", "The app that downloads from Usenet. Your Usenet servers move across from SABnzbd to NZBGet.", usenetCards),
     section("in-reelix", "Reelix", "Reelix, or Reelix with YouTube and Spotify downloads. The library, users and settings stay.", reelixBox),
-    section("in-confirm", "Make the change", "", form, status), how);
+    section("in-confirm", "Make the change", "", form, status), takeoverSection(), how);
   describe();
+}
+
+// Settings, Your install: apps someone already runs from their own Compose file (DASH-151, 127 to 129; 8 November
+// 2026). Step 1 moves Radarr, Sonarr and the others into Reelix through Reelix's own migrator (reelix_move.py); step 2
+// takes the rest over into Starboard's stack, with copies of their settings and a way back (takeover.py).
+function takeoverSection() {
+  const box = el("div", { class: "stack-2", "aria-busy": "true" }, el("p", { class: "muted", text: "Looking for apps you already run…" }));
+  const status = el("div", { class: "stack-2", "aria-live": "polite" });
+  const list = (items) => el("ul", { class: "stack-1" }, items.map((t) => el("li", { text: t })));
+  const pw = (hint) => { const i = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true }); return [i, field("Your password", i, { required: true, hint })]; };
+  const failed = (input, err, title) => {
+    if (err.status === 401 || err.status === 429) { setError(input, err.message); input.focus(); }
+    else status.replaceChildren(notice("danger", title, err.message));
+  };
+  const follow = async (url, done) => {
+    for (;;) {
+      await new Promise((res) => setTimeout(res, 3000));
+      const j = await api(url).catch(() => ({}));
+      if (j.step) status.replaceChildren(el("p", { class: "muted", text: `${j.step}…` }));
+      if (j.finished) return done(j);
+    }
+  };
+
+  const draw = async () => {
+    let t, m;
+    try { [t, m] = await Promise.all([api("/api/takeover"), api("/api/reelix/move")]); }
+    catch (e) { box.replaceChildren(notice("danger", "Could not look", e.message)); box.removeAttribute("aria-busy"); return; }
+    box.removeAttribute("aria-busy");
+    const parts = [];
+
+    // A takeover that can still be rolled back: Roll back, or Keep it.
+    if (t.record) {
+      const when = new Date(t.record.made * 1000).toLocaleString();
+      const [p1, p1f] = pw("Rolling back stops the apps Starboard took over and starts your old ones from their own Compose file, on the versions they ran.");
+      const back = el("button", { type: "button", class: "btn btn--danger", text: "Roll back" });
+      const keep = el("button", { type: "button", class: "btn", text: "Keep it" });
+      back.addEventListener("click", async () => {
+        if (!p1.value) { setError(p1, "Enter your password"); p1.focus(); return; }
+        back.disabled = keep.disabled = true;
+        try { await api("/api/takeover/rollback", { method: "POST", body: { password: p1.value } }); }
+        catch (err) { back.disabled = keep.disabled = false; failed(p1, err, "Nothing was rolled back"); return; }
+        p1.value = "";
+        status.replaceChildren(el("p", { class: "muted", text: "Rolling back…" }));
+        follow("/api/takeover/job", (j) => {
+          status.replaceChildren(notice(j.ok ? "success" : "danger", j.ok ? "Rolled back" : "Rolling back did not finish", (j.notes || []).join(". ")),
+            j.ok ? "" : el("pre", { class: "code-block", text: j.log || "" }));
+          if (j.ok) { announce("Rolled back"); setTimeout(draw, 5000); }
+        });
+      });
+      keep.addEventListener("click", async () => {
+        if (!p1.value) { setError(p1, "Enter your password"); p1.focus(); return; }
+        try { await api("/api/takeover/clear", { method: "POST", body: { password: p1.value } }); }
+        catch (err) { failed(p1, err, "Nothing was changed"); return; }
+        p1.value = ""; announce("Kept"); draw();
+      });
+      parts.push(notice("info", `Starboard took over ${t.record.containers.length} apps on ${when}`,
+        "Your old settings folders, Compose file and app versions are kept, so you can go back. Keep it once everything works: the way back is then put aside, and nothing is deleted."),
+        el("div", { class: "form-stack" }, p1f), el("div", { class: "actions" }, back, keep));
+      box.replaceChildren(...parts, status);
+      return;
+    }
+    if (t.error) {
+      box.replaceChildren(el("p", { class: "muted", text: t.error === "Starboard found no apps here to take over" ? "Starboard found no apps to take over: every app here is Starboard's already." : t.error }));
+      return;
+    }
+    const p = t.plan;
+
+    // Step 1: into Reelix.
+    const unmoved = p.unmoved || [];
+    if (m.sources && m.sources.length) {
+      const last = m.last;
+      const lines = [];
+      if (last && last.apps) last.apps.forEach((a) => lines.push(`${a.app}: ${a.state === "finished" ? "moved" : `not finished${a.error ? ` (${a.error})` : ""}`}${(a.not_moved || []).length ? `, ${a.not_moved.length} items not moved` : ""}`));
+      const [p2, p2f] = pw("Reelix's admin password is the same as Starboard's.");
+      const qbit = el("input", { class: "input", type: "password", autocomplete: "off" });
+      const hold = el("input", { type: "checkbox", checked: true });
+      const preview = el("button", { type: "button", class: "btn", text: "Show what moves" });
+      const run = el("button", { type: "button", class: "btn btn--primary", text: "Move them into Reelix" });
+      const shown = el("div", { class: "stack-1" });
+      const body = () => ({ password: p2.value, qbittorrent_password: qbit.value, hold: hold.checked });
+      preview.addEventListener("click", async () => {
+        if (!p2.value) { setError(p2, "Enter your password"); p2.focus(); return; }
+        preview.disabled = true; shown.replaceChildren(el("p", { class: "muted", text: "Asking Reelix…" }));
+        try {
+          const r = await api("/api/reelix/move/preview", { method: "POST", body: body() });
+          shown.replaceChildren(...r.apps.map((a) => {
+            if (a.error) return notice("warning", a.app, a.error);
+            const made = Object.entries(a.counts).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v.create || 0} new, ${v.existing || 0} there already${v.skip ? `, ${v.skip} not moved` : ""}`);
+            return el("details", {}, el("summary", { text: `${a.app}${a.still_missing.length ? ` (${a.still_missing.length} hidden keys still needed)` : ""}` }),
+              list(made), a.skipped.length ? el("p", { class: "small muted", text: "Not moved: " + a.skipped.map((s) => `${s.name} (${s.why})`).join("; ") }) : null);
+          }));
+        } catch (err) { shown.replaceChildren(); failed(p2, err, "Reelix could not show what moves"); }
+        preview.disabled = false;
+      });
+      run.addEventListener("click", async () => {
+        if (!p2.value) { setError(p2, "Enter your password"); p2.focus(); return; }
+        run.disabled = preview.disabled = true;
+        try { await api("/api/reelix/move/run", { method: "POST", body: body() }); }
+        catch (err) { run.disabled = preview.disabled = false; failed(p2, err, "Nothing was moved"); return; }
+        p2.value = ""; qbit.value = "";
+        status.replaceChildren(el("p", { class: "muted", text: "Moving your apps into Reelix. Films and series move in a minute or two; Reelix then finds their files, which can take an hour for a big library." }));
+        follow("/api/reelix/move/job", (j) => {
+          status.replaceChildren(notice(j.ok ? "success" : "warning", j.ok ? "Moved into Reelix" : "Not everything moved", "What moved, and what did not, is listed in step 1."));
+          setTimeout(draw, 3000);
+        });
+      });
+      parts.push(section("tk-reelix", "Step 1: move them into Reelix",
+        "Reelix reads each app and adds its films, series, music, books, quality profiles, sites to search and requests. The apps themselves do not change.",
+        list(m.sources.map((s) => `${s.app}${s.has_key ? "" : " (Starboard cannot read its key)"}`)),
+        lines.length ? notice(unmoved.length ? "warning" : "success", "Last move", lines.join(". ")) : null,
+        el("div", { class: "form-stack" }, p2f,
+          field("qBittorrent's password", qbit, { hint: "So Reelix can send downloads to qBittorrent. Starboard checks it with qBittorrent first, and keeps it only in Reelix. Leave it empty to add qBittorrent in Reelix yourself." }),
+          el("label", { class: "check" }, hold, el("span", { class: "check__text" }, el("strong", { text: "Hold the sites to search" }),
+            el("span", { class: "check__hint", text: "Switched off in Reelix after the move, so only your old apps search until step 2. Switch them on in Reelix, Settings, Indexers." })))),
+        el("div", { class: "actions" }, preview, run), shown));
+    }
+
+    // Step 2: take over.
+    const cfg = el("input", { class: "input", value: p.settings_folder, autocomplete: "off", spellcheck: false });
+    const media = el("input", { class: "input", value: p.media_folder, autocomplete: "off", spellcheck: false });
+    const [p3, p3f] = pw("This stops your apps for a few minutes while their settings are copied.");
+    const ok = el("input", { type: "checkbox" });
+    const go = el("button", { type: "button", class: "btn btn--primary", text: "Take over my apps" });
+    go.addEventListener("click", async () => {
+      if (!p3.value) { setError(p3, "Enter your password"); p3.focus(); return; }
+      go.disabled = true;
+      status.replaceChildren(el("p", { class: "muted", text: "Saving the way back, then stopping your apps and copying their settings…" }));
+      try { await api("/api/takeover/start", { method: "POST", body: { password: p3.value, install: p.install, usenet: p.usenet, config_dir: cfg.value, media_dir: media.value, unmoved_ok: ok.checked } }); }
+      catch (err) { go.disabled = false; status.replaceChildren(); failed(p3, err, "Nothing was changed"); return; }
+      p3.value = "";
+      follow("/api/takeover/job", (j) => {
+        status.replaceChildren(notice(j.ok ? "success" : "danger", j.ok ? "Starboard runs your apps now" : "Nothing was changed",
+          (j.notes || []).join(". ") || (j.ok ? "Finished." : "Your old apps run again as they were.")), j.ok ? "" : el("pre", { class: "code-block", text: j.log || "" }));
+        if (j.ok) { announce("Starboard runs your apps now"); setTimeout(draw, 5000); }
+      });
+    });
+    const keptLines = Object.entries(p.kept).map(([k, v]) => [k, [v.port_map && `ports ${Object.values(v.port_map).join(", ")}`, v.ports && `also ${v.ports.join(", ")}`,
+      v.devices && `devices ${v.devices.join(", ")}`, v.volumes && `${v.volumes.length} folders it uses as they are`, v.image && `its own version (${v.image})`,
+      v.env && `${v.env.length} of its own settings`, v.vpn === true && "through the VPN", v.vpn === false && "not through the VPN"].filter(Boolean).join(", ")]).map(([k, t]) => `${k}: ${t || "nothing extra"}`);
+    parts.push(section("tk-take", `Step ${m.sources && m.sources.length ? 2 : 1}: Starboard runs your apps`,
+      `Starboard takes over the apps in ${p.install_name}. Their settings are copied, never moved, and each keeps its port and what it relies on.`,
+      el("h3", { text: "Taken over" }), list(p.take.map((a) => a.app)),
+      p.replace.length ? el("h3", { text: "Stopped and removed (settings folders stay)" }) : null,
+      p.replace.length ? list(p.replace.map((a) => `${a.app}, replaced by ${a.by}${unmoved.includes(a.name) ? " (not moved into Reelix yet)" : ""}`)) : null,
+      p.new.length ? el("h3", { text: "Installed new" }) : null, p.new.length ? list(p.new) : null,
+      p.leave.length ? el("h3", { text: "Left as they are" }) : null, p.leave.length ? list(p.leave.map((a) => `${a.name}: ${a.why}`)) : null,
+      el("details", {}, el("summary", { text: `What each app keeps, and the ${p.copies.length} folders copied` }), list(keptLines),
+        list(p.copies.map((c) => `${c.from} to ${c.to}`))),
+      ...p.warnings.map((w) => notice("warning", "Before you start", w)),
+      el("div", { class: "form-stack" },
+        field("Settings folder", cfg, { hint: `Where the copies go. Not inside ${p.config_base || "your old settings folder"}.`, span: true }),
+        field("Media folder", media, { hint: "Where your media and downloads are now. Nothing in it is moved.", span: true }),
+        unmoved.length ? el("label", { class: "check" }, ok, el("span", { class: "check__text" }, el("strong", { text: `Stop ${unmoved.join(", ")} without moving them into Reelix` }),
+          el("span", { class: "check__hint", text: "Only if you do not need what they hold. Their settings folders stay either way." }))) : null,
+        p3f),
+      el("div", { class: "actions" }, go),
+      el("p", { class: "small muted", text: "Before anything stops, Starboard saves the way back: every app's version, your Compose file and Starboard's own set-up files. Roll back appears here afterwards." })));
+    box.replaceChildren(...parts, status);
+  };
+  draw();
+  return section("in-takeover", "Apps you already run", "Apps on this server from your own Compose file: moved into Reelix where Reelix replaces them, and run by Starboard from then on, with a way back.", box);
 }
 
 startPage().then(async (session) => {
