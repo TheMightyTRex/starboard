@@ -1287,6 +1287,7 @@ class Handler(BaseHTTPRequestHandler):
                 # Reelix or Reelix with YouTube and Spotify downloads: for both set-ups and Settings, Reelix.
                 image = stack.reelix_in_stack(app.data_dir)
                 return self.json(200, {"editions": stack.reelix_editions(), "image": image,
+                                       "needs_setup": bool(reelix_setup.read_setup(app.data_dir)),
                                        "current": stack.edition_of(image), "can_switch": bool(image),
                                        "can_start": bool(stack.host_folder(app.data_dir) and containers.available()),
                                        "starter": stack.starter_waiting(app.data_dir),
@@ -1380,7 +1381,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, takeover.job())
             # Moving the old apps into Reelix (Settings, Reelix; reelix_move.py)
             if path == "/api/reelix/move" and method == "GET":
-                out = {"job": reelix_move.job(), "last": reelix_move.last_result(app.data_dir)}
+                out = {"job": reelix_move.job(), "last": reelix_move.last_result(app.data_dir),
+                       "needs_setup": bool(reelix_setup.read_setup(app.data_dir))}
                 try:
                     out["sources"] = [reelix_move.public(s) for s in reelix_move.sources()]
                 except (ValueError, containers.DockerError) as e:

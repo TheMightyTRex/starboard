@@ -22,7 +22,9 @@ class YourInstallTest(unittest.TestCase):
                      "STARBOARD_DOCKER": "/nonexistent/docker.sock"}.items():
             os.environ[k] = v
         for p in (mock.patch("starboard.server.discovery.search", return_value={"items": []}),
-                  mock.patch("starboard.stack.can_download", return_value=True)):
+                  mock.patch("starboard.stack.can_download", return_value=True),
+                  # Every port counts as free: the tests must not depend on what runs on the computer they run on
+                  mock.patch("starboard.stack._port_free", return_value=True)):
             p.start()
             self.addCleanup(p.stop)
         self.server, self.app = make_server("127.0.0.1", 0, self.tmp.name)

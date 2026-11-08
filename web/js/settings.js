@@ -2148,7 +2148,39 @@ async function startReelix() {
     });
     body = [el("p", {}, "Now: ", now), form];
   }
-  root.replaceChildren(
+  // A set-up that did not finish (8 November 2026): Reelix's admin account, Starboard's key, folders and download
+  // apps, made with the same password as Starboard (reelix_setup.set_up, /api/reelix/setup).
+  const setupParts = [];
+  if (d.needs_setup) {
+    const pw = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true });
+    const go = el("button", { type: "submit", class: "btn btn--primary", text: "Finish setting up Reelix" });
+    const said = el("div", { class: "stack-2", "aria-live": "polite" });
+    const form = el("form", { novalidate: true }, el("div", { class: "form-stack" },
+      field("Your password", pw, { required: true, hint: "Reelix's admin account gets the same password as Starboard, so one password opens both. It is used for this and not kept." })),
+      el("div", { class: "actions" }, go));
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setError(pw, "");
+      if (!pw.value) { setError(pw, "Enter your password"); pw.focus(); return; }
+      go.disabled = true;
+      said.replaceChildren(el("p", { class: "muted", text: "Setting up Reelix…" }));
+      let r;
+      try { r = await api("/api/reelix/setup", { method: "POST", body: { password: pw.value } }); }
+      catch (err) {
+        go.disabled = false; said.replaceChildren();
+        if (err.status === 401 || err.status === 429) { setError(pw, err.message); pw.focus(); }
+        else said.replaceChildren(notice("danger", "Reelix is not set up yet", err.message));
+        return;
+      }
+      pw.value = "";
+      said.replaceChildren(notice("success", "Reelix is set up", (r.done || []).join(". ")));
+      announce("Reelix is set up");
+      setTimeout(() => startReelix(), 4000);
+    });
+    setupParts.push(section("rx-setup", "Finish setting up Reelix", "Reelix runs, but its set-up did not finish: its admin account, Starboard's key, its folders and its download apps.",
+      form, said));
+  }
+  root.replaceChildren(...setupParts,
     section("rx-version", "Version", "Which Reelix runs is part of your install: change it, and the rest of your install, on Settings, Your install.",
       el("p", {}, "Now: ", el("strong", { text: names[d.current] || d.image || "Not installed by Starboard" })),
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-install.html" }, icon("layers"), "Open Your install"))),
@@ -2374,6 +2406,13 @@ function takeoverSection() {
         "Reelix takes the place of " + p.unmoved_apps.join(", ") + ". Install it first, so it can read them before they stop.",
         el("p", { text: "In Install apps, choose Full install. Your apps that already run are left as they are, so it adds Reelix, NZBGet and Tdarr. Then come back here." }),
         el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/install-apps.html" }, icon("download"), "Install apps"))));
+    }
+    if (m.needs_setup && m.sources && m.sources.length) {
+      parts.push(section("tk-setup", `Step ${step}: finish setting up Reelix`,
+        "Reelix runs, but its set-up did not finish, so it cannot read your apps yet.",
+        el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/settings-reelix.html" }, icon("settings"), "Finish setting up Reelix"))));
+      box.replaceChildren(...parts, status);
+      return;
     }
     if (m.sources && m.sources.length) {
       step++;

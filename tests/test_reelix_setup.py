@@ -236,3 +236,48 @@ class NzbgetOptionsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TokenFromLogTest(unittest.TestCase):
+    """A start from the browser does not run the installer, so Starboard reads Reelix's token itself (8 November 2026)."""
+
+    @staticmethod
+    def stream(text):
+        data = text.encode()
+        return b"\x01\x00\x00\x00" + len(data).to_bytes(4, "big") + data
+
+    def test_reads_the_token_from_either_line_and_saves_it(self):
+        import tempfile, json as _json
+        from unittest import mock
+        from starboard import reelix_setup, stack
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "stack"))
+            with open(os.path.join(d, "stack", "reelix-setup.json"), "w") as f:
+                _json.dump({"url": "http://127.0.0.1:7700"}, f)
+            logs = {"reelix": self.stream("\x1b[33m WARN\x1b[0m no users yet \x1b[3msetup_token\x1b[0m\x1b[2m=\x1b[0mabcDEF123_-xyz\n")}
+            docker = lambda method, path, **k: logs[path.split("/")[2]]
+            with mock.patch.object(stack, "chosen_keys", return_value=["reelix"]):
+                info = reelix_setup.tokens_from_docker(d, reelix_setup.read_setup(d), docker=docker, available=lambda: True)
+            self.assertEqual(info["token"], "abcDEF123_-xyz")
+            self.assertEqual(reelix_setup.read_setup(d)["token"], "abcDEF123_-xyz")
+            self.assertNotIn("qbittorrent_password", info)  # qBittorrent is not Starboard's here: its log is not read
+
+    def test_the_banner_and_qbittorrent_when_starboard_installed_it(self):
+        import tempfile, json as _json
+        from unittest import mock
+        from starboard import reelix_setup, stack
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "stack"))
+            with open(os.path.join(d, "stack", "reelix-setup.json"), "w") as f:
+                _json.dump({"url": "http://127.0.0.1:7700"}, f)
+            logs = {"reelix": self.stream("  Reelix first-run setup token: Tok_123456789\n"),
+                    "qbittorrent": self.stream("A temporary password is provided for this session: QbTemp99\n")}
+            docker = lambda method, path, **k: logs[path.split("/")[2]]
+            with mock.patch.object(stack, "chosen_keys", return_value=["reelix", "qbittorrent"]):
+                info = reelix_setup.tokens_from_docker(d, reelix_setup.read_setup(d), docker=docker, available=lambda: True)
+            self.assertEqual((info["token"], info["qbittorrent_password"]), ("Tok_123456789", "QbTemp99"))
+
+    def test_a_token_already_there_is_kept_and_docker_is_not_asked(self):
+        from starboard import reelix_setup
+        info = reelix_setup.tokens_from_docker("/nowhere", {"url": "x", "token": "have"}, docker=None, available=lambda: True)
+        self.assertEqual(info["token"], "have")

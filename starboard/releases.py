@@ -331,6 +331,21 @@ RELEASES = [
         "review": [],
         "settings": "Nothing changes until you choose Take over my apps. To go back after a takeover, choose Roll back on Settings, Your install. To go back to the previous Starboard, run ./update.sh --to v0.11.0.",
     },
+    {
+        "version": "0.12.1",
+        "date": "8 November 2026",
+        "added": [
+            ('Finish setting up Reelix', 'When Reelix runs but its set-up did not finish, Settings, Reelix shows Finish setting up Reelix: your password makes its admin account, Starboard\'s key, its folders and its download apps. Your install sends you there when it is needed.'),
+        ],
+        "fixed": [
+            ('Reelix set up after a start from the browser', 'Reelix stayed waiting for its admin account when Install apps started the apps from the browser, because only the installer read its one-time set-up token. Starboard now reads the token from Reelix\'s log itself, through its Docker access.'),
+        ],
+        "security": [
+            ('Checks', 'The unit tests, the browser journeys and the help check ran on this release. Starboard reads only the Reelix log, and qBittorrent\'s only when it installed qBittorrent itself; the token and password go in data/stack/reelix-setup.json, which only you can read and which is removed once the set-up is done.'),
+        ],
+        "review": [],
+        "settings": "Nothing changes in your apps. To go back, run ./update.sh --to v0.12.0.",
+    },
 ]
 
 

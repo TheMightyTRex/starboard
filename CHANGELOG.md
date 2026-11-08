@@ -7,6 +7,19 @@ add features.
 
 ## [Unreleased]
 
+## [0.12.1] (8 November 2026)
+
+Reelix's set-up finishes after a start from the browser, and can be finished from Settings, Reelix.
+
+### Added
+- **Finish setting up Reelix:** When Reelix runs but its set-up did not finish, Settings, Reelix shows Finish setting up Reelix: your password makes its admin account, Starboard's key, its folders and its download apps. Your install sends you there when it is needed.
+
+### Fixed
+- **Reelix set up after a start from the browser:** Reelix stayed waiting for its admin account when Install apps started the apps from the browser, because only the installer read its one-time set-up token. Starboard now reads the token from Reelix's log itself, through its Docker access.
+
+### Security
+- **Only the logs it needs:** Starboard reads only the Reelix log, and qBittorrent's only when it installed qBittorrent itself; the token and password go in data/stack/reelix-setup.json, which only you can read and which is removed once the set-up is done.
+
 ## [0.12.0] (8 November 2026)
 
 Take over the apps you already run, move them into Reelix, and roll back if you need to.
@@ -897,7 +910,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/TheMightyTRex/starboard/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/TheMightyTRex/starboard/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/TheMightyTRex/starboard/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/TheMightyTRex/starboard/compare/v0.9.2...v0.10.0

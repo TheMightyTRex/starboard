@@ -23,6 +23,8 @@ them later. Each app keeps its settings, its ports and what it relies on, and yo
    leaves as they are.
 2. If the page shows **Step 1: install Reelix**, select **Install apps** and choose **Full install**. Your apps that
    already run are left as they are, so this adds only Reelix, NZBGet and Tdarr. Then come back to **Your install**.
+   If **Apps you already run** then shows **Finish setting up Reelix**, select it: on **Settings**, **Reelix**, type
+   **Your password** and select **Finish setting up Reelix**. Reelix's admin account gets the same password as Starboard.
 3. Under **Step 1: move them into Reelix**, type **Your password**, and **qBittorrent's password** if you want
    Reelix to use qBittorrent. Select **Show what moves** to see what Reelix will add from each app.
 4. Select **Move them into Reelix**. Films and series move in a minute or two. Reelix then finds their files, which

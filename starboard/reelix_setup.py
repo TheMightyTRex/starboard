@@ -125,6 +125,47 @@ def wait_until_up(base, seconds=180, opener=None):
             time.sleep(3)
 
 
+_TOKEN = re.compile(r"setup[ _]token[:=] ?([A-Za-z0-9_-]{8,200})")  # the start-up banner, or a later warning line
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+_QBIT = re.compile(r"temporary password is provided for this session: (\S{6,100})")
+
+
+def _log_text(container, docker=None):
+    """The last lines a container wrote, through Docker's API (its log stream has an 8-byte header per chunk)."""
+    from . import containers
+    raw = (docker or containers.docker)("GET", f"/containers/{container}/logs?stdout=1&stderr=1&tail=20000", raw=True, timeout=20)
+    text, i = b"", 0
+    while i + 8 <= len(raw):
+        n = int.from_bytes(raw[i + 4:i + 8], "big")
+        text += raw[i + 8:i + 8 + n]
+        i += 8 + n
+    return _ANSI.sub("", text.decode("utf-8", "replace"))
+
+
+def tokens_from_docker(data_dir, info, docker=None, available=None):
+    """Reelix's one-time set-up token, and qBittorrent's first password when Install apps installed qBittorrent, read
+    from their logs when the installer has not put them in reelix-setup.json: a start from the browser does not run
+    the installer (8 November 2026). Saves what it found and returns the updated info."""
+    from . import containers, stack
+    if info.get("token") or not (available or containers.available)():
+        return info
+    found = {}
+    try:
+        m = _TOKEN.findall(_log_text("reelix", docker))
+        if m:
+            found["token"] = m[-1]
+        if "qbittorrent" in stack.chosen_keys(data_dir) and not info.get("qbittorrent_password"):
+            q = _QBIT.findall(_log_text("qbittorrent", docker))
+            if q:
+                found["qbittorrent_password"] = q[-1]
+    except containers.DockerError:
+        return info
+    if found:
+        info = {**info, **found}
+        _rewrite_setup(data_dir, info)
+    return info
+
+
 def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=None, nzbget=None):
     """Runs every step; returns a list of what was done. Raises ReelixError when Reelix cannot be set up at all."""
     info = read_setup(data_dir)
@@ -134,13 +175,15 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     groups = set(info.get("groups") or [g for g, *_ in FOLDERS])
     done = []
     wait_until_up(base, opener=opener)
+    info = tokens_from_docker(data_dir, info)
 
     # 1. The admin account, or signing in to it when an earlier run made it.
     admin = Session(base, opener=opener)
     _, status = admin.call("GET", "/setup")
     if (status or {}).get("needs_setup"):
         if not info.get("token"):
-            raise ReelixError("Reelix needs its set-up token. Run ./install.sh --start-apps in the Starboard folder")
+            raise ReelixError("Reelix needs its set-up token, and Starboard could not read it from Reelix's log. Restart Reelix, "
+                                  "then select Finish setting up Reelix in Settings, Reelix, or run ./install.sh --start-apps")
         admin.call("POST", "/setup", {"username": ADMIN, "password": password, "setup_token": info["token"]})
         done.append("Made the Reelix admin account (admin, with your Starboard password)")
     else:
