@@ -4,7 +4,8 @@
 
 When the Run first script or Starboard's installer (`./install.sh`) stops, it shows an error number, such as
 `Error RF-11` or `Error IN-21`, with a link to this page. RF numbers come from the Run first script, IN numbers from
-the installer. Find the number below to see what it means and how to put it right. Then run the script again: it carries on from what
+the installer and the terminal set-up. When the installer stops while the Run first script runs it, the Run first
+script ends on the installer's number, so you only have one number to look up. Find the number below to see what it means and how to put it right. Then run the script again: it carries on from what
 is missing, and nothing that already worked is done twice.
 
 If you ask for help or report a problem, give the error number. The script's log has it too: the message gives
@@ -21,8 +22,8 @@ where the log is, a file called `run-first.log` in a `starboard-run-first` folde
 
    ![Accessible mode, with Error IN-33 and the address of its help (step 2) outlined](../images/run-first-errors-2-plain.png)
 
-3. When one job does not finish, such as starting the apps, the installer asks what to do: **Try again** is
-   recommended. **Show the details** shows the last lines of the job's log, and **Report this problem** helps you send a
+3. When one job does not finish, such as starting the apps, the line under it says what went wrong, then the error
+   number and the address of its help, as when it stops. Then it asks what to do: **Try again** is recommended. **Show the details** shows the last lines of the job's log, and **Report this problem** helps you send a
    report about it (read [Send feedback](send-feedback.md)).
 
    ![A job that did not finish, with What do you want to do? and its answers (step 3) outlined](../images/run-first-errors-3-choices.png)
