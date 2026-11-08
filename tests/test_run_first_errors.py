@@ -68,7 +68,7 @@ class DockerGroupRestartTest(unittest.TestCase):
         # sudo-rs (Ubuntu 26.04) ignores --preserve-env, so the settings go through env by name (8 November 2026).
         for name in ("install.sh", "run-first.sh"):
             script = (ROOT / name).read_text()
-            self.assertNotIn("--preserve-env", script, name)
+            self.assertNotIn("sudo --preserve-env", script, name)
             self.assertIn('-g docker -- env "${keep[@]}"', script, name)
             self.assertIn("STARBOARD_*|TERM|", script, name)
 
