@@ -59,6 +59,7 @@ function notice(tone, title, text, action) {
 }
 
 // One section of a settings page: an h2, a one-line description and its content.
+function pageSection(id, title, description, ...content) { return section(id, title, description, ...content); }
 function section(id, title, description, ...content) {
   return el("section", { class: "settings-section", "aria-labelledby": `${id}-h` },
     el("div", { class: "settings-section__head" }, el("h2", { id: `${id}-h`, text: title }), description ? el("p", { class: "small muted" }, description) : null),
@@ -2300,6 +2301,9 @@ async function startYourInstall() {
 // 2026). Step 1 moves Radarr, Sonarr and the others into Reelix through Reelix's own migrator (reelix_move.py); step 2
 // takes the rest over into Starboard's stack, with copies of their settings and a way back (takeover.py).
 function takeoverSection() {
+  // A step inside this section: an h3 under the section's h2.
+  const section = (id, title, description, ...content) => el("div", { class: "stack-2", role: "group", "aria-labelledby": `${id}-h` },
+    el("h3", { id: `${id}-h`, text: title }), description ? el("p", { class: "small muted" }, description) : null, ...content);
   const box = el("div", { class: "stack-2", "aria-busy": "true" }, el("p", { class: "muted", text: "Looking for apps you already run…" }));
   const status = el("div", { class: "stack-2", "aria-live": "polite" });
   const list = (items) => el("ul", { class: "stack-1" }, items.map((t) => el("li", { text: t })));
@@ -2361,9 +2365,18 @@ function takeoverSection() {
     }
     const p = t.plan;
 
-    // Step 1: into Reelix.
+    // Step 1: into Reelix. Reelix has to run first: on a server set up by hand, Install apps adds it (with NZBGet)
+    // next to the old apps, which stay as they are.
     const unmoved = p.unmoved || [];
+    let step = 1;
+    if (!(m.sources && m.sources.length) && unmoved.length) {
+      parts.push(section("tk-install", `Step ${step++}: install Reelix`,
+        "Reelix takes the place of " + p.unmoved_apps.join(", ") + ". Install it first, so it can read them before they stop.",
+        el("p", { text: "In Install apps, choose Full install. Your apps that already run are left as they are, so it adds Reelix, NZBGet and Tdarr. Then come back here." }),
+        el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/install-apps.html" }, icon("download"), "Install apps"))));
+    }
     if (m.sources && m.sources.length) {
+      step++;
       const last = m.last;
       const lines = [];
       if (last && last.apps) last.apps.forEach((a) => lines.push(`${a.app}: ${a.state === "finished" ? "moved" : `not finished${a.error ? ` (${a.error})` : ""}`}${(a.not_moved || []).length ? `, ${a.not_moved.length} items not moved` : ""}`));
@@ -2400,7 +2413,7 @@ function takeoverSection() {
           setTimeout(draw, 3000);
         });
       });
-      parts.push(section("tk-reelix", "Step 1: move them into Reelix",
+      parts.push(section("tk-reelix", `Step ${step - 1}: move them into Reelix`,
         "Reelix reads each app and adds its films, series, music, books, quality profiles, sites to search and requests. The apps themselves do not change.",
         list(m.sources.map((s) => `${s.app}${s.has_key ? "" : " (Starboard cannot read its key)"}`)),
         lines.length ? notice(unmoved.length ? "warning" : "success", "Last move", lines.join(". ")) : null,
@@ -2433,20 +2446,20 @@ function takeoverSection() {
     const keptLines = Object.entries(p.kept).map(([k, v]) => [k, [v.port_map && `ports ${Object.values(v.port_map).join(", ")}`, v.ports && `also ${v.ports.join(", ")}`,
       v.devices && `devices ${v.devices.join(", ")}`, v.volumes && `${v.volumes.length} folders it uses as they are`, v.image && `its own version (${v.image})`,
       v.env && `${v.env.length} of its own settings`, v.vpn === true && "through the VPN", v.vpn === false && "not through the VPN"].filter(Boolean).join(", ")]).map(([k, t]) => `${k}: ${t || "nothing extra"}`);
-    parts.push(section("tk-take", `Step ${m.sources && m.sources.length ? 2 : 1}: Starboard runs your apps`,
+    parts.push(section("tk-take", `Step ${step}: Starboard runs your apps`,
       `Starboard takes over the apps in ${p.install_name}. Their settings are copied, never moved, and each keeps its port and what it relies on.`,
-      el("h3", { text: "Taken over" }), list(p.take.map((a) => a.app)),
-      p.replace.length ? el("h3", { text: "Stopped and removed (settings folders stay)" }) : null,
+      el("h4", { text: "Taken over" }), list(p.take.map((a) => a.app)),
+      p.replace.length ? el("h4", { text: "Stopped and removed (settings folders stay)" }) : null,
       p.replace.length ? list(p.replace.map((a) => `${a.app}, replaced by ${a.by}${unmoved.includes(a.name) ? " (not moved into Reelix yet)" : ""}`)) : null,
-      p.new.length ? el("h3", { text: "Installed new" }) : null, p.new.length ? list(p.new) : null,
-      p.leave.length ? el("h3", { text: "Left as they are" }) : null, p.leave.length ? list(p.leave.map((a) => `${a.name}: ${a.why}`)) : null,
+      p.new.length ? el("h4", { text: "Installed new" }) : null, p.new.length ? list(p.new) : null,
+      p.leave.length ? el("h4", { text: "Left as they are" }) : null, p.leave.length ? list(p.leave.map((a) => `${a.name}: ${a.why}`)) : null,
       el("details", {}, el("summary", { text: `What each app keeps, and the ${p.copies.length} folders copied` }), list(keptLines),
         list(p.copies.map((c) => `${c.from} to ${c.to}`))),
       ...p.warnings.map((w) => notice("warning", "Before you start", w)),
       el("div", { class: "form-stack" },
         field("Settings folder", cfg, { hint: `Where the copies go. Not inside ${p.config_base || "your old settings folder"}.`, span: true }),
         field("Media folder", media, { hint: "Where your media and downloads are now. Nothing in it is moved.", span: true }),
-        unmoved.length ? el("label", { class: "check" }, ok, el("span", { class: "check__text" }, el("strong", { text: `Stop ${unmoved.join(", ")} without moving them into Reelix` }),
+        unmoved.length ? el("label", { class: "check" }, ok, el("span", { class: "check__text" }, el("strong", { text: `Stop ${p.unmoved_apps.join(", ")} without moving them into Reelix` }),
           el("span", { class: "check__hint", text: "Only if you do not need what they hold. Their settings folders stay either way." }))) : null,
         p3f),
       el("div", { class: "actions" }, go),
@@ -2454,7 +2467,7 @@ function takeoverSection() {
     box.replaceChildren(...parts, status);
   };
   draw();
-  return section("in-takeover", "Apps you already run", "Apps on this server from your own Compose file: moved into Reelix where Reelix replaces them, and run by Starboard from then on, with a way back.", box);
+  return pageSection("in-takeover", "Apps you already run", "Apps on this server from your own Compose file: moved into Reelix where Reelix replaces them, and run by Starboard from then on, with a way back.", box);
 }
 
 startPage().then(async (session) => {

@@ -156,6 +156,10 @@ def keep_for(key, name, info, image_env, cfg, data, base, globals_, owner_names,
             port_map[label] = int(hostport)
     if port_map:
         keep["port_map"] = port_map
+    # A port the app did not publish before stays unpublished (qBittorrent's 6881 when the VPN forwards a port).
+    unpublished = sorted(label for label in inside_ports if label not in port_map)
+    if unpublished and (port_map or bindings):
+        keep["unpublished"] = unpublished
     for inside, binds in (host.get("PortBindings") or {}).items():
         port, _, proto = inside.partition("/")
         label = port + ("/udp" if proto == "udp" else "")
@@ -324,6 +328,7 @@ def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=N
     if shared:
         warnings.append("These folders are used in place, not copied, so going back does not restore them: " + "; ".join(shared))
     names = {k: a["name"] for k, a in stack.APPS.items()}
+    names.update({svc: f"{stack.APPS[app]['name']}'s database" for svc, app in _db_services().items()})
     return {"install": spec["key"], "install_name": spec["name"], "usenet": usenet,
             "take": [{"name": c["name"], "key": c["key"], "app": names.get(c["key"], c["key"])} for c in take],
             "replace": [{"name": c["name"], "key": c["key"], "app": names.get(c["key"], c["name"]), "by": c["by"]} for c in replace],
@@ -429,7 +434,8 @@ def takeover_script(record, host_stack, cfg, data=None, folders=(), owner=(1000,
         lines.append("mkdir -p " + " ".join(q(f) for f in folders) + " || true")
     lines += [f"echo 'Removing the old containers (their settings folders and images stay)'; docker rm {names} || {{ {back}; }}",
               f"docker compose -p {stack.PROJECT} --env-file .env -f compose.yaml up -d --remove-orphans 2>&1"]
-    if data:
+    if data:  # as Install apps does (stack._start): the folders themselves, then each app's, not a database's
+        lines.append(f"chown {uid}:{gid} {q(cfg)} {q(data)} || true")
         lines.append(f"for d in {q(cfg)}/* {q(data)}/media {q(data)}/downloads; do case \"$d\" in *-db) continue ;; esac; "
                      f"[ -d \"$d\" ] && chown {uid}:{gid} \"$d\"; done; true")
     return "\n".join(lines)

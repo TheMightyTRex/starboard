@@ -57,6 +57,8 @@ needed. By file:
 | `test_performance.py` | 3 | Presets and background work that stops when turned off |
 | `test_pinned.py` | 3 | App updates for images pinned to a version |
 | `test_schedule.py` | 2 | Download hours: pause outside the hours, then resume only what Starboard paused |
+| `test_takeover.py` | 18 | Taking over apps from your own Compose file: what each app keeps (ports, folders, devices, settings, versions, VPN), the Compose file written for it, secrets only in .env, the rollback point, and the helper's script run for real with a stand-in docker (copy order, owners, never copying over files, starting the old apps again on failure) |
+| `test_reelix_move.py` | 11 | Moving the old apps into Reelix: path rewrites, Prowlarr's hidden keys from its database, the order and settings of each run, holding the indexers, leaving the networks, qBittorrent |
 
 ### Browser journeys
 
@@ -100,21 +102,19 @@ the setup code.
 
 ## Latest results
 
-From release 0.10.0 (7 November 2026): unit tests, journeys, and fresh installs on Debian 13, Ubuntu 26.04, Linux Mint 22.3 and the emulated Raspberry Pi OS, through the terminal and the browser. From 0.9.2: install tests on Ubuntu 24.04 and 64-bit ARM, and the Run first script on Ubuntu 24.04. The Run first script on Debian and Fedora is from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
+From release 0.12.0 (8 November 2026): unit tests, journeys, the help check, the six security scanners, a rehearsal of the takeover and roll back, and a move of a real server's apps into a test Reelix. Fresh installs are from 0.10.0 (7 November 2026) on Debian 13, Ubuntu 26.04, Linux Mint 22.3 and the emulated Raspberry Pi OS, through the terminal and the browser. From 0.9.2: install tests on Ubuntu 24.04 and 64-bit ARM, and the Run first script on Ubuntu 24.04. The Run first script on Debian and Fedora is from 0.9.0. Debian, Fedora and ARM at 512 MB are from 0.7.4.
 
 | | Result |
 |---|---|
-| Unit and API tests | 219 passed |
+| Unit and API tests | 372 passed |
 | Browser journeys | 36 passed |
-| Install tests, Ubuntu 24.04 | 17 passed |
-| Install tests, Debian 12 | 17 passed |
-| Install tests, Fedora 42 | 17 passed |
-| Install tests, 64-bit ARM, 1 GB | 17 passed |
-| Install tests, 64-bit ARM, 512 MB | 17 passed |
-| The Run first script on bare Debian 12, Ubuntu 24.04 and Fedora 42 | 12 passed on each |
-| Published ARM images (arm64, arm/v7) under emulation | Start and answer every request |
-| Help centre check | 83 articles, 0 problems |
-| Security scans | See [Security](SECURITY-AND-TESTS.md#security-review-of-the-set-up-wizards-5-november-2026-090) |
+| Takeover and roll back rehearsal (a stand-in of a real server's stack in Docker-in-Docker) | 98 of 98 checks |
+| Moving a real server's apps into a test Reelix | 251 of 257 films, 221 of 227 series, 7 of 8 indexers (3 hidden keys read from Prowlarr), 2 users, 2 of 3 requests; indexers held; networks left |
+| Install tests, Ubuntu 24.04 | 17 passed (0.9.2) |
+| Install tests, 64-bit ARM, 1 GB | 17 passed (0.9.2) |
+| The Run first script on bare Debian 12, Ubuntu 24.04 and Fedora 42 | 12 passed on each (0.9.0) |
+| Help centre check | 100 articles, 0 problems |
+| Security scans | Trivy 0, Gitleaks 0, Bandit 0, Hadolint 0, ZAP 58 passed; ShellCheck 12 warnings in install.sh and run-first.sh, from 0.11.0 |
 
 ## Test plans for each system
 

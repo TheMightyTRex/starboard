@@ -20,6 +20,9 @@ does not, and what to do afterwards.
 
 ## Steps
 
+Starboard can do these steps for you, with the keys filled in: read
+[Take over the apps you already run](take-over-your-apps.md). To do them in Reelix yourself:
+
 1. In Reelix, go to **System**, then **Migrate**.
 2. Move **Prowlarr** first, so your indexers come from one place. The indexers Prowlarr gave your other apps are
    then left out of those, as they should be.

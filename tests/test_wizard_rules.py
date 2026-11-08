@@ -28,7 +28,7 @@ class WizardRulesTest(unittest.TestCase):
 
     def test_the_recommended_answer_is_first_in_every_written_list(self):
         # Lists written out in full: ["Yes (recommended)", "No: ..."]. Only literal strings between the brackets.
-        lists = re.compile(r'\[\s*((?:"(?:[^"\\\n]|\\.)*"\s*,?\s*)+)\]')
+        lists = re.compile(r'\[\s*((?:"(?:[^"\\\n]|\\.)*"\s*(?:,\s*)?)+)\]')  # one way to match the spaces (CodeQL py/redos)
         for path in WIZARDS:
             for m in lists.finditer(strings(path)[1]):
                 items = re.findall(r'"((?:[^"\\\n]|\\.)*)"', m.group(1))

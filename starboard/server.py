@@ -1336,6 +1336,7 @@ class Handler(BaseHTTPRequestHandler):
                                       media_dir=q.get("media_dir", [out["defaults"]["data_dir"]])[0])
                     out["plan"] = takeover.summary(p)
                     out["plan"]["unmoved"] = [r["name"] for r in p["replace"] if r["by"] == "Reelix" and r["name"] not in out["moved"]]
+                    out["plan"]["unmoved_apps"] = [r["app"] for r in p["replace"] if r["name"] in out["plan"]["unmoved"]]
                 except (ValueError, containers.DockerError) as e:
                     out["error"] = str(e)
                 return self.json(200, out)
@@ -1367,7 +1368,7 @@ class Handler(BaseHTTPRequestHandler):
                 def after(ok):
                     services.forget()
                     return ["Your old apps run again as they were before the takeover"] if ok else \
-                        ["Rolling back did not finish. See the log below, and the help topic Roll back a takeover"]
+                        ["Rolling back did not finish. See the log below, and the help topic Take over the apps you already run"]
                 return self.json(200, takeover.roll_back(app.data_dir, host, after))
             if path == "/api/takeover/clear" and method == "POST":
                 body = self.body()

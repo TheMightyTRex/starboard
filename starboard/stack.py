@@ -543,6 +543,8 @@ def build(choice):
         port_map = keep.get("port_map") or {}
         for p in a.get("ports", []):
             host, inside = p.split(":", 1)
+            if inside in (keep.get("unpublished") or []):
+                continue
             if str(port_map.get(inside, "")).isdigit():  # the port it had before Starboard took it over: never moved
                 used.add(int(port_map[inside]))
                 ports.append(f"{int(port_map[inside])}:{inside}")
@@ -729,7 +731,7 @@ def save_keep(data_dir, keep):
     too. Secret values are not in this file: only their .env names, and .env holds the values."""
     out = {}
     for service, k in (keep or {}).items():
-        entry = {f: k[f] for f in ("image", "vpn", "ports", "port_map", "devices", "volumes") if k.get(f) not in (None, [], "", {})}
+        entry = {f: k[f] for f in ("image", "vpn", "ports", "port_map", "unpublished", "devices", "volumes") if k.get(f) not in (None, [], "", {})}
         env = {}
         for name, spec in (k.get("env") or {}).items():
             env[name] = {"var": spec["var"]} if spec.get("var") else {"value": spec.get("value", "")}
@@ -757,7 +759,7 @@ def read_keep(data_dir, env=None):
     for service, k in (saved or {}).items():
         if not isinstance(k, dict):
             continue
-        entry = {f: k[f] for f in ("image", "vpn", "ports", "port_map", "devices", "volumes") if f in k}
+        entry = {f: k[f] for f in ("image", "vpn", "ports", "port_map", "unpublished", "devices", "volumes") if f in k}
         entry["env"] = {name: ({"var": s["var"], "value": env.get(s["var"], "")} if s.get("var") else {"value": s.get("value", "")})
                         for name, s in (k.get("env") or {}).items() if isinstance(s, dict)}
         entry["vars"] = {name: env[name] for name in k.get("vars") or [] if name in env}

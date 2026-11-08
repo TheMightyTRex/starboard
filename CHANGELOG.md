@@ -7,6 +7,29 @@ add features.
 
 ## [Unreleased]
 
+## [0.12.0] (8 November 2026)
+
+Take over the apps you already run, move them into Reelix, and roll back if you need to.
+
+### Added
+- **Take over the apps you already run:** On a server set up by hand, Settings, Your install, Apps you already run takes your apps into Starboard. Their settings are copied, never moved, and each keeps its ports, the folders it uses, its devices, its own settings, its version and whether it runs through the VPN.
+- **Move your apps into Reelix:** The same page moves Radarr, Sonarr, Lidarr, Readarr, Prowlarr and Seerr into Reelix through Reelix itself, with each key read from the app, the keys Prowlarr hides read from its database, and qBittorrent connected with its password.
+- **Roll back or keep it:** Before anything stops, Starboard tags every app version and copies your Compose file and its own set-up. Roll back starts your old apps again exactly as they were; Keep it puts the way back aside without deleting anything.
+
+### Changed
+- **Your install keeps what each app relies on:** A later change in Your install keeps the ports, folders, devices and settings of apps Starboard took over, from data/stack/kept.json.
+
+### Fixed
+- **Reelix problems on the page:** When Reelix answers with a problem, the page now says what Reelix said, instead of Something went wrong.
+- **Coming up on a phone:** With many filter chips, such as Reelix radio, the page scrolled sideways on a phone. The chips now scroll in their own row.
+
+### Security
+- **Password for every change:** Taking over, rolling back, keeping and moving into Reelix each ask for your password again, and run one at a time with the other changes to your apps.
+- **Secrets stay private:** Passwords and keys an app had in its Compose file go only in data/stack/.env, which only you can read; data/stack/kept.json holds their names, never their values. Prowlarr's database is read into a private temporary folder and removed straight after.
+- **Old folders are never written to:** The takeover only reads your old settings folders, refuses a settings folder inside one of them, and never copies over a folder that has files.
+- **zlib in the image:** The image takes Alpine's zlib 1.4 when it is built, which fixes CVE-2026-4738 (medium) in the base image's zlib 1.3.2.
+- **Reelix joins your networks only for the move:** To read your old apps, Reelix joins their Docker networks for the move and leaves them afterwards, even when the move fails.
+
 ## [0.11.0] (8 November 2026)
 
 Radio in Starboard, one terminal frame with error numbers, help in slide-outs, and the fixes from the terminal checks.
@@ -874,7 +897,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/TheMightyTRex/starboard/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/TheMightyTRex/starboard/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/TheMightyTRex/starboard/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/TheMightyTRex/starboard/compare/v0.9.1...v0.9.2

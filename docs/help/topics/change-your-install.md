@@ -22,7 +22,8 @@ FlareSolverr need Reelix, and Reelix needs a download app.
 
 ## Before you begin
 
-- Install apps set up your apps. A server set up by hand has nothing to change here.
+- Install apps set up your apps. On a server set up by hand, Starboard can take your apps over first: read
+  [Take over the apps you already run](take-over-your-apps.md).
 - You know your Starboard password.
 - For an install with a VPN, the VPN details you gave Install apps are used again.
 
@@ -84,7 +85,8 @@ If the Run first window is still open, Starboard asks it to start the apps inste
 
 ## If it does not work
 
-- **"Install apps did not set up the apps here":** run Install apps first; this page changes what it set up.
+- **"Install apps did not set up the apps here":** run Install apps first, or take over the apps you already run
+  ([Take over the apps you already run](take-over-your-apps.md)); this page changes what Starboard set up.
 - **"Choose your VPN provider":** the new install has a VPN, but none was set up before. Run Install apps and fill in
   the VPN step.
 - **"That is what runs already":** choose a different install, Usenet app or Reelix version.
@@ -96,6 +98,7 @@ If the Run first window is still open, Starboard asks it to start the apps inste
 - [Install apps with Starboard](install-apps.md)
 - [Switch between the two versions of Reelix](switch-reelix-version.md)
 - [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md)
+- [Take over the apps you already run](take-over-your-apps.md)
 
 <!-- footer: download rights -->
 
