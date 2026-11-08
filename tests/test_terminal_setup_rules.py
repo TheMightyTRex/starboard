@@ -301,3 +301,27 @@ class WordsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AppByAppTest(unittest.TestCase):
+    def test_choosing_app_by_app_after_basics_starts_from_basics(self):
+        """Basics, then Let me choose app by app: the groups ticked are Basics' groups (its VPN included), not the
+        catalogue's first ones, so Enter keeps what Basics chose."""
+        groups = [{"key": k, "name": k.title(), "about": "", "default": k in ("movies", "tv")}
+                  for k in ("movies", "tv", "vpn", "subtitles")]
+        apps = [{"key": k, "name": k.title(), "groups": [g], "installed": False, "default": True, "memory": 100,
+                 "notes": ""} for k, g in (("reelix", "movies"), ("gluetun", "vpn"), ("bazarr", "subtitles"))]
+        overview = {"groups": groups, "apps": apps, "installs": [{"key": "basics", "name": "Basics", "about": "",
+                                                                  "recommended": True}],
+                    "defaults": {"data_dir": "/srv/media", "config_dir": "/srv/media-stack/config", "puid": 1000,
+                                 "pgid": 1000, "tz": "UTC"}}
+        basics = {"name": "Basics", "apps": ["reelix", "gluetun", "bazarr"], "groups": ["movies", "tv", "vpn", "subtitles"],
+                  "memory": 300, "reelix_edition": "lite", "disk_health": False}
+        api = FakeApi({("GET", "/api/stack"): overview, ("POST", "/api/stack/install"): basics})
+        # Yes, Basics, Let me choose app by app, Enter for the ticked groups, Yes to install them.
+        term, out = plain(["1", "1", "2", "", "1"])
+        state = {}
+        with mock.patch.object(ts, "ask_reelix_edition", return_value="lite"):
+            self.assertTrue(ts.step_apps(api, term, state))
+        self.assertEqual(state["choice"]["groups"], ["movies", "subtitles", "tv", "vpn"])
+        self.assertEqual(state["choice"]["apps"], ["reelix", "gluetun", "bazarr"])

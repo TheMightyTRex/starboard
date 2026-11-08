@@ -53,7 +53,11 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 3. **Welcome:** choose how to finish setting up. **In a browser** is recommended when the computer has a desktop;
    **Here in the terminal** when it has none, such as when you are connected over SSH. Press Enter for the
    recommended answer.
+   ![The Run first Welcome step in the terminal, with How do you want to finish setting up? and its two answers (step 3) outlined](../images/run-first-1-welcome.png)
+
 4. **Check this computer:** it lists what is already there, with a tick, and what is missing. This changes nothing.
+   ![The Check this computer step, with the list of what is there and what is missing (step 4) outlined](../images/run-first-2-check.png)
+
 5. **Install what is missing:** it shows the commands it will run. Press Enter to install them. When it asks for
    your password, type it and press Enter. Nothing shows as you type. If everything is already there, it says so.
 6. **Download Starboard:** it downloads Starboard into a folder called `starboard` in your home folder, or updates
@@ -71,6 +75,8 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
    - **Here in the terminal:** answer the set-up questions. Read
      [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md). At the end, the script makes the
      set-up's changes to this computer, such as disk health, and asks for your password if it needs it.
+
+   ![The Done step, with the Open Starboard box of addresses (step 8) outlined](../images/run-first-3-done.png)
 
 ## How to answer
 

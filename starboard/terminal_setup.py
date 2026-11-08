@@ -1877,6 +1877,9 @@ def step_apps(api, term, state):
             state["names"] = [names.get(k, k) for k in c["apps"]]
             return True
         last["chosen"] = c["apps"]
+        # Choosing app by app starts from what the install had chosen (Basics has a VPN, subtitles and audiobooks),
+        # as the browser set-up does, not from the catalogue's first groups.
+        last["groups"] = [i for i, g in enumerate(groups) if g["key"] in set(c["groups"])]
         break
     picked = term.choose_many("What do you want?", [(g["name"], g["about"]) for g in groups],
                               last.get("groups") or [i for i, g in enumerate(groups) if g["default"]], help_key="groups")

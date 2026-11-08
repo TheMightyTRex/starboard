@@ -39,7 +39,8 @@ app_feedback() {
 # Every way this script can stop has an error number (RF-01 and so on). The help page Run first error numbers says
 # what each means and how to put it right; keep the two in step (tests/test_run_first_errors.py checks).
 ERR_URL="https://themightytrex.github.io/starboard/help/topics/run-first-errors.html"
-err() { printf 'Error %s. What it means and how to fix it: %s#%s\n' "$1" "$ERR_URL" "$(printf '%s' "$1" | tr 'A-Z' 'a-z')"; }
+# The address goes on a line of its own, so it is never cut and copies whole (TERMINAL.md, Questions).
+err() { printf 'Error %s. What it means and how to fix it:\n%s#%s\n' "$1" "$ERR_URL" "$(printf '%s' "$1" | tr 'A-Z' 'a-z')"; }
 
 CHECK=0
 ASK=1
@@ -1209,7 +1210,7 @@ DRAWN=0  # the installer (and the terminal set-up) drew their own frames and gav
 if [ "$status" != 0 ]; then
   echo
   tell "The installer stopped. Error RF-40. The reason and its own error number are just above."
-  err RF-40 | fold -s -w "$(( COLS - 1 ))"
+  err RF-40
   exit "$status"
 fi
 if [ "$FINISH" = terminal ]; then

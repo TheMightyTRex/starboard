@@ -39,7 +39,10 @@ async function pageFor(shot) {
 
 for (const shot of shots) {
   const page = await pageFor(shot);
-  await page.goto(`${base}/${shot.page}`, { waitUntil: "networkidle" });
+  // A terminal screen (tools/screenshots/terminal_page.py) is a file next to this script; anything else is a page
+  // of the example server.
+  const url = shot.page.startsWith("terminal/") ? new URL(`./${shot.page}`, import.meta.url).href : `${base}/${shot.page}`;
+  await page.goto(url, { waitUntil: "networkidle" });
   await page.waitForTimeout(1500); // settle (SCREENSHOTS.md section 3)
   if (shot.run) { await page.evaluate(`(async () => { ${shot.run} })()`); await page.waitForTimeout(1500); }
   await page.evaluate(annotate);

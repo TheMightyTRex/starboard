@@ -36,12 +36,18 @@ takes about 10 minutes, plus the time to download the apps.
    Starboard lists the apps and memory; press Enter to install them. With **Let me choose**, type the numbers of
    what you want, such as Movies, TV and Watching, separated by commas. Read
    [Change your install](change-your-install.md) for what each install has.
+   ![The What to set up step in the terminal, with Basics, Full install, Everything and Let me choose (step 7) outlined](../images/set-up-in-the-terminal-1-what-to-set-up.png)
+
 8. **VPN**, if you chose it (every install has one): type the number of your provider. Each is listed with its
    website. Nothing is chosen for you here, so Enter on its own asks again. If yours is not listed, choose
    **Another one that Gluetun supports** and type its name as Gluetun's list writes it. Then its details: the
    password or key does not show as you type. Then **Usenet**, for NZBGet or SABnzbd: some providers, and what Usenet may be used for.
-9. **Check:** read the list, then type `y` to write the apps' files and start them.
+   ![The VPN step in the terminal, with the list of VPN providers and their websites (step 8) outlined](../images/set-up-in-the-terminal-2-vpn.png)
+
+9. **Check:** read the list, then press Enter (**Yes**) to write the apps' files, and again to start them.
    Downloading them can take several minutes.
+   ![The Check step in the terminal, with Write the apps' files now? (step 9) outlined](../images/set-up-in-the-terminal-3-check.png)
+
 10. **Jellyfin extras**, when you have Jellyfin: Starboard's Jellyfin extras, such as Live TV.
 11. **Download hours:** set hours are recommended, because downloading slows the internet for everyone else.
 12. **Alerts and disk health:** where alerts go, if anywhere, and whether to check each disk's health.

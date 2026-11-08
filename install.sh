@@ -36,7 +36,8 @@ set -uo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 ERR_URL="https://themightytrex.github.io/starboard/help/topics/run-first-errors.html"
-err() { printf 'Error %s. What it means and how to fix it: %s#%s\n' "$1" "$ERR_URL" "$(printf '%s' "$1" | tr 'A-Z' 'a-z')"; }
+# The address goes on a line of its own, so it is never cut and copies whole (TERMINAL.md, Questions).
+err() { printf 'Error %s. What it means and how to fix it:\n%s#%s\n' "$1" "$ERR_URL" "$(printf '%s' "$1" | tr 'A-Z' 'a-z')"; }
 
 MODE=docker
 PORT=8095
@@ -113,7 +114,7 @@ fail() {
   finish
   echo
   printf 'Stopped: %s\n' "$2" | fold -s -w $(( COLS > 20 ? COLS - 1 : 79 ))
-  err "$1" | fold -s -w $(( COLS > 20 ? COLS - 1 : 79 ))  # at spaces only: the address stays whole
+  err "$1"
   exit 1
 }
 # stop CODE "reason": inside a job (a subshell). The reason goes to the job's caller, which shows it under the bar.

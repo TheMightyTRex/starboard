@@ -10,6 +10,23 @@ is missing, and nothing that already worked is done twice.
 If you ask for help or report a problem, give the error number. The script's log has it too: the message gives
 where the log is, a file called `run-first.log` in a `starboard-run-first` folder in `/tmp`.
 
+## How an error looks
+
+1. When the script or the installer stops, the last lines say why, then the error number and the address of its
+   help on this page.
+
+   ![The installer stopped, with the error number IN-16 and the address of its help (step 1) outlined](../images/run-first-errors-1-stop.png)
+
+2. In accessible mode, the same lines come as plain text: the error number, then the address on a line of its own.
+
+   ![Accessible mode, with Error IN-33 and the address of its help (step 2) outlined](../images/run-first-errors-2-plain.png)
+
+3. When one job does not finish, such as starting the apps, the installer asks what to do: **Try again** is
+   recommended. **Show the details** shows the last lines of the job's log, and **Report this problem** helps you send a
+   report about it (read [Send feedback](send-feedback.md)).
+
+   ![A job that did not finish, with What do you want to do? and its answers (step 3) outlined](../images/run-first-errors-3-choices.png)
+
 ## Before it starts
 
 ### RF-01
