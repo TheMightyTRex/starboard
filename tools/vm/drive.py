@@ -106,8 +106,10 @@ def main():
             if x == y and len(x.strip()) > 8:
                 fault("line repeated", x.strip())
         if screen.wrapped:
-            fault("text past the right edge", f"{screen.wrapped} characters wrapped onto the next line")
+            fault("text past the right edge", f"{screen.wrapped} characters wrapped onto the next line, after: "
+                  + " / ".join(dict.fromkeys(screen.wrapped_lines))[:200])
             screen.wrapped = 0
+            screen.wrapped_lines.clear()
         for u in sorted(screen.unknown):
             fault("unknown terminal code", u)
         screen.unknown.clear()
