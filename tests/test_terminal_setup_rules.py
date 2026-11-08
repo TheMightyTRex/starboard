@@ -202,6 +202,38 @@ class JobsTest(unittest.TestCase):
         self.assertIn("pull access denied for made-up/app", raw)
         self.assertLess(raw.rindex("did not finish"), raw.index("The apps did not all start."))  # the error below
 
+    def test_a_failed_job_shows_its_error_number_the_same_boxed_and_plain(self):
+        # DASH-152: the boxed frame showed no number while plain lines did (only in the details). Both now show it under
+        # the problem, then the address of its help on a line of its own, before the choices.
+        url = "https://themightytrex.github.io/starboard/help/topics/run-first-errors.html#in-33"
+        for make in (plain, boxed):
+            term, out = make(["1"])
+            if make is boxed:
+                term.heading("Check", 7)
+            self.assertEqual(term.job_failed("The apps did not all start.", ["made-up/app failed"], code="IN-33"), "again")
+            raw = out.getvalue()
+            self.assertIn("Error IN-33. What it means and how to fix it:", raw, make.__name__)
+            line = next(line for line in raw.splitlines() if url in line)
+            self.assertEqual(line.strip(), url)  # whole, on its own line
+            self.assertLess(raw.index("Error IN-33."), raw.index("What do you want to do?"))
+            self.assertIn("Error IN-33", term.problem)  # and in Report this problem
+
+    def test_the_installers_number_is_read_from_its_lines(self):
+        lines = ["Note: Downloading and starting 7 apps did not work. Error IN-33.", "Error IN-33. What it means..."]
+        self.assertEqual(ts.error_number(lines), "IN-33")
+        self.assertIsNone(ts.error_number(["Pulling sonarr", "done"]))
+
+    def test_stop_after_a_failed_job_tells_run_first_its_number(self):
+        import os
+        import tempfile
+        term, _ = plain(["4"])
+        with self.assertRaises(ts.Stop):
+            term.job_failed("The apps did not all start.", code="IN-33")
+        self.assertEqual(term.stop_code, "IN-33")
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"STARBOARD_ERROR_FILE": d + "/e"}):
+            ts.note_stop("IN-33")
+            self.assertEqual(open(d + "/e").read().strip(), "IN-33")
+
     def test_stop_after_a_failed_job_stops(self):
         term, _ = plain(["4"])
         with self.assertRaises(ts.Stop):

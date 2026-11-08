@@ -131,11 +131,16 @@ permissions were changed. Move it aside, then run the script again to download a
 
 ### RF-40
 
-**Starboard's installer stopped.** The installer gives its own error number, starting IN, just above. Look that
-number up below. Put that right, then run the script again.
+**Starboard's installer stopped without giving an error number.** The Run first script ends on the installer's own
+number (starting IN) whenever it gives one, so you only see RF-40 when it gave none: it stopped suddenly, for example
+because the computer ran out of memory or the connection to it closed. The lines just above are the last it wrote.
+Run the script again: it carries on from what is missing. If RF-40 comes back, choose **Report this problem**, or
+[read the log and report a problem](read-the-log.md), with those lines.
 
 If the line above says `sg: command not found`, your copy of the script is from before 7 November 2026. Run the
 script again: the current one works without `sg`.
+
+If you stop the installer yourself, by typing `q` or pressing Ctrl+C, that is not an error and there is no number.
 
 ### RF-50
 
@@ -291,6 +296,28 @@ choose **Try again**.
 **Starboard could not give Jellyfin its Live TV fix.** Jellyfin runs FFmpeg through a small file in its settings
 folder, `jellyfin/ffmpeg-wrap`, so free channels such as U&Laughs play. Check the disk is not full and the
 settings folder is mounted, then choose **Try again**.
+
+### IN-35
+
+**The Starboard folder cannot be opened.** The installer could not go into its own folder, usually because its
+permissions were changed. Move the folder aside and run the Run first script again to download a fresh copy.
+
+### IN-36
+
+**No temporary folder.** The installer keeps its log in a temporary folder in `/tmp`, and could not make one. The
+disk is usually full: free some space (`df -h /tmp` shows how much is left), then run it again.
+
+### IN-37
+
+**The terminal set-up stopped on a problem.** The line above the number says what it was, often that Starboard is
+not answering on its port. Check Starboard is running (`docker ps` lists `starboard`), then run the set-up again
+with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in a browser.
+
+### IN-38
+
+**The terminal set-up stopped on a fault of its own.** Python wrote what went wrong just above the number. Run the
+set-up again with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in a browser, and
+choose **Report this problem** with those lines so it can be fixed.
 
 ## Find out more
 

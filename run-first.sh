@@ -84,6 +84,7 @@ TITLES=("" "Welcome" "Check this computer" "Install what is missing" "Download S
 # with the recommended one first; help as a box over the step; one bar for a job; plain lines for screen readers.
 # A script sets IN (the terminal to read answers from, or empty), TTY (the window to draw in when there are no
 # questions to ask, such as with --yes; it defaults to IN), PLAIN, STEPS, TITLES, LOG and an err function, then sources it.
+# When another script runs it and needs to know how it stopped, it also sets STOP_FILE (see stopped_by_person).
 # For its own name and feedback it sets APP_NAME, APP_VERSION, ISSUES (the repository for the feedback link, owner/name)
 # and, when it has its own feedback flow, a function called app_feedback.
 # tests/test_terminal_frame.py checks that run-first.sh's copy is the same. 7 November 2026.
@@ -299,7 +300,11 @@ finish() {
 }
 trap 'finish' EXIT
 STOP_WORDS="Stopped. Nothing else was changed."
-trap 'finish; echo; echo "$STOP_WORDS"; exit 130' INT
+# A script run by another (Starboard's installer, run by its Run first script) can set STOP_FILE: when the person
+# stops it (q or Ctrl+C), "stopped" is written there, so the caller can tell a person's own stop from a fault and
+# does not show an error number for it. The script's err function writes its error number there itself.
+stopped_by_person() { [ -z "${STOP_FILE:-}" ] || printf 'stopped\n' > "$STOP_FILE" 2>/dev/null || true; }
+trap 'finish; echo; echo "$STOP_WORDS"; stopped_by_person; exit 130' INT
 
 # Help over the step: a box in the middle, the step dimmed behind it. Enter closes it.
 popup() {
@@ -395,7 +400,7 @@ ask() {
   [ "$FANCY" = 1 ] && SCREEN+=("$PROMPT$ANSWER")
   ANSWER="$(printf '%s' "$ANSWER" | sed 's/^ *//; s/ *$//')"
   case "$ANSWER" in
-    q|Q) finish; echo; echo "$STOP_WORDS Run it again at any time."; exit 1 ;;
+    q|Q) finish; echo; echo "$STOP_WORDS Run it again at any time."; stopped_by_person; exit 1 ;;
     b|B)
       [ "$STEP" -gt "${FIRST_BACK:-1}" ] && return 10
       forget_prompt
@@ -1198,6 +1203,10 @@ page 6
 para "Starting Starboard's installer. It asks what Starboard may access, one question at a time, then builds and starts Starboard."
 finish
 export STARBOARD_FROM_RUN_FIRST=1
+# The installer (and its terminal set-up) writes how it stopped here: its error number, or "stopped" when the person
+# chose to stop. Run first then ends on that number, not on a second one of its own (DASH-147).
+export STARBOARD_ERROR_FILE="$WORK/installer-stopped-with"
+: > "$STARBOARD_ERROR_FILE"
 [ "$FANCY" = 0 ] && cmd+=(--plain)
 status=0
 if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
@@ -1208,9 +1217,19 @@ else
 fi
 DRAWN=0  # the installer (and the terminal set-up) drew their own frames and gave the window back
 if [ "$status" != 0 ]; then
+  inner="$(head -n 1 "$STARBOARD_ERROR_FILE" 2>/dev/null | tr -cd 'A-Za-z0-9-')"
   echo
-  tell "The installer stopped. Error RF-40. The reason and its own error number are just above."
-  err RF-40
+  case "$inner" in
+    stopped)
+      tell "Stopped. Run the Run first script again at any time: it carries on from what is missing." ;;
+    [A-Z][A-Z]-[0-9][0-9])
+      # The installer's own number, again as the last lines, so it is the one a person sees and looks up.
+      tell "The installer stopped with Error $inner, explained just above."
+      err "$inner" ;;
+    *)
+      tell "The installer stopped without giving an error number. Error RF-40. The lines just above are the last it wrote."
+      err RF-40 ;;
+  esac
   exit "$status"
 fi
 if [ "$FINISH" = terminal ]; then

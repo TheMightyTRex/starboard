@@ -34,10 +34,17 @@
 # Your settings go in ./data and .env, which git ignores.
 set -uo pipefail
 
-cd "$(dirname "$(readlink -f "$0")")" || exit 1
 ERR_URL="https://themightytrex.github.io/starboard/help/topics/run-first-errors.html"
+# How this run stopped, for the Run first script (DASH-147): the error number, or "stopped" when the person chose to
+# stop (the frame's q and Ctrl+C), so Run first ends on this number rather than adding RF-40 of its own. The terminal
+# set-up writes there too. Without Run first it is a file of our own, so the terminal set-up can still say.
+STOP_FILE="${STARBOARD_ERROR_FILE:-}"
 # The address goes on a line of its own, so it is never cut and copies whole (TERMINAL.md, Questions).
-err() { printf 'Error %s. What it means and how to fix it:\n%s#%s\n' "$1" "$ERR_URL" "$(printf '%s' "$1" | tr 'A-Z' 'a-z')"; }
+err() {
+  printf 'Error %s. What it means and how to fix it:\n%s#%s\n' "$1" "$ERR_URL" "$(printf '%s' "$1" | tr 'A-Z' 'a-z')"
+  [ -z "$STOP_FILE" ] || printf '%s\n' "$1" > "$STOP_FILE" 2>/dev/null || true
+}
+cd "$(dirname "$(readlink -f "$0")")" || { echo "Stopped: the Starboard folder cannot be opened" >&2; err IN-35 >&2; exit 1; }
 
 MODE=docker
 PORT=8095
@@ -103,7 +110,8 @@ IN=""; [ "$ASK" = 1 ] && IN=/dev/tty
 # With --yes there are no questions, but a real window still gets the boxed frame and its job bars.
 TTY=""; [ -t 1 ] && [ -r /dev/tty ] && { : < /dev/tty; } 2>/dev/null && TTY=/dev/tty
 PLAIN="${STARBOARD_PLAIN:+1}"
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/starboard-install.XXXXXX")" || { echo "Stopped: no temporary folder" >&2; exit 1; }
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/starboard-install.XXXXXX")" || { echo "Stopped: no temporary folder" >&2; err IN-36 >&2; exit 1; }
+[ -n "$STOP_FILE" ] || STOP_FILE="$WORK/stopped-with"
 LOG="$WORK/install.log"
 : > "$LOG"
 APP_VERSION="$(cat VERSION 2>/dev/null || echo unknown)"
@@ -832,8 +840,17 @@ step_done
 finish
 if [ "$TERMINAL" = 1 ]; then
   # The rest of set-up, here: the password, the apps and download hours (starboard/terminal_setup.py), in its own frame.
+  # It says how it stopped in STOP_FILE: an error number (shown with its address already), or "stopped" when the
+  # person chose to. Anything else, such as Python stopping on a fault of its own, is IN-38.
   status=0
-  STARBOARD_STARTS_APPS=1 python3 -m starboard.terminal_setup --port "$PORT" --data data --address "${LAN:-}" || status=$?
+  : > "$STOP_FILE"
+  STARBOARD_ERROR_FILE="$STOP_FILE" STARBOARD_STARTS_APPS=1 \
+    python3 -m starboard.terminal_setup --port "$PORT" --data data --address "${LAN:-}" || status=$?
+  if [ "$status" != 0 ] && ! grep -qE '^(stopped|[A-Z]{2}-[0-9]{2})$' "$STOP_FILE" 2>/dev/null; then
+    echo
+    echo "Stopped: the terminal set-up stopped on a fault of its own. The lines above say what it was."
+    err IN-38
+  fi
   exit "$status"
 fi
 exit 0
