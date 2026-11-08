@@ -26,6 +26,7 @@ os.environ["STARBOARD_DISKS"] = ("Media pool=/disks/pool,System disk=/data,Drive
                                  "Drive 3=/disks/each/3,Drive 4=/disks/each/4")
 from starboard import changes, containers, discovery, stack, sysinfo  # noqa: E402
 from starboard.server import make_server  # noqa: E402
+from tests.reelix_stand_in import StandIn  # noqa: E402
 
 GB, TB = 1024 ** 3, 1024 ** 4
 DISKS = {"Media pool": (24 * TB, 14.2 * TB), "System disk": (0.5 * TB, 0.12 * TB), "Drive 1": (8 * TB, 6.9 * TB),
@@ -82,6 +83,7 @@ if EXAMPLE_CONTAINERS:
     containers._check_one = lambda c: {"latest": "0.7.2", "update": True, "unknown": False, "big_change": False}
     changes._fetch = lambda url: changes.parse(EXAMPLE_CHANGELOG)
 stack._port_free = lambda port: True
+stack.reelix_url = lambda data_dir: f"http://127.0.0.1:{FAKE_PORT}/reelix"  # the made-up Reelix, for Settings, Reelix
 discovery.search = lambda services: {"docker": False, "items": [
     {"key": k, "name": n, "type": k, "url": f"http://127.0.0.1:{p}", "port": p, "needs_key": True, "background": False,
      "container": "", "already": False, "can_read_key": False} for k, n, p in (("bazarr", "Bazarr", 6767), ("prowlarr", "Prowlarr", 9696))]}
@@ -90,7 +92,44 @@ KEY = "example-key"
 today = dt.date.today()
 
 
+# Reelix's admin settings (Settings, Reelix), with made-up sites and media servers. Any password is taken.
+REELIX_ADMIN = StandIn(any_password=True)
+for _name, _impl, _state in (("Internet Archive", "definition:internetarchive", 0), ("1337x", "definition:1337x", 0),
+                             ("YTS", "definition:yts", 2), ("My Jackett", "torznab", 0)):
+    _site = REELIX_ADMIN.add("indexers", _impl, _name, {"base_url": "https://example.invalid/"}, enabled=_name != "My Jackett")
+    _site["status"]["failure_count"] = _state
+    if _state:
+        _site["status"]["last_failure_reason"] = "connection: the site took too long to answer"
+REELIX_ADMIN.add("mediaservers", "jellyfin", "Jellyfin", {"url": "http://jellyfin:8096", "api_key": "made-up"})
+REELIX_ADMIN.add("downloadclients", "qbittorrent", "qBittorrent", {"host": "gluetun", "port": 8080, "password": "made-up"})
+REELIX_ADMIN.search.update(proxy={"kind": "http", "host": "gluetun", "port": 8888}, allow_private_addresses=True)
+
+
 class FakeArr(BaseHTTPRequestHandler):
+    def reelix_admin(self, method):
+        """Reelix's admin routes, signed in with a cookie (never the manager key, which reads radio and the queue)."""
+        length = int(self.headers.get("Content-Length") or 0)
+        body = json.loads(self.rfile.read(length) or b"{}") if length else {}
+        with REELIX_ADMIN.lock:
+            status, answer, cookie = REELIX_ADMIN.handle(method, self.path.split("?")[0][len("/reelix/api/v1"):], body, dict(self.headers))
+        raw = json.dumps(answer).encode() if answer is not None else b""
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(raw)))
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
+        self.end_headers()
+        self.wfile.write(raw)
+
+    def do_POST(self):
+        self.reelix_admin("POST")
+
+    def do_PUT(self):
+        self.reelix_admin("PUT")
+
+    def do_DELETE(self):
+        self.reelix_admin("DELETE")
+
     def log_message(self, *a):
         pass
 
@@ -110,6 +149,8 @@ class FakeArr(BaseHTTPRequestHandler):
             if p.startswith("/abs/api/users"):
                 return self.send_json({"users": [{"id": "u1", "username": "sam"}, {"id": "u2", "username": "alex"}, {"id": "u3", "username": "jo"}]})
             return self.send_json({"libraries": []})
+        if p.startswith("/reelix/api/v1/") and not self.headers.get("X-Api-Key"):
+            return self.reelix_admin("GET")
         if p.startswith("/reelix/api/v1/"):  # a made-up Reelix: radio, read from its own API (Coming up, Downloads)
             return self.send_json(example_reelix(p[len("/reelix/api/v1"):].split("?")[0]))
         film = "/films" in p

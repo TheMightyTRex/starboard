@@ -202,6 +202,41 @@ for (const trick of ["//evil.example/", "/%09/evil.example", "https://evil.examp
   await fresh.close();
 }
 
+// RX-01: Reelix's settings (DASH-154): the password is asked, used in a request body only, never kept by the page's
+// storage or put in an address; a site is added, tested and removed again; the unlocked page fits a phone.
+console.log("\n== RX-01 Settings, Reelix");
+const RXPASS = "made-up-reelix-password-41c2";
+const addresses = [];
+page.on("request", (r) => addresses.push(r.url()));
+await open("settings-reelix.html");
+await page.getByRole("button", { name: "Show sites to search" }).click();
+await page.locator("#rx-password").fill(RXPASS);
+await page.locator("dialog button[value=ok]").click();
+await page.locator("section[aria-labelledby=rx-indexers-h] table").waitFor({ timeout: 15000 });
+check("RX-01", "the password opens the list of sites", await page.locator("section[aria-labelledby=rx-indexers-h] tbody tr").count() >= 1);
+await page.getByRole("button", { name: "Add a site to search" }).click();
+await page.locator(".rx-pick", { hasText: "EZTV" }).first().click();
+await page.locator("#side-panel .side-panel__foot").getByRole("button", { name: "Test" }).waitFor({ timeout: 15000 });
+await page.locator("#side-panel .side-panel__foot").getByRole("button", { name: "Test" }).click();
+await page.locator("#side-panel .notice").waitFor({ timeout: 15000 });
+check("RX-01", "a site's test answers in the form", (await page.locator("#side-panel .notice").textContent())?.includes("The test passed"));
+await page.locator("#side-panel .side-panel__foot").getByRole("button", { name: "Save" }).click();
+await page.waitForTimeout(1500);
+const eztv = page.locator("section[aria-labelledby=rx-indexers-h] tbody tr", { hasText: "EZTV" });
+check("RX-01", "the added site is in the list", await eztv.count() === 1);
+await eztv.locator("[role=menuitem]", { hasText: "Remove" }).evaluate((b) => b.click());
+await page.locator("dialog button[value=ok]").click();
+await page.waitForTimeout(1500);
+check("RX-01", "removed again", await eztv.count() === 0);
+await page.setViewportSize({ width: 375, height: 812 });
+await page.waitForTimeout(300);
+check("RX-01", "the unlocked page does not scroll sideways at 375 wide",
+  await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
+await page.setViewportSize({ width: 1280, height: 860 });
+check("RX-01", "the password is never in an address", !addresses.some((a) => a.includes(RXPASS)));
+check("RX-01", "the page keeps no copy in browser storage",
+  !(await page.evaluate((p) => JSON.stringify({ ...localStorage, ...sessionStorage }).includes(p) || document.cookie.includes(p), RXPASS)));
+
 // Phone width: no page scrolls sideways
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

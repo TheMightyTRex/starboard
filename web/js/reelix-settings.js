@@ -157,7 +157,7 @@ function rxEditPanel(kind, words, schema, existing, done) {
   const panel = sidePanel({ title: editing ? `Change ${existing.name}` : `Add ${schema.name}`, wide: true,
     body: [el("div", { class: "stack-4" }, about,
       field("Name", name, { required: true, hint: `The name Starboard and Reelix show for this ${words.one}.` }),
-      switchRow("On", `Reelix uses this ${words.one} while it is on.`, on),
+      switchRow("Active", `Reelix uses this ${words.one} while it is active.`, on),
       form.node,
       el("details", { class: "disclosure" }, el("summary", { text: "Order" }), el("div", { class: "disclosure__body" },
         field("Priority", priority, { hint: "From 1 to 50. Lower comes first when two give the same thing." }))),
@@ -207,7 +207,7 @@ function rxAddPanel(kind, words, catalogue, chosen, { have = [], suggested = [] 
 // One state chip for a configured one: off, cannot start, resting after failures, failed last time, or working.
 function rxState(i) {
   if (i.error) return chip("Cannot start", "danger");
-  if (!i.enabled) return chip("Off", "muted");
+  if (!i.enabled) return chip("Not active", "muted");
   const until = i.status?.disabled_until ? new Date(i.status.disabled_until) : null;
   if (until && until > new Date()) return chip(`Resting until ${until.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`, "warning");
   if (i.status?.failure_count) return chip("Failed last time", "warning");
@@ -301,7 +301,7 @@ function rxKindSection(kind, description) {
       if (!r) { priv.checked = !priv.checked; return; }
       search = r; toast(r.done); draw();
     }));
-    rows.push(switchRow("Addresses on your network", "Lets Reelix reach a site at home, such as your own Jackett. The VPN needs this on too. Leave it off otherwise.", priv));
+    rows.push(switchRow("Addresses on your network", "Lets Reelix reach a site at home, such as your own Jackett. Searching through the VPN needs it too. Otherwise, leave it deactivated.", priv));
     return el("div", { class: "stack-2" }, el("h3", { text: "How Reelix searches" }), rows,
       search.flaresolverr ? el("p", { class: "small muted", text: `Sites with a browser check go through FlareSolverr at ${search.flaresolverr}.` }) : null);
   };
@@ -342,7 +342,7 @@ function rxKindSection(kind, description) {
 
 // Jellyfin and Audiobookshelf: connected, ready to connect with the key Starboard has, or waiting for a key.
 function rxOffers(offers, done) {
-  return el("ul", { class: "stack-2", role: "list" }, offers.map((o) => {
+  return el("ul", { class: "rx-picks", role: "list" }, offers.map((o) => {
     const action = o.connected ? null : o.has_key
       ? el("button", { type: "button", class: "btn", onclick: async (e) => {
         e.currentTarget.disabled = true;

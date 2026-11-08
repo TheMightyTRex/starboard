@@ -1,6 +1,7 @@
 """A stand-in for Reelix's admin API, written from the API's behaviour (no Reelix code): sign-in and sign-out with
 the x-reelix-request header, the provider kinds with schemas, test, save and remove, the search settings and site
-counters. Used by tests/test_reelix_admin.py and by the help centre's example server (made-up data only).
+counters. Used by tests/test_reelix_admin.py and by the help centre's example server (made-up data only, where
+any password is taken: any_password=True).
 
     state = StandIn(password="...")
     status, answer = state.handle(method, path_after_api_v1, body, headers)
@@ -77,8 +78,8 @@ SECRET_TYPES = {"secret"}
 
 
 class StandIn:
-    def __init__(self, password="example-password", user="admin"):
-        self.password, self.user = password, user
+    def __init__(self, password="example-password", user="admin", any_password=False):
+        self.password, self.user, self.any_password = password, user, any_password
         self.lock = threading.Lock()
         self.sessions, self.logins, self.logouts = set(), 0, 0
         self.ids = itertools.count(1)
@@ -112,7 +113,7 @@ class StandIn:
         cookie = headers.get("cookie", "")
         signed = any(f"reelix_session={s}" in cookie for s in self.sessions)
         if path == "/auth/login" and method == "POST":
-            if body.get("username") != self.user or body.get("password") != self.password:
+            if body.get("username") != self.user or (body.get("password") != self.password and not (self.any_password and body.get("password"))):
                 return 401, {"error": "unauthorized", "message": "invalid username or password"}, None
             self.logins += 1
             token = f"s{self.logins}"

@@ -146,7 +146,7 @@ class SitesTest(StandInTest):
         with reelix_admin.Visit(self.base, PASSWORD) as reelix:
             done = reelix_sites.add_sites(reelix, choice)
         self.assertIn("gone is not in this Reelix's list of sites", done[0])
-        self.assertIn("Turn on Addresses on your network in Settings, Reelix, Sites to search", done[1])
+        self.assertIn("Activate Addresses on your network in Settings, Reelix, Sites to search", done[1])
 
     def test_choices_are_checked(self):
         for bad in ({"builtin": ["rm -rf /"]}, {"own": [{"url": "file:///etc/passwd"}]}, {"own": [{"kind": "ftp", "url": "http://a/"}]}):

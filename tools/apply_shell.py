@@ -111,7 +111,7 @@ HELP = {
     "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),
-    "settings-reelix.html": ("topics/change-your-install.md", "changing your install"),
+    "settings-reelix.html": ("topics/change-reelix-settings.md", "changing Reelix's settings"),
     "settings-jellyfin.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-audiobookshelf.html": ("README.md#jellyfin-and-audiobookshelf", "Jellyfin and Audiobookshelf"),
     "settings-alerts.html": ("topics/activate-alerts.md", "activating alerts"),

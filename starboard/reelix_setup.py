@@ -298,7 +298,7 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
             reelix_sites.set_vpn(admin, data_dir, True)
             done.append("Reelix searches through the VPN")
         except (ReelixError, OSError, ValueError) as e:
-            done.append(f"Reelix does not search through the VPN yet ({e}). Turn it on in Settings, Reelix, Sites to search")
+            done.append(f"Reelix does not search through the VPN yet ({e}). Activate Search through the VPN in Settings, Reelix, Sites to search")
 
     # 4e. The sites to search chosen in the set-up (DASH-155): nothing unless chosen.
     try:

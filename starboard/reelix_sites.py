@@ -113,7 +113,7 @@ def add_sites(reelix, choice):
         except reelix_setup.ReelixError as e:
             why = str(e)
             if "blocked address" in why:
-                why = ("Reelix does not reach addresses on your own network unless you allow it. Turn on Addresses on "
+                why = ("Reelix does not reach addresses on your own network unless you allow it. Activate Addresses on "
                        "your network in Settings, Reelix, Sites to search, then add it again")
             done.append(f"{name} was not added: {why}")
             continue

@@ -7,6 +7,13 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Reelix's settings in Starboard:** Settings, Reelix now shows Reelix's sites to search, media servers and download apps, each with its state, and adds, changes, tests and removes them. The forms come from Reelix's own description of each setting, so a setting Reelix adds shows without a Starboard update. Each change asks for Reelix's admin password, signs in to Reelix for that change only and signs out again; Starboard still keeps only a manager key (DASH-154).
+- **Sites to search:** Install apps and the terminal set-up have a new step, Sites to search, with the same questions in both: a short list of Reelix's public sites, none ticked unless you tick them, and your own Torznab or Newznab address. Settings, Reelix lists every site Reelix knows, with how many searches each has answered (DASH-155).
+- **Searches through the VPN:** with the VPN installed, Reelix's searches go out through Gluetun, as Prowlarr's did, and wait when the VPN is down. Install apps sets it up, and Settings, Reelix has a switch for it. Gluetun's own proxy is activated for this (DASH-133).
+- **Jellyfin and Audiobookshelf in Reelix:** Install apps connects Reelix to them with the API keys Starboard already has, so new files show in them at once. Settings, Reelix, Media servers connects them with one button (DASH-156).
+- **Help:** Change Reelix's settings in Starboard, Choose the sites Reelix searches, and Connect Reelix to Jellyfin and Audiobookshelf, each with 3 marked-up screenshots; Install apps and Set up in the terminal have the new step.
+
 ### Fixed
 - **Live TV channels that would not play:** Jellyfin's FFmpeg refuses Live TV pieces whose address has no file ending, such as the ad links on Samsung TV Plus channels like U&Laughs, so 107 channels stopped playing. Install apps now runs Jellyfin's FFmpeg through a small Starboard file, `jellyfin/ffmpeg-wrap/ffmpeg` in your settings folder, which allows those addresses for Live TV only. Your library files and On demand links are played as before. Starting the apps, from Starboard, from the installer or by taking over your apps, puts the file in place, so running the guide again keeps the fix (DASH-169).
 - **Error IN-34:** If the installer cannot put that file in Jellyfin's settings folder, it stops with error IN-34 rather than start a Jellyfin that cannot find FFmpeg.
