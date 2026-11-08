@@ -173,6 +173,61 @@
         5
       ],
       "alt": "The Downloads page with example data, with Activity (step 4) and The Example Hour, Lighthouses, downloading in Reelix (step 5) outlined"
+    },
+    {
+      "topic": "install-apps",
+      "file": "install-apps-1-what-to-set-up.png",
+      "page": "install-apps.html",
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; const field = (t) => document.getElementById([...document.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(t)).htmlFor); const set = (i, v) => { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); }; await press('Begin'); ",
+      "marks": [
+        {
+          "t": "Basics (recommended)",
+          "step": 3,
+          "side": "right"
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "The What to set up step with example data, with Basics (recommended) (step 3) outlined"
+    },
+    {
+      "topic": "install-apps",
+      "file": "install-apps-2-vpn.png",
+      "page": "install-apps.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; const field = (t) => document.getElementById([...document.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(t)).htmlFor); const set = (i, v) => { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); }; await press('Begin'); await press('Continue'); await press('Continue'); document.querySelector('input[value=protonvpn]').click(); set(field('WireGuard private key'), 'ZXhhbXBsZS1rZXktZm9yLXRoZS1oZWxwLWNlbnRyZS0xMjM='); set(field('WireGuard address'), '192.0.2.2/32'); ",
+      "marks": [
+        {
+          "t": "$fieldset:has(input[value=protonvpn])",
+          "step": 6,
+          "side": "right",
+          "tail": 80
+        }
+      ],
+      "steps": [
+        6
+      ],
+      "alt": "The VPN step with example data, with the VPN provider list (step 6) outlined and Proton VPN chosen"
+    },
+    {
+      "topic": "install-apps",
+      "file": "install-apps-3-check.png",
+      "page": "install-apps.html",
+      "height": 1000,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; const field = (t) => document.getElementById([...document.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(t)).htmlFor); const set = (i, v) => { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); }; await press('Begin'); await press('Continue'); await press('Continue'); document.querySelector('input[value=protonvpn]').click(); set(field('WireGuard private key'), 'ZXhhbXBsZS1rZXktZm9yLXRoZS1oZWxwLWNlbnRyZS0xMjM='); set(field('WireGuard address'), '192.0.2.2/32'); await press('Continue'); await press('Continue'); document.querySelector('main input[type=password]').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$main table",
+          "step": 9,
+          "side": "right",
+          "tail": 80
+        }
+      ],
+      "steps": [
+        9
+      ],
+      "alt": "The Check step with example data, with the table of answers (step 9) outlined"
     }
   ]
 }

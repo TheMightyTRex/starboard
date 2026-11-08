@@ -83,6 +83,7 @@ async function startInstall() {
       } });
     frame();
     const content = await installStep(step.id, state, data, apps, go);
+    if (!content) return;  // the step was drawn again by a newer go(), such as after Basics was applied
     step.nodes = content.nodes;
     save = content.save;
     loading = false;
@@ -146,6 +147,7 @@ async function installStep(id, state, data, apps, go) {
     };
     if (!state.installApplied && state.install !== "custom") {
       try { await applyInstall(state.install); } catch { state.install = "custom"; }
+      return go("groups");  // drawn again, so the list of steps follows Basics (its VPN and Usenet steps)
     }
     const total = el("p", { class: "small muted", "aria-live": "polite" });
     let afterCount = () => {};

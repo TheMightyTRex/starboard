@@ -51,8 +51,9 @@ Use this page to do it by hand.
 
    It explains what it is going to do, checks that Docker is installed, then asks its questions one at a time.
 
-6. Answer each question, then press Enter. The next section explains every question. The answer in capitals in the
-   brackets is the default: `[Y/n]` means Enter on its own says yes, and `[y/N]` means Enter on its own says no.
+6. Answer each question: type the number of your answer and press Enter. Press Enter on its own to take the one in
+   the brackets, which is marked recommended. When you run the installer again, your last answer is in the brackets
+   instead. The next section explains every question.
 7. Wait while the installer builds and starts Starboard. The first time, this downloads what Starboard needs and can
    take several minutes.
 8. When it finishes, the installer prints the addresses and the setup code. Keep the terminal open, or write the code
@@ -67,15 +68,15 @@ your answer later.
 
 On a new install the installer asks only what Starboard needs to start:
 
-1. **"Let your home network open Starboard? [Y/n]"**
+1. **"Can phones and other computers on your home network open Starboard?"**
    Yes means phones and other computers at home can open Starboard, with your password. No means only this computer
    can. Most people answer yes. Asked on a new install only: after that, it is a switch in **Settings**,
    **Security**.
-2. **"Give Starboard access to Docker for app updates? [y/N]"**
+2. **"Give Starboard access to Docker for app updates?"**
    Yes lets Starboard start your media apps, update them on **System**, **Apps**, **Updates**, and find their API keys.
    This gives Starboard full control of Docker, which is the same as full control of the computer. Answer yes if you
    want Starboard to set up your media server for you.
-3. **"Set up Drive pools? [y/N]"**, only when the computer has more than one drive besides the system drive.
+3. **"Set up Drive pools?"**, only when the computer has more than one drive besides the system drive.
    Yes installs the pool helper, which can join drives into one folder. It runs on this computer with sudo, so it is
    asked here, before the set-up.
 
@@ -85,13 +86,13 @@ shows (the [Run first script](run-first.md) runs it for you).
 
 When you run the installer again later, it also asks these, with your last answers as the defaults:
 
-- **"Show each app's processor and memory use? [y/N]"** Yes lets **System**, **Overview**, **Monitor** show what each
+- **"Show each app's processor and memory use?"** Yes lets **System**, **Overview**, **Monitor** show what each
   app is using. Starboard only reads, and only while that page is open.
-- **"Give Starboard a Live TV folder? [y/N]"** Only for Jellyfin users who want free Live TV channels: the folder
+- **"Give Starboard a Live TV folder?"** Only for Jellyfin users who want free Live TV channels: the folder
   Jellyfin reads its Live TV files from, for example `/srv/media-stack/config/jellyfin/iptv`. Starboard writes only in that folder.
-- **"Choose folders to show? [y/N]"** Yes lets **System**, **Storage** show how full your drives are. Type one folder
+- **"Choose folders to show?"** Yes lets **System**, **Storage** show how full your drives are. Type one folder
   per line as a name, an equals sign and the folder, such as `Media=/mnt/media`, then press Enter on an empty line.
-- **"Set up Disk health reports? [y/N]"** Yes lets **System**, **Storage**, **Disk health** show each drive's health
+- **"Set up Disk health reports?"** Yes lets **System**, **Storage**, **Disk health** show each drive's health
   report, which can warn of a failing drive. It installs a small job that checks your drives every 30 minutes, so it
   asks for your password. It needs a program called smartmontools.
 

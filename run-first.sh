@@ -1120,14 +1120,26 @@ apply_host() {
       echo "The set-up in the browser asks to change this computer:"
       for (( i = 0; i < ${#apply[@]}; i++ )); do
         case "${apply[$i]}" in
-          --disk-health) echo "  - Check each disk's health every 30 minutes (installs smartmontools; sudo asks for your password)" ;;
-          --disk) echo "  - Watch the free space of the media folder, ${apply[$((i + 1))]#Media=}"; i=$(( i + 1 )) ;;
-          --livetv-folder) echo "  - Let Starboard write Live TV files into ${apply[$((i + 1))]}"; i=$(( i + 1 )) ;;
+          --disk-health) tell "  - Check each disk's health every 30 minutes (installs smartmontools; sudo asks for your password)" ;;
+          --disk) tell "  - Watch the free space of the media folder, ${apply[$((i + 1))]#Media=}"; i=$(( i + 1 )) ;;
+          --livetv-folder) tell "  - Let Starboard write Live TV files into ${apply[$((i + 1))]}"; i=$(( i + 1 )) ;;
         esac
       done
+      # Numbered answers, as every question (TERMINAL.md, Questions). Nothing changes unless the person says so.
       local answer=""
-      [ -n "$IN" ] && read -r -p "Make these changes? Only if you chose them in the set-up. [y/N] " answer < "$IN"
-      if ! [[ "$answer" =~ ^[Yy] ]]; then
+      if [ -n "$IN" ]; then
+        echo
+        tell "Make these changes? Only if you chose them in the set-up."
+        echo "  1. No, change nothing (recommended)"
+        echo "  2. Yes, make these changes"
+        while :; do
+          answer=""
+          read -r -p "Your choice [1]: " answer < "$IN" || answer=1
+          case "${answer:-1}" in 1|2) break ;; esac
+          echo "Type 1 or 2."
+        done
+      fi
+      if [ "$answer" != 2 ]; then
         tell "Nothing was changed. To make them later, run ./install.sh ${apply[*]} in the Starboard folder."
         rm -f data/setup-host.json
         return 0

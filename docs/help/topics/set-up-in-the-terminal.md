@@ -36,8 +36,10 @@ takes about 10 minutes, plus the time to download the apps.
    Starboard lists the apps and memory; press Enter to install them. With **Let me choose**, type the numbers of
    what you want, such as Movies, TV and Watching, separated by commas. Read
    [Change your install](change-your-install.md) for what each install has.
-8. **VPN**, if you chose it (every install has one): your provider and its details. The password or key does not
-   show as you type. Then **Usenet**, for NZBGet or SABnzbd: some providers, and what Usenet may be used for.
+8. **VPN**, if you chose it (every install has one): type the number of your provider. Each is listed with its
+   website. Nothing is chosen for you here, so Enter on its own asks again. If yours is not listed, choose
+   **Another one that Gluetun supports** and type its name as Gluetun's list writes it. Then its details: the
+   password or key does not show as you type. Then **Usenet**, for NZBGet or SABnzbd: some providers, and what Usenet may be used for.
 9. **Check:** read the list, then type `y` to write the apps' files and start them.
    Downloading them can take several minutes.
 10. **Jellyfin extras**, when you have Jellyfin: Starboard's Jellyfin extras, such as Live TV.
@@ -47,12 +49,15 @@ takes about 10 minutes, plus the time to download the apps.
     recommended on a computer with less than 1 GB of memory.
 14. When it finishes, it prints the addresses to open Starboard from any device, and the one installer command for
     the changes to this computer, such as free space for your media folder and disk health. The
-    [Run first script](run-first.md) runs that command for you.
+    [Run first script](run-first.md) runs that command for you. If it needs sudo and sudo has forgotten your
+    password, it asks for it again in the same window.
 
 ## How to answer
 
 - Type a number and press Enter. Press Enter on its own to take the answer in the brackets, which is the recommended
-  one.
+  one. A question with no brackets, such as your VPN provider, has no recommended answer: type a number.
+- Keys you press while Starboard is working, or before a question appears, do not show until the next question.
+  If an answer is not one Starboard can use, it says why under the question and asks again.
 - Type `b` and press Enter to go back a step. Your last answers are in the brackets, so Enter keeps each one. A
   password or key you typed before is kept too, if you press Enter. Once the apps are written, you cannot go back
   past the check: change them later in **Settings**, **Install apps**.

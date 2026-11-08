@@ -30,21 +30,34 @@ and starts them. At the end, the apps are running and Starboard shows how to con
    - **Choose myself:** tick each group below, and with **Advanced settings** each app.
    The groups below show what is ticked; changing one makes it your own choice. An app also brings what it needs:
    Jellystat brings Jellyfin, and Reelix brings a download app.
+
+   ![The What to set up step with example data, with Basics (recommended) (step 3) outlined](../images/install-apps-1-what-to-set-up.png)
+
 4. Under **Which Reelix?**, the install has chosen for you; change it if you like. Select **Continue**. You can
    change any of this later: read [Change your install](change-your-install.md).
 5. On **Folders**, type your **Media folder**, such as `/srv/media`. If your other apps already use a media
    folder, Starboard offers it. Select **Continue**.
-6. If you ticked **VPN**, the **VPN** step asks for your **VPN provider** and the details from its website.
-   Select **Continue**.
+6. If your install has a VPN, the **VPN** step asks which **VPN provider** you have an account with. Choose it
+   from the list: each name has a link to the provider's site, which opens in a new tab. If yours is not listed,
+   choose **Another one that Gluetun supports** and type its name as Gluetun's list writes it. Then choose
+   **WireGuard** (quicker and simpler) or **OpenVPN**, and type the details from the provider's site. Fields marked
+   with a star (*) are required. Select **Continue**.
+
+   ![The VPN step with example data, with the VPN provider list (step 6) outlined and Proton VPN chosen](../images/install-apps-2-vpn.png)
+
 7. If you ticked **SABnzbd**, the **Usenet** step lists some Usenet providers. They are affiliate links: if you
    sign up through one, the provider pays a small commission towards Starboard's development, and you pay the same
    price. Use Usenet only for files you have the right to download. Select **Continue**.
 8. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
    you want, then select **Continue**.
-9. On **Check**, read the summary. Select **Change** beside anything you want to change. When it is right,
-   select **Write the files**.
-10. On **Start**, type **Your Starboard password**, then select **Start the apps**. Starboard downloads and starts
-   each app. This can take several minutes the first time.
+9. On **Check**, read the table of your answers. Select **Change** beside anything you want to change. When it is
+   right, type **Your Starboard password** and select **Write the files**.
+
+   ![The Check step with example data, with the table of answers (step 9) outlined](../images/install-apps-3-check.png)
+
+10. On **Start**, select **Start the apps**. Starboard downloads and starts each app. Beside the timer, it counts
+   how many are installed, then how many are running, such as "5 of 7 installed". This can take several minutes
+   the first time.
 11. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
 12. Starboard sets Reelix up for you: its admin account (`admin`, with your Starboard password), the library
     folders (radio included, when you chose it), and qBittorrent as its download app. To follow radio shows and

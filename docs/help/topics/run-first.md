@@ -59,7 +59,7 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
 6. **Download Starboard:** it downloads Starboard into a folder called `starboard` in your home folder, or updates
    it if it is already there.
 7. **Install Starboard:** check the summary and press Enter. Starboard's installer asks about your home network and
-   Docker access, and about drive pools when there is more than one drive. If you are unsure, the answer in capitals
+   Docker access, and about drive pools when there is more than one drive. If you are unsure, the recommended answer
    is the safe one. Answer yes to Docker access if you want Starboard to start your media apps for you. The script
    tells Starboard what it found on this computer (drives, apps already running, memory), so the set-up can
    recommend the right answers.
