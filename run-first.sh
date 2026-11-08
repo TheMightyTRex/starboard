@@ -866,7 +866,10 @@ with_docker_group() {
     printf 'exec %s < %q\n' "$line" "${IN:-/dev/null}" | newgrp docker
   else
     # shellcheck disable=SC2024  # the input is for the command; sudo reads a password from the terminal
-    sudo --preserve-env -u "$(id -un)" -g docker -- "$@" < "${IN:-/dev/null}"
+    # The settings go by name through env: sudo-rs (Ubuntu 26.04) ignores --preserve-env.
+    local keep=() v
+    for v in $(compgen -e); do case "$v" in STARBOARD_*|TERM|COLORTERM|NO_COLOR|LANG|LC_*|PATH|HOME) keep+=("$v=${!v}") ;; esac; done
+    sudo -u "$(id -un)" -g docker -- env "${keep[@]}" "$@" < "${IN:-/dev/null}"
   fi
 }
 

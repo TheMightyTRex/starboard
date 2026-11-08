@@ -106,7 +106,11 @@ if [ "$MODE" = docker ] && [ -z "${STARBOARD_REGROUPED:-}" ] && command -v docke
       printf '%s\n' "Your user was just allowed to use Docker. To use that now, without signing out, sudo asks for the password you use to sign in to this computer, once (nothing shows as you type)." \
         | fold -s -w $(( width - 1 ))
     fi
-    exec sudo --preserve-env -u "$(id -un)" -g docker -- "$0" "${ARGS[@]+"${ARGS[@]}"}"
+    # The settings go by name through env: sudo-rs (Ubuntu 26.04) ignores --preserve-env, and without
+    # STARBOARD_REGROUPED, STARBOARD_PLAIN and STARBOARD_ERROR_FILE the second run loses accessible mode and its
+    # error number.
+    keep=(); for v in $(compgen -e); do case "$v" in STARBOARD_*|TERM|COLORTERM|NO_COLOR|LANG|LC_*|PATH|HOME) keep+=("$v=${!v}") ;; esac; done
+    exec sudo -u "$(id -un)" -g docker -- env "${keep[@]}" "$0" "${ARGS[@]+"${ARGS[@]}"}"
   fi
 fi
 
