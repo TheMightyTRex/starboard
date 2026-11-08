@@ -18,7 +18,7 @@ docker run --rm --network host -u "$(id -u):$(id -g)" -e HOME=/tmp -e ONLY="${1:
   -e BASE="http://127.0.0.1:$PORT" -e PASSWORD_FILE=/work/data/password -e OUT=/work/out \
   -v "$work:/work" -v "$PWD/tools/screenshots:/shots:ro" \
   "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
-  sh -c "mkdir -p /tmp/s && cp /shots/help_shoot.mjs /shots/help_shots.json /shots/annotate.js /tmp/s/ && cd /tmp/s && npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT >/dev/null && node help_shoot.mjs" || status=$?
+  sh -c "mkdir -p /tmp/s && cp -r /shots/help_shoot.mjs /shots/help_shots.json /shots/annotate.js /shots/terminal /tmp/s/ && cd /tmp/s && npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT >/dev/null && node help_shoot.mjs" || status=$?
 mkdir -p docs/help/images
 cp "$work"/out/*.png docs/help/images/ 2>/dev/null || true
 command -v pngquant >/dev/null && pngquant --force --ext .png --quality 70-90 docs/help/images/*.png 2>/dev/null || true

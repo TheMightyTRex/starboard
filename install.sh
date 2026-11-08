@@ -52,6 +52,7 @@ TERMINAL=0
 DISKS_GIVEN=0
 DISKS=()
 START_APPS=0
+ARGS=("$@")
 while [ $# -gt 0 ]; do
   case "$1" in
     --native) MODE=native ;;
@@ -81,6 +82,20 @@ done
 [ -t 0 ] || ASK=0
 [ "$TERMINAL" = 0 ] || [ -t 0 ] || { echo "Stopped: --terminal needs a terminal to type in" >&2; err IN-02 >&2; exit 2; }
 [ "$(id -u)" -ne 0 ] || { echo "Stopped: run this as your normal user, not root" >&2; err IN-04 >&2; exit 1; }
+
+# Added to the docker group a moment ago (by Run first, say) but this sign-in does not know it yet: start again with
+# that group, as Run first does, rather than stop with IN-22 and ask for a sign-out. Newer systems may have no sg.
+if [ "$MODE" = docker ] && [ -z "${STARBOARD_REGROUPED:-}" ] && command -v docker >/dev/null 2>&1 \
+   && ! docker info >/dev/null 2>&1 \
+   && id -nG "$(id -un)" 2>/dev/null | tr ' ' '\n' | grep -qx docker \
+   && ! id -nG | tr ' ' '\n' | grep -qx docker; then
+  export STARBOARD_REGROUPED=1
+  if command -v sg >/dev/null 2>&1; then
+    exec sg docker -c "$(printf '%q ' "$0" "${ARGS[@]+"${ARGS[@]}"}")"
+  elif [ -t 0 ] || sudo -n true 2>/dev/null; then
+    exec sudo --preserve-env -u "$(id -un)" -g docker -- "$0" "${ARGS[@]+"${ARGS[@]}"}"
+  fi
+fi
 
 # The frame: answers come from the terminal; with --yes, or with no terminal, nothing is asked and plain lines are
 # written (the Run first window keeps them in its log).
