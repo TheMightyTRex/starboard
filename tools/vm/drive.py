@@ -134,6 +134,15 @@ def main():
         typed.append(label or repr(text))
         answers += 1
 
+    def many_open(screen_lines):
+        """A list that takes several numbers is the question asked now: its "Type the numbers" line is on the screen
+        and no answer has been typed under it yet (an m for the rest of the list does not count). Once answered, the
+        line stays on the screen above the next question, which takes one number."""
+        idx = [i for i, l in enumerate(screen_lines) if "Type the numbers, separated by commas" in l]
+        if not idx:
+            return False
+        return not any(re.search(r"Your choice \[[^\]]*\]: (?!m\s*$)\S", l) for l in screen_lines[idx[-1]:])
+
     def tick_all(lines):
         """In the arrow-key list: move to each unticked line and press Space, then Enter."""
         items = [i for i, l in enumerate(lines) if re.search(r"\[( |x)\]", l)]
@@ -237,7 +246,7 @@ def main():
         elif a.apps == "all" and "Space ticks" in text and "your choice" not in low and re.search(r"(?i)apps|what do you want|media server|use starboard's", text):
             keys, label = tick_all(lines)
             send(keys, label)
-        elif a.apps == "all" and re.search(r"Type the numbers, separated by commas", text) and re.search(r"(?i)apps|what do you want", text):
+        elif a.apps == "all" and many_open(lines) and re.search(r"(?i)apps|what do you want", text):
             more = next((int(m.group(1)) for l in lines for m in [re.search(r"(\d+) more: type m", l)] if m), 0)
             if more and not shown_more:
                 shown_more = True
