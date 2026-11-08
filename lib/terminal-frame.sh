@@ -409,7 +409,7 @@ choose() {
       hang "  $mark $(accent "$(printf '%2d' $(( i + 1 )))")  " "" "$name"
       [ -z "$about" ] || hang "        " dim "$about"
     else
-      say "  $(( i + 1 )). $name${about:+: $about}"
+      hang "  $(( i + 1 )). " "" "$name${about:+: $about}"
     fi
   done
   while :; do

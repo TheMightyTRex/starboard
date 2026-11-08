@@ -81,6 +81,8 @@ def main():
     shown_more = False
     repeats, last_same = 0, None
     sent_screen, sent_time = None, 0.0  # the screen when the last keys were sent
+    output_since_send = False           # anything written since then (a failed job can redraw the same screen)
+    last_keys = ""                      # the last keys typed, whose echo may run past the edge like any typing
     by_app = False                      # 'Let me choose app by app' already chosen once
     retries = 0                         # Try again chosen after a failed job
     heading = here = text = ""
@@ -105,7 +107,13 @@ def main():
         for x, y in zip(body, body[1:]):
             if x == y and len(x.strip()) > 8:
                 fault("line repeated", x.strip())
-        if screen.wrapped:
+        # Typing echoed after a long question wraps as in any terminal: that is the person's text, not a fault.
+        typed_echo = last_keys.strip()
+        if typed_echo and len(typed_echo) > 3:
+            kept = [l for l in screen.wrapped_lines if not (": " in l and typed_echo.startswith(l.rsplit(": ", 1)[1].strip()))]
+            screen.wrapped -= len(screen.wrapped_lines) - len(kept)
+            screen.wrapped_lines[:] = kept
+        if screen.wrapped > 0:
             fault("text past the right edge", f"{screen.wrapped} characters wrapped onto the next line, after: "
                   + " / ".join(dict.fromkeys(screen.wrapped_lines))[:200])
             screen.wrapped = 0
@@ -115,12 +123,13 @@ def main():
         screen.unknown.clear()
 
     def send(text, label=None):
-        nonlocal answers, repeats, last_same, sent_screen, sent_time
+        nonlocal answers, repeats, last_same, sent_screen, sent_time, output_since_send, last_keys
         same = (heading, here.strip(), label or repr(text))
         # Enter pressed while a job runs (the menu says Please wait) is a person being impatient, not a stuck question.
         repeats = repeats + 1 if same == last_same and "Please wait" not in screen_text else 0
         last_same = same
         sent_screen, sent_time = screen_text, time.time()
+        output_since_send, last_keys = False, text
         os.write(fd, text.encode())
         typed.append(label or repr(text))
         answers += 1
@@ -149,6 +158,7 @@ def main():
                 ended = "finished"
                 break
             screen.feed(chunk)
+            output_since_send = True
             raw += chunk
             raw = raw[-20000:]
             last_out = time.time()
@@ -164,7 +174,7 @@ def main():
         low = (before + " " + here).lower() if not here.lstrip().startswith(("›", "Your choice")) else here.lower()
         heading = next((m.group(1).strip() for l in lines[:4] for m in [re.search(r"Starboard \| ([^│]+?)\s{2,}", l)] if m), "")
         screen_text = text
-        if text == sent_screen:
+        if text == sent_screen and not output_since_send:
             # Nothing new on the screen since the last answer: the computer is working on it (after sudo's password,
             # or a job that writes nothing, as in plain mode). A person waits rather than pressing Enter again.
             if time.time() - sent_time > 1200:
