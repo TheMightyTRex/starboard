@@ -27,7 +27,9 @@ one() {
     plain) opts=(--plain) ;;
     browser) opts=(--browser --stop-after 'Press q to close it'); desktop=1 ;;
     resize) opts=(--resize-after 3) ;;
-    again) opts=(--command 'cat run-first.sh | STARBOARD_REPO=$HOME/starboard.bundle bash -s -- --yes --browser -- --yes >/dev/null 2>&1; cd starboard && ./install.sh') ;;
+    # Installed first with no questions; that run waits for the browser set-up at its end, so it is closed once it
+    # gets there (data/starter), and the installer is run again in the window.
+    again) opts=(--command 'cat run-first.sh | STARBOARD_REPO=$HOME/starboard.bundle bash -s -- --yes --browser -- --yes >/dev/null 2>&1 & p=$!; until [ -f starboard/data/starter ] || ! kill -0 $p 2>/dev/null; do sleep 5; done; kill $p 2>/dev/null; sleep 2; cd starboard && ./install.sh') ;;
   esac
   log="$OUT/$name.vm.log"
   [ "$slot" = 0 ] || sleep 90  # the two machines start apart: both write the same git bundle when they start

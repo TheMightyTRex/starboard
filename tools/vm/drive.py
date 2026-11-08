@@ -82,6 +82,7 @@ def main():
     repeats, last_same = 0, None
     sent_screen, sent_time = None, 0.0  # the screen when the last keys were sent
     by_app = False                      # 'Let me choose app by app' already chosen once
+    retries = 0                         # Try again chosen after a failed job
     heading = here = text = ""
     ended = "timeout"
     seen_faults = set()
@@ -228,6 +229,21 @@ def main():
         elif a.apps == "all" and re.search(r"install [^?]+\? \[y/n\]", " ".join(l.strip() for l in lines[max(screen.r - 3, 0):screen.r + 1]).lower()) \
                 and re.search(r"\[y/n\]: ?$", low.rstrip() + " "):
             send("y\r", "y (install this app)")
+        elif "what do you want to do?" in text.lower() and "try again" in text.lower() and "your choice" in low:
+            # A job failed. A person tries again a few times, then reads the details, then carries on without it.
+            nums = {m.group(2).lower(): m.group(1) for l in lines
+                    for m in [re.match(r"\s*(?:●\s+)?(\d+)[.\s]\s*(Try again|Show the details|Carry on without them|Stop)", l)] if m}
+            retries += 1
+            if retries <= 3:
+                send(nums.get("try again", "1") + "\r", "Try again")
+            elif retries == 4 and "show the details" in nums:
+                fault("job failed", " / ".join(l.strip() for l in lines if l.strip())[-300:])
+                send(nums["show the details"] + "\r", "Show the details")
+            elif "carry on without them" in nums:
+                send(nums["carry on without them"] + "\r", "Carry on without them")
+            else:
+                ended = "a job kept failing"
+                break
         elif a.plain and answers == 0:
             send("a\r", "a (accessible mode)")
         elif re.search(r"your choice: ?$", low.rstrip() + " ") and "[" not in here:
