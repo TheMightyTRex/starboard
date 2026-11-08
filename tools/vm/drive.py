@@ -30,7 +30,7 @@ import time
 sys.path.insert(0, os.path.dirname(__file__))
 from term_screen import Screen  # noqa: E402
 
-LEAKS = re.compile(r"^\s*(Get:\d|Hit:\d|Ign:\d|Reading package lists|Building dependency tree|Setting up |Unpacking |"
+LEAKS = re.compile(r"^\s*(Get:\d|Hit:\d|Ign:\d|Reading package lists|Building dependency tree|Setting up \S+ \(|Unpacking |"
                    r"Selecting previously|Preparing to unpack|Processing triggers|Executing docker install|\+ sh -c|"
                    r"WARNING: apt does not have|debconf: |dpkg: |E: |W: |Created symlink|Synchronizing state of)")
 FRAME = set("─│┌┐└┘├┤┬┴┼═║╔╗╚╝━┃╭╮╰╯ ")
