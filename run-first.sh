@@ -1154,7 +1154,10 @@ apply_host() {
     if [ ${#apply[@]} -gt 0 ]; then
       echo
       tell "Applying the set-up's changes to this computer: ./install.sh ${apply[*]}"
-      again=(./install.sh --yes "${apply[@]}")
+      # Accessible mode carries on into this run too: no boxes appear at the very end.
+      again=(./install.sh --yes)
+      [ -z "$PLAIN" ] || again+=(--plain)
+      again+=("${apply[@]}")
       if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
         # This sign-in does not know about the docker group yet.
         with_docker_group "${again[@]}" && rm -f data/setup-host.json

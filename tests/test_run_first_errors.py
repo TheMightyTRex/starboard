@@ -52,5 +52,16 @@ class InstallerStopNoteTest(unittest.TestCase):
         self.assertIn("stopped_by_person; exit 130", frame)
 
 
+
+class PlainCarriesOnTest(unittest.TestCase):
+    def test_second_installer_run_keeps_accessible_mode(self):
+        # Run first runs the installer again for the set-up's changes to this computer; in accessible mode that run
+        # must be plain too, or the very last page is boxed (night of 8 November 2026).
+        script = (ROOT / "run-first.sh").read_text()
+        self.assertIn('[ -z "$PLAIN" ] || again+=(--plain)', script)
+        plain_choice = 'case "$first" in a|A) FANCY=0; PLAIN=1'
+        self.assertIn(plain_choice, script)
+
+
 if __name__ == "__main__":
     unittest.main()
