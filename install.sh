@@ -100,6 +100,12 @@ if [ "$MODE" = docker ] && [ -z "${STARBOARD_REGROUPED:-}" ] && command -v docke
   if command -v sg >/dev/null 2>&1; then
     exec sg docker -c "$(printf '%q ' "$0" "${ARGS[@]+"${ARGS[@]}"}")"
   elif [ -t 0 ] || sudo -n true 2>/dev/null; then
+    # sudo's own prompt says nothing about why: say it first, wrapped to the window (TERMINAL.md, Questions).
+    if ! sudo -n true 2>/dev/null; then
+      width="$(tput cols 2>/dev/null || echo 80)"; [ "$width" -gt 20 ] 2>/dev/null || width=80
+      printf '%s\n' "Your user was just allowed to use Docker. To use that now, without signing out, sudo asks for the password you use to sign in to this computer, once (nothing shows as you type)." \
+        | fold -s -w $(( width - 1 ))
+    fi
     exec sudo --preserve-env -u "$(id -un)" -g docker -- "$0" "${ARGS[@]+"${ARGS[@]}"}"
   fi
 fi
