@@ -432,6 +432,7 @@ def takeover_script(record, host_stack, cfg, data=None, folders=(), owner=(1000,
     uid, gid = int(owner[0]), int(owner[1])
     if folders:  # the folders new apps use, made and owned as Install apps does (stack._start)
         lines.append("mkdir -p " + " ".join(q(f) for f in folders) + " || true")
+    lines.append(stack.ffmpeg_wrap_script(cfg, uid, gid) + " || echo 'Could not give Jellyfin the Live TV wrapper'")
     lines += [f"echo 'Removing the old containers (their settings folders and images stay)'; docker rm {names} || {{ {back}; }}",
               f"docker compose -p {stack.PROJECT} --env-file .env -f compose.yaml up -d --remove-orphans 2>&1"]
     if data:  # as Install apps does (stack._start): the folders themselves, then each app's, not a database's

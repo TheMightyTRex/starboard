@@ -286,6 +286,12 @@ set-up again to write it afresh.
 **Some apps did not start.** Choose **Show the details** for the last lines Docker wrote, put that right, then
 choose **Try again**.
 
+### IN-34
+
+**Starboard could not give Jellyfin its Live TV fix.** Jellyfin runs FFmpeg through a small file in its settings
+folder, `jellyfin/ffmpeg-wrap`, so free channels such as U&Laughs play. Check the disk is not full and the
+settings folder is mounted, then choose **Try again**.
+
 ## Find out more
 
 - [Set up everything with the Run first script](run-first.md)

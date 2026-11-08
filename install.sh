@@ -207,6 +207,15 @@ sa_seed() {
       "[ -e '$top/$name' ] || { mkdir -p '$top' && cat > '$top/$name' && chmod 600 '$top/$name' && chown $SA_PUID:$SA_PGID '$top' '$top/$name'; }" \
       < "$seed" >/dev/null 2>&1 || echo "Could not give $app_dir its first settings; it starts with its own."
   done
+  # Live TV fix (DASH-169): when compose.yaml points Jellyfin at the wrapper, it goes in Jellyfin's settings folder
+  # from Starboard's own copy (starboard/ffmpeg-wrap.sh, not data/stack), replacing an older one, with ffprobe as a
+  # link to it. Without it Jellyfin could not find FFmpeg, so a failure stops here.
+  if grep -qF 'FFMPEG_PATH: "/config/ffmpeg-wrap/ffmpeg"' "$SA_FILE"; then
+    top="${SA_DIRS[0]}/jellyfin/ffmpeg-wrap"
+    docker run --rm -i -v "${SA_DIRS[0]}:${SA_DIRS[0]}" --entrypoint sh "$SA_HELPER" -c \
+      "mkdir -p '$top' && cat > '$top/ffmpeg' && chmod 755 '$top/ffmpeg' && ln -sfn ffmpeg '$top/ffprobe' && chown -h $SA_PUID:$SA_PGID '${SA_DIRS[0]}/jellyfin' '$top' '$top/ffmpeg' '$top/ffprobe'" \
+      < starboard/ffmpeg-wrap.sh >/dev/null 2>&1 || stop IN-34 "Starboard could not give Jellyfin its Live TV wrapper in $top."
+  fi
   # SABnzbd keeps the API key in its own settings, which stay when it is taken away and added again: Starboard is
   # given the key SABnzbd really has, so Starboard and Reelix can still use it.
   if [ -f data/stack/seed/sabnzbd/sabnzbd.ini ] && grep -q '^SABNZBD_API_KEY=' "$SA_ENV"; then

@@ -10,6 +10,7 @@ optional extras: "later" (needs its own settings file first, so it is left out o
 "vpn" (runs through Gluetun when the VPN group is on), "db" (a database that comes with it), "notes".
 """
 
+import base64
 import json
 import os
 import re
@@ -42,6 +43,14 @@ GROUPS = [
 LSIO = {"PUID": "${PUID}", "PGID": "${PGID}", "TZ": "${TZ}"}
 CFG = "${CONFIG_DIR}"
 DATA = "${DATA_DIR}"
+
+# Live TV fix (DASH-169, 8 November 2026): Jellyfin's FFmpeg refuses HLS segments whose address has no file ending,
+# so 107 Samsung TV Plus and Amagi channels would not play. Jellyfin runs FFmpeg through a small wrapper
+# (starboard/ffmpeg-wrap.sh) that adds -extension_picky 0 for Live TV inputs only. Starting the apps puts it in
+# Jellyfin's settings folder as ffmpeg-wrap/ffmpeg, with ffprobe as a link to it (stack._start and install.sh).
+FFMPEG_WRAP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ffmpeg-wrap.sh")
+FFMPEG_PATH = "/config/ffmpeg-wrap/ffmpeg"
+JELLYFIN_CONFIG = f"{CFG}/jellyfin:/config"
 
 # Storyarr is pinned to a version, so System, Apps, Updates offers each newer one (with a database backup first).
 # STARBOARD_STORYARR_IMAGE chooses another image, or none to leave Storyarr out.
@@ -567,10 +576,13 @@ def build(choice):
             lines += [f"      - {_yaml_value(p)}" for p in ports]
         app_env = {k: _yaml_value(v) for k, v in (a.get("env") or {}).items()}
         app_env.update(_kept_env(keep, kept_vars))
+        volumes = _with_kept_volumes(a.get("volumes") or [], keep.get("volumes") or [])
+        if key == "jellyfin" and "linuxserver/jellyfin" in image and JELLYFIN_CONFIG in volumes:
+            # Only where Starboard knows /config is Jellyfin's own settings folder, so the wrapper is put there.
+            app_env.setdefault("FFMPEG_PATH", _yaml_value(FFMPEG_PATH))
         if app_env:
             lines.append("    environment:")
             lines += [f"      {k}: {v}" for k, v in app_env.items()]
-        volumes = _with_kept_volumes(a.get("volumes") or [], keep.get("volumes") or [])
         if volumes:
             lines.append("    volumes:")
             lines += [f"      - {_yaml_value(v)}" for v in volumes]
@@ -1101,6 +1113,23 @@ def _starter_result(j):
                  log="The Run first window closed before the apps started. Run ./install.sh --start-apps in the Starboard folder.")
 
 
+def ffmpeg_wrap_text():
+    with open(FFMPEG_WRAP, encoding="utf-8") as f:
+        return f.read()
+
+
+def ffmpeg_wrap_script(cfg, puid, pgid):
+    """Shell for the helper: when compose.yaml points Jellyfin at the Live TV wrapper, writes it into Jellyfin's
+    settings folder (replacing an older copy, as it is Starboard's file, not a setting), with ffprobe as a link."""
+    q = containers._quote
+    wrap = f"{cfg}/jellyfin/ffmpeg-wrap"
+    data = base64.b64encode(ffmpeg_wrap_text().encode()).decode()
+    return (f"if grep -q {q('FFMPEG_PATH: ' + _yaml_value(FFMPEG_PATH))} compose.yaml; then "
+            f"mkdir -p {q(wrap)} && echo {data} | base64 -d > {q(wrap + '/ffmpeg')} && chmod 755 {q(wrap + '/ffmpeg')} "
+            f"&& ln -sfn ffmpeg {q(wrap + '/ffprobe')} && chown -h {puid}:{pgid} {q(cfg + '/jellyfin')} {q(wrap)} "
+            f"{q(wrap + '/ffmpeg')} {q(wrap + '/ffprobe')}; fi")
+
+
 def start(host_stack, built_env):
     """Makes the folders (owned by PUID:PGID) and runs `docker compose up -d`, in a short-lived helper."""
     env = dict(line.split("=", 1) for line in built_env.splitlines() if "=" in line and not line.startswith("#"))
@@ -1121,6 +1150,7 @@ def _start(host_stack, env):
     script = " && ".join([
         f"mkdir -p {q(cfg)} {q(data)}",
         f"chown {int(env['PUID'])}:{int(env['PGID'])} {q(cfg)} {q(data)}",
+        ffmpeg_wrap_script(cfg, int(env["PUID"]), int(env["PGID"])),
         f"docker compose -p {PROJECT} --env-file .env -f compose.yaml pull 2>&1 | tail -n 20",
         # --remove-orphans: an app taken out of compose.yaml (a smaller install, NZBGet in place of SABnzbd) stops and
         # goes; its settings folder stays.
