@@ -86,6 +86,7 @@ def main():
     heading = here = text = ""
     ended = "timeout"
     seen_faults = set()
+    wait_screen, wait_since = None, 0.0  # plain mode: the screen while a job's "Please wait" line is the last
 
     def fault(kind, detail):
         key = (kind, detail[:60])
@@ -115,7 +116,7 @@ def main():
         nonlocal answers, repeats, last_same, sent_screen, sent_time
         same = (heading, here.strip(), label or repr(text))
         # Enter pressed while a job runs (the menu says Please wait) is a person being impatient, not a stuck question.
-        repeats = repeats + 1 if same == last_same and "Please wait" not in text else 0
+        repeats = repeats + 1 if same == last_same and "Please wait" not in screen_text else 0
         last_same = same
         sent_screen, sent_time = screen_text, time.time()
         os.write(fd, text.encode())
@@ -190,7 +191,18 @@ def main():
             last_out = time.time()
             continue
 
-        if any(m in here for m in "◐◓◑◒⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏") or "still working:" in low or ("keep this window open" in text.lower() and "close this window." not in low):
+        # In plain mode a job prints one line, "Please wait, this can take some time...", and then nothing until it
+        # ends: the last words on the screen. A person waits there too (Enter would only add a blank line).
+        tail = " ".join(l.strip() for l in lines if l.strip())[-200:].lower()
+        plain_wait = a.plain and tail.endswith("please wait, this can take some time...")
+        if plain_wait:
+            if text != wait_screen:
+                wait_screen, wait_since = text, time.time()
+            elif time.time() - wait_since > 1200:
+                ended = "stuck: nothing new for 20 minutes"
+                faults.append({"kind": "stuck", "detail": tail[-120:], "after_answers": answers, "screen": len(shots) - 1})
+                break
+        if plain_wait or any(m in here for m in "◐◓◑◒⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏") or "still working:" in low or ("keep this window open" in text.lower() and "close this window." not in low):
             # The apps are downloading, or the window waits for the browser set-up: a person waits
             last_out = time.time()
             continue
