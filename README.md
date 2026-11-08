@@ -83,8 +83,8 @@ In the help centre: [Quick start guide](https://themightytrex.github.io/starboar
 - **One set-up, complete.** It asks what you want (films, series, music, books, audiobooks, live TV), picks the
   apps, folders and settings, checks every step, starts the apps and connects them to each other, in a browser or
   entirely in the terminal.
-- **One dashboard.** Every app's status, search across your apps, downloads, what is coming up, requests, storage,
-  disk health, alerts and backups.
+- **One dashboard.** Every app's status, your library from Reelix, one search that looks in your library first,
+  downloads, what is coming up, requests, storage, disk health, alerts and backups.
 - **Lightweight first.** Starboard idles in about 16 MB of memory and almost no processor time, and every piece of
   background work can be paused or slowed.
 - **Accessible to everyone.** Built to WCAG 2.2 AA: keyboard first, screen readers, text up to 175%, high contrast,
@@ -100,6 +100,23 @@ In the help centre: [Quick start guide](https://themightytrex.github.io/starboar
 | **Install apps** in the browser | **The terminal set-up** |
 
 In the help centre: [Everything Starboard does](https://themightytrex.github.io/starboard/help/topics/everything-starboard-does.html) · [What Starboard is](https://themightytrex.github.io/starboard/help/basics/what-is-starboard.html) · [Set up your dashboard](https://themightytrex.github.io/starboard/help/guides/set-up-your-dashboard.html) · [Display and accessibility](https://themightytrex.github.io/starboard/help/topics/display-and-accessibility.html)
+
+## Your library
+
+The **Library** shows everything Reelix holds: TV, films, music, radio, books and audiobooks, each as a wall of
+covers with an A to Z list, filters and its own page for each title, with episodes, albums or reading order.
+**Search** looks in your library first as you type, then lists what Reelix can add, with **Add**, or **Follow** for
+radio. Starboard keeps a small list of each kind and reads Reelix again only while you use the Library, so it stays
+light on small servers.
+
+| | |
+|---|---|
+| ![The Films wall with example data: covers A to Z, the letter row, filters, sort and cover size](docs/screenshots/library.png) | ![A series page with example data: its name, progress, and the episodes with their status](docs/screenshots/library-item.png) |
+| **The Library**, A to Z | **A series**, with its episodes |
+| ![Search with example data: In your library first, then Not in your library with Add](docs/screenshots/library-search.png) | ![The Books wall on a phone, in the dark theme, with example data](docs/screenshots/library-phone-dark.png) |
+| **Search**, your library first | **On a phone**, dark theme |
+
+In the help centre: [Browse your library](https://themightytrex.github.io/starboard/help/topics/browse-your-library.html) · [Search for and add films, series, music and books](https://themightytrex.github.io/starboard/help/topics/search-and-add.html) · [Follow radio shows and podcasts](https://themightytrex.github.io/starboard/help/topics/follow-radio-shows.html)
 
 ## The three installs
 

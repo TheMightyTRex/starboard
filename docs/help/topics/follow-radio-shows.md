@@ -18,7 +18,7 @@ listen in Audiobookshelf. Starboard shows what is due in Coming up, and episodes
 
 ![The Search page with example data, with Search in the side menu (step 1), the search box (step 2) and Follow beside a radio show under Not in your library (step 3) outlined](../images/follow-radio-shows-1-search-link.png)
 
-1. Select **Search** in the side menu. On a phone, select the search button at the top of the screen.
+1. Select **Search** in the side menu. On a phone, select the search button at the top of the page.
 2. Type the show's name, such as `Morning Story`. Your library is searched first, so you can see whether you
    follow it already.
 3. Under **Not in your library**, **Radio** lists the shows Reelix found. Select **Follow** beside the one you want.

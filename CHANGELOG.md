@@ -7,6 +7,25 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **The Library, from Reelix:** **Library** shows everything Reelix holds, as TV, Films, Music, Radio, Books and Audiobooks. Each is a wall of covers, A to Z, with a search for that kind, filters with their counts (such as **Missing** or **Coming soon**), sort (A to Z, Recently added, Year), Covers or List, three cover sizes and **Show 40 more**. The placeholder Library pages are gone (DASH-163).
+- **The A to Z list:** a row of letters above each wall. Letters with nothing under them are shown but cannot be chosen, and say so to screen readers. It stays in view as you scroll, marks the letter you are at, and takes one Tab stop: the arrow keys move along it and Enter jumps. A letter further on opens the wall at that letter, with **Show earlier titles** above it. The row comes from the TRex Design System.
+- **A page for each title:** a film, series, artist, radio show, book or audiobook opens its own page with its name, what it is, how much of it you have, and its episodes, albums, reading order or collection, then **About**. Radio shows link to Audiobookshelf to listen.
+- **Groups:** **Networks** for TV, **Collections** for films, **Stations** for radio, and **Series** and **Authors** for books and audiobooks, each opening the wall with only that group's titles.
+- **Save this view as default:** a changed sort, layout, cover size or filter can be saved as how that kind opens, for your account on every device. **Settings**, **General**, **Library views** lists them, with **Reset Library views**.
+- **Search opens on your library:** before you type, Search shows what was recently added and each kind with its count. As you type, it searches your library first, then lists what Reelix can find under **Not in your library**, each kind as soon as it is ready, with **Add**, or **Follow** for radio shows and podcasts (DASH-162). Without Reelix, Search looks in Sonarr, Radarr, Lidarr and Readarr as before.
+- **Help:** a new article, Browse your library, and Search for and add, and Follow radio shows, rewritten for the new Search, each with marked-up screenshots.
+
+### Changed
+- **Search in the side menu** is now a link to the Search page on a computer. On a phone, the search button at the top of the screen and the search box in the menu work as before. The Search page stays in **Discover**.
+- **TV's second tab** is now **Networks**, and Radio's **Series** tab is gone: a radio show's series are on its own page.
+- **Posters on Coming up and the Library:** the setting in **Settings**, **Performance** now covers the Library's covers too.
+- **The Library keeps a small list of each kind** in `data/library`, with only what a wall needs: about 210 bytes a film. It is read from disk for each request, never held in memory, rebuilt when you open a kind and it is more than five minutes old, and every 30 minutes while the Library is in use. Nothing runs when nobody uses the Library. With 5,000 made-up items, Starboard held 2.4 to 3.6 MB more memory after using every part of the Library than after opening the old pages, and at most 4.9 MB more while reading Reelix; at idle, 0.7 to 0.9 MB more.
+- **Covers come through Starboard at a small size** (TMDB w185 on walls), are kept for a week (at most 400), and a missing picture is not asked for again for a day. Your browser never contacts the image sites.
+
+### Security
+- **Only image sites:** Starboard fetches covers only over https from TMDB, Open Library and Cover Art Archive, or from Reelix itself, and follows a redirect only to another of those sites. Adding from Search sends Reelix only the identifier from Reelix's own lookup and the choices in the panel.
+
 ### Fixed
 - **Live TV channels that would not play:** Jellyfin's FFmpeg refuses Live TV pieces whose address has no file ending, such as the ad links on Samsung TV Plus channels like U&Laughs, so 107 channels stopped playing. Install apps now runs Jellyfin's FFmpeg through a small Starboard file, `jellyfin/ffmpeg-wrap/ffmpeg` in your settings folder, which allows those addresses for Live TV only. Your library files and On demand links are played as before. Starting the apps, from Starboard, from the installer or by taking over your apps, puts the file in place, so running the guide again keeps the fix (DASH-169).
 - **Error IN-34:** If the installer cannot put that file in Jellyfin's settings folder, it stops with error IN-34 rather than start a Jellyfin that cannot find FFmpeg.

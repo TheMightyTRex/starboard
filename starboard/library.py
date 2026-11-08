@@ -12,8 +12,6 @@ the image sites Reelix uses (TMDB, Open Library, Cover Art Archive) or from Reel
 kept in data/posters/library (7 days, at most 400 files), so the browser never contacts an image site.
 """
 
-import ctypes
-import ctypes.util
 import datetime as dt
 import gc
 import hashlib
@@ -321,18 +319,14 @@ def build(reelix, tab):
 
 
 def _give_back():
-    """Hands the memory used while reading Reelix's lists back to the system (glibc keeps it otherwise)."""
+    """Hands the memory used while reading Reelix's lists back to the system (glibc keeps it otherwise). ctypes is
+    loaded here, after the first build, not when Starboard starts, so an unused Library costs nothing at idle."""
     gc.collect()
     try:
-        _libc.malloc_trim(0)
-    except (AttributeError, OSError):
-        pass
-
-
-try:
-    _libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.so.6")
-except OSError:
-    _libc = None
+        import ctypes  # noqa: PLC0415
+        ctypes.CDLL("libc.so.6").malloc_trim(0)
+    except (ImportError, AttributeError, OSError):
+        pass  # not glibc (such as Alpine's musl): the memory is still freed for Python to use again
 
 
 def _path(data_dir, tab):
