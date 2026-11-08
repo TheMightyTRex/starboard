@@ -14,6 +14,27 @@ async function loadVpnProviders() {
   return vpnProviders;
 }
 
+// Sites to search (DASH-155): Reelix's built-in public sites and the step's words, the same file the terminal
+// set-up reads (web/reelix-sites.json), so both ask the same questions in the same order.
+let reelixSites = null;
+async function loadReelixSites() {
+  if (!reelixSites) {
+    try { reelixSites = await (await fetch("/reelix-sites.json", { cache: "no-cache" })).json(); } catch { reelixSites = { sites: [], words: {} }; }
+  }
+  return reelixSites;
+}
+
+function sitesSummary(sites, list) {
+  const names = Object.fromEntries((list?.sites || []).map((s) => [s.id, s.name]));
+  const words = [...(sites?.builtin || []).map((i) => names[i] || i.split(":").pop()),
+    ...(sites?.own || []).map((o) => {
+      let host = o.url;
+      try { host = new URL(o.url).hostname; } catch { /* shown as typed */ }
+      return `${o.name || host} (${o.kind === "newznab" ? "Newznab" : "Torznab"})`;
+    })];
+  return words.join(", ") || "None yet: add them later in Settings, Reelix";
+}
+
 async function startInstall() {
   const root = $("#install");
   root.removeAttribute("aria-busy");
@@ -40,7 +61,7 @@ async function startInstall() {
     config_dir: data.defaults.config_dir, data_dir: chosenMedia || data.defaults.data_dir,
     puid: data.defaults.puid, pgid: data.defaults.pgid, tz: data.defaults.tz,
     vpn: { provider: "", type: "wireguard" }, moving: new Set(), written: null, pool: null, reelix_edition: "lite",
-    install: "basics", installApplied: false, usenet: "nzbget",
+    install: "basics", installApplied: false, usenet: "nzbget", sites: { builtin: [], own: [] },
   };
   // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd is, Moving over only when
   // there is something to move.
@@ -53,6 +74,7 @@ async function startInstall() {
     ...(state.apps.has("gluetun") ? [{ id: "vpn", ...stepNamed(T, "vpn"), skippable: false,
       intro: "Downloads go through your VPN, so your internet provider sees only the VPN. You need an account with a VPN provider." }] : []),
     ...(state.apps.has("sabnzbd") || state.apps.has("nzbget") ? [{ id: "usenet", ...stepNamed(T, "usenet"), skippable: false }] : []),
+    ...(state.apps.has("reelix") ? [{ id: "sites", ...stepNamed(T, "sites"), skippable: false }] : []),
     ...(data.servers.length ? [{ id: "moving", ...stepNamed(T, "moving"),
       intro: "Starboard found these on this computer. Nothing is copied or changed until the new apps are running and you choose." }] : []),
     { id: "review", ...stepNamed(T, "check"), skippable: false },
@@ -422,6 +444,41 @@ async function installStep(id, state, data, apps, go) {
     fieldset.addEventListener("change", (e) => show(e.target.value));
     show(state.usenetHave || "none");
     nodes = [el("p", { text: USENET_ABOUT }), fieldset, more];
+  } else if (id === "sites") {
+    // The same questions, in the same order and words, as the terminal set-up's step_sites: Reelix's built-in sites
+    // (none ticked unless chosen), then your own Torznab or Newznab address. Added once Reelix runs.
+    const list = await loadReelixSites();
+    const w = list.words;
+    const boxes = list.sites.map((s) => ({ s, input: el("input", { type: "checkbox", checked: state.sites.builtin.includes(s.id) }) }));
+    const own = state.sites.own[0] || {};
+    const kinds = ["", "torznab", "newznab"];
+    const url = el("input", { class: "input", type: "url", value: own.url || "", autocomplete: "off", spellcheck: "false", placeholder: "https://" });
+    const key = el("input", { class: "input", type: "password", value: own.api_key || "", autocomplete: "off" });
+    const ownBox = el("div", { class: "stack-4" }, field(w.address, url, { required: true }), field(w.key, key));
+    const which = el("fieldset", {}, el("legend", { text: w.own_question }),
+      el("div", { class: "option-cards" }, w.own_choices.map((t, i) => el("label", { class: "option-card" },
+        el("input", { type: "radio", name: "own-site", value: kinds[i], checked: (own.kind || "") === kinds[i] }), el("strong", { text: t })))));
+    const showOwn = () => { ownBox.hidden = !$("input:checked", which).value; };
+    which.addEventListener("change", showOwn);
+    showOwn();
+    nodes = [
+      el("p", { text: w.intro }),
+      state.apps.has("gluetun") ? el("p", { class: "small", text: w.vpn }) : null,
+      el("fieldset", {}, el("legend", { text: "Reelix's built-in sites, no account needed" }),
+        el("div", { class: "option-cards option-cards--row" }, boxes.map((b) => el("label", { class: "option-card" },
+          b.input, el("strong", { text: b.s.name }), el("small", { text: b.s.lists }))))),
+      which, ownBox,
+      notice("info", "What you may download", w.rights),
+      el("p", { class: "help-links" }, helpButton("How to choose sites to search", { page: "topics/choose-sites-to-search.md" })),
+    ].filter(Boolean);
+    save = async () => {
+      const kind = $("input:checked", which).value;
+      setError(url, "");
+      if (kind && !/^https?:\/\/[^\s/]+/.test(url.value.trim())) return stop(url, "Enter the site's address, starting http:// or https://");
+      state.sites = { builtin: boxes.filter((b) => b.input.checked).map((b) => b.s.id),
+        own: kind ? [{ kind, url: url.value.trim(), api_key: key.value.trim() }] : [] };
+      return true;
+    };
   } else if (id === "moving") {
     const offers = [];
     const has = (keys) => data.servers.filter((s) => keys.includes(s.key));
@@ -474,6 +531,7 @@ async function installStep(id, state, data, apps, go) {
         ...row("Media folder", el("code", { text: state.data_dir }), "folders"),
         ...(state.pool ? row("Pool", `${state.pool.path}, from ${state.pool.mounts.length} drives (run its commands first)`, "folders") : []),
         ...(state.advanced ? row("Settings folder", el("code", { text: state.config_dir }), "folders") : []),
+        ...(state.apps.has("reelix") ? row("Sites to search", sitesSummary(state.sites, await loadReelixSites()), "sites") : []),
         ...(state.apps.has("gluetun") ? row("VPN", `${vpnName}, ${state.vpn.type === "openvpn" ? "OpenVPN" : "WireGuard"}${state.vpn.countries ? `, ${state.vpn.countries}` : ""}`, "vpn") : []),
         ...(data.servers.length ? row("Moving over", moving || "Nothing", "moving") : [])))),
       p.moved.length ? notice("warning", "Some ports moved", p.moved.join(". ") + ".") : null,
@@ -729,5 +787,5 @@ function connectGuide(state, apps) {
 }
 
 function body(state) {
-  return { apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn, reelix_edition: state.apps.has("reelix") ? state.reelix_edition : "lite" };
+  return { apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn, reelix_edition: state.apps.has("reelix") ? state.reelix_edition : "lite", ...(state.apps.has("reelix") ? { sites: state.sites } : {}) };
 }

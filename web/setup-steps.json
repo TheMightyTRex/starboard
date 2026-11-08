@@ -68,6 +68,12 @@
       "help": "topics/change-your-install.md"
     },
     {
+      "id": "sites",
+      "title": "Sites to search",
+      "question": "Which sites should Reelix search?",
+      "help": "topics/choose-sites-to-search.md"
+    },
+    {
       "id": "moving",
       "title": "Moving over",
       "question": "Bring things over from the apps you have?",

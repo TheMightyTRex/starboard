@@ -11,23 +11,25 @@ Gluetun's HTTP proxy (http://gluetun:8888), as on the owner's server since 8 Nov
 searches fail rather than leave from the home address. Gluetun's proxy is turned on in the stack (stack.APPS).
 8 November 2026.
 """
+import json
+import os
 import re
 import urllib.parse
 
 from . import reelix_setup
 
-# Reelix's built-in public sites offered in the set-ups: general, English-language, no account needed. Each is
-# (Reelix's implementation id, its name, what it lists). None is ticked unless the person ticks it.
-SUGGESTED = [
-    ("definition:internetarchive", "Internet Archive", "Free, legal films, books, music and old radio"),
-    ("definition:1337x", "1337x", "Films, series, music and books"),
-    ("definition:thepiratebay", "The Pirate Bay", "Everything"),
-    ("definition:yts", "YTS", "Films in small files"),
-    ("definition:eztv", "EZTV", "Series"),
-    ("definition:limetorrents", "LimeTorrents", "Everything"),
-    ("definition:torrentproject2", "TorrentProject2", "A search across other sites"),
-    ("definition:uindex", "Uindex", "Films, series and music"),
-]
+# Reelix's built-in public sites offered in the set-ups: general, English-language, no account needed, from
+# web/reelix-sites.json (the browser set-up reads the same file). Each is (Reelix's implementation id, its name, what
+# it lists). None is ticked unless the person ticks it.
+def _read_list():
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "reelix-sites.json")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+_LIST = _read_list()
+SUGGESTED = [(s["id"], s["name"], s["lists"]) for s in _LIST["sites"]]
+WORDS = _LIST["words"]  # the step's words, the same in both set-ups
 SUGGESTED_IDS = {s[0] for s in SUGGESTED}
 OWN_KINDS = {"torznab": "Torznab (torrents)", "newznab": "Newznab (Usenet)"}
 PROXY = {"kind": "http", "host": "gluetun", "port": 8888}

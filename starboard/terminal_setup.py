@@ -119,6 +119,7 @@ HELP_PAGES = {
     "storage": "topics/check-storage.html", "extras": "topics/set-up-live-tv.html", "alerts": "topics/activate-alerts.html",
     "health": "topics/check-disk-health.html", "name": "guides/set-up-your-dashboard.html",
     "restore": "topics/restore-a-saved-copy.html", "found": "topics/search-for-new-apps.html",
+    "sites": "topics/choose-sites-to-search.html",
 }
 
 HELP = {
@@ -154,6 +155,10 @@ HELP = {
                       "downloads straight from YouTube and Spotify, and takes about 600 MB more disk. Both keep the same "
                       "settings, so you can switch either way later in Starboard, Settings, Reelix.",
     "usenet": USENET_HELP,
+    "sites": "Reelix searches these sites for what you want, then hands the best copy to the download app. The ones listed "
+             "need no account. Torznab and Newznab are the ways such sites answer searches: use your own address if "
+             "you run Jackett or Prowlarr, or have an account with a Usenet search site. You can add, test and remove "
+             "sites later in Starboard, Settings, Reelix, Sites to search.",
     "hours": "Downloading uses most of your internet connection while it runs, so streaming, video calls and games on "
              "other devices can slow down. With download hours, Starboard pauses the download apps outside them and "
              "starts them again when they begin. Nothing is lost.",
@@ -486,7 +491,7 @@ def question(step_id):
     return STEP_TABLE[step_id]["question"]
 
 
-STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "check", "extras", "hours", "alerts",
+STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "check", "extras", "hours", "alerts",
                             "preset")]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
@@ -1631,6 +1636,8 @@ def job_steps(state):
             ids.append("vpn")
         if apps is None or apps & {"sabnzbd", "nzbget"}:
             ids.append("usenet")
+        if apps is None or "reelix" in apps:
+            ids.append("sites")
         if apps is None or apps:
             ids.append("check")
     if not state.get("no_extras"):
@@ -2029,10 +2036,54 @@ def step_usenet(api, term, state):
     return True
 
 
+def step_sites(api, term, state):
+    """Sites to search (DASH-155): only when Reelix is chosen. The same questions, in the same order and words, as the
+    browser set-up (web/reelix-sites.json): Reelix's built-in sites, none ticked unless chosen, then your own Torznab
+    or Newznab address. Added once Reelix runs (reelix_setup.set_up)."""
+    from . import reelix_sites
+    choice = state.get("choice")
+    if not choice or "reelix" not in choice["apps"]:
+        return False
+    words = reelix_sites.WORDS
+    last = state.get("sites") or {"builtin": [], "own": []}
+    head(term, state, "sites")
+    term.say("")
+    term.note(words["intro"])
+    if "gluetun" in choice["apps"]:
+        term.note(words["vpn"])
+    term.say("")
+    ids = [i for i, _, _ in reelix_sites.SUGGESTED]
+    picked = term.choose_many(question("sites"), [f"{name}: {lists}" for _, name, lists in reelix_sites.SUGGESTED],
+                              [ids.index(i) for i in last["builtin"] if i in ids], help_key="sites", allow_none=True)
+    own_last = (last.get("own") or [{}])[0]
+    kinds = list(reelix_sites.OWN_KINDS)
+    default = kinds.index(own_last["kind"]) + 2 if own_last.get("kind") in kinds else 1
+    which = term.choose(words["own_question"], words["own_choices"], default, help_key="sites")
+    own = []
+    while which:
+        url = term.text(words["address"], own_last.get("url", ""), help_key="sites").strip()
+        key = term.hidden(words["key"], keep=bool(own_last.get("api_key")), help_key="sites")
+        entry = {"kind": kinds[which - 1], "url": url, "api_key": own_last.get("api_key", "") if key is None else key}
+        try:
+            own = reelix_sites.clean_choice({"own": [entry]})["own"]
+            break
+        except ValueError as e:
+            term.refuse(str(e))
+    state["sites"] = {"builtin": [ids[i] for i in picked], "own": own}
+    choice["sites"] = state["sites"]
+    term.say("")
+    term.note(term.accent("What you may download"))
+    term.note(words["rights"])
+    term.say("")
+    return True
+
+
 def preview_step(message):
     """Which earlier step an answer refused by the preview belongs to: the VPN's details, a folder (the media folder
     is chosen in Storage), or the apps."""
     low = message.lower()
+    if any(w in low for w in ("site's address", "torznab", "newznab", "reelix's sites")):
+        return step_sites
     if any(w in low for w in ("vpn", "wireguard", "openvpn")):
         return step_vpn
     if "settings folder" in low or "config" in low:
@@ -2057,6 +2108,9 @@ def step_check(api, term, state, wait=2.0):
     rows = [("Install", ", ".join(names)), ("Media folder", choice["data_dir"]), ("Settings folder", choice["config_dir"])]
     if "reelix" in choice["apps"] and choice.get("reelix_edition") == "full":
         rows.append(("Reelix", "With YouTube and Spotify downloads"))
+    if "reelix" in choice["apps"]:
+        from . import reelix_sites
+        rows.append(("Sites to search", reelix_sites.describe(choice.get("sites") or {})))
     if choice.get("vpn"):
         rows.append(("VPN", f"{ {v[0]: v[1] for v in VPNS}.get(choice['vpn']['provider'], choice['vpn']['provider'])}, "
                             f"{'WireGuard' if choice['vpn']['type'] == 'wireguard' else 'OpenVPN'}"))
@@ -2507,7 +2561,7 @@ def step_preset(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_start, step_storage, step_apps, step_vpn, step_usenet, step_check, step_connect, step_hours,
+STEP_FUNCTIONS = [step_password, step_start, step_storage, step_apps, step_vpn, step_usenet, step_sites, step_check, step_connect, step_hours,
                   step_alerts, step_preset]
 
 
