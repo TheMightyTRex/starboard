@@ -302,6 +302,43 @@ def set_indexers(admin, on):
 
 # DASH-129: qBittorrent, by its name on Starboard's stack, with its password --------------------------------------
 
+def conf_user(text):
+    """The web user name in qBittorrent.conf: "Username=" in its [WebUI] section (qBittorrent 5), or
+    "WebUI\\Username=" in [Preferences] (older versions). None when it is not set."""
+    section = ""
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1]
+            continue
+        key, _, value = line.partition("=")
+        if (section == "WebUI" and key == "Username") or key == "WebUI\\Username":
+            return value.strip()[:100] or None
+    return None
+
+
+def qbit_user(container="qbittorrent"):
+    """qBittorrent's web user name, from its own settings file (WebUI\\Username), or "admin", its default. People
+    change it (owner's server, 8 November 2026), and the sign-in fails with the right password and the wrong name."""
+    files, folder = {}, None
+    try:
+        files, folder = _read_files(container, ["/config/qBittorrent/qBittorrent.conf"], limit=2_000_000)
+        path = files.get("/config/qBittorrent/qBittorrent.conf")
+        if path:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                name = conf_user(f.read())
+            if name:
+                return name
+    except (containers.DockerError, tarfile.TarError, OSError):
+        pass
+    finally:
+        if folder:
+            for f in os.listdir(folder):
+                os.remove(os.path.join(folder, f))
+            os.rmdir(folder)
+    return "admin"
+
+
 def qbit_check(password, base="http://127.0.0.1:8080", user="admin", opener=None):
     """Whether qBittorrent accepts this user name and password."""
     import http.cookiejar
@@ -366,7 +403,7 @@ def moved(data_dir):
     return [m["container"] for m in r.get("apps") or [] if m.get("state") == "finished"]
 
 
-def start(data_dir, password, typed=None, hold=True, qbit_password=None, qbit_host=None, srcs=None):
+def start(data_dir, password, typed=None, hold=True, qbit_password=None, qbit_host=None, srcs=None, qbit_user_name="admin"):
     with _lock:
         if _job and not _job.get("finished"):
             raise ValueError("Reelix is already moving your apps")
@@ -387,7 +424,8 @@ def start(data_dir, password, typed=None, hold=True, qbit_password=None, qbit_ho
             result["apps"] = [r | {"container": names.get(r.get("source"))} for r in report if "source" in r]
             result["held"] = next((r["held"] for r in report if "held" in r), 0)
             if qbit_password:
-                result["qbittorrent"] = connect_qbittorrent(_admin(base, password), qbit_host or "gluetun", qbit_password)
+                result["qbittorrent"] = connect_qbittorrent(_admin(base, password), qbit_host or "gluetun", qbit_password,
+                                                            user=qbit_user_name)
             ok = all(a.get("state") == "finished" for a in result["apps"])
         except (reelix_setup.ReelixError, containers.DockerError, OSError, ValueError) as e:
             result["error"] = str(e)

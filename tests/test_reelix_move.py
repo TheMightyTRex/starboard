@@ -150,3 +150,21 @@ class QbitTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class QbitUserTest(unittest.TestCase):
+    """qBittorrent's web user name is read from its own settings, not assumed to be admin (8 November 2026)."""
+
+    def test_both_layouts(self):
+        self.assertEqual(reelix_move.conf_user("[WebUI]\nAddress=*\nUsername=sam\n"), "sam")  # qBittorrent 5
+        self.assertEqual(reelix_move.conf_user("[Preferences]\nWebUI\\Username=alex\n"), "alex")  # older versions
+        self.assertIsNone(reelix_move.conf_user("[Network]\nUsername=not-this-one\n"))
+
+    def test_falls_back_to_admin_when_it_cannot_read(self):
+        with mock.patch.object(reelix_move, "_read_files", side_effect=reelix_move.containers.DockerError("no")):
+            self.assertEqual(reelix_move.qbit_user(), "admin")
+
+    def test_connects_reelix_with_that_user(self):
+        admin = FakeAdmin(clients=[])
+        reelix_move.connect_qbittorrent(admin, "gluetun", "secret", user="sam")
+        self.assertEqual(admin.calls[-1][2]["settings"]["username"], "sam")

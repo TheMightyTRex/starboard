@@ -1385,6 +1385,7 @@ class Handler(BaseHTTPRequestHandler):
                        "needs_setup": bool(reelix_setup.read_setup(app.data_dir))}
                 try:
                     out["sources"] = [reelix_move.public(s) for s in reelix_move.sources()]
+                    out["qbittorrent_user"] = reelix_move.qbit_user()
                 except (ValueError, containers.DockerError) as e:
                     out["error"] = str(e)
                 return self.json(200, out)
@@ -1399,13 +1400,16 @@ class Handler(BaseHTTPRequestHandler):
                 self.check_password(body)
                 typed = {str(k): str(v) for k, v in (body.get("secrets") or {}).items() if v}
                 qpw = str(body.get("qbittorrent_password") or "")
-                if qpw and not reelix_move.qbit_check(qpw):
-                    raise ValueError("qBittorrent did not accept that password")
+                quser = reelix_move.qbit_user()
+                if qpw and not reelix_move.qbit_check(qpw, user=quser):
+                    raise ValueError(f"qBittorrent did not accept that password for its user {quser}. Check it, or leave "
+                                     "it empty and add qBittorrent in Reelix, Settings, Download Clients")
                 vpn = "gluetun" in (stack.chosen_keys(app.data_dir) or []) or any(
                     c["name"] == "gluetun" for c in takeover.found() if c["running"])
                 logs.event("info", "reelix", "Moving the old apps into Reelix")
                 return self.json(200, reelix_move.start(app.data_dir, body["password"], typed, hold=bool(body.get("hold", True)),
-                                                        qbit_password=qpw or None, qbit_host="gluetun" if vpn else "qbittorrent"))
+                                                        qbit_password=qpw or None, qbit_host="gluetun" if vpn else "qbittorrent",
+                                                        qbit_user_name=quser))
             if path == "/api/reelix/move/job" and method == "GET":
                 return self.json(200, reelix_move.job())
             if path == "/api/reelix/indexers" and method == "POST":

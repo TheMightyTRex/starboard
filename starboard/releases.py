@@ -346,6 +346,19 @@ RELEASES = [
         "review": [],
         "settings": "Nothing changes in your apps. To go back, run ./update.sh --to v0.12.0.",
     },
+    {
+        "version": "0.12.2",
+        "date": "8 November 2026",
+        "fixed": [
+            ('qBittorrent\'s user name', 'Moving your apps into Reelix signed in to qBittorrent as admin, so a qBittorrent with another user name refused the right password. Starboard now reads the user name from qBittorrent\'s own settings, shows it, and gives it to Reelix.'),
+            ('Messages under each step', 'On Apps you already run, what happened after Show what moves, Move them into Reelix or Take over my apps appeared at the end of the section, out of sight. Each step now says it under its own buttons.'),
+        ],
+        "security": [
+            ('Checks', 'The unit tests, the browser journeys and the help check ran on this release. Starboard reads one line of qBittorrent\'s settings file, its user name, into a private temporary folder that it removes straight after.'),
+        ],
+        "review": [],
+        "settings": "Nothing changes in your apps. To go back, run ./update.sh --to v0.12.1.",
+    },
 ]
 
 

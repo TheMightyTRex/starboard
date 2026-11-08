@@ -7,6 +7,17 @@ add features.
 
 ## [Unreleased]
 
+## [0.12.2] (8 November 2026)
+
+Moving your apps into Reelix works with any qBittorrent user name, and each step says what happened under its own buttons.
+
+### Fixed
+- **qBittorrent's user name:** Moving your apps into Reelix signed in to qBittorrent as admin, so a qBittorrent with another user name refused the right password. Starboard now reads the user name from qBittorrent's own settings, shows it, and gives it to Reelix.
+- **Messages under each step:** On Apps you already run, what happened after Show what moves, Move them into Reelix or Take over my apps appeared at the end of the section, out of sight. Each step now says it under its own buttons.
+
+### Security
+- **One line of qBittorrent's settings:** Starboard reads only qBittorrent's user name from its settings file, into a private temporary folder that it removes straight after.
+
 ## [0.12.1] (8 November 2026)
 
 Reelix's set-up finishes after a start from the browser, and can be finished from Settings, Reelix.
@@ -910,7 +921,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/TheMightyTRex/starboard/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/TheMightyTRex/starboard/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/TheMightyTRex/starboard/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/TheMightyTRex/starboard/compare/v0.10.0...v0.11.0
