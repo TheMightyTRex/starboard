@@ -357,6 +357,28 @@ class WordsTest(unittest.TestCase):
             self.assertIn(ts.question(step), out.getvalue())
 
 
+class NarrowCardTest(unittest.TestCase):
+    """The last card at 60 columns cut its labels and let a long folder run past its edge (8 November 2026)."""
+
+    ROWS = [("On your other devices", "http://192.0.2.15:8095"),
+            ("Changes to this computer", "./install.sh --livetv-folder /srv/media-stack/config/jellyfin/iptv-folder-that-is-long")]
+
+    def lines(self, width):
+        out = io.StringIO()
+        term = ts.Terminal(out=out, ask=lambda p="": "", fancy=True, colour=False, width=width, rows=30)
+        term.card("Starboard is ready", self.ROWS)
+        text = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b[78]", "", out.getvalue())
+        return [line for line in text.split("\n") if line.strip().startswith(("│", "╭", "╰"))]
+
+    def test_every_width_fits_and_keeps_labels_whole(self):
+        for width in (60, 80, 100):
+            lines = self.lines(width)
+            self.assertTrue(all(len(line) <= width - 2 for line in lines), (width, lines))
+            body = "\n".join(lines)
+            for label, _ in self.ROWS:
+                self.assertIn(label, body, width)
+
+
 if __name__ == "__main__":
     unittest.main()
 

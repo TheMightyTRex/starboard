@@ -892,12 +892,21 @@ class Terminal:
             inner = width - 8
             top = f"─ {title} "
             out = ["", "  " + self._c(colour, "╭" + top + "─" * max(inner + 2 - len(top), 0) + "╮")]
+            edge = lambda text: "  " + self._c(colour, "│") + " " + text + " " + self._c(colour, "│")  # noqa: E731
+            # Labels that do not fit their column (a narrow window) go on their own line, the value under them, so
+            # no label is cut. A word longer than the line, such as a long folder, is broken rather than run past
+            # the box's edge.
+            stacked = max(len(label) for label, _ in rows) + 2 > label_w
             for label, value in rows:
-                lines = _wrap(str(value), inner - label_w) or [""]
+                room = inner - 2 if stacked else inner - label_w
+                lines = textwrap.wrap(str(value), room, break_on_hyphens=False, break_long_words=True) or [""]
+                if stacked:
+                    out += [edge(self.dim(m.ljust(inner))) for m in _wrap(label, inner) or [""]]
+                    out += [edge("  " + m.ljust(inner - 2)) for m in lines]
+                    continue
                 for i, line in enumerate(lines):
-                    left = (label[:label_w - 1] if i == 0 else "").ljust(label_w)
-                    out.append("  " + self._c(colour, "│") + " " + self.dim(left) + line.ljust(inner - label_w) + " "
-                               + self._c(colour, "│"))
+                    left = (label if i == 0 else "").ljust(label_w)
+                    out.append(edge(self.dim(left) + line.ljust(inner - label_w)))
             out.append("  " + self._c(colour, "╰" + "─" * (inner + 2) + "╯"))
             return out
         self._show(render)
