@@ -13,6 +13,7 @@ import pathlib
 import secrets
 import sys
 import threading
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 REPO = pathlib.Path(__file__).resolve().parent.parent.parent
@@ -25,6 +26,7 @@ os.environ["STARBOARD_REPO"] = "TheMightyTRex/starboard"  # the public repositor
 os.environ["STARBOARD_DISKS"] = ("Media pool=/disks/pool,System disk=/data,Drive 1=/disks/each/1,Drive 2=/disks/each/2,"
                                  "Drive 3=/disks/each/3,Drive 4=/disks/each/4")
 from starboard import changes, containers, discovery, stack, sysinfo  # noqa: E402
+os.environ["EXAMPLE_REELIX_BASE"] = f"http://127.0.0.1:{FAKE_PORT}/reelix"
 import example_library  # noqa: E402  (a made-up Reelix library: tools/screenshots/example_library.py)
 from starboard.server import make_server  # noqa: E402
 
@@ -120,7 +122,7 @@ class FakeArr(BaseHTTPRequestHandler):
             return self.wfile.write(body)
         if p.startswith("/reelix/api/v1/"):  # a made-up Reelix: radio, read from its own API (Coming up, Downloads), and the Library
             path, _, query = p[len("/reelix/api/v1"):].partition("?")
-            found = example_library.answer(path, dict(x.split("=", 1) for x in query.split("&") if "=" in x))
+            found = example_library.answer(path, dict(urllib.parse.parse_qsl(query)))
             return self.send_json(found if found is not None else example_reelix(path))
         film = "/films" in p
         if "/system/status" in p:
@@ -285,7 +287,6 @@ def example_pool(data):
 
 
 def main():
-    example_library.BASE = f"http://127.0.0.1:{FAKE_PORT}/reelix"
     fake = ThreadingHTTPServer(("127.0.0.1", FAKE_PORT), FakeArr)
     threading.Thread(target=fake.serve_forever, daemon=True).start()
     DATA.mkdir(parents=True, exist_ok=True)

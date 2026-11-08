@@ -373,7 +373,7 @@
       "page": "search.html?q=Morning%20Story",
       "width": 1280,
       "height": 900,
-      "run": "for (let i = 0; i < 40 && !document.querySelector('#lookup [data-kind=radio] button'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#lookup [data-kind=radio]').scrollIntoView({ block: 'center' });",
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lookup [data-kind=radio] button'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#lib-found').hidden = true; document.querySelectorAll('#lookup [data-kind]').forEach((g) => { if (g.dataset.kind !== 'radio') g.hidden = true; }); window.scrollTo(0, 0);",
       "marks": [
         {
           "t": "$.rail a.rail__search",
@@ -384,8 +384,8 @@
         {
           "t": "$#q",
           "step": 2,
-          "side": "bottom",
-          "tail": 70
+          "side": "right",
+          "tail": 90
         },
         {
           "t": "$#lookup [data-kind=radio] button",
@@ -434,7 +434,7 @@
       "page": "search.html?q=harbour",
       "width": 1280,
       "height": 1100,
-      "run": "for (let i = 0; i < 40 && !document.querySelector('#lookup [data-kind=films] button'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelectorAll('#lib-found .lib-search-group').forEach((g, n) => { if (n) g.hidden = true; }); document.querySelectorAll('#lib-found .rows li').forEach((li, n) => { if (n > 2) li.hidden = true; });",
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lookup [data-kind=films] button'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelectorAll('#lib-found .lib-search-group').forEach((g, n) => { if (n) g.hidden = true; }); document.querySelectorAll('#lib-found .rows li').forEach((li, n) => { if (n > 2) li.hidden = true; }); window.scrollTo(0, 0);",
       "marks": [
         {
           "t": "$#q",
@@ -445,8 +445,8 @@
         {
           "t": "$#found-h",
           "step": 4,
-          "side": "right",
-          "tail": 90
+          "side": "bottom",
+          "tail": 40
         },
         {
           "t": "$#lookup [data-kind=films] button",
@@ -483,12 +483,6 @@
           "tail": 90
         },
         {
-          "t": "$#side-panel .check",
-          "step": 8,
-          "side": "left",
-          "tail": 90
-        },
-        {
           "t": "$#side-panel button[type=submit]",
           "step": 9,
           "side": "top",
@@ -498,10 +492,9 @@
       "steps": [
         6,
         7,
-        8,
         9
       ],
-      "alt": "The Add panel with example data, with Quality (step 6), Folder (step 7), Start looking for it now (step 8) and Add to Reelix (step 9) outlined"
+      "alt": "The Add panel with example data, with Quality (step 6), Folder (step 7) and Add to Reelix (step 9) outlined"
     },
     {
       "topic": "browse-your-library",
@@ -518,12 +511,6 @@
           "tail": 90
         },
         {
-          "t": "$#main-nav a[href='/library-films.html']",
-          "step": 2,
-          "side": "bottom",
-          "tail": 60
-        },
-        {
           "t": "$#lib-q",
           "step": 3,
           "side": "bottom",
@@ -538,11 +525,10 @@
       ],
       "steps": [
         1,
-        2,
         3,
         4
       ],
-      "alt": "The Films wall with example data, with Library in the side menu (step 1), Films (step 2), Search your films (step 3) and the filters (step 4) outlined"
+      "alt": "The Films wall with example data, with Library in the side menu (step 1), Search your films (step 3) and the filters (step 4) outlined"
     },
     {
       "topic": "browse-your-library",
@@ -550,7 +536,7 @@
       "page": "library-films.html",
       "width": 1280,
       "height": 900,
-      "run": "for (let i = 0; i < 40 && !document.querySelector('#lib-az a[href]'); i++) await new Promise(r => setTimeout(r, 250)); [...document.querySelectorAll('#lib-az a[href]')].find(a => a.textContent === 'M').click(); await new Promise(r => setTimeout(r, 1500)); window.scrollTo(0, 0); document.activeElement.blur();",
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lib-az a[href]'); i++) await new Promise(r => setTimeout(r, 250)); state.offset = 0; await load({ until: 'M' }); window.SharedComponents.azGo(document.querySelector('#lib-az'), 'M'); await new Promise(r => setTimeout(r, 300)); window.scrollTo(0, 0); document.activeElement.blur(); await new Promise(r => setTimeout(r, 300));",
       "marks": [
         {
           "t": "$#lib-az a[aria-current]",
@@ -569,7 +555,7 @@
         5,
         6
       ],
-      "alt": "The Films wall with example data, opened at the letter M, with M in the letter row (step 5) and the sort list (step 6) outlined"
+      "alt": "The Films wall with example data, opened at the letter M with Show earlier titles above it, with M in the letter row (step 5) and the sort list (step 6) outlined"
     },
     {
       "topic": "browse-your-library",
@@ -577,16 +563,10 @@
       "page": "library-tv-show.html?id=2",
       "width": 1280,
       "height": 900,
-      "run": "for (let i = 0; i < 40 && !document.querySelector('#item h1'); i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 600));",
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#item h1'); i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 600)); window.scrollTo(0, 0);",
       "marks": [
         {
           "t": "$#item h1",
-          "step": 7,
-          "side": "bottom",
-          "tail": 60
-        },
-        {
-          "t": "$#item [role=tablist]",
           "step": 7,
           "side": "right",
           "tail": 90
@@ -594,15 +574,15 @@
         {
           "t": "$#item-back",
           "step": 8,
-          "side": "right",
-          "tail": 90
+          "side": "bottom",
+          "tail": 40
         }
       ],
       "steps": [
         7,
         8
       ],
-      "alt": "A series page with example data, with its name and its Episodes and About tabs (step 7) and TV, the way back to the wall (step 8) outlined"
+      "alt": "A series page with example data, with its name (step 7) and TV, the way back to the wall (step 8) outlined"
     },
     {
       "topic": "browse-your-library",

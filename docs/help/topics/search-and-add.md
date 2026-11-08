@@ -31,7 +31,7 @@ podcasts have **Follow** instead.
    want. For a radio show or podcast, select **Follow**. Read
    [Follow radio shows and podcasts](follow-radio-shows.md).
 
-![The Add panel with example data, with Quality (step 6), Folder (step 7), Start looking for it now (step 8) and Add to Reelix (step 9) outlined](../images/search-and-add-3-add.png)
+![The Add panel with example data, with Quality (step 6), Folder (step 7) and Add to Reelix (step 9) outlined](../images/search-and-add-3-add.png)
 
 6. In the panel, choose the **Quality**: how good a copy Reelix looks for.
 7. Choose the **Folder** it goes in. Each folder shows the free space on its drive. For a book, choose

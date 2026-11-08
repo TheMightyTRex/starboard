@@ -21,6 +21,7 @@
 
 /* Item pages: a single cover in the fan's place, the in-page tabs, and the numbered list. */
 .lib-item { display: grid; gap: var(--space-5); }
+.lib > .back-link { justify-self: start; width: fit-content; }
 .lib-item .series-head__meta .chip { align-self: center; }
 .lib-fan { width: clamp(120px, 18vw, 200px); aspect-ratio: 2 / 3; }
 .lib-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--color-divider); overflow-x: auto; }

@@ -12,6 +12,8 @@ albums or reading order.
 
 ## Steps
 
+![The Films wall with example data, with Library in the side menu (step 1), Search your films (step 3) and the filters (step 4) outlined](../images/browse-your-library-1-wall.png)
+
 1. Select **Library** in the side menu, or in the menu on a phone.
 2. Choose a kind in the menu along the top: **TV**, **Films**, **Music**, **Radio**, **Books** or **Audiobooks**.
    **My library** shows them all as covers, A to Z.
@@ -19,10 +21,14 @@ albums or reading order.
    The wall shows only what matches as you type.
 4. Optional: to see only some, select a filter, such as **Missing** or **Coming soon**. Each filter says how many it
    holds. Select it again to see everything.
+![The Films wall with example data, opened at the letter M with Show earlier titles above it, with M in the letter row (step 5) and the sort list (step 6) outlined](../images/browse-your-library-2-letters.png)
+
 5. Optional: to jump to a letter, select it in the row of letters above the covers, such as **M**. Letters with
    nothing under them are greyed out and cannot be selected.
 6. Optional: to change the order, choose **A to Z**, **Recently added** or **Year** in the sort list. Choose
    **Covers** or **List**, and **Small covers**, **Medium covers** or **Large covers**.
+![A series page with example data, with its name (step 7) and TV, the way back to the wall (step 8) outlined](../images/browse-your-library-3-item.png)
+
 7. Select a title to open its page. It shows the name, what it is, how much of it you have, and:
    - **Episodes** for a series or radio show, with each one's number, date and whether you have it.
    - **Reading order** for a book in a series.
@@ -36,6 +42,9 @@ albums or reading order.
 When you change the order, the layout, the cover size or a filter, **Save this view as default** appears. Select
 it, and that kind always opens that way, on any device you sign in from. To go back to A to Z with medium covers,
 go to **Settings**, **General**, and select **Reset Library views**.
+
+![Settings, General with example data, with Reset Library views outlined](../images/browse-your-library-4-reset.png)
+
 
 ## Things to note
 

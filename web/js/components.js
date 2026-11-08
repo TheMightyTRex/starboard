@@ -527,7 +527,6 @@
       li.append(a);
       return li;
     }));
-    delete nav.dataset.ready;
     setupAzJump(nav.parentNode || document);
   }
   function azGo(nav, letter) {
@@ -581,14 +580,16 @@
       const track = () => {
         raf = 0;
         const line = nav.getBoundingClientRect().bottom + 8;
-        let current = null;
-        document.querySelectorAll(".wall-letter[id^='letter-']").forEach((h) => {
+        const headings = [...document.querySelectorAll(".wall-letter[id^='letter-']")];
+        let current = headings[0] || null; // at the top of a wall, its first letter
+        headings.forEach((h) => {
           if (h.getBoundingClientRect().top <= line + 40) current = h;
         });
         const letter = current ? (current.id === "letter-num" ? "#" : current.id.slice(7).toUpperCase()) : null;
         if (letter && nav.querySelector('[aria-current="location"]')?.textContent.trim() !== letter) azCurrent(nav, letter);
       };
       addEventListener("scroll", () => { raf ||= requestAnimationFrame(track); }, { passive: true });
+      raf = requestAnimationFrame(track);
     });
   }
 

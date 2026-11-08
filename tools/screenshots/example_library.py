@@ -5,6 +5,7 @@ from the made-up Reelix's own address so Starboard fetches it like a real poster
 answer(path, query) for GET and add(path, body) for POST under /reelix/api/v1.
 """
 import datetime as dt
+import os
 import random
 import struct
 import zlib
@@ -48,7 +49,7 @@ def png(n, w=92, h=138):
     return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", raw) + chunk(b"IEND", b"")
 
 
-BASE = ""  # set by example_server: http://127.0.0.1:PORT/reelix
+BASE = os.environ.get("EXAMPLE_REELIX_BASE", "")  # set by example_server: http://127.0.0.1:PORT/reelix
 
 
 def _poster(n):
