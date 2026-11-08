@@ -2,63 +2,81 @@
 
 # Search for and add films, series, music and books
 
-The Search page looks in every Sonarr, Radarr, Lidarr and Readarr you have added, all at once. Choose a result
-and select **Add**, and the right app adds it and, if you like, starts looking for it straight away.
+Search looks in your library first, so you see straight away whether you already have something. Below that,
+under **Not in your library**, it lists what Reelix can find, and you add it with one button. Radio shows and
+podcasts have **Follow** instead.
 
 ## Before you begin
 
-- At least one of Sonarr, Radarr, Lidarr or Readarr is in Starboard. Read [Add an app](add-an-app.md).
-- Optional: each app has its adding options chosen, so Starboard knows which quality profile and folder to
-  use. Read the section on adding options in [Add an app](add-an-app.md).
+- Reelix is in Starboard with its key. Install apps adds it for you. Read [Install apps](install-apps.md).
+- Without Reelix, Search looks in Sonarr, Radarr, Lidarr and Readarr instead. Read [Without Reelix](#without-reelix)
+  below.
 
 ## Steps
 
-1. Go to **Discover**, then **Search**. You can also type in the search box in the header, **Search films, series, music and
-   books**, on any page.
-2. In the search box, type at least two letters of the name, such as `Harbour Street`.
-3. Select **Search**. Starboard lists the results, with how many came from each app.
-4. Optional: to see only one kind, select a filter such as **Films** or **Series**. Select it again to see
-   everything. The filters appear when the results hold more than one kind.
-5. Find the one you want. Each result shows its cover, its kind, its year and the app it would go to. A
-   result you already have says **In library**.
-6. Select **Add** beside the result. A side panel opens, called **Add** and the name.
-7. Check the choices in the panel. They start with the adding options you chose for that app:
-   - **Quality profile**: how good a copy the app looks for.
-   - **Folder**: where it goes, with the free space on that drive.
-   - **Metadata profile**: for music and books only.
-   - **Start searching for it now**: on, the app looks for it straight away.
-8. Select **Add to** and the app's name, such as **Add to Radarr**. Starboard shows **Added to Radarr**.
-9. Select **Back to results** to add something else, or **View downloads** to follow the download.
+![The Search page with example data before anything is typed, with Search in the side menu (step 1) and Your library with each kind and its count (step 2) outlined](../images/search-and-add-1-start.png)
+
+1. Select **Search** in the side menu. On a phone, select the search button at the top of the screen, or type in
+   the search box in the menu. Typing in the search box at the top of any page also opens Search.
+2. Before you type, Search shows your library: **Recently added**, then each kind with how many you have, such as
+   **Films** and **64 films**. Select a kind to open it in the Library.
+
+![The Search page with example data after typing harbour, with the search box (step 3), In your library (step 4) and an Add button under Not in your library (step 5) outlined](../images/search-and-add-2-results.png)
+
+3. Type at least two letters of the name, such as `harbour`. You do not need to select **Search**: results appear as
+   you type.
+4. **In your library** lists what you already have, by kind, with whether each one is in your library, wanted or
+   not released yet. Select a title to open its page, or **See all** to see every match in the Library.
+5. **Not in your library** lists what Reelix finds that you do not have, by kind. Select **Add** beside the one you
+   want. For a radio show or podcast, select **Follow**. Read
+   [Follow radio shows and podcasts](follow-radio-shows.md).
+
+![The Add panel with example data, with Quality (step 6), Folder (step 7), Start looking for it now (step 8) and Add to Reelix (step 9) outlined](../images/search-and-add-3-add.png)
+
+6. In the panel, choose the **Quality**: how good a copy Reelix looks for.
+7. Choose the **Folder** it goes in. Each folder shows the free space on its drive. For a book, choose
+   **Ebook**, **Audiobook** or both.
+8. Leave **Start looking for it now** on, so Reelix looks for it straight away. Turn it off to add it now and look
+   later.
+9. Select **Add to Reelix**. The button beside it changes to **Added**, and it appears in the Library within a few
+   minutes.
 
 ## Things to note
 
-- Starboard searches only the apps that have **Show on the dashboard** active. Read
-  [Change or remove an app](change-or-remove-an-app.md).
-- Changes you make in the **Add** panel apply to this one item only. To change what every new item uses, edit
-  the app and change its **Adding options**.
-- If you deactivate **Start searching for it now**, the app keeps the item but does not look for it. Start the
-  search later in the app itself.
 - Each search has its own address, such as `http://192.168.1.20:8095/search.html?q=harbour`, so you can bookmark
   or share a search.
-- Covers in the results come from the sites your apps use, such as TMDB (The Movie Database).
+- Searching your library reads Starboard's own list, so it is quick. **Not in your library** asks Reelix, which asks
+  sites such as TMDB (The Movie Database) and Open Library, so it can take a few seconds. Each kind appears as soon
+  as it is ready.
+- Reelix needs a TMDB key to look up some films and series. Without one, Search may say so under
+  **Not in your library**. Books, music and radio need no key.
+- Covers come through Starboard, so your browser never contacts the image sites.
+
+## Without Reelix
+
+When Starboard has no Reelix with a key, Search looks in every Sonarr, Radarr, Lidarr and Readarr you have added.
+Type the name and select **Search**. Select **Add** beside a result, check the **Quality profile**, **Folder** and
+**Start searching for it now**, then select **Add to** and the app's name, such as **Add to Radarr**. A result you
+already have says **In library**. Read [Add an app](add-an-app.md).
 
 ## If it does not work
 
-- **Type at least two letters:** the search needs two letters or more. Type more of the name.
-- **Nothing found:** check the spelling, or try fewer words.
-- **Some results may be missing:** one of your apps did not answer. Select **View apps** to see which one. Read
-  [An app shows as not responding](app-not-responding.md).
-- **Could not load the profiles and folders** in the **Add** panel: the app did not send its lists. Close the
-  panel, check the app is running, and try again.
-- **Not finding it at all:** the right app may not be in Starboard yet. Select **Add another app to search** on
-  the Search page, or read [Add an app](add-an-app.md).
+- **Nothing in your library matches:** check the spelling, or try fewer words. The Library may still be reading
+  from Reelix: wait a minute and type again.
+- **Reelix found nothing else:** check the spelling, or try fewer words.
+- **Reelix cannot look up films until it has a TMDB key:** add a TMDB key to Reelix. Read
+  [Change your install](change-your-install.md).
+- **Reelix has no folder for this kind yet:** Reelix needs a folder for films, series, books or music before it can
+  add one. Run **Install apps** again, or read [Change your install](change-your-install.md).
+- **Some results may be missing** (without Reelix): one of your apps did not answer. Select **View apps** to see
+  which one. Read [An app shows as not responding](app-not-responding.md).
 
 ## Find out more
 
+- [Browse your library](browse-your-library.md)
+- [Follow radio shows and podcasts](follow-radio-shows.md)
 - [Pause, resume and remove downloads](manage-downloads.md)
 - [Find out what is coming up](coming-up.md)
-- [Approve or decline requests](approve-requests.md)
-- [The apps Starboard works with](../basics/the-apps.md)
 
 <!-- footer: download rights -->
 

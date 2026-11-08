@@ -25,6 +25,7 @@ os.environ["STARBOARD_REPO"] = "TheMightyTRex/starboard"  # the public repositor
 os.environ["STARBOARD_DISKS"] = ("Media pool=/disks/pool,System disk=/data,Drive 1=/disks/each/1,Drive 2=/disks/each/2,"
                                  "Drive 3=/disks/each/3,Drive 4=/disks/each/4")
 from starboard import changes, containers, discovery, stack, sysinfo  # noqa: E402
+import example_library  # noqa: E402  (a made-up Reelix library: tools/screenshots/example_library.py)
 from starboard.server import make_server  # noqa: E402
 
 GB, TB = 1024 ** 3, 1024 ** 4
@@ -110,8 +111,17 @@ class FakeArr(BaseHTTPRequestHandler):
             if p.startswith("/abs/api/users"):
                 return self.send_json({"users": [{"id": "u1", "username": "sam"}, {"id": "u2", "username": "alex"}, {"id": "u3", "username": "jo"}]})
             return self.send_json({"libraries": []})
-        if p.startswith("/reelix/api/v1/"):  # a made-up Reelix: radio, read from its own API (Coming up, Downloads)
-            return self.send_json(example_reelix(p[len("/reelix/api/v1"):].split("?")[0]))
+        if p.startswith("/reelix/posters/"):  # the made-up Library's posters: small pictures drawn by example_library
+            body = example_library.png(int(p.rsplit("/", 1)[1].split(".")[0]))
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
+        if p.startswith("/reelix/api/v1/"):  # a made-up Reelix: radio, read from its own API (Coming up, Downloads), and the Library
+            path, _, query = p[len("/reelix/api/v1"):].partition("?")
+            found = example_library.answer(path, dict(x.split("=", 1) for x in query.split("&") if "=" in x))
+            return self.send_json(found if found is not None else example_reelix(path))
         film = "/films" in p
         if "/system/status" in p:
             return self.send_json({"version": "6.0.4" if film else "4.0.16"})
@@ -154,6 +164,16 @@ class FakeArr(BaseHTTPRequestHandler):
             return self.send_json([{"path": "/media", "freeSpace": 10**12}])
         return self.send_json([], 200)
 
+
+
+def _post(self):
+    length = int(self.headers.get("Content-Length") or 0)
+    body = json.loads(self.rfile.read(length) or b"{}")
+    found = example_library.add(self.path[len("/reelix/api/v1"):].split("?")[0], body) if self.path.startswith("/reelix/api/v1/") else None
+    return self.send_json(found or {}, 201 if found else 404)
+
+
+FakeArr.do_POST = _post
 
 
 def example_reelix(path):
@@ -265,6 +285,7 @@ def example_pool(data):
 
 
 def main():
+    example_library.BASE = f"http://127.0.0.1:{FAKE_PORT}/reelix"
     fake = ThreadingHTTPServer(("127.0.0.1", FAKE_PORT), FakeArr)
     threading.Thread(target=fake.serve_forever, daemon=True).start()
     DATA.mkdir(parents=True, exist_ok=True)

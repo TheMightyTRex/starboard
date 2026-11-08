@@ -16,15 +16,15 @@ listen in Audiobookshelf. Starboard shows what is due in Coming up, and episodes
 
 ### Find and follow a show
 
-![The Search page with example data, with Discover (step 1), the search box (step 2) and Search for "The Example Hour" in Reelix radio (step 3) outlined](../images/follow-radio-shows-1-search-link.png)
+![The Search page with example data, with Search in the side menu (step 1), the search box (step 2) and Follow beside a radio show under Not in your library (step 3) outlined](../images/follow-radio-shows-1-search-link.png)
 
-1. Go to **Discover**, then **Search**.
-2. Type the show's name, such as `The Example Hour`, and select **Search**.
-3. Under the results, select **Search for** and the show's name **in Reelix radio**. Reelix opens in a new
-   tab, at **Add radio show**, with your words already searched.
-4. In Reelix, select **Add** next to the show you want.
-5. In **Follow**, choose **Episodes from now on**, or **Every episode, old and new** to fetch earlier ones too.
-6. Select **Add show**. Reelix looks for each episode as it is broadcast.
+1. Select **Search** in the side menu. On a phone, select the search button at the top of the screen.
+2. Type the show's name, such as `Morning Story`. Your library is searched first, so you can see whether you
+   follow it already.
+3. Under **Not in your library**, **Radio** lists the shows Reelix found. Select **Follow** beside the one you want.
+4. In **Get**, choose **Every episode, old and new**, or **New episodes only**.
+5. Select **Follow this show**. The button beside it changes to **Following**, and the show appears in **Library**,
+   **Radio** within a few minutes. Reelix looks for each episode as it is broadcast.
 
 ### Listen in Audiobookshelf
 
@@ -57,6 +57,8 @@ Do this once. After that, every episode Reelix downloads appears in Audiobookshe
   `/media/radio`.
 - Coming up reads the 20 shows Reelix checked most recently. Shows beyond those are still followed and
   downloaded; they are not listed in Coming up.
+- Every show you follow is in **Library**, **Radio**, with its episodes, newest first. Read
+  [Browse your library](browse-your-library.md).
 - To stop following a show, change its **Follow** choice in Reelix, at **Radio**, then the show.
 - Coming up and Downloads need the key Starboard made when it set up Reelix. A Reelix you added by hand shows no
   radio until you add its API key to the **Reelix** entry in **Settings**, **Apps**. Read
