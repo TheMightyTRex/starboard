@@ -7,15 +7,35 @@ add features.
 
 ## [Unreleased]
 
-### Added
-- **Radio in Starboard:** Install apps has a Radio group, which makes the radio folder and sets it up in Reelix. Episodes of the radio shows and podcasts you follow in Reelix show in Coming up, and radio downloads show in Downloads, where you can remove them or find another copy. Discover's Search links to the same words in Reelix radio. A new help page explains how to follow a show and listen in Audiobookshelf.
+## [0.11.0] (8 November 2026)
 
-### Fixed
-- **Run first on newer Ubuntu:** The script stopped with "sg: command not found" straight after allowing your user to use Docker. It now works without sg.
+Radio in Starboard, one terminal frame with error numbers, help in slide-outs, and the fixes from the terminal checks.
+
+### Added
+- **Radio in Starboard:** Install apps has a Radio group, which makes the radio folder and sets it up in Reelix. Episodes of the radio shows and podcasts you follow show in Coming up, radio downloads show in Downloads, and Discover links to the same search in Reelix radio.
+- **One frame for the terminal:** The installer and the Run first script draw in the same frame, follow the same terminal rules, and redraw when the window changes size while a question waits.
+- **Error numbers in the terminal:** Every way the Run first script and the installer can stop has an error number, such as RF-11, on a line of its own with the address of the help page that explains it.
+- **Help in slide-outs:** Help with this step opens the help article in a slide-out beside the set-up, with square help icons, instead of a new tab.
+- **Help pictures for the terminal:** Run first, the terminal set-up and the error numbers each have three marked-up pictures, and Install apps has pictures of what to set up, the VPN step and the Check table.
 
 ### Changed
-- **Error numbers in Run first:** Every way the Run first script can stop has an error number, such as RF-11, with a link to the new help page Run first error numbers, which says what each means and how to put it right.
+- **Install apps:** The VPN step lists each provider with its site, required answers have a star, the Check table is tidier, and starting the apps shows how many are installed, then running.
+- **Numbered answers:** Yes or no questions in the terminal have numbered answers with the recommended one first, in place of [y/N].
+- **App by app after Basics:** Choosing app by app after Basics starts with the Basics groups ticked.
 - **Storage counts radio with audiobooks:** A folder named radio or podcasts now counts as Audiobooks and radio, not Everything else.
+- **Storyarr 0.7.0:** Install apps installs Storyarr 0.7.0, which finds radio from torrent and Usenet sources.
+- **The Screen logo:** The set-up and sign-in pages, the browser tab and the app use the Screen logo.
+
+### Fixed
+- **Run first on newer Ubuntu:** The script stopped with sg: command not found straight after allowing your user to use Docker. It now works without sg.
+- **Running the installer straight after Run first:** The installer stopped with IN-22 because the docker group was not active yet. It now starts itself again inside the group.
+- **Keys typed between questions:** Keys pressed while a job runs or between questions no longer move the lines or show a question twice.
+- **The sudo password at the end:** Applying the changes asks for your sudo password in the window when sudo has forgotten it, instead of stopping with IN-16.
+- **Text cut at the edge:** Stop messages, the checklist hint, the sign-out line, long questions and help addresses wrap instead of running off the edge.
+- **A job that keeps failing:** A failing job is tried three times, then offers Show the details and Carry on.
+
+### Security
+- **Checks:** The unit tests and the help check ran on this release, and the terminal set-up was checked on fresh Ubuntu 26.04 machines at four window sizes. Nothing in this release changes what Starboard can reach.
 
 ## [0.10.0] (7 November 2026)
 
@@ -854,7 +874,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/TheMightyTRex/starboard/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/TheMightyTRex/starboard/compare/v0.9.2...v0.10.0
 [0.9.2]: https://github.com/TheMightyTRex/starboard/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/TheMightyTRex/starboard/compare/v0.9.0...v0.9.1
