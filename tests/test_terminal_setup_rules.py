@@ -234,6 +234,32 @@ class JobsTest(unittest.TestCase):
             ts.note_stop("IN-33")
             self.assertEqual(open(d + "/e").read().strip(), "IN-33")
 
+    def test_the_wait_for_the_apps_leaves_out_apps_that_did_not_start(self):
+        # DASH-151: qBittorrent behind a VPN that never connected kept the wait going for the full time, with nothing
+        # new on the screen. Only the apps that started are waited for.
+        api = FakeApi({("GET", "/api/discover"): {"items": [{"key": "reelix"}], "known": ["reelix", "qbittorrent"]}})
+        term, _ = plain()
+        clock = iter(range(0, 10000, 10))
+        with mock.patch.object(ts.time, "time", lambda: next(clock)), mock.patch.object(ts.time, "sleep", lambda s: None):
+            items = ts.found_when_settled(api, term, 0, ["reelix", "qbittorrent"], running={"reelix", "starboard"})
+        self.assertEqual(items, [{"key": "reelix"}])
+        self.assertEqual(len([c for c in api.calls if c[1] == "/api/discover"]), 1)  # no waiting at all
+        term, _ = plain()
+        clock = iter(range(0, 10000, 10))
+        with mock.patch.object(ts.time, "time", lambda: next(clock)), mock.patch.object(ts.time, "sleep", lambda s: None):
+            ts.found_when_settled(api, term, 0, ["reelix", "qbittorrent"])  # not known what started: waits it out
+        self.assertGreater(len([c for c in api.calls if c[1] == "/api/discover"]), 3)
+
+    def test_the_running_apps_are_read_from_the_installers_note(self):
+        import os
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(ts.running_apps(d))
+            os.makedirs(os.path.join(d, "data", "stack"))
+            with open(os.path.join(d, "data", "stack", "running.txt"), "w") as f:
+                f.write("reelix\njellyfin\n\n")
+            self.assertEqual(ts.running_apps(d), {"reelix", "jellyfin"})
+
     def test_stop_after_a_failed_job_stops(self):
         term, _ = plain(["4"])
         with self.assertRaises(ts.Stop):

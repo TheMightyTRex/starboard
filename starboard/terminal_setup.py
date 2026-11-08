@@ -1618,8 +1618,17 @@ class Terminal:
         try:
             import termios
             fd = sys.stdin.fileno()
-            if not (self.fancy and self._real_input and os.isatty(fd)):
+            if not (self._real_input and os.isatty(fd)):
                 return lambda: None
+            if not self.fancy:
+                # Plain lines keep the keys showing (a screen reader reads them back), but an Enter pressed while a
+                # job runs must not answer the next question with its default: it is thrown away when the job ends.
+                def flush():
+                    try:
+                        termios.tcflush(fd, termios.TCIFLUSH)
+                    except OSError:
+                        pass
+                return flush
             saved = termios.tcgetattr(fd)
             quiet = termios.tcgetattr(fd)
             quiet[3] &= ~(termios.ECHO | termios.ICANON)
@@ -2203,11 +2212,26 @@ def set_up_reelix(api, term, state, wait, job=None):
     term.note("Reelix's own pages are there if you need them: sign in as admin with your Starboard password.")
 
 
-def found_when_settled(api, term, wait, expected, most=120, job=None):
+def running_apps(folder):
+    """The apps' containers running after ./install.sh --start-apps (data/stack/running.txt, one name a line), or None
+    when it did not say."""
+    try:
+        with open(os.path.join(folder, "data", "stack", "running.txt"), encoding="utf-8") as f:
+            return {line.strip() for line in f if line.strip()}
+    except OSError:
+        return None
+
+
+def found_when_settled(api, term, wait, expected, most=120, job=None, running=None):
     """The apps Starboard finds on this computer, once the apps just started have answered: each opens its port a
     while after it starts (Radarr and Sonarr can take over a minute). It looks again until every one it can
-    recognise is there, or after most seconds, and then takes what it has."""
+    recognise is there, or after most seconds, and then takes what it has. With running (the containers that
+    started), it does not wait for an app that did not start, such as one behind a VPN that has not connected:
+    that wait was the full two minutes, with nothing new on the screen (DASH-151). Starboard adds such an app
+    itself once it answers (/api/stack/adopt)."""
     began = time.time()
+    if running is not None:
+        expected = [key for key in expected if key in running]
 
     def settled():
         found = api.call("GET", "/api/discover")
@@ -2250,7 +2274,7 @@ def start_with_installer(api, term, state, choice, wait):
     if "reelix" in choice["apps"]:
         set_up_reelix(api, term, state, wait, (2, jobs))
     try:
-        items = found_when_settled(api, term, wait, choice["apps"], job=(jobs, jobs))
+        items = found_when_settled(api, term, wait, choice["apps"], job=(jobs, jobs), running=running_apps(folder))
         if items:
             added = api.call("POST", "/api/discover/add", {"items": items})
             term.ok(f"Added {len(items)} {'app' if len(items) == 1 else 'apps'} to Starboard.")

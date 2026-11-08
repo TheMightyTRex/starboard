@@ -271,6 +271,10 @@ sa_up() {
   # sets itself up leaves it unfinished ("no pg_hba.conf entry").
   helped "for d in '${SA_DIRS[0]}'/* '${SA_DIRS[1]}'/media '${SA_DIRS[1]}'/downloads; do case \"\$d\" in *-db) continue ;; esac; [ -d \"\$d\" ] && chown $SA_PUID:$SA_PGID \"\$d\"; done; true" || true
   reelix_tokens  # Reelix may be running even when another app is not
+  # The apps running now, one name a line, for the terminal set-up: it waits for these to answer, and not for an app
+  # that did not start, such as one behind a VPN that has not connected (DASH-151).
+  docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps --status running --format '{{.Name}}' \
+    > data/stack/running.txt 2>/dev/null || rm -f data/stack/running.txt
   if [ "$status" != 0 ]; then
     running="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps -q --status running 2>/dev/null | wc -l)"
     stop IN-33 "$running of $SA_TOTAL apps are running; some did not start. Show the details for the last lines Docker wrote, fix what they say, then try again."
