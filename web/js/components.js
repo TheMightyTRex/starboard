@@ -496,6 +496,102 @@
     });
   }
 
+  /* A to Z jump list (.az-jump). Letters come from the sort title ("The Expanse" under E, "Émile" under E,
+     "24" under #): azLetter(title). azJump(nav, letters) draws # and A to Z into the nav, with the letters
+     not in the Set shown but not choosable. The row is one Tab stop: Arrow keys, Home and End move between
+     the letters that have titles, Enter jumps. A jump scrolls to the heading (#letter-a) and moves focus to it.
+     When the heading is not on the page yet (a wall that shows 40 at a time), the nav fires a cancelable
+     "az-jump" event with detail.letter: the app shows more, then calls azGo(nav, letter). The letter in
+     view gets aria-current="location". */
+  const AZ = ["#", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+  const ARTICLES = /^(the|a|an)\s+/i;
+  function azLetter(title) {
+    const first = String(title || "").trim().replace(ARTICLES, "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^[^\p{L}\p{N}]+/u, "").charAt(0).toUpperCase();
+    return first >= "A" && first <= "Z" ? first : "#";
+  }
+  const azId = (letter) => (letter === "#" ? "letter-num" : `letter-${letter.toLowerCase()}`);
+  function azJump(nav, letters) {
+    const list = nav.querySelector("ol") || nav.appendChild(document.createElement("ol"));
+    list.replaceChildren(...AZ.map((letter) => {
+      const li = document.createElement("li");
+      const a = document.createElement("a");
+      a.className = "az-jump__letter";
+      a.textContent = letter;
+      a.dataset.letter = letter;
+      if (letters.has(letter)) a.href = `#${azId(letter)}`;
+      else {
+        a.setAttribute("aria-disabled", "true");
+        a.setAttribute("role", "link");
+        a.setAttribute("aria-label", `${letter === "#" ? "Numbers" : letter}, no titles`);
+      }
+      li.append(a);
+      return li;
+    }));
+    delete nav.dataset.ready;
+    setupAzJump(nav.parentNode || document);
+  }
+  function azGo(nav, letter) {
+    const heading = document.getElementById(azId(letter));
+    if (!heading) return false;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("pref-motion");
+    if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+    heading.scrollIntoView({ block: "start", behavior: still ? "instant" : "smooth" });
+    heading.focus({ preventScroll: true });
+    azCurrent(nav, letter);
+    return true;
+  }
+  function azCurrent(nav, letter) {
+    nav.querySelectorAll(".az-jump__letter").forEach((a) => {
+      if ((a.dataset.letter || a.textContent.trim()) === letter) a.setAttribute("aria-current", "location");
+      else a.removeAttribute("aria-current");
+    });
+  }
+  function setupAzJump(root = document) {
+    const navs = root.matches?.(".az-jump") ? [root] : root.querySelectorAll(".az-jump");
+    navs.forEach((nav) => {
+      const live = () => [...nav.querySelectorAll(".az-jump__letter[href]")];
+      const rove = (target) => live().forEach((a) => a.setAttribute("tabindex", a === target ? "0" : "-1"));
+      rove(nav.querySelector('.az-jump__letter[aria-current="location"][href]') || live()[0]);
+      if (nav.dataset.ready) return;
+      nav.dataset.ready = "1";
+      nav.addEventListener("keydown", (event) => {
+        const list = live();
+        const at = list.indexOf(document.activeElement);
+        if (at < 0) return;
+        const go = { ArrowRight: at + 1, ArrowDown: at + 1, ArrowLeft: at - 1, ArrowUp: at - 1, Home: 0, End: list.length - 1 }[event.key];
+        if (go === undefined) return;
+        event.preventDefault();
+        const next = list[Math.max(0, Math.min(list.length - 1, go))];
+        rove(next);
+        next.focus();
+        next.scrollIntoView({ block: "nearest", inline: "nearest" });
+      });
+      nav.addEventListener("click", (event) => {
+        const a = event.target.closest(".az-jump__letter");
+        if (!a) return;
+        event.preventDefault();
+        if (!a.hasAttribute("href")) return;
+        rove(a);
+        const letter = a.dataset.letter || a.textContent.trim();
+        if (azGo(nav, letter)) return;
+        nav.dispatchEvent(new CustomEvent("az-jump", { bubbles: true, cancelable: true, detail: { letter } }));
+      });
+      // The letter in view: the last heading above the middle of the screen.
+      let raf = 0;
+      const track = () => {
+        raf = 0;
+        const line = nav.getBoundingClientRect().bottom + 8;
+        let current = null;
+        document.querySelectorAll(".wall-letter[id^='letter-']").forEach((h) => {
+          if (h.getBoundingClientRect().top <= line + 40) current = h;
+        });
+        const letter = current ? (current.id === "letter-num" ? "#" : current.id.slice(7).toUpperCase()) : null;
+        if (letter && nav.querySelector('[aria-current="location"]')?.textContent.trim() !== letter) azCurrent(nav, letter);
+      };
+      addEventListener("scroll", () => { raf ||= requestAnimationFrame(track); }, { passive: true });
+    });
+  }
+
   function setup(root) {
     setupMenus(root);
     setupShelves(root);
@@ -506,8 +602,9 @@
     setupCopy(root);
     setupSearch(root);
     setupDisplay(root);
+    setupAzJump(root);
   }
-  window.SharedComponents = { setup, setupSearch, openLayer, toast, savedNote, copyText };
+  window.SharedComponents = { setup, setupSearch, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo };
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");
