@@ -80,6 +80,8 @@ def main():
     resized = False
     shown_more = False
     repeats, last_same = 0, None
+    sent_screen, sent_time = None, 0.0  # the screen when the last keys were sent
+    by_app = False                      # 'Let me choose app by app' already chosen once
     heading = here = text = ""
     ended = "timeout"
     seen_faults = set()
@@ -106,11 +108,12 @@ def main():
         screen.unknown.clear()
 
     def send(text, label=None):
-        nonlocal answers, repeats, last_same
+        nonlocal answers, repeats, last_same, sent_screen, sent_time
         same = (heading, here.strip(), label or repr(text))
         # Enter pressed while a job runs (the menu says Please wait) is a person being impatient, not a stuck question.
         repeats = repeats + 1 if same == last_same and "Please wait" not in text else 0
         last_same = same
+        sent_screen, sent_time = screen_text, time.time()
         os.write(fd, text.encode())
         typed.append(label or repr(text))
         answers += 1
@@ -153,6 +156,16 @@ def main():
         before = lines[screen.r - 1] if 0 < screen.r < len(lines) else ""
         low = (before + " " + here).lower() if not here.lstrip().startswith(("›", "Your choice")) else here.lower()
         heading = next((m.group(1).strip() for l in lines[:4] for m in [re.search(r"Starboard \| ([^│]+?)\s{2,}", l)] if m), "")
+        screen_text = text
+        if text == sent_screen:
+            # Nothing new on the screen since the last answer: the computer is working on it (after sudo's password,
+            # or a job that writes nothing, as in plain mode). A person waits rather than pressing Enter again.
+            if time.time() - sent_time > 1200:
+                ended = "stuck: nothing new for 20 minutes"
+                faults.append({"kind": "stuck", "detail": here.strip()[:120], "after_answers": answers, "screen": len(shots) - 1})
+                break
+            last_out = time.time()
+            continue
         shots.append({"title": heading or here.strip()[:80], "html": screen.html(), "size": f"{cols} x {rows}"})
         # The same question given the same answer 40 times over means the driver does not know its answer: stop, so
         # one unknown question cannot use up the whole run. Only typed answers count, never a long wait.
@@ -193,7 +206,7 @@ def main():
             label = {"basics": "Basics", "full": "Full install", "all": "Everything", "choose": "Let me choose"}[a.install]
             num = next((m.group(1) for l in lines for m in [re.match(r"\s*(?:●\s+)?(\d+)\s+" + re.escape(label), l)] if m), "")
             send((num or "") + "\r", f"{num or 'Enter'} ({label})")
-        elif a.apps == "all" and "Space ticks" in text and re.search(r"(?i)apps|what do you want|media server|use starboard's", text):
+        elif a.apps == "all" and "Space ticks" in text and "your choice" not in low and re.search(r"(?i)apps|what do you want|media server|use starboard's", text):
             keys, label = tick_all(lines)
             send(keys, label)
         elif a.apps == "all" and re.search(r"Type the numbers, separated by commas", text) and re.search(r"(?i)apps|what do you want", text):
@@ -206,7 +219,8 @@ def main():
                 shown_more = False
                 nums = list(range(1, max(nums) + 1)) if nums else nums
                 send(",".join(map(str, nums)) + "\r", "every number: " + ",".join(map(str, nums)))
-        elif a.apps == "all" and "Install these?" in text and "your choice" in low:
+        elif a.apps == "all" and "Install these?" in text and "your choice" in low and not by_app:
+            by_app = True
             send("2\r", "2 (choose app by app)")
         elif a.apps == "all" and re.search(r"install [^?]+\? \[y/n\]", " ".join(l.strip() for l in lines[max(screen.r - 3, 0):screen.r + 1]).lower()) \
                 and re.search(r"\[y/n\]: ?$", low.rstrip() + " "):

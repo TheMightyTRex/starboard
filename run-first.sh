@@ -1196,13 +1196,13 @@ fi
 DRAWN=0  # the installer (and the terminal set-up) drew their own frames and gave the window back
 if [ "$status" != 0 ]; then
   echo
-  echo "The installer stopped. Error RF-40. The reason and its own error number are just above."
-  err RF-40
+  tell "The installer stopped. Error RF-40. The reason and its own error number are just above."
+  err RF-40 | fold -s -w "$(( COLS - 1 ))"
   exit "$status"
 fi
 if [ "$FINISH" = terminal ]; then
   apply_host
-  [ "$NEW_GROUP" = 1 ] && echo "Sign out and back in once, so docker commands work in new terminals too."
+  [ "$NEW_GROUP" = 1 ] && tell "Sign out and back in once, so docker commands work in new terminals too."
   exit 0
 fi
 

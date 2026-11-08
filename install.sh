@@ -113,7 +113,7 @@ fail() {
   finish
   echo
   printf 'Stopped: %s\n' "$2" | fold -s -w $(( COLS > 20 ? COLS - 1 : 79 ))
-  err "$1"
+  err "$1" | fold -s -w $(( COLS > 20 ? COLS - 1 : 79 ))  # at spaces only: the address stays whole
   exit 1
 }
 # stop CODE "reason": inside a job (a subshell). The reason goes to the job's caller, which shows it under the bar.
@@ -702,12 +702,15 @@ step_install() {
   [ "$FIRST" = 1 ] && JOBS_INTRO="Your media folder, the folders Starboard shows, Live TV and disk health come next, in Starboard's set-up. Please wait, this can take some time..."
   for n in "${NOTES[@]+"${NOTES[@]}"}"; do note "$n"; done
   if needs_sudo && ! sudo -n true 2>/dev/null; then
-    if [ -z "$IN" ]; then fail IN-16 "Disk health and Drive pools need sudo, and there is no terminal to type the password in. Run ./install.sh in a terminal"; fi
+    # A password is not a question of choice: with --yes in a real window (Run first applying the set-up's
+    # changes), sudo still asks for it there.
+    local pw_in="${IN:-$TTY}"
+    if [ -z "$pw_in" ]; then fail IN-16 "Disk health and Drive pools need sudo, and there is no terminal to type the password in. Run ./install.sh in a terminal"; fi
     para "sudo asks for the password you use to sign in to this computer, once (nothing shows as you type)."
     say ""
     KEYS="Ctrl+C"; MENU_RIGHT="Enter: send the password"; [ "$FANCY" = 1 ] && menu
     # shellcheck disable=SC2024  # the input is for sudo itself: it reads the password from the terminal
-    sudo -v < "$IN" || fail IN-16 "sudo did not accept the password"
+    sudo -v < "$pw_in" || fail IN-16 "sudo did not accept the password"
     ( while sleep 50; do sudo -n -v 2>/dev/null || exit; done ) &
     KEEP=$!
     KEYS="? f q"; MENU_RIGHT=""; [ "$FANCY" = 1 ] && menu

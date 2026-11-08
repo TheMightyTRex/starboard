@@ -622,16 +622,56 @@ class Terminal:
             return input(prompt)
         self.out.write(prompt)
         self.out.flush()
-        while True:
-            ready, _, _ = select.select([sys.stdin], [], [], 0.3)
-            if ready:
-                line = sys.stdin.readline()
-                if not line:
-                    raise EOFError
-                return line.rstrip("\n")
-            if self.resize_due and self.fancy:
-                self.resize_due = False
-                self._resized()
+        # Keys are hidden between questions, so Enter pressed before this question was drawn did not move the
+        # lines above it. A line typed ahead like that is shown here, after the question, as if typed now.
+        ready, _, _ = select.select([sys.stdin], [], [], 0)
+        if ready and self._show_keys(True) is not None:
+            self._show_keys(False)
+            line = sys.stdin.readline()
+            if not line:
+                raise EOFError
+            self.out.write(line.rstrip("\n") + "\n")
+            self.out.flush()
+            return line.rstrip("\n")
+        self._show_keys(True)
+        try:
+            while True:
+                ready, _, _ = select.select([sys.stdin], [], [], 0.3)
+                if ready:
+                    line = sys.stdin.readline()
+                    if not line:
+                        raise EOFError
+                    return line.rstrip("\n")
+                if self.resize_due and self.fancy:
+                    self.resize_due = False
+                    self._resized()
+        finally:
+            self._show_keys(False)
+
+    def _show_keys(self, on):
+        """In the boxed look, the terminal shows typed keys only while a question waits (TERMINAL.md, Questions):
+        keys pressed between questions would otherwise move the lines the step writes next. Returns whether keys
+        were hidden before, or None when this terminal is left as it is. The terminal is put back on exit."""
+        try:
+            import termios
+            fd = sys.stdin.fileno()
+            if not (self.fancy and self._real_input and os.isatty(fd)):
+                return None
+            mode = termios.tcgetattr(fd)
+            if not hasattr(self, "_keys_at_start"):
+                self._keys_at_start = list(mode)
+                import atexit
+                atexit.register(lambda: termios.tcsetattr(fd, termios.TCSADRAIN, self._keys_at_start))
+            was_hidden = not mode[3] & termios.ECHO
+            mode[3] = mode[3] | termios.ECHO if on else mode[3] & ~termios.ECHO
+            termios.tcsetattr(fd, termios.TCSADRAIN, mode)
+            return was_hidden
+        except (ImportError, OSError, ValueError, AttributeError):
+            return None
+        except Exception as e:  # noqa: BLE001 - termios.error is not an OSError
+            if type(e).__name__ == "error":
+                return None
+            raise
 
     def catch_up(self):
         """Draws the step again if the window changed size since the last read, to fit the new size."""
@@ -1035,7 +1075,7 @@ class Terminal:
                 out.append(f"  {cursor} {mark} {green(first[0])}")
                 out += [" " * 8 + green(more) for more in first[1:]]
                 out += [" " * 8 + self.dim(more) for more in _wrap(about, width - 10)]
-            out += ["", "  " + self.dim(note[0])]
+            out += [""] + ["  " + self.dim(line) for line in _wrap(note[0], width - 4)]
             return out
 
         self.say("")
