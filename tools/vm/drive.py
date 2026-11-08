@@ -96,6 +96,9 @@ def main():
         for i, line in enumerate(screen_lines):
             if LEAKS.match(line.strip("│ ")):
                 fault("other output in the frame", line.strip())
+            m = re.search(r"\bError ([A-Z]{2}-\d+)\b", line)
+            if m:  # a run that ends on an error number has not passed, however it ended
+                fault("error shown", m.group(1) + ": " + line.strip()[:100])
         body = [l for l in screen_lines if l.strip() and not set(l) <= FRAME]
         for x, y in zip(body, body[1:]):
             if x == y and len(x.strip()) > 8:
