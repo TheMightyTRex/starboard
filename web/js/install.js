@@ -731,9 +731,11 @@ function connectGuide(state, apps) {
       " with your Starboard password. Your library folders are added", has("qbittorrent") ? ", and qBittorrent is connected" : "", ". Then:",
       el("ul", {}, ...[
         el("li", {}, "Settings, Metadata: add a TMDB API key. Films and series need it; you get one free from themoviedb.org."),
-        el("li", {}, "Settings, Indexers: add the sites to search."),
+        el("li", {}, "Sites to search: the ones you chose are added. See each one's state, and add more, in ",
+          el("a", { href: "/settings-reelix.html", text: "Settings, Reelix, Sites to search" }), "."),
         has("sabnzbd") ? el("li", {}, "Settings, Download Clients, add SABnzbd: host ", code(host("sabnzbd")), ", port ", code("8080"), ", with its API key.") : null,
-        has("jellyfin") ? el("li", {}, "Settings, Media Servers: add Jellyfin at ", code("http://jellyfin:8096"), " with an API key from Jellyfin, so new things show up there at once.") : null,
+        has("jellyfin") || has("audiobookshelf") ? el("li", {}, `Once Starboard has ${[has("jellyfin") ? "Jellyfin's" : "", has("audiobookshelf") ? "Audiobookshelf's" : ""].filter(Boolean).join(" and ")} API key (Settings, Manage apps), connect ${has("jellyfin") && has("audiobookshelf") ? "them" : "it"} to Reelix with one button in `,
+          el("a", { href: "/settings-reelix.html", text: "Settings, Reelix, Media servers" }), ", so new things show up there at once.") : null,
       ].filter(Boolean))));
   }
   if (has("qbittorrent") && has("reelix")) {

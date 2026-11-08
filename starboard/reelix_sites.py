@@ -249,3 +249,38 @@ def connect_media_servers(reelix, services, data_dir, only=None):
             ok, result = False, {}
         done.append(f"Connected Reelix to {name}" + ("" if ok else f", but its test did not pass: {(result or {}).get('message') or 'no answer'}"))
     return done
+
+
+def after_install(app, password, wait=True):
+    """Install apps ran again with a Reelix that is set up already: once the apps have started, connects Reelix to
+    Jellyfin and Audiobookshelf with the keys Starboard has, signing in with the password just checked (the same as
+    Reelix's when Starboard set Reelix up). Says what happened in the log; a wrong password only says where to do it."""
+    import threading
+    import time
+    from . import logs, reelix_admin, stack
+    services = app.config.data["services"]
+    base = stack.reelix_url(app.data_dir)
+    if not base or not any(_key_of(services, k) for k in MEDIA_SERVERS):
+        return None
+
+    def run():
+        began = time.time()
+        while wait and not stack.job().get("finished"):
+            if time.time() - began > 3600:
+                return
+            time.sleep(5)
+        try:
+            reelix_setup.wait_until_up(base, seconds=300)
+            with reelix_admin.Visit(base, password) as reelix:
+                done = connect_media_servers(reelix, services, app.data_dir)
+            for line in done:
+                logs.event("info", "install apps", line)
+        except reelix_admin.WrongPassword:
+            logs.event("info", "install apps", "Reelix's password is not the same as Starboard's, so Jellyfin and "
+                       "Audiobookshelf were not connected to it. Connect them in Settings, Reelix, Media servers")
+        except (reelix_setup.ReelixError, OSError, ValueError) as e:
+            logs.event("warning", "install apps", f"Jellyfin and Audiobookshelf are not connected to Reelix yet ({e}). "
+                       "Connect them in Settings, Reelix, Media servers")
+    thread = threading.Thread(target=run, name="reelix-media-servers", daemon=True)
+    thread.start()
+    return thread

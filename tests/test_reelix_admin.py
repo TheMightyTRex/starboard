@@ -217,6 +217,39 @@ class MediaServersTest(StandInTest):
                          [("jellyfin", True, True), ("audiobookshelf", False, False)])
 
 
+class AfterInstallTest(StandInTest):
+    """Install apps run again with a Reelix set up before: Jellyfin and Audiobookshelf are connected with the
+    keys Starboard has, signing in with the password just checked."""
+
+    class App:
+        def __init__(self, data_dir, services):
+            self.data_dir = data_dir
+            self.config = type("Config", (), {"data": {"services": services}})()
+
+    def test_connects_with_the_password_just_checked(self):
+        port = self.base.rsplit(":", 1)[1]
+        os.makedirs(stack.folder(self.tmp.name), exist_ok=True)
+        with open(os.path.join(stack.folder(self.tmp.name), "compose.yaml"), "w") as f:
+            f.write(f'services:\n  reelix:\n    container_name: reelix\n    ports:\n      - "{port}:7700"\n')
+        self.state.handle = self._healthy(self.state.handle)
+        app = self.App(self.tmp.name, MediaServersTest.SERVICES)
+        reelix_sites.after_install(app, PASSWORD, wait=False).join(20)
+        self.assertEqual(sorted(i["implementation"] for i in self.state.items["mediaservers"]), ["audiobookshelf", "jellyfin"])
+        self.assertEqual(self.state.logins, self.state.logouts)
+
+    def test_nothing_without_keys_or_reelix(self):
+        self.assertIsNone(reelix_sites.after_install(self.App(self.tmp.name, MediaServersTest.SERVICES), PASSWORD, wait=False))
+        self.assertIsNone(reelix_sites.after_install(self.App(self.tmp.name, []), PASSWORD, wait=False))
+
+    @staticmethod
+    def _healthy(handle):
+        def wrapped(method, path, body=None, headers=None):
+            if path == "/system/health":
+                return 200, {"status": "ok"}, None
+            return handle(method, path, body, headers)
+        return wrapped
+
+
 class RouteTest(StandInTest):
     """Through Starboard: signed in to Starboard, the Reelix password in the body, never kept."""
 

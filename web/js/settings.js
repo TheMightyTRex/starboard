@@ -2463,7 +2463,7 @@ function takeoverSection() {
         el("div", { class: "form-stack" }, p2f,
           field("qBittorrent's password", qbit, { hint: `Optional. The password qBittorrent's user ${m.qbittorrent_user || "admin"} signs in with, so Reelix can send downloads to qBittorrent. Starboard checks it with qBittorrent first, and keeps it only in Reelix. Leave it empty to add qBittorrent in Reelix yourself.` }),
           el("label", { class: "check" }, hold, el("span", { class: "check__text" }, el("strong", { text: "Hold the sites to search" }),
-            el("span", { class: "check__hint", text: "Switched off in Reelix after the move, so only your old apps search until step 2. Switch them on in Reelix, Settings, Indexers." })))),
+            el("span", { class: "check__hint", text: "Switched off in Reelix after the move, so only your old apps search until step 2. Switch them on in Settings, Reelix, Sites to search." })))),
         el("div", { class: "actions" }, preview, run), said, shown));
     }
 

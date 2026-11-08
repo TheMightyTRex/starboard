@@ -370,8 +370,11 @@ def adopt_started_apps(app, keys, after_job=True, wait=5.0):
 
 def reelix_after_start(app, password):
     """Once the apps Install apps started are running, sets Reelix up (reelix_setup), if it was among them. The password
-    is the one just checked; it is used for these calls and dropped when they finish."""
+    is the one just checked; it is used for these calls and dropped when they finish. A Reelix set up before gets
+    Jellyfin and Audiobookshelf when Starboard has their keys (DASH-156, reelix_sites.after_install)."""
     if not reelix_setup.read_setup(app.data_dir):
+        from . import reelix_sites
+        reelix_sites.after_install(app, password)
         return
 
     def run():
