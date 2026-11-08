@@ -433,7 +433,14 @@ def after_takeover(app, password, p, sab_ini):
         services.forget()
         adopt_started_apps(app, [t["key"] for t in p["take"]] + ["reelix", "nzbget"], after_job=False)
         for r in p["replace"]:
-            for s in [s for s in app.config.data["services"] if s.get("icon") == r["key"] or s.get("container") == r["name"]]:
+            # Entries added before Starboard marked them (no icon or container) are known by their type or name.
+            def theirs(s, r=r):
+                kinds = {r["key"], r["name"]} | ({"readarr"} if r["key"] == "bookshelf" else set())
+                if s.get("icon") == "reelix":  # Reelix's own entries use the radarr and sonarr types too
+                    return False
+                return (s.get("icon") in kinds or s.get("container") == r["name"] or s.get("type") in kinds
+                        or s.get("name", "").strip().lower() in {r["name"].lower(), r["app"].lower()})
+            for s in [s for s in app.config.data["services"] if theirs(s)]:
                 app.config.remove_service(s["id"])
                 notes.append(f"Took {s['name']} off your apps")
         logs.event("info", "take over", "; ".join(notes) or "Took over your apps")

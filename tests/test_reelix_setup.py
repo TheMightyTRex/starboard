@@ -281,3 +281,27 @@ class TokenFromLogTest(unittest.TestCase):
         from starboard import reelix_setup
         info = reelix_setup.tokens_from_docker("/nowhere", {"url": "x", "token": "have"}, docker=None, available=lambda: True)
         self.assertEqual(info["token"], "have")
+
+
+class WaitUntilUpTest(unittest.TestCase):
+    """An unhealthy Reelix (503) is running: the wait must not hold back the step that fixes it (8 November 2026)."""
+
+    def test_an_unhealthy_answer_counts_as_up(self):
+        class Unhealthy(BaseHTTPRequestHandler):
+            def do_GET(self):
+                body = b'{"status": "error", "checks": []}'
+                self.send_response(503)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *a):
+                pass
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Unhealthy)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            reelix_setup.wait_until_up(f"http://127.0.0.1:{server.server_port}", seconds=1)  # returns, does not raise
+        finally:
+            server.shutdown()
+            server.server_close()

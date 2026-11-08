@@ -321,3 +321,24 @@ class RestoreTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AfterTakeoverTest(unittest.TestCase):
+    """The replaced apps leave the dashboard, including entries from before Starboard marked them; Reelix's stay."""
+
+    def test_old_entries_are_found_by_type_or_name_and_reelix_stays(self):
+        from starboard import server
+        services = [{"id": 1, "name": "Radarr", "type": "radarr"}, {"id": 2, "name": "Seerr", "type": "link"},
+                    {"id": 3, "name": "Readarr", "type": "readarr"}, {"id": 4, "name": "Reelix films", "type": "radarr", "icon": "reelix"},
+                    {"id": 5, "name": "Jellyfin", "type": "jellyfin"}]
+        app = mock.Mock()
+        app.config.data = {"services": services}
+        app.config.remove_service.side_effect = lambda i: services.remove(next(s for s in services if s["id"] == i))
+        p = {"choice": {"apps": ["jellyfin"]}, "take": [{"key": "jellyfin"}],
+             "replace": [{"key": "radarr", "name": "radarr", "app": "Radarr"}, {"key": "seerr", "name": "seerr", "app": "Seerr"},
+                         {"key": "bookshelf", "name": "readarr", "app": "Bookshelf"}]}
+        with mock.patch.object(server, "adopt_started_apps"), mock.patch.object(server.services, "forget"), \
+                mock.patch.object(server.logs, "event"), mock.patch.object(server.stack, "reelix_url", return_value=None):
+            notes = server.after_takeover(app, "pw", p, None)(True)
+        self.assertEqual([s["name"] for s in services], ["Reelix films", "Jellyfin"])
+        self.assertEqual(len([n for n in notes if n.startswith("Took")]), 3)

@@ -114,10 +114,12 @@ def _rewrite_setup(data_dir, info):
 
 
 def wait_until_up(base, seconds=180, opener=None):
+    """Waits until Reelix answers. "Unhealthy" (503) is an answer too: Reelix says so while a download app it was
+    given cannot be reached, which is often what the caller is about to fix (owner's takeover, 8 November 2026)."""
     began = time.time()
     while True:
         try:
-            Session(base, opener=opener).call("GET", "/system/health", timeout=5)
+            Session(base, opener=opener).call("GET", "/system/health", timeout=5, ok=(200, 503))
             return
         except ReelixError:
             if time.time() - began > seconds:
