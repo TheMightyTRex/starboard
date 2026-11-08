@@ -1837,7 +1837,7 @@ async function startPerformance() {
       pick("pf-usage-l", USAGE_CHOICES, perf().usage_every, (v, t) => save({ performance: { usage_every: v } }, `What uses the space: ${t.toLowerCase()}`)), "pf-usage-l"),
     settingRow("Daily record of used space", withCost("For the Space used over time chart and its forecast on System, Storage.", "spaceLog"),
       sw("pf-space-l", perf().space_log, (on) => save({ performance: { space_log: on } }, on ? "Daily record activated" : "Daily record deactivated")), "pf-space-l"),
-    settingRow("Posters on Coming up", withCost("Inactive: Coming up shows each app's icon.", "posters"),
+    settingRow("Posters on Coming up and the Library", withCost("Inactive: Coming up shows each app's icon, and the Library shows titles on plain tiles.", "posters"),
       sw("pf-post-l", config.show_posters, (on) => save({ show_posters: on }, on ? "Posters activated" : "Posters deactivated")), "pf-post-l"));
 
   // Pages

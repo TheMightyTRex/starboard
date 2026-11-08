@@ -36,7 +36,7 @@ In **Calendar**, select **Earlier** or **Later** to move by a month, and **Back 
 ### Show or hide posters
 
 1. Go to **Settings**, then **Performance**.
-2. Under **Background work**, activate or deactivate **Posters on Coming up**. Inactive: each release shows its
+2. Under **Background work**, activate or deactivate **Posters on Coming up and the Library**. Inactive: each release shows its
    app's icon instead.
 
 ## Things to note
