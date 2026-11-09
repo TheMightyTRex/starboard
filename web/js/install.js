@@ -445,14 +445,34 @@ async function installStep(id, state, data, apps, go) {
     const showType = () => { wg.hidden = kind() !== "wireguard"; ovpn.hidden = kind() !== "openvpn"; };
     type.addEventListener("change", showType);
     showType();
-    nodes = [provider, el("div", { class: "form-stack" },
+    // DASH-132: a Gluetun already running outside Starboard's apps. Its details are read on the server when the files
+    // are written; the key or password never comes to this page.
+    let existing = null;
+    try { existing = (await api("/api/stack/existing-vpn")).vpn; } catch { /* no Docker access: type them */ }
+    const reuse = existing?.complete ? el("input", { type: "checkbox", checked: !!state.vpn.use_existing || !state.vpn.provider }) : null;
+    const typed = el("div", { class: "stack-4" });
+    const showTyped = () => { typed.hidden = !!reuse?.checked; };
+    reuse?.addEventListener("change", showTyped);
+    const reuseBox = reuse ? el("div", { class: "stack-2" },
+      el("label", { class: "option-card" }, reuse,
+        el("strong", { text: `Use the VPN from ${existing.name}, already on this computer (recommended)` }),
+        el("small", { text: `${providers.find((v) => v.id === existing.provider)?.name || existing.provider}, ${existing.type === "openvpn" ? "OpenVPN" : "WireGuard"}${existing.countries ? `, ${existing.countries}` : ""}. Starboard copies its key into the new set-up, so you need not type it.` }))) : null;
+    nodes = [reuseBox, typed];
+    typed.append(provider, el("div", { class: "form-stack" },
       otherBox,
       el("div", { class: "field" }, el("span", { class: "field__label", text: "Connection" }),
         el("span", { class: "hint", text: "WireGuard is quicker and simpler. Use OpenVPN only if your provider has no WireGuard." }), type),
       wg, ovpn,
       field("Countries", countries, { hint: "Optional. Where the VPN connects; a nearby country is fastest." }),
-      el("p", { class: "small muted", text: "These go in the .env file on this computer only, never in Starboard's settings or its logs." }))];
+      el("p", { class: "small muted", text: "These go in the .env file on this computer only, never in Starboard's settings or its logs." })));
+    nodes = nodes.filter(Boolean);
+    showTyped();
     save = async () => {
+      if (reuse?.checked) {
+        state.vpn = { use_existing: existing.name, provider: existing.provider, type: existing.type, countries: existing.countries };
+        try { await api("/api/stack/preview", { method: "POST", body: body(state) }); return true; }
+        catch (e) { return stop(reuse, e.message); }
+      }
       [other, ...Object.values(inputs)].forEach(clearError);
       if (!picked()) return stop($("input", provider), "Choose your VPN provider");
       const p = picked() === "other" ? other.value.trim().toLowerCase() : picked();

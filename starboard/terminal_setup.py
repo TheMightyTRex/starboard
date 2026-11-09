@@ -2050,6 +2050,24 @@ def step_vpn(api, term, state):
         return False
     last = state.get("vpn_answers", {})
     head(term, state, "vpn")
+    # DASH-132: a Gluetun already running outside Starboard's apps; its key is read by Starboard when the files are
+    # written and never shown here (the browser set-up offers the same).
+    try:
+        existing = api.call("GET", "/api/stack/existing-vpn").get("vpn")
+    except Exception:  # noqa: BLE001  no Docker access: the details are typed
+        existing = None
+    if existing and existing.get("complete"):
+        name = next((n for i, n, _ in VPNS if i == existing["provider"]), existing["provider"])
+        what = f"{name}, {'OpenVPN' if existing['type'] == 'openvpn' else 'WireGuard'}" + \
+            (f", {existing['countries']}" if existing.get("countries") else "")
+        term.note(f"{existing['name']} is already on this computer, with a VPN: {what}.")
+        if term.yes_no(f"Use the VPN from {existing['name']}? Starboard copies its key, so you need not type it",
+                       last.get("reuse", True), help_key="vpn"):
+            last["reuse"] = True
+            state["vpn_answers"], state["vpn"] = last, {"use_existing": existing["name"], "provider": existing["provider"],
+                                                        "type": existing["type"], "countries": existing.get("countries", "")}
+            return True
+        last["reuse"] = False
     # The same list as the browser set-up, each with its site; nothing is chosen for you the first time.
     if vpn_ad():
         term.note(vpn_ad())

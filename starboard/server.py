@@ -1290,8 +1290,10 @@ class Handler(BaseHTTPRequestHandler):
                 after_install_change(app, body.get("password", ""), plan, sab_ini)
                 return self.json(200, {"started": started, "add": plan["add"], "remove": plan["remove"],
                                        "sab_servers": len(usenet_move.parse_sab_servers(sab_ini)) if sab_ini else 0})
+            if path == "/api/stack/existing-vpn" and method == "GET":
+                return self.json(200, {"vpn": takeover.existing_vpn()})  # DASH-132: never the key or password
             if path == "/api/stack/preview" and method == "POST":
-                preview = {k: v for k, v in self.body().items() if k != "own_ports"}
+                preview = takeover.fill_vpn({k: v for k, v in self.body().items() if k != "own_ports"})
                 built = stack.build({**preview, "own_ports": stack.compose_ports(app.data_dir)})
                 return self.json(200, {**{k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")}, "hooks": sorted(built["hooks"])})
             if path in ("/api/setup/test-tmdb", "/api/setup/test-usenet") and method == "POST":
@@ -1310,7 +1312,7 @@ class Handler(BaseHTTPRequestHandler):
                 choice = self.body()
                 # Writing decides which apps the next start keeps (it removes the rest), so the password again.
                 self.check_password(choice)
-                choice = {k: v for k, v in choice.items() if k not in ("password", "own_ports")}
+                choice = takeover.fill_vpn({k: v for k, v in choice.items() if k not in ("password", "own_ports")})
                 choice["own_ports"] = stack.compose_ports(app.data_dir)  # running Install apps again keeps the ports
                 from . import setup_answers
                 try:  # the new answers are checked before anything is written (DASH-178, DASH-183, DASH-189)

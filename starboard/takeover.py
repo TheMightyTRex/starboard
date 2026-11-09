@@ -235,6 +235,40 @@ def vpn_choice(info, image_env):
     return out
 
 
+def existing_vpn(with_secrets=False):
+    """The VPN details of a Gluetun already running on this computer outside Starboard's own apps (DASH-132), so the
+    set-up can offer to use them instead of asking again. Without with_secrets, only what the set-up shows: its name,
+    provider, connection and countries, never the key or password. None when there is none or Docker cannot say."""
+    try:
+        for c in found():
+            if c["key"] != "gluetun" or not c["running"]:
+                continue
+            info = _inspect(c["name"])
+            v = vpn_choice(info, _image_env(info.get("Image", "")))
+            if not v.get("provider"):
+                continue
+            secret = v.get("wireguard_private_key") if v["type"] == "wireguard" else v.get("openvpn_password")
+            if with_secrets:
+                return {**v, "name": c["name"]}
+            return {"name": c["name"], "provider": v["provider"], "type": v["type"], "countries": v.get("countries", ""),
+                    "complete": bool(secret)}
+    except containers.DockerError:
+        return None
+    return None
+
+
+def fill_vpn(choice):
+    """A set-up answer of "use my current Gluetun's VPN" becomes its details, read here so the key never goes through
+    the browser or the terminal."""
+    want = (choice.get("vpn") or {}).get("use_existing")
+    if not want:
+        return choice
+    v = existing_vpn(with_secrets=True)
+    if not v or v["name"] != want:
+        raise ValueError("Starboard could not read your current Gluetun's VPN details. Type them instead")
+    return {**choice, "vpn": {k: v.get(k, "") for k in stack.VPN_ENV.values()}}
+
+
 def _globals(infos):
     for info in infos.values():
         env = dict(e.split("=", 1) for e in (info.get("Config") or {}).get("Env") or [] if "=" in e)
