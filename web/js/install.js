@@ -733,7 +733,9 @@ async function installStep(id, state, data, apps, go) {
       const finder = await appFinder(undefined, { expect: settle ? [...state.apps] : null, shown: (t) => { waiting.textContent = t; } });
       const add = el("button", { type: "button", class: "btn btn--primary", hidden: !finder.add }, icon("plus"), "Add the ticked apps to Starboard");
       add.addEventListener("click", async () => { add.disabled = true; try { if (await finder.add()) add.hidden = true; } catch (e) { problem(e.message); } finally { add.disabled = false; } });
-      after.replaceChildren(el("h3", { text: "Add them to Starboard" }), finder.box, add, ...connectGuide(state, apps));
+      after.replaceChildren(el("h3", { text: "Add them to Starboard" }), finder.box, add, ...connectGuide(state, apps),
+        el("h3", { text: "Still to set up" }),
+        el("p", { text: "Starboard sets up the rest by itself in the next few minutes. Anything it cannot do is listed on the Apps page, with a link to where to do it, until it is done." }));
     };
     const poolFirst = state.pool ? notice("warning", "Make the pool first", `Run the pool commands from the Folders step on the server before you start, so ${state.pool.path} exists.`) : null;
     if (w.can_start || w.starter) {

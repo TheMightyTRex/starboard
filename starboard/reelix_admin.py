@@ -316,6 +316,9 @@ def _act(app, reelix, base, kind, action, body):
             out["suggested"] = [i for i, _, _ in reelix_sites.SUGGESTED]
         if kind == "mediaservers":
             out["offers"] = reelix_sites.media_server_offers(app.config.data["services"], app.data_dir, out["items"])
+            if out["items"]:
+                from . import setup_left
+                setup_left.record(app.data_dir, media_servers=True)
         if kind == "downloadclients":  # DASH-257: the ones that differ from Starboard's set-up, for Repair
             from . import download_repair
             out["repair"] = download_repair.needs(app.data_dir, out["items"])
@@ -338,6 +341,9 @@ def _act(app, reelix, base, kind, action, body):
                                                   only=str(body.get("app") or "") or None)
         for line in done:
             logs.event("info", "reelix", line)
+        if any(line.startswith("Connected") for line in done):
+            from . import setup_left
+            setup_left.record(app.data_dir, media_servers=True)
         return {"done": done, **listing(reelix, kind),
                 "offers": reelix_sites.media_server_offers(app.config.data["services"], app.data_dir, listing(reelix, kind)["items"])}
     if action == "repair" and kind == "downloadclients":

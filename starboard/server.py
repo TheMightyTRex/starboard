@@ -1295,6 +1295,9 @@ class Handler(BaseHTTPRequestHandler):
                 after_install_change(app, body.get("password", ""), plan, sab_ini)
                 return self.json(200, {"started": started, "add": plan["add"], "remove": plan["remove"],
                                        "sab_servers": len(usenet_move.parse_sab_servers(sab_ini)) if sab_ini else 0})
+            if path == "/api/setup/left" and method == "GET":
+                from . import setup_left  # DASH-185: what is left to set up
+                return self.json(200, setup_left.left(app.config, app.data_dir))
             if path == "/api/stack/existing-usenet" and method == "GET":
                 # DASH-247: the servers of a SABnzbd already running, by address only, for the Usenet step to name.
                 running = next((c["name"] for c in takeover.found() if c["key"] == "sabnzbd" and c["running"]), None) \

@@ -238,12 +238,13 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
 
     # 3b. Films and series information (the TMDB key, DASH-178) and the language of releases (DASH-189), before
     # Reelix searches or scans anything, so the first matches are right.
-    from . import setup_answers
+    from . import setup_answers, setup_left
     if info.get("tmdb"):
         try:
             _, meta = admin.call("GET", "/settings/metadata")
             admin.call("PUT", "/settings/metadata", setup_answers.tmdb_settings(info["tmdb"], meta))
             done.append("Added your TMDB key to Reelix")
+            setup_left.record(data_dir, tmdb=True)
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"Your TMDB key is not in Reelix yet ({e}). Add it in Settings, Reelix")
     if "language" in info:
@@ -363,13 +364,20 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     # 4e2. Reelix's radio into Audiobookshelf's Radio library, made by the first run at step 0 (DASH-181).
     if "radio" in groups:
         try:
-            done += app_setup.radio_settings(admin, found)
+            lines = app_setup.radio_settings(admin, found)
+            done += lines
+            if lines:
+                setup_left.record(data_dir, radio=True)
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"Reelix's radio is not pointed at Audiobookshelf yet ({e})")
 
     # 4f. Jellyfin and Audiobookshelf (DASH-156), with the keys Starboard already has, so new files show at once.
     try:
-        done += reelix_sites.connect_media_servers(admin, cfg.data["services"], data_dir)
+        lines = reelix_sites.connect_media_servers(admin, cfg.data["services"], data_dir)
+        done += lines
+        _, have = admin.call("GET", "/mediaservers")
+        if have:  # connected now, or before this run
+            setup_left.record(data_dir, media_servers=True)
     except (ReelixError, OSError, ValueError) as e:
         done.append(f"Jellyfin and Audiobookshelf are not connected to Reelix yet ({e}). Connect them in Settings, Reelix, Media servers")
 

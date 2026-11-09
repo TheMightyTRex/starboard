@@ -2883,6 +2883,18 @@ def run(api, term, data_dir, port, address=""):
             rows.append(("Changes to this computer", "./install.sh " + " ".join(args)))
         rows.append(("Ask these again", f"python3 -m starboard.terminal_setup --port {port}"))
         term.card("Starboard is ready", rows, colour="32")
+        # DASH-185: what is left to set up, the same list as on Starboard's Apps page.
+        try:
+            todo = [i for i in (api.call("GET", "/api/setup/left").get("items") or []) if not i["done"]]
+        except Exception:  # noqa: BLE001  the list is a help, never a stop
+            todo = []
+        if todo:
+            term.say("")
+            term.note(term.accent("Still to set up"))
+            bullet = "•" if term.fancy else "-"
+            for i in todo:
+                term.say(f"  {bullet} {i['title']}: {i['why']}")
+            term.note("The same list is on Starboard's Apps page; each one goes from it when it is done.")
         term.note("Everything here can be changed later in Starboard's Settings.")
     finally:
         term.finish()

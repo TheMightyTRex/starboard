@@ -266,6 +266,25 @@ async function check() {
   announce(summaryText(apps()));
 }
 
+// DASH-185: what is left to set up, under the page heading until it is all done. Each item goes to the place that
+// does it. The list is worked out on the server and kept for 5 minutes.
+async function renderSetupLeft() {
+  const box = $("#setup-left");
+  if (!box) return;
+  let r;
+  try { r = await api("/api/setup/left"); } catch { box.hidden = true; return; }
+  const todo = (r.items || []).filter((i) => !i.done);
+  if (!todo.length) { box.hidden = true; box.replaceChildren(); return; }
+  const done = r.items.length - todo.length;
+  box.replaceChildren(el("div", { class: "notice", role: "status" }, icon("list-checks"),
+    el("div", { class: "notice__body stack-2" },
+      el("span", { class: "notice__title", text: `Still to set up: ${todo.length} of ${r.items.length}` }),
+      el("p", { class: "small muted", text: done ? `${done} done. Each one goes from this list when it is done.` : "Each one goes from this list when it is done." }),
+      el("ul", { class: "stack-2" }, todo.map((i) => el("li", {},
+        el("a", { href: i.href, text: i.title }), el("span", { class: "small muted", text: ` ${i.why}` })))))));
+  box.hidden = false;
+}
+
 startPage().then(async () => {
   try {
     await AppDetails.load("config", "status");
@@ -277,6 +296,7 @@ startPage().then(async () => {
   if (startedRecently) setTimeout(() => { startedRecently = false; render(); }, 15 * 60 * 1000);
   AppDetails.onChange(() => render());
   render();
+  renderSetupLeft();
   appChangeNotices();
   AppDetails.openFromAddress();
   let typing;
