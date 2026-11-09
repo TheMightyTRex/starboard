@@ -2632,10 +2632,64 @@ function takeoverSection() {
   return pageSection("in-takeover", "Apps you already run", "Apps on this server from your own Compose file: moved into Reelix where Reelix replaces them, and run by Starboard from then on, with a way back.", box);
 }
 
+// Advanced settings (DASH-225): every Settings page opens with only its basic settings; one switch at the top shows
+// the rest. The choice is saved with Starboard's settings, so it holds on every Settings page and every device.
+// The basic settings are the approved table (FULL-INSTALL-AND-APP-SETUP section 3); the sections listed here are the
+// advanced ones, marked as each page draws them.
+const ADVANCED_SECTIONS = new Set([
+  "gn-cat", "gn-card", "gn-up", "gn-logs", "gn-test", "gn-design", "gn-guide",  // General
+  "sc-ses",  // Security
+  "in-how", "tk",  // Your install
+  "rx-mediaservers", "rx-downloadclients", "rx-library",  // Reelix
+  "jf-defaults", "jf-import", "jf-missing", "jf-you",  // Jellyfin
+  "ls-copy", "ls-missing",  // Audiobookshelf
+  "al-what", "al-week", "al-watch",  // Alerts
+  "pf-bg", "pf-pages", "pf-now",  // Performance
+]);
+
+function markAdvanced(root) {
+  let hidden = 0;
+  $$("section.settings-section", root).forEach((sec) => {
+    const id = (sec.getAttribute("aria-labelledby") || "").replace(/-h$/, "");
+    if (ADVANCED_SECTIONS.has(id)) { sec.dataset.advanced = ""; hidden += 1; }
+  });
+  return hidden;
+}
+
+function advancedSwitch() {
+  const main = $("main .page") || $("main");
+  if (!main || $("#advanced-switch") || !$$("[id$='-sections'], #reelix-sections", main).length) return;
+  const input = el("input", { type: "checkbox", role: "switch", id: "advanced-switch", checked: !!config.settings_advanced });
+  const note = el("p", { class: "small muted", id: "advanced-note" });
+  const apply = () => {
+    document.body.classList.toggle("show-advanced", input.checked);
+    const n = $$("[data-advanced]", main).length;
+    const text = input.checked ? "Showing every setting. Your choice is saved for every Settings page."
+      : n ? `${n} more ${n === 1 ? "section is" : "sections are"} under Advanced settings.` : "";
+    if (note.textContent !== text) note.textContent = text;  // only a real change, or the watcher below would loop
+  };
+  input.addEventListener("change", async () => {
+    apply();
+    try { await saveGeneral({ settings_advanced: input.checked }); } catch (e) { problem(e.message); }
+  });
+  const box = el("div", { class: "advanced-toggle stack-1" },
+    switchRow("Advanced settings", "Shows everything each app can change.", input), note);
+  ($(".page-head", main) || main.firstElementChild).after(box);
+  // Sections are drawn as their data arrives: mark each one as it appears, and keep the note's count right.
+  new MutationObserver((changes) => {
+    if (changes.every((c) => box.contains(c.target))) return;  // the switch's own note changing is not a new section
+    markAdvanced(main);
+    apply();
+  }).observe(main, { childList: true, subtree: true });
+  markAdvanced(main);
+  apply();
+}
+
 startPage().then(async (session) => {
   if (!session) return;
   if ($("#releases-list")) { startReleases(session.repo); return; }
   try { config = await api("/api/config"); } catch (e) { problem(e.message); return; }
+  advancedSwitch();
   if ($("#app-sections")) startManageApps();
   if ($("#general-sections")) startGeneral();
   if ($("#security-sections")) startSecurity();

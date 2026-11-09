@@ -49,6 +49,7 @@ DEFAULTS = {
     "show_outside_address": True,  # None: take STARBOARD_NETWORK on first run (on unless it is 0)
     "fetch_icons": True,  # app icons from the dashboard-icons collection on the internet
     "show_posters": True,  # posters on Coming up, which browsers load from the image sites the apps use
+    "settings_advanced": False,  # Settings pages show only the basic settings until this is on (DASH-225)
     "upcoming_view": "list",
     "upcoming_days": 14,
     # Download hours: qBittorrent, NZBGet and SABnzbd only download from start to end (whole hours, local time).
@@ -240,6 +241,7 @@ class Config:
             "show_outside_address": d["show_outside_address"],
             "fetch_icons": d["fetch_icons"],
             "show_posters": d["show_posters"],
+            "settings_advanced": d.get("settings_advanced", False),
             "upcoming_view": d["upcoming_view"],
             "upcoming_days": d["upcoming_days"],
             "upcoming_days_choices": UPCOMING_DAYS,
@@ -292,7 +294,7 @@ class Config:
                     if s.get("group") == old:
                         s["group"] = new
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
-                        "fetch_icons", "show_posters", "setup_guide_done", "ux_notes"):
+                        "fetch_icons", "show_posters", "setup_guide_done", "ux_notes", "settings_advanced"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
             if "upcoming_view" in incoming:

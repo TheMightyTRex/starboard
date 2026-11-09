@@ -126,3 +126,8 @@
 .rx-pick:hover { border-color: var(--color-accent); }
 .rx-pick__name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .rx-picks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+
+/* Advanced settings (DASH-225): advanced sections stay hidden until the switch at the top of the page is on. */
+body:not(.show-advanced) [data-advanced] { display: none; }
+.advanced-toggle { padding: var(--space-3, 12px) var(--space-4, 16px); border: 1px solid var(--color-divider); border-radius: var(--radius-2, 6px);
+  background: var(--color-surface); max-width: 40rem; }
