@@ -119,6 +119,28 @@ def usenet_words(text, app):
 
 # Each question's article in the help centre (the design system's help centre builder (tools/help_centre)), shown under its ? help.
 HELP_CENTRE = "https://themightytrex.github.io/starboard/help/"
+# Each error number's help, the same page Run first and the installer use (run-first.sh, install.sh: ERR_URL).
+ERR_URL = HELP_CENTRE + "topics/run-first-errors.html"
+ERROR_NUMBER = re.compile(r"\bError ((?:RF|IN)-\d\d)\b")
+
+
+def error_number(lines):
+    """The last error number a script printed (install.sh: "Error IN-33. What it means..."), or None."""
+    found = [m.group(1) for line in lines for m in ERROR_NUMBER.finditer(line)]
+    return found[-1] if found else None
+
+
+def note_stop(code):
+    """Tells Run first how this stopped (STARBOARD_ERROR_FILE, set by run-first.sh): an error number, or "stopped"
+    when the person chose to stop. Run first then ends on that number rather than its own RF-40 (DASH-147)."""
+    path = os.environ.get("STARBOARD_ERROR_FILE")
+    if not path or not code:
+        return
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(code + "\n")
+    except OSError:
+        pass
 HELP_PAGES = {
     "pool": "topics/add-a-drive-to-the-pool.html", "backup": "topics/use-a-drive-as-a-backup-drive.html",
     "balance": "topics/balance-the-files.html", "password": "topics/create-your-password.html",
@@ -547,6 +569,7 @@ class Terminal:
         self.typed = set()        # fingerprints of answers typed to the set-up (not hidden ones): never in a report
         self.problem = None       # the last thing that failed at this step: r reports it
         self.last_error = None    # Starboard's reply to the last failed call, or the apps' start log
+        self.stop_code = None     # the error number of the job that failed last, when the person then chose Stop
         self.plain_asked = False  # plain lines because the person asked (STARBOARD_PLAIN or --plain)
         self.save_dir = os.path.expanduser("~")
         self.total = None         # how many steps the chosen job has (job_steps); None: every step
@@ -879,12 +902,21 @@ class Terminal:
             inner = width - 8
             top = f"─ {title} "
             out = ["", "  " + self._c(colour, "╭" + top + "─" * max(inner + 2 - len(top), 0) + "╮")]
+            edge = lambda text: "  " + self._c(colour, "│") + " " + text + " " + self._c(colour, "│")  # noqa: E731
+            # Labels that do not fit their column (a narrow window) go on their own line, the value under them, so
+            # no label is cut. A word longer than the line, such as a long folder, is broken rather than run past
+            # the box's edge.
+            stacked = max(len(label) for label, _ in rows) + 2 > label_w
             for label, value in rows:
-                lines = _wrap(str(value), inner - label_w) or [""]
+                room = inner - 2 if stacked else inner - label_w
+                lines = textwrap.wrap(str(value), room, break_on_hyphens=False, break_long_words=True) or [""]
+                if stacked:
+                    out += [edge(self.dim(m.ljust(inner))) for m in _wrap(label, inner) or [""]]
+                    out += [edge("  " + m.ljust(inner - 2)) for m in lines]
+                    continue
                 for i, line in enumerate(lines):
-                    left = (label[:label_w - 1] if i == 0 else "").ljust(label_w)
-                    out.append("  " + self._c(colour, "│") + " " + self.dim(left) + line.ljust(inner - label_w) + " "
-                               + self._c(colour, "│"))
+                    left = (label if i == 0 else "").ljust(label_w)
+                    out.append(edge(self.dim(left) + line.ljust(inner - label_w)))
             out.append("  " + self._c(colour, "╰" + "─" * (inner + 2) + "╯"))
             return out
         self._show(render)
@@ -1002,6 +1034,8 @@ class Terminal:
         """Options are text, or (name, about) pairs: in two columns when the names are short, otherwise the name on
         its line and the about under it. Each wraps inside the width, again whenever the window changes size."""
         names = [o[0] for o in options if isinstance(o, tuple)]
+        # The longest word of any about: a web address is one word, never cut, so it decides whether two columns fit.
+        longest = max((len(w) for o in options if isinstance(o, tuple) for w in str(o[1]).split()), default=0)
         for i, o in enumerate(options, 1):
             if i <= start:
                 continue
@@ -1009,13 +1043,14 @@ class Terminal:
                 self._plain(f"  {i}. " + (f"{o[0]}: {o[1]}" if isinstance(o, tuple) else o), indent=5)
                 continue
             mark = self.accent("●") if i - 1 in defaults else " "
-            self._show(lambda width, o=o, i=i, mark=mark: self._option_lines(o, i, mark, names, width))
+            self._show(lambda width, o=o, i=i, mark=mark: self._option_lines(o, i, mark, names, width, longest))
 
-    def _option_lines(self, o, i, mark, names, width):
+    def _option_lines(self, o, i, mark, names, width, longest=0):
         name_w = max((len(n) for n in names), default=0) + 2
         green = lambda s: re.sub(r"\(recommended[^)]*\)|\(your last answer\)", lambda m: self.good(m.group(0)), s)  # noqa: E731
         lead = f"  {mark} {self.accent(str(i).rjust(2))}  "
-        if isinstance(o, tuple) and name_w <= min(30, width // 3):  # two columns: the about wraps under itself
+        if isinstance(o, tuple) and name_w <= min(30, width // 3) and longest <= width - 8 - name_w:
+            # Two columns: the about wraps under itself. Not when a word (an address) is wider than its column.
             about = _wrap(o[1], width - 8 - name_w) or [""]
             return [lead + green(o[0].ljust(name_w)) + self.dim(about[0])] + [" " * (8 + name_w) + self.dim(m) for m in about[1:]]
         if isinstance(o, tuple):  # long names: the name on its line, the about wrapped under it
@@ -1244,16 +1279,19 @@ class Terminal:
         if text and text not in (self.last_error or ""):
             self.last_error = text
 
-    def job_failed(self, summary, details=(), also=()):
-        """A job did not finish: the problem in plain words under its line, then the standard choices (WIZARD.md
-        section 5): Try again (recommended), Show the details, Report this problem or Stop, with any in also before
-        Report this problem. Returns "again", or the choice from also."""
-        self.problem = summary
-        self.record_error(summary)
+    def job_failed(self, summary, details=(), also=(), code=None):
+        """A job did not finish: the problem in plain words under its line, with its error number and the address of
+        its help on a line of its own when it has one (the same in the boxed frame and in plain lines, DASH-152), then
+        the standard choices (WIZARD.md section 5): Try again (recommended), Show the details, Report this problem or
+        Stop, with any in also before Report this problem. Returns "again", or the choice from also."""
+        self.problem = f"Error {code}: {summary}" if code else summary
+        self.record_error(self.problem)
         details = [line for line in details if line.strip()]
         if details:
-            self.last_error = summary + "\n" + "\n".join(details)
+            self.last_error = self.problem + "\n" + "\n".join(details)
         self.warn(summary)
+        if code:
+            self.error_code(code)
         if self.fancy and self.drawn:
             self.keys = self.step_keys()
             self._menu(*self.keys)
@@ -1267,9 +1305,20 @@ class Terminal:
             elif pick == "Report this problem":
                 self.feedback(summary)
             elif pick == "Stop":
+                self.stop_code = code
                 raise Stop()
             else:
                 return pick
+
+    def error_code(self, code):
+        """ "Error IN-33. What it means and how to fix it:", then the address of that number's help on a line of its
+        own, so it is never cut and copies whole (TERMINAL.md, When it stops)."""
+        words = f"Error {code}. What it means and how to fix it:"
+        if self.fancy:
+            self._show(lambda width: ["    " + line for line in _wrap(words, width - 6)])
+        else:
+            self._plain(words)
+        self.link(f"{ERR_URL}#{code.lower()}", indent=4)
 
     def details(self, lines):
         """Lines a job wrote, such as Docker's: wrapped to the width, and long addresses cut too, so nothing passes
@@ -1530,18 +1579,20 @@ class Terminal:
         self.screen = screen
         self._ask("")
 
-    def offer_report(self, message):
-        """After a stop: the error, and r to report it."""
+    def offer_report(self, message, code=None):
+        """After a stop: the error, its number and the address of its help, and r to report it."""
         try:
             self.can_back, self.came_back = False, False
             if self.fancy:
                 self.heading("Something went wrong")
-            self.problem = message
-            self.record_error(message)
+            self.problem = f"Error {code}: {message}" if code else message
+            self.record_error(self.problem)
             if self.fancy:
                 self.keys = self.step_keys()
                 self._menu(*self.keys)
                 self.warn(f"Stopped: {message}")
+            if code:
+                self.error_code(code)
             self.note("Type r to report this problem.")
             self._read("Press Enter to finish, or type r to report this problem: ", None, enter="Enter: finish")
         except (Stop, Back, EOFError, KeyboardInterrupt):
@@ -1589,8 +1640,17 @@ class Terminal:
         try:
             import termios
             fd = sys.stdin.fileno()
-            if not (self.fancy and self._real_input and os.isatty(fd)):
+            if not (self._real_input and os.isatty(fd)):
                 return lambda: None
+            if not self.fancy:
+                # Plain lines keep the keys showing (a screen reader reads them back), but an Enter pressed while a
+                # job runs must not answer the next question with its default: it is thrown away when the job ends.
+                def flush():
+                    try:
+                        termios.tcflush(fd, termios.TCIFLUSH)
+                    except OSError:
+                        pass
+                return flush
             saved = termios.tcgetattr(fd)
             quiet = termios.tcgetattr(fd)
             quiet[3] &= ~(termios.ECHO | termios.ICANON)
@@ -2177,11 +2237,26 @@ def set_up_reelix(api, term, state, wait, job=None):
     term.note("Reelix's own pages are there if you need them: sign in as admin with your Starboard password.")
 
 
-def found_when_settled(api, term, wait, expected, most=120, job=None):
+def running_apps(folder):
+    """The apps' containers running after ./install.sh --start-apps (data/stack/running.txt, one name a line), or None
+    when it did not say."""
+    try:
+        with open(os.path.join(folder, "data", "stack", "running.txt"), encoding="utf-8") as f:
+            return {line.strip() for line in f if line.strip()}
+    except OSError:
+        return None
+
+
+def found_when_settled(api, term, wait, expected, most=120, job=None, running=None):
     """The apps Starboard finds on this computer, once the apps just started have answered: each opens its port a
     while after it starts (Radarr and Sonarr can take over a minute). It looks again until every one it can
-    recognise is there, or after most seconds, and then takes what it has."""
+    recognise is there, or after most seconds, and then takes what it has. With running (the containers that
+    started), it does not wait for an app that did not start, such as one behind a VPN that has not connected:
+    that wait was the full two minutes, with nothing new on the screen (DASH-151). Starboard adds such an app
+    itself once it answers (/api/stack/adopt)."""
     began = time.time()
+    if running is not None:
+        expected = [key for key in expected if key in running]
 
     def settled():
         found = api.call("GET", "/api/discover")
@@ -2202,7 +2277,9 @@ def start_with_installer(api, term, state, choice, wait):
     folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     while True:
         with tempfile.TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as log:
-            job = subprocess.Popen([os.path.join(folder, "install.sh"), "--start-apps"], cwd=folder,
+            # Its error number is shown under the job here, so it does not go to Run first's note of how this stopped.
+            env = {k: v for k, v in os.environ.items() if k != "STARBOARD_ERROR_FILE"}
+            job = subprocess.Popen([os.path.join(folder, "install.sh"), "--start-apps"], cwd=folder, env=env,
                                    stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
             code = term.waiting("Downloading and starting the apps", job.poll, wait, (1, jobs), ok=lambda c: c == 0)
             log.seek(0)
@@ -2210,7 +2287,9 @@ def start_with_installer(api, term, state, choice, wait):
         if code == 0:
             term.ok(lines[-1] if lines else f"All {len(choice['apps'])} apps are running.")
             break
-        if term.job_failed("The apps did not all start.", lines[-12:], also=["Carry on without them"]) == "again":
+        # The installer's own number (IN-33 when an app did not start), or IN-29 when it gave none.
+        code_shown = error_number(lines) or "IN-29"
+        if term.job_failed("The apps did not all start.", lines[-12:], also=["Carry on without them"], code=code_shown) == "again":
             continue
         term.note("Start them later from the Starboard folder with: ./install.sh --start-apps")
         if not any(not line.startswith("0 of") for line in lines if " of " in line and "apps are running" in line):
@@ -2220,7 +2299,7 @@ def start_with_installer(api, term, state, choice, wait):
     if "reelix" in choice["apps"]:
         set_up_reelix(api, term, state, wait, (2, jobs))
     try:
-        items = found_when_settled(api, term, wait, choice["apps"], job=(jobs, jobs))
+        items = found_when_settled(api, term, wait, choice["apps"], job=(jobs, jobs), running=running_apps(folder))
         if items:
             added = api.call("POST", "/api/discover/add", {"items": items})
             term.ok(f"Added {len(items)} {'app' if len(items) == 1 else 'apps'} to Starboard.")
@@ -2623,15 +2702,21 @@ def main(argv=None):
         return run(Api(args.port), term, args.data, args.port, args.address)
     except Stop:
         term.say("\nStopped. Nothing else was changed. Carry on later in a browser, or run this again.")
+        if term.stop_code:  # stopped after a job failed: end on that job's number, as the frame does
+            term.say(f"Error {term.stop_code}. What it means and how to fix it:")
+            term.say(f"{ERR_URL}#{term.stop_code.lower()}")
+        note_stop(term.stop_code or "stopped")
         return 1
     except Problem as e:
         term.finish()
         term.say(f"\nStopped: {e}")
-        term.offer_report(str(e))
+        note_stop("IN-37")
+        term.offer_report(str(e), code="IN-37")
         return 1
     except (KeyboardInterrupt, EOFError):
         term.finish()
         term.say("\nStopped.")
+        note_stop("stopped")
         return 1
 
 

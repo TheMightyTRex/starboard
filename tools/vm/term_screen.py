@@ -22,6 +22,7 @@ class Screen:
         self.style = ""
         self.saved = (0, 0)
         self.wrapped = 0       # characters that ran past the right edge
+        self.wrapped_lines = []  # the lines they ran past the edge of
         self.unknown = set()   # escape codes this emulator does not follow
         self.pending = ""      # an escape code cut off at the end of one read, finished by the next
 
@@ -89,6 +90,7 @@ class Screen:
                                                    or (getattr(self, "url_run", False) and len(words) == 1)))
                     if not self.url_run:
                         self.wrapped += 1
+                        self.wrapped_lines.append(row.rstrip())  # which line ran over, for the fault's details
                     self.c = 0
                     self._down()
                 self.cells[self.r][self.c] = (ch, self.style)

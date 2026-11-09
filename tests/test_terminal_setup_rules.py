@@ -202,6 +202,64 @@ class JobsTest(unittest.TestCase):
         self.assertIn("pull access denied for made-up/app", raw)
         self.assertLess(raw.rindex("did not finish"), raw.index("The apps did not all start."))  # the error below
 
+    def test_a_failed_job_shows_its_error_number_the_same_boxed_and_plain(self):
+        # DASH-152: the boxed frame showed no number while plain lines did (only in the details). Both now show it under
+        # the problem, then the address of its help on a line of its own, before the choices.
+        url = "https://themightytrex.github.io/starboard/help/topics/run-first-errors.html#in-33"
+        for make in (plain, boxed):
+            term, out = make(["1"])
+            if make is boxed:
+                term.heading("Check", 7)
+            self.assertEqual(term.job_failed("The apps did not all start.", ["made-up/app failed"], code="IN-33"), "again")
+            raw = out.getvalue()
+            self.assertIn("Error IN-33. What it means and how to fix it:", raw, make.__name__)
+            line = next(line for line in raw.splitlines() if url in line)
+            self.assertEqual(line.strip(), url)  # whole, on its own line
+            self.assertLess(raw.index("Error IN-33."), raw.index("What do you want to do?"))
+            self.assertIn("Error IN-33", term.problem)  # and in Report this problem
+
+    def test_the_installers_number_is_read_from_its_lines(self):
+        lines = ["Note: Downloading and starting 7 apps did not work. Error IN-33.", "Error IN-33. What it means..."]
+        self.assertEqual(ts.error_number(lines), "IN-33")
+        self.assertIsNone(ts.error_number(["Pulling sonarr", "done"]))
+
+    def test_stop_after_a_failed_job_tells_run_first_its_number(self):
+        import os
+        import tempfile
+        term, _ = plain(["4"])
+        with self.assertRaises(ts.Stop):
+            term.job_failed("The apps did not all start.", code="IN-33")
+        self.assertEqual(term.stop_code, "IN-33")
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"STARBOARD_ERROR_FILE": d + "/e"}):
+            ts.note_stop("IN-33")
+            self.assertEqual(open(d + "/e").read().strip(), "IN-33")
+
+    def test_the_wait_for_the_apps_leaves_out_apps_that_did_not_start(self):
+        # DASH-151: qBittorrent behind a VPN that never connected kept the wait going for the full time, with nothing
+        # new on the screen. Only the apps that started are waited for.
+        api = FakeApi({("GET", "/api/discover"): {"items": [{"key": "reelix"}], "known": ["reelix", "qbittorrent"]}})
+        term, _ = plain()
+        clock = iter(range(0, 10000, 10))
+        with mock.patch.object(ts.time, "time", lambda: next(clock)), mock.patch.object(ts.time, "sleep", lambda s: None):
+            items = ts.found_when_settled(api, term, 0, ["reelix", "qbittorrent"], running={"reelix", "starboard"})
+        self.assertEqual(items, [{"key": "reelix"}])
+        self.assertEqual(len([c for c in api.calls if c[1] == "/api/discover"]), 1)  # no waiting at all
+        term, _ = plain()
+        clock = iter(range(0, 10000, 10))
+        with mock.patch.object(ts.time, "time", lambda: next(clock)), mock.patch.object(ts.time, "sleep", lambda s: None):
+            ts.found_when_settled(api, term, 0, ["reelix", "qbittorrent"])  # not known what started: waits it out
+        self.assertGreater(len([c for c in api.calls if c[1] == "/api/discover"]), 3)
+
+    def test_the_running_apps_are_read_from_the_installers_note(self):
+        import os
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(ts.running_apps(d))
+            os.makedirs(os.path.join(d, "data", "stack"))
+            with open(os.path.join(d, "data", "stack", "running.txt"), "w") as f:
+                f.write("reelix\njellyfin\n\n")
+            self.assertEqual(ts.running_apps(d), {"reelix", "jellyfin"})
+
     def test_stop_after_a_failed_job_stops(self):
         term, _ = plain(["4"])
         with self.assertRaises(ts.Stop):
@@ -297,6 +355,51 @@ class WordsTest(unittest.TestCase):
         ts.step_alerts(FakeApi(), term, {})
         for step in ("hours", "alerts"):
             self.assertIn(ts.question(step), out.getvalue())
+
+
+class NarrowCardTest(unittest.TestCase):
+    """The last card at 60 columns cut its labels and let a long folder run past its edge (8 November 2026)."""
+
+    ROWS = [("On your other devices", "http://192.0.2.15:8095"),
+            ("Changes to this computer", "./install.sh --livetv-folder /srv/media-stack/config/jellyfin/iptv-folder-that-is-long")]
+
+    def lines(self, width):
+        out = io.StringIO()
+        term = ts.Terminal(out=out, ask=lambda p="": "", fancy=True, colour=False, width=width, rows=30)
+        term.card("Starboard is ready", self.ROWS)
+        text = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b[78]", "", out.getvalue())
+        return [line for line in text.split("\n") if line.strip().startswith(("│", "╭", "╰"))]
+
+    def test_every_width_fits_and_keeps_labels_whole(self):
+        for width in (60, 80, 100):
+            lines = self.lines(width)
+            self.assertTrue(all(len(line) <= width - 2 for line in lines), (width, lines))
+            body = "\n".join(lines)
+            for label, _ in self.ROWS:
+                self.assertIn(label, body, width)
+
+
+class LongAddressOptionTest(unittest.TestCase):
+    """PrivadoVPN's affiliate address is one word wider than the about column at 80 columns: it ran past the edge
+    (9 November 2026). The list then puts each about under its name."""
+
+    OPTIONS = [("ExpressVPN", "expressvpn.com"),
+               ("PrivadoVPN", "privadovpn.com/getprivadovpn/#a_aid=themightytrexuk (Ad)"),
+               ("Private Internet Access", "privateinternetaccess.com")]
+
+    def lines(self, width):
+        out = io.StringIO()
+        term = ts.Terminal(out=out, ask=lambda p="": "1", fancy=True, colour=False, width=width, rows=30)
+        term._options(self.OPTIONS, {0})
+        text = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b[78]", "", out.getvalue()).replace("\r", "\n")
+        return [line for line in text.split("\n") if line.strip()]
+
+    def test_fits_at_80_and_stays_in_columns_when_wide(self):
+        narrow = self.lines(80)
+        self.assertTrue(all(len(line) <= 80 for line in narrow), narrow)
+        self.assertIn("privadovpn.com/getprivadovpn/#a_aid=themightytrexuk (Ad)", "\n".join(narrow))
+        wide = self.lines(120)
+        self.assertTrue(any("PrivadoVPN" in line and "privadovpn.com" in line for line in wide), wide)
 
 
 if __name__ == "__main__":

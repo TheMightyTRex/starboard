@@ -30,7 +30,7 @@ import time
 sys.path.insert(0, os.path.dirname(__file__))
 from term_screen import Screen  # noqa: E402
 
-LEAKS = re.compile(r"^\s*(Get:\d|Hit:\d|Ign:\d|Reading package lists|Building dependency tree|Setting up |Unpacking |"
+LEAKS = re.compile(r"^\s*(Get:\d|Hit:\d|Ign:\d|Reading package lists|Building dependency tree|Setting up \S+ \(|Unpacking |"
                    r"Selecting previously|Preparing to unpack|Processing triggers|Executing docker install|\+ sh -c|"
                    r"WARNING: apt does not have|debconf: |dpkg: |E: |W: |Created symlink|Synchronizing state of)")
 FRAME = set("─│┌┐└┘├┤┬┴┼═║╔╗╚╝━┃╭╮╰╯ ")
@@ -81,11 +81,14 @@ def main():
     shown_more = False
     repeats, last_same = 0, None
     sent_screen, sent_time = None, 0.0  # the screen when the last keys were sent
+    output_since_send = False           # anything written since then (a failed job can redraw the same screen)
+    last_keys = ""                      # the last keys typed, whose echo may run past the edge like any typing
     by_app = False                      # 'Let me choose app by app' already chosen once
     retries = 0                         # Try again chosen after a failed job
     heading = here = text = ""
     ended = "timeout"
     seen_faults = set()
+    wait_screen, wait_since = None, 0.0  # plain mode: the screen while a job's "Please wait" line is the last
 
     def fault(kind, detail):
         key = (kind, detail[:60])
@@ -95,7 +98,8 @@ def main():
 
     def check(screen_lines):
         for i, line in enumerate(screen_lines):
-            if LEAKS.match(line.strip("│ ")):
+            # The details of a failed job are the job's own log, asked for: its lines are not output in the frame.
+            if LEAKS.match(line.strip("│ ")) and not (typed and typed[-1] == "Show the details"):
                 fault("other output in the frame", line.strip())
             m = re.search(r"\bError ([A-Z]{2}-\d+)\b", line)
             if m:  # a run that ends on an error number has not passed, however it ended
@@ -104,23 +108,41 @@ def main():
         for x, y in zip(body, body[1:]):
             if x == y and len(x.strip()) > 8:
                 fault("line repeated", x.strip())
-        if screen.wrapped:
-            fault("text past the right edge", f"{screen.wrapped} characters wrapped onto the next line")
+        # Typing echoed after a long question wraps as in any terminal: that is the person's text, not a fault.
+        typed_echo = last_keys.strip()
+        if typed_echo and len(typed_echo) > 3:
+            kept = [l for l in screen.wrapped_lines if not (": " in l and typed_echo.startswith(l.rsplit(": ", 1)[1].strip()))]
+            screen.wrapped -= len(screen.wrapped_lines) - len(kept)
+            screen.wrapped_lines[:] = kept
+        if screen.wrapped > 0:
+            fault("text past the right edge", f"{screen.wrapped} characters wrapped onto the next line, after: "
+                  + " / ".join(dict.fromkeys(screen.wrapped_lines))[:200])
             screen.wrapped = 0
+            screen.wrapped_lines.clear()
         for u in sorted(screen.unknown):
             fault("unknown terminal code", u)
         screen.unknown.clear()
 
     def send(text, label=None):
-        nonlocal answers, repeats, last_same, sent_screen, sent_time
+        nonlocal answers, repeats, last_same, sent_screen, sent_time, output_since_send, last_keys
         same = (heading, here.strip(), label or repr(text))
         # Enter pressed while a job runs (the menu says Please wait) is a person being impatient, not a stuck question.
-        repeats = repeats + 1 if same == last_same and "Please wait" not in text else 0
+        repeats = repeats + 1 if same == last_same and "Please wait" not in screen_text else 0
         last_same = same
         sent_screen, sent_time = screen_text, time.time()
+        output_since_send, last_keys = False, text
         os.write(fd, text.encode())
         typed.append(label or repr(text))
         answers += 1
+
+    def many_open(screen_lines):
+        """A list that takes several numbers is the question asked now: its "Type the numbers" line is on the screen
+        and no answer has been typed under it yet (an m for the rest of the list does not count). Once answered, the
+        line stays on the screen above the next question, which takes one number."""
+        idx = [i for i, l in enumerate(screen_lines) if "Type the numbers, separated by commas" in l]
+        if not idx:
+            return False
+        return not any(re.search(r"Your choice \[[^\]]*\]: (?!m\s*$)\S", l) for l in screen_lines[idx[-1]:])
 
     def tick_all(lines):
         """In the arrow-key list: move to each unticked line and press Space, then Enter."""
@@ -146,6 +168,7 @@ def main():
                 ended = "finished"
                 break
             screen.feed(chunk)
+            output_since_send = True
             raw += chunk
             raw = raw[-20000:]
             last_out = time.time()
@@ -161,7 +184,7 @@ def main():
         low = (before + " " + here).lower() if not here.lstrip().startswith(("›", "Your choice")) else here.lower()
         heading = next((m.group(1).strip() for l in lines[:4] for m in [re.search(r"Starboard \| ([^│]+?)\s{2,}", l)] if m), "")
         screen_text = text
-        if text == sent_screen:
+        if text == sent_screen and not output_since_send:
             # Nothing new on the screen since the last answer: the computer is working on it (after sudo's password,
             # or a job that writes nothing, as in plain mode). A person waits rather than pressing Enter again.
             if time.time() - sent_time > 1200:
@@ -190,7 +213,20 @@ def main():
             last_out = time.time()
             continue
 
-        if any(m in here for m in "◐◓◑◒⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏") or "still working:" in low or ("keep this window open" in text.lower() and "close this window." not in low):
+        # In plain mode a job prints one line, "Please wait, this can take some time...", and then nothing until it
+        # ends: the last words on the screen. A person waits there too (Enter would only add a blank line).
+        tail = " ".join(l.strip() for l in lines if l.strip())[-200:].lower()
+        plain_wait = a.plain and tail.endswith("please wait, this can take some time...")
+        if plain_wait:
+            if text != wait_screen:
+                wait_screen, wait_since = text, time.time()
+            elif time.time() - wait_since > 2700:
+                # A plain job writes nothing until it ends, and downloading the apps on a slow line has taken over 20
+                # minutes (Mint, 9 November 2026): only 45 minutes of nothing is stuck.
+                ended = "stuck: nothing new for 45 minutes"
+                faults.append({"kind": "stuck", "detail": tail[-120:], "after_answers": answers, "screen": len(shots) - 1})
+                break
+        if plain_wait or any(m in here for m in "◐◓◑◒⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏") or "still working:" in low or ("keep this window open" in text.lower() and "close this window." not in low):
             # The apps are downloading, or the window waits for the browser set-up: a person waits
             last_out = time.time()
             continue
@@ -213,7 +249,7 @@ def main():
         elif a.apps == "all" and "Space ticks" in text and "your choice" not in low and re.search(r"(?i)apps|what do you want|media server|use starboard's", text):
             keys, label = tick_all(lines)
             send(keys, label)
-        elif a.apps == "all" and re.search(r"Type the numbers, separated by commas", text) and re.search(r"(?i)apps|what do you want", text):
+        elif a.apps == "all" and many_open(lines) and re.search(r"(?i)apps|what do you want", text):
             more = next((int(m.group(1)) for l in lines for m in [re.search(r"(\d+) more: type m", l)] if m), 0)
             if more and not shown_more:
                 shown_more = True

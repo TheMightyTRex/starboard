@@ -39,13 +39,15 @@ takes about 10 minutes, plus the time to download the apps.
    ![The What to set up step in the terminal, with Basics, Full install, Everything and Let me choose (step 7) outlined](../images/set-up-in-the-terminal-1-what-to-set-up.png)
 
 8. **VPN**, if you chose it (every install has one): type the number of your provider. Each is listed with its
-   website. Nothing is chosen for you here, so Enter on its own asks again. If yours is not listed, choose
+   website. PrivadoVPN's link is an affiliate link: it is marked **(Ad)**, and a note above the list says so. Nothing is chosen for you here, so Enter on its own asks again. If yours is not listed, choose
    **Another one that Gluetun supports** and type its name as Gluetun's list writes it. Then its details: the
    password or key does not show as you type. Then **Usenet**, for NZBGet or SABnzbd: some providers, and what Usenet may be used for.
-   ![The VPN step in the terminal, with the list of VPN providers and their websites (step 8) outlined](../images/set-up-in-the-terminal-2-vpn.png)
+   ![The VPN step in the terminal, with the Ad note and the list of VPN providers and their websites (step 8) outlined](../images/set-up-in-the-terminal-2-vpn.png)
 
 9. **Check:** read the list, then press Enter (**Yes**) to write the apps' files, and again to start them.
-   Downloading them can take several minutes.
+   Downloading them can take several minutes. Then Starboard waits up to two minutes for the apps that started to
+   answer, and adds them to your apps. An app that did not start, such as one behind a VPN that has not connected
+   yet, is not waited for: Starboard adds it by itself once it answers.
    ![The Check step in the terminal, with Write the apps' files now? (step 9) outlined](../images/set-up-in-the-terminal-3-check.png)
 
 10. **Jellyfin extras**, when you have Jellyfin: Starboard's Jellyfin extras, such as Live TV.
@@ -133,7 +135,9 @@ Type `q` at any feedback question to close it and go back to the step.
 - **"Starboard said: ..."**: Starboard refused an answer and says why. Type the answer again.
 - **"Starboard cannot start apps itself":** Starboard has no Docker access. Run the command it shows, or run
   `./install.sh` again and answer yes to Docker access.
-- **"The apps did not all start":** the lines below it are Docker's own. Read [An app is not responding](app-not-responding.md).
+- **"The apps did not all start":** the error number under it, usually IN-33, is explained in
+  [Run first and installer error numbers](run-first-errors.md). **Show the details** shows Docker's own lines. Read
+  [An app is not responding](app-not-responding.md).
 
 ## Find out more
 
