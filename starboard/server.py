@@ -1130,6 +1130,22 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"items": services.outside_all(cfg.data["services"])})
             if path == "/api/app-updates" and method == "GET":
                 return self.json(200, services.cached("app-updates", 600, lambda: services.app_updates(cfg.data["services"]), fresh))
+            if path in ("/api/wanted", "/api/wanted/search"):
+                from . import wanted  # DASH-207: Missing and Below the quality wanted, from Reelix
+                try:
+                    if method == "GET":
+                        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                        return self.json(200, wanted.listing(cfg.data["services"], q.get("which", ["missing"])[0],
+                                                             q.get("kind", ["movie"])[0], int(q.get("page", ["1"])[0] or 1)))
+                    if method == "POST":
+                        b = self.body()
+                        said = wanted.search(cfg.data["services"], str(b.get("which", "")), str(b.get("kind", "")), b.get("ids"))
+                        logs.event("info", "wanted", said)
+                        return self.json(200, {"said": said})
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, f"Reelix said no: {e}")
             if path == "/api/queue" and method == "GET":
                 return self.json(200, services.cached("queue", 10, lambda: services.queue(cfg.data["services"]), fresh))
             if path == "/api/queue/action" and method == "POST":

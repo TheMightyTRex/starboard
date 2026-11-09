@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/css/designs.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
-<script src="/js/placeholder.js" defer></script>
+<script src="/js/wanted.js" defer></script>
 </head>
 <body class="page-placeholder with-rail">
 <!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
@@ -158,11 +158,24 @@
 <div id="announcer" class="visually-hidden" aria-live="polite"></div>
 <!-- shell:end -->
 <main id="main" tabindex="-1">
-<div class="page">
+<div class="page" data-wanted="missing">
   <div class="page-head">
-    <div class="page-head__text"><h1>Missing</h1><p class="page-head__summary">Everything Reelix follows but does not have yet.</p></div>
+    <div class="page-head__text"><h1>Missing</h1><p class="page-head__summary" id="wanted-summary">Everything Reelix follows but does not have yet.</p></div>
+    <div class="actions">
+      <button type="button" class="btn" id="wanted-all"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-search"/></svg>Search all</button>
+    </div>
   </div>
-  <div class="notice" role="note"><div class="notice__body"><span class="notice__title">Coming with Reelix.</span><p>This page fills in once Starboard reads Reelix. Until then it holds its place in the menu.</p></div></div>
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <fieldset class="segmented"><legend class="visually-hidden">Show</legend>
+        <label><input type="radio" name="wanted-kind" value="movie" checked><span>Films</span></label>
+        <label><input type="radio" name="wanted-kind" value="episode"><span>Episodes</span></label>
+      </fieldset>
+      <button type="button" class="btn btn--primary" id="wanted-ticked" disabled><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-search"/></svg><span>Search for the ticked ones</span></button>
+    </div>
+  </div>
+  <ul class="rows" id="wanted-list" aria-live="polite"></ul>
+  <div class="actions"><button type="button" class="btn" id="wanted-more" hidden>Show more</button></div>
 </div>
 </main>
 </body>

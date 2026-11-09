@@ -121,6 +121,16 @@ def answer(path, q):
                  "unmapped_folders": [{"name": n, "path": f"/data/media/movies/{n}"} for n, *_ in ON_DISK]}]
     if path == "/libraryimport/scan":
         return [_candidate(*f, lookup=False) for f in ON_DISK]
+    if path in ("/wanted/missing", "/wanted/cutoff"):  # Wanted (DASH-207)
+        films = [f for f in FILMS if (not f["has_file"]) == (path == "/wanted/missing")][:12]
+        if q.get("kind") == "episode":
+            items = [{"kind": "episode", "id": 500 + n, "series_id": 8, "title": "43 Planets", "season_number": 2, "episode_number": n + 1,
+                      "episode_title": f"{WORDS_A[n]} {WORDS_B[n]}", "date": (TODAY - dt.timedelta(days=7 * n)).isoformat(),
+                      "quality": "SDTV" if path.endswith("cutoff") else None, "cutoff": "HD-1080p"} for n in range(6)]
+        else:
+            items = [{"kind": "movie", "id": f["id"], "movie_id": f["id"], "title": f["title"], "year": f["year"],
+                      "date": f"{f['year']}-05-01", "quality": "HD-720p" if path.endswith("cutoff") else None, "cutoff": "HD-1080p"} for f in films]
+        return {"items": items, "total": len(items), "page": 1, "page_size": 50}
     if path == "/movies":
         return _paged(FILMS, q)
     if path == "/series":
