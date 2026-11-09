@@ -181,6 +181,13 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     wait_until_up(base, opener=opener)
     info = tokens_from_docker(data_dir, info)
 
+    # 0. Jellyfin's and Audiobookshelf's first runs (DASH-179, DASH-180), before anything of Reelix's, so they are
+    # never left for anyone on the network to claim when Reelix's own set-up stops: their admin (admin, with the
+    # Starboard password), their libraries and a key for Starboard, so step 4f can connect them to Reelix.
+    from . import app_setup
+    found = {}
+    done += app_setup.first_runs(cfg, data_dir, password, groups, log=log, opener=opener, found=found)
+
     # 1. The admin account, or signing in to it when an earlier run made it.
     admin = Session(base, opener=opener)
     _, status = admin.call("GET", "/setup")
@@ -321,11 +328,7 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     except (ReelixError, OSError, ValueError) as e:
         done.append(f"The sites to search were not added ({e}). Add them in Settings, Reelix, Sites to search")
 
-    # 4e2. Jellyfin's and Audiobookshelf's first runs (DASH-179, DASH-180): their admin (admin, with the Starboard
-    # password, as Reelix), their libraries and a key for Starboard, so 4f can connect them to Reelix.
-    from . import app_setup
-    found = {}
-    done += app_setup.first_runs(cfg, data_dir, password, groups, log=log, opener=opener, found=found)
+    # 4e2. Reelix's radio into Audiobookshelf's Radio library, made by the first run at step 0 (DASH-181).
     if "radio" in groups:
         try:
             done += app_setup.radio_settings(admin, found)
@@ -337,6 +340,15 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         done += reelix_sites.connect_media_servers(admin, cfg.data["services"], data_dir)
     except (ReelixError, OSError, ValueError) as e:
         done.append(f"Jellyfin and Audiobookshelf are not connected to Reelix yet ({e}). Connect them in Settings, Reelix, Media servers")
+
+    # 4g. Bazarr to Reelix (DASH-182), with Bazarr's made-up key and the manager key.
+    from . import stack as _stack
+    bazarr = _stack.app_url(data_dir, "bazarr", 6767) if "bazarr" in (_stack.chosen_keys(data_dir) or []) else None
+    if bazarr and _stack.bazarr_key(data_dir):
+        try:
+            done += app_setup.bazarr_connect(bazarr, _stack.bazarr_key(data_dir), key, opener=opener)
+        except app_setup.AppSetupError as e:
+            done.append(f"Bazarr is not connected to Reelix yet: {e}")
 
     # 5. Reelix on the dashboard, through its compatible addresses, with the manager key.
     host = base

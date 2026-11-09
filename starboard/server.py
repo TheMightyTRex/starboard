@@ -374,7 +374,15 @@ def reelix_after_start(app, password):
     is the one just checked; it is used for these calls and dropped when they finish. A Reelix set up before gets
     Jellyfin and Audiobookshelf when Starboard has their keys (DASH-156, reelix_sites.after_install)."""
     if not reelix_setup.read_setup(app.data_dir):
-        from . import reelix_sites
+        from . import app_setup, reelix_sites
+        # No Reelix: Jellyfin's and Audiobookshelf's first runs still happen (DASH-179, DASH-180).
+        try:
+            groups = set(stack.chosen_groups(app.data_dir) or [])
+            done = app_setup.first_runs(app.config, app.data_dir, password, groups)
+            if done:
+                logs.event("info", "install apps", "; ".join(done))
+        except (OSError, ValueError) as e:
+            logs.event("warning", "install apps", f"Jellyfin and Audiobookshelf are not set up yet: {e}")
         reelix_sites.after_install(app, password)
         return
 

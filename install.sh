@@ -220,9 +220,10 @@ sa_seed() {
     [ -f "$seed" ] || continue
     app_dir="$(basename "$(dirname "$seed")")"; name="$(basename "$seed")"
     [[ "$app_dir" =~ ^[a-z0-9-]+$ ]] && [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]] || continue
+    name="${name//__//}"  # "__" is a folder: config__config.yaml goes in config/config.yaml (Bazarr)
     top="${SA_DIRS[0]}/$app_dir"
     docker run --rm -i -v "${SA_DIRS[0]}:${SA_DIRS[0]}" --entrypoint sh "$SA_HELPER" -c \
-      "[ -e '$top/$name' ] || { mkdir -p '$top' && cat > '$top/$name' && chmod 600 '$top/$name' && chown $SA_PUID:$SA_PGID '$top' '$top/$name'; }" \
+      "[ -e '$top/$name' ] || { mkdir -p \"\$(dirname '$top/$name')\" && cat > '$top/$name' && chmod 600 '$top/$name' && chown $SA_PUID:$SA_PGID '$top' \"\$(dirname '$top/$name')\" '$top/$name'; }" \
       < "$seed" >/dev/null 2>&1 || echo "Could not give $app_dir its first settings; it starts with its own."
   done
   # Live TV fix (DASH-169): when compose.yaml points Jellyfin at the wrapper, it goes in Jellyfin's settings folder

@@ -151,8 +151,10 @@ APPS = {
                         # Reelix sends only its searches through the VPN, by Gluetun's HTTP proxy (reelix_sites.py)
                         "HTTPPROXY": "on"},
                 "volumes": [f"{CFG}/gluetun:/gluetun"], "notes": "Your VPN details go in the .env file, never in Starboard's settings."},
+    # Bazarr starts with an API key Starboard made up (bazarr_seed), so Starboard can point it at Reelix (DASH-182).
     "bazarr": {"name": "Bazarr", "groups": ["subtitles"], "image": "lscr.io/linuxserver/bazarr:latest", "ports": ["6767:6767"],
-               "volumes": [f"{CFG}/bazarr:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 150},
+               "volumes": [f"{CFG}/bazarr:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 150,
+               "secrets": ["BAZARR_API_KEY"]},
     "decluttarr": {"name": "Decluttarr", "groups": ["tidy"], "image": "ghcr.io/manimatter/decluttarr:latest", "memory": 50,
                    "volumes": [f"{CFG}/decluttarr:/app/config"], "env": {"TZ": "${TZ}"}, "later": True,
                    "notes": "Removes stuck downloads. Needs a settings file with your apps' API keys first."},
@@ -897,6 +899,16 @@ def sabnzbd_seed(api_key):
             f"api_key = {api_key}\n")
 
 
+def bazarr_seed(api_key):
+    """Bazarr's first settings file: only its API key; Bazarr fills in the rest when it starts."""
+    return f"auth:\n  apikey: {api_key}\n"
+
+
+def bazarr_key(data_dir):
+    """Bazarr's API key as Install apps made it up (data/stack/.env), or None."""
+    return env_values(data_dir).get("BAZARR_API_KEY") or None
+
+
 def sabnzbd_key(data_dir):
     """SABnzbd's API key as Install apps made it up (data/stack/.env), or None."""
     return env_values(data_dir).get("SABNZBD_API_KEY") or None
@@ -928,6 +940,12 @@ def write(data_dir, built):
         os.makedirs(os.path.join(seed, "sabnzbd"), mode=0o700, exist_ok=True)
         with os.fdopen(os.open(os.path.join(seed, "sabnzbd", "sabnzbd.ini"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
             f.write(sabnzbd_seed(key))
+    key = next((l.split("=", 1)[1].strip().strip("'\"") for l in built["env"].splitlines() if l.startswith("BAZARR_API_KEY=")), "")
+    if key and re.fullmatch(r"[0-9a-f]{32}", key):
+        # Bazarr keeps its settings in config/config.yaml: "__" in a seed's name is a folder (install.sh, sa_seed).
+        os.makedirs(os.path.join(seed, "bazarr"), mode=0o700, exist_ok=True)
+        with os.fdopen(os.open(os.path.join(seed, "bazarr", "config__config.yaml"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+            f.write(bazarr_seed(key))
     hooks = os.path.join(path, "starboard-before-update")
     for key, script in (built.get("hooks") or {}).items():
         os.makedirs(hooks, mode=0o700, exist_ok=True)
@@ -961,6 +979,11 @@ def chosen_keys(data_dir):
             return re.findall(r"^    container_name: ([A-Za-z0-9._-]+)$", f.read(), re.M)
     except OSError:
         return []
+
+
+def chosen_groups(data_dir):
+    """The kinds of media the installed apps look after (films, series, books and so on), from compose.yaml."""
+    return sorted({g for k in chosen_keys(data_dir) if k in APPS for g in APPS[k].get("groups", [])})
 
 
 def note_reelix(data_dir, choice, built):

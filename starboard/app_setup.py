@@ -204,3 +204,38 @@ def radio_settings(reelix_admin, found, country="GB"):
                 "language": (current or {}).get("language") or "en"}
     reelix_admin.call("PUT", "/radio/settings", settings)
     return ["Reelix's radio goes into Audiobookshelf's Radio library"]
+
+
+# Bazarr -----------------------------------------------------------------------------------------------------------
+
+def bazarr_connect(base, bazarr_key, reelix_key, opener=None):
+    """Points Bazarr's Sonarr and Radarr connections at Reelix's Sonarr- and Radarr-style addresses, by its name on
+    the stack, with Starboard's manager key (DASH-182). Bazarr's own key is the one Install apps made up."""
+    fields = {"settings-general-use_sonarr": "true", "settings-general-use_radarr": "true"}
+    for kind in ("sonarr", "radarr"):
+        fields.update({f"settings-{kind}-ip": "reelix", f"settings-{kind}-port": "7700", f"settings-{kind}-base_url": f"/{kind}",
+                       f"settings-{kind}-apikey": reelix_key, f"settings-{kind}-ssl": "false"})
+    data = urllib.parse.urlencode(fields).encode()
+    req = urllib.request.Request(base.rstrip("/") + "/api/system/settings", data=data, method="POST",
+                                 headers={"X-API-KEY": bazarr_key, "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "Starboard"})
+    try:
+        with (opener or urllib.request.build_opener()).open(req, timeout=60) as r:  # Bazarr's address on this computer  # nosec B310
+            r.read()
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise AppSetupError("Bazarr has its own settings from before, with another API key. Connect it to Reelix in Bazarr, "
+                                "Settings, Sonarr and Radarr: host reelix, port 7700, base URL /sonarr or /radarr") from None
+        raise AppSetupError(f"Bazarr said {e.code}") from None
+    except (urllib.error.URLError, OSError) as e:
+        # Bazarr saves first and then tests the connection, which can take longer than the wait: read it back.
+        if not _bazarr_points_at_reelix(base, bazarr_key, opener):
+            raise AppSetupError(f"no answer from Bazarr: {getattr(e, 'reason', e)}") from None
+    return ["Connected Bazarr to Reelix, for subtitles"]
+
+
+def _bazarr_points_at_reelix(base, bazarr_key, opener=None):
+    try:
+        settings = _call(base, "GET", "/api/system/settings", headers={"X-API-KEY": bazarr_key}, opener=opener) or {}
+    except AppSetupError:
+        return False
+    return all((settings.get(k) or {}).get("ip") == "reelix" for k in ("sonarr", "radarr"))
