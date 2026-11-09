@@ -62,5 +62,6 @@ startPage().then(() => {
     historyLoad();
   }));
   $("#history-more").addEventListener("click", () => { historyState.page += 1; historyLoad(true); });
+  autoLoadMore($("#history-more"), async () => { const before = historyState.items; historyState.page += 1; await historyLoad(true); return historyState.items - before; }, "more");
   historyLoad();
 });

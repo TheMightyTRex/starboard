@@ -962,6 +962,7 @@ class Handler(BaseHTTPRequestHandler):
                     # Not told to people who have not signed in.
                     "version": app.version if signed_in else None,
                     "server_name": app.config.data["server_name"] if signed_in else None,
+                    "infinite_scroll": app.config.data.get("infinite_scroll", True) if signed_in else None,
                     "repo": app.repo if signed_in and re.match(r"^[\w.-]+/[\w.-]+$", app.repo or "") else None,
                     # Only what is already known (no call to GitHub here): the footer's "Upgrade available".
                     "latest": app._latest["tag"] if signed_in else None,

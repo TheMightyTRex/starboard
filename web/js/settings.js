@@ -2789,6 +2789,17 @@ startPage().then(async (session) => {
   if ($("#install") && typeof startInstall === "function") startInstall();
   if ($("#copy-sections") && typeof startCopy === "function") startCopy();
   if ($("#version-notice")) startAbout();
+  if ($("#general-sections")) {  // DASH-277: long lists load more by themselves, or wait for Show more
+    const input = el("input", { type: "checkbox", role: "switch", id: "infinite-scroll", checked: config.infinite_scroll !== false });
+    input.addEventListener("change", () => saveGeneral({ infinite_scroll: input.checked },
+      input.checked ? "Long lists load more as you near the end" : "Long lists wait for Show more"));
+    const box = section("gn-scroll", "Long lists", "The Library, Wanted and History.",
+      el("ul", { class: "settings-rows" }, el("li", { class: "setting" }, switchRow("Load more as you scroll",
+        "Off: a Show more button at the end instead. With Reduce motion on, the button is always used.", input))));
+    const sections = $("#general-sections");
+    const wait = new MutationObserver(() => { if (sections.childElementCount && !$("#gn-scroll-h")) { sections.append(box); wait.disconnect(); } });
+    wait.observe(sections, { childList: true });
+  }
   if ($("#reelix-auto-row")) {  // DASH-263: automatic Reelix updates, off until switched on
     const input = el("input", { type: "checkbox", role: "switch", id: "reelix-auto", checked: !!config.reelix_auto_update });
     input.addEventListener("change", () => saveGeneral({ reelix_auto_update: input.checked },

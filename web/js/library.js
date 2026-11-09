@@ -299,6 +299,12 @@ startPage().then(async () => {
     await load();
     $$("#lib-wall li")[before]?.querySelector("a")?.focus();
   });
+  autoLoadMore($("#lib-more button"), async () => {  // DASH-277: the next lot as you near the end, focus left alone
+    if (state.loading) return 0;
+    const before = $$("#lib-wall li").length;
+    await load();
+    return $$("#lib-wall li").length - before;
+  }, NOUN[TAB][1]);
   $("#lib-az").addEventListener("az-jump", async (e) => {
     if (state.loading) return;
     await load({ until: e.detail.letter });

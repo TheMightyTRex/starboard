@@ -720,6 +720,23 @@ function showServerName(name) {
   });
 }
 
+// Infinite scroll (DASH-277): a Show more button loads the next lot by itself as it nears the screen. The button
+// stays, so keyboard and screen reader users can still use it; focus never moves on its own, and a screen reader
+// hears how many were added. Off when the setting asks for the button, or when Reduce motion is on.
+let listLoading = "auto";
+function autoLoadMore(button, load, noun = "more") {
+  if (!button || !("IntersectionObserver" in window)) return;
+  const root = document.documentElement;  // Display, Reduce motion: On, Off, or the device's own setting
+  const reduced = root.classList.contains("pref-motion") || (!root.classList.contains("pref-motion-off") && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+  if (listLoading !== "auto" || reduced) return;
+  let busy = false;
+  new IntersectionObserver(async (seen) => {
+    if (!seen.some((x) => x.isIntersecting) || busy || button.hidden || button.closest("[hidden]") || button.disabled) return;
+    busy = true;
+    try { const n = await load(); if (n) announce(`${n} ${noun} loaded`); } finally { busy = false; }
+  }, { rootMargin: "600px 0px" }).observe(button);
+}
+
 async function startPage() {
   setUpHeader();
   setUpDisplayPanel();
@@ -729,6 +746,7 @@ async function startPage() {
     applyPrefs();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
     showServerName(session.server_name);
+    listLoading = session.infinite_scroll === false ? "button" : "auto";
     document.title = document.title.replace(/ · [^·]*$/, ` · ${session.site_name}`);
     // DASH-238: until the first set-up has finished, only the set-up wizard: no menus, and other pages lead to it.
     if (session.first_setup) {

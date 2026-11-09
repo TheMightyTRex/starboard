@@ -78,5 +78,6 @@ startPage().then(async () => {
   $("#wanted-ticked").addEventListener("click", (e) => wantedSearch($$("#wanted-list input[type=checkbox]:checked").map((b) => Number(b.value)), e.currentTarget));
   $("#wanted-all").addEventListener("click", (e) => wantedSearch([], e.currentTarget));
   $("#wanted-more").addEventListener("click", () => { wantedState.page += 1; wantedLoad(true); });
+  autoLoadMore($("#wanted-more"), async () => { const before = wantedState.items.length; wantedState.page += 1; await wantedLoad(true); return wantedState.items.length - before; }, "more");
   wantedLoad();
 });

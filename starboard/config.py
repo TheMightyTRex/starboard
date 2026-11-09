@@ -51,6 +51,7 @@ DEFAULTS = {
     "show_posters": True,  # posters on Coming up, which browsers load from the image sites the apps use
     "settings_advanced": False,  # Settings pages show only the basic settings until this is on (DASH-225)
     "reelix_auto_update": False,  # Starboard installs new Reelix images by itself, with a way back (DASH-263)
+    "infinite_scroll": True,  # long lists load more as you near the end; False keeps the Show more button (DASH-277)
     # The dashboard (DASH-239): the layout, and its cards when changed from the layout's own (None = the layout's).
     "dashboard": {"layout": "glance", "cards": None},
     "upcoming_view": "list",
@@ -249,6 +250,7 @@ class Config:
             "show_posters": d["show_posters"],
             "settings_advanced": d.get("settings_advanced", False),
             "reelix_auto_update": d.get("reelix_auto_update", False),
+            "infinite_scroll": d.get("infinite_scroll", True),
             "dashboard": d.get("dashboard") or {"layout": "glance", "cards": None},
             "upcoming_view": d["upcoming_view"],
             "upcoming_days": d["upcoming_days"],
@@ -306,7 +308,7 @@ class Config:
             if incoming.get("setup_guide_done"):  # the first set-up has finished, in either set-up (DASH-238)
                 d.pop("first_setup_pending", None)
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
-                        "fetch_icons", "show_posters", "setup_guide_done", "ux_notes", "settings_advanced", "reelix_auto_update"):
+                        "fetch_icons", "show_posters", "setup_guide_done", "ux_notes", "settings_advanced", "reelix_auto_update", "infinite_scroll"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
             if "upcoming_view" in incoming:
