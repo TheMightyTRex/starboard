@@ -2789,5 +2789,12 @@ startPage().then(async (session) => {
   if ($("#install") && typeof startInstall === "function") startInstall();
   if ($("#copy-sections") && typeof startCopy === "function") startCopy();
   if ($("#version-notice")) startAbout();
+  if ($("#reelix-auto-row")) {  // DASH-263: automatic Reelix updates, off until switched on
+    const input = el("input", { type: "checkbox", role: "switch", id: "reelix-auto", checked: !!config.reelix_auto_update });
+    input.addEventListener("change", () => saveGeneral({ reelix_auto_update: input.checked },
+      input.checked ? "Starboard installs new Reelix versions by itself" : "Reelix updates wait for you, on Apps, Updates"));
+    $("#reelix-auto-row").replaceChildren(el("li", { class: "setting" }, switchRow("Install Reelix updates automatically",
+      "Needs Docker access. Off: Apps, Updates says when there is one, and you choose.", input)));
+  }
   $("#usenet-rights")?.append(usenetRights());
 });

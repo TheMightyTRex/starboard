@@ -19,6 +19,7 @@ JOBS = {
     "defaults": {"title": "Jellyfin user defaults", "every": 3600, "what": "Gives every Jellyfin user your defaults, unless they chose otherwise"},
     "listening": {"title": "Listening progress", "every": 3600, "what": "Applies listening progress to Audiobookshelf as the books are scanned in"},
     "vpnport": {"title": "VPN port forwarding", "every": 600, "what": "Keeps qBittorrent listening on the port the VPN forwards"},
+    "reelixupdate": {"title": "Reelix updates", "every": 86400, "what": "Installs a new Reelix by itself, with a way back if it is not healthy"},
 }
 SETTING = {"livetv": "livetv", "import": "import_keep", "defaults": "defaults", "listening": "listening_keep"}
 PAGE = {"listening": "/settings-audiobookshelf.html"}
@@ -40,6 +41,8 @@ class Jobs:
     def enabled(self, key):
         if key == "vpnport":  # on by itself while the VPN forwards a port and both apps have their keys (DASH-233)
             return vpn_ports.wanted(self.app.config, self.app.data_dir)
+        if key == "reelixupdate":  # Settings, Update settings (DASH-263)
+            return bool(self.app.config.data.get("reelix_auto_update"))
         return bool(self.settings().get(SETTING[key]))
 
     def self_url(self):
@@ -85,6 +88,9 @@ class Jobs:
                 summary = listening.apply(self.app.config.data_dir, services)
             elif key == "vpnport":
                 summary = vpn_ports.sync(self.app.config)
+            elif key == "reelixupdate":
+                from . import reelix_updates
+                summary = reelix_updates.run(self.app.config, self.app.data_dir)
             else:
                 summary = migrate.ensure_defaults(services)
             self._record(key, finished=time.time(), state="done", summary=summary)
@@ -140,6 +146,9 @@ class Jobs:
                 needs.append("Jellyfin with its API key in Manage apps")
             if key == "listening":
                 needs = [] if abs_ else ["Audiobookshelf with an admin API key in Manage apps"]
+            if key == "reelixupdate":
+                needs = []
+                row["page"] = "/settings-updates.html"
             if key == "vpnport":
                 needs = [] if row["enabled"] else ["Gluetun with port forwarding, and qBittorrent, each with its key"]
                 row["page"] = "/settings-install.html"

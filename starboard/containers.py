@@ -391,7 +391,23 @@ def _helper(folder, script, extra_binds=()):
     return code, text.decode("utf-8", "replace")
 
 
-def _run(names):
+def job():
+    """The last update job, or None."""
+    with _lock:
+        return json.loads(json.dumps(_state["job"])) if _state["job"] else None
+
+
+def forget_old(image_id):
+    """Removes an image kept by keep_old, once nothing uses it (after an automatic update proved healthy)."""
+    if image_id in {c["image_id"] for c in containers()}:
+        return
+    try:
+        docker("DELETE", f"/images/{image_id}")
+    except DockerError:
+        pass
+
+
+def _run(names, keep_old=False):
     job = _state["job"]
     try:
         found = {c["name"]: c for c in containers()}
@@ -456,9 +472,10 @@ def _run(names):
             logs.event("info", "updates", f"Updated {', '.join(done)}")
         if failed:
             logs.event("error", "updates", f"Update did not finish for {', '.join(failed)}", log="\n".join(log)[-2000:])
-        # Remove only the images these apps used before, if nothing uses them now.
+        # Remove only the images these apps used before, if nothing uses them now. An automatic update keeps them
+        # until the new version proves healthy (reelix_updates.py).
         in_use = {c["image_id"] for c in containers()}
-        for image_id in old_images - in_use:
+        for image_id in (set() if keep_old else old_images - in_use):
             try:
                 docker("DELETE", f"/images/{image_id}")
             except DockerError:
@@ -474,7 +491,7 @@ def _run(names):
             _state["check"] = {}
 
 
-def update(services, ids):
+def update(services, ids, keep_old=False):
     found = containers()
     by_id = {s["id"]: s for s in services}
     names = []
@@ -493,5 +510,5 @@ def update(services, ids):
         docker("POST", f"/images/create?fromImage={urllib.parse.quote(HELPER_IMAGE, safe='')}", raw=True, timeout=300)
     except DockerError:
         pass  # the helper may already be here
-    threading.Thread(target=_run, args=(names,), name="updates", daemon=True).start()
+    threading.Thread(target=_run, args=(names, keep_old), name="updates", daemon=True).start()
     return apps(services)
