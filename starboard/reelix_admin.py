@@ -271,7 +271,7 @@ def route(handler, method, path):
     if method != "POST" or not m:
         return handler.error(404, "Not found")
     kind, action = m.group("kind"), m.group("action")
-    if kind not in KINDS and kind not in ("search", "library"):
+    if kind not in KINDS and kind not in ("search", "library", "basics"):
         return handler.error(404, "Starboard does not change that part of Reelix")
     body = handler.body()
     address = handler.client_address_text()
@@ -289,6 +289,19 @@ def route(handler, method, path):
 
 def _act(app, reelix, base, kind, action, body):
     from . import logs
+    if kind == "basics":  # the basic settings (DASH-226)
+        from . import reelix_basics, setup_answers
+        if action == "open":
+            return reelix_basics.state(reelix)
+        if action == "test-tmdb":
+            setup_answers.test_tmdb(body.get("tmdb"))
+            return {"ok": True, "message": setup_answers.WORDS["tmdb"]["ok"]}
+        if action == "save":
+            out = reelix_basics.save(reelix, body.get("changes"))
+            for line in out["done"]:
+                logs.event("info", "reelix", line)
+            return out
+        raise ValueError("Not something Starboard does")
     if kind == "library":  # naming and background pace (DASH-188, DASH-200)
         from . import reelix_library
         if action == "open":

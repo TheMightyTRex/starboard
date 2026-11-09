@@ -432,6 +432,53 @@ function rxLibrarySection() {
   return section("rx-library", "Naming and background work", "The names Reelix gives film and series folders and files, and how hard it works in the background.", body);
 }
 
+// The basics (DASH-226): films and series information, picture quality, language and who can ask, in the approved
+// order. Each change saves at once; the TMDB key has its own Test and Save.
+function rxBasicsSection() {
+  const body = el("div", { class: "stack-4", "aria-live": "polite" });
+  const unlock = () => el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: open }, icon("lock"), "Show the basic settings"));
+  const locked = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it before showing them." }), unlock());
+  async function open() {
+    body.replaceChildren(el("p", { class: "muted", text: "Asking Reelix…" }));
+    try { const r = await rxCall("basics", "open", {}, "show Reelix's basic settings"); if (!r) { locked(); return; } draw(r); }
+    catch (e) { body.replaceChildren(notice("danger", "Reelix could not be asked", e.message), unlock()); }
+  }
+  const save = async (changes, what, control) => {
+    if (control) control.disabled = true;
+    try { const r = await rxCall("basics", "save", { changes }, what); if (r) { draw(r); toast(r.done.join(". ") || "Saved"); } }
+    catch (e) { problem(e.message, control); }
+    finally { if (control) control.disabled = false; }
+  };
+  const draw = (r) => {
+    const key = el("input", { class: "input", type: "password", autocomplete: "off", spellcheck: "false", id: "rx-tmdb" });
+    const said = el("div", { "aria-live": "polite" });
+    const test = el("button", { type: "button", class: "btn" }, "Test the key");
+    test.addEventListener("click", async () => {
+      try { const t = await rxCall("basics", "test-tmdb", { tmdb: key.value.trim() }, "test the key"); if (t) said.replaceChildren(notice("success", "It works", t.message)); }
+      catch (e) { said.replaceChildren(notice("danger", "It did not work", e.message)); }
+    });
+    const keep = el("button", { type: "button", class: "btn btn--primary" }, "Save the key");
+    keep.addEventListener("click", () => key.value.trim() ? save({ tmdb: key.value.trim() }, "save the TMDB key", keep) : setError(key, "Paste the key first"));
+    const quality = el("select", { class: "select", id: "rx-quality" }, r.profiles.map((p) => el("option", { value: String(p.id), text: p.name, selected: p.id === r.profile })));
+    quality.addEventListener("change", () => save({ profile: quality.value }, "change the picture quality", quality));
+    const lang = el("select", { class: "select", id: "rx-language" }, r.languages.map((c) => el("option", { value: c.value, text: c.label, selected: c.value === r.language })));
+    lang.addEventListener("change", () => save({ language: lang.value }, "change the language", lang));
+    const who = el("select", { class: "select", id: "rx-who" }, r.whos.map((w) => el("option", { value: w.value, text: w.label, selected: w.value === r.who })));
+    who.addEventListener("change", () => save({ who: who.value }, "change who can ask", who));
+    body.replaceChildren(
+      el("div", { class: "stack-2" }, el("h3", { text: "Films and series information" }),
+        el("p", { class: "small muted", text: "A free key from The Movie Database. Without it Reelix uses open data and matches fewer titles." }),
+        el("p", {}, chip(r.tmdb ? "Connected" : "No key yet", r.tmdb ? "success" : "warning")),
+        field(r.tmdb ? "Change the key" : "TMDB key", key, { hint: "Paste the API Read Access Token or the API key from themoviedb.org, Settings, API." }),
+        el("div", { class: "actions" }, keep, test), said),
+      field("Picture quality", quality, { hint: "For new films and series. 4K needs about four times the space." }),
+      field("Language", lang, { hint: "Reelix skips releases in other languages, unless you choose any language." }),
+      field("Who can ask", who, { hint: "For people who get a Reelix account from now on. Settings, Reelix, People changes those who have one." }));
+  };
+  locked();
+  return section("rx-basics", "Basic settings", "What Reelix looks for, and how good it should be.", body);
+}
+
 function reelixAdminSections() {
   const holder = el("div", { class: "rx-admin" });
   api("/api/reelix/admin/about").then((a) => {
@@ -442,6 +489,7 @@ function reelixAdminSections() {
       return;
     }
     holder.replaceChildren(
+      rxBasicsSection(),
       rxKindSection("indexers", "The sites Reelix searches for films, series, books and music. Nothing is added unless you add it."),
       rxKindSection("mediaservers", "Reelix tells Jellyfin and Audiobookshelf about each new file, so it shows in them at once."),
       rxKindSection("downloadclients", "The apps that download what Reelix chooses."),

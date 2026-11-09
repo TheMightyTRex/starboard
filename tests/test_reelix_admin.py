@@ -370,3 +370,24 @@ class RepairTest(StandInTest):
                 self.assertEqual(download_repair.needs(self.tmp.name, items), [])
         saved = self.state.items["downloadclients"][0]["settings"]
         self.assertEqual((saved["host"], saved["username"], saved["password"]), ("gluetun", "starboard", "made-up-pass"))
+
+
+class BasicsTest(StandInTest):
+    """The basic Reelix settings (DASH-226)."""
+
+    def test_open_and_save(self):
+        from starboard import reelix_basics
+        tok = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJtYWRlLXVwIn0.c2lnbmF0dXJl"
+        with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+            now = reelix_basics.state(reelix)
+            self.assertEqual((now["tmdb"], now["profile"], now["who"], now["language"]), (False, 1, "approve", "English"))
+            self.assertEqual([p["name"] for p in now["profiles"]], ["HD-1080p", "Ultra-HD"])
+            out = reelix_basics.save(reelix, {"tmdb": tok, "profile": "2", "who": "auto", "language": "Original"})
+        self.assertTrue(out["tmdb"])
+        self.assertEqual(self.state.metadata["tmdb_read_token"], tok)
+        self.assertEqual(self.state.request_settings["series"]["profile_id"], 2)
+        self.assertTrue(self.state.request_settings["auto_approve_movie"])
+        self.assertEqual(out["who"], "auto")
+        self.assertEqual([p["language"] for p in self.state.profiles], ["Original", "Original", None])
+        with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+            self.assertEqual(reelix_basics.save(reelix, {"who": "me"})["who"], "me")

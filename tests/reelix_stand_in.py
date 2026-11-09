@@ -95,6 +95,11 @@ class StandIn:
                        "daily_episode_format": "", "anime_episode_format": "", "multi_episode_style": "prefixed_range",
                        "max_file_name_bytes": 255, "max_path_bytes": 4096}
         self.pace = "normal"
+        self.metadata = {"tmdb_api_key": None, "tmdb_read_token": None, "language": "en-GB", "region": "GB"}
+        self.request_settings = {"movie": {"profile_id": 1, "root_folder_id": None, "tags": []}, "series": {"profile_id": 1, "root_folder_id": None, "tags": []},
+                                 "default_permissions": (1 << 5) | (1 << 6) | (1 << 13), "auto_approve_movie": False, "auto_approve_series": False}
+        self.profiles = [{"id": 1, "name": "HD-1080p", "language": "English"}, {"id": 2, "name": "Ultra-HD", "language": "English"},
+                         {"id": 3, "name": "Music", "family": "music", "language": None}]
         self.calls = []
 
     def preview(self, naming):
@@ -166,6 +171,20 @@ class StandIn:
                           "avg_response_ms": 900 + 100 * i["id"], "status": i["status"]} for i in self.items["indexers"]], None
         if path == "/indexers/definitions/status":
             return 200, {"loaded": len(SCHEMAS["indexers"]) - 2, "last_sync": "2026-11-08T06:00:00Z", "last_error": None, "syncing": False}, None
+        if path == "/settings/metadata":
+            if method == "PUT":
+                self.metadata = {**self.metadata, **body}
+            return 200, self.metadata, None
+        if path == "/settings/requests":
+            if method == "PUT":
+                self.request_settings = {**self.request_settings, **body}
+            return 200, self.request_settings, None
+        if path == "/qualityprofiles":
+            return 200, self.profiles, None
+        if path.startswith("/qualityprofiles/") and method == "PUT":
+            pid = int(path.rsplit("/", 1)[1])
+            self.profiles = [body if p["id"] == pid else p for p in self.profiles]
+            return 200, body, None
         if path == "/settings/naming":
             if method == "PUT":
                 self.naming = {**self.naming, **body}
