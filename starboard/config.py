@@ -60,7 +60,7 @@ DEFAULTS = {
                          "backup_failed": True, "cert_days": 14}},
     # Hourly jobs (jobs.py): each off until turned on in Settings, Apps, Jellyfin or Settings, Apps, Audiobookshelf.
     "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "import_keep": False, "defaults": False,
-               "listening_keep": False},
+               "listening_keep": False, "jellyfin_user": ""},
     # How much Starboard does in the background and how often (Settings, Performance).
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
                     "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
@@ -439,6 +439,11 @@ def clean_extras(incoming, current):
     for key in ("livetv", "white_logos", "import_keep", "defaults", "listening_keep"):
         if key in incoming:
             out[key] = bool(incoming[key])
+    if "jellyfin_user" in incoming:  # whose watched status the Library shows (DASH-276); "" is Jellyfin's first admin
+        name = str(incoming["jellyfin_user"] or "").strip()[:100]
+        if any(c in name for c in "\r\n\t"):
+            raise ConfigError("Choose a Jellyfin user from the list")
+        out["jellyfin_user"] = name
     if "livetv_address" in incoming:
         url = str(incoming["livetv_address"] or "").strip().rstrip("/")[:200]
         if url and not re.match(r"^https?://[^\s/]+$", url):

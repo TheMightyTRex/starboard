@@ -557,13 +557,17 @@ def _seasons(seasons):
         rows = seasons[n]
         have = sum(1 for r in rows if r["status"] == STATUS["in_library"][0])
         wanted = sum(1 for r in rows if r.get("can_get"))
+        jf = [r for r in rows if r.get("jf")]
         out.append({"heading": f"Season {n}" if n else "Specials", "season": n, "missing": wanted,
+                    "watched": {"watched": all(r["watched"] for r in jf), "ids": [r["jf"] for r in jf]} if jf else None,
                     "meta": f"{have:,} of {len(rows):,} in your library", "open": n == newest, "rows": rows})
     return out
 
 
-def item(data_dir, reelix, tab, item_id):
-    """One item's page: header, facts and its list (episodes, reading order, albums, collection)."""
+def item(data_dir, reelix, tab, item_id, cfg=None):
+    """One item's page: header, facts and its list (episodes, reading order, albums, collection). With cfg, films and
+    series also say what you have watched, from Jellyfin (watched.py, DASH-276)."""
+    from . import watched as _watched
     item_id = int(item_id)
     today = dt.date.today().isoformat()
     poster = f"/api/library/poster?tab={tab}&id={item_id}&size=page"
@@ -583,6 +587,8 @@ def item(data_dir, reelix, tab, item_id):
                # DASH-276, DASH-206: what Starboard can do with it here.
                "can": {"get": not m.get("has_file") and not downloading, "follow": bool(m.get("monitored")), "delete": True,
                        "has_file": bool(m.get("has_file"))}}
+        w = _watched.film(cfg, m.get("tmdb_id")) if cfg else None
+        out["watched"] = {"watched": w["watched"], "ids": [w["id"]], "user": w["user"]} if w else None
         lists = []
         coll = m.get("collection") or {}
         if coll.get("id"):
@@ -602,12 +608,16 @@ def item(data_dir, reelix, tab, item_id):
         have, total = int(st.get("episode_file_count") or 0), int(st.get("episode_count") or 0)
         rows, seasons = [], {}
         busy = _queue(reelix)
+        w = _watched.series(cfg, s.get("tmdb_id")) if cfg else None
+        seen = (w or {}).get("episodes") or {}
         for ep in sorted(episodes, key=lambda x: (x.get("season_number") or 0, x.get("episode_number") or 0)):
             aired = ep.get("air_date") or ""
             status = "in_library" if ep.get("has_file") else "downloading" if ("episode", ep.get("id")) in busy else \
                 "not_released" if (not aired or aired > today) else "wanted" if ep.get("monitored", True) else "not_monitored"
+            jf = seen.get((int(ep.get("season_number") or 0), int(ep.get("episode_number") or 0)))
             row = _row(f"E{ep.get('episode_number', 0)}", ep.get("title"), aired, status, id=ep.get("id"),
-                       can_get=status in ("wanted", "not_monitored"))
+                       can_get=status in ("wanted", "not_monitored"),
+                       watched=jf["watched"] if jf else None, jf=jf["id"] if jf else None)
             rows.append(row)
             seasons.setdefault(int(ep.get("season_number") or 0), []).append(row)
         out = {"title": s.get("title"), "meta": [x for x in (s.get("network") or "", e["m"].split(" · ")[-1] if e["m"] else "",
@@ -618,6 +628,9 @@ def item(data_dir, reelix, tab, item_id):
                "open": _open(reelix, f"/series/{item_id}"),
                "can": {"get": any(r.get("can_get") for r in rows), "follow": bool(s.get("monitored")), "delete": True,
                        "has_file": have > 0}}
+        have_jf = [r for r in rows if r.get("jf")]
+        out["watched"] = {"watched": bool(have_jf) and all(r["watched"] for r in have_jf), "ids": [r["jf"] for r in have_jf],
+                          "user": w["user"]} if have_jf else None
         facts = [("Network", s.get("network")), ("First aired", _date(s.get("first_aired"))), ("Last aired", _date(s.get("last_aired"))),
                  ("Next airing", _date(s.get("next_airing"))), ("Seasons", st.get("season_count")),
                  ("Genres", ", ".join(s.get("genres") or [])), ("Certificate", s.get("certification"))]
@@ -1090,6 +1103,19 @@ def handle(h, method, path):
         index = load(data_dir, reelix, tab)
         return h.json(200, {"groups": groups(index, tab, "authors" if q.get("by") == "authors" else ""),
                             "label": GROUPS.get(f"{tab}-authors" if q.get("by") == "authors" else tab, "Group")})
+    if path == "/api/library/watched" and method == "POST":
+        from . import watched as _watched
+        b = h.body()
+        item_id = _int(b.get("id"), 0, 1, 10 ** 12)
+        try:
+            n = _watched.mark(cfg, b.get("ids"), bool(b.get("watched")))
+        except ValueError as e:
+            return h.error(400, str(e))
+        except services.ServiceError as e:
+            return h.error(502, f"Jellyfin said no: {e}")
+        services.forget(f"library-item-{tab}-{item_id}")
+        said = ("Marked as watched" if b.get("watched") else "Marked as not watched") + (f" ({n} episodes)" if n > 1 else "")
+        return h.json(200, {"said": said, "item": item(data_dir, reelix, tab, item_id, cfg)})
     if path == "/api/library/act" and method == "POST":
         b = h.body()
         item_id = _int(b.get("id"), 0, 1, 10 ** 12)
@@ -1104,9 +1130,9 @@ def handle(h, method, path):
         services.forget(f"library-item-{tab}-{item_id}")
         if b.get("action") in ("delete",):
             _background(data_dir, reelix, tab)  # the wall loses it
-        return h.json(200, {"said": said, "item": None if b.get("action") == "delete" else item(data_dir, reelix, tab, item_id)})
+        return h.json(200, {"said": said, "item": None if b.get("action") == "delete" else item(data_dir, reelix, tab, item_id, cfg)})
     if path == "/api/library/item" and method == "GET":
         item_id = _int(q.get("id"), 0, 0, 10 ** 12)
         return h.json(200, services.cached(f"library-item-{tab}-{item_id}", ITEM_SECONDS,
-                                           lambda: item(data_dir, reelix, tab, item_id)))
+                                           lambda: item(data_dir, reelix, tab, item_id, cfg)))
     return h.error(404, "Not found")

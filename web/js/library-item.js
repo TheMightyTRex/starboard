@@ -21,6 +21,24 @@ async function act(action, extra = {}, button = null) {
   }
 }
 
+// Watched or not watched, from Jellyfin (DASH-276): a toggle button that says its state (aria-pressed) and changes it.
+async function markWatched(ids, watched, button) {
+  button.disabled = true;
+  try {
+    const r = await api(`/api/library/watched?tab=${ITEM_TAB}`, { method: "POST", body: { id: current.id, ids, watched } });
+    announce(r.said);
+    show(r.item, r.said);
+  } catch (e) { problem(e.message, button); button.disabled = false; }
+}
+
+function watchedButton(w, label, compact = true) {
+  if (!w || !w.ids?.length) return null;
+  return el("button", { type: "button", class: compact ? "btn btn--quiet btn--compact" : "btn", "aria-pressed": String(!!w.watched),
+    onclick: (e) => markWatched(w.ids, !w.watched, e.currentTarget) },
+    icon(w.watched ? "eye" : "eye-off"), w.watched ? "Watched" : "Not watched",
+    el("span", { class: "visually-hidden", text: ` ${label}. ${w.watched ? "Select to mark as not watched" : "Select to mark as watched"}` }));
+}
+
 function rowList(rows) {
   return el("ul", { class: "rows lib-order" }, ...rows.map((r) => el("li", { class: `row${r.number ? "" : " row--no-lead"}` },
     r.number ? el("span", { class: "lib-order__number", text: r.number }) : null,
@@ -28,6 +46,7 @@ function rowList(rows) {
       el("h3", { class: "row__title" }, r.href ? el("a", { href: r.href, text: r.title }) : r.title),
       el("div", { class: "row__meta", text: [r.date, r.note].filter(Boolean).join(" · ") })),
     el("div", { class: "row__side" }, r.status ? chip(r.status, r.tone) : null,
+      r.jf ? watchedButton({ watched: r.watched, ids: [r.jf] }, `${r.number} ${r.title}`) : null,
       r.can_get && r.id ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => act("get", { scope: "episode", episode: r.id }, e.currentTarget) },
         "Get it", el("span", { class: "visually-hidden", text: ` ${r.number} ${r.title}` })) : null))));
 }
@@ -38,8 +57,10 @@ function groupList(list) {
   return el("div", { class: "lib-seasons" }, ...list.groups.map((g) => el("details", { class: "disclosure", open: g.open || null },
     el("summary", {}, el("span", { text: g.heading }), el("span", { class: "disclosure__meta", text: g.meta })),
     el("div", { class: "disclosure__body stack-2" },
-      g.missing ? el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn--compact", onclick: (e) => act("get", { scope: "season", season: g.season }, e.currentTarget) },
-        `Get the ${g.missing} missing`, el("span", { class: "visually-hidden", text: ` in ${g.heading}` }))) : null,
+      g.missing || g.watched ? el("div", { class: "actions" },
+        g.missing ? el("button", { type: "button", class: "btn btn--compact", onclick: (e) => act("get", { scope: "season", season: g.season }, e.currentTarget) },
+          `Get the ${g.missing} missing`, el("span", { class: "visually-hidden", text: ` in ${g.heading}` })) : null,
+        watchedButton(g.watched, g.heading)) : null,
       rowList(g.rows)))));
 }
 
@@ -109,6 +130,7 @@ function head(item) {
     item.listen ? newTabLink(item.listen.href, item.listen.label, { className: "btn btn--primary" }) : null,
     item.can ? el("button", { type: "button", class: "btn", "aria-pressed": String(!!can.follow),
       onclick: (e) => act(can.follow ? "unfollow" : "follow", {}, e.currentTarget) }, can.follow ? "Stop following" : "Follow") : null,
+    watchedButton(item.watched, item.title, false),
     item.open ? newTabLink(item.open.href, item.open.label, { className: "btn btn--quiet" }) : null,
     can.delete ? el("button", { type: "button", class: "btn btn--quiet btn--danger", onclick: (e) => removeItem(item, e.currentTarget) }, "Delete") : null,
   ].filter(Boolean);

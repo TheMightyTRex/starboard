@@ -1686,6 +1686,11 @@ async function startJellyfin() {
     } catch (err) { importError.replaceChildren(notice("danger", "Not started", err.message)); }
   });
   const users = h.jellyfin_users;
+  const whoPick = el("select", { class: "select", id: "jf-you-pick" },
+    el("option", { value: "", text: "Jellyfin's first admin (the one Starboard made)" }),
+    users.map((u) => el("option", { value: u, text: u, selected: (config.extras.jellyfin_user || "") === u })));
+  whoPick.addEventListener("change", () => saveGeneral({ extras: { jellyfin_user: whoPick.value } }, whoPick.value ? `The Library shows what ${whoPick.value} has watched` : "The Library shows what Jellyfin's first admin has watched"));
+  const whose = field("Show what this user has watched", whoPick);
   const mapping = h.accounts.length ? el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
     el("caption", { class: "visually-hidden", text: "Accounts and the Jellyfin user each one goes to" }),
     el("thead", {}, el("tr", {}, ["Account", "Films", "Episodes", "Goes to Jellyfin user", "Applied"].map((t) => el("th", { scope: "col", text: t })))),
@@ -1740,6 +1745,8 @@ async function startJellyfin() {
       el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply", "Apply now") : null)),
     missing,
     section("jf-defaults", "User defaults", null, defaultRows, el("div", { class: "actions" }, jobRun(df), runNow("defaults", "Defaults"))),
+    users.length ? section("jf-you", "Your Jellyfin user",
+      "The Library shows what this Jellyfin user has watched, and Mark as watched changes it for them.", whose) : null,
   ].filter(Boolean));
 }
 
