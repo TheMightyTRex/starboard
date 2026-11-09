@@ -381,7 +381,9 @@ function renderSchedule(s) {
   const text = running
     ? (s.reason === "manual" ? `Resumed by you. Back to the hours at ${whenText(s.next_change)}.` : `Inside the hours (${hours}). Pauses at ${whenText(s.next_change)}.`)
     : (s.reason === "manual" ? `Paused by you. Resumes at ${whenText(s.next_change)}.` : `Downloads run ${hours}. Next start ${whenText(s.next_change)}.`);
-  $("#schedule-text").replaceChildren(text, s.clients.length ? "" : " No qBittorrent, NZBGet or SABnzbd with an API key is set up yet.");
+  // DASH-171: what downloads now, outside the hours, and why.
+  const now = !running && s.now?.length ? ` Downloading now, outside the hours, because you chose Download now: ${s.now.map((n) => n.title || "one item").join(", ")}.` : "";
+  $("#schedule-text").replaceChildren(text + now, s.clients.length ? "" : " No qBittorrent, NZBGet or SABnzbd with an API key is set up yet.");
   const button = (label, iconName, action, primary) => el("button", { type: "button", class: primary ? "btn btn--primary" : "btn", onclick: (e) => scheduleAct(action, e.currentTarget) }, icon(iconName), label);
   $("#schedule-actions").replaceChildren(...[
     running ? null : button("Resume downloads now", "play", "resume", true),

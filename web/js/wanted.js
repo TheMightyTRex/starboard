@@ -10,10 +10,14 @@ function wantedRow(w) {
   const meta = [w.detail, when, WHICH === "cutoff" && w.quality ? `Has ${w.quality}, wants ${w.cutoff || "better"}` : ""].filter(Boolean).join(" · ");
   const search = el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => wantedSearch([w.id], e.currentTarget) },
     icon("search"), "Search", el("span", { class: "visually-hidden", text: ` for ${w.title}${w.detail ? `, ${w.detail}` : ""}` }));
+  // DASH-171: while download hours pause downloads, Download now gets this one straight away.
+  const name = w.detail ? `${w.title}, ${w.detail}` : w.title;
+  const now = wantedState.paused ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => downloadNow(w, name, e.currentTarget) },
+    icon("zap"), "Download now", el("span", { class: "visually-hidden", text: ` ${name}` })) : null;
   return el("li", { class: "row" }, box,
     el("div", {}, el("h3", { class: "row__title" }, w.href ? el("a", { href: w.href, text: w.year ? `${w.title} (${w.year})` : w.title }) : w.title),
       el("div", { class: "row__meta", text: meta })),
-    el("div", { class: "row__side" }, search));
+    el("div", { class: "row__side" }, search, now));
 }
 
 async function wantedLoad(more = false) {
@@ -52,13 +56,23 @@ async function wantedSearch(ids, button) {
   finally { if (button) button.disabled = false; }
 }
 
+async function downloadNow(w, name, button) {
+  const ok = await confirmDialog({ title: `Download ${name} now?`, confirm: "Download now",
+    message: "Download hours have paused downloads. Reelix searches for this one now, and it downloads as soon as it is found while everything else stays paused. Then downloads pause again until the hours start." });
+  if (!ok) return;
+  button.disabled = true;
+  try { toast((await api("/api/downloads/now", { method: "POST", body: { kind: wantedState.kind, id: w.id, title: name } })).said); }
+  catch (e) { problem(e.message, button); button.disabled = false; }
+}
+
 function wantedTicked() {
   const n = $$("#wanted-list input[type=checkbox]:checked").length;
   $("#wanted-ticked").disabled = !n;
   $("#wanted-ticked span").textContent = n ? `Search for the ${n} ticked` : "Search for the ticked ones";
 }
 
-startPage().then(() => {
+startPage().then(async () => {
+  try { wantedState.paused = (await api("/api/schedule")).mode === "pause"; } catch { wantedState.paused = false; }
   $$('input[name="wanted-kind"]').forEach((r) => r.addEventListener("change", () => { wantedState.kind = r.value; wantedLoad(); wantedTicked(); }));
   $("#wanted-list").addEventListener("change", wantedTicked);
   $("#wanted-ticked").addEventListener("click", (e) => wantedSearch($$("#wanted-list input[type=checkbox]:checked").map((b) => Number(b.value)), e.currentTarget));

@@ -50,6 +50,7 @@ class Schedule:
         state.setdefault("until", 0)
         state.setdefault("applied", None)
         state.setdefault("clients", {})
+        state.setdefault("now", [])  # Download now (DASH-171): items allowed to download while the hours pause
         return state
 
     def save(self, state):
@@ -74,29 +75,79 @@ class Schedule:
 
     # Clients ------------------------------------------------------------------
 
+    # Download now (DASH-171) ------------------------------------------------------------
+
+    NOW_FOR = 12 * 3600  # an allowance lasts at most 12 hours, so a download that never starts does not stay allowed
+
+    def allow(self, item):
+        """Lets one Reelix item ({"kind": "movie" or "episode", "id", "title"}) download now, outside the hours."""
+        with self.lock:
+            state = self.load()
+            now = time.time()
+            state["now"] = [a for a in state["now"] if a["until"] > now and (a["kind"], a["id"]) != (item["kind"], item["id"])]
+            state["now"].append({"kind": item["kind"], "id": int(item["id"]), "title": str(item.get("title", ""))[:200],
+                                 "until": now + self.NOW_FOR, "seen": False})
+            self.save(state)
+        self.ensure()
+
+    def _allowed_downloads(self, state):
+        """The download ids (torrent hashes, NZBGet ids) of allowed items in Reelix's queue now. An allowance whose
+        download has been and gone, or has expired, is dropped, so downloads pause again."""
+        now = time.time()
+        state["now"] = [a for a in state.get("now") or [] if a["until"] > now]
+        if not state["now"]:
+            return set()
+        reelix = services.reelix_native(self.config.data["services"])
+        if not reelix:
+            return set()
+        try:
+            answer = services._api(reelix[0], "/queue", timeout=10) or []
+        except ServiceError:
+            return set()
+        items = answer.get("items") if isinstance(answer, dict) else answer
+        found, keep = set(), []
+        for a in state["now"]:
+            mine = [q for q in items or [] if (a["kind"] == "movie" and (q.get("media") or {}).get("kind") == "movie" and (q.get("media") or {}).get("id") == a["id"])
+                    or (a["kind"] == "episode" and any(e.get("id") == a["id"] for e in q.get("episodes") or []))]
+            if mine:
+                a["seen"] = True
+                found |= {str(q.get("download_id") or "").lower() for q in mine}
+                keep.append(a)
+            elif not a["seen"]:
+                keep.append(a)  # still being searched for
+        state["now"] = keep
+        return found - {""}
+
     def apply(self, action, state, manual=False, enforcing=False):
         """Runs or pauses every client. enforcing: the minute-by-minute pause, which leaves alone anything
-        started in the client by hand since Starboard paused it."""
+        started in the client by hand since Starboard paused it. While pausing, items allowed by Download now
+        keep downloading."""
         errors = []
+        allowed = self._allowed_downloads(state) if action == "pause" else set()
         for client in self.clients():
             mine = state["clients"].setdefault(client["id"], {"stopped": [], "started_by_you": [], "sab_paused": False})
             try:
                 if client["type"] == "qbittorrent":
-                    self._qbit(client, mine, action, manual, enforcing)
+                    self._qbit(client, mine, action, manual, enforcing, allowed)
                 elif client["type"] == "nzbget":
-                    self._nzbget(client, mine, action, enforcing)
+                    self._nzbget(client, mine, action, enforcing, allowed)
                 else:
                     self._sab(client, mine, action, enforcing)
             except ServiceError as e:
                 errors.append(str(e))
         return errors
 
-    def _qbit(self, client, mine, action, manual, enforcing):
+    def _qbit(self, client, mine, action, manual, enforcing, allowed=frozenset()):
         torrents = services.qbit(client, "torrents/info") or []
         ours, yours = set(mine["stopped"]), set(mine["started_by_you"])
         unfinished = [t for t in torrents if t.get("progress", 1) < 1]
         if action == "pause":
-            active = {t["hash"] for t in unfinished if t.get("state") not in PAUSED}
+            now = {t["hash"] for t in unfinished if t["hash"].lower() in allowed}
+            waiting = {t["hash"] for t in unfinished if t["hash"] in now and t.get("state") in PAUSED}
+            if waiting:  # Download now: started even though the hours pause the rest
+                services.qbit(client, "torrents/start", {"hashes": "|".join(sorted(waiting))})
+                ours -= waiting
+            active = {t["hash"] for t in unfinished if t.get("state") not in PAUSED} - now
             if enforcing:
                 yours |= active & ours  # Starboard stopped it and it is running again: someone started it
                 ours -= yours
@@ -115,8 +166,27 @@ class Schedule:
         present = {t["hash"] for t in torrents}
         mine["stopped"], mine["started_by_you"] = sorted(ours & present), sorted(yours & present)
 
-    def _nzbget(self, client, mine, action, enforcing):
+    def _nzbget(self, client, mine, action, enforcing, allowed=frozenset()):
         paused = bool((services.nzbget(client, "status") or {}).get("DownloadPaused"))
+        groups = services.nzbget(client, "listgroups", [0]) or [] if (allowed or mine.get("nzbget_held")) else []
+        now = [g["NZBID"] for g in groups if str(g.get("NZBID")) in allowed]
+        if action == "pause" and now:
+            # Download now with NZBGet: the queue runs, but every other download is paused on its own.
+            others = [g["NZBID"] for g in groups if g["NZBID"] not in now and g.get("Status") not in ("PAUSED",)]
+            if others:
+                services.nzbget(client, "editqueue", ["GroupPause", "", others])
+                mine["nzbget_held"] = sorted(set(mine.get("nzbget_held") or []) | set(others))
+            services.nzbget(client, "editqueue", ["GroupResume", "", now])
+            if paused:
+                services.nzbget(client, "resumedownload")
+            mine["nzbget_paused"] = False
+            return
+        if mine.get("nzbget_held"):  # Download now has finished: the held ones go back to the queue, paused or not
+            services.nzbget(client, "editqueue", ["GroupResume", "", mine["nzbget_held"]])
+            mine["nzbget_held"] = []
+            paused = bool((services.nzbget(client, "status") or {}).get("DownloadPaused"))
+            if action == "pause":
+                mine["nzbget_paused"] = False  # paused again just below
         if action == "pause" and not paused:
             if not (enforcing and mine.get("nzbget_paused")):  # paused by Starboard and running again: leave it
                 services.nzbget(client, "pausedownload")
@@ -198,7 +268,8 @@ class Schedule:
         state = self.load()
         now = datetime.now()
         out = {"enabled": h["enabled"], "start": h["start"], "end": h["end"],
-               "clients": [c["name"] for c in self.clients()]}
+               "clients": [c["name"] for c in self.clients()],
+               "now": [{"title": a["title"], "kind": a["kind"], "id": a["id"]} for a in state.get("now") or [] if a["until"] > time.time()]}
         if not h["enabled"]:
             return out
         want, reason = self.wanted(state, now)

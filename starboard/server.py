@@ -1590,6 +1590,25 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"ok": True})
             if path == "/api/schedule" and method == "GET":
                 return self.json(200, app.schedule.status())
+            if path == "/api/downloads/now" and method == "POST":
+                # DASH-171: one item downloads now, outside download hours; everything else stays paused.
+                b = self.body()
+                kind, item_id = str(b.get("kind", "")), str(b.get("id", ""))
+                if kind not in ("movie", "episode") or not item_id.isdigit():
+                    return self.error(400, "Choose a film or an episode")
+                reelix = services.reelix_native(cfg.data["services"])
+                if not reelix:
+                    return self.error(400, "Add Reelix in Settings, Manage apps, with its key")
+                try:
+                    services._api(reelix[0], "/search", method="POST", body={"kind": kind, "ids": [int(item_id)]})
+                except services.ServiceError as e:
+                    return self.error(502, f"Reelix said no: {e}")
+                title = str(b.get("title", ""))[:200]
+                if cfg.data["download_hours"]["enabled"]:
+                    app.schedule.allow({"kind": kind, "id": int(item_id), "title": title})
+                logs.event("info", "download hours", f"Download now: {title or kind}")
+                return self.json(200, {"said": f"Reelix is searching for {title or 'it'} now. It downloads as soon as it is found, outside your download hours"
+                                       if cfg.data["download_hours"]["enabled"] else f"Reelix is searching for {title or 'it'} now"})
             if path == "/api/schedule" and method == "POST":
                 return self.json(200, app.schedule.act(str(self.body().get("action", ""))))
             if path == "/api/calendar" and method == "GET":
