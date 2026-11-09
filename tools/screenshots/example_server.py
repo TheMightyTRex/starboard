@@ -210,6 +210,8 @@ class FakeArr(BaseHTTPRequestHandler):
 
 
 def _post(self):
+    if not self.headers.get("X-Api-Key"):  # Reelix's admin routes, signed in with a cookie (Settings, Reelix)
+        return self.reelix_admin("POST")
     length = int(self.headers.get("Content-Length") or 0)
     body = json.loads(self.rfile.read(length) or b"{}")
     found = example_library.add(self.path[len("/reelix/api/v1"):].split("?")[0], body) if self.path.startswith("/reelix/api/v1/") else None
