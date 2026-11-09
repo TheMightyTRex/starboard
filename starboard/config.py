@@ -51,7 +51,7 @@ DEFAULTS = {
     "show_posters": True,  # posters on Coming up, which browsers load from the image sites the apps use
     "upcoming_view": "list",
     "upcoming_days": 14,
-    # Download hours: qBittorrent and SABnzbd only download from start to end (whole hours, local time).
+    # Download hours: qBittorrent, NZBGet and SABnzbd only download from start to end (whole hours, local time).
     "download_hours": {"enabled": False, "start": 1, "end": 6},
     # Watching in the background (watch.py): off until turned on, because it runs with no page open.
     "watch": {"enabled": False, "every": 5, "weekly": False,

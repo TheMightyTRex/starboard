@@ -181,6 +181,17 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
             found.update(more)
         _save_key(cfg, key, name, base, api_key)
         log(f"{name} ready")
+    # The download apps' sign-ins, made up by Install apps (DASH-184): saved on the dashboard so Downloads, download
+    # hours and Reelix all use the same details, and shown on Apps behind the Starboard password.
+    downloads = [("qbittorrent", "qBittorrent", 8080, lambda: stack.qbittorrent_password(data_dir) and f"admin:{stack.qbittorrent_password(data_dir)}"),
+                 ("nzbget", "NZBGet", 6789, lambda: stack.nzbget_key(data_dir)),
+                 ("sabnzbd", "SABnzbd", stack.SABNZBD_PORT, lambda: stack.sabnzbd_key(data_dir))]
+    for key, name, inside, secret in downloads:
+        value = secret() if key in keys else None
+        base = stack.app_url(data_dir, key, inside) if value else None
+        if value and base:
+            _save_key(cfg, key, name, base, value)
+            done.append(f"Added {name} to your apps, with its sign-in")
     return done
 
 

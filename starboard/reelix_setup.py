@@ -158,7 +158,8 @@ def tokens_from_docker(data_dir, info, docker=None, available=None):
         m = _TOKEN.findall(_log_text("reelix", docker))
         if m:
             found["token"] = m[-1]
-        if "qbittorrent" in stack.chosen_keys(data_dir) and not info.get("qbittorrent_password"):
+        if "qbittorrent" in stack.chosen_keys(data_dir) and not info.get("qbittorrent_password") \
+                and not stack.qbittorrent_password(data_dir):
             q = _QBIT.findall(_log_text("qbittorrent", docker))
             if q:
                 found["qbittorrent_password"] = q[-1]
@@ -251,10 +252,13 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"The language of releases is not set yet ({e})")
 
-    # 4. qBittorrent, with a lasting password in place of its temporary one.
-    if info.get("qbittorrent_password") and qbit:
+    # 4. qBittorrent. Since DASH-232 its password is made up before its first start (data/stack/.env, written into
+    # its settings file as a hash); an older install still swaps the temporary one from its log for a lasting one.
+    from . import stack as _stack_q
+    seeded = _stack_q.qbittorrent_password(data_dir) if "qbittorrent" in (_stack_q.chosen_keys(data_dir) or []) else None
+    if seeded or (info.get("qbittorrent_password") and qbit):
         try:
-            lasting = qbit(info["qbittorrent_password"])
+            lasting = seeded or qbit(info["qbittorrent_password"])
             _, clients = admin.call("GET", "/downloadclients")
             if not any(c.get("implementation") == "qbittorrent" for c in (clients or [])):
                 admin.call("POST", "/downloadclients", {

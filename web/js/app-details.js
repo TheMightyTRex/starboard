@@ -251,6 +251,23 @@ const AppDetails = (() => {
           el("span", { class: "visually-hidden", text: " (opens in a new tab)" })),
         el("span", { class: "small muted", text: ` and choose ${s.container || s.id}` })));
     }
+    // The sign-in Starboard made up for qBittorrent or NZBGet (DASH-184), after the Starboard password.
+    if (["qbittorrent", "nzbget"].includes(s.type) && s.has_api_key) {
+      const shown = el("span", { "aria-live": "polite" });
+      const button = el("button", { type: "button", class: "btn btn--quiet" }, "Show its sign-in");
+      button.addEventListener("click", async () => {
+        const input = el("input", { class: "input", type: "password", id: `signin-pw-${s.id}`, autocomplete: "current-password" });
+        const error = el("p", { class: "field__error", role: "alert" });
+        if (!await confirmDialog({ title: `Show ${s.name}'s sign-in`, message: `Starboard made up ${s.name}'s sign-in when it installed it. Type your Starboard password to see it.`,
+          confirm: "Show", fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, error)] })) return;
+        try {
+          const r = await api("/api/services/sign-in", { method: "POST", body: { id: s.id, password: input.value } });
+          shown.replaceChildren(el("span", { text: "User name " }), el("code", { text: r.user }), el("span", { text: ", password " }), el("code", { text: r.password }));
+          button.hidden = true;
+        } catch (e) { shown.replaceChildren(el("span", { class: "small", text: e.message })); }
+      });
+      about.push(el("dt", { text: "Sign-in" }), el("dd", {}, button, shown));
+    }
     const fol = followers(s);
     about.push(el("dt", { text: "Followed by" }), el("dd", { text: fol.length ? fol.map((x) => x.name).join(", ") : "No other services" }));
     out.push(section(s.background ? "About this service" : "About this app", "app-details-about", el("dl", { class: "facts" }, about)));

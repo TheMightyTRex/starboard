@@ -121,7 +121,9 @@ APPS = {
                "notes": "Invite friends to Jellyfin with a link."},
     "qbittorrent": {"name": "qBittorrent", "groups": ["downloads"], "image": "lscr.io/linuxserver/qbittorrent:latest",
                     "ports": ["8080:8080", "6881:6881", "6881:6881/udp"], "volumes": [f"{CFG}/qbittorrent:/config", f"{DATA}:/data"],
-                    "env": {**LSIO, "WEBUI_PORT": "8080"}, "vpn": True, "memory": 150},
+                    # Its sign-in is made up here and written into its first settings file as a hash (qbittorrent_seed,
+                    # DASH-232), so nobody reads a temporary password from its log.
+                    "env": {**LSIO, "WEBUI_PORT": "8080"}, "vpn": True, "memory": 150, "secrets": ["QBITTORRENT_PASS"]},
     # NZBGet is the default Usenet app (owner, 7 November 2026): written in C++, it uses far less memory and processor
     # than SABnzbd. Its sign-in is made up here (NZBGET_PASS in .env), so Starboard and Reelix can use it.
     "nzbget": {"name": "NZBGet", "groups": ["downloads"], "image": "lscr.io/linuxserver/nzbget:latest", "ports": ["6789:6789"],
@@ -178,7 +180,11 @@ APPS = {
 # Folders made inside the data folder, so downloads and the library share one disk and moves are instant.
 DATA_FOLDERS = {"movies": ["media/movies"], "tv": ["media/tv"], "music": ["media/music"], "ebooks": ["media/books"],
                 "audiobooks": ["media/audiobooks"], "radio": ["media/radio"], "comics": ["media/comics", "downloads/comics"],
-                "downloads": ["downloads/torrents", "downloads/usenet"]}
+                # The download apps' category folders (DASH-258): Reelix's qBittorrent categories are movies-reelix and
+                # tv-reelix under the save path, NZBGet's are movies and tv under completed. Made before the apps
+                # start, so Reelix does not warn they cannot be reached and suggest a remote path mapping.
+                "downloads": ["downloads/torrents", "downloads/torrents/movies-reelix", "downloads/torrents/tv-reelix",
+                              "downloads/usenet", "downloads/usenet/completed/movies", "downloads/usenet/completed/tv"]}
 
 PROJECT = "media-stack"
 _SAFE_PATH = re.compile(r"^/[A-Za-z0-9._/-]{1,200}$")
@@ -661,22 +667,6 @@ def folder(data_dir):
     return os.path.join(data_dir, "stack")
 
 
-def app_url(data_dir, service, inner):
-    """The address on this computer of a service Install apps wrote, from the port data/stack/compose.yaml maps to
-    its `inner` port (on the service, or on Gluetun when it runs through the VPN); None when there is none."""
-    try:
-        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
-            text = f.read()
-    except OSError:
-        return None
-    for name in (service, "gluetun"):
-        block = re.search(rf"(?ms)^  {name}:\n(.*?)(?=^  \S|\Z)", text)
-        port = re.search(rf'"(\d{{2,5}}):{inner}"', block.group(1)) if block else None
-        if port:
-            return f"http://127.0.0.1:{port.group(1)}"
-    return None
-
-
 KEEP_BEFORE = 10  # older copies of the set-up files that Starboard keeps in data/stack
 
 
@@ -904,6 +894,31 @@ def bazarr_seed(api_key):
     return f"auth:\n  apikey: {api_key}\n"
 
 
+def qbittorrent_seed(password, salt=None):
+    """qBittorrent's first settings file (DASH-232): the sign-in admin with the made-up password as qBittorrent's own
+    PBKDF2 hash, downloads in the shared media folder, and categories in their own folders (Reelix's movies-reelix
+    and tv-reelix). qBittorrent fills in the rest when it starts."""
+    import base64
+    import hashlib
+    salt = salt or secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha512", password.encode(), salt, 100000, 64)
+    b64 = lambda b: base64.b64encode(b).decode()  # noqa: E731
+    return ("[BitTorrent]\n"
+            "Session\\DefaultSavePath=/data/downloads/torrents\n"
+            "Session\\TempPathEnabled=false\n"
+            "Session\\DisableAutoTMMByDefault=false\n"
+            "Session\\Port=6881\n"
+            "\n[Preferences]\n"
+            "WebUI\\Username=admin\n"
+            f'WebUI\\Password_PBKDF2="@ByteArray({b64(salt)}:{b64(digest)})"\n'
+            "WebUI\\Port=8080\n")
+
+
+def qbittorrent_password(data_dir):
+    """qBittorrent's sign-in password as Install apps made it up (data/stack/.env), or None (an older install)."""
+    return env_values(data_dir).get("QBITTORRENT_PASS") or None
+
+
 def bazarr_key(data_dir):
     """Bazarr's API key as Install apps made it up (data/stack/.env), or None."""
     return env_values(data_dir).get("BAZARR_API_KEY") or None
@@ -946,6 +961,12 @@ def write(data_dir, built):
         os.makedirs(os.path.join(seed, "bazarr"), mode=0o700, exist_ok=True)
         with os.fdopen(os.open(os.path.join(seed, "bazarr", "config__config.yaml"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
             f.write(bazarr_seed(key))
+    pw = next((l.split("=", 1)[1].strip().strip("'\"") for l in built["env"].splitlines() if l.startswith("QBITTORRENT_PASS=")), "")
+    if pw and re.fullmatch(r"[A-Za-z0-9_-]{16,64}", pw):
+        # linuxserver's qBittorrent keeps its settings in /config/qBittorrent/qBittorrent.conf.
+        os.makedirs(os.path.join(seed, "qbittorrent"), mode=0o700, exist_ok=True)
+        with os.fdopen(os.open(os.path.join(seed, "qbittorrent", "qBittorrent__qBittorrent.conf"), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+            f.write(qbittorrent_seed(pw))
     hooks = os.path.join(path, "starboard-before-update")
     for key, script in (built.get("hooks") or {}).items():
         os.makedirs(hooks, mode=0o700, exist_ok=True)
@@ -1205,6 +1226,20 @@ def start(host_stack, built_env):
     return job()
 
 
+def seed_script(cfg, data, puid, pgid):
+    """The browser's start does what the installer's sa_seed and folders do: every folder in folders.txt that is
+    inside the settings or media folder, then each first settings file (seed/<app>/<file>, "__" a folder) in the
+    app's settings folder only when it has none yet, so your own settings are never replaced. Run in the helper,
+    in data/stack."""
+    q = containers._quote
+    return (f"if [ -f folders.txt ]; then while IFS= read -r d; do case \"$d\" in {q(cfg)}/*|{q(data)}/*) "
+            f"case \"$d\" in *..*) ;; *) [ -d \"$d\" ] || {{ mkdir -p \"$d\" && chown {puid}:{pgid} \"$d\"; }} ;; esac ;; esac; done < folders.txt; fi; "
+            f"for s in seed/*/*; do [ -f \"$s\" ] || continue; a=\"$(basename \"$(dirname \"$s\")\")\"; "
+            f"n=\"$(basename \"$s\" | sed 's#__#/#g')\"; case \"$a/$n\" in *..*) continue ;; esac; "
+            f"t={q(cfg)}/\"$a/$n\"; [ -e \"$t\" ] && continue; mkdir -p \"$(dirname \"$t\")\" && cp \"$s\" \"$t\" && chmod 600 \"$t\" "
+            f"&& chown {puid}:{pgid} {q(cfg)}/\"$a\" \"$(dirname \"$t\")\" \"$t\"; done; true")
+
+
 def _start(host_stack, env):
     q = containers._quote
     cfg, data = env["CONFIG_DIR"].strip("'"), env["DATA_DIR"].strip("'")
@@ -1212,6 +1247,7 @@ def _start(host_stack, env):
         f"mkdir -p {q(cfg)} {q(data)}",
         f"chown {int(env['PUID'])}:{int(env['PGID'])} {q(cfg)} {q(data)}",
         ffmpeg_wrap_script(cfg, int(env["PUID"]), int(env["PGID"])),
+        seed_script(cfg, data, int(env["PUID"]), int(env["PGID"])),
         f"docker compose -p {PROJECT} --env-file .env -f compose.yaml pull 2>&1 | tail -n 20",
         # --remove-orphans: an app taken out of compose.yaml (a smaller install, NZBGet in place of SABnzbd) stops and
         # goes; its settings folder stays.

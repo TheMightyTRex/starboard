@@ -370,7 +370,7 @@ function renderSchedule(s) {
   const text = running
     ? (s.reason === "manual" ? `Resumed by you. Back to the hours at ${whenText(s.next_change)}.` : `Inside the hours (${hours}). Pauses at ${whenText(s.next_change)}.`)
     : (s.reason === "manual" ? `Paused by you. Resumes at ${whenText(s.next_change)}.` : `Downloads run ${hours}. Next start ${whenText(s.next_change)}.`);
-  $("#schedule-text").replaceChildren(text, s.clients.length ? "" : " No qBittorrent or SABnzbd with an API key is set up yet.");
+  $("#schedule-text").replaceChildren(text, s.clients.length ? "" : " No qBittorrent, NZBGet or SABnzbd with an API key is set up yet.");
   const button = (label, iconName, action, primary) => el("button", { type: "button", class: primary ? "btn btn--primary" : "btn", onclick: (e) => scheduleAct(action, e.currentTarget) }, icon(iconName), label);
   $("#schedule-actions").replaceChildren(...[
     running ? null : button("Resume downloads now", "play", "resume", true),

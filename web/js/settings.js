@@ -751,8 +751,8 @@ function startGeneral() {
           upcomingSelect("upcoming_view", "up-view-l", [["list", "List"], ["calendar", "Calendar"]], (t) => `Coming up now opens as ${t === "List" ? "a list" : "a calendar"}`), "up-view-l"),
         settingRow("How far ahead", withCost("Releases from today to this far ahead, plus yesterday's.", "upcoming"),
           upcomingSelect("upcoming_days", "up-days-l", dayChoices, (t) => `Coming up now looks ${t} ahead`), "up-days-l")))),
-    el("div", { id: "download-hours" }, section("gn-dh", "Download hours", "Starboard pauses qBittorrent and SABnzbd outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
-      clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent or SABnzbd with its API key in Manage apps, so Starboard can pause and resume them."),
+    el("div", { id: "download-hours" }, section("gn-dh", "Download hours", "Starboard pauses qBittorrent, NZBGet and SABnzbd outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
+      clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent, NZBGet or SABnzbd with its API key in Manage apps, so Starboard can pause and resume them."),
       el("ul", { class: "settings-rows" },
         settingRow("Only download between set hours", withCost("Inactive: downloads run at any time.", "hours"), el("label", { class: "switch" }, hoursOn), "dh-on-l"),
         settingRow("Start", "Downloads start at this hour.", hoursSelect("start", "dh-start-l"), "dh-start-l"),
@@ -1263,7 +1263,7 @@ async function startGuide() {
         intro: "With its key, Starboard can show an app's queue, calendar, updates and warnings. Each key stays on the server." });
     }
     if (types(["jellyfin"]).length) list.push({ id: "jellyfin", ...stepNamed(T, "extras"), intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
-    if (types(["qbittorrent", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent and SABnzbd outside these hours, for example to keep the internet free in the day." });
+    if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet and SABnzbd outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
     list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
@@ -1822,7 +1822,7 @@ async function startPerformance() {
       el("div", { class: "inline-save" }, pick("pf-watch-every", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w.every,
         (v, t) => save({ watch: { every: Number(v) } }, `Watching: ${t.toLowerCase()}`)),
         sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }, on ? "Watching activated" : "Watching deactivated"))), "pf-watch-l"),
-    settingRow("Download hours check", withCost("How often Starboard checks qBittorrent and SABnzbd while download hours are on (Settings, General).", "scheduleEvery"),
+    settingRow("Download hours check", withCost("How often Starboard checks qBittorrent, NZBGet and SABnzbd while download hours are on (Settings, General).", "scheduleEvery"),
       pick("pf-sched-l", [[60, "Every minute"], [300, "Every 5 minutes"]], perf().schedule_every,
         (v, t) => save({ performance: { schedule_every: Number(v) } }, `Download hours check: ${t.toLowerCase()}`)), "pf-sched-l"),
     settingRow("Live TV white logos", withCost("Only matters while Live TV is on (Settings, Apps, Jellyfin).", "white"),

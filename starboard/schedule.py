@@ -1,4 +1,4 @@
-"""Download hours: qBittorrent and SABnzbd only download between two hours of the day.
+"""Download hours: qBittorrent, NZBGet and SABnzbd only download between two hours of the day.
 
 Settings, General turns it on and sets the hours (whole hours, the server's local time). Once a minute:
 - outside the hours, unfinished torrents are stopped and SABnzbd is paused, including anything new the apps

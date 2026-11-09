@@ -27,7 +27,7 @@ def summary(app):
               "It adds films, series and books only when you choose Add.",
               any(s.get("api_key") for s in d["services"]), "apps", link="/settings.html", cost="A few small requests to each app when a page that shows it is open, shared for a few seconds."),
         _item("download_hours", "Pausing and resuming downloads",
-              "Outside your download hours, Starboard pauses qBittorrent and SABnzbd"
+              "Outside your download hours, Starboard pauses qBittorrent, NZBGet and SABnzbd"
               + (f" ({' and '.join(clients)})" if clients else "") + ".",
               d["download_hours"]["enabled"] and clients, "setting", link="/settings-general.html#download-hours", cost="One small check a minute, under 0.01% of the processor."),
         _item("watch", "Watching in the background, and alerts",

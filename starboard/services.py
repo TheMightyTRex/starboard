@@ -934,7 +934,7 @@ def vpn_one(service):
 
 
 def transfer(services):
-    """Speeds from qBittorrent and SABnzbd, and the VPN's state from Gluetun, for the top of Downloads."""
+    """Speeds from qBittorrent, NZBGet and SABnzbd, and the VPN's state from Gluetun, for the top of Downloads."""
     on = [s for s in services if s.get("enabled", True) and s.get("url")]
     out = {"clients": [], "vpn": [], "errors": []}
 

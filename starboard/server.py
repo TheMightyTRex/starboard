@@ -1027,6 +1027,17 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/services/order" and method == "POST":
                 cfg.reorder_services(self.body().get("ids", []))
                 return self.json(200, cfg.public())
+            if path == "/api/services/sign-in" and method == "POST":
+                # A download app's sign-in that Install apps made up (DASH-184): shown only after the Starboard
+                # password, and only for qBittorrent and NZBGet, whose key is the user name and password.
+                body = self.body()
+                self.check_password(body)
+                s = next((x for x in app.config.data["services"] if x.get("id") == body.get("id")), None)
+                if not s or s.get("type") not in ("qbittorrent", "nzbget") or ":" not in (s.get("api_key") or ""):
+                    return self.error(404, "Starboard has no sign-in for that app")
+                user, _, password = s["api_key"].partition(":")
+                logs.event("info", "security", f"Showed {s['name']}'s sign-in")
+                return self.json(200, {"user": user, "password": password})
             if path == "/api/services/test" and method == "POST":
                 incoming = self.body()
                 stored = cfg.service(incoming.get("id", "")) if incoming.get("id") else None
