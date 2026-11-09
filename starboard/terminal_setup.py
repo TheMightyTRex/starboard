@@ -305,6 +305,10 @@ def _user():
         return ""
 
 
+# Plain mode says "Still working" this often while a long job runs, so a screen reader is never silent (DASH-236).
+STILL_EVERY = 120
+
+
 def clip(text, n):
     return text if len(text) <= n else text[:max(n - 3, 0)].rstrip() + "..."
 
@@ -1672,7 +1676,7 @@ class Terminal:
         return back
 
     def _waiting(self, text, check, wait, began):
-        turn = 0
+        turn = said = 0
         while True:
             result = check()
             if result is not None:
@@ -1685,6 +1689,12 @@ class Terminal:
                 words = text[:max(self.width - len(timer) - 7, 10)]  # one line, never wrapped onto a second
                 self._write(f"\r\033[2K{getattr(self, 'pad', '')}  {self.accent('◐◓◑◒'[turn % 4])} {words} {self.dim(timer)}")
                 turn += 1
+            else:
+                # Never silent for long (the design system's TERMINAL.md, DASH-236): a line every STILL_EVERY seconds.
+                secs = int(time.time() - began)
+                if secs >= STILL_EVERY * (said + 1):
+                    said = secs // STILL_EVERY
+                    self._plain(f"Still working: {text.split('. Please wait')[0]} ({secs // 60} min).")
             time.sleep(wait)
 
 

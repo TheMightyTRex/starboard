@@ -468,3 +468,23 @@ class TerminalSetupTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StillWorking(unittest.TestCase):
+    """Plain mode is never silent through a long job (DASH-236)."""
+
+    def test_a_line_every_so_often_while_a_job_runs(self):
+        import time
+        from starboard import terminal_setup as ts
+        out = []
+
+        class Plain:
+            fancy = False
+            resize_due = False
+            _plain = out.append
+        with mock.patch.object(ts, "STILL_EVERY", 1):
+            start = time.time()
+            ts.Terminal._waiting(Plain(), "Starting the apps. Please wait, this can take some time...",
+                                 lambda: "ok" if time.time() > start + 2.3 else None, 0.1, start)
+        self.assertGreaterEqual(len(out), 2)
+        self.assertEqual(out[0], "Still working: Starting the apps (0 min).")

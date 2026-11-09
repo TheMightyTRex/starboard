@@ -471,7 +471,19 @@ work() {
     say "$name ($n of $of). Please wait..."
     # Keys pressed meanwhile are not shown (each Enter would push the words above off the screen) and are dropped.
     ECHO_WAS="$(stty -g < "${IN:-/dev/tty}" 2>/dev/null)" && stty -echo < "${IN:-/dev/tty}" 2>/dev/null
-    run_job "$cmd" >> "$LOG" 2>&1 < /dev/null; status=$?
+    # Never silent for long (TERMINAL.md): "Still working" every 2 minutes, with the count when the job has one.
+    run_job "$cmd" >> "$LOG" 2>&1 < /dev/null &
+    pid=$!; JOB_START=$SECONDS
+    while kill -0 "$pid" 2>/dev/null; do
+      sleep 1
+      local t=$(( SECONDS - JOB_START ))
+      if [ "$t" -gt 0 ] && [ $(( t % ${STILL_EVERY:-120} )) = 0 ]; then
+        local more=""
+        if [ -n "$JOB_COUNT" ]; then COUNT_NOW="$("$JOB_COUNT" 2>/dev/null)"; [ -z "$COUNT_NOW" ] || more=", $COUNT_NOW"; fi
+        say "Still working: $name ($(( t / 60 )) min$more)."
+      fi
+    done
+    wait "$pid"; status=$?
     if [ -n "$ECHO_WAS" ]; then
       while read -r -t 0.01 -n 1000 _ < "${IN:-/dev/tty}" 2>/dev/null; do :; done
       stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""

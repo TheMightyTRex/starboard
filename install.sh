@@ -283,8 +283,16 @@ sa_up() {
   reelix_tokens  # Reelix may be running even when another app is not
   # The apps running now, one name a line, for the terminal set-up: it waits for these to answer, and not for an app
   # that did not start, such as one behind a VPN that has not connected (DASH-151).
+  # Look again a few seconds later (DASH-235): an app that keeps restarting, such as a VPN given a wrong key, can
+  # count as running just after it starts. One still restarting then is a problem, named in IN-33.
+  sleep 10
+  restarting="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps --status restarting --format '{{.Name}}' 2>/dev/null | paste -sd, - | sed 's/,/, /g')"
   docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps --status running --format '{{.Name}}' \
     > data/stack/running.txt 2>/dev/null || rm -f data/stack/running.txt
+  if [ -n "$restarting" ] && [ "$status" = 0 ]; then
+    running="$(grep -c . data/stack/running.txt 2>/dev/null || echo 0)"
+    stop IN-33 "$running of $SA_TOTAL apps are running; $restarting keeps restarting. Show the details for the last lines Docker wrote, fix what they say, then try again."
+  fi
   if [ "$status" != 0 ]; then
     running="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps -q --status running 2>/dev/null | wc -l)"
     stop IN-33 "$running of $SA_TOTAL apps are running; some did not start. Show the details for the last lines Docker wrote, fix what they say, then try again."
