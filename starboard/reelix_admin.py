@@ -271,7 +271,7 @@ def route(handler, method, path):
     if method != "POST" or not m:
         return handler.error(404, "Not found")
     kind, action = m.group("kind"), m.group("action")
-    if kind not in KINDS and kind != "search":
+    if kind not in KINDS and kind not in ("search", "library"):
         return handler.error(404, "Starboard does not change that part of Reelix")
     body = handler.body()
     address = handler.client_address_text()
@@ -289,6 +289,17 @@ def route(handler, method, path):
 
 def _act(app, reelix, base, kind, action, body):
     from . import logs
+    if kind == "library":  # naming and background pace (DASH-188, DASH-200)
+        from . import reelix_library
+        if action == "open":
+            return reelix_library.state(reelix)
+        if action == "preview":
+            return reelix_library.preview(reelix, body.get("naming"))
+        if action == "save":
+            out = reelix_library.save(reelix, body.get("naming"), body.get("pace"))
+            logs.event("info", "reelix", "Naming and background work saved")
+            return out
+        raise ValueError("Not something Starboard does")
     if kind == "search":
         if action == "open":
             return reelix_sites.search_state(reelix, app.data_dir)

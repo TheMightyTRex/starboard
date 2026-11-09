@@ -362,6 +362,68 @@ function rxOffers(offers, done) {
 }
 
 // Called by startReelix in settings.js: the sections, after Version.
+// Naming and background work (DASH-188, DASH-200): the folder and file names Reelix gives films and series, with an
+// example of each that changes as you type, and how hard Reelix works in the background.
+function rxLibrarySection() {
+  const body = el("div", { class: "stack-4", "aria-live": "polite" });
+  const labels = { movie_folder_format: ["Film folder", "movie_folder"], movie_file_format: ["Film file", "movie_file"],
+    series_folder_format: ["Series folder", "series_folder"], season_folder_format: ["Season folder", "season_folder"],
+    standard_episode_format: ["Episode file", "standard_episode"] };
+  const open = async () => {
+    body.replaceChildren(el("p", { class: "muted", text: "Asking Reelix…" }));
+    try {
+      const r = await rxCall("library", "open", {}, "show Reelix's naming");
+      if (!r) { locked(); return; }
+      draw(r);
+    } catch (e) { body.replaceChildren(notice("danger", "Reelix could not be asked", e.message), unlock()); }
+  };
+  const unlock = () => el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: open }, icon("lock"), "Show naming and background work"));
+  const locked = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it before showing them." }), unlock());
+  const draw = (r) => {
+    const inputs = {};
+    const examples = {};
+    const rows = Object.entries(labels).map(([k, [label, ex]]) => {
+      inputs[k] = el("input", { class: "input", value: r.naming[k] || "", spellcheck: "false", autocomplete: "off" });
+      examples[k] = el("code", { class: "small", text: r.preview[ex] || "" });
+      return el("div", { class: "stack-2" }, field(label, inputs[k]), el("p", { class: "small muted" }, "Example: ", examples[k]));
+    });
+    const errors = el("div");
+    const pace = el("select", { class: "select" }, r.paces.map((p) => el("option", { value: p.value, text: p.label, selected: p.value === r.pace })));
+    let timer = null;
+    const typed = () => Object.fromEntries(Object.entries(inputs).map(([k, i]) => [k, i.value]));
+    const refresh = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        try {
+          const p = await rxCall("library", "preview", { naming: typed() }, "show an example");
+          if (!p) return;
+          for (const [k, [, ex]] of Object.entries(labels)) examples[k].textContent = p[ex] || "";
+          errors.replaceChildren(p.errors?.length ? notice("warning", "Reelix cannot use this yet", p.errors.map((e) => e.message).join(". ")) : "");
+        } catch (e) { errors.replaceChildren(notice("danger", "No example", e.message)); }
+      }, 600);
+    };
+    Object.values(inputs).forEach((i) => i.addEventListener("input", refresh));
+    const note = savedNote("rx-library-saved");
+    const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
+    save.addEventListener("click", async () => {
+      save.disabled = true;
+      try {
+        const out = await rxCall("library", "save", { naming: typed(), pace: pace.value }, "change Reelix's naming");
+        if (out) { draw(out); showSaved("rx-library-saved"); }
+      } catch (e) { errors.replaceChildren(notice("danger", "Not saved", e.message)); }
+      finally { save.disabled = false; }
+    });
+    body.replaceChildren(
+      el("p", { class: "small muted" }, "Words in braces are filled in by Reelix, such as ", el("code", { text: "{Movie Title}" }), " and ",
+        el("code", { text: "{season}" }), ". Changes apply to files Reelix moves from now on."),
+      ...rows, errors,
+      field("Background work", pace, { hint: "How hard Reelix works on scans and refreshes. Light suits a small server: playing stays smooth. Changing How much it does in Settings, Performance does not change this." }),
+      el("div", { class: "actions" }, save, note));
+  };
+  locked();
+  return section("rx-library", "Naming and background work", "The names Reelix gives film and series folders and files, and how hard it works in the background.", body);
+}
+
 function reelixAdminSections() {
   const holder = el("div", { class: "rx-admin" });
   api("/api/reelix/admin/about").then((a) => {
@@ -374,7 +436,8 @@ function reelixAdminSections() {
     holder.replaceChildren(
       rxKindSection("indexers", "The sites Reelix searches for films, series, books and music. Nothing is added unless you add it."),
       rxKindSection("mediaservers", "Reelix tells Jellyfin and Audiobookshelf about each new file, so it shows in them at once."),
-      rxKindSection("downloadclients", "The apps that download what Reelix chooses."));
+      rxKindSection("downloadclients", "The apps that download what Reelix chooses."),
+      rxLibrarySection());
   }).catch((e) => holder.replaceChildren(notice("danger", "Could not look", e.message)));
   return holder;
 }

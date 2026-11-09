@@ -252,6 +252,15 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"The language of releases is not set yet ({e})")
 
+    # 3c. Naming (Season 6, not Season 06, DASH-188) and how hard Reelix works in the background, from how much the
+    # server does (Light on a small server, DASH-200).
+    from . import config as _config, reelix_library
+    try:
+        preset = (cfg.data.get("performance") or {}).get("preset") or _config.recommended_preset()
+        done += reelix_library.set_up(admin, preset)
+    except (ReelixError, OSError, ValueError) as e:
+        done.append(f"Reelix's naming and background pace are not set yet ({e}). Change them in Settings, Reelix")
+
     # 4. qBittorrent. Since DASH-232 its password is made up before its first start (data/stack/.env, written into
     # its settings file as a hash); an older install still swaps the temporary one from its log for a lasting one.
     from . import stack as _stack_q

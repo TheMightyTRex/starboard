@@ -85,7 +85,34 @@ class StandIn:
         self.ids = itertools.count(1)
         self.items = {k: [] for k in SCHEMAS}
         self.search = {"rss_interval_minutes": 15, "allow_private_addresses": False, "flaresolverr_url": None, "proxy": None}
+        # Reelix's own naming defaults (reelix-import naming/mod.rs) and background pace.
+        self.naming = {"rename_files": True, "replace_illegal_characters": True, "colon_replacement": "dash",
+                       "movie_folder_format": "{Movie CleanTitle} ({Release Year})",
+                       "movie_file_format": "{Movie CleanTitle} ({Release Year}) [{Quality Full}]",
+                       "series_folder_format": "{Series TitleYear}", "season_folder_format": "Season {season:00}",
+                       "specials_folder_format": "Specials",
+                       "standard_episode_format": "{Series TitleYear} - S{season:00}E{episode:00} - {Episode CleanTitle}",
+                       "daily_episode_format": "", "anime_episode_format": "", "multi_episode_style": "prefixed_range",
+                       "max_file_name_bytes": 255, "max_path_bytes": 4096}
+        self.pace = "normal"
         self.calls = []
+
+    def preview(self, naming):
+        """Example names from the formats, as Reelix's /naming/preview does, with a brace problem as an error."""
+        sample = {"Movie CleanTitle": "The Zone of Interest", "Release Year": "2023", "Quality Full": "Bluray-1080p",
+                  "Series TitleYear": "Ghosts (2021)", "Episode CleanTitle": "Ghost Hunter", "season:00": "06",
+                  "season": "6", "episode:00": "01"}
+        out, errors = {}, []
+        for field, key in (("movie_folder_format", "movie_folder"), ("movie_file_format", "movie_file"),
+                           ("series_folder_format", "series_folder"), ("season_folder_format", "season_folder"),
+                           ("standard_episode_format", "standard_episode")):
+            text = naming.get(field, "")
+            if text.count("{") != text.count("}"):
+                errors.append({"field": field, "message": "unbalanced braces"})
+            for k, v in sample.items():
+                text = text.replace("{" + k + "}", v)
+            out[key] = text
+        return {**out, "multi_episode": "", "daily_episode": "", "anime_episode": "", "errors": errors}
 
     def schema(self, kind, impl):
         return next((s["schema"] for s in SCHEMAS[kind] if s["schema"]["implementation"] == impl), None)
@@ -139,6 +166,18 @@ class StandIn:
                           "avg_response_ms": 900 + 100 * i["id"], "status": i["status"]} for i in self.items["indexers"]], None
         if path == "/indexers/definitions/status":
             return 200, {"loaded": len(SCHEMAS["indexers"]) - 2, "last_sync": "2026-11-08T06:00:00Z", "last_error": None, "syncing": False}, None
+        if path == "/settings/naming":
+            if method == "PUT":
+                self.naming = {**self.naming, **body}
+            return 200, self.naming, None
+        if path == "/naming/preview":
+            return 200, self.preview(body if method == "POST" else self.naming), None
+        if path == "/system/background-work":
+            if method == "PUT":
+                if body.get("pace") not in ("normal", "relaxed", "light", "minimal"):
+                    return 400, {"error": "invalid", "message": "unknown pace"}, None
+                self.pace = body["pace"]
+            return 200, {"pace": self.pace}, None
         parts = path.strip("/").split("/")
         kind = parts[0]
         if kind not in SCHEMAS:

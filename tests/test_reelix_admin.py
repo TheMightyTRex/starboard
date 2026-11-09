@@ -322,3 +322,30 @@ class RouteTest(StandInTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LibraryTest(StandInTest):
+    """Naming and background pace (DASH-188, DASH-200)."""
+
+    def test_the_set_up_makes_season_6_and_light_on_a_small_server(self):
+        from starboard import reelix_library
+        with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+            lines = reelix_library.set_up(reelix, "small")
+            self.assertEqual(self.state.naming["season_folder_format"], "Season {season}")
+            self.assertEqual(self.state.pace, "light")
+            self.assertEqual(len(lines), 2)
+            self.assertEqual(reelix_library.set_up(reelix, "small"), [])  # nothing twice
+            self.assertEqual(reelix_library.state(reelix)["preview"]["season_folder"], "Season 6")
+
+    def test_settings_saves_only_names_reelix_can_use(self):
+        from starboard import reelix_library
+        with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+            with self.assertRaisesRegex(ValueError, "unbalanced"):
+                reelix_library.save(reelix, {"movie_folder_format": "{Movie CleanTitle"})
+            self.assertEqual(self.state.naming["movie_folder_format"], "{Movie CleanTitle} ({Release Year})")
+            out = reelix_library.save(reelix, {"movie_folder_format": "{Movie CleanTitle}", "rename_files": False}, "relaxed")
+            self.assertEqual(out["preview"]["movie_folder"], "The Zone of Interest")
+            self.assertTrue(self.state.naming["rename_files"])  # only the formats Settings shows
+            self.assertEqual(self.state.pace, "relaxed")
+            with self.assertRaises(ValueError):
+                reelix_library.save(reelix, {}, "flat-out")
