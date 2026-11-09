@@ -309,8 +309,8 @@
       "topic": "set-up-in-the-terminal",
       "file": "set-up-in-the-terminal-2-vpn.png",
       "page": "terminal/terminal-vpn.html",
-      "width": 1000,
-      "height": 560,
+      "width": 1150,
+      "height": 600,
       "marks": [
         {
           "t": "$#providers",
@@ -322,7 +322,7 @@
       "steps": [
         8
       ],
-      "alt": "The VPN step in the terminal, with the list of VPN providers and their websites (step 8) outlined"
+      "alt": "The VPN step in the terminal, with the Ad note and the list of VPN providers and their websites (step 8) outlined"
     },
     {
       "topic": "set-up-in-the-terminal",
