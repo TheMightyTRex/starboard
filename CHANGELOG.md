@@ -7,6 +7,27 @@ add features.
 
 ## [Unreleased]
 
+## [0.13.1] (9 November 2026)
+
+### Added
+- **Reelix's warnings in Starboard:** Apps, each app's details and System now show Reelix's own warnings, such as a site to search that keeps failing or a download app it cannot reach, each with a link to the place in Starboard that puts it right. Reelix's Sonarr- and Radarr-style health answer is always empty, so Starboard now asks Reelix's own health check (DASH-176, DASH-160).
+- **Tdarr on the dashboard:** a Full install's Tdarr is found and shown like the other apps (DASH-221).
+
+### Changed
+- **One Reelix card:** Apps shows Reelix once, with the queue, wanted and update of films, series, books and music together, instead of a card for each kind (DASH-256).
+- **Reelix's logo** on its card comes from the running Reelix, as the icon collection has none (DASH-255).
+- **FlareSolverr** is given to Reelix whenever it is installed, through the VPN when there is one, not only when searches go through the VPN (DASH-219).
+- **Reelix never updates itself:** the set-up keeps Reelix's own installing of updates off, because Starboard updates Reelix on Apps, Updates (DASH-187).
+- **Starboard runs Reelix:** the set-up guides, messages and help now send you to Settings, Reelix in Starboard, not Reelix's own pages. The free TMDB key is the one thing still added in Reelix itself, until a later version asks for it (DASH-161).
+- **SABnzbd in the set-up guide:** the guide no longer asks you to set SABnzbd's folders, API key and Reelix connection by hand on the wrong port; Starboard already does all three (DASH-215).
+- **Help for going back to Reelix without YouTube and Spotify downloads** says what stops working (DASH-224).
+- **Accessible mode in the terminal** says "Still working" every 2 minutes during a long job, such as downloading the apps, so a screen reader is never silent for long (DASH-236).
+
+### Fixed
+- **Reelix's sites after a restart:** Reelix now starts once the VPN is ready, so its searches no longer fail for five minutes after the server restarts (DASH-262).
+- **Apps that keep restarting:** after starting the apps, the installer looks again a few seconds later, so an app that keeps restarting, such as a VPN with a wrong key, is no longer counted as running (DASH-235).
+- **A long row of filter chips** on a phone scrolls inside its toolbar, from the design system (DASH-244).
+
 ## [0.13.0] (9 November 2026)
 
 ### Added
@@ -964,7 +985,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/TheMightyTRex/starboard/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/TheMightyTRex/starboard/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/TheMightyTRex/starboard/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/TheMightyTRex/starboard/compare/v0.12.0...v0.12.1

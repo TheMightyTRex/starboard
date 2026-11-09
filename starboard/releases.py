@@ -508,6 +508,76 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your apps until you use the new steps. Install apps now turns on Gluetun's proxy so Reelix can search through the VPN. To go back, run ./update.sh --to v0.12.2."
+    },
+    {
+        "version": "0.13.1",
+        "date": "9 November 2026",
+        "added": [
+            [
+                "Reelix's warnings in Starboard",
+                "Apps, each app's details and System now show Reelix's own warnings, such as a site to search that keeps failing or a download app it cannot reach, each with a link to the place in Starboard that puts it right. Reelix's Sonarr- and Radarr-style health answer is always empty, so Starboard now asks Reelix's own health check."
+            ],
+            [
+                "Tdarr on the dashboard",
+                "A Full install's Tdarr is found and shown like the other apps."
+            ]
+        ],
+        "changed": [
+            [
+                "One Reelix card",
+                "Apps shows Reelix once, with the queue, wanted and update of films, series, books and music together, instead of a card for each kind."
+            ],
+            [
+                "Reelix's logo",
+                "Reelix's card shows its own logo, from the running Reelix, as the icon collection has none."
+            ],
+            [
+                "FlareSolverr",
+                "Reelix uses FlareSolverr whenever it is installed, through the VPN when there is one, not only when searches go through the VPN."
+            ],
+            [
+                "Reelix never updates itself",
+                "The set-up keeps Reelix's own installing of updates off, because Starboard updates Reelix on Apps, Updates."
+            ],
+            [
+                "Starboard runs Reelix",
+                "The set-up guides, messages and help now send you to Settings, Reelix in Starboard, not Reelix's own pages. The free TMDB key is the one thing still added in Reelix itself, until a later version asks for it."
+            ],
+            [
+                "SABnzbd in the set-up guide",
+                "The guide no longer asks you to set SABnzbd's folders, API key and Reelix connection by hand on the wrong port; Starboard already does all three."
+            ],
+            [
+                "Help for going back to Reelix without YouTube and Spotify downloads",
+                "The help for switching versions says what stops working when you go back."
+            ],
+            [
+                "Accessible mode in the terminal",
+                "Accessible mode says \"Still working\" every 2 minutes during a long job, such as downloading the apps, so a screen reader is never silent for long."
+            ]
+        ],
+        "fixed": [
+            [
+                "Reelix's sites after a restart",
+                "Reelix now starts once the VPN is ready, so its searches no longer fail for five minutes after the server restarts."
+            ],
+            [
+                "Apps that keep restarting",
+                "After starting the apps, the installer looks again a few seconds later, so an app that keeps restarting, such as a VPN with a wrong key, is no longer counted as running."
+            ],
+            [
+                "A long row of filter chips",
+                "A long row of filter chips on a phone now scrolls inside its toolbar, not the whole page."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests (483), the browser journeys (67), the help check, the private details check and the security scans ran on this release. ShellCheck is clean again: it now follows the shared terminal frame, where the variables it called unused are read."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your apps. A new install starts Reelix once the VPN is ready. To go back, run ./update.sh --to v0.13.0."
     }
 ]
 
