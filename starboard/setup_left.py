@@ -137,7 +137,37 @@ def items(cfg, data_dir):
     if "reelix" in keys and "radio" in groups and "audiobookshelf" in keys:
         out.append({"key": "radio", "title": "Point Reelix's radio at Audiobookshelf", "why": "Radio shows then play in Audiobookshelf.",
                     "href": "/settings-reelix.html", "done": bool(state.get("radio"))})
+    # Apps Starboard does not set up by itself, on purpose (DASH-230, DASH-231): one short step in the app, then
+    # Done on the checklist. Tdarr's choice of what to convert to is the person's; Wizarr's and Dispatcharr's own
+    # pages change with their updates, so Starboard does not script them.
+    finished = set(state.get("guided_done") or [])
+    for key, title, why in GUIDED:
+        if key in keys:
+            url = next((s.get("url") for s in svcs if (s.get("icon") or s.get("type")) == key and s.get("url")), None)
+            out.append({"key": key, "title": title, "why": why, "href": url or "/index.html", "done": key in finished, "guided": True})
     return [i for i in out if i["done"] is not None]  # one Starboard could not ask is left out, not guessed
+
+
+GUIDED = [
+    ("tdarr", "Tell Tdarr what to convert",
+     "In Tdarr, Libraries: add your films (/media/movies) and series (/media/tv), set the cache folder to /temp, "
+     "and choose what to convert to. Then select Done."),
+    ("wizarr", "Finish Wizarr's set-up",
+     "In Wizarr, make its admin, then add Jellyfin at http://jellyfin:8096 with Jellyfin's API key from Apps, Jellyfin. "
+     "Then select Done."),
+    ("dispatcharr", "Finish Dispatcharr's set-up",
+     "In Dispatcharr, make its admin and add your IPTV playlist and guide. In Jellyfin, Live TV, add an HDHomeRun tuner "
+     "at http://dispatcharr:9191/hdhr. Then select Done."),
+]
+
+
+def mark_done(data_dir, key):
+    """Done on a guided step: the checklist then drops it."""
+    if key not in {k for k, _, _ in GUIDED}:
+        raise ValueError("Not a step Starboard guides")
+    done = sorted(set(recorded(data_dir).get("guided_done") or []) | {key})
+    record(data_dir, guided_done=done)
+    return done
 
 
 def left(cfg, data_dir):

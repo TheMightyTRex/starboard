@@ -118,7 +118,7 @@ APPS = {
                          "secret": "JELLYSTAT_DB_PASSWORD", "secret2": "JELLYSTAT_JWT_SECRET"}},
     "wizarr": {"name": "Wizarr", "groups": ["watching"], "image": "ghcr.io/wizarrrr/wizarr:latest", "ports": ["5690:5690"],
                "volumes": [f"{CFG}/wizarr:/data/database"], "env": {"TZ": "${TZ}"}, "memory": 100, "default": False,
-               "notes": "Invite friends to Jellyfin with a link."},
+               "notes": "Invite friends to Jellyfin with a link. An add-on: after it starts, one short step in Wizarr."},
     "qbittorrent": {"name": "qBittorrent", "groups": ["downloads"], "image": "lscr.io/linuxserver/qbittorrent:latest",
                     "ports": ["8080:8080", "6881:6881", "6881:6881/udp"], "volumes": [f"{CFG}/qbittorrent:/config", f"{DATA}:/data"],
                     # Its sign-in is made up here and written into its first settings file as a hash (qbittorrent_seed,
@@ -174,7 +174,8 @@ APPS = {
                  "volumes": [f"{CFG}/janitorr:/config", f"{DATA}:/data"], "default": False,
                  "notes": "Deletes media nobody watches. Needs application.yml in its settings folder first."},
     "dispatcharr": {"name": "Dispatcharr", "groups": ["livetv"], "image": "ghcr.io/dispatcharr/dispatcharr:latest",
-                    "ports": ["9191:9191"], "volumes": [f"{CFG}/dispatcharr:/data"], "env": {"TZ": "${TZ}"}, "memory": 300},
+                    "ports": ["9191:9191"], "volumes": [f"{CFG}/dispatcharr:/data"], "env": {"TZ": "${TZ}"}, "memory": 300,
+                    "notes": "For paid IPTV, backup streams or full channel control. Starboard's own Live TV covers free channels."},
     "dozzle": {"name": "Dozzle", "groups": ["logs"], "image": "amir20/dozzle:latest", "ports": ["9999:8080"], "memory": 30,
                "volumes": ["/var/run/docker.sock:/var/run/docker.sock:ro"], "notes": "Reads Docker's logs, so it sees every container."},
     "tdarr": {"name": "Tdarr", "groups": ["transcoding"], "image": "ghcr.io/haveagitgat/tdarr:latest", "ports": ["8265:8265", "8266:8266"],
@@ -283,9 +284,11 @@ INSTALLS = {
                "usenet_choice": False},
     "full": {"name": "Full install", "reelix_edition": "full", "disk_health": True,
              "about": "Everything in Basics with the full Reelix (YouTube and Spotify downloads), plus disk health, "
-                      "watch statistics, invites, live TV, logs, FlareSolverr and Tdarr.",
+                      "watch statistics, logs, FlareSolverr and Tdarr.",
+             # Wizarr and Dispatcharr are add-ons in Install apps since 9 November 2026 (DASH-230, DASH-222):
+             # invitations are not standard on a small home server, and Starboard's own Live TV is every install's.
              "apps": ["reelix", "qbittorrent", "jellyfin", "audiobookshelf", "bazarr", "gluetun", "nzbget",
-                      "flaresolverr", "jellystat", "wizarr", "dozzle", "dispatcharr", "tdarr"], "usenet_choice": True},
+                      "flaresolverr", "jellystat", "dozzle", "tdarr"], "usenet_choice": True},
     "all": {"name": "Everything", "reelix_edition": "full", "disk_health": True,
             "about": "Every app Starboard offers, Storyarr and Kapowarr included.", "apps": None, "usenet_choice": True},
 }

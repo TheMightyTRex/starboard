@@ -35,5 +35,19 @@ class SetupLeft(unittest.TestCase):
         self.assertEqual(out["left"], 0)
 
 
+    def test_guided_steps_go_when_done(self):
+        with open(os.path.join(stack.folder(self.tmp.name), "compose.yaml"), "a") as f:
+            f.write("  tdarr:\n    container_name: tdarr\n")
+        tdarr = {"type": "link", "icon": "tdarr", "name": "Tdarr", "url": "http://tdarr.example:8265"}
+        with mock.patch.object(setup_left, "_reelix_health", return_value=None), \
+                mock.patch.object(setup_left, "_usenet_server", return_value=None):
+            item = next(i for i in setup_left.items(self.cfg(tdarr), self.tmp.name) if i["key"] == "tdarr")
+            self.assertEqual((item["href"], item["done"], item["guided"]), ("http://tdarr.example:8265", False, True))
+            setup_left.mark_done(self.tmp.name, "tdarr")
+            self.assertTrue(next(i for i in setup_left.items(self.cfg(tdarr), self.tmp.name) if i["key"] == "tdarr")["done"])
+        with self.assertRaises(ValueError):
+            setup_left.mark_done(self.tmp.name, "reelix")
+
+
 if __name__ == "__main__":
     unittest.main()

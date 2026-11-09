@@ -176,7 +176,7 @@ HELP = {
                   "You can switch later in Starboard, Settings, Your install, and your Usenet servers come across.",
     "installs": "Basics is Starboard with Reelix Lite, Jellyfin, Audiobookshelf, subtitles, and torrent and Usenet "
                 "downloads through a VPN, with NZBGet for Usenet. Full install uses the full Reelix, with YouTube and Spotify downloads, and adds "
-                "disk health, watch statistics, invites, live TV, logs, FlareSolverr and Tdarr. Everything installs every "
+                "disk health, watch statistics, logs, FlareSolverr and Tdarr. Everything installs every "
                 "app Starboard offers. Whatever you choose, an app also brings what it needs, such as Jellyfin for "
                 "Jellystat. You can add or remove apps later in Starboard, Settings, Install apps.",
     "folders": "The media folder holds your films, series, books and downloads, all in one place so files move in an "

@@ -281,8 +281,19 @@ async function renderSetupLeft() {
       el("span", { class: "notice__title", text: `Still to set up: ${todo.length} of ${r.items.length}` }),
       el("p", { class: "small muted", text: done ? `${done} done. Each one goes from this list when it is done.` : "Each one goes from this list when it is done." }),
       el("ul", { class: "stack-2" }, todo.map((i) => el("li", {},
-        el("a", { href: i.href, text: i.title }), el("span", { class: "small muted", text: ` ${i.why}` })))))));
+        el("a", { href: i.href, text: i.title, ...(i.guided && i.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {}) }),
+        el("span", { class: "small muted", text: ` ${i.why}` }), i.guided ? doneButton(i) : null))))));
   box.hidden = false;
+}
+
+// A guided step (Tdarr, Wizarr, Dispatcharr) has Done, as Starboard cannot see when it is finished.
+function doneButton(item) {
+  const b = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, `Done: ${item.title}`);
+  b.addEventListener("click", async () => {
+    try { await api("/api/setup/left/done", { method: "POST", body: { key: item.key } }); toast(`${item.title}: done`); renderSetupLeft(); }
+    catch (e) { problem(e.message, b); }
+  });
+  return el("div", { class: "actions" }, b);
 }
 
 startPage().then(async () => {

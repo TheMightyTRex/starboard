@@ -1431,6 +1431,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/setup/left" and method == "GET":
                 from . import setup_left  # DASH-185: what is left to set up
                 return self.json(200, setup_left.left(app.config, app.data_dir))
+            if path == "/api/setup/left/done" and method == "POST":
+                from . import setup_left  # Done on a guided step (DASH-230, DASH-231)
+                try:
+                    setup_left.mark_done(app.data_dir, str(body.get("key", "")))
+                except ValueError as e:
+                    return self.json(400, {"error": str(e)})
+                return self.json(200, setup_left.left(app.config, app.data_dir))
             if path == "/api/stack/existing-usenet" and method == "GET":
                 # DASH-247: the servers of a SABnzbd already running, by address only, for the Usenet step to name.
                 running = next((c["name"] for c in takeover.found() if c["key"] == "sabnzbd" and c["running"]), None) \

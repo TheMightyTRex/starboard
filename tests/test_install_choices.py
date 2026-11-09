@@ -31,8 +31,10 @@ class InstallChoicesTest(unittest.TestCase):
         c = stack.install_choice("full", check=downloadable)
         self.assertEqual(c["reelix_edition"], "full")
         self.assertTrue(c["disk_health"])
-        for k in ("flaresolverr", "jellystat", "wizarr", "dozzle", "dispatcharr", "tdarr"):
+        for k in ("flaresolverr", "jellystat", "dozzle", "tdarr"):
             self.assertIn(k, c["apps"])
+        for k in ("wizarr", "dispatcharr"):  # add-ons since 9 November 2026 (DASH-222, DASH-230)
+            self.assertNotIn(k, c["apps"])
         self.assertNotIn("storyarr", c["apps"])
         self.assertNotIn("kapowarr", c["apps"])
 
