@@ -7,6 +7,7 @@ import os
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 from starboard import auth, reelix_admin, reelix_sites, reelix_setup, stack
 from starboard.server import make_server
@@ -349,3 +350,23 @@ class LibraryTest(StandInTest):
             self.assertEqual(self.state.pace, "relaxed")
             with self.assertRaises(ValueError):
                 reelix_library.save(reelix, {}, "flat-out")
+
+
+class RepairTest(StandInTest):
+    """Reelix's download apps checked against Starboard's set-up, and repaired (DASH-257)."""
+
+    def test_a_wrong_address_is_found_and_repaired(self):
+        from starboard import download_repair
+        self.stack_with("gluetun", "nzbget")
+        with open(os.path.join(stack.folder(self.tmp.name), ".env"), "a") as f:
+            f.write("NZBGET_PASS=made-up-pass\n")
+        self.state.add("downloadclients", "nzbget", "NZBGet", {"host": "nzbget", "port": 6789, "username": "nzbget", "password": "x"})
+        with mock.patch.object(stack, "nzbget_key", return_value="starboard:made-up-pass"):
+            with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+                items = reelix_admin.listing(reelix, "downloadclients")["items"]
+                self.assertEqual(download_repair.needs(self.tmp.name, items), ["NZBGet"])
+                self.assertEqual(download_repair.repair(reelix, self.tmp.name), ["Repaired NZBGet in Reelix"])
+                items = reelix_admin.listing(reelix, "downloadclients")["items"]
+                self.assertEqual(download_repair.needs(self.tmp.name, items), [])
+        saved = self.state.items["downloadclients"][0]["settings"]
+        self.assertEqual((saved["host"], saved["username"], saved["password"]), ("gluetun", "starboard", "made-up-pass"))

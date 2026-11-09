@@ -316,6 +316,9 @@ def _act(app, reelix, base, kind, action, body):
             out["suggested"] = [i for i, _, _ in reelix_sites.SUGGESTED]
         if kind == "mediaservers":
             out["offers"] = reelix_sites.media_server_offers(app.config.data["services"], app.data_dir, out["items"])
+        if kind == "downloadclients":  # DASH-257: the ones that differ from Starboard's set-up, for Repair
+            from . import download_repair
+            out["repair"] = download_repair.needs(app.data_dir, out["items"])
         return out
     if action == "schema":
         return schema_of(reelix, kind, str(body.get("implementation", "")))
@@ -337,6 +340,13 @@ def _act(app, reelix, base, kind, action, body):
             logs.event("info", "reelix", line)
         return {"done": done, **listing(reelix, kind),
                 "offers": reelix_sites.media_server_offers(app.config.data["services"], app.data_dir, listing(reelix, kind)["items"])}
+    if action == "repair" and kind == "downloadclients":
+        from . import download_repair
+        done = download_repair.repair(reelix, app.data_dir)
+        for line in done:
+            logs.event("info", "reelix", line)
+        out = listing(reelix, kind)
+        return {"done": done, **out, "repair": download_repair.needs(app.data_dir, out["items"])}
     if action == "add-sites" and kind == "indexers":
         done = reelix_sites.add_sites(reelix, reelix_sites.clean_choice(body.get("sites")))
         for line in done:

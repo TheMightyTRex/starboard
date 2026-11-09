@@ -334,7 +334,15 @@ function rxKindSection(kind, description) {
         data.catalogue.filter((c) => ["torznab", "newznab"].includes(c.implementation)), add) }, "Add your own Torznab or Newznab address") : null);
     const known = data.definitions ? el("p", { class: "small muted", text: `Reelix knows ${data.definitions.loaded} sites${data.definitions.last_sync ? `, from a list it last updated on ${formatDate(data.definitions.last_sync)}` : ""}. Nothing is added unless you add it.` }) : null;
     const offers = kind === "mediaservers" ? rxOffers(data.offers || [], (r) => { data = { ...data, ...r }; draw(); }) : null;
-    redraw(body, [offers, table, buttons, known, kind === "indexers" ? searchSettings() : null].filter(Boolean));
+    // DASH-257: a download app whose address or user differs from what Starboard set up, with Repair.
+    const repair = kind === "downloadclients" && data.repair?.length ? notice("warning", "Reelix cannot reach some download apps the way Starboard set them up",
+      `${data.repair.join(", ")} ${data.repair.length === 1 ? "has" : "have"} a different address or user name in Reelix. Repair writes the ones Starboard made, so you need not look up a password.`,
+      el("button", { type: "button", class: "btn", onclick: (e) => reopen(async () => {
+        e.currentTarget.disabled = true;
+        const r = await rxCall("downloadclients", "repair", {}, "repair Reelix's download apps");
+        if (r) { data = { ...data, ...r }; draw(); }
+      }) }, "Repair")) : null;
+    redraw(body, [repair, offers, table, buttons, known, kind === "indexers" ? searchSettings() : null].filter(Boolean));
   };
   locked();
   return section(`rx-${kind}`, words.title, description, body);
