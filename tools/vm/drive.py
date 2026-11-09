@@ -98,7 +98,8 @@ def main():
 
     def check(screen_lines):
         for i, line in enumerate(screen_lines):
-            if LEAKS.match(line.strip("│ ")):
+            # The details of a failed job are the job's own log, asked for: its lines are not output in the frame.
+            if LEAKS.match(line.strip("│ ")) and not (typed and typed[-1] == "Show the details"):
                 fault("other output in the frame", line.strip())
             m = re.search(r"\bError ([A-Z]{2}-\d+)\b", line)
             if m:  # a run that ends on an error number has not passed, however it ended
