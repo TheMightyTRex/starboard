@@ -75,6 +75,8 @@ def get(service, folder, fetch=True):
         return None
     kind, value = src
     key = value if kind == "name" else "url-" + hashlib.sha256(value.encode()).hexdigest()[:24]
+    if kind == "name" and value == "reelix":
+        key = "reelix-own"  # Reelix's own logo (DASH-255): a "missing" marker saved before 0.13.1 does not hold it back
     os.makedirs(folder, mode=0o700, exist_ok=True)
     with _lock:
         for ext, ctype in TYPES.items():

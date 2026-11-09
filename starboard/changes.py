@@ -13,10 +13,13 @@ import threading
 import time
 import urllib.request
 
-# (image repository, app name, changelog address). The fork's lite image runs the same releases as upstream, whose
-# changelog is the one kept (the fork keeps upstream's file as it is).
+# (image repository, app name, changelog address). Reelix's images are the owner's fork's: Lite is built from the fork's
+# fork/lite branch and the full one from its master, so each changelog comes from that branch (9 November 2026).
+# Upstream's image is used only if someone chooses it.
 SOURCES = [
-    (re.compile(r"(^|/)reelix$", re.I), "Reelix", "https://raw.githubusercontent.com/demonzoned/Reelix/master/CHANGELOG.md"),
+    (re.compile(r"(^|/)themightytrex/reelix:lite$", re.I), "Reelix", "https://raw.githubusercontent.com/TheMightyTRex/Reelix/fork/lite/CHANGELOG.md"),
+    (re.compile(r"(^|/)themightytrex/reelix(:.*)?$", re.I), "Reelix", "https://raw.githubusercontent.com/TheMightyTRex/Reelix/master/CHANGELOG.md"),
+    (re.compile(r"(^|/)reelix(:.*)?$", re.I), "Reelix", "https://raw.githubusercontent.com/demonzoned/Reelix/master/CHANGELOG.md"),
 ]
 TYPES = ("Added", "Changed", "Deprecated", "Removed", "Fixed", "Security")
 KEEP = 6 * 3600
@@ -29,9 +32,7 @@ _cache = {}  # address -> (fetched at, versions)
 
 def source(image):
     """(app name, changelog address) for an image such as ghcr.io/themightytrex/reelix:lite, or None."""
-    repo = (image or "").split("@", 1)[0]
-    if ":" in repo.split("/")[-1]:
-        repo = repo.rsplit(":", 1)[0]
+    repo = (image or "").split("@", 1)[0]  # the tag stays: Lite and full have different changelogs
     for pattern, name, url in SOURCES:
         if pattern.search(repo):
             return name, url

@@ -159,3 +159,14 @@ class NoticeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ForkChangelogs(unittest.TestCase):
+    """Reelix's changelog comes from the owner's fork: Lite from fork/lite, the full image from master (9 November 2026)."""
+
+    def test_each_image_reads_its_own_branch(self):
+        from starboard import changes
+        self.assertIn("/TheMightyTRex/Reelix/fork/lite/", changes.source("ghcr.io/themightytrex/reelix:lite")[1])
+        self.assertIn("/TheMightyTRex/Reelix/master/", changes.source("ghcr.io/themightytrex/reelix:full")[1])
+        self.assertIn("/demonzoned/Reelix/", changes.source("ghcr.io/demonzoned/reelix:latest")[1])
+        self.assertIsNone(changes.source("lscr.io/linuxserver/jellyfin:latest"))

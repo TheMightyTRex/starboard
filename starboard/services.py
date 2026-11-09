@@ -371,7 +371,10 @@ def _update_one(service):
 def app_updates(services):
     """What each app says about its own updates. Sonarr, Radarr, Lidarr, Readarr and Prowlarr report this;
     for the others only the running version is known."""
-    targets = [s for s in services if s.get("enabled", True) and s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr")]
+    # Not Reelix: its own check looks at upstream's releases, but Starboard runs the owner's fork's Lite or full image,
+    # so Reelix's updates come only from that image's registry (containers.check, Apps, Updates).
+    targets = [s for s in services if s.get("enabled", True) and s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr")
+               and s.get("icon") != "reelix"]
     futures = [(s, POOL.submit(_update_one, s)) for s in targets]
     rows, errors = [], []
     for service, future in futures:
