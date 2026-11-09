@@ -1034,6 +1034,8 @@ class Terminal:
         """Options are text, or (name, about) pairs: in two columns when the names are short, otherwise the name on
         its line and the about under it. Each wraps inside the width, again whenever the window changes size."""
         names = [o[0] for o in options if isinstance(o, tuple)]
+        # The longest word of any about: a web address is one word, never cut, so it decides whether two columns fit.
+        longest = max((len(w) for o in options if isinstance(o, tuple) for w in str(o[1]).split()), default=0)
         for i, o in enumerate(options, 1):
             if i <= start:
                 continue
@@ -1041,13 +1043,14 @@ class Terminal:
                 self._plain(f"  {i}. " + (f"{o[0]}: {o[1]}" if isinstance(o, tuple) else o), indent=5)
                 continue
             mark = self.accent("●") if i - 1 in defaults else " "
-            self._show(lambda width, o=o, i=i, mark=mark: self._option_lines(o, i, mark, names, width))
+            self._show(lambda width, o=o, i=i, mark=mark: self._option_lines(o, i, mark, names, width, longest))
 
-    def _option_lines(self, o, i, mark, names, width):
+    def _option_lines(self, o, i, mark, names, width, longest=0):
         name_w = max((len(n) for n in names), default=0) + 2
         green = lambda s: re.sub(r"\(recommended[^)]*\)|\(your last answer\)", lambda m: self.good(m.group(0)), s)  # noqa: E731
         lead = f"  {mark} {self.accent(str(i).rjust(2))}  "
-        if isinstance(o, tuple) and name_w <= min(30, width // 3):  # two columns: the about wraps under itself
+        if isinstance(o, tuple) and name_w <= min(30, width // 3) and longest <= width - 8 - name_w:
+            # Two columns: the about wraps under itself. Not when a word (an address) is wider than its column.
             about = _wrap(o[1], width - 8 - name_w) or [""]
             return [lead + green(o[0].ljust(name_w)) + self.dim(about[0])] + [" " * (8 + name_w) + self.dim(m) for m in about[1:]]
         if isinstance(o, tuple):  # long names: the name on its line, the about wrapped under it

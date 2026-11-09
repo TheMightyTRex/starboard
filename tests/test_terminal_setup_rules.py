@@ -379,6 +379,29 @@ class NarrowCardTest(unittest.TestCase):
                 self.assertIn(label, body, width)
 
 
+class LongAddressOptionTest(unittest.TestCase):
+    """PrivadoVPN's affiliate address is one word wider than the about column at 80 columns: it ran past the edge
+    (9 November 2026). The list then puts each about under its name."""
+
+    OPTIONS = [("ExpressVPN", "expressvpn.com"),
+               ("PrivadoVPN", "privadovpn.com/getprivadovpn/#a_aid=themightytrexuk (Ad)"),
+               ("Private Internet Access", "privateinternetaccess.com")]
+
+    def lines(self, width):
+        out = io.StringIO()
+        term = ts.Terminal(out=out, ask=lambda p="": "1", fancy=True, colour=False, width=width, rows=30)
+        term._options(self.OPTIONS, {0})
+        text = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b[78]", "", out.getvalue()).replace("\r", "\n")
+        return [line for line in text.split("\n") if line.strip()]
+
+    def test_fits_at_80_and_stays_in_columns_when_wide(self):
+        narrow = self.lines(80)
+        self.assertTrue(all(len(line) <= 80 for line in narrow), narrow)
+        self.assertIn("privadovpn.com/getprivadovpn/#a_aid=themightytrexuk (Ad)", "\n".join(narrow))
+        wide = self.lines(120)
+        self.assertTrue(any("PrivadoVPN" in line and "privadovpn.com" in line for line in wide), wide)
+
+
 if __name__ == "__main__":
     unittest.main()
 
