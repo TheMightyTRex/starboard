@@ -42,7 +42,7 @@ MENU = [
     ("activity", "Activity", "activity", [
         ("Downloads", "download", [("downloads.html", "Queue", "download"), ("downloads-finished.html", "Recently finished", "history")]),
         ("Wanted", "list-checks", [("wanted.html", "Missing", "list-checks"), ("wanted-quality.html", "Below the quality wanted", "gauge")]),
-        ("Requests", "inbox", [("downloads-requests.html", "Requests", "inbox")]),
+        ("Requests", "inbox", [("downloads-requests.html", "Requests", "inbox"), ("downloads-issues.html", "Issues", "circle-alert")]),
         ("History", "history", [("history.html", "History", "history")]),
     ]),
     ("system", "System", "server", [
@@ -97,6 +97,7 @@ HELP = {
     "wanted.html": EVERYDAY,
     "wanted-quality.html": EVERYDAY,
     "downloads-requests.html": ("topics/approve-requests.md", "approving or declining requests"),
+    "downloads-issues.html": ("topics/approve-requests.md", "issues people report"),
     "history.html": EVERYDAY,
     "system.html": ("README.md#your-server", "your server"),
     "system-monitor.html": ("topics/monitor-apps.md", "finding out what each app is using"),

@@ -1130,6 +1130,24 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"items": services.outside_all(cfg.data["services"])})
             if path == "/api/app-updates" and method == "GET":
                 return self.json(200, services.cached("app-updates", 600, lambda: services.app_updates(cfg.data["services"]), fresh))
+            if path == "/api/issues" or path.startswith("/api/issues/"):
+                from . import issues  # DASH-208: issues people report, from Reelix
+                try:
+                    if path == "/api/issues" and method == "GET":
+                        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                        return self.json(200, issues.listing(cfg.data["services"], (q.get("status") or ["open"])[0]))
+                    m = re.match(r"^/api/issues/(\d{1,10})(?:/(comment|resolve|reopen))?$", path)
+                    if m and method == "GET" and not m.group(2):
+                        return self.json(200, issues.one(cfg.data["services"], m.group(1)))
+                    if m and method == "POST" and m.group(2):
+                        out = issues.act(cfg.data["services"], m.group(1), m.group(2), self.body().get("message", ""))
+                        logs.event("info", "issues", f"{m.group(2)} on an issue about {out['title']}")
+                        return self.json(200, out)
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, f"Reelix said no: {e}")
+                return self.error(404, "Not found")
             if path in ("/api/reelix-history", "/api/reelix-history/refused", "/api/reelix-history/refused/take-off"):
                 from . import activity  # DASH-159: History and the refused list, from Reelix
                 try:

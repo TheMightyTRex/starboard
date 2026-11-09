@@ -121,6 +121,13 @@ def answer(path, q):
                  "unmapped_folders": [{"name": n, "path": f"/data/media/movies/{n}"} for n, *_ in ON_DISK]}]
     if path == "/libraryimport/scan":
         return [_candidate(*f, lookup=False) for f in ON_DISK]
+    if path == "/issues/count":  # Issues (DASH-208)
+        return {"total": 2, "open": sum(1 for i in ISSUES if i["status"] == "open"), "resolved": sum(1 for i in ISSUES if i["status"] == "resolved")}
+    if path == "/issues":
+        rows = [i for i in ISSUES if q.get("status", "all") in ("all", i["status"])]
+        return {"items": rows, "total": len(rows), "page": 1, "page_size": 50}
+    if path.startswith("/issues/") and path.split("/")[2].isdigit():
+        return next((i for i in ISSUES if i["id"] == int(path.split("/")[2])), None)
     if path == "/history":  # History (DASH-159)
         kinds = ["grabbed", "imported", "download_failed", "grabbed", "imported", "renamed"]
         rows = [{"id": n, "event_type": kinds[n % 6], "date": (TODAY - dt.timedelta(hours=5 * n)).isoformat() + "T12:00:00Z",
@@ -211,6 +218,13 @@ def answer(path, q):
 
 
 CHANGED = {"episodes": {}}  # made-up changes from Library actions: episode id -> monitored
+ISSUES = [{"id": 1, "kind": "series", "title": "43 Planets", "year": 2019, "issue_type": "audio", "status": "open", "season": 2, "episode": 3,
+           "message": "No sound after ten minutes.", "reported_by": {"display_name": "Sam"}, "comment_count": 1,
+           "comments": [{"user": {"display_name": "Alex"}, "message": "Same here on the TV.", "created_at": "2026-11-09T10:00:00Z"}],
+           "created_at": "2026-11-08T20:00:00Z"},
+          {"id": 2, "kind": "movie", "title": "Iron Valley", "year": 1982, "issue_type": "subtitles", "status": "open",
+           "message": "The subtitles are a few seconds late.", "reported_by": {"display_name": "Jo"}, "comment_count": 0, "comments": [],
+           "created_at": "2026-11-09T08:00:00Z"}]
 
 
 def change(method, path, body, q):
@@ -242,6 +256,15 @@ def add(path, body):
     """A made-up add: answers as Reelix does, with the title."""
     if path == "/search":
         return {"queued": True}
+    parts = path.strip("/").split("/")
+    if len(parts) == 3 and parts[0] == "issues" and parts[1].isdigit():
+        issue = next((i for i in ISSUES if i["id"] == int(parts[1])), None)
+        if issue and parts[2] == "comments":
+            issue["comments"].append({"user": {"display_name": "You"}, "message": body.get("message", ""), "created_at": "2026-11-09T12:00:00Z"})
+            issue["comment_count"] += 1
+        elif issue and parts[2] in ("resolve", "reopen"):
+            issue["status"] = "resolved" if parts[2] == "resolve" else "open"
+        return issue
     if path == "/releases/grab":
         return {"queue_id": 1, "download_client": "qBittorrent", "download_id": "made-up"}
     if path == "/libraryimport/match":
