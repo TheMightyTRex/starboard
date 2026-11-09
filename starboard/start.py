@@ -126,6 +126,8 @@ def host_args(wanted):
         args += ["--livetv-folder", livetv]
     if wanted.get("health"):
         args.append("--disk-health")
+    if wanted.get("docker"):  # DASH-139, DASH-267: asked by both set-ups when Starboard has no Docker access
+        args.append("--docker")
     return args
 
 

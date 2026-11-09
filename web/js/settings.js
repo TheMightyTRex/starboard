@@ -1139,6 +1139,24 @@ async function stepContent(id, root) {
       await saveHost();
       return true;
     };
+  } else if (id === "docker") {
+    // DASH-139, DASH-267: the same words as the terminal set-up (web/setup-answers.json). For a move, Yes is
+    // recommended, because the move needs it; for a new install, No, with what that means.
+    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).docker;
+    const move = (guideMemory().start || "new") !== "new";
+    const name = `docker-${Date.now()}`;
+    const chosen = guideMemory().docker;
+    const cards = (move ? [["yes", w.yes, true], ["no", w.no, false]] : [["no", w.no, true], ["yes", w.yes, false]]).map(([v, t, rec]) =>
+      el("label", { class: "option-card" }, el("input", { type: "radio", name, value: v, checked: chosen === undefined ? rec : (chosen ? v === "yes" : v === "no") }),
+        el("strong", { text: t + (rec ? " (recommended)" : "") })));
+    nodes = [el("p", { text: w.intro }), el("p", { text: move ? w.move : w.without }),
+      el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Docker access" }), el("div", { class: "option-cards" }, cards))];
+    save = async () => {
+      const yes = root.querySelector(`input[name="${name}"]:checked`)?.value === "yes";
+      remember({ docker: yes });
+      await saveHost();
+      return true;
+    };
   } else if (id === "preset") {
     const name = `preset-${Date.now()}`;
     // The recommended preset at the top and marked, as in the terminal set-up.
@@ -1183,7 +1201,7 @@ function remember(values) {
 // The changes to this computer, for ./install.sh: the same options as the terminal set-up (starboard/start.py).
 async function saveHost() {
   const m = guideMemory();
-  return api("/api/setup/host", { method: "POST", body: { media: m.media || "", livetv: m.livetv || "", health: m.health !== false } });
+  return api("/api/setup/host", { method: "POST", body: { media: m.media || "", livetv: m.livetv || "", health: m.health !== false, docker: !!m.docker } });
 }
 function showProblemNear(input, message) {
   problem(message, input);
@@ -1239,6 +1257,8 @@ async function startGuide() {
   let index = 0;
   let hasDisks = false;
   try { hasDisks = (await api("/api/system")).disks.length > 0; } catch { /* leave the step out */ }
+  let dockerAccess = true;  // asked only when Starboard does not have it (DASH-139, DASH-267)
+  try { dockerAccess = !!(await api("/api/stack")).docker; } catch { /* not asked */ }
 
   // The agreed order (DASH-103), the same as the terminal set-up: each thing is decided before what depends on it.
   const build = () => {
@@ -1257,6 +1277,7 @@ async function startGuide() {
     } else {
       list.push({ id: "apps", ...stepNamed(T, "find"),
         intro: "Starboard looked for apps it knows on this computer. Tick the ones to add; you can add others by hand later." });
+      if (!dockerAccess) list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // before anything moves
     }
     if (types(Object.keys(KEY_PLACE)).some((s) => !s.has_api_key)) {
       list.push({ id: "keys", ...stepNamed(T, "keys"),
@@ -1266,6 +1287,7 @@ async function startGuide() {
     if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet and SABnzbd outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
+    if (!dockerAccess && start === "new") list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });
     list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
     list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
     return list;
@@ -1309,10 +1331,10 @@ async function startGuide() {
         const host = await api("/api/setup/host");
         if (host.command && host.starter) {
           step.nodes.push(el("h3", { text: "One change to the server, made for you" }),
-            el("p", { class: "muted", text: "Free space for your media folder, disk health and the Live TV folder need the installer on the server. The Run first window on the server is making this change now. If it asks for the server's password, type it there." }));
+            el("p", { class: "muted", text: "Free space for your media folder, disk health, the Live TV folder and Docker access need the installer on the server. The Run first window on the server is making this change now. If it asks for the server's password, type it there." }));
         } else if (host.command) {
           step.nodes.push(el("h3", { text: "One change to make on the server" }),
-            el("p", { class: "muted", text: "Free space for your media folder, disk health and the Live TV folder need the installer on the server. In a terminal there, in the Starboard folder, run:" }),
+            el("p", { class: "muted", text: "Free space for your media folder, disk health, the Live TV folder and Docker access need the installer on the server. In a terminal there, in the Starboard folder, run:" }),
             el("pre", { class: "code-block", text: host.command }), copyButton(host.command, "Copy the command"));
         }
       } catch { /* nothing to change on the server */ }

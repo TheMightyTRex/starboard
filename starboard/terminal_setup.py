@@ -152,6 +152,7 @@ HELP_PAGES = {
     "health": "topics/check-disk-health.html", "name": "guides/set-up-your-dashboard.html",
     "restore": "topics/restore-a-saved-copy.html", "found": "topics/search-for-new-apps.html",
     "sites": "topics/choose-sites-to-search.html", "films": "topics/choose-sites-to-search.html",
+    "docker": "topics/install-apps.html",
 }
 
 HELP = {
@@ -191,6 +192,10 @@ HELP = {
              "need no account. Torznab and Newznab are the ways such sites answer searches: use your own address if "
              "you run Jackett or Prowlarr, or have an account with a Usenet search site. You can add, test and remove "
              "sites later in Starboard, Settings, Reelix, Sites to search.",
+    "docker": "Docker access lets Starboard start, update and change your apps, and move the apps you already run. "
+              "It is full control of Docker, and so of this computer, so keep your Starboard password safe. Without "
+              "it, each of those needs a command in a terminal on the server. Change it later by running "
+              "./install.sh again.",
     "films": "TMDB, The Movie Database, is where Reelix finds each film's and series' details, posters and episodes. "
              "The key is free from themoviedb.org. Without one Reelix uses open data and matches fewer titles. The "
              "language decides whether Reelix skips releases dubbed into another language. Change both later in "
@@ -531,8 +536,8 @@ def question(step_id):
     return STEP_TABLE[step_id]["question"]
 
 
-STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "check", "extras", "hours", "alerts",
-                            "preset")]
+STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "check", "extras", "hours",
+                            "docker", "alerts", "preset")]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -1711,6 +1716,9 @@ def job_steps(state):
     job = state.get("start", "new")
     apps = None if "choice" not in state else set((state.get("choice") or {}).get("apps") or [])
     ids = ["password", "start"]
+    no_docker = not state.get("docker_access", False)
+    if job == "move" and no_docker:
+        ids.append("docker")  # DASH-267: before anything is moved, Yes recommended
     if job == "new":
         ids.append("storage")
         if step_drives in STEP_FUNCTIONS and state.get("storage", {}).get("key", "pool") == "pool":
@@ -1728,6 +1736,8 @@ def job_steps(state):
         ids.append("extras")
     if job != "restore":
         ids.append("hours")
+    if job == "new" and no_docker:
+        ids.append("docker")  # DASH-139: at the end of a new install
     return ids + ["alerts", "preset"]
 
 
@@ -1818,6 +1828,10 @@ def step_start(api, term, state):
                          [(c["title"] + (" (recommended)" if c["recommended"] else ""), c["about"]) for c in choices],
                          default, help_key="start")
     state["start"] = keys[picked]
+    try:  # DASH-139, DASH-267: Docker access is asked only when Starboard does not have it
+        state["docker_access"] = bool(api.call("GET", "/api/stack").get("docker"))
+    except Exception:  # noqa: BLE001  asked, to be safe
+        state["docker_access"] = False
     if state["start"] == "restore":
         return restore_backup(api, term, state)
     if state["start"] == "move":
@@ -2792,7 +2806,7 @@ def host_changes(state, data_dir):
     options as the browser set-up (starboard/start.py)."""
     host = state.get("host") or {}
     args = start.host_args({"media": host.get("disk", "").split("=", 1)[-1], "livetv": host.get("livetv"),
-                            "health": host.get("health")})
+                            "health": host.get("health"), "docker": host.get("docker")})
     if args:
         try:
             with open(os.path.join(data_dir, "setup-host.json"), "w", encoding="utf-8") as f:
@@ -2800,6 +2814,38 @@ def host_changes(state, data_dir):
         except OSError:
             pass
     return args
+
+
+def ask_docker(api, term, state, move):
+    """Docker access (DASH-139, DASH-267): the same words as the browser set-up (web/setup-answers.json). For a move
+    it is asked before anything moves, with Yes recommended; for a new install at the end, with No recommended.
+    Yes goes to ./install.sh --docker with the set-up's other changes to this computer."""
+    from . import setup_answers
+    w = setup_answers.WORDS["docker"]
+    head(term, state, "docker")
+    term.note(w["intro"])
+    term.note(w["move"] if move else w["without"])
+    options = [w["yes"] + " (recommended)", w["no"]] if move else [w["no"] + " (recommended)", w["yes"]]
+    was = state.get("host", {}).get("docker")
+    default = 1 if was is None else (1 if bool(was) == move else 2)
+    picked = term.choose(question("docker"), options, default, help_key="docker")
+    yes = picked == 0 if move else picked == 1
+    state.setdefault("host", {})["docker"] = yes
+    if yes:
+        term.ok(w["done"])
+    return True
+
+
+def step_docker_move(api, term, state):
+    if state.get("start") != "move" or state.get("docker_access"):
+        return False
+    return ask_docker(api, term, state, move=True)
+
+
+def step_docker_end(api, term, state):
+    if state.get("start", "new") != "new" or state.get("docker_access") or not state.get("choice"):
+        return False
+    return ask_docker(api, term, state, move=False)
 
 
 def step_preset(api, term, state):
@@ -2829,8 +2875,8 @@ def step_preset(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_start, step_storage, step_apps, step_vpn, step_usenet, step_sites, step_films, step_check, step_connect, step_hours,
-                  step_alerts, step_preset]
+STEP_FUNCTIONS = [step_password, step_start, step_docker_move, step_storage, step_apps, step_vpn, step_usenet, step_sites, step_films,
+                  step_check, step_connect, step_hours, step_docker_end, step_alerts, step_preset]
 
 
 def add_drives_step(available=None):

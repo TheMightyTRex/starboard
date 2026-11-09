@@ -125,16 +125,17 @@ class StepCountTest(unittest.TestCase):
         ts.head(term, {"start": "restore"}, "extras")
         self.assertIn("(step 3 of 5)", out.getvalue())
         moving = ts.job_steps({"start": "move", "no_extras": True})
-        self.assertEqual(moving, ["password", "start", "hours", "alerts", "preset"])
+        self.assertEqual(moving, ["password", "start", "docker", "hours", "alerts", "preset"])  # DASH-267: before any move
+        self.assertNotIn("docker", ts.job_steps({"start": "move", "docker_access": True}))
 
     def test_a_new_install_leaves_out_what_the_apps_do_not_need(self):
         state = {"start": "new", "storage": {"key": "disk"}, "choice": {"apps": ["jellyfin"]}}
         self.assertEqual(ts.job_steps(state), ["password", "start", "storage", "apps", "check", "extras", "hours",
-                                               "alerts", "preset"])
+                                               "docker", "alerts", "preset"])  # DASH-139: at the end
         term, _ = boxed()
         term._page = lambda *a: None
         ts.head(term, state, "check")
-        self.assertIn("step 5 of 9", term.header[1])
+        self.assertIn("step 5 of 10", term.header[1])
 
 
 class ResizeTest(unittest.TestCase):

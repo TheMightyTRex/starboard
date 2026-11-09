@@ -122,6 +122,12 @@
    "help": "topics/check-storage.md"
   },
   {
+   "id": "docker",
+   "title": "Docker access",
+   "question": "Give Starboard access to Docker?",
+   "help": "topics/install-apps.md"
+  },
+  {
    "id": "preset",
    "title": "How much it does",
    "question": "How much should Starboard do in the background?",

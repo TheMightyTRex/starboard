@@ -54,5 +54,13 @@
   "back": "Go back and add a VPN (recommended)",
   "carry_on": "Carry on without one",
   "browser": "Tick VPN to add one, or choose Continue again to carry on without one."
+ },
+ "docker": {
+  "intro": "Starboard can start, update and change your apps itself, and move the apps you already run, if it can use Docker. Docker access is full control of Docker, and so of this computer, so anyone who can sign in to Starboard could use it. Keep your Starboard password safe.",
+  "without": "Without it, Starboard still shows and checks your apps, but each change in Your install, each update and each move needs a command in a terminal on the server.",
+  "move": "Moving the apps you already run needs it: Starboard stops them, starts the new ones and moves their settings.",
+  "yes": "Yes, give Starboard Docker access",
+  "no": "No, I will run the commands myself",
+  "done": "The installer gives Starboard Docker access when it runs next (./install.sh --docker)."
  }
 }
