@@ -298,7 +298,10 @@ function openItem(i, opener) {
       : `Wanted. ${i.service_name} searches for it when it comes out.`],
   ];
   const page = itemPage(svc, i);
-  const link = svc?.link
+  // DASH-158: a radio show opens Starboard's own show page, where it can be followed or not.
+  const link = i.kind === "radio" && /^\d+$/.test(String(i.item_id || ""))
+    ? el("a", { class: "btn btn--primary", href: `/library-radio-show.html?id=${i.item_id}` }, icon("radio"), "Open the show")
+    : svc?.link
     ? el("a", { class: "btn btn--primary", href: `${reachableUrl(svc.link)}${page || "/calendar"}`, target: "_blank", rel: "noopener noreferrer" },
       icon("external-link"), page ? `Open in ${i.service_name}` : `Open the calendar in ${i.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
     : null;

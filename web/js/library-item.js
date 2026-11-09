@@ -158,10 +158,19 @@ function head(item) {
   const fan = item.poster ? el("div", { class: "cover-fan lib-fan", "aria-hidden": "true" },
     el("img", { src: item.poster, alt: "", decoding: "async", onerror: (e) => e.target.closest(".cover-fan")?.remove() })) : null;
   const can = item.can || {};
+  // DASH-158: how Reelix follows a radio show, changed here.
+  const follow = ITEM_TAB === "radio" && item.following ? (() => {
+    const pick = el("select", { class: "select", id: "radio-follow", "aria-label": "Following" },
+      [["all", "Every episode"], ["from_now_on", "New episodes from now on"], ["none", "Not following"]].map(([v, t]) =>
+        el("option", { value: v, text: t, selected: item.following === v })));
+    pick.addEventListener("change", () => act(pick.value === "none" ? "unfollow" : "follow", { scope: pick.value }, pick));
+    return el("label", { class: "series-head__follow" }, el("span", { class: "field__label", text: "Following" }), pick);
+  })() : null;
   const actions = [
     can.get ? el("button", { type: "button", class: "btn btn--primary", onclick: (e) => act("get", {}, e.currentTarget) },
       icon("download"), ITEM_TAB === "tv" ? "Get the missing episodes" : "Get it") : null,
     item.listen ? newTabLink(item.listen.href, item.listen.label, { className: "btn btn--primary" }) : null,
+    follow,
     item.can ? el("button", { type: "button", class: "btn", "aria-pressed": String(!!can.follow),
       onclick: (e) => act(can.follow ? "unfollow" : "follow", {}, e.currentTarget) }, can.follow ? "Stop following" : "Follow") : null,
     ITEM_TAB === "films" && !can.has_file ? el("button", { type: "button", class: "btn", onclick: () => chooseDownload({ scope: "item" }, item.title) },

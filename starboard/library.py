@@ -710,7 +710,8 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                "overview": r.get("synopsis") or "", "status": e["w"],
                "progress": {"have": have, "total": count, "text": f"{have:,} of {count:,} episodes in your library"} if count else None,
                "open": _open(reelix, f"/radio/shows/{item_id}"),
-               "listen": {"label": "Listen in Audiobookshelf", "href": r["abs_web_url"]} if str(r.get("abs_web_url") or "").startswith(("http://", "https://")) else None}
+               "listen": {"label": "Listen in Audiobookshelf", "href": r["abs_web_url"]} if str(r.get("abs_web_url") or "").startswith(("http://", "https://")) else None,
+               "following": r.get("follow") or "none"}
         facts = [("Station", r.get("station_name")), ("Presented by", r.get("author")),
                  ("Following", {"all": "Every episode", "from_now_on": "New episodes", "none": "Not following"}.get(r.get("follow"), "")),
                  ("Series", st.get("series_count")), ("Episodes", count), ("Wanted", st.get("wanted_count"))]
@@ -771,6 +772,12 @@ def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, d
         if action == "get":
             return f"Reelix is searching for {what} now"
         return f"Reelix follows {what}" if on else f"Reelix no longer follows {what}"
+    if tab == "radio" and action in ("follow", "unfollow"):
+        # DASH-158: Every episode, New episodes from now on, or Not following.
+        choice = scope if scope in ("all", "from_now_on", "none") else ("all" if action == "follow" else "none")
+        services._api(reelix, f"/radio/shows/{item_id}", method="PUT", body={"follow": choice, "monitored": choice != "none"})
+        return {"all": "Reelix follows every episode", "from_now_on": "Reelix follows new episodes from now on",
+                "none": "Reelix no longer follows this show"}[choice]
     raise ValueError("Changing these from the Library comes later; open it in Reelix for now")
 
 

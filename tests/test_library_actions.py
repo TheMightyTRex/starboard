@@ -45,3 +45,16 @@ class Actions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RadioFollow(unittest.TestCase):
+    """DASH-158: how Reelix follows a radio show, from Starboard."""
+
+    def test_new_episodes_from_now_on(self):
+        calls = []
+        with mock.patch("starboard.services._api", side_effect=lambda s, path, params=None, method="GET", body=None, timeout=None: calls.append((method, path, body))):
+            said = library.act({}, "radio", 5, "follow", "from_now_on")
+            library.act({}, "radio", 5, "unfollow", "none")
+        self.assertEqual(calls, [("PUT", "/radio/shows/5", {"follow": "from_now_on", "monitored": True}),
+                                 ("PUT", "/radio/shows/5", {"follow": "none", "monitored": False})])
+        self.assertIn("new episodes", said)

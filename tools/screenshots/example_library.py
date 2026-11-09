@@ -246,6 +246,11 @@ def change(method, path, body, q):
         return []
     if path == "/seasons/monitor":
         return {}
+    if len(parts) == 3 and parts[:2] == ["radio", "shows"] and parts[2].isdigit() and method == "PUT":  # DASH-158
+        show = next((x for x in SHOWS if x["id"] == int(parts[2])), None)
+        if show:
+            show["follow"] = body.get("follow", show.get("follow"))
+        return show
     if len(parts) == 2 and parts[0] == "blocklist" and parts[1].isdigit() and method == "DELETE":
         CHANGED.setdefault("unblocked", set()).add(int(parts[1]))
         return {}
