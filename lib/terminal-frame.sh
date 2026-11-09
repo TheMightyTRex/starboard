@@ -303,7 +303,8 @@ ask() {
   fi
   # A question longer than the column is wrapped between words: its first lines go above, so the line the answer
   # is typed on fits.
-  local room lead="  $(accent "›") " rest=() i
+  local room lead rest=() i
+  lead="  $(accent "›") "
   if [ "$FANCY" = 1 ]; then room=$(( W - 6 )); else room=$(( COLS < 80 ? COLS - 2 : 78 )); lead=""; fi
   if [ "${#question}" -gt "$room" ]; then
     mapfile -t rest < <(printf '%s\n' "$question" | fold -s -w "$room" | sed 's/ *$//')

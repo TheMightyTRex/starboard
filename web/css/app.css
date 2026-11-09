@@ -5,10 +5,6 @@
 
 .num { font-variant-numeric: tabular-nums; }
 .summary { color: var(--color-text-muted); font-size: var(--text-sm); }
-/* A toolbar row may shrink below its chips (the toolbar is a grid), so a long row of filter chips scrolls inside it
-   instead of making the page scroll sideways on a phone (Coming up with radio, 8 November 2026). For the shared
-   library too: components.css .toolbar__row. */
-.toolbar__row { min-width: 0; }
 .site-header__brand svg { width: 28px; height: 28px; }
 /* Between phone and wide screens the header has no room for search; the Search page is one tab away. */
 @media (max-width: 1199px) { .site-header__search { display: none; } .site-header__actions { margin-left: auto; } }
