@@ -100,10 +100,27 @@ def _paged(items, q):
     return {"items": chosen, "total": len(items), "page": page, "page_size": size}
 
 
+# Folders on disk that the made-up Reelix does not know yet (DASH-186), for Library, Bring them in.
+ON_DISK = [("Arrival (2016)", "Arrival", 2016, 329865), ("The Farewell (2019)", "The Farewell", 2019, 565310),
+           ("home movies", "home movies", None, None)]
+
+
+def _candidate(name, title, year, tmdb, lookup):
+    return {"folder": {"name": name, "path": f"/data/media/movies/{name}"}, "parsed_title": title, "parsed_year": year,
+            "file_count": 1, "size": 4 * 10**9,
+            "suggestions": [{"tmdb_id": tmdb, "title": title, "year": year}] if lookup and tmdb else [],
+            "lookup_error": None}
+
+
 def answer(path, q):
     """The made-up Reelix's answer for one GET, or None when this module does not know the path."""
     if path.startswith("/posters/"):
         return None
+    if path == "/rootfolders":
+        return [{"id": 1, "path": "/data/media/movies", "media_kind": "movie", "accessible": True,
+                 "unmapped_folders": [{"name": n, "path": f"/data/media/movies/{n}"} for n, *_ in ON_DISK]}]
+    if path == "/libraryimport/scan":
+        return [_candidate(*f, lookup=False) for f in ON_DISK]
     if path == "/movies":
         return _paged(FILMS, q)
     if path == "/series":
@@ -164,6 +181,10 @@ def answer(path, q):
 
 def add(path, body):
     """A made-up add: answers as Reelix does, with the title."""
+    if path == "/libraryimport/match":
+        return [_candidate(*f, lookup=True) for f in ON_DISK if f"/data/media/movies/{f[0]}" in body.get("paths", [])]
+    if path == "/libraryimport":
+        return {"added": list(range(len(body.get("items") or []))), "errors": []}
     title = {"/movies": "Added film", "/series": "Added series", "/books": "Added book", "/artists": "Added artist",
              "/radio/shows": "Added show"}.get(path)
     return {"id": 999, "title": title, "name": title} if title else None

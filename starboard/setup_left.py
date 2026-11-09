@@ -110,6 +110,17 @@ def items(cfg, data_dir):
                     "done": None if health is None else "No download clients" not in msgs.get("download_clients", "")})
         out.append({"key": "tmdb", "title": "Add a TMDB key", "why": "Reelix finds films and series far better with a free TMDB key.",
                     "href": "/settings-reelix.html", "done": bool(state.get("tmdb"))})
+    if "reelix" in keys:  # DASH-186: media already on disk that Reelix does not know yet
+        from . import media_import
+        for tab, words in (("films", "films"), ("tv", "series")):
+            try:
+                waiting = sum(f["waiting"] for f in media_import.folders(cfg, tab))
+            except media_import.ImportError_:
+                continue
+            if waiting:
+                out.append({"key": f"import-{tab}", "title": f"Bring in {words} already on disk",
+                            "why": f"{waiting} {'folder is' if waiting == 1 else 'folders are'} not in your library yet.",
+                            "href": f"/library-{'films' if tab == 'films' else 'tv'}.html", "done": False})
     if keys & {"nzbget", "sabnzbd"}:
         server = _usenet_server(svcs)
         out.append({"key": "usenet", "title": "Add your Usenet provider's server", "why": "The Usenet app downloads nothing without one.",

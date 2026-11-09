@@ -986,6 +986,23 @@ class Handler(BaseHTTPRequestHandler):
 
             if not self.signed_in():
                 return self.error(401, "Sign in first")
+            if path.startswith("/api/library/import"):
+                # DASH-186: films and series already on disk, through Reelix's own library import.
+                from . import media_import
+                try:
+                    if path == "/api/library/import" and method == "GET":
+                        tab = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("tab", [""])[0]
+                        return self.json(200, {"folders": media_import.folders(app.config, tab)})
+                    body = self.body()
+                    if path == "/api/library/import/scan" and method == "POST":
+                        return self.json(200, media_import.scan(app.config, body.get("root"), body.get("start", 0)))
+                    if path == "/api/library/import/run" and method == "POST":
+                        out = media_import.run(app.config, body.get("root"), body.get("items"))
+                        logs.event("info", "library", f"Brought in {out['added']} from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))
+                        return self.json(200, out)
+                except (media_import.ImportError_, ValueError, TypeError) as e:
+                    return self.error(400, str(e))
+                return self.error(404, "Not found")
             if path.startswith("/api/library/"):  # the Library and Search, from Reelix (starboard/library.py)
                 return library.handle(self, method, path)
 
