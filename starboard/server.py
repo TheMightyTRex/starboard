@@ -854,7 +854,7 @@ class Handler(BaseHTTPRequestHandler):
         if "/." in path or "\\" in path:  # no dot-dot or hidden files: the sign-in check reads the path as given
             return self.send(404, b"Not found", "text/plain; charset=utf-8")
         if path == "/":
-            path = "/index.html"
+            path = "/dashboard.html"  # the landing page (DASH-239)
         if not path.endswith(".html") and "." not in posixpath.basename(path):
             path += ".html"
         public = path in PUBLIC_PAGES or path in PUBLIC_FILES or path.startswith(PUBLIC_PREFIXES)

@@ -51,6 +51,8 @@ DEFAULTS = {
     "show_posters": True,  # posters on Coming up, which browsers load from the image sites the apps use
     "settings_advanced": False,  # Settings pages show only the basic settings until this is on (DASH-225)
     "reelix_auto_update": False,  # Starboard installs new Reelix images by itself, with a way back (DASH-263)
+    # The dashboard (DASH-239): the layout, and its cards when changed from the layout's own (None = the layout's).
+    "dashboard": {"layout": "glance", "cards": None},
     "upcoming_view": "list",
     "upcoming_days": 14,
     # Download hours: qBittorrent, NZBGet and SABnzbd only download from start to end (whole hours, local time).
@@ -247,6 +249,7 @@ class Config:
             "show_posters": d["show_posters"],
             "settings_advanced": d.get("settings_advanced", False),
             "reelix_auto_update": d.get("reelix_auto_update", False),
+            "dashboard": d.get("dashboard") or {"layout": "glance", "cards": None},
             "upcoming_view": d["upcoming_view"],
             "upcoming_days": d["upcoming_days"],
             "upcoming_days_choices": UPCOMING_DAYS,
@@ -298,6 +301,8 @@ class Config:
                 for s in d["services"]:
                     if s.get("group") == old:
                         s["group"] = new
+            if "dashboard" in incoming:
+                d["dashboard"] = clean_dashboard(incoming["dashboard"])
             if incoming.get("setup_guide_done"):  # the first set-up has finished, in either set-up (DASH-238)
                 d.pop("first_setup_pending", None)
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
@@ -439,6 +444,30 @@ def same_server(a, b):
     import urllib.parse
     pa, pb = urllib.parse.urlsplit(a or ""), urllib.parse.urlsplit(b or "")
     return (pa.scheme, pa.hostname, pa.port) == (pb.scheme, pb.hostname, pb.port)
+
+
+DASHBOARD_LAYOUTS = ("glance", "watch", "downloads", "compact")
+DASHBOARD_CARDS = ("setup", "playing", "downloads", "coming", "recent", "disk", "load", "vpn", "speed", "health", "requests",
+                   "alerts", "links")
+DASHBOARD_SIZES = ("small", "medium", "half", "wide", "full")
+
+
+def clean_dashboard(incoming):
+    """The dashboard's layout and cards (DASH-239): known cards and sizes only, each card once, at most 20."""
+    if not isinstance(incoming, dict) or incoming.get("layout") not in DASHBOARD_LAYOUTS:
+        raise ConfigError("Choose one of the four dashboard layouts")
+    cards = incoming.get("cards")
+    if cards is None:
+        return {"layout": incoming["layout"], "cards": None}
+    if not isinstance(cards, list) or len(cards) > 20:
+        raise ConfigError("Too many cards")
+    out, seen = [], set()
+    for c in cards:
+        if not isinstance(c, dict) or c.get("id") not in DASHBOARD_CARDS or c.get("size") not in DASHBOARD_SIZES or c["id"] in seen:
+            raise ConfigError("A card on the dashboard is not one Starboard knows")
+        seen.add(c["id"])
+        out.append({"id": c["id"], "size": c["size"]})
+    return {"layout": incoming["layout"], "cards": out}
 
 
 def clean_extras(incoming, current):

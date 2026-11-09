@@ -1,0 +1,39 @@
+/* The dashboard (DASH-239): a 12-column grid of cards in preset sizes; one column on phones. */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4, 16px);
+  align-items: start;
+}
+.dash-card {
+  grid-column: span 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+  min-width: 0;
+  padding: var(--space-4, 16px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-3, 8px);
+}
+.dash-card--small { grid-column: span 3; }
+.dash-card--medium { grid-column: span 4; }
+.dash-card--half { grid-column: span 6; }
+.dash-card--wide { grid-column: span 8; }
+.dash-card--full { grid-column: span 12; }
+.dash-card__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2, 8px); flex-wrap: wrap; }
+.dash-card__title { font-size: var(--text-md, 1rem); margin: 0; }
+.dash-card__tools { display: flex; align-items: center; gap: var(--space-1, 4px); flex-wrap: wrap; }
+.dash-card .rows .row { padding-block: var(--space-2, 8px); }
+.dash-links { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); }
+.dash-edit { padding: var(--space-4, 16px); border: 1px dashed var(--color-divider); border-radius: var(--radius-3, 8px); margin-bottom: var(--space-4, 16px); }
+.dash-edit__row { display: flex; flex-wrap: wrap; gap: var(--space-4, 16px); }
+@media (max-width: 1100px) {
+  .dash-card--small { grid-column: span 6; }
+  .dash-card--medium, .dash-card--half, .dash-card--wide { grid-column: span 12; }
+}
+@media (max-width: 767px) {
+  .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-card, .dash-card--medium, .dash-card--half, .dash-card--wide, .dash-card--full { grid-column: span 2; }
+  .dash-card--small { grid-column: span 1; }
+}

@@ -32,7 +32,7 @@ startPage().then((session) => {
   const setup = form.dataset.mode === "setup";
   if (session && setup && !session.needs_setup) location.replace("/login.html");
   if (session && !setup && session.needs_setup) location.replace("/setup.html");
-  if (session && session.signed_in) location.replace("/index.html");
+  if (session && session.signed_in) location.replace("/dashboard.html");
   if (setup && session && form.site_name && !form.site_name.value) form.site_name.value = session.site_name;
   // get-starboard.sh opens this page with the code after #, which never leaves the browser; fill it in, then
   // take it out of the address bar.
@@ -60,9 +60,9 @@ startPage().then((session) => {
       else await api("/api/login", { method: "POST", body: { password: form.password.value, remember: form.remember.checked } });
       if (setup) { location.href = "/setup-guide.html"; return; }  // set-up goes on to the guide: find apps, choose what runs
       // Only a page on this dashboard: the address is resolved first, so tricks like "/\t/evil.example" fail.
-      let next = "/index.html";
+      let next = "/dashboard.html";
       try {
-        const asked = new URL(new URLSearchParams(location.search).get("next") || "/index.html", location.origin);
+        const asked = new URL(new URLSearchParams(location.search).get("next") || "/dashboard.html", location.origin);
         if (asked.origin === location.origin) next = asked.pathname + asked.search + asked.hash;
       } catch { /* not an address: go to Apps */ }
       location.href = next;

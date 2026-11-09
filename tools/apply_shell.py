@@ -23,6 +23,9 @@ ICONS = dict(re.findall(r'<symbol id="i-([^"]+)"[^>]*>(.*?)</symbol>', (WEB / "i
 # Section: (key, label, icon, [level 1 item]). Level 1 item: (label, icon, [(page, level 2 label, icon)]).
 # A level 1 item opens its first page; it has a level 2 menu only when it has more than one page.
 MENU = [
+    ("home", "Home", "house", [
+        ("Dashboard", "layout-dashboard", [("dashboard.html", "Dashboard", "layout-dashboard")]),
+    ]),
     ("library", "Library", "library", [
         ("TV", "tv", [("library-tv.html", "My library", "library"), ("library-tv-networks.html", "Networks", "layers")]),
         ("Films", "film", [("library-films.html", "My library", "library"), ("library-films-collections.html", "Collections", "layers")]),
@@ -122,6 +125,7 @@ HELP = {
     "settings-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
     "settings-security.html": ("README.md#security", "security"),
     "settings-downloads.html": ("topics/set-download-hours.md", "your VPN, Usenet server and download hours"),
+    "dashboard.html": ("guides/set-up-your-dashboard.md", "your dashboard"),
     "settings-updates.html": ("topics/update-starboard.md", "updating Starboard"),
     "settings-releases.html": ("topics/update-starboard.md", "updating Starboard"),
     "settings-restore.html": ("topics/restore-a-saved-copy.md", "restoring a saved copy of your settings"),
