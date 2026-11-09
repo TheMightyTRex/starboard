@@ -2685,6 +2685,89 @@ function advancedSwitch() {
   apply();
 }
 
+// Settings, Downloads (DASH-226): the VPN (provider, connection, countries, key), the Usenet provider's server with
+// Test, and where download hours are. The same words as the set-ups (web/setup-answers.json).
+async function startDownloadsSettings() {
+  const root = $("#downloads-sections");
+  let d;
+  try { d = await api("/api/downloads/settings"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); root.removeAttribute("aria-busy"); return; }
+  const words = await (await fetch("/setup-answers.json", { cache: "no-cache" })).json();
+  const parts = [];
+  if (d.vpn.on) {
+    const provider = el("input", { class: "input", value: d.vpn.provider, spellcheck: "false", autocomplete: "off", id: "dl-vpn-provider" });
+    const type = el("select", { class: "select", id: "dl-vpn-type" }, [["wireguard", "WireGuard"], ["openvpn", "OpenVPN"]].map(([v, t]) => el("option", { value: v, text: t, selected: d.vpn.type === v })));
+    const countries = el("input", { class: "input", value: d.vpn.countries, placeholder: "such as Netherlands", id: "dl-vpn-countries" });
+    const key = el("input", { class: "input", type: "password", autocomplete: "off", id: "dl-vpn-key" });
+    const address = el("input", { class: "input", autocomplete: "off", placeholder: "ends with /32", id: "dl-vpn-address" });
+    const user = el("input", { class: "input", autocomplete: "off", id: "dl-vpn-user" });
+    const password = el("input", { class: "input", type: "password", autocomplete: "current-password", id: "dl-vpn-pw" });
+    // Only the fields for the chosen connection, as in the set-ups.
+    const addressField = field("WireGuard address", address, { hint: "Only when it changed; leave it empty to keep it." });
+    const userField = field("OpenVPN user name", user, { hint: "Leave it empty to keep the one there is." });
+    const showType = () => { addressField.hidden = type.value !== "wireguard"; userField.hidden = type.value !== "openvpn"; };
+    type.addEventListener("change", showType);
+    showType();
+    const save = el("button", { type: "button", class: "btn btn--primary" }, "Save and restart the VPN");
+    const said = el("div", { "aria-live": "polite" });
+    save.addEventListener("click", async () => {
+      if (!password.value) { setError(password, "Enter your Starboard password"); password.focus(); return; }
+      save.disabled = true;
+      const vpn = { provider: provider.value.trim().toLowerCase(), type: type.value, countries: countries.value.trim() };
+      if (type.value === "wireguard") Object.assign(vpn, { wireguard_private_key: key.value.trim(), wireguard_addresses: address.value.trim() });
+      else Object.assign(vpn, { openvpn_user: user.value.trim(), openvpn_password: key.value.trim() });
+      try {
+        const r = await api("/api/downloads/vpn", { method: "POST", body: { password: password.value, vpn } });
+        password.value = ""; key.value = "";
+        said.replaceChildren(notice("success", "Saved", r.said), ...(r.command ? [el("pre", { class: "code-block", text: r.command })] : []));
+      } catch (e) { said.replaceChildren(notice("danger", "Not saved", e.message)); }
+      finally { save.disabled = false; }
+    });
+    parts.push(section("dl-vpn", "VPN", "Downloads go through your VPN, so your internet provider sees only the VPN.",
+      el("div", { class: "form-stack" },
+        field("VPN provider", provider, { hint: "As Gluetun's list writes it, such as surfshark or protonvpn." }), field("Connection", type),
+        field("Countries", countries, { hint: "Optional. A nearby country is fastest." }),
+        field(d.vpn.has_secret ? "New WireGuard key or OpenVPN password" : "WireGuard key or OpenVPN password", key, { hint: d.vpn.has_secret ? "Leave it empty to keep the one there is." : "" }),
+        addressField, userField,
+        field("Your Starboard password", password, { required: true, hint: "Saving restarts the VPN, and the apps that go through it, for a moment." })),
+      el("div", { class: "actions" }, save), said));
+  }
+  if (d.usenet.app) {
+    const w = words.usenet;
+    const inputs = { host: el("input", { class: "input", id: "dl-u-host", autocomplete: "off", spellcheck: "false" }), ssl: el("input", { type: "checkbox", checked: true }),
+      port: el("input", { class: "input", inputmode: "numeric", value: "563", id: "dl-u-port" }), username: el("input", { class: "input", id: "dl-u-user", autocomplete: "off" }),
+      password: el("input", { class: "input", type: "password", id: "dl-u-pw", autocomplete: "new-password" }), connections: el("input", { class: "input", inputmode: "numeric", value: "8", id: "dl-u-conn" }) };
+    const server = () => ({ host: inputs.host.value.trim(), ssl: inputs.ssl.checked, port: inputs.port.value.trim(), username: inputs.username.value.trim(),
+      password: inputs.password.value, connections: inputs.connections.value.trim() });
+    const said = el("div", { "aria-live": "polite" });
+    const test = el("button", { type: "button", class: "btn" }, w.test);
+    test.addEventListener("click", async () => {
+      said.replaceChildren(el("p", { class: "small muted", text: "Testing…" }));
+      const r = await api("/api/setup/test-usenet", { method: "POST", body: { server: server() } });
+      said.replaceChildren(r.ok ? notice("success", "It works", r.message) : notice("danger", "It did not work", r.message));
+    });
+    const add = el("button", { type: "button", class: "btn btn--primary" }, `Add it to ${d.usenet.app}`);
+    add.addEventListener("click", async () => {
+      add.disabled = true;
+      try { said.replaceChildren(notice("success", "Saved", (await api("/api/downloads/usenet", { method: "POST", body: { server: server() } })).said)); }
+      catch (e) { said.replaceChildren(notice("danger", "Not saved", e.message)); }
+      finally { add.disabled = false; }
+    });
+    parts.push(section("dl-usenet", "Usenet provider", `${d.usenet.app} downloads from your Usenet provider's server.`,
+      el("p", { class: "small", text: d.usenet.servers.length ? `In ${d.usenet.app} now: ${d.usenet.servers.join(", ")}.` : `${d.usenet.app} has no server yet.` }),
+      el("div", { class: "form-stack" }, el("p", { class: "small muted", text: w.server_intro }),
+        field(w.host, inputs.host, { hint: w.host_hint }), el("label", { class: "check" }, inputs.ssl, el("span", { text: w.ssl })),
+        field(w.port, inputs.port, { hint: w.port_hint }), field(w.username, inputs.username), field(w.password, inputs.password),
+        field(w.connections, inputs.connections, { hint: w.connections_hint })),
+      el("div", { class: "actions" }, add, test), said));
+  }
+  parts.push(section("dl-hours", "Download hours", "When downloads run, so the internet stays free for everything else.",
+    el("p", {}, config.download_hours.enabled ? `On: ${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00. ` : "Off. ",
+      el("a", { href: "/settings-general.html#download-hours", text: "Change download hours" }))));
+  if (!d.vpn.on && !d.usenet.app) parts.unshift(notice("info", "Nothing to set here yet", "Your install has no VPN and no Usenet app. Add them in Settings, Your install."));
+  root.replaceChildren(...parts);
+  root.removeAttribute("aria-busy");
+}
+
 startPage().then(async (session) => {
   if (!session) return;
   if ($("#releases-list")) { startReleases(session.repo); return; }
@@ -2699,6 +2782,7 @@ startPage().then(async (session) => {
   if ($("#performance-sections")) startPerformance();
   if ($("#reelix-sections")) startReelix();
   if ($("#install-sections")) startYourInstall();
+  if ($("#downloads-sections")) startDownloadsSettings();
   if ($("#guide")) startGuide();
   if ($("#upgrade")) startUpgrade();
   if ($("#install") && typeof startInstall === "function") startInstall();

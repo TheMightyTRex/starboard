@@ -930,7 +930,7 @@ class Handler(BaseHTTPRequestHandler):
             Handler._upgrade = {"key": key, "value": {"from": p["from"], "to": p["to"], "wizard": p["wizard"], "count": len(p["review"])}}
         return Handler._upgrade["value"]
 
-    CHANGES_STACK = {"/api/install/change", "/api/stack/write", "/api/stack/start", "/api/reelix/edition",
+    CHANGES_STACK = {"/api/install/change", "/api/downloads/vpn", "/api/stack/write", "/api/stack/start", "/api/reelix/edition",
                      "/api/takeover/start", "/api/takeover/rollback", "/api/takeover/clear"}
 
     def api(self, method, path):
@@ -1343,6 +1343,54 @@ class Handler(BaseHTTPRequestHandler):
                 except (OSError, ValueError):
                     pass
                 return self.json(200, out)
+            if path == "/api/downloads/settings" and method == "GET":
+                # DASH-226: Settings, Downloads. The VPN without its key or password, and the Usenet servers by address.
+                choice = stack.current_choice(app.data_dir) or {}
+                vpn = choice.get("vpn") or {}
+                keys = set(choice.get("apps") or [])
+                usenet = "nzbget" if "nzbget" in keys else "sabnzbd" if "sabnzbd" in keys else ""
+                servers = []
+                try:
+                    if usenet == "nzbget" and stack.nzbget_key(app.data_dir):
+                        rpc = reelix_setup.nzbget_rpc(stack.nzbget_key(app.data_dir), base=stack.app_url(app.data_dir, "nzbget", 6789) or "http://127.0.0.1:6789",
+                                                      wait=0, timeout=5)
+                        servers = [o["Value"] for o in rpc("config") or [] if re.match(r"^Server\d+\.Host$", o.get("Name", "")) and o.get("Value")]
+                except (reelix_setup.ReelixError, OSError, ValueError):
+                    servers = []
+                return self.json(200, {"vpn": {"on": "gluetun" in keys, "provider": vpn.get("provider", ""), "type": vpn.get("type", "wireguard"),
+                                               "countries": vpn.get("countries", ""), "has_secret": bool(vpn.get("wireguard_private_key") or vpn.get("openvpn_password"))},
+                                       "usenet": {"app": {"nzbget": "NZBGet", "sabnzbd": "SABnzbd"}.get(usenet, ""), "servers": servers},
+                                       "docker": containers.available()})
+            if path == "/api/downloads/usenet" and method == "POST":
+                from . import setup_answers
+                body = self.body()
+                setup_answers.save_usenet(app.data_dir, setup_answers.clean_usenet(body.get("server")))
+                done = setup_answers.apply_usenet(app.data_dir)
+                logs.event("info", "downloads", "; ".join(done) or "Usenet server saved")
+                return self.json(200, {"said": "; ".join(done) or "Saved. Starboard adds it to the Usenet app when it runs"})
+            if path == "/api/downloads/vpn" and method == "POST":
+                # New VPN details: written into the set-up files, then Gluetun is started again with them. A key or
+                # password left empty keeps the one there is.
+                body = self.body()
+                self.check_password(body)
+                choice = stack.current_choice(app.data_dir)
+                if not choice or "gluetun" not in (choice.get("apps") or []):
+                    raise ValueError("Your install has no VPN. Add one in Settings, Your install")
+                old = choice.get("vpn") or {}
+                typed = {k: str(v).strip() for k, v in (body.get("vpn") or {}).items() if k in stack.VPN_ENV.values()}
+                new = {**old, **{k: v for k, v in typed.items() if v or k in ("countries",)}}
+                choice = {**choice, "vpn": new, "own_ports": stack.compose_ports(app.data_dir)}
+                built = stack.build(choice)
+                own = stack.own_services(app.data_dir)
+                if own:
+                    built = {**built, "compose": built["compose"].rstrip() + "\n" + "".join(own)}
+                stack.write(app.data_dir, built)
+                logs.event("info", "downloads", f"VPN details changed ({new.get('provider', '')})")
+                try:
+                    return self.json(200, {"started": self.start_stack(), "said": "Saved. Gluetun is starting again with the new details"})
+                except ValueError:
+                    return self.json(200, {"started": None, "command": "cd ~/starboard && ./install.sh --start-apps",
+                                           "said": "Saved. Run the command on the server to start Gluetun with them"})
             if path == "/api/install/change" and method == "POST":
                 # Change to another install, Usenet app or Reelix: rewrite the set-up file and start the apps.
                 body = self.body()

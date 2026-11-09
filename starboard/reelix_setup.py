@@ -438,8 +438,9 @@ def switch_usenet(base, password, to, host, creds=None, sab_key=None, opener=Non
     return done
 
 
-def nzbget_rpc(key, base="http://127.0.0.1:6789", opener=None):
-    """A function calling NZBGet's JSON-RPC as `key` ("user:password"), waiting up to 3 minutes for it to answer."""
+def nzbget_rpc(key, base="http://127.0.0.1:6789", opener=None, wait=180, timeout=20):
+    """A function calling NZBGet's JSON-RPC as `key` ("user:password"), waiting up to `wait` seconds (3 minutes
+    while the apps start) for it to answer; a page asks once, with wait=0 and a short timeout."""
     token = base64.b64encode(key.encode()).decode()
     jar = opener or urllib.request.build_opener()
 
@@ -447,7 +448,7 @@ def nzbget_rpc(key, base="http://127.0.0.1:6789", opener=None):
         req = urllib.request.Request(base + "/jsonrpc", data=json.dumps({"method": method, "params": params or [], "id": 1}).encode(),
                                      headers={"Authorization": f"Basic {token}", "Content-Type": "application/json",
                                               "User-Agent": "Starboard"})
-        with jar.open(req, timeout=20) as resp:  # NZBGet on this computer, from the stack Starboard wrote  # nosec B310
+        with jar.open(req, timeout=timeout) as resp:  # NZBGet on this computer, from the stack Starboard wrote  # nosec B310
             return json.loads(resp.read(2_000_000)).get("result")
 
     began = time.time()
@@ -456,7 +457,7 @@ def nzbget_rpc(key, base="http://127.0.0.1:6789", opener=None):
             rpc("version")
             return rpc
         except (urllib.error.URLError, OSError, ValueError):
-            if time.time() - began > 180:
+            if time.time() - began >= wait:
                 raise ReelixError("NZBGet did not answer") from None
             time.sleep(3)
 
