@@ -1142,7 +1142,7 @@ class Handler(BaseHTTPRequestHandler):
                 if radio:  # the Reelix link entry: a radio download, through Reelix's own queue
                     services.radio_queue_action(radio, int(data["id"]), str(data.get("action", "")))
                 else:
-                    services.queue_action(service, int(data["id"]), str(data.get("action", "")))
+                    services.queue_action(service, int(data["id"]), str(data.get("action", "")), cfg.data["services"])
                 logs.event("info", "downloads", f"{data.get('action')} for a download in {service['name']}")
                 return self.json(200, {"ok": True})
             if path in ("/api/containers", "/api/containers/check", "/api/containers/update"):

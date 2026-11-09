@@ -560,6 +560,8 @@ def _queue_one(service):
             "size": size,
             "time_left": r.get("timeleft") or "",
             "client": r.get("downloadClient") or "",
+            # DASH-205: a Reelix download stuck at import can be imported again or ignored from Starboard.
+            "reelix": service.get("icon") == "reelix",
         })
     return rows
 
@@ -632,9 +634,17 @@ QUEUE_ACTIONS = {
 }
 
 
-def queue_action(service, item_id, action):
+def queue_action(service, item_id, action, all_services=None):
     """Removes one queue item from its app and download client; block also blocklists that release, and
-    block-search then looks for another."""
+    block-search then looks for another. For Reelix, import tries the import again and ignore leaves a finished
+    download where it is and stops warning about it (DASH-205), through Reelix's own queue (same ids)."""
+    if action in ("import", "ignore"):
+        native = next((r for r in reelix_native(all_services or [service]) if service.get("icon") == "reelix"), None)
+        if not native:
+            raise ServiceError("Only Reelix can import again or ignore from here; open the app's queue instead")
+        _api(native, f"/queue/{int(item_id)}/{action}", method="POST")
+        forget("queue")
+        return
     if action not in QUEUE_ACTIONS:
         raise ServiceError("Choose remove, block or block-search")
     _api(service, f"/queue/{int(item_id)}", QUEUE_ACTIONS[action], method="DELETE")

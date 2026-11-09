@@ -235,7 +235,17 @@ function detailsFoot(item) {
       confirm: "Remove download", danger: true,
     });
   });
-  return [...out, another, remove];
+  // DASH-205: a Reelix download stuck at import: try the import again, or ignore it (the files stay where they are).
+  const stuck = item.reelix && ["importPending", "importBlocked", "failedPending"].includes(item.status);
+  const fix = stuck ? [
+    el("button", { type: "button", class: "btn btn--primary", onclick: () => queueAction(item, "import", {
+      title: "Try the import again?", message: `Reelix looks at the finished files again and moves them into your library if it can. Read its messages first if it failed before.`,
+      confirm: "Try again" }) }, icon("refresh-cw"), "Try the import again"),
+    el("button", { type: "button", class: "btn", onclick: () => queueAction(item, "ignore", {
+      title: "Ignore this download?", message: `Reelix stops warning about it and leaves the files in ${item.client || "the download client"}'s folder. Nothing is deleted.`,
+      confirm: "Ignore" }) }, icon("eye-off"), "Ignore"),
+  ] : [];
+  return [...fix, ...out, another, remove];
 }
 
 async function queueAction(item, action, dialog) {
@@ -243,7 +253,8 @@ async function queueAction(item, action, dialog) {
   const chosen = typeof action === "function" ? action() : action;
   try {
     await api("/api/queue/action", { method: "POST", body: { service: item.service, id: item.id, action: chosen } });
-    toast({ remove: "Removed", block: "Removed and blocked", "block-search": "Blocked. Searching for another" }[chosen]);
+    toast({ remove: "Removed", block: "Removed and blocked", "block-search": "Blocked. Searching for another",
+      import: "Reelix is trying the import again", ignore: "Ignored" }[chosen]);
     load({ announceIt: true });
   } catch (e) { problem(`Not done: ${e.message}`); }
 }

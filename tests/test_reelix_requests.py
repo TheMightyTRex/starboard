@@ -34,3 +34,17 @@ class ReelixRequests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StuckDownloads(unittest.TestCase):
+    """DASH-205: Try the import again and Ignore, through Reelix's own queue."""
+
+    def test_import_and_ignore_go_to_reelix(self):
+        entry = {"id": "rx-films", "type": "radarr", "icon": "reelix", "name": "Reelix films", "url": "http://r/radarr", "api_key": "k", "enabled": True}
+        calls = []
+        with mock.patch.object(services, "_api", side_effect=lambda s, path, params=None, method="GET", body=None, timeout=None: calls.append((s["url"], method, path))):
+            services.queue_action(entry, 12, "import", [entry])
+            services.queue_action(entry, 12, "ignore", [entry])
+        self.assertEqual(calls, [("http://r/api/v1", "POST", "/queue/12/import"), ("http://r/api/v1", "POST", "/queue/12/ignore")])
+        with self.assertRaises(services.ServiceError):
+            services.queue_action({**entry, "icon": "radarr"}, 12, "import", [])
