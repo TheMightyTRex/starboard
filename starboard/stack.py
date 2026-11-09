@@ -151,7 +151,14 @@ APPS = {
                         "WIREGUARD_PRIVATE_KEY": "${WIREGUARD_PRIVATE_KEY}", "WIREGUARD_ADDRESSES": "${WIREGUARD_ADDRESSES}",
                         "OPENVPN_USER": "${OPENVPN_USER}", "OPENVPN_PASSWORD": "${OPENVPN_PASSWORD}", "SERVER_COUNTRIES": "${SERVER_COUNTRIES}",
                         # Reelix sends only its searches through the VPN, by Gluetun's HTTP proxy (reelix_sites.py)
-                        "HTTPPROXY": "on"},
+                        "HTTPPROXY": "on",
+                        # DASH-233: Gluetun's control server answers Starboard only with this made-up key (the VPN's
+                        # state, public address and forwarded port on Apps, Network and Downloads).
+                        "HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE": '{"auth":"apikey","apikey":"${GLUETUN_API_KEY}"}',
+                        # Port forwarding, for the providers that offer it (port_forwarding_env); Starboard keeps
+                        # qBittorrent's listening port the same as the forwarded one (vpn_ports.sync).
+                        "VPN_PORT_FORWARDING": "${VPN_PORT_FORWARDING:-off}"},
+                "ports": ["8000:8000"], "secrets": ["GLUETUN_API_KEY"],
                 "volumes": [f"{CFG}/gluetun:/gluetun"], "notes": "Your VPN details go in the .env file, never in Starboard's settings."},
     # Bazarr starts with an API key Starboard made up (bazarr_seed), so Starboard can point it at Reelix (DASH-182).
     "bazarr": {"name": "Bazarr", "groups": ["subtitles"], "image": "lscr.io/linuxserver/bazarr:latest", "ports": ["6767:6767"],
@@ -527,7 +534,8 @@ def build(choice):
         kind = str(vpn_choice.get("type", "wireguard")).strip().lower()
         if not re.match(r"^[a-z0-9 _-]{2,40}$", provider) or kind not in ("wireguard", "openvpn"):
             raise ValueError("Choose your VPN provider, and WireGuard or OpenVPN")
-        vals = {"VPN_SERVICE_PROVIDER": provider, "VPN_TYPE": kind, "SERVER_COUNTRIES": str(vpn_choice.get("countries", ""))}
+        vals = {"VPN_SERVICE_PROVIDER": provider, "VPN_TYPE": kind, "SERVER_COUNTRIES": str(vpn_choice.get("countries", "")),
+                "VPN_PORT_FORWARDING": "on" if provider in PORT_FORWARDING else "off"}
         # Only the fields for the chosen connection go in, and those are needed.
         needed = {"wireguard": {"WIREGUARD_PRIVATE_KEY": "WireGuard private key", "WIREGUARD_ADDRESSES": "WireGuard address"},
                   "openvpn": {"OPENVPN_USER": "OpenVPN user name", "OPENVPN_PASSWORD": "OpenVPN password"}}[kind]
@@ -585,8 +593,9 @@ def build(choice):
             lines += ["    depends_on:", "      gluetun:", "        condition: service_healthy"]
         elif depends:
             lines += ["    depends_on:"] + [f"      - {d}" for d in depends]
-        if through_vpn:
-            lines.append('    network_mode: "service:gluetun"')
+        if through_vpn or a.get("gluetun"):  # Gluetun's own ports (its control server) join the ones it carries
+            if through_vpn:
+                lines.append('    network_mode: "service:gluetun"')
             vpn_ports += ports
         elif ports:
             lines.append("    ports:")
@@ -730,6 +739,10 @@ def nzbget_key(data_dir):
 
 
 # Your install: what runs now, and changing it (Settings, Your install) ------------------------------------------
+
+# Providers whose port forwarding Gluetun can use (Gluetun's wiki, VPN server port forwarding). Proton needs a key or
+# user name made with port forwarding (NAT-PMP) on, which its set-up page offers.
+PORT_FORWARDING = {"private internet access", "protonvpn", "perfect privacy", "privatevpn"}
 
 VPN_ENV = {"VPN_SERVICE_PROVIDER": "provider", "VPN_TYPE": "type", "SERVER_COUNTRIES": "countries",
            "WIREGUARD_PRIVATE_KEY": "wireguard_private_key", "WIREGUARD_ADDRESSES": "wireguard_addresses",

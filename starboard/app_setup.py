@@ -183,16 +183,51 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
         log(f"{name} ready")
     # The download apps' sign-ins, made up by Install apps (DASH-184): saved on the dashboard so Downloads, download
     # hours and Reelix all use the same details, and shown on Apps behind the Starboard password.
-    downloads = [("qbittorrent", "qBittorrent", 8080, lambda: stack.qbittorrent_password(data_dir) and f"admin:{stack.qbittorrent_password(data_dir)}"),
-                 ("nzbget", "NZBGet", 6789, lambda: stack.nzbget_key(data_dir)),
-                 ("sabnzbd", "SABnzbd", stack.SABNZBD_PORT, lambda: stack.sabnzbd_key(data_dir))]
+    # qBittorrent answers Starboard with an API key (qBittorrent 5.2 and later), made here with its sign-in; Gluetun's
+    # control server with the key Install apps made up (DASH-233).
+    downloads = [("qbittorrent", "qBittorrent", 8080, lambda base: qbittorrent_key(base, stack.qbittorrent_password(data_dir), opener)
+                  if stack.qbittorrent_password(data_dir) else None),
+                 ("nzbget", "NZBGet", 6789, lambda base: stack.nzbget_key(data_dir)),
+                 ("sabnzbd", "SABnzbd", stack.SABNZBD_PORT, lambda base: stack.sabnzbd_key(data_dir)),
+                 ("gluetun", "Gluetun", 8000, lambda base: stack.env_values(data_dir).get("GLUETUN_API_KEY"))]
     for key, name, inside, secret in downloads:
-        value = secret() if key in keys else None
-        base = stack.app_url(data_dir, key, inside) if value else None
-        if value and base:
+        base = stack.app_url(data_dir, key, inside) if key in keys else None
+        if not base:
+            continue
+        try:
+            value = secret(base)
+        except AppSetupError as e:
+            done.append(f"{name} is not on your apps with its key yet: {e}")
+            continue
+        if value:
             _save_key(cfg, key, name, base, value)
-            done.append(f"Added {name} to your apps, with its sign-in")
+            done.append(f"Added {name} to your apps, with its key")
     return done
+
+
+def qbittorrent_key(base, password, opener=None):
+    """Signs in to qBittorrent with the sign-in Install apps made up and makes an API key for Starboard (qBittorrent
+    5.2 and later); None from an older qBittorrent, which has no API keys."""
+    import http.cookiejar
+    jar = opener or urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+
+    def post(path, form=None):
+        req = urllib.request.Request(f"{base}/api/v2/{path}", data=urllib.parse.urlencode(form or {}).encode(),
+                                     headers={"Referer": base, "User-Agent": "Starboard"})
+        with jar.open(req, timeout=15) as r:  # qBittorrent on this computer, from the stack Starboard wrote  # nosec B310
+            return r.status, r.read(4000).decode("utf-8", "replace")
+    try:
+        status, text = post("auth/login", {"username": "admin", "password": password})
+        if not (status == 204 or (status == 200 and "Ok" in text)):
+            raise AppSetupError("it did not accept the sign-in Starboard made up")
+        status, text = post("app/rotateAPIKey")
+        return (json.loads(text) or {}).get("apiKey") or None
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None  # qBittorrent before 5.2
+        raise AppSetupError(f"it answered {e.code}") from None
+    except (urllib.error.URLError, OSError, ValueError):
+        raise AppSetupError("Starboard could not reach it") from None
 
 
 def _save_key(cfg, kind, name, base, api_key):

@@ -2089,6 +2089,23 @@ def step_vpn(api, term, state):
     countries = term.text("Countries to connect through (Enter for any)", last.get("countries", ""), help_key="vpn")
     old = state.get("vpn") or {}
     vpn = {"provider": provider, "type": kind, "countries": countries}
+    if kind == "wireguard" and provider == "nordvpn" and term.yes_no(
+            "Fetch the key with a NordVPN access token? (Nord Account, NordVPN, Manual setup)", True, help_key="vpn"):
+        # DASH-233: NordVPN hides its WireGuard key; the token fetches it once and is not kept (the browser does the same).
+        from . import setup_answers
+        while True:
+            token = term.hidden("NordVPN access token", help_key="vpn") or ""
+            try:
+                fetched, address = setup_answers.nordvpn_key(token)
+                term.ok("NordVPN sent your WireGuard key.")
+                vpn.update(wireguard_private_key=fetched, wireguard_addresses=address)
+                last.update(kind=kind_i + 1, countries=countries, address=address)
+                state["vpn_answers"], state["vpn"] = last, vpn
+                return True
+            except ValueError as e:
+                term.refuse(str(e))
+                if not term.yes_no("Try another token?", True, help_key="vpn"):
+                    break
     if kind == "wireguard":
         key = term.hidden("WireGuard private key, from your provider", keep=bool(old.get("wireguard_private_key")),
                           help_key="vpn")

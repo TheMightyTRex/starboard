@@ -385,6 +385,7 @@ def reelix_after_start(app, password):
         except (OSError, ValueError) as e:
             logs.event("warning", "install apps", f"Jellyfin and Audiobookshelf are not set up yet: {e}")
         reelix_sites.after_install(app, password)
+        app.jobs.ensure()  # VPN port forwarding starts once Gluetun and qBittorrent have their keys (DASH-233)
         return
 
     def run():
@@ -397,6 +398,7 @@ def reelix_after_start(app, password):
             done = reelix_setup.set_up(app.config, app.data_dir, password, qbit=reelix_setup.qbit_lasting_password(), nzbget=reelix_setup.nzbget_ready())
             services.forget()
             logs.event("info", "install apps", "Reelix set up: " + "; ".join(done))
+            app.jobs.ensure()  # VPN port forwarding starts once Gluetun and qBittorrent have their keys (DASH-233)
         except reelix_setup.ReelixError as e:
             logs.event("warning", "install apps", f"Reelix is not set up yet: {e}")
     threading.Thread(target=run, name="reelix-setup", daemon=True).start()
@@ -1033,9 +1035,12 @@ class Handler(BaseHTTPRequestHandler):
                 body = self.body()
                 self.check_password(body)
                 s = next((x for x in app.config.data["services"] if x.get("id") == body.get("id")), None)
-                if not s or s.get("type") not in ("qbittorrent", "nzbget") or ":" not in (s.get("api_key") or ""):
+                if s and s.get("type") == "qbittorrent" and stack.qbittorrent_password(app.data_dir):
+                    user, password = "admin", stack.qbittorrent_password(app.data_dir)  # its key is an API key
+                elif s and s.get("type") == "nzbget" and ":" in (s.get("api_key") or ""):
+                    user, _, password = s["api_key"].partition(":")
+                else:
                     return self.error(404, "Starboard has no sign-in for that app")
-                user, _, password = s["api_key"].partition(":")
                 logs.event("info", "security", f"Showed {s['name']}'s sign-in")
                 return self.json(200, {"user": user, "password": password})
             if path == "/api/services/test" and method == "POST":
@@ -1296,6 +1301,15 @@ class Handler(BaseHTTPRequestHandler):
                 preview = takeover.fill_vpn({k: v for k, v in self.body().items() if k != "own_ports"})
                 built = stack.build({**preview, "own_ports": stack.compose_ports(app.data_dir)})
                 return self.json(200, {**{k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")}, "hooks": sorted(built["hooks"])})
+            if path == "/api/setup/nordvpn-key" and method == "POST":
+                # DASH-233: the key goes back to the set-up's key field, as if typed; Starboard keeps nothing here.
+                from . import setup_answers
+                try:
+                    key, address = setup_answers.nordvpn_key(self.body().get("token"))
+                    return self.json(200, {"ok": True, "key": key, "address": address,
+                                           "message": "NordVPN sent your WireGuard key. It is in the key field."})
+                except ValueError as e:
+                    return self.json(200, {"ok": False, "message": str(e)})
             if path in ("/api/setup/test-tmdb", "/api/setup/test-usenet") and method == "POST":
                 # The set-up's Test buttons (DASH-178, DASH-183): nothing is kept.
                 from . import setup_answers

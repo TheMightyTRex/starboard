@@ -442,6 +442,21 @@ async function installStep(id, state, data, apps, go) {
       field("OpenVPN user name", inputs.openvpn_user, { required: true, hint: "Your provider's OpenVPN or service user name. It is often not the one you sign in to their website with." }),
       field("OpenVPN password", inputs.openvpn_password, { required: true }));
     const kind = () => $("input:checked", type)?.value || "wireguard";
+    // DASH-233: NordVPN hides its WireGuard key; an access token from Nord Account fetches it (the terminal asks too).
+    const nordToken = el("input", { class: "input", type: "password", autocomplete: "off", spellcheck: "false" });
+    const nord = el("details", { class: "disclosure" }, el("summary", { text: "Get the key from NordVPN with an access token" }),
+      el("div", { class: "disclosure__body stack-2" },
+        el("p", { class: "small", text: "In Nord Account, choose NordVPN, then Manual setup, and make an access token. Starboard uses it once to fetch your key and does not keep it." }),
+        field("NordVPN access token", nordToken),
+        testButton("Get my key", async () => {
+          const r = await api("/api/setup/nordvpn-key", { method: "POST", body: { token: nordToken.value.trim() } });
+          if (r.ok) { inputs.wireguard_private_key.value = r.key; inputs.wireguard_addresses.value = r.address; nordToken.value = ""; }
+          return r;
+        })));
+    wg.prepend(nord);
+    const showNord = () => { nord.hidden = picked() !== "nordvpn"; };
+    provider.addEventListener("change", showNord);
+    showNord();
     const showType = () => { wg.hidden = kind() !== "wireguard"; ovpn.hidden = kind() !== "openvpn"; };
     type.addEventListener("change", showType);
     showType();

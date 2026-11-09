@@ -21,7 +21,9 @@ found=0
 # The made-up examples the help centre uses (docs/help/HOW-THIS-HELP-IS-WRITTEN.md, rule 14). They are taken out
 # of a line before the check, so anything else on that line is still caught, and .private-words below still
 # checks them: if one of these is ever a real address of yours, list it there.
-EXAMPLES='192\.168\.1\.2[01]([^0-9]|$)|sam@starboard-pi\.local'
+EXAMPLES='192\.168\.1\.2[01]([^0-9]|$)|sam@starboard-pi\.local|10\.5\.0\.2/32  # the same WireGuard address for every NordVPN account'
+# The last one is NordVPN's published WireGuard address, the same for everyone (starboard/setup_answers.py,
+# DASH-233), let through only with that comment beside it on the same line.
 
 check() {
   local label="$1" pattern="$2"

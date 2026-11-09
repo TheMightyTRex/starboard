@@ -212,3 +212,33 @@ def apply_usenet(data_dir, opener=None):
     except OSError:
         pass
     return [f"Added your Usenet server to {app}"]
+
+
+# NordVPN's WireGuard key (DASH-233) ----------------------------------------------------------------------------------
+
+NORDVPN_ADDRESS = "10.5.0.2/32"  # the same WireGuard address for every NordVPN account (Gluetun's wiki, NordVPN)
+
+
+def nordvpn_key(token, opener=None):
+    """NordVPN's WireGuard (NordLynx) private key from an access token made in the account's Nord Account page,
+    Services, NordVPN, Manual setup. Returns (key, address), or raises ValueError in words."""
+    import base64
+    t = str(token or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9]{20,128}", t):
+        raise ValueError("Paste the access token from Nord Account, NordVPN, Manual setup")
+    auth = base64.b64encode(f"token:{t}".encode()).decode()
+    req = urllib.request.Request("https://api.nordvpn.com/v1/users/services/credentials",
+                                 headers={"Authorization": f"Basic {auth}", "Accept": "application/json", "User-Agent": "Starboard"})
+    try:
+        with (opener or urllib.request.build_opener()).open(req, timeout=15) as r:  # NordVPN's fixed https address  # nosec B310
+            data = json.loads(r.read(20000))
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise ValueError("NordVPN did not accept that token. Make a new one and paste all of it") from None
+        raise ValueError(f"NordVPN answered {e.code}. Try again in a moment") from None
+    except (urllib.error.URLError, OSError, ValueError):
+        raise ValueError("Starboard could not reach NordVPN. Check this computer is online") from None
+    key = (data or {}).get("nordlynx_private_key")
+    if not key:
+        raise ValueError("NordVPN did not send a WireGuard key for this account")
+    return key, NORDVPN_ADDRESS

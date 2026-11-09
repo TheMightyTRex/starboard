@@ -11,13 +11,14 @@ import os
 import threading
 import time
 
-from . import listening, livetv, logs, migrate
+from . import listening, livetv, logs, migrate, vpn_ports
 
 JOBS = {
     "livetv": {"title": "Live TV channels and guide", "every": 3600, "what": "Refreshes Jellyfin's free TV guides daily, and its channels when a channel list changes"},
     "import": {"title": "Watch history import", "every": 3600, "what": "Applies imported watch history to Jellyfin as the media arrives"},
     "defaults": {"title": "Jellyfin user defaults", "every": 3600, "what": "Gives every Jellyfin user your defaults, unless they chose otherwise"},
     "listening": {"title": "Listening progress", "every": 3600, "what": "Applies listening progress to Audiobookshelf as the books are scanned in"},
+    "vpnport": {"title": "VPN port forwarding", "every": 600, "what": "Keeps qBittorrent listening on the port the VPN forwards"},
 }
 SETTING = {"livetv": "livetv", "import": "import_keep", "defaults": "defaults", "listening": "listening_keep"}
 PAGE = {"listening": "/settings-audiobookshelf.html"}
@@ -37,6 +38,8 @@ class Jobs:
         return self.app.config.data["extras"]
 
     def enabled(self, key):
+        if key == "vpnport":  # on by itself while the VPN forwards a port and both apps have their keys (DASH-233)
+            return vpn_ports.wanted(self.app.config, self.app.data_dir)
         return bool(self.settings().get(SETTING[key]))
 
     def self_url(self):
@@ -80,6 +83,8 @@ class Jobs:
                 summary = migrate.apply(self.app.config.data_dir, services)
             elif key == "listening":
                 summary = listening.apply(self.app.config.data_dir, services)
+            elif key == "vpnport":
+                summary = vpn_ports.sync(self.app.config)
             else:
                 summary = migrate.ensure_defaults(services)
             self._record(key, finished=time.time(), state="done", summary=summary)
@@ -135,6 +140,9 @@ class Jobs:
                 needs.append("Jellyfin with its API key in Manage apps")
             if key == "listening":
                 needs = [] if abs_ else ["Audiobookshelf with an admin API key in Manage apps"]
+            if key == "vpnport":
+                needs = [] if row["enabled"] else ["Gluetun with port forwarding, and qBittorrent, each with its key"]
+                row["page"] = "/settings-install.html"
             if key == "livetv":
                 needs = [] if livetv.folder() and os.path.isdir(livetv.folder()) else ["Jellyfin's Live TV folder (./install.sh asks)"]
             row["needs"] = needs
