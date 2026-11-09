@@ -571,7 +571,11 @@ def build(choice):
             used.add(int(p.split(":", 1)[0]))
             ports.append(p)
         depends = (["gluetun"] if through_vpn else []) + ([a["db"]["service"]] if a.get("db") else [])
-        if depends:
+        if key == "reelix" and vpn and "gluetun" in keys:
+            # Reelix searches through Gluetun's proxy, so it starts once the VPN is up: after a restart its sites
+            # failed for five minutes while Gluetun connected (reboot test, 9 November 2026; DASH-262).
+            lines += ["    depends_on:", "      gluetun:", "        condition: service_healthy"]
+        elif depends:
             lines += ["    depends_on:"] + [f"      - {d}" for d in depends]
         if through_vpn:
             lines.append('    network_mode: "service:gluetun"')

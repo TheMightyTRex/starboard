@@ -768,10 +768,41 @@ def _health_one(service):
     return out
 
 
+# Where in Starboard each of Reelix's own checks is put right (DASH-160), by the check's source.
+REELIX_FIX = {"indexers": ("Sites to search", "/settings-reelix.html#rx-indexers"),
+              "download_clients": ("Download apps", "/settings-reelix.html#rx-downloadclients"),
+              "media_servers": ("Media servers", "/settings-reelix.html#rx-mediaservers"),
+              "root_folders": ("Your install", "/settings-install.html"),
+              "data_dir": ("Your install", "/settings-install.html"),
+              "database": ("Your install", "/settings-install.html")}
+
+
+def _reelix_health_one(reelix):
+    """Reelix's own checks (/api/v1/system/health with the manager key). Its Sonarr- and Radarr-style health routes
+    always answer an empty list (demonzoned/Reelix#74), so they are never asked (DASH-176)."""
+    now = time.time()
+    out = []
+    for c in (_api(reelix, "/system/health") or {}).get("checks") or []:
+        level = c.get("level") or "warning"
+        if level == "ok":
+            continue
+        message = c.get("message", "")
+        where = REELIX_FIX.get(c.get("source", ""))
+        out.append({"service": reelix["id"], "service_name": reelix["name"], "level": "error" if level == "error" else "warning",
+                    "message": message, "source": c.get("source", ""), "first_seen": FIRST_SEEN.setdefault((reelix["id"], message), now),
+                    "wiki": "", "fix": {"label": where[0], "href": where[1]} if where else None})
+    seen = {(reelix["id"], h["message"]) for h in out}
+    for key in [k for k in FIRST_SEEN if k[0] == reelix["id"] and k not in seen]:
+        FIRST_SEEN.pop(key, None)
+    return out
+
+
 def health(services):
-    targets = [s for s in services if s.get("enabled", True) and s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr")]
+    targets = [s for s in services if s.get("enabled", True) and s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr")
+               and s.get("icon") != "reelix"]
     rows, errors = _gather(targets, _health_one)
-    return {"items": rows, "errors": errors}
+    more, more_errors = _gather(reelix_native(services), _reelix_health_one)
+    return {"items": rows + more, "errors": errors + more_errors}
 
 
 # Finished downloads --------------------------------------------------------------

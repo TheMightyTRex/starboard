@@ -40,7 +40,7 @@ function warnings(health, disks) {
   for (const h of health.items || []) {
     const tone = h.level === "error" ? "danger" : h.level === "warning" ? "warning" : "info";
     items.push({ key: `app:${h.service_name}:${h.message}`, kind: "app", tone, word: tone === "danger" ? "Error" : tone === "warning" ? "Needs attention" : "Note",
-      service: byName[h.service_name], name: h.service_name, title: h.message, meta: `${h.service_name} · from its own health check`, message: h.message });
+      service: byId[h.service] || byName[h.service_name], name: h.service_name, title: h.message, meta: `${h.service_name} · from its own health check`, message: h.message, fix: h.fix });
   }
   for (const d of disks?.disks || []) {
     if (d.passed !== false && !d.problems.length) continue;
@@ -66,6 +66,7 @@ function openWarning(item, opener) {
       el("p", { class: "sys-message", text: item.message }),
       el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])),
       item.kind === "error" ? el("p", { class: "small muted", text: "Check that the app is running and that its address in Settings, Apps, Manage apps is right." }) : null,
+      item.fix ? el("p", {}, el("a", { href: item.fix.href, text: `Put it right in ${item.fix.label}` })) : null,
     ],
     foot: [
       s?.link ? el("a", { class: "btn btn--primary", href: reachableUrl(s.link), target: "_blank", rel: "noopener noreferrer" },

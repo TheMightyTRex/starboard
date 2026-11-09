@@ -30,6 +30,16 @@ class StackTest(unittest.TestCase):
         self.assertNotIn("ports:", q)
         self.assertIn('"8080:8080"', b["compose"].split("  gluetun:")[1].split("\n  storyarr:")[0])
 
+    def test_reelix_waits_for_the_vpn_to_be_ready(self):
+        b = stack.build({**CHOICE, "apps": ["reelix", "qbittorrent", "gluetun"]})
+        r = b["compose"].split("  reelix:")[1].split("\n  qbittorrent:")[0]
+        self.assertIn("    depends_on:\n      gluetun:\n        condition: service_healthy", r)
+
+    def test_reelix_without_a_vpn_waits_for_nothing(self):
+        b = stack.build({**CHOICE, "apps": ["reelix", "qbittorrent"], "vpn": None})
+        r = b["compose"].split("  reelix:")[1].split("\n  qbittorrent:")[0]
+        self.assertNotIn("depends_on", r)
+
     def test_secrets_are_made_and_hidden_from_the_page(self):
         b = stack.build(CHOICE)
         self.assertIn("STORYARR_DB_PASSWORD=", b["env"])

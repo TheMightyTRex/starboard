@@ -42,7 +42,7 @@ const AppDetails = (() => {
       state.numbers = state.config?.performance?.card_numbers === false ? {} : (await api(fresh("/api/numbers"))).items;
     },
     health: async () => {
-      if (!hasUpdates()) { state.warnings = {}; return; }
+      if (!hasUpdates() && !state.config?.services.some((s) => s.enabled && s.icon === "reelix")) { state.warnings = {}; return; }
       const { items, errors } = await api(fresh("/api/health"));
       state.healthErrors = Object.fromEntries((errors || []).map((e) => [e.service, e.message]));
       state.warnings = {};
@@ -90,7 +90,12 @@ const AppDetails = (() => {
     return u?.available ? u : null;
   }
 
-  function warnings(s) { return state.warnings[s.id] || []; }
+  // Reelix's own warnings come once for the whole of Reelix (DASH-176), so each of its cards shows them.
+  function warnings(s) {
+    if (s.icon !== "reelix") return state.warnings[s.id] || [];
+    const ids = (state.config?.services || []).filter((x) => x.icon === "reelix").map((x) => x.id);
+    return ids.flatMap((id) => state.warnings[id] || []);
+  }
 
   function followers(s) {
     return (state.config?.services || []).filter((x) => x.enabled && x.follows === s.id);
@@ -212,7 +217,7 @@ const AppDetails = (() => {
     if (s.url) out.push(section("Recent checks", "app-details-checks", recentBlock(s)));
 
     // The app's own warnings (only apps that report them).
-    if (UPDATE_TYPES.includes(s.type)) {
+    if (UPDATE_TYPES.includes(s.type) || s.icon === "reelix") {
       const list = warnings(s);
       let content;
       if (!state.loaded.has("health")) content = el("p", { class: "muted", text: state.errors.health ? `Could not ask ${s.name} for warnings: ${state.errors.health}` : "Asking…" });
@@ -221,7 +226,8 @@ const AppDetails = (() => {
       else content = el("ul", { class: "rows" }, list.map((w) => el("li", { class: "row row--no-lead" },
         el("div", {}, el("div", { class: "row__title", text: w.message }),
           el("div", { class: "row__meta" }, w.first_seen ? `Since ${clockOrDay(w.first_seen)}` : "",
-            /^https:\/\//.test(w.wiki || "") ? [w.first_seen ? " · " : "", el("a", { href: w.wiki, target: "_blank", rel: "noopener noreferrer" }, "How to fix it", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))] : null)),
+            /^https:\/\//.test(w.wiki || "") ? [w.first_seen ? " · " : "", el("a", { href: w.wiki, target: "_blank", rel: "noopener noreferrer" }, "How to fix it", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))] : null,
+            w.fix ? [w.first_seen ? " · " : "", el("a", { href: w.fix.href, text: `Put it right in ${w.fix.label}` })] : null)),
         el("div", { class: "row__side" }, w.level === "error" ? chip("Error", "danger") : chip("Needs attention", "warning")))));
       out.push(section(`Warnings from ${s.name}`, "app-details-warn", content));
     }
