@@ -220,8 +220,10 @@ def main():
         if plain_wait:
             if text != wait_screen:
                 wait_screen, wait_since = text, time.time()
-            elif time.time() - wait_since > 1200:
-                ended = "stuck: nothing new for 20 minutes"
+            elif time.time() - wait_since > 2700:
+                # A plain job writes nothing until it ends, and downloading the apps on a slow line has taken over 20
+                # minutes (Mint, 9 November 2026): only 45 minutes of nothing is stuck.
+                ended = "stuck: nothing new for 45 minutes"
                 faults.append({"kind": "stuck", "detail": tail[-120:], "after_answers": answers, "screen": len(shots) - 1})
                 break
         if plain_wait or any(m in here for m in "◐◓◑◒⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏") or "still working:" in low or ("keep this window open" in text.lower() and "close this window." not in low):
