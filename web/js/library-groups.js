@@ -27,9 +27,14 @@ function drawGroups(words) {
         el("h2", { class: "wall-letter", id: gLetterId(current), tabindex: "-1", text: current }), ul));
     }
     const href = `/${G_WALL[G_TAB]}?group=${encodeURIComponent(g.name)}${G_BY ? `&by=${G_BY}` : ""}`;
-    ul.append(el("li", { class: "row row--opens lib-row" },
-      g.poster ? el("div", { class: "cover cover--result", "aria-hidden": "true" }, el("img", { src: g.poster, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }))
-        : el("div", { class: "cover cover--result", "aria-hidden": "true" }),
+    // TV, Networks (DASH-264): the network's logo in one colour, or its name on a plain tile; never a series' cover.
+    const nameTile = () => el("div", { class: "cover cover--result network-logo", "aria-hidden": "true" }, el("span", { class: "network-logo__name", text: g.name }));
+    const picture = G_TAB === "tv"
+      ? (g.logo ? el("div", { class: "cover cover--result network-logo", "aria-hidden": "true" },
+        el("img", { src: g.logo, alt: "", loading: "lazy", onerror: (e) => e.target.closest(".network-logo").replaceWith(nameTile()) })) : nameTile())
+      : g.poster ? el("div", { class: "cover cover--result", "aria-hidden": "true" }, el("img", { src: g.poster, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }))
+        : el("div", { class: "cover cover--result", "aria-hidden": "true" });
+    ul.append(el("li", { class: "row row--opens lib-row" }, picture,
       el("div", {},
         el("h3", { class: "row__title" }, el("a", { href, text: g.name })),
         el("div", { class: "row__meta", text: `${gCount(g.count, G_NOUN[G_TAB])}, ${g.have.toLocaleString("en-GB")} in your library` }))));

@@ -628,6 +628,9 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                "open": _open(reelix, f"/series/{item_id}"),
                "can": {"get": any(r.get("can_get") for r in rows), "follow": bool(s.get("monitored")), "delete": True,
                        "has_file": have > 0}}
+        from . import networks  # DASH-264: the network's logo beside its name, when one is known
+        if s.get("network") and networks.logo_of(data_dir, s["network"]):
+            out["network_logo"] = {"name": s["network"], "src": f"/api/library/network-logo?tab=tv&name={urllib.parse.quote(s['network'])}"}
         have_jf = [r for r in rows if r.get("jf")]
         out["watched"] = {"watched": bool(have_jf) and all(r["watched"] for r in have_jf), "ids": [r["jf"] for r in have_jf],
                           "user": w["user"]} if have_jf else None
@@ -1135,9 +1138,23 @@ def handle(h, method, path):
             out["refreshing"] = tab in _building
         out["view"] = views(data_dir).get(tab, {})
         return h.json(200, out)
+    if path == "/api/library/network-logo" and method == "GET":
+        from . import networks
+        url = networks.logo_of(data_dir, q.get("name", "")[:200])
+        found = poster(data_dir, url, size="wall") if url and cfg.data["show_posters"] else None
+        if not found:
+            return h.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "private, max-age=3600"})
+        return h.send(200, found[0], found[1], {"Cache-Control": "private, max-age=604800"})
     if path == "/api/library/groups" and method == "GET":
         index = load(data_dir, reelix, tab)
-        return h.json(200, {"groups": groups(index, tab, "authors" if q.get("by") == "authors" else ""),
+        found = groups(index, tab, "authors" if q.get("by") == "authors" else "")
+        if tab == "tv":  # DASH-264: network logos, looked up in the background the first time
+            from . import networks
+            networks.refresh(data_dir, reelix, index)
+            have = networks.known(data_dir)
+            for g in found:
+                g["logo"] = f"/api/library/network-logo?tab=tv&name={urllib.parse.quote(g['name'])}" if (have.get(g["name"].lower()) or {}).get("url") else ""
+        return h.json(200, {"groups": found,
                             "label": GROUPS.get(f"{tab}-authors" if q.get("by") == "authors" else tab, "Group")})
     if path == "/api/library/watched" and method == "POST":
         from . import watched as _watched
