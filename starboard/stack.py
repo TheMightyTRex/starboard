@@ -702,6 +702,25 @@ def reelix_url(data_dir):
     return f"http://127.0.0.1:{port.group(1)}" if port else None
 
 
+def app_url(data_dir, key, inside):
+    """An app's address on this computer, from the port data/stack/compose.yaml maps to its own port inside (the
+    port on Gluetun's block when the app runs through the VPN); None when Install apps did not install it."""
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return None
+    block = re.search(rf"(?ms)^  {re.escape(key)}:\n(.*?)(?=^  \S|\Z)", text)
+    if not block:
+        return None
+    where = block.group(1)
+    if 'network_mode: "service:gluetun"' in where:
+        vpn = re.search(r"(?ms)^  gluetun:\n(.*?)(?=^  \S|\Z)", text)
+        where = vpn.group(1) if vpn else ""
+    port = re.search(rf'"(\d{{2,5}}):{int(inside)}"', where)
+    return f"http://127.0.0.1:{port.group(1)}" if port else None
+
+
 def env_values(data_dir):
     """The values in data/stack/.env, for Starboard's own use (NZBGet's sign-in)."""
     try:

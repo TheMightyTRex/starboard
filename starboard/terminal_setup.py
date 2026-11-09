@@ -2300,6 +2300,13 @@ def set_up_reelix(api, term, state, wait, job=None):
         term.ok(line)
     term.note("Starboard runs Reelix: change its settings in Settings, Reelix. For now, add your free TMDB key for films "
               "and series in Reelix itself: sign in as admin with your Starboard password, then Settings, Metadata.")
+    # The same words as the browser's guide (DASH-179, DASH-180): Starboard did Jellyfin's and Audiobookshelf's first runs.
+    chosen = set((state.get("choice") or {}).get("apps") or [])
+    for app, libraries in (("jellyfin", "Films, Series and Music"), ("audiobookshelf", "Audiobooks, Books and Radio")):
+        if app in chosen:
+            name = "Jellyfin" if app == "jellyfin" else "Audiobookshelf"
+            term.note(f"{name}: Starboard set it up. Sign in as admin with your Starboard password. Its {libraries} "
+                      "libraries are added, and Starboard has its key.")
 
 
 def running_apps(folder):

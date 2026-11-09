@@ -321,6 +321,17 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     except (ReelixError, OSError, ValueError) as e:
         done.append(f"The sites to search were not added ({e}). Add them in Settings, Reelix, Sites to search")
 
+    # 4e2. Jellyfin's and Audiobookshelf's first runs (DASH-179, DASH-180): their admin (admin, with the Starboard
+    # password, as Reelix), their libraries and a key for Starboard, so 4f can connect them to Reelix.
+    from . import app_setup
+    found = {}
+    done += app_setup.first_runs(cfg, data_dir, password, groups, log=log, opener=opener, found=found)
+    if "radio" in groups:
+        try:
+            done += app_setup.radio_settings(admin, found)
+        except (ReelixError, OSError, ValueError) as e:
+            done.append(f"Reelix's radio is not pointed at Audiobookshelf yet ({e})")
+
     # 4f. Jellyfin and Audiobookshelf (DASH-156), with the keys Starboard already has, so new files show at once.
     try:
         done += reelix_sites.connect_media_servers(admin, cfg.data["services"], data_dir)

@@ -746,8 +746,8 @@ function connectGuide(state, apps) {
           ", sign in as ", code("admin"), " with your Starboard password, then Settings, Metadata. Starboard will ask for it in a later version."),
         el("li", {}, "Sites to search: the ones you chose are added. See each one's state, and add more, in ",
           el("a", { href: "/settings-reelix.html", text: "Settings, Reelix, Sites to search" }), "."),
-        has("jellyfin") || has("audiobookshelf") ? el("li", {}, `Once Starboard has ${[has("jellyfin") ? "Jellyfin's" : "", has("audiobookshelf") ? "Audiobookshelf's" : ""].filter(Boolean).join(" and ")} API key (Settings, Manage apps), connect ${has("jellyfin") && has("audiobookshelf") ? "them" : "it"} to Reelix with one button in `,
-          el("a", { href: "/settings-reelix.html", text: "Settings, Reelix, Media servers" }), ", so new things show up there at once.") : null,
+        has("jellyfin") || has("audiobookshelf") ? el("li", {}, `Reelix is connected to ${[has("jellyfin") ? "Jellyfin" : "", has("audiobookshelf") ? "Audiobookshelf" : ""].filter(Boolean).join(" and ")}, so new things show up there at once. Check it, or connect again, in `,
+          el("a", { href: "/settings-reelix.html#rx-mediaservers", text: "Settings, Reelix, Media servers" }), ".") : null,
       ].filter(Boolean))));
   }
   if (has("qbittorrent") && has("reelix")) {
@@ -785,8 +785,14 @@ function connectGuide(state, apps) {
       "Prowlarr then shares the sites with all of them."));
   }
   if (has("jellyfin")) {
-    steps.push(el("li", {}, el("strong", { text: "Jellyfin. " }), open("jellyfin"), ". Its first-run wizard makes your account. Add a library for each kind of media, from ",
-      code("/data/media"), " (Films from movies, Shows from tv, and so on)."));
+    // Starboard runs Jellyfin's first run itself (DASH-179): the account, the libraries and its key.
+    steps.push(el("li", {}, el("strong", { text: "Jellyfin. " }), open("jellyfin"), ". Starboard set it up: sign in as ", code("admin"),
+      " with your Starboard password. Its Films, Series and Music libraries are added, and Starboard has its key."));
+  }
+  if (has("audiobookshelf")) {
+    // The same for Audiobookshelf (DASH-180): the account, the Audiobooks, Books and Radio libraries and its key.
+    steps.push(el("li", {}, el("strong", { text: "Audiobookshelf. " }), open("audiobookshelf"), ". Starboard set it up: sign in as ", code("admin"),
+      " with your Starboard password. Its Audiobooks, Books and Radio libraries are added, and Starboard has its key."));
   }
   if (has("seerr")) {
     steps.push(el("li", {}, el("strong", { text: "Seerr. " }), open("seerr"), ". Sign in with Jellyfin at ", code("http://jellyfin:8096"),
