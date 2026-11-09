@@ -271,7 +271,7 @@ def route(handler, method, path):
     if method != "POST" or not m:
         return handler.error(404, "Not found")
     kind, action = m.group("kind"), m.group("action")
-    if kind not in KINDS and kind not in ("search", "library", "basics", "form", "folders", "people"):
+    if kind not in KINDS and kind not in ("search", "library", "basics", "form", "folders", "people", "system"):
         return handler.error(404, "Starboard does not change that part of Reelix")
     body = handler.body()
     address = handler.client_address_text()
@@ -289,6 +289,18 @@ def route(handler, method, path):
 
 def _act(app, reelix, base, kind, action, body):
     from . import logs
+    if kind == "system":  # Reelix's backups, logs and tasks in System (DASH-201, 202, 203)
+        from . import reelix_system as rs
+        acts = {"backups": lambda: rs.backups(reelix), "backup-now": lambda: rs.backup_now(reelix),
+                "backup-settings": lambda: rs.backup_settings(reelix, body.get("every"), body.get("keep")),
+                "restore": lambda: rs.restore(reelix, body.get("name")), "logs": lambda: rs.logs(reelix, str(body.get("level", "")), body.get("lines")),
+                "tasks": lambda: rs.tasks(reelix), "run-task": lambda: rs.run_task(reelix, body.get("task"))}
+        if action not in acts:
+            raise ValueError("Not something Starboard does")
+        out = acts[action]()
+        if out.get("done"):
+            logs.event("info", "reelix", out["done"])
+        return out
     if kind == "form":  # Information, Files, Requests, Books, Music (DASH-193, 195, 197)
         from . import reelix_forms
         if action == "open":

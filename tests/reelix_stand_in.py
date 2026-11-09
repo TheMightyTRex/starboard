@@ -95,6 +95,9 @@ class StandIn:
                        "daily_episode_format": "", "anime_episode_format": "", "multi_episode_style": "prefixed_range",
                        "max_file_name_bytes": 255, "max_path_bytes": 4096}
         self.pace = "normal"
+        self.backups = [{"name": "reelix-2026-11-08.zip", "kind": "scheduled", "size_bytes": 5 * 10 ** 6, "created_at": "2026-11-08T03:00:00Z", "version": "0.9.0"}]
+        self.backup_settings = {"interval_days": 7, "retention": 5}
+        self.tasks_run = []
         self.other = {"/settings/mediamanagement": {"import_mode": "hardlink_or_copy", "minimum_free_space_mb": 100, "extra_file_extensions": ["srt"],
                                                    "delete_empty_folders": False, "recycle_bin_path": None},
                       "/settings/books": {"write_metadata": True, "metadata_language": "en"}, "/settings/music": {"write_tags": True}}
@@ -178,6 +181,23 @@ class StandIn:
                           "avg_response_ms": 900 + 100 * i["id"], "status": i["status"]} for i in self.items["indexers"]], None
         if path == "/indexers/definitions/status":
             return 200, {"loaded": len(SCHEMAS["indexers"]) - 2, "last_sync": "2026-11-08T06:00:00Z", "last_error": None, "syncing": False}, None
+        if path == "/system/backups":
+            if method == "POST":
+                self.backups.append({"name": "reelix-now.zip", "kind": "manual", "size_bytes": 1000, "created_at": "2026-11-09T20:00:00Z"})
+            return 200, {"backups": self.backups, "settings": self.backup_settings, "backup_dir": "/config/backups", "pending_restore": None}, None
+        if path == "/system/backups/settings":
+            self.backup_settings = body
+            return 200, body, None
+        if path.startswith("/system/logs"):
+            return 200, {"file": "reelix.log", "entries": [{"time": "2026-11-09T20:00:00Z", "level": "warn", "target": "x", "message": "A made-up warning"}],
+                         "truncated": False}, None
+        if path == "/system/tasks":
+            return 200, [{"kind": "refresh_library", "name": "Refresh the library", "enabled": True, "running": False, "last_run": None, "next_run": None}], None
+        if path.startswith("/system/jobs"):
+            return 200, [], None
+        if path.startswith("/system/tasks/") and path.endswith("/run"):
+            self.tasks_run.append(path.split("/")[3])
+            return 202, {"job_id": 1}, None
         if path in self.other:
             if method == "PUT":
                 self.other[path] = body

@@ -422,3 +422,20 @@ class SectionsTest(StandInTest):
             with self.assertRaisesRegex(ValueError, "admin"):
                 reelix_people.set_role(reelix, 1, "user")
         self.assertEqual(reelix_people.role_of(self.state.users[1]["permissions"]), "power")
+
+
+class SystemTest(StandInTest):
+    """Reelix's backups, log and tasks in System (DASH-201, 202, 203)."""
+
+    def test_backups_log_and_tasks(self):
+        from starboard import reelix_system as rs
+        with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+            self.assertEqual(len(rs.backup_now(reelix)["backups"]), 2)
+            self.assertEqual(rs.backup_settings(reelix, "0", "3")["every"], 0)
+            with self.assertRaises(ValueError):
+                rs.backup_settings(reelix, "-1", "3")
+            self.assertEqual(rs.logs(reelix, "warn")["lines"][0]["message"], "A made-up warning")
+            rs.run_task(reelix, "refresh_library")
+            with self.assertRaises(ValueError):
+                rs.restore(reelix, "../x")
+        self.assertEqual(self.state.tasks_run, ["refresh_library"])
