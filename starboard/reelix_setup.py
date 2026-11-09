@@ -244,7 +244,7 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
             if default and default.get("preferred_protocol") != "torrent" and not info.get("usenet") and not info.get("sabnzbd"):
                 admin.call("PUT", f"/delayprofiles/{default['id']}", {**default, "preferred_protocol": "torrent"})
         except (ReelixError, OSError, ValueError) as e:
-            done.append(f"qBittorrent is not connected yet ({e}). Add it in Reelix, Settings, Download apps")
+            done.append(f"qBittorrent is not connected yet ({e}). Add it in Starboard: Settings, Reelix, Download apps")
 
     # qBittorrent's temporary password has done its job, whatever happened: it leaves the file now.
     if info.pop("qbittorrent_password", None) is not None:
@@ -267,7 +267,7 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
             if default and default.get("preferred_protocol") != "usenet":
                 admin.call("PUT", f"/delayprofiles/{default['id']}", {**default, "preferred_protocol": "usenet"})
         except (ReelixError, OSError, ValueError) as e:
-            done.append(f"NZBGet is not connected yet ({e}). Add it in Reelix, Settings, Download Clients")
+            done.append(f"NZBGet is not connected yet ({e}). Add it in Starboard: Settings, Reelix, Download apps")
 
     # 4c. SABnzbd, when chosen in place of NZBGet: on port 8085, with the API key Install apps made up (its first
     # settings file has the same key, data/stack/seed/sabnzbd/sabnzbd.ini).
@@ -289,7 +289,7 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
             if default and default.get("preferred_protocol") != "usenet":
                 admin.call("PUT", f"/delayprofiles/{default['id']}", {**default, "preferred_protocol": "usenet"})
         except (ReelixError, OSError, ValueError) as e:
-            done.append(f"SABnzbd is not connected yet ({e}). Add it in Reelix, Settings, Download Clients")
+            done.append(f"SABnzbd is not connected yet ({e}). Add it in Starboard: Settings, Reelix, Download apps")
 
     # 4d. Searches through the VPN (DASH-133), as Prowlarr's were when it ran inside Gluetun.
     from . import reelix_sites
@@ -353,7 +353,7 @@ def switch_usenet(base, password, to, host, creds=None, sab_key=None, opener=Non
         elif to == "sabnzbd" and sab_key:
             settings = {"host": host, "port": 8085, "use_ssl": False, "api_key": sab_key}
         else:
-            return done + [f"Add {'NZBGet' if to == 'nzbget' else 'SABnzbd'} in Reelix, Settings, Download Clients"]
+            return done + [f"Add {'NZBGet' if to == 'nzbget' else 'SABnzbd'} in Starboard: Settings, Reelix, Download apps"]
         admin.call("POST", "/downloadclients", {"implementation": to, "name": "NZBGet" if to == "nzbget" else "SABnzbd",
                                                 "enabled": True, "priority": 1, "tags": [], "settings": settings})
         done.append(f"Connected Reelix to {'NZBGet' if to == 'nzbget' else 'SABnzbd'}")

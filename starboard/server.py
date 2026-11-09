@@ -433,7 +433,7 @@ def after_takeover(app, password, p, sab_ini):
                         admin.call("PUT", f"/downloadclients/{c['id']}", body)
                         notes.append(f"Reelix now reaches {c.get('name')} at {want}")
             except (reelix_setup.ReelixError, OSError, ValueError) as e:
-                notes.append(f"Reelix's download apps are not changed yet ({e}). Check them in Reelix, Settings, Download Clients")
+                notes.append(f"Reelix's download apps are not changed yet ({e}). Check them in Starboard: Settings, Reelix, Download apps")
         services.forget()
         adopt_started_apps(app, [t["key"] for t in p["take"]] + ["reelix", "nzbget"], after_job=False)
         for r in p["replace"]:
@@ -1418,7 +1418,7 @@ class Handler(BaseHTTPRequestHandler):
                 quser = reelix_move.qbit_user()
                 if qpw and not reelix_move.qbit_check(qpw, user=quser):
                     raise ValueError(f"qBittorrent did not accept that password for its user {quser}. Check it, or leave "
-                                     "it empty and add qBittorrent in Reelix, Settings, Download Clients")
+                                     "it empty and add qBittorrent in Starboard: Settings, Reelix, Download apps")
                 vpn = "gluetun" in (stack.chosen_keys(app.data_dir) or []) or any(
                     c["name"] == "gluetun" for c in takeover.found() if c["running"])
                 logs.event("info", "reelix", "Moving the old apps into Reelix")

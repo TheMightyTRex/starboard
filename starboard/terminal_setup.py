@@ -2283,12 +2283,13 @@ def set_up_reelix(api, term, state, wait, job=None):
         except Problem as e:
             if term.job_failed(f"Reelix is not set up yet: {e}", [str(e)], also=["Carry on without it"]) == "again":
                 continue
-            term.note("Starboard tries again when you run ./install.sh --start-apps. Reelix's own pages also work: "
-                      "sign in as admin with your Starboard password.")
+            term.note("Starboard tries again when you run ./install.sh --start-apps, or open Starboard and choose "
+                      "Settings, Reelix, Finish setting up Reelix.")
             return
     for line in done or []:
         term.ok(line)
-    term.note("Reelix's own pages are there if you need them: sign in as admin with your Starboard password.")
+    term.note("Starboard runs Reelix: change its settings in Settings, Reelix. For now, add your free TMDB key for films "
+              "and series in Reelix itself: sign in as admin with your Starboard password, then Settings, Metadata.")
 
 
 def running_apps(folder):

@@ -75,7 +75,7 @@ Your old apps hide passwords and API keys, so Reelix cannot copy them:
   instead, change the Usenet app in Starboard, **Settings**, **Your install**: your Usenet servers move across.
 - **qBittorrent's password.** If your old apps reached qBittorrent without a password (qBittorrent lets chosen
   addresses in without one), Reelix cannot, as it has its own address. Type qBittorrent's user name and password in
-  Reelix: **Settings**, **Download Clients**, **qBittorrent**.
+  Starboard: **Settings**, **Reelix**, **Download apps**, then **Change** on qBittorrent.
 - **qBittorrent through a VPN:** if your old apps reached qBittorrent by a fixed number address for the VPN
   container, change the host to the VPN container's name, such as `gluetun`.
 - **Local Jellyseerr or Seerr users** need a new password in Reelix: **Settings**, **Users**.

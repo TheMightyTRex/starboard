@@ -101,7 +101,7 @@ nothing is deleted. Your old settings folders and the `starboard-rollback` image
   another disk.
 - **"Move ... into Reelix first":** do step 1 first, or select that you do not need them moved.
 - **"qBittorrent did not accept that password":** type the password you use to sign in to qBittorrent, or leave it
-  empty and add qBittorrent in Reelix, **Settings**, **Download Clients**.
+  empty and add qBittorrent in Starboard: **Settings**, **Reelix**, **Download apps**.
 
 ## Find out more
 

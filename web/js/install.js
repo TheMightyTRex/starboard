@@ -738,20 +738,22 @@ function connectGuide(state, apps) {
   const arrs = [["radarr", "/data/media/movies", 7878], ["sonarr", "/data/media/tv", 8989], ["lidarr", "/data/media/music", 8686], ["bookshelf", "/data/media/books", 8787]].filter(([k]) => has(k));
   const steps = [];
   if (has("reelix")) {
-    steps.push(el("li", {}, el("strong", { text: "Reelix. " }), open("reelix"), ". Starboard has set it up: sign in as ", code("admin"),
-      " with your Starboard password. Your library folders are added", has("qbittorrent") ? ", and qBittorrent is connected" : "", ". Then:",
+    steps.push(el("li", {}, el("strong", { text: "Reelix. " }), "Starboard has set it up and runs it, so you do not need Reelix's own pages. Your library folders are added",
+      has("qbittorrent") || has("nzbget") || has("sabnzbd") ? ", and your download apps are connected" : "", ". Then:",
       el("ul", {}, ...[
-        el("li", {}, "Settings, Metadata: add a TMDB API key. Films and series need it; you get one free from themoviedb.org."),
+        // Until the set-ups ask for it (DASH-178), the TMDB key is the one setting still made in Reelix's own pages.
+        el("li", {}, "Films and series information: add a free TMDB key, from themoviedb.org. For now this is done in Reelix itself: ", open("reelix"),
+          ", sign in as ", code("admin"), " with your Starboard password, then Settings, Metadata. Starboard will ask for it in a later version."),
         el("li", {}, "Sites to search: the ones you chose are added. See each one's state, and add more, in ",
           el("a", { href: "/settings-reelix.html", text: "Settings, Reelix, Sites to search" }), "."),
-        has("sabnzbd") ? el("li", {}, "Settings, Download Clients, add SABnzbd: host ", code(host("sabnzbd")), ", port ", code("8080"), ", with its API key.") : null,
         has("jellyfin") || has("audiobookshelf") ? el("li", {}, `Once Starboard has ${[has("jellyfin") ? "Jellyfin's" : "", has("audiobookshelf") ? "Audiobookshelf's" : ""].filter(Boolean).join(" and ")} API key (Settings, Manage apps), connect ${has("jellyfin") && has("audiobookshelf") ? "them" : "it"} to Reelix with one button in `,
           el("a", { href: "/settings-reelix.html", text: "Settings, Reelix, Media servers" }), ", so new things show up there at once.") : null,
       ].filter(Boolean))));
   }
   if (has("qbittorrent") && has("reelix")) {
     steps.push(el("li", {}, el("strong", { text: "qBittorrent. " }), open("qbittorrent"), ". Starboard gave it a password of its own and saved it in Reelix, so nothing to do. ",
-      "To sign in to qBittorrent yourself, choose a new password in its Options, Web UI, then type it in Reelix too: Settings, Download Clients, qBittorrent."));
+      "To sign in to qBittorrent yourself, choose a new password in its Options, Web UI, then change it for Reelix in ",
+      el("a", { href: "/settings-reelix.html#rx-downloadclients", text: "Settings, Reelix, Download apps" }), "."));
   } else if (has("qbittorrent")) {
     steps.push(el("li", {}, el("strong", { text: "qBittorrent. " }), open("qbittorrent"), ". Its first password is in its log (on the server: ", code("docker logs qbittorrent"),
       "). Sign in as ", code("admin"), ", then choose your own password in Options, Web UI. In Options, Downloads, set the default save path to ", code("/data/downloads/torrents"), "."));
@@ -763,7 +765,10 @@ function connectGuide(state, apps) {
       ". Add your Usenet provider in its Settings, News-Servers."));
   }
   if (has("sabnzbd")) {
-    steps.push(el("li", {}, el("strong", { text: "SABnzbd. " }), open("sabnzbd"), ". Its first-run wizard asks for your Usenet provider. In Config, Folders, set the completed folder to ", code("/data/downloads/usenet"), ". Copy its API key from Config, General."));
+    // Starboard writes SABnzbd's folders and API key and connects it to Reelix itself (DASH-215).
+    steps.push(el("li", {}, el("strong", { text: "SABnzbd. " }), open("sabnzbd"), has("reelix")
+      ? ". Starboard set its folders and API key, and connected it to Reelix. Add your Usenet provider: its first-run wizard asks for it, or Config, Servers."
+      : ". Starboard set its folders and API key. Add your Usenet provider: its first-run wizard asks for it, or Config, Servers."));
   }
   for (const [k, folder, port] of arrs) {
     steps.push(el("li", {}, el("strong", { text: `${apps[k].name}. ` }), open(k), ". Choose a sign-in in the first window. Then:",

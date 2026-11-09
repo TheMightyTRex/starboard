@@ -24,6 +24,9 @@ RULES = [
     (r"\b(top right|top left|bottom right|bottom left|on the left|on the right|scroll down|scroll up)\b", "a position"),
     (r"(?<!\[)!(?!\[)", "an exclamation mark"),  # not GitHub's callouts, "> [!TIP]"
     (r"\b(click here|read more)\b", "a vague link"),
+    # Starboard runs Reelix (DASH-161): help never sends people to Reelix's own settings. The TMDB key (Settings,
+    # Metadata) is the one exception until the set-ups ask for it (DASH-178).
+    (r"(?-i:\bDownload Clients\b)|\bReelix,? (\*\*)?Settings(\*\*)?,? (?!(\*\*)?Metadata)", "Reelix's own settings (use Settings, Reelix in Starboard)"),
 ]
 
 

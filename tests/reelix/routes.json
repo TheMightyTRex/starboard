@@ -1,0 +1,241 @@
+{
+ "about": "Every group of Reelix's API routes (/api/v1/<group>/...) and where Starboard covers it: 'starboard' says where it is shown or used, 'task' names the task that will, 'not_for_lite' says why it is not needed. tests/test_reelix_routes.py fails when Reelix adds a group with no decision (DASH-177). Check against a running Reelix with REELIX_OPENAPI=http://host:7700/api/v1/openapi.json.",
+ "tested_with": "0.8.6",
+ "routes": {
+  "albums": {
+   "task": "DASH-206",
+   "what": "Library albums (read in DASH-163), follow and change"
+  },
+  "artists": {
+   "starboard": "Library, Music (DASH-163)"
+  },
+  "auth": {
+   "starboard": "The set-up's admin and key (reelix_setup.py), the admin password dialog (DASH-154)"
+  },
+  "authors": {
+   "task": "DASH-206",
+   "what": "Library authors (read in DASH-163), follow and change"
+  },
+  "blocklist": {
+   "task": "DASH-159",
+   "what": "the refused list"
+  },
+  "bookfiles": {
+   "task": "DASH-209",
+   "what": "file details"
+  },
+  "bookimport": {
+   "task": "DASH-186",
+   "what": "bring in books already on disk"
+  },
+  "bookrootfolders": {
+   "task": "DASH-194",
+   "what": "folders after set-up (made at set-up today)"
+  },
+  "books": {
+   "task": "DASH-206",
+   "what": "Library books (read in DASH-163), follow and change"
+  },
+  "bookseries": {
+   "starboard": "Library, Books and Audiobooks, Series (DASH-163)"
+  },
+  "calendar": {
+   "starboard": "Coming up"
+  },
+  "calendar.ics": {
+   "task": "DASH-67",
+   "what": "calendar feed"
+  },
+  "collections": {
+   "starboard": "Library, Films, Collections (DASH-163)"
+  },
+  "command": {
+   "task": "DASH-209",
+   "what": "refresh and rescan"
+  },
+  "customformats": {
+   "task": "DASH-196",
+   "what": "quality in full; language rules in DASH-189"
+  },
+  "delayprofiles": {
+   "task": "DASH-196",
+   "what": "set at set-up today (reelix_setup.py)"
+  },
+  "discover": {
+   "task": "DASH-211",
+   "what": "Discover, Trending"
+  },
+  "downloadclients": {
+   "starboard": "Settings, Reelix, Download apps (DASH-154)"
+  },
+  "downloads": {
+   "not_for_lite": "YouTube and Spotify downloads exist only in the full Reelix: DASH-216, DASH-217"
+  },
+  "episodefiles": {
+   "task": "DASH-209",
+   "what": "file details"
+  },
+  "episodes": {
+   "task": "DASH-206",
+   "what": "episodes on item pages (read in DASH-163), follow and change"
+  },
+  "history": {
+   "task": "DASH-159",
+   "what": "Downloads, History"
+  },
+  "importlists": {
+   "task": "DASH-198",
+   "what": "import lists, sync and exclusions"
+  },
+  "indexers": {
+   "starboard": "Settings, Reelix, Sites to search, with each site's results (DASH-155); free search in DASH-213"
+  },
+  "issues": {
+   "task": "DASH-208",
+   "what": "Downloads, Issues"
+  },
+  "library": {
+   "starboard": "Library counts (DASH-163)"
+  },
+  "libraryimport": {
+   "task": "DASH-186",
+   "what": "bring in films and series already on disk"
+  },
+  "manualimport": {
+   "task": "DASH-205",
+   "what": "fix a stuck download"
+  },
+  "media": {
+   "task": "DASH-211",
+   "what": "Discover's title pages"
+  },
+  "mediaservers": {
+   "starboard": "Settings, Reelix, Media servers (DASH-156)"
+  },
+  "metadataprofiles": {
+   "task": "DASH-193",
+   "what": "read when adding from Search (DASH-162)"
+  },
+  "moviefiles": {
+   "task": "DASH-209",
+   "what": "file details"
+  },
+  "movies": {
+   "task": "DASH-206",
+   "what": "Library films (read in DASH-163), follow and change"
+  },
+  "music": {
+   "task": "DASH-193",
+   "what": "music information and search"
+  },
+  "musicimport": {
+   "task": "DASH-186",
+   "what": "bring in music already on disk"
+  },
+  "musicrootfolders": {
+   "task": "DASH-194",
+   "what": "folders after set-up"
+  },
+  "naming": {
+   "task": "DASH-188",
+   "what": "naming"
+  },
+  "parse": {
+   "not_for_lite": "a test tool for release names"
+  },
+  "pending": {
+   "task": "DASH-210",
+   "what": "held downloads"
+  },
+  "profile": {
+   "not_for_lite": "each Reelix user's own notification choices; Starboard has its own alerts"
+  },
+  "qualitydefinitions": {
+   "task": "DASH-196",
+   "what": "quality sizes"
+  },
+  "qualityprofiles": {
+   "task": "DASH-196",
+   "what": "read when adding from Search (DASH-162)"
+  },
+  "queue": {
+   "starboard": "Downloads (stuck imports: DASH-205)"
+  },
+  "radio": {
+   "starboard": "Coming up and Library, Radio; following shows DASH-158, settings DASH-181, review DASH-212"
+  },
+  "releaseprofiles": {
+   "task": "DASH-196",
+   "what": "release rules"
+  },
+  "releases": {
+   "task": "DASH-159",
+   "what": "choose a download"
+  },
+  "remotepathmappings": {
+   "task": "DASH-204",
+   "what": "smaller settings"
+  },
+  "rename": {
+   "task": "DASH-209",
+   "what": "rename with a preview"
+  },
+  "requests": {
+   "task": "DASH-157",
+   "what": "requests; settings in DASH-197"
+  },
+  "rootfolders": {
+   "starboard": "Made at set-up (reelix_setup.py); changed later in DASH-194"
+  },
+  "search": {
+   "starboard": "Search (DASH-162); Wanted's search in DASH-207"
+  },
+  "seasonpass": {
+   "task": "DASH-206",
+   "what": "season pass"
+  },
+  "seasons": {
+   "task": "DASH-206",
+   "what": "follow seasons"
+  },
+  "series": {
+   "task": "DASH-206",
+   "what": "Library series (read in DASH-163), follow and change"
+  },
+  "settings": {
+   "starboard": "Settings, Reelix, Sites to search (indexer settings); the rest in DASH-188, 193, 195, 197, 200"
+  },
+  "setup": {
+   "starboard": "The set-up (reelix_setup.py)"
+  },
+  "system": {
+   "starboard": "Health on Apps and System (DASH-176), updates through Starboard (DASH-187), moving in (reelix_move.py); backups DASH-201, logs DASH-202, jobs DASH-203, pace DASH-200"
+  },
+  "tags": {
+   "task": "DASH-204",
+   "what": "smaller settings"
+  },
+  "trackfiles": {
+   "task": "DASH-209",
+   "what": "file details"
+  },
+  "tracks": {
+   "starboard": "Library album pages (DASH-163)"
+  },
+  "users": {
+   "task": "DASH-199",
+   "what": "people"
+  },
+  "wanted": {
+   "task": "DASH-207",
+   "what": "Wanted"
+  },
+  "ws": {
+   "task": "DASH-214",
+   "what": "live updates, only if lighter"
+  },
+  "{kind}": {
+   "starboard": "Settings, Reelix forms from Reelix's own description (DASH-154); notifications and lists in DASH-198"
+  }
+ }
+}
