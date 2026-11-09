@@ -21,6 +21,30 @@ async function loadVpnProviders() {
 // Sites to search (DASH-155): Reelix's built-in public sites and the step's words, the same file the terminal
 // set-up reads (web/reelix-sites.json), so both ask the same questions in the same order.
 let reelixSites = null;
+// The TMDB key, language and Usenet server questions: the same words as the terminal set-up (web/setup-answers.json).
+let setupAnswers = null;
+async function loadSetupAnswers() {
+  if (!setupAnswers) setupAnswers = await (await fetch("/setup-answers.json", { cache: "no-cache" })).json();
+  return setupAnswers;
+}
+
+// A Test button and the line that says how it went, for the TMDB key and the Usenet server.
+function testButton(label, run) {
+  const said = el("div", { role: "status", "aria-live": "polite" });
+  const button = el("button", { type: "button", class: "btn btn--secondary" }, label);
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    said.replaceChildren(el("p", { class: "small muted", text: "Testing…" }));
+    try {
+      const r = await run();
+      said.replaceChildren(r.ok ? notice("success", "It works", r.message) : notice("danger", "It did not work", r.message));
+    }
+    catch (e) { said.replaceChildren(notice("danger", "It did not work", e.message)); }
+    finally { button.disabled = false; }
+  });
+  return el("div", { class: "stack-2" }, el("div", {}, button), said);
+}
+
 async function loadReelixSites() {
   if (!reelixSites) {
     try { reelixSites = await (await fetch("/reelix-sites.json", { cache: "no-cache" })).json(); } catch { reelixSites = { sites: [], words: {} }; }
@@ -66,6 +90,7 @@ async function startInstall() {
     puid: data.defaults.puid, pgid: data.defaults.pgid, tz: data.defaults.tz,
     vpn: { provider: "", type: "wireguard" }, moving: new Set(), written: null, pool: null, reelix_edition: "lite",
     install: "basics", installApplied: false, usenet: "nzbget", sites: { builtin: [], own: [] },
+    tmdb: "", language: "English", usenetServer: null,
   };
   // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd is, Moving over only when
   // there is something to move.
@@ -78,7 +103,8 @@ async function startInstall() {
     ...(state.apps.has("gluetun") ? [{ id: "vpn", ...stepNamed(T, "vpn"), skippable: false,
       intro: "Downloads go through your VPN, so your internet provider sees only the VPN. You need an account with a VPN provider." }] : []),
     ...(state.apps.has("sabnzbd") || state.apps.has("nzbget") ? [{ id: "usenet", ...stepNamed(T, "usenet"), skippable: false }] : []),
-    ...(state.apps.has("reelix") ? [{ id: "sites", ...stepNamed(T, "sites"), skippable: false }] : []),
+    ...(state.apps.has("reelix") ? [{ id: "sites", ...stepNamed(T, "sites"), skippable: false },
+      { id: "films", ...stepNamed(T, "films"), skippable: false }] : []),
     ...(data.servers.length ? [{ id: "moving", ...stepNamed(T, "moving"),
       intro: "Starboard found these on this computer. Nothing is copied or changed until the new apps are running and you choose." }] : []),
     { id: "review", ...stepNamed(T, "check"), skippable: false },
@@ -437,6 +463,33 @@ async function installStep(id, state, data, apps, go) {
     // someone who has none. The rules for what Usenet may be used for show whatever the answer.
     const choices = [["none", "No, show me some providers"], ["have", "Yes, I have one"], ["later", "Not now: torrents are enough for now"]];
     const more = el("div", { class: "stack-2", "aria-live": "polite" });
+    // DASH-183: the provider's server, tested here and written into the Usenet app once it runs.
+    const uw = (await loadSetupAnswers()).usenet;
+    const last = state.usenetServer || {};
+    const usenetApp = state.apps.has("sabnzbd") ? "SABnzbd" : "NZBGet";
+    const inputs = {
+      host: el("input", { class: "input", autocomplete: "off", spellcheck: "false", value: last.host || "" }),
+      ssl: el("input", { type: "checkbox", checked: last.ssl !== false }),
+      port: el("input", { class: "input", inputmode: "numeric", autocomplete: "off", value: String(last.port || 563) }),
+      username: el("input", { class: "input", autocomplete: "off", spellcheck: "false", value: last.username || "" }),
+      password: el("input", { class: "input", type: "password", autocomplete: "new-password", value: last.password || "" }),
+      connections: el("input", { class: "input", inputmode: "numeric", autocomplete: "off", value: String(last.connections || 8) }),
+    };
+    inputs.ssl.addEventListener("change", () => {
+      if (["563", "119", ""].includes(inputs.port.value.trim())) inputs.port.value = inputs.ssl.checked ? "563" : "119";
+    });
+    const server = () => ({ host: inputs.host.value.trim(), ssl: inputs.ssl.checked, port: inputs.port.value.trim(),
+      username: inputs.username.value.trim(), password: inputs.password.value, connections: inputs.connections.value.trim() });
+    const serverBox = el("div", { class: "form-stack" },
+      el("p", { text: uw.server_intro }),
+      field(uw.host, inputs.host, { hint: uw.host_hint }),
+      el("label", { class: "check" }, inputs.ssl, el("span", { text: uw.ssl })),
+      field(uw.port, inputs.port, { hint: uw.port_hint }),
+      field(uw.username, inputs.username),
+      field(uw.password, inputs.password),
+      field(uw.connections, inputs.connections, { hint: uw.connections_hint }),
+      testButton(uw.test, () => api("/api/setup/test-usenet", { method: "POST", body: { server: server() } })),
+      el("p", { class: "small muted", text: uw.later.replace("{app}", usenetApp) }));
     const show = (v) => {
       state.usenetHave = v;
       const how = el("p", { class: "help-links" }, helpButton("How to add a provider's server", { page: "topics/choose-a-usenet-provider.md" }));
@@ -445,7 +498,7 @@ async function installStep(id, state, data, apps, go) {
         el("ul", { "aria-label": "Usenet providers (affiliate links)" }, USENET.map(([name, url]) => el("li", {},
           el("a", { href: url, target: "_blank", rel: "noopener noreferrer sponsored" }, name,
             el("span", { class: "visually-hidden", text: " (affiliate link, opens in a new tab)" }))))), how]
-        : v === "have" ? [el("p", { text: "Add its server to the Usenet app once the apps are running: its address, port, user name, password and connections." }), how]
+        : v === "have" ? [serverBox, how]
         : [el("p", { text: "The Usenet app is installed anyway. Add a provider whenever you like." }), how]),
       usenetRights());
     };
@@ -454,7 +507,15 @@ async function installStep(id, state, data, apps, go) {
         el("input", { type: "radio", name: "usenet-have", value: v, checked: v === (state.usenetHave || "none") }), el("strong", { text: t })))));
     fieldset.addEventListener("change", (e) => show(e.target.value));
     show(state.usenetHave || "none");
-    nodes = [el("p", { text: USENET_ABOUT }), fieldset, more];
+    nodes = [el("p", { text: USENET_ABOUT.replaceAll("SABnzbd", usenetApp) }), fieldset, more];
+    save = async () => {
+      if (state.usenetHave !== "have") { state.usenetServer = null; return true; }
+      const s = server();
+      setError(inputs.host, "");
+      if (!s.host) { state.usenetServer = null; return true; }  // added later in the Usenet app
+      state.usenetServer = s;
+      return true;
+    };
   } else if (id === "sites") {
     // The same questions, in the same order and words, as the terminal set-up's step_sites: Reelix's built-in sites
     // (none ticked unless chosen), then your own Torznab or Newznab address. Added once Reelix runs.
@@ -488,6 +549,34 @@ async function installStep(id, state, data, apps, go) {
       if (kind && !/^https?:\/\/[^\s/]+/.test(url.value.trim())) return stop(url, "Enter the site's address, starting http:// or https://");
       state.sites = { builtin: boxes.filter((b) => b.input.checked).map((b) => b.s.id),
         own: kind ? [{ kind, url: url.value.trim(), api_key: key.value.trim() }] : [] };
+      return true;
+    };
+  } else if (id === "films") {
+    // DASH-178 and DASH-189: the same questions, words and order as the terminal set-up's step_films. Both answers
+    // are written into Reelix once it runs.
+    const w = await loadSetupAnswers();
+    const key = el("input", { class: "input", type: "password", autocomplete: "off", spellcheck: "false", value: state.tmdb || "" });
+    const langs = el("fieldset", {}, el("legend", { text: w.language.question }),
+      el("div", { class: "option-cards" }, w.language.choices.map((c) => el("label", { class: "option-card" },
+        el("input", { type: "radio", name: "release-language", value: c.value, checked: (state.language ?? "English") === c.value }),
+        el("strong", { text: c.label }), el("small", { text: c.hint })))));
+    nodes = [
+      el("h3", { text: w.tmdb.title }),
+      el("p", { text: w.tmdb.intro }),
+      el("p", { class: "small" }, w.tmdb.how, " ", el("a", { href: w.tmdb.link, target: "_blank", rel: "noopener noreferrer" }, "themoviedb.org",
+        el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))),
+      field(w.tmdb.question, key, { hint: w.tmdb.hint }),
+      testButton(w.tmdb.test, () => api("/api/setup/test-tmdb", { method: "POST", body: { key: key.value.trim() } })),
+      el("h3", { text: w.language.title }),
+      el("p", { text: w.language.intro }),
+      langs,
+    ];
+    save = async () => {
+      const v = key.value.trim();
+      setError(key, "");
+      if (v && !/^([0-9a-f]{32}|eyJ[\w-]+\.[\w-]+\.[\w-]+)$/.test(v)) return stop(key, "That does not look like a TMDB key. Paste the API Read Access Token or the API key from themoviedb.org, Settings, API");
+      state.tmdb = v;
+      state.language = $("input:checked", langs)?.value ?? "English";
       return true;
     };
   } else if (id === "moving") {
@@ -543,6 +632,9 @@ async function installStep(id, state, data, apps, go) {
         ...(state.pool ? row("Pool", `${state.pool.path}, from ${state.pool.mounts.length} drives (run its commands first)`, "folders") : []),
         ...(state.advanced ? row("Settings folder", el("code", { text: state.config_dir }), "folders") : []),
         ...(state.apps.has("reelix") ? row("Sites to search", sitesSummary(state.sites, await loadReelixSites()), "sites") : []),
+        ...(state.apps.has("reelix") ? row("TMDB key", state.tmdb ? "Added" : "None for now: Reelix uses open data", "films") : []),
+        ...(state.apps.has("reelix") ? row("Language of releases", (await loadSetupAnswers()).language.choices.find((c) => c.value === state.language)?.label || "English", "films") : []),
+        ...(state.usenetServer ? row("Usenet server", state.usenetServer.host, "usenet") : []),
         ...(state.apps.has("gluetun") ? row("VPN", `${vpnName}, ${state.vpn.type === "openvpn" ? "OpenVPN" : "WireGuard"}${state.vpn.countries ? `, ${state.vpn.countries}` : ""}`, "vpn") : []),
         ...(data.servers.length ? row("Moving over", moving || "Nothing", "moving") : [])))),
       p.moved.length ? notice("warning", "Some ports moved", p.moved.join(". ") + ".") : null,
@@ -811,5 +903,6 @@ function connectGuide(state, apps) {
 }
 
 function body(state) {
-  return { apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn, reelix_edition: state.apps.has("reelix") ? state.reelix_edition : "lite", ...(state.apps.has("reelix") ? { sites: state.sites } : {}) };
+  return { apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn, reelix_edition: state.apps.has("reelix") ? state.reelix_edition : "lite", ...(state.apps.has("reelix") ? { sites: state.sites, tmdb: state.tmdb, language: state.language } : {}),
+    ...(state.usenetServer && (state.apps.has("nzbget") || state.apps.has("sabnzbd")) ? { usenet_server: state.usenetServer } : {}) };
 }

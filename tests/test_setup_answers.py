@@ -105,6 +105,20 @@ class Answers(unittest.TestCase):
         with open(os.path.join(setup_answers.HERE, "web", "setup-answers.json"), encoding="utf-8") as f:
             self.assertEqual(json.load(f), setup_answers.WORDS)
 
+    def test_both_set_ups_ask_films_and_series_after_the_sites(self):
+        from starboard import terminal_setup as ts
+        with open(os.path.join(setup_answers.HERE, "web", "js", "install.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn('fetch("/setup-answers.json"', js)
+        self.assertLess(js.index('stepNamed(T, "sites")'), js.index('stepNamed(T, "films")'))
+        self.assertIn("/api/setup/test-tmdb", js)
+        self.assertIn("/api/setup/test-usenet", js)
+        for words in (setup_answers.WORDS["tmdb"]["intro"], setup_answers.WORDS["usenet"]["server_intro"]):
+            self.assertNotIn(words, js, "Words belong in web/setup-answers.json, not in install.js")
+        ids = ts.job_steps({"start": "new", "choice": {"apps": ["reelix", "nzbget"]}})
+        self.assertEqual(ids[ids.index("sites") + 1], "films")
+        self.assertNotIn("films", ts.job_steps({"start": "new", "choice": {"apps": ["jellyfin"]}}))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -151,7 +151,7 @@ HELP_PAGES = {
     "storage": "topics/check-storage.html", "extras": "topics/set-up-live-tv.html", "alerts": "topics/activate-alerts.html",
     "health": "topics/check-disk-health.html", "name": "guides/set-up-your-dashboard.html",
     "restore": "topics/restore-a-saved-copy.html", "found": "topics/search-for-new-apps.html",
-    "sites": "topics/choose-sites-to-search.html",
+    "sites": "topics/choose-sites-to-search.html", "films": "topics/choose-sites-to-search.html",
 }
 
 HELP = {
@@ -191,6 +191,10 @@ HELP = {
              "need no account. Torznab and Newznab are the ways such sites answer searches: use your own address if "
              "you run Jackett or Prowlarr, or have an account with a Usenet search site. You can add, test and remove "
              "sites later in Starboard, Settings, Reelix, Sites to search.",
+    "films": "TMDB, The Movie Database, is where Reelix finds each film's and series' details, posters and episodes. "
+             "The key is free from themoviedb.org. Without one Reelix uses open data and matches fewer titles. The "
+             "language decides whether Reelix skips releases dubbed into another language. Change both later in "
+             "Starboard, Settings, Reelix.",
     "hours": "Downloading uses most of your internet connection while it runs, so streaming, video calls and games on "
              "other devices can slow down. With download hours, Starboard pauses the download apps outside them and "
              "starts them again when they begin. Nothing is lost.",
@@ -527,7 +531,7 @@ def question(step_id):
     return STEP_TABLE[step_id]["question"]
 
 
-STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "check", "extras", "hours", "alerts",
+STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "check", "extras", "hours", "alerts",
                             "preset")]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
@@ -1717,7 +1721,7 @@ def job_steps(state):
         if apps is None or apps & {"sabnzbd", "nzbget"}:
             ids.append("usenet")
         if apps is None or "reelix" in apps:
-            ids.append("sites")
+            ids += ["sites", "films"]
         if apps is None or apps:
             ids.append("check")
     if not state.get("no_extras"):
@@ -2103,9 +2107,7 @@ def step_usenet(api, term, state):
                 term.say(f"    {url}")
             term.say("")
     elif have == 1:
-        term.note(f"Add its server to {app} once the apps are running: its address, port, user name, password "
-                  "and connections.")
-        term.say("")
+        ask_usenet_server(term, state, app)
     else:
         term.note(f"{app} is installed anyway. Add a provider whenever you like.")
         term.say("")
@@ -2116,6 +2118,105 @@ def step_usenet(api, term, state):
     term.note(USENET_RIGHTS)
     term.say("")
     term.text("Press Enter to carry on", help_key="usenet")
+    return True
+
+
+def ask_usenet_server(term, state, app):
+    """Your provider's server (DASH-183): the same fields and words as the browser set-up (web/setup-answers.json),
+    tested when you like, and written into the Usenet app once it runs. Leave the address empty to add it later."""
+    from . import setup_answers
+    w = setup_answers.WORDS["usenet"]
+    choice = state.get("choice") or {}
+    last = state.get("usenet_server") or {}
+    term.note(w["server_intro"])
+    term.say("")
+    while True:
+        host = term.text(f"{w['host']} ({w['host_hint']})", last.get("host", ""), help_key="usenet").strip()
+        if not host:
+            state["usenet_server"] = None
+            choice.pop("usenet_server", None)
+            term.note(f"Add its server to {app} once the apps are running.")
+            term.say("")
+            return
+        use_ssl = term.yes_no(w["ssl"], last.get("ssl", True), help_key="usenet")
+        port = term.text(f"{w['port']} ({w['port_hint']})", str(last.get("port") or (563 if use_ssl else 119)), help_key="usenet").strip()
+        user = term.text(w["username"], last.get("username", ""), help_key="usenet").strip()
+        password = term.hidden(w["password"], keep=bool(last.get("password")), help_key="usenet")
+        password = last.get("password", "") if password is None else password
+        connections = term.text(f"{w['connections']} ({w['connections_hint']})", str(last.get("connections") or 8), help_key="usenet").strip()
+        try:
+            server = setup_answers.clean_usenet({"host": host, "port": port, "ssl": use_ssl, "username": user,
+                                                 "password": password, "connections": connections})
+        except ValueError as e:
+            term.refuse(str(e))
+            continue
+        last = server
+        if term.yes_no(w["test"] + "?", True, help_key="usenet"):
+            try:
+                setup_answers.test_usenet(server)
+                term.ok(w["ok"])
+            except ValueError as e:
+                term.refuse(str(e))
+                if term.yes_no("Change the details?", True, help_key="usenet"):
+                    continue
+        state["usenet_server"] = server
+        choice["usenet_server"] = server
+        term.note(w["later"].format(app=app))
+        term.say("")
+        return
+
+
+def step_films(api, term, state):
+    """Films and series (DASH-178, DASH-189): only when Reelix is chosen, straight after the sites to search. A TMDB
+    key, tested when you like, then the language of releases. The same words as the browser set-up
+    (web/setup-answers.json); both are written into Reelix once it runs."""
+    from . import setup_answers
+    choice = state.get("choice")
+    if not choice or "reelix" not in choice["apps"]:
+        return False
+    w = setup_answers.WORDS
+    head(term, state, "films")
+    term.say("")
+    term.note(term.accent(w["tmdb"]["title"]))
+    term.note(w["tmdb"]["intro"])
+    term.note(w["tmdb"]["how"])
+    if term.fancy:
+        term.link(w["tmdb"]["link"])
+    else:
+        term.say(f"  {w['tmdb']['link']}")
+    term.say("")
+    while True:
+        typed = term.hidden(f"{w['tmdb']['question']} ({w['tmdb']['hint']})", keep=bool(state.get("tmdb")), help_key="films")
+        key = state.get("tmdb", "") if typed is None else typed.strip()
+        try:
+            key = setup_answers.clean_tmdb(key)
+        except ValueError as e:
+            term.refuse(str(e))
+            continue
+        if not key:
+            term.note(w["tmdb"]["skipped"])
+            break
+        if term.yes_no(w["tmdb"]["test"] + "?", True, help_key="films"):
+            try:
+                setup_answers.test_tmdb(key)
+                term.ok(w["tmdb"]["ok"])
+            except ValueError as e:
+                term.refuse(str(e))
+                if term.yes_no("Type the key again?", True, help_key="films"):
+                    continue
+        break
+    state["tmdb"] = key
+    choice["tmdb"] = key
+    term.say("")
+    term.note(term.accent(w["language"]["title"]))
+    term.note(w["language"]["intro"])
+    langs = w["language"]["choices"]
+    values = [c["value"] for c in langs]
+    last = state.get("language", "English")
+    picked = term.choose(w["language"]["question"], [f"{c['label']}: {c['hint']}" for c in langs],
+                         values.index(last) + 1 if last in values else 1, help_key="films")
+    state["language"] = choice["language"] = values[picked]
+    term.say("")
     return True
 
 
@@ -2671,7 +2772,7 @@ def step_preset(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_start, step_storage, step_apps, step_vpn, step_usenet, step_sites, step_check, step_connect, step_hours,
+STEP_FUNCTIONS = [step_password, step_start, step_storage, step_apps, step_vpn, step_usenet, step_sites, step_films, step_check, step_connect, step_hours,
                   step_alerts, step_preset]
 
 

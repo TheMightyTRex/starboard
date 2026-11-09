@@ -323,7 +323,7 @@ class LiveRunTest(unittest.TestCase):
         self.assertEqual(term.step_keys()[1], "Enter: recommended")
 
     def test_a_long_link_is_on_a_line_of_its_own_with_no_indent(self):
-        term, out = boxed(["2", ""], width=80, rows=24)
+        term, out = boxed(["2", "", ""], width=80, rows=24)
         term._page = lambda *a: None
         self.assertTrue(ts.step_usenet(None, term, {"choice": {"apps": ["nzbget"]}}))
         link = f"{ts.HELP_CENTRE}topics/choose-a-usenet-provider.html"
@@ -343,7 +343,7 @@ class LiveRunTest(unittest.TestCase):
 
 class WordsTest(unittest.TestCase):
     def test_the_usenet_step_names_the_app_chosen(self):
-        term, out = plain(["2", ""])
+        term, out = plain(["2", "", ""])
         self.assertTrue(ts.step_usenet(None, term, {"choice": {"apps": ["nzbget"]}}))
         text = " ".join(out.getvalue().split())
         self.assertIn("NZBGet needs an account with a Usenet provider", text)

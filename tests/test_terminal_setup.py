@@ -73,9 +73,9 @@ class TerminalSetupTest(unittest.TestCase):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # name, start, storage, folder; install now, Basics (recommended), install these; the VPN (Basics has one):
         # provider, WireGuard, any country, the address; Usenet: no provider yet, Enter; Sites to search: none, no address
-        # of your own; then write, extras, hours, alerts, health, preset
-        typed = ["", "", "", media, "", "", "", "5", "", "", "192.168.1.20/32", "", "", "", "", "", "y", "", "", "", "", "", "", ""]
-        term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
+        # of your own; Films and series: no TMDB key (hidden), English; then write, extras, hours, alerts, health, preset
+        typed = ["", "", "", media, "", "", "", "5", "", "", "192.168.1.20/32", "", "", "", "", "", "", "y", "", "", "", "", "", "", ""]
+        term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key", ""])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
         self.assertFalse(self.app.needs_setup)
@@ -98,7 +98,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("Use Usenet only for files you have the right to download", text)
 
     def test_someone_with_a_usenet_provider_is_not_shown_the_list(self):
-        term, out = self.term(["2", ""], [])  # Yes, I have one; then Enter
+        term, out = self.term(["2", "", ""], [])  # Yes, I have one; no server address for now; then Enter
         self.assertTrue(terminal_setup.step_usenet(None, term, {"choice": {"apps": ["nzbget"]}}))
         self.assertNotIn("a_aid=", out.getvalue())
         self.assertIn("choose-a-usenet-provider", out.getvalue())
@@ -178,7 +178,7 @@ class TerminalSetupTest(unittest.TestCase):
         term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
         term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
         lines = term.header + out.getvalue().splitlines()  # the heading is drawn in place, not printed
-        self.assertTrue(any("step 2 of 12" in l for l in lines))
+        self.assertTrue(any("step 2 of 13" in l for l in lines))
         self.assertTrue(any("█" in l and " 8%" in l for l in lines))
         boxed = [l for l in lines if l and l[0] in "┌│└╭╰"]
         self.assertTrue(boxed)
