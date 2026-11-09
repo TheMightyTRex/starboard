@@ -4,3 +4,5 @@
 99eca9cb824091fb11492ec18004299763b38669:tests/test_terminal_setup.py:generic-api-key:219
 # A made-up WireGuard key the test driver types into the VPN step (tools/vm/drive.py), not a real one.
 cd3fb88af79c1a0607d77dc614a6f5d6102b52e8:tools/vm/drive.py:generic-api-key:36
+# A made-up Reelix set-up token in the test that reads it from Reelix's log (tests/test_reelix_setup.py), not a real one.
+3c11c28bc69b47907fdcf80e3b4af2da8aea1b3e:tests/test_reelix_setup.py:generic-api-key:273

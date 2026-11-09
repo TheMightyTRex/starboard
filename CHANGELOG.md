@@ -7,19 +7,20 @@ add features.
 
 ## [Unreleased]
 
+## [0.13.0] (9 November 2026)
+
 ### Added
 - **Reelix's settings in Starboard:** Settings, Reelix now shows Reelix's sites to search, media servers and download apps, each with its state, and adds, changes, tests and removes them. The forms come from Reelix's own description of each setting, so a setting Reelix adds shows without a Starboard update. Each change asks for Reelix's admin password, signs in to Reelix for that change only and signs out again; Starboard still keeps only a manager key (DASH-154).
 - **Sites to search:** Install apps and the terminal set-up have a new step, Sites to search, with the same questions in both: a short list of Reelix's public sites, none ticked unless you tick them, and your own Torznab or Newznab address. Settings, Reelix lists every site Reelix knows, with how many searches each has answered (DASH-155).
 - **Searches through the VPN:** with the VPN installed, Reelix's searches go out through Gluetun, as Prowlarr's did, and wait when the VPN is down. Install apps sets it up, and Settings, Reelix has a switch for it. Gluetun's own proxy is activated for this (DASH-133).
 - **Jellyfin and Audiobookshelf in Reelix:** Install apps connects Reelix to them with the API keys Starboard already has, so new files show in them at once. Settings, Reelix, Media servers connects them with one button (DASH-156).
-- **Help:** Change Reelix's settings in Starboard, Choose the sites Reelix searches, and Connect Reelix to Jellyfin and Audiobookshelf, each with 3 marked-up screenshots; Install apps and Set up in the terminal have the new step.
 - **The Library, from Reelix:** **Library** shows everything Reelix holds, as TV, Films, Music, Radio, Books and Audiobooks. Each is a wall of covers, A to Z, with a search for that kind, filters with their counts (such as **Missing** or **Coming soon**), sort (A to Z, Recently added, Year), Covers or List, three cover sizes and **Show 40 more**. The placeholder Library pages are gone (DASH-163).
 - **The A to Z list:** a row of letters above each wall. Letters with nothing under them are shown but cannot be chosen, and say so to screen readers. It stays in view as you scroll, marks the letter you are at, and takes one Tab stop: the arrow keys move along it and Enter jumps. A letter further on opens the wall at that letter, with **Show earlier titles** above it. The row comes from the TRex Design System.
 - **A page for each title:** a film, series, artist, radio show, book or audiobook opens its own page with its name, what it is, how much of it you have, and its episodes, albums, reading order or collection, then **About**. A series' episodes are grouped by season, the newest open, so a long series is not one long list. Radio shows link to Audiobookshelf to listen.
 - **Groups:** **Networks** for TV, **Collections** for films, **Stations** for radio, and **Series** and **Authors** for books and audiobooks, each opening the wall with only that group's titles.
 - **Save this view as default:** a changed sort, layout, cover size or filter can be saved as how that kind opens, for your account on every device. **Settings**, **General**, **Library views** lists them, with **Reset Library views**.
 - **Search opens on your library:** before you type, Search shows what was recently added and each kind with its count. As you type, it searches your library first, then lists what Reelix can find under **Not in your library**, each kind as soon as it is ready, with **Add**, or **Follow** for radio shows and podcasts (DASH-162). Without Reelix, Search looks in Sonarr, Radarr, Lidarr and Readarr as before.
-- **Help:** a new article, Browse your library, and Search for and add, and Follow radio shows, rewritten for the new Search, each with marked-up screenshots.
+- **Help:** new articles: Change Reelix's settings in Starboard, Choose the sites Reelix searches, Connect Reelix to Jellyfin and Audiobookshelf, and Browse your library; Install apps, Set up in the terminal, Search for and add, and Follow radio shows are updated for the new steps and the new Search. Each has marked-up screenshots.
 
 ### Changed
 - **PrivadoVPN's link:** In both set-ups, the VPN step's PrivadoVPN link now goes to PrivadoVPN's sign-up page. It is an affiliate link, so the step says so in an Ad note before the list, and PrivadoVPN's line is marked Ad.
@@ -963,7 +964,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/TheMightyTRex/starboard/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/TheMightyTRex/starboard/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/TheMightyTRex/starboard/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/TheMightyTRex/starboard/compare/v0.11.0...v0.12.0

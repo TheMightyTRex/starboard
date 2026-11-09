@@ -359,6 +359,156 @@ RELEASES = [
         "review": [],
         "settings": "Nothing changes in your apps. To go back, run ./update.sh --to v0.12.1.",
     },
+    {
+        "version": "0.13.0",
+        "date": "9 November 2026",
+        "added": [
+            [
+                "Reelix's settings in Starboard",
+                "Settings, Reelix now shows Reelix's sites to search, media servers and download apps, each with its state, and adds, changes, tests and removes them."
+            ],
+            [
+                "Sites to search",
+                "Install apps and the terminal set-up have a new step, Sites to search, with the same questions in both: a short list of Reelix's public sites, none ticked unless you tick them, and your own Torznab or Newznab address."
+            ],
+            [
+                "Searches through the VPN",
+                "With the VPN installed, Reelix's searches go out through Gluetun, as Prowlarr's did, and wait when the VPN is down."
+            ],
+            [
+                "Jellyfin and Audiobookshelf in Reelix",
+                "Install apps connects Reelix to them with the API keys Starboard already has, so new files show in them at once."
+            ],
+            [
+                "The Library, from Reelix",
+                "Library shows everything Reelix holds, as TV, Films, Music, Radio, Books and Audiobooks."
+            ],
+            [
+                "The A to Z list",
+                "A row of letters above each wall."
+            ],
+            [
+                "A page for each title",
+                "A film, series, artist, radio show, book or audiobook opens its own page with its name, what it is, how much of it you have, and its episodes, albums, reading order or collection, then About."
+            ],
+            [
+                "Groups",
+                "Networks for TV, Collections for films, Stations for radio, and Series and Authors for books and audiobooks, each opening the wall with only that group's titles."
+            ],
+            [
+                "Save this view as default",
+                "A changed sort, layout, cover size or filter can be saved as how that kind opens, for your account on every device."
+            ],
+            [
+                "Search opens on your library",
+                "Before you type, Search shows what was recently added and each kind with its count."
+            ],
+            [
+                "Help",
+                "New articles: Change Reelix's settings in Starboard, Choose the sites Reelix searches, Connect Reelix to Jellyfin and Audiobookshelf, and Browse your library; Install apps, Set up in the terminal, Search for and add, and Follow radio shows are updated for the new steps and the new Search."
+            ]
+        ],
+        "changed": [
+            [
+                "PrivadoVPN's link",
+                "In both set-ups, the VPN step's PrivadoVPN link now goes to PrivadoVPN's sign-up page."
+            ],
+            [
+                "Adverts in the help centre take turns",
+                "The help centre's advert now shows Newshosting on one page and PrivadoVPN on the next, in turn."
+            ],
+            [
+                "Search in the side menu",
+                "On a computer, Search in the side menu now opens the Search page; phones keep the search button and the menu's search box."
+            ],
+            [
+                "TV's second tab",
+                "TV's second tab is now Networks, and Radio's Series tab is gone: a radio show's series are on its own page."
+            ],
+            [
+                "Posters on Coming up and the Library",
+                "The setting in Settings, Performance now covers the Library's covers too."
+            ],
+            [
+                "The Library keeps a small list of each kind",
+                "The Library keeps a small list of each kind in data/library, with only what a wall needs: about 210 bytes a film."
+            ],
+            [
+                "Covers come through Starboard at a small size",
+                "Covers come through Starboard at a small size (TMDB w185 on walls), are kept for a week (at most 400), and a missing picture is not asked for again for a day."
+            ]
+        ],
+        "fixed": [
+            [
+                "Error numbers when a job does not finish",
+                "In the terminal set-up, a job that did not finish, such as starting the apps, showed no error number in the boxed look, while accessible mode showed IN-33 only among the details. Both now show the number under the problem, with the address of its help on a line of its own, and Report this problem includes it (DASH-152)."
+            ],
+            [
+                "The installer's own stops",
+                "The Run first script showed RF-40 whenever the installer stopped, after the installer's own number, so a stop had two numbers, and some of the installer's stops had none. Every stop of the installer and the terminal set-up now has its own number (new: IN-35 to IN-38), and the Run first script ends on that number. RF-40 is kept for an installer that stopped without one, and stopping it yourself with q or Ctrl+C is no longer shown as an error (DASH-147)."
+            ],
+            [
+                "Waiting for the apps to answer",
+                "After starting the apps, the terminal set-up waited the full two minutes, with nothing new on the screen, for apps that had not started, such as qBittorrent behind a VPN that had not connected. It now waits only for the apps that started, and Starboard adds the others itself once they answer (DASH-151)."
+            ],
+            [
+                "The installer's sudo question after Run first",
+                "On systems without sg, the installer starts itself again with your new Docker access through sudo, and sudo asked for your password with no word of why. It now says why first."
+            ],
+            [
+                "Long answers in accessible mode",
+                "In the Run first script and the installer, accessible mode printed each answer of a question on one line, however long, so in an 80 column window the last letter ran onto a line of its own. Answers now wrap between words inside the window, the rest set in under the number."
+            ],
+            [
+                "The last page in accessible mode",
+                "When the set-up in the terminal asked to change this computer, such as for disk health, the Run first script ran the installer again without accessible mode, so the very last page came back with boxes. That run is plain too now."
+            ],
+            [
+                "Docker access on Ubuntu 26.04",
+                "When the installer starts itself again with your new Docker access through sudo, Ubuntu 26.04's sudo (sudo-rs) dropped all of Starboard's settings, so the second run lost accessible mode and the Run first script lost the installer's error number. The settings now go across by name."
+            ],
+            [
+                "The last card in a narrow window",
+                "At the end of the set-up in the terminal, a window 60 columns wide cut the card's labels short, such as \"On your other devic\", and a long folder ran past the card's edge. In a narrow window each label now has its own line with the value under it, and a word too long for the line is broken inside the card."
+            ],
+            [
+                "The VPN list at 80 columns",
+                "In the set-up in the terminal, PrivadoVPN's address in the VPN list ran past the right edge of a window 80 columns wide. When an address is too wide for its column, each provider's address now goes on the line under its name."
+            ],
+            [
+                "Keys pressed while a job runs in accessible mode",
+                "An Enter pressed while a job ran answered the next question with its default. It is now thrown away when the job ends, as in the boxed look."
+            ],
+            [
+                "Live TV channels that would not play",
+                "Jellyfin's FFmpeg refuses Live TV pieces whose address has no file ending, such as the ad links on Samsung TV Plus channels like U&Laughs, so 107 channels stopped playing. Install apps now runs Jellyfin's FFmpeg through a small Starboard file, jellyfin/ffmpeg-wrap/ffmpeg in your settings folder, which allows those addresses for Live TV only. Your library files and On demand links are played as before. Starting the apps, from Starboard, from the installer or by taking over your apps, puts the file in place, so running the guide again keeps the fix (DASH-169)."
+            ],
+            [
+                "Error IN-34",
+                "If the installer cannot put that file in Jellyfin's settings folder, it stops with error IN-34 rather than start a Jellyfin that cannot find FFmpeg."
+            ],
+            [
+                "Taking over Reelix while it reports a problem",
+                "Reelix says it is unhealthy while a download app it was given cannot be reached, which is often what the takeover is about to fix. Starboard now carries on instead of waiting for it."
+            ],
+            [
+                "Old apps left on the Apps page after a takeover",
+                "apps added before Starboard marked its entries were not recognised, so Radarr and the others stayed on the Apps page. They are now found by their kind or name and taken off. Reelix's own entries are kept."
+            ]
+        ],
+        "security": [
+            [
+                "Only image sites",
+                "Starboard fetches covers only over https from TMDB, Open Library and Cover Art Archive, or from Reelix itself, and follows a redirect only to another of those sites."
+            ],
+            [
+                "Checks",
+                "The unit tests (467), the browser journeys, the help check, the private details check and the security scans ran on this release; the terminal set-up was tested on test machines before it was merged."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your apps until you use the new steps. Install apps now turns on Gluetun's proxy so Reelix can search through the VPN. To go back, run ./update.sh --to v0.12.2."
+    }
 ]
 
 
