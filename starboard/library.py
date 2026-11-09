@@ -771,6 +771,42 @@ def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, d
     raise ValueError("Changing these from the Library comes later; open it in Reelix for now")
 
 
+# Choose a download (DASH-159) ---------------------------------------------------------------------------------
+
+def releases(reelix, tab, item_id, scope="item", season=None, episode=None):
+    """What Reelix finds on its sites for a film, a season or an episode, best first, each with whether Reelix would
+    take it and why not. An interactive search: it asks every site, so it can take a minute."""
+    params = {}
+    if tab == "films":
+        params["movie_id"] = int(item_id)
+    elif tab == "tv" and scope == "episode":
+        params["episode_id"] = int(episode)
+    elif tab == "tv" and scope == "season":
+        params.update(series_id=int(item_id), season=int(season))
+    else:
+        raise ValueError("Choose a film, a season or an episode")
+    found = services._api(reelix, "/releases", params, timeout=120) or []
+    out = []
+    for r in sorted(found, key=lambda x: (not x.get("accepted"), x.get("rank") or 9999))[:40]:
+        q = (r.get("quality") or {}).get("quality") or ""
+        out.append({"guid": r.get("guid"), "indexer_id": r.get("indexer_id"), "title": r.get("title") or "", "site": r.get("indexer") or "",
+                    "protocol": r.get("protocol") or "", "size": r.get("size") or 0, "age_minutes": r.get("age_minutes"),
+                    "seeders": r.get("seeders"), "quality": q if isinstance(q, str) else str(q),
+                    "languages": [x.get("name") if isinstance(x, dict) else str(x) for x in r.get("languages") or []][:3],
+                    "score": r.get("format_score") or 0, "accepted": bool(r.get("accepted")),
+                    "why_not": [x.get("reason") for x in r.get("rejections") or [] if x.get("reason")][:3]})
+    return out
+
+
+def grab(reelix, guid, indexer_id, force=False):
+    """Sends one release to the download app, as Get this one; force takes one Reelix would have turned down."""
+    if not guid or not str(indexer_id).isdigit():
+        raise ValueError("Choose a release from the list")
+    services._api(reelix, "/releases/grab", method="POST", body={"guid": str(guid)[:2000], "indexer_id": int(indexer_id), "force": bool(force)},
+                  timeout=60)
+    return "Sent to the download app. It shows in Downloads in a moment"
+
+
 # Search ----------------------------------------------------------------------------------------------------
 
 def search_library(data_dir, q, limit=8):
@@ -1116,6 +1152,20 @@ def handle(h, method, path):
         services.forget(f"library-item-{tab}-{item_id}")
         said = ("Marked as watched" if b.get("watched") else "Marked as not watched") + (f" ({n} episodes)" if n > 1 else "")
         return h.json(200, {"said": said, "item": item(data_dir, reelix, tab, item_id, cfg)})
+    if path in ("/api/library/releases", "/api/library/grab"):
+        try:
+            if method == "GET":
+                return h.json(200, {"releases": releases(reelix, tab, _int(q.get("id"), 0, 1, 10 ** 12), q.get("scope", "item"),
+                                                          q.get("season"), q.get("episode"))})
+            b = h.body()
+            said = grab(reelix, b.get("guid"), b.get("indexer_id"), bool(b.get("force")))
+            logs.event("info", "library", f"Chose a download: {str(b.get('title', ''))[:120]}")
+            services.forget("queue")
+            return h.json(200, {"said": said})
+        except ValueError as e:
+            return h.error(400, str(e))
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix said no: {e}")
     if path == "/api/library/act" and method == "POST":
         b = h.body()
         item_id = _int(b.get("id"), 0, 1, 10 ** 12)

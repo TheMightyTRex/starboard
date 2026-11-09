@@ -1130,6 +1130,23 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"items": services.outside_all(cfg.data["services"])})
             if path == "/api/app-updates" and method == "GET":
                 return self.json(200, services.cached("app-updates", 600, lambda: services.app_updates(cfg.data["services"]), fresh))
+            if path in ("/api/history", "/api/history/refused", "/api/history/refused/take-off"):
+                from . import activity  # DASH-159: History and the refused list, from Reelix
+                try:
+                    q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                    page = int((q.get("page") or ["1"])[0] or 1)
+                    if path == "/api/history" and method == "GET":
+                        return self.json(200, activity.history(cfg.data["services"], (q.get("which") or ["all"])[0], page))
+                    if path == "/api/history/refused" and method == "GET":
+                        return self.json(200, activity.refused(cfg.data["services"], page))
+                    if method == "POST":
+                        said = activity.take_off(cfg.data["services"], int(self.body().get("id") or 0))
+                        logs.event("info", "history", said)
+                        return self.json(200, {"said": said})
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, f"Reelix said no: {e}")
             if path in ("/api/wanted", "/api/wanted/search"):
                 from . import wanted  # DASH-207: Missing and Below the quality wanted, from Reelix
                 try:

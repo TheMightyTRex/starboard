@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/css/designs.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
-<script src="/js/placeholder.js" defer></script>
+<script src="/js/history.js" defer></script>
 </head>
 <body class="page-placeholder with-rail">
 <!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
@@ -154,9 +154,21 @@
 <main id="main" tabindex="-1">
 <div class="page">
   <div class="page-head">
-    <div class="page-head__text"><h1>History</h1><p class="page-head__summary">What Reelix found, downloaded, renamed and removed, newest first.</p></div>
+    <div class="page-head__text"><h1>History</h1><p class="page-head__summary" id="history-summary">What Reelix found, downloaded, renamed and removed, newest first.</p></div>
   </div>
-  <div class="notice" role="note"><div class="notice__body"><span class="notice__title">Coming with Reelix.</span><p>This page fills in once Starboard reads Reelix. Until then it holds its place in the menu.</p></div></div>
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <div class="filter-chips" id="history-filters" role="group" aria-label="Show">
+        <button type="button" class="filter-chip" data-which="all" aria-pressed="true">Everything</button>
+        <button type="button" class="filter-chip" data-which="grabbed" aria-pressed="false">Sent to download</button>
+        <button type="button" class="filter-chip" data-which="imported" aria-pressed="false">Added to your library</button>
+        <button type="button" class="filter-chip" data-which="failed" aria-pressed="false">Failed</button>
+        <button type="button" class="filter-chip" data-which="refused" aria-pressed="false">Refused list</button>
+      </div>
+    </div>
+  </div>
+  <ul class="rows" id="history-list" aria-live="polite"></ul>
+  <div class="actions"><button type="button" class="btn" id="history-more" hidden>Show more</button></div>
 </div>
 </main>
 </body>

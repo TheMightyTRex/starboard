@@ -31,6 +31,38 @@ async function markWatched(ids, watched, button) {
   } catch (e) { problem(e.message, button); button.disabled = false; }
 }
 
+// Choose a download (DASH-159): what Reelix finds on its sites, best first, with Get this one. One Reelix would
+// turn down says why, and can still be taken with Get it anyway.
+async function chooseDownload(extra, what) {
+  const box = el("div", { class: "stack-2", "aria-live": "polite" }, el("p", { class: "muted", text: "Asking every site. This can take a minute…" }));
+  const dialog = confirmDialog({ title: `Choose a download for ${what}`, message: "", confirm: "Close", cancel: "Cancel", fields: [box] });
+  const params = new URLSearchParams({ tab: ITEM_TAB, id: String(current.id), ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [k, String(v)])) });
+  try {
+    const r = await api(`/api/library/releases?${params}`);
+    if (!r.releases.length) { box.replaceChildren(el("p", { text: "No site has it at the moment. Reelix keeps looking while it follows it." })); return dialog; }
+    box.replaceChildren(el("ul", { class: "rows" }, r.releases.map((x) => {
+      const meta = [x.quality, x.size ? formatBytes(x.size) : "", x.seeders != null ? `${x.seeders} seeders` : "", x.site,
+        x.age_minutes != null ? (x.age_minutes < 1440 ? "today" : Math.round(x.age_minutes / 1440) === 1 ? "1 day old" : `${Math.round(x.age_minutes / 1440)} days old`) : "", x.languages.join(", ")].filter(Boolean).join(" · ");
+      const take = el("button", { type: "button", class: x.accepted ? "btn btn--compact" : "btn btn--quiet btn--compact" },
+        x.accepted ? "Get this one" : "Get it anyway", el("span", { class: "visually-hidden", text: ` ${x.title}` }));
+      take.addEventListener("click", async () => {
+        take.disabled = true;
+        try { const g = await api(`/api/library/grab?tab=${ITEM_TAB}`, { method: "POST", body: { guid: x.guid, indexer_id: x.indexer_id, force: !x.accepted, title: x.title } });
+          take.replaceWith(chip("Sent", "success")); announce(g.said); toast(g.said); }
+        catch (e) { problem(e.message, take); take.disabled = false; }
+      });
+      return el("li", { class: "row row--no-lead" }, el("div", {},
+        el("div", { class: "row__title", text: x.title }), el("div", { class: "row__meta", text: meta }),
+        x.why_not.length ? el("div", { class: "row__meta", text: `Reelix would not take it: ${x.why_not.join("; ")}` }) : null),
+        el("div", { class: "row__side" }, x.accepted ? null : chip("Turned down", "warning"), take));
+    })));
+  } catch (e) {
+    box.replaceChildren(el("div", { class: "notice", "data-tone": "danger", role: "alert" }, icon("circle-x"),
+      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Reelix could not search" }), el("p", { text: e.message }))));
+  }
+  return dialog;
+}
+
 function watchedButton(w, label, compact = true) {
   if (!w || !w.ids?.length) return null;
   return el("button", { type: "button", class: compact ? "btn btn--quiet btn--compact" : "btn", "aria-pressed": String(!!w.watched),
@@ -60,6 +92,8 @@ function groupList(list) {
       g.missing || g.watched ? el("div", { class: "actions" },
         g.missing ? el("button", { type: "button", class: "btn btn--compact", onclick: (e) => act("get", { scope: "season", season: g.season }, e.currentTarget) },
           `Get the ${g.missing} missing`, el("span", { class: "visually-hidden", text: ` in ${g.heading}` })) : null,
+        g.missing ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: () => chooseDownload({ scope: "season", season: g.season }, g.heading) },
+          "Choose a download", el("span", { class: "visually-hidden", text: ` for ${g.heading}` })) : null,
         watchedButton(g.watched, g.heading)) : null,
       rowList(g.rows)))));
 }
@@ -130,6 +164,8 @@ function head(item) {
     item.listen ? newTabLink(item.listen.href, item.listen.label, { className: "btn btn--primary" }) : null,
     item.can ? el("button", { type: "button", class: "btn", "aria-pressed": String(!!can.follow),
       onclick: (e) => act(can.follow ? "unfollow" : "follow", {}, e.currentTarget) }, can.follow ? "Stop following" : "Follow") : null,
+    ITEM_TAB === "films" && !can.has_file ? el("button", { type: "button", class: "btn", onclick: () => chooseDownload({ scope: "item" }, item.title) },
+      icon("list"), "Choose a download") : null,
     watchedButton(item.watched, item.title, false),
     item.open ? newTabLink(item.open.href, item.open.label, { className: "btn btn--quiet" }) : null,
     can.delete ? el("button", { type: "button", class: "btn btn--quiet btn--danger", onclick: (e) => removeItem(item, e.currentTarget) }, "Delete") : null,

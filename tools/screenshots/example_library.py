@@ -121,6 +121,27 @@ def answer(path, q):
                  "unmapped_folders": [{"name": n, "path": f"/data/media/movies/{n}"} for n, *_ in ON_DISK]}]
     if path == "/libraryimport/scan":
         return [_candidate(*f, lookup=False) for f in ON_DISK]
+    if path == "/history":  # History (DASH-159)
+        kinds = ["grabbed", "imported", "download_failed", "grabbed", "imported", "renamed"]
+        rows = [{"id": n, "event_type": kinds[n % 6], "date": (TODAY - dt.timedelta(hours=5 * n)).isoformat() + "T12:00:00Z",
+                 "media": {"kind": "movie", "id": FILMS[n]["id"], "title": FILMS[n]["title"], "year": FILMS[n]["year"]}, "episode": None,
+                 "source_title": f"Made.Up.Release.{n}.1080p.WEB-DL", "quality": {"quality": "WEBDL-1080p"}, "indexer": "Example Torrents",
+                 "data": {"message": "The download app stopped answering" if kinds[n % 6] == "download_failed" else ""}} for n in range(12)]
+        if q.get("event_type"):
+            rows = [r for r in rows if r["event_type"] == q["event_type"]]
+        return {"items": rows, "total": len(rows), "page": 1, "page_size": 50}
+    if path == "/blocklist":
+        return {"items": [{"id": n, "media": {"kind": "movie", "id": FILMS[n]["id"], "title": FILMS[n]["title"], "year": FILMS[n]["year"]},
+                           "source_title": f"Bad.Release.{n}.CAM", "quality": {"quality": "CAM"}, "indexer": "Example Torrents",
+                           "message": "Fake file", "date": TODAY.isoformat() + "T09:00:00Z"} for n in range(2) if n not in CHANGED.get("unblocked", set())],
+                "total": 2, "page": 1, "page_size": 50}
+    if path == "/releases":  # Choose a download (DASH-159)
+        return [{"guid": f"made-up-{n}", "indexer_id": 1 + n % 2, "indexer": ["Example Torrents", "Example Usenet"][n % 2],
+                 "title": f"Made.Up.Release.{2020 + n}.1080p.WEB-DL", "protocol": ["torrent", "usenet"][n % 2], "size": (3 + n) * 10 ** 9,
+                 "age_minutes": 60 * 24 * (n + 1), "seeders": None if n % 2 else 40 - 9 * n, "quality": {"quality": "WEBDL-1080p"},
+                 "languages": [{"name": "English"}], "format_score": 10 - n, "accepted": n < 3, "rank": n,
+                 "rejections": [] if n < 3 else [{"reason": "Not wanted in this profile: 720p", "kind": "permanent", "spec": "quality"}]}
+                for n in range(5)]
     if path in ("/wanted/missing", "/wanted/cutoff"):  # Wanted (DASH-207)
         films = [f for f in FILMS if (not f["has_file"]) == (path == "/wanted/missing")][:12]
         if q.get("kind") == "episode":
@@ -211,6 +232,9 @@ def change(method, path, body, q):
         return []
     if path == "/seasons/monitor":
         return {}
+    if len(parts) == 2 and parts[0] == "blocklist" and parts[1].isdigit() and method == "DELETE":
+        CHANGED.setdefault("unblocked", set()).add(int(parts[1]))
+        return {}
     return None
 
 
@@ -218,6 +242,8 @@ def add(path, body):
     """A made-up add: answers as Reelix does, with the title."""
     if path == "/search":
         return {"queued": True}
+    if path == "/releases/grab":
+        return {"queue_id": 1, "download_client": "qBittorrent", "download_id": "made-up"}
     if path == "/libraryimport/match":
         return [_candidate(*f, lookup=True) for f in ON_DISK if f"/data/media/movies/{f[0]}" in body.get("paths", [])]
     if path == "/libraryimport":
