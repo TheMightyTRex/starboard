@@ -95,6 +95,13 @@ class StandIn:
                        "daily_episode_format": "", "anime_episode_format": "", "multi_episode_style": "prefixed_range",
                        "max_file_name_bytes": 255, "max_path_bytes": 4096}
         self.pace = "normal"
+        self.other = {"/settings/mediamanagement": {"import_mode": "hardlink_or_copy", "minimum_free_space_mb": 100, "extra_file_extensions": ["srt"],
+                                                   "delete_empty_folders": False, "recycle_bin_path": None},
+                      "/settings/books": {"write_metadata": True, "metadata_language": "en"}, "/settings/music": {"write_tags": True}}
+        self.folders = {"/rootfolders": [{"id": 1, "path": "/data/media/movies", "media_kind": "movie", "free_space": 10 ** 12, "accessible": True}],
+                        "/bookrootfolders": [], "/musicrootfolders": [], "/radio/rootfolders": []}
+        self.users = [{"id": 1, "username": "admin", "display_name": "admin", "auth_source": "local", "permissions": 1},
+                      {"id": 2, "username": "sam", "display_name": "Sam", "auth_source": "jellyfin", "permissions": (1 << 5) | (1 << 6) | (1 << 13)}]
         self.metadata = {"tmdb_api_key": None, "tmdb_read_token": None, "language": "en-GB", "region": "GB"}
         self.request_settings = {"movie": {"profile_id": 1, "root_folder_id": None, "tags": []}, "series": {"profile_id": 1, "root_folder_id": None, "tags": []},
                                  "default_permissions": (1 << 5) | (1 << 6) | (1 << 13), "auto_approve_movie": False, "auto_approve_series": False}
@@ -171,6 +178,27 @@ class StandIn:
                           "avg_response_ms": 900 + 100 * i["id"], "status": i["status"]} for i in self.items["indexers"]], None
         if path == "/indexers/definitions/status":
             return 200, {"loaded": len(SCHEMAS["indexers"]) - 2, "last_sync": "2026-11-08T06:00:00Z", "last_error": None, "syncing": False}, None
+        if path in self.other:
+            if method == "PUT":
+                self.other[path] = body
+            return 200, self.other[path], None
+        base = "/" + "/".join(path.strip("/").split("/")[:-1]) if path.rstrip("/").split("/")[-1].isdigit() else path
+        if base in self.folders:
+            if method == "POST":
+                item = {"id": next(self.ids) + 100, "path": body["path"], "media_kind": body.get("media_kind"), "kind": body.get("kind"), "accessible": True}
+                self.folders[base].append(item)
+                return 201, item, None
+            if method == "DELETE":
+                self.folders[base] = [f for f in self.folders[base] if f["id"] != int(path.rsplit("/", 1)[1])]
+                return 204, None, None
+            return 200, self.folders[base], None
+        if path == "/users":
+            return 200, self.users, None
+        if path.startswith("/users/"):
+            u = next((x for x in self.users if x["id"] == int(path.rsplit("/", 1)[1])), None)
+            if method == "PUT" and u:
+                u["permissions"] = body["permissions"]
+            return 200, u, None
         if path == "/settings/metadata":
             if method == "PUT":
                 self.metadata = {**self.metadata, **body}

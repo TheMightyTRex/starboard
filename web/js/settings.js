@@ -2640,7 +2640,8 @@ const ADVANCED_SECTIONS = new Set([
   "gn-cat", "gn-card", "gn-up", "gn-logs", "gn-test", "gn-design", "gn-guide",  // General
   "sc-ses",  // Security
   "in-how", "tk",  // Your install
-  "rx-mediaservers", "rx-downloadclients", "rx-library",  // Reelix
+  "rx-mediaservers", "rx-downloadclients", "rx-library", "rx-folders", "rx-information", "rx-files", "rx-requests",
+  "rx-notifications", "rx-importlists", "rx-people", "rx-books", "rx-music",  // Reelix
   "jf-defaults", "jf-import", "jf-missing", "jf-you",  // Jellyfin
   "ls-copy", "ls-missing",  // Audiobookshelf
   "al-what", "al-week", "al-watch",  // Alerts

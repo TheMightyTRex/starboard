@@ -271,7 +271,7 @@ def route(handler, method, path):
     if method != "POST" or not m:
         return handler.error(404, "Not found")
     kind, action = m.group("kind"), m.group("action")
-    if kind not in KINDS and kind not in ("search", "library", "basics"):
+    if kind not in KINDS and kind not in ("search", "library", "basics", "form", "folders", "people"):
         return handler.error(404, "Starboard does not change that part of Reelix")
     body = handler.body()
     address = handler.client_address_text()
@@ -289,6 +289,33 @@ def route(handler, method, path):
 
 def _act(app, reelix, base, kind, action, body):
     from . import logs
+    if kind == "form":  # Information, Files, Requests, Books, Music (DASH-193, 195, 197)
+        from . import reelix_forms
+        if action == "open":
+            return reelix_forms.open_form(reelix, str(body.get("name", "")))
+        if action == "save":
+            out = reelix_forms.save_form(reelix, str(body.get("name", "")), body.get("values") or {})
+            logs.event("info", "reelix", f"{out['title']} saved")
+            return out
+        raise ValueError("Not something Starboard does")
+    if kind == "folders":  # library folders after set-up (DASH-194)
+        from . import reelix_folders
+        if action == "open":
+            return reelix_folders.listing(reelix)
+        if action in ("add", "remove"):
+            out = reelix_folders.change(reelix, action, body)
+            logs.event("info", "reelix", out["done"])
+            return out
+        raise ValueError("Not something Starboard does")
+    if kind == "people":  # users and roles (DASH-199)
+        from . import reelix_people
+        if action == "open":
+            return reelix_people.listing(reelix)
+        if action == "role":
+            out = reelix_people.set_role(reelix, body.get("id"), str(body.get("role", "")))
+            logs.event("info", "reelix", out["done"])
+            return out
+        raise ValueError("Not something Starboard does")
     if kind == "basics":  # the basic settings (DASH-226)
         from . import reelix_basics, setup_answers
         if action == "open":

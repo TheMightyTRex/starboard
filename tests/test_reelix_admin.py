@@ -391,3 +391,34 @@ class BasicsTest(StandInTest):
         self.assertEqual([p["language"] for p in self.state.profiles], ["Original", "Original", None])
         with reelix_admin.Visit(self.base, PASSWORD) as reelix:
             self.assertEqual(reelix_basics.save(reelix, {"who": "me"})["who"], "me")
+
+
+class SectionsTest(StandInTest):
+    """Information, Files, Requests, Books, Music, Folders and People in Settings, Reelix (DASH-193 to 199)."""
+
+    def test_forms_keep_what_they_do_not_show(self):
+        from starboard import reelix_forms
+        with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+            form = reelix_forms.open_form(reelix, "files")
+            self.assertEqual(next(f for f in form["fields"] if f["key"] == "extra_file_extensions")["value"], "srt")
+            reelix_forms.save_form(reelix, "files", {"minimum_free_space_mb": "500", "extra_file_extensions": "srt, nfo", "delete_empty_folders": True})
+            with self.assertRaisesRegex(ValueError, "whole number"):
+                reelix_forms.save_form(reelix, "files", {"minimum_free_space_mb": "lots"})
+            reelix_forms.save_form(reelix, "information", {"tvdb_api_key": "********", "region": "GB"})
+        saved = self.state.other["/settings/mediamanagement"]
+        self.assertEqual((saved["minimum_free_space_mb"], saved["extra_file_extensions"], saved["import_mode"]), (500, ["srt", "nfo"], "hardlink_or_copy"))
+        self.assertNotIn("tvdb_api_key", {k for k, v in self.state.metadata.items() if v})  # the shown mask keeps Reelix's own
+
+    def test_folders_and_people(self):
+        from starboard import reelix_folders, reelix_people
+        with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+            out = reelix_folders.change(reelix, "add", {"kind": "movies", "path": "/data/media/films-4k"})
+            self.assertIn("/data/media/films-4k", [f["path"] for f in out["folders"]])
+            with self.assertRaises(ValueError):
+                reelix_folders.change(reelix, "add", {"kind": "movies", "path": "../etc"})
+            people = reelix_people.listing(reelix)["people"]
+            self.assertEqual([(p["name"], p["role"]) for p in people], [("admin", "admin"), ("Sam", "user")])
+            reelix_people.set_role(reelix, 2, "power")
+            with self.assertRaisesRegex(ValueError, "admin"):
+                reelix_people.set_role(reelix, 1, "user")
+        self.assertEqual(reelix_people.role_of(self.state.users[1]["permissions"]), "power")

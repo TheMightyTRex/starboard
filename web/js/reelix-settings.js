@@ -227,6 +227,8 @@ const RX_WORDS = {
   indexers: { title: "Sites to search", one: "site", a: "a site to search", many: "sites", show: "see and change the sites Reelix searches" },
   downloadclients: { title: "Download apps", one: "download app", a: "a download app", many: "download apps", show: "see and change Reelix's download apps" },
   mediaservers: { title: "Media servers", one: "media server", a: "a media server", many: "media servers", show: "see and change Reelix's media servers" },
+  notifications: { title: "Notifications", one: "notification", a: "a notification", many: "notifications", show: "see and change Reelix's notifications" },
+  importlists: { title: "Lists", one: "list", a: "a list", many: "lists", show: "see and change the lists Reelix follows" },
 };
 
 // One section for a kind: locked until the password is given, then the list with Add, Change, Test and Remove.
@@ -479,6 +481,101 @@ function rxBasicsSection() {
   return section("rx-basics", "Basic settings", "What Reelix looks for, and how good it should be.", body);
 }
 
+// A section that opens behind the Reelix password (the same pattern as the others), drawn by `draw(answer, body)`.
+function rxLockedSection(id, title, about, kind, openBody, draw, what) {
+  const body = el("div", { class: "stack-4", "aria-live": "polite" });
+  const unlock = () => el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: open }, icon("lock"), `Show ${title.toLowerCase()}`));
+  const locked = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it before showing them." }), unlock());
+  async function open() {
+    body.replaceChildren(el("p", { class: "muted", text: "Asking Reelix…" }));
+    try { const r = await rxCall(kind, "open", openBody, what); if (!r) { locked(); return; } draw(r, body); }
+    catch (e) { body.replaceChildren(notice("danger", "Reelix could not be asked", e.message), unlock()); }
+  }
+  locked();
+  return section(id, title, about, body);
+}
+
+// Information, Files, Requests, Books and Music (DASH-193, 195, 197): one form each, from Reelix's own settings.
+function rxFormSection(name, title, about) {
+  const draw = (r, body) => {
+    const read = [];
+    const rows = r.fields.map((f) => {
+      const id = `rx-${name}-${f.key}`;
+      let input;
+      if (f.type === "bool") {
+        input = el("input", { type: "checkbox", id, checked: !!f.value });
+        read.push(() => [f.key, input.checked]);
+        return switchRow(f.label, f.hint, input);
+      }
+      if (f.type === "select") {
+        input = el("select", { class: "select", id }, f.choices.map((c) => el("option", { value: c.value, text: c.label, selected: c.value === f.value })));
+      } else {
+        input = el("input", { class: "input", id, type: f.type === "secret" ? "password" : "text", autocomplete: "off", spellcheck: "false",
+          inputmode: f.type.includes("number") ? "numeric" : null, value: f.value ?? "" });
+      }
+      read.push(() => [f.key, input.value]);
+      return field(f.label, input, { hint: f.hint });
+    });
+    const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
+    const note = savedNote(`rx-${name}-saved`);
+    save.addEventListener("click", async () => {
+      save.disabled = true;
+      try {
+        const out = await rxCall("form", "save", { name, values: Object.fromEntries(read.map((fn) => fn())) }, `change ${title.toLowerCase()}`);
+        if (out) { draw(out, body); showSaved(`rx-${name}-saved`); }
+      } catch (e) { problem(e.message, save); }
+      finally { save.disabled = false; }
+    });
+    body.replaceChildren(el("div", { class: "form-stack" }, ...rows), el("div", { class: "actions" }, save, note));
+  };
+  return rxLockedSection(`rx-${name}`, title, about, "form", { name }, draw, `show ${title.toLowerCase()}`);
+}
+
+// Folders (DASH-194): the library folders for each kind, with Add and Remove.
+function rxFoldersSection() {
+  const draw = (r, body) => {
+    const rows = r.folders.map((f) => {
+      const remove = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Remove", el("span", { class: "visually-hidden", text: ` ${f.path}` }));
+      remove.addEventListener("click", async () => {
+        if (!await confirmDialog({ title: `Take ${f.path} out of Reelix?`, confirm: "Take out", danger: true,
+          message: "Reelix stops using this folder for new files. The files in it stay on disk." })) return;
+        try { const out = await rxCall("folders", "remove", { kind: f.kind, id: f.id }, "change Reelix's folders"); if (out) { draw(out, body); toast(out.done); } }
+        catch (e) { problem(e.message, remove); }
+      });
+      return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: f.path }),
+        el("div", { class: "row__meta", text: [f.kind_name, f.free != null ? `${formatBytes(f.free)} free` : "", f.ok ? "" : "Reelix cannot reach it"].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__side" }, remove));
+    });
+    const kind = el("select", { class: "select", id: "rx-folder-kind" }, r.kinds.map((k) => el("option", { value: k.value, text: k.label })));
+    const path = el("input", { class: "input", id: "rx-folder-path", placeholder: "/data/media/", spellcheck: "false", autocomplete: "off" });
+    const add = el("button", { type: "button", class: "btn" }, "Add the folder");
+    add.addEventListener("click", async () => {
+      try { const out = await rxCall("folders", "add", { kind: kind.value, path: path.value.trim() }, "change Reelix's folders"); if (out) { draw(out, body); toast(out.done); } }
+      catch (e) { setError(path, e.message); path.focus(); }
+    });
+    body.replaceChildren(el("ul", { class: "rows" }, rows),
+      el("div", { class: "form-stack" }, field("For", kind), field("Folder, as Reelix sees it", path, { hint: "Inside the media folder, such as /data/media/films-4k. Make the folder on disk first." })),
+      el("div", { class: "actions" }, add));
+  };
+  return rxLockedSection("rx-folders", "Folders", "Where Reelix keeps each kind of media.", "folders", {}, draw, "show Reelix's folders");
+}
+
+// People (DASH-199): who has a Reelix account and what each may do.
+function rxPeopleSection() {
+  const draw = (r, body) => {
+    body.replaceChildren(el("p", { class: "small", text: r.about }), el("ul", { class: "rows" }, r.people.map((p) => {
+      const pick = el("select", { class: "select", "aria-label": `What ${p.name} may do` }, r.roles.map((o) => el("option", { value: o.value, text: o.label, selected: o.value === p.role })));
+      pick.addEventListener("change", async () => {
+        try { const out = await rxCall("people", "role", { id: p.id, role: pick.value }, "change what people may do"); if (out) { draw(out, body); toast(out.done); } }
+        catch (e) { problem(e.message, pick); }
+      });
+      return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: p.name }),
+        el("div", { class: "row__meta", text: [p.user, p.from ? `signs in with ${p.from}` : ""].filter(Boolean).join(" · ") })), el("div", { class: "row__side" }, pick));
+    })));
+  };
+  return rxLockedSection("rx-people", "People", "Who has a Reelix account, and what each may do.", "people", {}, draw, "show Reelix's people");
+}
+
 function reelixAdminSections() {
   const holder = el("div", { class: "rx-admin" });
   api("/api/reelix/admin/about").then((a) => {
@@ -493,7 +590,16 @@ function reelixAdminSections() {
       rxKindSection("indexers", "The sites Reelix searches for films, series, books and music. Nothing is added unless you add it."),
       rxKindSection("mediaservers", "Reelix tells Jellyfin and Audiobookshelf about each new file, so it shows in them at once."),
       rxKindSection("downloadclients", "The apps that download what Reelix chooses."),
-      rxLibrarySection());
+      rxLibrarySection(),
+      rxFoldersSection(),
+      rxFormSection("information", "Information", "Where Reelix finds details about films and series."),
+      rxFormSection("files", "Files", "How Reelix moves finished downloads into your library."),
+      rxFormSection("requests", "Requests", "What happens when someone asks for something."),
+      rxKindSection("notifications", "Where Reelix tells you what it did: Discord, email, ntfy and others."),
+      rxKindSection("importlists", "Lists Reelix follows, such as a Trakt or IMDb list, to add what is on them."),
+      rxPeopleSection(),
+      rxFormSection("books", "Books", "How Reelix handles books and audiobooks."),
+      rxFormSection("music", "Music", "How Reelix handles albums."));
   }).catch((e) => holder.replaceChildren(notice("danger", "Could not look", e.message)));
   return holder;
 }
