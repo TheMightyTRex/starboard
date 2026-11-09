@@ -330,6 +330,13 @@ async function installStep(id, state, data, apps, go) {
         error.replaceChildren(notice("warning", "Nothing to download with", "Tick Downloads too, so the apps have something to download with. Or choose Continue again to go on without it."));
         return false;
       }
+      // DASH-131: torrents without a VPN are asked about once, in plain words (the terminal set-up asks the same).
+      if (state.apps.has("qbittorrent") && !state.apps.has("gluetun") && !apps.gluetun?.installed && !state.warnedVpn) {
+        state.warnedVpn = true;
+        const w = (await loadSetupAnswers()).novpn;
+        error.replaceChildren(notice("warning", w.title, `${w.text} ${w.browser}`));
+        return false;
+      }
       return true;
     };
   } else if (id === "folders") {

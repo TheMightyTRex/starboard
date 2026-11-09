@@ -1,5 +1,5 @@
 {
- "about": "The words of the set-up's TMDB key, language and Usenet server questions (DASH-178, DASH-189, DASH-183). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
+ "about": "The words of the set-up's TMDB key, language, Usenet server and no-VPN questions (DASH-178, DASH-189, DASH-183, DASH-131). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
  "tmdb": {
   "title": "Films and series information",
   "intro": "Reelix finds each film and series, its posters and its episodes, in The Movie Database (TMDB). A free key lets it find far more, more accurately. Without one it uses open data and matches fewer titles.",
@@ -16,9 +16,21 @@
   "intro": "Some releases are dubbed into another language. Reelix can skip those.",
   "question": "Which language should films and series be in?",
   "choices": [
-   {"value": "English", "label": "English (recommended)", "hint": "Reelix skips releases in other languages."},
-   {"value": "Original", "label": "The film's or series' own language", "hint": "Reelix gets each one in the language it was made in, with subtitles from Bazarr."},
-   {"value": "", "label": "Any language", "hint": "Reelix takes the best release whatever its language."}
+   {
+    "value": "English",
+    "label": "English (recommended)",
+    "hint": "Reelix skips releases in other languages."
+   },
+   {
+    "value": "Original",
+    "label": "The film's or series' own language",
+    "hint": "Reelix gets each one in the language it was made in, with subtitles from Bazarr."
+   },
+   {
+    "value": "",
+    "label": "Any language",
+    "hint": "Reelix takes the best release whatever its language."
+   }
   ]
  },
  "usenet": {
@@ -35,5 +47,12 @@
   "test": "Test the server",
   "ok": "The server accepted your details.",
   "later": "Starboard writes these into {app} once the apps are running."
+ },
+ "novpn": {
+  "title": "Torrents without a VPN",
+  "text": "Without a VPN, your internet provider can see what qBittorrent downloads, and everyone sharing the same torrent can see your home's internet address. A VPN hides both. Usenet apps use encrypted connections, so this matters less for them.",
+  "back": "Go back and add a VPN (recommended)",
+  "carry_on": "Carry on without one",
+  "browser": "Tick VPN to add one, or choose Continue again to carry on without one."
  }
 }

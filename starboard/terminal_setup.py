@@ -1999,6 +1999,18 @@ def step_apps(api, term, state):
         term.say("No apps chosen. Nothing to install.")
         state["apps"], state["choice"] = last, None
         return True
+    keys_chosen = {a["key"] for a in chosen}
+    if "qbittorrent" in keys_chosen and "gluetun" not in keys_chosen and not last.get("no_vpn_ok"):
+        # DASH-131: torrents without a VPN, asked once in the same words as the browser set-up.
+        from . import setup_answers
+        w = setup_answers.WORDS["novpn"]
+        term.say("")
+        term.note(term.accent(w["title"]))
+        term.note(w["text"])
+        if term.choose("Add a VPN?", [w["back"], w["carry_on"]], 1, help_key="vpn") == 0:
+            term.say("")
+            return step_apps(api, term, state)
+        last["no_vpn_ok"] = True
     edition = "lite"
     if any(a["key"] == "reelix" for a in chosen):
         edition = ask_reelix_edition(api, term, last)

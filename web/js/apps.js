@@ -56,7 +56,7 @@ function card(s, old) {
       warn.length ? chip(warn.length === 1 ? "1 warning" : `${warn.length} warnings`, "warning") : null,
       o && !o.reachable ? chip("Not reachable from outside", "warning") : null));
   const numbers = addUp(familyOf(s).flatMap((x) => AppDetails.state.numbers?.[x.id] || []));
-  const activity = down ? "Cannot reach it" : numbers?.length ? numbers.join(" · ") : numbersOff || !st ? "" : "Nothing to report";
+  const activity = down ? (s.type === "gluetun" && /^The VPN/.test(st?.message || "") ? AppDetails.sentence(st.message) : "Cannot reach it") : numbers?.length ? numbers.join(" · ") : numbersOff || !st ? "" : "Nothing to report";
   // Every card has the same parts in the same order, so each line sits in the same place on every card.
   return el("li", { class: "card app-card", "data-state": words.state, "data-tone": down ? "danger" : null },
     el("div", { class: "card__top" }, AppDetails.iconFor(s, old), el("h3", { class: "card__title" }, AppDetails.opener(s)),
@@ -160,26 +160,49 @@ function summaryText(services) {
 // most likely still starting, so the notice says so instead of showing an error.
 let startedRecently = false;
 
+// DASH-140: when Gluetun answers but its VPN is not connected, say that plainly, first, with what it stops and where
+// to put it right, instead of only showing an app that is not responding.
+function vpnNotice(services) {
+  const vpn = services.find((s) => s.type === "gluetun" && AppDetails.status(s).state === "down");
+  if (!vpn) return null;
+  const said = AppDetails.state.status[vpn.id]?.message || "";
+  const connecting = /starting|connecting/i.test(said);
+  const title = connecting ? "The VPN is still connecting" : "The VPN is not connected";
+  const text = `Downloads that go through ${vpn.name} wait until it connects, so nothing leaves without the VPN. `
+    + (connecting ? "This clears when it connects." : "Check the VPN's details in Settings, Install apps, VPN, or that your VPN account is active.");
+  return { sig: `${title}|${text}`, node: el("div", { class: "notice", "data-tone": connecting ? "muted" : "danger" }, icon(connecting ? "hourglass" : "circle-alert"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })),
+    el("div", { class: "actions" },
+      connecting ? null : el("a", { class: "btn", href: "/install-apps.html" }, "Check the VPN"),
+      el("button", { type: "button", class: "btn btn--quiet", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(vpn.id, e.currentTarget) }, `View ${vpn.name}`))) };
+}
+
 function renderNotice(services) {
   const box = $("#attention");
-  const down = services.filter((s) => AppDetails.status(s).state === "down");
-  if (!down.length) { box.replaceChildren(); box.dataset.sig = ""; box.hidden = true; return; }
-  const one = down.length === 1 ? down[0] : null;
-  const starting = startedRecently;
-  const title = starting ? (one ? `${one.name} is still starting` : `${down.length} apps are still starting`)
-    : one ? `${one.name} is not responding` : `${down.length} apps are not responding`;
-  const text = starting
-    ? `${down.map((s) => s.name).join(", ")} ${one ? "has" : "have"} not answered yet. Apps can take a few minutes to answer after they start, longer on a small server. This clears when they do.`
-    : one ? `${AppDetails.sentence(AppDetails.state.status[one.id]?.message || "It did not answer")} Check that its container is running.`
-    : `${down.map((s) => s.name).join(", ")}. Check that their containers are running.`;
-  const sig = `${title}|${text}`;
+  const vpn = vpnNotice(services);
+  const down = services.filter((s) => AppDetails.status(s).state === "down" && !(vpn && s.type === "gluetun"));
+  if (!down.length && !vpn) { box.replaceChildren(); box.dataset.sig = ""; box.hidden = true; return; }
+  let other = null;
+  let sig = vpn ? vpn.sig : "";
+  if (down.length) {
+    const one = down.length === 1 ? down[0] : null;
+    const starting = startedRecently;
+    const title = starting ? (one ? `${one.name} is still starting` : `${down.length} apps are still starting`)
+      : one ? `${one.name} is not responding` : `${down.length} apps are not responding`;
+    const text = starting
+      ? `${down.map((s) => s.name).join(", ")} ${one ? "has" : "have"} not answered yet. Apps can take a few minutes to answer after they start, longer on a small server. This clears when they do.`
+      : one ? `${AppDetails.sentence(AppDetails.state.status[one.id]?.message || "It did not answer")} Check that its container is running.`
+      : `${down.map((s) => s.name).join(", ")}. Check that their containers are running.`;
+    sig += `|${title}|${text}`;
+    const action = one
+      ? el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(one.id, e.currentTarget) }, `View ${one.name}`)
+      : el("button", { type: "button", class: "btn", onclick: () => { pressed.clear(); pressed.add("down"); setShowInAddress(); render({ announceCount: true }); } }, "Show them");
+    other = el("div", { class: "notice", "data-tone": starting ? "muted" : "danger" }, icon(starting ? "hourglass" : "circle-alert"),
+      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action);
+  }
   if (box.dataset.sig === sig) return; // keep the button, and focus on it, when nothing changed
   box.dataset.sig = sig;
-  const action = one
-    ? el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(one.id, e.currentTarget) }, `View ${one.name}`)
-    : el("button", { type: "button", class: "btn", onclick: () => { pressed.clear(); pressed.add("down"); setShowInAddress(); render({ announceCount: true }); } }, "Show them");
-  box.replaceChildren(el("div", { class: "notice", "data-tone": starting ? "muted" : "danger" }, icon(starting ? "hourglass" : "circle-alert"),
-    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action));
+  box.replaceChildren(...[vpn?.node, other].filter(Boolean));
   box.hidden = false;
 }
 
