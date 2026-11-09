@@ -24,7 +24,7 @@ function refusedRow(b) {
       message: `Reelix may download ${b.release} again the next time it searches${b.what ? ` for ${b.what}` : ""}.` });
     if (!ok) return;
     off.disabled = true;
-    try { toast((await api("/api/history/refused/take-off", { method: "POST", body: { id: b.id } })).said); historyLoad(); }
+    try { toast((await api("/api/reelix-history/refused/take-off", { method: "POST", body: { id: b.id } })).said); historyLoad(); }
     catch (e) { problem(e.message, off); off.disabled = false; }
   });
   return el("li", { class: "row row--no-lead" },
@@ -39,7 +39,7 @@ async function historyLoad(more = false) {
   if (!more) { historyState.page = 1; historyState.items = 0; list.replaceChildren(el("li", { class: "muted", text: "Asking Reelix…" })); }
   try {
     const refused = historyState.which === "refused";
-    const r = await api(refused ? `/api/history/refused?page=${historyState.page}` : `/api/history?which=${historyState.which}&page=${historyState.page}`);
+    const r = await api(refused ? `/api/reelix-history/refused?page=${historyState.page}` : `/api/reelix-history?which=${historyState.which}&page=${historyState.page}`);
     if (!more) list.replaceChildren();
     list.append(...r.items.map(refused ? refusedRow : historyRow));
     historyState.items += r.items.length;

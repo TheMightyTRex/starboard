@@ -1130,14 +1130,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"items": services.outside_all(cfg.data["services"])})
             if path == "/api/app-updates" and method == "GET":
                 return self.json(200, services.cached("app-updates", 600, lambda: services.app_updates(cfg.data["services"]), fresh))
-            if path in ("/api/history", "/api/history/refused", "/api/history/refused/take-off"):
+            if path in ("/api/reelix-history", "/api/reelix-history/refused", "/api/reelix-history/refused/take-off"):
                 from . import activity  # DASH-159: History and the refused list, from Reelix
                 try:
                     q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                     page = int((q.get("page") or ["1"])[0] or 1)
-                    if path == "/api/history" and method == "GET":
+                    if path == "/api/reelix-history" and method == "GET":
                         return self.json(200, activity.history(cfg.data["services"], (q.get("which") or ["all"])[0], page))
-                    if path == "/api/history/refused" and method == "GET":
+                    if path == "/api/reelix-history/refused" and method == "GET":
                         return self.json(200, activity.refused(cfg.data["services"], page))
                     if method == "POST":
                         said = activity.take_off(cfg.data["services"], int(self.body().get("id") or 0))
