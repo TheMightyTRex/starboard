@@ -904,6 +904,7 @@ class Handler(BaseHTTPRequestHandler):
         if data_dir in ("/", ""):
             data_dir = f"{base}/media"
         return {**stack.catalogue(installed), "docker": containers.available(), "can_start": bool(host and containers.available()),
+                "chosen": stack.chosen_keys(app.data_dir) or [],  # the apps in Starboard's own set-up files (DASH-173)
                 "existing_media": media, "drives": sysinfo.pool_candidates(app.data_dir),
                 "servers": [{"key": i["key"], "name": i["name"]} for i in found
                             if i["key"] in ("plex", "emby", "jellyfin", "audiobookshelf", "sonarr", "radarr", "lidarr")],

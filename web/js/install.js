@@ -120,6 +120,28 @@ async function startInstall() {
   const chosenMedia = fromGuide && /^\/[A-Za-z0-9._/-]{0,250}$/.test(params.get("media") || "") ? params.get("media") : "";
   let flow;
   try { flow = await installFlow({ chosenMedia }); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); return; }
+  // DASH-173: once the server is set up, Install apps opens on what is installed; the wizard is a choice.
+  if (!fromGuide && !params.get("wizard") && config?.setup_guide_done) {
+    const chosen = new Set(flow.data.chosen || []);
+    const have = flow.data.apps.filter((a) => chosen.has(a.key));
+    const more = flow.data.apps.filter((a) => !chosen.has(a.key) && !a.installed);
+    const again = el("a", { class: "btn", href: "/install-apps.html?wizard=1" }, icon("play"), "Run the set-up again");
+    $(".page-head .page-head__summary")?.replaceChildren("What is installed, and what you can add.");
+    root.replaceChildren(
+      section("ia-have", "Installed", `${have.length} ${have.length === 1 ? "app" : "apps"} that Starboard installed and runs.`,
+        el("ul", { class: "rows" }, have.map((a) => el("li", { class: "row row--no-lead" },
+          el("div", {}, el("div", { class: "row__title", text: a.name }), el("div", { class: "row__meta", text: a.notes || "" })))))),
+      more.length ? section("ia-more", "You can add", "Optional apps for what your server does. Adding them runs the set-up with them ticked.",
+        el("ul", { class: "rows" }, more.map((a) => el("li", { class: "row row--no-lead" },
+          el("div", {}, el("div", { class: "row__title", text: a.name }), el("div", { class: "row__meta", text: a.notes || "" })),
+          el("div", { class: "row__side" }, el("a", { class: "btn btn--quiet btn--compact", href: `/install-apps.html?wizard=1&add=${encodeURIComponent(a.key)}` },
+            "Add", el("span", { class: "visually-hidden", text: ` ${a.name}` }))))))) : null,
+      section("ia-change", "Change your install", "Basics or Full, the Usenet app and the Reelix version are on Settings, Your install. The set-up asks every question again and changes nothing until you write the files.",
+        el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/settings-install.html" }, "Open Your install"), again)));
+    return;
+  }
+  const adding = params.get("add");
+  if (adding && flow.apps[adding]) { flow.state.apps.add(adding); flow.state.install = "custom"; }
   const { state, data, apps, T } = flow;
   const build = () => [{ id: "welcome", ...stepNamed(T, "welcome"), skippable: false }, ...flow.before(), ...flow.finish()];
   const finishTo = fromGuide ? "/setup-guide.html" : "/index.html";
