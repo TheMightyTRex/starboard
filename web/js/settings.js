@@ -1053,8 +1053,10 @@ async function stepContent(id, root) {
       }
       remember({ where: picked.key, media: folder.value.trim(), at: "after-apps" });
       await saveHost();
-      location.href = `/install-apps.html?from=guide&media=${encodeURIComponent(folder.value.trim())}`;
-      return false;
+      // DASH-269: Install apps' steps follow in this wizard, with the media folder chosen here (no Folders step).
+      if (typeof installFlow !== "function") { location.href = `/install-apps.html?from=guide&media=${encodeURIComponent(folder.value.trim())}`; return false; }
+      document.dispatchEvent(new CustomEvent("guide-media", { detail: folder.value.trim() }));
+      return true;
     };
   } else if (id === "storage") {
     const p = config.performance;
@@ -1259,6 +1261,15 @@ async function startGuide() {
   try { hasDisks = (await api("/api/system")).disks.length > 0; } catch { /* leave the step out */ }
   let dockerAccess = true;  // asked only when Starboard does not have it (DASH-139, DASH-267)
   try { dockerAccess = !!(await api("/api/stack")).docker; } catch { /* not asked */ }
+  // DASH-269: a new install runs Install apps' steps here, in this wizard, with one step count (install.js).
+  let flow = null;
+  const needFlow = () => (guideMemory().start || "new") === "new" && typeof installFlow === "function";
+  const loadFlow = async () => {
+    if (flow || !needFlow()) return;
+    try { flow = await installFlow({ chosenMedia: guideMemory().media || "" }); } catch (e) { problem(e.message); }
+  };
+  await loadFlow();
+  document.addEventListener("guide-media", (e) => { if (flow) { flow.state.chosenMedia = e.detail; flow.state.data_dir = e.detail; } });
 
   // The agreed order (DASH-103), the same as the terminal set-up: each thing is decided before what depends on it.
   const build = () => {
@@ -1273,7 +1284,12 @@ async function startGuide() {
     }
     if (start === "new") {
       list.push({ id: "where", ...stepNamed(T, "storage"), skippable: false,
-        intro: "Your films, series, books and downloads go in one media folder. Next, Install apps sets up the apps for it." });
+        intro: "Your films, series, books and downloads go in one media folder. Next, choose what your server does." });
+      if (flow) {
+        // The agreed order (DASH-265): what to set up and its questions, How much it does, then Check and Start.
+        list.push(...flow.before(), { id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." },
+          ...flow.finish());
+      }
     } else {
       list.push({ id: "apps", ...stepNamed(T, "find"),
         intro: "Starboard looked for apps it knows on this computer. Tick the ones to add; you can add others by hand later." });
@@ -1283,24 +1299,27 @@ async function startGuide() {
       list.push({ id: "keys", ...stepNamed(T, "keys"),
         intro: "With its key, Starboard can show an app's queue, calendar, updates and warnings. Each key stays on the server." });
     }
-    if (types(["jellyfin"]).length) list.push({ id: "jellyfin", ...stepNamed(T, "extras"), intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
-    if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key)) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet and SABnzbd outside these hours, for example to keep the internet free in the day." });
+    const coming = (keys) => !!flow && keys.some((k) => flow.state.apps.has(k));  // installed by this set-up
+    if (types(["jellyfin"]).length || coming(["jellyfin"])) list.push({ id: "jellyfin", ...stepNamed(T, "extras"), intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
+    if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key) || coming(["qbittorrent", "nzbget", "sabnzbd"])) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet and SABnzbd outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
-    if (!dockerAccess && start === "new") list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });
-    list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+    if (!(start === "new" && flow)) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+    if (!dockerAccess && start === "new") list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // the last question
     list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
     return list;
   };
 
   const go = async (i) => {
+    await loadFlow();
     steps = build();
     index = Math.max(0, Math.min(i, steps.length - 1));
     const step = steps[index];
     step.nodes = [el("p", { class: "muted", text: "Loading…" })];
     let save = async () => true;
     let loading = true;  // Continue waits until the step has loaded, so a quick click cannot skip it
-    const frame = () => wizardFrame({ root, steps, index, busy: loading, continueText: step.id === "finish" ? "Go to Apps" : "Continue",
+    const frame = () => wizardFrame({ root, steps, index, busy: loading,
+      continueText: step.id === "finish" ? "Go to Apps" : step.id === "review" && flow?.ids().has("review") ? "Write the files" : "Continue",
       onBack: () => go(index - 1), onSkip: () => go(index + 1),
       onContinue: async (e) => {
         const button = e.currentTarget;  // the event forgets it once the save has been awaited
@@ -1312,7 +1331,27 @@ async function startGuide() {
     frame();
     $("#guide-summary").textContent = `Step ${index + 1} of ${steps.length} · about 3 minutes · you can change everything later in Settings`;
 
-    const content = await stepContent(step.id, root);
+    let content;
+    if (flow && flow.ids().has(step.id)) {
+      // An Install apps step: drawn by install.js; it may ask for another step by its id (Change, or after Basics).
+      const goTo = (id) => {
+        const list = build();
+        const want = id === "folders" && !list.some((x) => x.id === "folders") ? "where" : id;  // the guide's Storage chose the folder
+        return go(Math.max(0, list.findIndex((x) => x.id === want)));
+      };
+      content = await installStep(step.id, flow.state, flow.data, flow.apps, goTo);
+      if (!content) return;  // drawn again by a newer go()
+      if (step.id === "start") {
+        const started = content.save;
+        content.save = async () => {
+          const ok = await started();
+          try { config = await api("/api/config"); } catch { /* the next steps use what they have */ }
+          return ok;
+        };
+      }
+    } else {
+      content = await stepContent(step.id, root);
+    }
     if (step.id !== "finish") { step.nodes = content.nodes; save = content.save; }
     if (step.id === "finish") {
       await saveGeneral({ setup_guide_done: true });

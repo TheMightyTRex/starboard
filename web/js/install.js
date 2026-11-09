@@ -2,7 +2,7 @@
 // such as Movies, TV and Ebooks. It explains each part, picks sensible apps and folders, writes a Compose file and
 // a .env file, starts the apps only when you press Start and give your password, then talks you through connecting
 // them. "Advanced settings" shows every app, the settings folder, user and group numbers, and the files themselves.
-// Loaded only by install-apps.html, after settings.js (it uses field, setError, notice, wizardFrame and appFinder).
+// Loaded by install-apps.html and setup-guide.html, after settings.js (it uses field, setError, notice, wizardFrame and appFinder).
 
 // VPN providers, the same file the terminal set-up reads (web/vpn-providers.json): Gluetun's name, the provider's
 // own spelling and its site.
@@ -63,15 +63,11 @@ function sitesSummary(sites, list) {
   return words.join(", ") || "None yet: add them later in Settings, Reelix";
 }
 
-async function startInstall() {
-  const root = $("#install");
-  root.removeAttribute("aria-busy");
-  const params = new URLSearchParams(location.search);
-  const fromGuide = params.get("from") === "guide";
-  // The set-up guide's Storage step chose the media folder already (DASH-103): use it, and skip Folders.
-  const chosenMedia = fromGuide && /^\/[A-Za-z0-9._/-]{0,250}$/.test(params.get("media") || "") ? params.get("media") : "";
-  let data;
-  try { data = await api("/api/stack"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); return; }
+// One Install apps flow for two places (DASH-269): this page on its own, for adding apps later, and inside the set-up
+// guide, whose new install runs these steps in its own wizard with one step count. installFlow loads what the steps
+// need and lists them; installStep draws one.
+async function installFlow({ chosenMedia = "" } = {}) {
+  const data = await api("/api/stack");
   const apps = Object.fromEntries(data.apps.map((a) => [a.key, a]));
   const T = await stepTable();  // the step names the terminal set-up uses too
   // Reelix, or Reelix with YouTube and Spotify downloads: the second only when it can be downloaded now.
@@ -81,9 +77,9 @@ async function startInstall() {
   data.reelix_editions = editions;
   let advanced = false;
   try { advanced = localStorage.getItem("install-advanced") === "1"; } catch { /* private window */ }
-  let heldPassword = "";  // the password typed on the Check step, reused by Start the apps; this page only
   const state = {
-    advanced,
+    advanced, chosenMedia,
+    heldPassword: "",  // the password typed on the Check step, reused by Start the apps; this page only, never stored
     groups: new Set(data.groups.filter((g) => g.default).map((g) => g.key)),
     apps: new Set(data.apps.filter((a) => a.default && !a.installed && a.groups.some((g) => data.groups.find((x) => x.key === g).default)).map((a) => a.key)),
     config_dir: data.defaults.config_dir, data_dir: chosenMedia || data.defaults.data_dir,
@@ -92,13 +88,13 @@ async function startInstall() {
     install: "basics", installApplied: false, usenet: "nzbget", sites: { builtin: [], own: [] },
     tmdb: "", language: "English", usenetServer: null,
   };
-  // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd is, Moving over only when
-  // there is something to move.
-  const build = () => [
-    { id: "welcome", ...stepNamed(T, "welcome"), skippable: false },
+  // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd or NZBGet is, Moving over
+  // only when there is something to move. Check and Start are listed apart, so the guide can put How much it does
+  // between them and the rest (DASH-265).
+  const before = () => [
     { id: "groups", ...stepNamed(T, "apps"), skippable: false,
       intro: "Tick what you want. Starboard picks the apps for each one; you can see and change them with Advanced settings." },
-    ...(chosenMedia ? [] : [{ id: "folders", ...stepNamed(T, "folders"), skippable: false,
+    ...(state.chosenMedia ? [] : [{ id: "folders", ...stepNamed(T, "folders"), skippable: false,
       intro: "One media folder holds your downloads and your library together, so a finished download moves into the library instantly." }]),
     ...(state.apps.has("gluetun") ? [{ id: "vpn", ...stepNamed(T, "vpn"), skippable: false,
       intro: "Downloads go through your VPN, so your internet provider sees only the VPN. You need an account with a VPN provider." }] : []),
@@ -107,9 +103,25 @@ async function startInstall() {
       { id: "films", ...stepNamed(T, "films"), skippable: false }] : []),
     ...(data.servers.length ? [{ id: "moving", ...stepNamed(T, "moving"),
       intro: "Starboard found these on this computer. Nothing is copied or changed until the new apps are running and you choose." }] : []),
+  ];
+  const finish = () => [
     { id: "review", ...stepNamed(T, "check"), skippable: false },
     { id: "start", ...stepNamed(T, "start-apps"), skippable: false },
   ];
+  return { state, data, apps, T, before, finish, ids: () => new Set([...before(), ...finish()].map((x) => x.id)) };
+}
+
+async function startInstall() {
+  const root = $("#install");
+  root.removeAttribute("aria-busy");
+  const params = new URLSearchParams(location.search);
+  const fromGuide = params.get("from") === "guide";
+  // An older link from the set-up guide's Storage step carries the media folder already (DASH-103): use it.
+  const chosenMedia = fromGuide && /^\/[A-Za-z0-9._/-]{0,250}$/.test(params.get("media") || "") ? params.get("media") : "";
+  let flow;
+  try { flow = await installFlow({ chosenMedia }); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); return; }
+  const { state, data, apps, T } = flow;
+  const build = () => [{ id: "welcome", ...stepNamed(T, "welcome"), skippable: false }, ...flow.before(), ...flow.finish()];
   const finishTo = fromGuide ? "/setup-guide.html" : "/index.html";
 
   const go = async (id) => {
@@ -708,7 +720,7 @@ async function installStep(id, state, data, apps, go) {
       if (!writePassword.value) { setError(writePassword, "Enter your Starboard password"); writePassword.focus(); return false; }
       try {
         state.written = await api("/api/stack/write", { method: "POST", body: { ...body(state), password: writePassword.value } });
-        heldPassword = writePassword.value;  // for Start the apps a minute later; kept in this page only, never stored
+        state.heldPassword = writePassword.value;  // for Start the apps a minute later; kept in this page only, never stored
       } catch (e) {
         if (e.status === 401 || e.status === 429) { setError(writePassword, e.message); writePassword.focus(); return false; }
         throw e;
@@ -739,13 +751,13 @@ async function installStep(id, state, data, apps, go) {
     };
     const poolFirst = state.pool ? notice("warning", "Make the pool first", `Run the pool commands from the Folders step on the server before you start, so ${state.pool.path} exists.`) : null;
     if (w.can_start || w.starter) {
-      const pw = el("input", { class: "input", type: "password", autocomplete: "current-password", value: heldPassword });
+      const pw = el("input", { class: "input", type: "password", autocomplete: "current-password", value: state.heldPassword });
       const startBtn = el("button", { type: "button", class: "btn btn--primary" }, icon("play"), "Start the apps");
       const form = el("div", { class: "form-stack" },
         el("p", { text: w.can_start
           ? "Starboard asks Docker to download each app and start it, using a short-lived helper. This can take several minutes on the first run."
           : "The Run first window on this computer downloads each app and starts it, so keep that window open. This can take several minutes on the first run." }),
-        field("Your Starboard password", pw, { required: true, hint: heldPassword ? "Filled in from the Check step. Starting apps changes this computer, so Starboard checks it is you."
+        field("Your Starboard password", pw, { required: true, hint: state.heldPassword ? "Filled in from the Check step. Starting apps changes this computer, so Starboard checks it is you."
           : "Starting apps changes this computer, so Starboard checks it is you." }),
         el("div", { class: "actions" }, startBtn));
       startBtn.addEventListener("click", async () => {
@@ -754,7 +766,7 @@ async function installStep(id, state, data, apps, go) {
         startBtn.disabled = true;
         try {
           await api("/api/stack/start", { method: "POST", body: { password: pw.value } });
-          heldPassword = "";
+          state.heldPassword = "";
           form.hidden = true;
           // One bar for the job, updated in place; a problem goes below it (WIZARD.md section 5, A job's progress).
           const words = el("span", { text: "Downloading and starting the apps. Please wait, this can take some time…" });
