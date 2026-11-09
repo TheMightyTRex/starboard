@@ -1058,10 +1058,38 @@ def _title(service, kind, tmdb):
     return _titles[key]
 
 
+REELIX_REQUEST = {"pending": ("Waiting for approval", "warning"), "approved": ("Approved", "info"), "declined": ("Declined", "muted"),
+                  "processing": ("Downloading", "info"), "partially_available": ("Partly available", "info"),
+                  "available": ("Available", "success"), "failed": ("Failed", "danger")}
+
+
+def reelix_requests(services, pending_only=False):
+    """Reelix's own requests (DASH-157), when there is no Seerr: the same rows as Seerr's, with Retry for a failed one."""
+    found = reelix_native(services)
+    if not found:
+        return None
+    r = found[0]
+    page = _api(r, "/requests", {"status": "pending" if pending_only else "all", "page_size": 30}) or {}
+    items = []
+    for q in page.get("items") or []:
+        words, tone = REELIX_REQUEST.get(q.get("status"), ("Unknown", "muted"))
+        reason = q.get("failure_reason") or q.get("decline_reason") or ""
+        items.append({"id": q["id"], "kind": "Film" if q.get("kind") == "movie" else "Series", "title": q.get("title") or "Untitled",
+                      "year": str(q.get("year") or ""), "seasons": q.get("seasons") or [], "status": words, "tone": tone,
+                      "pending": q.get("status") == "pending", "retry": q.get("status") == "failed", "media": reason,
+                      "by": (q.get("requested_by") or {}).get("display_name", ""), "when": q.get("created_at", "")})
+    try:
+        pending = int((_api(r, "/requests/count") or {}).get("pending", 0))
+    except ServiceError:
+        pending = sum(i["pending"] for i in items)
+    base = r["url"].rsplit("/api/v1", 1)[0]
+    return {"configured": True, "source": "reelix", "name": "Reelix", "link": r.get("link") or base, "items": items, "pending": pending}
+
+
 def requests(services, pending_only=False):
     found = [s for s in services if s["type"] == "seerr" and s.get("enabled", True) and s.get("api_key")]
     if not found:
-        return {"configured": False, "items": [], "pending": 0}
+        return reelix_requests(services, pending_only) or {"configured": False, "items": [], "pending": 0}
     s = found[0]
     page = _seerr(s, f"/request?take=30&skip=0&sort=added&filter={'pending' if pending_only else 'all'}") or {}
     items = []
@@ -1080,8 +1108,15 @@ def requests(services, pending_only=False):
             "pending": counts.get("pending", sum(i["pending"] for i in items))}
 
 
-def request_action(services, request_id, action):
+def request_action(services, request_id, action, reason=""):
     s = next((s for s in services if s["type"] == "seerr" and s.get("enabled", True) and s.get("api_key")), None)
     if not s:
-        raise ServiceError("No Seerr app with an API key is set up")
+        reelix = reelix_native(services)
+        if not reelix:
+            raise ServiceError("No Seerr app and no Reelix with an API key is set up")
+        body = {"reason": str(reason)[:500]} if action == "decline" and reason else ({} if action == "decline" else None)
+        _api(reelix[0], f"/requests/{int(request_id)}/{action}", method="POST", body=body)
+        return
+    if action == "retry":
+        raise ServiceError("Seerr has no Retry; open Seerr to try again")
     _seerr(s, f"/request/{int(request_id)}/{'approve' if action == 'approve' else 'decline'}", method="POST")

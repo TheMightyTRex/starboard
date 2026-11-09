@@ -1607,9 +1607,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/requests" and method == "GET":
                 pending = "pending=1" in urllib.parse.urlparse(self.path).query
                 return self.json(200, services.cached(f"requests-{pending}", 20, lambda: services.requests(cfg.data["services"], pending), fresh))
-            m = re.match(r"^/api/requests/(\d{1,10})/(approve|decline)$", path)
+            m = re.match(r"^/api/requests/(\d{1,10})/(approve|decline|retry)$", path)
             if m and method == "POST":
-                services.request_action(cfg.data["services"], m.group(1), m.group(2))
+                services.request_action(cfg.data["services"], m.group(1), m.group(2), str(self.body().get("reason") or ""))
                 services.forget()
                 return self.json(200, services.requests(cfg.data["services"]))
             if path == "/api/jobs" and method == "GET":
