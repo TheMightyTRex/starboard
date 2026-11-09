@@ -62,5 +62,24 @@ class ReelixHealth(unittest.TestCase):
         self.assertEqual(len(result["errors"]), 1)
 
 
+
+class ReelixLogo(unittest.TestCase):
+    """The icon collection has no Reelix, so its cards use the running Reelix's own logo (DASH-255)."""
+
+    def test_the_logo_comes_from_reelix_itself(self):
+        import tempfile
+        from starboard import icons
+        png = b"\x89PNG\r\n\x1a\n" + b"0" * 20
+        asked = []
+
+        def fake(url):
+            asked.append(url)
+            return png if url.endswith("/logo.png") else None
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(icons, "_fetch", side_effect=fake):
+            got = icons.get({"name": "Reelix films", "icon": "reelix", "url": "http://reelix:7700/radarr"}, d)
+        self.assertEqual(asked[0], "http://reelix:7700/logo.png")
+        self.assertEqual(got, (png, "image/png"))
+
+
 if __name__ == "__main__":
     unittest.main()

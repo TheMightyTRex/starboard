@@ -5,14 +5,36 @@
 
 const FILTERS = [
   { key: "down", label: "Not responding", test: (s) => AppDetails.status(s).state === "down" },
-  { key: "updates", label: "Update available", test: (s) => !!AppDetails.update(s) },
+  { key: "updates", label: "Update available", test: (s) => familyOf(s).some((x) => AppDetails.update(x)) },
   { key: "warnings", label: "Has warnings", test: (s) => AppDetails.warnings(s).length > 0 },
 ];
 const pressed = new Set((new URLSearchParams(location.search).get("show") || "").split(",").filter((k) => FILTERS.some((f) => f.key === k)));
 let nameFilter = "";
 
 const design = () => document.documentElement.dataset.design;
-const apps = () => (AppDetails.state.config?.services || []).filter((s) => s.enabled && !s.background);
+// Reelix is one card (DASH-256): the set-up adds a card for Reelix and one for each kind it serves (films, series,
+// books, music), so Coming up, Downloads and Wanted can read each. Apps shows one, named Reelix, in the group of
+// the kinds, with the numbers, update and warnings of all of them.
+const reelixFamily = () => (AppDetails.state.config?.services || []).filter((s) => s.enabled && !s.background && s.icon === "reelix");
+function apps() {
+  const list = (AppDetails.state.config?.services || []).filter((s) => s.enabled && !s.background);
+  const family = list.filter((s) => s.icon === "reelix");
+  if (family.length < 2) return list;
+  const primary = family.find((s) => s.type === "link") || family[0];
+  const group = family.find((s) => s !== primary)?.group || primary.group;
+  return list.filter((s) => s.icon !== "reelix" || s === primary).map((s) => (s === primary ? { ...s, name: "Reelix", group } : s));
+}
+const familyOf = (s) => (s.icon === "reelix" ? reelixFamily() : [s]);
+// "1 in the queue" and "3 in the queue" from Reelix's kinds read "4 in the queue" on its one card.
+function addUp(parts) {
+  const sums = new Map();
+  for (const p of parts) {
+    const m = /^([\d,]+) (.+)$/.exec(p);
+    if (!m) { sums.set(p, null); continue; }
+    sums.set(m[2], (sums.get(m[2]) || 0) + Number(m[1].replace(/,/g, "")));
+  }
+  return [...sums].map(([words, n]) => (n === null ? words : `${n.toLocaleString("en-GB")} ${words}`));
+}
 
 // Cards -------------------------------------------------------------------------------------
 
@@ -20,7 +42,7 @@ function card(s, old) {
   const { config } = AppDetails.state;
   const words = AppDetails.status(s);
   const st = AppDetails.state.status[s.id];
-  const u = AppDetails.update(s);
+  const u = familyOf(s).map((x) => AppDetails.update(x)).find(Boolean) || null;
   const warn = AppDetails.warnings(s);
   const o = AppDetails.state.outside[s.id];
   const home = s.link ? reachableUrl(s.link) : "";
@@ -33,7 +55,7 @@ function card(s, old) {
     el("span", { class: "card__notes" },
       warn.length ? chip(warn.length === 1 ? "1 warning" : `${warn.length} warnings`, "warning") : null,
       o && !o.reachable ? chip("Not reachable from outside", "warning") : null));
-  const numbers = AppDetails.state.numbers?.[s.id];
+  const numbers = addUp(familyOf(s).flatMap((x) => AppDetails.state.numbers?.[x.id] || []));
   const activity = down ? "Cannot reach it" : numbers?.length ? numbers.join(" · ") : numbersOff || !st ? "" : "Nothing to report";
   // Every card has the same parts in the same order, so each line sits in the same place on every card.
   return el("li", { class: "card app-card", "data-state": words.state, "data-tone": down ? "danger" : null },
@@ -126,7 +148,7 @@ function summaryText(services) {
   if (!state.loaded.has("status")) return state.errors.status ? `Apps not checked: ${state.errors.status}` : "Checking your apps…";
   const up = services.filter((s) => AppDetails.status(s).state === "up").length;
   const down = services.filter((s) => AppDetails.status(s).state === "down").length;
-  const updates = services.filter((s) => AppDetails.update(s)).length;
+  const updates = services.filter((s) => familyOf(s).some((x) => AppDetails.update(x))).length;
   const parts = [`${up} of ${services.length} running`];
   if (down) parts.push(`${down} not responding`);
   if (updates) parts.push(`${updates} ${updates === 1 ? "update" : "updates"} available`);

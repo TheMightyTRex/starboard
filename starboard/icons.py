@@ -43,9 +43,18 @@ def source(service):
     return ("name", slug) if slug and NAME_RE.match(slug) else None
 
 
+def reelix_base(service):
+    """The running Reelix's own address from one of its cards (http://reelix:7700 from http://reelix:7700/radarr)."""
+    from .services import COMPAT_SUFFIXES
+    url = str(service.get("url") or "").rstrip("/")
+    if not url.startswith(("http://", "https://")):
+        return ""
+    return next((url[:-len(x)] for x in COMPAT_SUFFIXES if url.endswith(x)), url)
+
+
 def _fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": "Starboard"})
-    with urllib.request.urlopen(req, timeout=8) as resp:  # the icon collection's https address, or an icon address checked to start with https://  # nosec B310
+    with urllib.request.urlopen(req, timeout=8) as resp:  # the icon collection's https address, an icon address checked to start with https://, or Reelix's own logo on its saved address  # nosec B310
         if resp.status != 200:
             return None
         data = resp.read(MAX_BYTES + 1)
@@ -80,6 +89,11 @@ def get(service, folder, fetch=True):
             return None
         if kind == "name":
             candidates = [(f"{CDN}/svg/{value}.svg", ".svg"), (f"{CDN}/png/{value}.png", ".png")]
+            if value == "reelix":
+                # The collection has no Reelix (DASH-255): its own logo, from the running Reelix, kept like the others.
+                base = reelix_base(service)
+                if base:
+                    candidates.insert(0, (base + "/logo.png", ".png"))
         else:
             ext = ".png" if value.lower().split("?")[0].endswith(".png") else ".svg"
             candidates = [(value, ext)]
