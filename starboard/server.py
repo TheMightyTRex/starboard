@@ -1295,6 +1295,13 @@ class Handler(BaseHTTPRequestHandler):
                 after_install_change(app, body.get("password", ""), plan, sab_ini)
                 return self.json(200, {"started": started, "add": plan["add"], "remove": plan["remove"],
                                        "sab_servers": len(usenet_move.parse_sab_servers(sab_ini)) if sab_ini else 0})
+            if path == "/api/stack/existing-usenet" and method == "GET":
+                # DASH-247: the servers of a SABnzbd already running, by address only, for the Usenet step to name.
+                running = next((c["name"] for c in takeover.found() if c["key"] == "sabnzbd" and c["running"]), None) \
+                    if containers.available() else None
+                ini = usenet_move.read_sab_ini(running) if running else None
+                hosts = [s.get("host") for s in usenet_move.parse_sab_servers(ini or "") if s.get("host")]
+                return self.json(200, {"app": "SABnzbd" if hosts else None, "hosts": hosts})
             if path == "/api/stack/existing-vpn" and method == "GET":
                 return self.json(200, {"vpn": takeover.existing_vpn()})  # DASH-132: never the key or password
             if path == "/api/stack/preview" and method == "POST":

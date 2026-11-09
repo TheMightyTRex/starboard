@@ -549,7 +549,13 @@ async function installStep(id, state, data, apps, go) {
         el("input", { type: "radio", name: "usenet-have", value: v, checked: v === (state.usenetHave || "none") }), el("strong", { text: t })))));
     fieldset.addEventListener("change", (e) => show(e.target.value));
     show(state.usenetHave || "none");
-    nodes = [el("p", { text: USENET_ABOUT.replaceAll("SABnzbd", usenetApp) }), fieldset, more];
+    // DASH-247: a SABnzbd already running: its servers move into NZBGet when Starboard takes it over.
+    let already = null;
+    try { already = await api("/api/stack/existing-usenet"); } catch { /* no Docker access */ }
+    const moves = already?.hosts?.length && usenetApp === "NZBGet" ? notice("info", "Your Usenet provider comes with you",
+      `Your SABnzbd uses ${already.hosts.join(" and ")}. When Starboard takes over your apps, ${already.hosts.length === 1 ? "it moves" : "they move"} into NZBGet, so you need not type ${already.hosts.length === 1 ? "it" : "them"} again.`) : null;
+    if (moves && !state.usenetHave) { state.usenetHave = "later"; $(`input[value="later"]`, fieldset).checked = true; show("later"); }
+    nodes = [el("p", { text: USENET_ABOUT.replaceAll("SABnzbd", usenetApp) }), moves, fieldset, more].filter(Boolean);
     save = async () => {
       if (state.usenetHave !== "have") { state.usenetServer = null; return true; }
       const s = server();

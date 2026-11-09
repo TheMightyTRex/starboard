@@ -2135,10 +2135,20 @@ def step_usenet(api, term, state):
     head(term, state, "usenet")
     term.say("")
     term.note(usenet_words(USENET_ABOUT, app))
+    # DASH-247: a SABnzbd already running: its servers move into NZBGet at the takeover (the browser says the same).
+    try:
+        hosts = api.call("GET", "/api/stack/existing-usenet").get("hosts") or [] if app == "NZBGet" else []
+    except Exception:  # noqa: BLE001  no Docker access: nothing to say
+        hosts = []
+    if hosts:
+        term.say("")
+        term.note(f"Your SABnzbd uses {' and '.join(hosts)}. When Starboard takes over your apps, "
+                  f"{'it moves' if len(hosts) == 1 else 'they move'} into NZBGet, so you need not type "
+                  f"{'it' if len(hosts) == 1 else 'them'} again.")
     # DASH-142: asked first; the providers are listed only for someone who has none.
     have = term.choose("Do you have a Usenet provider?",
                        ["No, show me some providers", "Yes, I have one", "Not now: torrents are enough for now"],
-                       state.get("usenet_have", 1), help_key="usenet")
+                       state.get("usenet_have", 3 if hosts else 1), help_key="usenet")
     state["usenet_have"] = have + 1
     term.say("")
     if have == 0:
