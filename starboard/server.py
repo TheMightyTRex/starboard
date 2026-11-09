@@ -955,6 +955,8 @@ class Handler(BaseHTTPRequestHandler):
                 signed_in = self.signed_in()
                 return self.json(200, {
                     "signed_in": signed_in, "needs_setup": app.needs_setup,
+                    # DASH-238: until the first set-up has finished, pages show only the set-up wizard.
+                    "first_setup": bool(app.config.data.get("first_setup_pending")) if signed_in else None,
                     "site_name": app.config.data["site_name"], "design": app.config.data["design"],
                     # Not told to people who have not signed in.
                     "version": app.version if signed_in else None,
@@ -1565,6 +1567,7 @@ class Handler(BaseHTTPRequestHandler):
                 if unmoved and not body.get("unmoved_ok"):
                     raise ValueError("Move " + ", ".join(unmoved) + " into Reelix first (Settings, Reelix, Move your apps "
                                      "into Reelix), or tick that you do not need them moved")
+                app.config.update_general({"setup_guide_done": True})  # a takeover counts as set up (DASH-238)
                 sab_ini = usenet_move.read_sab_ini() if p["sab"] else None
                 logs.event("info", "take over", "Taking over " + ", ".join(t["name"] for t in p["take"]) +
                            "; stopping " + (", ".join(r["name"] for r in p["replace"]) or "nothing"))

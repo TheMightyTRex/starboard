@@ -392,7 +392,7 @@ def main():
         r, _ = call("POST", "/api/setup", {"token": app.setup_token, "password": password})
         cookie = r.getheader("Set-Cookie").split(";")[0]
         # A short server name, as Settings, General sets it: it starts the top row of the menu (DASH-237).
-        call("PUT", "/api/config/general", {"server_name": "Harbour"}, cookie)
+        call("PUT", "/api/config/general", {"server_name": "Harbour", "setup_guide_done": True}, cookie)  # a set-up server (DASH-238)
         for name, kind, group, path in APPS:
             url = f"http://127.0.0.1:{FAKE_PORT}/{path}" if path else "http://127.0.0.1:9/"
             call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": url, "api_key": KEY if kind != "link" else ""}, cookie)

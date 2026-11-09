@@ -730,6 +730,12 @@ async function startPage() {
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
     showServerName(session.server_name);
     document.title = document.title.replace(/ · [^·]*$/, ` · ${session.site_name}`);
+    // DASH-238: until the first set-up has finished, only the set-up wizard: no menus, and other pages lead to it.
+    if (session.first_setup) {
+      document.body.classList.add("first-setup");
+      const allowed = ["/setup-guide.html", "/install-apps.html", "/login.html", "/setup.html"];
+      if (!allowed.some((p) => location.pathname.endsWith(p))) { location.replace("/setup-guide.html"); return null; }
+    }
     showVersion(session.version, session.repo, session.latest);
     upgradeNotice(session.upgrade);
     if (session.ux_notes) startFeedback(session).catch(() => { /* the page works without it */ });

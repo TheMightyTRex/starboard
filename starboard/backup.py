@@ -101,6 +101,7 @@ def restore(config, backup):
         saved = dict(config.data)
         try:
             config.update_general({k: settings[k] for k in GENERAL_KEYS if k in settings})
+            config.data.pop("first_setup_pending", None)  # a restored server counts as set up (DASH-238)
             config.data["services"] = clean
             config.save()
         except (ConfigError, ValueError, TypeError):

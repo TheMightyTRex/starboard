@@ -3064,6 +3064,10 @@ def run(api, term, data_dir, port, address=""):
                     shown.pop()
                 i = e.step
         term.can_back = False
+        try:  # DASH-238: the first set-up has finished, so pages show the full menu from now on
+            api.call("PUT", "/api/config/general", {"setup_guide_done": True})
+        except Exception:  # noqa: BLE001  a closing mark, never a stop
+            pass
         term.heading("Done")
         rows = [("On this computer", f"http://localhost:{port}")]
         if address:

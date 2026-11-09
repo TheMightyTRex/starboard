@@ -125,6 +125,9 @@ class Config:
     def _load(self):
         if not os.path.exists(self.path):
             data = json.loads(json.dumps(DEFAULTS))
+            # DASH-238: a new Starboard shows only the set-up wizard until the first set-up has finished. A settings
+            # file from before has no such mark, so an existing server is never shut in the wizard.
+            data["first_setup_pending"] = True
             data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
             name = os.environ.get("STARBOARD_NAME", "").strip()[:60]
             if name:
@@ -295,6 +298,8 @@ class Config:
                 for s in d["services"]:
                     if s.get("group") == old:
                         s["group"] = new
+            if incoming.get("setup_guide_done"):  # the first set-up has finished, in either set-up (DASH-238)
+                d.pop("first_setup_pending", None)
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
                         "fetch_icons", "show_posters", "setup_guide_done", "ux_notes", "settings_advanced", "reelix_auto_update"):
                 if key in incoming:
