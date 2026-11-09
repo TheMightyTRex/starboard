@@ -215,19 +215,38 @@
       "file": "install-apps-3-check.png",
       "page": "install-apps.html",
       "height": 1000,
-      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; const field = (t) => document.getElementById([...document.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(t)).htmlFor); const set = (i, v) => { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); }; await press('Begin'); await press('Continue'); await press('Continue'); document.querySelector('input[value=protonvpn]').click(); set(field('WireGuard private key'), 'ZXhhbXBsZS1rZXktZm9yLXRoZS1oZWxwLWNlbnRyZS0xMjM='); set(field('WireGuard address'), '192.0.2.2/32'); await press('Continue'); await press('Continue'); document.querySelector('main input[type=password]').scrollIntoView({ block: 'center' });",
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; const field = (t) => document.getElementById([...document.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(t)).htmlFor); const set = (i, v) => { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); }; await press('Begin'); await press('Continue'); await press('Continue'); document.querySelector('input[value=protonvpn]').click(); set(field('WireGuard private key'), 'ZXhhbXBsZS1rZXktZm9yLXRoZS1oZWxwLWNlbnRyZS0xMjM='); set(field('WireGuard address'), '192.0.2.2/32'); await press('Continue'); await press('Continue'); await press('Continue'); document.querySelector('main input[type=password]').scrollIntoView({ block: 'center' });",
       "marks": [
         {
           "t": "$main table",
-          "step": 9,
+          "step": 10,
           "side": "right",
           "tail": 80
         }
       ],
       "steps": [
-        9
+        10
       ],
-      "alt": "The Check step with example data, with the table of answers (step 9) outlined"
+      "alt": "The Check step with example data, with the table of answers (step 10) outlined"
+    },
+    {
+      "topic": "install-apps",
+      "file": "install-apps-4-sites.png",
+      "page": "install-apps.html",
+      "height": 1000,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; const field = (t) => document.getElementById([...document.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(t)).htmlFor); const set = (i, v) => { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); }; await press('Begin'); await press('Continue'); await press('Continue'); document.querySelector('input[value=protonvpn]').click(); set(field('WireGuard private key'), 'ZXhhbXBsZS1rZXktZm9yLXRoZS1oZWxwLWNlbnRyZS0xMjM='); set(field('WireGuard address'), '192.0.2.2/32'); await press('Continue'); await press('Continue'); const card = (n) => [...document.querySelectorAll('main .option-card')].find((c) => c.querySelector('strong')?.textContent === n); for (let i = 0; i < 40 && !card('YTS'); i++) await wait(250); for (const n of ['Internet Archive', 'YTS']) card(n).querySelector('input').click(); document.querySelector('input[name=own-site][value=torznab]').click(); set(document.querySelector('main input[type=url]'), 'http://192.168.1.20:9117/api/v2.0/indexers/all/results/torznab'); await wait(300); document.querySelector('main fieldset:has(.option-cards--row)').scrollIntoView({ block: 'start' }); await wait(300);",
+      "marks": [
+        {
+          "t": "$main fieldset:has(.option-cards--row)",
+          "step": 8,
+          "side": "right",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        8
+      ],
+      "alt": "The Sites to search step with example data, with the built-in sites (step 8) outlined and two of them ticked"
     },
     {
       "topic": "run-first",
@@ -333,15 +352,15 @@
       "marks": [
         {
           "t": "$#check",
-          "step": 9,
+          "step": 10,
           "side": "right",
           "tail": 90
         }
       ],
       "steps": [
-        9
+        10
       ],
-      "alt": "The Check step in the terminal, with Write the apps' files now? (step 9) outlined"
+      "alt": "The Check step in the terminal, with Write the apps' files now? (step 10) outlined"
     },
     {
       "topic": "run-first-errors",
@@ -399,6 +418,197 @@
         3
       ],
       "alt": "A job that did not finish, with its error number IN-33, the address of its help and What do you want to do? (step 3) outlined"
+    },
+    {
+      "topic": "change-reelix-settings",
+      "file": "change-reelix-settings-1-show.png",
+      "page": "settings-reelix.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; await wait(500);",
+      "marks": [
+        {
+          "t": "Show sites to search",
+          "step": 2,
+          "side": "right"
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "Settings, Reelix, with example data, with Show sites to search (step 2) outlined"
+    },
+    {
+      "topic": "change-reelix-settings",
+      "file": "change-reelix-settings-2-password.png",
+      "page": "settings-reelix.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; btn('Show sites to search').click(); await until(() => document.getElementById('rx-password')); const d = document.querySelector('dialog'); document.getElementById('rx-password').value = 'example-password'; const c = d.cloneNode(true); d.close(); c.style.cssText = 'position: fixed; inset: 0; margin: auto; z-index: 5; height: fit-content'; const back = document.createElement('div'); back.style.cssText = 'position: fixed; inset: 0; background: rgb(0 0 0 / 0.45); z-index: 4'; document.body.append(back, c); c.show(); await wait(300);",
+      "marks": [
+        {
+          "t": "$dialog[open] #rx-password",
+          "step": 3,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "The Enter your Reelix password dialog, with Reelix password (step 3) outlined"
+    },
+    {
+      "topic": "change-reelix-settings",
+      "file": "change-reelix-settings-3-form.png",
+      "page": "settings-reelix.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; await unlock('Show sites to search'); const row = [...document.querySelectorAll('section[aria-labelledby=rx-indexers-h] tbody tr')].find((r) => r.textContent.startsWith('1337x')); [...row.querySelectorAll('[role=menuitem]')].find((b) => b.textContent.trim() === 'Change').click(); await until(() => document.querySelector('#side-panel .side-panel__foot button')); await wait(800);",
+      "marks": [
+        {
+          "t": "$#side-panel .side-panel__foot .btn:not(.btn--primary)",
+          "step": 6,
+          "side": "right",
+          "tail": 80
+        }
+      ],
+      "steps": [
+        6
+      ],
+      "alt": "The Change 1337x panel, with Test (step 6) outlined beside Save"
+    },
+    {
+      "topic": "choose-sites-to-search",
+      "file": "choose-sites-to-search-1-list.png",
+      "page": "settings-reelix.html",
+      "height": 1000,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; await unlock('Show sites to search'); document.querySelector('section[aria-labelledby=rx-indexers-h] table').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$section[aria-labelledby=rx-indexers-h] table",
+          "step": 3,
+          "side": "right",
+          "tail": 80
+        },
+        {
+          "t": "Add a site to search",
+          "step": 4,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        3,
+        4
+      ],
+      "alt": "Sites to search with example sites, their state and results, with the list (step 3) and Add a site to search (step 4) outlined"
+    },
+    {
+      "topic": "choose-sites-to-search",
+      "file": "choose-sites-to-search-2-add.png",
+      "page": "settings-reelix.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; await unlock('Show sites to search'); btn('Add a site to search').click(); await until(() => document.querySelector('.rx-pick')); document.querySelector('#side-panel input[value=public]').click(); await wait(500);",
+      "marks": [
+        {
+          "t": "$#side-panel .segmented",
+          "step": 4,
+          "side": "left",
+          "tail": 80
+        },
+        {
+          "t": "$#side-panel .rx-pick",
+          "step": 5,
+          "side": "left",
+          "tail": 80
+        }
+      ],
+      "steps": [
+        4,
+        5
+      ],
+      "alt": "The Add a site to search panel, with No account needed chosen (step 4) and the first site (step 5) outlined"
+    },
+    {
+      "topic": "choose-sites-to-search",
+      "file": "choose-sites-to-search-3-vpn.png",
+      "page": "settings-reelix.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; await unlock('Show sites to search'); document.querySelector('section[aria-labelledby=rx-indexers-h] .switch').scrollIntoView({ block: 'center' }); await wait(300);",
+      "marks": [
+        {
+          "t": "$section[aria-labelledby=rx-indexers-h] .switch",
+          "step": 7,
+          "side": "top",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        7
+      ],
+      "alt": "How Reelix searches, with Search through the VPN activated (step 7) outlined"
+    },
+    {
+      "topic": "connect-reelix-to-media-servers",
+      "file": "connect-reelix-to-media-servers-1-connect.png",
+      "page": "settings-reelix.html",
+      "height": 1000,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; await unlock('Show media servers'); btn('Connect Audiobookshelf').scrollIntoView({ block: 'center' }); await wait(300);",
+      "marks": [
+        {
+          "t": "Connect Audiobookshelf",
+          "step": 3,
+          "side": "left",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "Media servers with example data, with Connect Audiobookshelf (step 3) outlined"
+    },
+    {
+      "topic": "connect-reelix-to-media-servers",
+      "file": "connect-reelix-to-media-servers-2-connected.png",
+      "page": "settings-reelix.html",
+      "height": 1000,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; await unlock('Show media servers'); const c = btn('Connect Audiobookshelf'); if (c) { c.click(); await until(() => !btn('Connect Audiobookshelf')); await wait(1200); } document.querySelector('section[aria-labelledby=rx-mediaservers-h] ul').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$section[aria-labelledby=rx-mediaservers-h] ul",
+          "step": 4,
+          "side": "right",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        4
+      ],
+      "alt": "Media servers, with Jellyfin and Audiobookshelf both Connected (step 4) outlined"
+    },
+    {
+      "topic": "connect-reelix-to-media-servers",
+      "file": "connect-reelix-to-media-servers-3-change.png",
+      "page": "settings-reelix.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t, root = document) => [...root.querySelectorAll('button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const unlock = async (t) => { btn(t).click(); await until(() => document.getElementById('rx-password')); document.getElementById('rx-password').value = 'example-password'; document.querySelector('dialog button[value=ok]').click(); await until(() => !document.querySelector('dialog')); await wait(1500); }; await unlock('Show media servers'); const row = [...document.querySelectorAll('section[aria-labelledby=rx-mediaservers-h] tbody tr')].find((r) => r.textContent.startsWith('Jellyfin')); [...row.querySelectorAll('[role=menuitem]')].find((b) => b.textContent.trim() === 'Change').click(); await until(() => document.querySelector('#side-panel input[type=url]')); await wait(800);",
+      "marks": [
+        {
+          "t": "$#side-panel input[type=url]",
+          "step": 5,
+          "side": "bottom",
+          "tail": 70
+        },
+        {
+          "t": "$#side-panel .side-panel__foot .btn:not(.btn--primary)",
+          "step": 6,
+          "side": "top",
+          "tail": 80
+        }
+      ],
+      "steps": [
+        5,
+        6
+      ],
+      "alt": "The Change Jellyfin panel, with URL (step 5) and Test (step 6) outlined"
     }
   ]
 }

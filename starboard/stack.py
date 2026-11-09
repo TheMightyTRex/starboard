@@ -147,7 +147,9 @@ APPS = {
     "gluetun": {"name": "Gluetun", "groups": ["vpn"], "image": "qmcgaw/gluetun:v3", "memory": 50, "gluetun": True,
                 "env": {"TZ": "${TZ}", "VPN_SERVICE_PROVIDER": "${VPN_SERVICE_PROVIDER}", "VPN_TYPE": "${VPN_TYPE}",
                         "WIREGUARD_PRIVATE_KEY": "${WIREGUARD_PRIVATE_KEY}", "WIREGUARD_ADDRESSES": "${WIREGUARD_ADDRESSES}",
-                        "OPENVPN_USER": "${OPENVPN_USER}", "OPENVPN_PASSWORD": "${OPENVPN_PASSWORD}", "SERVER_COUNTRIES": "${SERVER_COUNTRIES}"},
+                        "OPENVPN_USER": "${OPENVPN_USER}", "OPENVPN_PASSWORD": "${OPENVPN_PASSWORD}", "SERVER_COUNTRIES": "${SERVER_COUNTRIES}",
+                        # Reelix sends only its searches through the VPN, by Gluetun's HTTP proxy (reelix_sites.py)
+                        "HTTPPROXY": "on"},
                 "volumes": [f"{CFG}/gluetun:/gluetun"], "notes": "Your VPN details go in the .env file, never in Starboard's settings."},
     "bazarr": {"name": "Bazarr", "groups": ["subtitles"], "image": "lscr.io/linuxserver/bazarr:latest", "ports": ["6767:6767"],
                "volumes": [f"{CFG}/bazarr:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 150},
@@ -502,6 +504,9 @@ def build(choice):
     puid, pgid = int(choice.get("puid", 1000)), int(choice.get("pgid", 1000))
     if not (0 < puid < 65536 and 0 < pgid < 65536):
         raise ValueError("The user and group numbers must be between 1 and 65535")
+    if "reelix" in keys:
+        from . import reelix_sites
+        reelix_sites.clean_choice(choice.get("sites"))  # a wrong address is said at the Check step, not after starting
     tz = str(choice.get("tz") or "Etc/UTC")
     if not re.match(r"^[A-Za-z0-9_+/-]{1,40}$", tz):
         raise ValueError("Choose a time zone such as Europe/London")
@@ -954,7 +959,12 @@ def note_reelix(data_dir, choice, built):
             "qbittorrent_host": "gluetun" if vpn and "qbittorrent" in apps else "qbittorrent",
             "sabnzbd": "sabnzbd" in apps,
             "usenet": next((k for k in USENET_APPS if k in apps), None),
-            "usenet_host": ("gluetun" if vpn else next((k for k in USENET_APPS if k in apps), "nzbget"))}
+            "usenet_host": ("gluetun" if vpn else next((k for k in USENET_APPS if k in apps), "nzbget")),
+            "vpn": vpn}
+    from . import reelix_sites
+    sites = reelix_sites.clean_choice(choice.get("sites"))  # chosen in either set-up; added once Reelix runs
+    if sites["builtin"] or sites["own"]:
+        info["sites"] = sites
     fd = os.open(target + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(info, f)

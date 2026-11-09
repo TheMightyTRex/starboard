@@ -20,7 +20,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
-from . import access, auth, backup, helpdocs, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, helpdocs, reelix_admin, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -370,8 +370,11 @@ def adopt_started_apps(app, keys, after_job=True, wait=5.0):
 
 def reelix_after_start(app, password):
     """Once the apps Install apps started are running, sets Reelix up (reelix_setup), if it was among them. The password
-    is the one just checked; it is used for these calls and dropped when they finish."""
+    is the one just checked; it is used for these calls and dropped when they finish. A Reelix set up before gets
+    Jellyfin and Audiobookshelf when Starboard has their keys (DASH-156, reelix_sites.after_install)."""
     if not reelix_setup.read_setup(app.data_dir):
+        from . import reelix_sites
+        reelix_sites.after_install(app, password)
         return
 
     def run():
@@ -960,6 +963,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.error(401, "Sign in first")
 
             cfg = app.config
+            if path.startswith("/api/reelix/admin/"):  # Reelix's admin settings, password each time (reelix_admin.py)
+                return reelix_admin.route(self, method, path)
             if path == "/api/config" and method == "GET":
                 return self.json(200, cfg.public())
             if path == "/api/config/general" and method == "PUT":

@@ -1,0 +1,58 @@
+{
+  "about": "Reelix's built-in public sites that both set-ups offer in Sites to search: general, in English, no account needed. None is ticked unless the person ticks it. starboard/reelix_sites.py, web/js/install.js and the terminal set-up read this file; tests/test_reelix_settings.py checks each is in Reelix's own list.",
+  "sites": [
+    {
+      "id": "definition:internetarchive",
+      "name": "Internet Archive",
+      "lists": "Free, legal films, books, music and old radio"
+    },
+    {
+      "id": "definition:1337x",
+      "name": "1337x",
+      "lists": "Films, series, music and books"
+    },
+    {
+      "id": "definition:thepiratebay",
+      "name": "The Pirate Bay",
+      "lists": "Everything"
+    },
+    {
+      "id": "definition:yts",
+      "name": "YTS",
+      "lists": "Films in small files"
+    },
+    {
+      "id": "definition:eztv",
+      "name": "EZTV",
+      "lists": "Series"
+    },
+    {
+      "id": "definition:limetorrents",
+      "name": "LimeTorrents",
+      "lists": "Everything"
+    },
+    {
+      "id": "definition:torrentproject2",
+      "name": "TorrentProject2",
+      "lists": "A search across other sites"
+    },
+    {
+      "id": "definition:uindex",
+      "name": "Uindex",
+      "lists": "Films, series and music"
+    }
+  ],
+  "words": {
+    "intro": "Reelix finds films, series, books and music by searching sites that list them. Nothing is added unless you tick it. Settings, Reelix, Sites to search lists every site Reelix knows, about 580, including ones that need an account.",
+    "own_question": "Do you have your own Torznab or Newznab address?",
+    "own_choices": [
+      "No",
+      "Yes, a Torznab address (torrents)",
+      "Yes, a Newznab address (Usenet)"
+    ],
+    "address": "Its address, starting http:// or https://",
+    "key": "Its API key, if it has one",
+    "vpn": "Reelix searches through your VPN, so your internet provider sees only the VPN.",
+    "rights": "Use these sites only for files you have the right to download, such as works in the public domain and free, legal releases. Downloading films, series, music or books without the copyright holder's permission is against the law in the UK and most other countries. Starboard does not host or provide any files, and you are responsible for what you download."
+  }
+}

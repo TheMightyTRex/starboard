@@ -50,23 +50,33 @@ and starts them. At the end, the apps are running and Starboard shows how to con
 7. If you ticked **SABnzbd**, the **Usenet** step lists some Usenet providers. They are affiliate links: if you
    sign up through one, the provider pays a small commission towards Starboard's development, and you pay the same
    price. Use Usenet only for files you have the right to download. Select **Continue**.
-8. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
+8. On **Sites to search**, tick the sites Reelix should search. Nothing is ticked for you. They all need no
+   account. If you run Jackett or Prowlarr, or have an account with a Usenet search site, choose **Yes, a Torznab
+   address** or **Yes, a Newznab address** and type its address and API key. Select **Continue**. Read
+   [Choose the sites Reelix searches](choose-sites-to-search.md) for more.
+
+   ![The Sites to search step with example data, with the built-in sites (step 8) outlined and two of them ticked](../images/install-apps-4-sites.png)
+
+9. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
    you want, then select **Continue**.
-9. On **Check**, read the table of your answers. Select **Change** beside anything you want to change. When it is
-   right, type **Your Starboard password** and select **Write the files**.
+10. On **Check**, read the table of your answers. Select **Change** beside anything you want to change. When it is
+    right, type **Your Starboard password** and select **Write the files**.
 
-   ![The Check step with example data, with the table of answers (step 9) outlined](../images/install-apps-3-check.png)
+    ![The Check step with example data, with the table of answers (step 10) outlined](../images/install-apps-3-check.png)
 
-10. On **Start**, select **Start the apps**. Starboard downloads and starts each app. Beside the timer, it counts
-   how many are installed, then how many are running, such as "5 of 7 installed". This can take several minutes
-   the first time.
-11. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
-12. Starboard sets Reelix up for you: its admin account (`admin`, with your Starboard password), the library
-    folders (radio included, when you chose it), and qBittorrent as its download app. To follow radio shows and
-    podcasts, read [Follow radio shows and podcasts](follow-radio-shows.md).
-13. Follow **Connect your apps, in this order**. It gives each app's address, folders and settings to type. In
-    Reelix, add a TMDB API key (films and series need it) and the sites to search.
-14. Select **Go to Apps**.
+11. On **Start**, select **Start the apps**. Starboard downloads and starts each app. Beside the timer, it counts
+    how many are installed, then how many are running, such as "5 of 7 installed". This can take several minutes
+    the first time.
+12. When Starboard shows **The apps are running**, select **Add the ticked apps to Starboard**.
+13. Starboard sets Reelix up for you: its admin account (`admin`, with your Starboard password), the library
+    folders (radio included, when you chose it), qBittorrent as its download app, the sites you chose, searches
+    through the VPN when you have one, and Jellyfin and Audiobookshelf when Starboard has their API keys. To follow
+    radio shows and podcasts, read [Follow radio shows and podcasts](follow-radio-shows.md).
+14. Follow **Connect your apps, in this order**. It gives each app's address, folders and settings to type. In
+    Reelix, add a TMDB API key (films and series need it). Once Starboard has Jellyfin's and Audiobookshelf's API
+    keys, connect them in **Settings**, **Reelix**, **Media servers**: read
+    [Connect Reelix to Jellyfin and Audiobookshelf](connect-reelix-to-media-servers.md).
+15. Select **Go to Apps**.
 
 ### If Starboard has no Docker access
 
@@ -84,7 +94,7 @@ cd ~/starboard && ./install.sh --start-apps
 If Starboard is in another folder, use that folder instead of `~/starboard`. If the terminal says your user is not
 allowed to use Docker yet, sign out of the server and back in, then paste it again.
 
-Then go back to Starboard and select **Find the new apps**. Continue from Step 11.
+Then go back to Starboard and select **Find the new apps**. Continue from Step 12.
 
 ## Things to note
 

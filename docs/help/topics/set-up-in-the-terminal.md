@@ -44,18 +44,22 @@ takes about 10 minutes, plus the time to download the apps.
    password or key does not show as you type. Then **Usenet**, for NZBGet or SABnzbd: some providers, and what Usenet may be used for.
    ![The VPN step in the terminal, with the Ad note and the list of VPN providers and their websites (step 8) outlined](../images/set-up-in-the-terminal-2-vpn.png)
 
-9. **Check:** read the list, then press Enter (**Yes**) to write the apps' files, and again to start them.
+9. **Sites to search**, when you have Reelix: type the numbers of the sites Reelix should search, such as `1,4`, or
+   press Enter for none. Nothing is ticked for you. Then say whether you have your own Torznab or Newznab address;
+   if so, type it and its API key (the key does not show as you type). The browser's Install apps asks the same
+   questions. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
+10. **Check:** read the list, then press Enter (**Yes**) to write the apps' files, and again to start them.
    Downloading them can take several minutes. Then Starboard waits up to two minutes for the apps that started to
    answer, and adds them to your apps. An app that did not start, such as one behind a VPN that has not connected
    yet, is not waited for: Starboard adds it by itself once it answers.
-   ![The Check step in the terminal, with Write the apps' files now? (step 9) outlined](../images/set-up-in-the-terminal-3-check.png)
+   ![The Check step in the terminal, with Write the apps' files now? (step 10) outlined](../images/set-up-in-the-terminal-3-check.png)
 
-10. **Jellyfin extras**, when you have Jellyfin: Starboard's Jellyfin extras, such as Live TV.
-11. **Download hours:** set hours are recommended, because downloading slows the internet for everyone else.
-12. **Alerts and disk health:** where alerts go, if anywhere, and whether to check each disk's health.
-13. **How much it does:** Balanced, Small server or Everything, with the recommended one first. Small server is
+11. **Jellyfin extras**, when you have Jellyfin: Starboard's Jellyfin extras, such as Live TV.
+12. **Download hours:** set hours are recommended, because downloading slows the internet for everyone else.
+13. **Alerts and disk health:** where alerts go, if anywhere, and whether to check each disk's health.
+14. **How much it does:** Balanced, Small server or Everything, with the recommended one first. Small server is
     recommended on a computer with less than 1 GB of memory.
-14. When it finishes, it prints the addresses to open Starboard from any device, and the one installer command for
+15. When it finishes, it prints the addresses to open Starboard from any device, and the one installer command for
     the changes to this computer, such as free space for your media folder and disk health. The
     [Run first script](run-first.md) runs that command for you. If it needs sudo and sudo has forgotten your
     password, it asks for it again in the same window.

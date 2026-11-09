@@ -72,8 +72,9 @@ class TerminalSetupTest(unittest.TestCase):
     def test_whole_set_up_with_the_recommended_answers(self):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # name, start, storage, folder; install now, Basics (recommended), install these; the VPN (Basics has one):
-        # provider, WireGuard, any country, the address; Usenet: no provider yet, Enter; then write, extras, hours, alerts, health, preset
-        typed = ["", "", "", media, "", "", "", "5", "", "", "192.168.1.20/32", "", "", "", "y", "", "", "", "", "", "", ""]
+        # provider, WireGuard, any country, the address; Usenet: no provider yet, Enter; Sites to search: none, no address
+        # of your own; then write, extras, hours, alerts, health, preset
+        typed = ["", "", "", media, "", "", "", "5", "", "", "192.168.1.20/32", "", "", "", "", "", "y", "", "", "", "", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -177,8 +178,8 @@ class TerminalSetupTest(unittest.TestCase):
         term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
         term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
         lines = term.header + out.getvalue().splitlines()  # the heading is drawn in place, not printed
-        self.assertTrue(any("step 2 of 11" in l for l in lines))
-        self.assertTrue(any("█" in l and " 9%" in l for l in lines))
+        self.assertTrue(any("step 2 of 12" in l for l in lines))
+        self.assertTrue(any("█" in l and " 8%" in l for l in lines))
         boxed = [l for l in lines if l and l[0] in "┌│└╭╰"]
         self.assertTrue(boxed)
         self.assertEqual({len(l) for l in boxed}, {70})  # every box line ends at the same column

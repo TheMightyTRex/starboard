@@ -76,6 +76,9 @@ Each guide is a journey through several topics, in order.
 - [Basics, Full install and Everything: what each one has](topics/install-types.md)
 - [Switch between the two versions of Reelix](topics/switch-reelix-version.md)
 - [Move from Radarr, Sonarr and the others to Reelix](topics/move-your-apps-to-reelix.md)
+- [Change Reelix's settings in Starboard](topics/change-reelix-settings.md)
+- [Choose the sites Reelix searches](topics/choose-sites-to-search.md)
+- [Connect Reelix to Jellyfin and Audiobookshelf](topics/connect-reelix-to-media-servers.md)
 - [Take over the apps you already run](topics/take-over-your-apps.md)
 - [Copy settings from one app to another](topics/copy-app-settings.md)
 

@@ -1,0 +1,3802 @@
+{
+ "about": "Every Reelix setting Starboard knows, and what the set-ups do with each: asked (with the step), default (with why) or later (Settings, Reelix). Checked by tests/test_reelix_settings.py; regenerate with python3 tests/test_reelix_settings.py --write URL PASSWORD, which keeps the decisions.",
+ "image": "ghcr.io/themightytrex/reelix:lite",
+ "tested_with": "0.8.6",
+ "providers": {
+  "indexers": {
+   "torznab": {
+    "base_url": {
+     "type": "url",
+     "use": "asked",
+     "step": "sites"
+    },
+    "api_path": {
+     "type": "text",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "asked",
+     "step": "sites"
+    },
+    "categories": {
+     "type": "list",
+     "use": "later"
+    },
+    "book_categories": {
+     "type": "list",
+     "use": "later"
+    },
+    "audiobook_categories": {
+     "type": "list",
+     "use": "later"
+    },
+    "music_categories": {
+     "type": "list",
+     "use": "later"
+    },
+    "additional_parameters": {
+     "type": "text",
+     "use": "later"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "later"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "later"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "later"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "later"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "later"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "later"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "later"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "later"
+    }
+   },
+   "newznab": {
+    "base_url": {
+     "type": "url",
+     "use": "asked",
+     "step": "sites"
+    },
+    "api_path": {
+     "type": "text",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "asked",
+     "step": "sites"
+    },
+    "categories": {
+     "type": "list",
+     "use": "later"
+    },
+    "book_categories": {
+     "type": "list",
+     "use": "later"
+    },
+    "audiobook_categories": {
+     "type": "list",
+     "use": "later"
+    },
+    "music_categories": {
+     "type": "list",
+     "use": "later"
+    },
+    "additional_parameters": {
+     "type": "text",
+     "use": "later"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "later"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "later"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "later"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "later"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "later"
+    }
+   },
+   "slskd": {
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "search_timeout_secs": {
+     "type": "number",
+     "use": "later"
+    },
+    "minimum_files": {
+     "type": "number",
+     "use": "later"
+    },
+    "max_results": {
+     "type": "number",
+     "use": "later"
+    },
+    "file_types": {
+     "type": "list",
+     "use": "later"
+    },
+    "require_free_slot": {
+     "type": "bool",
+     "use": "later"
+    },
+    "max_queue_length": {
+     "type": "number",
+     "use": "later"
+    },
+    "min_upload_speed_kbs": {
+     "type": "number",
+     "use": "later"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "later"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "later"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "later"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "later"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "later"
+    }
+   },
+   "definition:1337x": {
+    "base_url": {
+     "type": "url",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "uploader": {
+     "type": "text",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "primarydownloadlink": {
+     "type": "select",
+     "choices": [
+      "//itorrents.",
+      "magnet:"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "fallbackdownloadlink": {
+     "type": "select",
+     "choices": [
+      "//itorrents.",
+      "magnet:"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "disablesort": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "sort": {
+     "type": "select",
+     "choices": [
+      "seeders",
+      "size",
+      "time"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "type": {
+     "type": "select",
+     "choices": [
+      "asc",
+      "desc"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    }
+   },
+   "definition:eztv": {
+    "base_url": {
+     "type": "url",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    }
+   },
+   "definition:internetarchive": {
+    "base_url": {
+     "type": "url",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "titleOnly": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "noMagnet": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "sort": {
+     "type": "select",
+     "choices": [
+      "downloads",
+      "item_size",
+      "publicdate"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "type": {
+     "type": "select",
+     "choices": [
+      "-",
+      "_"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    }
+   },
+   "definition:limetorrents": {
+    "base_url": {
+     "type": "url",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "primarydownloadlink": {
+     "type": "select",
+     "choices": [
+      "//itorrents.",
+      "magnet:"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "fallbackdownloadlink": {
+     "type": "select",
+     "choices": [
+      "//itorrents.",
+      "magnet:"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "sort": {
+     "type": "select",
+     "choices": [
+      "date",
+      "seeds",
+      "size"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    }
+   },
+   "definition:thepiratebay": {
+    "base_url": {
+     "type": "url",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "apiurl": {
+     "type": "text",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "top100": {
+     "type": "select",
+     "choices": [
+      "100",
+      "200",
+      "300",
+      "400",
+      "500",
+      "600",
+      "recent"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "uploader": {
+     "type": "text",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    }
+   },
+   "definition:torrentproject2": {
+    "base_url": {
+     "type": "url",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "filter-verified": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "sort": {
+     "type": "select",
+     "choices": [
+      "latest",
+      "oldest",
+      "seeders",
+      "size"
+     ],
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    }
+   },
+   "definition:uindex": {
+    "base_url": {
+     "type": "url",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    }
+   },
+   "definition:yts": {
+    "base_url": {
+     "type": "url",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "apiurl": {
+     "type": "text",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_rss": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_automatic_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "enable_interactive_search": {
+     "type": "bool",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "query_limit_hours": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "min_interval_secs": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "minimum_seeders": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "default",
+     "why": "Reelix's own default for this site when it is chosen in Sites to search; changed in Settings, Reelix"
+    }
+   }
+  },
+  "downloadclients": {
+   "sabnzbd": {
+    "host": {
+     "type": "text",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "port": {
+     "type": "number",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "use_ssl": {
+     "type": "bool",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "verify_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "url_base": {
+     "type": "text",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "movie_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "tv_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "book_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "music_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "recent_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "older_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "grab_method": {
+     "type": "select",
+     "choices": [
+      "send_url",
+      "upload_nzb"
+     ],
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "nzbget": {
+    "host": {
+     "type": "text",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "port": {
+     "type": "number",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "use_ssl": {
+     "type": "bool",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "verify_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "url_base": {
+     "type": "text",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "password": {
+     "type": "secret",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "movie_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "tv_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "book_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "music_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "recent_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "older_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "add_paused": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "qbittorrent": {
+    "host": {
+     "type": "text",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "port": {
+     "type": "number",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "use_ssl": {
+     "type": "bool",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "verify_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "url_base": {
+     "type": "text",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "password": {
+     "type": "secret",
+     "use": "default",
+     "why": "Install apps connects Reelix to the download app it installed, with its own sign-in"
+    },
+    "movie_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "tv_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "book_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "music_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "torrent_tags": {
+     "type": "list",
+     "use": "later"
+    },
+    "recent_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "older_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "add_paused": {
+     "type": "bool",
+     "use": "later"
+    },
+    "sequential": {
+     "type": "bool",
+     "use": "later"
+    },
+    "first_last_piece": {
+     "type": "bool",
+     "use": "later"
+    },
+    "seed_ratio": {
+     "type": "number",
+     "use": "later"
+    },
+    "seed_time_minutes": {
+     "type": "number",
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "transmission": {
+    "host": {
+     "type": "text",
+     "use": "later"
+    },
+    "port": {
+     "type": "number",
+     "use": "later"
+    },
+    "use_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "verify_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "url_base": {
+     "type": "text",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "movie_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "tv_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "book_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "music_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "directory": {
+     "type": "path",
+     "use": "later"
+    },
+    "recent_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "older_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "add_paused": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "deluge": {
+    "host": {
+     "type": "text",
+     "use": "later"
+    },
+    "port": {
+     "type": "number",
+     "use": "later"
+    },
+    "use_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "verify_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "url_base": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "movie_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "tv_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "book_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "music_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "recent_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "older_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "add_paused": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "rtorrent": {
+    "host": {
+     "type": "text",
+     "use": "later"
+    },
+    "port": {
+     "type": "number",
+     "use": "later"
+    },
+    "use_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "verify_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "url_base": {
+     "type": "text",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "movie_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "tv_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "book_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "music_category": {
+     "type": "text",
+     "use": "later"
+    },
+    "directory": {
+     "type": "path",
+     "use": "later"
+    },
+    "recent_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "older_priority": {
+     "type": "select",
+     "choices": [
+      "Default",
+      "Force",
+      "High",
+      "Low",
+      "Normal",
+      "Paused"
+     ],
+     "use": "later"
+    },
+    "add_paused": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "torrent_blackhole": {
+    "drop_folder": {
+     "type": "path",
+     "use": "later"
+    },
+    "watch_folder": {
+     "type": "path",
+     "use": "later"
+    },
+    "book_folder": {
+     "type": "path",
+     "use": "later"
+    },
+    "music_folder": {
+     "type": "path",
+     "use": "later"
+    },
+    "save_magnet_files": {
+     "type": "bool",
+     "use": "later"
+    },
+    "magnet_extension": {
+     "type": "text",
+     "use": "later"
+    },
+    "read_only": {
+     "type": "bool",
+     "use": "later"
+    },
+    "settle_seconds": {
+     "type": "number",
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "usenet_blackhole": {
+    "drop_folder": {
+     "type": "path",
+     "use": "later"
+    },
+    "watch_folder": {
+     "type": "path",
+     "use": "later"
+    },
+    "book_folder": {
+     "type": "path",
+     "use": "later"
+    },
+    "music_folder": {
+     "type": "path",
+     "use": "later"
+    },
+    "settle_seconds": {
+     "type": "number",
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "slskd": {
+    "host": {
+     "type": "text",
+     "use": "later"
+    },
+    "port": {
+     "type": "number",
+     "use": "later"
+    },
+    "use_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "verify_ssl": {
+     "type": "bool",
+     "use": "later"
+    },
+    "url_base": {
+     "type": "text",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "downloads_dir": {
+     "type": "text",
+     "use": "later"
+    },
+    "fail_on_file_error": {
+     "type": "bool",
+     "use": "later"
+    },
+    "add_indexer": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_completed": {
+     "type": "bool",
+     "use": "later"
+    },
+    "remove_failed": {
+     "type": "bool",
+     "use": "later"
+    }
+   }
+  },
+  "mediaservers": {
+   "jellyfin": {
+    "url": {
+     "type": "url",
+     "use": "default",
+     "why": "Connected with the key Starboard already has (DASH-156); changed in Settings, Reelix, Media servers"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "default",
+     "why": "Connected with the key Starboard already has (DASH-156); changed in Settings, Reelix, Media servers"
+    },
+    "path_mappings": {
+     "type": "list",
+     "use": "later"
+    }
+   },
+   "emby": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "path_mappings": {
+     "type": "list",
+     "use": "later"
+    }
+   },
+   "plex": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "path_mappings": {
+     "type": "list",
+     "use": "later"
+    },
+    "plex_tv_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "discover_url": {
+     "type": "url",
+     "use": "later"
+    }
+   },
+   "audiobookshelf": {
+    "url": {
+     "type": "url",
+     "use": "default",
+     "why": "Connected with the key Starboard already has (DASH-156); changed in Settings, Reelix, Media servers"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "default",
+     "why": "Connected with the key Starboard already has (DASH-156); changed in Settings, Reelix, Media servers"
+    },
+    "ebooks": {
+     "type": "bool",
+     "use": "later"
+    },
+    "path_mappings": {
+     "type": "list",
+     "use": "later"
+    }
+   },
+   "kavita": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "path_mappings": {
+     "type": "list",
+     "use": "later"
+    }
+   },
+   "calibreweb": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    }
+   },
+   "navidrome": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "full_scan": {
+     "type": "bool",
+     "use": "later"
+    },
+    "music_folders": {
+     "type": "list",
+     "use": "later"
+    }
+   }
+  },
+  "notifications": {
+   "discord": {
+    "webhook_url": {
+     "type": "secret",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "avatar_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "include_poster": {
+     "type": "bool",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "slack": {
+    "webhook_url": {
+     "type": "secret",
+     "use": "later"
+    },
+    "channel": {
+     "type": "text",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "icon": {
+     "type": "text",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "telegram": {
+    "bot_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "chat_id": {
+     "type": "text",
+     "use": "later"
+    },
+    "topic_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "silent": {
+     "type": "bool",
+     "use": "later"
+    },
+    "include_links": {
+     "type": "bool",
+     "use": "later"
+    },
+    "api_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "email": {
+    "server": {
+     "type": "text",
+     "use": "later"
+    },
+    "port": {
+     "type": "number",
+     "use": "later"
+    },
+    "encryption": {
+     "type": "select",
+     "choices": [
+      "none",
+      "starttls",
+      "tls"
+     ],
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "from": {
+     "type": "text",
+     "use": "later"
+    },
+    "to": {
+     "type": "list",
+     "use": "later"
+    },
+    "cc": {
+     "type": "list",
+     "use": "later"
+    },
+    "bcc": {
+     "type": "list",
+     "use": "later"
+    },
+    "subject_prefix": {
+     "type": "text",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "pushover": {
+    "api_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "user_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "devices": {
+     "type": "list",
+     "use": "later"
+    },
+    "priority": {
+     "type": "select",
+     "choices": [
+      "-1",
+      "-2",
+      "0",
+      "1",
+      "2"
+     ],
+     "use": "later"
+    },
+    "retry": {
+     "type": "number",
+     "use": "later"
+    },
+    "expire": {
+     "type": "number",
+     "use": "later"
+    },
+    "sound": {
+     "type": "text",
+     "use": "later"
+    },
+    "api_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "gotify": {
+    "server_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "app_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "priority": {
+     "type": "number",
+     "use": "later"
+    },
+    "include_poster": {
+     "type": "bool",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "ntfy": {
+    "server_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "topics": {
+     "type": "list",
+     "use": "later"
+    },
+    "access_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "priority": {
+     "type": "number",
+     "use": "later"
+    },
+    "tags": {
+     "type": "list",
+     "use": "later"
+    },
+    "click_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "apprise": {
+    "server_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "config_key": {
+     "type": "text",
+     "use": "later"
+    },
+    "urls": {
+     "type": "secret",
+     "use": "later"
+    },
+    "tags": {
+     "type": "list",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "matrix": {
+    "homeserver_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "access_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "room": {
+     "type": "text",
+     "use": "later"
+    },
+    "msgtype": {
+     "type": "select",
+     "choices": [
+      "m.notice",
+      "m.text"
+     ],
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "webhook": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "method": {
+     "type": "select",
+     "choices": [
+      "POST",
+      "PUT"
+     ],
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "password": {
+     "type": "secret",
+     "use": "later"
+    },
+    "headers": {
+     "type": "list",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   },
+   "script": {
+    "path": {
+     "type": "path",
+     "use": "later"
+    },
+    "arguments": {
+     "type": "list",
+     "use": "later"
+    },
+    "events": {
+     "type": "multi_select",
+     "choices": [
+      "application_update",
+      "file_deleted",
+      "grab",
+      "health_issue",
+      "health_restored",
+      "import",
+      "issue_reported",
+      "issue_resolved",
+      "manual_interaction_required",
+      "media_added",
+      "media_deleted",
+      "rename",
+      "request_approved",
+      "request_available",
+      "request_declined",
+      "request_pending",
+      "upgrade"
+     ],
+     "use": "later"
+    }
+   }
+  },
+  "importlists": {
+   "tmdb": {
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "list_type": {
+     "type": "select",
+     "choices": [
+      "collection",
+      "company",
+      "keyword",
+      "list",
+      "now_playing",
+      "person",
+      "popular_movies",
+      "popular_series",
+      "top_rated_movies",
+      "top_rated_series",
+      "upcoming"
+     ],
+     "use": "later"
+    },
+    "list_id": {
+     "type": "text",
+     "use": "later"
+    },
+    "media": {
+     "type": "select",
+     "choices": [
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "person_credits": {
+     "type": "select",
+     "choices": [
+      "both",
+      "cast",
+      "crew"
+     ],
+     "use": "later"
+    },
+    "filter": {
+     "type": "select",
+     "choices": [
+      "both",
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "max_pages": {
+     "type": "number",
+     "use": "later"
+    },
+    "language": {
+     "type": "text",
+     "use": "later"
+    },
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "trakt": {
+    "client_id": {
+     "type": "secret",
+     "use": "later"
+    },
+    "client_secret": {
+     "type": "secret",
+     "use": "later"
+    },
+    "access_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "refresh_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "token_expires_at": {
+     "type": "text",
+     "use": "later"
+    },
+    "list_type": {
+     "type": "select",
+     "choices": [
+      "anticipated",
+      "popular",
+      "trending",
+      "user_list",
+      "watchlist"
+     ],
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "list_slug": {
+     "type": "text",
+     "use": "later"
+    },
+    "media": {
+     "type": "select",
+     "choices": [
+      "movies",
+      "shows"
+     ],
+     "use": "later"
+    },
+    "filter": {
+     "type": "select",
+     "choices": [
+      "both",
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "limit": {
+     "type": "number",
+     "use": "later"
+    },
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "imdb": {
+    "list_type": {
+     "type": "select",
+     "choices": [
+      "list",
+      "moviemeter",
+      "top250",
+      "top_tv",
+      "tvmeter",
+      "watchlist"
+     ],
+     "use": "later"
+    },
+    "list_id": {
+     "type": "text",
+     "use": "later"
+    },
+    "filter": {
+     "type": "select",
+     "choices": [
+      "both",
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "mdblist": {
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "list_id": {
+     "type": "text",
+     "use": "later"
+    },
+    "filter": {
+     "type": "select",
+     "choices": [
+      "both",
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "plex_watchlist": {
+    "token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "filter": {
+     "type": "select",
+     "choices": [
+      "both",
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "client_identifier": {
+     "type": "text",
+     "use": "later"
+    },
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "jellyfin": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "user": {
+     "type": "text",
+     "use": "later"
+    },
+    "filter": {
+     "type": "select",
+     "choices": [
+      "both",
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "emby": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "user": {
+     "type": "text",
+     "use": "later"
+    },
+    "filter": {
+     "type": "select",
+     "choices": [
+      "both",
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "url_list": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "kind": {
+     "type": "select",
+     "choices": [
+      "movie",
+      "series"
+     ],
+     "use": "later"
+    },
+    "id_type": {
+     "type": "select",
+     "choices": [
+      "tmdb",
+      "tvdb"
+     ],
+     "use": "later"
+    },
+    "bearer_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "reelix": {
+    "url": {
+     "type": "url",
+     "use": "later"
+    },
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "filter": {
+     "type": "select",
+     "choices": [
+      "both",
+      "movies",
+      "series"
+     ],
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "monitor": {
+     "type": "select",
+     "choices": [
+      "movie_and_collection",
+      "movie_only",
+      "none"
+     ],
+     "use": "later"
+    },
+    "series_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first_season",
+      "future",
+      "latest_season",
+      "missing",
+      "none",
+      "pilot"
+     ],
+     "use": "later"
+    },
+    "minimum_availability": {
+     "type": "select",
+     "choices": [
+      "announced",
+      "in_cinemas",
+      "released"
+     ],
+     "use": "later"
+    },
+    "series_type": {
+     "type": "select",
+     "choices": [
+      "anime",
+      "daily",
+      "standard"
+     ],
+     "use": "later"
+    },
+    "season_folder": {
+     "type": "bool",
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "lastfm": {
+    "api_key": {
+     "type": "secret",
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "list_type": {
+     "type": "select",
+     "choices": [
+      "loved_tracks",
+      "top_albums",
+      "top_artists"
+     ],
+     "use": "later"
+    },
+    "period": {
+     "type": "select",
+     "choices": [
+      "12month",
+      "1month",
+      "3month",
+      "6month",
+      "7day",
+      "overall"
+     ],
+     "use": "later"
+    },
+    "limit": {
+     "type": "number",
+     "use": "later"
+    },
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "metadata_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "artist_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first",
+      "future",
+      "latest",
+      "missing",
+      "none"
+     ],
+     "use": "later"
+    },
+    "monitor_new_items": {
+     "type": "select",
+     "choices": [
+      "all",
+      "new",
+      "none"
+     ],
+     "use": "later"
+    },
+    "album_handling": {
+     "type": "select",
+     "choices": [
+      "album",
+      "artist"
+     ],
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "listenbrainz": {
+    "list_type": {
+     "type": "select",
+     "choices": [
+      "playlist_albums",
+      "playlist_artists",
+      "top_artists",
+      "top_release_groups"
+     ],
+     "use": "later"
+    },
+    "username": {
+     "type": "text",
+     "use": "later"
+    },
+    "playlist_id": {
+     "type": "text",
+     "use": "later"
+    },
+    "range": {
+     "type": "select",
+     "choices": [
+      "all_time",
+      "half_yearly",
+      "month",
+      "quarter",
+      "this_month",
+      "this_week",
+      "this_year",
+      "week",
+      "year"
+     ],
+     "use": "later"
+    },
+    "limit": {
+     "type": "number",
+     "use": "later"
+    },
+    "token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "metadata_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "artist_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first",
+      "future",
+      "latest",
+      "missing",
+      "none"
+     ],
+     "use": "later"
+    },
+    "monitor_new_items": {
+     "type": "select",
+     "choices": [
+      "all",
+      "new",
+      "none"
+     ],
+     "use": "later"
+    },
+    "album_handling": {
+     "type": "select",
+     "choices": [
+      "album",
+      "artist"
+     ],
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   },
+   "spotify": {
+    "client_id": {
+     "type": "text",
+     "use": "later"
+    },
+    "client_secret": {
+     "type": "secret",
+     "use": "later"
+    },
+    "list_type": {
+     "type": "select",
+     "choices": [
+      "followed_artists",
+      "playlist_albums",
+      "playlist_artists",
+      "saved_albums"
+     ],
+     "use": "later"
+    },
+    "playlist_id": {
+     "type": "text",
+     "use": "later"
+    },
+    "refresh_token": {
+     "type": "secret",
+     "use": "later"
+    },
+    "limit": {
+     "type": "number",
+     "use": "later"
+    },
+    "base_url": {
+     "type": "url",
+     "use": "later"
+    },
+    "sync_interval_hours": {
+     "type": "number",
+     "use": "later"
+    },
+    "enabled_auto_add": {
+     "type": "bool",
+     "use": "later"
+    },
+    "quality_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "metadata_profile_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "root_folder_id": {
+     "type": "number",
+     "use": "later"
+    },
+    "artist_monitor": {
+     "type": "select",
+     "choices": [
+      "all",
+      "existing",
+      "first",
+      "future",
+      "latest",
+      "missing",
+      "none"
+     ],
+     "use": "later"
+    },
+    "monitor_new_items": {
+     "type": "select",
+     "choices": [
+      "all",
+      "new",
+      "none"
+     ],
+     "use": "later"
+    },
+    "album_handling": {
+     "type": "select",
+     "choices": [
+      "album",
+      "artist"
+     ],
+     "use": "later"
+    },
+    "search_on_add": {
+     "type": "bool",
+     "use": "later"
+    }
+   }
+  }
+ },
+ "settings": {
+  "/radio/settings": {
+   "abs_library_id": {
+    "type": "empty",
+    "use": "later"
+   },
+   "abs_library_folder": {
+    "type": "empty",
+    "use": "later"
+   },
+   "library_folder": {
+    "type": "empty",
+    "use": "later"
+   },
+   "default_follow": {
+    "type": "text",
+    "use": "later"
+   },
+   "enabled_providers": {
+    "type": "list",
+    "use": "later"
+   },
+   "country": {
+    "type": "empty",
+    "use": "later"
+   },
+   "language": {
+    "type": "empty",
+    "use": "later"
+   },
+   "max_lookups_per_refresh": {
+    "type": "number",
+    "use": "later"
+   },
+   "podcastindex_api_key": {
+    "type": "empty",
+    "use": "later"
+   },
+   "podcastindex_api_secret": {
+    "type": "empty",
+    "use": "later"
+   }
+  },
+  "/settings/books": {
+   "naming": {
+    "type": "object",
+    "use": "later"
+   },
+   "write_metadata": {
+    "type": "bool",
+    "use": "later"
+   },
+   "write_covers": {
+    "type": "bool",
+    "use": "later"
+   },
+   "calibre": {
+    "type": "object",
+    "use": "later"
+   },
+   "metadata_language": {
+    "type": "empty",
+    "use": "later"
+   }
+  },
+  "/settings/definitions": {
+   "enabled": {
+    "type": "bool",
+    "use": "later"
+   },
+   "source_url": {
+    "type": "text",
+    "use": "later"
+   },
+   "schema_version": {
+    "type": "text",
+    "use": "later"
+   },
+   "auto_update_hours": {
+    "type": "number",
+    "use": "later"
+   },
+   "last_sync": {
+    "type": "text",
+    "use": "later"
+   },
+   "last_check": {
+    "type": "text",
+    "use": "later"
+   },
+   "last_error": {
+    "type": "empty",
+    "use": "later"
+   },
+   "etag": {
+    "type": "text",
+    "use": "later"
+   },
+   "commit": {
+    "type": "text",
+    "use": "later"
+   },
+   "upstream_count": {
+    "type": "number",
+    "use": "later"
+   }
+  },
+  "/settings/indexers": {
+   "rss_interval_minutes": {
+    "type": "number",
+    "use": "later"
+   },
+   "allow_private_addresses": {
+    "type": "bool",
+    "use": "default",
+    "why": "Searches go through the VPN when Gluetun is installed (DASH-133)"
+   },
+   "flaresolverr_url": {
+    "type": "empty",
+    "use": "default",
+    "why": "Searches go through the VPN when Gluetun is installed (DASH-133)"
+   },
+   "proxy": {
+    "type": "empty",
+    "use": "default",
+    "why": "Searches go through the VPN when Gluetun is installed (DASH-133)"
+   }
+  },
+  "/settings/mediamanagement": {
+   "import_mode": {
+    "type": "text",
+    "use": "later"
+   },
+   "recycle_bin_path": {
+    "type": "empty",
+    "use": "later"
+   },
+   "recycle_bin_retention_days": {
+    "type": "number",
+    "use": "later"
+   },
+   "set_permissions": {
+    "type": "bool",
+    "use": "later"
+   },
+   "file_mode": {
+    "type": "text",
+    "use": "later"
+   },
+   "dir_mode": {
+    "type": "text",
+    "use": "later"
+   },
+   "chown_uid": {
+    "type": "empty",
+    "use": "later"
+   },
+   "chown_gid": {
+    "type": "empty",
+    "use": "later"
+   },
+   "minimum_free_space_mb": {
+    "type": "number",
+    "use": "later"
+   },
+   "skip_free_space_check": {
+    "type": "bool",
+    "use": "later"
+   },
+   "delete_empty_folders": {
+    "type": "bool",
+    "use": "later"
+   },
+   "create_empty_folders": {
+    "type": "bool",
+    "use": "later"
+   },
+   "unmonitor_deleted": {
+    "type": "bool",
+    "use": "later"
+   },
+   "rescan_after_refresh": {
+    "type": "text",
+    "use": "later"
+   },
+   "import_extra_files": {
+    "type": "bool",
+    "use": "later"
+   },
+   "extra_file_extensions": {
+    "type": "list",
+    "use": "later"
+   },
+   "ffprobe_path": {
+    "type": "text",
+    "use": "later"
+   },
+   "analyze_video_files": {
+    "type": "bool",
+    "use": "later"
+   }
+  },
+  "/settings/metadata": {
+   "tmdb_api_key": {
+    "type": "empty",
+    "use": "later"
+   },
+   "tmdb_read_token": {
+    "type": "empty",
+    "use": "later"
+   },
+   "tvdb_api_key": {
+    "type": "empty",
+    "use": "later"
+   },
+   "tvdb_pin": {
+    "type": "empty",
+    "use": "later"
+   },
+   "language": {
+    "type": "text",
+    "use": "later"
+   },
+   "region": {
+    "type": "empty",
+    "use": "later"
+   }
+  },
+  "/settings/music": {
+   "naming": {
+    "type": "object",
+    "use": "later"
+   },
+   "write_tags": {
+    "type": "bool",
+    "use": "later"
+   },
+   "embed_cover": {
+    "type": "bool",
+    "use": "later"
+   },
+   "save_cover_file": {
+    "type": "bool",
+    "use": "later"
+   },
+   "preferred_release_countries": {
+    "type": "list",
+    "use": "later"
+   },
+   "preferred_formats": {
+    "type": "list",
+    "use": "later"
+   }
+  },
+  "/settings/naming": {
+   "rename_files": {
+    "type": "bool",
+    "use": "later"
+   },
+   "replace_illegal_characters": {
+    "type": "bool",
+    "use": "later"
+   },
+   "colon_replacement": {
+    "type": "text",
+    "use": "later"
+   },
+   "movie_folder_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "movie_file_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "series_folder_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "season_folder_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "specials_folder_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "standard_episode_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "daily_episode_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "anime_episode_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "multi_episode_style": {
+    "type": "text",
+    "use": "later"
+   },
+   "max_file_name_bytes": {
+    "type": "number",
+    "use": "later"
+   },
+   "max_path_bytes": {
+    "type": "number",
+    "use": "later"
+   }
+  },
+  "/settings/requests": {
+   "movie": {
+    "type": "object",
+    "use": "later"
+   },
+   "movie_4k": {
+    "type": "object",
+    "use": "later"
+   },
+   "series": {
+    "type": "object",
+    "use": "later"
+   },
+   "series_4k": {
+    "type": "object",
+    "use": "later"
+   },
+   "enable_4k_movie": {
+    "type": "bool",
+    "use": "later"
+   },
+   "enable_4k_series": {
+    "type": "bool",
+    "use": "later"
+   },
+   "minimum_availability": {
+    "type": "text",
+    "use": "later"
+   },
+   "series_type": {
+    "type": "text",
+    "use": "later"
+   },
+   "season_folder": {
+    "type": "bool",
+    "use": "later"
+   },
+   "auto_approve_movie": {
+    "type": "bool",
+    "use": "later"
+   },
+   "auto_approve_series": {
+    "type": "bool",
+    "use": "later"
+   },
+   "search_on_approve": {
+    "type": "bool",
+    "use": "later"
+   },
+   "partial_requests": {
+    "type": "bool",
+    "use": "later"
+   },
+   "default_permissions": {
+    "type": "number",
+    "use": "later"
+   },
+   "movie_quota_limit": {
+    "type": "empty",
+    "use": "later"
+   },
+   "movie_quota_days": {
+    "type": "number",
+    "use": "later"
+   },
+   "tv_quota_limit": {
+    "type": "empty",
+    "use": "later"
+   },
+   "tv_quota_days": {
+    "type": "number",
+    "use": "later"
+   },
+   "discover_region": {
+    "type": "empty",
+    "use": "later"
+   },
+   "discover_language": {
+    "type": "empty",
+    "use": "later"
+   },
+   "hide_available": {
+    "type": "bool",
+    "use": "later"
+   },
+   "book_ebook": {
+    "type": "object",
+    "use": "later"
+   },
+   "book_audiobook": {
+    "type": "object",
+    "use": "later"
+   },
+   "book_default_formats": {
+    "type": "list",
+    "use": "later"
+   },
+   "music": {
+    "type": "object",
+    "use": "later"
+   },
+   "music_metadata_profile_id": {
+    "type": "empty",
+    "use": "later"
+   },
+   "auto_approve_book": {
+    "type": "bool",
+    "use": "later"
+   },
+   "auto_approve_music": {
+    "type": "bool",
+    "use": "later"
+   },
+   "book_quota_limit": {
+    "type": "empty",
+    "use": "later"
+   },
+   "book_quota_days": {
+    "type": "number",
+    "use": "later"
+   },
+   "music_quota_limit": {
+    "type": "empty",
+    "use": "later"
+   },
+   "music_quota_days": {
+    "type": "number",
+    "use": "later"
+   },
+   "radio": {
+    "type": "object",
+    "use": "later"
+   },
+   "auto_approve_radio": {
+    "type": "bool",
+    "use": "later"
+   },
+   "radio_quota_limit": {
+    "type": "empty",
+    "use": "later"
+   },
+   "radio_quota_days": {
+    "type": "number",
+    "use": "later"
+   }
+  },
+  "/settings/security": {
+   "local_login": {
+    "type": "bool",
+    "use": "later"
+   },
+   "jellyfin_login": {
+    "type": "bool",
+    "use": "later"
+   },
+   "emby_login": {
+    "type": "bool",
+    "use": "later"
+   },
+   "plex_login": {
+    "type": "bool",
+    "use": "later"
+   },
+   "jellyfin_server_id": {
+    "type": "empty",
+    "use": "later"
+   },
+   "emby_server_id": {
+    "type": "empty",
+    "use": "later"
+   },
+   "media_server_auto_create": {
+    "type": "bool",
+    "use": "later"
+   },
+   "oidc": {
+    "type": "object",
+    "use": "later"
+   }
+  },
+  "/settings/ui": {
+   "date_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "time_format": {
+    "type": "text",
+    "use": "later"
+   },
+   "relative_dates": {
+    "type": "bool",
+    "use": "later"
+   },
+   "first_day_of_week": {
+    "type": "text",
+    "use": "later"
+   },
+   "calendar_view": {
+    "type": "text",
+    "use": "later"
+   },
+   "library_view": {
+    "type": "text",
+    "use": "later"
+   }
+  },
+  "/system/settings": {
+   "saved": {
+    "type": "object",
+    "use": "later"
+   },
+   "running": {
+    "type": "object",
+    "use": "later"
+   },
+   "config_file": {
+    "type": "text",
+    "use": "later"
+   },
+   "overridden": {
+    "type": "list",
+    "use": "later"
+   },
+   "restart_required": {
+    "type": "bool",
+    "use": "later"
+   }
+  }
+ }
+}

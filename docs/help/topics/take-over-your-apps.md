@@ -34,7 +34,8 @@ them later. Each app keeps its settings, its ports and what it relies on, and yo
    there. It must not be inside the folder your apps use now.
 6. Type **Your password**, then select **Take over my apps**. Your apps stop for a few minutes while their settings
    are copied, then start again from Starboard's set-up.
-7. In Reelix, go to **Settings**, then **Indexers**, and activate your sites to search again.
+7. In Starboard, go to **Settings**, **Reelix**, **Sites to search**. For each site, select **More**, then **Change**,
+   activate **Active** and select **Save**.
 
 ## What Starboard does
 

@@ -118,3 +118,11 @@
 /* Install apps: a group's apps sit under its card, indented. */
 .install-group { display: grid; gap: var(--space-2); }
 .install-apps { padding-left: var(--space-6); }
+
+/* Settings, Reelix: the sections drawn from Reelix's schema (reelix-settings.js) sit in the page's own list. */
+.rx-admin { display: contents; }
+.rx-pick { width: 100%; grid-template-columns: 1fr; text-align: start; background: none; font: inherit; color: inherit; }
+.rx-pick small { grid-column: 1; }
+.rx-pick:hover { border-color: var(--color-accent); }
+.rx-pick__name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.rx-picks { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
