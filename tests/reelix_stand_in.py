@@ -98,6 +98,9 @@ class StandIn:
         self.backups = [{"name": "reelix-2026-11-08.zip", "kind": "scheduled", "size_bytes": 5 * 10 ** 6, "created_at": "2026-11-08T03:00:00Z", "version": "0.9.0"}]
         self.backup_settings = {"interval_days": 7, "retention": 5}
         self.tasks_run = []
+        self.direct = {"enabled": False, "output_dir": "/config/downloads", "ffmpeg": "ffmpeg", "yt_dlp": "yt-dlp", "spotify_credentials": ""}
+        self.direct_queue = []
+        self.spotify = {"connected": False, "username": None, "credentials_path": "", "pending": False, "error": None}
         self.other = {"/settings/mediamanagement": {"import_mode": "hardlink_or_copy", "minimum_free_space_mb": 100, "extra_file_extensions": ["srt"],
                                                    "delete_empty_folders": False, "recycle_bin_path": None},
                       "/settings/books": {"write_metadata": True, "metadata_language": "en"}, "/settings/music": {"write_tags": True}}
@@ -181,6 +184,28 @@ class StandIn:
                           "avg_response_ms": 900 + 100 * i["id"], "status": i["status"]} for i in self.items["indexers"]], None
         if path == "/indexers/definitions/status":
             return 200, {"loaded": len(SCHEMAS["indexers"]) - 2, "last_sync": "2026-11-08T06:00:00Z", "last_error": None, "syncing": False}, None
+        if path == "/downloads/settings":
+            if method == "PUT":
+                self.direct = body
+            return 200, self.direct, None
+        if path == "/downloads/health":
+            return 200, [{"tool": "yt-dlp", "available": True, "detail": ""}, {"tool": "ffmpeg", "available": True, "detail": ""}], None
+        if path == "/downloads/spotify":
+            return 200, self.spotify, None
+        if path == "/downloads/spotify/login":
+            self.spotify["pending"] = True
+            return 200, {"auth_url": "https://accounts.spotify.com/authorize?made-up", "automatic": False}, None
+        if path == "/downloads/spotify/login/finish":
+            self.spotify.update(connected=True, username="sam", pending=False)
+            return 200, self.spotify, None
+        if path == "/downloads/preview":
+            return 200, {"title": "A made-up album", "items": ["One", "Two"], "truncated": False}, None
+        if path == "/downloads":
+            if method == "POST":
+                self.direct_queue.append({"id": len(self.direct_queue) + 1, "request": body, "state": "queued", "progress": None, "message": "",
+                                          "output_dir": self.direct["output_dir"], "created_at": 0, "updated_at": 0})
+                return 201, self.direct_queue[-1], None
+            return 200, self.direct_queue, None
         if path == "/system/backups":
             if method == "POST":
                 self.backups.append({"name": "reelix-now.zip", "kind": "manual", "size_bytes": 1000, "created_at": "2026-11-09T20:00:00Z"})

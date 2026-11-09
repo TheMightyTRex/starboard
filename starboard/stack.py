@@ -191,7 +191,8 @@ DATA_FOLDERS = {"movies": ["media/movies"], "tv": ["media/tv"], "music": ["media
                 # tv-reelix under the save path, NZBGet's are movies and tv under completed. Made before the apps
                 # start, so Reelix does not warn they cannot be reached and suggest a remote path mapping.
                 "downloads": ["downloads/torrents", "downloads/torrents/movies-reelix", "downloads/torrents/tv-reelix",
-                              "downloads/usenet", "downloads/usenet/completed/movies", "downloads/usenet/completed/tv"]}
+                              "downloads/usenet", "downloads/usenet/completed/movies", "downloads/usenet/completed/tv",
+                              "downloads/direct"]}  # YouTube and Spotify with the full version of Reelix (DASH-216)
 
 PROJECT = "media-stack"
 _SAFE_PATH = re.compile(r"^/[A-Za-z0-9._/-]{1,200}$")
@@ -1020,6 +1021,12 @@ def chosen_groups(data_dir):
     return sorted({g for k in chosen_keys(data_dir) if k in APPS for g in APPS[k].get("groups", [])})
 
 
+def choice_image(choice):
+    """The Reelix image a choice installs: the full version's for reelix_edition "full"."""
+    return (REELIX_FULL_IMAGES[0] if REELIX_FULL_IMAGES else "ghcr.io/themightytrex/reelix:full") if choice.get("reelix_edition") == "full" \
+        else APPS["reelix"]["image"]
+
+
 def note_reelix(data_dir, choice, built):
     """When the stack has Reelix, notes what its set-up needs (server.reelix_after_start, reelix_setup): its address
     with the port it was given, what was chosen, and how qBittorrent is reached. The installer adds the one-time
@@ -1040,7 +1047,7 @@ def note_reelix(data_dir, choice, built):
             "sabnzbd": "sabnzbd" in apps,
             "usenet": next((k for k in USENET_APPS if k in apps), None),
             "usenet_host": ("gluetun" if vpn else next((k for k in USENET_APPS if k in apps), "nzbget")),
-            "vpn": vpn}
+            "vpn": vpn, "edition": edition_of(choice_image(choice)) if "reelix" in apps else None}
     from . import reelix_sites
     sites = reelix_sites.clean_choice(choice.get("sites"))  # chosen in either set-up; added once Reelix runs
     if sites["builtin"] or sites["own"]:

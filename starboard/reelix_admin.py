@@ -19,7 +19,7 @@ import threading
 import time
 import urllib.parse
 
-from . import reelix_setup, reelix_sites
+from . import reelix_setup, reelix_sites, stack
 
 KINDS = {
     "indexers": "Sites to search",
@@ -271,7 +271,7 @@ def route(handler, method, path):
     if method != "POST" or not m:
         return handler.error(404, "Not found")
     kind, action = m.group("kind"), m.group("action")
-    if kind not in KINDS and kind not in ("search", "library", "basics", "form", "folders", "people", "system"):
+    if kind not in KINDS and kind not in ("search", "library", "basics", "form", "folders", "people", "system", "direct"):
         return handler.error(404, "Starboard does not change that part of Reelix")
     body = handler.body()
     address = handler.client_address_text()
@@ -289,6 +289,19 @@ def route(handler, method, path):
 
 def _act(app, reelix, base, kind, action, body):
     from . import logs
+    if kind == "direct":  # YouTube and Spotify in the full version (DASH-216, 217)
+        from . import reelix_direct as rd
+        acts = {"open": lambda: rd.state(reelix), "save": lambda: rd.save(reelix, body.get("on"), body.get("folder")),
+                "spotify-start": lambda: rd.spotify_start(reelix), "spotify-finish": lambda: rd.spotify_finish(reelix, body.get("address")),
+                "spotify-off": lambda: rd.spotify_disconnect(reelix), "preview": lambda: rd.preview(reelix, body),
+                "queue": lambda: rd.queue(reelix), "start": lambda: rd.start(reelix, body),
+                "change": lambda: rd.change(reelix, body.get("id"), str(body.get("what", "")))}
+        if action not in acts:
+            raise ValueError("Not something Starboard does")
+        out = acts[action]()
+        if out.get("done"):
+            logs.event("info", "reelix", out["done"])
+        return out
     if kind == "system":  # Reelix's backups, logs and tasks in System (DASH-201, 202, 203)
         from . import reelix_system as rs
         acts = {"backups": lambda: rs.backups(reelix), "backup-now": lambda: rs.backup_now(reelix),
@@ -420,5 +433,6 @@ def about(app):
     host = urllib.parse.urlparse(base).netloc if base else None
     return {"address": host, "installed_here": bool(stack.reelix_url(app.data_dir)),
             "vpn": reelix_sites.vpn_available(app.data_dir), "kinds": KINDS,
+            "edition": stack.edition_of(stack.reelix_in_stack(app.data_dir)),
             "media_keys": [k for k in ("jellyfin", "audiobookshelf")
                            if any(s.get("type") == k and s.get("api_key") for s in app.config.data["services"])]}

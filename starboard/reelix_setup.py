@@ -262,6 +262,14 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     except (ReelixError, OSError, ValueError) as e:
         done.append(f"Reelix's naming and background pace are not set yet ({e}). Change them in Settings, Reelix")
 
+    # 3d. The full version: YouTube and Spotify downloads on, into the shared media folder (DASH-216).
+    if info.get("edition") == "full":
+        from . import reelix_direct
+        try:
+            done += reelix_direct.set_up(admin)
+        except (ReelixError, OSError, ValueError) as e:
+            done.append(f"YouTube and Spotify are not switched on yet ({e}). Switch them on in Settings, Reelix")
+
     # 4. qBittorrent. Since DASH-232 its password is made up before its first start (data/stack/.env, written into
     # its settings file as a hash); an older install still swaps the temporary one from its log for a lasting one.
     from . import stack as _stack_q

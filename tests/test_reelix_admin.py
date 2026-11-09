@@ -439,3 +439,25 @@ class SystemTest(StandInTest):
             with self.assertRaises(ValueError):
                 rs.restore(reelix, "../x")
         self.assertEqual(self.state.tasks_run, ["refresh_library"])
+
+
+class DirectTest(StandInTest):
+    """YouTube and Spotify in the full version (DASH-216, 217, 126)."""
+
+    def test_set_up_spotify_and_a_link(self):
+        from starboard import reelix_direct as rd
+        with reelix_admin.Visit(self.base, PASSWORD) as reelix:
+            self.assertTrue(rd.state(reelix)["folder_warning"])  # Reelix's own default is its settings folder
+            self.assertEqual(rd.set_up(reelix), ["YouTube and Spotify downloads are on, into /data/downloads/direct"])
+            self.assertEqual(rd.set_up(reelix), [])
+            self.assertTrue(rd.spotify_start(reelix)["url"].startswith("https://accounts.spotify.com/"))
+            with self.assertRaises(ValueError):
+                rd.spotify_finish(reelix, "not an address")
+            self.assertTrue(rd.spotify_finish(reelix, "http://127.0.0.1/callback?code=made-up")["spotify"]["connected"])
+            with self.assertRaisesRegex(ValueError, "YouTube or Spotify"):
+                rd.start(reelix, {"url": "https://example.com/x"})
+            out = rd.start(reelix, {"url": "https://open.spotify.com/album/x", "mode": "video"})
+            with self.assertRaises(ValueError):
+                rd.save(reelix, True, "/config/elsewhere")
+        self.assertEqual(self.state.direct_queue[0]["request"]["mode"], "audio")  # Spotify is sound only
+        self.assertEqual(len(out["items"]), 1)

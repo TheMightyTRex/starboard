@@ -43,7 +43,8 @@ MENU = [
         ("Coming up", "calendar-days", [("upcoming.html", "Coming up", "calendar-days")]),
     ]),
     ("activity", "Activity", "activity", [
-        ("Downloads", "download", [("downloads.html", "Queue", "download"), ("downloads-finished.html", "Recently finished", "history")]),
+        ("Downloads", "download", [("downloads.html", "Queue", "download"), ("downloads-finished.html", "Recently finished", "history"),
+                                   ("downloads-direct.html", "From a link", "link")]),
         ("Wanted", "list-checks", [("wanted.html", "Missing", "list-checks"), ("wanted-quality.html", "Below the quality wanted", "gauge")]),
         ("Requests", "inbox", [("downloads-requests.html", "Requests", "inbox"), ("downloads-issues.html", "Issues", "circle-alert")]),
         ("History", "history", [("history.html", "History", "history")]),
@@ -102,6 +103,7 @@ HELP = {
     "wanted-quality.html": EVERYDAY,
     "downloads-requests.html": ("topics/approve-requests.md", "approving or declining requests"),
     "downloads-issues.html": ("topics/approve-requests.md", "issues people report"),
+    "downloads-direct.html": ("topics/switch-reelix-version.md", "downloading from YouTube and Spotify"),
     "history.html": EVERYDAY,
     "system.html": ("README.md#your-server", "your server"),
     "system-monitor.html": ("topics/monitor-apps.md", "finding out what each app is using"),

@@ -576,6 +576,48 @@ function rxPeopleSection() {
   return rxLockedSection("rx-people", "People", "Who has a Reelix account, and what each may do.", "people", {}, draw, "show Reelix's people");
 }
 
+// YouTube and Spotify, in the full version only (DASH-216, DASH-126): on or off, the folder (inside /data, with the
+// rest of the media), the tools Reelix needs, and Connect Spotify: open Spotify's page, agree, then paste the address
+// it went to.
+function rxDirectSection() {
+  const draw = (r, body) => {
+    const on = el("input", { type: "checkbox", id: "rx-direct-on", checked: r.on });
+    const folder = el("input", { class: "input", id: "rx-direct-folder", value: r.folder, spellcheck: "false", autocomplete: "off" });
+    const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
+    save.addEventListener("click", async () => {
+      try { const o = await rxCall("direct", "save", { on: on.checked, folder: folder.value.trim() }, "change YouTube and Spotify"); if (o) { draw(o, body); toast(o.done); } }
+      catch (e) { setError(folder, e.message); folder.focus(); }
+    });
+    const sp = r.spotify;
+    const address = el("input", { class: "input", id: "rx-spotify-back", autocomplete: "off", spellcheck: "false", placeholder: "https://" });
+    const connect = el("button", { type: "button", class: "btn" }, sp.connected ? "Connect again" : "Connect Spotify");
+    const finish = el("button", { type: "button", class: "btn btn--primary" }, "Finish connecting");
+    const step2 = el("div", { class: "form-stack", hidden: true }, field("The address Spotify went to", address,
+      { hint: "After you agree in Spotify, the page may not open. Copy its whole address from the address bar and paste it here." }), el("div", { class: "actions" }, finish));
+    connect.addEventListener("click", async () => {
+      try { const o = await rxCall("direct", "spotify-start", {}, "connect Spotify"); if (o?.url) { window.open(o.url, "_blank", "noopener"); step2.hidden = false; address.focus(); } }
+      catch (e) { problem(e.message, connect); }
+    });
+    finish.addEventListener("click", async () => {
+      try { const o = await rxCall("direct", "spotify-finish", { address: address.value.trim() }, "connect Spotify"); if (o) { draw(o, body); toast(o.done); } }
+      catch (e) { setError(address, e.message); address.focus(); }
+    });
+    const off = sp.connected ? el("button", { type: "button", class: "btn btn--quiet" }, "Disconnect Spotify") : null;
+    off?.addEventListener("click", async () => { try { const o = await rxCall("direct", "spotify-off", {}, "disconnect Spotify"); if (o) { draw(o, body); toast(o.done); } } catch (e) { problem(e.message, off); } });
+    body.replaceChildren(
+      r.folder_warning ? notice("warning", "Downloads go to the wrong place", r.folder_warning) : null,
+      switchRow("YouTube and Spotify downloads", "Paste a link on Downloads, From a link.", on),
+      field("Folder, inside /data", folder, { hint: "Such as /data/downloads/direct, or /data/media/music to put music straight into the library." }),
+      el("div", { class: "actions" }, save),
+      el("p", { class: "small", text: `Tools: ${r.tools.map((t) => `${t.tool} ${t.ok ? "ready" : "missing"}`).join(", ") || "not reported"}.` }),
+      el("h3", { text: "Spotify" }),
+      el("p", {}, chip(sp.connected ? `Connected${sp.user ? ` as ${sp.user}` : ""}` : sp.waiting ? "Waiting for you to finish" : "Not connected", sp.connected ? "success" : "muted")),
+      sp.problem ? el("p", { class: "small", text: sp.problem }) : null,
+      el("div", { class: "actions" }, connect, off), step2);
+  };
+  return rxLockedSection("rx-direct", "YouTube and Spotify", "Downloads from a YouTube or Spotify link, in the full version of Reelix.", "direct", {}, draw, "show YouTube and Spotify");
+}
+
 function reelixAdminSections() {
   const holder = el("div", { class: "rx-admin" });
   api("/api/reelix/admin/about").then((a) => {
@@ -585,8 +627,10 @@ function reelixAdminSections() {
         notice("info", "Reelix is not on your dashboard", "Add Reelix in Settings, Manage apps, or install it with Install apps, and its settings show here.")));
       return;
     }
+    const full = a.edition === "full";
     holder.replaceChildren(
       rxBasicsSection(),
+      full ? rxDirectSection() : null,
       rxKindSection("indexers", "The sites Reelix searches for films, series, books and music. Nothing is added unless you add it."),
       rxKindSection("mediaservers", "Reelix tells Jellyfin and Audiobookshelf about each new file, so it shows in them at once."),
       rxKindSection("downloadclients", "The apps that download what Reelix chooses."),
