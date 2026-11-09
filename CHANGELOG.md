@@ -7,6 +7,10 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **PrivadoVPN's link:** In both set-ups, the VPN step's PrivadoVPN link now goes to PrivadoVPN's sign-up page. It is an affiliate link, so the step says so in an Ad note before the list, and PrivadoVPN's line is marked Ad.
+- **Adverts in the help centre take turns:** The help centre's advert now shows Newshosting on one page and PrivadoVPN on the next, in turn. Nothing changes while a page is open, and Hide hides both.
+
 ### Fixed
 - **Error numbers when a job does not finish:** In the terminal set-up, a job that did not finish, such as starting the apps, showed no error number in the boxed look, while accessible mode showed IN-33 only among the details. Both now show the number under the problem, with the address of its help on a line of its own, and Report this problem includes it (DASH-152).
 - **The installer's own stops:** The Run first script showed RF-40 whenever the installer stopped, after the installer's own number, so a stop had two numbers, and some of the installer's stops had none. Every stop of the installer and the terminal set-up now has its own number (new: IN-35 to IN-38), and the Run first script ends on that number. RF-40 is kept for an installer that stopped without one, and stopping it yourself with q or Ctrl+C is no longer shown as an error (DASH-147).

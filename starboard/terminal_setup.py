@@ -63,10 +63,20 @@ def _vpn_table():
     browser set-up reads too."""
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web", "vpn-providers.json")
     with open(path, encoding="utf-8") as f:
-        return [(v["id"], v["name"], v["site"]) for v in json.load(f)["providers"]]
+        rows = json.load(f)["providers"]
+    return [(v["id"], v["name"], v["site"]) for v in rows], {v["id"] for v in rows if v.get("affiliate")}
 
 
-VPNS = _vpn_table()
+VPNS, VPN_AFFILIATE = _vpn_table()
+
+
+def vpn_ad():
+    """The note for providers whose link is an affiliate link (the same words as vpnAd in web/js/install.js)."""
+    names = [n for i, n, _ in VPNS if i in VPN_AFFILIATE]
+    if not names:
+        return ""
+    return (f"Ad: the {' and '.join(names)} link is an affiliate link. If you sign up through it, {' or '.join(names)} "
+            "pays a small commission towards Starboard's development. You pay the same price.")
 
 
 def _vpn_default(last):
@@ -2005,8 +2015,11 @@ def step_vpn(api, term, state):
     last = state.get("vpn_answers", {})
     head(term, state, "vpn")
     # The same list as the browser set-up, each with its site; nothing is chosen for you the first time.
+    if vpn_ad():
+        term.note(vpn_ad())
     pick = term.choose("Which VPN provider do you have?",
-                       [(n, site.split("//")[1].rstrip("/").removeprefix("www.")) for _, n, site in VPNS]
+                       [(n, site.split("//")[1].rstrip("/").removeprefix("www.") + (" (Ad)" if i in VPN_AFFILIATE else ""))
+                        for i, n, site in VPNS]
                        + ["Another one that Gluetun supports"], _vpn_default(last), help_key="vpn")
     if pick < len(VPNS):
         provider = VPNS[pick][0]
