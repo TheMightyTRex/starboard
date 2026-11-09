@@ -11,10 +11,12 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "system-logs.html", "system-backup.html", "settings.html", "settings-general.html", "settings-security.html",
   "settings-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-performance.html", "settings-jellyfin.html",
   "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "upgrade.html",
-  // The places Reelix will fill (placeholders for now)
-  "library-tv.html", "library-tv-series.html", "library-films.html", "library-films-collections.html", "library-radio.html",
-  "library-radio-series.html", "library-radio-stations.html", "library-books.html", "library-books-series.html",
+  // The Library, from the made-up Reelix (DASH-163)
+  "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
+  "library-radio.html", "library-radio-stations.html", "library-books.html", "library-books-series.html",
   "library-books-authors.html", "library-audiobooks.html", "library-audiobooks-series.html", "library-audiobooks-authors.html",
+  "library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=1", "library-radio-show.html?id=1",
+  "library-book.html?id=4", "library-audiobook.html?id=6",
   "discover-trending.html", "downloads-finished.html", "wanted.html", "wanted-quality.html", "history.html", "settings-reelix.html"];
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
@@ -164,6 +166,76 @@ const notes = await api("/api/ux-notes");
 for (const n of notes.notes || []) await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } });
 await api(`/api/services/${added.id}`, { method: "DELETE" });
 await api("/api/config/general", { method: "PUT", body: { groups: before.groups, ux_notes: before.ux_notes } });
+
+// LIB-01 and SRCH-01: the Library from the made-up Reelix, the A to Z list, an item page, and Search (DASH-163, DASH-162)
+console.log("\n== LIB-01 The Library");
+await open("library-films.html");
+await page.locator("#lib-wall .media-card").first().waitFor({ timeout: 10000 }).catch(() => {});
+check("LIB-01", "the Films wall shows covers", await page.locator("#lib-wall .media-card").count() >= 20);
+check("LIB-01", "with a heading for each letter", await page.locator("#lib-wall h2.wall-letter").count() > 2);
+const az = page.locator("nav.az-jump");
+check("LIB-01", "the A to Z list has # and A to Z", await az.locator(".az-jump__letter").count() === 27);
+check("LIB-01", "letters with nothing are shown but not links", await az.locator('.az-jump__letter[aria-disabled="true"]:not([href])').count() > 0);
+const sizes = await az.locator(".az-jump__letter").first().evaluate((a) => [a.offsetWidth, a.offsetHeight]);
+check("LIB-01", "letters are 44px targets", sizes[0] >= 44 && sizes[1] >= 44, sizes.join("x"));
+check("LIB-01", "the row is one Tab stop", await az.locator('.az-jump__letter[tabindex="0"]').count() === 1);
+const target = az.locator(".az-jump__letter[href]").nth(5);
+const letter = (await target.textContent()).trim();
+await target.click();
+await page.waitForTimeout(800);
+check("LIB-01", `choosing ${letter} moves focus to its heading`, await page.evaluate(() => document.activeElement.className) === "wall-letter"
+  && (await page.evaluate(() => document.activeElement.textContent)).startsWith(letter));
+await page.locator("#lib-q").fill("harbour");
+await page.waitForTimeout(800);
+const found = await page.locator("#lib-wall .media-card__title").allTextContents();
+check("LIB-01", "searching the wall keeps only matches", found.length > 0 && found.every((x) => /harbour/i.test(x)), found.join(", "));
+await page.locator("#lib-q").fill("");
+await page.locator("#lib-sort").selectOption("added");
+await page.waitForTimeout(600);
+check("LIB-01", "a changed view offers Save this view as default", await page.locator("#lib-save").isVisible());
+await page.locator("#lib-save").click();
+await page.waitForTimeout(500);
+check("LIB-01", "the view is saved for the account", (await api("/api/library/views")).views.films?.sort === "added");
+await api("/api/library/views", { method: "DELETE" });
+await open("library-tv-show.html?id=2");
+check("LIB-01", "an item page has its name as the heading", (await page.locator("h1").textContent()).length > 2);
+check("LIB-01", "and its episodes with a status", await page.locator("#panel-episodes .chip").count() > 3);
+await page.locator('[role="tab"]', { hasText: "About" }).focus();
+check("LIB-01", "About is a tab", await page.locator('[role="tab"]', { hasText: "About" }).count() === 1);
+await open("library-tv-show.html?id=8");
+await page.locator("#panel-episodes details").first().waitFor({ timeout: 8000 }).catch(() => {});
+const seasons = await page.locator("#panel-episodes details").evaluateAll((ds) => ds.map((d) => [d.querySelector("summary").textContent, d.open]));
+check("LIB-01", "a series of two seasons shows each season, only the newest open",
+  seasons.length === 2 && !seasons[0][1] && seasons[1][1] && /Season 2/.test(seasons[1][0]), JSON.stringify(seasons));
+await open("library-books-series.html");
+await page.locator("#groups .row__title a").first().click();
+await page.waitForLoadState("networkidle");
+check("LIB-01", "a series opens the wall with only its books", /group=/.test(page.url()) && await page.locator("#lib-wall .media-card").count() > 0);
+
+console.log("\n== SRCH-01 Search");
+await open("index.html");
+check("SRCH-01", "on a computer, Search in the side menu is a link to the Search page", await page.locator('nav.rail a.rail__search[href="/search.html"]').count() === 1);
+await open("search.html");
+await page.locator("#lib-start .lib-kinds a").first().waitFor({ timeout: 8000 }).catch(() => {});
+check("SRCH-01", "the Search page opens on the Library, with each kind and its count", await page.locator("#lib-start .lib-kinds a").count() === 6);
+await page.locator("#q").fill("harbour");
+await page.locator("#lib-found .row").first().waitFor({ timeout: 5000 }).catch(() => {});
+check("SRCH-01", "typing searches your library first", await page.locator("#lib-found .row").count() > 0);
+await page.locator("#lookup button", { hasText: "Add" }).first().waitFor({ timeout: 10000 }).catch(() => {});
+check("SRCH-01", "then Not in your library, with Add", await page.locator("#lookup button", { hasText: "Add" }).count() > 0);
+check("SRCH-01", "and Follow for radio", await page.locator("#lookup button", { hasText: "Follow" }).count() > 0);
+await page.locator("#lookup button", { hasText: "Add" }).first().click();
+await page.locator("#side-panel button[type=submit]:not([disabled])").waitFor({ timeout: 5000 }).catch(() => {});
+await page.locator("#side-panel button[type=submit]").click();
+await page.locator("#lookup .chip", { hasText: "Added" }).waitFor({ timeout: 5000 }).catch(() => {});
+check("SRCH-01", "Add sends it to Reelix and says Added", await page.locator("#lookup .chip", { hasText: "Added" }).count() === 1);
+await page.setViewportSize({ width: 375, height: 812 });
+await open("index.html");
+check("SRCH-01", "on a phone, the header search button stays", await page.locator(".site-header__search-btn[data-search-open]").isVisible());
+await page.locator("[data-phone-menu-open]").click();
+check("SRCH-01", "and the menu keeps its search field", await page.locator("#phone-search-input").isVisible());
+await page.keyboard.press("Escape");
+await page.setViewportSize({ width: 1280, height: 860 });
 
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");

@@ -1917,6 +1917,101 @@
     font-size: var(--text-sm);
   }
 
+  /* A to Z jump list (8 November 2026): a row of letters over a long wall, # then A to Z. Letters with
+     nothing are shown but cannot be chosen (aria-disabled, and "Q, no titles" for screen readers). It
+     sticks under the header; the letter in view has aria-current="location" and a bar, so it is not shown
+     by colour alone. Targets are 44px. On phones the row scrolls sideways, as .menu-tabs does.
+     Markup: nav.az-jump[aria-label="Jump to letter"] > ol > li > a.az-jump__letter[href="#letter-a"];
+     a letter with nothing: a.az-jump__letter[aria-disabled="true"][aria-label="Q, no titles"], no href.
+     The wall: h2.wall-letter#letter-a[tabindex="-1"] before each letter's covers. components.js
+     (setupAzJump) adds arrow keys, Home and End, one Tab stop, and focus on the heading after a jump. */
+  .az-jump {
+    --az-top: var(--header-h);
+    position: sticky;
+    top: var(--az-top);
+    z-index: calc(var(--layer-header) - 1);
+    min-width: 0;
+    max-width: 100%;
+    contain: inline-size;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-divider);
+  }
+  :root:has(.site-header__tabs) .az-jump {
+    --az-top: calc(var(--header-h) + var(--tabs-h));
+  }
+  .az-jump ol {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .az-jump ol::-webkit-scrollbar {
+    display: none;
+  }
+  .az-jump li {
+    flex: 1 0 auto;
+  }
+  .az-jump__letter {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: var(--control-h);
+    min-height: var(--control-h);
+    padding: 0 var(--space-1);
+    color: var(--color-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+    text-decoration: none;
+  }
+  .az-jump__letter:hover {
+    background: var(--color-control-active);
+  }
+  .az-jump__letter:focus-visible {
+    outline-offset: calc(-1 * var(--focus-w));
+  }
+  .az-jump__letter[aria-current="location"] {
+    background: var(--color-control-active);
+  }
+  .az-jump__letter[aria-current="location"]::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: var(--current-bar-w);
+    background: var(--color-accent);
+  }
+  .az-jump__letter[aria-disabled="true"] {
+    color: var(--color-text-muted);
+    font-weight: var(--weight-regular);
+    cursor: default;
+  }
+  .az-jump__letter[aria-disabled="true"]:hover {
+    background: none;
+  }
+  /* A jump lands clear of the header, the tabs and the letter row. */
+  :root:has(.az-jump) {
+    scroll-padding-top: calc(var(--header-h) + var(--control-h) + var(--space-4));
+  }
+  :root:has(.site-header__tabs):has(.az-jump) {
+    scroll-padding-top: calc(var(--header-h) + var(--tabs-h) + var(--control-h) + var(--space-4));
+  }
+  /* A letter heading on a wall: full width, before that letter's covers. */
+  .wall-letter {
+    grid-column: 1 / -1;
+    margin: var(--space-4) 0 0;
+    padding-bottom: var(--space-1);
+    border-bottom: 1px solid var(--color-divider);
+    font-size: var(--text-lg);
+    line-height: var(--leading-tight);
+  }
+  .wall-letter:focus {
+    outline: none;
+  }
+  .wall-letter:focus-visible {
+    outline: var(--focus-w) solid var(--color-focus);
+  }
+
   /* 6. Containers ----------------------------------------------------------------------------- */
 
   /* Panel: a bordered box that groups related content. */

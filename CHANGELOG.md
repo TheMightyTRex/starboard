@@ -13,10 +13,22 @@ add features.
 - **Searches through the VPN:** with the VPN installed, Reelix's searches go out through Gluetun, as Prowlarr's did, and wait when the VPN is down. Install apps sets it up, and Settings, Reelix has a switch for it. Gluetun's own proxy is activated for this (DASH-133).
 - **Jellyfin and Audiobookshelf in Reelix:** Install apps connects Reelix to them with the API keys Starboard already has, so new files show in them at once. Settings, Reelix, Media servers connects them with one button (DASH-156).
 - **Help:** Change Reelix's settings in Starboard, Choose the sites Reelix searches, and Connect Reelix to Jellyfin and Audiobookshelf, each with 3 marked-up screenshots; Install apps and Set up in the terminal have the new step.
+- **The Library, from Reelix:** **Library** shows everything Reelix holds, as TV, Films, Music, Radio, Books and Audiobooks. Each is a wall of covers, A to Z, with a search for that kind, filters with their counts (such as **Missing** or **Coming soon**), sort (A to Z, Recently added, Year), Covers or List, three cover sizes and **Show 40 more**. The placeholder Library pages are gone (DASH-163).
+- **The A to Z list:** a row of letters above each wall. Letters with nothing under them are shown but cannot be chosen, and say so to screen readers. It stays in view as you scroll, marks the letter you are at, and takes one Tab stop: the arrow keys move along it and Enter jumps. A letter further on opens the wall at that letter, with **Show earlier titles** above it. The row comes from the TRex Design System.
+- **A page for each title:** a film, series, artist, radio show, book or audiobook opens its own page with its name, what it is, how much of it you have, and its episodes, albums, reading order or collection, then **About**. A series' episodes are grouped by season, the newest open, so a long series is not one long list. Radio shows link to Audiobookshelf to listen.
+- **Groups:** **Networks** for TV, **Collections** for films, **Stations** for radio, and **Series** and **Authors** for books and audiobooks, each opening the wall with only that group's titles.
+- **Save this view as default:** a changed sort, layout, cover size or filter can be saved as how that kind opens, for your account on every device. **Settings**, **General**, **Library views** lists them, with **Reset Library views**.
+- **Search opens on your library:** before you type, Search shows what was recently added and each kind with its count. As you type, it searches your library first, then lists what Reelix can find under **Not in your library**, each kind as soon as it is ready, with **Add**, or **Follow** for radio shows and podcasts (DASH-162). Without Reelix, Search looks in Sonarr, Radarr, Lidarr and Readarr as before.
+- **Help:** a new article, Browse your library, and Search for and add, and Follow radio shows, rewritten for the new Search, each with marked-up screenshots.
 
 ### Changed
 - **PrivadoVPN's link:** In both set-ups, the VPN step's PrivadoVPN link now goes to PrivadoVPN's sign-up page. It is an affiliate link, so the step says so in an Ad note before the list, and PrivadoVPN's line is marked Ad.
 - **Adverts in the help centre take turns:** The help centre's advert now shows Newshosting on one page and PrivadoVPN on the next, in turn. Nothing changes while a page is open, and Hide hides both.
+- **Search in the side menu** is now a link to the Search page on a computer. On a phone, the search button at the top of the screen and the search box in the menu work as before. The Search page stays in **Discover**.
+- **TV's second tab** is now **Networks**, and Radio's **Series** tab is gone: a radio show's series are on its own page.
+- **Posters on Coming up and the Library:** the setting in **Settings**, **Performance** now covers the Library's covers too.
+- **The Library keeps a small list of each kind** in `data/library`, with only what a wall needs: about 210 bytes a film. It is read from disk for each request, never held in memory, rebuilt when you open a kind and it is more than five minutes old, and every 30 minutes while the Library is in use. Nothing runs when nobody uses the Library. With 5,000 made-up items, Starboard held 2.4 to 3.6 MB more memory after using every part of the Library than after opening the old pages, and at most 4.9 MB more while reading Reelix; at idle, 0.7 to 0.9 MB more.
+- **Covers come through Starboard at a small size** (TMDB w185 on walls), are kept for a week (at most 400), and a missing picture is not asked for again for a day. Your browser never contacts the image sites.
 
 ### Fixed
 - **Error numbers when a job does not finish:** In the terminal set-up, a job that did not finish, such as starting the apps, showed no error number in the boxed look, while accessible mode showed IN-33 only among the details. Both now show the number under the problem, with the address of its help on a line of its own, and Report this problem includes it (DASH-152).
@@ -33,6 +45,9 @@ add features.
 - **Error IN-34:** If the installer cannot put that file in Jellyfin's settings folder, it stops with error IN-34 rather than start a Jellyfin that cannot find FFmpeg.
 - **Taking over Reelix while it reports a problem:** Reelix says it is unhealthy while a download app it was given cannot be reached, which is often what the takeover is about to fix. Starboard now carries on instead of waiting for it.
 - **Old apps left on the Apps page after a takeover:** apps added before Starboard marked its entries were not recognised, so Radarr and the others stayed on the Apps page. They are now found by their kind or name and taken off. Reelix's own entries are kept.
+
+### Security
+- **Only image sites:** Starboard fetches covers only over https from TMDB, Open Library and Cover Art Archive, or from Reelix itself, and follows a redirect only to another of those sites. Adding from Search sends Reelix only the identifier from Reelix's own lookup and the choices in the panel.
 
 ## [0.12.2] (8 November 2026)
 

@@ -20,6 +20,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
+from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
 from . import access, auth, backup, helpdocs, reelix_admin, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import Config, ConfigError, new_setup_token, same_server, validate_service
 
@@ -961,6 +962,8 @@ class Handler(BaseHTTPRequestHandler):
 
             if not self.signed_in():
                 return self.error(401, "Sign in first")
+            if path.startswith("/api/library/"):  # the Library and Search, from Reelix (starboard/library.py)
+                return library.handle(self, method, path)
 
             cfg = app.config
             if path.startswith("/api/reelix/admin/"):  # Reelix's admin settings, password each time (reelix_admin.py)

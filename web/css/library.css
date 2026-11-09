@@ -1,0 +1,60 @@
+/* The Library (DASH-163): walls of covers with the A to Z list, groups and item pages. Loaded after media.css;
+   the covers, rows, chips, the series header and the A to Z list come from the library (components.css). */
+
+.lib .toolbar { position: relative; z-index: 2; }
+.lib .toolbar__count { margin: 0; }
+.lib .lib-field { margin: 0; }
+.lib .lib-field .select { min-width: 10rem; }
+.lib-wall { display: grid; gap: var(--space-2); }
+.lib-group { display: grid; gap: var(--space-3); }
+.lib-group .wall-letter { scroll-margin-top: calc(var(--header-h) + var(--tabs-h) + var(--control-h) + var(--space-4)); }
+.lib-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); }
+.lib-group-head h2 { margin: 0; font-size: var(--text-lg); }
+
+/* A cover with no picture shows its title on a plain tile. */
+.lib-cover-title { padding: var(--space-2); color: var(--color-text); font-weight: var(--weight-strong); font-size: var(--text-sm);
+  line-height: var(--leading-tight); overflow-wrap: anywhere; }
+.lib-card .cover img, .lib-row .cover img, .lib-fan img { width: 100%; height: 100%; object-fit: cover; }
+.lib-card__status { min-height: 1.5rem; }
+.lib-card__status:empty { display: none; }
+.lib-card .media-card__meta:empty { display: none; }
+
+/* Item pages: a single cover in the fan's place, the in-page tabs, and the numbered list. */
+.lib-item { display: grid; gap: var(--space-5); }
+.lib > .back-link { justify-self: start; width: fit-content; }
+.lib-item .series-head__meta .chip { align-self: center; }
+.lib-fan { width: clamp(120px, 18vw, 200px); aspect-ratio: 2 / 3; }
+.lib-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--color-divider); overflow-x: auto; }
+.lib-tabs [role="tab"] { position: relative; min-height: var(--control-h); padding: 0 var(--space-4); border: 0; background: none;
+  color: var(--color-text-muted); font: inherit; font-weight: var(--weight-strong); cursor: pointer; }
+.lib-tabs [role="tab"]:hover, .lib-tabs [role="tab"][aria-selected="true"] { background: var(--color-control-active); color: var(--color-text); }
+.lib-tabs [role="tab"][aria-selected="true"]::after { content: ""; position: absolute; inset: auto 0 0 0; height: var(--current-bar-w);
+  background: var(--color-accent); }
+.lib-tabs [role="tab"]:focus-visible { outline-offset: calc(-1 * var(--focus-w)); }
+.lib-panel-heading { font-size: var(--text-lg); margin: 0 0 var(--space-2); }
+.lib-order .lib-order__number { min-width: 5.5ch; color: var(--color-text-muted); font-variant-numeric: tabular-nums; font-weight: var(--weight-strong); }
+.lib-order .row { grid-template-columns: auto minmax(0, 1fr) auto; }
+.lib-order .row--no-lead { grid-template-columns: minmax(0, 1fr) auto; }
+
+/* Search (DASH-162): what you have first, then Not in your library. */
+.lib-kinds { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  margin: 0; padding: 0; list-style: none; }
+.lib-kinds a { display: grid; gap: var(--space-1); padding: var(--space-4); border: 1px solid var(--color-divider);
+  background: var(--color-surface-raised); color: var(--color-text); text-decoration: none; }
+.lib-kinds a:hover { background: var(--color-control-active); }
+.lib-kinds strong { font-size: var(--text-lg); }
+.lib-recent { grid-template-columns: repeat(auto-fill, minmax(min(var(--cover-w, 120px), 45%), 1fr)); }
+.lib-search-group { display: grid; gap: var(--space-2); }
+.lib-search-group h3 { font-size: var(--text-md); margin: 0; }
+
+@media (max-width: 720px) {
+  .lib .toolbar__end { width: 100%; margin-left: 0; }
+  .lib .lib-field { flex: 1 1 8rem; }
+  .lib .lib-field .select { min-width: 0; width: 100%; }
+  .lib-fan { display: none; }
+  .lib-order .row { grid-template-columns: auto minmax(0, 1fr); }
+  .lib-order .row .row__side { grid-column: 2; justify-content: start; }
+}
+
+/* Small row covers show no title: the row says it beside them. */
+.cover--result .lib-cover-title { display: none; }

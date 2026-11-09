@@ -247,9 +247,12 @@ async function openPanel(r, opener) {
   }
 }
 
-startPage().then(() => {
+// Without Reelix, library-search.js hands the page to this search of Sonarr, Radarr, Lidarr and Readarr.
+window.legacySearchStart = () => {
+  $("#search-more").hidden = false;
+  $("#search-summary").textContent = "Find a series, film, artist or author and add it to the right app.";
   $("#search-form").addEventListener("submit", (e) => { e.preventDefault(); runSearch($("#q").value); });
   const q = new URLSearchParams(location.search).get("q");
   if (q) { $("#q").value = q; runSearch(q); } else { $("#q").focus(); }
   getConfig().catch(() => null);
-});
+};

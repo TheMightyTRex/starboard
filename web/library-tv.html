@@ -14,16 +14,18 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/app.css">
 <link rel="stylesheet" href="/css/designs.css">
+<link rel="stylesheet" href="/css/media.css">
+<link rel="stylesheet" href="/css/library.css">
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
-<script src="/js/placeholder.js" defer></script>
+<script src="/js/library.js" defer></script>
 </head>
-<body class="page-placeholder with-rail">
+<body class="page-library with-rail">
 <!-- shell:start (written by tools/apply_shell.py; edit the menus there) -->
 <a class="skip-link" href="#main">Skip to main content</a>
 <nav class="rail" aria-label="Side menu">
   <a class="rail__brand" href="/index.html"><svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true" focusable="false"><path fill-rule="evenodd" fill="var(--color-logo-tile)" d="M1.5 6h26v19.5h-26z M3.8 8.3v14.9h21.4V8.3z"/><path fill="var(--color-logo-tile)" d="M9.5 26.6h10v2.2h-10z"/><path fill="var(--color-logo-tile)" d="M6.2 10.6h7.6v5.2H6.2z M15.2 10.6h7.6v5.2h-7.6z M6.2 17.4h7.6v3.9H6.2z M15.2 17.4h7.6v3.9h-7.6z"/><path fill="var(--color-logo-star)" d="M25.2 0.2L26.8 4.9L31.8 5.0L27.8 8.0L29.3 12.8L25.2 10.0L21.1 12.8L22.6 8.0L18.6 5.0L23.6 4.9Z"/></svg><span class="rail__name">Starboard</span></a>
-  <button type="button" class="rail__search" data-search-open aria-controls="header-search" aria-expanded="false"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span>Search</span></button>
+  <a class="rail__search" href="/search.html"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span>Search</span></a>
   <a href="/library-tv.html" aria-current="page"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg><span>Library</span></a><a href="/search.html"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"/></svg><span>Discover</span></a><a href="/downloads.html"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg><span>Activity</span></a><a href="/system.html"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg><span>System</span></a><a href="/settings-general.html"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg><span>Settings</span></a>
 </nav>
 <header class="site-header">
@@ -34,6 +36,7 @@
     <nav class="menu-tabs" id="main-nav" aria-label="Library">
         <a href="/library-tv.html" aria-current="page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m17 2-5 5-5-5"/><rect width="20" height="15" x="2" y="7" rx="2"/></svg><span class="menu-tabs__label">TV</span></a>
         <a href="/library-films.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg><span class="menu-tabs__label">Films</span></a>
+        <a href="/library-music.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span class="menu-tabs__label">Music</span></a>
         <a href="/library-radio.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16.247 7.761a6 6 0 0 1 0 8.478"/><path d="M19.075 4.933a10 10 0 0 1 0 14.134"/><path d="M4.925 19.067a10 10 0 0 1 0-14.134"/><path d="M7.753 16.239a6 6 0 0 1 0-8.478"/><circle cx="12" cy="12" r="2"/></svg><span class="menu-tabs__label">Radio</span></a>
         <a href="/library-books.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/></svg><span class="menu-tabs__label">Books</span></a>
         <a href="/library-audiobooks.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg><span class="menu-tabs__label">Audiobooks</span></a>
@@ -41,14 +44,14 @@
     <form class="site-header__search search-field" id="header-search" action="/search.html" role="search"><label class="visually-hidden" for="header-search-input">Search films, series, music and books</label><input class="input" id="header-search-input" name="q" type="search" placeholder="Search films, series, music and books"><button type="submit" class="visually-hidden">Search</button></form>
     <div class="site-header__actions">
       <button type="button" class="icon-btn site-header__search-btn" data-search-open aria-controls="header-search" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span class="visually-hidden">Search</span></button>
-      <a class="icon-btn" href="https://themightytrex.github.io/starboard/help/index.html#everyday-use" target="_blank" rel="noopener noreferrer" data-help-link><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 3H3v18h18v-8"/><path d="M15 3h6v6"/><path d="M21 3l-5.5 5.5"/><path d="M7.59 11a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M10.5 18h.01"/></svg><span class="label">Help</span><span class="visually-hidden"> with your library (opens in a new tab)</span></a>
+      <a class="icon-btn" href="https://themightytrex.github.io/starboard/help/topics/browse-your-library.html" target="_blank" rel="noopener noreferrer" data-help-link><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 3H3v18h18v-8"/><path d="M15 3h6v6"/><path d="M21 3l-5.5 5.5"/><path d="M7.59 11a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M10.5 18h.01"/></svg><span class="label">Help</span><span class="visually-hidden"> with browsing your library (opens in a new tab)</span></a>
       <button type="button" class="icon-btn" data-display-toggle aria-haspopup="dialog" aria-expanded="false"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg><span class="label">Display</span></button>
     </div>
   </div>
   <div class="site-header__tabs">
     <nav class="menu-tabs" aria-label="TV">
       <a href="/library-tv.html" aria-current="page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg><span class="menu-tabs__label">My library</span></a>
-      <a href="/library-tv-series.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg><span class="menu-tabs__label">Series</span></a>
+      <a href="/library-tv-networks.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg><span class="menu-tabs__label">Networks</span></a>
     </nav>
   </div>
 </header>
@@ -66,6 +69,7 @@
           <ul id="phone-sub-library">
             <li><a href="/library-tv.html" aria-current="page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m17 2-5 5-5-5"/><rect width="20" height="15" x="2" y="7" rx="2"/></svg><span>TV</span></a></li>
             <li><a href="/library-films.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></svg><span>Films</span></a></li>
+            <li><a href="/library-music.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span>Music</span></a></li>
             <li><a href="/library-radio.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M16.247 7.761a6 6 0 0 1 0 8.478"/><path d="M19.075 4.933a10 10 0 0 1 0 14.134"/><path d="M4.925 19.067a10 10 0 0 1 0-14.134"/><path d="M7.753 16.239a6 6 0 0 1 0-8.478"/><circle cx="12" cy="12" r="2"/></svg><span>Radio</span></a></li>
             <li><a href="/library-books.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/></svg><span>Books</span></a></li>
             <li><a href="/library-audiobooks.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg><span>Audiobooks</span></a></li>
@@ -154,11 +158,37 @@
 <div id="announcer" class="visually-hidden" aria-live="polite"></div>
 <!-- shell:end -->
 <main id="main" tabindex="-1">
-<div class="page">
+<div class="page media lib" data-library="tv">
   <div class="page-head">
-    <div class="page-head__text"><h1>TV</h1><p class="page-head__summary">Every series Reelix follows, as a wall of covers with an A to Z list.</p></div>
+    <div class="page-head__text"><h1>TV</h1><p class="page-head__summary">Every series in your library, A to Z.</p></div>
   </div>
-  <div class="notice" role="note"><div class="notice__body"><span class="notice__title">Coming with Reelix.</span><p>This page fills in once Starboard reads Reelix. Until then it holds its place in the menu.</p></div></div>
+  <div class="lib-group-head" id="lib-group" hidden></div>
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <form class="toolbar__search search-field" id="lib-search" role="search">
+        <label class="visually-hidden" for="lib-q">Search your series</label>
+        <input class="input" id="lib-q" name="q" type="search" autocomplete="off" placeholder="Search your series">
+      </form>
+      <div class="filter-chips" id="lib-chips" role="group" aria-label="Show only" hidden></div>
+      <div class="toolbar__end">
+        <div class="field lib-field"><label class="visually-hidden" for="lib-sort">Sort</label>
+          <select class="select" id="lib-sort"><option value="az">A to Z</option><option value="added">Recently added</option><option value="year">Year</option></select></div>
+        <div class="segmented" role="radiogroup" aria-label="Show as">
+          <label><input type="radio" name="lib-layout" value="covers" checked><span>Covers</span></label>
+          <label><input type="radio" name="lib-layout" value="list"><span>List</span></label>
+        </div>
+        <div class="field lib-field" id="lib-size-field"><label class="visually-hidden" for="lib-size">Cover size</label>
+          <select class="select" id="lib-size"><option value="small">Small covers</option><option value="medium">Medium covers</option><option value="large">Large covers</option></select></div>
+        <button class="btn btn--quiet" type="button" id="lib-save" hidden>Save this view as default</button>
+      </div>
+    </div>
+    <p class="toolbar__count" id="lib-count" aria-live="polite"></p>
+  </div>
+  <nav class="az-jump" id="lib-az" aria-label="Jump to letter" hidden><ol></ol></nav>
+  <div id="lib-notice"></div>
+  <div class="load-more lib-earlier" id="lib-earlier" hidden><button class="btn" type="button">Show earlier titles</button></div>
+  <div id="lib-wall" class="lib-wall" aria-busy="true" aria-label="TV"><p class="muted">Reading your library…</p></div>
+  <div class="load-more" id="lib-more" hidden><span id="lib-more-count"></span><button class="btn" type="button">Show 40 more</button></div>
 </div>
 </main>
 </body>

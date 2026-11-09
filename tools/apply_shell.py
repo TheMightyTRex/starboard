@@ -4,7 +4,8 @@
 Edit the menus here, then run: python3 tools/apply_shell.py
 Each page is its own HTML file, so every page and sub-page has a real address you can link to.
 Three levels, named as in the design system (docs/DESIGN-SYSTEM.md): the side menu (the logo with Starboard
-underneath, Search and the five sections), the level 1 menu (header row 1, starting with the server name: a
+underneath, Search (a link to the Search page; phones keep the search field in the menu and the header button) and the
+five sections), the level 1 menu (header row 1, starting with the server name: a
 section's pages) and the level 2 menu (header row 2: a page's own tabs, only when it has them). On phones the
 side menu is hidden and the menu drawer holds the sections with their level 1 pages.
 """
@@ -23,10 +24,10 @@ ICONS = dict(re.findall(r'<symbol id="i-([^"]+)"[^>]*>(.*?)</symbol>', (WEB / "i
 # A level 1 item opens its first page; it has a level 2 menu only when it has more than one page.
 MENU = [
     ("library", "Library", "library", [
-        ("TV", "tv", [("library-tv.html", "My library", "library"), ("library-tv-series.html", "Series", "layers")]),
+        ("TV", "tv", [("library-tv.html", "My library", "library"), ("library-tv-networks.html", "Networks", "layers")]),
         ("Films", "film", [("library-films.html", "My library", "library"), ("library-films-collections.html", "Collections", "layers")]),
-        ("Radio", "radio", [("library-radio.html", "My library", "library"), ("library-radio-series.html", "Series", "layers"),
-                            ("library-radio-stations.html", "Stations", "radio")]),
+        ("Music", "music", [("library-music.html", "My library", "library")]),
+        ("Radio", "radio", [("library-radio.html", "My library", "library"), ("library-radio-stations.html", "Stations", "radio")]),
         ("Books", "book-open", [("library-books.html", "My library", "library"), ("library-books-series.html", "Series", "layers"),
                                 ("library-books-authors.html", "Authors", "users")]),
         ("Audiobooks", "headphones", [("library-audiobooks.html", "My library", "library"),
@@ -82,11 +83,12 @@ def help_page(path):
     return page + ("#" + anchor if anchor else "")
 EVERYDAY = ("README.md#everyday-use", "everyday use")
 HELP = {
-    **{page: ("README.md#everyday-use", "your library") for page in (
-        "library-tv.html", "library-tv-series.html", "library-films.html", "library-films-collections.html",
-        "library-radio.html", "library-radio-series.html", "library-radio-stations.html", "library-books.html",
+    **{page: ("topics/browse-your-library.md", "browsing your library") for page in (
+        "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html",
+        "library-music.html", "library-radio.html", "library-radio-stations.html", "library-books.html",
         "library-books-series.html", "library-books-authors.html", "library-audiobooks.html",
-        "library-audiobooks-series.html", "library-audiobooks-authors.html")},
+        "library-audiobooks-series.html", "library-audiobooks-authors.html", "library-film.html", "library-tv-show.html",
+        "library-artist.html", "library-radio-show.html", "library-book.html", "library-audiobook.html")},
     "search.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "discover-trending.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "upcoming.html": ("topics/coming-up.md", "finding out what is coming up"),
@@ -142,7 +144,11 @@ for key, _, _, items in MENU:
             PAGES[page] = (key, n)
 # Pages with no tab of their own show the page they open from as current: the guides open from Settings,
 # General, and Copy settings from Manage apps.
-TAB_OF = {"setup-guide.html": "settings-general.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html"}
+TAB_OF = {"setup-guide.html": "settings-general.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
+          # An item's page shows its Library tab as current.
+          "library-film.html": "library-films.html", "library-tv-show.html": "library-tv.html", "library-artist.html": "library-music.html",
+          "library-radio-show.html": "library-radio.html", "library-book.html": "library-books.html",
+          "library-audiobook.html": "library-audiobooks.html"}
 for page, parent in TAB_OF.items():
     PAGES[page] = PAGES[parent]
 
@@ -212,7 +218,7 @@ def shell(current):
     return f'''<a class="skip-link" href="#main">Skip to main content</a>
 <nav class="rail" aria-label="Side menu">
   <a class="rail__brand" href="/{HOME}">{LOGO.format(s=32)}<span class="rail__name">Starboard</span></a>
-  <button type="button" class="rail__search" data-search-open aria-controls="header-search" aria-expanded="false">{icon("search", 24)}<span>Search</span></button>
+  <a class="rail__search" href="/search.html">{icon("search", 24)}<span>Search</span></a>
   {rail_links}
 </nav>
 <header class="site-header">

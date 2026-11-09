@@ -84,6 +84,7 @@ Each guide is a journey through several topics, in order.
 
 ### Everyday use
 
+- [Browse your library](topics/browse-your-library.md)
 - [Search for and add films, series, music and books](topics/search-and-add.md)
 - [Pause, resume and remove downloads](topics/manage-downloads.md)
 - [Download only at certain hours](topics/set-download-hours.md)

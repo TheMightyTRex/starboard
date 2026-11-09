@@ -83,12 +83,13 @@
     {
       "topic": "follow-radio-shows",
       "file": "follow-radio-shows-1-search-link.png",
-      "page": "search.html?q=The%20Example%20Hour",
+      "page": "search.html?q=Morning%20Story",
       "width": 1280,
       "height": 900,
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lookup [data-kind=radio] button'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#lib-found').hidden = true; document.querySelectorAll('#lookup [data-kind]').forEach((g) => { if (g.dataset.kind !== 'radio') g.hidden = true; }); window.scrollTo(0, 0);",
       "marks": [
         {
-          "t": "$.rail a[href='/search.html']",
+          "t": "$.rail a.rail__search",
           "step": 1,
           "side": "right",
           "tail": 90
@@ -96,14 +97,14 @@
         {
           "t": "$#q",
           "step": 2,
-          "side": "bottom",
-          "tail": 70
+          "side": "right",
+          "tail": 90
         },
         {
-          "t": "$#radio-search a",
+          "t": "$#lookup [data-kind=radio] button",
           "step": 3,
-          "side": "top",
-          "tail": 90
+          "side": "left",
+          "tail": 120
         }
       ],
       "steps": [
@@ -111,7 +112,7 @@
         2,
         3
       ],
-      "alt": "The Search page with example data, with Discover (step 1), the search box (step 2) and Search for \"The Example Hour\" in Reelix radio (step 3) outlined"
+      "alt": "The Search page with example data, with Search in the side menu (step 1), the search box (step 2) and Follow beside a radio show under Not in your library (step 3) outlined"
     },
     {
       "topic": "follow-radio-shows",
@@ -609,6 +610,209 @@
         6
       ],
       "alt": "The Change Jellyfin panel, with URL (step 5) and Test (step 6) outlined"
+    },
+    {
+      "topic": "search-and-add",
+      "file": "search-and-add-1-start.png",
+      "page": "search.html",
+      "width": 1280,
+      "height": 900,
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lib-start .lib-kinds a'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#kinds-h').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$.rail a.rail__search",
+          "step": 1,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "$#lib-start .lib-kinds",
+          "step": 2,
+          "side": "top",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        1,
+        2
+      ],
+      "alt": "The Search page with example data before anything is typed, with Search in the side menu (step 1) and Your library with each kind and its count (step 2) outlined"
+    },
+    {
+      "topic": "search-and-add",
+      "file": "search-and-add-2-results.png",
+      "page": "search.html?q=harbour",
+      "width": 1280,
+      "height": 1100,
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lookup [data-kind=films] button'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelectorAll('#lib-found .lib-search-group').forEach((g, n) => { if (n) g.hidden = true; }); document.querySelectorAll('#lib-found .rows li').forEach((li, n) => { if (n > 2) li.hidden = true; }); window.scrollTo(0, 0);",
+      "marks": [
+        {
+          "t": "$#q",
+          "step": 3,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "$#found-h",
+          "step": 4,
+          "side": "bottom",
+          "tail": 40
+        },
+        {
+          "t": "$#lookup [data-kind=films] button",
+          "step": 5,
+          "side": "left",
+          "tail": 120
+        }
+      ],
+      "steps": [
+        3,
+        4,
+        5
+      ],
+      "alt": "The Search page with example data after typing harbour, with the search box (step 3), In your library (step 4) and an Add button under Not in your library (step 5) outlined"
+    },
+    {
+      "topic": "search-and-add",
+      "file": "search-and-add-3-add.png",
+      "page": "search.html?q=harbour",
+      "width": 1280,
+      "height": 900,
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lookup [data-kind=films] button'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#lookup [data-kind=films] button').click(); for (let i = 0; i < 20 && document.querySelector('#side-panel button[type=submit]').disabled; i++) await new Promise(r => setTimeout(r, 250));",
+      "marks": [
+        {
+          "t": "$#add-profile",
+          "step": 6,
+          "side": "left",
+          "tail": 90
+        },
+        {
+          "t": "$#add-folder",
+          "step": 7,
+          "side": "left",
+          "tail": 90
+        },
+        {
+          "t": "$#side-panel button[type=submit]",
+          "step": 9,
+          "side": "top",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        6,
+        7,
+        9
+      ],
+      "alt": "The Add panel with example data, with Quality (step 6), Folder (step 7) and Add to Reelix (step 9) outlined"
+    },
+    {
+      "topic": "browse-your-library",
+      "file": "browse-your-library-1-wall.png",
+      "page": "library-films.html",
+      "width": 1280,
+      "height": 900,
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lib-wall .media-card img'); i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 800));",
+      "marks": [
+        {
+          "t": "$.rail a[href='/library-tv.html']",
+          "step": 1,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "$#lib-q",
+          "step": 3,
+          "side": "bottom",
+          "tail": 60
+        },
+        {
+          "t": "$#lib-chips",
+          "step": 4,
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        1,
+        3,
+        4
+      ],
+      "alt": "The Films wall with example data, with Library in the side menu (step 1), Search your films (step 3) and the filters (step 4) outlined"
+    },
+    {
+      "topic": "browse-your-library",
+      "file": "browse-your-library-2-letters.png",
+      "page": "library-films.html",
+      "width": 1280,
+      "height": 900,
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#lib-az a[href]'); i++) await new Promise(r => setTimeout(r, 250)); state.offset = 0; await load({ until: 'M' }); window.SharedComponents.azGo(document.querySelector('#lib-az'), 'M'); await new Promise(r => setTimeout(r, 300)); window.scrollTo(0, 0); document.activeElement.blur(); await new Promise(r => setTimeout(r, 300));",
+      "marks": [
+        {
+          "t": "$#lib-az a[aria-current]",
+          "step": 5,
+          "side": "bottom",
+          "tail": 60
+        },
+        {
+          "t": "$#lib-sort",
+          "step": 6,
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        5,
+        6
+      ],
+      "alt": "The Films wall with example data, opened at the letter M with Show earlier titles above it, with M in the letter row (step 5) and the sort list (step 6) outlined"
+    },
+    {
+      "topic": "browse-your-library",
+      "file": "browse-your-library-3-item.png",
+      "page": "library-tv-show.html?id=8",
+      "width": 1280,
+      "height": 900,
+      "run": "for (let i = 0; i < 40 && !document.querySelector('#item h1'); i++) await new Promise(r => setTimeout(r, 250)); await new Promise(r => setTimeout(r, 600)); window.scrollTo(0, 0);",
+      "marks": [
+        {
+          "t": "$#item h1",
+          "step": 7,
+          "side": "top",
+          "tail": 30
+        },
+        {
+          "t": "$#item-back",
+          "step": 8,
+          "side": "bottom",
+          "tail": 40
+        }
+      ],
+      "steps": [
+        7,
+        8
+      ],
+      "alt": "A series page with example data, with its name (step 7) and TV, the way back to the wall (step 8) outlined"
+    },
+    {
+      "topic": "browse-your-library",
+      "file": "browse-your-library-4-reset.png",
+      "page": "settings-general.html",
+      "width": 1280,
+      "height": 760,
+      "run": "await api('/api/library/views', { method: 'POST', body: { tab: 'films', view: { sort: 'added', layout: 'covers', size: 'large' } } }); await drawLibraryViews(); document.querySelector('#library-views-s-h').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$#library-views button",
+          "step": 9,
+          "side": "left",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        9
+      ],
+      "alt": "Settings, General with example data, with Reset Library views outlined"
     }
   ]
 }
