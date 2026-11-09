@@ -62,5 +62,14 @@
   "yes": "Yes, give Starboard Docker access",
   "no": "No, I will run the commands myself",
   "done": "The installer gives Starboard Docker access when it runs next (./install.sh --docker)."
+ },
+ "move": {
+  "into": "Move them into Reelix, and let Starboard run them (recommended)",
+  "into_about": "Reelix takes over finding and sorting for Sonarr, Radarr and the rest, with their films, series, quality profiles and sites. Starboard then runs your apps, with a way back.",
+  "keep": "Keep them as they are",
+  "keep_about": "Starboard only shows them on the dashboard. Move them later in Settings, Your install.",
+  "needs_docker": "Moving needs Docker access, which Starboard gets when this set-up finishes. Then finish the move in Starboard, Settings, Your install, or run this set-up again.",
+  "waiting": "Waiting for Reelix to finish setting up",
+  "hold": "Hold the sites to search: only your old apps search until Starboard runs your apps"
  }
 }

@@ -1141,6 +1141,18 @@ async function stepContent(id, root) {
       await saveHost();
       return true;
     };
+  } else if (id === "movehow") {
+    // DASH-266: the same words as the terminal set-up (web/setup-answers.json).
+    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).move;
+    const name = `movehow-${Date.now()}`;
+    const into = guideMemory().moveInto !== false;
+    nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "What happens to them" }), el("div", { class: "option-cards" },
+      [["into", w.into, w.into_about, into], ["keep", w.keep, w.keep_about, !into]].map(([v, t, about, on]) => el("label", { class: "option-card" },
+        el("input", { type: "radio", name, value: v, checked: on }), el("strong", { text: t }), el("small", { text: about })))))];
+    save = async () => { remember({ moveInto: root.querySelector(`input[name="${name}"]:checked`)?.value === "into" }); return true; };
+  } else if (id === "move") {
+    // DASH-266: the move itself, the same section as Settings, Your install: move into Reelix, then Starboard runs them.
+    nodes = [takeoverSection()];
   } else if (id === "docker") {
     // DASH-139, DASH-267: the same words as the terminal set-up (web/setup-answers.json). For a move, Yes is
     // recommended, because the move needs it; for a new install, No, with what that means.
@@ -1263,7 +1275,11 @@ async function startGuide() {
   try { dockerAccess = !!(await api("/api/stack")).docker; } catch { /* not asked */ }
   // DASH-269: a new install runs Install apps' steps here, in this wizard, with one step count (install.js).
   let flow = null;
-  const needFlow = () => (guideMemory().start || "new") === "new" && typeof installFlow === "function";
+  // DASH-266: a move into Reelix runs the same steps, to put Reelix beside the old apps first, unless Reelix is there.
+  let reelixThere = config.services.some((x) => x.icon === "reelix");
+  try { reelixThere = reelixThere || !!(await api("/api/reelix/move")).sources?.length; } catch { /* as if not */ }
+  const moveInto = () => (guideMemory().start || "new") !== "new" && (guideMemory().start || "new") !== "restore" && guideMemory().moveInto !== false;
+  const needFlow = () => ((guideMemory().start || "new") === "new" || (moveInto() && !reelixThere)) && typeof installFlow === "function";
   const loadFlow = async () => {
     if (flow || !needFlow()) return;
     try { flow = await installFlow({ chosenMedia: guideMemory().media || "" }); } catch (e) { problem(e.message); }
@@ -1294,6 +1310,16 @@ async function startGuide() {
       list.push({ id: "apps", ...stepNamed(T, "find"),
         intro: "Starboard looked for apps it knows on this computer. Tick the ones to add; you can add others by hand later." });
       if (!dockerAccess) list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // before anything moves
+      list.push({ id: "movehow", ...stepNamed(T, "movehow"), skippable: false });
+      if (moveInto()) {
+        // Reelix beside the old apps first, when it is not there: the same steps as a new install, without sites (the
+        // move brings them); How much it does before Check, then the move (DASH-265, DASH-266).
+        const beside = flow && !reelixThere;
+        if (beside) list.push(...flow.before().filter((x) => !["sites", "moving"].includes(x.id)));
+        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+        if (beside) list.push(...flow.finish());
+        list.push({ id: "move", ...stepNamed(T, "move"), skippable: false });
+      }
     }
     if (types(Object.keys(KEY_PLACE)).some((s) => !s.has_api_key)) {
       list.push({ id: "keys", ...stepNamed(T, "keys"),
@@ -1304,7 +1330,7 @@ async function startGuide() {
     if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key) || coming(["qbittorrent", "nzbget", "sabnzbd"])) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet and SABnzbd outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
-    if (!(start === "new" && flow)) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+    if (!(start === "new" && flow) && !moveInto()) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
     if (!dockerAccess && start === "new") list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // the last question
     list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
     return list;

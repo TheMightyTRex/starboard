@@ -125,8 +125,14 @@ class StepCountTest(unittest.TestCase):
         term, out = plain()
         ts.head(term, {"start": "restore"}, "alerts")
         self.assertIn("(step 3 of 3)", out.getvalue())
-        moving = ts.job_steps({"start": "move", "no_extras": True})
-        self.assertEqual(moving, ["password", "start", "docker", "preset", "hours", "alerts"])  # DASH-267: before any move
+        moving = ts.job_steps({"start": "move", "no_extras": True, "reelix_there": True})
+        # DASH-267 and DASH-266: Docker access before any move, then what happens to the apps, then the move itself.
+        self.assertEqual(moving, ["password", "start", "docker", "movehow", "preset", "move", "hours", "alerts"])
+        beside = ts.job_steps({"start": "move", "no_extras": True, "choice": {"apps": ["reelix", "nzbget"]}})
+        self.assertEqual(beside, ["password", "start", "docker", "movehow", "apps", "usenet", "films", "preset", "check", "move",
+                                  "hours", "alerts"])  # Reelix beside the old apps first; sites come with the move
+        kept = ts.job_steps({"start": "move", "no_extras": True, "move_into": False})
+        self.assertEqual(kept, ["password", "start", "docker", "movehow", "preset", "hours", "alerts"])
         self.assertNotIn("docker", ts.job_steps({"start": "move", "docker_access": True}))
 
     def test_a_new_install_leaves_out_what_the_apps_do_not_need(self):
@@ -430,3 +436,43 @@ class AppByAppTest(unittest.TestCase):
             self.assertTrue(ts.step_apps(api, term, state))
         self.assertEqual(state["choice"]["groups"], ["movies", "subtitles", "tv", "vpn"])
         self.assertEqual(state["choice"]["apps"], ["reelix", "gluetun", "bazarr"])
+
+
+class MoveStepTest(unittest.TestCase):
+    """The move from the terminal set-up (DASH-266): the same calls as Settings, Your install."""
+
+    class Api:
+        def __init__(self):
+            self.calls = []
+            self.move_checks = 0
+
+        def call(self, method, path, body=None):
+            self.calls.append((method, path))
+            if path == "/api/reelix/move":
+                self.move_checks += 1
+                return {"needs_setup": self.move_checks < 2, "sources": [{"app": "Radarr"}] if self.move_checks >= 2 else []}
+            if path == "/api/reelix/move/preview":
+                return {"apps": [{"app": "Radarr", "counts": {"movies": {"create": 120}}, "skipped": []}]}
+            if path in ("/api/reelix/move/job", "/api/takeover/job"):
+                return {"finished": True, "ok": True, "notes": ["Moved"]}
+            if path == "/api/takeover":
+                return {"plan": {"take": [{"app": "Jellyfin"}], "replace": [{"app": "Radarr", "by": "Reelix"}], "install": "full",
+                                 "usenet": "nzbget", "settings_folder": "/srv/c", "media_folder": "/srv/m", "unmoved": []}}
+            return {}
+
+    def test_without_docker_access_it_says_how_to_finish_later(self):
+        term, out = plain([""])
+        api = self.Api()
+        self.assertTrue(ts.step_move(api, term, {"start": "move", "move_into": True, "docker_access": False}))
+        self.assertIn("Moving needs Docker access", " ".join(out.getvalue().split()))
+        self.assertEqual(api.calls, [])
+
+    def test_waits_for_reelix_then_moves_and_takes_over(self):
+        term, out = plain(["", "", ""])  # hold the sites, move now, let Starboard run them
+        api = self.Api()
+        with mock.patch.object(ts.time, "sleep"):
+            self.assertTrue(ts.step_move(api, term, {"start": "move", "move_into": True, "docker_access": True, "password": "pw"}, wait=0))
+        posts = [p for m, p in api.calls if m == "POST"]
+        self.assertEqual(posts, ["/api/reelix/move/preview", "/api/reelix/move/run", "/api/takeover/start"])
+        self.assertIn("Radarr: 120 new in Reelix", out.getvalue())
+        self.assertIn("Starboard runs your apps now", out.getvalue())

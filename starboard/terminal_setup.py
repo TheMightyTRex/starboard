@@ -537,7 +537,7 @@ def question(step_id):
 
 
 STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "check", "extras",
-                            "hours", "alerts", "docker")]
+                            "hours", "alerts", "docker")]  # the move's own steps are counted by job_steps
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -1723,6 +1723,18 @@ def job_steps(state):
         return ids + ["alerts"]
     if job == "move" and no_docker:
         ids.append("docker")  # DASH-267: before anything is moved, Yes recommended
+    if job == "move":
+        ids.append("movehow")  # DASH-266
+    into = job == "move" and state.get("move_into", True)
+    if into and not state.get("reelix_there"):
+        # Reelix beside the old apps: the media folder is the one found (shown, not asked); sites come with the move.
+        ids.append("apps")
+        if apps is None or "gluetun" in apps:
+            ids.append("vpn")
+        if apps is None or apps & {"sabnzbd", "nzbget"}:
+            ids.append("usenet")
+        if apps is None or "reelix" in apps:
+            ids.append("films")
     if job == "new":
         ids.append("storage")
         if step_drives in STEP_FUNCTIONS and state.get("storage", {}).get("key", "pool") == "pool":
@@ -1735,8 +1747,10 @@ def job_steps(state):
         if apps is None or "reelix" in apps:
             ids += ["sites", "films"]
     ids.append("preset")
-    if job == "new" and (apps is None or apps):
+    if (job == "new" or (into and not state.get("reelix_there"))) and (apps is None or apps):
         ids.append("check")
+    if into:
+        ids.append("move")
     if not state.get("no_extras"):
         ids.append("extras")
     ids += ["hours", "alerts"]
@@ -1933,7 +1947,8 @@ def step_storage(api, term, state):
 
 def step_apps(api, term, state):
     """Sets state["choice"] (the Install apps choice) and state["names"], or None to install nothing."""
-    if state.get("start", "new") != "new":
+    moving_beside = state.get("start") == "move" and state.get("move_into") and not state.get("reelix_there")
+    if state.get("start", "new") != "new" and not moving_beside:
         state["choice"] = None  # moving or restoring: the apps are there already
         return False
     overview = state.get("overview") or api.call("GET", "/api/stack")
@@ -2301,7 +2316,7 @@ def step_sites(api, term, state):
     or Newznab address. Added once Reelix runs (reelix_setup.set_up)."""
     from . import reelix_sites
     choice = state.get("choice")
-    if not choice or "reelix" not in choice["apps"]:
+    if not choice or "reelix" not in choice["apps"] or state.get("start") == "move":  # the move brings the sites
         return False
     words = reelix_sites.WORDS
     last = state.get("sites") or {"builtin": [], "own": []}
@@ -2821,6 +2836,101 @@ def host_changes(state, data_dir):
     return args
 
 
+def step_movehow(api, term, state):
+    """What happens to the apps found (DASH-266): moved into Reelix with Starboard running them, recommended, or kept
+    as they are and only shown on the dashboard. The same words as the browser set-up (web/setup-answers.json)."""
+    if state.get("start") != "move":
+        return False
+    from . import setup_answers
+    w = setup_answers.WORDS["move"]
+    head(term, state, "movehow")
+    try:
+        state["reelix_there"] = bool(api.call("GET", "/api/reelix/move").get("sources")) or \
+            any(s.get("icon") == "reelix" for s in api.call("GET", "/api/config").get("services", []))
+    except Exception:  # noqa: BLE001  asked as if Reelix were not there
+        state["reelix_there"] = False
+    picked = term.choose(question("movehow"), [(w["into"], w["into_about"]), (w["keep"], w["keep_about"])],
+                         1 if state.get("move_into", True) else 2, help_key="start")
+    state["move_into"] = picked == 0
+    return True
+
+
+def _wait_job(api, term, path, words, limit=7200):
+    """Shows one line while a Starboard job runs, then returns its last answer."""
+    began = time.time()
+    term.note(f"{words}. Please wait, this can take some time...")
+    while time.time() - began < limit:
+        time.sleep(3)
+        j = api.call("GET", path)
+        if j.get("finished"):
+            return j
+    return {"finished": False, "ok": False}
+
+
+def step_move(api, term, state, wait=3.0, limit=1800):
+    """Move into Reelix, then let Starboard run the apps (DASH-266): the same steps as Settings, Your install. Needs
+    Docker access already; without it the step says how to finish the move later."""
+    if state.get("start") != "move" or not state.get("move_into"):
+        return False
+    from . import setup_answers
+    w = setup_answers.WORDS["move"]
+    head(term, state, "move")
+    if not state.get("docker_access"):
+        term.note(w["needs_docker"])
+        term.text("Press Enter to carry on", help_key="start")
+        return True
+    # Reelix sets itself up after it starts; the move can read the old apps only once it has.
+    began = time.time()
+    m = api.call("GET", "/api/reelix/move")
+    if m.get("needs_setup") or not m.get("sources"):
+        term.note(f"{w['waiting']}. Please wait, this can take a few minutes...")
+    while (m.get("needs_setup") or not m.get("sources")) and time.time() - began < limit:
+        time.sleep(wait)
+        m = api.call("GET", "/api/reelix/move")
+    if not m.get("sources"):
+        term.note("Starboard found nothing to move into Reelix. Finish in Starboard: Settings, Your install.")
+        term.text("Press Enter to carry on", help_key="start")
+        return True
+    password = state.get("password", "")
+    preview = api.call("POST", "/api/reelix/move/preview", {"password": password, "hold": True})
+    term.say("")
+    for a in preview.get("apps", []):
+        if a.get("error"):
+            term.note(f"{a['app']}: {a['error']}")
+            continue
+        made = sum((v.get("create") or 0) for v in (a.get("counts") or {}).values())
+        term.note(f"{a['app']}: {made} new in Reelix" + (f", {len(a.get('skipped') or [])} not moved" if a.get("skipped") else ""))
+    hold = term.yes_no(w["hold"], True, help_key="start")
+    if not term.yes_no("Move them into Reelix now?", True, help_key="start"):
+        term.note("Nothing was moved. Finish later in Starboard: Settings, Your install.")
+        return True
+    api.call("POST", "/api/reelix/move/run", {"password": password, "hold": hold})
+    j = _wait_job(api, term, "/api/reelix/move/job", "Moving your apps into Reelix")
+    (term.ok if j.get("ok") else term.note)("Moved into Reelix." if j.get("ok") else "Not everything moved: Settings, Your install says what.")
+    # Starboard runs the apps, with the way back saved first.
+    t = api.call("GET", "/api/takeover")
+    plan = t.get("plan") or {}
+    if not plan:
+        term.note(t.get("error") or "Starboard cannot take over these apps here. Finish in Settings, Your install.")
+        return True
+    term.say("")
+    term.note("Starboard runs: " + ", ".join(a["app"] for a in plan.get("take", [])) + ".")
+    if plan.get("replace"):
+        term.note("Stopped and removed (their settings folders stay): " + ", ".join(f"{a['app']}, replaced by {a['by']}" for a in plan["replace"]) + ".")
+    if not term.yes_no("Let Starboard run your apps now? They stop for a few minutes; the way back is saved first", True, help_key="start"):
+        term.note("Your apps run as they were. Let Starboard run them later in Settings, Your install.")
+        return True
+    api.call("POST", "/api/takeover/start", {"password": password, "install": plan.get("install"), "usenet": plan.get("usenet"),
+                                             "config_dir": plan.get("settings_folder"), "media_dir": plan.get("media_folder"),
+                                             "unmoved_ok": bool(plan.get("unmoved")) and not j.get("ok")})
+    j = _wait_job(api, term, "/api/takeover/job", "Saving the way back, then stopping your apps and copying their settings")
+    if j.get("ok"):
+        term.ok("Starboard runs your apps now. " + ". ".join(j.get("notes") or []))
+    else:
+        term.note("Nothing was changed: your old apps run again as they were. " + (j.get("log") or "")[-300:])
+    return True
+
+
 def ask_docker(api, term, state, move):
     """Docker access (DASH-139, DASH-267): the same words as the browser set-up (web/setup-answers.json). For a move
     it is asked before anything moves, with Yes recommended; for a new install at the end, with No recommended.
@@ -2883,8 +2993,8 @@ def step_preset(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_start, step_docker_move, step_storage, step_apps, step_vpn, step_usenet, step_sites, step_films,
-                  step_preset, step_check, step_connect, step_hours, step_alerts, step_docker_end]
+STEP_FUNCTIONS = [step_password, step_start, step_docker_move, step_movehow, step_storage, step_apps, step_vpn, step_usenet, step_sites,
+                  step_films, step_preset, step_check, step_move, step_connect, step_hours, step_alerts, step_docker_end]
 
 
 def add_drives_step(available=None):

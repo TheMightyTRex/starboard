@@ -26,6 +26,18 @@
    "help": "topics/find-an-api-key.md"
   },
   {
+   "id": "movehow",
+   "title": "What happens to them",
+   "question": "What should happen to the apps you already run?",
+   "help": "topics/install-apps.md"
+  },
+  {
+   "id": "move",
+   "title": "Move into Reelix",
+   "question": "Move your apps into Reelix and let Starboard run them?",
+   "help": "topics/install-apps.md"
+  },
+  {
    "id": "storage",
    "title": "Storage",
    "question": "Where should your media go?",
