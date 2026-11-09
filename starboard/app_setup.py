@@ -4,6 +4,8 @@ is missing is added.
 
 - Jellyfin: the start-up wizard (/Startup/*), the Films, Series and Music libraries, and an API key for Starboard.
 - Audiobookshelf: the root user (/init), the Audiobooks, Books and Radio libraries, and an API key for Starboard.
+- Jellystat: its admin (/auth/createuser), Jellyfin's address and key (/auth/configSetup) and a key for Starboard
+  (DASH-227).
 
 One admin for every app (DASH-234): the same name ("admin") and the Starboard password, as Reelix already has. The
 password is used for these calls only and never kept; Starboard keeps each app's API key, as it does today.
@@ -149,6 +151,88 @@ def audiobookshelf_first_run(base, password, groups, user=ADMIN, opener=None):
     return key, done, {"radio_library": radio.get("id") if radio else None}
 
 
+# Jellystat -------------------------------------------------------------------------------------------------------
+
+def _keccak512(data):
+    """Keccak-512 as CryptoJS.SHA3 makes it: Jellystat's own page sends the password this way, so Starboard must too.
+    It is the Keccak before NIST's SHA-3 (padding 0x01, not 0x06), which hashlib does not offer."""
+    rate, rounds = 72, 24
+    rc = []
+    r = 1
+    for _ in range(rounds):
+        c = 0
+        for j in range(7):
+            r = ((r << 1) ^ (0x71 if r & 0x80 else 0)) & 0xFF
+            if r & 2:
+                c |= 1 << ((1 << j) - 1)
+        rc.append(c)
+    rot = [[0, 36, 3, 41, 18], [1, 44, 10, 45, 2], [62, 6, 43, 15, 61], [28, 55, 25, 21, 56], [27, 20, 39, 8, 14]]
+    mask = (1 << 64) - 1
+
+    def rol(v, n):
+        return ((v << n) | (v >> (64 - n))) & mask if n else v
+
+    def permute(a):
+        for rnd in range(rounds):
+            c = [a[x][0] ^ a[x][1] ^ a[x][2] ^ a[x][3] ^ a[x][4] for x in range(5)]
+            d = [c[(x - 1) % 5] ^ rol(c[(x + 1) % 5], 1) for x in range(5)]
+            a = [[a[x][y] ^ d[x] for y in range(5)] for x in range(5)]
+            b = [[0] * 5 for _ in range(5)]
+            for x in range(5):
+                for y in range(5):
+                    b[y][(2 * x + 3 * y) % 5] = rol(a[x][y], rot[x][y])
+            a = [[b[x][y] ^ (~b[(x + 1) % 5][y] & b[(x + 2) % 5][y]) for y in range(5)] for x in range(5)]
+            a[0][0] ^= rc[rnd]
+        return a
+
+    msg = bytearray(data) + b"\x01"
+    msg += b"\x00" * (-len(msg) % rate)
+    msg[-1] |= 0x80
+    state = [[0] * 5 for _ in range(5)]
+    for off in range(0, len(msg), rate):
+        block = msg[off:off + rate]
+        for i in range(rate // 8):
+            state[i % 5][i // 5] ^= int.from_bytes(block[8 * i:8 * i + 8], "little")
+        state = permute(state)
+    out = b"".join(state[i % 5][i // 5].to_bytes(8, "little") for i in range(25))
+    return out[:64].hex()
+
+
+def jellystat_first_run(base, password, jellyfin_key, user=ADMIN, jellyfin_inside="http://jellyfin:8096", opener=None):
+    """Makes Jellystat's admin when it has none, gives it Jellyfin's address (as Jellystat reaches it, inside the
+    stack) and key, and returns (a Jellystat key for Starboard, lines of what was done)."""
+    done = []
+    hashed = _keccak512(password.encode())
+    state = (_call(base, "GET", "/auth/isConfigured", opener=opener) or {}).get("state", 0)
+    if not state:
+        _call(base, "POST", "/auth/createuser", {"username": user, "password": hashed}, opener=opener)
+        done.append(f"Set up Jellystat with the account {user} and your Starboard password")
+    try:
+        token = (_call(base, "POST", "/auth/login", {"username": user, "password": hashed}, opener=opener) or {}).get("token")
+    except AppSetupError as e:
+        raise AppSetupError("Jellystat was set up before with another account, so Starboard cannot sign in. Add "
+                            f"Jellystat's API key in Settings, Apps, Manage apps ({e})") from None
+    if not token:
+        raise AppSetupError("Jellystat did not give Starboard a sign-in")
+    auth = {"Authorization": f"Bearer {token}"}
+    if (_call(base, "GET", "/auth/isConfigured", opener=opener) or {}).get("state", 0) < 2:
+        if not jellyfin_key:
+            raise AppSetupError("Jellyfin is not set up yet, so Jellystat has nothing to read")
+        _call(base, "POST", "/auth/configSetup", {"JF_HOST": jellyfin_inside, "JF_API_KEY": jellyfin_key}, headers=auth, opener=opener)
+        done.append("Connected Jellystat to Jellyfin")
+
+    def find():
+        keys = _call(base, "GET", "/api/keys", headers=auth, opener=opener) or []
+        return next((k.get("key") for k in keys if isinstance(k, dict) and k.get("name") == KEY_NAME and k.get("key")), None)
+    key = find()
+    if not key:
+        _call(base, "POST", "/api/keys", {"name": KEY_NAME}, headers=auth, opener=opener)
+        key = find()
+    if not key:
+        raise AppSetupError("Jellystat did not make an API key for Starboard")
+    return key, done, {}
+
+
 # Together --------------------------------------------------------------------------------------------------------
 
 def country_from_tz(tz):
@@ -164,6 +248,7 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
     done = []
     keys = stack.chosen_keys(data_dir) or []
     apps = [("jellyfin", "Jellyfin", 8096, jellyfin_first_run), ("audiobookshelf", "Audiobookshelf", 80, audiobookshelf_first_run)]
+    jellyfin_key = None
     for key, name, inside, run in apps:
         if key not in keys:
             continue
@@ -180,7 +265,20 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
         if found is not None:
             found.update(more)
         _save_key(cfg, key, name, base, api_key)
+        if key == "jellyfin":
+            jellyfin_key = api_key
         log(f"{name} ready")
+    # Jellystat, in the Full install (DASH-227): after Jellyfin, whose key it needs.
+    base = stack.app_url(data_dir, "jellystat", 3000) if "jellystat" in keys else None
+    if base:
+        jellyfin_key = jellyfin_key or next((s.get("api_key") for s in cfg.data["services"] if s.get("type") == "jellyfin"), None)
+        try:
+            api_key, lines, _ = jellystat_first_run(base, password, jellyfin_key, opener=opener)
+            done += lines
+            _save_key(cfg, "jellystat", "Jellystat", base, api_key)
+            log("Jellystat ready")
+        except AppSetupError as e:
+            done.append(f"Jellystat is not set up yet: {e}")
     # The download apps' sign-ins, made up by Install apps (DASH-184): saved on the dashboard so Downloads, download
     # hours and Reelix all use the same details, and shown on Apps behind the Starboard password.
     # qBittorrent answers Starboard with an API key (qBittorrent 5.2 and later), made here with its sign-in; Gluetun's

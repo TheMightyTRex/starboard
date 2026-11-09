@@ -92,6 +92,33 @@ class Audiobookshelf(Stand):
         return self.answer(404)
 
 
+class Jellystat(Stand):
+    """Answers like Jellystat 1.1 (backend/routes/auth.js and api.js)."""
+    def route(self, method):
+        s, path = self.state, self.path
+        body = self.body() if method == "POST" else None
+        if path == "/auth/isConfigured":
+            return self.answer(200, {"state": 2 if s.get("jf") else 1 if s.get("user") else 0})
+        if path == "/auth/createuser":
+            if s.get("user"):
+                return self.answer(403)
+            s["user"] = (body["username"], body["password"])
+            return self.answer(200, {"token": "js-token"})
+        if path == "/auth/login":
+            return self.answer(200, {"token": "js-token"}) if s.get("user") == (body["username"], body["password"]) else self.answer(401)
+        if self.headers.get("Authorization") != "Bearer js-token":
+            return self.answer(401)
+        if path == "/auth/configSetup":
+            s["jf"] = (body["JF_HOST"], body["JF_API_KEY"])
+            return self.answer(200, {})
+        if path == "/api/keys" and method == "GET":
+            return self.answer(200, s.get("keys", []))
+        if path == "/api/keys":
+            s.setdefault("keys", []).append({"name": body["name"], "key": "js-key"})
+            return self.answer(200, s["keys"])
+        return self.answer(404)
+
+
 def serve(handler, state):
     handler.state = state
     srv = ThreadingHTTPServer(("127.0.0.1", 0), handler)
@@ -128,6 +155,30 @@ class FirstRuns(unittest.TestCase):
         self.assertEqual(state["libraries"], [("Audiobooks", "book", "/media/audiobooks"), ("Radio", "podcast", "/media/radio")])
         self.assertEqual(found["radio_library"], "lib1")
         self.assertEqual(len(done), 3)
+
+    def test_keccak_is_the_one_cryptojs_makes(self):
+        # Keccak-512 of nothing, the published value; SHA3-512 would start a69f73ca.
+        self.assertTrue(app_setup._keccak512(b"").startswith("0eab42de4c3ceb9235fc91acffe746b29c29a8c366b7c60e4e67c466f36a4304"))
+        self.assertEqual(len(app_setup._keccak512(b"x" * 200)), 128)
+
+    def test_jellystat_admin_jellyfin_and_a_key_and_again_changes_nothing(self):
+        state = {}
+        srv, base = serve(Jellystat, state)
+        self.addCleanup(srv.shutdown)
+        key, done, _ = app_setup.jellystat_first_run(base, PASSWORD, "jf-key")
+        self.assertEqual(key, "js-key")
+        self.assertEqual(state["user"], ("admin", app_setup._keccak512(PASSWORD.encode())))
+        self.assertEqual(state["jf"], ("http://jellyfin:8096", "jf-key"))
+        self.assertEqual(len(done), 2)
+        key, again, _ = app_setup.jellystat_first_run(base, PASSWORD, "jf-key")
+        self.assertEqual((key, again, len(state["keys"])), ("js-key", [], 1))
+
+    def test_jellystat_set_up_by_someone_else_says_what_to_do(self):
+        state = {"user": ("someone", "other"), "jf": ("x", "y")}
+        srv, base = serve(Jellystat, state)
+        self.addCleanup(srv.shutdown)
+        with self.assertRaisesRegex(app_setup.AppSetupError, "Manage apps"):
+            app_setup.jellystat_first_run(base, PASSWORD, "jf-key")
 
     def test_radio_settings_point_reelix_at_the_library(self):
         class FakeReelix:
