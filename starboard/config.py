@@ -64,7 +64,7 @@ DEFAULTS = {
               "alerts": {"apps_down": True, "disk_problem": True, "disk_full": 90, "download_stuck": True,
                          "backup_failed": True, "cert_days": 14}},
     # Hourly jobs (jobs.py): each off until turned on in Settings, Apps, Jellyfin or Settings, Apps, Audiobookshelf.
-    "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "import_keep": False, "defaults": False,
+    "extras": {"livetv": False, "white_logos": True, "livetv_address": "", "livetv_jellyfin_folder": "", "import_keep": False, "defaults": False,
                "listening_keep": False, "jellyfin_user": ""},
     # How much Starboard does in the background and how often (Settings, Performance).
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
@@ -489,6 +489,11 @@ def clean_extras(incoming, current):
         if url and not re.match(r"^https?://[^\s/]+$", url):
             raise ConfigError("Enter the address as http://address:port, with nothing after the port")
         out["livetv_address"] = url
+    if "livetv_jellyfin_folder" in incoming:  # the Live TV folder as Jellyfin sees it (DASH-229); "" works it out
+        path = str(incoming["livetv_jellyfin_folder"] or "").strip().rstrip("/")[:300]
+        if path and not re.match(r"^/[A-Za-z0-9 ._()&+/-]*$", path):
+            raise ConfigError("Enter the folder as Jellyfin sees it, such as /config/iptv")
+        out["livetv_jellyfin_folder"] = path
     return out
 
 

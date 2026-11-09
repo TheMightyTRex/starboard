@@ -82,6 +82,9 @@ class Jobs:
         try:
             if key == "livetv":
                 summary = livetv.run(self.self_url(), bool(self.settings().get("white_logos", True)), force=force)
+                from . import livetv_jellyfin  # the channels and guides into Jellyfin itself (DASH-229)
+                added = livetv_jellyfin.connect(services, self.settings(), self.app.config.data_dir)
+                summary = f"{summary} · {added}" if added else summary
             elif key == "import":
                 summary = migrate.apply(self.app.config.data_dir, services)
             elif key == "listening":

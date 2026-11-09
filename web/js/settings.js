@@ -1636,13 +1636,22 @@ async function startJellyfin() {
     e.preventDefault();
     if (await save({ livetv_address: address.value })) { await startJellyfin(); showSaved("livetv-address-saved"); }
   });
+  // Where Jellyfin sees the files (DASH-229): blank lets Starboard work it out for an Install apps stack.
+  const jfFolder = el("input", { class: "input", autocomplete: "off", spellcheck: "false", value: x().livetv_jellyfin_folder || "", placeholder: "/config/iptv" });
+  const jfFolderForm = el("form", { class: "inline-save", novalidate: true },
+    field("Live TV folder as Jellyfin sees it", jfFolder, { hint: "Starboard adds the channels and guides to Jellyfin itself. Blank: Starboard works it out when it installed Jellyfin." }),
+    el("button", { type: "submit", class: "btn", text: "Save folder" }), savedNote("livetv-folder-saved"));
+  jfFolderForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (await save({ livetv_jellyfin_folder: jfFolder.value })) { showSaved("livetv-folder-saved"); }
+  });
   const liveRows = el("ul", { class: "settings-rows" },
     settingRow("Build Live TV channels and guide", withCost(lt.what + ". Free channels only: Samsung TV Plus, Pluto TV and Free-TV, with Sky-style numbers.", "livetv"),
       sw("lt-on-l", x().livetv, (on) => save({ livetv: on }, on ? "Live TV activated" : "Live TV deactivated")), "lt-on-l"),
     settingRow("White channel logos", withCost(d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About). Inactive: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.", "white"),
       sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }, on ? "White logos activated" : "White logos deactivated"), !d.pillow), "lt-white-l"));
   const liveNeeds = lt.needs.length ? notice("warning", "Needs set-up on the server", `Starboard needs ${lt.needs.join(" and ")}. Run ./install.sh and say yes to Live TV.`) : null;
-  const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "In Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder Jellyfin sees them in." }) }));
+  const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "With Jellyfin's API key, Starboard adds these to Jellyfin after each run, and leaves your own alone. By hand, in Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder Jellyfin sees them in." }) }));
 
   // Import watch history
   const h = d.history;
@@ -1739,7 +1748,7 @@ async function startJellyfin() {
   root.replaceChildren(...[
     welcome ? notice("success", "Starboard found Jellyfin", "These are all inactive. Activate what you want; you can change them here at any time.") : null,
     top,
-    section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV: guides refreshed daily, channels only when a list changes.", liveNeeds, liveRows, addressForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
+    section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV: guides refreshed daily, channels only when a list changes.", liveNeeds, liveRows, addressForm, jfFolderForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
     section("jf-import", "Import watch history", "Move what people watched, and where they stopped, from Plex, Emby or another Jellyfin into this Jellyfin.",
       importForm, result, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
       el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply", "Apply now") : null)),
