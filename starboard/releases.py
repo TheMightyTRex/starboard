@@ -578,6 +578,40 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your apps. A new install starts Reelix once the VPN is ready. To go back, run ./update.sh --to v0.13.0."
+    },
+    {
+        "version": "0.13.2",
+        "date": "9 November 2026",
+        "added": [
+            [
+                "Update in the side menu",
+                "The version is now at the bottom of the side menu, and when a newer Starboard is out, Update with a dot shows above it, linked to About and updates; the footer's About and updates says (1) too."
+            ]
+        ],
+        "changed": [
+            [
+                "The footer",
+                "The footer is the design system's: Starboard's name and logo, then Help, Release notes, GitHub repository and About and updates, with the TheMightyTRexUK mark on the right."
+            ],
+            [
+                "Reelix's updates come from your fork",
+                "Apps, Updates checks the Lite or full image Starboard installed, from TheMightyTRex's Reelix, and its What is new reads that branch's changelog; Reelix's own check of upstream's releases is no longer shown."
+            ]
+        ],
+        "fixed": [
+            [
+                "Reelix's logo",
+                "Reelix's logo now shows on its card on servers where Starboard had looked for an icon before 0.13.1 and found none."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests (486), the browser journeys (67), the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your apps. To go back, run ./update.sh --to v0.13.1."
     }
 ]
 

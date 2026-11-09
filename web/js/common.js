@@ -499,22 +499,40 @@ function isNewer(a, b) {
   return false;
 }
 
+// The design system's maker mark: the T-rex, linked to TheMightyTRexUK's GitHub profile (the same in every app).
+const MAKER_MARK = '<svg class="maker-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="1" y="1" width="30" height="30" fill="var(--color-logo-tile)"/><path fill="var(--color-bg)" d="M17 6.5h7.5q2.5 0 2.5 2.2V11h-4v.8h2.6v1.6H21v2.2l2.6 1.5-.6 1-2-1.1V20q0 2.2-2.4 2.9l.9 3.8h1.6V28h-4.3l-.9-4.4h-1.6l-.8 3.1h1.4V28h-4.1l1-4.9q-3.6-1-8.7.3 3.4-3.6 8.2-5.2 3.3-1.3 3.9-4.6V8.4q0-1.9 1.4-1.9Z"/><circle cx="20" cy="8.6" r="1" fill="var(--color-logo-star)"/></svg>';
+
+// The version sits at the bottom of the side menu and in the phone menu; a newer release shows "Update" above it
+// (DASH-104, DASH-105). The footer is the design system's: Starboard's links on the left, the maker on the right.
 function showVersion(version, repo, latest) {
   if (!version) return;
-  const label = `Starboard: v${version}`;
-  $$("[data-version]").forEach((n) => { n.textContent = label; });
+  const newer = isNewer(latest, version);
+  $$("[data-version]").forEach((n) => { n.textContent = `Starboard: v${version}`; });
+  $$("[data-version-short]").forEach((n) => {
+    n.replaceChildren(el("span", { class: "visually-hidden", text: "Starboard version " }), `v${version}`);
+  });
+  $$("[data-update-available]").forEach((n) => {
+    n.hidden = !newer;
+    if (newer) n.setAttribute("aria-label", `Update available: version ${String(latest).replace(/^v/, "")}. About and updates`);
+  });
   if ($(".site-header") && !$(".site-footer")) {
-    // The version opens the release notes; a newer release on GitHub shows "Upgrade available" beside it.
-    const newer = isNewer(latest, version);
-    const button = el("button", { type: "button", class: "btn btn--quiet version-label", onclick: (e) => openReleaseNotes(e.currentTarget) },
-      label, el("span", { class: "visually-hidden", text: ", release notes" }));
-    document.body.append(el("footer", { class: "site-footer" }, button,
-      newer ? el("a", { class: "upgrade-available", href: "/settings-updates.html" }, el("span", { class: "update-dot", "aria-hidden": "true" }), `Upgrade available: ${latest}`) : null,
-      // The help centre's pages, built from docs/help and published on GitHub Pages (the design system's help centre builder (tools/help_centre)).
-      el("a", { href: `${HELP_CENTRE}index.html`, target: "_blank", rel: "noopener noreferrer" },
-        "Help", el("span", { class: "visually-hidden", text: " centre (opens in a new tab)" })),
-      repo ? el("a", { href: `https://github.com/${repo}`, target: "_blank", rel: "noopener noreferrer" }, "GitHub repository", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null,
-      el("a", { href: "/settings-updates.html", text: "About and updates" })));
+    const brand = $(".site-header__brand svg")?.cloneNode(true);
+    const link = (href, text, outside) => el("li", {}, outside
+      ? el("a", { href, target: "_blank", rel: "noopener noreferrer" }, text, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
+      : el("a", { href, text }));
+    const notes = el("li", {}, el("a", { href: "#release-notes", onclick: (e) => { e.preventDefault(); openReleaseNotes(e.currentTarget); } }, "Release notes"));
+    const maker = el("a", { class: "site-footer__maker", href: "https://github.com/TheMightyTRex", rel: "me noopener noreferrer", target: "_blank" });
+    maker.innerHTML = MAKER_MARK;  // a fixed string from this file, never from data
+    maker.append("TheMightyTRexUK", el("span", { class: "visually-hidden", text: ", on GitHub (opens in a new tab)" }), icon("external-link"));
+    document.body.append(el("footer", { class: "site-footer" },
+      el("div", { class: "site-footer__app" },
+        el("span", { class: "site-footer__brand" }, brand || "", "Starboard"),
+        el("nav", { "aria-label": "Starboard" }, el("ul", { class: "site-footer__links" },
+          // The help centre's pages, built from docs/help and published on GitHub Pages.
+          link(`${HELP_CENTRE}index.html`, "Help", true), notes,
+          repo ? link(`https://github.com/${repo}`, "GitHub repository", true) : null,
+          link("/settings-updates.html", newer ? "About and updates (1)" : "About and updates")))),
+      maker));
   }
 }
 

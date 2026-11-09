@@ -220,6 +220,10 @@ def shell(current):
   <a class="rail__brand" href="/{HOME}">{LOGO.format(s=32)}<span class="rail__name">Starboard</span></a>
   <a class="rail__search" href="/search.html">{icon("search", 24)}<span>Search</span></a>
   {rail_links}
+  <div class="rail__end">
+    <a class="rail__update" href="/settings-updates.html" data-update-available hidden><span class="update-dot" aria-hidden="true"></span><span>Update</span></a>
+    <span class="rail__version" data-version-short></span>
+  </div>
 </nav>
 <header class="site-header">
   <div class="site-header__bar">

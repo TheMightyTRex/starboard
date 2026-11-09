@@ -7,6 +7,18 @@ add features.
 
 ## [Unreleased]
 
+## [0.13.2] (9 November 2026)
+
+### Added
+- **Update in the side menu:** the version is now at the bottom of the side menu, and when a newer Starboard is out, "Update" with a dot shows above it, linked to About and updates. The footer's About and updates says "(1)" too (DASH-104, DASH-105).
+
+### Changed
+- **The footer** is the design system's: Starboard's name and logo, then Help, Release notes, GitHub repository and About and updates, with the TheMightyTRexUK mark on the right (DASH-104).
+- **Reelix's updates come from your fork:** Apps, Updates checks the Lite or full image Starboard installed, from TheMightyTRex's Reelix, and its What is new reads that branch's changelog. Reelix's own check of upstream's releases is no longer shown.
+
+### Fixed
+- **Reelix's logo** now shows on its card on servers where Starboard had looked for an icon before 0.13.1 and found none.
+
 ## [0.13.1] (9 November 2026)
 
 ### Added
@@ -985,7 +997,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.13.2...HEAD
+[0.13.2]: https://github.com/TheMightyTRex/starboard/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/TheMightyTRex/starboard/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/TheMightyTRex/starboard/compare/v0.12.2...v0.13.0
 [0.12.2]: https://github.com/TheMightyTRex/starboard/compare/v0.12.1...v0.12.2

@@ -96,8 +96,6 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 
 /* Downloads: the toolbar already draws the line above the queue. */
 .toolbar ~ #queue > :first-child > .rows:first-child { border-top: 0; }
-.site-footer .version-label { min-height: auto; padding-inline: var(--space-1); }
-.upgrade-available { display: inline-flex; align-items: center; gap: var(--space-1); }
 .release-notes + .release-notes { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--color-border); }
 .release-notes ul { padding-left: var(--space-4); }
 #upgrade-notice { margin-bottom: var(--space-4); }

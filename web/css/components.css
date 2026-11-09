@@ -343,6 +343,21 @@
     gap: var(--space-2);
     justify-items: center;
   }
+  /* "Update" above the version when a newer release is out: a dot and the word, a 44px target, to About and updates. */
+  .rail__update {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 44px;
+    padding-inline: var(--space-2);
+    color: var(--color-text);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-strong);
+    text-decoration: none;
+  }
+  .rail__update[hidden] {
+    display: none;
+  }
   /* The app's version at the bottom of the side menu: plain text, not a link (Release notes is in the footer). */
   .rail__version {
     padding-bottom: var(--space-2);
