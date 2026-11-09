@@ -44,6 +44,8 @@ STATUS = {  # Storyarr's status words: label and tone
     "wanted": ("Wanted", "warning"),
     "not_released": ("Not released", "muted"),
     "not_monitored": ("Not wanted", "muted"),
+    "downloading": ("Downloading", "info"),
+    "searching": ("Searching", "info"),
 }
 CHIPS = {  # filter chips for each tab: key, label
     "films": [("released", "Released"), ("coming", "Coming soon"), ("missing", "Missing")],
@@ -518,10 +520,27 @@ def _date(text):
         return ""
 
 
-def _row(number, title, when, status, poster="", href="", note=""):
+def _row(number, title, when, status, poster="", href="", note="", **extra):
     word = STATUS.get(status, ("", "muted"))
     return {"number": number, "title": title or "Untitled", "date": _date(when) if when else "", "status": word[0],
-            "tone": word[1], "poster": poster, "href": href, "note": note}
+            "tone": word[1], "poster": poster, "href": href, "note": note, **extra}
+
+
+def _queue(reelix):
+    """What Reelix is downloading now: {("movie", id) or ("episode", id)}, for Downloading on item pages."""
+    try:
+        answer = services._api(reelix, "/queue", timeout=10) or []
+    except services.ServiceError:
+        return set()
+    items = answer.get("items") if isinstance(answer, dict) else answer
+    out = set()
+    for q in items or []:
+        media = q.get("media") or {}
+        if media.get("kind") == "movie":
+            out.add(("movie", media.get("id")))
+        for ep in q.get("episodes") or []:
+            out.add(("episode", ep.get("id")))
+    return out
 
 
 def _open(reelix, path):
@@ -537,7 +556,8 @@ def _seasons(seasons):
     for n in order:
         rows = seasons[n]
         have = sum(1 for r in rows if r["status"] == STATUS["in_library"][0])
-        out.append({"heading": f"Season {n}" if n else "Specials",
+        wanted = sum(1 for r in rows if r.get("can_get"))
+        out.append({"heading": f"Season {n}" if n else "Specials", "season": n, "missing": wanted,
                     "meta": f"{have:,} of {len(rows):,} in your library", "open": n == newest, "rows": rows})
     return out
 
@@ -555,9 +575,14 @@ def item(data_dir, reelix, tab, item_id):
                  ("In cinemas", _date(m.get("in_cinemas"))), ("Digital release", _date(m.get("digital_release"))),
                  ("Quality", ((m.get("movie_file") or {}).get("quality_name") or "")),
                  ("Collection", (m.get("collection") or {}).get("title"))]
+        downloading = ("movie", item_id) in _queue(reelix)
         out = {"title": m.get("title"), "meta": [x for x in (str(m.get("year") or ""), _minutes(m.get("runtime_minutes")),
                                                              m.get("certification") or "") if x],
-               "overview": m.get("overview") or "", "status": e["w"], "progress": None, "open": _open(reelix, f"/movies/{item_id}")}
+               "overview": m.get("overview") or "", "status": "downloading" if downloading else e["w"], "progress": None,
+               "open": _open(reelix, f"/movies/{item_id}"),
+               # DASH-276, DASH-206: what Starboard can do with it here.
+               "can": {"get": not m.get("has_file") and not downloading, "follow": bool(m.get("monitored")), "delete": True,
+                       "has_file": bool(m.get("has_file"))}}
         lists = []
         coll = m.get("collection") or {}
         if coll.get("id"):
@@ -576,11 +601,13 @@ def item(data_dir, reelix, tab, item_id):
         st = s.get("statistics") or {}
         have, total = int(st.get("episode_file_count") or 0), int(st.get("episode_count") or 0)
         rows, seasons = [], {}
+        busy = _queue(reelix)
         for ep in sorted(episodes, key=lambda x: (x.get("season_number") or 0, x.get("episode_number") or 0)):
             aired = ep.get("air_date") or ""
-            status = "in_library" if ep.get("has_file") else "not_released" if (not aired or aired > today) else \
-                "wanted" if ep.get("monitored", True) else "not_monitored"
-            row = _row(f"E{ep.get('episode_number', 0)}", ep.get("title"), aired, status)
+            status = "in_library" if ep.get("has_file") else "downloading" if ("episode", ep.get("id")) in busy else \
+                "not_released" if (not aired or aired > today) else "wanted" if ep.get("monitored", True) else "not_monitored"
+            row = _row(f"E{ep.get('episode_number', 0)}", ep.get("title"), aired, status, id=ep.get("id"),
+                       can_get=status in ("wanted", "not_monitored"))
             rows.append(row)
             seasons.setdefault(int(ep.get("season_number") or 0), []).append(row)
         out = {"title": s.get("title"), "meta": [x for x in (s.get("network") or "", e["m"].split(" · ")[-1] if e["m"] else "",
@@ -588,7 +615,9 @@ def item(data_dir, reelix, tab, item_id):
                                                  if x],
                "overview": s.get("overview") or "", "status": e["w"],
                "progress": {"have": have, "total": total, "text": f"{have:,} of {total:,} episodes in your library"} if total else None,
-               "open": _open(reelix, f"/series/{item_id}")}
+               "open": _open(reelix, f"/series/{item_id}"),
+               "can": {"get": any(r.get("can_get") for r in rows), "follow": bool(s.get("monitored")), "delete": True,
+                       "has_file": have > 0}}
         facts = [("Network", s.get("network")), ("First aired", _date(s.get("first_aired"))), ("Last aired", _date(s.get("last_aired"))),
                  ("Next airing", _date(s.get("next_airing"))), ("Seasons", st.get("season_count")),
                  ("Genres", ", ".join(s.get("genres") or [])), ("Certificate", s.get("certification"))]
@@ -677,6 +706,56 @@ def item(data_dir, reelix, tab, item_id):
                 "facts": [{"label": k, "value": str(v)} for k, v in facts if v not in (None, "", 0)], "lists": lists})
     out.setdefault("listen", None)
     return out
+
+
+# Changing things from the Library (DASH-276, DASH-206) --------------------------------------------------------
+
+ACTIONS = ("get", "follow", "unfollow", "delete")
+
+
+def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, delete_files=False):
+    """Get it (follow and search now), follow, stop following or delete, for a film, or a series, one of its seasons or
+    one episode. Uses Reelix's own routes with Starboard's manager key. Returns a sentence of what was done."""
+    item_id = int(item_id)
+    if action not in ACTIONS:
+        raise ValueError("Choose Get it, Follow, Stop following or Delete")
+    on = action in ("get", "follow")
+    if tab == "films":
+        if action == "delete":
+            services._api(reelix, f"/movies/{item_id}", {"delete_files": "true" if delete_files else "false"}, method="DELETE")
+            return "Deleted from your library" + (", with its files" if delete_files else "; its files stay")
+        services._api(reelix, f"/movies/{item_id}", method="PUT", body={"monitored": on})
+        if action == "get":
+            services._api(reelix, "/search", method="POST", body={"kind": "movie", "ids": [item_id]})
+            return "Reelix is searching for it now"
+        return "Reelix follows it" if on else "Reelix no longer follows it"
+    if tab == "tv":
+        if action == "delete":
+            services._api(reelix, f"/series/{item_id}", {"delete_files": "true" if delete_files else "false"}, method="DELETE")
+            return "Deleted from your library" + (", with its files" if delete_files else "; its files stay")
+        if scope == "episode":
+            ep = int(episode)
+            services._api(reelix, "/episodes/monitor", method="PUT", body={"episode_ids": [ep], "monitored": on})
+            if action == "get":
+                services._api(reelix, "/search", method="POST", body={"kind": "episode", "ids": [ep]})
+        elif scope == "season":
+            n = int(season)
+            services._api(reelix, "/seasons/monitor", method="PUT", body={"series_id": item_id, "season_number": n, "monitored": on})
+            if action == "get":
+                services._api(reelix, "/search", method="POST", body={"kind": "season", "ids": [item_id], "season": n})
+        else:
+            services._api(reelix, f"/series/{item_id}", method="PUT", body={"monitored": on})
+            if action in ("get", "unfollow"):  # the whole series: every season follows the series
+                episodes = services._api(reelix, f"/series/{item_id}/episodes") or []
+                for n in sorted({int(e.get("season_number") or 0) for e in episodes if e.get("season_number")}):
+                    services._api(reelix, "/seasons/monitor", method="PUT", body={"series_id": item_id, "season_number": n, "monitored": on})
+            if action == "get":
+                services._api(reelix, "/search", method="POST", body={"kind": "series", "ids": [item_id]})
+        what = {"episode": "this episode", "season": f"season {season}", "item": "the series"}.get(scope, "it")
+        if action == "get":
+            return f"Reelix is searching for {what} now"
+        return f"Reelix follows {what}" if on else f"Reelix no longer follows {what}"
+    raise ValueError("Changing these from the Library comes later; open it in Reelix for now")
 
 
 # Search ----------------------------------------------------------------------------------------------------
@@ -1011,6 +1090,21 @@ def handle(h, method, path):
         index = load(data_dir, reelix, tab)
         return h.json(200, {"groups": groups(index, tab, "authors" if q.get("by") == "authors" else ""),
                             "label": GROUPS.get(f"{tab}-authors" if q.get("by") == "authors" else tab, "Group")})
+    if path == "/api/library/act" and method == "POST":
+        b = h.body()
+        item_id = _int(b.get("id"), 0, 1, 10 ** 12)
+        try:
+            said = act(reelix, tab, item_id, str(b.get("action", "")), str(b.get("scope") or "item"), b.get("season"),
+                       b.get("episode"), bool(b.get("delete_files")))
+        except ValueError as e:
+            return h.error(400, str(e))
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix said no: {e}")
+        logs.event("info", "library", f"{tab} {item_id}: {said}")
+        services.forget(f"library-item-{tab}-{item_id}")
+        if b.get("action") in ("delete",):
+            _background(data_dir, reelix, tab)  # the wall loses it
+        return h.json(200, {"said": said, "item": None if b.get("action") == "delete" else item(data_dir, reelix, tab, item_id)})
     if path == "/api/library/item" and method == "GET":
         item_id = _int(q.get("id"), 0, 0, 10 ** 12)
         return h.json(200, services.cached(f"library-item-{tab}-{item_id}", ITEM_SECONDS,

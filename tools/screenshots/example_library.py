@@ -145,7 +145,7 @@ def answer(path, q):
         have = s["statistics"]["episode_file_count"]
         return [{"id": n, "season_number": 1 + n // 8, "episode_number": 1 + n % 8, "title": f"{WORDS_A[n % 20]} {WORDS_B[n % 19]}",
                  "air_date": (TODAY - dt.timedelta(days=(s["statistics"]["episode_count"] - n) * 7)).isoformat(),
-                 "has_file": n < have, "monitored": True} for n in range(s["statistics"]["episode_count"])]
+                 "has_file": n < have, "monitored": CHANGED["episodes"].get(n, True)} for n in range(s["statistics"]["episode_count"])]
     if path == "/albums":
         a = int(q.get("artist_id", "1"))
         return {"items": [{"id": a * 10 + n, "title": f"{WORDS_A[(a + n) % 20]} {WORDS_B[n]}", "release_date": f"{2010 + n * 3}-06-01",
@@ -179,8 +179,35 @@ def answer(path, q):
     return None
 
 
+CHANGED = {"episodes": {}}  # made-up changes from Library actions: episode id -> monitored
+
+
+def change(method, path, body, q):
+    """A made-up PUT or DELETE from Library actions (DASH-276, DASH-206): follow, stop following, delete."""
+    parts = path.strip("/").split("/")
+    if len(parts) == 2 and parts[1].isdigit() and parts[0] in ("movies", "series"):
+        items = FILMS if parts[0] == "movies" else SERIES
+        found = next((x for x in items if x["id"] == int(parts[1])), None)
+        if not found:
+            return None
+        if method == "DELETE":
+            items.remove(found)
+            return {}
+        found["monitored"] = bool((body or {}).get("monitored", found.get("monitored")))
+        return found
+    if path == "/episodes/monitor":
+        for e in body.get("episode_ids") or []:
+            CHANGED["episodes"][e] = bool(body.get("monitored"))
+        return []
+    if path == "/seasons/monitor":
+        return {}
+    return None
+
+
 def add(path, body):
     """A made-up add: answers as Reelix does, with the title."""
+    if path == "/search":
+        return {"queued": True}
     if path == "/libraryimport/match":
         return [_candidate(*f, lookup=True) for f in ON_DISK if f"/data/media/movies/{f[0]}" in body.get("paths", [])]
     if path == "/libraryimport":

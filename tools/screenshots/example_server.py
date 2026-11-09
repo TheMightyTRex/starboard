@@ -128,10 +128,20 @@ class FakeArr(BaseHTTPRequestHandler):
         self.reelix_admin("POST")
 
     def do_PUT(self):
-        self.reelix_admin("PUT")
+        self._change("PUT")
 
     def do_DELETE(self):
-        self.reelix_admin("DELETE")
+        self._change("DELETE")
+
+    def _change(self, method):
+        """Library actions with the manager key go to the made-up Library; the admin's (a cookie) to Settings, Reelix."""
+        if not self.headers.get("X-Api-Key") or not self.path.startswith("/reelix/api/v1/"):
+            return self.reelix_admin(method)
+        length = int(self.headers.get("Content-Length") or 0)
+        body = json.loads(self.rfile.read(length) or b"{}")
+        path, _, query = self.path[len("/reelix/api/v1"):].partition("?")
+        found = example_library.change(method, path, body, dict(urllib.parse.parse_qsl(query)))
+        return self.send_json(found if found is not None else {"message": "no such route"}, 200 if found is not None else 404)
 
     def log_message(self, *a):
         pass

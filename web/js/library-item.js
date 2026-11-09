@@ -5,13 +5,31 @@ const ITEM_TAB = document.querySelector("[data-library-item]")?.dataset.libraryI
 const WALL = { films: ["library-films.html", "Films"], tv: ["library-tv.html", "TV"], music: ["library-music.html", "Music"],
   radio: ["library-radio.html", "Radio"], books: ["library-books.html", "Books"], audiobooks: ["library-audiobooks.html", "Audiobooks"] };
 
+// DASH-276, DASH-206: Get it, Follow, Stop following and Delete, through Starboard (Reelix's own routes). The page
+// draws itself again with Reelix's answer, and says what was done.
+let current = null;
+async function act(action, extra = {}, button = null) {
+  if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
+  try {
+    const r = await api(`/api/library/act?tab=${ITEM_TAB}`, { method: "POST", body: { id: current.id, action, ...extra } });
+    announce(r.said);
+    if (!r.item) { location.href = `/${WALL[ITEM_TAB][0]}`; return; }
+    show(r.item, r.said);
+  } catch (e) {
+    problem(e.message, button);
+    if (button) { button.disabled = false; button.removeAttribute("aria-busy"); }
+  }
+}
+
 function rowList(rows) {
   return el("ul", { class: "rows lib-order" }, ...rows.map((r) => el("li", { class: `row${r.number ? "" : " row--no-lead"}` },
     r.number ? el("span", { class: "lib-order__number", text: r.number }) : null,
     el("div", {},
       el("h3", { class: "row__title" }, r.href ? el("a", { href: r.href, text: r.title }) : r.title),
       el("div", { class: "row__meta", text: [r.date, r.note].filter(Boolean).join(" · ") })),
-    el("div", { class: "row__side" }, r.status ? chip(r.status, r.tone) : null))));
+    el("div", { class: "row__side" }, r.status ? chip(r.status, r.tone) : null,
+      r.can_get && r.id ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => act("get", { scope: "episode", episode: r.id }, e.currentTarget) },
+        "Get it", el("span", { class: "visually-hidden", text: ` ${r.number} ${r.title}` })) : null))));
 }
 
 // A long list in groups (a series' seasons): one disclosure each, the newest open. One group stays a plain list.
@@ -19,7 +37,10 @@ function groupList(list) {
   if (!list.groups || list.groups.length < 2) return rowList(list.rows);
   return el("div", { class: "lib-seasons" }, ...list.groups.map((g) => el("details", { class: "disclosure", open: g.open || null },
     el("summary", {}, el("span", { text: g.heading }), el("span", { class: "disclosure__meta", text: g.meta })),
-    el("div", { class: "disclosure__body" }, rowList(g.rows)))));
+    el("div", { class: "disclosure__body stack-2" },
+      g.missing ? el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn--compact", onclick: (e) => act("get", { scope: "season", season: g.season }, e.currentTarget) },
+        `Get the ${g.missing} missing`, el("span", { class: "visually-hidden", text: ` in ${g.heading}` }))) : null,
+      rowList(g.rows)))));
 }
 
 function about(item) {
@@ -69,12 +90,27 @@ function bar(progress) {
   return span;
 }
 
+async function removeItem(item, button) {
+  const files = el("input", { type: "checkbox", id: "delete-files" });
+  const ok = await confirmDialog({ title: `Delete ${item.title}?`, danger: true, confirm: "Delete",
+    message: `Reelix stops following it and takes it out of your library.`,
+    fields: item.can?.has_file ? [el("label", { class: "check" }, files, el("span", { class: "check__text" }, el("strong", { text: "Delete its files too" }),
+      el("span", { class: "check__hint", text: "They go to Reelix's recycle bin when it has one; otherwise they cannot be brought back." })))] : [] });
+  if (ok) act("delete", { delete_files: files.checked }, button);
+}
+
 function head(item) {
   const fan = item.poster ? el("div", { class: "cover-fan lib-fan", "aria-hidden": "true" },
     el("img", { src: item.poster, alt: "", decoding: "async", onerror: (e) => e.target.closest(".cover-fan")?.remove() })) : null;
+  const can = item.can || {};
   const actions = [
+    can.get ? el("button", { type: "button", class: "btn btn--primary", onclick: (e) => act("get", {}, e.currentTarget) },
+      icon("download"), ITEM_TAB === "tv" ? "Get the missing episodes" : "Get it") : null,
     item.listen ? newTabLink(item.listen.href, item.listen.label, { className: "btn btn--primary" }) : null,
-    item.open ? newTabLink(item.open.href, item.open.label, { className: item.listen ? "btn btn--quiet" : "btn" }) : null,
+    item.can ? el("button", { type: "button", class: "btn", "aria-pressed": String(!!can.follow),
+      onclick: (e) => act(can.follow ? "unfollow" : "follow", {}, e.currentTarget) }, can.follow ? "Stop following" : "Follow") : null,
+    item.open ? newTabLink(item.open.href, item.open.label, { className: "btn btn--quiet" }) : null,
+    can.delete ? el("button", { type: "button", class: "btn btn--quiet btn--danger", onclick: (e) => removeItem(item, e.currentTarget) }, "Delete") : null,
   ].filter(Boolean);
   return el("header", { class: "series-head" },
     el("div", { class: "series-head__text" },
@@ -86,6 +122,20 @@ function head(item) {
           "aria-valuemin": "0", "aria-valuemax": "100" }, bar(item.progress))) : null,
       actions.length ? el("div", { class: "series-head__actions" }, ...actions) : null),
     fan);
+}
+
+function show(item, said = "") {
+  current = item;
+  const box = $("#item");
+  const open = $("[role=tab][aria-selected=true]", box)?.id;
+  const parts = item.lists.filter((l) => l.rows.length).map((l) => ({ key: l.key, label: l.label, heading: l.heading, body: groupList(l) }));
+  parts.push({ key: "about", label: "About", heading: "", body: about(item) });
+  if (ITEM_TAB === "films") parts.unshift(parts.pop()); // a film opens on About, then its collection
+  const note = said ? el("div", { class: "notice", "data-tone": "success", role: "status" }, icon("circle-check"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: said }))) : null;
+  box.replaceChildren(head(item), ...(note ? [note] : []), ...(parts.length > 1 ? tabs(parts) : [parts[0].body]));
+  if (open) document.getElementById(open)?.click();  // the same tab stays open after a change
+  box.setAttribute("aria-busy", "false");
 }
 
 startPage().then(async () => {
@@ -101,11 +151,7 @@ startPage().then(async () => {
   try {
     const item = await api(`/api/library/item?tab=${ITEM_TAB}&id=${id}`);
     document.title = `${item.title} · ${document.title}`;
-    const parts = item.lists.filter((l) => l.rows.length).map((l) => ({ key: l.key, label: l.label, heading: l.heading, body: groupList(l) }));
-    parts.push({ key: "about", label: "About", heading: "", body: about(item) });
-    if (ITEM_TAB === "films") parts.unshift(parts.pop()); // a film opens on About, then its collection
-    box.replaceChildren(head(item), ...(parts.length > 1 ? tabs(parts) : [parts[0].body]));
-    box.setAttribute("aria-busy", "false");
+    show(item);
   } catch (e) {
     box.setAttribute("aria-busy", "false");
     box.replaceChildren(el("div", { class: "notice", "data-tone": e.status === 409 ? "info" : "danger", role: "alert" },
