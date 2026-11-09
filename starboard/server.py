@@ -445,6 +445,19 @@ def after_takeover(app, password, p, sab_ini):
                         notes.append(f"Reelix now reaches {c.get('name')} at {want}")
             except (reelix_setup.ReelixError, OSError, ValueError) as e:
                 notes.append(f"Reelix's download apps are not changed yet ({e}). Check them in Starboard: Settings, Reelix, Download apps")
+        # DASH-119: a Bazarr taken over still points at the old Radarr and Sonarr; it now points at Reelix, with its
+        # own key (from the dashboard) and Starboard's manager key.
+        if "bazarr" in apps and "reelix" in apps:
+            from . import app_setup
+            svcs = app.config.data["services"]
+            bkey = next((s.get("api_key") for s in svcs if s["type"] == "bazarr" and s.get("api_key")), None) or stack.bazarr_key(app.data_dir)
+            rkey = next((s.get("api_key") for s in svcs if s.get("icon") == "reelix" and s["type"] == "link" and s.get("api_key")), None)
+            burl = stack.app_url(app.data_dir, "bazarr", 6767)
+            if bkey and rkey and burl:
+                try:
+                    notes += app_setup.bazarr_connect(burl, bkey, rkey)
+                except app_setup.AppSetupError as e:
+                    notes.append(f"Bazarr does not point at Reelix yet: {e}")
         services.forget()
         adopt_started_apps(app, [t["key"] for t in p["take"]] + ["reelix", "nzbget"], after_job=False)
         for r in p["replace"]:
