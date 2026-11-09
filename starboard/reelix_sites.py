@@ -145,6 +145,36 @@ def _flaresolverr_here(data_dir):
         return False
 
 
+def flaresolverr_url(data_dir):
+    """FlareSolverr's address for Reelix when Starboard installed it: through Gluetun when the stack has the VPN (it
+    runs inside it), else by its own name. None when it is not installed."""
+    from . import stack
+    try:
+        keys = stack.chosen_keys(data_dir) or []
+    except (OSError, ValueError):
+        return None
+    if "flaresolverr" not in keys:
+        return None
+    return FLARESOLVERR if "gluetun" in keys else "http://flaresolverr:8191"
+
+
+def connect_flaresolverr(reelix, data_dir):
+    """Gives Reelix FlareSolverr whenever it is installed, with or without the VPN switch (DASH-219). Leaves an
+    address someone typed alone."""
+    url = flaresolverr_url(data_dir)
+    if not url:
+        return None
+    _, s = reelix.call("GET", "/settings/indexers")
+    s = dict(s or {})
+    if s.get("flaresolverr_url"):
+        return None
+    s["flaresolverr_url"] = url
+    if url.startswith("http://gluetun") or url.startswith("http://flaresolverr"):
+        s["allow_private_addresses"] = True  # FlareSolverr is on this computer's own network
+    reelix.call("PUT", "/settings/indexers", s)
+    return "Reelix uses FlareSolverr for sites with browser checks"
+
+
 def through_vpn(settings):
     p = (settings or {}).get("proxy") or {}
     return p.get("host") == PROXY["host"] and int(p.get("port") or 0) == PROXY["port"]
@@ -177,8 +207,8 @@ def set_vpn(reelix, data_dir, on):
     if on:
         s["proxy"] = dict(PROXY)
         s["allow_private_addresses"] = True
-        if _flaresolverr_here(data_dir) and not s.get("flaresolverr_url"):
-            s["flaresolverr_url"] = FLARESOLVERR
+        if not s.get("flaresolverr_url"):
+            s["flaresolverr_url"] = flaresolverr_url(data_dir)
     else:
         s["proxy"] = None
     reelix.call("PUT", "/settings/indexers", s)

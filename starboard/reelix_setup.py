@@ -300,6 +300,21 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"Reelix does not search through the VPN yet ({e}). Activate Search through the VPN in Settings, Reelix, Sites to search")
 
+    # 4d1. Reelix's own updates: it may check, but never installs itself; Starboard updates the Reelix image on
+    # Apps, Updates (DASH-187). Reelix's default is already off; this keeps it so.
+    try:
+        admin.call("PUT", "/system/updates/settings", {"automatic": True, "auto_install": False})
+    except (ReelixError, OSError, ValueError):
+        pass  # an older Reelix without the setting: nothing to switch off
+
+    # 4d2. FlareSolverr, whenever it is installed (DASH-219).
+    try:
+        line = reelix_sites.connect_flaresolverr(admin, data_dir)
+        if line:
+            done.append(line)
+    except (ReelixError, OSError, ValueError) as e:
+        done.append(f"Reelix does not use FlareSolverr yet ({e})")
+
     # 4e. The sites to search chosen in the set-up (DASH-155): nothing unless chosen.
     try:
         done += reelix_sites.add_sites(admin, reelix_sites.clean_choice(info.get("sites")))

@@ -53,6 +53,7 @@ CATALOGUE = {
     "kapowarr": ("Kapowarr", "link", [5656, 5757], ("title", "kapowarr"), False, False),
     "dispatcharr": ("Dispatcharr", "link", [9191], ("title", "dispatcharr"), False, False),
     "dozzle": ("Dozzle", "link", [9999, 8080], ("title", "dozzle"), False, False),
+    "tdarr": ("Tdarr", "link", [8265], ("title", "tdarr"), False, False),  # DASH-221: the Full install's converter
     "uptime-kuma": ("Uptime Kuma", "link", [3001], ("title", "uptime kuma"), False, False),
     "portainer": ("Portainer", "link", [9000, 9443], ("title", "portainer"), False, False),
     "home-assistant": ("Home Assistant", "link", [8123], ("title", "home assistant"), False, False),

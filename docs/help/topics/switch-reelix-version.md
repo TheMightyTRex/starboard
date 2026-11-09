@@ -38,6 +38,11 @@ If the Run first window is still open, Starboard asks it to start Reelix instead
 - Starboard keeps the old set-up file next to the new one in `data/stack`, named `compose.yaml.before-` and the date.
 - Both versions come from the same place, TheMightyTRex's copy of Reelix, so they have the same fixes. If the version
   with YouTube and Spotify downloads cannot be downloaded from there, Starboard uses Reelix's own.
+- **Going back to Reelix without YouTube and Spotify downloads** stops those downloads: any still waiting are
+  paused, and the YouTube and Spotify settings are kept for if you switch back. The API reference page,
+  `/api/docs`, is only in the version with downloads. Everything else, your library included, stays as it was.
+- **After switching to the version with downloads,** YouTube and Spotify downloads are not active at first. A later
+  version of Starboard will set them up; until then they are set in Reelix itself.
 - Reelix updates its database when a newer release starts, and an older release cannot read it afterwards. So
   Starboard does not switch to a version that is behind the one you run. Reelix follows each release within a day.
 
