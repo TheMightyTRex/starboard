@@ -1,0 +1,39 @@
+{
+ "about": "The words of the set-up's TMDB key, language and Usenet server questions (DASH-178, DASH-189, DASH-183). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
+ "tmdb": {
+  "title": "Films and series information",
+  "intro": "Reelix finds each film and series, its posters and its episodes, in The Movie Database (TMDB). A free key lets it find far more, more accurately. Without one it uses open data and matches fewer titles.",
+  "how": "Get one free: make an account at themoviedb.org, then Settings, API, and copy the API Read Access Token (the long one) or the API key.",
+  "link": "https://www.themoviedb.org/settings/api",
+  "question": "TMDB key",
+  "hint": "Paste the API Read Access Token or the API key. Leave it empty to add it later in Settings, Reelix.",
+  "test": "Test the key",
+  "ok": "TMDB accepted the key.",
+  "skipped": "No key for now: Reelix uses open data. Add one later in Settings, Reelix."
+ },
+ "language": {
+  "title": "Language of releases",
+  "intro": "Some releases are dubbed into another language. Reelix can skip those.",
+  "question": "Which language should films and series be in?",
+  "choices": [
+   {"value": "English", "label": "English (recommended)", "hint": "Reelix skips releases in other languages."},
+   {"value": "Original", "label": "The film's or series' own language", "hint": "Reelix gets each one in the language it was made in, with subtitles from Bazarr."},
+   {"value": "", "label": "Any language", "hint": "Reelix takes the best release whatever its language."}
+  ]
+ },
+ "usenet": {
+  "server_intro": "Type your provider's server details. They are in the email or account page your provider gave you.",
+  "host": "Server address",
+  "host_hint": "Such as news.example.com",
+  "port": "Port",
+  "port_hint": "563 for an encrypted connection, the usual choice; 119 without encryption",
+  "ssl": "Encrypted connection (recommended)",
+  "username": "User name",
+  "password": "Password",
+  "connections": "Connections",
+  "connections_hint": "How many your plan allows, such as 20. Fewer is fine.",
+  "test": "Test the server",
+  "ok": "The server accepted your details.",
+  "later": "Starboard writes these into {app} once the apps are running."
+ }
+}

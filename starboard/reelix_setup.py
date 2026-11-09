@@ -235,6 +235,22 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         admin.call("POST", path, {"path": folder, **extra})
         done.append(f"Added the library folder {folder}")
 
+    # 3b. Films and series information (the TMDB key, DASH-178) and the language of releases (DASH-189), before
+    # Reelix searches or scans anything, so the first matches are right.
+    from . import setup_answers
+    if info.get("tmdb"):
+        try:
+            _, meta = admin.call("GET", "/settings/metadata")
+            admin.call("PUT", "/settings/metadata", setup_answers.tmdb_settings(info["tmdb"], meta))
+            done.append("Added your TMDB key to Reelix")
+        except (ReelixError, OSError, ValueError) as e:
+            done.append(f"Your TMDB key is not in Reelix yet ({e}). Add it in Settings, Reelix")
+    if "language" in info:
+        try:
+            done += setup_answers.apply_language(admin, info["language"])
+        except (ReelixError, OSError, ValueError) as e:
+            done.append(f"The language of releases is not set yet ({e})")
+
     # 4. qBittorrent, with a lasting password in place of its temporary one.
     if info.get("qbittorrent_password") and qbit:
         try:
@@ -297,6 +313,9 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
                 admin.call("PUT", f"/delayprofiles/{default['id']}", {**default, "preferred_protocol": "usenet"})
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"SABnzbd is not connected yet ({e}). Add it in Starboard: Settings, Reelix, Download apps")
+
+    # 4c2. Your Usenet server into NZBGet or SABnzbd (DASH-183), as typed in the set-up.
+    done += setup_answers.apply_usenet(data_dir, opener=opener)
 
     # 4d. Searches through the VPN (DASH-133), as Prowlarr's were when it ran inside Gluetun.
     from . import reelix_sites

@@ -1011,6 +1011,11 @@ def note_reelix(data_dir, choice, built):
     sites = reelix_sites.clean_choice(choice.get("sites"))  # chosen in either set-up; added once Reelix runs
     if sites["builtin"] or sites["own"]:
         info["sites"] = sites
+    from . import setup_answers
+    tmdb = setup_answers.clean_tmdb(choice.get("tmdb"))  # DASH-178: written into Reelix once it runs
+    if tmdb:
+        info["tmdb"] = tmdb
+    info["language"] = setup_answers.clean_language(choice.get("language", "English"))  # DASH-189
     fd = os.open(target + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(info, f)

@@ -378,7 +378,8 @@ def reelix_after_start(app, password):
         # No Reelix: Jellyfin's and Audiobookshelf's first runs still happen (DASH-179, DASH-180).
         try:
             groups = set(stack.chosen_groups(app.data_dir) or [])
-            done = app_setup.first_runs(app.config, app.data_dir, password, groups)
+            from . import setup_answers
+            done = app_setup.first_runs(app.config, app.data_dir, password, groups) + setup_answers.apply_usenet(app.data_dir)
             if done:
                 logs.event("info", "install apps", "; ".join(done))
         except (OSError, ValueError) as e:
@@ -1282,18 +1283,38 @@ class Handler(BaseHTTPRequestHandler):
                 preview = {k: v for k, v in self.body().items() if k != "own_ports"}
                 built = stack.build({**preview, "own_ports": stack.compose_ports(app.data_dir)})
                 return self.json(200, {**{k: built[k] for k in ("compose", "env_shown", "folders", "moved", "later")}, "hooks": sorted(built["hooks"])})
+            if path in ("/api/setup/test-tmdb", "/api/setup/test-usenet") and method == "POST":
+                # The set-up's Test buttons (DASH-178, DASH-183): nothing is kept.
+                from . import setup_answers
+                body = self.body()
+                try:
+                    if path.endswith("tmdb"):
+                        setup_answers.test_tmdb(body.get("key"))
+                        return self.json(200, {"ok": True, "message": setup_answers.WORDS["tmdb"]["ok"]})
+                    setup_answers.test_usenet(body.get("server"))
+                    return self.json(200, {"ok": True, "message": setup_answers.WORDS["usenet"]["ok"]})
+                except ValueError as e:
+                    return self.json(200, {"ok": False, "message": str(e)})
             if path == "/api/stack/write" and method == "POST":
                 choice = self.body()
                 # Writing decides which apps the next start keeps (it removes the rest), so the password again.
                 self.check_password(choice)
                 choice = {k: v for k, v in choice.items() if k not in ("password", "own_ports")}
                 choice["own_ports"] = stack.compose_ports(app.data_dir)  # running Install apps again keeps the ports
+                from . import setup_answers
+                try:  # the new answers are checked before anything is written (DASH-178, DASH-183, DASH-189)
+                    setup_answers.clean_tmdb(choice.get("tmdb"))
+                    setup_answers.clean_language(choice.get("language", "English"))
+                    setup_answers.clean_usenet(choice.get("usenet_server"))
+                except ValueError as e:
+                    return self.error(400, str(e))
                 built = stack.build(choice)
                 own = stack.own_services(app.data_dir)  # apps added by hand stay, so starting does not remove them
                 if own:
                     built = {**built, "compose": built["compose"].rstrip() + "\n" + "".join(own)}
                 stack.write(app.data_dir, built)
                 stack.note_reelix(app.data_dir, choice, built)  # what the Reelix set-up needs once the apps run
+                setup_answers.save_usenet(app.data_dir, choice.get("usenet_server"))  # written into the Usenet app once it runs
                 host = stack.host_folder(app.data_dir)
                 return self.json(200, {"host_folder": host, "can_start": bool(host and containers.available()),
                                        "starter": stack.starter_waiting(app.data_dir),
