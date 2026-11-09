@@ -476,3 +476,33 @@ class MoveStepTest(unittest.TestCase):
         self.assertEqual(posts, ["/api/reelix/move/preview", "/api/reelix/move/run", "/api/takeover/start"])
         self.assertIn("Radarr: 120 new in Reelix", out.getvalue())
         self.assertIn("Starboard runs your apps now", out.getvalue())
+
+
+class RestoreBringsAppsBackTest(unittest.TestCase):
+    """DASH-268: a restore on a rebuilt server asks Storage, the VPN's secrets and Check, nothing else."""
+
+    def test_the_steps_and_the_choice(self):
+        install = {"apps": ["reelix", "nzbget", "gluetun"], "config_dir": "/srv/c", "data_dir": "/srv/m", "puid": 1000,
+                   "pgid": 1000, "tz": "Europe/London", "reelix_edition": "lite",
+                   "vpn": {"provider": "surfshark", "type": "wireguard", "wireguard_addresses": "10.2.0.2/32"}}
+        state = {"start": "restore", "restore_install": install, "media_dir": "/mnt/pool/media",
+                 "overview": {"defaults": {"data_dir": "/srv/media"}}}
+        self.assertEqual(ts.job_steps(state), ["password", "start", "storage", "vpn", "check", "alerts"])
+        term, _ = plain()
+        self.assertFalse(ts.step_apps(None, term, state))
+        self.assertEqual(state["choice"]["data_dir"], "/mnt/pool/media")
+        self.assertEqual(state["choice"]["apps"], install["apps"])
+        self.assertEqual(state["vpn_answers"]["provider"], "surfshark")
+        for step in (ts.step_usenet, ts.step_sites, ts.step_films, ts.step_preset):
+            self.assertFalse(step(None, term, state))
+
+    def test_backups_hold_the_choice_without_secrets(self):
+        from starboard import backup
+        with mock.patch("starboard.stack.current_choice", return_value={"apps": ["gluetun"], "config_dir": "/c", "data_dir": "/m",
+                                                                          "vpn": {"provider": "x", "wireguard_private_key": "secret"}}):
+            out = backup.install_choice("/data")
+        self.assertEqual(out["vpn"], {"provider": "x"})
+        with mock.patch("starboard.stack.chosen_keys", return_value=[]):
+            self.assertEqual(backup.apps_to_bring_back({"install": {"apps": ["reelix"]}}, "/data"), {"apps": ["reelix"]})
+        with mock.patch("starboard.stack.chosen_keys", return_value=["reelix"]):
+            self.assertIsNone(backup.apps_to_bring_back({"install": {"apps": ["reelix"]}}, "/data"))

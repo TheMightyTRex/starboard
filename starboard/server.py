@@ -1690,13 +1690,15 @@ class Handler(BaseHTTPRequestHandler):
                                        "since": (cfg.data.get("version_since") or {}).get("since")})
             if path == "/api/backup/settings" and method == "POST":
                 self.check_password(self.body())
-                return self.json(200, backup.export(cfg, app.version))
+                return self.json(200, backup.export(cfg, app.version, app.data_dir))
             if path == "/api/backup/restore" and method == "POST":
                 data = self.body(limit=2 * 1024 * 1024)
                 self.check_password(data)
                 count = backup.restore(cfg, data.get("backup"))
                 logs.event("info", "backup", f"Settings restored from a file ({count} apps)")
-                return self.json(200, {"apps": count, "config": cfg.public()})
+                # DASH-268: on a rebuilt server, the set-ups bring the backup's apps back (Storage, then Check).
+                return self.json(200, {"apps": count, "config": cfg.public(),
+                                       "install": backup.apps_to_bring_back(data.get("backup"), app.data_dir)})
             if path == "/api/backup/saved" and method == "GET":
                 one = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
                 if one:

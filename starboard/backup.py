@@ -25,9 +25,26 @@ GENERAL_KEYS = ("site_name", "server_name", "design", "groups", "show_home_addre
 SAVED_RE = re.compile(r"^config-\d{4}-\d{2}-\d{2}-\d{6}-[a-z]+(-[a-z]+)*\.json$")  # each part can match only one way
 
 
-def export(config, version):
+SECRET_VPN = ("wireguard_private_key", "openvpn_password", "openvpn_user")
+
+
+def install_choice(data_dir):
+    """The Install apps choice (DASH-268), so a restore on a rebuilt server can bring the same apps back: the apps,
+    folders, user and group, time zone, Reelix version and the VPN's provider. Never a key or password: the VPN's
+    secrets are asked again, and every app's own secrets are made up again when the files are written."""
+    from . import stack
+    choice = stack.current_choice(data_dir) if data_dir else None
+    if not choice:
+        return None
+    out = {k: choice[k] for k in ("apps", "config_dir", "data_dir", "puid", "pgid", "tz", "reelix_edition") if k in choice}
+    if choice.get("vpn"):
+        out["vpn"] = {k: v for k, v in choice["vpn"].items() if k not in SECRET_VPN}
+    return out
+
+
+def export(config, version, data_dir=None):
     d = config.data
-    return {
+    out = {
         "format": FORMAT,
         "version": version,
         "schema": SCHEMA,
@@ -35,6 +52,19 @@ def export(config, version):
         "settings": {k: d[k] for k in GENERAL_KEYS if k in d},
         "services": d["services"],
     }
+    install = install_choice(data_dir)
+    if install:
+        out["install"] = install
+    return out
+
+
+def apps_to_bring_back(backup, data_dir):
+    """The backup's install choice when its apps are not on this computer (no data/stack yet), else None."""
+    from . import stack
+    install = (backup or {}).get("install") if isinstance(backup, dict) else None
+    if not isinstance(install, dict) or not isinstance(install.get("apps"), list) or stack.chosen_keys(data_dir):
+        return None
+    return {k: install[k] for k in ("apps", "config_dir", "data_dir", "puid", "pgid", "tz", "reelix_edition", "vpn") if k in install}
 
 
 def restore(config, backup):

@@ -1026,6 +1026,8 @@ async function stepContent(id, root) {
         const done = await api("/api/backup/restore", { method: "POST", body: { backup, password: password.value } });
         config = done.config;
         announce(`Restored: ${done.apps} apps, with your categories, design and alerts.`);
+        // DASH-268: the backup's apps are not on this computer: Storage, the VPN's secrets, then Check bring them back.
+        remember({ restoreInstall: done.install || null });
       }
       remember({ start: key });
       return true;
@@ -1134,9 +1136,12 @@ async function stepContent(id, root) {
       el("div", { class: "form-grid" }, field("Address", url, { span: true }), field("Token (if it needs one)", token, { span: true })),
       el("label", { class: "check" }, health, el("span", { class: "check__text" }, el("strong", { text: "Check each disk's health every 30 minutes" }),
         el("span", { class: "check__hint", text: "A small script reads each disk's health report as root, so Starboard can warn you before a disk fails. It is set up on the server with one command at the end." })))];
+    // A restore brought its alerts back: only disk health is asked, as in the terminal (DASH-265).
+    const restored = (guideMemory().start || "new") === "restore";
+    if (restored) nodes = nodes.slice(2);
     save = async () => {
       const kind = root.querySelector(`input[name="${name}"]:checked`)?.value || "";
-      await saveGeneral({ watch: kind ? { enabled: true, channel: { kind, url: url.value, token: token.value } } : { enabled: false } });
+      if (!restored) await saveGeneral({ watch: kind ? { enabled: true, channel: { kind, url: url.value, token: token.value } } : { enabled: false } });
       remember({ health: health.checked });
       await saveHost();
       return true;
@@ -1279,10 +1284,22 @@ async function startGuide() {
   let reelixThere = config.services.some((x) => x.icon === "reelix");
   try { reelixThere = reelixThere || !!(await api("/api/reelix/move")).sources?.length; } catch { /* as if not */ }
   const moveInto = () => (guideMemory().start || "new") !== "new" && (guideMemory().start || "new") !== "restore" && guideMemory().moveInto !== false;
-  const needFlow = () => ((guideMemory().start || "new") === "new" || (moveInto() && !reelixThere)) && typeof installFlow === "function";
+  const needFlow = () => ((guideMemory().start || "new") === "new" || (moveInto() && !reelixThere) ||
+    ((guideMemory().start || "new") === "restore" && !!guideMemory().restoreInstall)) && typeof installFlow === "function";
   const loadFlow = async () => {
-    if (flow || !needFlow()) return;
-    try { flow = await installFlow({ chosenMedia: guideMemory().media || "" }); } catch (e) { problem(e.message); }
+    if (!needFlow()) return;
+    if (!flow) {
+      try { flow = await installFlow({ chosenMedia: guideMemory().media || "" }); } catch (e) { problem(e.message); return; }
+    }
+    const install = (guideMemory().start || "new") === "restore" ? guideMemory().restoreInstall : null;
+    if (install && !flow.fromBackup) {  // the backup's choice; nothing is asked again but the folder and the VPN's secrets
+      flow.fromBackup = true;
+      Object.assign(flow.state, { apps: new Set(install.apps || []), install: "custom", installApplied: true,
+        config_dir: install.config_dir || flow.state.config_dir, puid: install.puid ?? flow.state.puid, pgid: install.pgid ?? flow.state.pgid,
+        tz: install.tz || flow.state.tz, reelix_edition: install.reelix_edition || "lite",
+        vpn: { provider: install.vpn?.provider || "", type: install.vpn?.type || "wireguard", countries: install.vpn?.countries || "",
+          wireguard_addresses: install.vpn?.wireguard_addresses || "" } });
+    }
   };
   await loadFlow();
   document.addEventListener("guide-media", (e) => { if (flow) { flow.state.chosenMedia = e.detail; flow.state.data_dir = e.detail; } });
@@ -1294,7 +1311,14 @@ async function startGuide() {
     list.push({ id: "start", ...stepNamed(T, "start"), skippable: false,
       intro: "A new media server, the apps you already run, or a backup of Starboard's settings." });
     if (start === "restore") {
-      list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+      // DASH-265, DASH-268: the backup brought the settings back, so they are not asked again. When its apps are not
+      // on this computer, Storage, the VPN (its secrets are not in backups) and Check bring them back.
+      const install = guideMemory().restoreInstall;
+      if (install && flow) {
+        list.push({ id: "where", ...stepNamed(T, "storage"), skippable: false, intro: "The backup's apps go back with their media in this folder." },
+          ...flow.before().filter((x) => x.id === "vpn"), ...flow.finish());
+      }
+      list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Disk health is a change to this computer, so it is asked again." });
       list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
       return list;
     }

@@ -1720,6 +1720,12 @@ def job_steps(state):
     ids = ["password", "start"]
     no_docker = not state.get("docker_access", False)
     if job == "restore":
+        install = state.get("restore_install")
+        if install:  # DASH-268: the backup's apps come back; the VPN's secrets are asked again
+            ids.append("storage")
+            if "gluetun" in (install.get("apps") or []):
+                ids.append("vpn")
+            ids.append("check")
         return ids + ["alerts"]
     if job == "move" and no_docker:
         ids.append("docker")  # DASH-267: before anything is moved, Yes recommended
@@ -1884,6 +1890,12 @@ def restore_backup(api, term, state):
             continue
         state["backup_file"] = path
         term.ok(f"Restored: {done['apps']} apps, with your categories, design and alerts.")
+        if done.get("install"):
+            # DASH-268: the backup's apps are not on this computer: Storage, then Check brings them back.
+            state["restore_install"] = done["install"]
+            names = ", ".join(done["install"].get("apps") or [])
+            term.note(f"The apps in the backup are not on this computer yet ({names}). Next, choose where your media "
+                      "goes; then Starboard writes and starts the same apps.")
         return True
 
 
@@ -1917,7 +1929,7 @@ def add_found_apps(api, term, state):
 def step_storage(api, term, state):
     """Storage: this computer's main disk, a separate disk or a pool. Only for a new install: moving keeps the apps'
     folders, and a restore brings its own."""
-    if state.get("start", "new") != "new":
+    if state.get("start", "new") != "new" and not (state.get("start") == "restore" and state.get("restore_install")):
         return False
     found = api.call("GET", "/api/setup/storage")
     choices = found["choices"]
@@ -1947,6 +1959,20 @@ def step_storage(api, term, state):
 
 def step_apps(api, term, state):
     """Sets state["choice"] (the Install apps choice) and state["names"], or None to install nothing."""
+    install = state.get("restore_install") if state.get("start") == "restore" else None
+    if install:
+        # DASH-268: the backup's choice, with the media folder chosen in Storage; nothing else is asked again.
+        d = (state.get("overview") or api.call("GET", "/api/stack"))["defaults"]
+        data_dir = state.get("media_dir") or (state["pool_dir"] + "/media" if state.get("pool_dir") else install.get("data_dir") or d["data_dir"])
+        choice = {k: install[k] for k in ("apps", "config_dir", "puid", "pgid", "tz", "reelix_edition") if k in install}
+        choice.update(data_dir=data_dir, groups=[])
+        state["choice"] = choice
+        state["names"] = list(choice["apps"])
+        if install.get("vpn"):
+            state["vpn_answers"] = {"provider": install["vpn"].get("provider", ""), "countries": install["vpn"].get("countries", ""),
+                                    "address": install["vpn"].get("wireguard_addresses", ""),
+                                    "kind": 2 if install["vpn"].get("type") == "openvpn" else 1}
+        return False  # not a question: the backup answered it
     moving_beside = state.get("start") == "move" and state.get("move_into") and not state.get("reelix_there")
     if state.get("start", "new") != "new" and not moving_beside:
         state["choice"] = None  # moving or restoring: the apps are there already
@@ -2161,7 +2187,7 @@ def step_usenet(api, term, state):
     in full (a terminal shows the link itself), the affiliate note before them and what Usenet may be used for after
     them."""
     choice = state.get("choice")
-    if not choice or not ({"sabnzbd", "nzbget"} & set(choice["apps"])):
+    if not choice or not ({"sabnzbd", "nzbget"} & set(choice["apps"])) or state.get("start") == "restore":
         return False
     app = usenet_app(state)
     HELP["usenet"] = usenet_words(USENET_HELP, app)
@@ -2262,7 +2288,7 @@ def step_films(api, term, state):
     (web/setup-answers.json); both are written into Reelix once it runs."""
     from . import setup_answers
     choice = state.get("choice")
-    if not choice or "reelix" not in choice["apps"]:
+    if not choice or "reelix" not in choice["apps"] or state.get("start") == "restore":  # Reelix's own backup has them
         return False
     w = setup_answers.WORDS
     head(term, state, "films")
@@ -2316,7 +2342,7 @@ def step_sites(api, term, state):
     or Newznab address. Added once Reelix runs (reelix_setup.set_up)."""
     from . import reelix_sites
     choice = state.get("choice")
-    if not choice or "reelix" not in choice["apps"] or state.get("start") == "move":  # the move brings the sites
+    if not choice or "reelix" not in choice["apps"] or state.get("start") in ("move", "restore"):  # the move or backup brings them
         return False
     words = reelix_sites.WORDS
     last = state.get("sites") or {"builtin": [], "own": []}
