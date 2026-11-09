@@ -120,22 +120,23 @@ class RefusalsTest(unittest.TestCase):
 
 class StepCountTest(unittest.TestCase):
     def test_a_restore_counts_only_its_own_steps(self):
-        self.assertEqual(ts.job_steps({"start": "restore"}), ["password", "start", "extras", "alerts", "preset"])
+        # DASH-265: a restore asks only disk health; the backup brought the rest.
+        self.assertEqual(ts.job_steps({"start": "restore"}), ["password", "start", "alerts"])
         term, out = plain()
-        ts.head(term, {"start": "restore"}, "extras")
-        self.assertIn("(step 3 of 5)", out.getvalue())
+        ts.head(term, {"start": "restore"}, "alerts")
+        self.assertIn("(step 3 of 3)", out.getvalue())
         moving = ts.job_steps({"start": "move", "no_extras": True})
-        self.assertEqual(moving, ["password", "start", "docker", "hours", "alerts", "preset"])  # DASH-267: before any move
+        self.assertEqual(moving, ["password", "start", "docker", "preset", "hours", "alerts"])  # DASH-267: before any move
         self.assertNotIn("docker", ts.job_steps({"start": "move", "docker_access": True}))
 
     def test_a_new_install_leaves_out_what_the_apps_do_not_need(self):
         state = {"start": "new", "storage": {"key": "disk"}, "choice": {"apps": ["jellyfin"]}}
-        self.assertEqual(ts.job_steps(state), ["password", "start", "storage", "apps", "check", "extras", "hours",
-                                               "docker", "alerts", "preset"])  # DASH-139: at the end
+        self.assertEqual(ts.job_steps(state), ["password", "start", "storage", "apps", "preset", "check", "extras", "hours",
+                                               "alerts", "docker"])  # DASH-265: How much it does before Check; Docker last
         term, _ = boxed()
         term._page = lambda *a: None
         ts.head(term, state, "check")
-        self.assertIn("step 5 of 10", term.header[1])
+        self.assertIn("step 6 of 10", term.header[1])
 
 
 class ResizeTest(unittest.TestCase):

@@ -115,7 +115,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn(terminal_setup.USENET_AD.removeprefix("Ad: "), js)
 
     def test_help_mismatch_and_short_passwords_ask_again(self):
-        term, out = self.term(["", "", "", "", "2", "2", "", "", ""], ["?", "short", SIGN_IN_WORDS, "different words", SIGN_IN_WORDS, SIGN_IN_WORDS])
+        term, out = self.term(["", "", "", "", "2", "", "2", "", ""], ["?", "short", SIGN_IN_WORDS, "different words", SIGN_IN_WORDS, SIGN_IN_WORDS])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
         self.assertIn("a few unrelated words", text)
@@ -134,7 +134,7 @@ class TerminalSetupTest(unittest.TestCase):
     def test_signs_in_when_a_password_is_set(self):
         self.api.call("POST", "/api/setup", {"token": self.app.setup_token, "password": SIGN_IN_WORDS})
         api = terminal_setup.Api(self.port)
-        term, out = self.term(["", "", "", "2", "2", "", "", ""], ["wrong password here", SIGN_IN_WORDS])
+        term, out = self.term(["", "", "", "2", "", "2", "", ""], ["wrong password here", SIGN_IN_WORDS])
         self.assertEqual(terminal_setup.run(api, term, self.tmp.name, self.port), 0)
         self.assertIn("That password is not right", out.getvalue())
         self.assertIn("Signed in.", out.getvalue())
@@ -142,7 +142,7 @@ class TerminalSetupTest(unittest.TestCase):
     def test_vpn_details_are_asked_and_kept_out_of_the_screen(self):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # Downloads and VPN only, every default app; Proton VPN over WireGuard.
-        typed = ["", "", "", media, "", "4", "9,10", "", "5", "1", "", "192.168.1.20/32", "", "", "y", "2", "", "", "", ""]
+        typed = ["", "", "", media, "", "4", "9,10", "", "5", "1", "", "192.168.1.20/32", "", "", "", "y", "2", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -166,7 +166,7 @@ class TerminalSetupTest(unittest.TestCase):
             self.assertIn(words, js)
 
     def test_bad_hours_ask_again(self):
-        term, out = self.term(["", "", "", "", "2", "", "5", "5", "22", "6", "", "", ""], [SIGN_IN_WORDS, SIGN_IN_WORDS])
+        term, out = self.term(["", "", "", "", "2", "", "", "5", "5", "22", "6", "", ""], [SIGN_IN_WORDS, SIGN_IN_WORDS])  # How much it does before the hours
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         self.assertIn("That did not work", out.getvalue())
         self.assertEqual(self.app.config.data["download_hours"], {"enabled": True, "start": 22, "end": 6})
@@ -202,10 +202,12 @@ class TerminalSetupTest(unittest.TestCase):
         typed = ["", "", "", media, "", "4", "9,10", "",     # name, start, storage and folder, Let me choose, the apps
                  "6", "", "", "192.168.1.20/32",            # step 3: Surfshark, WireGuard, any country, the address
                  "", "",                                      # Usenet (NZBGet comes with Downloads): no provider, Enter
-                 "b", "b",                                    # the check: back to Usenet, back again to the VPN
+                 "",                                          # How much it does, before the check (DASH-265)
+                 "b", "b", "b",                               # the check: back to it, to Usenet, then to the VPN
                  "", "", "", "",                              # step 3 again: every answer kept with Enter
                  "", "",                                      # Usenet again
-                 "y", "2", "", "", "", ""]                    # write, any time, no Docker access, no alerts, health, Balanced
+                 "",                                          # How much it does again
+                 "y", "2", "", "", ""]                        # write, any time, no alerts, health, no Docker access
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key", ""])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -220,7 +222,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn("secret-wireguard-key", env)  # kept from before, without typing it again
 
     def test_b_on_the_first_step_and_the_password_is_kept_after_back(self):
-        term, out = self.term(["", "b", "2", "b", "", "", "", "", "2", "2", "", "", ""], ["b", SIGN_IN_WORDS, SIGN_IN_WORDS])
+        term, out = self.term(["", "b", "2", "b", "", "", "", "", "2", "", "2", "", ""], ["b", SIGN_IN_WORDS, SIGN_IN_WORDS])
         # b while choosing the password does nothing (first step); b at step 2 shows the saved password.
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         self.assertIn("Your password is saved.", out.getvalue())
@@ -336,8 +338,8 @@ class TerminalSetupTest(unittest.TestCase):
                  "Mail me at sam@example.org, token=abc123def456")
         # Downloads and VPN (Proton over WireGuard), then f at the check: Something is broken, the words, skip the
         # second question, save to a file; then write and downloads at any time.
-        typed = ["", "", "", media, "", "4", "9,10", "", "5", "1", "Netherlands", "192.168.1.20/32", "", "",
-                 "f", "1", words, "", "1", "y", "2", "", "", "", ""]
+        typed = ["", "", "", media, "", "4", "9,10", "", "5", "1", "Netherlands", "192.168.1.20/32", "", "", "",
+                 "f", "1", words, "", "1", "y", "2", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         term.save_dir = self.tmp.name
         token = self.app.setup_token
@@ -352,7 +354,7 @@ class TerminalSetupTest(unittest.TestCase):
                 self.assertNotIn(private, text)
             self.assertIn("[your answer]", text)
             self.assertIn("[email]", text)
-            self.assertIn("Terminal set-up, step 7: Check", text)
+            self.assertIn("Terminal set-up, step 8: Check", text)  # How much it does is step 7 since DASH-265
         self.assertIn("https://github.com/TheMightyTRex/starboard/issues/new?title=", saved)
         self.assertIn("labels=feedback,problem,type:+bug", saved)
         self.assertEqual(os.stat(os.path.join(self.tmp.name, name)).st_mode & 0o777, 0o600)

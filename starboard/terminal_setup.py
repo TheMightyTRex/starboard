@@ -536,8 +536,8 @@ def question(step_id):
     return STEP_TABLE[step_id]["question"]
 
 
-STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "check", "extras", "hours",
-                            "docker", "alerts", "preset")]
+STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "check", "extras",
+                            "hours", "alerts", "docker")]
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -1712,11 +1712,15 @@ class Terminal:
 def job_steps(state):
     """The steps of the chosen job, in order, as step ids: "step n of m" counts only these (WIZARD.md section 5), so
     a restore goes from step 2 to step 3, not to step 9. A step a choice leaves out is not counted; one that depends
-    on an answer not given yet is counted until it is answered."""
+    on an answer not given yet is counted until it is answered. The order is the set-up order review's (DASH-265):
+    How much it does before Check, so Reelix's background pace follows it; Docker access last; a restore asks only
+    disk health, because the backup brought the rest."""
     job = state.get("start", "new")
     apps = None if "choice" not in state else set((state.get("choice") or {}).get("apps") or [])
     ids = ["password", "start"]
     no_docker = not state.get("docker_access", False)
+    if job == "restore":
+        return ids + ["alerts"]
     if job == "move" and no_docker:
         ids.append("docker")  # DASH-267: before anything is moved, Yes recommended
     if job == "new":
@@ -1730,15 +1734,15 @@ def job_steps(state):
             ids.append("usenet")
         if apps is None or "reelix" in apps:
             ids += ["sites", "films"]
-        if apps is None or apps:
-            ids.append("check")
+    ids.append("preset")
+    if job == "new" and (apps is None or apps):
+        ids.append("check")
     if not state.get("no_extras"):
         ids.append("extras")
-    if job != "restore":
-        ids.append("hours")
+    ids += ["hours", "alerts"]
     if job == "new" and no_docker:
-        ids.append("docker")  # DASH-139: at the end of a new install
-    return ids + ["alerts", "preset"]
+        ids.append("docker")  # DASH-139: the last question of a new install
+    return ids
 
 
 def head(term, state, step_id, text=None):
@@ -2732,7 +2736,7 @@ def step_connect(api, term, state):
     set by Starboard itself; apps added from Move get theirs read where Docker allows."""
     config = api.call("GET", "/api/config")
     has_jellyfin = any(s["type"] == "jellyfin" for s in config["services"]) or "jellyfin" in ((state.get("choice") or {}).get("apps") or [])
-    if not has_jellyfin:
+    if not has_jellyfin or state.get("start") == "restore":  # a restore brought the extras back (DASH-265)
         state["no_extras"] = True  # left out of the step count
         return False
     state.pop("no_extras", None)
@@ -2760,10 +2764,11 @@ def step_connect(api, term, state):
 
 
 def step_alerts(api, term, state):
-    """Alerts and disk health: a push service for alerts, and the disk health reports (set up at the end)."""
+    """Alerts and disk health: a push service for alerts, and the disk health reports (set up at the end). A restore
+    brought its alerts back, so it asks only disk health, a change to this computer (DASH-265)."""
     head(term, state, "alerts")
     last = state.get("alerts", {})
-    while True:
+    while state.get("start") != "restore":
         kind = term.choose(question("alerts"),
                            [("Not now", "No alerts"), ("ntfy", "A free push service with a phone app"),
                             ("Gotify", "Your own push server"), ("A webhook", "Starboard posts to an address you choose")],
@@ -2849,7 +2854,10 @@ def step_docker_end(api, term, state):
 
 
 def step_preset(api, term, state):
-    """How much Starboard does: the same presets and words as the browser's set-up guide."""
+    """How much Starboard does: the same presets and words as the browser's set-up guide. Before Check, so Reelix's
+    background pace follows it (DASH-200, DASH-265); a restore brought its own."""
+    if state.get("start") == "restore":
+        return False
     config = api.call("GET", "/api/config")
     keys = ["small", "balanced", "everything"]
     recommended = config.get("preset_recommended", "balanced")
@@ -2876,7 +2884,7 @@ def step_preset(api, term, state):
 
 
 STEP_FUNCTIONS = [step_password, step_start, step_docker_move, step_storage, step_apps, step_vpn, step_usenet, step_sites, step_films,
-                  step_check, step_connect, step_hours, step_docker_end, step_alerts, step_preset]
+                  step_preset, step_check, step_connect, step_hours, step_alerts, step_docker_end]
 
 
 def add_drives_step(available=None):
