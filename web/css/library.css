@@ -61,12 +61,13 @@
 /* Small row covers show no title: the row says it beside them. */
 .cover--result .lib-cover-title { display: none; }
 
-/* Network logos (DASH-264): every logo in one colour so they sit quietly beside the covers: black on light designs,
-   white on dark ones, high contrast included. The logo is decorative: the network's name is always written beside
+/* Network logos (DASH-264): every logo in greys so they sit quietly beside the covers. The logo is decorative: the network's name is always written beside
    or under it. A network with no logo gets a plain name tile. */
-:root { --network-logo-filter: brightness(0); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --network-logo-filter: brightness(0) invert(1); } }
-:root[data-theme="dark"], :root.is-dark { --network-logo-filter: brightness(0) invert(1); }
+/* Shades of grey, not one flat black (owner, 10 November 2026): a logo with white words inside a shape, such as
+   Cinemax's or ABC's, keeps its words; dark designs flip the greys so the logo stays light on the dark tile. */
+:root { --network-logo-filter: grayscale(1) contrast(1.2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --network-logo-filter: grayscale(1) contrast(1.2) invert(1); } }
+:root[data-theme="dark"], :root.is-dark { --network-logo-filter: grayscale(1) contrast(1.2) invert(1); }
 .network-logo {
   display: grid;
   place-items: center;

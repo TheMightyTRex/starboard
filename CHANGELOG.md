@@ -7,6 +7,19 @@ add features.
 
 ## [Unreleased]
 
+## [0.16.2] (10 November 2026)
+
+### Changed
+- **TV networks as a grid:** Library, TV, Networks shows each network as a square card with its logo, its name and how many series it has; a network's own page shows its logo too. Help: [Browse your library](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/browse-your-library.md).
+- **The A to Z bar:** Letters with titles are filled buttons and letters with none are plain grey, so you can see at once which letters have anything.
+
+### Fixed
+- **Posters slow to show:** Starboard keeps a poster for every item in every library (it used to keep 400, fewer than a larger library has), fetches missing ones in the background when a list is rebuilt, and no longer lets the browser remember a busy image site as no picture for an hour. Reported in issue #5.
+- **Network logos cut off:** A wide logo now fits inside its card, and logos are drawn in greys rather than flat black, so white words inside a shape (Cinemax, ABC) stay readable. Reported in issue #4.
+
+### Security
+- **Checks:** The unit tests (also as another user), the browser journeys, the API contract tests, the help check, the private details check, the design system copy check and the security scans ran on this release.
+
 ## [0.16.1] (10 November 2026)
 
 ### Added
@@ -1154,7 +1167,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.16.2...HEAD
+[0.16.2]: https://github.com/TheMightyTRex/starboard/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/TheMightyTRex/starboard/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/TheMightyTRex/starboard/compare/v0.15.5...v0.16.0
 [0.15.5]: https://github.com/TheMightyTRex/starboard/compare/v0.15.4...v0.15.5

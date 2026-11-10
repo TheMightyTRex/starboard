@@ -1056,6 +1056,38 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your settings. To go back, run ./update.sh --to v0.16.0."
+    },
+    {
+        "version": "0.16.2",
+        "date": "10 November 2026",
+        "changed": [
+            [
+                "TV networks as a grid",
+                "Library, TV, Networks shows each network as a square card with its logo, its name and how many series it has; a network's own page shows its logo too."
+            ],
+            [
+                "The A to Z bar",
+                "Letters with titles are filled buttons and letters with none are plain grey, so you can see at once which letters have anything."
+            ]
+        ],
+        "fixed": [
+            [
+                "Posters slow to show",
+                "Starboard keeps a poster for every item in every library (it used to keep 400, fewer than a larger library has), fetches missing ones in the background when a list is rebuilt, and no longer lets the browser remember a busy image site as no picture for an hour. Reported in issue #5."
+            ],
+            [
+                "Network logos cut off",
+                "A wide logo now fits inside its card, and logos are drawn in greys rather than flat black, so white words inside a shape (Cinemax, ABC) stay readable. Reported in issue #4."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests (also as another user), the browser journeys, the API contract tests, the help check, the private details check, the design system copy check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your settings. To go back, run ./update.sh --to v0.16.1."
     }
 ]
 
