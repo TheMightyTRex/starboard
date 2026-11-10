@@ -59,7 +59,9 @@ GROUPS = {"films": "Collection", "tv": "Network", "radio": "Station", "books": "
           "books-authors": "Author", "audiobooks-authors": "Author"}
 IMAGE_HOSTS = ("image.tmdb.org", "covers.openlibrary.org", "coverartarchive.org")
 POSTER_KEEP = 7 * 86400
-POSTER_FILES = 400
+POSTER_FILES = 400  # the least kept; the real limit follows the libraries (poster_limit)
+POSTER_MARGIN = 50  # room for pictures of items added since the last count, and the larger page posters
+BUSY = False  # poster(): the image site was busy or did not answer, so try again soon (None means it has no picture)
 POSTER_BYTES = 400_000
 _locks = {tab: threading.Lock() for tab in TABS}
 _one_build = threading.Lock()  # one tab is built at a time, so opening Search does not read six lists at once
@@ -163,9 +165,9 @@ def poster(data_dir, url, reelix=None, size="wall"):
                 data = resp.read(POSTER_BYTES + 1)
     except urllib.error.HTTPError as e:
         if e.code != 404:
-            return None  # busy or refused: try again next time
+            return BUSY  # busy or refused: try again soon
     except (urllib.error.URLError, OSError, ValueError):
-        return None
+        return BUSY
     if not data or len(data) > POSTER_BYTES:
         with open(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb"):
             pass  # remembered as "no picture" for a day
@@ -174,16 +176,40 @@ def poster(data_dir, url, reelix=None, size="wall"):
     with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "wb") as f:
         f.write(kind.encode() + b"\n" + data)
     os.replace(tmp, path)
-    _prune(folder)
+    _prune(folder, poster_limit(data_dir))
     return data, kind
 
 
-def _prune(folder):
+_limit = {}  # data folder -> (counted at, limit)
+
+
+def poster_limit(data_dir):
+    """How many pictures the cache keeps: one for every item with a poster in every library, every network logo,
+    and a margin (owner, 10 November 2026: the cache matches each library). Counted again at most every 10 minutes,
+    and at once when a library's list is rebuilt."""
+    hit = _limit.get(data_dir)
+    if hit and time.time() - hit[0] < 600:
+        return hit[1]
+    count = 0
+    for tab in TABS:
+        try:
+            with open(_path(data_dir, tab), encoding="utf-8") as f:
+                count += sum(1 for e in json.load(f).get("items", []) if isinstance(e, dict) and e.get("p"))
+        except (OSError, ValueError, AttributeError):
+            pass
+    from . import networks
+    count += sum(1 for v in networks.known(data_dir).values() if isinstance(v, dict) and v.get("url"))
+    limit = max(POSTER_FILES, count + POSTER_MARGIN)
+    _limit[data_dir] = (time.time(), limit)
+    return limit
+
+
+def _prune(folder, limit=POSTER_FILES):
     files = [os.path.join(folder, n) for n in os.listdir(folder) if n.endswith(".img")]
-    if len(files) <= POSTER_FILES:
+    if len(files) <= limit:
         return
     files.sort(key=os.path.getmtime)
-    for old in files[:len(files) - POSTER_FILES]:
+    for old in files[:len(files) - limit]:
         try:
             os.remove(old)
         except OSError:
@@ -345,6 +371,38 @@ def _write(data_dir, tab, entries):
     os.replace(tmp, path)
 
 
+_warming = set()
+
+
+def warm(data_dir, reelix, tab, urls, pause=0.3):
+    """Fetches a library's posters that are not kept yet, one at a time with a short pause, in the background, so
+    the page shows them at once instead of waiting for each (issue #5). Light: one small picture at a time, only the
+    ones missing, and only once per rebuild. Skipped while posters are switched off."""
+    if tab in _warming or not urls:
+        return
+
+    def run():
+        try:
+            try:  # read only: the running Starboard owns its settings file
+                with open(os.path.join(data_dir, "config.json"), encoding="utf-8") as f:
+                    if json.load(f).get("show_posters", True) is False:
+                        return
+            except (OSError, ValueError, AttributeError):
+                pass
+            for url in urls:
+                path = os.path.join(data_dir, "posters", "library", hashlib.sha256(small(url, "wall").encode()).hexdigest()[:32] + ".img")
+                if os.path.exists(path):
+                    continue
+                if poster(data_dir, url, reelix, "wall") is BUSY:
+                    time.sleep(5)  # the image site is busy: slow down
+                time.sleep(pause)
+        finally:
+            _warming.discard(tab)
+
+    _warming.add(tab)
+    threading.Thread(target=run, name=f"posters-{tab}", daemon=True).start()
+
+
 def refresh(data_dir, reelix, tab):
     """Builds one tab's index now. Only one build per tab runs at a time; a second caller waits for it."""
     with _locks[tab], _one_build:
@@ -356,6 +414,8 @@ def refresh(data_dir, reelix, tab):
                 _state["errors"][tab] = str(e)
             raise
         _write(data_dir, tab, entries)
+        _limit.pop(data_dir, None)
+        warm(data_dir, reelix, tab, [e["p"] for e in entries if isinstance(e, dict) and e.get("p")])
         count = len(entries)
         del entries
         _give_back()
@@ -1083,7 +1143,7 @@ def handle(h, method, path):
     if path == "/api/library/lookup-poster" and method == "GET":
         found = poster(data_dir, q.get("src", "")) if cfg.data["show_posters"] else None
         if not found:
-            return h.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "private, max-age=3600"})
+            return h.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "no-store" if found is BUSY else "private, max-age=3600"})
         return h.send(200, found[0], found[1], {"Cache-Control": "private, max-age=604800"})
     reelix = get_reelix()
     if not reelix:
@@ -1130,7 +1190,8 @@ def handle(h, method, path):
             if e and e.get("p"):
                 found = poster(data_dir, e["p"], reelix, "page" if q.get("size") == "page" else "wall")
         if not found:
-            return h.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "private, max-age=3600"})
+            # A busy image site is tried again at the next look; only a real "no picture" is kept for an hour.
+            return h.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "no-store" if found is BUSY else "private, max-age=3600"})
         return h.send(200, found[0], found[1], {"Cache-Control": "private, max-age=86400"})
     used(data_dir, tab, get_reelix)
     if path == "/api/library/wall" and method == "GET":
@@ -1150,7 +1211,7 @@ def handle(h, method, path):
         url = networks.logo_of(data_dir, q.get("name", "")[:200])
         found = poster(data_dir, url, size="wall") if url and cfg.data["show_posters"] else None
         if not found:
-            return h.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "private, max-age=3600"})
+            return h.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "no-store" if found is BUSY else "private, max-age=3600"})
         return h.send(200, found[0], found[1], {"Cache-Control": "private, max-age=604800"})
     if path == "/api/library/groups" and method == "GET":
         index = load(data_dir, reelix, tab)

@@ -210,7 +210,12 @@ function showGroup() {
   if (!state.group) return;
   const [page, label] = state.by === "authors" ? [`library-${TAB}-authors.html`, "Authors"] : GROUP_PAGE[TAB] || ["", ""];
   $("#lib-group").hidden = false;
-  $("#lib-group").replaceChildren(el("h2", { text: state.group }),
+  // A TV network's own page shows its logo beside its name (owner, 10 November 2026), in the same one colour as the
+  // Networks grid; decorative, as the name is written beside it, and left out when the network has none.
+  const logo = TAB === "tv" && state.by !== "authors"
+    ? el("img", { class: "lib-group-logo", src: `/api/library/network-logo?tab=tv&name=${encodeURIComponent(state.group)}`, alt: "",
+      onerror: (e) => e.target.remove() }) : null;
+  $("#lib-group").replaceChildren(...[logo].filter(Boolean), el("h2", { text: state.group }),
     page ? el("a", { class: "back-link", href: `/${page}` }, icon("arrow-left"), `All ${label.toLowerCase()}`) : null);
   document.title = `${state.group} · ${document.title}`;
 }

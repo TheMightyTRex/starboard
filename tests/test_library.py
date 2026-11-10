@@ -295,3 +295,38 @@ class HandleTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PosterCacheTest(unittest.TestCase):
+    """Issue #5 and the owner's ask: the poster cache holds every library's pictures, a busy image site is not
+    remembered as "no picture", and a rebuilt list fetches its missing posters in the background."""
+
+    def test_the_limit_follows_the_libraries(self):
+        import json
+        import os
+        import tempfile
+        from starboard import library
+        with tempfile.TemporaryDirectory() as d:
+            os.makedirs(os.path.join(d, "library"))
+            for tab, n in (("films", 300), ("tv", 250)):
+                with open(os.path.join(d, "library", f"{tab}.json"), "w") as f:
+                    json.dump({"items": [{"i": i, "p": f"https://image.tmdb.org/t/p/w500/{tab}{i}.jpg"} for i in range(n)] + [{"i": 9999}]}, f)
+            with open(os.path.join(d, "library", "network-logos.json"), "w") as f:
+                json.dump({"bbc one": {"url": "https://image.tmdb.org/t/p/w500/x.png"}, "none": {"url": ""}}, f)
+            library._limit.pop(d, None)
+            self.assertEqual(library.poster_limit(d), 300 + 250 + 1 + library.POSTER_MARGIN)
+        with tempfile.TemporaryDirectory() as d:  # an empty library keeps the least
+            library._limit.pop(d, None)
+            self.assertEqual(library.poster_limit(d), library.POSTER_FILES)
+
+    def test_a_busy_site_is_told_apart_from_no_picture(self):
+        import tempfile
+        import urllib.error
+        from unittest import mock
+        from starboard import library
+
+        class Busy:
+            def open(self, req, timeout=None):
+                raise urllib.error.HTTPError(req.full_url, 503, "busy", {}, None)
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(library, "_image_opener", Busy()):
+            self.assertIs(library.poster(d, "https://image.tmdb.org/t/p/w500/a.jpg"), library.BUSY)

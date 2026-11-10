@@ -2002,6 +2002,7 @@
   }
   .az-jump ol {
     display: flex;
+    gap: 2px;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -2026,6 +2027,13 @@
     font-weight: var(--weight-strong);
     text-decoration: none;
   }
+  /* A letter with titles is a filled button and one with none is plain grey text, so the two differ by more than
+     weight (Starboard issue #6, 10 November 2026). */
+  .az-jump__letter[href] {
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+    border-radius: var(--radius);
+  }
   .az-jump__letter:hover {
     background: var(--color-control-active);
   }
@@ -2043,9 +2051,14 @@
     background: var(--color-accent);
   }
   .az-jump__letter[aria-disabled="true"] {
+    background: none;
     color: var(--color-text-muted);
     font-weight: var(--weight-regular);
     cursor: default;
+  }
+  @media (forced-colors: active) {
+    .az-jump__letter[href] { border: 1px solid LinkText; color: LinkText; }
+    .az-jump__letter[aria-disabled="true"] { color: GrayText; }
   }
   .az-jump__letter[aria-disabled="true"]:hover {
     background: none;

@@ -19,13 +19,22 @@ function drawGroups(words) {
   box.replaceChildren();
   let ul = null;
   let current = "";
+  // TV networks: one grid of square cards, A to Z, the A to Z bar jumping to each letter's first card (owner,
+  // 10 November 2026). Other groups: a list under a heading for each letter.
+  const grid = G_TAB === "tv" ? el("ul", { class: "network-grid", "aria-label": "Networks, A to Z" }) : null;
+  if (grid) box.append(grid);
+  let firstOfLetter = false;
   for (const g of shown) {
+    firstOfLetter = g.letter !== current;
     if (g.letter !== current) {
       current = g.letter;
-      ul = el("ul", { class: "rows" });
-      box.append(el("section", { class: "lib-group", "aria-labelledby": gLetterId(current) },
-        el("h2", { class: "wall-letter", id: gLetterId(current), tabindex: "-1", text: current }), ul));
+      if (!grid) {
+        ul = el("ul", { class: "rows" });
+        box.append(el("section", { class: "lib-group", "aria-labelledby": gLetterId(current) },
+          el("h2", { class: "wall-letter", id: gLetterId(current), tabindex: "-1", text: current }), ul));
+      }
     }
+    if (grid) ul = grid;
     const href = `/${G_WALL[G_TAB]}?group=${encodeURIComponent(g.name)}${G_BY ? `&by=${G_BY}` : ""}`;
     // TV, Networks (DASH-264): the network's logo in one colour, or its name on a plain tile; never a series' cover.
     const nameTile = () => el("div", { class: "cover cover--result network-logo", "aria-hidden": "true" }, el("span", { class: "network-logo__name", text: g.name }));
@@ -34,10 +43,16 @@ function drawGroups(words) {
         el("img", { src: g.logo, alt: "", loading: "lazy", onerror: (e) => e.target.closest(".network-logo").replaceWith(nameTile()) })) : nameTile())
       : g.poster ? el("div", { class: "cover cover--result", "aria-hidden": "true" }, el("img", { src: g.poster, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }))
         : el("div", { class: "cover cover--result", "aria-hidden": "true" });
-    ul.append(el("li", { class: "row row--opens lib-row" }, picture,
-      el("div", {},
-        el("h3", { class: "row__title" }, el("a", { href, text: g.name })),
-        el("div", { class: "row__meta", text: `${gCount(g.count, G_NOUN[G_TAB])}, ${g.have.toLocaleString("en-GB")} in your library` }))));
+    const meta = `${gCount(g.count, G_NOUN[G_TAB])}, ${g.have.toLocaleString("en-GB")} in your library`;
+    // The whole card opens the network: its link covers the card (network-card__link::after), so one tab stop each.
+    ul.append(G_TAB === "tv"
+      ? el("li", { class: "network-card", ...(firstOfLetter ? { id: gLetterId(current), tabindex: "-1" } : {}) }, picture,
+        el("h3", { class: "network-card__name" }, el("a", { class: "network-card__link", href, text: g.name })),
+        el("p", { class: "network-card__meta", text: meta }))
+      : el("li", { class: "row row--opens lib-row" }, picture,
+        el("div", {},
+          el("h3", { class: "row__title" }, el("a", { href, text: g.name })),
+          el("div", { class: "row__meta", text: meta }))));
   }
   const nav = $("#lib-az");
   nav.hidden = !shown.length;

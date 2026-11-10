@@ -10,6 +10,8 @@
 .lib-group .wall-letter { scroll-margin-top: calc(var(--header-h) + var(--tabs-h) + var(--control-h) + var(--space-4)); }
 .lib-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); }
 .lib-group-head h2 { margin: 0; font-size: var(--text-lg); }
+.lib-group-head:has(.lib-group-logo) { align-items: center; }
+.lib-group-logo { height: 2.5rem; width: auto; max-width: 10rem; object-fit: contain; filter: var(--network-logo-filter); }
 
 /* A cover with no picture shows its title on a plain tile. */
 .lib-cover-title { padding: var(--space-2); color: var(--color-text); font-weight: var(--weight-strong); font-size: var(--text-sm);
@@ -75,7 +77,27 @@
   border-radius: var(--radius-2, 6px);
   overflow: hidden;
 }
-.network-logo img { max-width: 100%; max-height: 60%; object-fit: contain; filter: var(--network-logo-filter); }
+/* The card's one grid cell is the card's own size (minmax(0, 1fr)), not the logo's: a 500 px wide logo used to set the
+   column's width and was clipped (issue #4). The logo then fits inside, whole, with room around it. */
+.network-logo { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); padding: var(--space-3, 12px); }
+.network-logo img { width: 100%; height: 100%; max-width: 100%; max-height: 50%; min-width: 0; object-fit: contain; filter: var(--network-logo-filter); }
 .network-logo__name { font-size: var(--text-xs, 0.75rem); font-weight: 600; text-align: center; color: var(--color-text-muted); overflow-wrap: anywhere; }
 .series-head__network { display: inline-flex; align-items: center; gap: var(--space-1, 4px); }
 .series-head__network img { height: 1.25em; width: auto; filter: var(--network-logo-filter); }
+
+/* TV, Networks as a grid of square cards (owner, 10 November 2026): the logo in a square tile, the name and counts
+   under it; the whole card opens the network, and keyboard focus shows on the card. */
+.network-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4, 16px);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr)); }
+.network-card { position: relative; display: grid; gap: var(--space-1, 4px); align-content: start; }
+.media .network-card .network-logo { aspect-ratio: 1 / 1; width: 100%; }  /* not the 64 px of a cover in a row */
+.network-card[id] { scroll-margin-top: var(--space-6, 24px); }
+.network-card__name { margin: var(--space-1, 4px) 0 0; font-size: var(--text-sm, 0.875rem); }
+.network-card__link { color: var(--color-text); text-decoration: none; }
+.network-card__link::after { content: ""; position: absolute; inset: 0; }
+.network-card:hover .network-logo { border-color: var(--color-accent); }
+.network-card:hover .network-card__link { text-decoration: underline; }
+.network-card:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; border-radius: var(--radius-2, 6px); }
+.network-card__link:focus-visible { outline: none; }
+.network-card__meta { margin: 0; font-size: var(--text-xs, 0.75rem); color: var(--color-text-muted); }
+
