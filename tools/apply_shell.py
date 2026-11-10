@@ -232,6 +232,7 @@ def shell(current):
   <a class="rail__search" href="/search.html">{icon("search", 24)}<span>Search</span></a>
   {rail_links}
   <div class="rail__end">
+    <button type="button" class="rail__feedback" data-feedback-open hidden>{icon("message-square-warning", 24)}<span>Feedback</span><span class="visually-hidden"> (send feedback)</span></button>
     <a class="rail__update" href="/settings-updates.html" data-update-available hidden><span class="update-dot" aria-hidden="true"></span><span>Update</span></a>
     <span class="rail__version" data-version-short></span>
   </div>
@@ -263,6 +264,7 @@ def shell(current):
     <div class="phone-menu__sections">
         {phone_sections}
     </div>
+    <button type="button" class="phone-menu__feedback" data-feedback-open hidden>{icon("message-square-warning", 20)}<span>Send feedback</span></button>
     <div class="phone-menu__foot">
       <span class="version-label" data-version></span>
       <button type="button" class="btn btn--quiet" data-sign-out>{icon("log-out", 18)}<span>Sign out</span></button>

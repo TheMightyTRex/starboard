@@ -302,7 +302,8 @@
     text-align: center;
   }
   .rail a,
-  .rail__search {
+  .rail__search,
+  .rail__feedback {
     position: relative;
     display: grid;
     justify-items: center;
@@ -326,6 +327,7 @@
   }
   .rail a:hover,
   .rail__search:hover,
+  .rail__feedback:hover,
   .rail a[aria-current="page"] {
     background: var(--color-control-active);
     color: var(--color-text);
@@ -336,6 +338,19 @@
     inset: 0 auto 0 calc(-1 * var(--space-2));
     width: 3px;
     background: var(--color-accent);
+  }
+  /* Send feedback at the foot of the side menu while Send feedback is activated (Settings, General): a menu item
+     under a line, opening Snaglist. Pages with no side menu, such as the set-up, keep Snaglist's corner button. */
+  .rail__feedback {
+    width: 100%;
+    border: 0;
+    border-top: 1px solid var(--color-divider);
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .rail__feedback[hidden] {
+    display: none;
   }
   .rail__end {
     margin-top: auto;
@@ -437,6 +452,28 @@
   }
   .phone-menu__section {
     border-bottom: 1px solid var(--color-divider);
+  }
+  /* Send feedback, its own row above the menu's foot while Send feedback is activated, like the section rows. */
+  .phone-menu__feedback {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: 52px;
+    margin-top: auto;
+    padding: 0 var(--space-4);
+    border: 0;
+    border-top: 1px solid var(--color-divider);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-md);
+    font-weight: var(--weight-strong);
+    text-align: left;
+    cursor: pointer;
+  }
+  .phone-menu__feedback[hidden] {
+    display: none;
   }
   .phone-menu__section > button {
     display: flex;
@@ -4940,7 +4977,7 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
 :root:has(snag-list) #main { padding-block-end: 72px; }
 
 /* Send feedback (Snaglist) sits in the bottom left corner: the side menu's end keeps room above it. */
-:root.has-feedback .rail__end { padding-block-end: 64px; }
+:root.has-feedback .rail__end:not(:has(.rail__feedback)) { padding-block-end: 64px; }
 
 /* The set-up wizard's step marks (DASH-289): past, now and to come; the text above says the same in words. */
 .wizard-steps { display: flex; gap: var(--space-1); }

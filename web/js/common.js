@@ -815,10 +815,12 @@ function wireDialog(dialog) {
 async function startFeedback(session) {
   if (!session?.version) session = await api("/api/session").catch(() => ({}));
   const { key } = await api("/api/feedback/key");
-  const start = () => window.Snaglist?.start({
+  const inMenu = $$("[data-feedback-open]");
+  const start = () => { window.Snaglist?.start({
     app: "Starboard", version: session.version || "", language: "en-GB", userToggle: false,
-    // Bottom left: side panels open on the right, with their Save and Remove buttons at the bottom.
-    launcher: "bottom-left",
+    // Pages with the side menu open it from Feedback in the menu. Pages without one, such as the set-up, keep the
+    // button bottom left: side panels open on the right, with their Save and Remove buttons at the bottom.
+    launcher: inMenu.length ? false : "bottom-left",
     theme: document.documentElement.dataset.theme || "auto", // the theme chosen in Display, or the device's
     types: ["bug", "ux", "visual", "accessibility", "performance", "content", "feature", "idea", "other", "check"],
     send: {
@@ -832,11 +834,24 @@ async function startFeedback(session) {
       sent: "Saved in Starboard. It is listed in Settings, General, Send feedback.",
     },
   });
+    inMenu.forEach((b) => {
+      b.hidden = false;
+      if (b.dataset.feedbackReady) return;
+      b.dataset.feedbackReady = "1";
+      b.addEventListener("click", () => {
+        b.closest(".side-panel-layer")?.querySelector("[data-closes]")?.click(); // the phone menu closes first
+        window.Snaglist?.open();
+      });
+    });
+  };
   document.documentElement.classList.add("has-feedback");  // the side menu keeps room for the button under it
   if (window.Snaglist) return start();
   document.head.append(el("script", { src: "/js/snaglist.js", onload: start }));
 }
-function stopFeedback() { window.Snaglist?.destroy(); }
+function stopFeedback() {
+  window.Snaglist?.destroy();
+  $$("[data-feedback-open]").forEach((b) => { b.hidden = true; });
+}
 
 // The server's name at the start of the level 1 menu; nothing shows when it is empty.
 function showServerName(name) {
