@@ -926,6 +926,30 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your apps. Ignored items can be brought back on Apps. To go back, run ./update.sh --to v0.15.3."
+    },
+    {
+        "version": "0.15.5",
+        "date": "10 November 2026",
+        "added": [
+            [
+                "Send feedback in the side menu",
+                "Feedback is now an item at the foot of the side menu, and on a phone a row in the menu, instead of a button floating over the page. Pages with no side menu, such as the set-up, keep the button in the corner."
+            ]
+        ],
+        "fixed": [
+            [
+                "The ready-made image",
+                "The ready-made Starboard image builds again. Since 0.15.2 a test that only passed on one computer stopped GitHub building it, so installs from the image stayed on 0.15.1."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your settings. To go back, run ./update.sh --to v0.15.4."
     }
 ]
 

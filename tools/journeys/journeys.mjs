@@ -130,10 +130,17 @@ console.log("\n== FB-01 Send feedback (Snaglist)");
 const fbBefore = (await api("/api/config")).ux_notes;
 await api("/api/config/general", { method: "PUT", body: { ux_notes: true } });
 await open("index.html");
-const launcher = page.locator("snag-list button", { hasText: "Send feedback" });
-await launcher.waitFor({ timeout: 5000 }).catch(() => {});
-check("FB-01", "Send feedback is on the page", await launcher.count() === 1);
-check("FB-01", "its styles are let in by the content policy", await launcher.evaluate((b) => getComputedStyle(b).position === "fixed").catch(() => false));
+// Pages with the side menu open it from Feedback in the menu (DASH-292); Snaglist's own corner button is not shown.
+const inMenu = page.locator(".rail__feedback");
+await inMenu.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+check("FB-01", "Feedback is in the side menu", await inMenu.isVisible());
+check("FB-01", "no corner button over the page", await page.locator("snag-list button", { hasText: "Send feedback" }).count() === 0);
+await inMenu.click().catch(() => {});
+const go = page.locator("snag-list button", { hasText: /^Continue$/ });
+await go.waitFor({ timeout: 5000 }).catch(() => {});
+check("FB-01", "Feedback opens Snaglist", await go.count() === 1);
+check("FB-01", "its styles are let in by the content policy", await go.evaluate((b) => !["rgba(0, 0, 0, 0)", "rgb(239, 239, 239)", "rgb(240, 240, 240)"].includes(getComputedStyle(b).backgroundColor)).catch(() => false));
+await page.keyboard.press("Escape");
 await page.evaluate(() => Snaglist.report(document.querySelector("main"), "other"));
 await page.locator("snag-list textarea").first().fill("A made-up journey report");
 await page.locator("snag-list button", { hasText: /^Review what is sent$/ }).click();
@@ -146,7 +153,7 @@ check("FB-01", "Settings, General lists it", await page.locator("#feedback-list 
 for (const n of saved) await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } });
 await api("/api/config/general", { method: "PUT", body: { ux_notes: false } });
 await open("index.html");
-check("FB-01", "deactivated, it is gone", await page.locator("snag-list").count() === 0);
+check("FB-01", "deactivated, it is gone", await page.locator("snag-list").count() === 0 && !(await page.locator(".rail__feedback").isVisible()));
 await api("/api/config/general", { method: "PUT", body: { ux_notes: fbBefore } });  // on by default since 0.15.2
 
 // SEC-07: names, categories, descriptions and UX notes that look like code are shown as text

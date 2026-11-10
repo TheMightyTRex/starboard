@@ -2,7 +2,7 @@
 
 # Send feedback about a page
 
-Send feedback puts a button in the corner of every page. Use it to report something that is broken or hard to
+Send feedback adds **Feedback** to the side menu on every page, and **Send feedback** to the menu on a phone. Pages with no side menu, such as the set-up, have a **Send feedback** button instead. Use it to report something that is broken or hard to
 use, suggest something, or check a page for accessibility problems. Each report says which page and which part of
 it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyTRex/snaglist).
 
@@ -19,7 +19,8 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
 
 ## Send a report
 
-1. On the page with the problem, select **Send feedback** in the corner.
+1. On the page with the problem, select **Feedback** in the side menu. On a phone, open the menu and
+   select **Send feedback**.
 2. Choose what you want to send, such as **Something is broken** or **A new feature**.
 3. Choose what to show: **One thing on the page**, **A series of steps** or **Describe it in words**. For one
    thing, select the part of the page it is about.
@@ -51,7 +52,7 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
 
 ## If it does not work
 
-- **No Send feedback button:** check that **Send feedback** is active, then reload the page.
+- **No Feedback in the side menu:** check that **Send feedback** is active, then reload the page.
 - **Save in Starboard says it is not sent:** you were signed out. Sign in again, then send it again.
   The report is kept until you close the window, so you can also select **Back** and copy it instead.
 - **Open in GitHub does nothing:** your browser may have blocked the new window. Allow pop-ups for Starboard, or

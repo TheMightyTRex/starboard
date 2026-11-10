@@ -7,6 +7,17 @@ add features.
 
 ## [Unreleased]
 
+## [0.15.5] (10 November 2026)
+
+### Added
+- **Send feedback in the side menu:** Feedback is now an item at the foot of the side menu, and on a phone a row in the menu, instead of a button floating over the page. Pages with no side menu, such as the set-up, keep the button in the corner. Help: [Send feedback about a page](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/send-feedback.md).
+
+### Fixed
+- **The ready-made image:** The ready-made Starboard image builds again. Since 0.15.2 a test that only passed on one computer stopped GitHub building it, so installs from the image stayed on 0.15.1. Help: [Install Starboard from the ready-made image](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-from-the-ready-made-image.md).
+
+### Security
+- **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
+
 ## [0.15.4] (10 November 2026)
 
 ### Added
@@ -1105,7 +1116,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.4...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.5...HEAD
+[0.15.5]: https://github.com/TheMightyTRex/starboard/compare/v0.15.4...v0.15.5
 [0.15.4]: https://github.com/TheMightyTRex/starboard/compare/v0.15.3...v0.15.4
 [0.15.3]: https://github.com/TheMightyTRex/starboard/compare/v0.15.2...v0.15.3
 [0.15.2]: https://github.com/TheMightyTRex/starboard/compare/v0.15.1...v0.15.2
