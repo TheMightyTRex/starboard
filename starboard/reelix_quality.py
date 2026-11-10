@@ -95,7 +95,8 @@ def state(reelix):
     _, req = reelix.call("GET", "/settings/requests")
     video = [p for p in profiles or [] if p.get("family", "video") == "video"]
     formats = [f for f in formats or [] if isinstance(f, dict) and "id" in f]
-    chosen = (((req or {}).get("movie") or {}).get("profile_id")) or (video[0]["id"] if video else None)
+    recommended = next((p["id"] for p in video if p.get("name") == RECOMMENDED), video[0]["id"] if video else None)
+    chosen = (((req or {}).get("movie") or {}).get("profile_id")) or recommended
     return {"levels": [describe(p, formats) for p in video], "chosen": chosen}
 
 
@@ -172,3 +173,20 @@ def choose(reelix, pid):
     out = state(reelix)
     level = next((lvl for lvl in out["levels"] if lvl["id"] == int(pid)), None)
     return {**out, "done": [f"New films and series use {level['title'] if level else 'that level'}"]}
+
+
+def recommended_for_new(reelix):
+    """At set-up: new films and series use HD-1080p when no level is chosen yet. Returns what was done, in words."""
+    _, req = reelix.call("GET", "/settings/requests")
+    req = dict(req or {})
+    if all((req.get(kind) or {}).get("profile_id") for kind in ("movie", "series")):
+        return []
+    _, profiles = reelix.call("GET", "/qualityprofiles")
+    hd = next((p for p in profiles or [] if p.get("name") == RECOMMENDED and p.get("family", "video") == "video"), None)
+    if not hd:
+        return []
+    for kind in ("movie", "series"):
+        if not (req.get(kind) or {}).get("profile_id"):
+            req[kind] = {**(req.get(kind) or {}), "profile_id": hd["id"]}
+    reelix.call("PUT", "/settings/requests", req)
+    return ["New films and series use HD (1080p)"]

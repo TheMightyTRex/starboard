@@ -116,3 +116,40 @@ class ReadKeysTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HelperReaderTest(unittest.TestCase):
+    """Without Docker access, the set-up helper reads the keys and hands them over in keys-found.json (VM test F3)."""
+
+    def test_one_request_for_every_key_and_the_answer_is_deleted(self):
+        import json
+        import threading
+        import time
+        with tempfile.TemporaryDirectory() as d:
+            def helper():  # stands in for starter.sh's read_keys
+                path = os.path.join(d, "keys-request")
+                for _ in range(100):
+                    if os.path.exists(path):
+                        asked = json.load(open(path))
+                        os.remove(path)
+                        keys = {f"{a['key']}|{a['container']}": "k" * 32 for a in asked["apps"] if a["key"] == "bazarr"}
+                        with open(os.path.join(d, "keys-found.json"), "w") as f:
+                            json.dump({"request": asked["request"], "keys": keys}, f)
+                        return
+                    time.sleep(0.05)
+            threading.Thread(target=helper, daemon=True).start()
+
+            class Cfg:
+                data = {"services": [{"id": "1", "name": "Bazarr", "type": "bazarr", "url": "http://127.0.0.1:6767", "container": "bazarr"},
+                                     {"id": "2", "name": "Jellyfin", "type": "jellyfin", "url": "http://127.0.0.1:8096"}]}
+                saved = []
+
+                def upsert_service(self, s):
+                    self.saved.append(s)
+
+            cfg = Cfg()
+            out = discovery.read_missing_keys(cfg, discovery.helper_reader(d, wait=5))
+            self.assertEqual(out["found"], ["Bazarr"])
+            self.assertEqual([m["name"] for m in out["missing"]], ["Jellyfin"])
+            self.assertEqual(cfg.saved[0]["api_key"], "k" * 32)
+            self.assertFalse(os.path.exists(os.path.join(d, "keys-found.json")))  # the keys stay only in the settings

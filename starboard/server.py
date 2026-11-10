@@ -1152,6 +1152,17 @@ class Handler(BaseHTTPRequestHandler):
             m = re.match(r"^/api/icons/([a-z0-9-]+)$", path)
             if m and method == "GET":
                 return self.icon(m.group(1))
+            if path == "/api/services/read-keys" and method == "POST":
+                # The set-up's keys step: each missing key read from the app's own files (owner, 10 November 2026).
+                # Starboard reads them itself with Docker access; without it (the safe default), the set-up helper on
+                # the server reads them and hands them over (data/stack/keys-request, keys-found.json).
+                reader = None if containers.available() else (
+                    discovery.helper_reader(stack.folder(app.data_dir)) if stack.starter_waiting(app.data_dir) else (lambda key, name: None))
+                out = discovery.read_missing_keys(cfg, reader)
+                services.forget()
+                if out["found"]:
+                    logs.event("info", "settings", "Keys read for " + ", ".join(out["found"]))
+                return self.json(200, {**out, "config": cfg.public()})
             m = re.match(r"^/api/services/([a-z0-9-]+)(/options)?$", path)
             if m:
                 service = cfg.service(m.group(1))
@@ -1397,19 +1408,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":
                 return self.json(200, self.add_found(self.body().get("items")))
-            if path == "/api/services/read-keys" and method == "POST":
-                # The set-up's keys step: each missing key read from the app's own files (owner, 10 November 2026).
-                out = discovery.read_missing_keys(cfg)
-                services.forget()
-                if out["found"]:
-                    logs.event("info", "settings", "Keys read for " + ", ".join(out["found"]))
-                return self.json(200, {**out, "config": cfg.public()})
             if path == "/api/stack" and method == "GET":
                 return self.json(200, self.stack_overview())
             if path == "/api/stack/install" and method == "POST":
                 # Basics, Full install or Everything: the apps (with what they need), groups and answers, for both set-ups.
                 overview = self.stack_overview()
-                installed = {a["key"] for a in overview["apps"] if a["installed"]}
+                # Apps of Starboard's own install stay in the choice even while running (VM test F4): left out, the
+                # compose file written next would drop them, and starting it (--remove-orphans) would stop them.
+                own = set(stack.chosen_keys(app.data_dir) or [])
+                installed = {a["key"] for a in overview["apps"] if a["installed"]} - own
                 body = self.body()
                 return self.json(200, stack.install_choice(str(body.get("install", "")), installed,
                                                            usenet=str(body.get("usenet") or "nzbget")))

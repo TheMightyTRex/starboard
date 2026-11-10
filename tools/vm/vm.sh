@@ -391,7 +391,7 @@ case "$ACTION" in
     ;;
 
   clean)
-    rm -f "$READY" "$RUN" "$DIR/$SYSTEM-seed.iso" "$DIR/$SYSTEM-seed-bare.iso" "$LOG" "$DIR/$SYSTEM"*-drive*.qcow2
+    rm -f "$READY" "$RUN" "$DIR/$SYSTEM-seed.iso" "$DIR/$SYSTEM-seed-"*.iso "$DIR/user-data" "$LOG" "$DIR/$SYSTEM"*-drive*.qcow2
     echo "Removed the $SYSTEM VM files (the downloaded image stays: $BASE)"
     ;;
 

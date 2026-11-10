@@ -302,6 +302,10 @@ set-up again to write it afresh.
 **Some apps did not start.** Choose **Show the details** for the last lines Docker wrote, put that right, then
 choose **Try again**.
 
+When it says the VPN did not connect, the apps that download through it wait on purpose, so nothing is downloaded
+outside the VPN. Check the VPN's details (the private key and address from your VPN provider) in the set-up's VPN
+step, then choose **Try again**.
+
 ### IN-34
 
 **Starboard could not give Jellyfin its Live TV fix.** Jellyfin runs FFmpeg through a small file in its settings

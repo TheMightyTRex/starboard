@@ -141,7 +141,8 @@ class InstallerAddsDockerTest(unittest.TestCase):
         import subprocess
         import tempfile
         script = (ROOT / "install.sh").read_text()
-        step = script[script.index("docker_os() {"):script.index("if ! command -v docker >/dev/null || ! docker compose version")]
+        step = script[script.index("DW_N=0"):script.index("if ! command -v docker >/dev/null || ! docker compose version")]
+        step = step + "\n" + script[script.index("docker_os() {"):script.index("DW_N=0")] if "docker_os() {" not in step else step
         with tempfile.TemporaryDirectory() as d:
             log = os.path.join(d, "log")
             for name in ("sudo", "curl"):
@@ -153,7 +154,7 @@ class InstallerAddsDockerTest(unittest.TestCase):
 WORK={d}; ARGS=(); STARBOARD_REGROUPED=1
 para() {{ :; }}; ok() {{ echo "OK $1" >> {log}; }}; finish() {{ :; }}
 fail() {{ echo "FAIL $1 $2" >> {log}; exit 1; }}
-work() {{ echo "WORK $1" >> {log}; bash -c "$2"; }}
+work() {{ [ $# -eq 4 ] || {{ echo "FAIL work needs 4 arguments, got $#" >> {log}; exit 1; }}; echo "WORK $1" >> {log}; bash -c "$2"; }}
 command() {{ if [ "$1" = -v ] && {{ [ "$2" = {"docker" if not have_docker else "none"} ] || [ "$2" = "{missing or 'none'}" ]; }}; then return 1; fi; builtin command "$@"; }}
 docker() {{ [ "$1" = compose ] && return 1; return 0; }}
 {step}

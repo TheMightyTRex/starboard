@@ -253,6 +253,14 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"The language of releases is not set yet ({e})")
 
+    # 3b2. Picture quality (VM test F7): new films and series use the recommended level, HD-1080p, unless a level is
+    # already chosen; otherwise Reelix takes its first, Anything.
+    try:
+        from . import reelix_quality
+        done += reelix_quality.recommended_for_new(admin)
+    except (ReelixError, OSError, ValueError) as e:
+        done.append(f"Picture quality is not set yet ({e}). Choose it in Settings, Reelix")
+
     # 3c. Naming (Season 6, not Season 06, DASH-188) and how hard Reelix works in the background, from how much the
     # server does (Light on a small server, DASH-200).
     from . import config as _config, reelix_library

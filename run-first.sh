@@ -1374,7 +1374,7 @@ finish
 host_change() {
   local status=0 job progress=data/stack/host-progress.json
   echo
-  echo "Making the set-up's change to this computer, as the set-up in the browser asked. The browser shows how it goes."
+  tell "Making the set-up's change to this computer, as the set-up in the browser asked. The browser shows how it goes."
   printf '{"state": "running", "n": 0, "of": 1, "name": "Starting"}\n' > "$progress"
   ( STARBOARD_PROGRESS="$PWD/$progress" apply_host > data/stack/host.log 2>&1 < /dev/null ) &
   job=$!
@@ -1410,7 +1410,7 @@ starter() {
       req="$(head -c 40 data/stack/start-request | tr -cd '0-9.')"
       rm -f data/stack/start-request
       echo
-      echo "Downloading and starting your apps, as the set-up asked. The browser shows how it goes."
+      tell "Downloading and starting your apps, as the set-up asked. The browser shows how it goes."
       status=0
       if [ "$NEW_GROUP" = 1 ] && ! id -nG | tr ' ' '\n' | grep -qx docker; then
         IN=/dev/null STARTER_RUN=1 with_docker_group ./install.sh --start-apps > data/stack/start.log 2>&1 &
@@ -1427,11 +1427,11 @@ json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(s
         "$req" "$status" data/stack/start.log "$result" && mv -f "$result.new" "$result"
       tail -n 1 data/stack/start.log | fold -s -w $(( COLS > 1 ? COLS - 1 : 79 ))
       if [ "$status" = 0 ]; then
-        echo "Your apps are running. Keep this window open until the set-up in the browser has finished."
+        tell "Your apps are running. Keep this window open until the set-up in the browser has finished."
       else
-        echo "Error RF-50: the apps did not start. The reason is in the line above."
+        tell "Error RF-50: the apps did not start. The reason is in the line above."
         err RF-50
-        echo "Waiting: select Try again in the browser, or press q to close this window."
+        tell "Waiting: select Try again in the browser, or press q to close this window."
       fi
     fi
     if [ -f data/stack/host-request ] && [ ! -L data/stack/host-request ]; then

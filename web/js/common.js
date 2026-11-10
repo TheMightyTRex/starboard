@@ -641,14 +641,19 @@ if (location.hash.length > 1) {
     if (!target) return false;
     target.scrollIntoView({ block: "start" });
     if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
-    target.focus({ preventScroll: true });
+    if (document.activeElement !== target) target.focus({ preventScroll: true });
     return true;
   };
   document.addEventListener("DOMContentLoaded", () => {
-    if (reach()) return;
-    const watch = new MutationObserver(() => { if (reach()) watch.disconnect(); });
+    // Parts drawn above it later push it down (VM test): it is kept in view while the page fills in, until the person
+    // scrolls or presses a key, and for 8 seconds at most.
+    let found = false;
+    const stop = () => { watch.disconnect(); ["wheel", "keydown", "touchstart", "pointerdown"].forEach((e) => removeEventListener(e, stop, true)); };
+    const watch = new MutationObserver(() => { found = reach() || found; });
+    ["wheel", "keydown", "touchstart", "pointerdown"].forEach((e) => addEventListener(e, stop, true));
+    found = reach();
     watch.observe(document.body, { childList: true, subtree: true });
-    setTimeout(() => watch.disconnect(), 8000);
+    setTimeout(stop, 8000);
   });
 }
 // The address of a Starboard page for a slide-out: ?panel=1 before any #part, such as /settings-reelix.html#rx-indexers-h.

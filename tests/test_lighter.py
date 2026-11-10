@@ -143,6 +143,25 @@ class LighterTest(unittest.TestCase):
             self.assertEqual((j.loads(body)["n"], j.loads(body)["name"]), (2, "Installing smartmontools"))
             c.close()
 
+    def test_a_second_set_up_keeps_the_apps_starboard_installed(self):
+        # VM test F4: running apps of Starboard's own install stay in Basics, or the next start would stop them.
+        import json as j
+        from unittest import mock
+        from starboard import server, stack
+        overview = {"apps": [{"key": "jellyfin", "installed": True}, {"key": "sonarr", "installed": True}]}
+        with mock.patch.object(server.Handler, "signed_in", return_value=True), \
+                mock.patch.object(type(self.app), "needs_setup", new_callable=mock.PropertyMock, return_value=False), \
+                mock.patch.object(server.Handler, "stack_overview", return_value=overview), \
+                mock.patch.object(stack, "chosen_keys", return_value=["jellyfin", "reelix"]):
+            c = self.conn()
+            c.request("POST", "/api/stack/install", j.dumps({"install": "basics"}),
+                      {"Host": f"127.0.0.1:{self.port}", "Content-Type": "application/json", "X-Starboard": "1", "Origin": f"http://127.0.0.1:{self.port}"})
+            r = c.getresponse()
+            body = j.loads(r.read())
+            c.close()
+        self.assertEqual(r.status, 200)
+        self.assertIn("jellyfin", body["apps"])  # Starboard's own, running: kept
+
 
 if __name__ == "__main__":
     unittest.main()

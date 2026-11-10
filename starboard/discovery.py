@@ -268,16 +268,62 @@ def read_key(key, container_name):
     return m.group(1) if m else None
 
 
-def read_missing_keys(cfg):
+def helper_reader(stack_folder, wait=25.0):
+    """A key reader that asks the set-up helper on the server (starter.sh), which can use Docker when Starboard cannot:
+    one request for every key wanted, answered in keys-found.json. Returns reader(key, container) -> key or None."""
+    import json as _json
+    import time as _time
+    asked = {}
+
+    def reader(key, name):
+        asked[f"{key}|{name}"] = {"key": key, "container": name}
+        return None
+
+    def ask():
+        if not asked:
+            return {}
+        request = f"{_time.time():.3f}"
+        done = os.path.join(stack_folder, "keys-found.json")
+        try:
+            os.remove(done)
+        except OSError:
+            pass
+        with open(os.path.join(stack_folder, "keys-request.new"), "w", encoding="utf-8") as f:
+            _json.dump({"request": request, "apps": list(asked.values())}, f)
+        os.replace(os.path.join(stack_folder, "keys-request.new"), os.path.join(stack_folder, "keys-request"))
+        until = _time.time() + wait
+        while _time.time() < until:
+            try:
+                with open(done, encoding="utf-8") as f:
+                    got = _json.load(f)
+                if got.get("request") == request:
+                    os.remove(done)  # the keys stay only in Starboard's settings
+                    return {k: v for k, v in (got.get("keys") or {}).items() if isinstance(v, str) and v}
+            except (OSError, ValueError):
+                pass
+            _time.sleep(0.5)
+        return {}
+
+    reader.ask = ask
+    return reader
+
+
+def read_missing_keys(cfg, reader=None):
     """The set-up's keys step (owner, 10 November 2026: nothing to type): for each app on the dashboard that needs a
-    key and has none, its key read from its own files and saved. Returns {"found": [names], "missing": [services]}."""
+    key and has none, its key read from its own files and saved. `reader(key, container)` reads one key (read_key, or
+    the set-up helper's, which answers every key at once). Returns {"found": [names], "missing": [services]}."""
+    reader = reader or read_key
     found, missing = [], []
     needs = {v[1]: k for k, v in CATALOGUE.items() if v[4] or k in KEY_DATABASES}  # service type -> catalogue key
+    wanted = []
     for s in list(cfg.data["services"]):
         key = needs.get(s.get("type"))
-        if not key or s.get("api_key"):
-            continue
-        value = read_key(key, s.get("container") or key)
+        if key and not s.get("api_key"):
+            wanted.append((s, key, s.get("container") or key))
+            reader(key, s.get("container") or key)
+    answers = reader.ask() if hasattr(reader, "ask") else None
+    for s, key, name in wanted:
+        value = answers.get(f"{key}|{name}") if answers is not None else reader(key, name)
         if value:
             cfg.upsert_service({**s, "api_key": value})
             found.append(s["name"])

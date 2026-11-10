@@ -998,7 +998,7 @@ async function stepContent(id, root) {
       location.href = "/install-apps.html?from=guide";
       return false;
     };
-  } else if (id === "start") {
+  } else if (id === "how-to-start") {  // not "start": that is Install apps' Start the apps step, drawn by install.js
     // How to start: the same question, answers and help as the terminal set-up (starboard/start.py).
     const found = await api("/api/setup/start");
     const name = `start-${Date.now()}`;
@@ -1317,7 +1317,7 @@ async function startGuide() {
   const build = () => {
     const list = [];
     const start = guideMemory().start || "new";
-    list.push({ id: "start", ...stepNamed(T, "start"), skippable: false,
+    list.push({ id: "how-to-start", ...stepNamed(T, "start"), skippable: false,
       intro: "A new media server, the apps you already run, or a backup of Starboard's settings." });
     if (start === "restore") {
       // DASH-265, DASH-268: the backup brought the settings back, so they are not asked again. When its apps are not
@@ -2901,7 +2901,8 @@ async function hostChange(opener) {
     try { await api("/api/setup/host/apply", { method: "POST", body: { password: input.value } }); break; }
     catch (e) { err.textContent = e.status === 401 ? "That password is not right. Check Caps Lock and try again." : e.message; err.hidden = false; input.setAttribute("aria-invalid", "true"); input.value = ""; }
   }
-  const bar = el("span", { style: "width: 0%" });
+  const bar = el("span");  // its width is set from here (a style property), which the content policy allows
+  bar.style.width = "0%";
   const meter = el("div", { class: "progress", role: "progressbar", "aria-label": "Changing the server", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "0" }, bar);
   const now = el("p", { "aria-live": "polite", text: "Waiting for the helper on the server…" });
   const out = el("pre", { class: "code-block host-output", tabindex: "0", "aria-label": "What the installer says", hidden: true });

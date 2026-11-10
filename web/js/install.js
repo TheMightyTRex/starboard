@@ -827,7 +827,9 @@ async function installStep(id, state, data, apps, go) {
               const details = el("button", { type: "button", class: "btn", "aria-expanded": "false" }, "Show the details");
               const leave = el("a", { class: "btn btn--quiet", href: "/index.html" }, "Stop");
               const problemBox = el("div", { class: "stack-2", id: "start-problem" },
-                notice("danger", "Something did not start", "Docker stopped before every app was running. Try again often works after a slow download; the details show the last lines Docker wrote."),
+                /VPN did not connect|container gluetun is unhealthy/i.test(j.log || "")
+                  ? notice("danger", "The VPN did not connect", "Starboard sends downloads only through the VPN, so the apps that use it wait until it connects. Check the VPN's details in the VPN step, then try again.")
+                  : notice("danger", "Something did not start", "Docker stopped before every app was running. Try again often works after a slow download; the details show the last lines Docker wrote."),
                 el("div", { class: "actions" }, again, details, leave));
               bar.setAttribute("aria-describedby", "start-problem");
               status.append(problemBox);

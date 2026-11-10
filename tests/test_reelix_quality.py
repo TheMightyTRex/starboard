@@ -111,3 +111,13 @@ class QualityTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RecommendedTest(unittest.TestCase):
+    def test_new_films_use_hd_when_nothing_is_chosen(self):
+        reelix = FakeReelix()
+        reelix.state.request_settings = {}
+        self.assertEqual(rq.state(reelix)["chosen"], 1)  # shown as HD even before it is saved
+        self.assertEqual(rq.recommended_for_new(reelix), ["New films and series use HD (1080p)"])
+        self.assertEqual(reelix.state.request_settings["movie"]["profile_id"], 1)
+        self.assertEqual(rq.recommended_for_new(reelix), [])  # a level already chosen is kept

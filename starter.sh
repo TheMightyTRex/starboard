@@ -95,8 +95,30 @@ host_change() {
   fi
 }
 
+# Keys: Starboard asks for the API keys of apps it found (data/stack/keys-request); this reads each from the app's own
+# files through Docker, with Starboard's own reader, and answers in data/stack/keys-found.json, which Starboard
+# deletes once it has saved them.
+read_keys() {
+  local request=data/stack/keys-request
+  mv -f "$request" "$request.reading" 2>/dev/null || return 0
+  python3 -c 'import json, sys
+sys.path.insert(0, ".")
+from starboard import discovery
+asked = json.load(open(sys.argv[1]))
+keys = {}
+for app in asked.get("apps", [])[:40]:
+    key, name = str(app.get("key", "")), str(app.get("container", ""))
+    value = discovery.read_key(key, name)
+    if value:
+        keys[f"{key}|{name}"] = value
+json.dump({"request": asked.get("request"), "keys": keys}, open(sys.argv[2] + ".new", "w"))' "$request.reading" data/stack/keys-found.json 2>> data/stack/keys.log \
+    && mv -f data/stack/keys-found.json.new data/stack/keys-found.json
+  rm -f "$request.reading"
+}
+
 while :; do
   : > data/starter
+  if [ -f data/stack/keys-request ] && [ ! -L data/stack/keys-request ]; then read_keys; fi
   if [ -f data/stack/start-request ] && [ ! -L data/stack/start-request ]; then start_apps; fi
   if [ -f data/stack/host-request ] && [ ! -L data/stack/host-request ]; then host_change; fi
   sleep 3

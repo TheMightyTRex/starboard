@@ -304,6 +304,13 @@ sa_up() {
   restarting="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps --status restarting --format '{{.Name}}' 2>/dev/null | paste -sd, - | sed 's/,/, /g')"
   docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps --status running --format '{{.Name}}' \
     > data/stack/running.txt 2>/dev/null || rm -f data/stack/running.txt
+  # The VPN did not connect (VM test F5): the apps that download through it wait for it on purpose, so nothing leaks
+  # outside it. Say so, rather than only "some did not start".
+  if grep -qiE 'container gluetun is unhealthy|dependency failed to start: container gluetun' "$WORK/up.log" 2>/dev/null \
+     || [[ ", $restarting," == *", gluetun,"* ]]; then
+    running="$(docker compose -p media-stack -f "$SA_FILE" --env-file "$SA_ENV" ps -q --status running 2>/dev/null | wc -l)"
+    stop IN-33 "the VPN did not connect, so the apps that download through it did not start ($running of $SA_TOTAL apps are running). Check the VPN's details in the set-up's VPN step, then try again."
+  fi
   if [ -n "$restarting" ] && [ "$status" = 0 ]; then
     running="$(grep -c . data/stack/running.txt 2>/dev/null || echo 0)"
     stop IN-33 "$running of $SA_TOTAL apps are running; $restarting keeps restarting. Show the details for the last lines Docker wrote, fix what they say, then try again."
@@ -389,6 +396,9 @@ start_apps() {
 # IN-08 are left for when installing it fails.
 # shellcheck source=/dev/null
 docker_os() { (. /etc/os-release 2>/dev/null; printf '%s %s\n' "${ID:-}" "${ID_LIKE:-}"); }
+# dwork "name" "command": one of the Docker steps, numbered for the bar (work needs its place: n of).
+DW_N=0
+dwork() { DW_N=$(( DW_N + 1 )); work "$1" "$2" "$DW_N" 4; }
 install_docker() {
   local os pkg=""
   os="$(docker_os)"
@@ -400,26 +410,26 @@ install_docker() {
   sudo -v || fail IN-07 "Docker is needed, and sudo did not get the password. Run this again, or install Docker first"
   if ! command -v docker >/dev/null; then
     if [ "$pkg" = apt ] && { [[ " $os " == *" linuxmint "* ]] || ! command -v curl >/dev/null; }; then
-      work "Updating the list of software" "sudo apt-get update" || fail IN-07 "the list of software could not be updated"
-      work "Installing Docker and Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2" \
+      dwork "Updating the list of software" "sudo apt-get update" || fail IN-07 "the list of software could not be updated"
+      dwork "Installing Docker and Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2" \
         || fail IN-07 "Docker could not be installed"
     else
-      work "Downloading Docker's installer" "curl -fsSL https://get.docker.com -o $WORK/get-docker.sh" || fail IN-07 "Docker's installer could not be downloaded"
-      work "Installing Docker and Docker Compose" "sudo sh $WORK/get-docker.sh" || fail IN-07 "Docker could not be installed"
+      dwork "Downloading Docker's installer" "curl -fsSL https://get.docker.com -o $WORK/get-docker.sh" || fail IN-07 "Docker's installer could not be downloaded"
+      dwork "Installing Docker and Docker Compose" "sudo sh $WORK/get-docker.sh" || fail IN-07 "Docker could not be installed"
     fi
   elif ! docker compose version >/dev/null 2>&1; then
     case "$pkg" in
       apt) if [[ " $os " == *" ubuntu "* || " $os " == *" linuxmint "* ]]; then
-             work "Installing Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-v2" || fail IN-08 "Docker Compose could not be installed"
+             dwork "Installing Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-v2" || fail IN-08 "Docker Compose could not be installed"
            else
-             work "Installing Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin" || fail IN-08 "Docker Compose could not be installed"
+             dwork "Installing Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin" || fail IN-08 "Docker Compose could not be installed"
            fi ;;
-      dnf) work "Installing Docker Compose" "sudo dnf install -y docker-compose-plugin" || fail IN-08 "Docker Compose could not be installed" ;;
+      dnf) dwork "Installing Docker Compose" "sudo dnf install -y docker-compose-plugin" || fail IN-08 "Docker Compose could not be installed" ;;
     esac
   fi
-  if command -v systemctl >/dev/null; then work "Starting Docker" "sudo systemctl enable --now docker" || fail IN-07 "Docker could not be started"; fi
+  if command -v systemctl >/dev/null; then dwork "Starting Docker" "sudo systemctl enable --now docker" || fail IN-07 "Docker could not be started"; fi
   if ! id -nG "$(id -un)" | tr ' ' '\n' | grep -qx docker; then
-    work "Allowing your user to use Docker" "sudo usermod -aG docker $(id -un)" || fail IN-07 "your user could not be allowed to use Docker"
+    dwork "Allowing your user to use Docker" "sudo usermod -aG docker $(id -un)" || fail IN-07 "your user could not be allowed to use Docker"
   fi
   ok "Docker and Docker Compose are installed."
   # This sign-in does not know the new group yet: carry on within it, as the start of this script does.
