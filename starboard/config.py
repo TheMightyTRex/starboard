@@ -23,6 +23,7 @@ SERVICE_TYPES = {
     # NZBGet signs in with its control user name and password, kept as "user:password" in the API key field.
     "nzbget": {"label": "NZBGet", "api": "/jsonrpc", "searchable": False},
     "gluetun": {"label": "Gluetun (VPN)", "api": "", "searchable": False},
+    "slskd": {"label": "Soulseek (slskd)", "api": "/api/v0", "searchable": False},  # DASH-94: download hours pause it
     "seerr": {"label": "Seerr, Jellyseerr or Overseerr", "api": "/api/v1", "searchable": False},
     "audiobookshelf": {"label": "Audiobookshelf", "api": "/api", "searchable": False},
     "link": {"label": "Other app", "api": "", "searchable": False},

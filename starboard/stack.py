@@ -146,6 +146,16 @@ APPS = {
     "unpackerr": {"name": "Unpackerr", "groups": ["downloads"], "image": "ghcr.io/hotio/unpackerr:latest",
                   "volumes": [f"{CFG}/unpackerr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 50, "default": False, "later": True,
                   "notes": "Unpacks downloads. Needs the API keys of your apps in its settings file first."},
+    # Soulseek through slskd (DASH-94): music and books from other people's shares, through the VPN when there is
+    # one. Its API key and its own sign-in are made up here; the Soulseek name and password are the person's, typed
+    # in slskd (a new name makes a free account), so its settings can be changed from its own page.
+    "slskd": {"name": "Soulseek (slskd)", "groups": ["downloads"], "image": "slskd/slskd:latest", "ports": ["5030:5030", "50300:50300"],
+              "volumes": [f"{CFG}/slskd:/app", f"{DATA}:/data"], "vpn": True, "memory": 150, "default": False,
+              "env": {"TZ": "${TZ}", "SLSKD_API_KEY": "${SLSKD_API_KEY}", "SLSKD_USERNAME": "starboard",
+                      "SLSKD_PASSWORD": "${SLSKD_WEB_PASS}", "SLSKD_REMOTE_CONFIGURATION": "true",
+                      "SLSKD_DOWNLOADS_DIR": "/data/downloads/soulseek", "SLSKD_INCOMPLETE_DIR": "/data/downloads/soulseek/incomplete"},
+              "secrets": ["SLSKD_API_KEY", "SLSKD_WEB_PASS"],
+              "notes": "Music and books from the Soulseek network. Type your Soulseek name and password in slskd; download hours pause it."},
     "gluetun": {"name": "Gluetun", "groups": ["vpn"], "image": "qmcgaw/gluetun:v3", "memory": 50, "gluetun": True,
                 "env": {"TZ": "${TZ}", "VPN_SERVICE_PROVIDER": "${VPN_SERVICE_PROVIDER}", "VPN_TYPE": "${VPN_TYPE}",
                         "WIREGUARD_PRIVATE_KEY": "${WIREGUARD_PRIVATE_KEY}", "WIREGUARD_ADDRESSES": "${WIREGUARD_ADDRESSES}",
@@ -193,7 +203,8 @@ DATA_FOLDERS = {"movies": ["media/movies"], "tv": ["media/tv"], "music": ["media
                 # start, so Reelix does not warn they cannot be reached and suggest a remote path mapping.
                 "downloads": ["downloads/torrents", "downloads/torrents/movies-reelix", "downloads/torrents/tv-reelix",
                               "downloads/usenet", "downloads/usenet/completed/movies", "downloads/usenet/completed/tv",
-                              "downloads/direct"]}  # YouTube and Spotify with the full version of Reelix (DASH-216)
+                              "downloads/direct",  # YouTube and Spotify with the full version of Reelix (DASH-216)
+                              "downloads/soulseek", "downloads/soulseek/incomplete"]}  # Soulseek (DASH-94)
 
 PROJECT = "media-stack"
 _SAFE_PATH = re.compile(r"^/[A-Za-z0-9._/-]{1,200}$")
@@ -971,6 +982,11 @@ def bazarr_key(data_dir):
     return env_values(data_dir).get("BAZARR_API_KEY") or None
 
 
+def slskd_key(data_dir):
+    """slskd's API key as Install apps made it up (data/stack/.env), or None (DASH-94)."""
+    return env_values(data_dir).get("SLSKD_API_KEY") or None
+
+
 def sabnzbd_key(data_dir):
     """SABnzbd's API key as Install apps made it up (data/stack/.env), or None."""
     return env_values(data_dir).get("SABNZBD_API_KEY") or None
@@ -1080,7 +1096,8 @@ def note_reelix(data_dir, choice, built):
             "sabnzbd": "sabnzbd" in apps,
             "usenet": next((k for k in USENET_APPS if k in apps), None),
             "usenet_host": ("gluetun" if vpn else next((k for k in USENET_APPS if k in apps), "nzbget")),
-            "vpn": vpn, "edition": edition_of(choice_image(choice)) if "reelix" in apps else None}
+            "vpn": vpn, "edition": edition_of(choice_image(choice)) if "reelix" in apps else None,
+            "slskd_host": ("gluetun" if vpn else "slskd") if "slskd" in apps else None}
     from . import reelix_sites
     sites = reelix_sites.clean_choice(choice.get("sites"))  # chosen in either set-up; added once Reelix runs
     if sites["builtin"] or sites["own"]:

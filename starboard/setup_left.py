@@ -155,6 +155,9 @@ GUIDED = [
     ("wizarr", "Finish Wizarr's set-up",
      "In Wizarr, make its admin, then add Jellyfin at http://jellyfin:8096 with Jellyfin's API key from Apps, Jellyfin. "
      "Then select Done."),
+    ("slskd", "Add your Soulseek name",
+     "In slskd, Options: type a Soulseek name and password under soulseek (a new name makes a free account), and "
+     "choose what to share. Then select Done."),
     ("dispatcharr", "Finish Dispatcharr's set-up",
      "In Dispatcharr, make its admin and add your IPTV playlist and guide. In Jellyfin, Live TV, add an HDHomeRun tuner "
      "at http://dispatcharr:9191/hdhr. Then select Done."),

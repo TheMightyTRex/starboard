@@ -1378,15 +1378,18 @@
    "slskd": {
     "host": {
      "type": "text",
-     "use": "later"
+     "use": "default",
+     "why": "Set by Starboard when Install apps installs Soulseek (slskd), with the key it made up (DASH-94)"
     },
     "port": {
      "type": "number",
-     "use": "later"
+     "use": "default",
+     "why": "Set by Starboard when Install apps installs Soulseek (slskd), with the key it made up (DASH-94)"
     },
     "use_ssl": {
      "type": "bool",
-     "use": "later"
+     "use": "default",
+     "why": "Set by Starboard when Install apps installs Soulseek (slskd), with the key it made up (DASH-94)"
     },
     "verify_ssl": {
      "type": "bool",
@@ -1398,19 +1401,23 @@
     },
     "api_key": {
      "type": "secret",
-     "use": "later"
+     "use": "default",
+     "why": "Set by Starboard when Install apps installs Soulseek (slskd), with the key it made up (DASH-94)"
     },
     "downloads_dir": {
      "type": "text",
-     "use": "later"
+     "use": "default",
+     "why": "Set by Starboard when Install apps installs Soulseek (slskd), with the key it made up (DASH-94)"
     },
     "fail_on_file_error": {
      "type": "bool",
-     "use": "later"
+     "use": "default",
+     "why": "Set by Starboard when Install apps installs Soulseek (slskd), with the key it made up (DASH-94)"
     },
     "add_indexer": {
      "type": "bool",
-     "use": "later"
+     "use": "default",
+     "why": "Set by Starboard when Install apps installs Soulseek (slskd), with the key it made up (DASH-94)"
     },
     "remove_completed": {
      "type": "bool",

@@ -180,6 +180,14 @@ def qbit(service, path, data=None, timeout=TIMEOUT):
     return _fetch(service, req, timeout)
 
 
+def slskd(service, method, path, timeout=TIMEOUT):
+    """slskd's API (/api/v0) with its key (DASH-94)."""
+    req = urllib.request.Request(service["url"].rstrip("/") + "/api/v0/" + path, method=method,
+                                 data=b"" if method in ("PUT", "POST") else None,
+                                 headers={"X-API-Key": service.get("api_key", ""), "User-Agent": USER_AGENT})
+    return _fetch(service, req, timeout)
+
+
 def sab(service, mode, timeout=TIMEOUT, **params):
     """One SABnzbd API call. SABnzbd 4 and later answer on /api (with no URL base, /sabnzbd/api only redirects);
     older ones and those with the URL base /sabnzbd answer on /sabnzbd/api, which is tried second."""
@@ -241,6 +249,12 @@ def check(service):
             sab(service, "queue", timeout=5, limit=0)  # "version" works without a key; this one does not
         elif kind == "seerr":
             version = (_api(service, "/status", timeout=5) or {}).get("version", "")
+        elif kind == "slskd":  # DASH-94: its version, and whether it is signed in to Soulseek
+            version = (slskd(service, "GET", "application", timeout=5) or {}).get("version", {})
+            version = version.get("current", "") if isinstance(version, dict) else str(version)
+            server = slskd(service, "GET", "server", timeout=5) or {}
+            if not server.get("isLoggedIn"):
+                raise ServiceError("Not signed in to Soulseek: type your Soulseek name and password in slskd")
         elif kind == "gluetun":
             v = vpn_one(service)
             if not v["running"]:

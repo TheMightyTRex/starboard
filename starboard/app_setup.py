@@ -303,6 +303,7 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
                   if stack.qbittorrent_password(data_dir) else None),
                  ("nzbget", "NZBGet", 6789, lambda base: stack.nzbget_key(data_dir)),
                  ("sabnzbd", "SABnzbd", stack.SABNZBD_PORT, lambda base: stack.sabnzbd_key(data_dir)),
+                 ("slskd", "Soulseek (slskd)", 5030, lambda base: stack.slskd_key(data_dir)),
                  ("gluetun", "Gluetun", 8000, lambda base: stack.env_values(data_dir).get("GLUETUN_API_KEY"))]
     for key, name, inside, secret in downloads:
         base = stack.app_url(data_dir, key, inside) if key in keys else None

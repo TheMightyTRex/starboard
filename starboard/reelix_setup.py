@@ -336,6 +336,24 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"SABnzbd is not connected yet ({e}). Add it in Starboard: Settings, Reelix, Download apps")
 
+    # 4c1. Soulseek through slskd (DASH-94): a download app and, with Reelix's add_indexer, a site to search, with the
+    # API key Install apps made up. Finished files land in the shared media folder, so moves are instant.
+    if info.get("slskd_host"):
+        from . import stack
+        key = stack.slskd_key(data_dir)
+        try:
+            if not key:
+                raise ReelixError("its API key is not in data/stack/.env")
+            _, clients = admin.call("GET", "/downloadclients")
+            if not any(c.get("implementation") == "slskd" for c in (clients or [])):
+                admin.call("POST", "/downloadclients", {
+                    "implementation": "slskd", "name": "Soulseek", "enabled": True, "priority": 50, "tags": [],
+                    "settings": {"host": info["slskd_host"], "port": 5030, "use_ssl": False, "api_key": key,
+                                 "downloads_dir": "/data/downloads/soulseek", "fail_on_file_error": False, "add_indexer": True}})
+                done.append("Connected Reelix to Soulseek, for downloads and searches")
+        except (ReelixError, OSError, ValueError) as e:
+            done.append(f"Soulseek is not connected yet ({e}). Add it in Starboard: Settings, Reelix, Download apps")
+
     # 4c2. Your Usenet server into NZBGet or SABnzbd (DASH-183), as typed in the set-up.
     done += setup_answers.apply_usenet(data_dir, opener=opener)
 

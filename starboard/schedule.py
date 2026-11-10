@@ -64,7 +64,7 @@ class Schedule:
 
     def clients(self):
         return [s for s in self.config.data["services"]
-                if s["type"] in ("qbittorrent", "sabnzbd", "nzbget") and s.get("enabled", True) and s.get("url") and s.get("api_key")]
+                if s["type"] in ("qbittorrent", "sabnzbd", "nzbget", "slskd") and s.get("enabled", True) and s.get("url") and s.get("api_key")]
 
     def wanted(self, state, now):
         """("run" or "pause", "manual" or "hours")"""
@@ -131,6 +131,8 @@ class Schedule:
                     self._qbit(client, mine, action, manual, enforcing, allowed)
                 elif client["type"] == "nzbget":
                     self._nzbget(client, mine, action, enforcing, allowed)
+                elif client["type"] == "slskd":
+                    self._slskd(client, mine, action, enforcing)
                 else:
                     self._sab(client, mine, action, enforcing)
             except ServiceError as e:
@@ -195,6 +197,20 @@ class Schedule:
             if paused:
                 services.nzbget(client, "resumedownload")
             mine["nzbget_paused"] = False
+
+    def _slskd(self, client, mine, action, enforcing):
+        """Soulseek (DASH-94): paused by disconnecting slskd from the network, which stops its transfers and
+        searches; run connects it again. One connected by hand since Starboard paused it is left alone."""
+        state = services.slskd(client, "GET", "server") or {}
+        connected = bool(state.get("isConnected") or state.get("isLoggedIn"))
+        if action == "pause" and connected:
+            if not (enforcing and mine.get("slskd_paused")):
+                services.slskd(client, "DELETE", "server")
+                mine["slskd_paused"] = True
+        elif action == "run":
+            if not connected and mine.get("slskd_paused"):
+                services.slskd(client, "PUT", "server")
+            mine["slskd_paused"] = False
 
     def _sab(self, client, mine, action, enforcing):
         paused = services.sab(client, "queue", limit=0)["queue"]["paused"]
