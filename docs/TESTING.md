@@ -147,3 +147,6 @@ Faults found and fixed before release:
 - Jellyfin and Audiobookshelf were set up too soon after starting and never again: their first runs now wait.
 - Smaller: lines past 80 columns, Picture quality not on HD by default, a stray /dev/tty line, the bar's style.
 
+- After the fixes, a single straight run on a fresh VM set up everything, Jellyfin and Audiobookshelf included, with
+  every app's key and Jellyfin's start-up wizard closed. Nothing was typed but the Starboard password, and the
+  VPN details from the provider when the VPN is chosen. Disk health asks for one sudo command, by design.
