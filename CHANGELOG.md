@@ -7,6 +7,20 @@ add features.
 
 ## [Unreleased]
 
+## [0.16.4] (10 November 2026)
+
+### Added
+- **Reset style:** Display has a Reset style button under the style list, and Settings, General has a Style section saying which style this browser uses, with Reset style and Choose a style. Reset style goes back to Starboard's standard colours and keeps your other Display choices. Help: [Change text size, theme and other display settings](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/display-and-accessibility.md).
+
+### Fixed
+- **Live TV guides that ran out:** Samsung TV Plus's guide covers about ten hours, so refreshing once a day left its channels empty by the evening. A guide is now fetched again when it has under 12 hours left, and Jellyfin reads new guides straight away. Help: [Set up free Live TV in Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md).
+- **Each guide with its own channels:** With every guide set for every channel list, Jellyfin took programmes from the first guide only. Live TV now links each guide to its own list in Jellyfin, and puts right set-ups made before. Help: [Set up free Live TV in Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md).
+- **Display's Reset left the style ticked:** Reset in Display now also unticks a style from a plug-in.
+- **Bringing in radio shows looked stuck:** Finding your radio shows on Reelix's sources searched one show after another, which could take minutes with nothing on screen. It now searches five at once, ten to a page, and the button says it is finding them. Help: [Follow radio shows and podcasts](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/follow-radio-shows.md#bring-in-shows-you-already-have).
+
+### Security
+- **Checks:** The unit tests (also as another user), the browser journeys, the API contract tests, the help check, the private details check, the design system copy check and the security scans ran on this release.
+
 ## [0.16.3] (10 November 2026)
 
 ### Added
@@ -1180,7 +1194,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.16.3...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/TheMightyTRex/starboard/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/TheMightyTRex/starboard/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/TheMightyTRex/starboard/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/TheMightyTRex/starboard/compare/v0.16.0...v0.16.1
