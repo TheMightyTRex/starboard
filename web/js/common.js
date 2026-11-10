@@ -631,6 +631,75 @@ async function appChangeNotices() {
 // The upgrade guide inside a slide-out (?panel=1): only its steps, without the menus around them.
 if (new URLSearchParams(location.search).get("panel") === "1" && window.parent !== window) document.documentElement.classList.add("in-panel");
 
+// Still to set up, one at a time (DASH-289, owner, 10 November 2026): a slide-out that walks through each item left,
+// with Do it now (the place that does it), Skip (later), Ignore (not asked again; Bring back in the list), Done for
+// a guided step, and Next step. It opens by itself once in each browser session while anything is left, and
+// remembers where it was when Do it now goes to another page.
+const WIZARD_KEY = "starboard.setup-wizard";
+function wizardMemory(update) {
+  let m = {};
+  try { m = JSON.parse(sessionStorage.getItem(WIZARD_KEY) || "{}"); } catch { /* a fresh start */ }
+  if (update) { m = { ...m, ...update }; try { sessionStorage.setItem(WIZARD_KEY, JSON.stringify(m)); } catch { /* fine */ } }
+  return m;
+}
+async function setupWizard({ opener = document.activeElement, onChange } = {}) {
+  let items;
+  try { items = (await api("/api/setup/left")).items.filter((i) => !i.done && !i.ignored); } catch { return; }
+  if (!items.length) return;
+  const mem = wizardMemory({ opened: true });
+  let index = Math.max(0, items.findIndex((i) => i.key === mem.at));
+  // Closing it (X or Escape) ends this session's walk-through; Do it now leaves the page, so it carries on there.
+  const panel = sidePanel({ title: "Still to set up", opener, wide: false, body: [], onClose: () => { wizardMemory({ at: null }); onChange?.(); } });
+  const draw = () => {
+    if (index >= items.length) {
+      panel.body.replaceChildren(el("div", { class: "stack-4" }, el("h3", { text: "That is all for now" }),
+        el("p", { text: "What you skipped stays on the list, so you can come back to it. What you ignored is not asked again." })));
+      const close = el("button", { type: "button", class: "btn btn--primary", text: "Close" });
+      close.addEventListener("click", () => panel.close());
+      panel.setFoot([close]);
+      wizardMemory({ at: null });
+      close.focus();
+      return;
+    }
+    const item = items[index];
+    wizardMemory({ at: item.key });
+    const heading = el("h3", { tabindex: "-1", text: item.title });
+    const outside = item.href.startsWith("http");
+    const doIt = el("a", { class: "btn btn--primary", href: item.href, ...(outside ? { target: "_blank", rel: "noopener" } : {}) },
+      "Do it now", outside ? el("span", { class: "visually-hidden", text: " (opens in a new tab)" }) : null);
+    const doneBtn = item.guided ? el("button", { type: "button", class: "btn" }, "Done") : null;
+    doneBtn?.addEventListener("click", async () => {
+      try { await api("/api/setup/left/done", { method: "POST", body: { key: item.key } }); announce(`${item.title}: done`); items.splice(index, 1); draw(); onChange?.(); }
+      catch (e) { problem(e.message, doneBtn); }
+    });
+    const bar = el("div", { class: "wizard-steps", "aria-hidden": "true" }, items.map((_, i) => el("span", { class: i < index ? "is-past" : i === index ? "is-now" : "" })));
+    panel.body.replaceChildren(el("div", { class: "stack-4" },
+      el("p", { class: "small muted", text: `Step ${index + 1} of ${items.length}` }), bar, heading,
+      el("p", { text: item.why }), el("div", { class: "actions" }, doIt, doneBtn)));
+    const skip = el("button", { type: "button", class: "btn", text: "Skip" });
+    skip.addEventListener("click", () => { index += 1; draw(); announce("Skipped for now"); });
+    const ignore = el("button", { type: "button", class: "btn btn--quiet", text: "Ignore" });
+    ignore.addEventListener("click", async () => {
+      try { await api("/api/setup/left/ignore", { method: "POST", body: { key: item.key } }); items.splice(index, 1); announce(`${item.title}: not asked again`); draw(); onChange?.(); }
+      catch (e) { problem(e.message, ignore); }
+    });
+    const next = el("button", { type: "button", class: "btn btn--primary", text: index === items.length - 1 ? "Finish" : "Next step" });
+    next.addEventListener("click", () => { index += 1; draw(); });
+    panel.setFoot([next, skip, ignore]);
+    heading.focus();
+  };
+  draw();
+}
+// Once in each browser session, on the page with the list, while anything is left.
+let wizardStarted = false;
+function setupWizardOnce(onChange) {
+  if (wizardStarted || $("#side-panel")) return;  // a page that redraws (the dashboard, each minute) asks only once
+  wizardStarted = true;
+  const mem = wizardMemory();
+  if (mem.opened && !mem.at) return;
+  setTimeout(() => setupWizard({ onChange }), 600);
+}
+
 // After an upgrade: with something to choose, a notice opens the upgrade guide (or waits, with Remind me later);
 // with nothing to choose, the upgrade is marked as seen and the notes stay under the version.
 function upgradeNotice(upgrade) {

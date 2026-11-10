@@ -273,17 +273,33 @@ async function renderSetupLeft() {
   if (!box) return;
   let r;
   try { r = await api("/api/setup/left"); } catch { box.hidden = true; return; }
-  const todo = (r.items || []).filter((i) => !i.done);
-  if (!todo.length) { box.hidden = true; box.replaceChildren(); return; }
-  const done = r.items.length - todo.length;
+  const todo = (r.items || []).filter((i) => !i.done && !i.ignored);
+  const ignoredItems = (r.items || []).filter((i) => !i.done && i.ignored);
+  if (!todo.length && !ignoredItems.length) { box.hidden = true; box.replaceChildren(); return; }
+  const done = r.items.length - todo.length - ignoredItems.length;
+  // The wizard (DASH-289): one item at a time, with Skip, Ignore and Next step; Bring back undoes Ignore.
+  const walk = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
+  walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: renderSetupLeft }));
+  const back = ignoredItems.length ? el("button", { type: "button", class: "btn btn--quiet btn--compact" }, `Bring back ${ignoredItems.length} ignored`) : null;
+  back?.addEventListener("click", async () => {
+    for (const i of ignoredItems) await api("/api/setup/left/ignore", { method: "POST", body: { key: i.key, ignore: false } }).catch(() => {});
+    renderSetupLeft();
+  });
+  if (!todo.length) {
+    box.replaceChildren(el("p", { class: "small muted" }, `Everything else is set up. ${ignoredItems.length} ignored. `, back));
+    box.hidden = false;
+    return;
+  }
   box.replaceChildren(el("div", { class: "notice", role: "status" }, icon("list-checks"),
     el("div", { class: "notice__body stack-2" },
       el("span", { class: "notice__title", text: `Still to set up: ${todo.length} of ${r.items.length}` }),
       el("p", { class: "small muted", text: done ? `${done} done. Each one goes from this list when it is done.` : "Each one goes from this list when it is done." }),
+      el("div", { class: "actions" }, walk, back),
       el("ul", { class: "stack-2" }, todo.map((i) => el("li", {},
         el("a", { href: i.href, text: i.title, ...(i.guided && i.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {}) }),
         el("span", { class: "small muted", text: ` ${i.why}` }), i.guided ? doneButton(i) : null))))));
   box.hidden = false;
+  setupWizardOnce(renderSetupLeft);
 }
 
 // A guided step (Tdarr, Wizarr, Dispatcharr) has Done, as Starboard cannot see when it is finished.

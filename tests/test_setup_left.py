@@ -49,5 +49,21 @@ class SetupLeft(unittest.TestCase):
             setup_left.mark_done(self.tmp.name, "reelix")
 
 
+    def test_ignore_takes_an_item_off_what_is_left_and_bring_back_returns_it(self):
+        with mock.patch.object(setup_left, "_reelix_health", return_value=None), \
+                mock.patch.object(setup_left, "_usenet_server", return_value=None):
+            before = setup_left.left(self.cfg(), self.tmp.name)["left"]
+            setup_left.ignore(self.tmp.name, "tmdb")
+            setup_left.forget()
+            out = setup_left.left(self.cfg(), self.tmp.name)
+            self.assertEqual(out["left"], before - 1)
+            self.assertTrue(next(i for i in out["items"] if i["key"] == "tmdb")["ignored"])
+            setup_left.ignore(self.tmp.name, "tmdb", on=False)
+            setup_left.forget()
+            self.assertEqual(setup_left.left(self.cfg(), self.tmp.name)["left"], before)
+        with self.assertRaises(ValueError):
+            setup_left.ignore(self.tmp.name, "")
+
+
 if __name__ == "__main__":
     unittest.main()

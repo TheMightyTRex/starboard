@@ -145,7 +145,11 @@ def items(cfg, data_dir):
         if key in keys:
             url = next((s.get("url") for s in svcs if (s.get("icon") or s.get("type")) == key and s.get("url")), None)
             out.append({"key": key, "title": title, "why": why, "href": url or "/index.html", "done": key in finished, "guided": True})
-    return [i for i in out if i["done"] is not None]  # one Starboard could not ask is left out, not guessed
+    ignored = set(state.get("ignored") or [])  # Ignore in the set-up wizard: not asked again until brought back
+    out = [i for i in out if i["done"] is not None]  # one Starboard could not ask is left out, not guessed
+    for i in out:
+        i["ignored"] = i["key"] in ignored
+    return out
 
 
 GUIDED = [
@@ -173,6 +177,16 @@ def mark_done(data_dir, key):
     return done
 
 
+def ignore(data_dir, key, on=True):
+    """Ignore (or bring back) an item: an ignored one no longer counts as left to set up."""
+    if not isinstance(key, str) or not 1 <= len(key) <= 40:
+        raise ValueError("Not an item on the list")
+    have = set(recorded(data_dir).get("ignored") or [])
+    have = have | {key} if on else have - {key}
+    record(data_dir, ignored=sorted(have))
+    return sorted(have)
+
+
 def left(cfg, data_dir):
     """{items, left}: cached for 5 minutes."""
     with _lock:
@@ -180,7 +194,7 @@ def left(cfg, data_dir):
         if hit and time.time() - hit[0] < KEEP:
             return hit[1]
     out = items(cfg, data_dir)
-    result = {"items": out, "left": sum(1 for i in out if not i["done"])}
+    result = {"items": out, "left": sum(1 for i in out if not i["done"] and not i.get("ignored"))}
     with _lock:
         _cache["left"] = (time.time(), result)
     return result

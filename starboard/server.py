@@ -1490,8 +1490,17 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/setup/left" and method == "GET":
                 from . import setup_left  # DASH-185: what is left to set up
                 return self.json(200, setup_left.left(app.config, app.data_dir))
+            if path == "/api/setup/left/ignore" and method == "POST":
+                from . import setup_left  # Ignore, or bring back, in the set-up wizard (DASH-289)
+                body = self.body()
+                try:
+                    setup_left.ignore(app.data_dir, str(body.get("key", "")), body.get("ignore", True) is not False)
+                except ValueError as e:
+                    return self.json(400, {"error": str(e)})
+                return self.json(200, setup_left.left(app.config, app.data_dir))
             if path == "/api/setup/left/done" and method == "POST":
                 from . import setup_left  # Done on a guided step (DASH-230, DASH-231)
+                body = self.body()
                 try:
                     setup_left.mark_done(app.data_dir, str(body.get("key", "")))
                 except ValueError as e:

@@ -4941,3 +4941,10 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
 
 /* Send feedback (Snaglist) sits in the bottom left corner: the side menu's end keeps room above it. */
 :root.has-feedback .rail__end { padding-block-end: 64px; }
+
+/* The set-up wizard's step marks (DASH-289): past, now and to come; the text above says the same in words. */
+.wizard-steps { display: flex; gap: var(--space-1); }
+.wizard-steps span { flex: 1; block-size: 6px; background: var(--color-divider); border-radius: var(--radius); }
+.wizard-steps .is-past { background: var(--color-text-muted); }
+.wizard-steps .is-now { background: var(--color-accent); }
+@media (forced-colors: active) { .wizard-steps span { border: 1px solid CanvasText; } .wizard-steps .is-now { background: Highlight; } }

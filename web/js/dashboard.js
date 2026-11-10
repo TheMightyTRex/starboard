@@ -34,8 +34,13 @@ const ask = (url) => (SOURCES[url] ||= api(url).finally(() => setTimeout(() => {
 const CARDS = {
   async setup() {
     const r = await ask("/api/setup/left");
-    const todo = r.items.filter((i) => !i.done);
-    return todo.length ? el("ul", { class: "rows" }, todo.map((i) => line(i.title, i.why, i.href))) : null;
+    const todo = r.items.filter((i) => !i.done && !i.ignored);
+    if (!todo.length) return null;
+    // The wizard (DASH-289): one item at a time; it opens by itself once in each browser session.
+    const walk = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
+    walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: () => draw() }));
+    if (!editing) setupWizardOnce(() => draw());
+    return el("div", { class: "stack-2" }, el("div", { class: "actions" }, walk), el("ul", { class: "rows" }, todo.map((i) => line(i.title, i.why, i.href))));
   },
   async playing() {
     const r = await ask("/api/jellyfin");
