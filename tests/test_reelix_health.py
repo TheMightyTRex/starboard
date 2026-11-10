@@ -49,6 +49,15 @@ class ReelixHealth(unittest.TestCase):
         self.assertEqual(fixes[0], {"label": "Sites to search", "href": "/settings-reelix.html#rx-indexers"})
         self.assertIsNone(fixes[2])
 
+    def test_a_cloudflare_check_offers_flaresolverr_until_it_is_installed(self):
+        report = {"checks": [{"source": "indexers", "level": "warning",
+                              "message": "Indexer 1337x is unavailable due to failures until 2026-11-10 09:00 UTC (Cloudflare challenge: challenge detected; configure FlareSolverr)"}]}
+        result, _ = self.asked(report)
+        self.assertEqual(result["items"][0]["fix"]["href"], "/install-apps.html?wizard=1&add=flaresolverr")
+        with mock.patch.object(services, "_api", return_value=report):
+            again = services.health(REELIX, ["reelix", "flaresolverr"])
+        self.assertEqual(again["items"][0]["fix"]["label"], "Sites to search")
+
     def test_a_healthy_reelix_gives_nothing(self):
         result, _ = self.asked({"status": "ok", "checks": [{"source": "database", "level": "ok", "message": "fine"}]})
         self.assertEqual(result, {"items": [], "errors": []})

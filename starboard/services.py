@@ -790,7 +790,11 @@ REELIX_FIX = {"indexers": ("Sites to search", "/settings-reelix.html#rx-indexers
               "database": ("Your install", "/settings-install.html")}
 
 
-def _reelix_health_one(reelix):
+FLARESOLVERR_OFFER = {"label": "Install FlareSolverr: it gets past the browser check this site uses, with about 300 MB of memory",
+                      "href": "/install-apps.html?wizard=1&add=flaresolverr"}
+
+
+def _reelix_health_one(reelix, installed=()):
     """Reelix's own checks (/api/v1/system/health with the manager key). Its Sonarr- and Radarr-style health routes
     always answer an empty list (demonzoned/Reelix#74), so they are never asked (DASH-176)."""
     now = time.time()
@@ -801,20 +805,26 @@ def _reelix_health_one(reelix):
             continue
         message = c.get("message", "")
         where = REELIX_FIX.get(c.get("source", ""))
+        fix = {"label": where[0], "href": where[1]} if where else None
+        # A site behind Cloudflare's browser check: offer FlareSolverr in one step, only when it is needed (DASH-84).
+        if c.get("source") == "indexers" and "cloudflare" in message.lower() and "flaresolverr" not in installed:
+            fix = FLARESOLVERR_OFFER
         out.append({"service": reelix["id"], "service_name": reelix["name"], "level": "error" if level == "error" else "warning",
                     "message": message, "source": c.get("source", ""), "first_seen": FIRST_SEEN.setdefault((reelix["id"], message), now),
-                    "wiki": "", "fix": {"label": where[0], "href": where[1]} if where else None})
+                    "wiki": "", "fix": fix})
     seen = {(reelix["id"], h["message"]) for h in out}
     for key in [k for k in FIRST_SEEN if k[0] == reelix["id"] and k not in seen]:
         FIRST_SEEN.pop(key, None)
     return out
 
 
-def health(services):
+def health(services, installed=None):
+    """Problems the apps report. `installed`: the apps Install apps installed, so an offer to install one is made only
+    when it is missing."""
     targets = [s for s in services if s.get("enabled", True) and s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr")
                and s.get("icon") != "reelix"]
     rows, errors = _gather(targets, _health_one)
-    more, more_errors = _gather(reelix_native(services), _reelix_health_one)
+    more, more_errors = _gather(reelix_native(services), lambda r: _reelix_health_one(r, set(installed or ())))
     return {"items": rows + more, "errors": errors + more_errors}
 
 

@@ -1755,7 +1755,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/jellyfin" and method == "GET":
                 return self.json(200, services.cached("jellyfin", 20, lambda: services.jellyfin(cfg.data["services"]), fresh))
             if path == "/api/health" and method == "GET":
-                return self.json(200, services.cached("health", 300, lambda: services.health(cfg.data["services"]), fresh))
+                return self.json(200, services.cached("health", 300, lambda: services.health(cfg.data["services"], stack.chosen_keys(app.data_dir)), fresh))
             if path == "/api/history" and method == "GET":
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                 hours = {"1": 1, "6": 6, "24": 24}.get(q.get("hours", ["1"])[0], 1)
