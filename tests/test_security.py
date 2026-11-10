@@ -8,6 +8,7 @@ import tempfile
 import threading
 import unittest
 import unittest.mock
+import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -182,7 +183,11 @@ class SecurityTest(unittest.TestCase):
         threading.Thread(target=bounce.serve_forever, daemon=True).start()
         try:
             req = urllib.request.Request(f"http://127.0.0.1:{bounce.server_port}/", headers={"X-Api-Key": "secret"})
-            urllib.request.urlopen(req, timeout=5).read()
+            with self.assertRaises(urllib.error.HTTPError):  # not followed at all since DASH-279
+                urllib.request.urlopen(req, timeout=5).read()
+            self.assertNotIn("auth", seen)
+            plain = urllib.request.Request(f"http://127.0.0.1:{bounce.server_port}/")  # no key: followed as before
+            urllib.request.urlopen(plain, timeout=5).read()
             self.assertIsNone(seen.get("auth"))
         finally:
             other.shutdown()

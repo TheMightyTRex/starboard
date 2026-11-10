@@ -633,6 +633,12 @@ def validate_service(s):
         value = str(clean.get(key, "")).strip().rstrip("/")[:300]
         if value and not re.match(r"^https?://[^\s/]+$|^https?://[^\s/]+/\S*$", value):
             raise ConfigError(f"The {label} must start with http:// or https:// and have no spaces")
+        if value and key in ("url", "outside_link"):  # Starboard itself calls these (DASH-279)
+            from . import outside
+            try:
+                outside.check_url(value)
+            except ValueError as e:
+                raise ConfigError(str(e)) from None
         clean[key] = value
     clean["background"] = bool(clean.get("background", False))
     follows = str(clean.get("follows") or "").strip()

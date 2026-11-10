@@ -30,11 +30,18 @@ class _KeepKeysHome(urllib.request.HTTPRedirectHandler):
     SECRET = ("authorization", "x-api-key", "x-emby-token", "x-plex-token")
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
+        from . import outside
+        try:  # a redirect is checked like any address Starboard is told to call (DASH-279)
+            outside.check_url(newurl)
+        except ValueError:
+            return None
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new is not None:
             old_host = urllib.parse.urlsplit(req.full_url)
             new_host = urllib.parse.urlsplit(newurl)
             if (old_host.scheme, old_host.hostname, old_host.port) != (new_host.scheme, new_host.hostname, new_host.port):
+                if any(name.lower() in self.SECRET for name in req.headers) and old_host.hostname != new_host.hostname:
+                    return None  # an app's request with its key never goes on to another server (DASH-279)
                 for name in list(new.headers):
                     if name.lower() in self.SECRET:
                         del new.headers[name]

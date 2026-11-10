@@ -1968,6 +1968,12 @@ class Handler(BaseHTTPRequestHandler):
         secret = str(data.get("token", "")).strip()
         if kind in ("plex", "emby", "jellyfin") and not re.match(r"^https?://[^\s/]+(/\S*)?$", url):
             return self.error(400, "Enter the server's address, starting with http:// or https://")
+        if url:
+            from . import outside  # the server Starboard is told to read from (DASH-279)
+            try:
+                outside.check_url(url)
+            except ValueError as e:
+                return self.error(400, str(e))
         if kind in ("plex", "emby", "jellyfin") and not secret:
             return self.error(400, "Enter the token or API key")
         if kind not in ("plex", "emby", "jellyfin"):
@@ -2004,6 +2010,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.error(400, "Choose where to read from")
         if not re.match(r"^https?://[^\s/]+(/\S*)?$", url):
             return self.error(400, "Enter the server's address, starting with http:// or https://")
+        if url:
+            from . import outside  # the server Starboard is told to read from (DASH-279)
+            try:
+                outside.check_url(url)
+            except ValueError as e:
+                return self.error(400, str(e))
         if not secret:
             return self.error(400, "Enter the token or API key")
         with app.import_lock:
