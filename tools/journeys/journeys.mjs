@@ -143,9 +143,10 @@ check("FB-01", "the report is saved in Starboard", saved.length === 1);
 await open("settings-general.html");
 check("FB-01", "Settings, General lists it", await page.locator("#feedback-list .row").count() >= 1);
 for (const n of saved) await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } });
-await api("/api/config/general", { method: "PUT", body: { ux_notes: fbBefore } });
+await api("/api/config/general", { method: "PUT", body: { ux_notes: false } });
 await open("index.html");
 check("FB-01", "deactivated, it is gone", await page.locator("snag-list").count() === 0);
+await api("/api/config/general", { method: "PUT", body: { ux_notes: fbBefore } });  // on by default since 0.15.2
 
 // SEC-07: names, categories, descriptions and UX notes that look like code are shown as text
 console.log("\n== SEC-07 Text that looks like code");
