@@ -110,9 +110,9 @@ the VPN, Reelix scanning a new folder and one film playing directly (not convert
 | Gluetun | Sends downloads through your VPN | ✓ | ✓ | ✓ | A VPN account; a download app |
 | FlareSolverr | Gets past browser checks on some search sites | | ✓ | ✓ | Reelix |
 | Jellystat | Watch statistics for Jellyfin, with its own database | | ✓ | ✓ | Jellyfin |
-| Wizarr | Invites people to Jellyfin | | ✓ | ✓ | Jellyfin |
-| Dispatcharr | Live TV channels and guides in Jellyfin | | ✓ | ✓ | Jellyfin |
-| Dozzle | Reads every app's log in the browser | | ✓ | ✓ | |
+| Wizarr | Invites people to Jellyfin | | | ✓ | Jellyfin |
+| Dispatcharr | Paid IPTV channels in Jellyfin (Starboard's own Live TV plug-in covers free channels) | | | ✓ | Jellyfin |
+| Dozzle | Reads every app's log in the browser, with no sign-in (System, Logs shows app logs too) | | | ✓ | |
 | Tdarr | Converts the library to smaller files | | ✓ | ✓ | Processor time |
 | Disk health | Checks each disk every 30 minutes (on the server, not an app) | | ✓ | ✓ | The server's password once |
 | Storyarr | Ebooks and audiobooks with series and reading lists, with its own database | | | ✓ | A download app |
