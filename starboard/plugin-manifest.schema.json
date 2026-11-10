@@ -1,0 +1,223 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://starboard.invalid/plugin-manifest-1.json",
+ "title": "Starboard plug-in manifest, version 1",
+ "type": "object",
+ "additionalProperties": false,
+ "required": [
+  "author",
+  "containers",
+  "description",
+  "homepage",
+  "id",
+  "licence",
+  "manifest_version",
+  "name",
+  "permissions",
+  "starboard_api",
+  "support_url",
+  "version"
+ ],
+ "properties": {
+  "manifest_version": {
+   "const": 1
+  },
+  "id": {
+   "type": "string",
+   "pattern": "^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
+  },
+  "name": {
+   "type": "string",
+   "maxLength": 40
+  },
+  "version": {
+   "type": "string",
+   "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$"
+  },
+  "description": {
+   "type": "string",
+   "maxLength": 200
+  },
+  "author": {
+   "type": "string",
+   "maxLength": 60
+  },
+  "licence": {
+   "type": "string",
+   "pattern": "^[A-Za-z0-9.+-]{2,40}$"
+  },
+  "homepage": {
+   "type": "string",
+   "pattern": "^https://"
+  },
+  "support_url": {
+   "type": "string",
+   "pattern": "^https://"
+  },
+  "starboard_api": {
+   "type": "string"
+  },
+  "health": {
+   "type": "string",
+   "pattern": "^/"
+  },
+  "permissions": {
+   "type": "array",
+   "items": {
+    "enum": [
+     "apps:read",
+     "downloads:read",
+     "jellyfin:key",
+     "media:read",
+     "network:lan",
+     "network:vpn",
+     "system:read"
+    ]
+   },
+   "uniqueItems": true
+  },
+  "needs": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "containers": {
+   "type": "array",
+   "minItems": 1,
+   "maxItems": 4,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "name",
+     "image"
+    ],
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "image": {
+      "type": "string",
+      "pattern": "^[a-z0-9.-]+(:\\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
+     },
+     "port": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+     },
+     "network": {
+      "enum": [
+       "default",
+       "lan",
+       "vpn"
+      ]
+     },
+     "volumes": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "env": {
+      "type": "object"
+     },
+     "start": {
+      "enum": [
+       "always",
+       "when_needed"
+      ]
+     },
+     "idle_stop_minutes": {
+      "type": "integer"
+     },
+     "user": {
+      "type": "string",
+      "pattern": "^[1-9]\\d{0,5}:\\d{1,6}$"
+     }
+    }
+   }
+  },
+  "resources": {
+   "type": "object",
+   "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+     "memory": {
+      "type": "integer",
+      "maximum": 512
+     },
+     "cpus": {
+      "type": "number",
+      "maximum": 1.0
+     }
+    }
+   }
+  },
+  "settings": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "key",
+     "label",
+     "type"
+    ],
+    "properties": {
+     "type": {
+      "enum": [
+       "text",
+       "number",
+       "switch",
+       "choice",
+       "address",
+       "secret",
+       "folder",
+       "list",
+       "custom"
+      ]
+     }
+    }
+   }
+  },
+  "cards": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "type",
+     "path"
+    ],
+    "properties": {
+     "type": {
+      "enum": [
+       "stat",
+       "list",
+       "status"
+      ]
+     },
+     "format": {
+      "enum": [
+       "number",
+       "bytes",
+       "percent",
+       "duration",
+       "date"
+      ]
+     }
+    }
+   }
+  },
+  "actions": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": [
+     "label",
+     "path"
+    ]
+   }
+  }
+ }
+}

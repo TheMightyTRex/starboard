@@ -1,0 +1,264 @@
+"""Plug-ins (DASH-149), first part: the manifest, its check, the permissions people approve, and the Compose file
+Starboard writes for a plug-in with its hardened defaults. The design is in PLUGIN-SYSTEM-DESIGN (DASH-272); the
+rules are P1 to P17 and PS1 to PS11 in the developer best practice.
+
+A plug-in is containers, a manifest (starboard-plugin.json), optional settings and cards, and an API key limited to
+what the person approved. It never adds code to Starboard's pages, never gets the Docker socket, privileged mode,
+the host network, devices, or any folder but its own.
+"""
+import json
+import os
+import re
+
+MANIFEST_VERSION = 1
+API_VERSION = "1.0.0"
+ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
+SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
+DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
+TAG_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+(:[A-Za-z0-9._-]{1,128})?$"
+SPDX = r"^[A-Za-z0-9.+-]{2,40}$"
+
+# What each permission means, in the words people read before install (PS1), and its risk.
+PERMISSIONS = {
+    "apps:read": ("See your apps and whether they answer", "low", "apps"),
+    "downloads:read": ("See what is downloading", "low", "downloads"),
+    "media:read": ("See your films, series and books (the media folder, read only, and the library)", "medium", "media"),
+    "system:read": ("See processor, memory and disks", "low", "system"),
+    "network:lan": ("Reach other computers on your home network", "medium", None),
+    "network:vpn": ("Run inside your VPN connection", "medium", None),
+    "jellyfin:key": ("Use Jellyfin's API key, kept by Starboard", "high", None),
+}
+NETWORKS = {"default": None, "lan": "network:lan", "vpn": "network:vpn"}
+SETTING_TYPES = ("text", "number", "switch", "choice", "address", "secret", "folder", "list", "custom")
+CARD_TYPES = ("stat", "list", "status")
+CARD_FORMATS = ("number", "bytes", "percent", "duration", "date")
+DEFAULT_MEMORY, DEFAULT_CPUS, CEILING_MEMORY, CEILING_CPUS = 128, 0.25, 512, 1.0
+
+TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
+       "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs"}
+REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs"}
+CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user"}
+SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item"}
+CARD = {"id", "title", "type", "path", "format", "label"}
+ACTION = {"id", "label", "path", "confirm"}
+
+
+def _range_ok(spec, version=API_VERSION):
+    """True when `version` is inside a range such as ">=1.0 <2.0" (only >=, >, <=, < and = are used)."""
+    def parts(v):
+        return tuple(int(x) for x in (v.split("-")[0].split(".") + ["0", "0"])[:3])
+    have = parts(version)
+    for clause in str(spec).split():
+        m = re.match(r"^(>=|<=|>|<|=)?(\d+(?:\.\d+){0,2})$", clause)
+        if not m:
+            return False
+        op, want = m.group(1) or "=", parts(m.group(2))
+        if not {">=": have >= want, "<=": have <= want, ">": have > want, "<": have < want, "=": have == want}[op]:
+            return False
+    return True
+
+
+def check(manifest, dev=False):
+    """Every problem with a manifest, as plain sentences; an empty list when it can be installed. `dev`: development
+    mode, which allows images without a digest (P17)."""
+    out = []
+    m = manifest if isinstance(manifest, dict) else {}
+    if not isinstance(manifest, dict):
+        return ["The manifest must be a JSON object"]
+    for k in sorted(set(m) - TOP):
+        out.append(f"Unknown field {k}")
+    for k in sorted(REQUIRED - set(m)):
+        out.append(f"Missing field {k}")
+    if m.get("manifest_version") not in (None, MANIFEST_VERSION):
+        out.append(f"manifest_version must be {MANIFEST_VERSION}")
+    for key, pattern, words in (("id", ID, "3 to 40 lower case letters, numbers and hyphens"), ("version", SEMVER, "a version such as 1.2.0"),
+                                ("licence", SPDX, "an SPDX licence id such as MIT")):
+        if key in m and not (isinstance(m[key], str) and re.match(pattern, m[key])):
+            out.append(f"{key} must be {words}")
+    for key, limit in (("name", 40), ("description", 200), ("author", 60)):
+        if key in m and not (isinstance(m[key], str) and 0 < len(m[key].strip()) <= limit):
+            out.append(f"{key} must be text of up to {limit} characters")
+    for key in ("homepage", "support_url"):
+        if key in m and not (isinstance(m[key], str) and re.match(r"^https://\S+$", m[key])):
+            out.append(f"{key} must be an https address")
+    if "starboard_api" in m:
+        if not isinstance(m["starboard_api"], str) or not all(re.match(r"^(>=|<=|>|<|=)?\d+(\.\d+){0,2}$", c) for c in m["starboard_api"].split()):
+            out.append("starboard_api must be a range such as >=1.0 <2.0")
+        elif not _range_ok(m["starboard_api"]):
+            out.append(f"It needs Starboard's API {m['starboard_api']}; this Starboard has {API_VERSION}")
+    perms = m.get("permissions", [])
+    if not isinstance(perms, list) or any(p not in PERMISSIONS for p in perms):
+        out.append("permissions must be a list from: " + ", ".join(PERMISSIONS))
+        perms = []
+    containers = m.get("containers")
+    if "containers" in m and not (isinstance(containers, list) and 1 <= len(containers) <= 4):
+        out.append("containers must list one to four containers")
+        containers = []
+    names = set()
+    for i, c in enumerate(containers or []):
+        where = f"containers[{i}]"
+        if not isinstance(c, dict):
+            out.append(f"{where} must be an object")
+            continue
+        for k in sorted(set(c) - CONTAINER):
+            out.append(f"{where}: unknown field {k}")
+        name = c.get("name")
+        if not (isinstance(name, str) and re.match(r"^[a-z0-9][a-z0-9-]{0,20}$", name)) or name in names:
+            out.append(f"{where}: name must be short, lower case and different from the others")
+        names.add(name)
+        image = c.get("image")
+        if not isinstance(image, str) or not (re.match(DIGEST_IMAGE, image) or (dev and re.match(TAG_IMAGE, image))):
+            out.append(f"{where}: image must be pinned by digest (name@sha256:...)" + ("" if dev else "; development mode allows a tag"))
+        if "port" in c and not (isinstance(c["port"], int) and 1 <= c["port"] <= 65535):
+            out.append(f"{where}: port must be a number from 1 to 65535")
+        net = c.get("network", "default")
+        if net not in NETWORKS:
+            out.append(f"{where}: network must be default, lan or vpn")
+        elif NETWORKS[net] and NETWORKS[net] not in perms:
+            out.append(f"{where}: network {net} needs the permission {NETWORKS[net]}")
+        for v in c.get("volumes") or []:
+            if v == "media:ro":
+                if "media:read" not in perms:
+                    out.append(f"{where}: the media folder needs the permission media:read")
+            elif v != "data" and not re.match(r"^media/[A-Za-z0-9._-]{1,60}$", str(v)):
+                out.append(f"{where}: volumes may be data, media:ro or media/<one folder>, not {v}")
+        env = c.get("env") or {}
+        if not isinstance(env, dict) or any(not re.match(r"^[A-Z][A-Z0-9_]{0,60}$", str(k)) or not isinstance(v, (str, int, bool)) for k, v in env.items()):
+            out.append(f"{where}: env must map UPPER_CASE names to plain values")
+        user = c.get("user")
+        if user is not None and (not isinstance(user, str) or not re.match(r"^\d{1,6}:\d{1,6}$", user) or user.split(":")[0] == "0"):
+            out.append(f"{where}: user must be a non-root uid:gid such as 1000:1000")
+        if c.get("start", "always") not in ("always", "when_needed"):
+            out.append(f"{where}: start must be always or when_needed")
+    for i, s in enumerate(m.get("settings") or []):
+        where = f"settings[{i}]"
+        if not isinstance(s, dict) or not re.match(r"^[a-z][a-z0-9_]{0,40}$", str(s.get("key", ""))) or not s.get("label"):
+            out.append(f"{where}: needs a key (lower_case) and a label")
+            continue
+        for k in sorted(set(s) - SETTING):
+            out.append(f"{where}: unknown field {k}")
+        if s.get("type") not in SETTING_TYPES:
+            out.append(f"{where}: type must be one of {', '.join(SETTING_TYPES)}")
+        if s.get("type") == "custom" and not re.match(r"^/[A-Za-z0-9/_-]{1,80}$", str(s.get("choices", ""))):
+            out.append(f"{where}: a custom setting names the path that gives its choices")
+    for i, card in enumerate(m.get("cards") or []):
+        where = f"cards[{i}]"
+        if not isinstance(card, dict):
+            out.append(f"{where} must be an object")
+            continue
+        for k in sorted(set(card) - CARD):
+            out.append(f"{where}: unknown field {k}")
+        if card.get("type") not in CARD_TYPES or not re.match(r"^/[A-Za-z0-9/_.-]{1,80}$", str(card.get("path", ""))):
+            out.append(f"{where}: needs a type ({', '.join(CARD_TYPES)}) and a path on the plug-in")
+        if card.get("format") and card["format"] not in CARD_FORMATS:
+            out.append(f"{where}: format must be one of {', '.join(CARD_FORMATS)}")
+    for i, a in enumerate(m.get("actions") or []):
+        if not isinstance(a, dict) or set(a) - ACTION or not a.get("label") or not re.match(r"^/[A-Za-z0-9/_-]{1,80}$", str(a.get("path", ""))):
+            out.append(f"actions[{i}]: needs a label and a path on the plug-in")
+    if "health" in m and not re.match(r"^/[A-Za-z0-9/_.-]{0,80}$", str(m["health"])):
+        out.append("health must be a path on the plug-in, such as /health")
+    for name, r in (m.get("resources") or {}).items():
+        if name not in names or not isinstance(r, dict) or set(r) - {"memory", "cpus"}:
+            out.append(f"resources.{name}: name a container and give memory (MB) and cpus")
+        elif r.get("memory", 0) > CEILING_MEMORY or r.get("cpus", 0) > CEILING_CPUS:
+            out.append(f"resources.{name}: at most {CEILING_MEMORY} MB and {CEILING_CPUS} processor")
+    if m.get("needs") is not None and not (isinstance(m["needs"], list) and all(re.match(r"^[a-z0-9-]{2,30}$", str(n)) for n in m["needs"])):
+        out.append("needs must list app names such as jellyfin")
+    return out
+
+
+def permission_words(manifest):
+    """[{permission, words, risk}] for the screen people see before install (PS1)."""
+    return [{"permission": p, "words": PERMISSIONS[p][0], "risk": PERMISSIONS[p][1]} for p in manifest.get("permissions") or []]
+
+
+def key_scopes(manifest):
+    """The API key's scopes: exactly the read permissions approved (P8)."""
+    return sorted({PERMISSIONS[p][2] for p in manifest.get("permissions") or [] if PERMISSIONS[p][2]})
+
+
+def compose(manifest, plugin_dir, media_dir):
+    """The Compose file Starboard writes for a plug-in, with the hardened defaults the plug-in cannot change (PS2 to
+    PS5). `plugin_dir` is data/plugins/<id> on the host; `media_dir` the media folder."""
+    problems = check(manifest, dev=True)
+    if problems:
+        raise ValueError("; ".join(problems))
+    pid = manifest["id"]
+    res = manifest.get("resources") or {}
+    lines = [f"# Written by Starboard for the plug-in {manifest['name']} {manifest['version']}. Starboard rewrites it;",
+             "# change the plug-in's settings in Starboard instead.", "services:"]
+    networks = set()
+    for c in manifest["containers"]:
+        name = f"plugin-{pid}-{c['name']}"
+        r = res.get(c["name"]) or {}
+        lines += [f"  {name}:", f"    image: {json.dumps(c['image'])}", f"    container_name: {name}", "    restart: unless-stopped",
+                  "    read_only: true", "    tmpfs:", "      - /tmp:size=64m", "    cap_drop:", "      - ALL",
+                  "    security_opt:", "      - no-new-privileges:true", f"    user: {json.dumps(c.get('user') or '10001:10001')}",
+                  "    pids_limit: 64", f"    mem_limit: {int(r.get('memory', DEFAULT_MEMORY))}m", f"    cpus: {float(r.get('cpus', DEFAULT_CPUS))}",
+                  "    labels:", f"      starboard.plugin: {json.dumps(pid)}"]
+        if c.get("start") == "when_needed":
+            lines.append(f"      starboard.idle_stop_minutes: \"{int(c.get('idle_stop_minutes') or 15)}\"")
+        net = c.get("network", "default")
+        if net == "vpn":
+            lines += ['    network_mode: "service:gluetun"']
+        else:
+            lines += ["    networks:", f"      - plugin-{pid}"] + (["      - lan"] if net == "lan" else [])
+            networks.add(net)
+        vols = []
+        for v in c.get("volumes") or []:
+            if v == "data":
+                vols.append(f"{plugin_dir}/data/{c['name']}:/data")
+            elif v == "media:ro":
+                vols.append(f"{media_dir}:/media:ro")
+            else:
+                vols.append(f"{media_dir}/{v.split('/', 1)[1]}:/{v}")
+        vols.append(f"{plugin_dir}/settings.json:/run/starboard/settings.json:ro")
+        lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
+        env = {**{k: str(v) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
+               "STARBOARD_API_KEY_FILE": "/run/starboard/key"}
+        lines += ["    environment:"] + [f"      {k}: {json.dumps(v)}" for k, v in sorted(env.items())]
+    if networks:
+        lines += ["networks:", f"  plugin-{pid}:", "    internal: true"]
+        if "lan" in networks:
+            lines += ["  lan:", "    driver: bridge"]
+    return "\n".join(lines) + "\n"
+
+
+def write_schema(path):
+    """The manifest's JSON Schema (P1), for authors and their tools; check() is what Starboard itself runs."""
+    schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://starboard.invalid/plugin-manifest-1.json",
+        "title": "Starboard plug-in manifest, version 1", "type": "object", "additionalProperties": False,
+        "required": sorted(REQUIRED),
+        "properties": {
+            "manifest_version": {"const": 1}, "id": {"type": "string", "pattern": ID}, "name": {"type": "string", "maxLength": 40},
+            "version": {"type": "string", "pattern": SEMVER}, "description": {"type": "string", "maxLength": 200},
+            "author": {"type": "string", "maxLength": 60}, "licence": {"type": "string", "pattern": SPDX},
+            "homepage": {"type": "string", "pattern": "^https://"}, "support_url": {"type": "string", "pattern": "^https://"},
+            "starboard_api": {"type": "string"}, "health": {"type": "string", "pattern": "^/"},
+            "permissions": {"type": "array", "items": {"enum": sorted(PERMISSIONS)}, "uniqueItems": True},
+            "needs": {"type": "array", "items": {"type": "string"}},
+            "containers": {"type": "array", "minItems": 1, "maxItems": 4, "items": {
+                "type": "object", "additionalProperties": False, "required": ["name", "image"],
+                "properties": {"name": {"type": "string"}, "image": {"type": "string", "pattern": DIGEST_IMAGE},
+                               "port": {"type": "integer", "minimum": 1, "maximum": 65535}, "network": {"enum": sorted(NETWORKS)},
+                               "volumes": {"type": "array", "items": {"type": "string"}}, "env": {"type": "object"},
+                               "start": {"enum": ["always", "when_needed"]}, "idle_stop_minutes": {"type": "integer"},
+                               "user": {"type": "string", "pattern": r"^[1-9]\d{0,5}:\d{1,6}$"}}}},
+            "resources": {"type": "object", "additionalProperties": {"type": "object", "additionalProperties": False,
+                                                                      "properties": {"memory": {"type": "integer", "maximum": CEILING_MEMORY},
+                                                                                     "cpus": {"type": "number", "maximum": CEILING_CPUS}}}},
+            "settings": {"type": "array", "items": {"type": "object", "required": ["key", "label", "type"],
+                                                    "properties": {"type": {"enum": list(SETTING_TYPES)}}}},
+            "cards": {"type": "array", "items": {"type": "object", "required": ["type", "path"],
+                                                 "properties": {"type": {"enum": list(CARD_TYPES)}, "format": {"enum": list(CARD_FORMATS)}}}},
+            "actions": {"type": "array", "items": {"type": "object", "required": ["label", "path"]}},
+        },
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(schema, f, indent=1)
+        f.write("\n")
+
+
+if __name__ == "__main__":
+    write_schema(os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin-manifest.schema.json"))
