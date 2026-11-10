@@ -193,7 +193,8 @@ APPS = {
                     "ports": ["9191:9191"], "volumes": [f"{CFG}/dispatcharr:/data"], "env": {"TZ": "${TZ}"}, "memory": 300,
                     "notes": "For paid IPTV, backup streams or full channel control. Starboard's own Live TV covers free channels."},
     "dozzle": {"name": "Dozzle", "groups": ["logs"], "image": "amir20/dozzle:latest", "ports": ["9999:8080"], "memory": 30,
-               "volumes": ["/var/run/docker.sock:/var/run/docker.sock:ro"], "notes": "Reads Docker's logs, so it sees every container."},
+               "volumes": ["/var/run/docker.sock:/var/run/docker.sock:ro"],
+               "notes": "An add-on: reads Docker's logs with no sign-in, so it sees every container. Starboard's System, Logs shows app logs too."},
     "tdarr": {"name": "Tdarr", "groups": ["transcoding"], "image": "ghcr.io/haveagitgat/tdarr:latest", "ports": ["8265:8265", "8266:8266"],
               "volumes": [f"{CFG}/tdarr/server:/app/server", f"{CFG}/tdarr/configs:/app/configs", f"{CFG}/tdarr/logs:/app/logs",
                           f"{DATA}/media:/media", f"{CFG}/tdarr/cache:/temp"],
@@ -301,11 +302,11 @@ INSTALLS = {
                "usenet_choice": False},
     "full": {"name": "Full install", "reelix_edition": "full", "disk_health": True,
              "about": "Everything in Basics with the full Reelix (YouTube and Spotify downloads), plus disk health, "
-                      "watch statistics, logs, FlareSolverr and Tdarr.",
+                      "watch statistics, FlareSolverr and Tdarr. App logs are on System, Logs.",
              # Wizarr and Dispatcharr are add-ons in Install apps since 9 November 2026 (DASH-230, DASH-222):
              # invitations are not standard on a small home server, and Starboard's own Live TV is every install's.
              "apps": ["reelix", "qbittorrent", "jellyfin", "audiobookshelf", "bazarr", "gluetun", "nzbget",
-                      "flaresolverr", "jellystat", "dozzle", "tdarr"], "usenet_choice": True},
+                      "flaresolverr", "jellystat", "tdarr"], "usenet_choice": True},  # Dozzle: an add-on since DASH-223
     "all": {"name": "Everything", "reelix_edition": "full", "disk_health": True,
             "about": "Every app Starboard offers, Storyarr and Kapowarr included.", "apps": None, "usenet_choice": True},
 }
@@ -542,8 +543,8 @@ def graphics_chip(node=RENDER_NODE, sys_root="/sys/class/drm"):
     try:
         with open(os.path.join(sys_root, os.path.basename(node), "device", "vendor"), encoding="utf-8") as f:
             vendor = VENDORS.get(f.read().strip().lower(), "other")
-    except OSError:
-        vendor = "other"
+    except OSError:  # Starboard in Docker sees the device but not /sys: the installer read the maker (DASH-82)
+        vendor = VENDORS.get(os.environ.get("STARBOARD_GRAPHICS_VENDOR", "").strip().lower(), "other")
     return {"vendor": vendor, "gid": gid}
 
 

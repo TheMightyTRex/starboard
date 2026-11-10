@@ -5071,3 +5071,15 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
 .side-panel__body:has(> .wizard-step--framed) { padding: 0; display: flex; }
 .side-panel__body > .wizard-step--framed { flex: 1; min-block-size: 0; }
 .wizard-frame { flex: 1; min-block-size: 50vh; }
+
+/* The folder picker (DASH-240): the field with Browse beside it, what Starboard found under it, and the slide-out list. */
+.folder-field { display: flex; gap: var(--space-2); align-items: stretch; }
+.folder-field .input { flex: 1; min-inline-size: 0; }
+.folder-check p { margin: var(--space-1) 0 0; }
+.folder-check[data-tone="danger"] { color: var(--status-danger-fg); }
+.folder-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.folder-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--color-border); max-block-size: 60vh; overflow: auto; }
+.folder-list [role="option"] { display: flex; gap: var(--space-2); align-items: center; min-block-size: var(--control-h); padding-inline: var(--space-3); cursor: pointer; overflow-wrap: anywhere; }
+.folder-list [role="option"][aria-selected="true"] { background: var(--color-control-active); outline: 2px solid var(--color-focus); outline-offset: -2px; }
+.folder-list [role="option"]:hover { background: var(--color-surface-sunken); }
+@media (max-width: 560px) { .folder-field { flex-wrap: wrap; } .folder-field .btn { inline-size: 100%; } }

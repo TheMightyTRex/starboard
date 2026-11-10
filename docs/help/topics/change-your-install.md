@@ -11,10 +11,10 @@ Reelix. Every change works both ways.
 | | Basics | Full install | Everything |
 |---|---|---|---|
 | Reelix | Reelix (Lite) | Reelix with YouTube and Spotify downloads | Reelix with YouTube and Spotify downloads |
-| Watching and listening | Jellyfin, Audiobookshelf | Jellyfin, Audiobookshelf, Jellystat | The same, plus Wizarr and Dispatcharr |
+| Watching and listening | Jellyfin, Audiobookshelf | Jellyfin, Audiobookshelf, Jellystat | All of those, plus Wizarr and Dispatcharr |
 | Subtitles | Bazarr | Bazarr | Bazarr |
 | Downloads | qBittorrent and NZBGet through a VPN (Gluetun) | The same, plus FlareSolverr; SABnzbd in place of NZBGet if you choose it | The same, plus Soulseek (slskd) |
-| Extras | | Disk health, Dozzle (logs), Tdarr (smaller files) | Disk health, Dozzle, Tdarr, Storyarr, Kapowarr |
+| Extras | | Disk health, Tdarr (smaller files) | Disk health, Dozzle, Tdarr, Storyarr, Kapowarr |
 | Memory when idle | about 1.0 GB | about 2.0 GB | about 2.9 GB |
 
 Everything also has the No-IP updater. Apps that need another app bring it with them. Read

@@ -113,7 +113,9 @@ Live TV is a plug-in that comes with Starboard, not an app in the install: read
 | Gluetun | Sends downloads through your VPN | ✓ | ✓ | ✓ | A VPN account; a download app |
 | FlareSolverr | Gets past browser checks on some search sites | | ✓ | ✓ | Reelix |
 | Jellystat | Watch statistics for Jellyfin, with its own database | | ✓ | ✓ | Jellyfin |
-| Dozzle | Reads every app's log in the browser | | ✓ | ✓ | |
+| Wizarr | Invites people to Jellyfin | | | ✓ | Jellyfin |
+| Dispatcharr | Paid IPTV channels in Jellyfin (Starboard's own Live TV plug-in covers free channels) | | | ✓ | Jellyfin |
+| Dozzle | Reads every app's log in the browser, with no sign-in (System, Logs shows app logs too) | | | ✓ | |
 | Tdarr | Converts the library to smaller files | | ✓ | ✓ | Processor time |
 | Disk health | Checks each disk every 30 minutes (on the server, not an app) | | ✓ | ✓ | The server's password once |
 | Wizarr | Invites people to Jellyfin | | | ✓ | Jellyfin |

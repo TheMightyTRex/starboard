@@ -26,7 +26,7 @@ starts them and sets most of them up. It takes about 15 minutes, and the first d
    - **Basics (recommended):** Reelix Lite, Jellyfin, Audiobookshelf, Bazarr for subtitles, and qBittorrent and
      NZBGet through a VPN. About 1 GB of memory.
    - **Full install:** everything in Basics with the full Reelix (YouTube and Spotify downloads), plus disk health,
-     Jellystat, Dozzle, FlareSolverr and Tdarr. About 2 GB. Under **Usenet app**, keep **NZBGet**
+     Jellystat, FlareSolverr and Tdarr. About 2 GB. Wizarr, Dispatcharr and Dozzle are add-ons you can tick. Under **Usenet app**, keep **NZBGet**
      or choose **SABnzbd**.
    - **Everything:** every app Starboard offers. About 2.9 GB. The same Usenet choice.
    - **Choose myself:** tick each group, and with **Advanced settings** each app.

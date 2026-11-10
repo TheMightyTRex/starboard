@@ -1,6 +1,7 @@
 """Basics, Full install and Everything, and the apps each app needs (stack.INSTALLS, stack.NEEDS, stack.with_needs).
 The three installs come from the owner's install choices page (7 November 2026)."""
 import unittest
+from unittest import mock
 
 from starboard import stack
 
@@ -31,9 +32,9 @@ class InstallChoicesTest(unittest.TestCase):
         c = stack.install_choice("full", check=downloadable)
         self.assertEqual(c["reelix_edition"], "full")
         self.assertTrue(c["disk_health"])
-        for k in ("flaresolverr", "jellystat", "dozzle", "tdarr"):
+        for k in ("flaresolverr", "jellystat", "tdarr"):
             self.assertIn(k, c["apps"])
-        for k in ("wizarr", "dispatcharr"):  # add-ons since 9 November 2026 (DASH-222, DASH-230)
+        for k in ("wizarr", "dispatcharr", "dozzle"):  # add-ons (DASH-222, DASH-230, DASH-223)  # add-ons since 9 November 2026 (DASH-222, DASH-230)
             self.assertNotIn(k, c["apps"])
         self.assertNotIn("storyarr", c["apps"])
         self.assertNotIn("kapowarr", c["apps"])
@@ -53,6 +54,8 @@ class InstallChoicesTest(unittest.TestCase):
             self.assertIsNone(stack.graphics_chip(node, sys_root=sys_root))
             open(node, "w").close()
             self.assertEqual(stack.graphics_chip(node, sys_root=sys_root)["vendor"], "other")
+            with mock.patch.dict(os.environ, {"STARBOARD_GRAPHICS_VENDOR": "0x1002"}):  # in Docker: the installer's answer
+                self.assertEqual(stack.graphics_chip(node, sys_root=sys_root)["vendor"], "amd")
             os.makedirs(os.path.join(sys_root, "renderD128", "device"))
             with open(os.path.join(sys_root, "renderD128", "device", "vendor"), "w") as f:
                 f.write("0x8086\n")

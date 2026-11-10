@@ -304,6 +304,15 @@ def newest_tag(names):
     return max(found)[1] if found else None
 
 
+def newer(tag, version):
+    """True when tag (vX.Y.Z) is a later version than version (X.Y.Z)."""
+    def key(v):
+        m = re.match(r"^v?(\d+)\.(\d+)\.(\d+)$", str(v or ""))
+        return tuple(int(x) for x in m.groups()) if m else None
+    a, b = key(tag), key(version)
+    return bool(a and b and a > b)
+
+
 class PasswordProblem(Exception):
     def __init__(self, status, message):
         super().__init__(message)
@@ -1985,6 +1994,27 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
+            if path in ("/api/folders", "/api/folders/check") and method == "GET":  # the folder picker (DASH-240)
+                from . import folders
+                where = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("path", [""])[0]
+                if path.endswith("check"):
+                    return self.json(200, folders.check(where))
+                try:
+                    return self.json(200, folders.browse(where))
+                except LookupError as e:
+                    return self.error(404, str(e))
+            if path == "/api/app-logs" and method == "GET":  # App logs on System, Logs (DASH-223): in place of Dozzle
+                from . import app_logs
+                return self.json(200, app_logs.listing())
+            ml = re.match(r"^/api/app-logs/([A-Za-z0-9][A-Za-z0-9_.-]{0,63})$", path)
+            if ml and method == "GET":
+                from . import app_logs
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                try:
+                    return self.json(200, app_logs.lines(ml.group(1), q.get("tail", ["300"])[0], q.get("find", [""])[0],
+                                                         words=[app.config.data.get("site_name", ""), app.config.data.get("server_name", ""), socket.gethostname()]))
+                except LookupError as e:
+                    return self.error(404, str(e))
             if path == "/api/styles" and method == "GET":  # styles from plug-ins that are on (DASH-284)
                 from . import plugins_admin
                 return self.json(200, {"styles": plugins_admin.styles(app.data_dir)})

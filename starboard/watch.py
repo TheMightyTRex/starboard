@@ -267,6 +267,10 @@ class Watch:
                     elif left is not None:
                         self.clear(key)
 
+            # A new Starboard release (DASH-105, owner, 10 November 2026): one line where alerts go, at most once a week
+            # and never twice for the same version; the side menu's Update already shows it in the app.
+            if w.get("releases", True) and now - self.state.get("release_sent", 0) > 7 * 86400:
+                self._release(name)
             # Weekly summary: Monday, after 09:00, once.
             today = datetime.now()
             week = today.strftime("%G-%V")
@@ -274,6 +278,28 @@ class Watch:
                 self.state["weekly_sent"] = week
                 self._weekly(name, cfg)
             self._save()
+
+    def _release(self, name):
+        latest = self.app.latest_release() if hasattr(self.app, "latest_release") else None
+        current = getattr(self.app, "version", "")
+        if not latest or latest == self.state.get("release_told"):
+            return
+        from .server import newer
+        if not newer(latest, current):
+            return
+        channel = self.settings().get("channel") or {}
+        if channel.get("kind") not in ("ntfy", "gotify", "webhook"):
+            return
+        link = f"https://github.com/{self.app.repo}/releases/tag/{latest}" if getattr(self.app, "repo", "") else ""
+        try:
+            send(channel, f"{name}: Starboard {latest.lstrip('v')} is out",
+                 f"You have {current}. Read what is new{': ' + link if link else ' in Settings, Updates, Releases'}. "
+                 "Update with ./update.sh, or in Settings, Updates.", "info")
+        except ValueError as e:
+            logs.event("error", "alert", f"Release note not sent: {e}")
+            return
+        self.state["release_told"] = latest
+        self.state["release_sent"] = time.time()
 
     def _weekly(self, name, cfg):
         channel = self.settings().get("channel") or {}
