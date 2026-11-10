@@ -68,6 +68,26 @@ def folder_from_jellyfin(services, opener=None):
     return None
 
 
+def _refresh(jf, opener=None):
+    tasks = _call(jf["url"], jf["api_key"], "GET", "/ScheduledTasks?isHidden=false", opener=opener) or []
+    task = next((t.get("Id") for t in tasks if t.get("Key") == "RefreshGuide"), None)
+    if task:
+        _call(jf["url"], jf["api_key"], "POST", f"/ScheduledTasks/Running/{task}", opener=opener)
+    return bool(task)
+
+
+def refresh_guide(services, opener=None):
+    """Asks Jellyfin to read the guides again, after new ones were written (owner, 10 November 2026: Jellyfin kept
+    the morning's guide until its own daily refresh). Returns a sentence, or "" when there is no Jellyfin."""
+    jf = next((s for s in services if s.get("type") == "jellyfin" and s.get("api_key") and s.get("url")), None)
+    if not jf:
+        return ""
+    try:
+        return "Jellyfin: reading the new guides" if _refresh(jf, opener) else ""
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        return f"Jellyfin: no answer ({getattr(e, 'reason', e)})"
+
+
 def connect(services, extras, data_dir, local_folder=None, opener=None, host_path=None, env=None):
     """Adds the playlists and guides that exist to Jellyfin. Returns a short line, or "" when nothing changed."""
     jf = next((s for s in services or [] if s.get("type") == "jellyfin" and s.get("url") and s.get("api_key")), None)
@@ -99,10 +119,7 @@ def connect(services, extras, data_dir, local_folder=None, opener=None, host_pat
             added += 1
         if not added:
             return ""
-        tasks = _call(jf["url"], jf["api_key"], "GET", "/ScheduledTasks?isHidden=false", opener=opener) or []
-        refresh = next((t.get("Id") for t in tasks if t.get("Key") == "RefreshGuide"), None)
-        if refresh:
-            _call(jf["url"], jf["api_key"], "POST", f"/ScheduledTasks/Running/{refresh}", opener=opener)
+        _refresh(jf, opener)
         return f"Jellyfin: added {added} channel {'list or guide' if added == 1 else 'lists and guides'} and started its guide refresh"
     except urllib.error.HTTPError as e:
         return f"Jellyfin: did not take the channels ({e.code}); add them by hand as Help, Set up Live TV says"

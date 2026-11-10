@@ -189,6 +189,39 @@ def _old(path):
     return not os.path.exists(path) or time.time() - os.path.getmtime(path) > DAY
 
 
+AHEAD = 12 * 3600  # a guide with less than this still to come is fetched again (Samsung's covers about ten hours)
+_STOP = re.compile(rb'stop="(\d{14})(?: ?([+-])(\d{2})(\d{2}))?"')
+
+
+def guide_end(path):
+    """When the last programme in an XMLTV guide ends, as a Unix time; 0 when there is none or no file. Read a piece
+    at a time, so a guide of several MB is never held in memory."""
+    import calendar
+    last = 0
+    try:
+        with open(path, "rb") as f:
+            tail = b""
+            while True:
+                piece = f.read(1 << 20)
+                if not piece:
+                    break
+                text = tail + piece
+                for m in _STOP.finditer(text):
+                    t = calendar.timegm(time.strptime(m.group(1).decode(), "%Y%m%d%H%M%S"))
+                    if m.group(2):
+                        t -= (1 if m.group(2) == b"+" else -1) * (int(m.group(3)) * 3600 + int(m.group(4)) * 60)
+                    last = max(last, t)
+                tail = text[-64:]
+    except (OSError, ValueError):
+        return 0
+    return last
+
+
+def _short(path, now=None):
+    """True when the guide has less than AHEAD still to come."""
+    return guide_end(path) < (now or time.time()) + AHEAD
+
+
 # Checks and building blocks ---------------------------------------------------------------
 
 def adult(v):
@@ -614,9 +647,10 @@ def run(self_url, white, force=False):
     failed = state.setdefault("failed", {})
 
     def guide_due(name, path):
-        """A guide is due when it is a day old, unless it failed less than RETRY ago (a failing source is not
-        downloaded again every hour)."""
-        return force or (_old(path) and now - failed.get(name, 0) > RETRY)
+        """A guide is due when it is a day old or has less than 12 hours still to come (owner, 10 November 2026:
+        Samsung's covers about ten hours, so once a day left it empty by the evening), unless it failed less than
+        RETRY ago (a failing source is not downloaded again every hour)."""
+        return force or ((_old(path) or _short(path, now)) and now - failed.get(name, 0) > RETRY)
 
     def guide_step(name, label, fn):
         ok = step(label, fn)
@@ -664,7 +698,7 @@ def run(self_url, white, force=False):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(state, f)
     os.replace(tmp, state_path)
-    return " · ".join(done) or "Nothing due: guides are less than a day old and no channel list has changed"
+    return " · ".join(done) or "Nothing due: guides cover the next 12 hours and no channel list has changed"
 
 
 def logo_file(name):

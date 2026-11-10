@@ -45,19 +45,30 @@ def _save_status(**values):
     os.replace(tmp, STATUS)
 
 
-def run_once(force=False, build=None, connect=None):
+def run_once(force=False, build=None, connect=None, refresh=None):
     """One run: the files, then Jellyfin. Returns the sentence the card shows."""
     from . import livetv, livetv_jellyfin
     s = _read(SETTINGS, {})
     address = str(s.get("address") or "").rstrip("/")
     if not address:
         raise ValueError("Set the address Jellyfin uses to reach Starboard in Settings, Plug-ins, Live TV")
+    guides = [os.path.join(livetv.folder() or "", g) for g in livetv_jellyfin.GUIDES]
+    before = [_mtime(g) for g in guides]
     summary = (build or livetv.run)(address, bool(s.get("white_logos", True)), force=force)
     jf = _read(JELLYFIN, {})
     services = [{"type": "jellyfin", "url": jf["url"], "api_key": jf["api_key"]}] if jf.get("url") and jf.get("api_key") else []
     added = (connect or livetv_jellyfin.connect)(services, {"livetv_jellyfin_folder": s.get("jellyfin_folder") or ""}, "",
                                                  local_folder=livetv.folder(), host_path="", env={})
+    if not added and [_mtime(g) for g in guides] != before:  # new guides: Jellyfin reads them now, not tomorrow
+        added = (refresh or livetv_jellyfin.refresh_guide)(services)
     return f"{summary} · {added}" if added else summary
+
+
+def _mtime(path):
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return None
 
 
 def card():

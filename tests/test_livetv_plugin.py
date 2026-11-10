@@ -114,6 +114,38 @@ class LiveTvPluginTest(unittest.TestCase):
             self.assertEqual(r.status, 202)
             self.assertTrue(livetv_plugin._force["now"])
 
+    def test_a_guide_running_short_is_due_and_new_guides_reach_jellyfin(self):
+        # Owner, 10 November 2026: Samsung's guide covers about ten hours, so a daily refresh left it empty by the
+        # evening, and Jellyfin kept the morning's guide.
+        import time as _t
+        from starboard import livetv
+        d = self.tmp.name
+        guide = os.path.join(d, "guide-samsung.xml")
+        end = _t.strftime("%Y%m%d%H%M%S", _t.gmtime(_t.time() + 3 * 3600))
+        open(guide, "w").write(f'<tv><programme start="20261110000000 +0000" stop="{end} +0100" channel="a"/></tv>')
+        self.assertAlmostEqual(livetv.guide_end(guide), _t.time() + 2 * 3600, delta=5)
+        self.assertTrue(livetv._short(guide))  # fresh file, but only two hours left
+        later = _t.strftime("%Y%m%d%H%M%S", _t.gmtime(_t.time() + 20 * 3600))
+        open(guide, "w").write(f'<tv><programme start="x" stop="{later}" channel="a"/></tv>')
+        self.assertFalse(livetv._short(guide))
+        self.assertEqual(livetv.guide_end(os.path.join(d, "none.xml")), 0)
+        settings, jellyfin, status = (os.path.join(d, n) for n in ("settings.json", "jellyfin.json", "status.json"))
+        json.dump({"address": "http://192.168.1.20:8095"}, open(settings, "w"))
+        json.dump({"url": "http://jf.example:8096", "api_key": "made-up-jf-key"}, open(jellyfin, "w"))
+        asked = []
+
+        def build(*a, **k):
+            open(os.path.join(d, "guide-pluto.xml"), "w").write("<tv/>")  # a guide written this run
+            return "pluto guide: 10 programmes"
+        with mock.patch.multiple(livetv_plugin, SETTINGS=settings, JELLYFIN=jellyfin, STATUS=status), \
+                mock.patch.object(livetv, "folder", return_value=d):
+            said = livetv_plugin.run_once(build=build, connect=lambda *a, **k: "", refresh=lambda svc: asked.append(svc) or "Jellyfin: reading the new guides")
+            self.assertEqual(said, "pluto guide: 10 programmes · Jellyfin: reading the new guides")
+            self.assertEqual(asked[0][0]["url"], "http://jf.example:8096")
+            asked.clear()
+            livetv_plugin.run_once(build=lambda *a, **k: "Nothing due", connect=lambda *a, **k: "", refresh=lambda svc: asked.append(svc))
+            self.assertEqual(asked, [])  # no new guide: Jellyfin is not asked
+
     def test_built_in_plug_ins_follow_starboards_update(self):
         cfg = FakeConfig(self.tmp.name, {"livetv": True})
         runs = []
