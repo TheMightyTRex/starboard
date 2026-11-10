@@ -121,6 +121,19 @@ def items(cfg, data_dir):
                 out.append({"key": f"import-{tab}", "title": f"Bring in {words} already on disk",
                             "why": f"{waiting} {'folder is' if waiting == 1 else 'folders are'} not in your library yet.",
                             "href": f"/library-{'films' if tab == 'films' else 'tv'}.html", "done": False})
+    if "reelix" in keys and "audiobookshelf" in keys:  # radio shows already on disk (10 November 2026)
+        from . import radio_import
+        try:
+            radio = radio_import.status(cfg)
+        except (ValueError, OSError):
+            radio = None
+        if radio and not radio["connected"]:
+            out.append({"key": "radio-connect", "title": "Let Reelix see your radio shows", "why": "It reads Audiobookshelf's Radio library, so the shows you have come in.",
+                        "href": "/settings-reelix.html#rx-radio-h", "done": False})
+        elif radio and radio["waiting"]:
+            out.append({"key": "import-radio", "title": "Bring in radio shows already on disk",
+                        "why": f"{radio['waiting']} {'show is' if radio['waiting'] == 1 else 'shows are'} not in your library yet.",
+                        "href": "/library-radio.html", "done": False})
     if keys & {"nzbget", "sabnzbd"}:
         server = _usenet_server(svcs)
         out.append({"key": "usenet", "title": "Add your Usenet provider's server", "why": "The Usenet app downloads nothing without one.",
@@ -157,7 +170,7 @@ def items(cfg, data_dir):
 # The pages Still to set up shows inside its slide-out (Starboard's own steps). The server lets only Starboard's own
 # pages frame them; tests/test_setup_left.py checks every step's page is here.
 PANEL_PAGES = frozenset({"/settings-reelix.html", "/settings-jellyfin.html", "/settings-audiobookshelf.html",
-                         "/install-apps.html", "/library-films.html", "/library-tv.html"})
+                         "/install-apps.html", "/library-films.html", "/library-tv.html", "/library-radio.html"})
 
 
 GUIDED = [

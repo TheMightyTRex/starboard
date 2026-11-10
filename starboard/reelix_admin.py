@@ -271,7 +271,7 @@ def route(handler, method, path):
     if method != "POST" or not m:
         return handler.error(404, "Not found")
     kind, action = m.group("kind"), m.group("action")
-    if kind not in KINDS and kind not in ("search", "library", "basics", "quality", "form", "folders", "people", "system", "direct"):
+    if kind not in KINDS and kind not in ("search", "library", "basics", "quality", "radio", "form", "folders", "people", "system", "direct"):
         return handler.error(404, "Starboard does not change that part of Reelix")
     body = handler.body()
     address = handler.client_address_text()
@@ -360,6 +360,14 @@ def _act(app, reelix, base, kind, action, body):
             return reelix_quality.state(reelix)
         if action in ("choose", "save"):
             out = reelix_quality.choose(reelix, body.get("id")) if action == "choose" else reelix_quality.save(reelix, body.get("id"), body.get("changes"))
+            for line in out["done"]:
+                logs.event("info", "reelix", line)
+            return out
+        raise ValueError("Not something Starboard does")
+    if kind == "radio":  # point Reelix's radio at Audiobookshelf's Radio library (radio import, 10 November 2026)
+        from . import radio_import
+        if action == "connect":
+            out = radio_import.connect(reelix, app.config)
             for line in out["done"]:
                 logs.event("info", "reelix", line)
             return out

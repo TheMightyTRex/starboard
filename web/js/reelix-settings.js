@@ -434,6 +434,29 @@ function rxLibrarySection() {
   return section("rx-library", "Naming and background work", "The names Reelix gives film and series folders and files, and how hard it works in the background.", body);
 }
 
+// Radio (owner, 10 November 2026): point Reelix's radio at Audiobookshelf's Radio library, with the folder as
+// Audiobookshelf reports it, and read it now, so Library, Radio can bring in the shows already on disk.
+function rxRadioSection() {
+  const body = el("div", { class: "stack-4" });
+  const said = el("div", { "aria-live": "polite" });
+  const go = el("button", { type: "button", class: "btn btn--primary" }, icon("link"), "Connect Audiobookshelf's Radio library");
+  go.addEventListener("click", async () => {
+    go.disabled = true;
+    try { const out = await rxCall("radio", "connect", {}, "connect the radio library"); if (out) said.replaceChildren(notice("success", "Connected", out.done.join(". "))); }
+    catch (e) { said.replaceChildren(notice("danger", "It did not connect", e.message)); }
+    finally { go.disabled = false; }
+  });
+  api("/api/library/radio-import").then((s) => {
+    if (s.connected) go.replaceChildren(icon("link"), "Connect again");
+    body.replaceChildren(el("p", {}, chip(s.connected ? "Connected" : "Not connected", s.connected ? "success" : "warning")),
+      el("p", { class: "small muted", text: s.connected
+        ? `Reelix reads Audiobookshelf's Radio library. ${s.waiting ? `${s.waiting} ${s.waiting === 1 ? "show there is" : "shows there are"} not in your library yet: bring ${s.waiting === 1 ? "it" : "them"} in on Library, Radio.` : "Every show there is in your library."}`
+        : "Reelix cannot see the radio shows you already have until it reads Audiobookshelf's Radio library." }),
+      el("div", { class: "actions" }, go), said);
+  }).catch((e) => body.replaceChildren(notice("info", "Reelix could not be asked", e.message)));
+  return section("rx-radio", "Radio", "Where Reelix finds the radio shows you already have.", body);
+}
+
 // Picture quality (DASH-196, agreed by the owner on 10 November 2026). A: choose a level, HD recommended. B: what the
 // level does, in words. C, under Advanced settings: change the level, with its qualities best first (Move up, Move
 // down or drag; a tick for each), a Stop upgrading here line, extras as Prefer, Neutral or Never, and the largest file.
@@ -730,6 +753,7 @@ function reelixAdminSections() {
     holder.replaceChildren(
       rxBasicsSection(),
       rxQualitySection(),
+      rxRadioSection(),
       ...(full ? [rxDirectSection()] : []),  // replaceChildren writes a null as the word "null"
       rxKindSection("indexers", "The sites Reelix searches for films, series, books and music. Nothing is added unless you add it."),
       rxKindSection("mediaservers", "Reelix tells Jellyfin and Audiobookshelf about each new file, so it shows in them at once."),

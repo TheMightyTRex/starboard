@@ -121,3 +121,68 @@ class RecommendedTest(unittest.TestCase):
         self.assertEqual(rq.recommended_for_new(reelix), ["New films and series use HD (1080p)"])
         self.assertEqual(reelix.state.request_settings["movie"]["profile_id"], 1)
         self.assertEqual(rq.recommended_for_new(reelix), [])  # a level already chosen is kept
+
+
+class RadioImportTest(unittest.TestCase):
+    """Bring in radio shows already on disk (owner, 10 November 2026). Reelix's answers are stand-ins."""
+
+    def test_matches_are_found_by_title_and_shows_added_following_every_episode(self):
+        from unittest import mock
+        from starboard import radio_import as ri
+        calls = []
+
+        def call(cfg, method, path, body=None, timeout=60):
+            calls.append((method, path, body))
+            if path == "/radio/library/review":
+                return {"unmatched_shows": [{"abs_item_id": "a", "title": "The Castle", "file_count": 18},
+                                            {"abs_item_id": "b", "title": "Unknown Show", "file_count": 2}], "synced_at": "2026-11-10T06:00:00Z"}
+            if path.startswith("/radio/search"):
+                return [{"provider": "apple", "external_id": "p1", "title": "Castle Podcast"},
+                        {"provider": "bbc", "external_id": "b1", "title": "The Castle", "station_name": "BBC Radio 4"}] if "Castle" in path else []
+            if path == "/radio/rootfolders":
+                return [{"id": 7, "path": "/data/media/radio", "accessible": True}]
+            if path == "/radio/shows" and method == "POST":
+                return {"id": 1}
+            return {}
+        with mock.patch.object(ri, "_call", call):
+            page = ri.scan(None)
+            castle = next(i for i in page["items"] if i["title"] == "The Castle")
+            self.assertEqual(castle["matches"][0]["external_id"], "b1")  # the same title comes first
+            self.assertTrue(castle["sure"])
+            self.assertEqual(next(i for i in page["items"] if i["title"] == "Unknown Show")["matches"], [])
+            out = ri.run(None, [castle["matches"][0]])
+        self.assertEqual(out, {"added": 1, "errors": []})
+        added = next(b for m, p, b in calls if m == "POST")
+        self.assertEqual((added["follow"], added["root_folder_id"]), ("all", 7))  # fill the gaps, the owner's choice
+        with self.assertRaisesRegex(ValueError, "Choose what Reelix gets"):
+            ri.run(None, [castle["matches"][0]], follow="everything")
+
+    def test_connect_uses_the_folder_audiobookshelf_reports(self):
+        from unittest import mock
+        from starboard import radio_import as ri
+
+        class Admin:
+            puts, ran = [], []
+
+            def call(self, method, path, body=None, ok=None):
+                if path == "/radio/rootfolders":
+                    return 200, [{"id": 7, "path": "/data/media/radio", "accessible": True}]
+                if path == "/radio/settings" and method == "GET":
+                    return 200, {"country": "GB"}
+                if method == "PUT":
+                    self.puts.append(body)
+                if path.startswith("/system/tasks"):
+                    self.ran.append(path)
+                return 200, {}
+
+        class Cfg:
+            data = {"services": [{"type": "audiobookshelf", "url": "http://127.0.0.1:13378", "api_key": "k"}]}
+        admin = Admin()
+        with mock.patch.object(ri, "radio_library", return_value=("lib-radio", "/radio")), \
+                mock.patch("starboard.reelix_system.tasks", return_value={}):
+            out = ri.connect(admin, Cfg())
+        self.assertEqual(admin.puts[0]["abs_library_folder"], "/radio")
+        self.assertEqual(admin.puts[0]["abs_library_id"], "lib-radio")
+        self.assertEqual(admin.puts[0]["country"], "GB")  # the rest kept
+        self.assertTrue(any("radio_library_sync" in p for p in admin.ran))
+        self.assertIn("/radio", out["done"][0])

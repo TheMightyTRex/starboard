@@ -216,8 +216,11 @@ class FakeArr(BaseHTTPRequestHandler):
             return self.wfile.write(body)
         if p.startswith("/reelix/api/v1/"):  # a made-up Reelix: radio, read from its own API (Coming up, Downloads), and the Library
             path, _, query = p[len("/reelix/api/v1"):].partition("?")
-            found = example_library.answer(path, dict(urllib.parse.parse_qsl(query)))
-            return self.send_json(found if found is not None else example_reelix(path))
+            q = dict(urllib.parse.parse_qsl(query))
+            # The radio import's own shows answer first; any other radio search is the made-up library's, as before.
+            mine = path == "/radio/library/review" or (path == "/radio/search" and any(x["title"].lower() == q.get("q", "").lower() for x in RADIO_ON_DISK))
+            found = None if mine else example_library.answer(path, q)
+            return self.send_json(found if found is not None else example_reelix(path, q))
         film = "/films" in p
         if "/system/status" in p:
             return self.send_json({"version": "6.0.4" if film else "4.0.16"})
@@ -267,6 +270,9 @@ def _post(self):
         return self.reelix_admin("POST")
     length = int(self.headers.get("Content-Length") or 0)
     body = json.loads(self.rfile.read(length) or b"{}")
+    if self.path.split("?")[0] == "/reelix/api/v1/radio/shows":  # a radio show added (the radio import)
+        RADIO_ADDED.append({"id": 10 + len(RADIO_ADDED), "title": body.get("external_id", ""), "external_id": body.get("external_id", "")})
+        return self.send_json(RADIO_ADDED[-1], 201)
     found = example_library.add(self.path[len("/reelix/api/v1"):].split("?")[0], body) if self.path.startswith("/reelix/api/v1/") else None
     return self.send_json(found or {}, 201 if found else 404)
 
@@ -274,9 +280,31 @@ def _post(self):
 FakeArr.do_POST = _post
 
 
-def example_reelix(path):
+RADIO_ON_DISK = [  # made-up radio shows in Audiobookshelf's Radio library that Reelix does not follow yet
+    {"abs_item_id": "li_harbour", "title": "The Harbour Comedy Hour", "file_count": 24},
+    {"abs_item_id": "li_light", "title": "Lighthouse Stories", "file_count": 12},
+    {"abs_item_id": "li_night", "title": "Night Train", "file_count": 6}]
+RADIO_ADDED = []
+
+
+def example_reelix(path, query=None):
     """Reelix's own radio and queue answers, with made-up shows."""
-    shows = [{"id": 1, "title": "The Example Hour"}, {"id": 2, "title": "Sample Science Weekly"}]
+    shows = [{"id": 1, "title": "The Example Hour"}, {"id": 2, "title": "Sample Science Weekly"}] + RADIO_ADDED
+    if path == "/radio/library/review":
+        added = {a["external_id"] for a in RADIO_ADDED}
+        return {"unmatched_shows": [x for x in RADIO_ON_DISK if f"ex-{x['abs_item_id']}" not in added], "unmatched_files": [],
+                "synced_at": today.isoformat() + "T06:00:00Z"}
+    if path == "/radio/rootfolders":
+        return [{"id": 1, "path": "/data/media/radio", "kind": "radio", "accessible": True, "unmapped_folders": []}]
+    if path == "/radio/search":
+        q = (query or {}).get("q", "")
+        item = next((x for x in RADIO_ON_DISK if x["title"].lower() == q.lower()), None)
+        if not item or item["abs_item_id"] == "li_night":  # one show no source knows
+            return []
+        return [{"provider": "bbc", "external_id": f"ex-{item['abs_item_id']}", "title": item["title"], "station_name": "Example Radio 4",
+                 "episode_count": item["file_count"] + 6},
+                {"provider": "apple", "external_id": f"ap-{item['abs_item_id']}", "title": item["title"] + " (podcast)", "author": "A made-up podcast",
+                 "episode_count": 40}]
     if path == "/radio/shows":
         return {"items": shows, "total": len(shows), "page": 1, "page_size": 20}
     if path.startswith("/radio/shows/") and path.endswith("/episodes"):

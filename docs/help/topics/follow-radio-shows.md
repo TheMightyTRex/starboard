@@ -53,6 +53,20 @@ up Audiobookshelf yourself, do this once. After that, every episode Reelix downl
    its details, find another copy or remove it, as for any download. Read
    [Pause, resume and remove downloads](manage-downloads.md).
 
+## Bring in shows you already have
+
+Radio shows already in Audiobookshelf's Radio library can come into your library without downloading them again.
+
+1. If **Library**, then **Radio** says Reelix does not read Audiobookshelf's Radio library yet, select **Connect it**.
+   In [Settings, Reelix, Radio](change-reelix-settings.md), select **Connect Audiobookshelf's Radio library** and type
+   your Reelix password. This is needed once.
+2. Back on **Library**, then **Radio**, select **Bring them in**.
+3. Choose what Reelix gets for each show: **Every episode** (it fills the gaps), **New episodes** or **Only what you
+   have**.
+4. Check each match. A show is ticked only when its match has the same title; check any other match before you tick
+   it. A show no radio source knows says **No match found**.
+5. Select **Bring in the ticked ones**. Reelix matches your files to each show's episodes. Nothing is moved.
+
 ## Things to note
 
 - Reelix files each episode in `media/radio`, inside the data folder. Audiobookshelf sees the same folder as

@@ -163,7 +163,7 @@ def audiobookshelf_first_run(base, password, groups, user=ADMIN, opener=None):
     libraries = (_call(base, "GET", "/api/libraries", headers=auth, opener=opener) or {}).get("libraries") or []
     radio = next((lib for lib in libraries if lib.get("mediaType") == "podcast"
                   and any(f.get("fullPath") == "/media/radio" for f in lib.get("folders") or [])), None)
-    return key, done, {"radio_library": radio.get("id") if radio else None}
+    return key, done, {"radio_library": radio.get("id") if radio else None, "radio_folder": "/media/radio" if radio else None}
 
 
 # Jellystat -------------------------------------------------------------------------------------------------------
@@ -383,7 +383,8 @@ def radio_settings(reelix_admin, found, country="GB"):
     if not library:
         return []
     _, current = reelix_admin.call("GET", "/radio/settings")
-    settings = {**(current or {}), "abs_library_id": library, "abs_library_folder": "/media/radio",
+    folder = (found or {}).get("radio_folder") or "/media/radio"  # as Audiobookshelf reports it, when known
+    settings = {**(current or {}), "abs_library_id": library, "abs_library_folder": folder,
                 "library_folder": "/data/media/radio", "country": (current or {}).get("country") or country,
                 "language": (current or {}).get("language") or "en"}
     reelix_admin.call("PUT", "/radio/settings", settings)

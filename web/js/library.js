@@ -273,9 +273,75 @@ async function importDialog(folder, start = 0, added = 0) {
   reload();
 }
 
+// Radio shows already on disk (owner, 10 November 2026): shows in Audiobookshelf's Radio library that Reelix does
+// not follow. A note above the wall; when Reelix does not read that library yet, the note says where to connect it.
+const FOLLOW_WORDS = { all: ["Every episode", "Old and new: Reelix fills the gaps"], from_now_on: ["New episodes", "From today on"],
+  none: ["Only what you have", "Nothing is downloaded"] };
+async function radioNote() {
+  if (TAB !== "radio") return;
+  let s;
+  try { s = await api("/api/library/radio-import"); } catch { return; }
+  const box = (title, text, action) => el("div", { id: "lib-import" }, el("div", { class: "notice", role: "status" }, icon("folder-input"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action));
+  if (!s.connected) {
+    $(".page-head").after(box("Bring in radio shows already on disk", "Reelix does not read Audiobookshelf's Radio library yet, so it cannot see the shows you have. Connect it once in Settings, Reelix, Radio.",
+      el("a", { class: "btn", href: "/settings-reelix.html#rx-radio-h" }, "Connect it")));
+    return;
+  }
+  if (!s.waiting) return;
+  $(".page-head").after(box(`${plural(s.waiting, ["show", "shows"])} on disk ${s.waiting === 1 ? "is" : "are"} not in your library yet`,
+    "In Audiobookshelf's Radio library. Starboard can bring them in: Reelix finds each show on its radio sources and matches your files to its episodes. Nothing is moved.",
+    el("button", { type: "button", class: "btn", onclick: () => radioDialog() }, "Bring them in")));
+}
+
+async function radioDialog(start = 0, added = 0, follow = "all") {
+  let page;
+  try { page = await api("/api/library/radio-import/scan", { method: "POST", body: { start } }); }
+  catch (e) { problem(e.message); return; }
+  const rows = page.items.map((it) => {
+    const pick = el("select", { class: "select", "aria-label": `Match for ${it.title}` },
+      it.matches.map((m, i) => el("option", { value: String(i), text: `${m.title}${m.station ? `, ${m.station}` : ""}${m.episodes ? ` (${m.episodes} episodes)` : ""}`, selected: i === 0 })),
+      el("option", { value: "", text: it.matches.length ? "None of these" : "No match found" }));
+    // Ticked only for a match with the same title; a near one is shown, unticked, for you to check.
+    const keep = el("input", { type: "checkbox", checked: !!it.sure, "aria-label": `Bring in ${it.title}` });
+    pick.addEventListener("change", () => { keep.checked = pick.value !== ""; });
+    const note = it.problem || (it.matches.length && !it.sure ? "Not the same title: check it, then tick it." : "");
+    return { it, pick, keep, node: el("tr", {}, el("td", {}, keep), el("th", { scope: "row" }, it.title, el("span", { class: "small muted", text: ` ${plural(it.files, ["file", "files"])}` })),
+      el("td", {}, pick, note ? el("p", { class: "small muted", text: note }) : null)) };
+  });
+  const name = `radio-follow-${Date.now()}`;
+  const gets = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: "What Reelix gets for each show" }),
+    el("div", { class: "option-cards" }, Object.entries(FOLLOW_WORDS).map(([v, [t, h]]) => el("label", { class: "option-card" },
+      el("input", { type: "radio", name, value: v, checked: v === follow }), el("strong", { text: t }), el("small", { text: h })))));
+  const table = el("div", { class: "table-wrap" }, el("table", { class: "table table--middle" },
+    el("caption", { class: "visually-hidden", text: "Radio shows and their matches" }),
+    el("thead", {}, el("tr", {}, el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Bring in" })),
+      el("th", { scope: "col", text: "Show on disk" }), el("th", { scope: "col", text: "Reelix's match" }))),
+    el("tbody", {}, rows.map((r) => r.node))));
+  const end = Math.min(page.start + page.items.length, page.total);
+  const ok = await confirmDialog({ title: "Bring in radio shows from disk", confirm: "Bring in the ticked ones",
+    message: el("p", { text: `Shows ${page.start + 1} to ${end} of ${page.total}. Check each match; untick any that are wrong.` }),
+    fields: [start ? null : gets, table].filter(Boolean) });
+  if (!ok) return;
+  if (!start) follow = (gets.querySelector(`input[name="${name}"]:checked`) || {}).value || "all";
+  const items = rows.filter((r) => r.keep.checked && r.pick.value !== "").map((r) => ({ ...r.it.matches[Number(r.pick.value)] }));
+  let out;
+  try {
+    out = items.length ? await api("/api/library/radio-import/run", { method: "POST", body: { items, follow } }) : { added: 0, errors: [] };
+    if (out.errors.length) problem(out.errors.map((e) => `${e.title}: ${e.message}`).join(". "));
+  } catch (e) { problem(e.message); return; }
+  added += out.added;
+  if (end < page.total) { radioDialog(end, added, follow); return; }
+  const text = added ? `Brought in ${plural(added, ["show", "shows"])}. Reelix is matching your files to their episodes; they show here as it does.` : "Nothing was brought in.";
+  $("#lib-import")?.replaceChildren(el("div", { class: "notice", "data-tone": added ? "success" : null, role: "status" }, icon(added ? "circle-check" : "info"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: added ? "Brought in from disk" : "Nothing brought in" }), el("p", { text }))));
+  reload();
+}
+
 startPage().then(async () => {
   if (!TAB) return;
   importNote();
+  radioNote();
   try { saved = (await api("/api/library/views")).views[TAB] || {}; } catch { saved = {}; }
   applyView(saved);
   showGroup();

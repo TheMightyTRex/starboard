@@ -1041,6 +1041,22 @@ class Handler(BaseHTTPRequestHandler):
 
             if not self.signed_in():
                 return self.error(401, "Sign in first")
+            if path.startswith("/api/library/radio-import"):
+                # Radio shows already on disk (owner, 10 November 2026), through Reelix's radio review and search.
+                from . import radio_import
+                try:
+                    if path == "/api/library/radio-import" and method == "GET":
+                        return self.json(200, radio_import.status(app.config))
+                    body = self.body()
+                    if path == "/api/library/radio-import/scan" and method == "POST":
+                        return self.json(200, radio_import.scan(app.config, body.get("start", 0)))
+                    if path == "/api/library/radio-import/run" and method == "POST":
+                        out = radio_import.run(app.config, body.get("items"), str(body.get("follow") or radio_import.DEFAULT_FOLLOW))
+                        logs.event("info", "library", f"Brought in {out['added']} radio shows from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))
+                        return self.json(200, out)
+                except (ValueError, TypeError) as e:
+                    return self.error(400, str(e))
+                return self.error(404, "Not found")
             if path.startswith("/api/library/import"):
                 # DASH-186: films and series already on disk, through Reelix's own library import.
                 from . import media_import
