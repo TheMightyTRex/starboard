@@ -16,6 +16,9 @@ from . import livetv
 
 PLAYLISTS = [("channels.m3u", "Free-TV"), ("samsung.m3u", "Samsung TV Plus"), ("pluto.m3u", "Pluto TV")]
 GUIDES = ["guide.xml", "guide-samsung.xml", "guide-pluto.xml"]
+# Each guide belongs to one channel list. Set to every tuner, Jellyfin takes programmes from the first guide only
+# (owner's server, 10 November 2026: Samsung TV Plus and Pluto TV had no listings), so each is linked to its own.
+GUIDE_OF = {"guide.xml": "channels.m3u", "guide-samsung.xml": "samsung.m3u", "guide-pluto.xml": "pluto.m3u"}
 TIMEOUT = 20
 
 
@@ -110,16 +113,32 @@ def connect(services, extras, data_dir, local_folder=None, opener=None, host_pat
                   {"Type": "m3u", "Url": path, "FriendlyName": label, "TunerCount": 0, "ImportFavoritesOnly": False,
                    "AllowHWTranscoding": True, "EnableStreamLooping": False, "IgnoreDts": True}, opener=opener)
             added += 1
+        if added:  # the new lists' ids, for linking their guides
+            options = _call(jf["url"], jf["api_key"], "GET", "/System/Configuration/livetv", opener=opener) or {}
+        tuner_id = {t.get("Url"): t.get("Id") for t in options.get("TunerHosts") or []}
+        existing = {g.get("Path"): g for g in options.get("ListingProviders") or []}
+        linked = 0
         for name in GUIDES:
             path = f"{inside}/{name}"
-            if path in guides or not os.path.exists(os.path.join(here, name)):
+            own = tuner_id.get(f"{inside}/{GUIDE_OF[name]}")
+            want = {"EnableAllTuners": False, "EnabledTuners": [own]} if own else {"EnableAllTuners": True}
+            if path in existing:  # already there: linked to its own list, if it is not yet
+                g = existing[path]
+                if own and (g.get("EnableAllTuners") or list(g.get("EnabledTuners") or []) != [own]):
+                    _call(jf["url"], jf["api_key"], "POST", "/LiveTv/ListingProviders?validateListings=false&validateLogin=false",
+                          {**g, **want}, opener=opener)
+                    linked += 1
+                continue
+            if not os.path.exists(os.path.join(here, name)):
                 continue
             _call(jf["url"], jf["api_key"], "POST", "/LiveTv/ListingProviders?validateListings=false&validateLogin=false",
-                  {"Type": "xmltv", "Path": path, "EnableAllTuners": True}, opener=opener)
+                  {"Type": "xmltv", "Path": path, **want}, opener=opener)
             added += 1
-        if not added:
+        if not added and not linked:
             return ""
         _refresh(jf, opener)
+        if not added:
+            return f"Jellyfin: linked {linked} {'guide' if linked == 1 else 'guides'} to {'its' if linked == 1 else 'their'} own channel list and started its guide refresh"
         return f"Jellyfin: added {added} channel {'list or guide' if added == 1 else 'lists and guides'} and started its guide refresh"
     except urllib.error.HTTPError as e:
         return f"Jellyfin: did not take the channels ({e.code}); add them by hand as Help, Set up Live TV says"

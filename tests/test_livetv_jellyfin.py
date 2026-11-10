@@ -39,9 +39,13 @@ class Jellyfin(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length") or 0)
         body = json.loads(self.rfile.read(n)) if n else None
         if self.path == "/LiveTv/TunerHosts":
-            s["tuners"].append(body)
+            s["tuners"].append({**body, "Id": f"tuner{len(s['tuners'])}"})
         elif self.path.startswith("/LiveTv/ListingProviders"):
-            s["guides"].append(body)
+            old = next((i for i, g in enumerate(s["guides"]) if body.get("Id") and g.get("Id") == body["Id"]), None)
+            if old is None:
+                s["guides"].append({**body, "Id": f"guide{len(s['guides'])}"})
+            else:  # Jellyfin updates the guide with that Id
+                s["guides"][old] = body
         elif self.path == "/ScheduledTasks/Running/t9":
             s["refreshed"] += 1
         else:
@@ -51,7 +55,7 @@ class Jellyfin(BaseHTTPRequestHandler):
 
 class LiveTvJellyfinTest(unittest.TestCase):
     def setUp(self):
-        self.state = {"tuners": [{"Type": "m3u", "Url": "/config/iptv/channels.m3u"}], "guides": [], "refreshed": 0}
+        self.state = {"tuners": [{"Type": "m3u", "Url": "/config/iptv/channels.m3u", "Id": "tunerA"}], "guides": [], "refreshed": 0}
         Jellyfin.state = self.state
         srv = ThreadingHTTPServer(("127.0.0.1", 0), Jellyfin)
         threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -78,6 +82,20 @@ class LiveTvJellyfinTest(unittest.TestCase):
         self.assertEqual(self.state["refreshed"], 1)
         self.assertEqual(self.connect(), "")
         self.assertEqual(self.state["refreshed"], 1)
+
+    def test_each_guide_is_linked_to_its_own_list_and_old_ones_are_repaired(self):
+        self.connect()
+        own = {g["Path"]: g["EnabledTuners"] for g in self.state["guides"]}
+        self.assertEqual(own, {"/config/iptv/guide.xml": ["tunerA"], "/config/iptv/guide-samsung.xml": ["tuner1"]})
+        self.assertFalse(any(g["EnableAllTuners"] for g in self.state["guides"]))
+        # A set-up from before (every guide on every tuner) is linked on the next run, once.
+        for g in self.state["guides"]:
+            g.update(EnableAllTuners=True, EnabledTuners=[])
+        line = self.connect()
+        self.assertEqual(line, "Jellyfin: linked 2 guides to their own channel list and started its guide refresh")
+        self.assertEqual(self.state["guides"][1]["EnabledTuners"], ["tuner1"])
+        self.assertEqual(len(self.state["guides"]), 2)
+        self.assertEqual(self.connect(), "")
 
     def test_the_folder_comes_from_jellyfins_own_tuners(self):
         self.assertEqual(lj.folder_from_jellyfin(self.services), "/config/iptv")
