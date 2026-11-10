@@ -1,5 +1,5 @@
 /*
- * Snaglist 0.3.2: feedback for any website or app. People report bugs and UX problems, or suggest features and
+ * Snaglist 0.4.0: feedback for any website or app. People report bugs and UX problems, or suggest features and
  * improvements, tagged with the page and the part of it, with the technical detail needed to act on it and
  * without personal information. One file, no libraries, MIT licence.
  * https://github.com/TheMightyTRex/snaglist
@@ -15,7 +15,7 @@
   "use strict";
   if (window.Snaglist) return;
 
-  const VERSION = "0.3.2";
+  const VERSION = "0.4.0";
   const KEY = "snaglist:";
 
   // What people can send. Each type is a problem or a suggestion, asks its own questions and records the
@@ -150,7 +150,7 @@
     component: { attribute: "data-component", from: null },
     context: null,
     redact: [],
-    send: { github: null, email: null, endpoint: null, copy: true, download: true },
+    send: { github: null, email: null, endpoint: null, qr: true, copy: true, download: true },
     beforeSend: null,
     text: {},
   };
@@ -216,6 +216,21 @@
     sendGithub: "Open in GitHub",
     sendEmail: "Open in email",
     sendEndpoint: "Send",
+    sendQr: "Show as a QR code",
+    qrOffline: "This computer looks offline: scan it with your phone instead.",
+    qrTitle: "Show as a QR code",
+    qrScan: "Scan it with your phone's camera to open the report there.",
+    qrAlt: "QR code for the link below.",
+    qrHoldsAll: "It holds the whole report.",
+    qrHoldsNoDetails: "It holds the report without its technical details.",
+    qrHoldsShort: "It holds a short report: the kind, where it happened and your words, cut to fit.",
+    qrHoldsWhere: "It holds the kind, where it happened and the version.",
+    qrHoldsTitle: "It holds only the title.",
+    qrWhole: "Download keeps the whole report.",
+    qrNone: "The report is too long for a QR code. Copy the link, or use Download.",
+    qrLink: "The link",
+    copyLink: "Copy the link",
+    linkCopied: "Link copied",
     copy: "Copy as Markdown",
     download: "Download",
     back: "Back",
@@ -796,7 +811,9 @@
     out.push(row("Reported", report.created.replace("T", " ")));
     const lines = out.filter((l) => l != null);
     const section = (title, body) => { lines.push("", `**${title}**`, "", ...body); };
-    if (short) {
+    if (short === "qr") {
+      lines.push("", "_Sent with a QR code, which leaves out the technical details._");
+    } else if (short) {
       lines.push("", "_The technical details did not fit in GitHub's address: paste the full report from your clipboard here._");
     } else {
       if (report.check) for (const c of report.check) {
@@ -828,11 +845,236 @@
   const plain = (md) => md.replace(/^\|---\|---\|(---\|)?$/gm, "").replace(/^\| \| \|$/gm, "").replace(/^\| (.+?) \| (.*) \|$/gm, "$1: $2")
     .replace(/[`*_]|<\/?sub>/g, "").replace(/\n{3,}/g, "\n\n");
 
+  // QR codes ---------------------------------------------------------------------------------------------
+  // A small QR encoder (ISO/IEC 18004), ported from the design system's terminal/qr.py: byte mode (the text as
+  // UTF-8), error correction level L or M, every version from 1 to 40, Reed-Solomon error correction and the
+  // mask with the lowest penalty. qrEncode(text) gives { version, level, mask, size, modules }, where
+  // modules[y][x] is true for a dark module, or null when the text is too long for any version.
+
+  const QR_ECC = {
+    L: [0, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+    M: [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
+  };
+  const QR_BLOCKS = {
+    L: [0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
+    M: [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
+  };
+  const QR_QUIET = 4;
+  const QR_LIMIT = 1200; // bytes: larger codes are hard to scan off a screen
+  const GF_EXP = new Array(512).fill(0);
+  const GF_LOG = new Array(256).fill(0);
+  for (let i = 0, x = 1; i < 255; i++) { GF_EXP[i] = x; GF_LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11d; }
+  for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255];
+  const gfMul = (a, b) => (a && b ? GF_EXP[GF_LOG[a] + GF_LOG[b]] : 0);
+
+  function reedSolomon(data, degree) {
+    let gen = [1];
+    for (let i = 0; i < degree; i++) {
+      const next = new Array(gen.length + 1).fill(0);
+      gen.forEach((c, j) => { next[j] ^= c; next[j + 1] ^= gfMul(c, GF_EXP[i]); });
+      gen = next;
+    }
+    let rem = new Array(degree).fill(0);
+    for (const byte of data) {
+      const factor = byte ^ rem[0];
+      rem = [...rem.slice(1), 0];
+      for (let j = 0; j < degree; j++) rem[j] ^= gfMul(gen[j + 1], factor);
+    }
+    return rem;
+  }
+
+  const qrSize = (v) => 17 + 4 * v;
+  function qrRawModules(v) {
+    let n = (16 * v + 128) * v + 64;
+    if (v >= 2) { const a = Math.floor(v / 7) + 2; n -= (25 * a - 10) * a - 55; if (v >= 7) n -= 36; }
+    return n;
+  }
+  const qrDataWords = (v, level) => Math.floor(qrRawModules(v) / 8) - QR_ECC[level][v] * QR_BLOCKS[level][v];
+  const qrCapacity = (v, level = "L") => Math.floor((qrDataWords(v, level) * 8 - 4 - (v < 10 ? 8 : 16)) / 8);
+  function qrAlignment(v) {
+    if (v === 1) return [];
+    const count = Math.floor(v / 7) + 2;
+    const step = Math.floor((v * 8 + count * 3 + 5) / (count * 4 - 4)) * 2;
+    const out = [];
+    for (let i = 0; i < count - 1; i++) out.push(qrSize(v) - 7 - i * step);
+    return [6, ...out.sort((a, b) => a - b)];
+  }
+
+  function qrCodewords(data, v, level) {
+    const bits = [];
+    const put = (value, n) => { for (let i = n - 1; i >= 0; i--) bits.push((value >>> i) & 1); };
+    put(4, 4);
+    put(data.length, v < 10 ? 8 : 16);
+    for (const byte of data) put(byte, 8);
+    const room = qrDataWords(v, level) * 8;
+    for (let i = Math.min(4, room - bits.length); i > 0; i--) bits.push(0);
+    while (bits.length % 8) bits.push(0);
+    const words = [];
+    for (let i = 0; i < bits.length; i += 8) words.push(bits.slice(i, i + 8).reduce((a, b) => a * 2 + b, 0));
+    for (let pad = 0xec; words.length < room / 8; pad ^= 0xec ^ 0x11) words.push(pad);
+    // Split into blocks (the short ones first), add the error correction, then interleave.
+    const count = QR_BLOCKS[level][v], ecc = QR_ECC[level][v], total = Math.floor(qrRawModules(v) / 8);
+    const short = count - (total % count), shortLen = Math.floor(total / count);
+    const blocks = [];
+    for (let i = 0, k = 0; i < count; i++) {
+      const n = shortLen - ecc + (i < short ? 0 : 1);
+      const part = words.slice(k, k + n);
+      k += n;
+      blocks.push([part, reedSolomon(part, ecc)]);
+    }
+    const out = [];
+    const longest = Math.max(...blocks.map(([d]) => d.length));
+    for (let i = 0; i < longest; i++) for (const [d] of blocks) if (i < d.length) out.push(d[i]);
+    for (let i = 0; i < ecc; i++) for (const [, e] of blocks) out.push(e[i]);
+    return out;
+  }
+
+  const QR_MASKS = [
+    (x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x) => x % 3 === 0, (x, y) => (x + y) % 3 === 0,
+    (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => ((x * y) % 2) + ((x * y) % 3) === 0,
+    (x, y) => (((x * y) % 2) + ((x * y) % 3)) % 2 === 0, (x, y) => (((x + y) % 2) + ((x * y) % 3)) % 2 === 0,
+  ];
+  function qrFormatBits(level, mask) {
+    const data = ((level === "L" ? 1 : 0) << 3) | mask;
+    let rem = data;
+    for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >> 9) * 0x537);
+    return ((data << 10) | rem) ^ 0x5412;
+  }
+  function qrVersionBits(v) {
+    let rem = v;
+    for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >> 11) * 0x1f25);
+    return (v << 12) | rem;
+  }
+
+  // The standard penalty: long runs, 2 by 2 blocks, finder-like patterns and an uneven share of dark.
+  function qrPenalty(dark) {
+    const size = dark.length;
+    let score = 0;
+    const lines = dark.map((row) => row.map((d) => (d ? "1" : "0")).join(""));
+    for (let x = 0; x < size; x++) { let s = ""; for (let y = 0; y < size; y++) s += dark[y][x] ? "1" : "0"; lines.push(s); }
+    for (const line of lines) {
+      let run = 1;
+      for (let i = 1; i <= size; i++) {
+        if (i < size && line[i] === line[i - 1]) { run++; continue; }
+        if (run >= 5) score += run - 2;
+        run = 1;
+      }
+      const padded = `0000${line}0000`;
+      for (const pattern of ["10111010000", "00001011101"]) {
+        for (let at = padded.indexOf(pattern); at !== -1; at = padded.indexOf(pattern, at + 1)) score += 40;
+      }
+    }
+    for (let y = 0; y < size - 1; y++) {
+      for (let x = 0; x < size - 1; x++) {
+        const a = dark[y][x];
+        if (a === dark[y][x + 1] && a === dark[y + 1][x] && a === dark[y + 1][x + 1]) score += 3;
+      }
+    }
+    const total = size * size;
+    let count = 0;
+    for (const row of dark) for (const d of row) if (d) count++;
+    return score + (Math.floor((Math.abs(count * 20 - total * 10) + total - 1) / total) - 1) * 10;
+  }
+
+  // The QR code for text, in the smallest version that holds it; level L becomes M when M fits the same version.
+  function qrEncode(text, level = "L", largest = 40) {
+    const data = new TextEncoder().encode(text.toWellFormed ? text.toWellFormed() : text);
+    let v = 1;
+    while (v <= largest && data.length > qrCapacity(v, level)) v++;
+    if (v > largest) return null;
+    if (level === "L" && data.length <= qrCapacity(v, "M")) level = "M";
+    const size = qrSize(v);
+    const dark = Array.from({ length: size }, () => new Array(size).fill(false));
+    const fixed = Array.from({ length: size }, () => new Array(size).fill(false));
+    const put = (x, y, d) => { dark[y][x] = !!d; fixed[y][x] = true; };
+    for (let i = 0; i < size; i++) { put(6, i, i % 2 === 0); put(i, 6, i % 2 === 0); } // timing
+    for (const [cx, cy] of [[3, 3], [size - 4, 3], [3, size - 4]]) { // finders, with their light separators
+      for (let dy = -4; dy <= 4; dy++) {
+        for (let dx = -4; dx <= 4; dx++) {
+          const x = cx + dx, y = cy + dy, ring = Math.max(Math.abs(dx), Math.abs(dy));
+          if (x >= 0 && x < size && y >= 0 && y < size) put(x, y, ring !== 2 && ring !== 4);
+        }
+      }
+    }
+    const pos = qrAlignment(v), last = pos.length - 1;
+    pos.forEach((ax, i) => pos.forEach((ay, j) => {
+      if ((i === 0 && j === 0) || (i === 0 && j === last) || (i === last && j === 0)) return;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) put(ax + dx, ay + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+    }));
+    const format = (lv, mask) => {
+      const bits = qrFormatBits(lv, mask), bit = (i) => (bits >> i) & 1;
+      for (let i = 0; i < 6; i++) put(8, i, bit(i));
+      put(8, 7, bit(6)); put(8, 8, bit(7)); put(7, 8, bit(8));
+      for (let i = 9; i < 15; i++) put(14 - i, 8, bit(i));
+      for (let i = 0; i < 8; i++) put(size - 1 - i, 8, bit(i));
+      for (let i = 8; i < 15; i++) put(8, size - 15 + i, bit(i));
+      put(8, size - 8, true); // the dark module
+    };
+    format("L", 0); // reserves the places; drawn again with the chosen mask
+    if (v >= 7) {
+      const bits = qrVersionBits(v);
+      for (let i = 0; i < 18; i++) { const bit = (bits >> i) & 1, a = size - 11 + (i % 3), b = Math.floor(i / 3); put(a, b, bit); put(b, a, bit); }
+    }
+    const words = qrCodewords(data, v, level), total = words.length * 8;
+    let n = 0;
+    for (let right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      const upward = ((right + 1) & 2) === 0;
+      for (let vert = 0; vert < size; vert++) {
+        const y = upward ? size - 1 - vert : vert;
+        for (const x of [right, right - 1]) {
+          if (!fixed[y][x] && n < total) { dark[y][x] = ((words[n >> 3] >> (7 - (n & 7))) & 1) === 1; n++; }
+        }
+      }
+    }
+    const apply = (mask) => {
+      const test = QR_MASKS[mask];
+      for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!fixed[y][x] && test(x, y)) dark[y][x] = !dark[y][x];
+    };
+    let best = null;
+    for (let m = 0; m < 8; m++) {
+      apply(m);
+      format(level, m);
+      const score = qrPenalty(dark);
+      if (!best || score < best[0]) best = [score, m];
+      apply(m); // masking twice undoes it
+    }
+    apply(best[1]);
+    format(level, best[1]);
+    return { version: v, level, mask: best[1], size, modules: dark };
+  }
+
+  // The code as an SVG picture: dark modules on a light square, with the 4-module quiet zone all round. The
+  // colours are fixed, not the theme's, so the code is the right way round in every theme.
+  function qrSvg(code, description) {
+    const ns = "http://www.w3.org/2000/svg", n = code.size + 2 * QR_QUIET;
+    const s = document.createElementNS(ns, "svg");
+    const d = [];
+    code.modules.forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) {
+        if (!row[x]) continue;
+        let w = 1;
+        while (row[x + w]) w++;
+        d.push(`M${x + QR_QUIET} ${y + QR_QUIET}h${w}v1h-${w}z`);
+        x += w - 1;
+      }
+    });
+    for (const [k, v] of Object.entries({ viewBox: `0 0 ${n} ${n}`, role: "img", "aria-label": description, class: "sl-qr",
+      "shape-rendering": "crispEdges", style: `width: min(100%, ${Math.max(240, n * 4)}px)` })) s.setAttribute(k, v);
+    const rect = document.createElementNS(ns, "rect");
+    for (const [k, v] of Object.entries({ width: n, height: n, fill: "#fff" })) rect.setAttribute(k, v);
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d.join(""));
+    path.setAttribute("fill", "#000");
+    s.append(rect, path);
+    return s;
+  }
+
   // Sending ----------------------------------------------------------------------------------------------
 
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; } catch {
-      const area = h("textarea", { style: "position:fixed;opacity:0" }); area.value = text; wrap.append(area); area.select();
+      const area = h("textarea"); Object.assign(area.style, { position: "fixed", opacity: "0" }); area.value = text; wrap.append(area); area.select();
       const ok = document.execCommand("copy"); area.remove(); return ok;
     }
   }
@@ -847,12 +1089,16 @@
   }
 
   const enc = (text) => encodeURIComponent(text.toWellFormed ? text.toWellFormed() : text);
-  async function sendGithub(report) {
-    const g = config.send.github;
+  const issueAddress = (title) => `https://github.com/${config.send.github.repo}/issues/new?title=${enc(title)}`;
+  function githubLabels(report) {
     const group = typeOf(report.type)?.group;
-    const labels = [...config.labels, ...(g.labels || []), group === "suggestion" ? "suggestion" : group === "problem" ? "problem" : null, report.check ? "accessibility" : null, `type: ${report.type}`,
+    return [...config.labels, ...(config.send.github.labels || []), group === "suggestion" ? "suggestion" : group === "problem" ? "problem" : null, report.check ? "accessibility" : null, `type: ${report.type}`,
       report.category && `kind: ${report.category}`, report.severity && `${report.scale}: ${report.severity}`].filter(Boolean).join(",");
-    const base = `https://github.com/${g.repo}/issues/new?labels=${enc(labels)}&title=${enc(titleOf(report))}`;
+  }
+  const githubBase = (report) => `https://github.com/${config.send.github.repo}/issues/new?labels=${enc(githubLabels(report))}&title=${enc(titleOf(report))}`;
+
+  async function sendGithub(report) {
+    const base = githubBase(report);
     let url = `${base}&body=${enc(markdown(report))}`;
     if (url.length > 7500) {
       await copyText(markdown(report));
@@ -886,6 +1132,60 @@
     const a = h("a", { href: url, download: `feedback-${report.created.slice(0, 10)}.json` });
     wrap.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // Show as a QR code: the same pre-filled new-issue address as Open in GitHub, for a phone to open when this
+  // computer is not online. A QR code read off a screen holds about 1,200 bytes at most, so when the whole
+  // report does not fit, less goes in, in the design system's order (TERMINAL.md, "How the QR code is made").
+  const noMention = (text) => text.replace(/@(?=[A-Za-z0-9-])/g, "@\u200b");
+  // The same address, written shorter: + for a space and : / , ? as they are, which GitHub reads the same way.
+  const shorter = (url) => url.replace(/=([^&]*)/g, (m, v) => `=${v.replace(/%20/g, "+").replace(/%(3A|2F|2C|3F)/g, (x, c) => decodeURIComponent(`%${c}`))}`);
+  function qrChoices(report) {
+    const type = typeOf(report.type);
+    const kind = type?.label || report.type;
+    const where = report.page?.name || report.app;
+    const said = Object.entries(report.answers).filter(([id]) => type?.fields.find((f) => f.id === id)?.type !== "select")
+      .map(([, v]) => v.replace(/\s+/g, " ").trim()).filter(Boolean).join(" ") || titleOf(report);
+    const about = [report.app, report.version].filter(Boolean).join(" ");
+    const system = report.environment ? `, ${report.environment.browser} on ${report.environment.system}` : "";
+    const labels = `&labels=${enc(githubLabels(report))}`;
+    const short = (w) => `${issueAddress(clip(titleOf(report), Math.min(60, 30 + w)))}${labels}&body=${enc(noMention(`${kind} on ${where}: ${clip(said, w).replace(/\.$/, "")}. ${about}${system}.`))}`;
+    return [
+      [`${githubBase(report)}&body=${enc(markdown(report))}`, t("qrHoldsAll")],
+      [`${githubBase(report)}&body=${enc(markdown(report, "qr"))}`, t("qrHoldsNoDetails")],
+      ...[300, 200, 140, 90, 50].map((w) => [short(w), t("qrHoldsShort")]),
+      [`${issueAddress(`${kind}: ${clip(where, 60)}`)}&body=${enc(noMention(`${about}.`))}`, t("qrHoldsWhere")],
+      [issueAddress(clip(`${kind}: ${where}`, 60)), t("qrHoldsTitle")],
+    ];
+  }
+  function qrFit(report) {
+    for (const [address, holds] of qrChoices(report)) {
+      const url = shorter(address);
+      if (url.length <= QR_LIMIT) return { url, holds, code: qrEncode(url) };
+    }
+    return null;
+  }
+
+  // The QR code on a view of its own, never the only way: the link is there as text with a Copy button, and
+  // Download keeps the whole report.
+  function openQr(report, from) {
+    const fit = qrFit(report);
+    const link = fit ? fit.url : `${githubBase(report)}&body=${enc(markdown(report))}`;
+    const box = h("pre", { class: "sl-preview sl-qr-link sl-scroll", tabindex: "0", "aria-label": t("qrLink"), text: link });
+    const whole = fit && fit.holds === t("qrHoldsAll");
+    const body = fit
+      ? [h("p", { class: "sl-qr-scan", text: t("qrScan") }), qrSvg(fit.code, `${t("qrAlt")} ${fit.holds}`),
+        h("p", { class: "sl-muted", text: whole ? fit.holds : `${fit.holds} ${t("qrWhole")}` }), h("p", { class: "sl-qr-label", text: t("qrLink") }), box]
+      : [h("p", { text: t("qrNone") }), box];
+    const copy = h("button", { type: "button", class: "sl-btn sl-btn--primary", text: t("copyLink"),
+      onclick: async () => { if (await copyText(link)) say(t("linkCopied")); } });
+    const foot = [copy,
+      config.send.download ? h("button", { type: "button", class: "sl-btn", text: t("download"), onclick: () => download(report) }) : null,
+      h("button", { type: "button", class: "sl-btn", text: t("back"), onclick: () => d.close() })].filter(Boolean);
+    const d = dialog(t("qrTitle"), body, foot);
+    d.classList.add("sl-dialog--qr");
+    d.addEventListener("close", () => { if (from?.isConnected) from.focus(); });
+    copy.focus();
   }
 
   // Interface --------------------------------------------------------------------------------------------
@@ -1098,7 +1398,10 @@
     draw();
     const s = config.send;
     const notes = [s.github && t("githubNote"), s.email && t("emailNote"), s.endpoint && t("endpointNote")].filter(Boolean);
+    const qr = !!(s.qr && s.github?.repo);
+    const offline = qr && navigator.onLine === false;
     const body = [
+      offline ? h("p", { class: "sl-offline", text: t("qrOffline") }) : null,
       h("p", { class: "sl-privacy", text: t("privacy") }),
       toggles.length ? h("fieldset", { class: "sl-checks" }, h("legend", { text: t("include") }), toggles) : null,
       preview,
@@ -1111,12 +1414,15 @@
     };
     // The first way of sending is the primary button; the rest are secondary.
     const buttons = [];
-    const add = (text, fn) => {
+    const add = (text, fn, own) => {
       const b = h("button", { type: "button", class: buttons.length ? "sl-btn" : "sl-btn sl-btn--primary", text });
-      b.addEventListener("click", () => run(b, fn));
+      b.addEventListener("click", () => (own ? fn(report, b) : run(b, fn)));
       buttons.push(b);
     };
+    // Offline, the QR code comes first: a phone can still open the issue.
+    if (offline) add(t("sendQr"), openQr, true);
     if (s.github?.repo) add(t("sendGithub"), sendGithub);
+    if (qr && !offline) add(t("sendQr"), openQr, true);
     if (s.email?.to) add(t("sendEmail"), sendEmail);
     if (s.endpoint?.url) add(t("sendEndpoint"), sendEndpoint);
     if (s.copy) add(t("copy"), async (r) => ((await copyText(markdown(r))) ? t("copied") : null));
@@ -1522,6 +1828,13 @@ fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; min-inline
   font: .8125rem/1.5 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; min-height: 12rem; max-height: 40vh; overflow: auto;
   --sbg: var(--sk); overscroll-behavior: contain; }
 .sl-summary { display: grid; gap: 4px; padding: 12px 16px; background: var(--sk); }
+.sl-offline { margin: 0; font-weight: 600; }
+.sl-qr-scan, .sl-qr-label { margin: 0; }
+.sl-qr-label { font-weight: 600; }
+/* Dark on light in every theme, with a border so the light square has an edge on a light dialog. */
+.sl-qr { display: block; height: auto; margin: 0 auto; background: #fff; border: 1px solid var(--bd); forced-color-adjust: none; }
+.sl-qr-link { min-height: 0; max-height: 8rem; }
+.sl-dialog--qr .sl-body { grid-auto-rows: max-content; }
 .sl-summary p { margin: 0; overflow-wrap: anywhere; }
 .sl-summary .sl-actions { gap: 16px; }
 .sl-disclosure { border: 1px solid var(--bd); background: var(--bg); }
@@ -1585,7 +1898,14 @@ fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; min-inline
     const rtl = /^(ar|he|fa|ur|ps|yi)\b/i.test(lang);
     wrap = h("div", { class: `sl sl--${["dark", "auto"].includes(config.theme) ? config.theme : "light"}`, lang, dir: rtl ? "rtl" : null },
       h("div", { class: "sl-status", role: "status", hidden: true }));
-    root.append(h("style", { text: CSS_TEXT }), wrap);
+    // A constructed style sheet works under a strict Content Security Policy (style-src 'self'); a <style>
+    // element is the fallback for browsers without one.
+    if (typeof CSSStyleSheet === "function" && "adoptedStyleSheets" in root && "replaceSync" in CSSStyleSheet.prototype) {
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(CSS_TEXT);
+      root.adoptedStyleSheets = [sheet];
+      root.append(wrap);
+    } else root.append(h("style", { text: CSS_TEXT }), wrap);
     if (config.launcher) {
       launcher = h("button", { type: "button", class: `sl-btn sl-btn--primary sl-launcher sl-launcher--${config.launcher}`, onclick: () => openChooser() },
         icon("flag"), t("launcher"));
@@ -1634,6 +1954,8 @@ fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 4px; min-inline
     setUserEnabled,
     presets: { types: TYPES, categories: CATEGORIES, severities: SEVERITIES, groups: GROUPS },
     redact: (text) => redact(text),
+    // The QR code Snaglist would draw for some text: { version, level, mask, size, modules }, or null.
+    qr: (text) => qrEncode(String(text)),
     // Every piece of interface text, by key, for translating: Snaglist.start({ text: { key: "translation" } }).
     strings: () => {
       const out = { ...TEXT };

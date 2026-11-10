@@ -235,6 +235,10 @@ def compose(manifest, plugin_dir, media_dir, host=None):
             lines.append(f"      starboard.idle_stop_minutes: \"{int(c.get('idle_stop_minutes') or 15)}\"")
         if c.get("command"):
             lines.append(f"    command: {json.dumps(c['command'])}")
+        if c["image"] == "starboard":  # Starboard's own image checks Starboard's port: a built-in plug-in checks its own
+            path = manifest.get("health") or "/"
+            lines += ["    healthcheck:", f'      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:{int(c.get("port") or 80)}{path}"]',
+                      "      interval: 60s", "      timeout: 5s", "      retries: 3"]
         net = c.get("network", "default")
         if net == "lan":  # the computer itself, for apps Starboard reaches at 127.0.0.1 (Jellyfin's key, DASH-285)
             lines += ["    extra_hosts:", '      - "host.docker.internal:host-gateway"']

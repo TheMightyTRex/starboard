@@ -197,6 +197,24 @@ def host_path(data_dir, pid):
     return f"{base}/plugins/{pid}"
 
 
+def _prepare_folders(data_dir, pid):
+    """Shell lines that make each container's data folder and give it to the user the container runs as, run as root
+    in the helper before starting: a folder Docker makes by itself belongs to root, and the plug-in could not write."""
+    from . import containers
+    m = _read(os.path.join(folder(data_dir, pid), "manifest.json"), {}) or {}
+    st = _read(os.path.join(folder(data_dir, pid), "state.json"), {}) or {}
+    lines = []
+    for c in m.get("containers") or []:
+        if "data" not in (c.get("volumes") or []):
+            continue
+        user = c.get("user") or (f"{os.getuid()}:{os.getgid()}" if st.get("builtin") and c.get("image") == "starboard" else "10001:10001")
+        if not re.match(r"^\d{1,6}:\d{1,6}$", user) or not re.match(r"^[a-z0-9-]{1,21}$", c.get("name", "")):
+            continue
+        d = containers._quote(f"data/{c['name']}")
+        lines.append(f"mkdir -p {d} && chown {user} {d} && chmod 700 {d}")
+    return " && ".join(lines)
+
+
 def _compose_run(data_dir, pid, command, helper=None):
     """Runs `docker compose <command>` for the plug-in in the short-lived helper; returns (ok, text)."""
     from . import containers
@@ -205,7 +223,9 @@ def _compose_run(data_dir, pid, command, helper=None):
     host = host_path(data_dir, pid)
     q = containers._quote
     # The exit code is kept (a pipe into tail would hide a failure), and only the last lines are shown.
-    script = (f"out=$(docker compose -p {q('plugin-' + pid)} -f compose.yaml {command} 2>&1); code=$?; "
+    prep = _prepare_folders(data_dir, pid) if command.startswith("up") else ""
+    script = ((f"{prep} || {{ echo 'Could not make its data folder'; exit 1; }}; " if prep else "") +
+              f"out=$(docker compose -p {q('plugin-' + pid)} -f compose.yaml {command} 2>&1); code=$?; "
               "printf '%s\n' \"$out\" | tail -n 40")
     if command.startswith("up"):
         # Starboard joins the plug-in's own network, so the plug-in can reach Starboard's API and nothing else.

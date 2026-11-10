@@ -372,6 +372,7 @@ class ServerTest(unittest.TestCase):
         report = {"title": "Apps: the button is hidden", "markdown": "## Hard to use\n\nThe button is hidden.",
                   "report": {"type": "ux", "severity": "major", "page": {"path": "/index.html"}, "element": {"component": "Apps"}}}
         send = lambda key, body=report: self.request("POST", "/api/feedback", body, {"X-Starboard-Feedback": key}, cookie=False)
+        self.request("PUT", "/api/config/general", {"ux_notes": False})  # on by default since 0.15.2: switched off here
         resp, _ = self.request("GET", "/api/feedback/key")
         self.assertEqual(resp.status, 404)  # Send feedback is inactive
         self.request("PUT", "/api/config/general", {"ux_notes": True})
@@ -406,8 +407,9 @@ class ServerTest(unittest.TestCase):
 
     def test_70_ux_notes_only_while_turned_on(self):
         self.sign_in()
+        self.request("PUT", "/api/config/general", {"ux_notes": False})  # on by default since 0.15.2: switched off here
         resp, _ = self.request("GET", "/api/ux-notes")
-        self.assertEqual(resp.status, 404)  # off by default
+        self.assertEqual(resp.status, 404)  # off when deactivated
         self.request("PUT", "/api/config/general", {"ux_notes": True})
         resp, data = self.request("GET", "/api/session")
         self.assertTrue(data["ux_notes"])

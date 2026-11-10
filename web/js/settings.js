@@ -770,9 +770,9 @@ function startGeneral() {
             (v, t) => saveGeneral({ logs: { detail: v } }, `Detailed logging: ${t.toLowerCase()}`)), "lg-detail-l")),
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")))),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
-    el("div", { id: "testing" }, section("gn-test", "Testing", "For trying Starboard out and reporting what could be better.",
+    el("div", { id: "testing" }, section("gn-test", "Send feedback", "Report a problem or suggest something from any page. On unless you deactivate it.",
       el("ul", { class: "settings-rows" },
-        settingRow("Send feedback", "Adds Send feedback to the corner of every page, to report a problem, suggest something or check a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here.",
+        settingRow("Send feedback", "Send feedback sits in the corner of every page, to report a problem, suggest something or check a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Deactivate it to hide the button.",
           uxSwitch, "ux-notes-l")),
       el("div", { id: "feedback-list" }))));
   renderCategories();
@@ -2699,7 +2699,7 @@ function takeoverSection() {
 // The basic settings are the approved table (FULL-INSTALL-AND-APP-SETUP section 3); the sections listed here are the
 // advanced ones, marked as each page draws them.
 const ADVANCED_SECTIONS = new Set([
-  "gn-cat", "gn-card", "gn-up", "gn-logs", "gn-test", "gn-design", "gn-guide",  // General
+  "gn-cat", "gn-card", "gn-up", "gn-logs", "gn-design", "gn-guide",  // General
   "sc-ses",  // Security
   "in-how", "tk",  // Your install
   "rx-mediaservers", "rx-downloadclients", "rx-library", "rx-folders", "rx-information", "rx-files", "rx-requests",

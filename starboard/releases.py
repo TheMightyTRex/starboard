@@ -822,6 +822,56 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Live TV moves into its plug-in by itself on the next start. To go back, run ./update.sh --to v0.14.1, then switch Live TV on again in Settings, Apps, Jellyfin."
+    },
+    {
+        "version": "0.15.2",
+        "date": "10 November 2026",
+        "added": [
+            [
+                "Send feedback everywhere",
+                "Send feedback, with Snaglist 0.4.0 and its QR code reports, is now on every page by default; deactivate it in Settings, General."
+            ]
+        ],
+        "added": [
+            [
+                "Send feedback on every page",
+                "Send feedback is on by default, in the corner of every page, to report a problem or suggest something; deactivate it in Settings, General. It now uses Snaglist 0.4.0, which can show a report as a QR code."
+            ]
+        ],
+        "fixed": [
+            [
+                "Language and Region in Settings, Reelix",
+                "Language of details and Region are lists with plain names, one choice each, and an empty Region no longer stops Information saving."
+            ],
+            [
+                "Plug-in styles before signing in",
+                "The sign-in page loads a chosen plug-in style without an error."
+            ],
+            [
+                "Region and language in Settings, Reelix",
+                "Saving Information with Region empty no longer fails with \"not in the form it needs\"; Language of details and Region are now lists with plain names, one choice each, as Reelix uses."
+            ],
+            [
+                "Plug-in data folders",
+                "Starboard makes each plug-in's data folder for the user the plug-in runs as, so a plug-in can save its work; Live TV's first run on a real server could not."
+            ],
+            [
+                "Plug-in cards and buttons",
+                "Starboard finds a plug-in at its address when it uses the computer's own network, so cards and buttons such as Run Live TV now answer."
+            ],
+            [
+                "Built-in plug-ins' health",
+                "Built-in plug-ins check their own health instead of Starboard's, so Docker no longer marks them unhealthy."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Live TV starts its first run as a plug-in. To go back, run ./update.sh --to v0.15.1."
     }
 ]
 

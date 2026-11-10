@@ -76,12 +76,15 @@ def loop(stop=None):
     while not (stop and stop.is_set()):
         with _lock:
             force, _force["now"] = _force["now"], False
-        _save_status(state="running", started=time.time())
         try:
+            _save_status(state="running", started=time.time())
             said = run_once(force=force)  # first: the finish time is taken after the run
             _save_status(state="done", finished=time.time(), summary=said)
         except Exception as e:  # recorded for the card and the plug-in's section; the next run tries again
-            _save_status(state="failed", finished=time.time(), summary=str(e)[:300])
+            try:
+                _save_status(state="failed", finished=time.time(), summary=str(e)[:300])
+            except OSError as again:  # its folder cannot be written: said in its log, and it keeps running
+                print(f"Live TV could not save its status: {again}; the run said: {e}", flush=True)
         _wake.wait(EVERY)
         _wake.clear()
 

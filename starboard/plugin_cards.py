@@ -52,6 +52,25 @@ def clean(card_type, data):
     raise ValueError("Cards are stat, list or status")
 
 
+def _host(pid, main):
+    """Where Starboard reaches a plug-in's main container: by name when Docker's names resolve here; when Starboard
+    uses the computer's own network (they do not), at the container's address on its own network."""
+    import socket
+    name = "gluetun" if main.get("network") == "vpn" else f"plugin-{pid}-{main['name']}"
+    try:
+        socket.gethostbyname(name)
+        return name
+    except OSError:
+        pass
+    from . import containers
+    try:
+        nets = (containers.docker("GET", f"/containers/{name}/json").get("NetworkSettings") or {}).get("Networks") or {}
+    except containers.DockerError:
+        return name
+    own = nets.get(f"plugin-{pid}") or next(iter(nets.values()), {})
+    return own.get("IPAddress") or name
+
+
 def available(data_dir):
     """Cards from active plug-ins, for Edit dashboard: [{id, title, type, format, plugin}]."""
     from . import plugins_admin
@@ -81,8 +100,7 @@ def answer(data_dir, pid, cid, opener=None):
     if not card or not m.get("containers"):
         raise LookupError("No such card")
     main = m["containers"][0]
-    host = "gluetun" if main.get("network") == "vpn" else f"plugin-{pid}-{main['name']}"
-    url = f"http://{host}:{int(main.get('port') or 80)}{card['path']}"
+    url = f"http://{_host(pid, main)}:{int(main.get('port') or 80)}{card['path']}"
     out = {"type": card["type"], "format": card.get("format", "number")}
     try:
         req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "Starboard"})
@@ -106,8 +124,7 @@ def action(data_dir, pid, aid, opener=None):
     if not act or not m.get("containers"):
         raise LookupError("No such button")
     main = m["containers"][0]
-    host = "gluetun" if main.get("network") == "vpn" else f"plugin-{pid}-{main['name']}"
-    req = urllib.request.Request(f"http://{host}:{int(main.get('port') or 80)}{act['path']}", data=b"", method="POST",
+    req = urllib.request.Request(f"http://{_host(pid, main)}:{int(main.get('port') or 80)}{act['path']}", data=b"", method="POST",
                                  headers={"Accept": "application/json", "User-Agent": "Starboard"})
     try:
         with (opener or urllib.request.build_opener()).open(req, timeout=10) as r:  # the plug-in's own container  # nosec B310

@@ -4932,3 +4932,12 @@
 :root.in-panel :is(.rail, .site-header, .site-footer, .skip-link, .menu-tabs) { display: none !important; }
 :root.in-panel body.with-rail { padding-inline-start: 0; }
 :root.in-panel .page-head h1 { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+
+/* Send feedback (Snaglist) sits in the bottom-right corner of every page (DASH-288). It must never cover a control:
+   it steps aside while a slide-out or dialog is open, whose own buttons sit in that corner, and pages keep room at the
+   bottom so their last controls can scroll clear of it. Snaglist itself is copied unchanged; only its host is styled. */
+body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: none; }
+:root:has(snag-list) #main { padding-block-end: 72px; }
+
+/* Send feedback (Snaglist) sits in the bottom left corner: the side menu's end keeps room above it. */
+:root.has-feedback .rail__end { padding-block-end: 64px; }

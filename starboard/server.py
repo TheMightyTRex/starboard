@@ -810,6 +810,11 @@ class Handler(BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
         if path == "/healthz":
             return self.send(200, b"ok", "text/plain; charset=utf-8")
+        if path == "/api/styles.css":
+            # Plug-in styles' colours, open before sign-in too: the sign-in page uses the style you chose, and the file
+            # holds only colours Starboard checked and wrote itself (DASH-284).
+            from . import plugins_admin
+            return self.send(200, plugins_admin.styles_css(self.app.data_dir).encode(), "text/css; charset=utf-8", {"Cache-Control": "no-cache"})
         if path.startswith("/api/v1/") or path == "/api/v1":  # the public API, with its own keys (DASH-274)
             from . import api_v1
             return api_v1.handle(self, "GET", path)
@@ -1926,9 +1931,6 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/styles" and method == "GET":  # styles from plug-ins that are on (DASH-284)
                 from . import plugins_admin
                 return self.json(200, {"styles": plugins_admin.styles(app.data_dir)})
-            if path == "/api/styles.css" and method == "GET":
-                from . import plugins_admin
-                return self.send(200, plugins_admin.styles_css(app.data_dir).encode(), "text/css; charset=utf-8", {"Cache-Control": "no-cache"})
             if path.startswith("/api/plugins"):  # Settings, Plug-ins (DASH-149)
                 return self.plugins_route(method, path)
             if path == "/api/keys" and method == "GET":  # API keys (DASH-274): never their secrets

@@ -4,10 +4,29 @@ a hint in plain words. Only the fields listed here are read and changed; everyth
 it was. Reelix keeps these behind its admin password (reelix_admin.py)."""
 
 LANGUAGE = r"^[a-z]{2}(-[A-Z]{2})?$"
+# Language of details and Region as lists with plain names (owner, 10 November 2026: easier than typing a code).
+# Reelix takes one of each. A value Reelix already holds that is not here stays as a choice (open_form).
+LANGUAGES = [("en-GB", "English (United Kingdom), en-GB"), ("en-US", "English (United States), en-US"), ("en-AU", "English (Australia), en-AU"),
+             ("en-CA", "English (Canada), en-CA"), ("en-IE", "English (Ireland), en-IE"), ("en-NZ", "English (New Zealand), en-NZ"),
+             ("cy-GB", "Welsh, cy-GB"), ("ga-IE", "Irish, ga-IE"), ("fr-FR", "French (France), fr-FR"), ("fr-CA", "French (Canada), fr-CA"),
+             ("de-DE", "German, de-DE"), ("es-ES", "Spanish (Spain), es-ES"), ("es-MX", "Spanish (Mexico), es-MX"), ("it-IT", "Italian, it-IT"),
+             ("pt-PT", "Portuguese (Portugal), pt-PT"), ("pt-BR", "Portuguese (Brazil), pt-BR"), ("nl-NL", "Dutch, nl-NL"),
+             ("sv-SE", "Swedish, sv-SE"), ("da-DK", "Danish, da-DK"), ("nb-NO", "Norwegian, nb-NO"), ("fi-FI", "Finnish, fi-FI"),
+             ("pl-PL", "Polish, pl-PL"), ("cs-CZ", "Czech, cs-CZ"), ("el-GR", "Greek, el-GR"), ("tr-TR", "Turkish, tr-TR"),
+             ("ru-RU", "Russian, ru-RU"), ("uk-UA", "Ukrainian, uk-UA"), ("ar-SA", "Arabic, ar-SA"), ("he-IL", "Hebrew, he-IL"),
+             ("hi-IN", "Hindi, hi-IN"), ("ja-JP", "Japanese, ja-JP"), ("ko-KR", "Korean, ko-KR"), ("zh-CN", "Chinese (simplified), zh-CN"),
+             ("zh-TW", "Chinese (traditional), zh-TW")]
+REGIONS = [("", "Use the language's country (Reelix's own choice)")] + [
+    (c, f"{n}, {c}") for c, n in (("GB", "United Kingdom"), ("IE", "Ireland"), ("US", "United States"), ("CA", "Canada"),
+                                  ("AU", "Australia"), ("NZ", "New Zealand"), ("FR", "France"), ("DE", "Germany"), ("ES", "Spain"),
+                                  ("IT", "Italy"), ("NL", "Netherlands"), ("BE", "Belgium"), ("PT", "Portugal"), ("SE", "Sweden"),
+                                  ("DK", "Denmark"), ("NO", "Norway"), ("FI", "Finland"), ("PL", "Poland"), ("IN", "India"),
+                                  ("JP", "Japan"), ("KR", "South Korea"), ("BR", "Brazil"), ("MX", "Mexico"), ("ZA", "South Africa"))]
+NAMED = {"LANGUAGES": LANGUAGES, "REGIONS": REGIONS}
 FORMS = {
     "information": ("/settings/metadata", "Information", "Where Reelix finds details about films and series.", [
-        ("language", "Language of details", "Titles and descriptions in this language, such as en-GB.", "text", LANGUAGE),
-        ("region", "Region", "Release dates and certificates for this country, such as GB.", "text", r"^[A-Z]{2}$"),
+        ("language", "Language of details", "Titles and descriptions come in this one language. Reelix uses one, so pick the one you read.", "select", "LANGUAGES"),
+        ("region", "Region", "Release dates and age ratings for this one country, such as GB for the UK.", "select", "REGIONS"),
         ("tvdb_api_key", "TheTVDB key", "Optional. Only for series TheTVDB knows better.", "secret", None),
         ("tvdb_pin", "TheTVDB PIN", "Optional. Only with a subscriber key.", "secret", None),
     ]),
@@ -65,13 +84,21 @@ def open_form(reelix, name):
     path, title, about, fields = FORMS[name]
     _, current = reelix.call("GET", path)
     current = current or {}
+    def choices(k, kind, rule):
+        if kind != "select":
+            return None
+        listed = list(NAMED.get(rule, rule) if isinstance(rule, str) else rule)
+        have = current.get(k)
+        if have and have not in [v for v, _ in listed]:  # Reelix's own value stays, even when it is not in the list
+            listed.insert(0, (have, f"{have} (as Reelix has it now)"))
+        return [{"value": v, "label": t} for v, t in listed]
     return {"name": name, "title": title, "about": about,
-            "fields": [{"key": k, "label": label, "hint": hint or "", "type": kind,
-                        "choices": [{"value": v, "label": t} for v, t in rule] if kind == "select" else None,
-                        "value": _shown(kind, current.get(k))} for k, label, hint, kind, rule in fields]}
+            "fields": [{"key": k, "label": label, "hint": hint or "", "type": kind, "choices": choices(k, kind, rule),
+                        "value": _shown(kind, current.get(k)) if current.get(k) is not None else ("" if kind == "select" else None)}
+                       for k, label, hint, kind, rule in fields]}
 
 
-def _clean(kind, rule, label, value):
+def _clean(kind, rule, label, value, current_value=None):
     import re
     if kind == "bool":
         return bool(value)
@@ -86,9 +113,10 @@ def _clean(kind, rule, label, value):
             raise ValueError(f"{label} is a number from {rule[0]} to {rule[1]}")
         return n
     if kind == "select":
-        if value not in [v for v, _ in rule]:
+        listed = [v for v, _ in (NAMED.get(rule, rule) if isinstance(rule, str) else rule)]
+        if value not in listed and not (isinstance(rule, str) and value == current_value):
             raise ValueError(f"Choose one of the choices for {label.lower()}")
-        return value
+        return value or None
     if kind == "list":
         items = [x.strip() for x in str(value or "").split(",") if x.strip()]
         if any(len(x) > 40 or any(c in x for c in "\r\n") for x in items) or len(items) > 50:
@@ -121,6 +149,6 @@ def save_form(reelix, name, values):
                 raise ValueError(f"Check {label.lower()}")
             out[k] = v
             continue
-        out[k] = _clean(kind, rule, label, v)
+        out[k] = _clean(kind, rule, label, v, current.get(k))
     reelix.call("PUT", path, out)
     return open_form(reelix, name)

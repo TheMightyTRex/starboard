@@ -90,6 +90,15 @@ class PluginsAdminTest(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("pull access denied", r.stdout)
 
+    def test_starting_makes_the_data_folder_for_the_plugins_user(self):
+        pa.install(self.tmp.name, ON_DEMAND, "/srv/media")
+        scripts = []
+        pa._compose_run(self.tmp.name, "on-demand", "up -d", lambda folder, script: (scripts.append(script) or (0, "")))
+        self.assertIn("mkdir -p 'data/main' && chown 1000:1000 'data/main' && chmod 700 'data/main'", scripts[0])
+        self.assertIn("mkdir -p 'data/engine' && chown 1000:1000 'data/engine'", scripts[0])
+        pa._compose_run(self.tmp.name, "on-demand", "stop", lambda folder, script: (scripts.append(script) or (0, "")))
+        self.assertNotIn("chown", scripts[1])
+
     def test_no_docker_access_says_so(self):
         pa.install(self.tmp.name, ON_DEMAND, "/srv/media")
         with mock.patch("starboard.containers.available", return_value=False):

@@ -748,6 +748,8 @@ async function startFeedback(session) {
   const { key } = await api("/api/feedback/key");
   const start = () => window.Snaglist?.start({
     app: "Starboard", version: session.version || "", language: "en-GB", userToggle: false,
+    // Bottom left: side panels open on the right, with their Save and Remove buttons at the bottom.
+    launcher: "bottom-left",
     theme: document.documentElement.dataset.theme || "auto", // the theme chosen in Display, or the device's
     types: ["bug", "ux", "visual", "accessibility", "performance", "content", "feature", "idea", "other", "check"],
     send: {
@@ -757,10 +759,11 @@ async function startFeedback(session) {
     },
     text: {
       sendEndpoint: "Save in Starboard",
-      endpointNote: "Save in Starboard keeps the report on this server, listed in Settings, General, Testing.",
-      sent: "Saved in Starboard. It is listed in Settings, General, Testing.",
+      endpointNote: "Save in Starboard keeps the report on this server, listed in Settings, General, Send feedback.",
+      sent: "Saved in Starboard. It is listed in Settings, General, Send feedback.",
     },
   });
+  document.documentElement.classList.add("has-feedback");  // the side menu keeps room for the button under it
   if (window.Snaglist) return start();
   document.head.append(el("script", { src: "/js/snaglist.js", onload: start }));
 }

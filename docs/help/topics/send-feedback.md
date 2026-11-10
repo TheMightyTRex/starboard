@@ -10,10 +10,12 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
 
 - You are signed in to Starboard.
 
-## Activate it
+## It is on already
+
+**Send feedback** is on every page from Starboard 0.15.2. To hide it:
 
 1. Go to **Settings**, then **General**.
-2. Under **Testing**, activate **Send feedback**. Starboard shows **Send feedback activated on every page**.
+2. Under **Send feedback**, deactivate **Send feedback**. Activate it again the same way.
 
 ## Send a report
 
@@ -28,11 +30,12 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
      your own GitHub account.
    - **Save in Starboard** keeps it on your server. Starboard shows **Saved in Starboard**.
    - **Copy as Markdown** or **Download** gives you the report to send another way.
+   - **Show as a QR code** opens the same report on your phone, for a computer that is not online.
 
 ## See the reports saved in Starboard
 
 1. Go to **Settings**, then **General**.
-2. Under **Testing**, the saved reports are listed, newest first. Open **The full report** to read one.
+2. Under **Send feedback**, the saved reports are listed, newest first. Open **The full report** to read one.
 3. Select **Mark fixed** when it is dealt with, or **More actions**, then **Remove**, to delete it.
 4. Select **Download all** to save every report as one file.
 

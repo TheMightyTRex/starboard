@@ -74,7 +74,8 @@ DEFAULTS = {
     # Starboard's own log (System, Logs): days to keep, and detailed logging for reporting a problem.
     "logs": {"keep_days": 60, "detail": "off", "detail_until": 0},
     "setup_guide_done": False,
-    "ux_notes": False,  # Testing: the Note an issue button on every page (the shared library's ux-notes.js)
+    "ux_notes": True,  # Send feedback (Snaglist) on every page: on by default since 0.15.2 (owner); Settings, General
+    "feedback_default_on": True,  # the one-time switch-on for installs from before 0.15.2 is done (or never needed)
     "last_version": "",  # the version the upgrade wizard last finished, so it opens once per upgrade
     "auth": {"password_hash": "", "session_version": 1},
     "services": [],
@@ -132,6 +133,7 @@ class Config:
             # DASH-238: a new Starboard shows only the set-up wizard until the first set-up has finished. A settings
             # file from before has no such mark, so an existing server is never shut in the wizard.
             data["first_setup_pending"] = True
+            data["feedback_default_on"] = True  # Send feedback is on already (DEFAULTS); nothing to switch on later
             data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
             name = os.environ.get("STARBOARD_NAME", "").strip()[:60]
             if name:
@@ -147,6 +149,12 @@ class Config:
         if "server_name" not in data:  # added in 0.8: a short dashboard name becomes the server name
             name = str(data.get("site_name", "")).strip()
             data["server_name"] = name if name != "Starboard" and len(name) <= SERVER_NAME_MAX else ""
+        if not data.get("feedback_default_on"):
+            # Send feedback is on by default (owner, 10 November 2026): switched on once for an install from before,
+            # after which Settings, General's switch decides and this never runs again.
+            data["ux_notes"] = True
+            data["feedback_default_on"] = True
+            self._write(data)
         for key, value in DEFAULTS.items():
             data.setdefault(key, json.loads(json.dumps(value)))
         for key, value in DEFAULTS["performance"].items():  # settings added in later versions

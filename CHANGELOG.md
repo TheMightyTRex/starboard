@@ -7,6 +7,20 @@ add features.
 
 ## [Unreleased]
 
+## [0.15.2] (10 November 2026)
+
+### Added
+- **Send feedback everywhere:** Send feedback, with Snaglist 0.4.0 and its QR code reports, is now on every page by default; deactivate it in Settings, General.
+
+### Fixed
+- **Region and language in Settings, Reelix:** Saving Information with Region empty no longer fails with "not in the form it needs"; Language of details and Region are now lists with plain names, one choice each, as Reelix uses.
+- **Plug-in data folders:** Starboard makes each plug-in's data folder for the user the plug-in runs as, so a plug-in can save its work; Live TV's first run on a real server could not.
+- **Plug-in cards and buttons:** Starboard finds a plug-in at its address when it uses the computer's own network, so cards and buttons such as Run Live TV now answer.
+- **Built-in plug-ins' health:** Built-in plug-ins check their own health instead of Starboard's, so Docker no longer marks them unhealthy.
+
+### Security
+- **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
+
 ## [0.15.1] (10 November 2026)
 
 ### Fixed
@@ -1069,7 +1083,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.2...HEAD
+[0.15.2]: https://github.com/TheMightyTRex/starboard/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/TheMightyTRex/starboard/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/TheMightyTRex/starboard/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/TheMightyTRex/starboard/compare/v0.14.0...v0.14.1

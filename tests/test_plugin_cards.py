@@ -56,9 +56,17 @@ class PluginCardsTest(unittest.TestCase):
             out = plugin_cards.answer(d, "on-demand", "titles", op)
             plugin_cards.answer(d, "on-demand", "titles", op)
             self.assertEqual((out["data"]["value"], len(op.urls)), (1200, 1))
-            self.assertEqual(op.urls[0], "http://gluetun:7790/api/card")  # On demand runs inside the VPN
+            self.assertTrue(op.urls[0].endswith(":7790/api/card"))  # On demand runs inside the VPN, reached through Gluetun
             plugin_cards._cache.clear()
             self.assertIn("No answer", plugin_cards.answer(d, "on-demand", "titles", FakeOpener(b"not json"))["problem"])
+
+    def test_a_plug_in_is_found_by_its_address_when_names_do_not_resolve(self):
+        from starboard import containers
+        info = {"NetworkSettings": {"Networks": {"plugin-livetv_lan": {"IPAddress": "172.30.0.3"}, "plugin-livetv": {"IPAddress": "172.29.0.2"}}}}
+        with mock.patch("socket.gethostbyname", side_effect=OSError), mock.patch.object(containers, "docker", return_value=info):
+            self.assertEqual(plugin_cards._host("livetv", {"name": "main"}), "172.29.0.2")
+        with mock.patch("socket.gethostbyname", return_value="172.29.0.2"):
+            self.assertEqual(plugin_cards._host("livetv", {"name": "main"}), "plugin-livetv-main")
 
     def test_styles_listing_carries_what_the_pictures_need(self):
         path = os.path.join(os.path.dirname(__file__), "..", "tools", "screenshots", "example-plugin-styles.json")
