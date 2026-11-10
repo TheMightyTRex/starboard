@@ -91,7 +91,7 @@ async function pageFor(shot) {
     await page.goto(`${base}/login.html`);
     await page.fill("input[type=password]", password);
     await page.keyboard.press("Enter");
-    await page.waitForURL(/index/);
+    await page.waitForURL(/dashboard|index/);
     contexts[key] = page;
   }
   return contexts[key];

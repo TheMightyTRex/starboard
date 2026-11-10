@@ -27,6 +27,7 @@ PERMISSIONS = {
     "network:lan": ("Reach other computers on your home network", "medium", None),
     "network:vpn": ("Run inside your VPN connection", "medium", None),
     "jellyfin:key": ("Use Jellyfin's API key, kept by Starboard", "high", None),
+    "appearance:styles": ("Add styles to Display: colours, corners, a font and shadows, checked for accessibility", "low", None),
 }
 NETWORKS = {"default": None, "lan": "network:lan", "vpn": "network:vpn"}
 SETTING_TYPES = ("text", "number", "switch", "choice", "address", "secret", "folder", "list", "custom")
@@ -35,11 +36,11 @@ CARD_FORMATS = ("number", "bytes", "percent", "duration", "date")
 DEFAULT_MEMORY, DEFAULT_CPUS, CEILING_MEMORY, CEILING_CPUS = 128, 0.25, 512, 1.0
 
 TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
-       "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs"}
-REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs"}
+       "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles"}
+REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers"}
 CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user"}
 SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item"}
-CARD = {"id", "title", "type", "path", "format", "label"}
+CARD = {"id", "title", "type", "path", "format", "label", "example"}
 ACTION = {"id", "label", "path", "confirm"}
 
 
@@ -90,10 +91,26 @@ def check(manifest, dev=False):
     if not isinstance(perms, list) or any(p not in PERMISSIONS for p in perms):
         out.append("permissions must be a list from: " + ", ".join(PERMISSIONS))
         perms = []
-    containers = m.get("containers")
-    if "containers" in m and not (isinstance(containers, list) and 1 <= len(containers) <= 4):
-        out.append("containers must list one to four containers")
+    containers = m.get("containers", [])
+    least = 0 if m.get("styles") else 1  # a plug-in with only styles runs nothing (DASH-284)
+    if not (isinstance(containers, list) and least <= len(containers) <= 4):
+        out.append("containers must list one to four containers" + (" (none for a plug-in with only styles)" if not least else ""))
         containers = []
+    styles = m.get("styles")
+    if styles is not None:
+        from . import plugin_styles
+        if not (isinstance(styles, list) and 1 <= len(styles) <= 12):
+            out.append("styles must list one to twelve styles")
+        else:
+            if "appearance:styles" not in perms:
+                out.append("styles need the permission appearance:styles, so people see it before adding")
+            ids = [st.get("id") for st in styles if isinstance(st, dict)]
+            if len(ids) != len(set(ids)):
+                out.append("Each style needs its own id")
+            for i, st in enumerate(styles):
+                for issue in plugin_styles.check_style(st, f"styles[{i}]"):
+                    if issue["severity"] == "error":
+                        out.append(f"{issue['where']}: {issue['what']}")
     names = set()
     for i, c in enumerate(containers or []):
         where = f"containers[{i}]"
@@ -184,6 +201,8 @@ def compose(manifest, plugin_dir, media_dir):
     if problems:
         raise ValueError("; ".join(problems))
     pid = manifest["id"]
+    if not manifest.get("containers"):
+        return ""  # nothing to run: a plug-in with only styles
     res = manifest.get("resources") or {}
     lines = [f"# Written by Starboard for the plug-in {manifest['name']} {manifest['version']}. Starboard rewrites it;",
              "# change the plug-in's settings in Starboard instead.", "services:"]
@@ -231,6 +250,10 @@ def write_schema(path):
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://starboard.invalid/plugin-manifest-1.json",
         "title": "Starboard plug-in manifest, version 1", "type": "object", "additionalProperties": False,
+        "$defs": {"colours": {"type": "object", "additionalProperties": False,
+                              "required": ["bg", "header", "surface", "surface_raised", "surface_sunken", "text", "text_muted", "border",
+                                           "divider", "accent", "accent_text", "accent_soft", "focus"],
+                              "patternProperties": {"^[a-z_]+$": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}}}},
         "required": sorted(REQUIRED),
         "properties": {
             "manifest_version": {"const": 1}, "id": {"type": "string", "pattern": ID}, "name": {"type": "string", "maxLength": 40},
@@ -240,7 +263,14 @@ def write_schema(path):
             "starboard_api": {"type": "string"}, "health": {"type": "string", "pattern": "^/"},
             "permissions": {"type": "array", "items": {"enum": sorted(PERMISSIONS)}, "uniqueItems": True},
             "needs": {"type": "array", "items": {"type": "string"}},
-            "containers": {"type": "array", "minItems": 1, "maxItems": 4, "items": {
+            "styles": {"type": "array", "minItems": 1, "maxItems": 12, "items": {
+                "type": "object", "additionalProperties": False, "required": ["id", "name", "light", "dark"],
+                "properties": {"id": {"type": "string"}, "name": {"type": "string", "maxLength": 30}, "description": {"type": "string", "maxLength": 120},
+                               "radius": {"type": "integer", "minimum": 0, "maximum": 24},
+                               "font": {"enum": ["hyperlegible", "system", "rounded", "serif", "mono"]},
+                               "shadow": {"enum": ["none", "soft", "strong"]},
+                               "light": {"$ref": "#/$defs/colours"}, "dark": {"$ref": "#/$defs/colours"}}}},
+            "containers": {"type": "array", "minItems": 0, "maxItems": 4, "items": {
                 "type": "object", "additionalProperties": False, "required": ["name", "image"],
                 "properties": {"name": {"type": "string"}, "image": {"type": "string", "pattern": DIGEST_IMAGE},
                                "port": {"type": "integer", "minimum": 1, "maximum": 65535}, "network": {"enum": sorted(NETWORKS)},

@@ -82,6 +82,13 @@ Each guide is a journey through several topics, in order.
 - [Take over the apps you already run](topics/take-over-your-apps.md)
 - [Copy settings from one app to another](topics/copy-app-settings.md)
 
+### Plug-ins
+
+- [Add a plug-in](topics/add-a-plugin.md)
+- [The plug-in collection](basics/plugin-collection.md)
+- [What a plug-in can change](basics/what-plugins-can-change.md)
+- [Write a plug-in](basics/write-a-plugin.md)
+
 ### Everyday use
 
 - [Browse your library](topics/browse-your-library.md)
@@ -154,6 +161,9 @@ Each guide is a journey through several topics, in order.
 - [Addresses and ports](basics/addresses-and-ports.md)
 - [What an API key is](basics/what-is-an-api-key.md)
 - [The apps Starboard works with](basics/the-apps.md)
+- [What a plug-in can change](basics/what-plugins-can-change.md)
+- [The plug-in collection](basics/plugin-collection.md)
+- [Write a plug-in](basics/write-a-plugin.md)
 
 ---
 

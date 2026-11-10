@@ -112,8 +112,31 @@ const CARDS = {
   },
 };
 
+// Cards from active plug-ins (DASH-149): Starboard asks the plug-in and draws the answer itself, as text only.
+let pluginCards = {};
+const FORMATS = {
+  number: (v) => Number(v).toLocaleString("en-GB"),
+  bytes: (v) => { let n = Number(v), u = 0; const units = ["bytes", "KB", "MB", "GB", "TB"]; while (n >= 1024 && u < 4) { n /= 1024; u++; } return `${n.toFixed(u ? 1 : 0)} ${units[u]}`; },
+  percent: (v) => `${Math.round(Number(v))}%`,
+  duration: (v) => { const m = Math.round(Number(v) / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; },
+  date: (v) => new Date(Number(v) * 1000).toLocaleDateString("en-GB"),
+};
+async function pluginCard(id) {
+  const [, pid, cid] = id.split(":");
+  const r = await api(`/api/plugins/${pid}/cards/${cid}`);
+  if (r.problem) return empty(r.problem);
+  const d = r.data;
+  if (r.type === "stat") return el("p", { class: "dash-stat" }, el("strong", { text: (FORMATS[r.format] || FORMATS.number)(d.value) }),
+    d.label ? ` ${d.label}` : null, d.note ? el("span", { class: "small muted", text: ` ${d.note}` }) : null);
+  if (r.type === "status") return el("p", {}, chip({ ok: "OK", warning: "Warning", problem: "Problem" }[d.state], { ok: "success", warning: "warning", problem: "danger" }[d.state]),
+    d.text ? el("span", { text: ` ${d.text}` }) : null);
+  return d.items.length ? el("ul", { class: "rows" }, d.items.map((it) => el("li", { class: "row row--no-lead" }, el("div", {},
+    el("div", { class: "row__title" }, it.link ? el("a", { href: it.link, target: "_blank", rel: "noopener noreferrer", text: it.title }) : it.title),
+    it.detail ? el("div", { class: "row__meta", text: it.detail }) : null)))) : empty("Nothing to show.");
+}
+
 function cardShell(c, i, list) {
-  const head = el("div", { class: "dash-card__head" }, el("h2", { class: "dash-card__title", id: `dash-${c.id}-h`, text: CARD_TITLES[c.id] }));
+  const head = el("div", { class: "dash-card__head" }, el("h2", { class: "dash-card__title", id: `dash-${c.id}-h`, text: CARD_TITLES[c.id] || "Plug-in card" }));
   const body = el("div", { class: "dash-card__body", "aria-live": "polite" }, el("p", { class: "small muted", text: "Asking…" }));
   const card = el("section", { class: `dash-card dash-card--${c.size}`, "aria-labelledby": `dash-${c.id}-h`, "data-card": c.id }, head, body);
   if (editing) {
@@ -132,7 +155,7 @@ function cardShell(c, i, list) {
 
 async function fill(c, body, card) {
   try {
-    const node = await CARDS[c.id]();
+    const node = c.id.startsWith("plugin:") ? (pluginCards[c.id] ? await pluginCard(c.id) : empty("Its plug-in is not active.")) : await CARDS[c.id]();
     if (node === null && c.id === "setup" && !editing) { card.remove(); return; }  // everything is set up
     body.replaceChildren(node || empty("Nothing to show."));
   } catch (e) {
@@ -197,6 +220,9 @@ function startEdit() {
 startPage().then(async (session) => {
   if (!session) return;
   try { dash = (await api("/api/config")).dashboard || dash; } catch { /* the default layout */ }
+  try {
+    for (const c of (await api("/api/plugins/cards")).cards) { pluginCards[c.id] = c; CARD_TITLES[c.id] = `${c.title} (${c.plugin})`; }
+  } catch { /* no plug-in cards */ }
   $("#dash-summary").textContent = `${LAYOUTS[dash.layout]?.name || "At a glance"}. Change it with Edit dashboard.`;
   draw();
   // Once a minute while the page is in view; nothing while the tab is hidden.

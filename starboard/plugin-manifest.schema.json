@@ -4,9 +4,35 @@
  "title": "Starboard plug-in manifest, version 1",
  "type": "object",
  "additionalProperties": false,
+ "$defs": {
+  "colours": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "bg",
+    "header",
+    "surface",
+    "surface_raised",
+    "surface_sunken",
+    "text",
+    "text_muted",
+    "border",
+    "divider",
+    "accent",
+    "accent_text",
+    "accent_soft",
+    "focus"
+   ],
+   "patternProperties": {
+    "^[a-z_]+$": {
+     "type": "string",
+     "pattern": "^#[0-9a-fA-F]{6}$"
+    }
+   }
+  }
+ },
  "required": [
   "author",
-  "containers",
   "description",
   "homepage",
   "id",
@@ -65,6 +91,7 @@
    "type": "array",
    "items": {
     "enum": [
+     "appearance:styles",
      "apps:read",
      "downloads:read",
      "jellyfin:key",
@@ -82,9 +109,64 @@
     "type": "string"
    }
   },
-  "containers": {
+  "styles": {
    "type": "array",
    "minItems": 1,
+   "maxItems": 12,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "name",
+     "light",
+     "dark"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string",
+      "maxLength": 30
+     },
+     "description": {
+      "type": "string",
+      "maxLength": 120
+     },
+     "radius": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 24
+     },
+     "font": {
+      "enum": [
+       "hyperlegible",
+       "system",
+       "rounded",
+       "serif",
+       "mono"
+      ]
+     },
+     "shadow": {
+      "enum": [
+       "none",
+       "soft",
+       "strong"
+      ]
+     },
+     "light": {
+      "$ref": "#/$defs/colours"
+     },
+     "dark": {
+      "$ref": "#/$defs/colours"
+     }
+    }
+   }
+  },
+  "containers": {
+   "type": "array",
+   "minItems": 0,
    "maxItems": 4,
    "items": {
     "type": "object",

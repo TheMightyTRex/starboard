@@ -507,7 +507,8 @@ def clean_dashboard(incoming):
         raise ConfigError("Too many cards")
     out, seen = [], set()
     for c in cards:
-        if not isinstance(c, dict) or c.get("id") not in DASHBOARD_CARDS or c.get("size") not in DASHBOARD_SIZES or c["id"] in seen:
+        plugin_card = isinstance(c, dict) and re.match(r"^plugin:[a-z0-9-]{3,40}:[A-Za-z0-9_-]{1,40}$", str(c.get("id", "")))
+        if not isinstance(c, dict) or (c.get("id") not in DASHBOARD_CARDS and not plugin_card) or c.get("size") not in DASHBOARD_SIZES or c["id"] in seen:
             raise ConfigError("A card on the dashboard is not one Starboard knows")
         seen.add(c["id"])
         out.append({"id": c["id"], "size": c["size"]})

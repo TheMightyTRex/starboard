@@ -43,6 +43,30 @@ def _read(path, default=None):
         return default
 
 
+def styles(data_dir):
+    """Every style from plug-ins that are turned on: [{value, name, description, plugin}] for Display (DASH-284)."""
+    out = []
+    for p in listing(data_dir):
+        if p["state"] != "enabled":
+            continue
+        m = _read(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {})
+        for st in m.get("styles") or []:
+            out.append({"value": f"{p['id']}.{st['id']}", "name": st["name"], "description": st.get("description", ""),
+                        "plugin": p["name"], "light": st["light"]["accent"], "dark": st["dark"]["accent"],
+                        "bg": st["light"]["bg"], "bg_dark": st["dark"]["bg"]})
+    return out
+
+
+def styles_css(data_dir):
+    from . import plugin_styles
+    rules = []
+    for p in listing(data_dir):
+        if p["state"] == "enabled":
+            m = _read(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {})
+            rules.append(plugin_styles.css(p["id"], m.get("styles") or []))
+    return "".join(rules)
+
+
 def summary(manifest, problems=None):
     """What the Add a plug-in screen shows before anything is installed."""
     return {"id": manifest.get("id"), "name": manifest.get("name"), "version": manifest.get("version"),
@@ -51,6 +75,8 @@ def summary(manifest, problems=None):
             "permissions": plugins.permission_words(manifest) if isinstance(manifest.get("permissions"), list) else [],
             "containers": [{"name": c.get("name"), "network": c.get("network", "default"), "volumes": c.get("volumes") or []}
                            for c in manifest.get("containers") or [] if isinstance(c, dict)],
+            "styles": [{"id": st.get("id"), "name": st.get("name"), "description": st.get("description", "")}
+                       for st in manifest.get("styles") or [] if isinstance(st, dict)],
             "problems": problems if problems is not None else plugins.check(manifest)}
 
 
@@ -92,7 +118,13 @@ def listing(data_dir):
         m = _read(os.path.join(root(data_dir), pid, "manifest.json"))
         st = _read(os.path.join(root(data_dir), pid, "state.json"), {})
         if m:
-            out.append({**summary(m, []), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
+            from . import plugin_styles
+            fonts = plugin_styles.FONTS
+            looks = [{"value": f"{pid}.{x['id']}", "id": x["id"], "name": x["name"], "description": x.get("description", ""),
+                      "light": x["light"], "dark": x["dark"], "radius": x.get("radius", 0), "shadow": x.get("shadow", "none"),
+                      "font": fonts.get(x.get("font", "hyperlegible"), fonts["hyperlegible"])}
+                     for x in m.get("styles") or [] if isinstance(x, dict)]
+            out.append({**summary(m, []), "looks": looks, "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m)})
     return out
 
@@ -110,9 +142,11 @@ def install(data_dir, manifest, media_dir, dev=False):
     os.makedirs(where, mode=0o700, exist_ok=True)
     _write(os.path.join(where, "manifest.json"), manifest)
     _write(os.path.join(where, "settings.json"), {s["key"]: s["default"] for s in manifest.get("settings") or [] if "default" in s})
-    key, item = api_v1.create_key(data_dir, f"Plug-in: {manifest['name']}"[:60], "read", plugins.key_scopes(manifest), None)
-    _write(os.path.join(where, "key"), key)
-    _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir), 0o644)
+    item = {"id": None}
+    if manifest.get("containers"):  # only something that runs gets an API key and a Compose file
+        key, item = api_v1.create_key(data_dir, f"Plug-in: {manifest['name']}"[:60], "read", plugins.key_scopes(manifest), None)
+        _write(os.path.join(where, "key"), key)
+        _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir), 0o644)
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _write(os.path.join(where, "state.json"), {"state": "installed", "installed_at": now, "key_id": item["id"]})
     api_v1.audit(data_dir, "plugin_installed", plugin=pid, version=manifest["version"], permissions=manifest.get("permissions") or [])
@@ -154,7 +188,15 @@ def set_state(data_dir, pid, state, message=""):
     _write(os.path.join(folder(data_dir, pid), "state.json"), st)
 
 
+def _runs_nothing(data_dir, pid):
+    return not (_read(os.path.join(folder(data_dir, pid), "manifest.json"), {}) or {}).get("containers")
+
+
 def enable(data_dir, pid, helper=None):
+    if _runs_nothing(data_dir, pid):  # only styles: nothing to start (DASH-284)
+        set_state(data_dir, pid, "enabled")
+        api_v1.audit(data_dir, "plugin_enabled", plugin=pid)
+        return
     ok, text = _compose_run(data_dir, pid, "up -d --remove-orphans", helper)
     set_state(data_dir, pid, "enabled" if ok else "failed", "" if ok else text[-300:])
     api_v1.audit(data_dir, "plugin_enabled" if ok else "plugin_failed", plugin=pid)
@@ -163,6 +205,10 @@ def enable(data_dir, pid, helper=None):
 
 
 def disable(data_dir, pid, helper=None):
+    if _runs_nothing(data_dir, pid):
+        set_state(data_dir, pid, "disabled")
+        api_v1.audit(data_dir, "plugin_disabled", plugin=pid)
+        return
     ok, text = _compose_run(data_dir, pid, "stop", helper)
     set_state(data_dir, pid, "disabled", "" if ok else text[-300:])
     api_v1.audit(data_dir, "plugin_disabled", plugin=pid)
@@ -173,7 +219,8 @@ def uninstall(data_dir, pid, helper=None):
     where = folder(data_dir, pid)
     st = _read(os.path.join(where, "state.json"), {})
     try:
-        _compose_run(data_dir, pid, "down", helper)
+        if not _runs_nothing(data_dir, pid):
+            _compose_run(data_dir, pid, "down", helper)
     except Exception:  # Docker may be unreachable; the folder still moves and the key still goes
         pass
     if st.get("key_id"):

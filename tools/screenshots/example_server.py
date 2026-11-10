@@ -95,6 +95,27 @@ if EXAMPLE_CONTAINERS:
     changes._fetch = lambda url: changes.parse(EXAMPLE_CHANGELOG)
 stack._port_free = lambda port: True
 stack.reelix_url = lambda data_dir: f"http://127.0.0.1:{FAKE_PORT}/reelix"  # the made-up Reelix, for Settings, Reelix
+# Plug-ins (DASH-149, DASH-284): the Styles plug-in added and active, and a made-up Hello card that the help's
+# Add a plug-in pictures preview from an address (nothing is fetched: the address answers with this manifest).
+from starboard import plugins_admin  # noqa: E402
+_HELLO = {"manifest_version": 1, "id": "hello-card", "name": "Hello card", "version": "0.1.0",
+          "description": "A made-up example that shows one number on your dashboard.", "author": "TheMightyTRexUK",
+          "licence": "MIT", "homepage": "https://example.invalid/hello", "support_url": "https://example.invalid/hello/issues",
+          "starboard_api": ">=1.0 <2.0", "permissions": ["apps:read"], "health": "/health",
+          "containers": [{"name": "main", "image": "ghcr.io/example/hello@sha256:" + "a" * 64, "port": 8080, "volumes": ["data"]}],
+          "cards": [{"id": "count", "title": "Hello", "type": "stat", "path": "/card", "format": "number",
+                     "example": {"value": 42, "label": "hellos", "note": "3 today"}}]}
+plugins_admin.fetch_manifest = lambda address, opener=None: dict(_HELLO)
+
+
+def _example_plugins(data_dir):
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "example-plugin-styles.json"), encoding="utf-8") as f:
+        styles = json.load(f)
+    if not plugins_admin.listing(data_dir):
+        plugins_admin.install(data_dir, styles, "/nonexistent-media")
+        plugins_admin.enable(data_dir, "styles")
+
+
 from starboard import noip  # noqa: E402  The No-IP updater (DASH-170), with made-up addresses
 noip.status = lambda data_dir, **k: {"installed": True, "running": True, "state": "refused", "last_update": "2026-11-09T10:19:01Z",
                                      "address": "203.0.113.7", "said": "Type a new DDNS key or password below, then save. The updater starts again with it.",
@@ -396,6 +417,7 @@ def main():
                                             "data_dir": "/srv/media", "reelix_edition": "lite",
                                             "vpn": {"provider": "mullvad", "type": "wireguard",
                                                     "wireguard_private_key": "made-up", "wireguard_addresses": "192.168.1.20/32"}}))
+    _example_plugins(str(DATA))
     server, app = make_server("127.0.0.1", PORT, str(DATA))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     if app.needs_setup:

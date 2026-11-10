@@ -96,7 +96,7 @@ function helpNodes(list, panel) {
 }
 
 const PREF_KEY = "starboard.display";
-const DEFAULT_PREFS = { theme: "system", text: "100", contrast: false, motion: "device", underline: false, spacing: false, design: "" };
+const DEFAULT_PREFS = { theme: "system", text: "100", contrast: false, motion: "device", underline: false, spacing: false, design: "", style: "" };
 const DESIGNS = {
   health: ["Health first", "Apps that are not responding at the top, with a coloured edge for status."],
   tiles: ["Tiles", "A grid of cards with a description, like a launcher."],
@@ -127,6 +127,15 @@ function applyPrefs(prefs = readPrefs()) {
   root.classList.toggle("pref-motion-off", prefs.motion === "off");
   root.classList.toggle("pref-underline", !!prefs.underline);
   root.classList.toggle("pref-spacing", !!prefs.spacing);
+  // A style from a plug-in (DASH-284): colours and shape Starboard checked and wrote itself. High contrast wins.
+  if (prefs.style && /^[a-z0-9-]+\.[a-z0-9-]+$/.test(prefs.style)) {
+    root.dataset.style = prefs.style;
+    if (!document.getElementById("plugin-styles")) {
+      document.head.append(Object.assign(document.createElement("link"), { id: "plugin-styles", rel: "stylesheet", href: "/api/styles.css" }));
+    }
+  } else {
+    delete root.dataset.style;
+  }
   const design = DESIGNS[prefs.design] ? prefs.design : serverDesign;
   if (root.dataset.design !== design) {
     root.dataset.design = design;
@@ -637,6 +646,14 @@ function upgradeNotice(upgrade) {
 
 // A slide-out, like every other panel that opens over a page (DESIGN-SYSTEM.md, Consistency rules). Choices apply
 // at once and are kept in this browser; Done closes it, Reset goes back to the defaults.
+// Set through the style object, which the page's content security policy allows (a style attribute it would not).
+function styleSwatch(x) {
+  const sw = el("span", { class: "style-swatch", "aria-hidden": "true" });
+  sw.style.setProperty("--sw-a", x.light);
+  sw.style.setProperty("--sw-b", x.bg_dark);
+  return sw;
+}
+
 function setUpDisplayPanel() {
   const template = $("#display-panel");
   const opener = $("[data-display-toggle]");
@@ -647,6 +664,21 @@ function setUpDisplayPanel() {
 function openDisplayPanel(template, opener) {
   const form = template.content.querySelector("[data-display-form]").cloneNode(true);
   const designList = $("[data-design-options]", form);
+  // Styles from plug-ins that are turned on (DASH-284), shown above Design; none, and the list stays hidden.
+  const styleList = el("div", { class: "option-cards" });
+  const styleSet = el("fieldset", { hidden: true }, el("legend", { text: "Style" }),
+    el("p", { class: "hint", text: "Colours and shape from your plug-ins, checked for accessibility. High contrast always wins. This browser only." }), styleList);
+  designList.closest("fieldset").before(styleSet);
+  api("/api/styles").then((r) => {
+    if (!r.styles.length) return;
+    for (const [value, label, help, swatch] of [["", "Starboard", "The standard colours.", null], ...r.styles.map((x) => [x.value, x.name, `${x.description} From ${x.plugin}.`, x])]) {
+      styleList.append(el("label", { class: "option-card" },
+        el("input", { type: "radio", name: "style", value, checked: value === readPrefs().style }),
+        el("strong", {}, swatch ? styleSwatch(swatch) : null, label),
+        el("small", { text: help })));
+    }
+    styleSet.hidden = false;
+  }).catch(() => { /* signed out, or no plug-ins: no list */ });
   const choices = [["", "Use the dashboard's default"], ...Object.entries(DESIGNS).map(([k, v]) => [k, v[0], v[1]])];
   for (const [value, label, help] of choices) {
     designList.append(el("label", { class: "option-card" },
@@ -663,6 +695,7 @@ function openDisplayPanel(template, opener) {
   const save = () => {
     const prefs = {
       theme: form.theme.value, text: form.text.value, motion: form.motion.value, design: form.design.value,
+      style: form.querySelector("input[name=style]:checked")?.value || "",
       contrast: form.contrast.checked, underline: form.underline.checked, spacing: form.spacing.checked,
     };
     writePrefs(prefs);

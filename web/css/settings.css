@@ -131,3 +131,28 @@
 body:not(.show-advanced) [data-advanced] { display: none; }
 .advanced-toggle { padding: var(--space-3, 12px) var(--space-4, 16px); border: 1px solid var(--color-divider); border-radius: var(--radius-2, 6px);
   background: var(--color-surface); max-width: 40rem; }
+
+/* Pictures of plug-in styles (DASH-284): small pages drawn in each style's colours, decoration only. */
+.style-gallery { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.style-gallery__item { display: grid; gap: var(--space-2); align-content: start; padding: var(--space-3);
+  border: 1px solid var(--color-divider); background: var(--color-surface-raised); border-radius: var(--radius); }
+.style-gallery__item h4 { margin: 0; font-size: var(--text-md); }
+.style-gallery__item p { margin: 0; }
+.style-gallery__item .btn { justify-self: start; }
+.style-gallery__pics { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+.style-pic { background: var(--p-bg); color: var(--p-text); font-family: var(--p-font); font-size: 11px; line-height: 1.3;
+  border: 1px solid var(--color-border); block-size: 112px; display: grid; grid-template-rows: 18px 1fr; overflow: hidden; }
+.style-pic__head { background: var(--p-header); border-block-end: 1px solid var(--p-border); display: flex; align-items: center; gap: 4px; padding-inline: 6px; }
+.style-pic__logo { inline-size: 9px; block-size: 9px; background: var(--p-accent); border-radius: min(var(--p-radius), 3px); }
+.style-pic__line { inline-size: 40%; block-size: 4px; background: var(--p-muted); opacity: 0.6; }
+.style-pic__body { display: grid; grid-template-columns: 16px 1fr; }
+.style-pic__rail { background: var(--p-rail); display: grid; align-content: start; gap: 5px; padding: 5px 4px; }
+.style-pic__rail span { block-size: 6px; background: var(--p-muted); opacity: 0.55; border-radius: 2px; }
+.style-pic__card { margin: 8px; padding: 6px; background: var(--p-card); border: 1px solid var(--p-border); border-radius: var(--p-radius);
+  box-shadow: var(--p-shadow); display: grid; gap: 2px; align-content: start; }
+.style-pic__title { font-weight: 700; }
+.style-pic__muted { color: var(--p-muted); }
+.style-pic__link { color: var(--p-accent); text-decoration: underline; }
+.style-pic__btn { justify-self: start; margin-block-start: 2px; padding: 1px 6px; background: var(--p-accent); color: var(--p-accent-text); border-radius: var(--p-radius); }
+@media (forced-colors: active) { .style-pic { forced-color-adjust: none; } }

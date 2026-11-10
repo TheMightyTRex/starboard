@@ -813,6 +813,91 @@
         9
       ],
       "alt": "Settings, General with example data, with Reset Library views outlined"
+    },
+    {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-1-preview.png",
+      "page": "settings-plugins.html",
+      "height": 1100,
+      "run": "const a = document.querySelector('#pl-address'); a.value = 'https://example.invalid/hello/starboard-plugin.json'; a.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-add-h').scrollIntoView();",
+      "marks": [
+        {
+          "t": "$#pl-address",
+          "step": 2,
+          "side": "right"
+        },
+        {
+          "t": "$[aria-labelledby=pl-add-h] form button[type=submit]",
+          "step": 3,
+          "side": "right"
+        }
+      ],
+      "steps": [
+        2,
+        3
+      ],
+      "alt": "Settings, Plug-ins, with the manifest address (step 2), See what it does (step 3) and the test results outlined"
+    },
+    {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-2-active.png",
+      "page": "settings-plugins.html",
+      "height": 1000,
+      "run": "document.querySelector('#pl-styles-h').scrollIntoView();",
+      "marks": [
+        {
+          "t": "$[aria-labelledby=pl-styles-h] .actions .btn",
+          "step": 5,
+          "side": "right"
+        }
+      ],
+      "steps": [
+        5
+      ],
+      "alt": "The Styles plug-in's section, with its status and Deactivate (step 5) outlined"
+    },
+    {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-3-style.png",
+      "page": "index.html",
+      "height": 1000,
+      "run": "document.querySelector('[data-display-toggle]').click(); await new Promise(r => setTimeout(r, 1200)); const s = [...document.querySelectorAll('fieldset legend')].find(l => l.textContent === 'Style'); s.scrollIntoView();",
+      "marks": [
+        {
+          "t": "$fieldset:has(input[name=style]) legend",
+          "step": 6,
+          "side": "left"
+        }
+      ],
+      "steps": [
+        6
+      ],
+      "alt": "The Display panel, with the Style list (step 6) outlined"
+    },
+    {
+      "topic": "add-a-plugin",
+      "file": "add-a-plugin-4-test.png",
+      "page": "settings-plugins.html",
+      "height": 1000,
+      "run": "const f = new File([\"{\\\"manifest_version\\\": 1, \\\"id\\\": \\\"my-style\\\", \\\"name\\\": \\\"My style\\\", \\\"version\\\": \\\"0.1.0\\\", \\\"description\\\": \\\"A first try at a style.\\\", \\\"author\\\": \\\"Sam\\\", \\\"licence\\\": \\\"MIT\\\", \\\"homepage\\\": \\\"https://example.invalid/my-style\\\", \\\"support_url\\\": \\\"https://example.invalid/my-style/issues\\\", \\\"starboard_api\\\": \\\">=1.0 <2.0\\\", \\\"permissions\\\": [\\\"appearance:styles\\\"], \\\"containers\\\": [], \\\"styles\\\": [{\\\"id\\\": \\\"sky\\\", \\\"name\\\": \\\"Sky\\\", \\\"radius\\\": 8, \\\"font\\\": \\\"system\\\", \\\"shadow\\\": \\\"soft\\\", \\\"light\\\": {\\\"bg\\\": \\\"#eaf4ff\\\", \\\"header\\\": \\\"#f5faff\\\", \\\"surface\\\": \\\"#f2f8ff\\\", \\\"surface_raised\\\": \\\"#ffffff\\\", \\\"surface_sunken\\\": \\\"#dceaf8\\\", \\\"text\\\": \\\"#10202e\\\", \\\"text_muted\\\": \\\"#7a8a99\\\", \\\"border\\\": \\\"#6a7d90\\\", \\\"divider\\\": \\\"#c9d8e6\\\", \\\"accent\\\": \\\"#3d8fe0\\\", \\\"accent_text\\\": \\\"#ffffff\\\", \\\"accent_soft\\\": \\\"#dbeafb\\\", \\\"focus\\\": \\\"#1f5fa8\\\"}, \\\"dark\\\": {\\\"bg\\\": \\\"#0b1520\\\", \\\"header\\\": \\\"#101c29\\\", \\\"surface\\\": \\\"#12202e\\\", \\\"surface_raised\\\": \\\"#182a3b\\\", \\\"surface_sunken\\\": \\\"#08111a\\\", \\\"text\\\": \\\"#e8f2fc\\\", \\\"text_muted\\\": \\\"#a8bccf\\\", \\\"border\\\": \\\"#6a8099\\\", \\\"divider\\\": \\\"#22374b\\\", \\\"accent\\\": \\\"#7cc0ff\\\", \\\"accent_text\\\": \\\"#0b1520\\\", \\\"accent_soft\\\": \\\"#163452\\\", \\\"focus\\\": \\\"#7cc0ff\\\"}}]}\"], 'starboard-plugin.json', { type: 'application/json' }); const dt = new DataTransfer(); dt.items.add(f); const i = document.querySelector('#pl-test-file'); i.files = dt.files; i.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-test-h').scrollIntoView();",
+      "marks": [
+        {
+          "t": "$[aria-labelledby=pl-test-h] .rows li",
+          "side": "right"
+        }
+      ],
+      "steps": [],
+      "alt": "Test a plug-in, with a style that fails contrast: the list of issues, each with how to fix it, is outlined"
+    },
+    {
+      "topic": "plugin-collection",
+      "file": "plugin-collection-1-styles.png",
+      "page": "settings-plugins.html",
+      "height": 1200,
+      "run": "document.querySelector('.style-gallery').scrollIntoView();",
+      "marks": [],
+      "steps": [],
+      "alt": "The Styles plug-in's section, with a picture of each of the eight styles in light and dark, and Use this style under each"
     }
   ]
 }

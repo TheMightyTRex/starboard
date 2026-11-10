@@ -37,3 +37,7 @@
   .dash-card, .dash-card--medium, .dash-card--half, .dash-card--wide, .dash-card--full { grid-column: span 2; }
   .dash-card--small { grid-column: span 1; }
 }
+
+/* A plug-in stat card (DASH-149): one large number and its label. */
+.dash-stat { margin: 0; }
+.dash-stat strong { font-size: var(--text-2xl); line-height: var(--leading-tight); }

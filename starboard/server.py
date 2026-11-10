@@ -1901,6 +1901,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
+            if path == "/api/styles" and method == "GET":  # styles from plug-ins that are on (DASH-284)
+                from . import plugins_admin
+                return self.json(200, {"styles": plugins_admin.styles(app.data_dir)})
+            if path == "/api/styles.css" and method == "GET":
+                from . import plugins_admin
+                return self.send(200, plugins_admin.styles_css(app.data_dir).encode(), "text/css; charset=utf-8", {"Cache-Control": "no-cache"})
             if path.startswith("/api/plugins"):  # Settings, Plug-ins (DASH-149)
                 return self.plugins_route(method, path)
             if path == "/api/keys" and method == "GET":  # API keys (DASH-274): never their secrets
@@ -1978,18 +1984,33 @@ class Handler(BaseHTTPRequestHandler):
         media = f"{media}/media" if media else "/nonexistent-media-folder"
         if path == "/api/plugins" and method == "GET":
             return self.json(200, {"plugins": pa.listing(app.data_dir)})
-        if path in ("/api/plugins/preview", "/api/plugins/add") and method == "POST":
+        if path in ("/api/plugins/preview", "/api/plugins/add", "/api/plugins/test") and method == "POST":
+            from . import plugin_tester
             body = self.body()
             manifest = pa.parse(body["manifest"]) if body.get("manifest") else pa.fetch_manifest(body.get("address"))
+            if path.endswith("test"):  # the plug-in tester: every issue, accessibility always (DASH-284)
+                return self.json(200, plugin_tester.report(manifest, dev=bool(body.get("dev"))))
             if path.endswith("preview"):
-                return self.json(200, pa.summary(manifest))
+                return self.json(200, {**pa.summary(manifest), "test": plugin_tester.report(manifest)})
             self.check_password(body)
+            if not plugin_tester.report(manifest)["ok"]:
+                raise ValueError("This plug-in has errors. Test it to see them")
             item = pa.install(app.data_dir, manifest, media)
             logs.event("info", "plug-ins", f"Added {item['name']} {item['version']}")
             return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
+        if path == "/api/plugins/cards" and method == "GET":  # plug-in cards for the dashboard
+            from . import plugin_cards
+            return self.json(200, {"cards": plugin_cards.available(app.data_dir)})
+        mc = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/cards/([A-Za-z0-9_-]{1,40})$", path)
+        if mc and method == "GET":
+            from . import plugin_cards
+            try:
+                return self.json(200, plugin_cards.answer(app.data_dir, mc.group(1), mc.group(2)))
+            except LookupError as e:
+                return self.error(404, str(e))
         if path == "/api/plugins/stop-all" and method == "POST":
             stopped = pa.stop_all(app.data_dir)
-            logs.event("info", "plug-ins", f"Stopped every plug-in ({len(stopped)})")
+            logs.event("info", "plug-ins", f"Deactivated every plug-in ({len(stopped)})")
             return self.json(200, {"stopped": stopped, "plugins": pa.listing(app.data_dir)})
         m = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/(enable|disable|remove|settings)$", path)
         if not m or not any(p["id"] == m.group(1) for p in pa.listing(app.data_dir)):

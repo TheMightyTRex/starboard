@@ -1,15 +1,29 @@
 // Settings, Plug-ins (DASH-149): the plug-ins added, Add a plug-in with what it may do shown before anything
-// is installed, Turn on and Turn off, Remove (its folder is kept), Stop all plug-ins, and each plug-in's settings,
+// is installed, Activate and Deactivate, Remove (its folder is kept), Deactivate all plug-ins, and each plug-in's settings,
 // drawn by Starboard from its manifest. A plug-in never adds code to this page.
 
 const RISK = { low: ["Low", "success"], medium: ["Medium", "warning"], high: ["High", "danger"] };
-const STATE = { installed: ["Added, not running", "muted"], enabled: ["Running", "success"], disabled: ["Turned off", "muted"], failed: ["Did not start", "danger"] };
+const STATE = { installed: ["Added, not active", "muted"], enabled: ["Active", "success"], disabled: ["Inactive", "muted"], failed: ["Did not start", "danger"] };
 
 function pluginPermissions(list) {
   if (!list.length) return el("p", { class: "small", text: "It asks for nothing beyond its own folder." });
   return el("ul", { class: "rows" }, list.map((p) => el("li", { class: "row row--no-lead" },
     el("div", {}, el("div", { class: "row__title", text: p.words }), el("div", { class: "row__meta", text: p.permission })),
     el("div", { class: "row__side" }, chip(...RISK[p.risk])))));
+}
+
+// The tester's issues (DASH-284): errors first, each with where, what and how to fix it.
+const SEVERITY = { error: ["Error", "danger"], warning: ["Warning", "warning"], info: ["Tip", "muted"] };
+const count = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
+function testReport(r) {
+  const head = r.ok ? notice("success", "Ready to add", `${count(r.warnings, "warning")} and ${count(r.infos, "tip")}.`)
+    : notice("danger", `${count(r.errors, "error")} to fix before it can be added`, `${count(r.warnings, "warning")} and ${count(r.infos, "tip")} as well.`);
+  const acc = el("p", {}, chip(r.accessibility.passed ? "Accessibility passed" : "Accessibility failed", r.accessibility.passed ? "success" : "danger"),
+    el("span", { class: "small", text: ` Checked: ${r.accessibility.checked}.` }));
+  const list = r.issues.length ? el("ul", { class: "rows" }, r.issues.map((i) => el("li", { class: "row row--no-lead" },
+    el("div", {}, el("div", { class: "row__title", text: i.what }), el("div", { class: "row__meta", text: `${i.where} · ${i.area} · Fix: ${i.fix}` })),
+    el("div", { class: "row__side" }, chip(...SEVERITY[i.severity]))))) : el("p", { class: "small", text: "No issues found." });
+  return el("div", { class: "stack-4" }, head, acc, list);
 }
 
 function pluginSettingsForm(p, redraw) {
@@ -40,12 +54,58 @@ function pluginSettingsForm(p, redraw) {
   return form;
 }
 
+// A picture of a style (DASH-284): a small page drawn by Starboard in the style's own colours, light and dark side
+// by side. Colours go in through the style object, which the page's security policy allows.
+function stylePicture(look, mode) {
+  const c = look[mode];
+  const box = el("div", { class: "style-pic", "aria-hidden": "true" },
+    el("div", { class: "style-pic__head" }, el("span", { class: "style-pic__logo" }), el("span", { class: "style-pic__line" })),
+    el("div", { class: "style-pic__body" },
+      el("div", { class: "style-pic__rail" }, el("span"), el("span"), el("span")),
+      el("div", { class: "style-pic__card" },
+        el("span", { class: "style-pic__title", text: "Jellyfin" }), el("span", { class: "style-pic__muted", text: "Running" }),
+        el("span", { class: "style-pic__link", text: "Open" }), el("span", { class: "style-pic__btn", text: "Save" }))));
+  const map = { bg: "--p-bg", header: "--p-header", surface_raised: "--p-card", text: "--p-text", text_muted: "--p-muted",
+    border: "--p-border", accent: "--p-accent", accent_text: "--p-accent-text", surface_sunken: "--p-rail" };
+  for (const [k, v] of Object.entries(map)) box.style.setProperty(v, c[k]);
+  box.style.setProperty("--p-radius", `${Math.min(look.radius, 12)}px`);
+  box.style.setProperty("--p-font", look.font);
+  box.style.setProperty("--p-shadow", look.shadow === "strong" ? `3px 3px 0 ${c.text}` : look.shadow === "soft" ? "0 4px 12px rgb(0 0 0 / 0.18)" : "none");
+  return box;
+}
+
+// The Styles section: a picture of every style and Use this style, the same choice as Display's Style list.
+function styleGallery(p) {
+  const active = p.state === "enabled";
+  const grid = el("ul", { class: "style-gallery" });
+  const draw = () => {
+    const current = readPrefs().style || "";
+    grid.replaceChildren(...p.looks.map((look) => {
+      const chosen = current === look.value;
+      const use = el("button", { type: "button", class: chosen ? "btn btn--primary" : "btn", "aria-pressed": String(chosen), disabled: !active },
+        chosen ? "In use" : "Use this style", el("span", { class: "visually-hidden", text: `: ${look.name}` }));
+      use.addEventListener("click", () => {
+        const prefs = { ...readPrefs(), style: chosen ? "" : look.value };
+        writePrefs(prefs); applyPrefs(prefs); draw();
+        announce(chosen ? "Back to Starboard's own style" : `${look.name} style in use`);
+      });
+      return el("li", { class: "style-gallery__item" },
+        el("div", { class: "style-gallery__pics" }, stylePicture(look, "light"), stylePicture(look, "dark")),
+        el("h4", { text: look.name }), el("p", { class: "small", text: look.description }), use);
+    }));
+  };
+  draw();
+  return el("div", { class: "stack-4" }, el("h3", { text: "Styles" }),
+    el("p", { class: "small", text: active ? "Light on the left, dark on the right. Your choice applies to this browser, as in Display. High contrast always wins." : "Activate the plug-in to use its styles." }),
+    grid);
+}
+
 function pluginCard(p, redraw) {
   const act = (label, what, primary) => {
     const b = el("button", { type: "button", class: primary ? "btn btn--primary" : "btn" }, label);
     b.addEventListener("click", async () => {
       b.disabled = true;
-      try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); toast(`${p.name}: ${what === "enable" ? "running" : "turned off"}`); redraw(); }
+      try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); toast(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw(); }
       catch (err) { problem(err.message, b); b.disabled = false; }
     });
     return b;
@@ -63,37 +123,70 @@ function pluginCard(p, redraw) {
   const custom = p.settings.filter((s) => s.type === "custom");
   return section(`pl-${p.id}`, `${p.name} ${p.version}`, p.description,
     el("p", {}, chip(...(STATE[p.state] || ["Unknown", "muted"])), p.message ? el("span", { class: "small", text: ` ${p.message}` }) : null),
-    el("div", { class: "actions" }, p.state === "enabled" ? act("Turn off", "disable") : act("Turn on", "enable", true), remove),
+    el("div", { class: "actions" }, p.state === "enabled" ? act("Deactivate", "disable") : act("Activate", "enable", true), remove),
+    p.looks?.length ? styleGallery(p) : null,
     el("h3", { text: "What it may do" }), pluginPermissions(p.permissions),
     pluginSettingsForm(p, redraw),
     custom.length ? el("p", { class: "small muted", text: `${custom.map((s) => s.label).join(", ")}: on its own screen, which comes with the next part of plug-ins.` }) : null);
+}
+
+// Test a plug-in (DASH-284): for authors, before sharing it. Nothing is added.
+function testerSection() {
+  const file = el("input", { type: "file", id: "pl-test-file", accept: ".json,application/json", class: "input" });
+  const dev = el("input", { type: "checkbox", id: "pl-test-dev" });
+  const out = el("div", { "aria-live": "polite" });
+  const form = el("form", { class: "form-stack", novalidate: true },
+    field("Manifest file to test", file, { hint: "starboard-plugin.json. Accessibility is always tested." }),
+    el("label", { class: "check", for: dev.id }, dev, el("span", { text: "Allow images without a digest (while you develop it)" })),
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn", text: "Test it" })));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setError(file, "");
+    if (!file.files[0]) { setError(file, "Choose the manifest file"); file.focus(); return; }
+    try { out.replaceChildren(testReport(await api("/api/plugins/test", { method: "POST", body: { manifest: await file.files[0].text(), dev: dev.checked } }))); }
+    catch (err) { setError(file, err.message); file.focus(); }
+  });
+  return section("pl-test", "Test a plug-in", "For people who make plug-ins: every issue with how to fix it. The same tests run before any plug-in is added.", form, out);
 }
 
 function addPluginSection(redraw) {
   const address = el("input", { class: "input", id: "pl-address", type: "url", placeholder: "https://", autocomplete: "off", spellcheck: "false" });
   const seen = el("div", { class: "stack-4", "aria-live": "polite" });
   const look = el("button", { type: "submit", class: "btn btn--primary", text: "See what it does" });
+  const file = el("input", { type: "file", id: "pl-file", accept: ".json,application/json", class: "input" });
   const form = el("form", { class: "form-stack", novalidate: true },
     field("The plug-in's manifest address", address, { hint: "The https address of its starboard-plugin.json, from the plug-in's own page." }),
+    field("Or its manifest file", file, { hint: "starboard-plugin.json from the plug-in's folder. A plug-in's own installer fills this in for you." }),
     el("div", { class: "actions" }, look));
+  let given = null; // a manifest from a file, or from a plug-in's installer link (#manifest=...)
+  file.addEventListener("change", async () => { given = file.files[0] ? await file.files[0].text() : null; });
+  const fromLink = /^#manifest=([A-Za-z0-9_-]+)$/.exec(location.hash);
+  if (fromLink) {
+    try { given = new TextDecoder().decode(Uint8Array.from(atob(fromLink[1].replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0))); }
+    catch { given = null; }
+    history.replaceState(null, "", location.pathname);
+    if (given) queueMicrotask(() => form.requestSubmit());
+  }
+  const source = () => (given ? { manifest: given } : { address: address.value.trim() });
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     setError(address, "");
     let s;
-    try { s = await api("/api/plugins/preview", { method: "POST", body: { address: address.value.trim() } }); }
+    try { s = await api("/api/plugins/preview", { method: "POST", body: source() }); }
     catch (err) { setError(address, err.message); address.focus(); return; }
     const pw = el("input", { class: "input", type: "password", id: "pl-add-password", autocomplete: "current-password" });
     const add = el("button", { type: "button", class: "btn btn--primary", text: `Add ${s.name || "it"}` });
     add.addEventListener("click", async () => {
-      try { await api("/api/plugins/add", { method: "POST", body: { address: address.value.trim(), password: pw.value } }); toast(`${s.name} added. Turn it on when you are ready`); address.value = ""; seen.replaceChildren(); redraw(); }
+      try { await api("/api/plugins/add", { method: "POST", body: { ...source(), password: pw.value } }); toast(`${s.name} added. Activate it when you are ready`); address.value = ""; given = null; seen.replaceChildren(); redraw(); }
       catch (err) { problem(err.message, add); }
     });
-    seen.replaceChildren(
+    seen.replaceChildren(...[
       el("h3", { text: `${s.name || "This plug-in"} ${s.version || ""}` }), el("p", { text: s.description || "" }),
       el("p", { class: "small", text: [s.author && `By ${s.author}`, s.licence, s.needs.length && `Needs ${s.needs.join(" and ")}`].filter(Boolean).join(" · ") }),
-      s.problems.length ? notice("danger", "It cannot be added", s.problems.join(". ")) : null,
       el("h3", { text: "What it may do" }), pluginPermissions(s.permissions),
-      s.problems.length ? null : el("div", { class: "form-stack" }, field("Your Starboard password", pw), el("div", { class: "actions" }, add)));
+      s.styles.length ? el("p", { class: "small", text: `Styles: ${s.styles.map((x) => x.name).join(", ")}.` }) : null,
+      el("h3", { text: "Test results" }), testReport(s.test),
+      s.test.ok ? el("div", { class: "form-stack" }, field("Your Starboard password", pw), el("div", { class: "actions" }, add)) : null].filter(Boolean));
     seen.querySelector("h3")?.focus?.();
   });
   return section("pl-add", "Add a plug-in", "Starboard shows what a plug-in may do before anything is installed. Plug-ins never get the Docker socket, the host network or other apps' settings.", form, seen);
@@ -105,16 +198,16 @@ async function startPlugins() {
     let r;
     try { r = await api("/api/plugins"); } catch (e) { holder.replaceChildren(notice("danger", "Could not load the plug-ins", e.message)); return; }
     holder.removeAttribute("aria-busy");
-    const stopAll = el("button", { type: "button", class: "btn btn--danger", text: "Stop all plug-ins" });
+    const stopAll = el("button", { type: "button", class: "btn btn--danger", text: "Deactivate all plug-ins" });
     stopAll.addEventListener("click", async () => {
-      if (!await confirmDialog({ title: "Stop all plug-ins?", message: "Every plug-in that runs stops. Their settings stay; turn each on again from its section.", confirm: "Stop all", danger: true })) return;
-      try { const o = await api("/api/plugins/stop-all", { method: "POST" }); toast(o.stopped.length ? `Stopped ${o.stopped.join(", ")}` : "Nothing was running"); draw(); }
+      if (!await confirmDialog({ title: "Deactivate all plug-ins?", message: "Every active plug-in is deactivated. Their settings stay; activate each again from its section.", confirm: "Deactivate all", danger: true })) return;
+      try { const o = await api("/api/plugins/stop-all", { method: "POST" }); toast(o.stopped.length ? `Deactivated ${o.stopped.join(", ")}` : "No plug-in was active"); draw(); }
       catch (err) { problem(err.message, stopAll); }
     });
-    holder.replaceChildren(
+    holder.replaceChildren(...[
       r.plugins.length ? section("pl-yours", "Your plug-ins", `${r.plugins.length} added.`, el("div", { class: "actions" }, stopAll)) : null,
       ...r.plugins.map((p) => pluginCard(p, draw)),
-      addPluginSection(draw));
+      addPluginSection(draw), testerSection()].filter(Boolean));
   };
   draw();
 }
