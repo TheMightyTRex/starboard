@@ -32,6 +32,10 @@ guide and the notes on GitHub, so they always say the same thing.
 5. **Checks.** Run the tests (`python3 -m unittest discover -s tests`), the browser journeys
    (`tools/journeys.sh`), the help centre check (`python3 tools/check-help.py`), the security scans (`tools/security-scan.sh`) and
    `tools/check-private.sh`.
+   The API must not break: `python3 tools/make_openapi.py` leaves `starboard/openapi.json` unchanged, and
+   `python3 -m unittest tests.test_api_v1` passes (each `/api/v1` route against its description, with its rights and
+   errors). Once the example plug-ins exist, install and run each one against the new build. A change that breaks
+   either is fixed, or becomes a new API version with a deprecation note, before it is merged.
    When the installer, `update.sh` or the image changed, also run `tools/vm/vm.sh test` on at least one PC system
    and `arm64`. Record the results and any change in system use in `docs/TESTING.md`
    ([Testing and system use](TESTING.md)).

@@ -14,6 +14,10 @@ jobs:
           python-version: "3.12"
       - name: Tests
         run: python -m unittest discover -s tests -v
+      - name: API contract (every /api/v1 route against starboard/openapi.json, DASH-281)
+        run: |
+          python tools/make_openapi.py && git diff --exit-code starboard/openapi.json
+          python -m unittest tests.test_api_v1 -v
       - name: No private details
         run: tools/check-private.sh
       - name: Shell scripts parse
