@@ -10,7 +10,7 @@ person sees. What a plug-in can and cannot do is in [What a plug-in can change](
 
 - **Styles** for **Display**: colours, corners, shadows and a font. No container needed.
 - **Dashboard cards** that show a number, a short list or a status from your plug-in.
-- **Settings and buttons** on its own section of **Settings**, **Plug-ins**.
+- **Settings and buttons** in its own section of **Settings**, then **Plug-ins**.
 - **Containers**: small apps Starboard runs for it, each in its own locked-down space.
 
 ## The manifest
@@ -56,7 +56,8 @@ plug-in in [The plug-in collection](plugin-collection.md) is a full example to c
 A card puts one small piece of your plug-in on the dashboard, next to Starboard's own cards: how many titles it has,
 the last few things it did, or whether it is working. People add your card with **Edit dashboard**, choose its
 size and move it. Use a card for something worth seeing at a glance. Long lists, settings and anything people act
-on belong in the plug-in's own section of **Settings**, **Plug-ins**.
+on belong in the plug-in's own section of **Settings**, then **Plug-ins**. Read
+[Use and change the dashboard](../topics/use-the-dashboard.md) for how people add cards.
 
 ### The three kinds
 
@@ -85,7 +86,7 @@ on belong in the plug-in's own section of **Settings**, **Plug-ins**.
    - `list`: `{"items": [{"title": "Dune", "detail": "Added today", "link": "https://example.invalid/dune"}]}`.
    - `status`: `{"state": "ok", "text": "Up to date"}`. `state` is `ok`, `warning` or `problem`.
 
-3. Test the plug-in, as in the next section.
+3. Test the plug-in. Read [Test your plug-in](#test-your-plug-in).
 
 ### What Starboard does with your answer
 
@@ -98,7 +99,7 @@ on belong in the plug-in's own section of **Settings**, **Plug-ins**.
 
 ## Test your plug-in
 
-In **Settings**, **Plug-ins**, under **Test a plug-in**, choose your `starboard-plugin.json` and select **Test it**.
+In **Settings**, then **Plug-ins**, under **Test a plug-in**, choose your `starboard-plugin.json` and select **Test it**.
 On a computer with Starboard's files, run `python3 -m starboard.plugin_tester path/to/your-plugin`. Each issue says
 where it is, what is wrong and how to fix it:
 
@@ -127,10 +128,10 @@ Rules:
   text_muted and accent on bg and surfaces at least 4.5:1; accent_text on accent at least 4.5:1;
   border and focus on bg and surfaces at least 3:1. Show me each ratio.
 - Cards: type stat, list or status, a path, and an example answer in the right shape.
-- No CSS, HTML, scripts, fonts or pictures. Only the fields above.
+- No CSS, HTML, scripts, fonts or pictures. Only the fields in this list.
 ```
 
-Then test what it writes, as in the section above. Fix each error, or paste the tester's issues back into the
+Then test what it writes. Read [Test your plug-in](#test-your-plug-in). Fix each error, or paste the tester's issues back into the
 assistant and ask it to fix them. Check the result yourself before you share it: the tester checks the rules, not
 whether you like the colours.
 

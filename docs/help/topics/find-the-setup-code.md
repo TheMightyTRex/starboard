@@ -3,7 +3,7 @@
 # Find the setup code
 
 The setup code is a one-time code that proves the person choosing Starboard's password is the person who installed
-it. The installer prints it, and you can show it again at any time on the server until you have chosen a password.
+it. The installer shows it at the end. You can show it again on the server until you have chosen a password.
 
 ## Before you begin
 
@@ -13,8 +13,8 @@ it. The installer prints it, and you can show it again at any time on the server
 
 ## Steps if you used the installer
 
-1. Look at the last lines the installer printed. The code follows "Setup code (you need it once, to choose your
-   password):".
+1. Find **Setup code** in the **Open Starboard** box the installer showed at the end. Read
+   [What it prints at the end](install-with-the-installer.md#what-it-prints-at-the-end).
 2. If you closed the terminal, open a new one and go to the Starboard folder:
 
    ```bash
@@ -27,8 +27,8 @@ it. The installer prints it, and you can show it again at any time on the server
    cat data/setup-token
    ```
 
-   You can also find it in Starboard's log, on the line that starts "No password yet. Open the dashboard and enter this
-   setup code:". To show the log:
+   It is also in Starboard's log, on the line that starts "No password yet. Open the dashboard and enter this setup
+   code:". To show the log:
 
    ```bash
    docker compose logs starboard

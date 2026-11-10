@@ -2,13 +2,13 @@
 
 # A pool drive has failed
 
-When a drive in the pool fails, the pool still works, but the files on that drive are missing. This page says
-what to do first and how to get the files back.
+When a drive in the pool fails, the pool still works, but the files on that drive are missing. Here is what to do
+first and how to get the files back.
 
-## What you see
+## What happens
 
 - On **System**, **Storage**, **Pool**, the drive shows **Not mounted**.
-- On **Disk health**, the drive shows **Failing** or **Needs attention**, or is not listed.
+- On **System**, **Storage**, **Disk health**, the drive shows **Failing** or **Needs attention**, or is not listed.
 - Apps report films or episodes as missing.
 
 ## What to do first
@@ -29,9 +29,9 @@ what to do first and how to get the files back.
 
 ## Afterwards
 
-- Take the failed drive out of the pool once its files are back: read
+- Take the failed drive out of the pool once its files are back. Read
   [Take a drive out of the pool](take-a-drive-out-of-the-pool.md).
-- Add a backup drive if you have none: read [Use a drive as a backup drive](use-a-drive-as-a-backup-drive.md).
+- If you have no backup drive, add one. Read [Use a drive as a backup drive](use-a-drive-as-a-backup-drive.md).
 
 ## Find out more
 

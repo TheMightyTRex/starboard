@@ -68,6 +68,9 @@ so remove it too.
 
    It says "Removed the Disk health timer". The reports it already saved stay in the `smart` folder.
 
+If you set up Drive pools, remove the pool helper in the same way, with `sudo deploy/install-pool.sh --remove`.
+Your pool and the files on its drives stay as they are.
+
 ## Your settings and the Starboard folder
 
 The Starboard folder still holds your settings, API keys and backups, in the `data` and `backups` folders and the

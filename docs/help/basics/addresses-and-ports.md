@@ -20,7 +20,7 @@ use them to reach you.
 
 Your router can give a device a new address from time to time, for example after a power cut. If Starboard's
 address stops working one day, check the server's address again. Many routers let you keep the same address for
-one device: look for "reserved address" or "static lease" in your router's settings.
+one device, called a "reserved address" or "static lease" in your router's settings.
 
 ## A port finds the app
 
@@ -30,8 +30,7 @@ a request is for. Some examples:
 | App | Usual port |
 |---|---|
 | Starboard | 8095 |
-| Sonarr | 8989 |
-| Radarr | 7878 |
+| Reelix | 7700 |
 | Jellyfin | 8096 |
 | Audiobookshelf | 13378 |
 
@@ -73,7 +72,7 @@ You use addresses and ports twice with Starboard:
 - **To open Starboard:** on the server, `http://localhost:8095`; on other devices, the server's address with
   `:8095`.
 - **To add your apps:** Starboard runs on the same computer as your apps, so it reaches them at `127.0.0.1` and each
-  app's port, for example `http://127.0.0.1:8989` for Sonarr.
+  app's port, for example `http://127.0.0.1:8096` for Jellyfin.
 
 ## Find out more
 

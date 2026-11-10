@@ -2,9 +2,8 @@
 
 # Choose a Usenet provider and add it
 
-NZBGet, or SABnzbd if you chose it, downloads from Usenet. To use it, you need an account with a Usenet provider,
-then you add the provider's server to NZBGet or SABnzbd. Usenet is a worldwide network of discussion groups,
-running since 1980, that also carries files. Any provider works with NZBGet and SABnzbd.
+NZBGet, or SABnzbd if you chose it, downloads from Usenet. Usenet is a worldwide network of discussion groups that
+also carries files. To use it, you need an account with a Usenet provider, and then you add the provider's server.
 
 ## Before you begin
 
@@ -24,38 +23,32 @@ Starboard's development. You pay the same price.
 | Pure Usenet | [Pure Usenet](https://www.pureusenet.nl/?a_aid=6aec3d712dec1&a_bid=9fa99e6a) |
 | XLned | [XLned](https://www.xlned.com/?a_aid=6aec3d712dec1&a_bid=dbc287fb) |
 
-Compare what each offers on its own site before you choose: how many connections, how long files are kept
-(retention) and the price.
+Any provider works with NZBGet and SABnzbd. Compare what each offers on its own site before you choose: how many
+connections, how long files are kept (retention) and the price.
 
 ## Steps
 
 1. Choose a provider and make an account on its site. Keep the details it gives you: the server address, the
-   port (563 for an encrypted connection), your user name, your password and how many connections you may use.
-2. Open NZBGet from your dashboard. It asks for its sign-in: the user name is `starboard`, and the password is
-   `NZBGET_PASS` in `data/stack/.env` in the Starboard folder.
-3. Select **Settings**, then **News-Servers**, then **Server1**.
-4. Fill in **Host**, **Port**, **Username** and **Password**, set **Encryption** to **Yes** and **Connections** to
-   the number your provider allows.
-5. Select **Save all changes** at the bottom of the menu, then **Reload**.
+   port, your user name, your password and how many connections you may use.
+2. Go to **Settings**, then **Downloads**, and find 'Usenet provider'.
+3. Enter the **Server address**, **Port**, **User name**, **Password** and **Connections**. Keep **Encrypted
+   connection (recommended)** ticked, with port 563.
+4. Select **Test the server**. When it says **It works**, select **Add it to NZBGet** (or **Add it to SABnzbd**).
 
-### If you use SABnzbd
-
-1. Open SABnzbd from your dashboard.
-2. Select **Config**, then **Servers**, then **Add Server**.
-3. Fill in the same details, tick **SSL**, then select **Test Server** and **Add Server**.
-
-Reelix already sends downloads to NZBGet or SABnzbd. Nothing else needs to change.
+The Usenet step of Install apps asks for the same details, so you can add the server while you install. Reelix
+already sends downloads to NZBGet or SABnzbd, so nothing else needs to change.
 
 ## Things to note
 
-- Changing from SABnzbd to NZBGet in **Settings**, **Apps**, **Your install** moves your servers across. Read
-  [Change your install](change-your-install.md).
+- Changing from SABnzbd to NZBGet moves your servers across. Read
+  [Change your install](change-your-install.md#how-changing-works).
 - Downloads go through your VPN, as torrents do.
-- Download only what you have the right to: see the note at the bottom of this page.
+- To open NZBGet itself, sign in as `starboard`, with the password `NZBGET_PASS` in `data/stack/.env` in the
+  Starboard folder.
 
 ## If it does not work
 
-- **NZBGet says the server refused the sign-in:** check the user name and password with the provider's site.
+- **The test says the server refused the sign-in:** check the user name and password on the provider's site.
 - **Downloads are slow or stop:** lower **Connections** to the number your plan includes.
 
 ## Find out more

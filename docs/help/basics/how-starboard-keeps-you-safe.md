@@ -2,9 +2,8 @@
 
 # How Starboard keeps your server safe
 
-Starboard runs a server that other devices in your home can reach, so it is built to be safe by default. This
-page explains what protects you, what Starboard can and cannot do on your computer, and the few choices that are
-yours.
+Starboard runs a server that other devices in your home can reach, so it is built to be safe by default. Here
+is what protects you, what Starboard can and cannot do on your computer, and the few choices that are yours.
 
 ## Your password
 
@@ -15,14 +14,17 @@ yours.
 - Five wrong attempts lock that address out for 15 minutes.
 - Without **Remember me**, you are signed out when the browser closes, or after a day.
 - Changes that affect the computer itself, such as starting apps, changing your install or erasing a drive, ask
-  for the password again.
+  for the password again. So does [Sign out everywhere](../topics/sign-out-everywhere.md).
 
 ## Your keys and settings
 
 - API keys stay on the server, in `data/config.json`, which only your user can read. They are never sent to the
   browser.
-- Passwords Starboard makes up for your apps (databases, NZBGet, SABnzbd) stay in `data/stack/.env`, which only your
-  user can read.
+- Passwords Starboard makes up for your apps (databases, NZBGet, SABnzbd) stay in `data/stack/.env`, which only
+  your user can read.
+- Starboard's own API keys only read. Each is shown once, kept only as a hash and accepted only in a header. No
+  key can change network access, the sign-in cookie, how long sign-ins last or where alerts go. Read
+  [Make an API key and use Starboard's API](../topics/use-starboards-api.md).
 - Starboard never sends your settings anywhere.
 
 ## What Starboard can do on your computer
@@ -32,7 +34,7 @@ yours.
 - Each kind of access is optional and asked for by the installer: your home network, Docker (for app updates and
   starting apps), each app's memory use, folders for the Storage page, and Disk health. Say no and only that part
   is missing. [What the installer asks](../topics/what-the-installer-asks.md) explains each one.
-- Docker access is as powerful as the root account, so it is off unless you say yes.
+- Docker access is as powerful as the root account, so it is inactive unless you say yes.
 - **Install apps** starts only the apps on its own list, with folders it has checked (never a system folder or a
   whole home folder). Before the apps start, the Run first window and the installer check the set-up file again
   with the same rules, so a changed file cannot start anything else.

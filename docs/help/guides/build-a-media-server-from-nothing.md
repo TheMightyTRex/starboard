@@ -2,67 +2,63 @@
 
 # Build a media server from nothing
 
-This guide takes you from a server with only Starboard on it to a working set of media apps: a player such as
-Jellyfin, the apps that find and organise films, series, music and books, and a download app. It is for
-people who have never set these apps up. It takes an afternoon, most of it connecting the apps to each other.
+This guide takes you from a server with only Starboard on it to a working media server. Reelix finds what you want,
+a download app fetches it, and Jellyfin and Audiobookshelf play it. It is for people who have never set these apps
+up.
 
-Starboard's **Install apps** page does the hard parts: it explains each app, picks sensible folders, writes
-the set-up file and starts the apps. Then it tells you how to connect them, with the exact addresses.
+Starboard's **Install apps** does most of the work: it picks the apps, writes the set-up file, starts the apps and
+sets them up. You finish the few things it cannot do for you.
 
 ## Before you begin
 
-- Starboard is installed with Docker access. If you said No to Docker access, see
+- Starboard is installed with Docker access. If you said no to Docker access, read
   [Change what Starboard can access](../topics/change-what-starboard-can-access.md).
 - A disk with enough room for your media. Films and series take a lot of space: plan for 1 TB or more.
-- Read [The apps Starboard works with](../basics/the-apps.md) to know what each app does.
+- Optional: an account with a VPN provider, and a free TMDB key from themoviedb.org.
+- To know what each app does, read [The apps Starboard works with](../basics/the-apps.md).
 
 ## The steps at a glance
 
 1. Choose and start your apps with Install apps.
-2. Add the new apps to Starboard.
-3. Give each app its API key.
-4. Connect the apps to each other, following Install apps.
-5. Search for something and add it.
+2. Check that your apps are running.
+3. Finish what is still to set up.
+4. Search for something and add it.
 
 ```mermaid
 flowchart LR
-    A["1. Install apps"] --> B["2. Add them to Starboard"]
-    B --> C["3. API keys"]
-    C --> D["4. Connect the apps"]
-    D --> E["5. Search and add"]
+    A["1. Install apps"] --> B["2. Check the apps"]
+    B --> C["3. Finish setting up"]
+    C --> D["4. Search and add"]
 ```
 
 ## Step 1: Choose and start your apps
 
-Choose what you want, such as Movies, TV and Watching, and Install apps chooses the apps and folders. Follow
-[Install apps with Starboard](../topics/install-apps.md).
+Choose an install, such as **Basics**, and answer the questions about folders, your VPN, Usenet, sites to search
+and your TMDB key. Follow [Install apps with Starboard](../topics/install-apps.md). To compare the installs, read
+[Basics, Full install and Everything](../topics/install-types.md).
 
-**It worked when** Install apps says each app has started.
+**It worked when** Install apps shows **The apps are running**.
 
-## Step 2: Add the new apps to Starboard
+## Step 2: Check that your apps are running
 
-Follow [Search for apps already on your server](../topics/search-for-new-apps.md). Starboard finds the apps you
-just started.
+Starboard adds each new app to Starboard as it answers, and sets up Reelix, Jellyfin, Audiobookshelf, qBittorrent
+and the others for you. Go to **System**, then **Apps**, then **Apps**.
 
-## Step 3: Give each app its API key
+**It worked when** each new app is on the **Apps** page and responding. If one is missing after 30 minutes, read
+[Search for apps already on your server](../topics/search-for-new-apps.md).
 
-Each new app makes its own key the first time it starts. Follow
-[Find an app's API key](../topics/find-an-api-key.md) and add each key with
-[Change or remove an app](../topics/change-or-remove-an-app.md).
+## Step 3: Finish what is still to set up
 
-## Step 4: Connect the apps to each other
+Anything Starboard could not do by itself, such as a guided step for Tdarr, is listed under 'Still to set up' on
+your dashboard. Follow [Finish what is still to set up](../topics/finish-setting-up.md). To download from Usenet,
+also read [Choose a Usenet provider and add it](../topics/choose-a-usenet-provider.md).
 
-The apps need to know about each other: Sonarr and Radarr need your download app and your indexer manager,
-and your player needs your media folders. Install apps lists each connection with the addresses and folders to
-type in. Work through that list in [Install apps with Starboard](../topics/install-apps.md).
+**It worked when** 'Still to set up' has nothing left in it.
 
-**It worked when** each app's own settings page shows its connections as working, usually with a green
-tick.
-
-## Step 5: Search for something and add it
+## Step 4: Search for something and add it
 
 Follow [Search for and add films, series, music and books](../topics/search-and-add.md). Then watch it arrive
-on the **Downloads** page.
+in **Activity**, **Downloads**.
 
 ## What next
 

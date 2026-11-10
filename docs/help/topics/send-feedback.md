@@ -12,7 +12,7 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
 
 ## It is on already
 
-**Send feedback** is on every page from Starboard 0.15.2. To hide it:
+**Send feedback** is active on every page unless you deactivate it. To hide it:
 
 1. Go to **Settings**, then **General**.
 2. Under **Send feedback**, deactivate **Send feedback**. Activate it again the same way.
@@ -24,7 +24,7 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
 2. Choose what you want to send, such as **Something is broken** or **A new feature**.
 3. Choose what to show: **One thing on the page**, **A series of steps** or **Describe it in words**. For one
    thing, select the part of the page it is about.
-4. Answer the questions, then select **Review what is sent**. You see the whole report, and you can untick
+4. Answer the questions, then select **Review what is sent**. The whole report is shown, and you can clear
    anything you would rather not send.
 5. Choose where it goes:
    - **Open in GitHub** opens a new issue on Starboard's GitHub page with the report filled in. You post it from
@@ -33,11 +33,12 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
    - **Copy as Markdown** or **Download** gives you the report to send another way.
    - **Show as a QR code** opens the same report on your phone, for a computer that is not online.
 
-## See the reports saved in Starboard
+## Find the reports saved in Starboard
 
 1. Go to **Settings**, then **General**.
 2. Under **Send feedback**, the saved reports are listed, newest first. Open **The full report** to read one.
-3. Select **Mark fixed** when it is dealt with, or **More actions**, then **Remove**, to delete it.
+3. Select **Mark fixed** when it is dealt with. To delete one, select **More actions**, then **Remove**, then
+   **Remove report**.
 4. Select **Download all** to save every report as one file.
 
 ## Things to note
@@ -47,7 +48,7 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
   so check the report before you send it.
 - Reports saved in Starboard are kept on the server in `data/ux-notes.json`, which only Starboard's user can
   read. They are in Starboard's backups.
-- The button loads only while **Send feedback** is active, so it costs nothing when it is not.
+- **Feedback** loads only while **Send feedback** is active, so it costs nothing when it is not.
 - Notes from the older **Note an issue** button are kept and listed with the new reports.
 
 ## If it does not work

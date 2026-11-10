@@ -2,71 +2,68 @@
 
 # Everything Starboard does
 
-A list of what Starboard can do, by area, and the apps it works with. Each item links to the help for it.
+A short tour of what Starboard can do, by area. Each item links to the article that explains it.
 
 ## The dashboard
 
-- **Apps by category, with their own icons,** and five designs: Health first (apps that are not responding come
-  first), Tiles, Shelf, Command and Status board. Read [Choose a design](choose-a-design.md).
-- **Every page has its own address,** so you can bookmark any page, and searches too: `/search.html?q=dune`.
-- **Display and accessibility:** light or dark theme, text up to 175%, high contrast, less motion, underlined links
-  and wider spacing. Built to WCAG 2.2 AA. Read [Display and accessibility](display-and-accessibility.md).
+- **Your dashboard:** cards in one of four layouts, which you can change and add to. Read
+  [Use and change the dashboard](use-the-dashboard.md).
+- **Still to set up:** a list of what is left after installing, with guided steps. Read
+  [Finish what is still to set up](finish-setting-up.md).
+- **Apps page:** every app by category, in one of five designs. Read [Choose a design for the Apps page](choose-a-design.md).
+- **Display:** theme, text size, contrast and motion. Read
+  [Change text size, theme and other display settings](display-and-accessibility.md).
 
 ## Your media
 
-- **Search once, add anywhere.** Read [Search for something and add it](search-and-add.md).
-- **Coming up** as a list or a month calendar. Read [See what is coming up](coming-up.md).
-- **Downloads,** with pause and resume, speeds and the VPN's state, and **download hours**. Read
-  [Manage downloads](manage-downloads.md) and [Set download hours](set-download-hours.md).
-- **Requests,** with **Approve** and **Decline**. Read [Approve requests](approve-requests.md).
-- **Jellyfin extras:** free Live TV channels and guides, watch history from Plex, Emby or another Jellyfin, and
-  defaults for every user. Read [Set up Live TV](set-up-live-tv.md) and [Import watch history](import-watch-history.md).
-- **Listening progress** into Audiobookshelf from Plex, Jellyfin, Emby or another Audiobookshelf. Read
-  [Copy listening progress](copy-listening-progress.md).
+- **Library, search and coming up.** Read [Browse your library](browse-your-library.md),
+  [Search for and add films, series, music and books](search-and-add.md) and
+  [Find out what is coming up](coming-up.md).
+- **Downloads and download hours.** Read [Pause, resume and remove downloads](manage-downloads.md) and
+  [Download only at certain hours](set-download-hours.md).
+- **Wanted:** what is missing, or below the quality you want. Read [Find and get what is missing](get-what-is-missing.md).
+- **Requests.** Read [Approve or decline requests](approve-requests.md).
+- **Radio shows and podcasts.** Read [Follow radio shows and podcasts](follow-radio-shows.md).
+- **Jellyfin and Audiobookshelf extras.** Read [Import watch history into Jellyfin](import-watch-history.md) and
+  [Copy listening progress into Audiobookshelf](copy-listening-progress.md).
 
 ## Your server
 
-- **Install apps:** a complete media server in Basics, Full install or Everything, set up for you. Read
-  [Install apps with Starboard](install-apps.md) and [Change your install](change-your-install.md).
-- **Search for new apps** on this computer, with their API keys. Read [Search for new apps](search-for-new-apps.md).
-- **Copy app settings** from one Sonarr, Radarr or Lidarr to another. Read [Copy app settings](copy-app-settings.md).
-- **App updates** with a backup first. Read [Update your apps](update-your-apps.md).
-- **Storage** with charts by type and a forecast, **Disk health**, and **Monitor** for each app's use. Read
-  [Check storage](check-storage.md) and [Check disk health](check-disk-health.md).
-- **Drive pools:** join drives into one folder, balance them, take one out, and keep a backup drive. Read
-  [Add a drive to the pool](add-a-drive-to-the-pool.md).
-- **Alerts** to ntfy, Gotify or a webhook, uptime history and a weekly summary. Read
-  [Activate alerts](activate-alerts.md).
-- **Backups** of Starboard's settings, and of the whole server through a job you run. Read
-  [Back up Starboard's settings](back-up-settings.md) and [Back up the server](back-up-the-server.md).
+- **Install apps:** a complete media server, set up for you. Read [Install apps with Starboard](install-apps.md) and
+  [Basics, Full install and Everything](install-types.md).
+- **App updates,** with a backup first. Read [Update your apps](update-your-apps.md).
+- **Storage, disk health and drive pools.** Read [Check free space and what is using it](check-storage.md),
+  [Check your disks' health](check-disk-health.md) and [Add a drive to the pool](add-a-drive-to-the-pool.md).
+- **Alerts** to ntfy, Gotify or a webhook. Read [Activate alerts](activate-alerts.md).
+- **Backups.** Read [Back up and restore Starboard's settings](back-up-settings.md) and
+  [Back up the whole server](back-up-the-server.md).
+- **Settings.** Read [What is in each Settings page](find-a-setting.md).
+
+## Plug-ins and more
+
+- **Plug-ins** add cards, settings and styles. Read [Add a plug-in](add-a-plugin.md) and
+  [What a plug-in can change](../basics/what-plugins-can-change.md).
+- **Live TV:** free channels and guides for Jellyfin, from a plug-in that comes with Starboard. Read
+  [Set up free Live TV in Jellyfin](set-up-live-tv.md).
+- **Send feedback** about any page. Read [Send feedback about a page](send-feedback.md).
+- **Starboard's API** lets other apps, scripts and AI assistants read Starboard. Read
+  [Make an API key and use Starboard's API](use-starboards-api.md).
 
 ## The apps it works with
 
-Starboard finds the apps already running on your server and adds them. **Install apps** can install the ones
-marked "can install".
-
-| What for | Apps |
-|---|---|
-| Finding and downloading | Reelix, Sonarr, Radarr, Lidarr, Readarr (and Bookshelf, its maintained version), Prowlarr, Kapowarr, Whisparr (can install Reelix, Sonarr, Radarr, Lidarr, Bookshelf, Prowlarr and Kapowarr) |
-| Download apps and VPN | qBittorrent, NZBGet, SABnzbd, Transmission, Deluge, and Gluetun for a VPN (can install qBittorrent, NZBGet, SABnzbd and Gluetun) |
-| Watching and listening | Jellyfin, Plex, Emby, Audiobookshelf, Navidrome, Kavita, Komga, Calibre-Web, Storyarr (can install Jellyfin, Audiobookshelf and Storyarr) |
-| Requests and users | Seerr, Jellyseerr, Overseerr, Wizarr, Jellystat, Tautulli (can install Seerr, Wizarr and Jellystat) |
-| Subtitles and tidying | Bazarr, Profilarr, Decluttarr, Janitorr, Unpackerr, FlareSolverr, Tdarr (can install all) |
-| Live TV | Dispatcharr (can install), and Starboard's own free Live TV channels and guides for Jellyfin |
-| The rest of the server | Dozzle (can install), Portainer, Uptime Kuma, Homepage, Homarr, Grafana, Pi-hole, AdGuard Home, Home Assistant, Immich, Nextcloud, Paperless, Syncthing, Vaultwarden |
+Starboard installs Reelix, Jellyfin, Audiobookshelf and the apps around them, and works with many apps you already
+run. Read [The apps Starboard works with](../basics/the-apps.md).
 
 ## How it is built
 
-Light comes first. Starboard idles in about 16 MB of memory and almost no processor time, uses Python's standard
-library and plain HTML, CSS and JavaScript, does work only when a page that shows it is open or on a schedule you
-chose, and lets you pause or slow every piece of background work in **Settings**, **Performance**. Read
-[Make Starboard lighter](make-starboard-lighter.md).
+Starboard idles in about 16 MB of memory and almost no processor time. Background work runs only when you choose,
+and you can slow or pause each piece. Read [Make Starboard use less of your server](make-starboard-lighter.md).
 
 ## Find out more
 
 - [What Starboard is](../basics/what-is-starboard.md)
-- [Basics, Full install and Everything: what each one has](install-types.md)
 - [What Reelix is](../basics/what-is-reelix.md)
+- [Basics, Full install and Everything: what each one has](install-types.md)
 
 <!-- footer: download rights -->
 

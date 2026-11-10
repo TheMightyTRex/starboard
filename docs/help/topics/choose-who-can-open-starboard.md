@@ -9,31 +9,30 @@ open it. The change takes effect at once, and Starboard shows the addresses that
 
 - You can sign in to Starboard. If not, read [Create your password and sign in](create-your-password.md).
 - If you want to deactivate access, sign in on the server itself if you can, at `http://127.0.0.1:8095`.
-  A phone or another computer loses access as soon as the switch goes off.
+  A phone or another computer loses access as soon as the switch is inactive.
 
 ## Steps
 
 1. Go to **Settings**, then **Security**.
 2. Find **Who can open the dashboard**.
-3. Set the **Phones and other computers on your home network** switch:
-   - On: phones and other computers on your home network can reach the sign-in page.
-   - Off: only the computer Starboard runs on can open it.
-4. If you deactivated the switch, Starboard asks **Deactivate access from your home network?** Select
+3. Activate or deactivate **Phones and other computers on your home network**:
+   - Active: phones and other computers on your home network can reach the sign-in page.
+   - Inactive: only the computer Starboard runs on can open it.
+4. If you deactivated it, Starboard asks **Deactivate access from your home network?** Select
    **Deactivate network access** to go ahead, or close the dialog to keep things as they are.
 
-Starboard confirms the change. Under the switch it lists the addresses that open it now: **This computer**,
-and, when the switch is active, the addresses for **Phones and other computers**. Each one has a button to copy
-it.
+Starboard confirms the change and lists the addresses that open it now: **This computer** and, when the switch
+is active, **Phones and other computers**. Each address has a button to copy it.
 
 ## Things to note
 
 - With the switch inactive, Starboard stops listening on your network. Other devices cannot connect at all, not
   even to the sign-in page.
 - Home network access is active unless you chose otherwise when you installed. The installer's `--local-only`
-  option starts Starboard with it off.
-- If the page says **Set by STARBOARD_HOST on the server, so it cannot be changed here**, the address is
-  fixed on the server by a setting called `STARBOARD_HOST`. Remove that setting from the server and restart
-  Starboard to use the switch again.
+  option starts Starboard with it inactive.
+- An API key can never change this setting. Only someone signed in to Starboard can.
+- If the page says 'Set by STARBOARD_HOST on the server, so it cannot be changed here', the address is fixed by
+  `STARBOARD_HOST` on the server. Remove that setting and restart Starboard to use the switch again.
 - Live TV needs this switch active, because Jellyfin must be able to reach Starboard. Read
   [Set up free Live TV in Jellyfin](set-up-live-tv.md).
 - This switch is about your home network only. To open Starboard away from home, read
@@ -52,7 +51,7 @@ it.
   ```
 
   While it stays connected, open `http://127.0.0.1:8095` in your own computer's browser. Starboard treats
-  you as if you were on the server, so you can activate the switch again. Type `exit` in the terminal when you
+  you as if you were on the server, so you can activate the switch again. Enter `exit` in the terminal when you
   have finished.
 
 ## Find out more

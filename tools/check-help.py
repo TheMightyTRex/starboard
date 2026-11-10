@@ -95,7 +95,11 @@ def main():
         if "--list-screenshots" in sys.argv:
             print("\n".join("  " + f for f in few))
     print(f"{len(files)} articles checked, {len(problems)} problems")
-    return 1 if problems else 0
+    # Every link into the help, from the help, the release notes, the pages and the code, reaches its heading.
+    spec = importlib.util.spec_from_file_location("check_help_links", pathlib.Path(__file__).with_name("check-help-links.py"))
+    links = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(links)
+    return 1 if links.main() or problems else 0
 
 
 if __name__ == "__main__":

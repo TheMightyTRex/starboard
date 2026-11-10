@@ -59,6 +59,7 @@ Each guide is a journey through several topics, in order.
 - [Update Starboard](topics/update-starboard.md)
 - [Go back to an earlier version](topics/go-back-to-an-earlier-version.md)
 - [Remove Starboard](topics/remove-starboard.md)
+- [Finish what is still to set up](topics/finish-setting-up.md)
 
 ### Apps
 
@@ -81,6 +82,7 @@ Each guide is a journey through several topics, in order.
 - [Connect Reelix to Jellyfin and Audiobookshelf](topics/connect-reelix-to-media-servers.md)
 - [Take over the apps you already run](topics/take-over-your-apps.md)
 - [Copy settings from one app to another](topics/copy-app-settings.md)
+- [What is in each Settings page](topics/find-a-setting.md)
 
 ### Plug-ins
 
@@ -91,8 +93,10 @@ Each guide is a journey through several topics, in order.
 
 ### Everyday use
 
+- [Use and change the dashboard](topics/use-the-dashboard.md)
 - [Browse your library](topics/browse-your-library.md)
 - [Search for and add films, series, music and books](topics/search-and-add.md)
+- [Find and get what is missing](topics/get-what-is-missing.md)
 - [Pause, resume and remove downloads](topics/manage-downloads.md)
 - [Download only at certain hours](topics/set-download-hours.md)
 - [Approve or decline requests](topics/approve-requests.md)
@@ -127,6 +131,7 @@ Each guide is a journey through several topics, in order.
 - [Reset a forgotten password](topics/reset-a-forgotten-password.md)
 - [Sign out everywhere](topics/sign-out-everywhere.md)
 - [Put Starboard behind a reverse proxy](topics/reverse-proxy.md)
+- [Make an API key and use Starboard's API](topics/use-starboards-api.md)
 
 ### Backup and restore
 
@@ -137,6 +142,7 @@ Each guide is a journey through several topics, in order.
 ### Jellyfin and Audiobookshelf
 
 - [Set up free Live TV in Jellyfin](topics/set-up-live-tv.md)
+- [A Live TV channel will not play](topics/live-tv-channel-will-not-play.md)
 - [Import watch history into Jellyfin](topics/import-watch-history.md)
 - [Give every Jellyfin user the same defaults](topics/jellyfin-user-defaults.md)
 - [Copy listening progress into Audiobookshelf](topics/copy-listening-progress.md)

@@ -3,7 +3,7 @@
 # What you need to run Starboard
 
 Starboard runs on four Linux systems, each in the version named here or any later one. Starboard itself is very
-small, so what your computer needs depends on the media apps you run beside it. The figures below are for a whole
+small, so what your computer needs depends on the media apps you run beside it. The figures here are for a whole
 media server: Starboard, Reelix, Jellyfin, Audiobookshelf and a download app.
 
 ## The four systems
@@ -27,8 +27,7 @@ Downloads:
 
 ## Starboard on its own
 
-These are measured, not estimated. Starboard was tested with 20 apps added and every page opened in a
-browser.
+These are measured, with 20 apps added and every page opened in a browser.
 
 | | Starboard needs | Measured |
 |---|---|---|
@@ -36,7 +35,7 @@ browser.
 | Processor | Any | 2 seconds of processor time to open every page once. Close to nothing when nobody has it open. |
 | Disk space | 150 MB | The image is 117 MB. Settings, logs and history add about 3 MB. |
 | Download | 30 MB | 29 MB for 64-bit computers and 64-bit Raspberry Pi systems, 21 MB for 32-bit Raspberry Pi systems. |
-| System | One of the four systems above | Tested on clean copies of each, and on 64-bit ARM with 1 GB and with 512 MB of memory. |
+| System | One of **The four systems** | Tested on clean copies of each, and on 64-bit ARM with 1 GB and with 512 MB of memory. |
 
 Docker itself adds about 60 to 100 MB of memory, and the system needs its own share. So Starboard on its own runs
 on a computer with **512 MB of memory**, such as a Raspberry Pi Zero 2 W, but a whole media server needs the
@@ -44,8 +43,8 @@ minimum in **The four systems**.
 
 ## Which computer for which set-up
 
-The rows below Starboard on its own are guidance for the other apps, not measurements of Starboard. Each app's
-own documentation has the final word.
+Apart from Starboard on its own, these figures are guidance for the other apps, not measurements. Each app's own
+documentation has the final word.
 
 | What you want | Memory | Examples |
 |---|---|---|
@@ -61,9 +60,8 @@ better than a Raspberry Pi.
 
 ### Every app at once
 
-These figures were measured with the old separate apps (Radarr, Sonarr, Prowlarr and the others, 22 apps with
-Starboard), before Reelix replaced six of them, so Everything now uses less. Ticking every app was tested on a newly
-installed copy of each system:
+These figures were measured on a newly installed copy of each system, before Reelix replaced six of the separate
+apps, so Everything now uses less:
 
 - **Memory:** about 3.5 GB in use when the apps are idle. With 4 GB, everything starts, but almost nothing is left
   over, so choose 6 GB or more, or 8 GB on a Raspberry Pi.
@@ -87,7 +85,7 @@ installed copy of each system:
 
 ## Things to note
 
-- Windows and Mac are not supported yet: [Can I use Windows or a Mac?](windows-and-mac.md)
+- Windows and Mac are not supported. Read [Can I use Windows or a Mac?](windows-and-mac.md)
 - Your media needs its own space. Plan for 1 TB or more for films and series.
 - A network cable is more reliable than Wi-Fi for a server.
 

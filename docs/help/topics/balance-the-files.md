@@ -17,24 +17,24 @@ every file in the same place all the time, so the apps notice nothing.
 
 1. Go to **System**, then **Storage**, then **Pool**.
 2. Select **Balance the files**.
-3. Choose the balancer. **Starboard's balancer** is recommended.
-4. Leave **Pause during download hours** selected to keep the drives free for downloads at those times.
+3. Under **Balancer**, select **Starboard's balancer (recommended)**.
+4. Leave **Pause during download hours** selected to keep the drives free for downloads at those times. Read
+   [Set download hours](set-download-hours.md).
 5. Select **Continue to Check**. Nothing moves yet.
-6. Read the check: each drive before and after, and **The folders it moves**.
-7. Select **Continue to Confirm**, type your Starboard password and select **Start balancing**.
+6. Read the check: each drive before and after, and the folders it moves.
+7. Select **Continue to Confirm**, enter your Starboard password and select **Start balancing**.
 8. Wait, or go back to the Pool page. **Last change** shows how many folders have moved. To stop, select
    **Stop after this folder**.
 
 ## How it works
 
-Each folder is moved in three steps, and the pool shows it in the same place throughout:
+Each folder is copied to the emptier drive, checked against the original, then removed from the fuller one:
 
 ![Copy the folder to the emptier drive, check the copy against the original, then remove the original](../images/pool-how-a-folder-moves.svg)
 
-- The balancer works out a target: the same share of each drive in use. It moves the biggest folder that fits
-  from the fullest drive to the emptiest one, again and again, until every drive is within 5 percentage points
-  of the target, or no folder fits.
-- A **folder** is three levels down in the pool, such as `media/tv/A series`. Loose files higher up move on their
+- The balancer moves the biggest folder that fits from the fullest drive to the emptiest one. It stops when
+  every drive is within 5 percentage points of the same fill, or no folder fits.
+- A folder is three levels down in the pool, such as `media/tv/A series`. Loose files higher up move on their
   own.
 - Folders changed in the last hour stay where they are, because a download may still be writing them.
 - If it is stopped, or the power goes off, the folder being moved is still whole on the drive it came from.
@@ -43,26 +43,26 @@ Each folder is moved in three steps, and the pool shows it in the same place thr
 ## What happens without balancing
 
 The pool works without balancing. New files go to the drive with the most free space, so the drives even out
-slowly over time. Until they do:
+slowly. Until they do:
 
 ![Without balancing, disk 1 stays 95% full and the newer episodes of series A are on two other drives. With balancing, each series is together on one drive](../images/pool-without-balancing.svg)
 
-- **A series ends up on several drives.** Its new episodes go to the emptiest drive. If one drive fails, many
-  series lose a few episodes each, instead of a few series being lost whole (which a parity drive can rebuild).
-- **The old drives stay nearly full.** A drive over 90% full is slower, and files that grow, such as a
-  download being repaired, may have nowhere to go on it.
+- **A series ends up on several drives.** If one drive fails, many series lose a few episodes each, instead of a
+  few series being lost whole, which a parity drive can rebuild.
+- **The old drives stay nearly full.** A drive over 90% full is slower, and files that grow may have nowhere to
+  go on it.
 - **One drive does most of the work**, because every new file goes to it.
 
 ## mergerfs.balance
 
 `mergerfs.balance` is a balancer from the mergerfs-tools project. It is not installed with Starboard. It moves
-single files until the drives are even, so a series can end up spread over several drives. To use it, install it
-yourself from the [mergerfs-tools project](https://github.com/trapexit/mergerfs-tools), then choose it under
-**Balancer**. It has no check before it starts.
+single files until the drives are even, so a series can end up spread over several drives, and it has no check
+before it starts. To use it, install it from the [mergerfs-tools project](https://github.com/trapexit/mergerfs-tools),
+then select it under **Balancer**.
 
 ## If it does not work
 
-- **Nothing needs moving:** the drives are already within 5% of each other.
+- **Nothing needs moving:** the drives are already within 5 percentage points of each other.
 - **No Balance the files button:** the pool has only one drive.
 - **Some folders were left where they were:** they changed while being moved, or the same folder was already on
   the other drive. Balance again later.

@@ -13,22 +13,23 @@ A plug-in can only do what it says in its manifest, and only after you have read
 shows each permission in plain words with a risk level (low, medium or high) before you add it.
 
 - **Add styles to Display.** Colours, corner shapes, shadows and a font from those already on your device. Starboard
-  writes the styles itself from the plug-in's colours, after checking them.
+  writes the styles itself from the plug-in's colours, after checking them. You choose a style in **Display**.
 - **Run its own small apps, called containers.** Each one is limited to its own folder, a set amount of memory and
   processor, and its own network.
 - **Read from Starboard, if you allow it.** Your apps and whether they answer, what is downloading, your films,
   series and books, or processor, memory and disks. It uses its own key, which only reads, and stops working when
   the plug-in is removed.
 - **Reach your home network or run inside your VPN,** only when it asks for this and you agree.
-- **Show settings and buttons** on its own section of **Settings**, **Plug-ins**, drawn by Starboard.
-- **Add cards to the dashboard** that show a number, a short list or a status. People choose to add them with
-  **Edit dashboard**. Starboard asks the plug-in at most once a minute and shows its answer as plain text.
+- **Show settings and buttons** in its own section of **Settings**, then **Plug-ins**, drawn by Starboard.
+- **Add cards to the dashboard** that show a number, a short list or a status. You choose to add them with
+  **Edit dashboard**. Starboard asks the plug-in at most once a minute and shows its answer as plain text. Read
+  [Use and change the dashboard](../topics/use-the-dashboard.md#add-a-plug-ins-card).
 
 ## What a plug-in can never do
 
 These are refused whatever a plug-in asks for. Starboard does not offer them, so no plug-in can be given them.
 
-- **Add code to Starboard's pages.** A plug-in sends data, never scripts or CSS. Starboard draws everything you see.
+- **Add code to Starboard's pages.** A plug-in sends data, never scripts or CSS. Starboard draws everything on the page.
 - **Change how Starboard works for you:** the layout and order of pages, the size of buttons, text size, spacing,
   underlined links, reduced motion and **High contrast**. Your **Display** choices always win over a style.
 - **Use a style that fails accessibility.** Every style is checked in light and dark: text needs a contrast of at
@@ -36,11 +37,11 @@ These are refused whatever a plug-in asks for. Starboard does not offer them, so
   cannot be added or chosen.
 - **Control Docker or the computer.** No plug-in gets the Docker socket, administrator rights, the computer's own
   network, its devices, or any folder but its own.
-- **See or change other apps' settings, keys or passwords,** or Starboard's own data and password.
+- **Read or change other apps' settings, keys or passwords,** or Starboard's own data and password.
 - **Change your install, your VPN, your downloads or your accounts.** The keys plug-ins get today only read.
 - **Download fonts, pictures or code from the internet** into Starboard's pages.
 - **Stay if you do not want it.** **Deactivate** stops it, **Remove** takes it away and stops its key, and
-  **Deactivate all plug-ins** stops every one at once.
+  **Deactivate all plug-ins** stops every one at once. Read [Add a plug-in](../topics/add-a-plugin.md#things-to-note).
 
 ## How Starboard checks a plug-in
 

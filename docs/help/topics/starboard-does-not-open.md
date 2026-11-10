@@ -49,14 +49,13 @@ running, the address is wrong, or Starboard is set to open on the server only.
    server itself, use `http://127.0.0.1:8095`.
 4. Check the port. Starboard uses port 8095 unless you chose another when you installed. The `.env` file in
    the Starboard folder shows it on the line `STARBOARD_PORT`.
-5. Try on the server itself, at `http://127.0.0.1:8095`. If it opens there but not on a phone, carry on to
-   the next step.
+5. Try on the server itself, at `http://127.0.0.1:8095`. If it opens there but not on a phone, carry on with
+   step 6.
 6. Check that other devices are allowed in. On the server, go to **Settings**, then **Security**, and check
-   that **Phones and other computers on your home network** is active. If the server has no monitor,
-   [Choose who can open Starboard](choose-who-can-open-starboard.md) explains how to reach the setting from
-   your own computer.
+   that **Phones and other computers on your home network** is active. If the server has no monitor, read
+   [Choose who can open Starboard](choose-who-can-open-starboard.md) to reach the setting from your own computer.
 7. Check the server's firewall. A firewall is a program that blocks connections the server has not allowed.
-   On Ubuntu, Debian and Linux Mint, this command shows whether ufw (a common firewall) is on:
+   On Ubuntu, Debian and Linux Mint, this command shows whether ufw, a common firewall, is active:
 
    ```bash
    sudo ufw status

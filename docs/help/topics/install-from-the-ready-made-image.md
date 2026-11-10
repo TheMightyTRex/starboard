@@ -2,9 +2,8 @@
 
 # Install Starboard from the ready-made image
 
-The ready-made image is the quickest way to install Starboard: Docker downloads it already built, so there is nothing
-to build and no questions to answer. At the end, Starboard is running and you have the setup code for choosing your
-password.
+With the ready-made image, Docker downloads Starboard already built, so there is nothing to build and no questions
+to answer. At the end, Starboard is running and you have the setup code for choosing your password.
 
 ## Before you begin
 
@@ -78,7 +77,7 @@ password.
    docker logs starboard
    ```
 
-   Look for the line "No password yet. Open the dashboard and enter this setup code:" followed by the code.
+   Find the line "No password yet. Open the dashboard and enter this setup code:". The code is at the end of it.
 
 10. In a browser on this computer, open `http://localhost:8095`. Enter the setup code and choose your password. Read
     [Create your password and sign in](create-your-password.md).
@@ -86,26 +85,25 @@ password.
 ## Optional extras
 
 The Compose file has some extra lines that start with `#`, which means they are inactive. Each has a comment
-that explains it. To switch one on, open the file with nano, remove the `#` and the space after it at the start of
-the line, save, and run the command in Step 8 again.
+that explains it. To activate one, follow
+[If you used the ready-made image](change-what-starboard-can-access.md#if-you-used-the-ready-made-image).
 
 - **Folders for System, Storage:** shows how full your drives are. You need two lines: the `STARBOARD_DISKS` line,
   and one line for each folder under `volumes`, such as `/mnt/media:/disks/media:ro`. The `:ro` means read-only.
-- **The Docker socket:** lets **System**, **Apps**, **Updates** update your other apps and lets Starboard find their API keys.
-  This gives Starboard full control of Docker, which is the same as full control of the computer. Leave it out if
-  you are unsure. It needs three lines: the `docker.sock` line, and the `group_add:` line with the number under
-  it. Put your own number there: this command prints it.
+- **The Docker socket:** lets **System**, **Apps**, **Updates** update your other apps, and lets Starboard find
+  their API keys. This gives Starboard full control of Docker, which is the same as full control of the computer.
+  Leave it out if you are unsure. It needs three lines: the `docker.sock` line, and the `group_add:` line with the
+  number under it. Put your own number there. This command prints it:
 
   ```bash
   stat -c %g /var/run/docker.sock
   ```
 
-Read [Change what Starboard can access](change-what-starboard-can-access.md) for more.
 
 ## Things to note
 
-- Unlike the installer, the ready-made image asks no questions. Phones and other computers on your home network can
-  open Starboard straight away, with your password. To change that, go to **Settings**, then **Security**. Read
+- The ready-made image asks no questions. Phones and other computers on your home network can open Starboard
+  straight away, with your password. To change that, read
   [Choose who can open Starboard](choose-who-can-open-starboard.md).
 - Every command for this kind of install includes `-f compose.image.yaml`, and runs in the folder that holds that
   file. Without it, Docker does not know which Compose file you mean.

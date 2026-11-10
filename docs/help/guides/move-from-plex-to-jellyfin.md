@@ -3,9 +3,8 @@
 # Move from Plex to Jellyfin and Audiobookshelf
 
 This guide moves what everyone has watched and listened to from Plex into Jellyfin and Audiobookshelf, so
-nobody loses their place. It also works from Emby or another Jellyfin. It is for people who already have
-Jellyfin, and Audiobookshelf for audiobooks, running with the same media as Plex. It takes about an hour,
-plus waiting while the new apps scan your media.
+nobody loses their place. It also works from Emby or another Jellyfin. It is for people who already run
+Jellyfin, and Audiobookshelf for audiobooks, with the same media as Plex.
 
 Nothing in Plex is changed. Starboard only reads it.
 
@@ -13,7 +12,7 @@ Nothing in Plex is changed. Starboard only reads it.
 
 - Jellyfin is running, has scanned your films and series, and has an account for each person. Audiobookshelf
   too, for audiobooks.
-- Both are in Starboard with their API keys: [Add an app](../topics/add-an-app.md) and
+- Both are in Starboard with their API keys. Read [Add an app](../topics/add-an-app.md) and
   [Find an app's API key](../topics/find-an-api-key.md). Audiobookshelf needs a key from an admin user.
 - Plex still has everyone's history: a running Plex server, or a copy of its database file.
 
@@ -33,8 +32,8 @@ flowchart LR
 
 ## Step 1: Import watch history into Jellyfin
 
-Starboard reads what each Plex account watched and where they stopped, matches each account to a Jellyfin
-user, then marks the same films and episodes in Jellyfin. Follow
+Starboard reads what each Plex account watched and where they stopped, and you match each account to a
+Jellyfin user. Starboard then marks the same films and episodes in Jellyfin. Follow
 [Import watch history into Jellyfin](../topics/import-watch-history.md).
 
 **It worked when** a film you watched in Plex shows as watched in Jellyfin.
@@ -47,13 +46,15 @@ Audiobookshelf. It never changes progress someone already has there. Follow
 
 ## Step 3: Check what was not found
 
-Both pages list what Starboard could not match: usually media the new app has not scanned yet, or that has
-different details. Fix those in Jellyfin or Audiobookshelf, then apply again. Starboard never counts anything
-twice. With **Keep applying every hour** on, Jellyfin picks up the rest as it arrives.
+Both pages list what Starboard could not match: **Not in Jellyfin yet** and **Books not found in
+Audiobookshelf**. Usually the new app has not scanned it yet, or its details differ. Fix those in Jellyfin or
+Audiobookshelf, then select **Apply now** again. Nothing is applied twice. With **Keep applying every hour**
+active, Starboard picks up the rest as it arrives.
 
 ## Step 4: Give every Jellyfin user the same defaults
 
-Follow [Give every Jellyfin user the same defaults](../topics/jellyfin-user-defaults.md).
+Starboard can make Live TV open on the Guide for everyone. Follow
+[Give every Jellyfin user the same defaults](../topics/jellyfin-user-defaults.md).
 
 ## What next
 

@@ -13,15 +13,13 @@ settings, installs the newest release and goes back to the version you had if th
 
 ## Find out whether an update is out
 
-- The footer of every page shows Starboard's version. When a newer one is out, **Upgrade available** and the new
-  version number appear beside it. Select it to go to **Settings**, **Updates**.
-- On **Settings**, **Updates**, **Update settings**, a notice says "Version 0.8.0 is out", for example, with a **Release notes** button that
+- Starboard's version is at the foot of the side menu. When a newer one is out, **Update** appears beside it, and
+  the footer link becomes **About and updates (1)**. Either goes to **Settings**, **Updates**, **Update settings**.
+- On **Update settings**, a notice says "Version 0.15.5 is out", for example, with a **Release notes** button that
   says what changed.
 
-For this to work, **Check GitHub for new releases** must be active. It is on **Update settings**, under **Updates**.
-
-What changed in every version is on **Settings**, **Updates**, **Releases**: each release opens to show what was
-added, changed and fixed, and how to go back.
+For this to work, **Check GitHub for new releases** must be active, in the **Updates** section of **Update
+settings**. What changed in every version is on **Settings**, **Updates**, **Releases**.
 
 ## Steps if you used the installer
 
@@ -76,9 +74,9 @@ If you only want to know whether an update is out, without installing it, run `.
 ## After the update
 
 - Select **Release notes** in the footer of any page to read what changed.
-- If the new version brings settings worth choosing, a notice says how many. Select **Choose now** to choose them in a
-  slide-out over the page you are on, or **Open as a page**. It asks only the new questions. **Remind me later**
-  leaves it for later.
+- If the new version brings settings to choose, a notice says "Starboard 0.15.5 is installed" and how many things
+  there are to choose. Select **Choose now** to choose them in a slide-out over the page you are on, or
+  **Open as a page**. It asks only the new questions. **Remind me later** in the slide-out leaves them for later.
 
 ## Things to note
 
@@ -87,14 +85,15 @@ If you only want to know whether an update is out, without installing it, run `.
 - If the new version does not start, the updater goes back to the version you had and puts your settings back. The
   last lines say "Back on" and the version.
 - If the `image:` line in your Compose file ends in a version, such as `:0.7.2` instead of `:latest`, pulling does not
-  change it. Change the version in the file first. Read [Go back to an earlier version](go-back-to-an-earlier-version.md)
+  change it. Change the version in the file first. Read
+  [Steps if you used the ready-made image](go-back-to-an-earlier-version.md#steps-if-you-used-the-ready-made-image)
   for how to edit it.
 - Starboard only updates itself. To update your other apps, read [Update your apps](update-your-apps.md).
 
 ## If it does not work
 
 - **"Already up to date":** you have the newest release. Nothing changed.
-- **It stops just after "What changed", and nothing is updated:** versions up to 0.9.0 stop there when more than 30
+- **It stops after "What changed", and nothing is updated:** versions up to 0.9.0 stop there when more than 30
   changes came since your version. Nothing has changed yet. In the Starboard folder, save a copy of your settings,
   then update by hand, with the version you want in place of `v0.9.0`:
 

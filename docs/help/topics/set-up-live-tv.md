@@ -2,21 +2,18 @@
 
 # Set up free Live TV in Jellyfin
 
-Live TV builds free TV channels and their guides for Jellyfin's Live TV, from Samsung TV Plus, Pluto TV and
-Free-TV, and adds them to Jellyfin. At the end, Jellyfin shows the channels with a TV guide, numbered the way Sky
-numbers them. Live TV is a plug-in that comes with Starboard, so you add it only if you want it.
+Live TV gives Jellyfin free TV channels with a TV guide, from Samsung TV Plus, Pluto TV and Free-TV. Channels are
+numbered the way Sky numbers them. Live TV is a plug-in built into Starboard, so you add it only if you want it.
 
 ## Before you begin
 
-- Jellyfin is installed and on your dashboard, with its API key, so Live TV can add the channels to Jellyfin.
-  Read [Add an app](add-an-app.md).
-- Starboard can write to the folder Jellyfin reads its Live TV files from. The installer asks
-  "Give Starboard a Live TV folder?": answer yes and give the folder, such as `/srv/jellyfin/config/iptv`.
-  To change your answer, read [Change what Starboard can access](change-what-starboard-can-access.md).
-- Starboard can run containers (Docker access). Without it, Live TV runs inside Starboard instead, from
-  **Settings**, **Apps**, **Jellyfin**.
-- Phones and other computers on your home network can open Starboard, because Jellyfin fetches channel
-  logos and Pluto TV streams from it. Read [Choose who can open Starboard](choose-who-can-open-starboard.md).
+- Jellyfin is in **Manage apps** with its API key, so Live TV can add the channels to Jellyfin. Read
+  [Find an app's API key](find-an-api-key.md).
+- The installer gave Starboard a Live TV folder. It asks "Give Starboard a Live TV folder?". To change your answer,
+  read [Change what Starboard can access](change-what-starboard-can-access.md#change-access-with-the-installer).
+- Starboard can run containers (Docker access).
+- Starboard is open to your home network, because Jellyfin fetches channel logos and Pluto TV streams from it.
+  Read [Choose who can open Starboard](choose-who-can-open-starboard.md).
 
 ## Steps
 
@@ -24,65 +21,73 @@ numbers them. Live TV is a plug-in that comes with Starboard, so you add it only
 
 1. Go to **Settings**, then **Plug-ins**.
 2. Under **Built into Starboard**, select **Add Live TV**.
-3. Read what it may do, type your Starboard password and select **Add Live TV**. It is added and active.
+3. Read **What it may do**, enter **Your Starboard password** and select **Add Live TV**. Starboard shows
+   "Live TV added and active".
 4. In the **Live TV** section, check **Address Jellyfin uses to reach Starboard**, such as
-   `http://192.168.1.20:8095`, and **Live TV folder as Jellyfin sees it**, such as `/config/iptv`, then select
-   **Save**.
-5. Select **Run Live TV now** to build the files straight away.
+   `http://192.168.1.20:8095`.
+5. Check **Live TV folder as Jellyfin sees it**, such as `/config/iptv`, then select **Save**.
+6. Select **Run Live TV now**. The first run tests every channel, so it takes a few minutes.
 
-If you used Live TV before Starboard 0.15.0, you do not need these steps: Starboard moved it into the plug-in
-with your settings, and your channels and guides in Jellyfin did not change.
+Live TV adds its channel lists and guides to Jellyfin itself, then starts Jellyfin's guide refresh. It reads
+the folder from Jellyfin's own tuners first, so nothing is added twice.
 
-The first run tests every stream, so it takes a few minutes. Its card on the dashboard and its section in
-**Settings**, **Plug-ins** say when it last ran and what it did.
+To follow it on the dashboard, add the **Live TV** card with **Edit dashboard**. Read
+[Use and change the dashboard](use-the-dashboard.md). The card says when Live TV last ran and what it did.
+
+If you used Live TV before Starboard 0.15.0, Starboard moved it into the plug-in by itself, with the same
+settings. Your channels and guides in Jellyfin did not change.
 
 ### Add the channels and guides in Jellyfin
 
+Do this only if the **Live TV** card says Jellyfin did not take the channels.
+
 1. Open Jellyfin and go to **Dashboard**, then **Live TV**.
-2. Add a tuner of type M3U for each of these playlists, from the Live TV folder:
-   - `channels.m3u`
-   - `samsung.m3u`
-   - `pluto.m3u`
-3. Add an XMLTV guide for each of these guide files, from the same folder:
-   - `guide.xml`
-   - `guide-samsung.xml`
-   - `guide-pluto.xml`
+2. Add a tuner of type M3U for each playlist in the Live TV folder: `channels.m3u`, `samsung.m3u` and
+   `pluto.m3u`.
+3. Add an XMLTV guide for each guide file in the same folder: `guide.xml`, `guide-samsung.xml` and
+   `guide-pluto.xml`.
 4. Let Jellyfin refresh its guide data.
 
-Use the folder as Jellyfin sees it. If Jellyfin runs in Docker, that is the path inside Jellyfin's
-container. For example, if `/srv/jellyfin/config` on the server is `/config` for Jellyfin, the playlist is
-`/config/iptv/channels.m3u`.
+Use the folder as Jellyfin sees it. If `/srv/jellyfin/config` on the server is `/config` for Jellyfin, the
+first playlist is `/config/iptv/channels.m3u`.
 
 ## Things to note
 
-- Starboard refreshes the guides once a day. It rebuilds the channel lists only when a source's list
-  changes, or once a week to drop channels that stopped playing.
-- Only free channels are included. Starboard skips channels that need DRM (digital rights management),
-  adult channels and anything that does not play from your connection.
+- Live TV checks once an hour. It refreshes the guides once a day, and rebuilds a channel list only when its
+  source changes, or once a week to drop channels that stopped playing. **Run Live TV now** rebuilds every
+  list.
+- Only free channels are included. Live TV skips channels that need DRM (digital rights management), adult
+  channels and anything that does not play from your connection.
 - Channels are numbered in blocks: 101 Entertainment, 401 Lifestyle, 451 Movies, 501 Music, 601 Sport,
   701 News, 801 Documentaries, 1001 Kids and 1101 Other.
 - **White channel logos** turns each logo white on a clear background. Deactivate it to keep each channel's
   own logo.
-- The page section **How Jellyfin uses these files** repeats the file names, so you can check them there.
+- Starboard itself still serves the channel logos and the Pluto TV links to Jellyfin.
+- Where the plug-in cannot run, **Built into Starboard** says why, after "Not here". Live TV then runs inside
+  Starboard, in **Settings**, **Apps**, **Jellyfin**, **Live TV**, with the same settings and its own
+  **Run Live TV now**.
+- What the plug-in may do and what it runs are listed in
+  [The plug-in collection](../basics/plugin-collection.md#live-tv).
 - To make Live TV open on the Guide for everyone, read
   [Give every Jellyfin user the same defaults](jellyfin-user-defaults.md).
-- Live TV uses a little of your server once a day, and more once a week while it tests streams. Read
-  [Make Starboard use less of your server](make-starboard-lighter.md).
 
 ## If it does not work
 
-- **"Needs set-up on the server":** Starboard has no Live TV folder. Run `./install.sh` again and say yes to
-  Live TV. Read [Change what Starboard can access](change-what-starboard-can-access.md).
-- **Channels have no logos, or Pluto TV channels do not play:** Jellyfin cannot reach Starboard. Check that
-  home network access is active, and that **Address Jellyfin uses to reach Starboard** opens from the computer
-  Jellyfin runs on.
-- **"Last run failed":** read the reason next to it, then read [Read the log and report a problem](read-the-log.md).
+- **"Not here" next to Live TV:** Starboard has no Docker access or no Live TV folder. Run `./install.sh`
+  again and say yes to both. Read
+  [Change what Starboard can access](change-what-starboard-can-access.md#change-access-with-the-installer).
+- **The card says "Last run failed":** read the reason next to it. If it names the address, enter it in the
+  **Live TV** section in **Settings**, **Plug-ins**.
+- **"Jellyfin: add its API key":** add the key to Jellyfin in **Manage apps**, then select **Run Live TV now**.
+- **Channels have no logos, or Pluto TV channels do not play:** Jellyfin cannot reach Starboard. Read
+  [A Live TV channel will not play](live-tv-channel-will-not-play.md).
 
 ## Find out more
 
+- [A Live TV channel will not play](live-tv-channel-will-not-play.md)
+- [Add a plug-in](add-a-plugin.md)
 - [Give every Jellyfin user the same defaults](jellyfin-user-defaults.md)
-- [Change what Starboard can access](change-what-starboard-can-access.md)
-- [The apps Starboard works with](../basics/the-apps.md)
+- [Make Starboard use less of your server](make-starboard-lighter.md)
 
 <!-- footer: download rights -->
 

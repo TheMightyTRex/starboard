@@ -3,18 +3,18 @@
 # Run first and installer error numbers
 
 When the Run first script or Starboard's installer (`./install.sh`) stops, it shows an error number, such as
-`Error RF-11` or `Error IN-21`, with a link to this page. RF numbers come from the Run first script, IN numbers from
-the installer and the terminal set-up. When the installer stops while the Run first script runs it, the Run first
-script ends on the installer's number, so you only have one number to look up. Find the number below to see what it means and how to put it right. Then run the script again: it carries on from what
-is missing, and nothing that already worked is done twice.
+`Error RF-11` or `Error IN-21`, with a link to this page. RF numbers come from the
+[Run first script](run-first.md), IN numbers from the installer and the terminal set-up. When the installer stops
+inside the Run first script, the script ends on the installer's number, so there is only one number.
 
-If you ask for help or report a problem, give the error number. The script's log has it too: the message gives
-where the log is, a file called `run-first.log` in a `starboard-run-first` folder in `/tmp`.
+Find the number on this page for what it means and how to put it right. Then run the script again: it carries on
+from what is missing. If you ask for help or report a problem, give the error number. The message also says where
+the log is: a file called `run-first.log` in a `starboard-run-first` folder in `/tmp`.
 
 ## How an error looks
 
-1. When the script or the installer stops, the last lines say why, then the error number and the address of its
-   help on this page.
+1. When the script or the installer stops, its last lines say why, then give the error number and the address of
+   its help on this page.
 
    ![The installer stopped, with the error number IN-16 and the address of its help (step 1) outlined](../images/run-first-errors-1-stop.png)
 
@@ -22,9 +22,10 @@ where the log is, a file called `run-first.log` in a `starboard-run-first` folde
 
    ![Accessible mode, with Error IN-33 and the address of its help (step 2) outlined](../images/run-first-errors-2-plain.png)
 
-3. When one job does not finish, such as starting the apps, the line under it says what went wrong, then the error
-   number and the address of its help, as when it stops. Then it asks what to do: **Try again** is recommended. **Show the details** shows the last lines of the job's log, and **Report this problem** helps you send a
-   report about it (read [Send feedback](send-feedback.md)).
+3. When one job does not finish, such as starting the apps, the next line says what went wrong, with the error
+   number and the address of its help. Then it asks what to do. **Try again** is recommended. **Show the details**
+   shows the last lines of the job's log. **Report this problem** helps you send a report. Read
+   [Send feedback from the terminal](set-up-in-the-terminal.md#send-feedback-from-the-terminal).
 
    ![A job that did not finish, with its error number IN-33, the address of its help and What do you want to do? (step 3) outlined](../images/run-first-errors-3-choices.png)
 
@@ -34,7 +35,7 @@ where the log is, a file called `run-first.log` in a `starboard-run-first` folde
 
 **An option the script does not know.** The command has a word after `bash` that the script does not use, often a
 typing mistake. Run it with no options, or with one of `--browser`, `--terminal`, `--plain`, `--yes`, `--dir` or
-`--check`. To see what each does, run it with `--help`.
+`--check`. Run it with `--help` for what each does.
 
 ### RF-02
 
@@ -78,15 +79,19 @@ Wi-Fi, then choose **Try again**.
 
 ### RF-12
 
-**Another program is still installing updates.** This often happens just after Linux is installed, when it
-updates itself. The script waits for it on its own, with a progress bar called **Waiting for Linux to finish
-installing its updates**, which says what is installing, how many are done and how much is downloaded, and carries on when it is done. You see this error only when the updates take more than
-45 minutes. Wait until they finish, or restart the computer, then choose **Try again**.
+**Another program is still installing updates.** This often happens soon after Linux is installed, when it
+updates itself. The script waits for the updates by itself, with a progress bar called **Waiting for Linux to
+finish installing its updates**. The bar shows what is installing, how many are done and how much is downloaded.
+When the updates finish, the script carries on. If updates start part-way through an install, it waits and tries
+again by itself.
+
+You get this error only when the updates take more than 45 minutes. Wait until they finish, or restart the
+computer, then choose **Try again**.
 
 ### RF-13
 
 **A software source has a signing key Linux no longer accepts.** The list of software could not be updated.
-Choose **Show the details** to see which source. Install that source's new key, or turn the source off, then
+Choose **Show the details** for the name of the source. Install that source's new key, or deactivate the source, then
 choose **Try again**.
 
 ### RF-14
@@ -105,8 +110,8 @@ ask whoever looks after this computer to add you to the `sudo` group.
 
 ### RF-17
 
-**sudo did not accept the password.** Type the password you use to sign in to this computer. Nothing shows as
-you type on most systems. Then choose **Try again**.
+**sudo did not accept the password.** Enter the password you use to sign in to this computer. On most systems,
+nothing shows as you enter it. Then choose **Try again**.
 
 ### RF-19
 
@@ -134,31 +139,30 @@ permissions were changed. Move it aside, then run the script again to download a
 
 ### RF-40
 
-**Starboard's installer stopped without giving an error number.** The Run first script ends on the installer's own
-number (starting IN) whenever it gives one, so you only see RF-40 when it gave none: it stopped suddenly, for example
-because the computer ran out of memory or the connection to it closed. The lines just above are the last it wrote.
+**Starboard's installer stopped without giving an error number.** It stopped suddenly, for example because the
+computer ran out of memory or the connection to it closed. The lines before the error number are the last it wrote.
 Run the script again: it carries on from what is missing. If RF-40 comes back, choose **Report this problem**, or
 [read the log and report a problem](read-the-log.md), with those lines.
 
-If the line above says `sg: command not found`, your copy of the script is from before 7 November 2026. Run the
-script again: the current one works without `sg`.
+If those lines say `sg: command not found`, your copy of the script is an old one. Run the script again: the
+current one works without `sg`.
 
-If you stop the installer yourself, by typing `q` or pressing Ctrl+C, that is not an error and there is no number.
+If you stop the installer yourself, with `q` or Ctrl+C, that is not an error and there is no number.
 
 ### RF-50
 
 **The apps did not start.** The set-up in the browser asked this window to download and start your apps, and
-that did not finish. The line just above the error number says why. Most often this computer could not reach the
+that did not finish. The line before the error number says why. Most often this computer could not reach the
 internet, or the disk is full. Put that right, then select **Try again** in the browser.
 
 ## Starboard's installer
 
-The installer is `./install.sh`, in the Starboard folder. The Run first script starts it for you; you can also run it
-yourself to change what Starboard may access.
+The installer is `./install.sh`, in the Starboard folder. The Run first script starts it for you. You can also run it
+yourself to [change what Starboard can access](change-what-starboard-can-access.md#change-access-with-the-installer).
 
 ### IN-01
 
-**An option the installer does not know.** Run `./install.sh --help` to see the options, then run it again.
+**An option the installer does not know.** Run `./install.sh --help` for the options, then run it again.
 
 ### IN-02
 
@@ -208,7 +212,7 @@ Docker (`sudo systemctl start docker`), or answer No to app updates.
 
 ### IN-12
 
-**The Live TV folder does not exist.** Make the folder Jellyfin reads its Live TV files from, or type another.
+**The Live TV folder does not exist.** Make the folder Jellyfin reads its Live TV files from, or enter another.
 
 ### IN-13
 
@@ -228,7 +232,7 @@ folder, or move Starboard to a folder without them.
 ### IN-16
 
 **sudo did not accept the password, or there is nowhere to type it.** Disk health and Drive pools need sudo. Run
-`./install.sh` in a terminal and type the password you use to sign in to this computer.
+`./install.sh` in a terminal and enter the password you use to sign in to this computer.
 
 ### IN-17
 
@@ -237,11 +241,11 @@ then run the installer again.
 
 ### IN-18
 
-**Disk health did not set up.** Choose **Show the details** to see why, put it right, then choose **Try again**.
+**Disk health did not set up.** Choose **Show the details** for the reason, put it right, then choose **Try again**.
 
 ### IN-19
 
-**The pool helper did not install.** Choose **Show the details** to see why, put it right, then choose **Try
+**The pool helper did not install.** Choose **Show the details** for the reason, put it right, then choose **Try
 again**.
 
 ### IN-20
@@ -265,8 +269,8 @@ the network or the disk. Put it right, then choose **Try again**.
 
 ### IN-24
 
-**Starboard did not answer after starting.** Read what it says with `docker compose logs starboard` in the
-Starboard folder (or `journalctl --user -u starboard` with `--native`). See also
+**Starboard did not answer after starting.** Read its messages with `docker compose logs starboard` in the
+Starboard folder, or `journalctl --user -u starboard` with `--native`. Then read
 [Starboard does not open](starboard-does-not-open.md).
 
 ### IN-29
@@ -297,7 +301,7 @@ choose **Try again**.
 ### IN-34
 
 **Starboard could not give Jellyfin its Live TV fix.** Jellyfin runs FFmpeg through a small file in its settings
-folder, `jellyfin/ffmpeg-wrap`, so free channels such as U&Laughs play. Check the disk is not full and the
+folder, `jellyfin/ffmpeg-wrap`, so some free channels play. Check the disk is not full and the
 settings folder is mounted, then choose **Try again**.
 
 ### IN-35
@@ -312,13 +316,13 @@ disk is usually full: free some space (`df -h /tmp` shows how much is left), the
 
 ### IN-37
 
-**The terminal set-up stopped on a problem.** The line above the number says what it was, often that Starboard is
+**The terminal set-up stopped on a problem.** The line before the number says what it was, often that Starboard is
 not answering on its port. Check Starboard is running (`docker ps` lists `starboard`), then run the set-up again
 with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in a browser.
 
 ### IN-38
 
-**The terminal set-up stopped on a fault of its own.** Python wrote what went wrong just above the number. Run the
+**The terminal set-up stopped on a fault of its own.** Python wrote what went wrong before the number. Run the
 set-up again with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in a browser, and
 choose **Report this problem** with those lines so it can be fixed.
 
