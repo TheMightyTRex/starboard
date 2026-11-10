@@ -700,6 +700,24 @@ function startGeneral() {
     catch (err) { designForm.design.value = before; problem(err.message); }
   });
 
+  // Style (owner, 10 November 2026): the plug-in style this browser uses, and Reset style back to the standard colours.
+  const styleSaid = el("p", { "aria-live": "polite" });
+  const styleResetBtn = el("button", { type: "button", class: "btn" }, icon("rotate-ccw"), "Reset style");
+  const styleChoose = el("button", { type: "button", class: "btn btn--quiet" }, "Choose a style");
+  let styleNames = {};
+  const styleShow = () => {
+    const chosen = readPrefs().style;
+    styleSaid.replaceChildren("This browser uses ", el("strong", { text: chosen ? (styleNames[chosen] || "a style from a plug-in that is now off") : "Starboard's standard colours" }), ".");
+    styleResetBtn.disabled = !chosen;
+  };
+  styleResetBtn.addEventListener("click", () => { resetStyle(); styleShow(); });
+  styleChoose.addEventListener("click", () => $("[data-display-toggle]")?.click());
+  document.addEventListener("stylechange", styleShow);
+  addEventListener("storage", styleShow);  // changed in another tab
+  api("/api/styles").then((r) => { styleNames = Object.fromEntries(r.styles.map((x) => [x.value, `${x.name}, from ${x.plugin}`])); styleShow(); }).catch(styleShow);
+  styleShow();
+  const styleForm = el("div", { class: "stack-2" }, styleSaid, el("div", { class: "actions" }, styleResetBtn, styleChoose));
+
   // Coming up: selects that apply at once.
   const upcomingSelect = (key, labelId, options, message) => {
     const select = el("select", { class: "select", "aria-labelledby": labelId },
@@ -772,6 +790,7 @@ function startGeneral() {
             (v, t) => saveGeneral({ logs: { detail: v } }, `Detailed logging: ${t.toLowerCase()}`)), "lg-detail-l")),
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")))),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
+    section("gn-style", "Style", "Colours from a plug-in, chosen in Display for this browser only. Reset style goes back to Starboard's standard colours and keeps your other Display choices.", styleForm),
     el("div", { id: "testing" }, section("gn-test", "Send feedback", "Report a problem or suggest something from any page. On unless you deactivate it.",
       el("ul", { class: "settings-rows" },
         settingRow("Send feedback", "Feedback in the side menu, on every page, reports a problem, suggests something or checks a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Deactivate it to remove Feedback from the menu.",

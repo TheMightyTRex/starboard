@@ -886,6 +886,16 @@ function styleSwatch(x) {
   return sw;
 }
 
+// Reset style (owner, 10 November 2026): back to Starboard's standard colours in this browser, leaving every other
+// Display choice as it is. In the Display panel and in Settings, General.
+function resetStyle() {
+  const prefs = { ...readPrefs(), style: "" };
+  writePrefs(prefs);
+  applyPrefs(prefs);
+  announce("Style reset to Starboard's standard colours");
+  document.dispatchEvent(new CustomEvent("stylechange"));
+}
+
 function setUpDisplayPanel() {
   const template = $("#display-panel");
   const opener = $("[data-display-toggle]");
@@ -898,8 +908,10 @@ function openDisplayPanel(template, opener) {
   const designList = $("[data-design-options]", form);
   // Styles from plug-ins that are turned on (DASH-284), shown above Design; none, and the list stays hidden.
   const styleList = el("div", { class: "option-cards" });
+  const styleReset = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, icon("rotate-ccw"), "Reset style");
   const styleSet = el("fieldset", { hidden: true }, el("legend", { text: "Style" }),
-    el("p", { class: "hint", text: "Colours and shape from your plug-ins, checked for accessibility. High contrast always wins. This browser only." }), styleList);
+    el("p", { class: "hint", text: "Colours and shape from your plug-ins, checked for accessibility. High contrast always wins. This browser only." }), styleList,
+    el("div", { class: "actions" }, styleReset));
   designList.closest("fieldset").before(styleSet);
   api("/api/styles").then((r) => {
     if (!r.styles.length) return;
@@ -920,6 +932,8 @@ function openDisplayPanel(template, opener) {
   }
   const fill = () => {
     const p = readPrefs();
+    $$("input[name=style]", form).forEach((r) => { r.checked = r.value === (p.style || ""); }); // Reset un-ticks a style too
+    styleReset.disabled = !p.style;
     form.theme.value = p.theme; form.text.value = p.text; form.motion.value = p.motion;
     $$("input[name=design]", form).forEach((r) => { r.checked = r.value === p.design; }); // "" is the dashboard's default
     form.contrast.checked = p.contrast; form.underline.checked = p.underline; form.spacing.checked = p.spacing;
@@ -933,7 +947,12 @@ function openDisplayPanel(template, opener) {
     writePrefs(prefs);
     applyPrefs(prefs);
   };
-  form.addEventListener("change", save);
+  form.addEventListener("change", (e) => {
+    save();
+    styleReset.disabled = !readPrefs().style;
+    if (e.target.name === "style") document.dispatchEvent(new CustomEvent("stylechange"));  // Settings, General shows it
+  });
+  styleReset.addEventListener("click", () => { resetStyle(); fill(); });
   const done = el("button", { type: "button", class: "btn btn--primary", text: "Done" });
   const reset = el("button", { type: "button", class: "btn", text: "Reset" });
   fill();
@@ -942,7 +961,7 @@ function openDisplayPanel(template, opener) {
     onClose: () => opener.setAttribute("aria-expanded", "false") });
   form.addEventListener("submit", (e) => { e.preventDefault(); panel.close(); });
   done.addEventListener("click", () => panel.close());
-  reset.addEventListener("click", () => { writePrefs(DEFAULT_PREFS); applyPrefs(DEFAULT_PREFS); fill(); announce("Display settings reset"); });
+  reset.addEventListener("click", () => { writePrefs(DEFAULT_PREFS); applyPrefs(DEFAULT_PREFS); fill(); announce("Display settings reset"); document.dispatchEvent(new CustomEvent("stylechange")); });
 }
 
 // Every dialog closes with its X button and returns focus (the browser handles Escape and focus trapping).
