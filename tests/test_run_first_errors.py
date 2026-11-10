@@ -277,3 +277,49 @@ install_docker
         self.assertNotIn("/dev/tty", done.stderr)
         self.assertNotIn("NOT FANCY", log)  # drawn in full, as for a person
         self.assertIn("get-docker.sh", log, done.stderr[-500:])
+
+
+class UpdateInstallsTheHelperTest(unittest.TestCase):
+    """DASH-299: ./update.sh installs the set-up helper through tools/install-starter.sh, unless --no-starter turned it
+    off. systemctl and loginctl are stand-ins that write down what they are asked; nothing is installed."""
+
+    def run_it(self, off=False):
+        import os
+        import shutil
+        import subprocess
+        import tempfile
+        from pathlib import Path
+        d = tempfile.mkdtemp()
+        try:
+            for f in ("starter.sh", "deploy/starboard-starter.service", "tools/install-starter.sh"):
+                Path(d, f).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(ROOT / f, Path(d, f))
+            os.chmod(Path(d, "starter.sh"), 0o755)
+            os.chmod(Path(d, "tools/install-starter.sh"), 0o755)
+            Path(d, "data").mkdir()
+            if off:
+                Path(d, "data", "starter-off").touch()
+            bin_dir = Path(d, "bin")
+            bin_dir.mkdir()
+            for name in ("systemctl", "loginctl"):
+                Path(bin_dir, name).write_text(f'#!/bin/sh\necho "{name} $*" >> {d}/asked\nexit 0\n')
+                os.chmod(Path(bin_dir, name), 0o755)
+            home = Path(d, "home")
+            done = subprocess.run([str(Path(d, "tools/install-starter.sh"))], env=dict(os.environ, PATH=f"{bin_dir}:/usr/bin:/bin", HOME=str(home)),
+                                  capture_output=True, text=True, timeout=30)
+            unit = home / ".config/systemd/user/starboard-starter.service"
+            return done, unit.read_text() if unit.exists() else "", Path(d, "asked").read_text() if Path(d, "asked").exists() else "", d
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_the_helper_is_installed_and_started(self):
+        done, unit, asked, d = self.run_it()
+        self.assertEqual(done.returncode, 0)
+        self.assertIn(f"ExecStart={d}/starter.sh", unit)
+        self.assertIn("enable --now starboard-starter.service", asked)
+        self.assertIn("set-up helper is running", done.stdout)
+
+    def test_left_off_after_no_starter(self):
+        done, unit, asked, _ = self.run_it(off=True)
+        self.assertEqual((done.returncode, unit), (0, ""))
+        self.assertNotIn("enable", asked)

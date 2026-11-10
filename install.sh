@@ -21,7 +21,8 @@
 #                         backup drives (installs it with sudo; asks for your password)
 #   --no-pool             Stop using the pool helper (and say how to remove it)
 #   --no-starter          Do not run the set-up helper (starter.sh), which starts the apps and makes the set-up's
-#                         changes for the browser; without it, the Run first window or a command does that
+#                         changes for the browser; without it, the Run first window or a command does that.
+#                         It stays off, updates included, until --starter
 #   --yes                 Do not ask: use the options above, and your last answers (or No) for the rest
 #   --start-apps          Download and start the apps the set-up wrote in data/stack, then stop
 #   --terminal            Finish set-up here in the terminal (password, apps, download hours), with no browser:
@@ -56,6 +57,7 @@ DOCKER=""
 HEALTH=""
 POOL=""
 STARTER=1
+STARTER_SAID=0  # --starter or --no-starter given this time; otherwise an earlier --no-starter (data/starter-off) stands
 APPUSE=""
 LIVETV="-"
 TERMINAL=0
@@ -80,7 +82,8 @@ while [ $# -gt 0 ]; do
     --no-disk-health) HEALTH=0 ;;
     --pool) POOL=1 ;;
     --no-pool) POOL=0 ;;
-    --no-starter) STARTER=0 ;;
+    --no-starter) STARTER=0; STARTER_SAID=1 ;;
+    --starter) STARTER=1; STARTER_SAID=1 ;;
     --yes) ASK=0 ;;
     --terminal) TERMINAL=1 ;;
     --start-apps) START_APPS=1 ;;
@@ -827,7 +830,10 @@ job_starter() {
     echo "The set-up helper is running."
     return 0
   fi
+  if [ "$STARTER_SAID" = 0 ] && [ -e data/starter-off ]; then STARTER=0; fi
+  if [ "$STARTER" = 1 ]; then rm -f data/starter-off; fi
   if [ "$STARTER" != 1 ]; then
+    : > data/starter-off  # ./update.sh leaves it off too
     systemctl --user disable --now starboard-starter.service >/dev/null 2>&1 || true
     rm -f "$unit_dir/starboard-starter.service"
     echo "The set-up helper is off."

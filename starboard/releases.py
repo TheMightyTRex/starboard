@@ -1032,6 +1032,30 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your apps. Dozzle stays if you have it. To go back, run ./update.sh --to v0.15.5."
+    },
+    {
+        "version": "0.16.1",
+        "date": "10 November 2026",
+        "added": [
+            [
+                "The set-up helper with updates",
+                "A server set up before 0.16.0 gets the set-up helper with this update, and later updates keep it. ./install.sh --no-starter turns it off for good, until ./install.sh --starter."
+            ]
+        ],
+        "fixed": [
+            [
+                "Memory that grew with use",
+                "Starboard kept every answer it had fetched for each search, item page and calendar range until it restarted, so its memory grew the more it was used. It now forgets answers once they are out of date and keeps at most 200. On the example server, 2,000 searches no longer add any memory."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests (also as another user), the browser journeys, the API contract tests, the help check, the private details check, the design system copy check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your settings. To go back, run ./update.sh --to v0.16.0."
     }
 ]
 

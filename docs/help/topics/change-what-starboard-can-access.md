@@ -92,7 +92,9 @@ helper runs the installer on the server for you, and the browser shows how it go
 - It runs as your user, never as root, and runs only the installer with the set-up's own answers.
 - It cannot use sudo. When a change needs the server's password, such as disk health, the browser shows the one
   command to run.
-- To stop it, run `./install.sh --no-starter` in the Starboard folder.
+- To stop it, run `./install.sh --no-starter` in the Starboard folder. It then stays off, updates included, until
+  you run `./install.sh --starter`.
+- A server set up before Starboard 0.16.0 gets it with its next update.
 
 ## Things to note
 

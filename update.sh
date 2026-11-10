@@ -114,6 +114,8 @@ git -c advice.detachedHead=false checkout --quiet "$WANT"
 restart
 
 if healthy; then
+  # The set-up helper (DASH-299), from the version just installed: this copy of update.sh may be older.
+  if [ -x tools/install-starter.sh ]; then tools/install-starter.sh || true; fi
   say "Updated to $WANT_NAME"
   exit 0
 fi

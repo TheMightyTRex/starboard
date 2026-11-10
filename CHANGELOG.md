@@ -7,6 +7,17 @@ add features.
 
 ## [Unreleased]
 
+## [0.16.1] (10 November 2026)
+
+### Added
+- **The set-up helper with updates:** A server set up before 0.16.0 gets the set-up helper with this update, and later updates keep it. ./install.sh --no-starter turns it off for good, until ./install.sh --starter. Help: [Change what Starboard can access](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-what-starboard-can-access.md#the-set-up-helper).
+
+### Fixed
+- **Memory that grew with use:** Starboard kept every answer it had fetched for each search, item page and calendar range until it restarted, so its memory grew the more it was used. It now forgets answers once they are out of date and keeps at most 200. On the example server, 2,000 searches no longer add any memory.
+
+### Security
+- **Checks:** The unit tests (also as another user), the browser journeys, the API contract tests, the help check, the private details check, the design system copy check and the security scans ran on this release.
+
 ## [0.16.0] (10 November 2026)
 
 ### Added
@@ -1143,7 +1154,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.16.1...HEAD
+[0.16.1]: https://github.com/TheMightyTRex/starboard/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/TheMightyTRex/starboard/compare/v0.15.5...v0.16.0
 [0.15.5]: https://github.com/TheMightyTRex/starboard/compare/v0.15.4...v0.15.5
 [0.15.4]: https://github.com/TheMightyTRex/starboard/compare/v0.15.3...v0.15.4
