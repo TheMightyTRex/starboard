@@ -199,23 +199,40 @@ def _file(container_name, path, limit):
         return None
 
 
+def _copy_out(container_name, path, dest):
+    """One file from a container to `dest` on disk, through Docker's archive call, a piece at a time (Starboard is
+    light first: a database of hundreds of MB never sits in memory). True when it was copied."""
+    import shutil
+    tar_path = dest + ".tar"
+    try:
+        containers.docker_to_file(f"/containers/{container_name}/archive?path={urllib.parse.quote(path)}", tar_path)
+        with tarfile.open(tar_path) as tar:
+            member = next((m for m in tar.getmembers() if m.isfile()), None)
+            if not member:
+                return False
+            with tar.extractfile(member) as src, open(dest, "wb") as out:
+                shutil.copyfileobj(src, out, 1024 * 1024)
+        return True
+    except (containers.DockerError, tarfile.TarError, OSError):
+        return False
+    finally:
+        try:
+            os.remove(tar_path)
+        except OSError:
+            pass
+
+
 def _from_database(container_name, paths, query):
-    """A value from an app's SQLite database, copied out first (with its write-ahead log) and opened read only, so the
-    app's own file is never touched."""
+    """A value from an app's SQLite database, copied out to a temporary folder first (with its write-ahead log) and
+    opened there, so the app's own file is never touched."""
     import sqlite3
     import tempfile
     for path in paths:
-        data = _file(container_name, path, 200_000_000)
-        if not data:
-            continue
         with tempfile.TemporaryDirectory() as d:
             copy = os.path.join(d, "app.db")
-            with open(copy, "wb") as f:
-                f.write(data)
-            wal = _file(container_name, path + "-wal", 200_000_000)
-            if wal:
-                with open(copy + "-wal", "wb") as f:
-                    f.write(wal)
+            if not _copy_out(container_name, path, copy):
+                continue
+            _copy_out(container_name, path + "-wal", copy + "-wal")
             try:
                 db = sqlite3.connect(copy)
                 try:

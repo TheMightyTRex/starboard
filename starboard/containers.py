@@ -87,6 +87,37 @@ def docker(method, path, body=None, raw=False, timeout=30):
     return json.loads(data) if data else None
 
 
+def docker_to_file(path, dest, limit=2 * 1024 ** 3, timeout=120):
+    """A GET whose answer goes straight to a file, 1 MB at a time, so a large one (an app's database) never sits in
+    memory. Refused past `limit` bytes; the file is removed then."""
+    c = _UnixConnection(timeout)
+    try:
+        c.request("GET", path)
+        r = c.getresponse()
+        if r.status >= 400:
+            raise DockerError(f"Docker answered {r.status}: {r.read(200).decode('utf-8', 'replace')}")
+        total = 0
+        with open(dest, "wb") as f:
+            while True:
+                chunk = r.read(1024 * 1024)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > limit:
+                    raise DockerError("Docker's answer was too big to copy")
+                f.write(chunk)
+    except OSError as e:
+        raise DockerError(f"Cannot reach Docker: {e}") from None
+    except DockerError:
+        try:
+            os.remove(dest)
+        except OSError:
+            pass
+        raise
+    finally:
+        c.close()
+
+
 def _label_version(labels):
     m = re.search(r"version:-\s*(\S+)", labels.get("build_version", ""))  # linuxserver.io images
     if m:

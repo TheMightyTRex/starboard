@@ -43,6 +43,10 @@ class FakeDocker:
             raise containers.DockerError("no such file")
         return tar_of(self.files[(name, want)])
 
+    def to_file(self, path, dest, limit=None, timeout=None):
+        with open(dest, "wb") as f:
+            f.write(self("GET", path, raw=True))
+
 
 BAZARR = b"""general:
   port: 6767
@@ -59,7 +63,8 @@ radarr:
 class ReadKeysTest(unittest.TestCase):
     def read(self, key, files, container="app"):
         with mock.patch.object(containers, "available", return_value=True), \
-                mock.patch.object(containers, "docker", FakeDocker(files)):
+                mock.patch.object(containers, "docker", FakeDocker(files)), \
+                mock.patch.object(containers, "docker_to_file", FakeDocker(files).to_file):
             return discovery.read_key(key, container)
 
     def test_bazarr_is_its_own_key_not_sonarrs(self):
