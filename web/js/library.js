@@ -332,7 +332,7 @@ async function radioDialog(start = 0, added = 0, follow = "all") {
   } catch (e) { problem(e.message); return; }
   added += out.added;
   if (end < page.total) { radioDialog(end, added, follow); return; }
-  const text = added ? `Brought in ${plural(added, ["show", "shows"])}. Reelix is matching your files to their episodes; they show here as it does.` : "Nothing was brought in.";
+  const text = added ? `Brought in ${plural(added, ["show", "shows"])}. Reelix is matching your files to their episodes${follow === "none" ? "" : " and searching for the ones you do not have"}; they show here as it does.` : "Nothing was brought in.";
   $("#lib-import")?.replaceChildren(el("div", { class: "notice", "data-tone": added ? "success" : null, role: "status" }, icon(added ? "circle-check" : "info"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: added ? "Brought in from disk" : "Nothing brought in" }), el("p", { text }))));
   reload();

@@ -124,14 +124,23 @@ def run(cfg, items, follow=DEFAULT_FOLLOW):
         raise ValueError("Choose a match for at least one show")
     roots = _call(cfg, "GET", "/radio/rootfolders") or []
     root = next((r["id"] for r in roots if r.get("accessible", True)), None)
-    added, errors = 0, []
+    added, searched, errors = 0, 0, []
     for i in keep[:200]:
         body = {"provider": str(i["provider"]), "external_id": str(i["external_id"]), "follow": follow, "monitored": True}
         if root is not None:
             body["root_folder_id"] = root
         try:
-            _call(cfg, "POST", "/radio/shows", body)
+            show = _call(cfg, "POST", "/radio/shows", body) or {}
             added += 1
         except ValueError as e:
             errors.append({"title": str(i.get("title") or i["external_id"]), "message": str(e)})
-    return {"added": added, "errors": errors}
+            continue
+        # Search for what is missing now (owner, 10 November 2026), not at Reelix's next scheduled search. A search
+        # that cannot start is not a problem with the show: Reelix's own schedule searches later.
+        if follow != "none" and isinstance(show, dict) and str(show.get("id", "")).isdigit():
+            try:
+                _call(cfg, "POST", f"/radio/shows/{int(show['id'])}/search", {})
+                searched += 1
+            except ValueError:
+                pass
+    return {"added": added, "searched": searched, "errors": errors}

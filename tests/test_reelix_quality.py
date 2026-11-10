@@ -143,6 +143,8 @@ class RadioImportTest(unittest.TestCase):
                 return [{"id": 7, "path": "/data/media/radio", "accessible": True}]
             if path == "/radio/shows" and method == "POST":
                 return {"id": 1}
+            if path == "/radio/shows/1/search":
+                return {}
             return {}
         with mock.patch.object(ri, "_call", call):
             page = ri.scan(None)
@@ -151,7 +153,8 @@ class RadioImportTest(unittest.TestCase):
             self.assertTrue(castle["sure"])
             self.assertEqual(next(i for i in page["items"] if i["title"] == "Unknown Show")["matches"], [])
             out = ri.run(None, [castle["matches"][0]])
-        self.assertEqual(out, {"added": 1, "errors": []})
+        self.assertEqual(out, {"added": 1, "searched": 1, "errors": []})
+        self.assertIn(("POST", "/radio/shows/1/search", {}), calls)  # what is missing is searched for at once
         added = next(b for m, p, b in calls if m == "POST")
         self.assertEqual((added["follow"], added["root_folder_id"]), ("all", 7))  # fill the gaps, the owner's choice
         with self.assertRaisesRegex(ValueError, "Choose what Reelix gets"):
