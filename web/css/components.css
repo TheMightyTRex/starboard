@@ -4957,6 +4957,72 @@
       display: none;
     }
   }
+  /* Sortable list (UX-51): rows in an order the person sets, by dragging the handle or with Move up and Move down.
+     A marker row (such as "Stop upgrading here") is a dashed line with its words, moved the same way. */
+  .sortable {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sortable__row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--control-h);
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+  }
+  .sortable__handle {
+    display: inline-grid;
+    place-items: center;
+    inline-size: 32px;
+    block-size: 32px;
+    color: var(--color-text-muted);
+    cursor: grab;
+    touch-action: none;
+  }
+  .sortable__label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .sortable__meta {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .sortable__moves {
+    display: inline-flex;
+    gap: var(--space-1);
+  }
+  .sortable__row.is-dragging {
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-raised);
+    cursor: grabbing;
+  }
+  .sortable__row--marker {
+    border: 0;
+    border-block-start: 2px dashed var(--color-accent);
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-accent);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-strong);
+  }
+  .sortable__row--off .sortable__label {
+    color: var(--color-text-muted);
+  }
+  @media (max-width: 480px) {
+    .sortable__row { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .sortable__meta { grid-column: 2; grid-row: 2; }
+  }
+  @media (forced-colors: active) {
+    .sortable__row--marker { border-block-start-color: Highlight; color: Highlight; }
+    .sortable__row.is-dragging { outline: 2px solid Highlight; }
+  }
 }
 
 /* A plug-in style's two colours in the Display panel (DASH-284): decoration only, the name says it. */

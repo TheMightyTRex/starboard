@@ -593,6 +593,69 @@
     });
   }
 
+
+  /* Sortable list (UX-51): rows put in order, such as qualities best first. Each row has Move up and Move down
+     buttons (the keyboard and screen reader way, and the way on a phone), and a handle to drag with a mouse or a
+     finger. A row can be a marker, such as "Stop upgrading here", moved the same way. Each move says where the row is
+     now, keeps the keyboard on the button pressed, and sends a "sortable-change" event with the new order (each
+     row's data-value) for the app to save. Buttons are never disabled: at an end they say so instead. */
+  function sortableLabel(row) {
+    return (row.querySelector(".sortable__label")?.textContent || row.textContent).trim();
+  }
+  function sortableMoved(list, row, said) {
+    const rows = [...list.querySelectorAll(":scope > .sortable__row")];
+    const where = rows.indexOf(row) + 1;
+    announcer("sortable-status", "status").textContent = said || `${sortableLabel(row)}: ${where} of ${rows.length}`;
+    list.dispatchEvent(new CustomEvent("sortable-change", { bubbles: true, detail: { order: rows.map((r) => r.dataset.value), moved: row.dataset.value } }));
+  }
+  function sortableMove(list, row, by) {
+    const sibling = by < 0 ? row.previousElementSibling : row.nextElementSibling;
+    if (!sibling || !sibling.classList.contains("sortable__row")) {
+      announcer("sortable-status", "status").textContent = `${sortableLabel(row)} is already ${by < 0 ? "at the top" : "at the bottom"}`;
+      return;
+    }
+    if (by < 0) sibling.before(row);
+    else sibling.after(row);
+    sortableMoved(list, row);
+  }
+  function setupSortables(root = document) {
+    root.querySelectorAll(".sortable").forEach((list) => {
+      if (list.dataset.ready) return;
+      list.dataset.ready = "1";
+      list.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-move]");
+        if (!button || !list.contains(button)) return;
+        sortableMove(list, button.closest(".sortable__row"), button.dataset.move === "up" ? -1 : 1);
+        button.focus();
+      });
+      // Dragging by the handle: the row follows the pointer and settles between the rows either side.
+      let dragging = null;
+      list.addEventListener("pointerdown", (event) => {
+        const handle = event.target.closest(".sortable__handle");
+        if (!handle || !list.contains(handle) || event.button > 0) return;
+        dragging = handle.closest(".sortable__row");
+        dragging.classList.add("is-dragging");
+        handle.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      });
+      list.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        const rows = [...list.querySelectorAll(":scope > .sortable__row:not(.is-dragging)")];
+        const after = rows.find((r) => { const box = r.getBoundingClientRect(); return event.clientY < box.top + box.height / 2; });
+        if (after) { if (dragging.nextElementSibling !== after) after.before(dragging); }
+        else if (list.lastElementChild !== dragging) list.append(dragging);
+      });
+      const drop = () => {
+        if (!dragging) return;
+        dragging.classList.remove("is-dragging");
+        sortableMoved(list, dragging);
+        dragging = null;
+      };
+      list.addEventListener("pointerup", drop);
+      list.addEventListener("pointercancel", drop);
+    });
+  }
+
   function setup(root) {
     setupMenus(root);
     setupShelves(root);
@@ -604,8 +667,9 @@
     setupSearch(root);
     setupDisplay(root);
     setupAzJump(root);
+    setupSortables(root);
   }
-  window.SharedComponents = { setup, setupSearch, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo };
+  window.SharedComponents = { setup, setupSearch, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo };
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");
