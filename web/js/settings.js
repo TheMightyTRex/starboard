@@ -2116,7 +2116,8 @@ async function startSecurity() {
         settingRow("Phones and other computers on your home network", result, el("label", { class: "switch" }, access), "net-l")),
       addresses, forced),
     section("sc-pw", "Password", "At least 10 characters; a short sentence is easy to remember. You stay signed in here and everyone else is signed out.", pwForm),
-    section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm));
+    section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm),
+    section("sc-keys", "API keys", "For other apps, scripts and AI assistants that read Starboard. Each key only reads, and is shown once.", apiKeys()));
   daysForm.append(
       el("ul", { class: "settings-rows" },
         el("li", { class: "setting" },
@@ -2130,6 +2131,46 @@ async function startSecurity() {
         settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Activate when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
         settingRow("Sign out", "This browser, or every browser and phone at once.", el("div", { class: "actions session-actions" }, signOut, everywhere), "signout-l")));
   showNetwork();
+}
+
+// API keys (DASH-274): read-only keys for /api/v1, made with the password and shown once.
+function apiKeys() {
+  const box = el("div", { class: "stack-4" });
+  const list = el("ul", { class: "rows", "aria-live": "polite" });
+  const draw = (keys) => list.replaceChildren(...(keys.length ? keys.map((k) => {
+    const revoke = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Revoke", el("span", { class: "visually-hidden", text: ` ${k.name}` }));
+    revoke.addEventListener("click", async () => {
+      if (!await confirmDialog({ title: `Revoke ${k.name}?`, message: "Anything using this key stops working at once.", confirm: "Revoke", danger: true })) return;
+      try { draw((await api(`/api/keys/${k.id}`, { method: "DELETE" })).keys); toast(`${k.name} revoked`); } catch (e) { problem(e.message, revoke); }
+    });
+    const meta = [k.scopes.length ? `Reads ${k.scopes.join(", ")}` : "Reads everything", k.expires_at ? `ends ${new Date(k.expires_at).toLocaleDateString()}` : "never ends",
+      k.last_used_at ? `last used ${new Date(k.last_used_at).toLocaleString()}` : "not used yet"].join(" · ");
+    return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: k.name }), el("div", { class: "row__meta", text: `${k.prefix}… · ${meta}` })),
+      el("div", { class: "row__side" }, revoke));
+  }) : [el("li", { class: "empty", text: "No keys yet." })]));
+  const name = el("input", { class: "input", id: "key-name", autocomplete: "off", placeholder: "Home Assistant" });
+  const ends = el("select", { class: "select", id: "key-ends" }, [["90", "In 90 days"], ["365", "In a year"], ["never", "Never"]].map(([v, t]) => el("option", { value: v, text: t })));
+  const pw = el("input", { class: "input", id: "key-password", type: "password", autocomplete: "current-password" });
+  const shown = el("div", { "aria-live": "polite" });
+  const form = el("form", { class: "form-stack", novalidate: true }, field("Name it after what will use it", name), field("Ends", ends), field("Your Starboard password", pw),
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Make a key" })));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const r = await api("/api/keys", { method: "POST", body: { name: name.value, expires_days: ends.value, password: pw.value } });
+      pw.value = ""; name.value = "";
+      const value = el("input", { class: "input", id: "key-made", readonly: true, value: r.key, spellcheck: "false" });
+      const copy = el("button", { type: "button", class: "btn" }, icon("copy"), "Copy");
+      copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(r.key); toast("Key copied"); } catch { value.select(); } });
+      shown.replaceChildren(notice("success", "Copy the key now", "Starboard shows it only this once. Send it as Authorization: Bearer, never in an address."),
+        field(`${r.item.name}'s key`, value), el("div", { class: "actions" }, copy));
+      value.focus(); value.select();
+      draw((await api("/api/keys")).keys);
+    } catch (err) { problem(err.message, form); }
+  });
+  api("/api/keys").then((r) => draw(r.keys)).catch((e) => list.replaceChildren(el("li", { class: "empty", text: e.message })));
+  box.append(list, shown, form, el("p", { class: "small muted" }, "What the API offers: ", el("a", { href: "/api/v1/openapi.json", text: "the API description (OpenAPI)" }), "."));
+  return box;
 }
 
 // Update settings (the footer's About and updates) ---------------------------------

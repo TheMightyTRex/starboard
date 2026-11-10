@@ -793,6 +793,9 @@ class Handler(BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
         if path == "/healthz":
             return self.send(200, b"ok", "text/plain; charset=utf-8")
+        if path.startswith("/api/v1/") or path == "/api/v1":  # the public API, with its own keys (DASH-274)
+            from . import api_v1
+            return api_v1.handle(self, "GET", path)
         if path.startswith("/api/"):
             return self.api("GET", path)
         if path.startswith("/iptv/"):
@@ -834,6 +837,10 @@ class Handler(BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
         if not path.startswith("/api/"):
             return self.error(405, "Not allowed")
+        if path.startswith("/api/v1/") or path == "/api/v1":  # keys, not the browser's session: no Origin check
+            from . import api_v1
+            self.close_connection = True  # its body is not read
+            return api_v1.handle(self, method, path)
         if not self.same_origin():
             self.close_connection = True  # its body was not read, so the connection cannot carry another request
             return self.error(403, "Blocked: this request did not come from the dashboard")
@@ -1894,6 +1901,25 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
+            if path == "/api/keys" and method == "GET":  # API keys (DASH-274): never their secrets
+                from . import api_v1
+                return self.json(200, {"keys": api_v1.list_keys(app.data_dir), "scopes": api_v1.SCOPES, "rights": api_v1.RIGHTS},
+                                 {"Cache-Control": "no-store"})
+            if path == "/api/keys" and method == "POST":
+                from . import api_v1
+                body = self.body()
+                self.check_password(body)
+                key, item = api_v1.create_key(app.data_dir, body.get("name"), body.get("right", "read"), body.get("scopes"),
+                                              body.get("expires_days", 90))
+                logs.event("info", "security", f"API key made: {item['name']}")
+                return self.json(200, {"key": key, "item": item}, {"Cache-Control": "no-store"})
+            m = re.match(r"^/api/keys/([0-9a-f]{6})$", path)
+            if m and method == "DELETE":
+                from . import api_v1
+                if not api_v1.revoke_key(app.data_dir, m.group(1)):
+                    return self.error(404, "No key with that id")
+                logs.event("info", "security", "API key revoked")
+                return self.json(200, {"keys": api_v1.list_keys(app.data_dir)})
             if path == "/api/sessions/end-all" and method == "POST":
                 # The password again (DASH-280), as changing it asks: a stolen session cannot lock everyone out.
                 self.check_password(self.body())
