@@ -1957,6 +1957,12 @@ def step_storage(api, term, state):
     return True
 
 
+def _graphics():
+    """The graphics chip, found the same way as the browser set-up finds it (DASH-82)."""
+    from . import stack
+    return stack.graphics_chip()
+
+
 def step_apps(api, term, state):
     """Sets state["choice"] (the Install apps choice) and state["names"], or None to install nothing."""
     install = state.get("restore_install") if state.get("start") == "restore" else None
@@ -2023,7 +2029,8 @@ def step_apps(api, term, state):
             last.update(data_dir=data_dir, config_dir=config_dir, chosen=c["apps"], groups=None)
             state["apps"] = last
             state["choice"] = {"apps": c["apps"], "groups": c["groups"], "data_dir": data_dir, "config_dir": config_dir,
-                               "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"], "reelix_edition": c["reelix_edition"]}
+                               "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"], "reelix_edition": c["reelix_edition"],
+                               "graphics": _graphics()}  # as the browser set-up does (DASH-82)
             state["names"] = [names.get(k, k) for k in c["apps"]]
             return True
         last["chosen"] = c["apps"]
@@ -2079,7 +2086,8 @@ def step_apps(api, term, state):
     last.update(data_dir=data_dir, config_dir=config_dir)
     state["apps"] = last
     state["choice"] = {"apps": [a["key"] for a in chosen], "groups": sorted(keys), "data_dir": data_dir, "config_dir": config_dir,
-                       "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"], "reelix_edition": edition}
+                       "puid": d["puid"], "pgid": d["pgid"], "tz": d["tz"], "reelix_edition": edition,
+                       "graphics": _graphics()}  # as the browser set-up does (DASH-82)
     state["names"] = [a["name"] for a in chosen]
     return True
 

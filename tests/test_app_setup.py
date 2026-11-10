@@ -59,6 +59,11 @@ class Jellyfin(Stand):
             name = path.split("name=")[1].split("&")[0]
             s["libraries"].append((name, body["LibraryOptions"]["PathInfos"][0]["Path"]))
             return self.answer(204)
+        if path == "/System/Configuration/encoding":
+            if method == "POST":
+                s["encoding"] = body
+                return self.answer(204)
+            return self.answer(200, s.get("encoding", {"HardwareAccelerationType": "none", "EnableTonemapping": False}))
         if path == "/Auth/Keys" and method == "GET":
             return self.answer(200, {"Items": [{"AppName": "Starboard", "AccessToken": "jf-key"}] if s.get("key") else []})
         if path.startswith("/Auth/Keys?"):
@@ -138,6 +143,17 @@ class FirstRuns(unittest.TestCase):
         self.assertEqual(len(done), 3)
         _, again, _ = app_setup.jellyfin_first_run(base, PASSWORD, {"movies", "tv"})
         self.assertEqual(again, [])
+
+    def test_jellyfin_uses_the_graphics_chip_unless_someone_chose(self):
+        state = {"done": False, "libraries": []}
+        srv, base = serve(Jellyfin, state)
+        self.addCleanup(srv.shutdown)
+        _, done, _ = app_setup.jellyfin_first_run(base, PASSWORD, {"movies"}, graphics="intel")
+        self.assertIn("Jellyfin converts video with the Intel graphics chip", done)
+        self.assertEqual((state["encoding"]["HardwareAccelerationType"], state["encoding"]["EnableTonemapping"]), ("qsv", False))
+        state["encoding"]["HardwareAccelerationType"] = "nvenc"
+        _, again, _ = app_setup.jellyfin_first_run(base, PASSWORD, {"movies"}, graphics="amd")
+        self.assertEqual((again, state["encoding"]["HardwareAccelerationType"]), ([], "nvenc"))
 
     def test_jellyfin_set_up_by_someone_else_says_what_to_do(self):
         state = {"done": True, "libraries": [], "user": ("someone", "other")}

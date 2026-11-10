@@ -510,6 +510,26 @@ def switch_reelix(data_dir, edition, check=None):
     return m.group(2), new
 
 
+RENDER_NODE = "/dev/dri/renderD128"
+VENDORS = {"0x8086": "intel", "0x1002": "amd"}
+
+
+def graphics_chip(node=RENDER_NODE, sys_root="/sys/class/drm"):
+    """The graphics chip Jellyfin can convert video with (DASH-82): {"vendor": "intel"|"amd"|"other", "gid": the
+    render group's number}, or None when this computer has none (a Raspberry Pi, a server without one). Read from
+    the device itself, so it needs nothing installed."""
+    try:
+        gid = os.stat(node).st_gid
+    except OSError:
+        return None
+    try:
+        with open(os.path.join(sys_root, os.path.basename(node), "device", "vendor"), encoding="utf-8") as f:
+            vendor = VENDORS.get(f.read().strip().lower(), "other")
+    except OSError:
+        vendor = "other"
+    return {"vendor": vendor, "gid": gid}
+
+
 def build(choice):
     """The Compose file and .env for the ticked apps. choice: {apps, config_dir, data_dir, puid, pgid, tz, vpn,
     reelix_edition ("lite", the default, or "full")}.
@@ -532,6 +552,10 @@ def build(choice):
     vpn = "gluetun" in keys
     vpn_choice = choice.get("vpn") or {}
     env = {"PUID": str(puid), "PGID": str(pgid), "TZ": tz, "CONFIG_DIR": config_dir, "DATA_DIR": data_dir}
+    graphics = choice.get("graphics") if "jellyfin" in keys else None  # DASH-82: found by graphics_chip()
+    if graphics:
+        env["RENDER_GID"] = str(int(graphics["gid"]))
+        env["GRAPHICS_VENDOR"] = graphics.get("vendor") if graphics.get("vendor") in ("intel", "amd") else "other"
     shown = dict(env)
     if vpn:
         provider = str(vpn_choice.get("provider", "")).strip().lower()
@@ -569,10 +593,14 @@ def build(choice):
             lines.append('    profiles: ["later"]  # needs its own settings file first: docker compose --profile later up -d')
             later.append(a["name"])
         devices = (["/dev/net/tun:/dev/net/tun"] if a.get("gluetun") else []) + list(keep.get("devices") or [])
+        if key == "jellyfin" and graphics:  # the graphics chip converts video instead of the processor (DASH-82)
+            devices.append("/dev/dri:/dev/dri")
         if a.get("gluetun"):
             lines += ["    cap_add:", "      - NET_ADMIN"]
         if devices:
             lines += ["    devices:"] + [f"      - {_yaml_value(d)}" for d in dict.fromkeys(devices)]
+        if key == "jellyfin" and graphics:
+            lines += ["    group_add:", '      - "${RENDER_GID}"']
         ports = []
         port_map = keep.get("port_map") or {}
         for p in a.get("ports", []):
@@ -763,6 +791,8 @@ def current_choice(data_dir):
     choice = {"apps": [k for k in keys if k in APPS], "config_dir": env["CONFIG_DIR"], "data_dir": env["DATA_DIR"],
               "puid": int(env.get("PUID", 1000)), "pgid": int(env.get("PGID", 1000)), "tz": env.get("TZ", "Etc/UTC"),
               "reelix_edition": edition_of(image) or "lite"}
+    if str(env.get("RENDER_GID", "")).isdigit():
+        choice["graphics"] = {"gid": int(env["RENDER_GID"]), "vendor": env.get("GRAPHICS_VENDOR") or "other"}
     vpn = {field: env[name] for name, field in VPN_ENV.items() if env.get(name)}
     if vpn:
         choice["vpn"] = vpn

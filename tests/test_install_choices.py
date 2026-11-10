@@ -38,6 +38,26 @@ class InstallChoicesTest(unittest.TestCase):
         self.assertNotIn("storyarr", c["apps"])
         self.assertNotIn("kapowarr", c["apps"])
 
+    def test_graphics_chip_goes_to_jellyfin_and_comes_back(self):
+        import os
+        import tempfile
+        c = {"apps": ["jellyfin"], "config_dir": "/srv/config", "data_dir": "/srv/media", "graphics": {"vendor": "intel", "gid": 993}}
+        built = stack.build(c)
+        self.assertIn('      - "/dev/dri:/dev/dri"', built["compose"])
+        self.assertIn('    group_add:\n      - "${RENDER_GID}"', built["compose"])
+        self.assertIn("RENDER_GID=993", built["env"])
+        self.assertIn("GRAPHICS_VENDOR=intel", built["env"])
+        self.assertNotIn("/dev/dri", stack.build({**c, "graphics": None})["compose"])
+        with tempfile.TemporaryDirectory() as d:
+            node, sys_root = os.path.join(d, "renderD128"), os.path.join(d, "sys")
+            self.assertIsNone(stack.graphics_chip(node, sys_root=sys_root))
+            open(node, "w").close()
+            self.assertEqual(stack.graphics_chip(node, sys_root=sys_root)["vendor"], "other")
+            os.makedirs(os.path.join(sys_root, "renderD128", "device"))
+            with open(os.path.join(sys_root, "renderD128", "device", "vendor"), "w") as f:
+                f.write("0x8086\n")
+            self.assertEqual(stack.graphics_chip(node, sys_root=sys_root), {"vendor": "intel", "gid": os.stat(node).st_gid})
+
     def test_everything_is_every_app_offered(self):
         c = stack.install_choice("all", check=downloadable)
         self.assertEqual(sorted(c["apps"]), sorted(k for k in stack.offered() if k != "sabnzbd"))  # one Usenet app

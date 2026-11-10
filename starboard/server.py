@@ -1485,6 +1485,8 @@ class Handler(BaseHTTPRequestHandler):
                     setup_answers.clean_usenet(choice.get("usenet_server"))
                 except ValueError as e:
                     return self.error(400, str(e))
+                if "graphics" not in choice:  # Jellyfin uses the graphics chip when this computer has one (DASH-82)
+                    choice = {**choice, "graphics": stack.graphics_chip()}
                 built = stack.build(choice)
                 own = stack.own_services(app.data_dir)  # apps added by hand stay, so starting does not remove them
                 if own:

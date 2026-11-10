@@ -62,7 +62,7 @@ def _jf_auth(token=None):
     return {"Authorization": words + (f', Token="{token}"' if token else "")}
 
 
-def jellyfin_first_run(base, password, groups, country="GB", user=ADMIN, opener=None):
+def jellyfin_first_run(base, password, groups, country="GB", user=ADMIN, opener=None, graphics=None):
     """Finishes Jellyfin's start-up wizard when it has not run, signs in, adds the libraries for what was chosen and
     returns (API key, lines of what was done)."""
     done = []
@@ -94,8 +94,23 @@ def jellyfin_first_run(base, password, groups, country="GB", user=ADMIN, opener=
         _call(base, "POST", f"/Library/VirtualFolders?{query}", {"LibraryOptions": {"PathInfos": [{"Path": folder}]}},
               headers=auth, opener=opener)
         done.append(f"Added the {name} library to Jellyfin")
+    if graphics in ("intel", "amd"):
+        done += _jf_graphics(base, auth, graphics, opener)
     key = _jf_key(base, auth, opener)
     return key, done, {}
+
+
+def _jf_graphics(base, auth, vendor, opener):
+    """Hardware conversion with the graphics chip (DASH-82): Intel Quick Sync or AMD's VA-API, on the device Install
+    apps passed through. Left alone when someone has already chosen a kind of hardware conversion."""
+    current = _call(base, "GET", "/System/Configuration/encoding", headers=auth, opener=opener) or {}
+    if current.get("HardwareAccelerationType") not in (None, "", "none"):
+        return []
+    kind = "qsv" if vendor == "intel" else "vaapi"
+    _call(base, "POST", "/System/Configuration/encoding",
+          {**current, "HardwareAccelerationType": kind, "VaapiDevice": "/dev/dri/renderD128", "EnableHardwareEncoding": True,
+           "HardwareDecodingCodecs": ["h264", "hevc", "mpeg2video", "vc1", "vp8", "vp9", "av1"]}, headers=auth, opener=opener)
+    return [f"Jellyfin converts video with the {'Intel' if vendor == 'intel' else 'AMD'} graphics chip"]
 
 
 def _jf_key(base, auth, opener):
@@ -256,7 +271,8 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
         if not base:
             continue
         try:
-            extra = {"country": country_from_tz(os.environ.get("TZ")) or "GB"} if key == "jellyfin" else {}
+            extra = {"country": country_from_tz(os.environ.get("TZ")) or "GB",
+                     "graphics": stack.env_values(data_dir).get("GRAPHICS_VENDOR")} if key == "jellyfin" else {}
             api_key, lines, more = run(base, password, groups, opener=opener, **extra)
         except AppSetupError as e:
             done.append(f"{name} is not set up yet: {e}")
