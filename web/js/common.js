@@ -628,12 +628,40 @@ async function appChangeNotices() {
   }
 }
 
-// The upgrade guide inside a slide-out (?panel=1): only its steps, without the menus around them.
-if (new URLSearchParams(location.search).get("panel") === "1" && window.parent !== window) document.documentElement.classList.add("in-panel");
+// A page inside a slide-out (?panel=1), such as the upgrade guide or a Still to set up step: only its content,
+// without the menus around it, and without its own wizard, Send feedback or upgrade notice (the page around it has them).
+const IN_PANEL = new URLSearchParams(location.search).get("panel") === "1" && window.parent !== window;
+if (IN_PANEL) document.documentElement.classList.add("in-panel");
+// A link to a part of a page (#rx-basics-h) whose part is drawn after the page loads: scroll to it once it is there,
+// and put the keyboard there too. Stops looking after 8 seconds; a page with no #part does nothing.
+if (location.hash.length > 1) {
+  const want = decodeURIComponent(location.hash.slice(1));
+  const reach = () => {
+    const target = document.getElementById(want);
+    if (!target) return false;
+    target.scrollIntoView({ block: "start" });
+    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+    return true;
+  };
+  document.addEventListener("DOMContentLoaded", () => {
+    if (reach()) return;
+    const watch = new MutationObserver(() => { if (reach()) watch.disconnect(); });
+    watch.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => watch.disconnect(), 8000);
+  });
+}
+// The address of a Starboard page for a slide-out: ?panel=1 before any #part, such as /settings-reelix.html#rx-indexers-h.
+function panelUrl(href) {
+  const url = new URL(href, location.origin);
+  url.searchParams.set("panel", "1");
+  return url.pathname + url.search + url.hash;
+}
 
 // Still to set up, one at a time (DASH-289, owner, 10 November 2026): a slide-out that walks through each item left,
-// with Do it now (the place that does it), Skip (later), Ignore (not asked again; Bring back in the list), Done for
-// a guided step, and Next step. It opens by itself once in each browser session while anything is left, and
+// with Skip (later), Ignore (not asked again; Bring back in the list), Done for a guided step, and Next step.
+// Starboard's own steps show their page inside the slide-out, so the set-up is done there (owner, 10 November
+// 2026); another app's step (Tdarr, Wizarr...) opens that app in a new tab, as apps do not let Starboard frame them. It opens by itself once in each browser session while anything is left, and
 // remembers where it was when Do it now goes to another page.
 const WIZARD_KEY = "starboard.setup-wizard";
 function wizardMemory(update) {
@@ -649,7 +677,15 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
   const mem = wizardMemory({ opened: true });
   let index = Math.max(0, items.findIndex((i) => i.key === mem.at));
   // Closing it (X or Escape) ends this session's walk-through; Do it now leaves the page, so it carries on there.
-  const panel = sidePanel({ title: "Still to set up", opener, wide: false, body: [], onClose: () => { wizardMemory({ at: null }); onChange?.(); } });
+  const panel = sidePanel({ title: "Still to set up", opener, wide: true, body: [], onClose: () => { wizardMemory({ at: null }); onChange?.(); } });
+  // After a step's page saves, Next step asks again, so a finished step says so and leaves the list.
+  const recheck = async (item) => {
+    try {
+      const now = (await api("/api/setup/left")).items.find((i) => i.key === item.key);
+      if (now && now.done) { announce(`${item.title}: done`); onChange?.(); return true; }
+    } catch { /* carry on */ }
+    return false;
+  };
   const draw = () => {
     if (index >= items.length) {
       panel.body.replaceChildren(el("div", { class: "stack-4" }, el("h3", { text: "That is all for now" }),
@@ -665,17 +701,21 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
     wizardMemory({ at: item.key });
     const heading = el("h3", { tabindex: "-1", text: item.title });
     const outside = item.href.startsWith("http");
-    const doIt = el("a", { class: "btn btn--primary", href: outside ? reachableUrl(item.href) : item.href, ...(outside ? { target: "_blank", rel: "noopener" } : {}) },
-      "Do it now", outside ? el("span", { class: "visually-hidden", text: " (opens in a new tab)" }) : null);
+    const doIt = outside ? el("a", { class: "btn btn--primary", href: reachableUrl(item.href), target: "_blank", rel: "noopener" },
+      "Open the app", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
+      : el("a", { class: "btn btn--quiet", href: item.href }, "Open as a page");
+    const frame = outside ? null : el("iframe", { class: "panel-frame wizard-frame", src: panelUrl(item.href), title: `${item.title}: set it up here` });
     const doneBtn = item.guided ? el("button", { type: "button", class: "btn" }, "Done") : null;
     doneBtn?.addEventListener("click", async () => {
       try { await api("/api/setup/left/done", { method: "POST", body: { key: item.key } }); announce(`${item.title}: done`); items.splice(index, 1); draw(); onChange?.(); }
       catch (e) { problem(e.message, doneBtn); }
     });
     const bar = el("div", { class: "wizard-steps", "aria-hidden": "true" }, items.map((_, i) => el("span", { class: i < index ? "is-past" : i === index ? "is-now" : "" })));
-    panel.body.replaceChildren(el("div", { class: "stack-4" },
-      el("p", { class: "small muted", text: `Step ${index + 1} of ${items.length}` }), bar, heading,
-      el("p", { text: item.why }), el("div", { class: "actions" }, doIt, doneBtn)));
+    panel.body.replaceChildren(el("div", { class: frame ? "wizard-step wizard-step--framed" : "wizard-step" },
+      el("div", { class: "stack-4 wizard-step__head" },
+        el("p", { class: "small muted", text: `Step ${index + 1} of ${items.length}` }), bar, heading,
+        el("p", { text: item.why }), el("div", { class: "actions" }, doIt, doneBtn)),
+      frame));
     const skip = el("button", { type: "button", class: "btn", text: "Skip" });
     skip.addEventListener("click", () => { index += 1; draw(); announce("Skipped for now"); });
     const ignore = el("button", { type: "button", class: "btn btn--quiet", text: "Ignore" });
@@ -684,7 +724,11 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
       catch (e) { problem(e.message, ignore); }
     });
     const next = el("button", { type: "button", class: "btn btn--primary", text: index === items.length - 1 ? "Finish" : "Next step" });
-    next.addEventListener("click", () => { index += 1; draw(); });
+    next.addEventListener("click", async () => {
+      next.disabled = true;
+      if (!item.guided && await recheck(item)) { items.splice(index, 1); draw(); return; }
+      index += 1; draw();
+    });
     panel.setFoot([next, skip, ignore]);
     heading.focus();
   };
@@ -693,7 +737,7 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
 // Once in each browser session, on the page with the list, while anything is left.
 let wizardStarted = false;
 function setupWizardOnce(onChange) {
-  if (wizardStarted || $("#side-panel")) return;  // a page that redraws (the dashboard, each minute) asks only once
+  if (wizardStarted || IN_PANEL || $("#side-panel")) return;  // a page that redraws (the dashboard, each minute) asks only once
   wizardStarted = true;
   const mem = wizardMemory();
   if (mem.opened && !mem.at) return;
@@ -703,7 +747,7 @@ function setupWizardOnce(onChange) {
 // After an upgrade: with something to choose, a notice opens the upgrade guide (or waits, with Remind me later);
 // with nothing to choose, the upgrade is marked as seen and the notes stay under the version.
 function upgradeNotice(upgrade) {
-  if (!upgrade || upgrade.from === upgrade.to || /\/(upgrade|setup-guide)\.html$/.test(location.pathname)) return;
+  if (!upgrade || IN_PANEL || upgrade.from === upgrade.to || /\/(upgrade|setup-guide)\.html$/.test(location.pathname)) return;
   if (!upgrade.wizard) { api("/api/releases/seen", { method: "POST" }).catch(() => {}); return; }
   try { if (sessionStorage.getItem(`upgrade-later-${upgrade.to}`)) return; } catch { /* show it */ }
   const main = $("#main .page");
@@ -813,6 +857,7 @@ function wireDialog(dialog) {
 // issue on Starboard's repository, or is saved in Starboard (data/ux-notes.json, listed in Settings, General).
 // It sends without cookies, so a key given while signed in stands in. The script loads only while it is on.
 async function startFeedback(session) {
+  if (IN_PANEL) return;  // the page around the slide-out has it
   if (!session?.version) session = await api("/api/session").catch(() => ({}));
   const { key } = await api("/api/feedback/key");
   const inMenu = $$("[data-feedback-open]");

@@ -4966,7 +4966,7 @@
 /* The upgrade guide in a slide-out (Choose now): the frame fills the panel, and the page inside shows only the guide. */
 .panel-frame { display: block; inline-size: 100%; block-size: 100%; min-block-size: 70vh; border: 0; background: var(--color-bg); }
 .side-panel__body:has(> .panel-frame) { padding: 0; display: flex; }
-:root.in-panel :is(.rail, .site-header, .site-footer, .skip-link, .menu-tabs) { display: none !important; }
+:root.in-panel :is(.rail, .site-header, .site-footer, .skip-link, .menu-tabs, [data-sign-out]) { display: none !important; }
 :root.in-panel body.with-rail { padding-inline-start: 0; }
 :root.in-panel .page-head h1 { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
 
@@ -4985,3 +4985,12 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
 .wizard-steps .is-past { background: var(--color-text-muted); }
 .wizard-steps .is-now { background: var(--color-accent); }
 @media (forced-colors: active) { .wizard-steps span { border: 1px solid CanvasText; } .wizard-steps .is-now { background: Highlight; } }
+
+/* Still to set up (DASH-289, owner, 10 November 2026): a Starboard step shows its own page in the slide-out, under
+   the step's title, so the set-up is done there. The page fills what is left of the slide-out and scrolls itself. */
+.wizard-step { display: flex; flex-direction: column; gap: var(--space-4); block-size: 100%; }
+.wizard-step--framed { gap: 0; }
+.wizard-step--framed .wizard-step__head { padding: var(--space-4); border-block-end: 1px solid var(--color-divider); }
+.side-panel__body:has(> .wizard-step--framed) { padding: 0; display: flex; }
+.side-panel__body > .wizard-step--framed { flex: 1; min-block-size: 0; }
+.wizard-frame { flex: 1; min-block-size: 50vh; }

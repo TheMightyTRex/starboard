@@ -630,7 +630,7 @@ function reelixAdminSections() {
     const full = a.edition === "full";
     holder.replaceChildren(
       rxBasicsSection(),
-      full ? rxDirectSection() : null,
+      ...(full ? [rxDirectSection()] : []),  // replaceChildren writes a null as the word "null"
       rxKindSection("indexers", "The sites Reelix searches for films, series, books and music. Nothing is added unless you add it."),
       rxKindSection("mediaservers", "Reelix tells Jellyfin and Audiobookshelf about each new file, so it shows in them at once."),
       rxKindSection("downloadclients", "The apps that download what Reelix chooses."),

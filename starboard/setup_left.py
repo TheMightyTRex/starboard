@@ -109,7 +109,7 @@ def items(cfg, data_dir):
                     "href": "/settings-reelix.html#rx-downloadclients-h",
                     "done": None if health is None else "No download clients" not in msgs.get("download_clients", "")})
         out.append({"key": "tmdb", "title": "Add a TMDB key", "why": "Reelix finds films and series far better with a free TMDB key.",
-                    "href": "/settings-reelix.html", "done": bool(state.get("tmdb"))})
+                    "href": "/settings-reelix.html#rx-basics-h", "done": bool(state.get("tmdb"))})
     if "reelix" in keys:  # DASH-186: media already on disk that Reelix does not know yet
         from . import media_import
         for tab, words in (("films", "films"), ("tv", "series")):
@@ -152,6 +152,12 @@ def items(cfg, data_dir):
     for i in out:
         i["ignored"] = i["key"] in ignored
     return out
+
+
+# The pages Still to set up shows inside its slide-out (Starboard's own steps). The server lets only Starboard's own
+# pages frame them; tests/test_setup_left.py checks every step's page is here.
+PANEL_PAGES = frozenset({"/settings-reelix.html", "/settings-jellyfin.html", "/settings-audiobookshelf.html",
+                         "/install-apps.html", "/library-films.html", "/library-tv.html"})
 
 
 GUIDED = [

@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
 from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
-from . import access, auth, backup, helpdocs, reelix_admin, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import GENERAL_RIGHTS, Config, ConfigError, general_right, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -909,6 +909,12 @@ class Handler(BaseHTTPRequestHandler):
         query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         fixed = query.get("v", [""])[0] == tag.strip('"')
         extra = {"Cache-Control": "public, max-age=31536000, immutable" if fixed else "no-cache", "ETag": tag, "Vary": "Accept-Encoding"}
+        if path == "/upgrade.html" or path in setup_left.PANEL_PAGES:
+            # The upgrade guide and the Still to set up steps also open in a slide-out on Starboard's own pages (a frame
+            # from this address only; other sites still cannot frame them). Set before
+            # the 304 answer too, or a page the browser already has keeps the old refusal.
+            extra["Content-Security-Policy"] = SECURITY_HEADERS["Content-Security-Policy"].replace("frame-ancestors 'none'", "frame-ancestors 'self'")
+            extra["X-Frame-Options"] = "SAMEORIGIN"
         if self.headers.get("If-None-Match") == tag:
             return self.send(304, b"", kind, extra)
         if packed and self.accepts_gzip():
@@ -916,10 +922,6 @@ class Handler(BaseHTTPRequestHandler):
             extra["Content-Encoding"] = "gzip"
         elif data is None:
             data = gzip.decompress(packed)
-        if path == "/upgrade.html":
-            # The upgrade guide also opens in a slide-out on Starboard's own pages (a frame from this address only).
-            extra["Content-Security-Policy"] = SECURITY_HEADERS["Content-Security-Policy"].replace("frame-ancestors 'none'", "frame-ancestors 'self'")
-            extra["X-Frame-Options"] = "SAMEORIGIN"
         if path in ("/favicon.svg", "/icon-app.svg"):
             # The logo switches colours for dark mode with its own small style block, and runs nothing.
             extra["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"

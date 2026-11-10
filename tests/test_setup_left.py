@@ -67,3 +67,17 @@ class SetupLeft(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PanelPagesTest(unittest.TestCase):
+    """Every Starboard step in Still to set up opens its page in the slide-out, so its page must be allowed there."""
+
+    def test_every_step_page_may_open_in_the_slide_out(self):
+        import re
+        from starboard import setup_left
+        src = open(setup_left.__file__).read()
+        pages = set(re.findall(r'"href": f?"(/[a-z-]+(?:\{[^}]+\}[a-z-]*)?\.html)', src))
+        pages = {p.replace("{'films' if tab == 'films' else 'tv'}", x) for p in pages for x in ("films", "tv")} if pages else pages
+        pages = {p for p in pages if "{" not in p and p != "/index.html"}
+        self.assertTrue(pages)
+        self.assertEqual(pages - setup_left.PANEL_PAGES, set())

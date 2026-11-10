@@ -95,6 +95,22 @@ class LighterTest(unittest.TestCase):
         self.assertTrue(r.will_close)
         c.close()
 
+    def test_only_slide_out_pages_may_be_framed_and_a_cached_answer_says_so_too(self):
+        # Still to set up shows its steps' pages in a slide-out (a frame from Starboard itself); other pages refuse.
+        from unittest import mock
+        from starboard import server
+        with mock.patch.object(server.Handler, "signed_in", return_value=True), \
+                mock.patch.object(type(self.app), "needs_setup", new_callable=mock.PropertyMock, return_value=False):
+            c = self.conn()
+            r, _ = self.get(c, "/settings-reelix.html")
+            self.assertEqual(r.getheader("X-Frame-Options"), "SAMEORIGIN")
+            self.assertIn("frame-ancestors 'self'", r.getheader("Content-Security-Policy"))
+            again, _ = self.get(c, "/settings-reelix.html", {"If-None-Match": r.getheader("ETag")})
+            self.assertEqual((again.status, again.getheader("X-Frame-Options")), (304, "SAMEORIGIN"))
+            other, _ = self.get(c, "/dashboard.html")
+            self.assertEqual(other.getheader("X-Frame-Options"), "DENY")
+            c.close()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -156,6 +156,25 @@ await open("index.html");
 check("FB-01", "deactivated, it is gone", await page.locator("snag-list").count() === 0 && !(await page.locator(".rail__feedback").isVisible()));
 await api("/api/config/general", { method: "PUT", body: { ux_notes: fbBefore } });  // on by default since 0.15.2
 
+// WZ-01: Still to set up, one step at a time, each Starboard step set up inside the slide-out (DASH-289)
+console.log("\n== WZ-01 Still to set up in the slide-out");
+await open("index.html");
+const goThrough = page.getByRole("button", { name: "Go through them" });
+await goThrough.waitFor({ timeout: 5000 }).catch(() => {});
+await goThrough.click().catch(() => {});
+const stepFrame = page.locator("#side-panel .wizard-frame");
+await stepFrame.waitFor({ timeout: 5000 }).catch(() => {});
+check("WZ-01", "the step's own page is in the slide-out", await stepFrame.count() === 1);
+const inside = page.frameLocator("#side-panel .wizard-frame");
+await inside.locator("#main").waitFor({ timeout: 8000 }).catch(() => {});
+check("WZ-01", "it shows without the menus", await inside.locator("html.in-panel").count() === 1 && !(await inside.locator(".rail").isVisible().catch(() => true)));
+check("WZ-01", "no second wizard or Send feedback inside", await inside.locator("#side-panel, snag-list").count() === 0);
+const firstStep = await page.locator("#side-panel h3").textContent();
+await page.locator("#side-panel .side-panel__foot button", { hasText: /^Skip$/ }).click().catch(() => {});
+await page.waitForFunction((t) => document.querySelector("#side-panel h3")?.textContent !== t, firstStep, { timeout: 5000 }).catch(() => {});
+check("WZ-01", "Skip goes to the next step", (await page.locator("#side-panel h3").textContent().catch(() => firstStep)) !== firstStep);
+await page.keyboard.press("Escape");
+
 // SEC-07: names, categories, descriptions and UX notes that look like code are shown as text
 console.log("\n== SEC-07 Text that looks like code");
 const before = await api("/api/config");
