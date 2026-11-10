@@ -36,9 +36,12 @@ page.on("console", (m) => { if (m.type() === "error" && !/40[04]/.test(m.text())
 await page.goto(`${base}/login.html`);
 await page.fill("input[type=password]", password);
 await page.keyboard.press("Enter");
-await page.waitForURL(/index/);
+await page.waitForURL(/dashboard|index/);
 const api = (path, opts) => page.evaluate(([p, o]) => api(p, o), [path, opts]);
 const open = async (p) => { await page.goto(`${base}/${p}`, { waitUntil: "networkidle" }); await page.waitForTimeout(400); };
+// The journeys use every setting, so Advanced settings is on for them (DASH-225: each page opens on its basics).
+await page.goto(`${base}/settings-general.html`, { waitUntil: "networkidle" });
+await api("/api/config/general", { method: "PUT", body: { settings_advanced: true } });
 
 // USE-02: add, change, test and remove an app, through the page as a person would
 console.log("\n== USE-02 Manage apps");

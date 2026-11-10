@@ -6,3 +6,7 @@
 cd3fb88af79c1a0607d77dc614a6f5d6102b52e8:tools/vm/drive.py:generic-api-key:36
 # A made-up Reelix set-up token in the test that reads it from Reelix's log (tests/test_reelix_setup.py), not a real one.
 3c11c28bc69b47907fdcf80e3b4af2da8aea1b3e:tests/test_reelix_setup.py:generic-api-key:273
+# A made-up TMDB token (its payload reads made-up) in the Reelix basics tests, not a real one.
+be218dae026f5384441af09dad06c8b1dd513d59:tests/test_reelix_admin.py:jwt:380
+# The same made-up TMDB token in the set-up answers tests.
+cd91b60518911ddd505886ad1871f11527dcd220:tests/test_setup_answers.py:jwt:12

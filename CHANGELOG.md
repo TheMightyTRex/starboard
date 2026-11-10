@@ -7,6 +7,45 @@ add features.
 
 ## [Unreleased]
 
+## [0.14.0] (10 November 2026)
+
+### Added
+- **Plug-ins:** Settings, Plug-ins adds a plug-in from its address, its file or its own installer, shows what it may do with a risk level and its test results first, and activates, deactivates or removes it, keeping its folder.
+- **Styles from plug-ins:** A plug-in can add styles to Display, which Starboard checks for accessibility in light and dark and draws itself; the Styles plug-in has eight, each with a picture to choose from.
+- **Plug-in tester:** Test a plug-in lists every issue with where it is and how to fix it, and always tests accessibility; the same tests run before any plug-in is added.
+- **Plug-in cards:** Plug-ins can add cards to the dashboard that show a number, a list or a status, asked at most once a minute.
+- **Starboard's API:** A read-only API at /api/v1 for other apps, scripts and AI assistants, with its own keys made in Settings, Security and a published description.
+- **The dashboard:** A dashboard of cards is the first page after signing in, in four layouts, with Edit dashboard to add, size and move cards.
+- **Library actions:** Film and series pages have Get it, Follow, Stop following, Delete, Choose a download and watched or not watched from Jellyfin.
+- **Wanted, History and Issues:** Wanted shows what is missing or below the quality wanted, with Search; History and Issues are real pages; Requests shows Reelix's own requests.
+- **Download now:** Wanted items can download straight away, outside download hours.
+- **Basic and advanced settings:** Every Settings page opens on its basic settings, with an Advanced settings switch for the rest.
+- **Settings, Downloads:** A new page for the VPN, the Usenet server and download hours, with Test buttons.
+- **Reelix's settings, backups and logs:** Settings, Reelix covers its basics, folders, information, files and requests; System has Reelix's backups and log; Reelix can update automatically, off until you switch it on.
+- **YouTube and Spotify:** With the full version of Reelix, downloads from a YouTube or Spotify link, with Connect Spotify.
+- **Apps set up for you:** Jellyfin, Audiobookshelf, Jellystat, qBittorrent, Bazarr and Gluetun are set up by Starboard, and Live TV's channels and guides are added to Jellyfin by itself.
+- **Guided steps:** The set-up checklist has short guided steps with Done for Tdarr, Wizarr, Dispatcharr and Soulseek.
+- **More apps:** Soulseek through slskd and the No-IP updater in Install apps; FlareSolverr is offered only when a site needs it.
+- **The graphics chip:** Jellyfin uses an Intel or AMD graphics chip to convert video when the computer has one.
+
+### Changed
+- **One set-up in each place:** The browser and terminal set-ups ask the same questions in the same order, including the TMDB key, the Usenet server, sites to search and the VPN.
+- **First set-up only:** A new Starboard shows only the set-up until it is finished.
+- **Wizarr and Dispatcharr:** They are add-ons in Install apps instead of part of the Full install. Installs that have them keep them.
+- **Long lists:** Library walls, Wanted and History load more as you near the end.
+- **Plug-in words:** Plug-ins are activated and deactivated, in the house style.
+
+### Fixed
+- **Test scripts after the dashboard:** The help pictures, screenshots and browser journeys wait for the dashboard after signing in.
+
+### Security
+- **Settings by risk:** Each general setting has a level of access; network access, secure cookies, session length and the alert channel can never be changed by an API key.
+- **Addresses Starboard calls:** Link-local and cloud metadata addresses are refused, and a request carrying an app's key never follows a redirect to another server.
+- **Sign out everywhere:** It now asks for the password, so a session someone else has cannot sign everyone out.
+- **API keys:** Keys are shown once, stored only as a SHA-256 hash, sent only in a header, and every change is in an audit log.
+- **Plug-ins locked down:** Plug-ins never get the Docker socket, the host network, devices or other apps' folders; containers are read only, without capabilities, not root and limited in memory and processor.
+- **Checks:** The unit tests (600), the browser journeys (66), the API contract tests, the help check, the private details check and the security scans ran on this release.
+
 ## [0.13.2] (9 November 2026)
 
 ### Added
@@ -997,7 +1036,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.13.2...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/TheMightyTRex/starboard/compare/v0.13.2...v0.14.0
 [0.13.2]: https://github.com/TheMightyTRex/starboard/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/TheMightyTRex/starboard/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/TheMightyTRex/starboard/compare/v0.12.2...v0.13.0

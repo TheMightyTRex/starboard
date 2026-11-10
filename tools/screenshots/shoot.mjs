@@ -45,7 +45,7 @@ const SHOTS = [
   { file: "setup-guide.png", page: "setup-guide.html", ...desk },
   { file: "performance.png", page: "settings-performance.html", ...desk },
   { file: "search-new-apps.png", page: "settings.html", ...desk, click: "#find-apps" },
-  { file: "release-notes.png", page: "index.html", ...desk, click: ".site-footer .version-label" },
+  { file: "release-notes.png", page: "index.html", ...desk, click: ".site-footer a[href=\"#release-notes\"]" },
   { file: "logs.png", page: "system-logs.html", ...desk, before: 'api("/api/config/general", { method: "PUT", body: { logs: { detail: "day" } } })' },
   { file: "logs-entries.png", page: "system-logs.html", ...desk, run: top("#entries-h") },
   { file: "display.png", page: "index.html", ...desk, click: "[data-display-toggle]" },
