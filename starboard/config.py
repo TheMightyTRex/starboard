@@ -60,7 +60,7 @@ DEFAULTS = {
     # Download hours: qBittorrent, NZBGet and SABnzbd only download from start to end (whole hours, local time).
     "download_hours": {"enabled": False, "start": 1, "end": 6},
     # Watching in the background (watch.py): off until turned on, because it runs with no page open.
-    "watch": {"enabled": False, "every": 5, "weekly": False,
+    "watch": {"enabled": False, "every": 5, "weekly": False, "releases": True,
               "channel": {"kind": "", "url": "", "token": ""},
               "alerts": {"apps_down": True, "disk_problem": True, "disk_full": 90, "download_stuck": True,
                          "backup_failed": True, "cert_days": 14}},
@@ -561,7 +561,7 @@ def clean_watch(incoming, current):
     if not isinstance(incoming, dict):
         raise ConfigError("Send the alert settings as an object")
     out = json.loads(json.dumps(current))
-    for key in ("enabled", "weekly"):
+    for key in ("enabled", "weekly", "releases"):
         if key in incoming:
             out[key] = bool(incoming[key])
     if "every" in incoming:

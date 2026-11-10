@@ -304,6 +304,15 @@ def newest_tag(names):
     return max(found)[1] if found else None
 
 
+def newer(tag, version):
+    """True when tag (vX.Y.Z) is a later version than version (X.Y.Z)."""
+    def key(v):
+        m = re.match(r"^v?(\d+)\.(\d+)\.(\d+)$", str(v or ""))
+        return tuple(int(x) for x in m.groups()) if m else None
+    a, b = key(tag), key(version)
+    return bool(a and b and a > b)
+
+
 class PasswordProblem(Exception):
     def __init__(self, status, message):
         super().__init__(message)

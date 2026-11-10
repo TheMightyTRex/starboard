@@ -1574,7 +1574,10 @@ function startAlerts() {
 
   const weekly = el("ul", { class: "settings-rows" },
     settingRow("Weekly summary", withCost("On Monday morning: how each app did, disk health and how full your folders are. Sent where alerts go.", "weekly"),
-      switchFor("al-week-l", w().weekly, (on) => save({ weekly: on }, on ? "Weekly summary activated" : "Weekly summary deactivated")), "al-week-l"));
+      switchFor("al-week-l", w().weekly, (on) => save({ weekly: on }, on ? "Weekly summary activated" : "Weekly summary deactivated")), "al-week-l"),
+    // DASH-105: a new Starboard release, at most one message a week, only where your alerts go.
+    settingRow("New Starboard release", "One message when a newer Starboard is out, with a link to what is new. At most once a week, and once for each version.",
+      switchFor("al-rel-l", w().releases !== false, (on) => save({ releases: on }, on ? "Release messages activated" : "Release messages deactivated")), "al-rel-l"));
 
   $("#alerts-sections").removeAttribute("aria-busy");
   $("#alerts-sections").replaceChildren(
