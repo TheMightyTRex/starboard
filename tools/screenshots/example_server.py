@@ -87,6 +87,10 @@ if EXAMPLE_CONTAINERS:
     changes._fetch = lambda url: changes.parse(EXAMPLE_CHANGELOG)
 stack._port_free = lambda port: True
 stack.reelix_url = lambda data_dir: f"http://127.0.0.1:{FAKE_PORT}/reelix"  # the made-up Reelix, for Settings, Reelix
+from starboard import noip  # noqa: E402  The No-IP updater (DASH-170), with made-up addresses
+noip.status = lambda data_dir, **k: {"installed": True, "running": True, "state": "refused", "last_update": "2026-11-09T10:19:01Z",
+                                     "address": "203.0.113.7", "said": "Type a new DDNS key or password below, then save. The updater starts again with it.",
+                                     "username": "examplekey", "hostnames": "home.example.net", "password_set": True}
 discovery.search = lambda services: {"docker": False, "items": [
     {"key": k, "name": n, "type": k, "url": f"http://127.0.0.1:{p}", "port": p, "needs_key": True, "background": False,
      "container": "", "already": False, "can_read_key": False} for k, n, p in (("bazarr", "Bazarr", 6767), ("prowlarr", "Prowlarr", 9696))]}

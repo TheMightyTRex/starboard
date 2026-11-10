@@ -123,6 +123,47 @@ async function load({ speak = false } = {}) {
   }
 }
 
+// The No-IP updater (DASH-170): shown when it is installed, with what it last did and a form for a new DDNS key.
+// Settings' field() and notice() are not loaded on this page, so these two small ones build the same markup.
+function noipField(label, control, hint) {
+  const hintNode = hint ? el("span", { class: "hint", id: `${control.id}-hint`, text: hint }) : null;
+  if (hintNode) control.setAttribute("aria-describedby", hintNode.id);
+  return el("div", { class: "field" }, el("label", { for: control.id, text: label }), hintNode, control);
+}
+
+async function renderNoip() {
+  let r;
+  try { r = await api("/api/noip"); } catch { return; }
+  const box = $("#noip");
+  if (!r.installed) { box.hidden = true; return; }
+  box.hidden = false;
+  const words = { ok: ["Up to date", "success"], refused: ["Sign-in refused", "danger"], waiting: ["Checking", "muted"], unknown: [r.running ? "Running" : "Stopped", r.running ? "muted" : "warning"] }[r.state] || ["Unknown", "muted"];
+  const facts = el("dl", { class: "facts" },
+    el("dt", { text: "State" }), el("dd", {}, chip(words[0], words[1])),
+    el("dt", { text: "Last update" }), el("dd", { text: r.last_update ? new Date(r.last_update).toLocaleString() : "Not since it started" }),
+    el("dt", { text: "Addresses it keeps up to date" }), el("dd", { text: r.hostnames || "None yet" }),
+    el("dt", { text: "Points them at" }), el("dd", { text: r.address || "Not known yet" }));
+  const user = el("input", { class: "input", id: "noip-user", autocomplete: "off", spellcheck: "false", value: r.username || "" });
+  const pass = el("input", { class: "input", id: "noip-pass", type: "password", autocomplete: "new-password", placeholder: r.password_set ? "Leave empty to keep it" : "" });
+  const hosts = el("input", { class: "input", id: "noip-hosts", autocomplete: "off", spellcheck: "false", value: r.hostnames || "", placeholder: "home.example.net" });
+  const mine = el("input", { class: "input", id: "noip-mine", type: "password", autocomplete: "current-password" });
+  const form = el("form", { class: "form-stack", novalidate: true },
+    noipField("DDNS key user name", user, "In No-IP: Dynamic DNS, DDNS Keys. A DDNS key is safer than your No-IP password."),
+    noipField("DDNS key password", pass), noipField("Addresses", hosts, "Separate several with commas."),
+    noipField("Your Starboard password", mine), el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save and restart the updater" })));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const o = await api("/api/noip", { method: "POST", body: { username: user.value, ddns_password: pass.value, hostnames: hosts.value, password: mine.value } });
+      toast(o.said);
+      setTimeout(renderNoip, 60000);
+    } catch (err) { problem(err.message, form); }
+  });
+  const refused = r.state === "refused" ? el("div", { class: "notice", "data-tone": "danger", role: "status" }, icon("circle-alert"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "No-IP refused the sign-in" }), el("p", { text: r.said }))) : null;
+  $("#noip-body").replaceChildren(refused, facts, form);
+}
+
 startPage().then(async () => {
   range = rangePicker(() => loadTraffic().catch((e) => problem(e.message)));
   $("#range-row").append(range.element);
@@ -130,6 +171,7 @@ startPage().then(async () => {
   try { await AppDetails.load("config"); } catch (e) { $("#network-summary").textContent = e.message; return; }
   AppDetails.onChange(() => { renderOutside(); renderStats(lastPoints); });
   await load({ speak: true });
+  renderNoip();
   AppDetails.openFromAddress();
   AppDetails.load("status");
 });

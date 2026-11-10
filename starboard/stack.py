@@ -38,6 +38,7 @@ GROUPS = [
     ("livetv", "Live TV", "Free TV channels and guides", "extras", False),
     ("logs", "Logs", "Read every container's log in the browser", "extras", False),
     ("transcoding", "Transcoding", "Convert the library to save space", "extras", False),
+    ("network", "Network", "Keep a home address pointing at this server", "extras", False),  # No-IP (DASH-170)
 ]
 
 LSIO = {"PUID": "${PUID}", "PGID": "${PGID}", "TZ": "${TZ}"}
@@ -146,6 +147,11 @@ APPS = {
     "unpackerr": {"name": "Unpackerr", "groups": ["downloads"], "image": "ghcr.io/hotio/unpackerr:latest",
                   "volumes": [f"{CFG}/unpackerr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 50, "default": False, "later": True,
                   "notes": "Unpacks downloads. Needs the API keys of your apps in its settings file first."},
+    # The No-IP updater (DASH-170): keeps a No-IP address pointing at this server. Its sign-in is in noip.env next to
+    # the Compose file (never in Starboard's settings), written from System, Network.
+    "noip-duc": {"name": "No-IP updater", "groups": ["network"], "image": "ghcr.io/noipcom/noip-duc:latest", "memory": 10,
+                 "env": {"NOIP_CHECK_INTERVAL": "5m"}, "env_file": "./noip.env", "default": False,
+                 "notes": "Keeps your No-IP address pointing at this server. Add your DDNS key in System, Network."},
     # Soulseek through slskd (DASH-94): music and books from other people's shares, through the VPN when there is
     # one. Its API key and its own sign-in are made up here; the Soulseek name and password are the person's, typed
     # in slskd (a new name makes a free account), so its settings can be changed from its own page.
@@ -612,6 +618,8 @@ def build(choice):
             lines += ["    devices:"] + [f"      - {_yaml_value(d)}" for d in dict.fromkeys(devices)]
         if key == "jellyfin" and graphics:
             lines += ["    group_add:", '      - "${RENDER_GID}"']
+        if a.get("env_file"):  # a sign-in kept in its own file next to compose.yaml (No-IP, DASH-170)
+            lines.append(f"    env_file: {a['env_file']}")
         ports = []
         port_map = keep.get("port_map") or {}
         for p in a.get("ports", []):
@@ -1000,6 +1008,9 @@ def write(data_dir, built):
             built = {**built, "env": keep_made_up(built["env"], f.read(), built.get("env_shown", {}))}
     except OSError:
         pass
+    if re.search(r"(?m)^  noip-duc:", built["compose"]):
+        from . import noip
+        noip.ensure_file(data_dir)  # Compose needs the file to exist; the updater waits for a DDNS key
     for name, text, mode in (("compose.yaml", built["compose"], 0o644), (".env", built["env"], 0o600)):
         target = os.path.join(path, name)
         if os.path.exists(target):

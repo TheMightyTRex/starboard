@@ -931,7 +931,7 @@ class Handler(BaseHTTPRequestHandler):
             Handler._upgrade = {"key": key, "value": {"from": p["from"], "to": p["to"], "wizard": p["wizard"], "count": len(p["review"])}}
         return Handler._upgrade["value"]
 
-    CHANGES_STACK = {"/api/install/change", "/api/downloads/vpn", "/api/stack/write", "/api/stack/start", "/api/reelix/edition",
+    CHANGES_STACK = {"/api/install/change", "/api/downloads/vpn", "/api/noip", "/api/stack/write", "/api/stack/start", "/api/reelix/edition",
                      "/api/takeover/start", "/api/takeover/rollback", "/api/takeover/clear"}
 
     def api(self, method, path):
@@ -1372,6 +1372,21 @@ class Handler(BaseHTTPRequestHandler):
                 done = setup_answers.apply_usenet(app.data_dir)
                 logs.event("info", "downloads", "; ".join(done) or "Usenet server saved")
                 return self.json(200, {"said": "; ".join(done) or "Saved. Starboard adds it to the Usenet app when it runs"})
+            if path == "/api/noip" and method == "GET":
+                from . import noip  # the No-IP updater (DASH-170)
+                return self.json(200, noip.status(app.data_dir))
+            if path == "/api/noip" and method == "POST":
+                # A new DDNS key or password, into data/stack/noip.env; then the updater starts again with it.
+                from . import noip
+                body = self.body()
+                self.check_password(body)
+                noip.save(app.data_dir, body.get("username"), body.get("ddns_password"), body.get("hostnames"))
+                logs.event("info", "network", "No-IP sign-in changed")
+                try:
+                    return self.json(200, {"started": self.start_stack(), "said": "Saved. The No-IP updater is starting again with it"})
+                except ValueError:
+                    return self.json(200, {"started": None, "command": "cd ~/starboard && ./install.sh --start-apps",
+                                           "said": "Saved. Run the command on the server to start the updater with it"})
             if path == "/api/downloads/vpn" and method == "POST":
                 # New VPN details: written into the set-up files, then Gluetun is started again with them. A key or
                 # password left empty keeps the one there is.
