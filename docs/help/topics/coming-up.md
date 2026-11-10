@@ -2,8 +2,8 @@
 
 # Find out what is coming up
 
-The Coming up page lists the new episodes, films, albums, books and radio episodes your apps expect, from yesterday to as far
-ahead as you choose. You can see them as a list by day or on a month calendar.
+The Coming up page lists the new episodes, films, albums, books and radio episodes your apps expect, from
+yesterday to as far ahead as you choose. You can show them as a list by day or on a month calendar.
 
 ## Before you begin
 
@@ -12,18 +12,19 @@ ahead as you choose. You can see them as a list by day or on a month calendar.
 
 ## Steps
 
-### See what is coming up
+### Check what is coming up
 
-1. Go to **Discover**, then **Coming up**. The page says how many releases are due, how many are wanted and how many are already
-   in the library.
-2. Choose **List** to see releases day by day, or **Calendar** to see them on a month.
-3. Optional: select **Wanted** to see only what you do not have yet, or **In library** to see only what you
-   have. Select it again to see everything.
-4. Optional: to see one app only, select its name, such as **Sonarr**. Select it again to see every app.
-5. Select a title to see its details: when it comes out, which app it is in and whether it is wanted.
+1. Go to **Discover**, then **Coming up**. The page says how many releases are due, how many are wanted and
+   how many are already in the library.
+2. Choose **List** to show releases day by day, or **Calendar** to show them on a month.
+3. Optional: select **Wanted** to show only what you do not have yet, or **In library** to show only what you
+   have. Select it again to show everything.
+4. Optional: to show one app only, select its name, such as **Sonarr**. Select it again to show every app.
+5. Select a title to open its details: when it comes out, which app it is in and whether it is wanted.
 6. Optional: select **Open in** and the app's name to open it in the app itself, in a new tab.
 
-In **Calendar**, select **Earlier** or **Later** to move by a month, and **Back to now** to return.
+In **Calendar**, select **Earlier** or **Later** and the month's name to move by a month, and **Back to now**
+to return.
 
 ### Change how far ahead it looks
 
@@ -35,9 +36,9 @@ In **Calendar**, select **Earlier** or **Later** to move by a month, and **Back 
 
 ### Show or hide posters
 
-1. Go to **Settings**, then **Performance**.
-2. Under **Background work**, activate or deactivate **Posters on Coming up and the Library**. Inactive: each release shows its
-   app's icon instead.
+1. Go to **Settings**, then **Performance**, and activate **Advanced settings**.
+2. Under **Background work**, activate or deactivate **Posters on Coming up and the Library**. When it is
+   inactive, each release shows its app's icon instead.
 
 ## Things to note
 
@@ -45,19 +46,21 @@ In **Calendar**, select **Earlier** or **Later** to move by a month, and **Back 
 - Choosing **List** or **Calendar** on the page also saves it as the view the page opens with.
 - Starboard fetches posters from your own apps and keeps copies for a week. Your browser loads them from
   Starboard, so no image site sees them.
-- The **Small server** preset turns posters off. Read
+- The **Small server** preset deactivates posters. Read
   [Make Starboard use less of your server](make-starboard-lighter.md).
+- To get something wanted now, use **Activity**, then **Wanted**. Read
+  [Find and get what is missing](get-what-is-missing.md).
 - A wanted item that has already come out says the app has not found it yet. An item still to come says the
   app searches for it when it comes out.
 
 ## If it does not work
 
 - **Nothing is due:** your apps have nothing due in that time. Choose a longer time in **How far ahead**.
-- **Nothing matches these filters:** select the filter you chose again to deactivate it.
+- **Nothing matches these filters:** select the filter you chose again to clear it.
 - **A warning about one app:** that app did not answer, so its releases are missing. Read
   [An app shows as not responding](app-not-responding.md).
 - **The view changed here but was not saved:** the page shows your choice, but Starboard could not save it.
-  Choose it again later.
+  Choose it again.
 
 ## Find out more
 

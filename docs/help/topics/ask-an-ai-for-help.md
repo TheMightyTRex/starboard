@@ -3,7 +3,7 @@
 # Ask an AI assistant to help you set up
 
 An AI assistant, such as Claude or ChatGPT, can walk you through setting up Starboard, read error messages with you
-and explain what each command does. Copy one of the prompts below into it, fill in the parts in square brackets,
+and explain what each command does. Copy one of the prompts in this article into it, fill in the parts in square brackets,
 and it follows Starboard's own help with you, one step at a time.
 
 ## Before you begin
@@ -15,7 +15,7 @@ and it follows Starboard's own help with you, one step at a time.
 ## Steps
 
 1. Choose the prompt that fits:
-   - **An assistant in a chat**, on your phone or another computer: it tells you what to type, and you copy the
+   - **An assistant in a chat**, on your phone or another computer: it tells you what to enter, and you copy the
      result back to it.
    - **An assistant on the server**, one that can run commands in the server's terminal for you.
 2. Copy the whole prompt, fill in the parts in square brackets, and send it.

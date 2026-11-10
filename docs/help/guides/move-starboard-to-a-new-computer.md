@@ -5,8 +5,8 @@
 This guide moves Starboard, with all your apps, keys, categories and settings, from one computer to another.
 It is for anyone replacing or rebuilding their server. It takes about 30 minutes.
 
-There are two ways. **A settings backup** is the simplest and works between any two installs. **Copying the
-data folder** also keeps your password, history and alerts, and suits a like-for-like move.
+There are two ways. **A settings backup** works between any two installs. **Copying the data folder** also keeps
+your password, history and alerts, and suits a like-for-like move. Read [Things to note](#things-to-note).
 
 ## Before you begin
 
@@ -31,26 +31,31 @@ flowchart LR
 
 ## Step 1: Back up Starboard's settings on the old computer
 
-Follow [Back up and restore Starboard's settings](../topics/back-up-settings.md) to download the backup file.
-Keep it somewhere safe: it holds your apps' API keys.
+Follow [Download a backup](../topics/back-up-settings.md#download-a-backup) to download the backup file. Keep it
+somewhere safe: it holds your apps' API keys.
 
 ## Step 2: Install Starboard on the new computer
 
 Follow [Install Starboard on a Linux computer](install-on-a-linux-computer.md) or
-[Install Starboard on a Raspberry Pi](install-on-a-raspberry-pi.md), including creating a password.
+[Install Starboard on a Raspberry Pi](install-on-a-raspberry-pi.md), up to choosing a password. Read
+[Create your password and sign in](../topics/create-your-password.md).
 
 ## Step 3: Restore the backup on the new computer
 
-Follow the restore part of [Back up and restore Starboard's settings](../topics/back-up-settings.md). A backup
-from an older version of Starboard is brought up to date as it is restored. Your new password stays: a backup
-never holds the password.
+In the set-up's **How to start** step, choose **Restore a backup**. Choose the backup file and enter the password
+you chose. The set-up then asks only what the backup does not hold, such as where your media goes and your VPN
+details, when the apps need installing again. In the terminal set-up, enter where the backup file is.
+
+A backup from an older version of Starboard is brought up to date as it is restored. Your new password stays: a
+backup never holds the password. If you already finished the set-up, follow
+[Restore from a file](../topics/back-up-settings.md#restore-from-a-file) instead.
 
 **It worked when** the **Apps** page shows your apps.
 
 ## Step 4: Check your apps' addresses
 
 If your apps moved too, or the new computer reaches them differently, their addresses may need changing.
-Any app that shows as not responding needs a look: follow
+For any app that shows as not responding, follow
 [An app shows as not responding](../topics/app-not-responding.md).
 
 ## Step 5: Stop Starboard on the old computer

@@ -7,7 +7,7 @@ Starboard's plug-in tester, accessibility included. To add one, read [Add a plug
 
 ## Styles
 
-Eight styles for Starboard, chosen from current interface trends and checked for accessibility in light and dark.
+Eight styles for Starboard, each checked for accessibility in light and dark.
 
 | Style | What it looks like |
 |---|---|
@@ -27,41 +27,36 @@ Eight styles for Starboard, chosen from current interface trends and checked for
 - **Download:** [styles.zip](https://github.com/TheMightyTRex/starboard-plugins/raw/main/zips/styles.zip)
   (5 KB): the manifest, its installer, readme and licence.
   [See its files](https://github.com/TheMightyTRex/starboard-plugins/tree/main/styles).
-- **How to add it:** paste the install address, as above. Or unzip the download and run its installer,
+- **How to add it:** paste the install address. Or unzip the download and run its installer,
   `python3 install.py`, or choose its `starboard-plugin.json` under **Or its manifest file**.
 - **Version:** 1.0.0. Made by TheMightyTRexUK. Licence: MIT.
-- **Choosing a style:** in **Settings**, **Plug-ins**, the Styles section shows a picture of each style, light and
-  dark, with **Use this style**. **Display**, **Style** has the same choice.
+- **Choosing a style:** in **Settings**, then **Plug-ins**, the Styles section shows a picture of each style,
+  light and dark, with **Use this style**. **Style** in the Display panel has the same choice. Read
+  [Choose a style from a plug-in](../topics/display-and-accessibility.md#choose-a-style-from-a-plug-in).
 
 ![The Styles plug-in's section, with a picture of each of the eight styles in light and dark, and Use this style under each](../images/plugin-collection-1-styles.png)
 
-Frost keeps its panels solid. See-through panels change the contrast of the text on them with whatever is behind,
-so no style in the collection uses them.
+No style in the collection has see-through panels, because they change how well the text on them stands out.
 
 ## Live TV
 
 Free TV channels and guides for Jellyfin's Live TV, from Samsung TV Plus, Pluto TV and Free-TV, numbered like Sky.
-It comes with Starboard: add it in **Settings**, **Plug-ins**, under **Built into Starboard**.
+It comes with Starboard: add it in **Settings**, then **Plug-ins**, under **Built into Starboard**.
 
 - **Install address and download:** none needed. It is part of Starboard, so there is nothing to download.
-
 - **What it may do:** reach the internet and your home network (to fetch guides and test channels), and use
   Jellyfin's API key, kept by Starboard (to add the channels to Jellyfin). Risk: medium and high.
 - **What it runs:** one container on Starboard's own image, read only, limited to 192 MB of memory, writing only to
   the Live TV folder you gave the installer.
-- **Its card:** when it last ran and what it did. **Run Live TV now** builds everything straight away.
+- **Its card:** a dashboard card with when it last ran and what it did. **Run Live TV now** in its section builds
+  everything straight away. Read [Use and change the dashboard](../topics/use-the-dashboard.md).
 - **How to set it up:** read [Set up free Live TV in Jellyfin](../topics/set-up-live-tv.md).
-
-## Coming next
-
-- **Example plug-ins** for people who want to make their own: a card for the dashboard, a settings form, and one
-  that runs through your VPN.
 
 ## Make your own
 
 A plug-in is a folder with a `starboard-plugin.json`. [Write a plug-in](write-a-plugin.md) explains the manifest,
-styles and dashboard cards, and how to use AI to write one. Test it in **Settings**, **Plug-ins**, **Test a
-plug-in**, which lists every issue with how to fix it, accessibility always included.
+styles and dashboard cards, and how to use AI to write one. Test it in **Settings**, then **Plug-ins**, under
+**Test a plug-in**. It lists every issue with how to fix it, accessibility always included.
 
 ## Find out more
 

@@ -3,7 +3,7 @@
 # Connect to the internet, by cable or Wi-Fi
 
 Check that your server is online, and connect it by network cable or Wi-Fi: with the network icon on a computer
-with a desktop, or by typing commands in the terminal on one without. At the end, the server can reach the internet
+with a desktop, or with commands in the terminal on one without. At the end, the server can reach the internet
 and you are ready to run the Run first script.
 
 ## Before you begin
@@ -12,13 +12,13 @@ and you are ready to run the Run first script.
 - A monitor and keyboard on the server. With no desktop, a terminal open on it: read
   [The terminal: typing commands](../basics/the-terminal.md).
 - For Wi-Fi: your Wi-Fi network's name and password.
-- Some commands below have quotes `"` and other symbols in them. If a symbol is not where you expect on your
+- Some commands in this article have quotes `"` and other symbols in them. If a symbol is not where you expect on your
   keyboard, read
   [Symbols that are in different places on different keyboards](../basics/the-terminal.md#symbols-that-are-in-different-places-on-different-keyboards).
 
 ## Check whether the server is online
 
-1. Type this command and press Enter:
+1. Enter this command and press Enter:
 
    ```bash
    ping -c 3 debian.org
@@ -27,8 +27,8 @@ and you are ready to run the Run first script.
 2. Read what it prints:
    - **Lines that end in a time, such as `time=14.2 ms`, and "0% packet loss":** the server is online. You do not need
      the rest of this page.
-   - **"Temporary failure in name resolution" or "Network is unreachable":** the server is not online. Carry on
-     below.
+   - **"Temporary failure in name resolution" or "Network is unreachable":** the server is not online. Follow the
+     section for your connection in this article.
 
 ## Connect with Wi-Fi on a desktop
 
@@ -36,17 +36,17 @@ On Linux Mint and on Raspberry Pi OS with the desktop, the network icon shows th
 
 1. Select the network icon: in the panel on Linux Mint, in the taskbar on Raspberry Pi OS.
 2. Select your Wi-Fi network's name.
-3. Type its password and select **Connect**. On Raspberry Pi OS, select **OK**.
+3. Enter its password and select **Connect**. On Raspberry Pi OS, select **OK**.
 4. When the icon shows the Wi-Fi signal, the computer is online. It connects by itself every time it starts.
 
-To check from a terminal, use the `ping` command in **Check whether the server is online**.
+To check from a terminal, use the `ping` command in [Check whether the server is online](#check-whether-the-server-is-online).
 
 ## Connect with a network cable (recommended)
 
 A cable is faster and more reliable than Wi-Fi for a server.
 
 1. Plug the cable into the server and into your router.
-2. Wait 10 seconds, then check again with the `ping` command above. Most systems connect a cable by themselves.
+2. Wait 10 seconds, then check again with the `ping` command. Most systems connect a cable by themselves.
 3. **Debian with no desktop, if it is still not online:** Debian sets up only the network it saw while it was being
    installed. List the server's network connections:
 
@@ -69,14 +69,14 @@ A cable is faster and more reliable than Wi-Fi for a server.
    sudo ifup enp3s0
    ```
 
-6. Check again with the `ping` command above.
+6. Check again with the `ping` command.
 
 ## Connect with Wi-Fi in the terminal on Linux Mint or Raspberry Pi OS
 
 These use a program called NetworkManager, which you control with the `nmcli` command. On Raspberry Pi OS Lite,
 `sudo raspi-config` also sets up Wi-Fi, under **System Options** then **Wireless LAN**.
 
-1. List the Wi-Fi networks the server can see:
+1. List the Wi-Fi networks the server can find:
 
    ```bash
    nmcli device wifi list
@@ -88,8 +88,8 @@ These use a program called NetworkManager, which you control with the `nmcli` co
    nmcli --ask device wifi connect "My network"
    ```
 
-3. When it asks for the password, type it and press Enter. Nothing shows as you type.
-4. Check again with the `ping` command above. The server connects by itself every time it starts.
+3. When it asks for the password, enter it and press Enter. Nothing shows as you type.
+4. Check again with the `ping` command. The server connects by itself every time it starts.
 
 ## Connect with Wi-Fi in the terminal on Ubuntu Server
 
@@ -108,7 +108,7 @@ already.
    sudo nano /etc/netplan/60-wifi.yaml
    ```
 
-3. Type these lines, with your connection's name, your network's name and its password in place of `wlan0`,
+3. Enter these lines, with your connection's name, your network's name and its password in place of `wlan0`,
    `My network` and `my-wifi-password`. The spaces at the start of each line matter: use spaces, not Tab:
 
    ```text
@@ -133,19 +133,20 @@ already.
    sudo netplan apply
    ```
 
-6. Check again with the `ping` command above.
+6. Check again with the `ping` command in [Check whether the server is online](#check-whether-the-server-is-online).
 
 ## Connect with Wi-Fi in the terminal on Debian
 
-A minimal Debian has no Wi-Fi tools unless you set up Wi-Fi while installing it. Connect a network cable for now, as
-above, then install NetworkManager:
+A minimal Debian has no Wi-Fi tools unless you set up Wi-Fi while installing it. Connect a network cable for now, with
+[Connect with a network cable](#connect-with-a-network-cable-recommended), then install NetworkManager:
 
 ```bash
 sudo apt install network-manager
 ```
 
-After that, the Wi-Fi steps in the terminal for Linux Mint and Raspberry Pi OS work on Debian too. Keep the cable plugged in until Wi-Fi
-works.
+After that, follow
+[Connect with Wi-Fi in the terminal on Linux Mint or Raspberry Pi OS](#connect-with-wi-fi-in-the-terminal-on-linux-mint-or-raspberry-pi-os).
+Keep the cable plugged in until Wi-Fi works.
 
 ## Things to note
 
@@ -158,11 +159,11 @@ works.
 
 - **`ping` works with `1.1.1.1` but not with `debian.org`:** the server is online but cannot look up names. Restart
   it and try again; if it still fails, check the DNS setting on your router.
-- **`nmcli: command not found`:** this Linux does not use NetworkManager. Use the steps for your Linux above.
+- **`nmcli: command not found`:** this Linux does not use NetworkManager. Use the section for your Linux in this article.
 - **"No Wi-Fi device found" or no name starting with `wl`:** the server has no Wi-Fi, or its Wi-Fi needs extra files.
   Use a network cable.
 - **"Error: Connection activation failed: Secrets were required":** the password was not right. Run the connect
-  command again and type it carefully.
+  command again and enter it carefully.
 
 ## Find out more
 

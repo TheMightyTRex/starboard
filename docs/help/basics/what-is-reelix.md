@@ -11,8 +11,9 @@ Sonarr, Lidarr, Readarr, Prowlarr and Seerr.
 - **One app instead of six.** One place to search, one list of sites to search, one set of quality settings and
   one queue.
 - **Light.** Reelix idles in under 40 MB of memory, where the six apps it replaces take about 900 MB together.
-- **Set up for you.** Install apps installs Reelix and sets it up through its own API: the admin account, a key
-  for Starboard, your library folders and your download apps (qBittorrent, and NZBGet or SABnzbd).
+- **Set up for you.** Install apps installs Reelix and sets it up: the admin account, a key for Starboard, your
+  library folders, your download apps, the sites to search and your TMDB key. Read
+  [Install apps with Starboard](../topics/install-apps.md).
 
 ## The two versions
 
@@ -23,21 +24,23 @@ Sonarr, Lidarr, Readarr, Prowlarr and Seerr.
 | Downloads from YouTube and Spotify | No | Yes |
 | Size | Smaller, with only what it needs to repack video | Larger, with the full video tools |
 
-Lite keeps up with each Reelix release within a day. You can change from one version to the other later, either
-way: read [Switch between the two versions of Reelix](../topics/switch-reelix-version.md).
+You can change from one version to the other later, either way: read [Switch between the two versions of Reelix](../topics/switch-reelix-version.md).
 
 ## What this means for Starboard
 
 - Reelix appears on the **Apps** page like any other app, with its queue, what is coming up and its health.
-- Before Reelix updates, **What is new** lists its changes from Reelix's own changelog.
-- **Settings**, **Apps**, **Your install** changes the version of Reelix, the download apps and the install.
+- Before Reelix updates, **What is new** lists its changes from Reelix's own changelog. Read
+  [Update your apps](../topics/update-your-apps.md).
+- **Settings**, **Apps**, **Reelix** changes its sites to search, download apps and media servers. Read
+  [Choose the sites Reelix searches](../topics/choose-sites-to-search.md).
+- **Settings**, **Apps**, **Your install** changes the version of Reelix, the download apps and the install. Read
+  [Change your install](../topics/change-your-install.md).
 - Reelix is a separate project, with its own licence (GPL-3.0). Starboard talks to it only through its API.
 
 ## Find out more
 
 - [Basics, Full install and Everything: what each one has](../topics/install-types.md)
 - [Move from Radarr, Sonarr and the others to Reelix](../topics/move-your-apps-to-reelix.md)
-- [Change your install](../topics/change-your-install.md)
 - [Reelix on GitHub](https://github.com/demonzoned/Reelix)
 
 <!-- footer: download rights -->

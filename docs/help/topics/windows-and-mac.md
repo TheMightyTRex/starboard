@@ -9,14 +9,14 @@ use a Windows or Mac computer to open Starboard in a browser, once it runs on a 
 
 Starboard runs in Docker with a setting called host networking. This lets it reach your other apps and decide who
 may connect to it. Host networking works fully only with Docker on Linux. On Windows and Mac, Docker runs inside a
-hidden Linux computer of its own, and Starboard cannot work properly through it.
-
-Read [What Docker is](../basics/what-is-docker.md) for more about Docker.
+hidden Linux computer of its own, and Starboard cannot work properly through it. Read
+[What Docker is](../basics/what-is-docker.md).
 
 ## What you can do instead
 
-- **Use a spare computer with Linux.** An old laptop or desktop is often enough. Ubuntu and Linux Mint are free and
-  friendly for beginners. Read [Install Starboard on a Linux computer](../guides/install-on-a-linux-computer.md).
+- **Use a spare computer with Linux.** An old laptop or desktop is often enough. Linux Mint, Debian and Ubuntu
+  Server are free. Read [Choose which Linux](install-linux.md#choose-which-linux), then
+  [Install Starboard on a Linux computer](../guides/install-on-a-linux-computer.md).
 - **Use a Raspberry Pi.** A small, cheap computer that uses little electricity. Read
   [Install Starboard on a Raspberry Pi](../guides/install-on-a-raspberry-pi.md).
 - **Keep using Windows or a Mac to open Starboard.** Once Starboard runs on a Linux computer at home, any browser on
@@ -26,8 +26,7 @@ Read [What Docker is](../basics/what-is-docker.md) for more about Docker.
 ## Windows with WSL: untested
 
 WSL (Windows Subsystem for Linux) runs Linux inside Windows. Some people may get Starboard working there, but it has
-not been tested and is not supported. If you try it, you do so at your own risk, and help may not be able to answer
-problems that come from it.
+not been tested and is not supported. If you try it, you do so at your own risk.
 
 ## Find out more
 

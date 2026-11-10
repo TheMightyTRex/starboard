@@ -3,11 +3,11 @@
 # Use Starboard away from home safely
 
 This guide helps you open Starboard on your phone when you are out, without putting your server on the open
-internet. It is for people who already use Starboard at home. How long it takes depends on the way you
-choose: a VPN (virtual private network) app takes about 30 minutes.
+internet. It is for people who already use Starboard at home. A VPN (virtual private network) app takes about
+30 minutes to set up.
 
 **Never forward Starboard's port on your router to the internet.** Anyone in the world could then try to
-sign in. The two safe ways are below.
+sign in. There are two safe ways.
 
 ## Before you begin
 

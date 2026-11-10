@@ -18,24 +18,27 @@ them later. Each app keeps its settings, its ports and what it relies on, and yo
 
 ## Steps
 
-1. Go to **Settings**, then **Apps**, then **Your install**, then **Apps you already run**. Starboard lists the apps
-   it found: the ones it takes over, the ones Reelix or NZBGet replaces, the ones it installs new and the ones it
-   leaves as they are.
-2. If the page shows **Step 1: install Reelix**, select **Install apps** and choose **Full install**. Your apps that
-   already run are left as they are, so this adds only Reelix, NZBGet and Tdarr. Then come back to **Your install**.
-   If **Apps you already run** then shows **Finish setting up Reelix**, select it: on **Settings**, **Reelix**, type
-   **Your password** and select **Finish setting up Reelix**. Reelix's admin account gets the same password as Starboard.
-3. Under **Step 1: move them into Reelix**, type **Your password**, and **qBittorrent's password** if you want
-   Reelix to use qBittorrent. Select **Show what moves** to see what Reelix will add from each app.
-4. Select **Move them into Reelix**. Films and series move in a minute or two. Reelix then finds their files, which
+The steps on the page are numbered, and the numbers change with what your server needs.
+
+1. Go to **Settings**, then **Apps**, then **Your install**, and find **Apps you already run**. Starboard lists the
+   apps it takes over, the ones Reelix or NZBGet replaces, the ones it installs new and the ones it leaves as they are.
+2. If the page has an 'install Reelix' step, select **Install apps** and choose **Full install**. Apps that already
+   run are left as they are, so it adds only what your server does not have yet, such as Reelix and NZBGet. Then come
+   back to **Your install**.
+3. If the page has a 'finish setting up Reelix' step, select **Finish setting up Reelix**. On **Settings**,
+   **Reelix**, enter **Your password** and select **Finish setting up Reelix**. Reelix's admin account gets the same
+   password as Starboard.
+4. In the 'move them into Reelix' step, enter **Your password**, and **qBittorrent's password** if you want Reelix to
+   use qBittorrent. Select **Show what moves** to list what Reelix adds from each app.
+5. Select **Move them into Reelix**. Films and series move in a minute or two. Reelix then finds their files, which
    takes about an hour for a big library. Leave **Hold the sites to search** selected, so only your old apps search
    until the next step.
-5. Under **Step 2: Starboard runs your apps**, check the **Settings folder**. The copies of your apps' settings go
-   there. It must not be inside the folder your apps use now.
-6. Type **Your password**, then select **Take over my apps**. Your apps stop for a few minutes while their settings
+6. In the 'Starboard runs your apps' step, check the **Settings folder**. The copies of your apps' settings go there.
+   It must not be inside the folder your apps use now.
+7. Enter **Your password**, then select **Take over my apps**. Your apps stop for a few minutes while their settings
    are copied, then start again from Starboard's set-up.
-7. In Starboard, go to **Settings**, **Reelix**, **Sites to search**. For each site, select **More**, then **Change**,
-   activate **Active** and select **Save**.
+8. Go to **Settings**, then **Apps**, then **Reelix**. Under 'Sites to search', for each site select **More**, then
+   **Change**, activate **Active** and select **Save**. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
 
 ## What Starboard does
 
@@ -69,7 +72,7 @@ Starboard keeps all this in `data/stack/kept.json`, so later changes in **Your i
 
 Until you choose **Keep it**, **Apps you already run** shows **Roll back**.
 
-1. Type **Your password**, then select **Roll back**.
+1. Enter **Your password**, then select **Roll back**.
 2. Starboard stops the apps it took over, puts its own set-up back as it was, and starts your old apps from your
    own Compose file, on the versions they ran.
 
@@ -87,9 +90,8 @@ nothing is deleted. Your old settings folders and the `starboard-rollback` image
   them: the container names are taken, so it fails for those apps.
 - **Apps the install does not have,** such as Kapowarr, and apps that are stopped, are left as they are in your own
   Compose file.
-- **What does not move into Reelix:** custom formats, delay profiles, notifications, import lists and history. Set
-  those up again in Reelix. [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md) lists
-  them.
+- **What does not move into Reelix** is listed in
+  [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md#what-does-not-move).
 
 ## If it does not work
 
@@ -99,9 +101,10 @@ nothing is deleted. Your old settings folders and the `starboard-rollback` image
   one. Your apps run again as they were.
 - **"Not enough space":** free some space on the disk with the settings folder, or choose a settings folder on
   another disk.
-- **"Move ... into Reelix first":** do step 1 first, or select that you do not need them moved.
-- **"qBittorrent did not accept that password":** type the password you use to sign in to qBittorrent, or leave it
-  empty and add qBittorrent in Starboard: **Settings**, **Reelix**, **Download apps**.
+- **"Move ... into Reelix first":** do the 'move them into Reelix' step first, or tick **Stop ... without moving
+  them into Reelix**.
+- **"qBittorrent did not accept that password":** enter the password you use to sign in to qBittorrent, or leave it
+  empty and add qBittorrent later in **Settings**, **Apps**, **Reelix**, under 'Download apps'.
 
 ## Find out more
 

@@ -6,8 +6,8 @@ The terminal is a window where you type instructions to your computer instead of
 is like sending a written note to the computer rather than pointing at things: you write exactly what you want,
 press Enter, and it does it.
 
-Installing Starboard needs a few commands. You do not have to type them: you copy them from this help and paste
-them in.
+Installing Starboard needs a few commands. You can copy them from this help and paste them in, rather than type
+them.
 
 ## Open a terminal
 
@@ -139,18 +139,18 @@ printed: they usually say what went wrong.
 ## Messages that look alarming
 
 Commands often print a lot of text. Most of it is progress, and you can ignore it. What matters is the last few
-lines. Words such as "Stopped", "error" or "permission denied" mean something went wrong, and the help for that
-step says what to do.
+lines. Words such as "Stopped", "error" or "permission denied" mean something went wrong. An error number such as
+RF-11 is explained in [Run first and installer error numbers](../topics/run-first-errors.md).
 
 ## What this means for Starboard
 
-You use the terminal to install Docker, install Starboard, find the setup code and, later, to update Starboard.
-After that, you do almost everything in Starboard's own pages, in your browser.
+You use the terminal to run [the Run first script](../topics/run-first.md), which installs Docker and Starboard,
+and later to update Starboard. After that, you do almost everything in Starboard's own pages, in your browser.
 
 ## Find out more
 
+- [Set up everything with the Run first script](../topics/run-first.md)
 - [Install Docker](../topics/install-docker.md)
-- [Install Starboard with the installer](../topics/install-with-the-installer.md)
 - [Connect to your server from another computer](../topics/connect-with-ssh.md)
 - [What Docker is](what-is-docker.md)
 

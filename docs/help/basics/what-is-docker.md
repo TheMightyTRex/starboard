@@ -27,7 +27,7 @@ kept in a folder outside the box, so they survive the swap.
 ## Docker Compose
 
 Docker Compose is a part of Docker that starts containers from a written list, called a Compose file. The file
-says which image to use, which folders the app may see and how it connects to the network. Starboard's are
+says which image to use, which folders the app may use and how it connects to the network. Starboard's are
 `compose.yaml` and `compose.image.yaml`.
 
 With a Compose file, one short command starts everything:
@@ -37,11 +37,11 @@ docker compose up -d
 ```
 
 `up` means start, and `-d` means "in the background", so you get the prompt back straight away. You do not need to
-run this now: the Starboard instructions tell you when.
+run this now: [the Run first script](../topics/run-first.md) does it for you.
 
-## Folders the box can see
+## Folders the box can use
 
-A container cannot see your files unless you say so. Each folder it may use is listed in the Compose file. Starboard
+A container can use only the folders you give it. Each folder it may use is listed in the Compose file. Starboard
 keeps its settings in a folder called `data`, next to its Compose file. Other folders, such as your media folders,
 are only added if you choose to, and Starboard can read them but not change them.
 
@@ -57,6 +57,7 @@ Host networking only works with Docker on Linux, which is why Starboard needs a 
 
 ## Find out more
 
+- [Set up everything with the Run first script](../topics/run-first.md)
 - [Install Docker](../topics/install-docker.md)
 - [Install Starboard with the installer](../topics/install-with-the-installer.md)
 - [Install Starboard from the ready-made image](../topics/install-from-the-ready-made-image.md)

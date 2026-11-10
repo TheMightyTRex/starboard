@@ -3,7 +3,7 @@
 # What a drive pool is
 
 A drive pool joins several drives into one folder. Instead of films on one drive and series on another, the apps
-see one folder, `/mnt/pool`, with everything in it. It is like a bookcase made of several shelves: you look for a
+find one folder, `/mnt/pool`, with everything in it. It is like a bookcase made of several shelves: you find a
 book on the bookcase, not on a particular shelf.
 
 ## How Starboard makes one
@@ -26,8 +26,9 @@ A pool keeps one copy of each file. A **backup drive** protects the pool:
   protects all the others.
 - **A copy** (rsync) is a second, readable copy of the folders you choose.
 
-Both are in the same computer, so keep a third copy of what matters somewhere else. Read
-[Use a drive as a backup drive](../topics/use-a-drive-as-a-backup-drive.md).
+Both are in the same computer, so keep a third copy of what matters somewhere else: three copies, on two kinds of
+storage, one away from home (the 3-2-1 rule). To choose between parity and a copy, read
+[Use a drive as a backup drive](../topics/use-a-drive-as-a-backup-drive.md#which-kind).
 
 ## Other ways to make a pool
 
@@ -39,6 +40,7 @@ Both are in the same computer, so keep a third copy of what matters somewhere el
 ## Find out more
 
 - [Add a drive to the pool](../topics/add-a-drive-to-the-pool.md)
+- [Balance the files](../topics/balance-the-files.md)
 - [Use a drive as a backup drive](../topics/use-a-drive-as-a-backup-drive.md)
 - [Check your disks' health](../topics/check-disk-health.md)
 

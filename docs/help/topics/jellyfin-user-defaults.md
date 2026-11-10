@@ -2,8 +2,8 @@
 
 # Give every Jellyfin user the same defaults
 
-Starboard can give every Jellyfin user the same starting choices, and new users get them too. For now there
-is one default: Live TV opens on the Guide.
+Starboard can give every Jellyfin user the same starting choices, and new users get them too. There is one
+default: Live TV opens on the Guide.
 
 ## Before you begin
 
@@ -25,12 +25,12 @@ Starboard shows **Last run worked** and what it did.
 - A user who has chosen something else in Jellyfin keeps their own choice.
 - Deactivate the switch to stop. Choices already given stay as they are, and each person can change their own
   in Jellyfin.
-- The hourly check makes two small requests to Jellyfin for each user, which is not noticeable.
+- The hourly check makes two small requests to Jellyfin for each user.
 
 ## If it does not work
 
 - **"Add Jellyfin first":** Starboard has no Jellyfin app with an API key. Select **Manage apps** in the
-  message and add the key. Read [Change or remove an app](change-or-remove-an-app.md).
+  message and add the key. Read [Find an app's API key](find-an-api-key.md).
 - **"Last run failed":** read the reason next to it, then read
   [An app shows as not responding](app-not-responding.md).
 

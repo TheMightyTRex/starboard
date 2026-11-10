@@ -7,12 +7,11 @@ them on System, Overview, shows how each one went, and lets you start one with *
 
 ## Before you begin
 
-- A job runner is set up on the server. Starboard does not run jobs itself: it only asks, and the runner does
-  the work. This is an advanced setup, done by hand.
-- Starboard knows the runner's folder. It is set with `STARBOARD_JOBS_DIR` in the `.env` file, as the README in
-  the Starboard repository explains under "Backup and restore". The same folder is used for
-  [Back up the whole server](back-up-the-server.md).
-- To use **Run now**, Starboard must be allowed to write in that folder's `requests` folder.
+- A job runner is set up on the server, by hand. Starboard does not run jobs itself: it only asks, and the
+  runner does the work.
+- Starboard knows the runner's folder, set with `STARBOARD_JOBS_DIR`. To use **Run now**, Starboard must be
+  allowed to write in that folder's `requests` folder. Both are explained in
+  [Back up the whole server](back-up-the-server.md#how-it-works), which uses the same folder.
 
 ## Steps
 
@@ -31,7 +30,8 @@ them on System, Overview, shows how each one went, and lets you start one with *
 ## Things to note
 
 - **Run now** cannot be selected while the job is waiting or running.
-- Starboard lists every job the runner reports, apart from the backups. Backups have their own page: **System**, then **Backup**.
+- Starboard lists every job the runner reports, apart from the backups. Backups have their own page: **System**,
+  then **Backup and restore**.
 - **Server jobs** appears only when the runner has reported at least one job.
 
 ## If it does not work
@@ -41,7 +41,7 @@ them on System, Overview, shows how each one went, and lets you start one with *
 - **No Run now button:** Starboard cannot write in the `requests` folder. Give it permission to write there,
   then restart Starboard.
 - **Not started** and a message: Starboard could not ask for the job. Read the message, then try again.
-- **Failed:** select **What it found** to see what went wrong.
+- **Failed:** select **What it found** to read what went wrong.
 
 ## Find out more
 

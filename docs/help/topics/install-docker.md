@@ -2,16 +2,16 @@
 
 # Install Docker
 
-Install Docker, the program that runs Starboard in its own sealed box, by copying a few commands into the terminal.
-At the end, `docker compose version` prints a version number and you are ready to install Starboard.
+Install Docker, the program that runs Starboard in its own sealed box, with a few commands in the terminal. At the
+end, `docker compose version` prints a version number and you are ready to install Starboard.
 
-The [Run first script](run-first.md) does all of this for you, and installs Starboard too. Use this page to do it
-by hand.
+[Set up everything with the Run first script](run-first.md) does all of this for you, and installs Starboard too.
+Use this page to do it by hand.
 
 ## Before you begin
 
-- A computer with Linux Mint 22.3, Debian 13, Ubuntu Server 26.04 or Raspberry Pi OS (64-bit), or a later version. Read
-  [What you need to run Starboard](what-you-need.md).
+- A computer with Linux Mint 22.3, Debian 13, Ubuntu Server 26.04 or Raspberry Pi OS (64-bit), or a later version.
+  Read [The four systems](what-you-need.md#the-four-systems).
 - The password you use to sign in to that computer. The terminal asks for it.
 - A terminal open on that computer. Read [The terminal: typing commands](../basics/the-terminal.md).
 - Not sure what Docker is? Read [What Docker is](../basics/what-is-docker.md).
@@ -24,14 +24,14 @@ by hand.
    curl -fsSL https://get.docker.com | sh
    ```
 
-2. Let your user run Docker without typing `sudo` every time:
+2. Let your user run Docker without `sudo` every time:
 
    ```bash
    sudo usermod -aG docker $USER
    ```
 
 3. Sign out of the computer and sign back in. On a computer you reach over SSH (secure shell), close the
-   connection and connect again. This is what makes Step 2 take effect.
+   connection and connect again. This makes step 2 take effect.
 4. Open a terminal again and check that Docker works:
 
    ```bash
@@ -50,9 +50,9 @@ Docker's install script does not support Linux Mint, so install Docker from Mint
    sudo apt install docker.io docker-compose-v2
    ```
 
-   When it asks "Do you want to continue?", type `y` and press Enter.
+   When it asks "Do you want to continue?", enter `y` and press Enter.
 
-2. Let your user run Docker without typing `sudo` every time:
+2. Let your user run Docker without `sudo` every time:
 
    ```bash
    sudo usermod -aG docker $USER
@@ -76,16 +76,16 @@ Docker's install script does not support Linux Mint, so install Docker from Mint
 ## If it does not work
 
 - **"curl: command not found":** the computer does not have curl, the tool that downloads the script. Install it,
-  then run Step 1 again:
+  then run step 1 again:
 
   ```bash
   sudo apt install curl
   ```
 
-- **"permission denied" when you run a docker command:** you have not signed out and back in since Step 2. Sign out,
+- **"permission denied" when you run a docker command:** you have not signed out and back in since step 2. Sign out,
   sign in, and try again. If it still happens, restart the computer.
 - **"docker: 'compose' is not a docker command":** the Compose part of Docker is missing. On Linux Mint, run the
-  install command in Step 1 again. On the others, run Docker's install script again.
+  install command in step 1 again. On the others, run Docker's install script again.
 - **On Linux Mint, "Unable to locate package docker-compose-v2":** your copy of Mint is probably an older version.
   Update Mint to the newest version, then try again.
 

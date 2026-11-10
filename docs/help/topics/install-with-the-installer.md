@@ -2,20 +2,18 @@
 
 # Install Starboard with the installer
 
-The installer downloads Starboard, asks what it may access on your computer, and starts it. At the end it prints the
+The installer asks what Starboard may access on your computer, then builds and starts it. At the end it shows the
 addresses to open Starboard and a one-time setup code for choosing your password. It takes about 10 minutes.
 
-Tip: most people should use the Run first script instead. It installs Docker and everything else, then runs this
-installer for you. Read [Quick start: one command sets up everything](../guides/quick-start.md).
-
-Use this page to do it by hand.
+Most people use the [Run first script](run-first.md) instead. It installs Docker and everything else, then runs
+this installer for you. Use this page to do it by hand.
 
 ## Before you begin
 
 - A Linux computer that is big enough. Read [What you need to run Starboard](what-you-need.md).
-- Docker is installed and `docker compose version` prints a version number. Read [Install Docker](install-docker.md).
+- Docker is installed and `docker compose version` shows a version number. Read [Install Docker](install-docker.md).
 - A terminal open on that computer. Read [The terminal: typing commands](../basics/the-terminal.md).
-- Run everything as your normal user. Do not type `sudo` in front of the installer.
+- Run everything as your normal user. Do not put `sudo` in front of the installer.
 
 ## Steps
 
@@ -49,14 +47,11 @@ Use this page to do it by hand.
    ./install.sh
    ```
 
-   It explains what it is going to do, checks that Docker is installed, then asks its questions one at a time.
-
-6. Answer each question: type the number of your answer and press Enter. Press Enter on its own to take the one in
-   the brackets, which is marked recommended. When you run the installer again, your last answer is in the brackets
-   instead. The next section explains every question.
-7. Wait while the installer builds and starts Starboard. The first time, this downloads what Starboard needs and can
-   take several minutes.
-8. When it finishes, the installer prints the addresses and the setup code. Keep the terminal open, or write the code
+   It says what it is going to do, checks that Docker is installed, then asks its questions one at a time.
+6. Answer each question: enter the number of your answer and press Enter. Press Enter on its own to take the
+   recommended answer. When you run the installer again, your last answer is the default instead.
+7. Wait while the installer builds and starts Starboard. The first time, this can take several minutes.
+8. When it finishes, the installer shows the addresses and the setup code. Keep the terminal open, or write the code
    down.
 9. Open the first address in a browser on this computer and choose your password. Read
    [Create your password and sign in](create-your-password.md).
@@ -64,84 +59,47 @@ Use this page to do it by hand.
 ## The questions, in plain words
 
 Every question is optional. If you are unsure, answer no: only that part of Starboard is missing, and you can change
-your answer later.
+your answer later. On a new install it asks only about your home network, Docker access and, when the computer has
+more than one extra drive, Drive pools. When you run it again, it also asks about each app's use, a Live TV folder,
+folders to show and disk health.
 
-On a new install the installer asks only what Starboard needs to start:
-
-1. **"Can phones and other computers on your home network open Starboard?"**
-   Yes means phones and other computers at home can open Starboard, with your password. No means only this computer
-   can. Most people answer yes. Asked on a new install only: after that, it is a switch in **Settings**,
-   **Security**.
-2. **"Give Starboard access to Docker for app updates?"**
-   Yes lets Starboard start your media apps, update them on **System**, **Apps**, **Updates**, and find their API keys.
-   This gives Starboard full control of Docker, which is the same as full control of the computer. Answer yes if you
-   want Starboard to set up your media server for you.
-3. **"Set up Drive pools?"**, only when the computer has more than one drive besides the system drive.
-   Yes installs the pool helper, which can join drives into one folder. It runs on this computer with sudo, so it is
-   asked here, before the set-up.
-
-The dashboard's name, where your media goes, Live TV, disk health and alerts come next, in Starboard's set-up, in
-the browser or the terminal. Those that change this computer are applied at the end with one command, which the set-up
-shows (the [Run first script](run-first.md) runs it for you).
-
-When you run the installer again later, it also asks these, with your last answers as the defaults:
-
-- **"Show each app's processor and memory use?"** Yes lets **System**, **Overview**, **Monitor** show what each
-  app is using. Starboard only reads, and only while that page is open.
-- **"Give Starboard a Live TV folder?"** Only for Jellyfin users who want free Live TV channels: the folder
-  Jellyfin reads its Live TV files from, for example `/srv/media-stack/config/jellyfin/iptv`. Starboard writes only in that folder.
-- **"Choose folders to show?"** Yes lets **System**, **Storage** show how full your drives are. Type one folder
-  per line as a name, an equals sign and the folder, such as `Media=/mnt/media`, then press Enter on an empty line.
-- **"Set up Disk health reports?"** Yes lets **System**, **Storage**, **Disk health** show each drive's health
-  report, which can warn of a failing drive. It installs a small job that checks your drives every 30 minutes, so it
-  asks for your password. It needs a program called smartmontools.
+[What the installer asks, and what each answer means](what-the-installer-asks.md#the-access-it-asks-for) explains
+every question. Your dashboard's name, media folder, apps and alerts come next, in Starboard's own set-up, in the
+browser or the terminal.
 
 ## What it prints at the end
 
-When Starboard is running, the last lines look like this, with your own address and code:
+When Starboard is running, the installer shows **Open Starboard** with these lines:
 
-```
-== Starboard is running
-On this computer: http://localhost:8095
-On your phone or other computers: http://192.168.1.20:8095
-What Starboard can access, and how to change it: Settings, Updates, Update settings.
-Setup code (you need it once, to choose your password): <your setup code>
-To update later: ./update.sh
-```
-
-- **On this computer** is the address to use in a browser on the server itself.
-- **On your phone or other computers** is the address for every other device at home. It appears only if you let your
-  home network open Starboard.
-- **Setup code** is the one-time code you enter before choosing a password. If you lose it, read
+- **On this computer:** the address to use in a browser on the server itself, such as `http://localhost:8095`.
+- **On other devices:** the address for every other device at home, such as `http://192.168.1.20:8095`. It appears
+  only if you let your home network open Starboard.
+- **Setup code:** the one-time code you enter before choosing a password. If you lose it, read
   [Find the setup code](find-the-setup-code.md).
+- **Ask again** and **Update:** the commands to change your answers and to update Starboard.
 
 ## Things to note
 
 - Your answers are saved in two files in the Starboard folder: `.env` and `compose.access.yaml`. Your settings and
   password are kept in the `data` folder. None of them leave your computer.
-- To change your answers later, go to the Starboard folder and run `./install.sh` again. Your settings and password
-  stay. Read [Change what Starboard can access](change-what-starboard-can-access.md).
-- No browser to finish in? Run `./install.sh --terminal`, and the installer asks for your password, the apps and
-  your download hours in the terminal too. Read [Set up Starboard in the terminal](set-up-in-the-terminal.md).
-- Without Docker, the installer can run Starboard with the computer's own Python instead: `./install.sh --native`.
-  This needs Python 3.10 or newer. When it finishes, it prints one more command to run so Starboard keeps running
-  after you sign out.
+- To change your answers later, run `./install.sh` again in the Starboard folder. Your settings and password stay.
+  Read [Change what Starboard can access](change-what-starboard-can-access.md).
+- No browser to finish in? Run `./install.sh --terminal`. Read
+  [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md).
+- Without Docker, the installer can run Starboard with the computer's own Python: `./install.sh --native`. This
+  needs Python 3.10 or newer. At the end, it shows one more command to run so Starboard keeps running after you sign
+  out.
 
 ## If it does not work
 
-- **"Stopped: install git first":** git is missing. Run Step 1 again.
-- **"Stopped: install Docker first, or use --native"** or **"install the Docker Compose plugin first":** Docker is
-  missing or incomplete. Follow [Install Docker](install-docker.md).
-- **"Stopped: run this as your normal user, not root":** you typed `sudo` before the installer. Run `./install.sh` on
-  its own.
-- **"permission denied" while it builds:** you have not signed out and back in since installing Docker. Sign out,
-  sign in, go to the Starboard folder with `cd ~/starboard`, and run `./install.sh` again.
-- **"Stopped: there is no folder":** a folder you typed does not exist. Check the spelling, including capitals, and
-  run the installer again.
-- **"install smartmontools first":** for Disk health, install smartmontools with `sudo apt install smartmontools`
-  then run `./install.sh` again.
-- **"Stopped: Starboard did not start":** read what went wrong with `docker compose logs starboard`, then read
-  [Starboard does not open](starboard-does-not-open.md).
+Each time the installer stops, it shows an error number, such as "Error IN-07". Find it in
+[Run first and installer error numbers](run-first-errors.md#starboards-installer). The most common are:
+
+- **IN-05, IN-07 or IN-08:** git, Docker or Docker Compose is missing. Read
+  [IN-07](run-first-errors.md#in-07).
+- **IN-04:** you put `sudo` in front of the installer. Run `./install.sh` on its own.
+- **IN-22:** you have not signed out and back in since installing Docker. Read [IN-22](run-first-errors.md#in-22).
+- **IN-24:** Starboard did not start. Read [Starboard does not open](starboard-does-not-open.md).
 
 ## Find out more
 

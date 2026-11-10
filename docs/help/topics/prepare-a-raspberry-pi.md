@@ -8,14 +8,15 @@ ready for [Connect to your server from another computer](connect-with-ssh.md).
 
 ## Before you begin
 
-- A microSD card of 16 GB or more, and a computer with a card reader. Everything on the card is erased.
+- A microSD card of 32 GB or more, and a computer with a card reader. Everything on the card is erased.
 - The name and password of your Wi-Fi, unless the Pi will use a network cable.
-- Check your Pi is big enough in [What you need to run Starboard](what-you-need.md).
+- A Pi big enough for a media server. Read
+  [Raspberry Pi and other small devices](what-you-need.md#raspberry-pi-and-other-small-devices).
 
 ## Steps
 
-1. On your computer, download and install Raspberry Pi Imager from raspberrypi.com/software (opens the
-   Raspberry Pi website).
+1. On your computer, download and install Raspberry Pi Imager from
+   [Raspberry Pi's software page](https://www.raspberrypi.com/software/).
 2. Put the microSD card in your computer and open Raspberry Pi Imager.
 3. For the device, choose your Raspberry Pi model.
 4. For the operating system, choose **Raspberry Pi OS (64-bit)**. On a Pi 3 or Zero 2 W you can choose
@@ -32,18 +33,19 @@ ready for [Connect to your server from another computer](connect-with-ssh.md).
 8. Save the settings, choose **Yes** to apply them, and confirm that the card may be erased.
 9. When Imager says it has finished, take the card out, put it in the Pi and connect the power.
 
-The Pi takes a few minutes to start the first time. It is ready when its green light stops flashing
-steadily.
+The Pi takes a few minutes to start the first time. It is ready when its green light stops flashing.
+Next, follow [Start Starboard on Raspberry Pi OS](start-on-raspberry-pi-os.md#steps).
 
 ## Things to note
 
-- Imager's labels change between versions. If a label here is not on your copy, look for the same idea:
-  the device, the system, the card, then the customisation settings.
+- Imager's labels change between versions. If a label here is not on your copy, choose the same things in
+  order: the device, the system, the card, then the customisation settings.
 - A network cable is more reliable than Wi-Fi for a server, and faster for media.
 
 ## Find out more
 
 - [Connect to your server from another computer](connect-with-ssh.md)
+- [Start Starboard on Raspberry Pi OS](start-on-raspberry-pi-os.md)
 - [Install Starboard on a Raspberry Pi](../guides/install-on-a-raspberry-pi.md)
 - [What a home server is](../basics/what-is-a-home-server.md)
 

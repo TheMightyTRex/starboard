@@ -2,18 +2,17 @@
 
 # Back up the whole server
 
-Starboard can start a backup of your whole server and list the files it made, on **System**, **Backup**. The backup itself is done by a job you set up on the server, so Starboard never needs to read the
-server's files.
+Starboard can start a backup of your whole server and list the files it made, on **System**, **Backup**. A
+job you set up on the server makes the backup, so Starboard never reads the server's files.
 
-This article is for confident readers. You write a small script, set up a systemd service and change
-Docker's settings. If that is new to you, start with
-[Back up and restore Starboard's settings](back-up-settings.md), which needs none of it.
+You write a small script, set up a systemd service and change Docker's settings. If that is new to you, start
+with [Back up and restore Starboard's settings](back-up-settings.md), which needs none of it.
 
 ## Before you begin
 
 - You installed Starboard with the installer, and you can use `sudo` on the server.
 - You know what you want to back up, such as each app's settings folder, and where to keep the backups.
-- You have read [What Docker is](../basics/what-is-docker.md) and
+- You know the basics in [What Docker is](../basics/what-is-docker.md) and
   [The terminal: typing commands](../basics/the-terminal.md).
 
 ## How it works
@@ -40,8 +39,8 @@ The result file is JSON (a simple text format for data) with these fields:
 | `finished` | When it finished, in the same form |
 | `summary` | One sentence about the result, shown on the page |
 
-Starboard lists files in the backup folder that end in `.zip`, `.tar`, `.tar.gz`, `.tgz`, `.gz`, `.7z`,
-`.dump`, `.sql` or `.md`.
+Starboard lists the files in the backup folder that end in `.zip`, `.tar`, `.tar.gz`, `.tgz`, `.gz`, `.7z`,
+`.dump`, `.sql` or `.md`, newest first.
 
 ## Steps
 
@@ -173,20 +172,20 @@ Starboard lists files in the backup folder that end in `.zip`, `.tar`, `.tar.gz`
 
 11. Go to **System**, then **Backup**, and select **Back up the server now**.
 
-The status shows **Starting**, then **Backing up now**, then **Complete** or **Failed**. The page checks
-again every 5 seconds while the backup runs. The new file appears in the list under it.
+The status shows **Starting**, then **Backing up now**, then **Complete** or **Failed**. The server picks up the
+request within a minute. The new file then appears in the list of server backups.
 
 ## Things to note
 
 - Starboard cannot restore the whole server. To restore, copy the files back on the server yourself, or
   follow the rebuild prompt.
-- With **Include a rebuild prompt** on, your job can also save `REBUILD-PROMPT.md` next to the backup: steps
-  an AI assistant with a shell can follow to rebuild the server. The example script does not write one.
-- Select a backup in the list to see its details, then **Download** to save it. Starboard asks for your
+- With **Include a rebuild prompt** active, your job can also save `REBUILD-PROMPT.md` next to the backup:
+  steps an AI assistant with a shell can follow to rebuild the server. The example script does not write one.
+- Select a backup in the list to open its details, then **Download** to save it. Starboard asks for your
   password first, because a server backup can hold API keys and private files.
-- The backups sit on the same server. If its disk fails, they go with it, so copy the newest one to another
+- The backups are on the same server. If its disk fails, they go with it, so copy the newest one to another
   disk or computer.
-- If you set only `STARBOARD_BACKUP_DIR`, the page lists the backups but says it cannot start one.
+- With only `STARBOARD_BACKUP_DIR` set, the page lists the backups but cannot start one.
 - Your job can also write `included` and `unreadable` (lists of what went in and what could not be read),
   `exit` (its exit code) and `runs` (earlier results). Starboard shows them when they are there.
 - The same `requests` folder can run other jobs, such as a server check. Read
@@ -198,7 +197,7 @@ again every 5 seconds while the backup runs. The new file appears in the list un
 
 - **The page says "No server backup job is set up":** Starboard did not get the two settings. Check `.env`,
   then repeat step 10.
-- **"The requests folder is not writable":** repeat step 2, and check the `requests` line in
+- **"the requests folder is not writable":** repeat step 2, and check the `requests` line in
   `compose.override.yaml` does not end in `:ro`.
 - **The status stays on Starting:** the path unit is not running. Check it with this command:
 

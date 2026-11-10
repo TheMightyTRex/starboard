@@ -7,9 +7,9 @@ their own in the Display panel.
 
 ## The five designs
 
-- **Health first:** the default. Apps that are not responding come first, with a coloured edge for status.
+- **Health first:** the default. Apps that are not responding are at the start, with a coloured edge for status.
 - **Tiles:** a grid of cards with a description, like a launcher.
-- **Shelf:** an icon rail and one app per row.
+- **Shelf:** one app per row, with room for its details.
 - **Command:** search first, with apps as a compact icon grid.
 - **Status board:** a dense table for checking everything at a glance.
 
@@ -17,14 +17,14 @@ their own in the Display panel.
 
 ### Set the design everyone sees
 
-1. Go to **Settings**, then **General**.
+1. Go to **Settings**, then **General**, and activate **Advanced settings**.
 2. Find **Default design**.
 3. Choose a design, such as **Tiles**. The change applies at once, and Starboard confirms with **Default
    design: Tiles**.
 
 ### Choose your own design
 
-1. Select **Display** in the header. A side panel opens, called **Display and accessibility**.
+1. Select **Display** in the header of any page. A side panel opens, called **Display and accessibility**.
 2. Under **Design**, choose a design. The Apps page changes at once.
 3. Select **Done**.
 
@@ -34,13 +34,17 @@ To go back to the design everyone sees, choose **Use the dashboard's default** u
 
 - Your own choice in **Display** applies to this browser only. On another phone or computer, choose it again.
 - Your own choice wins over the default. If you chose a design in **Display**, changing **Default design** does
-  not change what you see.
+  not change what the page shows.
 - **Reset** in the Display panel sets every display choice back to the default, including the design.
+- A design sets how the Apps page is laid out. A style from a plug-in changes colours and shape on every page. Read
+  [Choose a style from a plug-in](display-and-accessibility.md#choose-a-style-from-a-plug-in).
+- The dashboard has its own layouts. Read [Use and change the dashboard](use-the-dashboard.md).
 
 ## Find out more
 
 - [Change text size, theme and other display settings](display-and-accessibility.md)
 - [Organise apps into categories](organise-categories.md)
+- [Use and change the dashboard](use-the-dashboard.md)
 - [Set up your dashboard after installing](../guides/set-up-your-dashboard.md)
 
 <!-- footer: download rights -->

@@ -30,7 +30,12 @@ Starboard's help follows the shared guides in the design system, which Starboard
   up to the design system's screenshot rules. Retake them whenever the page or the help changes.
   `python3 tools/check-help.py --list-screenshots` lists the topics that still have fewer.
 - **Check before committing:** `python3 tools/check-help.py` checks every link, the layout of each tier and the
-  writing rules that a machine can check.
+  writing rules that a machine can check. It also runs `tools/check-help-links.py`, which checks that every link
+  into the help, from the articles, the release notes, the pages and the code, reaches a heading that exists.
+- **Link to the exact heading:** when an article mentions another task or page that has its own article or
+  heading, link straight to it, such as `set-download-hours.md#before-you-begin`. An anchor is the heading in
+  lower case, with punctuation left out and spaces as hyphens. Keep headings stable, because release notes link
+  to them; if one must change, update its links in `CHANGELOG.md` and `docs/releases`.
 
 ## The footer on every page
 

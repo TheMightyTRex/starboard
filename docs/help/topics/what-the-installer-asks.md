@@ -4,28 +4,35 @@
 
 `./install.sh` explains each step before it runs it, and asks before giving Starboard any access to your
 computer. Every kind of access is optional: say no, and only that part of Starboard is missing. Run
-`./install.sh` again at any time to change your answers; your settings and password stay.
+`./install.sh` again at any time to change your answers. Your settings and password stay.
 
 ## What the installer does, in order
 
 1. **Checks what is installed:** Docker and Docker Compose, or Python and systemd with `--native`. It changes
    nothing.
-2. **Asks what Starboard may access** (the table below).
+2. **Asks what Starboard may access** (the table in the next section).
 3. **Saves your answers** in `.env` (only your user can read it) and `compose.access.yaml`. Git ignores both.
 4. **Builds and starts Starboard** with `docker compose up -d --build`, or as a systemd service for your user with
    `--native`. Neither needs `sudo`.
 
 ## The access it asks for
 
-| Access | What it is for | What it means for your computer | Answer when new | Change it |
+A new install asks only the first two questions, plus **Set up Drive pools?** when the computer has more than one
+extra drive. The others come when you run the installer again, with your last answers as the defaults. The
+set-up in the browser or the terminal asks about folders, Live TV and disk health for a new install.
+
+| Question | What it is for | What it means for your computer | Recommended when new | Change it |
 |---|---|---|---|---|
-| Home network | Phones and computers at home can open Starboard | Starboard listens on your network, behind your password | Yes | **Settings**, **Security**, or `--local-only` on a new install |
-| Docker | **System**, **Apps**, **Updates**, and starting the apps Install apps sets up | Docker's socket is shared with Starboard: full control of Docker, so of the computer | No | `--docker`, `--no-docker` |
-| Each app's use | **System**, **Overview**, **Monitor**: each app's processor and memory | `/sys/fs/cgroup` is shared read-only; two small files for each app are read while Monitor is open | No | `--app-use`, `--no-app-use` |
-| Live TV folder | **Settings**, **Apps**, **Jellyfin**: free channels and guides for Jellyfin | Jellyfin's Live TV folder is shared; Starboard writes playlists, guides and logos there once a day while Live TV is on | None | `--livetv-folder /path`, `--no-livetv` |
-| Folders | **System**, **Storage**: free space | Each folder is shared read-only; Starboard reads sizes, not files | None | `--disk Name=/path`, `--no-disks` |
-| Disk health | **System**, **Disk health**: each drive's health report | Runs `deploy/install-smart.sh` with `sudo`: a timer reads each drive every 30 minutes as root and saves the reports in `./smart`; Starboard may only ask it for a reading now | No | `--disk-health`, `--no-disk-health` |
-| Drive pools | **System**, **Storage**, **Pool**: join drives into one folder | Installs a small helper with `sudo` that changes drives only from a fixed list of actions, after a check | No | Answer **Set up Drive pools?** again |
+| **Can phones and other computers on your home network open Starboard?** | Phones and computers at home can open Starboard, with your password | Starboard listens on your network, behind your password | Yes | **Settings**, **Security**, or `--local-only` on a new install |
+| **Give Starboard access to Docker for app updates?** | **System**, **Apps**, **Updates**, and starting the apps that **Install apps** sets up | Docker's socket is shared with Starboard: full control of Docker, so of the computer | No | `--docker`, `--no-docker` |
+| **Show each app's processor and memory use?** | **System**, **Monitor**: each app's processor and memory | `/sys/fs/cgroup` is shared read-only; two small files for each app are read while Monitor is open | No | `--app-use`, `--no-app-use` |
+| **Give Starboard a Live TV folder?** | Free Live TV channels and guides for Jellyfin | Jellyfin's Live TV folder is shared; Starboard writes playlists, guides and logos there while Live TV is active | None | `--livetv-folder /path`, `--no-livetv` |
+| **Choose folders to show?** | **System**, **Storage**: free space. Enter one folder per line, such as `Media=/mnt/media`, then press Enter on an empty line | Each folder is shared read-only; Starboard reads sizes, not files | None | `--disk Name=/path`, `--no-disks` |
+| **Set up Disk health reports?** | **System**, **Disk health**: each drive's health report | Runs `deploy/install-smart.sh` with `sudo`: a timer reads each drive every 30 minutes as root and saves the reports in `./smart` | No | `--disk-health`, `--no-disk-health` |
+| **Set up Drive pools?** | **System**, **Pool**: join drives into one folder | Installs a small helper with `sudo` that changes drives only from a fixed list of actions, after a check | No | Answer **Set up Drive pools?** again |
+
+Docker access is what lets Starboard start and update your media apps for you. Answer yes if you want that, and keep
+your Starboard password safe: anyone who can sign in could then control Docker.
 
 `--yes` answers without asking: the options you give, then your last answers, then No. To remove the Disk health
 timer: `sudo deploy/install-smart.sh --remove`.
@@ -37,16 +44,16 @@ Some access needs nothing from the installer, so it is a setting in Starboard:
 - **Your apps** (**Settings**, **Apps**, **Manage apps**): Starboard reads status, queues and calendars with the
   API keys you give it, and adds films, series and books only when you choose **Add**.
 - **Download hours** (**Settings**, **General**): pauses the download apps outside the hours you choose.
-- **Updates** (**Settings**, **Updates**): looks for new Starboard releases, at most every 6 hours, and downloads
-  app icons and posters.
+- **Updates** (**Settings**, **Updates**, **Update settings**): looks for new Starboard releases, at most every 6
+  hours, and downloads app icons and posters.
 
-**Settings**, **Updates**, **What Starboard can access** lists all of these, says which are active, and gives the
-setting or the command that changes each one.
+[Change what Starboard can access](change-what-starboard-can-access.md#check-what-starboard-can-access-now) shows
+where Starboard lists all of these, with the setting or command that changes each one.
 
 ## Your own folders: compose.override.yaml
 
 Keep anything else particular to your server in `compose.override.yaml`, next to `compose.yaml`. Git ignores it,
-and `./install.sh` and `./update.sh` leave it alone. The installer sees folders added this way and keeps them.
+and `./install.sh` and `./update.sh` leave it alone. The installer finds folders added this way and keeps them.
 
 ## Find out more
 

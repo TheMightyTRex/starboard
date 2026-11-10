@@ -2,18 +2,17 @@
 
 # Set up everything with the Run first script
 
-Once Linux is installed, the Run first script sets up everything else: it checks the computer, installs Docker and
-anything else that is missing, downloads Starboard and starts its installer. Then the set-up opens in your browser
-if the computer has a desktop, or carries on in the terminal if it does not. It takes about 15 minutes.
+Once Linux is installed, the Run first script sets up everything else. It checks the computer, installs Docker and
+anything else that is missing, downloads Starboard and starts its installer. Then the set-up opens in your browser,
+or carries on in the terminal. It takes about 15 minutes.
 
 ## Before you begin
 
 - A computer with Linux installed: Linux Mint 22.3 (recommended), Debian 13, Ubuntu Server 26.04 or Raspberry Pi
   OS (64-bit), or a later version, with or without a desktop. Read [Install Linux on a computer](install-linux.md).
-  Each system has its own page, with the computer it needs and its common problems:
-  [Linux Mint](start-on-linux-mint.md), [Debian](start-on-debian.md), [Ubuntu Server](start-on-ubuntu-server.md)
-  and [Raspberry Pi OS](start-on-raspberry-pi-os.md).
-- The computer is connected to the internet. Not sure? Read
+  Each system has its own page: [Linux Mint](start-on-linux-mint.md), [Debian](start-on-debian.md),
+  [Ubuntu Server](start-on-ubuntu-server.md) and [Raspberry Pi OS](start-on-raspberry-pi-os.md).
+- The computer is connected to the internet. Read
   [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md).
 - The password you use to sign in to that computer. It is asked for when something needs installing.
 - A terminal open on that computer, or connected to it. Read [The terminal: typing commands](../basics/the-terminal.md).
@@ -26,77 +25,74 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
    curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
    ```
 
-   Type it exactly, or better, copy and paste it: `main/run-first.sh` must be in small letters, with a hyphen, and
-   the GitHub account is `TheMightyTRex`. A typing mistake gives "error: 404", which means "not found". Read
+   Copy and paste it if you can. `main/run-first.sh` is in small letters, with a hyphen, and the GitHub account is
+   `TheMightyTRex`. A difference gives "error: 404", which means "not found". Read
    [Capital letters matter](../basics/the-terminal.md#capital-letters-matter).
 
-   The `|` in the middle is the vertical bar, which is in a different place on different keyboards: on a UK
-   keyboard it is **Shift** and the `\` key next to the left **Shift**. Read
+   The `|` is the vertical bar. Its key is in different places on different keyboards. Read
    [Symbols that are in different places on different keyboards](../basics/the-terminal.md#symbols-that-are-in-different-places-on-different-keyboards).
-   With no `|` at all, these two commands do the same:
+   These two commands do the same with no `|`:
 
    ```bash
    curl -fsSL -o run-first.sh https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh
    bash run-first.sh
    ```
 
-   If it says "Command 'curl' not found" (a new Debian does not include curl), use this command instead. It does
-   the same with `wget`, which Linux Mint, Debian, Ubuntu Server and Raspberry Pi OS include:
-
-   ```bash
-   wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
-   ```
-
-2. The first question is about how it looks. Press Enter for the standard look, or type `a` and press Enter for
-   **accessible mode**: plain lines with no boxes or colour, for software that reads text aloud. Your choice is kept
-   for the whole installation.
-3. **Welcome:** choose how to finish setting up. **In a browser** is recommended when the computer has a desktop;
-   **Here in the terminal** when it has none, such as when you are connected over SSH. Press Enter for the
-   recommended answer.
+2. The first question is about how it looks. Press Enter for the standard look. For **accessible mode**, enter `a`
+   and press Enter: plain lines with no boxes or colour, for software that reads text aloud. Your choice is kept for
+   the whole installation.
+3. **Welcome:** choose how to finish setting up. **In a browser** is recommended when the computer has a desktop.
+   **Here in the terminal** is recommended when it has none, such as over SSH. Press Enter for the recommended answer.
    ![The Run first Welcome step in the terminal, with How do you want to finish setting up? and its two answers (step 3) outlined](../images/run-first-1-welcome.png)
 
 4. **Check this computer:** it lists what is already there, with a tick, and what is missing. This changes nothing.
    ![The Check this computer step, with the list of what is there and what is missing (step 4) outlined](../images/run-first-2-check.png)
 
-5. **Install what is missing:** it shows the commands it will run. Press Enter to install them. When it asks for
-   your password, type it and press Enter. Nothing shows as you type. If everything is already there, it says so.
+5. **Install what is missing:** it shows the commands it will run. Press Enter to install them. When sudo asks for
+   your password, enter it and press Enter. Nothing shows as you enter it.
+
+   If Linux is installing its own updates, which is common soon after Linux is installed, the script waits for them.
+   A progress bar called **Waiting for Linux to finish installing its updates** shows what is installing, how many
+   are done and how much is downloaded. The script then carries on by itself. If updates start part-way through, it
+   waits and tries again by itself.
 6. **Download Starboard:** it downloads Starboard into a folder called `starboard` in your home folder, or updates
    it if it is already there.
-7. **Install Starboard:** check the summary and press Enter. Starboard's installer asks about your home network and
-   Docker access, and about drive pools when there is more than one drive. If you are unsure, the recommended answer
-   is the safe one. Answer yes to Docker access if you want Starboard to start your media apps for you. The script
-   tells Starboard what it found on this computer (drives, apps already running, memory), so the set-up can
-   recommend the right answers.
-8. Finish setting up:
+7. **Ready to install:** check the summary and press Enter to start Starboard's installer.
+8. **Install Starboard:** answer the installer's questions. If you are unsure, press Enter for the recommended answer.
+   Read [What the installer asks](what-the-installer-asks.md#the-access-it-asks-for). The script tells the set-up
+   what it found on this computer, such as drives and apps already running, so it can recommend the right answers.
+9. Finish setting up:
    - **In a browser, on a computer with a desktop:** the set-up page opens by itself with the setup code filled in.
-     Choose your password. Read [Create your password and sign in](create-your-password.md).
-   - **In a browser, with no desktop:** open the address it prints on a phone or another computer at home, and
+     Read [Create your password and sign in](create-your-password.md).
+   - **In a browser, with no desktop:** open the address it shows on a phone or another computer at home, and
      enter the setup code it shows.
    - **Here in the terminal:** answer the set-up questions. Read
-     [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md). At the end, the script makes the
-     set-up's changes to this computer, such as disk health, and asks for your password if it needs it.
+     [Set up Starboard in the terminal, with no browser](set-up-in-the-terminal.md#steps).
 
-   ![The Done step, with the Open Starboard box of addresses (step 8) outlined](../images/run-first-3-done.png)
+   At the end, the script makes the set-up's changes to this computer, such as disk health. It asks for your password
+   again if sudo needs it.
+
+   ![The Done step, with the Open Starboard box of addresses (step 9) outlined](../images/run-first-3-done.png)
 
 ## How to answer
 
 - Press Enter on its own to take the recommended answer.
-- Type `b` and press Enter to go back a step, `?` for help with the step, or `q` to stop. Stopping changes nothing
-  more, and you can run the script again at any time.
-- Each step starts on an empty terminal window. The heading and progress bar stay at the top and the keys stay on
-  the bottom line.
+- Enter `b` to go back a step, `?` for help with the step, or `q` to stop. Stopping changes nothing more, and you can
+  run the script again at any time.
+- Each step starts on an empty terminal window. The heading and progress bar stay at the top of the window, and the
+  keys stay on its last line.
 
 ## Things to note
 
-- You can run it again at any time: it only installs what is missing, and updates Starboard if it is already
+- You can run it again at any time. It installs only what is missing, and updates Starboard if it is already
   downloaded.
-- To only check the computer, with no changes, add `--check`:
+- To check the computer with no changes, add `--check`:
 
   ```bash
   curl -fsSL https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash -s -- --check
   ```
 
-- Prefer to read a script before running it? Download it, read it, then run it:
+- To read the script before running it, download it, read it with `less`, then run it:
 
   ```bash
   curl -fsSL -o run-first.sh https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh
@@ -104,47 +100,28 @@ if the computer has a desktop, or carries on in the terminal if it does not. It 
   bash run-first.sh
   ```
 
-- It never runs as administrator by itself and never keeps your password: sudo asks for it, only when something is
+- It never runs as administrator by itself and never keeps your password. sudo asks for it, only when something is
   being installed.
-- It allows your user to use Docker. This is the same as administrator control of the computer, so only run it as
-  your own user.
-- After it allows your user to use Docker, sign out and back in once, so ordinary `docker` commands work in new
-  terminals too. The installer itself does not need this.
+- It allows your user to use Docker. This is the same as administrator control of the computer, so run it only as
+  your own user. Sign out and back in once afterwards, so `docker` commands work in new terminals too.
 
 ## If it does not work
 
-- **An error number, such as "Error RF-11":** look it up in [Run first and installer error numbers](run-first-errors.md),
-  which says what each one means and how to put it right.
-- **"The requested URL returned error: 404":** the address was typed with a difference. Copy and paste it instead,
-  or check that `main/run-first.sh` is in small letters with a hyphen and the account is `TheMightyTRex`.
-- **"Command 'curl' not found" or "curl: command not found":** use the same command with `wget` instead:
+- **An error number, such as "Error RF-11":** find it in
+  [Run first and installer error numbers](run-first-errors.md), which says what it means and how to put it right.
+- **"The requested URL returned error: 404":** the address has a difference. Copy and paste it instead.
+- **"Command 'curl' not found" or "curl: command not found":** a new Debian does not include curl. Use the same
+  command with `wget` instead:
 
   ```bash
   wget -qO- https://raw.githubusercontent.com/TheMightyTRex/starboard/main/run-first.sh | bash
   ```
 
-  If `wget` is missing too, install curl, then run the first command again. Use the command below, not the
-  `sudo snap install curl` that Ubuntu suggests: the snap version is sandboxed and cannot save the files the script
-  needs:
-
-  ```bash
-  sudo apt install curl
-  ```
-
-- **"curl: (23) client returned ERROR on write", with a message about `curl.snap`:** curl was installed as a snap,
-  which cannot save files where the script needs them. Install the usual curl, then run the script again; it uses
-  that one from then on:
-
-  ```bash
-  sudo apt install curl
-  ```
-
+  If `wget` is missing too, install curl with `sudo apt install curl`, then run the first command again. Do not use
+  the `sudo snap install curl` that Ubuntu suggests. Read [RF-10](run-first-errors.md#rf-10).
 - **"This Linux is not one this script knows how to install on":** install Docker by hand with
   [Install Docker](install-docker.md), then run the script again.
-- **A command fails while installing:** read the lines above the message. Most often the computer is not online, or
-  another update is running. Wait a few minutes and run the script again.
-- **"exists but is not a Starboard download":** a folder called `starboard` is already in your home folder. Move or
-  rename it, then run the script again.
+- **"exists but is not a Starboard download":** read [RF-30](run-first-errors.md#rf-30).
 
 ## Find out more
 

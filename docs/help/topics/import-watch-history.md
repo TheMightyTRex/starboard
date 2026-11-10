@@ -23,14 +23,14 @@ At the end, films and episodes show as watched in Jellyfin, with resume points f
 
 1. Go to **Settings**, then **Apps**, then **Jellyfin**.
 2. In **Import watch history**, choose where the history comes from in **Import from**.
-3. For a server, type its **Server address**, such as `http://192.168.1.20:32400`, and its
+3. For a server, enter its **Server address**, such as `http://192.168.1.20:32400`, and its
    **Token or API key**.
 4. For a file, select it in **File**. For a Plex database, stop Plex before you copy the file, or copy its
    `-wal` file with it.
 5. Select **Read the history**.
 
 Starboard shows "Reading the history. This can take a few minutes." When it ends, it shows **History read**
-and a table of the accounts it found, with how many films and episodes each one watched.
+and a table of the accounts it found, with the films and episodes each one watched.
 
 ### Match each account to a Jellyfin user
 
@@ -59,14 +59,16 @@ hour**.
   TVDB, TMDB or IMDb ID, with the season and episode number.
 - After an apply, **Not in Jellyfin yet** lists the films and episodes Starboard could not match, and the
   account each one belongs to. Either they are not in Jellyfin yet, or Jellyfin has no TMDB, IMDb or TVDB
-  ID for them. With **Keep applying every hour** on, they are picked up when they arrive.
+  ID for them. With **Keep applying every hour** active, they are picked up when they arrive.
 - A Plex database copy is deleted after Starboard reads it.
 - **Keep applying every hour** uses a little of your server each hour. Read
   [Make Starboard use less of your server](make-starboard-lighter.md).
+- **Your Jellyfin user**, on the same page, chooses whose watch history the Library shows, and whose
+  **Mark as watched** changes.
 
 ## If it does not work
 
-- **"Not started":** read the reason in the message. The most common one is a missing file or address.
+- **"Not started":** read the reason in the message. It is usually a missing file or address.
 - **"The import did not work":** check the server address and the token or API key, then select
   **Read the history** again.
 - **An account has no Jellyfin user to choose:** make the user in Jellyfin first, then open this page again.

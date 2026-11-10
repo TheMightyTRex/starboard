@@ -3,7 +3,7 @@
 # Back up and restore Starboard's settings
 
 Download Starboard's settings as one file, and put them back from that file later. The file holds your
-apps, their API keys, your categories and your other settings, so you can rebuild your dashboard in minutes.
+apps, their API keys, your categories and your other settings.
 
 ## Before you begin
 
@@ -16,10 +16,10 @@ apps, their API keys, your categories and your other settings, so you can rebuil
 1. Go to **System**, then **Backup**.
 2. Find **Starboard's settings**.
 3. Select **Download a backup**.
-4. Starboard asks for **Your password**. Type it and select **Download**.
+4. Starboard asks for **Your password**. Enter it and select **Download**.
 
 Your browser saves a file named like `starboard-settings-2026-11-03.json`, with the date you made it.
-Starboard shows how many apps the backup holds.
+Starboard shows "Backup downloaded" and how many apps it holds.
 
 ### Restore from a file
 
@@ -27,7 +27,7 @@ Starboard shows how many apps the backup holds.
 2. In **Starboard's settings**, select **Restore from a file**.
 3. Choose the backup file you downloaded.
 4. Starboard asks **Restore Starboard's settings?** and says how many apps the file holds and when it was
-   made. Type **Your password** and select **Restore settings**.
+   made. Enter **Your password** and select **Restore settings**.
 
 Starboard shows **Settings restored** and how many apps it put back.
 
@@ -44,10 +44,12 @@ Starboard shows **Settings restored** and how many apps it put back.
   longer knows becomes a plain link.
 - This backup covers Starboard only, not your other apps or your media. For the whole server, read
   [Back up the whole server](back-up-the-server.md).
+- If Starboard installed Reelix, **Reelix's backups** on the same page makes and restores Reelix's own
+  backups. Starboard asks for Reelix's password first.
 
 ## If it does not work
 
-- **"That password is not right":** check Caps Lock and type it again.
+- **"That password is not right":** check Caps Lock and enter it again.
 - **"That file is not a Starboard backup":** choose the file you downloaded with **Download a backup**. It
   ends in `.json`.
 

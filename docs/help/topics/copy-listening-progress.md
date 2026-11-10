@@ -8,8 +8,8 @@ Audiobookshelf into your Audiobookshelf. At the end, each person carries on from
 ## Before you begin
 
 - Audiobookshelf has scanned in your books. Progress is matched to the books it has.
-- Audiobookshelf is on your dashboard with an admin user's API key. In Audiobookshelf, go to **Settings**,
-  **API Keys**, then **Add API key**, for an admin user. Then add the key to the app in Starboard, as in
+- Audiobookshelf is in **Manage apps** with an admin user's API key. In Audiobookshelf, go to **Settings**,
+  **API Keys**, then **Add API key**, for an admin user. Then add the key to the app in Starboard. Read
   [Change or remove an app](change-or-remove-an-app.md).
 - Each person has a user in Audiobookshelf.
 - You have the address of the server to copy from, and one of these:
@@ -24,7 +24,7 @@ Audiobookshelf into your Audiobookshelf. At the end, each person carries on from
 
 1. Go to **Settings**, then **Apps**, then **Audiobookshelf**.
 2. In **Copy listening progress**, choose where the progress comes from in **Read from**.
-3. Type the **Server address**, such as `http://192.168.1.20:8096`, and the **Token or API key**.
+3. Enter the **Server address**, such as `http://192.168.1.20:8096`, and the **Token or API key**.
 4. Select **Read the progress**.
 
 Starboard shows "Reading the progress. This can take a minute or two." When it ends, it shows **Progress
@@ -50,7 +50,7 @@ To keep applying progress as new books are scanned in, activate **Keep applying 
 
 - Progress a person already has in Audiobookshelf is never changed, and each book is copied once.
 - Books are matched by their ASIN (Amazon's book number), then their ISBN, then their title and author, then
-  their folder. The section **How Starboard copies progress** on the page explains this too.
+  their folder. **How Starboard copies progress** on the page says the same.
 - A book in several files becomes one position. If the two copies are different lengths, the position is
   scaled to fit.
 - From Plex, Starboard reads music libraries with "book" in their name, or that use the Audnexus agent. From
@@ -60,15 +60,14 @@ To keep applying progress as new books are scanned in, activate **Keep applying 
 
 ## If it does not work
 
-- **"Give Audiobookshelf an admin API key first":** add the key as described in
+- **"Give Audiobookshelf an admin API key first":** add the key, as in
   [Before you begin](#before-you-begin). You can read progress before that, but not apply it.
 - **"Starboard cannot reach Audiobookshelf":** check its address and API key in **Manage apps**. Read
   [An app shows as not responding](app-not-responding.md).
 - **"Reading did not work":** check the server address and the token or API key, then select **Read the
   progress** again.
-- **Books not found in Audiobookshelf:** this list shows books Starboard could not match. Either they are not
-  scanned in yet, or their details differ. Check the title, author or ASIN in Audiobookshelf. The next apply
-  picks them up.
+- **Books not found in Audiobookshelf:** Starboard could not match these books. Either they are not scanned in
+  yet, or their details differ. Check the title, author or ASIN in Audiobookshelf. The next apply picks them up.
 
 ## Find out more
 

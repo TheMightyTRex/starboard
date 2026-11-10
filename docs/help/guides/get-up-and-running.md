@@ -15,7 +15,7 @@ After the Run first script the guide splits into two paths. Both end in the same
 ## Before you begin
 
 - A computer to use as the server, big enough for what you want. Check
-  [What you need to run Starboard](../topics/what-you-need.md).
+  [The four systems](../topics/what-you-need.md#the-four-systems).
 - A USB stick of 8 GB or more, and another computer to prepare it. For a Raspberry Pi, a microSD card instead.
 - A disk for your media: plan for 1 TB or more for films and series.
 - If the terminal is new to you, read [The terminal: typing commands](../basics/the-terminal.md) first.
@@ -43,28 +43,26 @@ flowchart TD
     G --> H
 ```
 
-The flowchart shows the same steps as the list above: steps 1 to 4 are the same for everyone, step 5 is either
-the browser or the terminal, and both lead to step 6.
+Steps 1 to 4 are the same for everyone. Step 5 is either the browser or the terminal, and both lead to step 6.
 
 ## Step 1: Choose your path
 
 Choose **with a browser** if the server has a desktop, or if you have a phone or laptop on the same network.
 Choose **terminal only** if the server has no desktop and you have nothing else to finish on. Your choice decides
-which Linux to install in Step 2. The Run first script suggests the right path for the computer, and you can still
-open Starboard in a browser later.
+which Linux to install in step 2: read [Choose which Linux](../topics/install-linux.md#choose-which-linux). The Run
+first script suggests the right path for the computer, and you can still open Starboard in a browser later.
 
 ## Step 2: Install Linux
 
-Install Linux Mint 22.3 (recommended) to set up in a browser on the server itself, or Debian 13 or Ubuntu Server
-26.04 with no desktop for a lighter server. Follow [Install Linux on a computer](../topics/install-linux.md). For a Raspberry Pi,
-follow [Prepare a Raspberry Pi](../topics/prepare-a-raspberry-pi.md) instead. Then check the server is online, and
-connect it by cable or Wi-Fi if it is not: follow [Connect to the internet, by cable or Wi-Fi](../topics/connect-to-the-internet.md).
+Follow [Install Linux on a computer](../topics/install-linux.md#steps). For a Raspberry Pi, follow
+[Prepare a Raspberry Pi](../topics/prepare-a-raspberry-pi.md) instead. Then check the server is online, and connect
+it if it is not: follow [Connect to the internet, by cable or Wi-Fi](../topics/connect-to-the-internet.md).
 
 **It worked when** the computer starts Linux by itself, you can sign in, and `ping -c 3 debian.org` shows replies.
 
 ## Step 3: Connect from your own computer
 
-A server with no desktop is easier to use from your own computer, where you can copy and paste commands. Follow
+On a server with no desktop, work from your own computer, where you can copy and paste commands. Follow
 [Connect to your server from another computer](../topics/connect-with-ssh.md). If the server has a desktop, skip
 this step and open its terminal.
 
@@ -74,9 +72,12 @@ this step and open its terminal.
 
 One command checks the computer, installs Docker and anything else that is missing, downloads Starboard and starts
 its installer. It asks before it changes anything, and offers an accessible mode for software that reads text
-aloud. Follow [Set up everything with the Run first script](../topics/run-first.md).
+aloud. If Linux is still installing its own updates, it waits for them with a progress bar. Follow the page for your
+system: [Linux Mint](../topics/start-on-linux-mint.md), [Debian](../topics/start-on-debian.md),
+[Ubuntu Server](../topics/start-on-ubuntu-server.md) or [Raspberry Pi OS](../topics/start-on-raspberry-pi-os.md).
+[Set up everything with the Run first script](../topics/run-first.md) explains each step.
 
-**It worked when** the installer prints "Starboard is running".
+**It worked when** the installer says "Starboard is running".
 
 ## Step 5, with a browser: create your password and set up
 
@@ -98,10 +99,11 @@ for the recommended answer, **b** to go back and **?** for help. Follow
 ## Step 6: Add your media apps
 
 Choose what you want, such as films, series and audiobooks, and Starboard installs the apps and tells you how
-to connect them. If you chose your apps in Step 5, they are already running: go on to connecting them. Follow
-[Build a media server from nothing](build-a-media-server-from-nothing.md).
+to connect them. If you chose your apps in step 5, they are already running: go on to connecting them. Follow
+[Build a media server from nothing](build-a-media-server-from-nothing.md). The dashboard's **Still to set up** list
+shows what is left: read [Finish what is still to set up](../topics/finish-setting-up.md).
 
-**It worked when** you search for something, add it and see it arrive on the **Downloads** page.
+**It worked when** you search for something, add it and find it in **Activity**, **Downloads**, **Queue**.
 
 ## What next
 

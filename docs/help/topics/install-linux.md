@@ -16,8 +16,6 @@ itself and you can sign in with your own user name and password. It takes about 
 
 ## Choose which Linux
 
-Choose by how you will finish setting up Starboard:
-
 Starboard supports four systems, in the version named here or any later one. Choose by how you will use the server:
 
 | You want | Install | Why |
@@ -28,8 +26,8 @@ Starboard supports four systems, in the version named here or any later one. Cho
 | A Raspberry Pi | **Raspberry Pi OS (64-bit)** | Follow [Prepare a Raspberry Pi](prepare-a-raspberry-pi.md) instead of this page |
 
 A desktop uses 500 MB to 1.5 GB of memory even when nobody uses it. On a computer with 4 GB of memory or less,
-choose Debian and finish set-up from a phone or laptop. Read [What you need to run Starboard](what-you-need.md) for
-the minimum and recommended computer for each.
+choose Debian and finish set-up from a phone or laptop. Read [The four systems](what-you-need.md#the-four-systems)
+for the minimum and recommended computer for each.
 
 ## Steps
 
@@ -51,7 +49,7 @@ the minimum and recommended computer for each.
 4. Follow the installer. For Debian:
    - Choose **Install**, not Graphical install, if the mouse does not work.
    - When it asks for a **root password**, leave it empty and select **Continue**. Your own user then gets
-     administrator rights through `sudo`, which Starboard's help expects.
+     administrator rights through `sudo`.
    - Choose your user name and a password you will remember. The terminal asks for it later.
    - At **Software selection**, deselect **Debian desktop environment** and **GNOME**, and select only **SSH
      server** and **standard system utilities**. Press the space bar to select or deselect, and Enter to go on.
@@ -60,7 +58,7 @@ the minimum and recommended computer for each.
    For Ubuntu Server, select **Install OpenSSH server**, select nothing under **Featured server snaps**, and choose
    your user name and password. Accept the other suggested answers.
 6. When the installer says it has finished, remove the USB stick and let the computer restart.
-7. Sign in with your user name and password. On Debian and Ubuntu Server, you see a line ending in `$`: that is
+7. Sign in with your user name and password. On Debian and Ubuntu Server, a line ending in `$` appears: that is
    the terminal, ready for commands. On Linux Mint, open a terminal from **Menu**, **Terminal**.
 8. Install the updates that came out after your installer file. It asks for your password:
 
@@ -68,7 +66,7 @@ the minimum and recommended computer for each.
    sudo apt update && sudo apt upgrade
    ```
 
-   When it asks "Do you want to continue?", type `y` and press Enter.
+   When it asks "Do you want to continue?", enter `y` and press Enter.
 
 9. Write down the computer's address on your network, to connect from another computer later:
 
@@ -82,8 +80,10 @@ the minimum and recommended computer for each.
 
 - Give the server the same address every time, so your bookmarks keep working. Most home routers call this an
   address reservation or a static lease.
-- After this, Debian needs no monitor or keyboard: connect from your own computer with
+- After this, Debian and Ubuntu Server need no monitor or keyboard: connect from your own computer with
   [Connect to your server from another computer](connect-with-ssh.md).
+- Next, start Starboard with the page for your system: [Start Starboard on Linux Mint](start-on-linux-mint.md),
+  [on Debian](start-on-debian.md) or [on Ubuntu Server](start-on-ubuntu-server.md).
 - Avoid Windows for a server: Windows 10 no longer gets security updates, and Docker on Windows runs inside a
   virtual machine that takes extra memory. Read [Can I use Windows or a Mac?](windows-and-mac.md)
 
@@ -99,17 +99,17 @@ the minimum and recommended computer for each.
   [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md).
 - **Debian finds no network:** check the cable. Debian does not set up Wi-Fi without extra files, and a cable is
   more reliable for a server anyway.
-- **"sudo: command not found" or "is not in the sudoers file" on Debian:** you set a root password in Step 4.
-  Install Linux again and leave the root password empty.
+- **"sudo: command not found" or "is not in the sudoers file" on Debian:** you set a root password in step 4.
+  Give your user the right to use `sudo` with
+  [If it does not work](start-on-debian.md#if-it-does-not-work) in Start Starboard on Debian, or install Linux
+  again and leave the root password empty.
 
 ## Find out more
 
 - [Connect to the internet, by cable or Wi-Fi](connect-to-the-internet.md)
-- [Install Docker](install-docker.md)
 - [Connect to your server from another computer](connect-with-ssh.md)
 - [The terminal: typing commands](../basics/the-terminal.md)
-- [Start Starboard on Linux Mint](start-on-linux-mint.md), [on Debian](start-on-debian.md) or
-  [on Ubuntu Server](start-on-ubuntu-server.md)
+- [Set up everything with the Run first script](run-first.md)
 - [Get Starboard up and running, from a bare computer](../guides/get-up-and-running.md)
 
 <!-- footer: download rights -->

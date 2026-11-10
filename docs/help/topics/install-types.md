@@ -2,32 +2,31 @@
 
 # Basics, Full install and Everything: what each one has
 
-Install apps offers three installs. This page lists what each one can do, the apps it puts on your server, and what
-you need for it: the computer, accounts and keys. You can change from one to another later, either way: read
-[Change your install](change-your-install.md).
+**Install apps** offers three installs. This page lists what each one does, its apps, and the computer and accounts
+it needs. You can change from one to another later, either way: read [Change your install](change-your-install.md).
 
 ## At a glance
 
 | | Basics | Full install | Everything |
 |---|---|---|---|
-| Who it is for | Most homes: a complete media server that stays light | A household that wants statistics, invites, live TV and smaller files | Someone who wants every app Starboard offers |
-| Apps | 7 | 13 | 15 |
-| Memory when idle | about 0.6 to 1.1 GB | about 1.5 to 2.4 GB | about 1.8 to 2.8 GB |
-| Memory at load | about 1.2 to 1.8 GB | about 3 to 4 GB | about 3.5 to 4.5 GB |
+| Who it is for | Most homes: a complete media server that stays light | A household that wants watch statistics, logs and smaller files | Someone who wants every app Starboard offers |
+| Apps | 7 | 11 | 17 |
+| Memory when idle | about 0.6 to 1.1 GB | about 1.1 to 2.0 GB | about 2.0 to 3.0 GB |
+| Memory at load | about 1.2 to 1.8 GB | about 2.6 to 3.6 GB | about 3.7 to 4.8 GB |
 | Processor when idle | under 5% of one core | under 10% of one core | under 10% of one core |
 | Processor at load | 1 to 2 cores in bursts | 2 cores, or every core while Tdarr converts | 2 cores, or every core while Tdarr converts |
-| Disk for the apps | about 3.5 GB | about 13.5 GB | about 15.5 GB |
+| Disk for the apps | about 3.5 GB | about 9 GB | about 16 GB |
 | Smallest computer | 2 cores, 2 GB | 4 cores, 6 GB | 4 cores, 8 GB |
 | Recommended computer | 4 cores, 4 GB, or a Raspberry Pi 5 with 4 GB | 4 cores, 8 GB, ideally with an Intel processor | 4 or more cores, 8 GB or more |
 
-The memory and processor figures are for the computer described under "Memory and processor" below, with Starboard
-(about 25 MB) and Docker (about 80 MB) included. Converting video needs much more processor: read that section.
+The figures include Starboard (about 25 MB) and Docker (about 80 MB). They are for the computer described in
+[Memory and processor](#memory-and-processor). Converting video needs much more processor.
 
 ## Memory and processor
 
 **The computer these figures are for:** an AMD Ryzen 5 1600 (6 cores, 12 threads, 3.2 GHz, from 2017) with 16 GB of
-memory and an NVIDIA GeForce GT 710, which cannot convert video, so all video work is done by the processor. "Core"
-means one of its 12 threads. A Raspberry Pi 5 core does about half as much, so double the processor figures there; a
+memory and an NVIDIA GeForce GT 710, which cannot convert video, so the processor does all video work. "Core" means
+one of its 12 threads. A Raspberry Pi 5 core does about half as much, so double the processor figures there. A
 recent Intel processor does about the same or more, and converts video with its own hardware.
 
 **Idle** means nothing is downloading, scanning or playing. **At load** means downloading at about 100 Mbit/s through
@@ -36,12 +35,10 @@ the VPN, Reelix scanning a new folder and one film playing directly (not convert
 
 ### Each install
 
+Converting video comes on top of the figures in [At a glance](#at-a-glance):
+
 | | Basics | Full install | Everything |
 |---|---|---|---|
-| Memory when idle | 0.6 to 1.1 GB | 1.5 to 2.4 GB | 1.8 to 2.8 GB |
-| Memory at load | 1.2 to 1.8 GB | 3 to 4 GB | 3.5 to 4.5 GB |
-| Processor when idle | under 5% of one core | under 10% of one core | under 10% of one core |
-| Processor at load | 1 to 2 cores in bursts | 2 cores in bursts | 2 cores in bursts |
 | Converting one 1080p film for a phone (Jellyfin) | 3 to 4 cores, +1 GB | 3 to 4 cores, +1 GB | 3 to 4 cores, +1 GB |
 | Tdarr converting the library | | every core it is given, for hours, +1 to 2 GB | every core it is given, for hours, +1 to 2 GB |
 
@@ -85,15 +82,21 @@ the VPN, Reelix scanning a new folder and one film playing directly (not convert
 | Watch films and series on TVs, phones and browsers | ✓ | ✓ | ✓ |
 | Listen to audiobooks and podcasts, keeping your place | ✓ | ✓ | ✓ |
 | Subtitles found for you | ✓ | ✓ | ✓ |
+| Free live TV channels and guides (the Live TV plug-in) | ✓ | ✓ | ✓ |
 | Who watched what, and when | | ✓ | ✓ |
-| Invite friends and family with a link | | ✓ | ✓ |
-| Free live TV channels and guides | | ✓ | ✓ |
 | Convert the library to smaller files | | ✓ | ✓ |
 | Read every app's log in the browser | | ✓ | ✓ |
 | A warning before a disk fails (disk health) | | ✓ | ✓ |
+| Invite friends and family with a link (Wizarr) | | | ✓ |
+| Paid IPTV or full control of channels (Dispatcharr) | | | ✓ |
+| Music and books from the Soulseek network | | | ✓ |
+| Keep a No-IP address pointing at your server | | | ✓ |
 | Ebooks and audiobooks with series and reading lists (Storyarr) | | | ✓ |
 | Comics and graphic novels | | | ✓ |
 | Starboard's dashboard, alerts, download hours, backups and updates | ✓ | ✓ | ✓ |
+
+Live TV is a plug-in that comes with Starboard, not an app in the install: read
+[Set up free Live TV in Jellyfin](set-up-live-tv.md#add-live-tv).
 
 ## The apps in each
 
@@ -110,11 +113,13 @@ the VPN, Reelix scanning a new folder and one film playing directly (not convert
 | Gluetun | Sends downloads through your VPN | ✓ | ✓ | ✓ | A VPN account; a download app |
 | FlareSolverr | Gets past browser checks on some search sites | | ✓ | ✓ | Reelix |
 | Jellystat | Watch statistics for Jellyfin, with its own database | | ✓ | ✓ | Jellyfin |
-| Wizarr | Invites people to Jellyfin | | ✓ | ✓ | Jellyfin |
-| Dispatcharr | Live TV channels and guides in Jellyfin | | ✓ | ✓ | Jellyfin |
 | Dozzle | Reads every app's log in the browser | | ✓ | ✓ | |
 | Tdarr | Converts the library to smaller files | | ✓ | ✓ | Processor time |
 | Disk health | Checks each disk every 30 minutes (on the server, not an app) | | ✓ | ✓ | The server's password once |
+| Wizarr | Invites people to Jellyfin | | | ✓ | Jellyfin |
+| Dispatcharr | Paid IPTV, backup streams or full control of channels in Jellyfin | | | ✓ | Jellyfin |
+| Soulseek (slskd) | Music and books from the Soulseek network | | | ✓ | A Soulseek name and password |
+| No-IP updater | Keeps your No-IP address pointing at the server | | | ✓ | A No-IP account |
 | Storyarr | Ebooks and audiobooks with series and reading lists, with its own database | | | ✓ | A download app |
 | Kapowarr | Comics and graphic novels | | | ✓ | A download app |
 
@@ -131,12 +136,12 @@ there is no download app.
 | An account with a Usenet provider, to download from Usenet | Only for Usenet | Only for Usenet | Only for Usenet |
 | A TMDB API key, free from themoviedb.org | Recommended | Recommended | Recommended |
 | A Spotify account, for Spotify downloads | | Only for Spotify | Only for Spotify |
-| Disk for the apps, before any media | about 3.5 GB | about 13.5 GB | about 15.5 GB |
+| Disk for the apps, before any media | about 3.5 GB | about 9 GB | about 16 GB |
 
 - **The VPN** is in every install, because it keeps your address private when downloading torrents. Your provider's
   website gives the details the set-up asks for.
 - **Usenet** needs a paid provider. Without one, NZBGet is installed but has nothing to download from; torrents still
-  work.
+  work. Read [Choose a Usenet provider and add it](choose-a-usenet-provider.md).
 - **TMDB:** without a key, Reelix uses open data for films and series (Wikidata and TVmaze), with no film posters. A
   free key gives the full details and pictures.
 - **Disk** is the apps as downloaded, measured on a server (NZBGet and Tdarr estimated). The biggest are Dispatcharr
@@ -145,18 +150,21 @@ there is no download app.
 
 ## Things to note
 
-- **Changing later:** Settings, Your install moves between the three either way. Apps taken away keep their settings
-  folders, so adding one back carries on where it left off.
-- **Choose myself:** Install apps also lets you tick each group, and with Advanced settings each app.
+- **Changing later:** **Settings**, **Apps**, **Your install** moves between the three either way. Apps taken away
+  keep their settings folders, so adding one back carries on where it left off.
+- **Add-ons:** any app can be added to any install. Go to **System**, then **Apps**, then **Install apps**, and
+  select **Add** beside it under 'You can add'.
+- **Choose myself:** Install apps also lets you tick each group, and with **Advanced settings** each app.
 - **Apps already running** on the server are left out of a new install.
 - **Converting video** (Jellyfin for phones and browsers, or Tdarr) is the heaviest work on any install. With an
   Intel processor from 2018 or later, Jellyfin uses its video hardware.
 
 ## Find out more
 
-- [Choose a Usenet provider and add it](choose-a-usenet-provider.md)
 - [Install apps with Starboard](install-apps.md)
 - [Change your install](change-your-install.md)
+- [Choose a Usenet provider and add it](choose-a-usenet-provider.md)
+- [Set up free Live TV in Jellyfin](set-up-live-tv.md)
 - [What you need](what-you-need.md)
 
 <!-- footer: download rights -->

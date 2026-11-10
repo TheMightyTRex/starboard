@@ -17,7 +17,7 @@ by hand. It takes about 20 minutes.
 1. Activate alerts and send a test message.
 2. Activate disk health checks.
 3. Get a weekly summary.
-4. Know where to look when an alert arrives.
+4. Know where to go when an alert arrives.
 
 ```mermaid
 flowchart LR
@@ -28,7 +28,7 @@ flowchart LR
 
 ## Step 1: Activate alerts and send a test message
 
-Choose where alerts go and which ones you want, then send a test. Follow
+Choose where alerts go and send a test. Then activate watching, under **Advanced settings**. Follow
 [Activate alerts](../topics/activate-alerts.md).
 
 **It worked when** the test message arrives on your phone.
@@ -43,11 +43,12 @@ question answered Yes. Follow [Check your disks' health](../topics/check-disk-he
 A short message once a week says how everything has been, even when nothing went wrong. Follow
 [Get a weekly summary](../topics/weekly-summary.md).
 
-## Step 4: Know where to look when an alert arrives
+## Step 4: Know where to go when an alert arrives
 
 - An app stopped answering: [An app shows as not responding](../topics/app-not-responding.md).
-- A disk has a problem or is getting full: [Check your disks' health](../topics/check-disk-health.md) and
-  [Check free space and what is using it](../topics/check-storage.md).
+- A disk has a problem: [Check your disks' health](../topics/check-disk-health.md). If it is a pool drive, read
+  [A pool drive has failed](../topics/a-pool-drive-has-failed.md).
+- A folder is getting full: [Check free space and what is using it](../topics/check-storage.md).
 - Something else: [Read the log and report a problem](../topics/read-the-log.md).
 
 ## What next

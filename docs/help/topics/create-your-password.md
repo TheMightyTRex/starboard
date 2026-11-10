@@ -3,7 +3,8 @@
 # Create your password and sign in
 
 The first time you open Starboard, you enter the setup code, name your dashboard and choose a password. Starboard then
-signs you in and opens a short set-up guide: how to start, where your media goes, and your apps.
+signs you in and opens a short set-up guide: how to start, where your media goes, and your apps. Until the guide is
+finished, Starboard shows only the set-up.
 
 ## Before you begin
 
@@ -18,29 +19,29 @@ signs you in and opens a short set-up guide: how to start, where your media goes
 
    Starboard opens the page **Set up Starboard**.
 
-2. In **Setup code**, paste or type the setup code.
-3. In **Name your dashboard**, keep "Starboard" or type a name of your own, such as "Sam's server". It appears in the
+2. In **Setup code**, paste or enter the setup code. When the Run first script opened the page, it is filled in.
+3. In **Name your dashboard**, keep "Starboard" or enter a name of your own, such as "Sam's server". It appears in the
    header and the browser tab.
-4. In **Choose a password**, type a password of at least 10 characters. A short sentence is easy to remember, such
-   as "the kettle is always on".
-5. In **Type it again**, type the same password again.
-6. Choose whether to activate **Remember me on this device**. On, you stay signed in on this device for a week. Leave
-   it off on a shared computer.
+4. In **Choose a password**, enter a password of at least 10 characters. A short sentence works well, such as "the
+   kettle is always on".
+5. In **Type it again**, enter the same password again.
+6. Choose whether to activate **Remember me on this device**. Leave it inactive on a shared computer. Read
+   [Things to note](#things-to-note).
 7. Select **Save password and continue**.
 
    Starboard signs you in and opens its set-up guide, also called **Set up Starboard**.
 
-8. Follow the guide. It asks one question per step, in the same order as the set-up in the terminal: **How to
-   start** (a new install, the apps you already run, or a backup), **Storage** (where your media goes), your apps,
-   connecting them, download hours, alerts and disk health, and how much Starboard does. For a new install, Storage
-   takes you to **Install apps** and back. Select **Continue** to save each step, or **Skip this step** to leave it.
-9. On the last step, select **Go to Apps**.
+8. Follow the guide. It asks one question per step, the same questions in the same order as the
+   [set-up in the terminal](set-up-in-the-terminal.md#steps). Select **Continue** to save each step, or
+   **Skip this step** to leave it. Read [Set up your dashboard after installing](../guides/set-up-your-dashboard.md).
+9. On the last step, **Finish**, select **Go to Apps**. From then on, the dashboard is the first page after you sign
+   in.
 
 ## Sign in after that
 
 Next time, Starboard shows **Sign in to Starboard**.
 
-1. In **Password**, type your password.
+1. In **Password**, enter your password.
 2. Choose whether to activate **Remember me on this device**.
 3. Select **Sign in**.
 
@@ -57,8 +58,8 @@ Next time, Starboard shows **Sign in to Starboard**.
 
 - **"The setup code is not right":** copy the code again, exactly. Read [Find the setup code](find-the-setup-code.md).
 - **"Use at least 10 characters":** the password is too short. Add more characters.
-- **"The two passwords are different. Type it again.":** type the password again in **Type it again**.
-- **"That password is not right. Check Caps Lock and try again.":** when signing in, check the Caps Lock key and type
+- **"The two passwords are different. Type it again.":** enter the password again in **Type it again**.
+- **"That password is not right. Check Caps Lock and try again.":** when signing in, check the Caps Lock key and enter
   it again.
 - **You have forgotten the password:** read [Reset a forgotten password](reset-a-forgotten-password.md).
 - **The page does not open at all:** read [Starboard does not open](starboard-does-not-open.md).

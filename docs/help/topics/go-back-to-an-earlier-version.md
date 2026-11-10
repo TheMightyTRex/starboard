@@ -2,8 +2,8 @@
 
 # Go back to an earlier version
 
-If a new version of Starboard causes you a problem, you can go back to an earlier one with one command. Your settings
-are backed up first, and you can update again whenever you are ready.
+If a new version of Starboard causes you a problem, go back to an earlier one with one command. Your settings are
+backed up first, and you can update again when you are ready.
 
 ## Before you begin
 
@@ -80,8 +80,8 @@ are backed up first, and you can update again whenever you are ready.
 - Staying on an older version means you miss fixes, including security fixes. Go forward again once the problem is
   solved.
 - A newer version can change how settings are stored. When it does, Starboard keeps a copy of the old settings in
-  `data/backups` first. If something looks wrong on the older version, put back the backup from before the update, as
-  described in the next section.
+  `data/backups` first. If something looks wrong on the older version, put back the backup from before the update. Read
+  [If it does not work](#if-it-does-not-work).
 - Tell the people who make Starboard what went wrong, so it can be fixed. Read
   [Read the log and report a problem](read-the-log.md).
 
@@ -89,7 +89,7 @@ are backed up first, and you can update again whenever you are ready.
 
 - **"Stopped: there is no release called":** the version name is wrong. Check it in the list from Step 2, including the
   `v` at the start.
-- **Settings look wrong on the older version (installer):** each update saved your `data` folder in the `backups`
+- **Settings are wrong on the older version (installer):** each update saved your `data` folder in the `backups`
   folder, in a file named with the date and time, such as `starboard-data-2026-11-01-093000-a1b2c3d.tar.gz`. To put
   one back:
   1. List the backups. The names include the date and time:
@@ -125,7 +125,7 @@ are backed up first, and you can update again whenever you are ready.
 
   If you installed with `--native`, use `systemctl --user stop starboard` and `systemctl --user start starboard` in
   place of the two docker commands.
-- **Settings look wrong on the older version (ready-made image):** do the same with the copy you made before updating,
+- **Settings are wrong on the older version (ready-made image):** do the same with the copy you made before updating,
   `starboard-data-before-update.tar.gz`, and the commands `docker compose -f compose.image.yaml down` and
   `docker compose -f compose.image.yaml up -d`.
 
