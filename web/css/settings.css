@@ -156,3 +156,9 @@ body:not(.show-advanced) [data-advanced] { display: none; }
 .style-pic__link { color: var(--p-accent); text-decoration: underline; }
 .style-pic__btn { justify-self: start; margin-block-start: 2px; padding: 1px 6px; background: var(--p-accent); color: var(--p-accent-text); border-radius: var(--p-radius); }
 @media (forced-colors: active) { .style-pic { forced-color-adjust: none; } }
+
+/* Settings, Reelix, Picture quality (DASH-196): a level's Recommended tag sits at its start, not across the card; each
+   extra is a row with its name and Prefer, Neutral or Never. */
+.rx-level .chip { justify-self: start; }
+.rx-extra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin: 0; padding: var(--space-2) 0; border: 0; border-block-end: 1px solid var(--color-divider); }
+.rx-extra legend { float: left; padding: 0; font-weight: var(--weight-strong); }

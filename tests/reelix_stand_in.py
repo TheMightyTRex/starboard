@@ -111,8 +111,20 @@ class StandIn:
         self.metadata = {"tmdb_api_key": None, "tmdb_read_token": None, "language": "en-GB", "region": "GB"}
         self.request_settings = {"movie": {"profile_id": 1, "root_folder_id": None, "tags": []}, "series": {"profile_id": 1, "root_folder_id": None, "tags": []},
                                  "default_permissions": (1 << 5) | (1 << 6) | (1 << 13), "auto_approve_movie": False, "auto_approve_series": False}
-        self.profiles = [{"id": 1, "name": "HD-1080p", "language": "English"}, {"id": 2, "name": "Ultra-HD", "language": "English"},
-                         {"id": 3, "name": "Music", "family": "music", "language": None}]
+        q = lambda name, allowed=True: {"quality": name, "allowed": allowed}  # noqa: E731
+        self.profiles = [
+            {"id": 1, "name": "HD-1080p", "language": "English", "upgrade_allowed": True, "cutoff": 21,
+             "items": [q("HDTV-720p", False), q("WEBDL-720p"), q("HDTV-1080p", False),
+                       {"id": 1000, "name": "WEB 1080p", "items": ["WEBDL-1080p", "WEBRip-1080p"], "allowed": True},
+                       q("Bluray-1080p"), q("WEBDL-2160p", False), q("Bluray-2160p", False)],
+             "format_items": [{"format_id": 1, "score": 50}, {"format_id": 4, "score": -10000}],
+             "min_format_score": 0, "cutoff_format_score": 0, "max_size_mb": 20000},
+            {"id": 2, "name": "Ultra-HD", "language": "English", "upgrade_allowed": True, "cutoff": 26,
+             "items": [q("WEBDL-1080p", False), q("Bluray-1080p", False), q("WEBDL-2160p"), q("Bluray-2160p"), q("Remux-2160p", False)],
+             "format_items": [{"format_id": 2, "score": 100}], "min_format_score": 0, "cutoff_format_score": 0},
+            {"id": 3, "name": "Music", "family": "music", "language": None, "items": [], "cutoff": 0, "upgrade_allowed": False}]
+        self.formats = [{"id": 1, "name": "HEVC (smaller files)", "specifications": []}, {"id": 2, "name": "HDR", "specifications": []},
+                        {"id": 3, "name": "English audio", "specifications": []}, {"id": 4, "name": "3D", "specifications": []}]
         self.calls = []
 
     def preview(self, naming):
@@ -254,6 +266,12 @@ class StandIn:
             return 200, self.request_settings, None
         if path == "/qualityprofiles":
             return 200, self.profiles, None
+        if path == "/customformats":
+            return 200, self.formats, None
+        if path.startswith("/qualityprofiles/") and method == "GET":
+            pid = int(path.rsplit("/", 1)[1])
+            found = next((p for p in self.profiles if p["id"] == pid), None)
+            return (200, found, None) if found else (404, {"error": "not found"}, None)
         if path.startswith("/qualityprofiles/") and method == "PUT":
             pid = int(path.rsplit("/", 1)[1])
             self.profiles = [body if p["id"] == pid else p for p in self.profiles]

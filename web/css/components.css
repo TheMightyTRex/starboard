@@ -5015,9 +5015,11 @@
   .sortable__row--off .sortable__label {
     color: var(--color-text-muted);
   }
+  /* On a phone the extra detail goes under the row's words, and Move up and Move down stay on the row. */
   @media (max-width: 480px) {
     .sortable__row { grid-template-columns: auto minmax(0, 1fr) auto; }
     .sortable__meta { grid-column: 2; grid-row: 2; }
+    .sortable__moves { grid-column: 3; grid-row: 1; }
   }
   @media (forced-colors: active) {
     .sortable__row--marker { border-block-start-color: Highlight; color: Highlight; }

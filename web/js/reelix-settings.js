@@ -434,6 +434,108 @@ function rxLibrarySection() {
   return section("rx-library", "Naming and background work", "The names Reelix gives film and series folders and files, and how hard it works in the background.", body);
 }
 
+// Picture quality (DASH-196, agreed by the owner on 10 November 2026). A: choose a level, HD recommended. B: what the
+// level does, in words. C, under Advanced settings: change the level, with its qualities best first (Move up, Move
+// down or drag; a tick for each), a Stop upgrading here line, extras as Prefer, Neutral or Never, and the largest file.
+function rxQualitySection() {
+  const body = el("div", { class: "stack-4" });
+  const unlock = () => el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: open }, icon("lock"), "Show picture quality"));
+  const locked = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it before showing them." }), unlock());
+  async function open() {
+    body.replaceChildren(el("p", { class: "muted", text: "Asking Reelix…" }));
+    try { const r = await rxCall("quality", "open", {}, "show picture quality"); if (!r) { locked(); return; } draw(r); }
+    catch (e) { body.replaceChildren(notice("danger", "Reelix could not be asked", e.message), unlock()); }
+  }
+  const words = (list, none) => (list.length ? list.join(", ") : none);
+  const summary = (lvl) => el("dl", { class: "facts", id: "rx-quality-words" },
+    el("dt", { text: "Accepts" }), el("dd", { text: words(lvl.accepts, "Nothing ticked") }),
+    el("dt", { text: "Stops upgrading at" }), el("dd", { text: lvl.upgrades ? (lvl.stops_at || "The best it accepts") : "Does not upgrade" }),
+    el("dt", { text: "Prefers" }), el("dd", { text: words(lvl.prefers, "Nothing in particular") }),
+    el("dt", { text: "Never takes" }), el("dd", { text: words(lvl.never, "Nothing is ruled out") }),
+    el("dt", { text: "Upgrades" }), el("dd", { text: lvl.upgrades ? "Yes, when a better copy comes out" : "No, it keeps the first copy" }));
+  const editor = (lvl, save) => {
+    const name = (row) => row.label;
+    const move = (label, dir) => el("button", { type: "button", class: "icon-btn", "data-move": dir, "aria-label": `Move ${label} ${dir}` }, icon(dir === "up" ? "arrow-up" : "arrow-down"));
+    const ticks = {};
+    const rowNode = (row) => {
+      const tick = el("input", { type: "checkbox", checked: row.allowed, "aria-label": `Accept ${name(row)}` });
+      ticks[row.key] = tick;
+      return el("li", { class: row.allowed ? "sortable__row" : "sortable__row sortable__row--off", "data-value": row.key },
+        el("span", { class: "sortable__handle", "aria-hidden": "true" }, icon("grip-vertical")),
+        el("label", { class: "sortable__label check" }, tick, el("span", { class: "check__text", text: name(row) })),
+        el("span", { class: "sortable__moves" }, move(name(row), "up"), move(name(row), "down")));
+    };
+    const stopRow = el("li", { class: "sortable__row sortable__row--marker", "data-value": "stop" },
+      el("span", { class: "sortable__handle", "aria-hidden": "true" }, icon("grip-vertical")),
+      el("span", { class: "sortable__label", text: "Stop upgrading here" }),
+      el("span", { class: "sortable__moves" }, move("Stop upgrading here", "up"), move("Stop upgrading here", "down")));
+    const list = el("ol", { class: "sortable", id: "rx-quality-order", "aria-label": `${lvl.title}: qualities, best first` });
+    lvl.rows.forEach((row) => { if (row.key === lvl.stop) list.append(stopRow); list.append(rowNode(row)); });
+    if (!list.contains(stopRow)) list.prepend(stopRow);
+    Object.values(ticks).forEach((t) => t.addEventListener("change", () => t.closest(".sortable__row").classList.toggle("sortable__row--off", !t.checked)));
+    const extras = lvl.extras.map((x) => el("fieldset", { class: "rx-extra" }, el("legend", { text: x.name }),
+      el("div", { class: "segmented" }, ["prefer", "neutral", "never"].map((c) =>
+        el("label", {}, el("input", { type: "radio", name: `rx-extra-${x.id}`, value: c, checked: x.choice === c }), el("span", { text: c[0].toUpperCase() + c.slice(1) }))))));
+    const upgrades = el("input", { type: "checkbox", id: "rx-quality-upgrades", checked: lvl.upgrades });
+    const largest = el("input", { class: "input", id: "rx-quality-largest", inputmode: "decimal", value: lvl.largest_gb ?? "", autocomplete: "off" });
+    const go = el("button", { type: "button", class: "btn btn--primary" }, `Save ${lvl.title}`);
+    go.addEventListener("click", () => {
+      setError(largest, "");
+      const changes = {
+        order: [...list.children].map((r) => r.dataset.value),
+        allowed: Object.fromEntries(Object.entries(ticks).map(([k, t]) => [k, t.checked])),
+        upgrades: upgrades.checked,
+        extras: Object.fromEntries(lvl.extras.map((x) => [x.id, (body.querySelector(`input[name="rx-extra-${x.id}"]:checked`) || {}).value || "neutral"])),
+        largest_gb: largest.value.trim(),
+      };
+      save(changes, go);
+    });
+    return el("div", { class: "stack-4", "data-advanced": "" },
+      el("h3", { text: `Change ${lvl.title}` }),
+      el("p", { class: "small muted", text: "Qualities best first. Tick the ones to accept. Reelix upgrades a film until it has a ticked quality under Stop upgrading here." }),
+      list,
+      el("label", { class: "check" }, upgrades, el("span", { class: "check__text", text: "Upgrade when a better copy comes out" })),
+      lvl.extras.length ? el("div", { class: "stack-2" }, el("h4", { text: "Extras" }),
+        el("p", { class: "small muted", text: "Prefer picks a release with it when there is a choice. Never refuses a release with it." }), ...extras) : null,
+      field("Largest file, in GB", largest, { hint: "Leave it empty for no limit. Films over this size are not downloaded." }),
+      el("div", { class: "actions" }, go));
+  };
+  const draw = (r) => {
+    let shown = r.chosen;
+    const render = () => {
+      const lvl = r.levels.find((l) => l.id === shown) || r.levels[0];
+      if (!lvl) { body.replaceChildren(notice("info", "Reelix has no picture quality levels", "Add one in Reelix itself, then come back.")); return; }
+      const save = async (changes, control) => {
+        control.disabled = true;
+        try { const out = await rxCall("quality", "save", { id: lvl.id, changes }, `save ${lvl.title}`); if (out) { r = out; render(); toast(out.done.join(". ")); } }
+        catch (e) { problem(e.message, control); }
+        finally { control.disabled = false; }
+      };
+      const cards = el("div", { class: "option-cards option-cards--row", role: "radiogroup", "aria-label": "Level for new films and series" },
+        r.levels.map((l) => {
+          const pick = el("input", { type: "radio", name: "rx-level", value: String(l.id), checked: l.id === r.chosen });
+          pick.addEventListener("change", async () => {
+            try { const out = await rxCall("quality", "choose", { id: l.id }, "choose the level"); if (out) { r = out; shown = l.id; render(); toast(out.done.join(". ")); } }
+            catch (e) { problem(e.message, pick); }
+          });
+          return el("label", { class: "option-card" }, pick, el("span", { class: "stack-1 rx-level" },
+            l.recommended ? el("span", { class: "chip", "data-tone": "info", text: "Recommended" }) : null,
+            el("strong", { text: l.title }), el("span", { class: "small muted", text: l.line || l.name })));
+        }));
+      body.replaceChildren(
+        el("div", { class: "stack-2" }, el("h3", { text: "Choose a level" }),
+          el("p", { class: "small muted", text: "For films and series added from now on. 4K needs about four times the space of HD." }), cards),
+        el("div", { class: "stack-2" }, el("h3", { text: `What ${lvl.title} does` }), summary(lvl)),
+        editor(lvl, save));
+      SharedComponents.setupSortables(body);
+      if (typeof applyAdvanced === "function") applyAdvanced();
+    };
+    render();
+  };
+  locked();
+  return section("rx-quality", "Picture quality", "How good films and series should be, and how far Reelix upgrades them.", body);
+}
+
 // The basics (DASH-226): films and series information, picture quality, language and who can ask, in the approved
 // order. Each change saves at once; the TMDB key has its own Test and Save.
 function rxBasicsSection() {
@@ -461,8 +563,6 @@ function rxBasicsSection() {
     });
     const keep = el("button", { type: "button", class: "btn btn--primary" }, "Save the key");
     keep.addEventListener("click", () => key.value.trim() ? save({ tmdb: key.value.trim() }, "save the TMDB key", keep) : setError(key, "Paste the key first"));
-    const quality = el("select", { class: "select", id: "rx-quality" }, r.profiles.map((p) => el("option", { value: String(p.id), text: p.name, selected: p.id === r.profile })));
-    quality.addEventListener("change", () => save({ profile: quality.value }, "change the picture quality", quality));
     const lang = el("select", { class: "select", id: "rx-language" }, r.languages.map((c) => el("option", { value: c.value, text: c.label, selected: c.value === r.language })));
     lang.addEventListener("change", () => save({ language: lang.value }, "change the language", lang));
     const who = el("select", { class: "select", id: "rx-who" }, r.whos.map((w) => el("option", { value: w.value, text: w.label, selected: w.value === r.who })));
@@ -473,7 +573,6 @@ function rxBasicsSection() {
         el("p", {}, chip(r.tmdb ? "Connected" : "No key yet", r.tmdb ? "success" : "warning")),
         field(r.tmdb ? "Change the key" : "TMDB key", key, { hint: "Paste the API Read Access Token or the API key from themoviedb.org, Settings, API." }),
         el("div", { class: "actions" }, keep, test), said),
-      field("Picture quality", quality, { hint: "For new films and series. 4K needs about four times the space." }),
       field("Language", lang, { hint: "Reelix skips releases in other languages, unless you choose any language." }),
       field("Who can ask", who, { hint: "For people who get a Reelix account from now on. Settings, Reelix, People changes those who have one." }));
   };
@@ -630,6 +729,7 @@ function reelixAdminSections() {
     const full = a.edition === "full";
     holder.replaceChildren(
       rxBasicsSection(),
+      rxQualitySection(),
       ...(full ? [rxDirectSection()] : []),  // replaceChildren writes a null as the word "null"
       rxKindSection("indexers", "The sites Reelix searches for films, series, books and music. Nothing is added unless you add it."),
       rxKindSection("mediaservers", "Reelix tells Jellyfin and Audiobookshelf about each new file, so it shows in them at once."),
