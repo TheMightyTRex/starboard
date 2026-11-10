@@ -1431,7 +1431,7 @@ async function startGuide() {
           const make = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog" }, icon("play"), "Make the change now");
           make.addEventListener("click", () => hostChange(make));
           step.nodes.push(el("h3", { text: "One change to the server, made for you" }),
-            el("p", { class: "muted", text: "Free space for your media folder, disk health, the Live TV folder and Docker access need the installer on the server. Starboard asks the Run first window on the server to make the change, and shows how it goes here, so you do not need to go to the server." }),
+            el("p", { class: "muted", text: "Free space for your media folder, disk health, the Live TV folder and Docker access need the installer on the server. Starboard's helper on the server makes the change, and shows how it goes here, so you do not need to go to the server." }),
             el("div", { class: "actions" }, make));
         } else if (host.command) {
           step.nodes.push(el("h3", { text: "One change to make on the server" }),
@@ -2894,7 +2894,7 @@ async function hostChange(opener) {
   const input = el("input", { class: "input", id: "host-password", type: "password", autocomplete: "current-password", required: true });
   const err = el("span", { class: "field-error", id: "host-password-error", hidden: true });
   for (;;) {
-    const asked = confirmDialog({ title: "Make the change to the server", message: "The Run first window on the server runs the installer with your answers. Type your Starboard password to go ahead.",
+    const asked = confirmDialog({ title: "Make the change to the server", message: "Starboard's helper on the server runs the installer with your answers. Type your Starboard password to go ahead.",
       confirm: "Make the change", fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
     input.focus();
     if (!(await asked)) return;
@@ -2903,7 +2903,7 @@ async function hostChange(opener) {
   }
   const bar = el("span", { style: "width: 0%" });
   const meter = el("div", { class: "progress", role: "progressbar", "aria-label": "Changing the server", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "0" }, bar);
-  const now = el("p", { "aria-live": "polite", text: "Waiting for the Run first window…" });
+  const now = el("p", { "aria-live": "polite", text: "Waiting for the helper on the server…" });
   const out = el("pre", { class: "code-block host-output", tabindex: "0", "aria-label": "What the installer says", hidden: true });
   const close = el("button", { type: "button", class: "btn", text: "Close" });
   const panel = sidePanel({ title: "Changing the server", opener, wide: true, body: [el("div", { class: "stack-4" }, now, meter, out)], foot: [close] });
@@ -2936,7 +2936,7 @@ async function hostChange(opener) {
       return;
     }
     bar.style.width = `${Math.max(3, Math.min(97, shown))}%`; meter.setAttribute("aria-valuenow", String(Math.max(0, shown)));
-    now.textContent = p.state === "running" && p.name ? `Step ${p.n} of ${p.of}: ${p.name}` : p.window === false ? "The Run first window on the server has closed." : "Waiting for the Run first window…";
+    now.textContent = p.state === "running" && p.name ? `Step ${p.n} of ${p.of}: ${p.name}` : p.window === false ? "Starboard's helper on the server is not answering. Run first or ./install.sh starts it again." : "Waiting for the helper on the server…";
     if (/sudo|password for/i.test((p.log || "").slice(-300))) now.textContent += " The Run first window on the server is asking for the server's password.";
     setTimeout(tick, 2000);
   };

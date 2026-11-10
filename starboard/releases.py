@@ -950,6 +950,88 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your settings. To go back, run ./update.sh --to v0.15.4."
+    },
+    {
+        "version": "0.16.0",
+        "date": "10 November 2026",
+        "added": [
+            [
+                "Nothing to set up outside Starboard",
+                "The installer adds Docker when it is missing, Starboard reads each app's API key itself (Jellyfin, Audiobookshelf, Bazarr, NZBGet and others), and a small set-up helper on the server starts the apps and makes the set-up's changes, so the Run first window can close."
+            ],
+            [
+                "Make the change now",
+                "The set-up's last page makes its change to the server for you, after your Starboard password, with a progress bar and the installer's words live in a slide-out."
+            ],
+            [
+                "Still to set up, done in place",
+                "Each of Starboard's own steps opens its page inside the slide-out, at the right part, so the set-up is done there; Next step checks again and drops a step that is done."
+            ],
+            [
+                "Picture quality in full",
+                "Settings, Reelix, Picture quality: choose a level, see what it does in plain words, and under Advanced settings put its qualities in order, tick the ones to accept, move Stop upgrading here, and set extras to Prefer, Neutral or Never."
+            ],
+            [
+                "The folder picker",
+                "Folders are chosen with Browse, and each one is checked as you type: whether it is there, which disk it is on and how much is free."
+            ],
+            [
+                "App logs",
+                "System, Logs shows each app's own log, so Dozzle is no longer needed."
+            ],
+            [
+                "New releases in Alerts",
+                "A short weekly line through Alerts when a new Starboard is out."
+            ],
+            [
+                "Graphics chip found everywhere",
+                "The browser set-up also finds an Intel or AMD graphics chip for Jellyfin when Starboard runs in Docker."
+            ],
+            [
+                "A simpler help centre",
+                "Every article checked against this version, simpler, and linked to the exact part of each area it mentions, with six new articles: Find a setting, Finish setting up, Get what is missing, Live TV channel will not play, Use Starboard's API and Use the dashboard."
+            ],
+            [
+                "Plug-ins in their own place",
+                "The plug-in collection lives at github.com/TheMightyTRex/starboard-plugins, with each plug-in's install address and zip."
+            ]
+        ],
+        "changed": [
+            [
+                "Add-ons",
+                "Dozzle, Wizarr and Dispatcharr are add-ons you tick in Install apps, not part of the Full install."
+            ],
+            [
+                "The setup code",
+                "Filled in from the installer's link, it is read only, with a note that Starboard uses it to continue."
+            ],
+            [
+                "Run one command",
+                "When a command is still needed, it always shows, and the page says to run it in a terminal on the server."
+            ]
+        ],
+        "fixed": [
+            [
+                "Out-of-date words",
+                "Thirteen places in Starboard's pages said where things used to be, such as Send feedback in the corner; they say where things are now, and links to parts under Advanced settings show those parts."
+            ],
+            [
+                "Settings, Reelix with Reelix Lite",
+                "The word null no longer shows between Basic settings and Sites to search."
+            ],
+            [
+                "Pages in a slide-out",
+                "The upgrade guide opened inside Starboard only on its first visit; it now opens every time."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests (also as another user, as GitHub runs them), the browser journeys, the API contract tests, the help check, the private details check, the design system copy check and the security scans ran on this release. The set-up helper runs as your user and cannot use sudo."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your apps. Dozzle stays if you have it. To go back, run ./update.sh --to v0.15.5."
     }
 ]
 

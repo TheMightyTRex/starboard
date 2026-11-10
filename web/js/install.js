@@ -778,7 +778,7 @@ async function installStep(id, state, data, apps, go) {
       const form = el("div", { class: "form-stack" },
         el("p", { text: w.can_start
           ? "Starboard asks Docker to download each app and start it, using a short-lived helper. This can take several minutes on the first run."
-          : "The Run first window on this computer downloads each app and starts it, so keep that window open. This can take several minutes on the first run." }),
+          : "Starboard's helper on this computer (or the Run first window) downloads each app and starts it. This can take several minutes on the first run." }),
         field("Your Starboard password", pw, { required: true, hint: state.heldPassword ? "Filled in from the Check step. Starting apps changes this computer, so Starboard checks it is you."
           : "Starting apps changes this computer, so Starboard checks it is you." }),
         el("div", { class: "actions" }, startBtn));
