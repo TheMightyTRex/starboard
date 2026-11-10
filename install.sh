@@ -611,6 +611,8 @@ job_save() {
   set_env STARBOARD_ALLOW_DOCKER "$DOCKER"
   set_env STARBOARD_ALLOW_APPUSE "$APPUSE"
   set_env STARBOARD_LIVETV_PATH "$LIVETV"
+  # The graphics chip's maker (0x8086 Intel, 0x1002 AMD), which Starboard in Docker cannot read itself (DASH-82).
+  set_env STARBOARD_GRAPHICS_VENDOR "$(cat /sys/class/drm/renderD128/device/vendor 2>/dev/null || true)"
   if [ -n "$LIVETV" ]; then
     if [ "$MODE" = docker ]; then set_env STARBOARD_IPTV_DIR /iptv; else set_env STARBOARD_IPTV_DIR "$LIVETV"; fi
   else
@@ -644,6 +646,7 @@ job_save() {
     if [ "$DOCKER" = 1 ]; then echo "      - /var/run/docker.sock:/var/run/docker.sock  # app updates"; fi
     if [ "$APPUSE" = 1 ]; then echo "      - /sys/fs/cgroup:/host-cgroup:ro  # per-app use"; fi
     if [ -n "$LIVETV" ]; then echo "      - \"$LIVETV:/iptv\"  # Live TV for Jellyfin (read-write)"; fi
+    if [ -e /dev/dri/renderD128 ]; then echo "      - /dev/dri:/dev/dri:ro  # the graphics chip, so the set-up can give it to Jellyfin"; fi
     if [ "$DISKS_GIVEN" != skip ]; then
       i=0
       for d in "${DISKS[@]+"${DISKS[@]}"}"; do

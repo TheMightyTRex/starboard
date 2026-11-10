@@ -542,8 +542,8 @@ def graphics_chip(node=RENDER_NODE, sys_root="/sys/class/drm"):
     try:
         with open(os.path.join(sys_root, os.path.basename(node), "device", "vendor"), encoding="utf-8") as f:
             vendor = VENDORS.get(f.read().strip().lower(), "other")
-    except OSError:
-        vendor = "other"
+    except OSError:  # Starboard in Docker sees the device but not /sys: the installer read the maker (DASH-82)
+        vendor = VENDORS.get(os.environ.get("STARBOARD_GRAPHICS_VENDOR", "").strip().lower(), "other")
     return {"vendor": vendor, "gid": gid}
 
 
