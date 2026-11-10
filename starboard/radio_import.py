@@ -17,7 +17,8 @@ from . import media_import
 
 FOLLOW = ("all", "from_now_on", "none")
 DEFAULT_FOLLOW = "all"  # the owner's choice, 10 November 2026: fill the gaps
-BATCH = 15  # shows searched at a time: each is one search of Reelix's sources
+BATCH = 10  # shows on one page of the dialog: each is one search of Reelix's sources
+SEARCHES_AT_ONCE = 5
 
 
 def _call(cfg, method, path, body=None, timeout=60):
@@ -95,15 +96,24 @@ def scan(cfg, start=0):
     review = _call(cfg, "GET", "/radio/library/review") or {}
     waiting = sorted(review.get("unmatched_shows") or [], key=lambda x: _fold(x.get("title")))
     page = waiting[int(start):int(start) + BATCH]
+    import concurrent.futures
     import urllib.parse
-    items = []
-    for show in page:
-        title = show.get("title") or ""
+
+    def search(title):
+        """Reelix's radio search for one title: (hits, problem). A search can take 30 seconds or more on a cold cache."""
+        if not title:
+            return [], None
         try:
-            hits = _call(cfg, "GET", f"/radio/search?{urllib.parse.urlencode({'q': title})}", timeout=30) or [] if title else []
-            problem = None
+            return _call(cfg, "GET", f"/radio/search?{urllib.parse.urlencode({'q': title})}", timeout=60) or [], None
         except ValueError as e:
-            hits, problem = [], str(e)
+            return [], str(e)
+    # Several at once (owner's server, 10 November 2026: one after another took four minutes for 15 shows, and the
+    # button looked broken). Five keeps Reelix's sources from being flooded.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=SEARCHES_AT_ONCE) as pool:
+        found = list(pool.map(search, [show.get("title") or "" for show in page]))
+    items = []
+    for show, (hits, problem) in zip(page, found):
+        title = show.get("title") or ""
         matches = [{"provider": h.get("provider"), "external_id": h.get("external_id"), "title": h.get("title"),
                     "station": h.get("station_name") or h.get("author") or "", "episodes": h.get("episode_count"),
                     "already": h.get("show_id")} for h in _best(title, hits)[:5] if h.get("provider") and h.get("external_id")]

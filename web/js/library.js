@@ -299,13 +299,20 @@ async function radioNote() {
   if (!s.waiting) return;
   $(".page-head").after(box(`${plural(s.waiting, ["show", "shows"])} on disk ${s.waiting === 1 ? "is" : "are"} not in your library yet`,
     "In Audiobookshelf's Radio library. Starboard can bring them in: Reelix finds each show on its radio sources and matches your files to its episodes. Nothing is moved.",
-    el("button", { type: "button", class: "btn", onclick: () => radioDialog() }, "Bring them in")));
+    el("button", { type: "button", class: "btn", onclick: (e) => radioDialog(0, 0, "all", e.currentTarget) }, "Bring them in")));
 }
 
-async function radioDialog(start = 0, added = 0, follow = "all") {
+async function radioDialog(start = 0, added = 0, follow = "all", button = null) {
+  // Reelix searches its radio sources for each show, which can take a minute: say so at once (owner, 10 November
+  // 2026: the button looked as if it did nothing).
+  const busy = button || $("#lib-import button");
+  const label = busy?.textContent;
+  if (busy) { busy.disabled = true; busy.textContent = "Finding your shows…"; }
+  announce("Finding your shows on Reelix's radio sources. This can take a minute.");
   let page;
   try { page = await api("/api/library/radio-import/scan", { method: "POST", body: { start } }); }
   catch (e) { problem(e.message); return; }
+  finally { if (busy) { busy.disabled = false; busy.textContent = label; } }
   const rows = page.items.map((it) => {
     const pick = el("select", { class: "select", "aria-label": `Match for ${it.title}` },
       it.matches.map((m, i) => el("option", { value: String(i), text: `${m.title}${m.station ? `, ${m.station}` : ""}${m.episodes ? ` (${m.episodes} episodes)` : ""}`, selected: i === 0 })),
