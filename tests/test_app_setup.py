@@ -216,3 +216,37 @@ class FirstRuns(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WhenReadyTest(unittest.TestCase):
+    """VM test R1: an app still starting (503, a reset connection) is set up once it is ready, not left half done."""
+
+    def test_tried_again_while_starting_then_done(self):
+        from starboard import app_setup
+        answers = [app_setup.AppSetupError("503 from POST /Startup/Configuration"),
+                   app_setup.AppSetupError("no answer at http://127.0.0.1:13378: Connection reset by peer"), ("key", [], {})]
+
+        def step():
+            a = answers.pop(0)
+            if isinstance(a, Exception):
+                raise a
+            return a
+        said = []
+        self.assertEqual(app_setup._when_ready(step, said.append, "Jellyfin", wait=60, sleep=lambda s: None), ("key", [], {}))
+        self.assertEqual(said, ["Waiting for Jellyfin to finish starting"])
+
+    def test_other_problems_stop_at_once_and_waiting_ends(self):
+        from starboard import app_setup
+        calls = []
+
+        def wrong_password():
+            calls.append(1)
+            raise app_setup.AppSetupError("401 from POST /Users/AuthenticateByName")
+        with self.assertRaisesRegex(app_setup.AppSetupError, "401"):
+            app_setup._when_ready(wrong_password, lambda line: None, "Jellyfin", wait=60, sleep=lambda s: None)
+        self.assertEqual(len(calls), 1)
+
+        def never_ready():
+            raise app_setup.AppSetupError("503 from GET /System/Info/Public")
+        with self.assertRaisesRegex(app_setup.AppSetupError, "503"):
+            app_setup._when_ready(never_ready, lambda line: None, "Jellyfin", wait=0, sleep=lambda s: None)

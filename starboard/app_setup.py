@@ -255,7 +255,30 @@ def country_from_tz(tz):
     return {"Europe/London": "GB", "Europe/Dublin": "IE"}.get(tz or "")
 
 
-def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=None, found=None):
+NOT_READY = ("503 from", "502 from", "no answer at")  # an app still starting: its first run is tried again
+
+
+def _when_ready(step, log, name, wait=300, pause=5, sleep=None):
+    """Runs an app's first run, again while the app is still starting (VM test R1: Jellyfin answers 503 and
+    Audiobookshelf resets the connection for a while after its container starts). Each first run is safe to run
+    again. Any other problem stops at once; still starting after `wait` seconds, its last problem is raised."""
+    import time
+    sleep = sleep or time.sleep
+    until = time.monotonic() + wait
+    said = False
+    while True:
+        try:
+            return step()
+        except AppSetupError as e:
+            if not any(w in str(e) for w in NOT_READY) or time.monotonic() >= until:
+                raise
+            if not said:
+                log(f"Waiting for {name} to finish starting")
+                said = True
+            sleep(pause)
+
+
+def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=None, found=None, wait=300):
     """Jellyfin's and Audiobookshelf's first runs, when Install apps installed them, and their keys saved on the
     dashboard so Reelix can be connected to them (DASH-156). Returns lines of what was done; a problem is a line too,
     never a stop, so the rest of the set-up carries on."""
@@ -273,7 +296,7 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
         try:
             extra = {"country": country_from_tz(os.environ.get("TZ")) or "GB",
                      "graphics": stack.env_values(data_dir).get("GRAPHICS_VENDOR")} if key == "jellyfin" else {}
-            api_key, lines, more = run(base, password, groups, opener=opener, **extra)
+            api_key, lines, more = _when_ready(lambda: run(base, password, groups, opener=opener, **extra), log, name, wait)
         except AppSetupError as e:
             done.append(f"{name} is not set up yet: {e}")
             continue
@@ -289,7 +312,7 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
     if base:
         jellyfin_key = jellyfin_key or next((s.get("api_key") for s in cfg.data["services"] if s.get("type") == "jellyfin"), None)
         try:
-            api_key, lines, _ = jellystat_first_run(base, password, jellyfin_key, opener=opener)
+            api_key, lines, _ = _when_ready(lambda: jellystat_first_run(base, password, jellyfin_key, opener=opener), log, "Jellystat", wait)
             done += lines
             _save_key(cfg, "jellystat", "Jellystat", base, api_key)
             log("Jellystat ready")
