@@ -18,6 +18,7 @@
 <script src="/js/components.js" data-manual></script>
 <script src="/js/common.js"></script>
 <script src="/js/system-logs.js" defer></script>
+<script src="/js/app-logs.js" defer></script>
 <script src="/js/reelix-system.js" defer></script>
 </head>
 <body class="page-system-backup with-rail">
@@ -178,6 +179,10 @@
     <div class="panel__head"><h2 id="entries-h">Log</h2><span class="small muted" id="entries-count"></span></div>
     <div class="toolbar" id="logs-toolbar"></div>
     <div id="entries" aria-live="polite" aria-busy="true"></div>
+  </section>
+  <section class="panel" aria-labelledby="applogs-h" id="applogs" hidden>
+    <div class="panel__head"><h2 id="applogs-h">App logs</h2><span class="small muted">The latest lines from each app, with keys, passwords and addresses hidden</span></div>
+    <div class="stack-4" id="applogs-body"></div>
   </section>
 </div>
 </main>

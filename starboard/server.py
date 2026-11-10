@@ -1952,6 +1952,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
+            if path == "/api/app-logs" and method == "GET":  # App logs on System, Logs (DASH-223): in place of Dozzle
+                from . import app_logs
+                return self.json(200, app_logs.listing())
+            ml = re.match(r"^/api/app-logs/([A-Za-z0-9][A-Za-z0-9_.-]{0,63})$", path)
+            if ml and method == "GET":
+                from . import app_logs
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                try:
+                    return self.json(200, app_logs.lines(ml.group(1), q.get("tail", ["300"])[0], q.get("find", [""])[0],
+                                                         words=[app.config.data.get("site_name", ""), app.config.data.get("server_name", ""), socket.gethostname()]))
+                except LookupError as e:
+                    return self.error(404, str(e))
             if path == "/api/styles" and method == "GET":  # styles from plug-ins that are on (DASH-284)
                 from . import plugins_admin
                 return self.json(200, {"styles": plugins_admin.styles(app.data_dir)})
