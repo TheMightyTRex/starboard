@@ -229,6 +229,7 @@ class BalanceTest(unittest.TestCase):
             moves, _ = ph.balance_moves(None, {full: {"size": 60 * mb, "used": 50 * mb}, empty: {"size": 60 * mb, "used": 0}})
             self.assertEqual(moves, [])
 
+    @unittest.skipUnless(__import__("shutil").which("rsync"), "rsync is not on this computer (the pool helper's servers have it)")
     def test_a_move_copies_checks_then_removes(self):
         with tempfile.TemporaryDirectory() as root:
             full = self.make(root, "disk1", {"media/tv/Show A/e1.mkv": 1000})

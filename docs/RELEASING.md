@@ -32,6 +32,9 @@ guide and the notes on GitHub, so they always say the same thing.
 5. **Checks.** Run the tests (`python3 -m unittest discover -s tests`), the browser journeys
    (`tools/journeys.sh`), the help centre check (`python3 tools/check-help.py`), the security scans (`tools/security-scan.sh`) and
    `tools/check-private.sh`.
+   Also run the tests as GitHub does, `tools/test-as-another-user.sh` (a fresh copy, as uid 1001, in a container), so
+   a test that passes only as your own user is found before the image fails to build. The design system's copies are
+   checked by `tests/test_design_system_copies.py`: change the library and sync, never the copies.
    The API must not break: `python3 tools/make_openapi.py` leaves `starboard/openapi.json` unchanged, and
    `python3 -m unittest tests.test_api_v1` passes (each `/api/v1` route against its description, with its rights and
    errors). Once the example plug-ins exist, install and run each one against the new build. A change that breaks
@@ -52,6 +55,9 @@ guide and the notes on GitHub, so they always say the same thing.
    ```bash
    gh release create vX.Y.Z --notes-file docs/releases/vX.Y.Z.md
    ```
+
+   Then wait for GitHub's **Image** and **Checks** runs for the tag to pass (`gh run list --limit 4`) before updating a
+   server or telling anyone: a failed Image run means installs from the ready-made image stay on the old version.
 
    `./update.sh` on a server then fetches the new tag, rebuilds and restarts, and goes back if it does not start.
 
