@@ -10,7 +10,7 @@ from unittest import mock
 
 from starboard import config as config_mod, livetv_move, livetv_plugin, plugin_cards, plugins, plugins_admin as pa
 
-HOST = {"image": "starboard:local", "user": "1000:1000", "iptv": "/srv/apps/jellyfin/iptv"}
+HOST = {"image": "starboard:local", "user": "1000:1000", "iptv": "/srv/apps/jellyfin/iptv", "tz": "Europe/London"}
 
 
 class FakeConfig:
@@ -47,7 +47,7 @@ class LiveTvPluginTest(unittest.TestCase):
         text = plugins.compose(self.manifest, "/srv/p", "/srv/media", HOST)
         for line in ('image: "starboard:local"', 'command: ["python", "-m", "starboard.livetv_plugin"]', 'user: "1000:1000"',
                      '"/srv/apps/jellyfin/iptv:/iptv"', "host.docker.internal:host-gateway", "jellyfin.json:/run/starboard/jellyfin.json:ro",
-                     "read_only: true", "- ALL", "mem_limit: 192m"):
+                     "read_only: true", "- ALL", "mem_limit: 192m", 'TZ: "Europe/London"'):
             self.assertIn(line, text)
         with self.assertRaisesRegex(ValueError, "no Live TV folder"):
             plugins.compose(self.manifest, "/srv/p", "/srv/media", {**HOST, "iptv": None})

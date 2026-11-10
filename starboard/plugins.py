@@ -260,7 +260,7 @@ def compose(manifest, plugin_dir, media_dir, host=None):
         if "jellyfin:key" in (manifest.get("permissions") or []):  # Jellyfin's address and key, kept by Starboard
             vols.append(f"{plugin_dir}/jellyfin.json:/run/starboard/jellyfin.json:ro")
         lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
-        env = {**{k: str(v) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
+        env = {**({"TZ": host["tz"]} if host.get("tz") else {}), **{k: str(v) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
                "STARBOARD_API_KEY_FILE": "/run/starboard/key"}
         lines += ["    environment:"] + [f"      {k}: {json.dumps(v)}" for k, v in sorted(env.items())]
     if networks:

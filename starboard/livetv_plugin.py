@@ -78,7 +78,8 @@ def loop(stop=None):
             force, _force["now"] = _force["now"], False
         _save_status(state="running", started=time.time())
         try:
-            _save_status(state="done", finished=time.time(), summary=run_once(force=force))
+            said = run_once(force=force)  # first: the finish time is taken after the run
+            _save_status(state="done", finished=time.time(), summary=said)
         except Exception as e:  # recorded for the card and the plug-in's section; the next run tries again
             _save_status(state="failed", finished=time.time(), summary=str(e)[:300])
         _wake.wait(EVERY)

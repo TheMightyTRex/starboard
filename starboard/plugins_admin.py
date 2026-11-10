@@ -158,7 +158,7 @@ def own_image():
 def host_for_builtin():
     """What a built-in plug-in's Compose file needs from this install."""
     return {"image": own_image(), "user": f"{os.getuid()}:{os.getgid()}",
-            "iptv": os.environ.get("STARBOARD_LIVETV_PATH") or None}
+            "iptv": os.environ.get("STARBOARD_LIVETV_PATH") or None, "tz": os.environ.get("TZ") or None}
 
 
 def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=None, host=None):
