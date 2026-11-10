@@ -7,6 +7,17 @@ add features.
 
 ## [Unreleased]
 
+## [0.14.1] (10 November 2026)
+
+### Added
+- **Choose now:** When an upgrade has something to choose, Choose now opens those choices in a slide-out over the page you are on; Open as a page still opens the full guide.
+
+### Fixed
+- **API error links:** The links in the API's error answers open the new errors page in Starboard's repository.
+
+### Security
+- **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
+
 ## [0.14.0] (10 November 2026)
 
 ### Added
@@ -1036,7 +1047,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/TheMightyTRex/starboard/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/TheMightyTRex/starboard/compare/v0.13.2...v0.14.0
 [0.13.2]: https://github.com/TheMightyTRex/starboard/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/TheMightyTRex/starboard/compare/v0.13.0...v0.13.1

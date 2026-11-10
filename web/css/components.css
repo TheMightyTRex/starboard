@@ -4925,3 +4925,10 @@
 /* A plug-in style's two colours in the Display panel (DASH-284): decoration only, the name says it. */
 .style-swatch { display: inline-block; inline-size: 1em; block-size: 1em; margin-inline-end: var(--space-2); vertical-align: -0.1em;
   border: 1px solid var(--color-border); background: linear-gradient(135deg, var(--sw-a) 50%, var(--sw-b) 50%); }
+
+/* The upgrade guide in a slide-out (Choose now): the frame fills the panel, and the page inside shows only the guide. */
+.panel-frame { display: block; inline-size: 100%; block-size: 100%; min-block-size: 70vh; border: 0; background: var(--color-bg); }
+.side-panel__body:has(> .panel-frame) { padding: 0; display: flex; }
+:root.in-panel :is(.rail, .site-header, .site-footer, .skip-link, .menu-tabs) { display: none !important; }
+:root.in-panel body.with-rail { padding-inline-start: 0; }
+:root.in-panel .page-head h1 { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }

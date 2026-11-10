@@ -628,6 +628,9 @@ async function appChangeNotices() {
   }
 }
 
+// The upgrade guide inside a slide-out (?panel=1): only its steps, without the menus around them.
+if (new URLSearchParams(location.search).get("panel") === "1" && window.parent !== window) document.documentElement.classList.add("in-panel");
+
 // After an upgrade: with something to choose, a notice opens the upgrade guide (or waits, with Remind me later);
 // with nothing to choose, the upgrade is marked as seen and the notes stay under the version.
 function upgradeNotice(upgrade) {
@@ -639,7 +642,25 @@ function upgradeNotice(upgrade) {
   main.prepend(el("div", { class: "notice", id: "upgrade-notice", role: "status" }, icon("circle-arrow-up"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `Starboard ${upgrade.to} is installed` }),
       el("p", { text: `${upgrade.count} ${upgrade.count === 1 ? "thing" : "things"} to choose. The rest carries on as before.` })),
-    el("a", { class: "btn btn--primary", href: "/upgrade.html" }, "Open the upgrade guide")));
+    el("div", { class: "actions" }, chooseNow(upgrade), el("a", { class: "btn btn--quiet", href: "/upgrade.html" }, "Open as a page"))));
+}
+
+// Choose now: the things to choose, in a slide-out over the page you are on (the upgrade guide itself, framed).
+function chooseNow(upgrade) {
+  const button = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog" }, "Choose now");
+  button.addEventListener("click", () => {
+    const frame = el("iframe", { class: "panel-frame", src: "/upgrade.html?panel=1", title: `Upgrade guide for Starboard ${upgrade.to}` });
+    const panel = sidePanel({ title: `Starboard ${upgrade.to}: ${upgrade.count} ${upgrade.count === 1 ? "thing" : "things"} to choose`, opener: button, wide: true, body: [frame] });
+    const done = (e) => {
+      if (e.origin !== location.origin || !e.data?.starboard) return;
+      window.removeEventListener("message", done);
+      panel.close();
+      if (e.data.starboard === "upgrade-done") { $("#upgrade-notice")?.remove(); toast(`Starboard ${upgrade.to}: your choices are saved`); }
+      if (e.data.starboard === "upgrade-later") $("#upgrade-notice")?.remove();
+    };
+    window.addEventListener("message", done);
+  });
+  return button;
 }
 
 // Display and accessibility panel --------------------------------------

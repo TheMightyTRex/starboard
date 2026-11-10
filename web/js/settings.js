@@ -1457,11 +1457,14 @@ async function startUpgrade() {
   const steps = [{ id: "new", title: "What is new", question: `What is new in ${p.to}` },
     ...p.review.map((id) => ({ id, title: titles[id] || id, question: questions[id] || titles[id] })),
     { id: "done", title: "Finish", question: "Upgrade finished", skippable: false }];
-  const finish = async () => { await api("/api/releases/seen", { method: "POST" }); location.href = "/index.html"; };
+  // In the slide-out (?panel=1), finishing or Remind me later tells the page around it, which closes the slide-out.
+  const inPanel = document.documentElement.classList.contains("in-panel");
+  const leave = (what) => { if (inPanel) window.parent.postMessage({ starboard: what }, location.origin); else location.href = "/index.html"; };
+  const finish = async () => { await api("/api/releases/seen", { method: "POST" }); leave("upgrade-done"); };
   const head = $(".page-head");
   if (!$("#upgrade-later", head)) {
     head.append(el("div", { class: "actions" },
-      el("button", { type: "button", class: "btn btn--quiet", id: "upgrade-later", onclick: () => { try { sessionStorage.setItem(`upgrade-later-${p.to}`, "1"); } catch { /* fine */ } location.href = "/index.html"; } }, "Remind me later"),
+      el("button", { type: "button", class: "btn btn--quiet", id: "upgrade-later", onclick: () => { try { sessionStorage.setItem(`upgrade-later-${p.to}`, "1"); } catch { /* fine */ } leave("upgrade-later"); } }, "Remind me later"),
       el("button", { type: "button", class: "btn btn--quiet", onclick: finish }, "Keep the defaults and finish")));
   }
   const go = async (index) => {

@@ -744,6 +744,30 @@ RELEASES = [
             "apps"
         ],
         "settings": "Your apps keep running as they are. New apps and guided steps are offered, never added on their own. To go back, run ./update.sh --to v0.13.2."
+    },
+    {
+        "version": "0.14.1",
+        "date": "10 November 2026",
+        "added": [
+            [
+                "Choose now",
+                "When an upgrade has something to choose, Choose now opens those choices in a slide-out over the page you are on; Open as a page still opens the full guide."
+            ]
+        ],
+        "fixed": [
+            [
+                "API error links",
+                "The links in the API's error answers open the new errors page in Starboard's repository."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your apps. To go back, run ./update.sh --to v0.14.0."
     }
 ]
 

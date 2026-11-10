@@ -75,9 +75,10 @@ If you only want to know whether an update is out, without installing it, run `.
 
 ## After the update
 
-- Select the version number in the footer of any page to read the release notes.
-- If the new version brings settings worth choosing, a notice offers to open the upgrade guide. It asks only the new
-  questions. You can leave it for later.
+- Select **Release notes** in the footer of any page to read what changed.
+- If the new version brings settings worth choosing, a notice says how many. Select **Choose now** to choose them in a
+  slide-out over the page you are on, or **Open as a page**. It asks only the new questions. **Remind me later**
+  leaves it for later.
 
 ## Things to note
 

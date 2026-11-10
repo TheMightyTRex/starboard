@@ -887,6 +887,10 @@ class Handler(BaseHTTPRequestHandler):
             extra["Content-Encoding"] = "gzip"
         elif data is None:
             data = gzip.decompress(packed)
+        if path == "/upgrade.html":
+            # The upgrade guide also opens in a slide-out on Starboard's own pages (a frame from this address only).
+            extra["Content-Security-Policy"] = SECURITY_HEADERS["Content-Security-Policy"].replace("frame-ancestors 'none'", "frame-ancestors 'self'")
+            extra["X-Frame-Options"] = "SAMEORIGIN"
         if path in ("/favicon.svg", "/icon-app.svg"):
             # The logo switches colours for dark mode with its own small style block, and runs nothing.
             extra["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; sandbox"
