@@ -49,8 +49,14 @@ Latest results: 3 November 2026.
 - The container runs as your user, read-only, with every Linux capability dropped and no new privileges.
 - It is capped at 512 MB of memory and 200 processes, so a fault cannot take the whole server's.
 - Every kind of access is optional and off unless you say yes: Docker, folders, per-app use, disk health,
-  Live TV. **Settings, About and updates** lists each one and how to change it.
+  Live TV. **Settings, Updates, Update settings** lists each one and how to change it.
 - Data files are `0600` and data folders `0700`.
+- The set-up helper (`starter.sh`, a user service, 0.16.0) runs as your user, never as root, and cannot use sudo. It
+  runs only `./install.sh --start-apps`, and the installer with the set-up's own answers (disk health, the media
+  folder, the Live TV folder), each folder checked first. **Make the change now** needs the Starboard password; the
+  browser cannot send the server any other command. `./install.sh --no-starter` removes it.
+- Pages that open inside Starboard's slide-outs (the upgrade guide and the Still to set up steps) may be framed only
+  by Starboard itself (`frame-ancestors 'self'`); every other page refuses any frame.
 - **Home network** can be switched off, so nothing else on the network can connect at all.
 
 ## The security review, November 2026

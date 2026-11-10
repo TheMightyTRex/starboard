@@ -20,6 +20,8 @@
 #   --pool                Set up Drive pools: the pool helper, which joins drives into one folder and looks after
 #                         backup drives (installs it with sudo; asks for your password)
 #   --no-pool             Stop using the pool helper (and say how to remove it)
+#   --no-starter          Do not run the set-up helper (starter.sh), which starts the apps and makes the set-up's
+#                         changes for the browser; without it, the Run first window or a command does that
 #   --yes                 Do not ask: use the options above, and your last answers (or No) for the rest
 #   --start-apps          Download and start the apps the set-up wrote in data/stack, then stop
 #   --terminal            Finish set-up here in the terminal (password, apps, download hours), with no browser:
@@ -53,6 +55,7 @@ ASK=1
 DOCKER=""
 HEALTH=""
 POOL=""
+STARTER=1
 APPUSE=""
 LIVETV="-"
 TERMINAL=0
@@ -77,6 +80,7 @@ while [ $# -gt 0 ]; do
     --no-disk-health) HEALTH=0 ;;
     --pool) POOL=1 ;;
     --no-pool) POOL=0 ;;
+    --no-starter) STARTER=0 ;;
     --yes) ASK=0 ;;
     --terminal) TERMINAL=1 ;;
     --start-apps) START_APPS=1 ;;
@@ -802,6 +806,32 @@ job_service() {
   systemctl --user daemon-reload && systemctl --user enable --now starboard.service && systemctl --user restart starboard.service \
     || stop IN-23 "the Starboard service did not start. Show the details to see what systemd said."
 }
+# The set-up helper (owner, 10 November 2026: nothing to configure outside Starboard): a user service running
+# starter.sh. Not a stop when it cannot be installed: the Run first window, or the command the browser shows, does
+# the same work.
+job_starter() {
+  local unit_dir="$HOME/.config/systemd/user"
+  if [ "$STARTER" != 1 ]; then
+    systemctl --user disable --now starboard-starter.service >/dev/null 2>&1 || true
+    rm -f "$unit_dir/starboard-starter.service"
+    echo "The set-up helper is off."
+    return 0
+  fi
+  if ! command -v systemctl >/dev/null || ! systemctl --user show-environment >/dev/null 2>&1; then
+    echo "No systemd user session here, so the set-up helper is not installed. The Run first window or a command does its work."
+    return 0
+  fi
+  mkdir -p "$unit_dir"
+  sed -e "s|@DIR@|$PWD|g" deploy/starboard-starter.service > "$unit_dir/starboard-starter.service"
+  # It keeps running after you sign out and starts with the computer.
+  loginctl enable-linger "$(id -un)" >/dev/null 2>&1 || sudo -n loginctl enable-linger "$(id -un)" >/dev/null 2>&1 || true
+  if systemctl --user daemon-reload && systemctl --user enable --now starboard-starter.service && systemctl --user restart starboard-starter.service; then
+    echo "The set-up helper is running."
+  else
+    echo "The set-up helper did not start; the Run first window or a command does its work."
+  fi
+  return 0
+}
 job_wait() {
   local _
   for _ in $(seq 1 30); do
@@ -839,7 +869,7 @@ step_install() {
   para "$JOBS_INTRO"
   say ""
   JOB_N=0
-  JOB_OF=3; [ "$HEALTH" = 1 ] && JOB_OF=$(( JOB_OF + 1 )); [ "$POOL" = 1 ] && JOB_OF=$(( JOB_OF + 1 ))
+  JOB_OF=4; [ "$HEALTH" = 1 ] && JOB_OF=$(( JOB_OF + 1 )); [ "$POOL" = 1 ] && JOB_OF=$(( JOB_OF + 1 ))
   job "Saving your answers" job_save
   if [ "$HEALTH" = 1 ]; then job "Setting up Disk health" job_health; fi
   if [ "$POOL" = 1 ]; then job "Setting up Drive pools" job_pool; fi
@@ -851,6 +881,7 @@ step_install() {
     job "Installing the Starboard service" job_service
   fi
   job "Waiting for Starboard to answer" job_wait
+  job "Starting the set-up helper" job_starter
   return 0
 }
 

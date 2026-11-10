@@ -1,0 +1,18 @@
+# Written by install.sh: Starboard's set-up helper (starter.sh). Runs as your user, never as root, and only runs the
+# installer with the set-up's answers, so nothing needs configuring outside Starboard. Remove it with
+# ./install.sh --no-starter.
+[Unit]
+Description=Starboard set-up helper
+After=network-online.target
+
+[Service]
+WorkingDirectory=@DIR@
+ExecStart=@DIR@/starter.sh
+Restart=on-failure
+RestartSec=10
+MemoryMax=128M
+TasksMax=100
+UMask=0077
+
+[Install]
+WantedBy=default.target

@@ -83,6 +83,17 @@ The ready-made image has no installer. Instead, you change the Compose file.
    docker compose -f compose.image.yaml up -d
    ```
 
+## The set-up helper
+
+The installer also starts a small background service, the set-up helper, so nothing needs setting up outside
+Starboard. When the set-up in the browser starts your apps, or you select **Make the change now** at its end, the
+helper runs the installer on the server for you, and the browser shows how it goes.
+
+- It runs as your user, never as root, and runs only the installer with the set-up's own answers.
+- It cannot use sudo. When a change needs the server's password, such as disk health, the browser shows the one
+  command to run.
+- To stop it, run `./install.sh --no-starter` in the Starboard folder.
+
 ## Things to note
 
 - Every kind of access is optional. If you say no, only that part of Starboard is missing, and its page says what it

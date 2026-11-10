@@ -186,3 +186,52 @@ install_docker
         self.assertEqual(code, 0, log)
         self.assertIn("apt-get install -y docker-compose-v2", log)
         self.assertNotIn("get-docker", log)
+
+
+class SetUpHelperTest(unittest.TestCase):
+    """starter.sh, the set-up helper (owner, 10 November 2026): it makes the set-up's change when the browser asks, with
+    only the set-up's answers, never sudo. A stand-in installer writes down what it is asked; nothing is installed."""
+
+    def test_the_change_is_made_and_disk_health_left_for_the_password(self):
+        import json
+        import os
+        import shutil
+        import subprocess
+        import tempfile
+        import time
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as d:
+            shutil.copy(ROOT / "starter.sh", d)
+            with open(os.path.join(d, "install.sh"), "w") as f:
+                f.write('#!/bin/sh\necho "$@" > asked\nexit 0\n')
+            os.chmod(os.path.join(d, "install.sh"), 0o755)
+            bin_dir = os.path.join(d, "bin")
+            os.mkdir(bin_dir)
+            with open(os.path.join(bin_dir, "sudo"), "w") as f:
+                f.write("#!/bin/sh\nexit 1\n")  # no sudo without a password
+            os.chmod(os.path.join(bin_dir, "sudo"), 0o755)
+            live = os.path.join(d, "livetv")
+            os.mkdir(live)
+            os.makedirs(os.path.join(d, "data", "stack"))
+            with open(os.path.join(d, "data", "setup-host.json"), "w") as f:
+                json.dump({"args": ["--livetv-folder", live, "--disk-health", "--disk", "Media=/etc"]}, f)
+            open(os.path.join(d, "data", "stack", "host-request"), "w").close()
+            env = dict(os.environ, PATH=f"{bin_dir}:/usr/bin:/bin")
+            helper = subprocess.Popen(["bash", os.path.join(d, "starter.sh")], cwd=d, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            try:
+                progress = os.path.join(d, "data", "stack", "host-progress.json")
+                for _ in range(40):
+                    if os.path.exists(progress) and json.loads(Path(progress).read_text())["state"] != "running":
+                        break
+                    time.sleep(0.25)
+                state = json.loads(Path(progress).read_text())
+                asked = Path(d, "asked").read_text().split()
+                left = json.loads(Path(d, "data", "setup-host.json").read_text())["args"]
+                log = Path(d, "data", "stack", "host.log").read_text()
+            finally:
+                helper.terminate()
+                helper.wait(timeout=5)
+        self.assertEqual(state["state"], "needs-password")
+        self.assertEqual(asked, ["--yes", "--plain", "--livetv-folder", live])  # /etc is never used
+        self.assertEqual(left, ["--disk-health"])
+        self.assertIn("Left out: --disk Media=/etc", log)

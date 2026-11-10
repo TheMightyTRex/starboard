@@ -2923,6 +2923,14 @@ async function hostChange(opener) {
       close.classList.add("btn--primary");
       return;
     }
+    if (p.state === "needs-password") {
+      // The set-up helper never uses sudo: disk health is left for one command on the server.
+      bar.style.width = "100%"; meter.setAttribute("aria-valuenow", "100");
+      const cmd = "cd ~/starboard && ./install.sh --disk-health";
+      now.replaceChildren(notice("warning", "One part needs the server's password", "Everything else is done. Disk health needs sudo, which Starboard never uses itself. Run this once in a terminal on the server:"),
+        el("pre", { class: "code-block", text: cmd }), copyButton(cmd, "Copy the command"));
+      return;
+    }
     if (p.state === "failed") {
       now.replaceChildren(notice("danger", "The change stopped", "What the installer said is below. Run first's window on the server shows it too, and the help has each error number."));
       return;

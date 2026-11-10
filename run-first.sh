@@ -1467,5 +1467,10 @@ json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(s
   rm -f data/starter
 }
 if [ "$FINISH" = browser ] && ! grep -qx 'STARBOARD_ALLOW_DOCKER=1' .env 2>/dev/null; then
-  starter
+  # The installer's set-up helper (starter.sh) does this window's work in the background, so it can close.
+  if systemctl --user is-active --quiet starboard-starter.service 2>/dev/null; then
+    para "Starboard's set-up helper runs in the background: it starts the apps and makes the set-up's changes when the browser asks. You can close this window."
+  else
+    starter
+  fi
 fi
