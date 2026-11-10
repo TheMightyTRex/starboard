@@ -2089,14 +2089,18 @@ async function startSecurity() {
     catch (err) { fail(err.message); }
   });
   const everywhere = el("button", { type: "button", class: "btn btn--danger", text: "Sign out everywhere" });
+  // The password again (DASH-280), so a session someone else has cannot sign everyone out.
   everywhere.addEventListener("click", async () => {
+    const pw = el("input", { class: "input", type: "password", id: "end-all-password", autocomplete: "current-password", required: true });
     const ok = await confirmDialog({
       title: "Sign out everywhere?",
       message: "Every browser and phone signed in to Starboard is signed out, including this one. Everyone needs the password to sign in again.",
       confirm: "Sign out everywhere", danger: true,
+      fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)],
     });
     if (!ok) return;
-    try { await api("/api/sessions/end-all", { method: "POST" }); } catch { /* signed out anyway */ }
+    try { await api("/api/sessions/end-all", { method: "POST", body: { password: pw.value } }); }
+    catch (e) { problem(e.message, everywhere); return; }
     location.href = "/login.html";
   });
   const signOut = el("button", { type: "button", class: "btn" }, icon("log-out"), "Sign out");

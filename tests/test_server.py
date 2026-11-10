@@ -352,6 +352,21 @@ class ServerTest(unittest.TestCase):
         resp, _ = self.request("GET", "/api/config")
         self.assertEqual(resp.status, 200)
 
+    def test_995_sign_out_everywhere_needs_the_password(self):
+        # DASH-280: a session on its own cannot sign everyone out.
+        self.sign_in()
+        resp, _ = self.request("POST", "/api/sessions/end-all", {})
+        self.assertEqual(resp.status, 401)
+        resp, _ = self.request("POST", "/api/sessions/end-all", {"password": "not it"})
+        self.assertEqual(resp.status, 401)
+        resp, _ = self.request("GET", "/api/config")
+        self.assertEqual(resp.status, 200)  # still signed in
+        resp, _ = self.request("POST", "/api/sessions/end-all", {"password": "correct horse battery"})
+        self.assertEqual(resp.status, 200)
+        resp, _ = self.request("GET", "/api/config")
+        self.assertEqual(resp.status, 401)
+        ServerTest.cookie = None
+
     def test_73_snaglist_reports_need_the_key_from_a_signed_in_session(self):
         self.sign_in()
         report = {"title": "Apps: the button is hidden", "markdown": "## Hard to use\n\nThe button is hidden.",

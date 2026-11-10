@@ -1895,6 +1895,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/password" and method == "POST":
                 return self.change_password()
             if path == "/api/sessions/end-all" and method == "POST":
+                # The password again (DASH-280), as changing it asks: a stolen session cannot lock everyone out.
+                self.check_password(self.body())
                 cfg.data["auth"]["session_version"] = app.session_version + 1
                 cfg.save()
                 app.sessions.end_all()
