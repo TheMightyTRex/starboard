@@ -768,6 +768,34 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your apps. To go back, run ./update.sh --to v0.14.0."
+    },
+    {
+        "version": "0.15.0",
+        "date": "10 November 2026",
+        "added": [
+            [
+                "Live TV as a plug-in",
+                "Live TV comes with Starboard as a built-in plug-in: add it in Settings, Plug-ins, with its own card, settings and Run Live TV now. It runs locked down on Starboard's own image."
+            ],
+            [
+                "Waiting for Linux's updates",
+                "Run first waits with a progress bar while Linux installs its own updates, and tries again by itself if they start part-way, instead of stopping with error RF-12."
+            ]
+        ],
+        "changed": [
+            [
+                "Your Live TV moves by itself",
+                "If Live TV was on, Starboard moves it into the plug-in on its first start, with the same settings and folder; Jellyfin's channels and guides do not change. Where the plug-in cannot run, Live TV stays in Starboard as before."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Live TV moves into its plug-in by itself. To go back, run ./update.sh --to v0.14.1, then switch Live TV on again in Settings, Apps, Jellyfin."
     }
 ]
 

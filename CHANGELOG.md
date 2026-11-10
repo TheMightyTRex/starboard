@@ -7,6 +7,18 @@ add features.
 
 ## [Unreleased]
 
+## [0.15.0] (10 November 2026)
+
+### Added
+- **Live TV as a plug-in:** Live TV comes with Starboard as a built-in plug-in: add it in Settings, Plug-ins, with its own card, settings and Run Live TV now. It runs locked down on Starboard's own image.
+- **Waiting for Linux's updates:** Run first waits with a progress bar while Linux installs its own updates, and tries again by itself if they start part-way, instead of stopping with error RF-12.
+
+### Changed
+- **Your Live TV moves by itself:** If Live TV was on, Starboard moves it into the plug-in on its first start, with the same settings and folder; Jellyfin's channels and guides do not change. Where the plug-in cannot run, Live TV stays in Starboard as before.
+
+### Security
+- **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
+
 ## [0.14.1] (10 November 2026)
 
 ### Added
@@ -1047,7 +1059,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/TheMightyTRex/starboard/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/TheMightyTRex/starboard/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/TheMightyTRex/starboard/compare/v0.13.2...v0.14.0
 [0.13.2]: https://github.com/TheMightyTRex/starboard/compare/v0.13.1...v0.13.2
