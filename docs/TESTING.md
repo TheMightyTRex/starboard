@@ -129,3 +129,21 @@ gives the minimum and recommended hardware for each. Every step of the start is 
 Left for people: real apps and a real Plex, Windows and Mac, a physical Raspberry Pi, keyboard-only and screen
 reader passes, and how pages look and read. Send feedback (Settings, General, Testing) records
 problems found while testing by hand, as GitHub issues or saved in Starboard.
+
+## Starboard 0.16.0: the first-time set-up on fresh virtual machines (10 November 2026)
+
+Four runs of `tools/vm/vm.sh new mint` (KVM, a bare system with no Docker), driven by `tools/vm/drive.py` and a
+browser, from Run first or `./install.sh` to the end of the browser set-up with the Run first window closed.
+Faults found and fixed before release:
+
+- `./install.sh` crashed when it installed Docker (a job before the first page; MENU_RIGHT unset): fixed, with a test
+  in a pretend terminal.
+- The guide's first step showed Install apps' Start step (the same step id).
+- Reading apps' keys never ran (a route answered first) and needed Docker access Starboard does not have: the set-up
+  helper reads them.
+- A second set-up dropped the apps Starboard had installed and stopped them.
+- A VPN that did not connect was not named as the reason the apps did not start.
+- Make the change now never finished: the installer restarted the helper that ran it.
+- Jellyfin and Audiobookshelf were set up too soon after starting and never again: their first runs now wait.
+- Smaller: lines past 80 columns, Picture quality not on HD by default, a stray /dev/tty line, the bar's style.
+

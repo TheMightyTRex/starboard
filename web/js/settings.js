@@ -1369,6 +1369,13 @@ async function startGuide() {
     return list;
   };
 
+  // The step after this one, found in the list as it is now: a step can drop out once it is done (the keys step,
+  // when no key is missing), and counting on by one would skip the next step (VM test).
+  const after = (id, at) => {
+    const list = build();
+    const here = list.findIndex((x) => x.id === id);
+    return go(here >= 0 ? here + 1 : at);
+  };
   const go = async (i) => {
     await loadFlow();
     steps = build();
@@ -1379,11 +1386,11 @@ async function startGuide() {
     let loading = true;  // Continue waits until the step has loaded, so a quick click cannot skip it
     const frame = () => wizardFrame({ root, steps, index, busy: loading,
       continueText: step.id === "finish" ? "Go to Apps" : step.id === "review" && flow?.ids().has("review") ? "Write the files" : "Continue",
-      onBack: () => go(index - 1), onSkip: () => go(index + 1),
+      onBack: () => go(index - 1), onSkip: () => after(step.id, index),
       onContinue: async (e) => {
         const button = e.currentTarget;  // the event forgets it once the save has been awaited
         button.disabled = true;
-        try { if (await save()) { if (step.id === "finish") location.href = "/index.html"; else go(index + 1); } }
+        try { if (await save()) { if (step.id === "finish") location.href = "/index.html"; else after(step.id, index); } }
         catch (err) { problem(err.message); }
         finally { if (button.isConnected) button.disabled = false; }
       } });
