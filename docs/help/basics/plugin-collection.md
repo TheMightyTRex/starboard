@@ -2,7 +2,7 @@
 
 # The plug-in collection
 
-The plug-ins you can add to Starboard, what each one does, and what it may do on your server. Each one has passed
+The plug-ins you can add to Starboard, what each one does, and what it may do on your server. They live in the [Starboard plug-ins repository](https://github.com/TheMightyTRex/starboard-plugins). Each one has passed
 Starboard's plug-in tester, accessibility included. To add one, read [Add a plug-in](../topics/add-a-plugin.md).
 
 ## Styles
@@ -22,11 +22,11 @@ Eight styles for Starboard, chosen from current interface trends and checked for
 
 - **What it may do:** add styles to **Display**. Risk: low.
 - **What it runs:** nothing. No container, no code and no network access.
-- **Install address:** `https://raw.githubusercontent.com/TheMightyTRex/starboard/main/plugins-collection/styles/starboard-plugin.json`.
+- **Install address:** `https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json`.
   Copy it into **The plug-in's manifest address** in **Settings**, **Plug-ins**, **Add a plug-in**.
-- **Download:** [styles.zip](https://github.com/TheMightyTRex/starboard/raw/main/plugins-collection/styles.zip)
+- **Download:** [styles.zip](https://github.com/TheMightyTRex/starboard-plugins/raw/main/zips/styles.zip)
   (5 KB): the manifest, its installer, readme and licence.
-  [See its files](https://github.com/TheMightyTRex/starboard/tree/main/plugins-collection/styles).
+  [See its files](https://github.com/TheMightyTRex/starboard-plugins/tree/main/styles).
 - **How to add it:** paste the install address, as above. Or unzip the download and run its installer,
   `python3 install.py`, or choose its `starboard-plugin.json` under **Or its manifest file**.
 - **Version:** 1.0.0. Made by TheMightyTRexUK. Licence: MIT.
