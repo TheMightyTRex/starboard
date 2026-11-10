@@ -796,6 +796,32 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Live TV moves into its plug-in by itself. To go back, run ./update.sh --to v0.14.1, then switch Live TV on again in Settings, Apps, Jellyfin."
+    },
+    {
+        "version": "0.15.1",
+        "date": "10 November 2026",
+        "fixed": [
+            [
+                "Live TV's move",
+                "Starboard's container now knows where the Live TV folder is on the computer, so Live TV moves into its plug-in as 0.15.0 meant to."
+            ],
+            [
+                "Live TV and newer Jellyfin",
+                "Live TV sends Jellyfin's key the way Jellyfin 10.11 and later expect, so it can add its channels and guides there."
+            ],
+            [
+                "No channels twice",
+                "When Live TV moves, it reads the folder from Jellyfin's own tuners, so it never adds the same channels again under another path."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Live TV moves into its plug-in by itself on the next start. To go back, run ./update.sh --to v0.14.1, then switch Live TV on again in Settings, Apps, Jellyfin."
     }
 ]
 

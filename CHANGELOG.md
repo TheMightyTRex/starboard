@@ -7,6 +7,16 @@ add features.
 
 ## [Unreleased]
 
+## [0.15.1] (10 November 2026)
+
+### Fixed
+- **Live TV's move:** Starboard's container now knows where the Live TV folder is on the computer, so Live TV moves into its plug-in as 0.15.0 meant to.
+- **Live TV and newer Jellyfin:** Live TV sends Jellyfin's key the way Jellyfin 10.11 and later expect, so it can add its channels and guides there.
+- **No channels twice:** When Live TV moves, it reads the folder from Jellyfin's own tuners, so it never adds the same channels again under another path.
+
+### Security
+- **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
+
 ## [0.15.0] (10 November 2026)
 
 ### Added
@@ -1059,7 +1069,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/TheMightyTRex/starboard/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/TheMightyTRex/starboard/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/TheMightyTRex/starboard/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/TheMightyTRex/starboard/compare/v0.13.2...v0.14.0

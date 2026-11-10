@@ -26,7 +26,7 @@ class Jellyfin(BaseHTTPRequestHandler):
 
     def do_GET(self):
         s = self.state
-        if self.headers.get("X-Emby-Token") != "jf-key":
+        if self.headers.get("Authorization") != 'MediaBrowser Token="jf-key"':  # as Jellyfin 10.11 and later
             return self.answer(401)
         if self.path == "/System/Configuration/livetv":
             return self.answer(200, {"TunerHosts": s["tuners"], "ListingProviders": s["guides"]})
@@ -78,6 +78,10 @@ class LiveTvJellyfinTest(unittest.TestCase):
         self.assertEqual(self.state["refreshed"], 1)
         self.assertEqual(self.connect(), "")
         self.assertEqual(self.state["refreshed"], 1)
+
+    def test_the_folder_comes_from_jellyfins_own_tuners(self):
+        self.assertEqual(lj.folder_from_jellyfin(self.services), "/config/iptv")
+        self.assertIsNone(lj.folder_from_jellyfin([]))
 
     def test_says_what_is_missing(self):
         self.assertIn("API key", lj.connect([], {}, "", local_folder=self.dir, host_path="", env=ENV))

@@ -55,7 +55,9 @@ def settings_from(cfg, self_url):
     extras = cfg.data["extras"]
     return {"white_logos": bool(extras.get("white_logos", True)),
             "address": (extras.get("livetv_address") or self_url or "").rstrip("/"),
-            "jellyfin_folder": livetv_jellyfin.jellyfin_folder(extras, cfg.data_dir) or ""}
+            # The folder Jellyfin's own tuners use first, so nothing is added twice; else worked out, as before.
+            "jellyfin_folder": livetv_jellyfin.folder_from_jellyfin(cfg.data["services"])
+            or livetv_jellyfin.jellyfin_folder(extras, cfg.data_dir) or ""}
 
 
 def add(cfg, data_dir, media_dir, self_url, helper=None):

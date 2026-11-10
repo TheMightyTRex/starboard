@@ -40,13 +40,32 @@ def jellyfin_folder(extras, data_dir, host_path=None, env=None):
 
 def _call(base, key, method, path, body=None, opener=None):
     data = json.dumps(body).encode() if body is not None else None
-    headers = {"X-Emby-Token": key, "Accept": "application/json", "User-Agent": "Starboard"}
+    # Newer Jellyfin (10.11 and later) takes the key only in Authorization; older versions and Emby in X-Emby-Token.
+    headers = {"Authorization": f'MediaBrowser Token="{key}"', "X-Emby-Token": key, "Accept": "application/json", "User-Agent": "Starboard"}
     if data is not None:
         headers["Content-Type"] = "application/json"
     req = urllib.request.Request(base.rstrip("/") + path, data=data, method=method, headers=headers)
     with (opener or urllib.request.build_opener()).open(req, timeout=TIMEOUT) as r:  # Jellyfin from the dashboard  # nosec B310
         raw = r.read()
     return json.loads(raw) if raw else None
+
+
+def folder_from_jellyfin(services, opener=None):
+    """The Live TV folder as Jellyfin sees it, read from the tuners Jellyfin already has for Starboard's lists, so a
+    move never adds the same lists again under another path. None when Jellyfin has none, or does not answer."""
+    jf = next((s for s in services or [] if s.get("type") == "jellyfin" and s.get("url") and s.get("api_key")), None)
+    if not jf:
+        return None
+    try:
+        options = _call(jf["url"], jf["api_key"], "GET", "/System/Configuration/livetv", opener=opener) or {}
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    names = {n for n, _ in PLAYLISTS}
+    for t in options.get("TunerHosts") or []:
+        url = str(t.get("Url") or "")
+        if posixpath.basename(url) in names and url.startswith("/"):
+            return posixpath.dirname(url)
+    return None
 
 
 def connect(services, extras, data_dir, local_folder=None, opener=None, host_path=None, env=None):
