@@ -43,8 +43,8 @@ def summary(app):
               bool(sysinfo.cgroup_dir()) and os.path.isdir(os.path.join(sysinfo.cgroup_dir(), "system.slice")),
               "installer", on_flag="--app-use", off_flag="--no-app-use", cost="Two small files per container every 2 seconds, only while Monitor is open."),
         _item("livetv", "Jellyfin's Live TV folder",
-              "Starboard writes channel playlists, guides and logos there once a day while Live TV is on (Settings, Apps, Jellyfin). "
-              "Jellyfin can fetch logos and Pluto streams from Starboard without signing in, and only while Live TV is on.",
+              "Starboard writes channel playlists, guides and logos there once a day while the Live TV plug-in is active (Settings, Plug-ins). "
+              "Jellyfin can fetch logos and Pluto streams from Starboard without signing in, and only while the Live TV plug-in is active.",
               bool(os.environ.get("STARBOARD_IPTV_DIR")), "installer", on_flag="--livetv-folder /path", off_flag="--no-livetv", cost="See Settings, Apps, Jellyfin: under 2 seconds a day, about a minute a week."),
         _item("jellyfin_jobs", "Jellyfin: watch history import and user defaults",
               "With Jellyfin's API key, Starboard marks imported history as watched and sets defaults for users who have not chosen their own.",

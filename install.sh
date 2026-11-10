@@ -474,7 +474,7 @@ step_welcome() {
   para "Starboard runs as your user, in a read-only container with no extra privileges, and keeps its settings in ./data. It never sends your settings anywhere."
   MENU_RIGHT="Enter: start"; [ "$FANCY" = 1 ] && menu
   ask "Press Enter to start" "" \
-"Run ./install.sh again at any time to change your answers; your settings and password stay. Settings, About and updates in Starboard shows what it can access now." || return $?
+"Run ./install.sh again at any time to change your answers; your settings and password stay. Settings, Updates, Update settings in Starboard shows what it can access now." || return $?
 }
 
 step_network() {
@@ -813,7 +813,7 @@ step_done() {
   if [ -n "$code" ] && [ "$TERMINAL" = 0 ]; then
     para "You need the setup code once, to choose your password. No browser here? Finish in the terminal instead: python3 -m starboard.terminal_setup --port $PORT"
   fi
-  para "What Starboard can access, and how to change it: Settings, About and updates."
+  para "What Starboard can access, and how to change it: Settings, Updates, Update settings."
   if [ "$TERMINAL" = 1 ]; then
     ask "Press Enter to set up the rest here: your password, your apps and download hours" "" \
 "The terminal set-up asks the same questions as the set-up in a browser. Run it again later with: python3 -m starboard.terminal_setup" || true

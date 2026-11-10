@@ -362,7 +362,7 @@ function rxOffers(offers, done) {
         } catch (err) { toast(err.message); }
         finally { if (e.currentTarget?.isConnected) e.currentTarget.disabled = false; }
       } }, `Connect ${o.name}`)
-      : el("a", { class: "btn btn--quiet", href: "/apps-services.html" }, `Add ${o.name}'s API key first`);
+      : el("a", { class: "btn btn--quiet", href: "/settings.html" }, `Add ${o.name}'s API key first`);
     return el("li", { class: "setting" },
       el("div", { class: "setting__text" }, el("span", { class: "setting__label", text: o.name }),
         el("span", { class: "setting__hint", text: o.connected ? `Reelix tells ${o.name} about new files at once (${o.url}).`

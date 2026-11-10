@@ -211,7 +211,7 @@ def server_file(name):
 def request_server_backup(with_prompt=False):
     jobs = jobs_dir()
     if not jobs:
-        raise ConfigError("No server backup job is set up. See Backup and restore in the README")
+        raise ConfigError("No server backup job is set up. See the help article Back up the whole server")
     path = os.path.join(jobs, "requests", "backup-with-prompt" if with_prompt else "backup")
     try:
         with open(path, "w"):

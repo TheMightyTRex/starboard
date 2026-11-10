@@ -129,6 +129,8 @@
 
 /* Advanced settings (DASH-225): advanced sections stay hidden until the switch at the top of the page is on. */
 body:not(.show-advanced) [data-advanced] { display: none; }
+/* A link to a part under Advanced settings (#rx-mediaservers-h, #categories) shows that part anyway. */
+body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:target, :target [data-advanced]) { display: revert; }
 .advanced-toggle { padding: var(--space-3, 12px) var(--space-4, 16px); border: 1px solid var(--color-divider); border-radius: var(--radius-2, 6px);
   background: var(--color-surface); max-width: 40rem; }
 

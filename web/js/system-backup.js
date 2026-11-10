@@ -122,7 +122,7 @@ function openFile(f, opener) {
       notice("info", prompt ? "Use it on the server" : "Restore it on the server",
         prompt
           ? "Open it from the backup folder on the server, or from your copy of the backup, and give it to the assistant."
-          : "Starboard cannot restore the whole server itself. Follow REBUILD-PROMPT.md or Backup and restore in the README."),
+          : "Starboard cannot restore the whole server itself. Follow REBUILD-PROMPT.md, or the help article Back up the whole server."),
     ],
   });
 }
@@ -144,7 +144,7 @@ async function loadServer() {
   const busy = s && (s.status === "running" || s.status === "waiting");
   if (!server.configured) {
     box.replaceChildren(el("div", { class: "empty" },
-      el("p", { text: "No server backup job is set up, so Starboard cannot back up the whole server. Backup and restore in the README explains how to set one up." })));
+      el("p", { text: "No server backup job is set up, so Starboard cannot back up the whole server. The help article Back up the whole server explains how to set one up." })));
     $("#backup-summary").textContent = "Keep a copy of the whole server, and of Starboard's settings.";
     return;
   }

@@ -804,8 +804,8 @@ def _health_one(service):
 
 # Where in Starboard each of Reelix's own checks is put right (DASH-160), by the check's source.
 REELIX_FIX = {"indexers": ("Sites to search", "/settings-reelix.html#rx-indexers"),
-              "download_clients": ("Download apps", "/settings-reelix.html#rx-downloadclients"),
-              "media_servers": ("Media servers", "/settings-reelix.html#rx-mediaservers"),
+              "download_clients": ("Download apps", "/settings-reelix.html#rx-downloadclients-h"),
+              "media_servers": ("Media servers", "/settings-reelix.html#rx-mediaservers-h"),
               "root_folders": ("Your install", "/settings-install.html"),
               "data_dir": ("Your install", "/settings-install.html"),
               "database": ("Your install", "/settings-install.html")}

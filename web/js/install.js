@@ -918,8 +918,8 @@ function connectGuide(state, apps) {
       has("qbittorrent") || has("nzbget") || has("sabnzbd") ? ", and your download apps are connected" : "", ". Then:",
       el("ul", {}, ...[
         // Until the set-ups ask for it (DASH-178), the TMDB key is the one setting still made in Reelix's own pages.
-        el("li", {}, "Films and series information: add a free TMDB key, from themoviedb.org. For now this is done in Reelix itself: ", open("reelix"),
-          ", sign in as ", code("admin"), " with your Starboard password, then Settings, Metadata. Starboard will ask for it in a later version."),
+        el("li", {}, "Films and series information: add a free TMDB key, from themoviedb.org, in ",
+          el("a", { href: "/settings-reelix.html#rx-basics-h", text: "Settings, Reelix, Basic settings" }), ", if you did not give it in the Films and series step."),
         el("li", {}, "Sites to search: the ones you chose are added. See each one's state, and add more, in ",
           el("a", { href: "/settings-reelix.html", text: "Settings, Reelix, Sites to search" }), "."),
         has("jellyfin") || has("audiobookshelf") ? el("li", {}, `Reelix is connected to ${[has("jellyfin") ? "Jellyfin" : "", has("audiobookshelf") ? "Audiobookshelf" : ""].filter(Boolean).join(" and ")}, so new things show up there at once. Check it, or connect again, in `,

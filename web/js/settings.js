@@ -357,7 +357,9 @@ function openService(s = null, opener = null, { background = false, preset = nul
     const where = { qbittorrent: "Options, Web UI, API key (version 5.2 or later)", sabnzbd: "Config, General, API Key",
       jellyfin: "Dashboard, API keys. Optional: it adds Jellyfin's state, what is playing and recently added to System",
       audiobookshelf: "Settings, API Keys, for an admin user. Optional: it is needed only to copy listening progress (Settings, Apps, Audiobookshelf)",
-      gluetun: "its control server settings. Optional: only if you gave its control server an API key" }[t] || "Settings, General";
+      gluetun: "its control server settings. Optional: only if you gave its control server an API key",
+      nzbget: "Settings, Security: type its control user name and password as user:password",
+      slskd: "Options, web, authentication, API keys (in its slskd.yml)" }[t] || "Settings, General";
     keyHint.textContent = `In ${config.types[t]?.label || "the app"}: ${where}.${current?.has_api_key ? " Leave blank to keep the saved key; it is never shown again." : ""}`;
     followsField.hidden = !bg.checked;
     group.options[0].textContent = `Choose for me (${guessGroup(name.value, t) || "the last category"})`;
@@ -751,8 +753,8 @@ function startGeneral() {
           upcomingSelect("upcoming_view", "up-view-l", [["list", "List"], ["calendar", "Calendar"]], (t) => `Coming up now opens as ${t === "List" ? "a list" : "a calendar"}`), "up-view-l"),
         settingRow("How far ahead", withCost("Releases from today to this far ahead, plus yesterday's.", "upcoming"),
           upcomingSelect("upcoming_days", "up-days-l", dayChoices, (t) => `Coming up now looks ${t} ahead`), "up-days-l")))),
-    el("div", { id: "download-hours" }, section("gn-dh", "Download hours", "Starboard pauses qBittorrent, NZBGet and SABnzbd outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
-      clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent, NZBGet or SABnzbd with its API key in Manage apps, so Starboard can pause and resume them."),
+    el("div", { id: "download-hours" }, section("gn-dh", "Download hours", "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
+      clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent, NZBGet, SABnzbd or Soulseek (slskd) with its API key in Manage apps, so Starboard can pause and resume them."),
       el("ul", { class: "settings-rows" },
         settingRow("Only download between set hours", withCost("Inactive: downloads run at any time.", "hours"), el("label", { class: "switch" }, hoursOn), "dh-on-l"),
         settingRow("Start", "Downloads start at this hour.", hoursSelect("start", "dh-start-l"), "dh-start-l"),
@@ -772,7 +774,7 @@ function startGeneral() {
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
     el("div", { id: "testing" }, section("gn-test", "Send feedback", "Report a problem or suggest something from any page. On unless you deactivate it.",
       el("ul", { class: "settings-rows" },
-        settingRow("Send feedback", "Send feedback sits in the corner of every page, to report a problem, suggest something or check a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Deactivate it to hide the button.",
+        settingRow("Send feedback", "Feedback in the side menu, on every page, reports a problem, suggests something or checks a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Deactivate it to remove Feedback from the menu.",
           uxSwitch, "ux-notes-l")),
       el("div", { id: "feedback-list" }))));
   renderCategories();
@@ -1351,7 +1353,7 @@ async function startGuide() {
     }
     const coming = (keys) => !!flow && keys.some((k) => flow.state.apps.has(k));  // installed by this set-up
     if (types(["jellyfin"]).length || coming(["jellyfin"])) list.push({ id: "jellyfin", ...stepNamed(T, "extras"), intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
-    if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key) || coming(["qbittorrent", "nzbget", "sabnzbd"])) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet and SABnzbd outside these hours, for example to keep the internet free in the day." });
+    if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key) || coming(["qbittorrent", "nzbget", "sabnzbd"])) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
     if (!(start === "new" && flow) && !moveInto()) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
@@ -1578,7 +1580,7 @@ function startAlerts() {
 
   $("#alerts-sections").removeAttribute("aria-busy");
   $("#alerts-sections").replaceChildren(
-    section("al-watch", "Watching", "Uptime history on each app's details needs this on.", watching),
+    section("al-watch", "Watching", "Uptime history on each app's details needs this active.", watching),
     section("al-where", "Where alerts go", "ntfy, Gotify or a webhook. Starboard keeps the token on the server.", channelForm),
     section("al-what", "What to alert on", "Each alert is sent once, and again only after it has cleared.", alertRows),
     section("al-week", "Weekly summary", null, weekly));
@@ -1957,10 +1959,10 @@ async function startPerformance() {
       el("div", { class: "inline-save" }, pick("pf-watch-every", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w.every,
         (v, t) => save({ watch: { every: Number(v) } }, `Watching: ${t.toLowerCase()}`)),
         sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }, on ? "Watching activated" : "Watching deactivated"))), "pf-watch-l"),
-    settingRow("Download hours check", withCost("How often Starboard checks qBittorrent, NZBGet and SABnzbd while download hours are on (Settings, General).", "scheduleEvery"),
+    settingRow("Download hours check", withCost("How often Starboard checks qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) while download hours are active (Settings, General).", "scheduleEvery"),
       pick("pf-sched-l", [[60, "Every minute"], [300, "Every 5 minutes"]], perf().schedule_every,
         (v, t) => save({ performance: { schedule_every: Number(v) } }, `Download hours check: ${t.toLowerCase()}`)), "pf-sched-l"),
-    settingRow("Live TV white logos", withCost("Only matters while Live TV is on (Settings, Apps, Jellyfin).", "white"),
+    settingRow("Live TV white logos", withCost("Only matters while the Live TV plug-in is active (Settings, Plug-ins).", "white"),
       sw("pf-white-l", x.white_logos, (on) => save({ extras: { white_logos: on } }, on ? "White logos activated" : "White logos deactivated")), "pf-white-l"),
     settingRow("Keep applying imported history", withCost("Settings, Apps, Jellyfin, Import watch history.", "importKeep"),
       sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } }, on ? "History applied every hour" : "History applied only when you ask")), "pf-imp-l"),
@@ -1992,7 +1994,7 @@ async function startPerformance() {
   root.replaceChildren(...[
     now ? section("pf-now", "Starboard now", "Measured on this server while you look.", now) : null,
     section("pf-preset", "Preset", "Sets everything below at once. Features you chose for what they do, such as Live TV and download hours, stay as they are.", presetForm),
-    section("pf-bg", "Background work", "Runs with no page open. Each part's thread exists only while it is on.", background),
+    section("pf-bg", "Background work", "Runs with no page open. Each part's thread exists only while it is active.", background),
     section("pf-pages", "While a page is open", "Only while the page is open and in view; a hidden tab asks for nothing.", pages),
   ].filter(Boolean));
 }
@@ -2587,7 +2589,7 @@ function takeoverSection() {
     if (!(m.sources && m.sources.length) && unmoved.length) {
       parts.push(section("tk-install", `Step ${step++}: install Reelix`,
         "Reelix takes the place of " + p.unmoved_apps.join(", ") + ". Install it first, so it can read them before they stop.",
-        el("p", { text: "In Install apps, choose Full install. Your apps that already run are left as they are, so it adds Reelix, NZBGet and Tdarr. Then come back here." }),
+        el("p", { text: "In Install apps, choose Full install. Your apps that already run are left as they are, so it adds only the apps you do not have yet, Reelix among them. Then come back here." }),
         el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/install-apps.html" }, icon("download"), "Install apps"))));
     }
     if (m.needs_setup && m.sources && m.sources.length) {

@@ -389,7 +389,7 @@ const VIEWS = {
           { value: "mergerfs.balance", title: "mergerfs.balance", text: hasTool ? "Moves single files until the drives are even. A series can end up spread over several drives." : "Not installed. It is an extra download from the mergerfs-tools project; the help says how.", disabled: !hasTool },
         ], flow.engine, (v) => { flow.engine = v; }),
         el("label", { class: "check" }, el("input", { type: "checkbox", id: "pause", checked: flow.pause, onchange: (e) => { flow.pause = e.target.checked; } }),
-          el("span", { class: "check__text", text: "Pause during download hours (Settings, General)" })),
+          el("span", { class: "check__text", text: "Pause during download hours (Settings, General, Download hours)" })),
         el("p", { class: "small muted", text: "It runs at low priority, so playing films is not slowed. Folders changed in the last hour stay where they are." }),
         el("p", { class: "help-links" }, helpLink("How balancing works, and what happens without it", "topics/balance-the-files.md"))],
       [btn("Continue to Check", () => runCheck({ kind: "balance", engine: flow.engine, pause: flow.pause }), "btn btn--primary"), cancel()]];
