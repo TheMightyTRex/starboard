@@ -872,6 +872,24 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Live TV starts its first run as a plug-in. To go back, run ./update.sh --to v0.15.1."
+    },
+    {
+        "version": "0.15.3",
+        "date": "10 November 2026",
+        "fixed": [
+            [
+                "Built-in plug-ins follow Starboard's updates",
+                "Each time Starboard starts, its built-in plug-ins, such as Live TV, are set up again from the new version and started again, so they get its fixes."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your settings. To go back, run ./update.sh --to v0.15.2."
     }
 ]
 

@@ -114,6 +114,22 @@ class LiveTvPluginTest(unittest.TestCase):
             self.assertEqual(r.status, 202)
             self.assertTrue(livetv_plugin._force["now"])
 
+    def test_built_in_plug_ins_follow_starboards_update(self):
+        cfg = FakeConfig(self.tmp.name, {"livetv": True})
+        runs = []
+        helper = lambda folder, script: (runs.append(script) or (0, ""))
+        with mock.patch.object(livetv_move, "can_run", return_value=""), mock.patch.object(pa, "host_for_builtin", return_value=HOST):
+            livetv_move.move(cfg, self.tmp.name, "/srv/media", "http://192.168.1.20:8095", helper=helper)
+        compose = os.path.join(pa.folder(self.tmp.name, "livetv"), "compose.yaml")
+        with open(compose, "w") as f:
+            f.write("services: {}\n")  # as an older version wrote it
+        again = pa.refresh_builtins(self.tmp.name, "/srv/media", cfg.data["services"], helper=helper, host=HOST)
+        self.assertEqual(again, ["Live TV"])
+        with open(compose) as f:
+            self.assertIn("healthcheck:", f.read())
+        self.assertIn("chown", runs[-1])
+        self.assertIn("up -d", runs[-1])
+
     def test_an_address_is_needed(self):
         settings = os.path.join(self.tmp.name, "settings.json")
         json.dump({}, open(settings, "w"))

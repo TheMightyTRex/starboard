@@ -7,6 +7,14 @@ add features.
 
 ## [Unreleased]
 
+## [0.15.3] (10 November 2026)
+
+### Fixed
+- **Built-in plug-ins follow Starboard's updates:** Each time Starboard starts, its built-in plug-ins, such as Live TV, are set up again from the new version and started again, so they get its fixes.
+
+### Security
+- **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
+
 ## [0.15.2] (10 November 2026)
 
 ### Added
@@ -1083,7 +1091,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused.
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.2...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.3...HEAD
+[0.15.3]: https://github.com/TheMightyTRex/starboard/compare/v0.15.2...v0.15.3
 [0.15.2]: https://github.com/TheMightyTRex/starboard/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/TheMightyTRex/starboard/compare/v0.15.0...v0.15.1
 [0.15.0]: https://github.com/TheMightyTRex/starboard/compare/v0.14.1...v0.15.0

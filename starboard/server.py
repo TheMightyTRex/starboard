@@ -604,11 +604,17 @@ def _move_livetv(app):
     time.sleep(20)  # Docker and the network are up, and the first pages answered
     try:
         media = (stack.env_values(app.data_dir).get("DATA_DIR") or "").rstrip("/")
-        said = livetv_move.move(app.config, app.data_dir, f"{media}/media" if media else "/nonexistent-media-folder",
-                                app.jobs.self_url(), log=lambda line: logs.event("info", "live tv", line))
+        media_dir = f"{media}/media" if media else "/nonexistent-media-folder"
+        said = livetv_move.move(app.config, app.data_dir, media_dir, app.jobs.self_url(), log=lambda line: logs.event("info", "live tv", line))
         if said:
             logs.event("info", "live tv", said)
             app.jobs.ensure()
+        elif containers.available():
+            # Built-in plug-ins follow Starboard's update: their files are written again and active ones restarted.
+            from . import plugins_admin
+            again = plugins_admin.refresh_builtins(app.data_dir, media_dir, app.config.data["services"])
+            if again:
+                logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
     except Exception as e:  # Live TV carries on inside Starboard
         logs.error("live tv", f"Live TV stays in Starboard for now: {e}", e)
 

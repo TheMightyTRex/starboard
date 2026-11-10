@@ -302,6 +302,33 @@ def uninstall(data_dir, pid, helper=None):
     return target
 
 
+def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
+    """At each start: a built-in plug-in follows Starboard's own update. Its manifest and Compose file are written
+    again from the copy inside Starboard, and an active one is started again, so it runs the new image with the new
+    settings. Returns the names started again; a problem is left in the plug-in's own state, never raised."""
+    done = []
+    shipped = builtins()
+    for p in listing(data_dir):
+        if not p.get("builtin") or p["id"] not in shipped:
+            continue
+        pid, manifest = p["id"], shipped[p["id"]]
+        where = folder(data_dir, pid)
+        try:
+            text = plugins.compose(manifest, host_path(data_dir, pid), media_dir, host or host_for_builtin())
+        except ValueError as e:
+            set_state(data_dir, pid, p["state"], str(e))
+            continue
+        _write(os.path.join(where, "manifest.json"), manifest)
+        _write(os.path.join(where, "compose.yaml"), text, 0o644)
+        if p["state"] == "enabled":
+            try:
+                enable(data_dir, pid, helper=helper, services=services)
+                done.append(p["name"])
+            except ValueError:
+                pass  # enable() has recorded why, for its section in Settings, Plug-ins
+    return done
+
+
 def stop_all(data_dir, helper=None):
     """The kill switch (PS11): every enabled plug-in stopped."""
     stopped = []
