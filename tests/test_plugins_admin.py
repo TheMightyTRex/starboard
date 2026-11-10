@@ -86,7 +86,14 @@ class PluginsAdminTest(unittest.TestCase):
             with open(fake, "w") as f:
                 f.write("#!/bin/sh\necho 'Error: pull access denied'\nexit 1\n")
             os.chmod(fake, 0o755)
-            r = subprocess.run(["sh", "-c", scripts[0]], env={"PATH": f"{bin_dir}:/usr/bin:/bin"}, capture_output=True, text=True)
+            # The helper runs as root; chown stands in, so the test runs the same as any user (GitHub's runner is
+            # not user 1000), in a folder of its own.
+            chown = os.path.join(bin_dir, "chown")
+            with open(chown, "w") as f:
+                f.write("#!/bin/sh\nexit 0\n")
+            os.chmod(chown, 0o755)
+            with tf.TemporaryDirectory() as work:
+                r = subprocess.run(["sh", "-c", scripts[0]], env={"PATH": f"{bin_dir}:/usr/bin:/bin"}, cwd=work, capture_output=True, text=True)
         self.assertEqual(r.returncode, 1)
         self.assertIn("pull access denied", r.stdout)
 
