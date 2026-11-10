@@ -111,6 +111,38 @@ class LighterTest(unittest.TestCase):
             self.assertEqual(other.getheader("X-Frame-Options"), "DENY")
             c.close()
 
+    def test_make_the_change_now_needs_the_password_and_the_run_first_window(self):
+        # The set-up's change to the server (owner, 10 November 2026): a request the Run first window picks up.
+        import json as j
+        from unittest import mock
+        from starboard import server, stack
+        folder = stack.folder(self.tmp.name)
+        with mock.patch.object(server.Handler, "signed_in", return_value=True), \
+                mock.patch.object(type(self.app), "needs_setup", new_callable=mock.PropertyMock, return_value=False), \
+                mock.patch.object(server.Handler, "check_password", return_value=None) as pw, \
+                mock.patch.object(stack, "starter_waiting", return_value=True):
+            c = self.conn()
+            post = lambda: (c.request("POST", "/api/setup/host/apply", j.dumps({"password": "made-up"}),  # noqa: E731
+                                      {"Host": f"127.0.0.1:{self.port}", "Content-Type": "application/json", "X-Starboard": "1",
+                                       "Origin": f"http://127.0.0.1:{self.port}"}), c.getresponse())[1]
+            r = post()
+            r.read()
+            self.assertEqual(r.status, 400)  # nothing to change yet
+            with open(os.path.join(self.tmp.name, "setup-host.json"), "w") as f:
+                j.dump({"args": ["--disk-health"]}, f)
+            r = post()
+            r.read()
+            self.assertEqual(r.status, 200)
+            self.assertTrue(pw.called)
+            self.assertTrue(os.path.exists(os.path.join(folder, "host-request")))
+            r, body = self.get(c, "/api/setup/host/progress")
+            self.assertEqual(j.loads(body)["state"], "waiting")
+            with open(os.path.join(folder, "host-progress.json"), "w") as f:
+                j.dump({"state": "running", "n": 2, "of": 3, "name": "Installing smartmontools"}, f)
+            r, body = self.get(c, "/api/setup/host/progress")
+            self.assertEqual((j.loads(body)["n"], j.loads(body)["name"]), (2, "Installing smartmontools"))
+            c.close()
+
 
 if __name__ == "__main__":
     unittest.main()

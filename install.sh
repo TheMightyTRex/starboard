@@ -157,12 +157,22 @@ stop() { printf '%s|%s\n' "$1" "$2" > "$WORK/reason"; echo "Stopped: $2"; exit 1
 JOB_N=0
 JOB_OF=1
 JOBS_INTRO=""
+# progress_note "state" "name": one line for the browser's pop-up, when the Run first window asked for it
+# (STARBOARD_PROGRESS names the file). Written whole each time, so the page never reads half a line.
+progress_note() {
+  [ -n "${STARBOARD_PROGRESS:-}" ] || return 0
+  local name="${2//\\/}"; name="${name//\"/}"
+  printf '{"state": "%s", "n": %s, "of": %s, "name": "%s"}\n' "$1" "$JOB_N" "$JOB_OF" "$name" > "$STARBOARD_PROGRESS.new" \
+    && mv -f "$STARBOARD_PROGRESS.new" "$STARBOARD_PROGRESS"
+}
 job() {
   local name="$1" fn="$2" code reason
   JOB_N=$(( JOB_N + 1 ))
   while :; do
     rm -f "$WORK/reason"
-    work "$name" "$fn" "$JOB_N" "$JOB_OF" && return 0
+    progress_note running "$name"
+    work "$name" "$fn" "$JOB_N" "$JOB_OF" && { progress_note ok "$name"; return 0; }
+    progress_note failed "$name"
     code="IN-29"; reason="Something went wrong while ${name,}."
     if [ -s "$WORK/reason" ]; then IFS='|' read -r code reason < "$WORK/reason"; fi
     job_failed "$name" "${reason^}" "" "$code"

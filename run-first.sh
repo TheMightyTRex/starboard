@@ -1368,12 +1368,42 @@ finish
 # default), so when the person selects Start the apps, it leaves a request in data/stack, and this window runs
 # ./install.sh --start-apps for it and leaves the result next to the request. data/starter, touched every few
 # seconds, tells Starboard this window is open.
+# host_change: the set-up's change to this computer, asked for in the browser with the Starboard password (Make the
+# change now). It runs without a question here, its output goes to data/stack/host.log and each step to
+# data/stack/host-progress.json, which the browser's pop-up shows. This window stays open meanwhile.
+host_change() {
+  local status=0 job progress=data/stack/host-progress.json
+  echo
+  echo "Making the set-up's change to this computer, as the set-up in the browser asked. The browser shows how it goes."
+  printf '{"state": "running", "n": 0, "of": 1, "name": "Starting"}\n' > "$progress"
+  ( STARBOARD_PROGRESS="$PWD/$progress" apply_host > data/stack/host.log 2>&1 < /dev/null ) &
+  job=$!
+  while kill -0 "$job" 2>/dev/null; do : > data/starter; sleep 2; done
+  wait "$job" || status=$?
+  if [ "$status" = 0 ] && [ ! -s data/setup-host.json ]; then
+    printf '{"state": "finished", "n": 1, "of": 1, "name": "Done"}\n' > "$progress"
+    echo "The change is made."
+  else
+    printf '{"state": "failed", "n": 1, "of": 1, "name": "Stopped"}\n' > "$progress"
+    tail -n 3 data/stack/host.log | fold -s -w $(( COLS > 1 ? COLS - 1 : 79 ))
+  fi
+}
 starter() {
-  local key req status job result=data/stack/start-result.json
+  local key req status job result=data/stack/start-result.json done_at=""
   echo
   printf '%s\n' "Keep this window open until the set-up in the browser says your apps are running: they are downloaded and started from here. Press q to close it." \
     | fold -s -w $(( COLS > 1 ? COLS - 1 : 79 ))
   mkdir -p data/stack
+  # sudo once, now, so the browser set-up can finish the server change without anyone coming back here; it is kept
+  # only while this window is open.
+  if [ -n "$IN" ] && ! sudo -n true 2>/dev/null; then
+    printf '%s\n' "So the set-up in the browser can finish everything itself, sudo asks for the password you use to sign in to this computer, once (nothing shows as you type). Press Enter to skip: this window then asks again only if a change needs it." \
+      | fold -s -w $(( COLS > 1 ? COLS - 1 : 79 ))
+    sudo -v < "$IN" || true
+  fi
+  if sudo -n true 2>/dev/null; then
+    ( while sleep 50; do [ -e data/starter ] || break; sudo -n -v 2>/dev/null || break; done ) &
+  fi
   while :; do
     : > data/starter
     if [ -f data/stack/start-request ] && [ ! -L data/stack/start-request ]; then
@@ -1404,8 +1434,18 @@ json.dump({"request": sys.argv[1], "ok": sys.argv[2] == "0", "log": log}, open(s
         echo "Waiting: select Try again in the browser, or press q to close this window."
       fi
     fi
-    # The set-up in the browser has finished: make its changes to this computer, then this window is done.
+    if [ -f data/stack/host-request ] && [ ! -L data/stack/host-request ]; then
+      rm -f data/stack/host-request
+      host_change
+    fi
+    # The set-up in the browser has finished: its last page offers Make the change now, so this window waits up to
+    # 10 minutes for that; only then does it ask here instead. With no change to make, this window is done.
     if grep -q '"setup_guide_done": *true' data/config.json 2>/dev/null; then
+      [ -n "$done_at" ] || done_at=$SECONDS
+      if [ -s data/setup-host.json ] && [ $(( SECONDS - done_at )) -lt 600 ]; then
+        [ -n "$IN" ] && { key=""; read -r -s -t 3 -n 1 key < "$IN" || true; case "$key" in q|Q) break ;; esac; } || sleep 3
+        continue
+      fi
       rm -f data/starter
       if [ -s data/setup-host.json ]; then
         echo

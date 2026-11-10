@@ -1351,6 +1351,39 @@ class Handler(BaseHTTPRequestHandler):
                     args = []
                 return self.json(200, {"args": args, "command": "./install.sh " + " ".join(args) if args else "",
                                        "starter": stack.starter_waiting(app.data_dir)})
+            if path == "/api/setup/host/apply" and method == "POST":
+                # Make the change now (owner, 10 November 2026): the Run first window on the server makes the set-up's
+                # change to the computer when Starboard leaves a request, after the Starboard password here.
+                self.check_password(self.body())
+                if not stack.starter_waiting(app.data_dir):
+                    raise ValueError("The Run first window on the server is closed, so run the command there instead")
+                if not os.path.exists(os.path.join(app.data_dir, "setup-host.json")):
+                    raise ValueError("There is no change to make")
+                folder = stack.folder(app.data_dir)
+                os.makedirs(folder, exist_ok=True)
+                for name in ("host-progress.json", "host.log"):
+                    try:
+                        os.remove(os.path.join(folder, name))
+                    except OSError:
+                        pass
+                with open(os.path.join(folder, "host-request"), "w", encoding="utf-8") as f:
+                    f.write(f"{time.time():.3f}\n")
+                logs.event("info", "settings", "Asked the Run first window to make the set-up's change to the server")
+                return self.json(200, {"state": "waiting"})
+            if path == "/api/setup/host/progress" and method == "GET":
+                folder = stack.folder(app.data_dir)
+                try:
+                    with open(os.path.join(folder, "host-progress.json"), encoding="utf-8") as f:
+                        progress = json.load(f)
+                except (OSError, ValueError):
+                    progress = {"state": "waiting" if os.path.exists(os.path.join(folder, "host-request")) else "idle"}
+                try:
+                    with open(os.path.join(folder, "host.log"), encoding="utf-8", errors="replace") as f:
+                        log = f.read()[-8000:]
+                except OSError:
+                    log = ""
+                return self.json(200, {**{k: progress.get(k) for k in ("state", "n", "of", "name")}, "log": log,
+                                       "window": stack.starter_waiting(app.data_dir)})
             if path == "/api/discover" and method == "GET":
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":

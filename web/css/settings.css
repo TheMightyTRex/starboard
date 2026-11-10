@@ -164,3 +164,6 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .rx-level .chip { justify-self: start; }
 .rx-extra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin: 0; padding: var(--space-2) 0; border: 0; border-block-end: 1px solid var(--color-divider); }
 .rx-extra legend { float: left; padding: 0; font-weight: var(--weight-strong); }
+
+/* Make the change now: the installer's output, live, in a box of its own height that scrolls. */
+.host-output { max-block-size: 50vh; overflow: auto; white-space: pre-wrap; }

@@ -1428,8 +1428,11 @@ async function startGuide() {
       try {
         const host = await api("/api/setup/host");
         if (host.command && host.starter) {
+          const make = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog" }, icon("play"), "Make the change now");
+          make.addEventListener("click", () => hostChange(make));
           step.nodes.push(el("h3", { text: "One change to the server, made for you" }),
-            el("p", { class: "muted", text: "Free space for your media folder, disk health, the Live TV folder and Docker access need the installer on the server. The Run first window on the server is making this change now. If it asks for the server's password, type it there." }));
+            el("p", { class: "muted", text: "Free space for your media folder, disk health, the Live TV folder and Docker access need the installer on the server. Starboard asks the Run first window on the server to make the change, and shows how it goes here, so you do not need to go to the server." }),
+            el("div", { class: "actions" }, make));
         } else if (host.command) {
           step.nodes.push(el("h3", { text: "One change to make on the server" }),
             el("p", { class: "muted", text: "Free space for your media folder, disk health, the Live TV folder and Docker access need the installer on the server. In a terminal there, in the Starboard folder, run:" }),
@@ -2880,3 +2883,52 @@ startPage().then(async (session) => {
   }
   $("#usenet-rights")?.append(usenetRights());
 });
+
+// Make the change now (owner, 10 November 2026): the set-up's change to the server, made by the Run first window,
+// with its output live in a slide-out and a progress bar. The Starboard password first: only someone who knows it
+// can change the server. Nobody can type commands into the server from here; the window runs only the installer.
+async function hostChange(opener) {
+  const input = el("input", { class: "input", id: "host-password", type: "password", autocomplete: "current-password", required: true });
+  const err = el("span", { class: "field-error", id: "host-password-error", hidden: true });
+  for (;;) {
+    const asked = confirmDialog({ title: "Make the change to the server", message: "The Run first window on the server runs the installer with your answers. Type your Starboard password to go ahead.",
+      confirm: "Make the change", fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
+    input.focus();
+    if (!(await asked)) return;
+    try { await api("/api/setup/host/apply", { method: "POST", body: { password: input.value } }); break; }
+    catch (e) { err.textContent = e.status === 401 ? "That password is not right. Check Caps Lock and try again." : e.message; err.hidden = false; input.setAttribute("aria-invalid", "true"); input.value = ""; }
+  }
+  const bar = el("span", { style: "width: 0%" });
+  const meter = el("div", { class: "progress", role: "progressbar", "aria-label": "Changing the server", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "0" }, bar);
+  const now = el("p", { "aria-live": "polite", text: "Waiting for the Run first window…" });
+  const out = el("pre", { class: "code-block host-output", tabindex: "0", "aria-label": "What the installer says", hidden: true });
+  const close = el("button", { type: "button", class: "btn", text: "Close" });
+  const panel = sidePanel({ title: "Changing the server", opener, wide: true, body: [el("div", { class: "stack-4" }, now, meter, out)], foot: [close] });
+  close.addEventListener("click", () => panel.close());
+  let lost = 0;
+  const tick = async () => {
+    if (!document.body.contains(panel.layer)) return;
+    let p;
+    try { p = await api("/api/setup/host/progress"); lost = 0; }
+    catch { lost += 1; now.textContent = "Starboard is starting again with its new settings…"; setTimeout(tick, 3000); return; }  // Docker access restarts it
+    const shown = p.of ? Math.round(((p.n || 0) - (p.state === "running" ? 1 : 0)) / p.of * 100) : 0;
+    out.hidden = !p.log;  // shown once the installer has said something
+    if (p.log && out.textContent !== p.log) { out.textContent = p.log; out.scrollTop = out.scrollHeight; }
+    if (p.state === "finished") {
+      bar.style.width = "100%"; meter.setAttribute("aria-valuenow", "100");
+      now.replaceChildren(notice("success", "The change is made", "Everything the set-up asked for on the server is done. You can close this."));
+      close.classList.add("btn--primary");
+      return;
+    }
+    if (p.state === "failed") {
+      now.replaceChildren(notice("danger", "The change stopped", "What the installer said is below. Run first's window on the server shows it too, and the help has each error number."));
+      return;
+    }
+    bar.style.width = `${Math.max(3, Math.min(97, shown))}%`; meter.setAttribute("aria-valuenow", String(Math.max(0, shown)));
+    now.textContent = p.state === "running" && p.name ? `Step ${p.n} of ${p.of}: ${p.name}` : p.window === false ? "The Run first window on the server has closed." : "Waiting for the Run first window…";
+    if (/sudo|password for/i.test((p.log || "").slice(-300))) now.textContent += " The Run first window on the server is asking for the server's password.";
+    setTimeout(tick, 2000);
+  };
+  tick();
+}
+
