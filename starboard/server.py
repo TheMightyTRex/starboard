@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from . import start as how_to_start
 from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
 from . import access, auth, backup, helpdocs, reelix_admin, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
-from .config import Config, ConfigError, new_setup_token, same_server, validate_service
+from .config import GENERAL_RIGHTS, Config, ConfigError, general_right, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(ROOT, "web")
@@ -1017,7 +1017,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, cfg.public())
             if path == "/api/config/general" and method == "PUT":
                 before = cfg.data.get("network_access", True)
-                incoming = self.body()
+                # Each key has its right (DASH-278); a signed-in person holds every right. An API key (DASH-274) will
+                # be checked with config.allowed(its right, this right) before anything is saved, and an unknown key
+                # refused; from a page, keys Starboard does not know are left out, as they always were.
+                incoming = {k: v for k, v in self.body().items() if k in GENERAL_RIGHTS}
+                general_right(incoming)
                 cfg.update_general(incoming)
                 logs.event("info", "settings", f"Changed: {', '.join(sorted(incoming)) or 'nothing'}")
                 if "watch" in incoming:

@@ -348,6 +348,47 @@ class Config:
             self.save()
 
 
+# The right each key of PUT /api/config/general needs (DASH-278, from the capabilities list): "manage" for everyday
+# changes, "admin" for what changes what Starboard does or contacts, "never" for what no API key may change (only a
+# signed-in person). A key that is not here is refused, so a new setting must be given its right before it works.
+GENERAL_RIGHTS = {
+    # Everyday: names, designs, categories, pages, download hours, performance
+    "site_name": "manage", "server_name": "manage", "design": "manage", "groups": "manage", "move_apps": "manage",
+    "dashboard": "manage", "upcoming_view": "manage", "upcoming_days": "manage", "show_home_address": "manage",
+    "show_outside_address": "manage", "fetch_icons": "manage", "show_posters": "manage", "settings_advanced": "manage",
+    "infinite_scroll": "manage", "download_hours": "manage", "preset": "manage", "performance": "manage",
+    "setup_guide_done": "manage",
+    # What Starboard does by itself or reaches out to
+    "update_check": "admin", "ux_notes": "admin", "reelix_auto_update": "admin", "extras": "admin", "watch": "admin",
+    "logs": "admin",
+    # Security: never by key
+    "network_access": "never", "secure_cookies": "never", "session_days": "never", "last_version": "never",
+}
+RIGHT_ORDER = {"read": 0, "manage": 1, "admin": 2, "never": 3}
+
+
+def general_right(incoming):
+    """The highest right a change to the general settings needs. Raises ConfigError for a key with no right."""
+    if not isinstance(incoming, dict):
+        raise ConfigError("Send the settings as an object")
+    unknown = sorted(k for k in incoming if k not in GENERAL_RIGHTS)
+    if unknown:
+        raise ConfigError(f"Not a setting Starboard knows: {', '.join(unknown)[:200]}")
+    need = "read"
+    for key, value in incoming.items():
+        right = GENERAL_RIGHTS[key]
+        if key == "watch" and isinstance(value, dict) and "channel" in value:
+            right = "never"  # the alert channel can send your server's news anywhere: never by key
+        if RIGHT_ORDER[right] > RIGHT_ORDER[need]:
+            need = right
+    return need
+
+
+def allowed(right_held, right_needed):
+    """True when a key's right covers what a change needs; "never" is covered by nothing a key can hold."""
+    return right_needed != "never" and RIGHT_ORDER.get(right_held, -1) >= RIGHT_ORDER[right_needed]
+
+
 PERF_CHOICES = {"history_every": (60, 300, 900), "schedule_every": (60, 300), "downloads_refresh": (0, 10, 15, 30, 60),
                 "monitor_refresh": (2, 5, 10), "storage_refresh": (0, 60, 300)}
 USAGE_CHOICES = ("off", "ask", "open", "nightly", "weekly")
