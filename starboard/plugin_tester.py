@@ -44,7 +44,7 @@ def _text_checks(m):
     return out
 
 
-def run(manifest, dev=False):
+def run(manifest, dev=False, builtin=False):
     """All issues for a manifest: [{severity, area, where, what, fix}], errors first. Never empty of accessibility
     checks: when a plug-in has nothing to check, it says what was checked."""
     issues = []
@@ -55,7 +55,7 @@ def run(manifest, dev=False):
         for issue in plugin_styles.check_style(st, f"styles[{i}]"):
             issues.append({**issue, "area": "accessibility"})
             style_errors.add(f"{issue['where']}: {issue['what']}")
-    for p in plugins.check(manifest, dev=dev):
+    for p in plugins.check(manifest, dev=dev, builtin=builtin):
         if p not in style_errors:  # style problems are listed once, with their fix
             where, _, what = p.partition(": ") if re.match(r"^[a-z_]+(\[\d+\])?(\.[a-z]+)?: ", p) else ("manifest", "", p)
             issues.append({"severity": "error", "area": "manifest", "where": where, "what": what or p, "fix": "See the manifest reference in the help centre"})
@@ -93,9 +93,9 @@ def run(manifest, dev=False):
     return issues
 
 
-def report(manifest, dev=False):
+def report(manifest, dev=False, builtin=False):
     """{ok, errors, warnings, infos, issues, accessibility}: what pages and the command show."""
-    issues = run(manifest, dev)
+    issues = run(manifest, dev, builtin)
     styles = len(manifest.get("styles") or []) if isinstance(manifest, dict) else 0
     acc = [i for i in issues if i["area"] == "accessibility"]
     return {"ok": not any(i["severity"] == "error" for i in issues),

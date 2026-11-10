@@ -18,6 +18,8 @@ WORKDIR /app
 COPY --chown=root:root VERSION ./
 COPY --chown=root:root starboard ./starboard
 COPY --chown=root:root web ./web
+# Plug-ins that ship inside Starboard, such as Live TV (DASH-285).
+COPY --chown=root:root plugins ./plugins
 # Compiled once here, so Python does not compile Starboard again at every start (start-up 430 ms to 204 ms), then
 # readable by the app's user whatever permissions the files had on the host. (COPY --chmod would save a layer but
 # needs a newer Docker than some servers that build this image have.)

@@ -120,10 +120,22 @@ function pluginCard(p, redraw) {
     try { await api(`/api/plugins/${p.id}/remove`, { method: "POST", body: { password: pw.value } }); toast(`${p.name} removed`); redraw(); }
     catch (err) { problem(err.message, remove); }
   });
+  // Its buttons, from the manifest (such as Run Live TV now): Starboard asks the plug-in and shows its answer.
+  const buttons = (p.actions || []).map((a) => {
+    const b = el("button", { type: "button", class: "btn", disabled: p.state !== "enabled" }, a.label);
+    b.addEventListener("click", async () => {
+      b.disabled = true;
+      try { toast((await api(`/api/plugins/${p.id}/actions/${a.id}`, { method: "POST" })).said); }
+      catch (err) { problem(err.message, b); }
+      finally { b.disabled = false; }
+    });
+    return b;
+  });
   const custom = p.settings.filter((s) => s.type === "custom");
   return section(`pl-${p.id}`, `${p.name} ${p.version}`, p.description,
     el("p", {}, chip(...(STATE[p.state] || ["Unknown", "muted"])), p.message ? el("span", { class: "small", text: ` ${p.message}` }) : null),
-    el("div", { class: "actions" }, p.state === "enabled" ? act("Deactivate", "disable") : act("Activate", "enable", true), remove),
+    el("div", { class: "actions" }, p.state === "enabled" ? act("Deactivate", "disable") : act("Activate", "enable", true), ...buttons, remove),
+    p.builtin ? el("p", { class: "small muted", text: "Built into Starboard: it runs on Starboard's own image and updates with Starboard." }) : null,
     p.looks?.length ? styleGallery(p) : null,
     el("h3", { text: "What it may do" }), pluginPermissions(p.permissions),
     pluginSettingsForm(p, redraw),
@@ -147,6 +159,28 @@ function testerSection() {
     catch (err) { setError(file, err.message); file.focus(); }
   });
   return section("pl-test", "Test a plug-in", "For people who make plug-ins: every issue with how to fix it. The same tests run before any plug-in is added.", form, out);
+}
+
+// Plug-ins that ship inside Starboard, such as Live TV (DASH-285): Add asks for the password and activates it.
+function builtinSection(list, redraw) {
+  const rows = list.filter((b) => !b.added);
+  if (!rows.length) return null;
+  return section("pl-builtin", "Built into Starboard", "Plug-ins that come with Starboard. Add one only if you want it.",
+    el("ul", { class: "rows" }, rows.map((b) => {
+      const add = el("button", { type: "button", class: "btn btn--primary", disabled: !!b.why_not }, `Add ${b.name}`);
+      add.addEventListener("click", async () => {
+        const pw = el("input", { class: "input", type: "password", id: `pl-bi-${b.id}`, autocomplete: "current-password" });
+        const ok = await confirmDialog({ title: `Add ${b.name}?`, confirm: `Add ${b.name}`,
+          message: [el("p", { text: b.description }), el("h3", { text: "What it may do" }), pluginPermissions(b.permissions)],
+          fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+        if (!ok) return;
+        try { await api("/api/plugins/add-builtin", { method: "POST", body: { id: b.id, password: pw.value } }); toast(`${b.name} added and active`); redraw(); }
+        catch (err) { problem(err.message, add); }
+      });
+      return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: b.name }),
+        el("div", { class: "row__meta", text: b.why_not ? `${b.description} Not here: ${b.why_not}.` : b.description })),
+        el("div", { class: "row__side" }, add));
+    })));
 }
 
 function addPluginSection(redraw) {
@@ -207,7 +241,7 @@ async function startPlugins() {
     holder.replaceChildren(...[
       r.plugins.length ? section("pl-yours", "Your plug-ins", `${r.plugins.length} added.`, el("div", { class: "actions" }, stopAll)) : null,
       ...r.plugins.map((p) => pluginCard(p, draw)),
-      addPluginSection(draw), testerSection()].filter(Boolean));
+      builtinSection(r.builtin || [], draw), addPluginSection(draw), testerSection()].filter(Boolean));
   };
   draw();
 }

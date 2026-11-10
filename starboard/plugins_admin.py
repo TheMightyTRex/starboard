@@ -75,6 +75,8 @@ def summary(manifest, problems=None):
             "permissions": plugins.permission_words(manifest) if isinstance(manifest.get("permissions"), list) else [],
             "containers": [{"name": c.get("name"), "network": c.get("network", "default"), "volumes": c.get("volumes") or []}
                            for c in manifest.get("containers") or [] if isinstance(c, dict)],
+            "actions": [{"id": a.get("id") or str(i), "label": a.get("label", "")} for i, a in enumerate(manifest.get("actions") or [])
+                        if isinstance(a, dict)],
             "styles": [{"id": st.get("id"), "name": st.get("name"), "description": st.get("description", "")}
                        for st in manifest.get("styles") or [] if isinstance(st, dict)],
             "problems": problems if problems is not None else plugins.check(manifest)}
@@ -124,15 +126,46 @@ def listing(data_dir):
                       "light": x["light"], "dark": x["dark"], "radius": x.get("radius", 0), "shadow": x.get("shadow", "none"),
                       "font": fonts.get(x.get("font", "hyperlegible"), fonts["hyperlegible"])}
                      for x in m.get("styles") or [] if isinstance(x, dict)]
-            out.append({**summary(m, []), "looks": looks, "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
+            out.append({**summary(m, []), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m)})
     return out
 
 
-def install(data_dir, manifest, media_dir, dev=False):
+def builtins():
+    """Plug-ins that ship inside Starboard (plugins/<id>/starboard-plugin.json), by id."""
+    out = {}
+    try:
+        names = sorted(os.listdir(plugins.BUILTIN_DIR))
+    except OSError:
+        return out
+    for name in names:
+        m = _read(os.path.join(plugins.BUILTIN_DIR, name, "starboard-plugin.json"))
+        if m and m.get("id") == name:
+            out[name] = m
+    return out
+
+
+def own_image():
+    """The image Starboard itself runs, which built-in plug-ins run too; None outside Docker."""
+    from . import containers
+    try:
+        info = containers.docker("GET", "/containers/starboard/json")
+    except containers.DockerError:
+        return None
+    return (info.get("Config") or {}).get("Image") or None
+
+
+def host_for_builtin():
+    """What a built-in plug-in's Compose file needs from this install."""
+    return {"image": own_image(), "user": f"{os.getuid()}:{os.getgid()}",
+            "iptv": os.environ.get("STARBOARD_LIVETV_PATH") or None}
+
+
+def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=None, host=None):
     """Checks and installs a plug-in (not started): its folder, settings with defaults, its API key with exactly the
     approved scopes, and its Compose file. Returns its listing entry."""
-    problems = plugins.check(manifest, dev=dev)
+    builtin = builtin and manifest.get("id") in builtins() and builtins()[manifest["id"]] == manifest
+    problems = plugins.check(manifest, dev=dev, builtin=builtin)
     if problems:
         raise ValueError("This plug-in cannot be added: " + "; ".join(problems[:6]))
     pid = manifest["id"]
@@ -141,14 +174,17 @@ def install(data_dir, manifest, media_dir, dev=False):
         raise ValueError(f"{manifest['name']} is already added. Update it from its tab instead")
     os.makedirs(where, mode=0o700, exist_ok=True)
     _write(os.path.join(where, "manifest.json"), manifest)
-    _write(os.path.join(where, "settings.json"), {s["key"]: s["default"] for s in manifest.get("settings") or [] if "default" in s})
+    values = {s["key"]: s["default"] for s in manifest.get("settings") or [] if "default" in s}
+    values.update({k: v for k, v in (defaults or {}).items() if k in {s["key"] for s in manifest.get("settings") or []}})
+    _write(os.path.join(where, "settings.json"), values)
     item = {"id": None}
     if manifest.get("containers"):  # only something that runs gets an API key and a Compose file
         key, item = api_v1.create_key(data_dir, f"Plug-in: {manifest['name']}"[:60], "read", plugins.key_scopes(manifest), None)
         _write(os.path.join(where, "key"), key)
-        _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir), 0o644)
+        hosted = (host or host_for_builtin()) if builtin else None
+        _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir, hosted), 0o644)
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    _write(os.path.join(where, "state.json"), {"state": "installed", "installed_at": now, "key_id": item["id"]})
+    _write(os.path.join(where, "state.json"), {"state": "installed", "installed_at": now, "key_id": item["id"], "builtin": builtin})
     api_v1.audit(data_dir, "plugin_installed", plugin=pid, version=manifest["version"], permissions=manifest.get("permissions") or [])
     return next(p for p in listing(data_dir) if p["id"] == pid)
 
@@ -192,11 +228,24 @@ def _runs_nothing(data_dir, pid):
     return not (_read(os.path.join(folder(data_dir, pid), "manifest.json"), {}) or {}).get("containers")
 
 
-def enable(data_dir, pid, helper=None):
+def write_jellyfin(data_dir, pid, services):
+    """Jellyfin's address and key for a plug-in that was allowed them (jellyfin:key), owner-only, as the plug-in's
+    containers reach Jellyfin: an address on this computer goes through host.docker.internal."""
+    m = _read(os.path.join(folder(data_dir, pid), "manifest.json"), {}) or {}
+    if "jellyfin:key" not in (m.get("permissions") or []):
+        return False
+    jf = next((s for s in services or [] if s.get("type") == "jellyfin" and s.get("url") and s.get("api_key")), None)
+    url = re.sub(r"^(https?://)(127\.0\.0\.1|localhost)(?=[:/]|$)", r"\1host.docker.internal", (jf or {}).get("url", ""))
+    _write(os.path.join(folder(data_dir, pid), "jellyfin.json"), {"url": url, "api_key": (jf or {}).get("api_key", "")})
+    return bool(jf)
+
+
+def enable(data_dir, pid, helper=None, services=None):
     if _runs_nothing(data_dir, pid):  # only styles: nothing to start (DASH-284)
         set_state(data_dir, pid, "enabled")
         api_v1.audit(data_dir, "plugin_enabled", plugin=pid)
         return
+    write_jellyfin(data_dir, pid, services)
     ok, text = _compose_run(data_dir, pid, "up -d --remove-orphans", helper)
     set_state(data_dir, pid, "enabled" if ok else "failed", "" if ok else text[-300:])
     api_v1.audit(data_dir, "plugin_enabled" if ok else "plugin_failed", plugin=pid)

@@ -1,0 +1,30 @@
+{
+ "manifest_version": 1,
+ "id": "livetv",
+ "name": "Live TV",
+ "version": "1.0.0",
+ "description": "Free TV channels and guides for Jellyfin's Live TV, from Samsung TV Plus, Pluto TV and Free-TV, numbered like Sky.",
+ "author": "TheMightyTRexUK",
+ "licence": "MIT",
+ "homepage": "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md",
+ "support_url": "https://github.com/TheMightyTRex/starboard/issues",
+ "starboard_api": ">=1.0 <2.0",
+ "permissions": ["network:lan", "jellyfin:key"],
+ "containers": [
+  {"name": "main", "image": "starboard", "command": ["python", "-m", "starboard.livetv_plugin"], "port": 8080,
+   "network": "lan", "volumes": ["iptv", "data"], "env": {"STARBOARD_IPTV_DIR": "/iptv"}}
+ ],
+ "resources": {"main": {"memory": 192, "cpus": 0.5}},
+ "health": "/health",
+ "settings": [
+  {"key": "white_logos", "label": "White channel logos", "type": "switch", "default": true,
+   "hint": "Turns each logo white on a clear background. Deactivated: channels keep their own logos."},
+  {"key": "address", "label": "Address Jellyfin uses to reach Starboard", "type": "text",
+   "hint": "For channel logos and Pluto TV streams, such as http://192.168.1.20:8095. Jellyfin must be able to open it."},
+  {"key": "jellyfin_folder", "label": "Live TV folder as Jellyfin sees it", "type": "text",
+   "hint": "Such as /config/iptv. Live TV adds its channels and guides to Jellyfin from there."}
+ ],
+ "actions": [{"id": "run", "label": "Run Live TV now", "path": "/run"}],
+ "cards": [{"id": "status", "title": "Live TV", "type": "status", "path": "/card",
+            "example": {"state": "ok", "text": "Guides refreshed at 04:10; 412 channels"}}]
+}

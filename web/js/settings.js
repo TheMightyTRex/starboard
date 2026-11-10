@@ -1629,7 +1629,9 @@ async function startJellyfin() {
       el("a", { class: "btn", href: found?.found && !found.in_apps ? `/settings.html?add=jellyfin&url=${encodeURIComponent(found.found.url)}` : "/settings.html" }, "Manage apps"));
   }
 
-  // Live TV
+  // Live TV: a plug-in since DASH-285 once it has moved; until then, as before.
+  let livePlugin = null;
+  try { livePlugin = (await api("/api/plugins")).plugins.find((x) => x.id === "livetv") || null; } catch { /* as before */ }
   const lt = jobs.livetv;
   const address = el("input", { class: "input", inputmode: "url", autocomplete: "off", value: x().livetv_address, placeholder: d.self_url });
   const addressForm = el("form", { class: "inline-save", novalidate: true },
@@ -1751,7 +1753,10 @@ async function startJellyfin() {
   root.replaceChildren(...[
     welcome ? notice("success", "Starboard found Jellyfin", "These are all inactive. Activate what you want; you can change them here at any time.") : null,
     top,
-    section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV: guides refreshed daily, channels only when a list changes.", liveNeeds, liveRows, addressForm, jfFolderForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
+    livePlugin ? section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV.",
+      notice("info", "Live TV is a plug-in now", `Its settings, Run Live TV now and its status are in Settings, Plug-ins, Live TV. It is ${livePlugin.state === "enabled" ? "active" : "not active"}. Your channels and guides in Jellyfin are unchanged.`),
+      el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-plugins.html#pl-livetv-h", text: "Open Live TV's settings" })))
+    : section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV: guides refreshed daily, channels only when a list changes.", liveNeeds, liveRows, addressForm, jfFolderForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
     section("jf-import", "Import watch history", "Move what people watched, and where they stopped, from Plex, Emby or another Jellyfin into this Jellyfin.",
       importForm, result, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
       el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply", "Apply now") : null)),

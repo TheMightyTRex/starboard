@@ -163,6 +163,7 @@ class App:
         self.jobs = jobs.Jobs(self)
         if os.environ.get("STARBOARD_JOBS", "1") != "0":
             self.jobs.ensure()
+            threading.Thread(target=_move_livetv, args=(self,), name="livetv-move", daemon=True).start()
         self.importing = None  # the watch history import that is running, if any
         self.import_result = None
         self.import_lock = threading.Lock()
@@ -596,6 +597,22 @@ def _adopt_run(app, after_job, wait):
         time.sleep(wait)
 
 
+def _move_livetv(app):
+    """Live TV moves into its plug-in once, a little after start (DASH-285): livetv_move.py says when it does not."""
+    import time
+    from . import livetv_move
+    time.sleep(20)  # Docker and the network are up, and the first pages answered
+    try:
+        media = (stack.env_values(app.data_dir).get("DATA_DIR") or "").rstrip("/")
+        said = livetv_move.move(app.config, app.data_dir, f"{media}/media" if media else "/nonexistent-media-folder",
+                                app.jobs.self_url(), log=lambda line: logs.event("info", "live tv", line))
+        if said:
+            logs.event("info", "live tv", said)
+            app.jobs.ensure()
+    except Exception as e:  # Live TV carries on inside Starboard
+        logs.error("live tv", f"Live TV stays in Starboard for now: {e}", e)
+
+
 class Handler(BaseHTTPRequestHandler):
     # HTTP/1.1 keeps the connection open for the page's styles, scripts and API calls, so a page costs one
     # connection and one thread instead of about 15 (a page took a third of the processor time in testing).
@@ -804,7 +821,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def iptv(self, path):
         """For Jellyfin, with no sign-in, only while Live TV is on: channel logos and Pluto stream links."""
-        if not self.app.config.data["extras"].get("livetv"):
+        from . import livetv_move  # the plug-in builds the files, Starboard still serves them (DASH-285)
+        if not (self.app.config.data["extras"].get("livetv") or livetv_move.plugin_active(self.app.data_dir)):
             return self.send(404, b"", "text/plain; charset=utf-8")
         m = re.match(r"^/iptv/logos/([A-Za-z0-9._-]{1,80}\.png)$", path)
         if m:
@@ -1987,7 +2005,32 @@ class Handler(BaseHTTPRequestHandler):
         media = (stack.env_values(app.data_dir).get("DATA_DIR") or "").rstrip("/")
         media = f"{media}/media" if media else "/nonexistent-media-folder"
         if path == "/api/plugins" and method == "GET":
-            return self.json(200, {"plugins": pa.listing(app.data_dir)})
+            from . import livetv_move
+            added = {p["id"] for p in pa.listing(app.data_dir)}
+            built = [{**pa.summary(m, []), "added": m["id"] in added,
+                      "why_not": livetv_move.can_run(app.data_dir) if m["id"] == livetv_move.PID else ""}
+                     for m in pa.builtins().values()]
+            return self.json(200, {"plugins": pa.listing(app.data_dir), "builtin": built})
+        if path == "/api/plugins/add-builtin" and method == "POST":
+            # A plug-in that ships inside Starboard, such as Live TV (DASH-285): the password, then added and active.
+            from . import livetv_move
+            body = self.body()
+            self.check_password(body)
+            pid = str(body.get("id", ""))
+            if pid not in pa.builtins():
+                return self.error(404, "Not a plug-in built into Starboard")
+            if pid == livetv_move.PID:
+                why = livetv_move.can_run(app.data_dir)
+                if why:
+                    raise ValueError(f"Live TV cannot run as a plug-in here: {why}. It keeps running inside Starboard")
+                item = livetv_move.add(app.config, app.data_dir, media, app.jobs.self_url())
+                with app.config.lock:
+                    app.config.data["extras"]["livetv"] = False
+                    app.config.save()
+            else:
+                item = pa.install(app.data_dir, pa.builtins()[pid], media, builtin=True)
+            logs.event("info", "plug-ins", f"Added {item['name']}, built into Starboard")
+            return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
         if path in ("/api/plugins/preview", "/api/plugins/add", "/api/plugins/test") and method == "POST":
             from . import plugin_tester
             body = self.body()
@@ -2016,6 +2059,13 @@ class Handler(BaseHTTPRequestHandler):
             stopped = pa.stop_all(app.data_dir)
             logs.event("info", "plug-ins", f"Deactivated every plug-in ({len(stopped)})")
             return self.json(200, {"stopped": stopped, "plugins": pa.listing(app.data_dir)})
+        ma = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/actions/([A-Za-z0-9_-]{1,40})$", path)
+        if ma and method == "POST":  # a button from the plug-in's manifest, such as Run Live TV now
+            from . import plugin_cards
+            try:
+                return self.json(200, plugin_cards.action(app.data_dir, ma.group(1), ma.group(2)))
+            except LookupError as e:
+                return self.error(404, str(e))
         m = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/(enable|disable|remove|settings)$", path)
         if not m or not any(p["id"] == m.group(1) for p in pa.listing(app.data_dir)):
             return self.error(404, "No plug-in with that id")
@@ -2029,7 +2079,7 @@ class Handler(BaseHTTPRequestHandler):
             pa.uninstall(app.data_dir, pid)
             logs.event("info", "plug-ins", f"Removed {pid}; its folder is kept in data/plugins/.removed")
         elif what == "enable":
-            pa.enable(app.data_dir, pid)
+            pa.enable(app.data_dir, pid, services=app.config.data["services"])
         else:
             pa.disable(app.data_dir, pid)
         return self.json(200, {"plugins": pa.listing(app.data_dir)})

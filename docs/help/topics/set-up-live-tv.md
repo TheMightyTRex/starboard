@@ -2,32 +2,39 @@
 
 # Set up free Live TV in Jellyfin
 
-Starboard can build free TV channels and their guides for Jellyfin's Live TV, from Samsung TV Plus, Pluto TV
-and Free-TV. At the end, Jellyfin shows the channels with a TV guide, numbered the way Sky numbers them.
+Live TV builds free TV channels and their guides for Jellyfin's Live TV, from Samsung TV Plus, Pluto TV and
+Free-TV, and adds them to Jellyfin. At the end, Jellyfin shows the channels with a TV guide, numbered the way Sky
+numbers them. Live TV is a plug-in that comes with Starboard, so you add it only if you want it.
 
 ## Before you begin
 
-- Jellyfin is installed and on your dashboard. Read [Add an app](add-an-app.md). Live TV works without
-  Jellyfin's API key.
+- Jellyfin is installed and on your dashboard, with its API key, so Live TV can add the channels to Jellyfin.
+  Read [Add an app](add-an-app.md).
 - Starboard can write to the folder Jellyfin reads its Live TV files from. The installer asks
   "Give Starboard a Live TV folder?": answer yes and give the folder, such as `/srv/jellyfin/config/iptv`.
   To change your answer, read [Change what Starboard can access](change-what-starboard-can-access.md).
+- Starboard can run containers (Docker access). Without it, Live TV runs inside Starboard instead, from
+  **Settings**, **Apps**, **Jellyfin**.
 - Phones and other computers on your home network can open Starboard, because Jellyfin fetches channel
   logos and Pluto TV streams from it. Read [Choose who can open Starboard](choose-who-can-open-starboard.md).
 
 ## Steps
 
-### Activate Live TV in Starboard
+### Add Live TV
 
-1. Go to **Settings**, then **Apps**, then **Jellyfin**.
-2. In **Live TV**, activate **Build Live TV channels and guide**.
-3. Check **Address Jellyfin uses to reach Starboard**. Leave it blank to use the address Starboard shows in
-   the field. If Jellyfin needs another address, type it, such as `http://192.168.1.20:8095`, and select
-   **Save address**.
-4. Select **Run Live TV now** to build the files straight away.
+1. Go to **Settings**, then **Plug-ins**.
+2. Under **Built into Starboard**, select **Add Live TV**.
+3. Read what it may do, type your Starboard password and select **Add Live TV**. It is added and active.
+4. In the **Live TV** section, check **Address Jellyfin uses to reach Starboard**, such as
+   `http://192.168.1.20:8095`, and **Live TV folder as Jellyfin sees it**, such as `/config/iptv`, then select
+   **Save**.
+5. Select **Run Live TV now** to build the files straight away.
 
-The first run tests every stream, so it takes a few minutes. When it ends, Starboard shows **Last run
-worked** and what it did.
+If you used Live TV before Starboard 0.15.0, you do not need these steps: Starboard moved it into the plug-in
+with your settings, and your channels and guides in Jellyfin did not change.
+
+The first run tests every stream, so it takes a few minutes. Its card on the dashboard and its section in
+**Settings**, **Plug-ins** say when it last ran and what it did.
 
 ### Add the channels and guides in Jellyfin
 

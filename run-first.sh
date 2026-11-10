@@ -673,6 +673,48 @@ card_row() {
 card_end() { [ "$FANCY" = 0 ] || say "  $(c 36 "╰$(rep ─ $(( CARD_W - 1 )))╯")"; }
 # terminal-frame: end
 
+# Linux installing its own updates (often just after it is installed) holds the package lock, and any install would
+# stop with RF-12. These find it, and wait for it with a moving bar and a timer instead (owner, 10 November 2026).
+UPDATES_WAIT_MAX="${UPDATES_WAIT_MAX:-2700}"  # 45 minutes, then RF-12 as before
+updates_busy() {
+  local name
+  for name in apt apt-get aptitude dpkg unattended-upgr apt.systemd.dai packagekitd-inst dnf dnf-3 dnf-automatic yum rpm zypper; do
+    if pgrep -x "$name" >/dev/null 2>&1; then printf '%s' "$name"; return 0; fi
+  done
+  return 1
+}
+updates_detail() {
+  local name; name="$(updates_busy)" || { printf 'nearly done'; return; }
+  case "$name" in
+    unattended-upgr|apt.systemd.dai) printf 'automatic updates are running' ;;
+    dnf-automatic) printf 'automatic updates are running' ;;
+    *) printf '%s is running' "$name" ;;
+  esac
+}
+wait_for_updates_job() {
+  local start=$SECONDS
+  while updates_busy >/dev/null; do
+    if [ $(( SECONDS - start )) -ge "$UPDATES_WAIT_MAX" ]; then
+      echo "Could not get lock: another process is still installing updates after $(( UPDATES_WAIT_MAX / 60 )) minutes"; return 1
+    fi
+    sleep 3
+  done
+  # The lock is let go a moment after the program ends.
+  sleep 2
+}
+# wait_for_updates n of: when updates are running, a bar waits for them; returns at once when nothing is.
+wait_for_updates() {
+  updates_busy >/dev/null || return 0
+  local detail_was="$JOB_DETAIL"
+  JOB_DETAIL=updates_detail
+  work "Waiting for Linux to finish installing its updates" wait_for_updates_job "$1" "$2"
+  local status=$?
+  JOB_DETAIL="$detail_was"
+  return $status
+}
+is_package_job() { [[ "$1" == *apt-get* || "$1" == *"dnf "* || "$1" == *zypper* ]]; }
+held_lock() { tail -n 40 "$LOG" 2>/dev/null | grep -qE "Could not get lock|is held by process|Waiting for cache lock|another process"; }
+
 # The logo: the monitor with four tiles, and the star, in the logo's two colours (tile and star).
 LOGO_ART=(
 "               {S}▄{R}"
@@ -831,8 +873,8 @@ explain() {
       TIP="Check the network cable or Wi-Fi, then try again." ;;
     *"Could not get lock"*|*"is held by process"*|*"dpkg was interrupted"*|*"Waiting for cache lock"*|*"another process"*)
       CODE=RF-12
-      WHY="Another program is installing updates on this computer right now. This often happens just after Linux is installed."
-      TIP="Wait a few minutes for it to finish, then try again." ;;
+      WHY="Another program is still installing updates on this computer. This often happens just after Linux is installed. The script waited for it, then stopped waiting."
+      TIP="Wait until it finishes, or restart the computer, then try again." ;;
     *"is not signed"*|*"NO_PUBKEY"*|*"signature verification failed"*|*"EXPKEYSIG"*)
       CODE=RF-13
       WHY="One of this computer's software sources has a signing key that Linux no longer accepts, so the list of software could not be updated."
@@ -1032,7 +1074,18 @@ Show the commands first lists the exact command for each job. Choose No to insta
   say ""
   PROMPT=""
   for i in "${!FIX[@]}"; do
-    until work "${FIX_NAME[$i]}" "${FIX[$i]//sudo /sudo -n }" $(( i + 1 )) ${#FIX[@]}; do
+    lock_tries=0
+    while :; do
+      if is_package_job "${FIX[$i]}"; then wait_for_updates $(( i + 1 )) ${#FIX[@]}; fi
+      work "${FIX_NAME[$i]}" "${FIX[$i]//sudo /sudo -n }" $(( i + 1 )) ${#FIX[@]} && break
+      # Updates that started part-way through hold the lock: wait for them and try again by itself, twice at most.
+      if is_package_job "${FIX[$i]}" && held_lock && [ "$lock_tries" -lt 2 ]; then
+        lock_tries=$(( lock_tries + 1 ))
+        printf 'The package lock was held: waiting for the updates, then trying again\n' >> "$LOG"
+        jobs_page 3 "Please wait, this can take some time..."
+        sleep 5
+        continue
+      fi
       problem "${FIX_NAME[$i]}"
       jobs_page 3 "Please wait, this can take some time..."
     done

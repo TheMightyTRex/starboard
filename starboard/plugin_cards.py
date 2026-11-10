@@ -96,3 +96,23 @@ def answer(data_dir, pid, cid, opener=None):
     with _lock:
         _cache[key] = (time.time(), out)
     return out
+
+
+def action(data_dir, pid, aid, opener=None):
+    """Runs one of a plug-in's buttons: a POST to its path on the plug-in's main container. {said}."""
+    from . import plugins_admin
+    m = plugins_admin._read(f"{plugins_admin.folder(data_dir, pid)}/manifest.json", {}) or {}
+    act = next((a for a in m.get("actions") or [] if (a.get("id") or "") == aid), None)
+    if not act or not m.get("containers"):
+        raise LookupError("No such button")
+    main = m["containers"][0]
+    host = "gluetun" if main.get("network") == "vpn" else f"plugin-{pid}-{main['name']}"
+    req = urllib.request.Request(f"http://{host}:{int(main.get('port') or 80)}{act['path']}", data=b"", method="POST",
+                                 headers={"Accept": "application/json", "User-Agent": "Starboard"})
+    try:
+        with (opener or urllib.request.build_opener()).open(req, timeout=10) as r:  # the plug-in's own container  # nosec B310
+            raw = r.read(MAX_BYTES)
+        said = (json.loads(raw) or {}).get("said") if raw[:1] == b"{" else ""
+    except (OSError, ValueError) as e:
+        raise ValueError(f"{m.get('name', pid)} did not answer: {e}") from None
+    return {"said": _text(said or f"{act['label']}: started", 160)}

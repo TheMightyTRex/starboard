@@ -38,7 +38,11 @@ DEFAULT_MEMORY, DEFAULT_CPUS, CEILING_MEMORY, CEILING_CPUS = 128, 0.25, 512, 1.0
 TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
        "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles"}
 REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers"}
-CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user"}
+CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command"}
+# Plug-ins that ship inside Starboard (plugins/<id>/ in its own folder): they may run Starboard's own image
+# ("image": "starboard") with a command, and Live TV may use the Live TV folder the installer gave ("iptv").
+BUILTIN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plugins")
+BUILTIN_VOLUMES = {"iptv"}
 SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item"}
 CARD = {"id", "title", "type", "path", "format", "label", "example"}
 ACTION = {"id", "label", "path", "confirm"}
@@ -59,7 +63,7 @@ def _range_ok(spec, version=API_VERSION):
     return True
 
 
-def check(manifest, dev=False):
+def check(manifest, dev=False, builtin=False):
     """Every problem with a manifest, as plain sentences; an empty list when it can be installed. `dev`: development
     mode, which allows images without a digest (P17)."""
     out = []
@@ -124,7 +128,11 @@ def check(manifest, dev=False):
             out.append(f"{where}: name must be short, lower case and different from the others")
         names.add(name)
         image = c.get("image")
-        if not isinstance(image, str) or not (re.match(DIGEST_IMAGE, image) or (dev and re.match(TAG_IMAGE, image))):
+        if "command" in c and not (builtin and isinstance(c["command"], list) and all(isinstance(x, str) for x in c["command"])):
+            out.append(f"{where}: only plug-ins built into Starboard may set a command")
+        if image == "starboard" and not builtin:
+            out.append(f"{where}: only plug-ins built into Starboard may run Starboard's own image")
+        elif image != "starboard" and (not isinstance(image, str) or not (re.match(DIGEST_IMAGE, image) or (dev and re.match(TAG_IMAGE, image)))):
             out.append(f"{where}: image must be pinned by digest (name@sha256:...)" + ("" if dev else "; development mode allows a tag"))
         if "port" in c and not (isinstance(c["port"], int) and 1 <= c["port"] <= 65535):
             out.append(f"{where}: port must be a number from 1 to 65535")
@@ -137,6 +145,8 @@ def check(manifest, dev=False):
             if v == "media:ro":
                 if "media:read" not in perms:
                     out.append(f"{where}: the media folder needs the permission media:read")
+            elif v in BUILTIN_VOLUMES and builtin:
+                pass
             elif v != "data" and not re.match(r"^media/[A-Za-z0-9._-]{1,60}$", str(v)):
                 out.append(f"{where}: volumes may be data, media:ro or media/<one folder>, not {v}")
         env = c.get("env") or {}
@@ -194,10 +204,12 @@ def key_scopes(manifest):
     return sorted({PERMISSIONS[p][2] for p in manifest.get("permissions") or [] if PERMISSIONS[p][2]})
 
 
-def compose(manifest, plugin_dir, media_dir):
+def compose(manifest, plugin_dir, media_dir, host=None):
     """The Compose file Starboard writes for a plug-in, with the hardened defaults the plug-in cannot change (PS2 to
-    PS5). `plugin_dir` is data/plugins/<id> on the host; `media_dir` the media folder."""
-    problems = check(manifest, dev=True)
+    PS5). `plugin_dir` is data/plugins/<id> on the host; `media_dir` the media folder. `host`, for a plug-in built
+    into Starboard: {"image": Starboard's own image, "user": "uid:gid", "iptv": the Live TV folder}."""
+    host = host or {}
+    problems = check(manifest, dev=True, builtin=bool(host))
     if problems:
         raise ValueError("; ".join(problems))
     pid = manifest["id"]
@@ -210,14 +222,22 @@ def compose(manifest, plugin_dir, media_dir):
     for c in manifest["containers"]:
         name = f"plugin-{pid}-{c['name']}"
         r = res.get(c["name"]) or {}
-        lines += [f"  {name}:", f"    image: {json.dumps(c['image'])}", f"    container_name: {name}", "    restart: unless-stopped",
+        image = host.get("image") if c["image"] == "starboard" else c["image"]
+        if not image:
+            raise ValueError("Starboard could not find its own image for this plug-in")
+        user = c.get("user") or (host.get("user") if c["image"] == "starboard" else None) or "10001:10001"
+        lines += [f"  {name}:", f"    image: {json.dumps(image)}", f"    container_name: {name}", "    restart: unless-stopped",
                   "    read_only: true", "    tmpfs:", "      - /tmp:size=64m", "    cap_drop:", "      - ALL",
-                  "    security_opt:", "      - no-new-privileges:true", f"    user: {json.dumps(c.get('user') or '10001:10001')}",
+                  "    security_opt:", "      - no-new-privileges:true", f"    user: {json.dumps(user)}",
                   "    pids_limit: 64", f"    mem_limit: {int(r.get('memory', DEFAULT_MEMORY))}m", f"    cpus: {float(r.get('cpus', DEFAULT_CPUS))}",
                   "    labels:", f"      starboard.plugin: {json.dumps(pid)}"]
         if c.get("start") == "when_needed":
             lines.append(f"      starboard.idle_stop_minutes: \"{int(c.get('idle_stop_minutes') or 15)}\"")
+        if c.get("command"):
+            lines.append(f"    command: {json.dumps(c['command'])}")
         net = c.get("network", "default")
+        if net == "lan":  # the computer itself, for apps Starboard reaches at 127.0.0.1 (Jellyfin's key, DASH-285)
+            lines += ["    extra_hosts:", '      - "host.docker.internal:host-gateway"']
         if net == "vpn":  # Gluetun runs in the apps' own Compose project, so the plug-in joins its container by name
             lines += ['    network_mode: "container:gluetun"']
         else:
@@ -229,10 +249,16 @@ def compose(manifest, plugin_dir, media_dir):
                 vols.append(f"{plugin_dir}/data/{c['name']}:/data")
             elif v == "media:ro":
                 vols.append(f"{media_dir}:/media:ro")
+            elif v == "iptv":
+                if not host.get("iptv"):
+                    raise ValueError("The installer gave Starboard no Live TV folder (./install.sh asks)")
+                vols.append(f"{host['iptv']}:/iptv")
             else:
                 vols.append(f"{media_dir}/{v.split('/', 1)[1]}:/{v}")
         vols.append(f"{plugin_dir}/settings.json:/run/starboard/settings.json:ro")
         vols.append(f"{plugin_dir}/key:/run/starboard/key:ro")  # its own API key (P8), owner-only on the host
+        if "jellyfin:key" in (manifest.get("permissions") or []):  # Jellyfin's address and key, kept by Starboard
+            vols.append(f"{plugin_dir}/jellyfin.json:/run/starboard/jellyfin.json:ro")
         lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
         env = {**{k: str(v) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
                "STARBOARD_API_KEY_FILE": "/run/starboard/key"}

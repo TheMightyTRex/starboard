@@ -33,10 +33,20 @@ Eight styles for Starboard, chosen from current interface trends and checked for
 Frost keeps its panels solid. See-through panels change the contrast of the text on them with whatever is behind,
 so no style in the collection uses them.
 
+## Live TV
+
+Free TV channels and guides for Jellyfin's Live TV, from Samsung TV Plus, Pluto TV and Free-TV, numbered like Sky.
+It comes with Starboard: add it in **Settings**, **Plug-ins**, under **Built into Starboard**.
+
+- **What it may do:** reach the internet and your home network (to fetch guides and test channels), and use
+  Jellyfin's API key, kept by Starboard (to add the channels to Jellyfin). Risk: medium and high.
+- **What it runs:** one container on Starboard's own image, read only, limited to 192 MB of memory, writing only to
+  the Live TV folder you gave the installer.
+- **Its card:** when it last ran and what it did. **Run Live TV now** builds everything straight away.
+- **How to set it up:** read [Set up free Live TV in Jellyfin](../topics/set-up-live-tv.md).
+
 ## Coming next
 
-- **Live TV:** Starboard's free TV channels and guides for Jellyfin, moving into a plug-in, so you add it only if
-  you want it. Nothing changes for people who use Live TV today.
 - **Example plug-ins** for people who want to make their own: a card for the dashboard, a settings form, and one
   that runs through your VPN.
 

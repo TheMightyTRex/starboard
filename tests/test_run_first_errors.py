@@ -75,3 +75,42 @@ class DockerGroupRestartTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WaitForUpdatesTest(unittest.TestCase):
+    """Linux installing its own updates (RF-12): Run first waits with a bar, then carries on (owner, 10 November 2026)."""
+
+    def run_part(self, busy_checks, wait_max):
+        import os
+        import subprocess
+        import tempfile
+        script = (ROOT / "run-first.sh").read_text()
+        start = script.index("UPDATES_WAIT_MAX=")
+        part = script[start:script.index("is_package_job()", start)]
+        with tempfile.TemporaryDirectory() as d:
+            count = os.path.join(d, "count")
+            open(count, "w").write("0")
+            fake = os.path.join(d, "pgrep")  # says unattended-upgrades runs for the first few checks
+            open(fake, "w").write(f'#!/bin/sh\nn=$(cat {count}); echo $((n + 1)) > {count}\n'
+                                  f'[ "$2" = unattended-upgr ] && [ "$n" -lt {busy_checks} ] && exit 0\nexit 1\n')
+            os.chmod(fake, 0o755)
+            body = (f"UPDATES_WAIT_MAX={wait_max}\n" + part.replace("UPDATES_WAIT_MAX=\"${UPDATES_WAIT_MAX:-2700}\"", "")
+                    .replace("sleep 3", "sleep 0.05").replace("sleep 2", "sleep 0") +
+                    "\nupdates_busy && echo BUSY; updates_detail; echo; wait_for_updates_job; echo \"status=$?\"\n")
+            return subprocess.run(["bash", "-c", body], env={"PATH": f"{d}:/usr/bin:/bin"}, capture_output=True, text=True, timeout=30).stdout
+
+    def test_waits_until_the_updates_finish_then_carries_on(self):
+        out = self.run_part(busy_checks=40, wait_max=60)
+        self.assertIn("BUSY", out)
+        self.assertIn("automatic updates are running", out)
+        self.assertIn("status=0", out)
+
+    def test_gives_up_after_the_longest_wait_with_the_lock_words(self):
+        out = self.run_part(busy_checks=10**6, wait_max=0)
+        self.assertIn("Could not get lock", out)  # so explain() still says RF-12
+        self.assertIn("status=1", out)
+
+    def test_install_jobs_wait_first_and_retry_on_a_held_lock(self):
+        script = (ROOT / "run-first.sh").read_text()
+        self.assertIn('if is_package_job "${FIX[$i]}"; then wait_for_updates', script)
+        self.assertIn('held_lock && [ "$lock_tries" -lt 2 ]', script)
