@@ -855,8 +855,14 @@ async function installStep(id, state, data, apps, go) {
       });
       nodes = [poolFirst, form, status, log, after].filter(Boolean);
     } else {
-      nodes = [poolFirst, notice("info", "Run one command", "Starboard does not have Docker access, so it cannot start apps itself. On this computer, run:"),
-        el("pre", { class: "code-block", text: w.command || "" }), copyButton(w.command || "", "Copy the command"),
+      // The command is the same for every install (the write step sends it too), so it shows even before then.
+      const command = w.command || "cd ~/starboard && ./install.sh --start-apps";
+      const help = "https://themightytrex.github.io/starboard/help/topics/connect-with-ssh.html";
+      nodes = [poolFirst, notice("info", "Run one command in a terminal",
+          "Starboard does not have Docker access, so it cannot start the apps itself. Run this command in a terminal on the server: open Terminal on the server itself, or connect to it from another computer with SSH."),
+        el("p", { class: "small" }, "It may ask for the password you use to sign in to the server. ",
+          el("a", { href: help, target: "_blank", rel: "noopener noreferrer" }, "How to open a terminal on the server", icon("external-link"), el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))),
+        el("pre", { class: "code-block", text: command }), copyButton(command, "Copy the command"),
         el("p", { class: "small muted", text: "Then come back here: Starboard finds the new apps and adds them, and shows you how to connect them." }),
         el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: (e) => { e.currentTarget.hidden = true; showAfter(); } }, icon("search"), "Find the new apps")),
         after].filter(Boolean);

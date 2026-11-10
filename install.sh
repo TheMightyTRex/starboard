@@ -370,6 +370,57 @@ start_apps() {
   ok "$running of $SA_TOTAL apps are running. Open Starboard to see them."
   finish
 }
+# Docker is a requirement: Starboard's apps always run in it, with --native too. When it or Docker Compose is missing,
+# the installer adds it, as Run first does, then carries on in the same run (owner, 10 November 2026). IN-07 and
+# IN-08 are left for when installing it fails.
+# shellcheck source=/dev/null
+docker_os() { (. /etc/os-release 2>/dev/null; printf '%s %s\n' "${ID:-}" "${ID_LIKE:-}"); }
+install_docker() {
+  local os pkg=""
+  os="$(docker_os)"
+  command -v apt-get >/dev/null && pkg=apt
+  command -v dnf >/dev/null && pkg=${pkg:-dnf}
+  [ -n "$pkg" ] || fail IN-07 "Docker is needed, and this computer has neither apt nor dnf to install it with. Install Docker, then run this again"
+  [ -t 0 ] || sudo -n true 2>/dev/null || fail IN-07 "Docker is needed. Run this in a terminal, so sudo can ask for your password, or install Docker first"
+  para "Starboard's apps run in Docker, which is not on this computer yet, so the installer adds it now. sudo asks for the password you use to sign in to this computer, once (nothing shows as you type)."
+  sudo -v || fail IN-07 "Docker is needed, and sudo did not get the password. Run this again, or install Docker first"
+  if ! command -v docker >/dev/null; then
+    if [ "$pkg" = apt ] && { [[ " $os " == *" linuxmint "* ]] || ! command -v curl >/dev/null; }; then
+      work "Updating the list of software" "sudo apt-get update" || fail IN-07 "the list of software could not be updated"
+      work "Installing Docker and Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-v2" \
+        || fail IN-07 "Docker could not be installed"
+    else
+      work "Downloading Docker's installer" "curl -fsSL https://get.docker.com -o $WORK/get-docker.sh" || fail IN-07 "Docker's installer could not be downloaded"
+      work "Installing Docker and Docker Compose" "sudo sh $WORK/get-docker.sh" || fail IN-07 "Docker could not be installed"
+    fi
+  elif ! docker compose version >/dev/null 2>&1; then
+    case "$pkg" in
+      apt) if [[ " $os " == *" ubuntu "* || " $os " == *" linuxmint "* ]]; then
+             work "Installing Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-v2" || fail IN-08 "Docker Compose could not be installed"
+           else
+             work "Installing Docker Compose" "sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin" || fail IN-08 "Docker Compose could not be installed"
+           fi ;;
+      dnf) work "Installing Docker Compose" "sudo dnf install -y docker-compose-plugin" || fail IN-08 "Docker Compose could not be installed" ;;
+    esac
+  fi
+  if command -v systemctl >/dev/null; then work "Starting Docker" "sudo systemctl enable --now docker" || fail IN-07 "Docker could not be started"; fi
+  if ! id -nG "$(id -un)" | tr ' ' '\n' | grep -qx docker; then
+    work "Allowing your user to use Docker" "sudo usermod -aG docker $(id -un)" || fail IN-07 "your user could not be allowed to use Docker"
+  fi
+  ok "Docker and Docker Compose are installed."
+  # This sign-in does not know the new group yet: carry on within it, as the start of this script does.
+  if ! docker info >/dev/null 2>&1 && [ -z "${STARBOARD_REGROUPED:-}" ]; then
+    export STARBOARD_REGROUPED=1
+    finish
+    if command -v sg >/dev/null 2>&1; then
+      exec sg docker -c "$(printf '%q ' "$0" "${ARGS[@]+"${ARGS[@]}"}")"
+    fi
+    exec sudo -u "$(id -un)" -g docker env STARBOARD_REGROUPED=1 "$0" "${ARGS[@]+"${ARGS[@]}"}"
+  fi
+}
+if ! command -v docker >/dev/null || ! docker compose version >/dev/null 2>&1; then
+  install_docker
+fi
 if [ "$START_APPS" = 1 ]; then
   start_apps
   exit $?
@@ -381,8 +432,8 @@ fi
 command -v git >/dev/null || fail IN-05 "install git first"
 [ -d .git ] || fail IN-06 "run this inside a git clone of Starboard, so ./update.sh can update it later"
 if [ "$MODE" = docker ]; then
-  command -v docker >/dev/null || fail IN-07 "install Docker first, or use --native"
-  docker compose version >/dev/null 2>&1 || fail IN-08 "install the Docker Compose plugin first, or use --native"
+  command -v docker >/dev/null || fail IN-07 "Docker could not be installed. Install it, then run this again"
+  docker compose version >/dev/null 2>&1 || fail IN-08 "Docker Compose could not be installed. Install it, then run this again"
   READY="Docker and Docker Compose are installed."
 else
   command -v python3 >/dev/null || fail IN-09 "install Python 3.10 or newer first"

@@ -130,3 +130,57 @@ class WaitForUpdatesTest(unittest.TestCase):
         script = (ROOT / "run-first.sh").read_text()
         self.assertIn('if is_package_job "${FIX[$i]}"; then wait_for_updates', script)
         self.assertIn('held_lock && [ "$lock_tries" -lt 2 ]', script)
+
+
+class InstallerAddsDockerTest(unittest.TestCase):
+    """install.sh adds Docker when it is missing, as a requirement (owner, 10 November 2026). Only its install_docker
+    step runs here, with sudo, curl and Docker as stand-ins that write down what they are asked: nothing is installed."""
+
+    def run_step(self, os_words, have_curl=True, have_docker=False):
+        import os
+        import subprocess
+        import tempfile
+        script = (ROOT / "install.sh").read_text()
+        step = script[script.index("docker_os() {"):script.index("if ! command -v docker >/dev/null || ! docker compose version")]
+        with tempfile.TemporaryDirectory() as d:
+            log = os.path.join(d, "log")
+            for name in ("sudo", "curl"):
+                with open(os.path.join(d, name), "w") as f:
+                    f.write(f'#!/bin/sh\necho "{name} $*" >> {log}\nexit 0\n')
+                os.chmod(os.path.join(d, name), 0o755)
+            missing = "" if have_curl else "curl"
+            wrapper = f"""
+WORK={d}; ARGS=(); STARBOARD_REGROUPED=1
+para() {{ :; }}; ok() {{ echo "OK $1" >> {log}; }}; finish() {{ :; }}
+fail() {{ echo "FAIL $1 $2" >> {log}; exit 1; }}
+work() {{ echo "WORK $1" >> {log}; bash -c "$2"; }}
+command() {{ if [ "$1" = -v ] && {{ [ "$2" = {"docker" if not have_docker else "none"} ] || [ "$2" = "{missing or 'none'}" ]; }}; then return 1; fi; builtin command "$@"; }}
+docker() {{ [ "$1" = compose ] && return 1; return 0; }}
+{step}
+docker_os() {{ echo "{os_words}"; }}
+install_docker
+"""
+            env = dict(os.environ, PATH=f"{d}:/usr/bin:/bin")
+            done = subprocess.run(["bash", "-c", wrapper], env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30)
+            from pathlib import Path
+            return done.returncode, Path(log).read_text() if os.path.exists(log) else ""
+
+    def test_docker_is_installed_with_dockers_own_installer(self):
+        code, log = self.run_step("ubuntu debian")
+        self.assertEqual(code, 0, log)
+        self.assertIn("curl -fsSL https://get.docker.com", log)
+        self.assertIn("get-docker.sh", log)
+        self.assertIn("sudo systemctl enable --now docker", log)
+        self.assertIn("OK Docker and Docker Compose are installed.", log)
+
+    def test_mint_gets_dockers_packages(self):
+        code, log = self.run_step("linuxmint ubuntu")
+        self.assertEqual(code, 0, log)
+        self.assertIn("apt-get install -y docker.io docker-compose-v2", log)
+        self.assertNotIn("get.docker.com", log)
+
+    def test_only_compose_is_added_when_docker_is_there(self):
+        code, log = self.run_step("ubuntu debian", have_docker=True)
+        self.assertEqual(code, 0, log)
+        self.assertIn("apt-get install -y docker-compose-v2", log)
+        self.assertNotIn("get-docker", log)

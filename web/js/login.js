@@ -38,7 +38,13 @@ startPage().then((session) => {
   // take it out of the address bar.
   const given = /^#code=([A-Za-z0-9_-]{4,64})$/.exec(location.hash);
   if (given) {
-    if (setup && form.token) form.token.value = given[1];
+    if (setup && form.token) {
+      // Filled in by the installer's link: read only, with a note, and the cursor goes to the next question.
+      form.token.value = given[1];
+      form.token.readOnly = true;
+      $("#token-hint").textContent = "Filled in by the installer. Starboard uses it automatically to continue the set-up, so there is nothing to type here.";
+      form.site_name?.focus();
+    }
     history.replaceState(null, "", location.pathname + location.search);
   }
   form.addEventListener("submit", async (e) => {
@@ -69,7 +75,11 @@ startPage().then((session) => {
     } catch (err) {
       const m = err.message;
       if (!setup) showFieldError(form.password, /not right/i.test(m) ? "That password is not right. Check Caps Lock and try again." : m);
-      else if (/setup code/i.test(m)) showFieldError(form.token, m);
+      else if (/setup code/i.test(m)) {
+        // A code from the link that is refused (an old link, say) can be typed instead.
+        if (form.token.readOnly) { form.token.readOnly = false; $("#token-hint").textContent = "In the installer's output, or run docker compose logs starboard on the server."; }
+        showFieldError(form.token, m);
+      }
       else if (/name/i.test(m)) showFieldError(form.site_name, m);
       else if (/password is already set/i.test(m)) showFormError(m);
       else if (/password|characters/i.test(m)) showFieldError(form.password, m);

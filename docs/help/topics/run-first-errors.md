@@ -185,12 +185,16 @@ for you.
 
 ### IN-07
 
-**Docker is not installed.** Install it with [Install Docker](install-docker.md), or run the Run first script,
-which installs it for you.
+**Docker could not be installed.** The installer adds Docker by itself when it is missing, and this error means
+that did not work: there was no terminal to ask for your password, the password was not given, or the download or
+install failed. Run the installer again in a terminal, or install Docker by hand with
+[Install Docker](install-docker.md).
 
 ### IN-08
 
-**Docker Compose is not installed.** Install the Docker Compose plugin with [Install Docker](install-docker.md).
+**Docker Compose could not be installed.** The installer adds it by itself when Docker is there without it, and
+this error means that did not work. Run the installer again, or install the Docker Compose plugin by hand with
+[Install Docker](install-docker.md).
 
 ### IN-09
 

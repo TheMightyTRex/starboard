@@ -829,6 +829,15 @@
     border-color: var(--status-danger-fg);
     border-width: 2px;
   }
+  /* Read only (TheMightyTRexUK, 10 November 2026): a value the app filled in and uses itself, such as the setup code
+     from the installer's link. Sunken, so it does not look like a box to type in; the text keeps full contrast and
+     can still be selected and copied. Its hint says why it cannot be changed. */
+  .input[readonly],
+  .textarea[readonly] {
+    background: var(--color-surface-sunken);
+    border-style: dashed;
+    cursor: default;
+  }
   .input[disabled],
   .select[disabled] {
     background: var(--color-surface-sunken);
