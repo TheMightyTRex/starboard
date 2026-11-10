@@ -236,3 +236,44 @@ class SetUpHelperTest(unittest.TestCase):
         self.assertEqual(asked, ["--yes", "--plain", "--livetv-folder", live])  # /etc is never used
         self.assertEqual(left, ["--disk-health"])
         self.assertIn("Left out: --disk Media=/etc", log)
+
+
+class DockerStepWithTheRealFrameTest(unittest.TestCase):
+    """VM test N2: install_docker runs before the installer's first page, with the real terminal frame and set -u.
+    sudo and curl are stand-ins; the frame's own work() runs, so a value it needs that is not set yet fails here."""
+
+    @unittest.skipUnless(__import__("shutil").which("script"), "script (util-linux) is not on this computer")
+    def test_the_docker_step_runs_before_any_page(self):
+        import os
+        import subprocess
+        import tempfile
+        from pathlib import Path
+        script = (ROOT / "install.sh").read_text()
+        step = script[script.index("# dwork \"name\""):script.index("if ! command -v docker >/dev/null || ! docker compose version")]
+        with tempfile.TemporaryDirectory() as d:
+            for name in ("sudo", "curl"):
+                Path(d, name).write_text(f'#!/bin/sh\necho "{name} $*" >> {d}/log\nexit 0\n')
+                os.chmod(Path(d, name), 0o755)
+            wrapper = f"""set -euo pipefail
+cd {ROOT}
+WORK={d}; LOG={d}/install.log; ARGS=(); STARBOARD_REGROUPED=1; PLAIN=""; IN=/dev/tty; TTY=/dev/tty
+stty rows 24 cols 80 < /dev/tty
+. lib/terminal-frame.sh
+[ "$FANCY" = 1 ] || echo "NOT FANCY" >> {d}/log
+fail() {{ echo "FAIL $1 $2" >> {d}/log; exit 1; }}
+command() {{ if [ "$1" = -v ] && [ "$2" = docker ]; then return 1; fi; builtin command "$@"; }}
+docker() {{ return 1; }}
+{step}
+docker_os() {{ echo "ubuntu debian"; }}
+install_docker
+"""
+            Path(d, "run.sh").write_text(wrapper)
+            # In a pretend terminal (script), as a person runs it: the frame then draws in full, where N2 crashed.
+            done = subprocess.run(["script", "-qec", f"bash {d}/run.sh 2>{d}/err", "/dev/null"], env=dict(os.environ, PATH=f"{d}:/usr/bin:/bin", TERM="xterm", LANG="C.UTF-8", LC_ALL="C.UTF-8"),
+                                  capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=60)
+            done.stderr = Path(d, "err").read_text() if Path(d, "err").exists() else ""
+            log = Path(d, "log").read_text() if Path(d, "log").exists() else ""
+        self.assertNotIn("unbound variable", done.stderr)
+        self.assertNotIn("/dev/tty", done.stderr)
+        self.assertNotIn("NOT FANCY", log)  # drawn in full, as for a person
+        self.assertIn("get-docker.sh", log, done.stderr[-500:])

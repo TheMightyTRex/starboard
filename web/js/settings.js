@@ -1092,7 +1092,7 @@ async function stepContent(id, root) {
       return { s, input, node: field(`${s.name} API key`, input, { hint: `In ${s.name}: ${KEY_PLACE[s.type]}.`, span: true }) };
     });
     const got = read.found.length ? notice("success", `Starboard has ${read.found.length === 1 ? "the key" : "the keys"} for ${read.found.join(", ")}`,
-      "It read them from each app's own settings, so there is nothing to type for them.") : null;
+      read.found.length === 1 ? "It read it from the app's own settings, so there is nothing to type for it." : "It read them from each app's own settings, so there is nothing to type for them.") : null;
     nodes = rows.length
       ? [got, el("p", { text: `Starboard could not read ${rows.length === 1 ? "this key" : "these keys"} itself, so ${rows.length === 1 ? "it is" : "they are"} asked for here.` }),
         el("div", { class: "form-stack" }, rows.map((r) => r.node)), el("p", { class: "small muted", text: "Leave a box empty to add that key later in Manage apps." })].filter(Boolean)
@@ -2910,6 +2910,7 @@ async function hostChange(opener) {
   const panel = sidePanel({ title: "Changing the server", opener, wide: true, body: [el("div", { class: "stack-4" }, now, meter, out)], foot: [close] });
   close.addEventListener("click", () => panel.close());
   let lost = 0;
+  let same = "", since = Date.now();  // a step that does not move for 10 minutes has stopped (VM test N1)
   const tick = async () => {
     if (!document.body.contains(panel.layer)) return;
     let p;
@@ -2934,6 +2935,12 @@ async function hostChange(opener) {
     }
     if (p.state === "failed") {
       now.replaceChildren(notice("danger", "The change stopped", "What the installer said is below. Run first's window on the server shows it too, and the help has each error number."));
+      return;
+    }
+    const where = `${p.state}|${p.n}|${p.name}|${(p.log || "").length}`;
+    if (where !== same) { same = where; since = Date.now(); }
+    if (p.state === "running" && Date.now() - since > 10 * 60 * 1000) {
+      now.replaceChildren(notice("danger", "The change has stopped", "Nothing has happened for 10 minutes. What the installer said is below. Select Make the change now again, or run ./install.sh in the Starboard folder on the server."));
       return;
     }
     bar.style.width = `${Math.max(3, Math.min(97, shown))}%`; meter.setAttribute("aria-valuenow", String(Math.max(0, shown)));

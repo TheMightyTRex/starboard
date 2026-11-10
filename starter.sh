@@ -42,7 +42,7 @@ start_apps() {
   local req status=0
   req="$(head -c 40 data/stack/start-request | tr -cd '0-9.')"
   rm -f data/stack/start-request
-  STARTER_RUN=1 ./install.sh --start-apps > data/stack/start.log 2>&1 < /dev/null &
+  STARBOARD_FROM_HELPER=1 STARTER_RUN=1 ./install.sh --start-apps > data/stack/start.log 2>&1 < /dev/null &
   local job=$!
   while kill -0 "$job" 2>/dev/null; do : > data/starter; sleep 3; done
   wait "$job" || status=$?
@@ -77,7 +77,7 @@ host_change() {
   done
   if [ ${#apply[@]} -gt 0 ]; then
     echo "Applying the set-up's answers: ./install.sh ${apply[*]}" >> data/stack/host.log
-    STARBOARD_PROGRESS="$PWD/data/stack/host-progress.json" ./install.sh --yes --plain "${apply[@]}" >> data/stack/host.log 2>&1 < /dev/null &
+    STARBOARD_FROM_HELPER=1 STARBOARD_PROGRESS="$PWD/data/stack/host-progress.json" ./install.sh --yes --plain "${apply[@]}" >> data/stack/host.log 2>&1 < /dev/null &
     local job=$!
     while kill -0 "$job" 2>/dev/null; do : > data/starter; sleep 2; done
     wait "$job" || status=$?
@@ -115,6 +115,12 @@ json.dump({"request": asked.get("request"), "keys": keys}, open(sys.argv[2] + ".
     && mv -f data/stack/keys-found.json.new data/stack/keys-found.json
   rm -f "$request.reading"
 }
+
+# Started again while a change was running (a restart, a reboot): that change did not finish, so say so rather than
+# leave the browser waiting for good (VM test N1).
+if grep -q '"state": "running"' data/stack/host-progress.json 2>/dev/null; then
+  progress failed "Stopped part-way: select Make the change now again"
+fi
 
 while :; do
   : > data/starter

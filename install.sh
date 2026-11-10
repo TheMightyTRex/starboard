@@ -821,6 +821,12 @@ job_service() {
 # the same work.
 job_starter() {
   local unit_dir="$HOME/.config/systemd/user"
+  # Run by the helper itself (Make the change now): restarting its own service would stop this installer part-way
+  # (VM test N1), so it is left running as it is.
+  if [ -n "${STARBOARD_FROM_HELPER:-}" ]; then
+    echo "The set-up helper is running."
+    return 0
+  fi
   if [ "$STARTER" != 1 ]; then
     systemctl --user disable --now starboard-starter.service >/dev/null 2>&1 || true
     rm -f "$unit_dir/starboard-starter.service"
@@ -832,10 +838,14 @@ job_starter() {
     return 0
   fi
   mkdir -p "$unit_dir"
+  local was=""
+  [ -f "$unit_dir/starboard-starter.service" ] && was="$(cat "$unit_dir/starboard-starter.service")"
   sed -e "s|@DIR@|$PWD|g" deploy/starboard-starter.service > "$unit_dir/starboard-starter.service"
   # It keeps running after you sign out and starts with the computer.
   loginctl enable-linger "$(id -un)" >/dev/null 2>&1 || sudo -n loginctl enable-linger "$(id -un)" >/dev/null 2>&1 || true
-  if systemctl --user daemon-reload && systemctl --user enable --now starboard-starter.service && systemctl --user restart starboard-starter.service; then
+  # Started, and restarted only when its unit file changed, so a run of the installer never stops it for nothing.
+  if systemctl --user daemon-reload && systemctl --user enable --now starboard-starter.service \
+     && { [ "$was" = "$(cat "$unit_dir/starboard-starter.service")" ] || systemctl --user restart starboard-starter.service; }; then
     echo "The set-up helper is running."
   else
     echo "The set-up helper did not start; the Run first window or a command does its work."

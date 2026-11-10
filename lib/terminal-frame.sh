@@ -21,7 +21,7 @@ ROWS=24
 COLS=80
 measure() {
   local size
-  size="$(stty size < "${TTY:-${IN:-/dev/null}}" 2>/dev/null)" || size=""
+  size="$(stty size 2>/dev/null < "${TTY:-${IN:-/dev/null}}")" || size=""
   if [ -n "$size" ]; then ROWS="${size% *}"; COLS="${size#* }"; fi
   W=$(( COLS < 100 ? COLS : 100 ))
   # The frame and text sit in a column centred in a wider window; L is its left margin, PAD those spaces.
@@ -53,6 +53,7 @@ HEADER=()
 DRAWN=0
 STEP=0
 KEYS=""
+MENU_RIGHT=""  # set here too: a job can run before the first page draws the menu (Starboard VM test N2)
 PROMPT=""
 
 # Everything shown on a step goes through say, so the step can be drawn again when the window changes size.
@@ -215,7 +216,7 @@ trap 'RESIZED=1' WINCH
 ECHO_WAS=""
 finish() {
   [ -z "${KEEP:-}" ] || { kill "$KEEP" 2>/dev/null; KEEP=""; }
-  [ -z "$ECHO_WAS" ] || { stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""; }
+  [ -z "$ECHO_WAS" ] || { stty "$ECHO_WAS" 2>/dev/null < "${IN:-/dev/tty}"; ECHO_WAS=""; }
   if [ "$FANCY" = 1 ] && [ "$DRAWN" = 1 ]; then
     printf '\0337\033[r\033[%d;1H\033[2K\033[%d;1H\033[2K\0338\n' $(( ROWS - 1 )) "$ROWS"
     DRAWN=0
@@ -471,7 +472,7 @@ work() {
   if [ "$FANCY" = 0 ]; then
     say "$name ($n of $of). Please wait..."
     # Keys pressed meanwhile are not shown (each Enter would push the words above off the screen) and are dropped.
-    ECHO_WAS="$(stty -g < "${IN:-/dev/tty}" 2>/dev/null)" && stty -echo < "${IN:-/dev/tty}" 2>/dev/null
+    ECHO_WAS="$(stty -g 2>/dev/null < "${IN:-/dev/tty}")" && stty -echo 2>/dev/null < "${IN:-/dev/tty}"
     # Never silent for long (TERMINAL.md): "Still working" every 2 minutes, with the count when the job has one.
     run_job "$cmd" >> "$LOG" 2>&1 < /dev/null &
     pid=$!; JOB_START=$SECONDS
@@ -488,7 +489,7 @@ work() {
     wait "$pid"; status=$?
     if [ -n "$ECHO_WAS" ]; then
       while read -r -t 0.01 -n 1000 _ < "${IN:-/dev/tty}" 2>/dev/null; do :; done
-      stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""
+      stty "$ECHO_WAS" 2>/dev/null < "${IN:-/dev/tty}"; ECHO_WAS=""
     fi
     if [ "$status" = 0 ]; then say "Done: $name."; else say "Did not finish: $name."; fi
     return "$status"
@@ -501,19 +502,19 @@ work() {
   KEYS="Ctrl+C"; MENU_RIGHT="Please wait"; menu
   # Keys pressed while the bar moves (Enter, out of impatience) would print new lines under it and repeat the bar
   # down the window: they are not shown until the job ends, and dropped then.
-  ECHO_WAS="$(stty -g < "${IN:-/dev/tty}" 2>/dev/null)" && stty -echo < "${IN:-/dev/tty}" 2>/dev/null
+  ECHO_WAS="$(stty -g 2>/dev/null < "${IN:-/dev/tty}")" && stty -echo 2>/dev/null < "${IN:-/dev/tty}"
   while kill -0 "$pid" 2>/dev/null; do
     if [ "$RESIZED" = 1 ]; then RESIZED=0; PROMPT=""; resized; fi
     frame "$n" "$of" "$(job_words "$name" "$n" "$of" "$tick")" "$tick"
     # A job can set the terminal back to showing keys (apt and Docker's installer do): hide them again.
-    if [ -n "$ECHO_WAS" ] && [ $(( tick % 8 )) = 0 ]; then stty -echo < "${IN:-/dev/tty}" 2>/dev/null; fi
+    if [ -n "$ECHO_WAS" ] && [ $(( tick % 8 )) = 0 ]; then stty -echo 2>/dev/null < "${IN:-/dev/tty}"; fi
     tick=$(( tick + 1 ))
     sleep 0.12
   done
   wait "$pid"; status=$?
   if [ -n "$ECHO_WAS" ]; then
     while read -r -t 0.01 -n 1000 _ < "${IN:-/dev/tty}" 2>/dev/null; do :; done
-    stty "$ECHO_WAS" < "${IN:-/dev/tty}" 2>/dev/null; ECHO_WAS=""
+    stty "$ECHO_WAS" 2>/dev/null < "${IN:-/dev/tty}"; ECHO_WAS=""
   fi
   KEYS="$keys_were"; MENU_RIGHT="$right_were"; menu
   if [ "$status" = 0 ]; then
