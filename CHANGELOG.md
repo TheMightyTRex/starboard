@@ -7,6 +7,20 @@ add features.
 
 ## [Unreleased]
 
+## [0.15.4] (10 November 2026)
+
+### Added
+- **Still to set up, one at a time:** Go through them opens a slide-out that walks through each thing left to set up, with Do it now, Skip, Ignore, Done and Next step. It also opens by itself once in each browser session while anything is left.
+- **Plug-in install addresses and downloads:** The plug-in collection in the help centre now gives each plug-in's install address, to paste into Add a plug-in, and a zip to download. The Styles plug-in lives in Starboard's own repository, under plugins-collection. Help: [The plug-in collection](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/plugin-collection.md) and [Add a plug-in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-a-plugin.md).
+
+### Fixed
+- **Links to apps in Still to set up:** Links in Still to set up, such as Tell Tdarr what to convert, open at the address you opened Starboard at, instead of 127.0.0.1, which another device cannot reach. Help: [Open Starboard from a phone or another computer](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/open-from-another-device.md).
+- **Waiting for Linux's updates:** Run first no longer waits for Ubuntu's always-running shutdown helper as if it were updates, and its bar now says what is installing, how many are done and how much is downloaded. Help: [Set up everything with the Run first script](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first.md) and [RF-12](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md#rf-12).
+- **Done on guided steps:** Done on a guided step, such as Tdarr's, now saves instead of failing.
+
+### Security
+- **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
+
 ## [0.15.3] (10 November 2026)
 
 ### Fixed
@@ -18,10 +32,10 @@ add features.
 ## [0.15.2] (10 November 2026)
 
 ### Added
-- **Send feedback everywhere:** Send feedback, with Snaglist 0.4.0 and its QR code reports, is now on every page by default; deactivate it in Settings, General.
+- **Send feedback everywhere:** Send feedback, with Snaglist 0.4.0 and its QR code reports, is now on every page by default; deactivate it in Settings, General. Help: [Send feedback about a page](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/send-feedback.md).
 
 ### Fixed
-- **Region and language in Settings, Reelix:** Saving Information with Region empty no longer fails with "not in the form it needs"; Language of details and Region are now lists with plain names, one choice each, as Reelix uses.
+- **Region and language in Settings, Reelix:** Saving Information with Region empty no longer fails with "not in the form it needs"; Language of details and Region are now lists with plain names, one choice each, as Reelix uses. Help: [Change Reelix's settings in Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-reelix-settings.md).
 - **Plug-in data folders:** Starboard makes each plug-in's data folder for the user the plug-in runs as, so a plug-in can save its work; Live TV's first run on a real server could not.
 - **Plug-in cards and buttons:** Starboard finds a plug-in at its address when it uses the computer's own network, so cards and buttons such as Run Live TV now answer.
 - **Built-in plug-ins' health:** Built-in plug-ins check their own health instead of Starboard's, so Docker no longer marks them unhealthy.
@@ -32,9 +46,9 @@ add features.
 ## [0.15.1] (10 November 2026)
 
 ### Fixed
-- **Live TV's move:** Starboard's container now knows where the Live TV folder is on the computer, so Live TV moves into its plug-in as 0.15.0 meant to.
-- **Live TV and newer Jellyfin:** Live TV sends Jellyfin's key the way Jellyfin 10.11 and later expect, so it can add its channels and guides there.
-- **No channels twice:** When Live TV moves, it reads the folder from Jellyfin's own tuners, so it never adds the same channels again under another path.
+- **Live TV's move:** Starboard's container now knows where the Live TV folder is on the computer, so Live TV moves into its plug-in as 0.15.0 meant to. Help: [Set up free Live TV in Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md).
+- **Live TV and newer Jellyfin:** Live TV sends Jellyfin's key the way Jellyfin 10.11 and later expect, so it can add its channels and guides there. Help: [Set up free Live TV in Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md).
+- **No channels twice:** When Live TV moves, it reads the folder from Jellyfin's own tuners, so it never adds the same channels again under another path. Help: [Set up free Live TV in Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md).
 
 ### Security
 - **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
@@ -42,11 +56,11 @@ add features.
 ## [0.15.0] (10 November 2026)
 
 ### Added
-- **Live TV as a plug-in:** Live TV comes with Starboard as a built-in plug-in: add it in Settings, Plug-ins, with its own card, settings and Run Live TV now. It runs locked down on Starboard's own image.
-- **Waiting for Linux's updates:** Run first waits with a progress bar while Linux installs its own updates, and tries again by itself if they start part-way, instead of stopping with error RF-12.
+- **Live TV as a plug-in:** Live TV comes with Starboard as a built-in plug-in: add it in Settings, Plug-ins, with its own card, settings and Run Live TV now. It runs locked down on Starboard's own image. Help: [Set up free Live TV in Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md) and [The plug-in collection](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/plugin-collection.md#live-tv).
+- **Waiting for Linux's updates:** Run first waits with a progress bar while Linux installs its own updates, and tries again by itself if they start part-way, instead of stopping with error RF-12. Help: [Set up everything with the Run first script](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first.md) and [RF-12](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md#rf-12).
 
 ### Changed
-- **Your Live TV moves by itself:** If Live TV was on, Starboard moves it into the plug-in on its first start, with the same settings and folder; Jellyfin's channels and guides do not change. Where the plug-in cannot run, Live TV stays in Starboard as before.
+- **Your Live TV moves by itself:** If Live TV was on, Starboard moves it into the plug-in on its first start, with the same settings and folder; Jellyfin's channels and guides do not change. Where the plug-in cannot run, Live TV stays in Starboard as before. Help: [Set up free Live TV in Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md).
 
 ### Security
 - **Checks:** The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release.
@@ -54,7 +68,7 @@ add features.
 ## [0.14.1] (10 November 2026)
 
 ### Added
-- **Choose now:** When an upgrade has something to choose, Choose now opens those choices in a slide-out over the page you are on; Open as a page still opens the full guide.
+- **Choose now:** When an upgrade has something to choose, Choose now opens those choices in a slide-out over the page you are on; Open as a page still opens the full guide. Help: [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md#after-the-update).
 
 ### Fixed
 - **API error links:** The links in the API's error answers open the new errors page in Starboard's repository.
@@ -65,20 +79,20 @@ add features.
 ## [0.14.0] (10 November 2026)
 
 ### Added
-- **Plug-ins:** Settings, Plug-ins adds a plug-in from its address, its file or its own installer, shows what it may do with a risk level and its test results first, and activates, deactivates or removes it, keeping its folder.
-- **Styles from plug-ins:** A plug-in can add styles to Display, which Starboard checks for accessibility in light and dark and draws itself; the Styles plug-in has eight, each with a picture to choose from.
-- **Plug-in tester:** Test a plug-in lists every issue with where it is and how to fix it, and always tests accessibility; the same tests run before any plug-in is added.
-- **Plug-in cards:** Plug-ins can add cards to the dashboard that show a number, a list or a status, asked at most once a minute.
+- **Plug-ins:** Settings, Plug-ins adds a plug-in from its address, its file or its own installer, shows what it may do with a risk level and its test results first, and activates, deactivates or removes it, keeping its folder. Help: [Add a plug-in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-a-plugin.md) and [What a plug-in can change](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/what-plugins-can-change.md).
+- **Styles from plug-ins:** A plug-in can add styles to Display, which Starboard checks for accessibility in light and dark and draws itself; the Styles plug-in has eight, each with a picture to choose from. Help: [The plug-in collection](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/plugin-collection.md#styles).
+- **Plug-in tester:** Test a plug-in lists every issue with where it is and how to fix it, and always tests accessibility; the same tests run before any plug-in is added. Help: [Add a plug-in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-a-plugin.md#test-a-plug-in).
+- **Plug-in cards:** Plug-ins can add cards to the dashboard that show a number, a list or a status, asked at most once a minute. Help: [Write a plug-in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/write-a-plugin.md#dashboard-cards).
 - **Starboard's API:** A read-only API at /api/v1 for other apps, scripts and AI assistants, with its own keys made in Settings, Security and a published description.
 - **The dashboard:** A dashboard of cards is the first page after signing in, in four layouts, with Edit dashboard to add, size and move cards.
-- **Library actions:** Film and series pages have Get it, Follow, Stop following, Delete, Choose a download and watched or not watched from Jellyfin.
+- **Library actions:** Film and series pages have Get it, Follow, Stop following, Delete, Choose a download and watched or not watched from Jellyfin. Help: [Browse your library](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/browse-your-library.md).
 - **Wanted, History and Issues:** Wanted shows what is missing or below the quality wanted, with Search; History and Issues are real pages; Requests shows Reelix's own requests.
 - **Download now:** Wanted items can download straight away, outside download hours.
 - **Basic and advanced settings:** Every Settings page opens on its basic settings, with an Advanced settings switch for the rest.
 - **Settings, Downloads:** A new page for the VPN, the Usenet server and download hours, with Test buttons.
-- **Reelix's settings, backups and logs:** Settings, Reelix covers its basics, folders, information, files and requests; System has Reelix's backups and log; Reelix can update automatically, off until you switch it on.
-- **YouTube and Spotify:** With the full version of Reelix, downloads from a YouTube or Spotify link, with Connect Spotify.
-- **Apps set up for you:** Jellyfin, Audiobookshelf, Jellystat, qBittorrent, Bazarr and Gluetun are set up by Starboard, and Live TV's channels and guides are added to Jellyfin by itself.
+- **Reelix's settings, backups and logs:** Settings, Reelix covers its basics, folders, information, files and requests; System has Reelix's backups and log; Reelix can update automatically, off until you switch it on. Help: [Change Reelix's settings in Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-reelix-settings.md).
+- **YouTube and Spotify:** With the full version of Reelix, downloads from a YouTube or Spotify link, with Connect Spotify. Help: [Switch between the two versions of Reelix](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/switch-reelix-version.md).
+- **Apps set up for you:** Jellyfin, Audiobookshelf, Jellystat, qBittorrent, Bazarr and Gluetun are set up by Starboard, and Live TV's channels and guides are added to Jellyfin by itself. Help: [Install apps with Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-apps.md).
 - **Guided steps:** The set-up checklist has short guided steps with Done for Tdarr, Wizarr, Dispatcharr and Soulseek.
 - **More apps:** Soulseek through slskd and the No-IP updater in Install apps; FlareSolverr is offered only when a site needs it.
 - **The graphics chip:** Jellyfin uses an Intel or AMD graphics chip to convert video when the computer has one.
@@ -86,7 +100,7 @@ add features.
 ### Changed
 - **One set-up in each place:** The browser and terminal set-ups ask the same questions in the same order, including the TMDB key, the Usenet server, sites to search and the VPN.
 - **First set-up only:** A new Starboard shows only the set-up until it is finished.
-- **Wizarr and Dispatcharr:** They are add-ons in Install apps instead of part of the Full install. Installs that have them keep them.
+- **Wizarr and Dispatcharr:** They are add-ons in Install apps instead of part of the Full install. Installs that have them keep them. Help: [Basics, Full install and Everything: what each one has](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-types.md).
 - **Long lists:** Library walls, Wanted and History load more as you near the end.
 - **Plug-in words:** Plug-ins are activated and deactivated, in the house style.
 
@@ -96,19 +110,19 @@ add features.
 ### Security
 - **Settings by risk:** Each general setting has a level of access; network access, secure cookies, session length and the alert channel can never be changed by an API key.
 - **Addresses Starboard calls:** Link-local and cloud metadata addresses are refused, and a request carrying an app's key never follows a redirect to another server.
-- **Sign out everywhere:** It now asks for the password, so a session someone else has cannot sign everyone out.
+- **Sign out everywhere:** It now asks for the password, so a session someone else has cannot sign everyone out. Help: [Sign out everywhere](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/sign-out-everywhere.md).
 - **API keys:** Keys are shown once, stored only as a SHA-256 hash, sent only in a header, and every change is in an audit log.
-- **Plug-ins locked down:** Plug-ins never get the Docker socket, the host network, devices or other apps' folders; containers are read only, without capabilities, not root and limited in memory and processor.
+- **Plug-ins locked down:** Plug-ins never get the Docker socket, the host network, devices or other apps' folders; containers are read only, without capabilities, not root and limited in memory and processor. Help: [What a plug-in can change](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/what-plugins-can-change.md#what-a-plug-in-can-never-do).
 - **Checks:** The unit tests (600), the browser journeys (66), the API contract tests, the help check, the private details check and the security scans ran on this release.
 
 ## [0.13.2] (9 November 2026)
 
 ### Added
-- **Update in the side menu:** the version is now at the bottom of the side menu, and when a newer Starboard is out, "Update" with a dot shows above it, linked to About and updates. The footer's About and updates says "(1)" too (DASH-104, DASH-105).
+- **Update in the side menu:** the version is now at the bottom of the side menu, and when a newer Starboard is out, "Update" with a dot shows above it, linked to About and updates. The footer's About and updates says "(1)" too (DASH-104, DASH-105). Help: [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md#find-out-whether-an-update-is-out).
 
 ### Changed
 - **The footer** is the design system's: Starboard's name and logo, then Help, Release notes, GitHub repository and About and updates, with the TheMightyTRexUK mark on the right (DASH-104).
-- **Reelix's updates come from your fork:** Apps, Updates checks the Lite or full image Starboard installed, from TheMightyTRex's Reelix, and its What is new reads that branch's changelog. Reelix's own check of upstream's releases is no longer shown.
+- **Reelix's updates come from your fork:** Apps, Updates checks the Lite or full image Starboard installed, from TheMightyTRex's Reelix, and its What is new reads that branch's changelog. Reelix's own check of upstream's releases is no longer shown. Help: [Update your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-your-apps.md#what-is-new-in-reelix).
 
 ### Fixed
 - **Reelix's logo** now shows on its card on servers where Starboard had looked for an icon before 0.13.1 and found none.
@@ -123,10 +137,10 @@ add features.
 - **One Reelix card:** Apps shows Reelix once, with the queue, wanted and update of films, series, books and music together, instead of a card for each kind (DASH-256).
 - **Reelix's logo** on its card comes from the running Reelix, as the icon collection has none (DASH-255).
 - **FlareSolverr** is given to Reelix whenever it is installed, through the VPN when there is one, not only when searches go through the VPN (DASH-219).
-- **Reelix never updates itself:** the set-up keeps Reelix's own installing of updates off, because Starboard updates Reelix on Apps, Updates (DASH-187).
-- **Starboard runs Reelix:** the set-up guides, messages and help now send you to Settings, Reelix in Starboard, not Reelix's own pages. The free TMDB key is the one thing still added in Reelix itself, until a later version asks for it (DASH-161).
+- **Reelix never updates itself:** the set-up keeps Reelix's own installing of updates off, because Starboard updates Reelix on Apps, Updates (DASH-187). Help: [Update your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-your-apps.md).
+- **Starboard runs Reelix:** the set-up guides, messages and help now send you to Settings, Reelix in Starboard, not Reelix's own pages. The free TMDB key is the one thing still added in Reelix itself, until a later version asks for it (DASH-161). Help: [Change Reelix's settings in Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-reelix-settings.md).
 - **SABnzbd in the set-up guide:** the guide no longer asks you to set SABnzbd's folders, API key and Reelix connection by hand on the wrong port; Starboard already does all three (DASH-215).
-- **Help for going back to Reelix without YouTube and Spotify downloads** says what stops working (DASH-224).
+- **Help for going back to Reelix without YouTube and Spotify downloads** says what stops working (DASH-224). Help: [Switch between the two versions of Reelix](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/switch-reelix-version.md).
 - **Accessible mode in the terminal** says "Still working" every 2 minutes during a long job, such as downloading the apps, so a screen reader is never silent for long (DASH-236).
 
 ### Fixed
@@ -137,16 +151,16 @@ add features.
 ## [0.13.0] (9 November 2026)
 
 ### Added
-- **Reelix's settings in Starboard:** Settings, Reelix now shows Reelix's sites to search, media servers and download apps, each with its state, and adds, changes, tests and removes them. The forms come from Reelix's own description of each setting, so a setting Reelix adds shows without a Starboard update. Each change asks for Reelix's admin password, signs in to Reelix for that change only and signs out again; Starboard still keeps only a manager key (DASH-154).
-- **Sites to search:** Install apps and the terminal set-up have a new step, Sites to search, with the same questions in both: a short list of Reelix's public sites, none ticked unless you tick them, and your own Torznab or Newznab address. Settings, Reelix lists every site Reelix knows, with how many searches each has answered (DASH-155).
-- **Searches through the VPN:** with the VPN installed, Reelix's searches go out through Gluetun, as Prowlarr's did, and wait when the VPN is down. Install apps sets it up, and Settings, Reelix has a switch for it. Gluetun's own proxy is activated for this (DASH-133).
-- **Jellyfin and Audiobookshelf in Reelix:** Install apps connects Reelix to them with the API keys Starboard already has, so new files show in them at once. Settings, Reelix, Media servers connects them with one button (DASH-156).
-- **The Library, from Reelix:** **Library** shows everything Reelix holds, as TV, Films, Music, Radio, Books and Audiobooks. Each is a wall of covers, A to Z, with a search for that kind, filters with their counts (such as **Missing** or **Coming soon**), sort (A to Z, Recently added, Year), Covers or List, three cover sizes and **Show 40 more**. The placeholder Library pages are gone (DASH-163).
-- **The A to Z list:** a row of letters above each wall. Letters with nothing under them are shown but cannot be chosen, and say so to screen readers. It stays in view as you scroll, marks the letter you are at, and takes one Tab stop: the arrow keys move along it and Enter jumps. A letter further on opens the wall at that letter, with **Show earlier titles** above it. The row comes from the TRex Design System.
-- **A page for each title:** a film, series, artist, radio show, book or audiobook opens its own page with its name, what it is, how much of it you have, and its episodes, albums, reading order or collection, then **About**. A series' episodes are grouped by season, the newest open, so a long series is not one long list. Radio shows link to Audiobookshelf to listen.
-- **Groups:** **Networks** for TV, **Collections** for films, **Stations** for radio, and **Series** and **Authors** for books and audiobooks, each opening the wall with only that group's titles.
-- **Save this view as default:** a changed sort, layout, cover size or filter can be saved as how that kind opens, for your account on every device. **Settings**, **General**, **Library views** lists them, with **Reset Library views**.
-- **Search opens on your library:** before you type, Search shows what was recently added and each kind with its count. As you type, it searches your library first, then lists what Reelix can find under **Not in your library**, each kind as soon as it is ready, with **Add**, or **Follow** for radio shows and podcasts (DASH-162). Without Reelix, Search looks in Sonarr, Radarr, Lidarr and Readarr as before.
+- **Reelix's settings in Starboard:** Settings, Reelix now shows Reelix's sites to search, media servers and download apps, each with its state, and adds, changes, tests and removes them. The forms come from Reelix's own description of each setting, so a setting Reelix adds shows without a Starboard update. Each change asks for Reelix's admin password, signs in to Reelix for that change only and signs out again; Starboard still keeps only a manager key (DASH-154). Help: [Change Reelix's settings in Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-reelix-settings.md).
+- **Sites to search:** Install apps and the terminal set-up have a new step, Sites to search, with the same questions in both: a short list of Reelix's public sites, none ticked unless you tick them, and your own Torznab or Newznab address. Settings, Reelix lists every site Reelix knows, with how many searches each has answered (DASH-155). Help: [Choose the sites Reelix searches](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-sites-to-search.md).
+- **Searches through the VPN:** with the VPN installed, Reelix's searches go out through Gluetun, as Prowlarr's did, and wait when the VPN is down. Install apps sets it up, and Settings, Reelix has a switch for it. Gluetun's own proxy is activated for this (DASH-133). Help: [Choose the sites Reelix searches](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-sites-to-search.md).
+- **Jellyfin and Audiobookshelf in Reelix:** Install apps connects Reelix to them with the API keys Starboard already has, so new files show in them at once. Settings, Reelix, Media servers connects them with one button (DASH-156). Help: [Connect Reelix to Jellyfin and Audiobookshelf](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/connect-reelix-to-media-servers.md).
+- **The Library, from Reelix:** **Library** shows everything Reelix holds, as TV, Films, Music, Radio, Books and Audiobooks. Each is a wall of covers, A to Z, with a search for that kind, filters with their counts (such as **Missing** or **Coming soon**), sort (A to Z, Recently added, Year), Covers or List, three cover sizes and **Show 40 more**. The placeholder Library pages are gone (DASH-163). Help: [Browse your library](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/browse-your-library.md).
+- **The A to Z list:** a row of letters above each wall. Letters with nothing under them are shown but cannot be chosen, and say so to screen readers. It stays in view as you scroll, marks the letter you are at, and takes one Tab stop: the arrow keys move along it and Enter jumps. A letter further on opens the wall at that letter, with **Show earlier titles** above it. The row comes from the TRex Design System. Help: [Browse your library](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/browse-your-library.md).
+- **A page for each title:** a film, series, artist, radio show, book or audiobook opens its own page with its name, what it is, how much of it you have, and its episodes, albums, reading order or collection, then **About**. A series' episodes are grouped by season, the newest open, so a long series is not one long list. Radio shows link to Audiobookshelf to listen. Help: [Browse your library](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/browse-your-library.md).
+- **Groups:** **Networks** for TV, **Collections** for films, **Stations** for radio, and **Series** and **Authors** for books and audiobooks, each opening the wall with only that group's titles. Help: [Browse your library](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/browse-your-library.md).
+- **Save this view as default:** a changed sort, layout, cover size or filter can be saved as how that kind opens, for your account on every device. **Settings**, **General**, **Library views** lists them, with **Reset Library views**. Help: [Browse your library](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/browse-your-library.md#keep-your-favourite-view).
+- **Search opens on your library:** before you type, Search shows what was recently added and each kind with its count. As you type, it searches your library first, then lists what Reelix can find under **Not in your library**, each kind as soon as it is ready, with **Add**, or **Follow** for radio shows and podcasts (DASH-162). Without Reelix, Search looks in Sonarr, Radarr, Lidarr and Readarr as before. Help: [Search for and add films, series, music and books](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/search-and-add.md).
 - **Help:** new articles: Change Reelix's settings in Starboard, Choose the sites Reelix searches, Connect Reelix to Jellyfin and Audiobookshelf, and Browse your library; Install apps, Set up in the terminal, Search for and add, and Follow radio shows are updated for the new steps and the new Search. Each has marked-up screenshots.
 
 ### Changed
@@ -154,13 +168,13 @@ add features.
 - **Adverts in the help centre take turns:** The help centre's advert now shows Newshosting on one page and PrivadoVPN on the next, in turn. Nothing changes while a page is open, and Hide hides both.
 - **Search in the side menu** is now a link to the Search page on a computer. On a phone, the search button at the top of the screen and the search box in the menu work as before. The Search page stays in **Discover**.
 - **TV's second tab** is now **Networks**, and Radio's **Series** tab is gone: a radio show's series are on its own page.
-- **Posters on Coming up and the Library:** the setting in **Settings**, **Performance** now covers the Library's covers too.
+- **Posters on Coming up and the Library:** the setting in **Settings**, **Performance** now covers the Library's covers too. Help: [Find out what is coming up](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/coming-up.md#show-or-hide-posters).
 - **The Library keeps a small list of each kind** in `data/library`, with only what a wall needs: about 210 bytes a film. It is read from disk for each request, never held in memory, rebuilt when you open a kind and it is more than five minutes old, and every 30 minutes while the Library is in use. Nothing runs when nobody uses the Library. With 5,000 made-up items, Starboard held 2.4 to 3.6 MB more memory after using every part of the Library than after opening the old pages, and at most 4.9 MB more while reading Reelix; at idle, 0.7 to 0.9 MB more.
 - **Covers come through Starboard at a small size** (TMDB w185 on walls), are kept for a week (at most 400), and a missing picture is not asked for again for a day. Your browser never contacts the image sites.
 
 ### Fixed
-- **Error numbers when a job does not finish:** In the terminal set-up, a job that did not finish, such as starting the apps, showed no error number in the boxed look, while accessible mode showed IN-33 only among the details. Both now show the number under the problem, with the address of its help on a line of its own, and Report this problem includes it (DASH-152).
-- **The installer's own stops:** The Run first script showed RF-40 whenever the installer stopped, after the installer's own number, so a stop had two numbers, and some of the installer's stops had none. Every stop of the installer and the terminal set-up now has its own number (new: IN-35 to IN-38), and the Run first script ends on that number. RF-40 is kept for an installer that stopped without one, and stopping it yourself with q or Ctrl+C is no longer shown as an error (DASH-147).
+- **Error numbers when a job does not finish:** In the terminal set-up, a job that did not finish, such as starting the apps, showed no error number in the boxed look, while accessible mode showed IN-33 only among the details. Both now show the number under the problem, with the address of its help on a line of its own, and Report this problem includes it (DASH-152). Help: [IN-33](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md#in-33).
+- **The installer's own stops:** The Run first script showed RF-40 whenever the installer stopped, after the installer's own number, so a stop had two numbers, and some of the installer's stops had none. Every stop of the installer and the terminal set-up now has its own number (new: IN-35 to IN-38), and the Run first script ends on that number. RF-40 is kept for an installer that stopped without one, and stopping it yourself with q or Ctrl+C is no longer shown as an error (DASH-147). Help: [RF-40](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md#rf-40).
 - **Waiting for the apps to answer:** After starting the apps, the terminal set-up waited the full two minutes, with nothing new on the screen, for apps that had not started, such as qBittorrent behind a VPN that had not connected. It now waits only for the apps that started, and Starboard adds the others itself once they answer (DASH-151).
 - **The installer's sudo question after Run first:** On systems without `sg`, the installer starts itself again with your new Docker access through sudo, and sudo asked for your password with no word of why. It now says why first.
 - **Long answers in accessible mode:** In the Run first script and the installer, accessible mode printed each answer of a question on one line, however long, so in an 80 column window the last letter ran onto a line of its own. Answers now wrap between words inside the window, the rest set in under the number.
@@ -170,9 +184,9 @@ add features.
 - **The VPN list at 80 columns:** In the set-up in the terminal, PrivadoVPN's address in the VPN list ran past the right edge of a window 80 columns wide. When an address is too wide for its column, each provider's address now goes on the line under its name.
 - **Keys pressed while a job runs in accessible mode:** An Enter pressed while a job ran answered the next question with its default. It is now thrown away when the job ends, as in the boxed look.
 - **Live TV channels that would not play:** Jellyfin's FFmpeg refuses Live TV pieces whose address has no file ending, such as the ad links on Samsung TV Plus channels like U&Laughs, so 107 channels stopped playing. Install apps now runs Jellyfin's FFmpeg through a small Starboard file, `jellyfin/ffmpeg-wrap/ffmpeg` in your settings folder, which allows those addresses for Live TV only. Your library files and On demand links are played as before. Starting the apps, from Starboard, from the installer or by taking over your apps, puts the file in place, so running the guide again keeps the fix (DASH-169).
-- **Error IN-34:** If the installer cannot put that file in Jellyfin's settings folder, it stops with error IN-34 rather than start a Jellyfin that cannot find FFmpeg.
-- **Taking over Reelix while it reports a problem:** Reelix says it is unhealthy while a download app it was given cannot be reached, which is often what the takeover is about to fix. Starboard now carries on instead of waiting for it.
-- **Old apps left on the Apps page after a takeover:** apps added before Starboard marked its entries were not recognised, so Radarr and the others stayed on the Apps page. They are now found by their kind or name and taken off. Reelix's own entries are kept.
+- **Error IN-34:** If the installer cannot put that file in Jellyfin's settings folder, it stops with error IN-34 rather than start a Jellyfin that cannot find FFmpeg. Help: [IN-34](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md#in-34).
+- **Taking over Reelix while it reports a problem:** Reelix says it is unhealthy while a download app it was given cannot be reached, which is often what the takeover is about to fix. Starboard now carries on instead of waiting for it. Help: [Take over the apps you already run](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/take-over-your-apps.md).
+- **Old apps left on the Apps page after a takeover:** apps added before Starboard marked its entries were not recognised, so Radarr and the others stayed on the Apps page. They are now found by their kind or name and taken off. Reelix's own entries are kept. Help: [Take over the apps you already run](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/take-over-your-apps.md).
 
 ### Security
 - **Only image sites:** Starboard fetches covers only over https from TMDB, Open Library and Cover Art Archive, or from Reelix itself, and follows a redirect only to another of those sites. Adding from Search sends Reelix only the identifier from Reelix's own lookup and the choices in the panel.
@@ -182,7 +196,7 @@ add features.
 Moving your apps into Reelix works with any qBittorrent user name, and each step says what happened under its own buttons.
 
 ### Fixed
-- **qBittorrent's user name:** Moving your apps into Reelix signed in to qBittorrent as admin, so a qBittorrent with another user name refused the right password. Starboard now reads the user name from qBittorrent's own settings, shows it, and gives it to Reelix.
+- **qBittorrent's user name:** Moving your apps into Reelix signed in to qBittorrent as admin, so a qBittorrent with another user name refused the right password. Starboard now reads the user name from qBittorrent's own settings, shows it, and gives it to Reelix. Help: [Move from Radarr, Sonarr and the others to Reelix](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/move-your-apps-to-reelix.md).
 - **Messages under each step:** On Apps you already run, what happened after Show what moves, Move them into Reelix or Take over my apps appeared at the end of the section, out of sight. Each step now says it under its own buttons.
 
 ### Security
@@ -193,7 +207,7 @@ Moving your apps into Reelix works with any qBittorrent user name, and each step
 Reelix's set-up finishes after a start from the browser, and can be finished from Settings, Reelix.
 
 ### Added
-- **Finish setting up Reelix:** When Reelix runs but its set-up did not finish, Settings, Reelix shows Finish setting up Reelix: your password makes its admin account, Starboard's key, its folders and its download apps. Your install sends you there when it is needed.
+- **Finish setting up Reelix:** When Reelix runs but its set-up did not finish, Settings, Reelix shows Finish setting up Reelix: your password makes its admin account, Starboard's key, its folders and its download apps. Your install sends you there when it is needed. Help: [Take over the apps you already run](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/take-over-your-apps.md).
 
 ### Fixed
 - **Reelix set up after a start from the browser:** Reelix stayed waiting for its admin account when Install apps started the apps from the browser, because only the installer read its one-time set-up token. Starboard now reads the token from Reelix's log itself, through its Docker access.
@@ -206,12 +220,12 @@ Reelix's set-up finishes after a start from the browser, and can be finished fro
 Take over the apps you already run, move them into Reelix, and roll back if you need to.
 
 ### Added
-- **Take over the apps you already run:** On a server set up by hand, Settings, Your install, Apps you already run takes your apps into Starboard. Their settings are copied, never moved, and each keeps its ports, the folders it uses, its devices, its own settings, its version and whether it runs through the VPN.
-- **Move your apps into Reelix:** The same page moves Radarr, Sonarr, Lidarr, Readarr, Prowlarr and Seerr into Reelix through Reelix itself, with each key read from the app, the keys Prowlarr hides read from its database, and qBittorrent connected with its password.
-- **Roll back or keep it:** Before anything stops, Starboard tags every app version and copies your Compose file and its own set-up. Roll back starts your old apps again exactly as they were; Keep it puts the way back aside without deleting anything.
+- **Take over the apps you already run:** On a server set up by hand, Settings, Your install, Apps you already run takes your apps into Starboard. Their settings are copied, never moved, and each keeps its ports, the folders it uses, its devices, its own settings, its version and whether it runs through the VPN. Help: [Take over the apps you already run](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/take-over-your-apps.md).
+- **Move your apps into Reelix:** The same page moves Radarr, Sonarr, Lidarr, Readarr, Prowlarr and Seerr into Reelix through Reelix itself, with each key read from the app, the keys Prowlarr hides read from its database, and qBittorrent connected with its password. Help: [Move from Radarr, Sonarr and the others to Reelix](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/move-your-apps-to-reelix.md).
+- **Roll back or keep it:** Before anything stops, Starboard tags every app version and copies your Compose file and its own set-up. Roll back starts your old apps again exactly as they were; Keep it puts the way back aside without deleting anything. Help: [Take over the apps you already run](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/take-over-your-apps.md#roll-back).
 
 ### Changed
-- **Your install keeps what each app relies on:** A later change in Your install keeps the ports, folders, devices and settings of apps Starboard took over, from data/stack/kept.json.
+- **Your install keeps what each app relies on:** A later change in Your install keeps the ports, folders, devices and settings of apps Starboard took over, from data/stack/kept.json. Help: [Change your install](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-your-install.md).
 
 ### Fixed
 - **Reelix problems on the page:** When Reelix answers with a problem, the page now says what Reelix said, instead of Something went wrong.
@@ -229,25 +243,25 @@ Take over the apps you already run, move them into Reelix, and roll back if you 
 Radio in Starboard, one terminal frame with error numbers, help in slide-outs, and the fixes from the terminal checks.
 
 ### Added
-- **Radio in Starboard:** Install apps has a Radio group, which makes the radio folder and sets it up in Reelix. Episodes of the radio shows and podcasts you follow show in Coming up, radio downloads show in Downloads, and Discover links to the same search in Reelix radio.
+- **Radio in Starboard:** Install apps has a Radio group, which makes the radio folder and sets it up in Reelix. Episodes of the radio shows and podcasts you follow show in Coming up, radio downloads show in Downloads, and Discover links to the same search in Reelix radio. Help: [Follow radio shows and podcasts](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/follow-radio-shows.md).
 - **One frame for the terminal:** The installer and the Run first script draw in the same frame, follow the same terminal rules, and redraw when the window changes size while a question waits.
-- **Error numbers in the terminal:** Every way the Run first script and the installer can stop has an error number, such as RF-11, on a line of its own with the address of the help page that explains it.
+- **Error numbers in the terminal:** Every way the Run first script and the installer can stop has an error number, such as RF-11, on a line of its own with the address of the help page that explains it. Help: [Run first and installer error numbers](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md).
 - **Help in slide-outs:** Help with this step opens the help article in a slide-out beside the set-up, with square help icons, instead of a new tab.
 - **Help pictures for the terminal:** Run first, the terminal set-up and the error numbers each have three marked-up pictures, and Install apps has pictures of what to set up, the VPN step and the Check table.
 
 ### Changed
-- **Install apps:** The VPN step lists each provider with its site, required answers have a star, the Check table is tidier, and starting the apps shows how many are installed, then running.
+- **Install apps:** The VPN step lists each provider with its site, required answers have a star, the Check table is tidier, and starting the apps shows how many are installed, then running. Help: [Install apps with Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-apps.md).
 - **Numbered answers:** Yes or no questions in the terminal have numbered answers with the recommended one first, in place of [y/N].
 - **App by app after Basics:** Choosing app by app after Basics starts with the Basics groups ticked.
-- **Storage counts radio with audiobooks:** A folder named radio or podcasts now counts as Audiobooks and radio, not Everything else.
+- **Storage counts radio with audiobooks:** A folder named radio or podcasts now counts as Audiobooks and radio, not Everything else. Help: [Check free space and what is using it](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/check-storage.md#sort-the-space-by-type).
 - **Storyarr 0.7.0:** Install apps installs Storyarr 0.7.0, which finds radio from torrent and Usenet sources.
 - **The Screen logo:** The set-up and sign-in pages, the browser tab and the app use the Screen logo.
 
 ### Fixed
 - **Run first on newer Ubuntu:** The script stopped with sg: command not found straight after allowing your user to use Docker. It now works without sg.
-- **Running the installer straight after Run first:** The installer stopped with IN-22 because the docker group was not active yet. It now starts itself again inside the group.
+- **Running the installer straight after Run first:** The installer stopped with IN-22 because the docker group was not active yet. It now starts itself again inside the group. Help: [IN-22](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md#in-22).
 - **Keys typed between questions:** Keys pressed while a job runs or between questions no longer move the lines or show a question twice.
-- **The sudo password at the end:** Applying the changes asks for your sudo password in the window when sudo has forgotten it, instead of stopping with IN-16.
+- **The sudo password at the end:** Applying the changes asks for your sudo password in the window when sudo has forgotten it, instead of stopping with IN-16. Help: [IN-16](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md#in-16).
 - **Text cut at the edge:** Stop messages, the checklist hint, the sign-out line, long questions and help addresses wrap instead of running off the edge.
 - **A job that keeps failing:** A failing job is tried three times, then offers Show the details and Carry on.
 
@@ -259,13 +273,13 @@ Radio in Starboard, one terminal frame with error numbers, help in slide-outs, a
 Reelix in place of the separate media apps, set up for you; Basics, Full install or Everything; NZBGet; and the fixes from testing on four systems.
 
 ### Added
-- **Reelix in Install apps:** For a new server, Install apps installs Reelix, one app for films, series, books, audiobooks, music and radio, in place of Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr and Seerr. Servers that run those keep them.
+- **Reelix in Install apps:** For a new server, Install apps installs Reelix, one app for films, series, books, audiobooks, music and radio, in place of Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr and Seerr. Servers that run those keep them. Help: [What Reelix is](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/what-is-reelix.md) and [Install apps with Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-apps.md).
 - **Reelix set up for you:** After the apps start, Starboard makes Reelix's admin account with your Starboard password, a manager key for itself, the library folders, and qBittorrent with a password of its own, then shows Reelix's queue and calendar on your dashboard.
-- **Basics, Full install or Everything:** Both set-ups start by asking which install you want. Basics is Reelix Lite, Jellyfin, Audiobookshelf, subtitles, and qBittorrent and NZBGet through a VPN; Full install adds the full Reelix and more; Everything is every app. An app also brings what it needs.
-- **NZBGet:** NZBGet is the Usenet app in every install, lighter than SABnzbd, which Full install and Everything offer instead. Starboard makes up its password, sets its folders and connects it to Reelix, and shows its queue and speed, and pauses it with download hours.
-- **Settings, Your install:** Shows what is installed and changes it either way: a bigger or smaller install, NZBGet or SABnzbd, Reelix Lite or full. Your Usenet servers move across from SABnzbd to NZBGet, and the page explains each step.
-- **Usenet providers for SABnzbd:** When you choose SABnzbd, both set-ups list some Usenet providers. They are affiliate links, marked Ad, and the step says to download only files you have the right to.
-- **Help for moving to Reelix:** A new help page says what moves from Radarr, Sonarr and the others into Reelix, what does not, and what to type in afterwards.
+- **Basics, Full install or Everything:** Both set-ups start by asking which install you want. Basics is Reelix Lite, Jellyfin, Audiobookshelf, subtitles, and qBittorrent and NZBGet through a VPN; Full install adds the full Reelix and more; Everything is every app. An app also brings what it needs. Help: [Basics, Full install and Everything: what each one has](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-types.md).
+- **NZBGet:** NZBGet is the Usenet app in every install, lighter than SABnzbd, which Full install and Everything offer instead. Starboard makes up its password, sets its folders and connects it to Reelix, and shows its queue and speed, and pauses it with download hours. Help: [Choose a Usenet provider and add it](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-a-usenet-provider.md).
+- **Settings, Your install:** Shows what is installed and changes it either way: a bigger or smaller install, NZBGet or SABnzbd, Reelix Lite or full. Your Usenet servers move across from SABnzbd to NZBGet, and the page explains each step. Help: [Change your install](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-your-install.md).
+- **Usenet providers for SABnzbd:** When you choose SABnzbd, both set-ups list some Usenet providers. They are affiliate links, marked Ad, and the step says to download only files you have the right to. Help: [Choose a Usenet provider and add it](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-a-usenet-provider.md).
+- **Help for moving to Reelix:** A new help page says what moves from Radarr, Sonarr and the others into Reelix, what does not, and what to type in afterwards. Help: [Move from Radarr, Sonarr and the others to Reelix](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/move-your-apps-to-reelix.md).
 - **Passwords kept when the set-up is written again:** Running Install apps again, or changing your install, keeps the passwords Starboard made up for databases and NZBGet, so they keep working.
 - **Help centre on the web.** The help is now web pages, one for each article, with search, a menu of every article, On this page beside each article and the same display settings as the app, at themightytrex.github.io/starboard/help. Help buttons, the set-ups' Help with this step and the terminal's ? help open the article for what you are doing.
 - **New help pages.** How Starboard keeps your server safe, What Reelix is, Everything Starboard does, and What the installer asks.
@@ -287,11 +301,11 @@ Reelix in place of the separate media apps, set up for you; Basics, Full install
 - **Text cut at 80 columns:** The installer's explanations, long questions and Docker's messages now wrap at spaces.
 - **Jellystat's database:** Starboard changed the owner of the database's folder while it was setting up, so Jellystat could never connect. Database folders are now left alone.
 - **A download that broke off:** A broken download stopped every app. The installer tries again twice, and the terminal set-up offers Try again or Carry on without them.
-- **Ubuntu 26.04's sudo:** Ubuntu 26.04 shows a star for each letter of the password; the help said nothing shows.
+- **Ubuntu 26.04's sudo:** Ubuntu 26.04 shows a star for each letter of the password; the help said nothing shows. Help: [The terminal: typing commands](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/the-terminal.md#when-a-command-asks-for-your-password).
 - **qBittorrent 5.1.** Reelix is connected to qBittorrent again: qBittorrent 5.1 answers a right password differently, so the set-up said it was wrong.
 - **NZBGet on the dashboard and in Reelix.** NZBGet is found and added to the dashboard, its downloads finish in the media folder, and series go to a tv category Reelix uses.
 - **SABnzbd.** SABnzbd works as the Usenet app: its own port 8085 beside qBittorrent behind the VPN, the names Reelix uses, downloads in the media folder, a key Starboard made up, and its newer address for Starboard's checks.
-- **Changes without Docker access.** After you run the command Settings, Your install shows, Starboard finishes the change: Reelix, the dashboard and moving your Usenet servers.
+- **Changes without Docker access.** After you run the command Settings, Your install shows, Starboard finishes the change: Reelix, the dashboard and moving your Usenet servers. Help: [Change your install](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-your-install.md#if-starboard-has-no-docker-access).
 - **Ports kept.** Changing your install, or running Install apps again, keeps every app on its port instead of moving it to the next one up.
 - **Keys pressed while Run first works.** Pressing Enter while a step runs no longer repeats the progress bar down the window.
 
@@ -310,9 +324,9 @@ Releases and Restore in Settings, Help that opens the right article, and a calme
 ### Added
 - **Releases:** Settings, Updates, Releases shows every version in its own section, newest first. The one you have is
   open; each shows how many changes of each type it has, then what was added, changed and fixed, in colour, and how to
-  go back.
+  go back. Help: [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md#find-out-whether-an-update-is-out).
 - **Restore:** Settings, Updates, Restore puts back a copy of your settings that Starboard saved, or one from a file,
-  and shows the command to go back to the version before.
+  and shows the command to go back to the version before. Help: [Restore a saved copy of your settings](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/restore-a-saved-copy.md).
 - **Sign out on every Settings page,** beside the page title.
 
 ### Changed
@@ -331,12 +345,12 @@ Releases and Restore in Settings, Help that opens the right article, and a calme
 ### Fixed
 - **curl installed as a snap:** Docker's installer failed to download ("curl: (23) error on write"), because a snap is
   sandboxed. The Run first script now installs Ubuntu's usual curl beside it and explains the error in plain words;
-  Show the details shows more of the log, wrapped, not cut off.
+  Show the details shows more of the log, wrapped, not cut off. Help: [RF-10](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first-errors.md#rf-10).
 - **The quick start without curl:** Ubuntu Desktop does not include curl, so the README and the help now give the
-  same command with `wget`, which Ubuntu, Linux Mint and Debian include.
+  same command with `wget`, which Ubuntu, Linux Mint and Debian include. Help: [Quick start: one command sets up everything](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/guides/quick-start.md).
 - **Disk health installs what it needs:** choosing disk health no longer stops with "install smartmontools first":
   the installer installs smartmontools itself (sudo asks for the password), and finds it in /usr/sbin, which is not on
-  every user's path.
+  every user's path. Help: [Check your disks' health](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/check-disk-health.md).
 
 ## [0.9.1] (5 November 2026)
 
@@ -345,9 +359,9 @@ Updating works again after a long gap.
 ### Fixed
 - **Updating after a long gap:** `./update.sh` stopped just after "What changed" when more than 30 changes had come
   since your version. It now lists 30 and says how many more. Until you have this version, Update Starboard in the help
-  has the steps to update by hand.
+  has the steps to update by hand. Help: [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md#if-it-does-not-work).
 - **Typing the Run first script's command:** the help and README now say that the address is case-sensitive after
-  the repository's name, and what a 404 means. The terminal basics page has a new section, Capital letters matter.
+  the repository's name, and what a 404 means. The terminal basics page has a new section, Capital letters matter. Help: [The terminal: typing commands](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/the-terminal.md#capital-letters-matter).
 
 ### Security
 - **Checks:** Trivy, OWASP ZAP (signed out), Gitleaks, Bandit, ShellCheck, Hadolint and CodeQL ran on this release;
@@ -364,7 +378,7 @@ The Run first script, one order for both set-ups, and a security review of the s
   installs only what is missing after you say yes, downloads Starboard and starts the installer. With a desktop it
   opens the set-up in your browser with the setup code filled in; with none, it carries on in the terminal.
   Accessible mode is asked first, in plain words, and goes on to the installer (`./install.sh --plain`). `--check`
-  only reports. Find out more in **Set up everything with the Run first script**.
+  only reports. Find out more in **Set up everything with the Run first script**. Help: [Set up everything with the Run first script](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/run-first.md).
 - **How to start, in both set-ups:** the browser set-up guide and the terminal set-up now start with the same
   question, New install, Move from apps you already run, or Restore a backup, with the recommended answer chosen from
   what Starboard finds on the computer. Restore takes a backup file and restores it after the password.
@@ -374,10 +388,10 @@ The Run first script, one order for both set-ups, and a security review of the s
 - **Alerts and disk health, and how much Starboard does, in the terminal set-up,** as in the browser.
 - **Keyboard help for commands:** The terminal: typing commands now says where `|`, `~`, `\`, `"`, `@`, `$` and `&` are
   on US, UK and Ireland, German, French and Spanish keyboards, and warns that the `¦` key on a UK keyboard is a
-  different character. The Run first script's command also comes in a version without `|`.
+  different character. The Run first script's command also comes in a version without `|`. Help: [The terminal: typing commands](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/the-terminal.md#symbols-that-are-in-different-places-on-different-keyboards).
 - **Connect to the internet from the terminal:** a help topic for a server with no desktop: check it is online,
   connect a network cable (Debian included), or Wi-Fi with NetworkManager or on Ubuntu Server. The guide from a bare
-  computer links to it after installing Linux.
+  computer links to it after installing Linux. Help: [Connect to the internet, by cable or Wi-Fi](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/connect-to-the-internet.md).
 
 ### Changed
 - **One order for every step,** the same in the browser and the terminal: your password, how to start, storage, your
@@ -386,7 +400,7 @@ The Run first script, one order for both set-ups, and a security review of the s
 - **The installer asks less on a new install:** only your home network and Docker access, and drive pools when there
   is more than one drive. The dashboard's name moves into the set-up, beside the password. Free space for the media
   folder, the Live TV folder and disk health are chosen in the set-up and applied at the end with one installer
-  command, which the Run first script runs for you.
+  command, which the Run first script runs for you. Help: [What the installer asks, and what each answer means](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/what-the-installer-asks.md).
 - **The Run first script fits the window:** the logo is drawn at the size that fits, or left out in a small window;
   below 60 by 20 it uses plain lines and says why; help shows a page at a time; and a change of window size is drawn
   again at once.
@@ -427,7 +441,7 @@ Set up in the terminal, drive pools, and feedback with a QR code.
   asks. Every change is checked first (a dry run with the exact commands), needs the password again, and erasing
   needs the end of the drive's serial number. `mergerfs.balance` can be chosen when it is installed, and is not
   installed by default. Diagrams in the help explain balancing and what happens without it. Tested in a
-  throwaway VM with blank virtual drives (`tools/vm/vm.sh pool debian`). Find out more in **Add a drive to the pool**.
+  throwaway VM with blank virtual drives (`tools/vm/vm.sh pool debian`). Find out more in **Add a drive to the pool**. Help: [Add a drive to the pool](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-a-drive-to-the-pool.md) and [What a drive pool is](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/what-is-a-drive-pool.md).
 - **Set up in the terminal, with no browser** (DASH-86): `./install.sh --terminal` carries on once Starboard is
   running and asks the set-up questions in the same terminal: your password (typed hidden, with no setup code
   needed on the server itself), the apps for your media server (what you want, then the apps, folders and VPN
@@ -437,23 +451,23 @@ Set up in the terminal, drive pools, and feedback with a QR code.
   and a menu on the bottom line; help opens as a box over the dimmed step. With `STARBOARD_PLAIN=1`, `--plain`, a
   small window or no terminal, it prints plain lines that never clear or redraw, which suit software that reads
   text aloud; `NO_COLOR` keeps the boxes without colour. Run it again with `python3 -m starboard.terminal_setup`.
-  Find out more in **Set up Starboard in the terminal, with no browser**.
+  Find out more in **Set up Starboard in the terminal, with no browser**. Help: [Set up Starboard in the terminal, with no browser](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-in-the-terminal.md).
 - **Feedback from the terminal set-up** (DASH-91): `f` at any question sends Snaglist's report about that step,
   in a box over it: what it is about (Snaglist's seven kinds), one or two of Snaglist's questions, then the whole
   report before any choice to send. It is a pre-filled GitHub issue with the step, Starboard's version, the system,
   the window size and the last error. Answers to the set-up, passwords, VPN details and the setup code are never
   in it, and email and network addresses, user names in paths and anything like a key are replaced. Send it as a
   QR code drawn in the terminal (a new standard-library encoder, `starboard/qr.py`), as the link, or saved to a
-  file. Plain mode never draws a QR code. After a failure, `r` reports it with the error filled in.
+  file. Plain mode never draws a QR code. After a failure, `r` reports it with the error filled in. Help: [Set up Starboard in the terminal, with no browser](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-in-the-terminal.md#send-feedback-from-the-terminal).
 - **What is new in Reelix:** on **Apps**, **Updates**, **What is new** beside **Update** lists the changes in a
   waiting Reelix update, from Reelix's own changelog, under Added, Changed, Fixed and the other kinds of change.
   After Reelix's version goes up, a notice on the Apps page and on Updates says so, with **What is new** for the
   versions it skipped. The changelog is downloaded only when you open What is new, and kept for 6 hours. Find
-  out more in **Update your apps**.
+  out more in **Update your apps**. Help: [Update your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-your-apps.md#what-is-new-in-reelix).
 - **A guide from a bare computer:** the help centre's new guide, Get Starboard up and running, goes from
   installing Linux to Docker, then splits into a path for the browser and one for the terminal only. New topics:
   Install Linux on a computer, and Ask an AI assistant to help you set up, with prompts for a chat assistant and
-  for one on the server.
+  for one on the server. Help: [Get Starboard up and running, from a bare computer](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/guides/get-up-and-running.md) and [Ask an AI assistant to help you set up](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/ask-an-ai-for-help.md).
 
 ### Changed
 - **The terminal set-up fits the window:** the heading box, the progress bar and the menu stay in place and only
@@ -517,7 +531,7 @@ short-lived process, the next step of DASH-79.
   Search, then five sections: Library, Discover, Activity, System and Settings. The level 1 menu along the
   top holds a section's pages, and the level 2 menu under it holds a page's own tabs, only when it has them.
   On phones the side menu is hidden and the menu drawer lists the sections with their pages. Every page
-  keeps its address.
+  keeps its address. Help: [What Starboard is](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/what-is-starboard.md#find-your-way-around).
 - **Server name:** a new setting in Settings, General, up to 10 characters, shown in bold at the start of
   the level 1 menu (phones show only the logo). A dashboard name of 10 characters or fewer is copied across
   once. The dashboard name still names the browser tab and alerts.
@@ -531,7 +545,7 @@ short-lived process, the next step of DASH-79.
 ### Changed
 
 - **The help and the app's own text** name the new places, such as **Settings**, then **Apps**, then
-  **Jellyfin**. What Starboard is has a new part, Find your way around.
+  **Jellyfin**. What Starboard is has a new part, Find your way around. Help: [What Starboard is](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/basics/what-is-starboard.md#find-your-way-around).
 
 ### Removed
 
@@ -550,7 +564,7 @@ short-lived process, the next step of DASH-79.
 - **Send feedback** (Settings, General, Testing) replaces Note issues. It uses
   [Snaglist](https://github.com/TheMightyTRex/snaglist): report a problem, suggest something or check a page for
   accessibility problems, then open it as an issue on Starboard's GitHub page or save it in Starboard. Saved
-  reports, and the older notes, are listed under Testing with Mark fixed, Remove and Download all.
+  reports, and the older notes, are listed under Testing with Mark fixed, Remove and Download all. Help: [Send feedback about a page](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/send-feedback.md).
 
 ### Changed
 
@@ -559,7 +573,7 @@ short-lived process, the next step of DASH-79.
   belong to is an error toast that stays until you close it (it used to fade like an information toast).
 - **Apps, Updates:** the button says Check until the first check, then Check again.
 - **Watch history:** a watch history file can now be up to 80 MB (was 512 MB): reading one takes about 4.5 times
-  its size, and 80 MB is more than 250,000 films and episodes.
+  its size, and 80 MB is more than 250,000 films and episodes. Help: [Import watch history into Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/import-watch-history.md).
 
 ### Removed
 
@@ -586,9 +600,9 @@ short-lived process, the next step of DASH-79.
   install guides for a Linux computer and a Raspberry Pi, and what you need for each set-up. Help in the footer
   of every page opens it.
 - **Reset a forgotten password:** `./reset-password.sh` on the server (or `touch data/reset-password` and a
-  restart with the ready-made image) removes the password, signs everyone out and starts with a new setup code.
+  restart with the ready-made image) removes the password, signs everyone out and starts with a new setup code. Help: [Reset a forgotten password](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/reset-a-forgotten-password.md).
 - **Watch history:** applying it lists the films and episodes not in Jellyfin yet. A history file over 512 MB is
-  refused before it uploads.
+  refused before it uploads. Help: [Import watch history into Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/import-watch-history.md).
 - **Tests:** backup and migration round trips, browser journeys (`tools/journeys.sh`), install tests in VMs on
   Ubuntu, Debian, Fedora and 64-bit ARM (`tools/vm/vm.sh`), and `docs/TESTING.md` with measured system use.
 - **Testing aid:** Note issues (Settings, General) adds the shared Note an issue button to every page.
@@ -601,12 +615,12 @@ short-lived process, the next step of DASH-79.
 
 ### Fixed
 
-- **Watch history:** a second run no longer counts episodes it applied before as missing.
+- **Watch history:** a second run no longer counts episodes it applied before as missing. Help: [Import watch history into Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/import-watch-history.md).
 - **Restore:** backups from before 0.6.0 are brought up to date; a design or choice that no longer exists goes
-  to the default; an app of a kind Starboard no longer knows becomes a plain link.
+  to the default; an app of a kind Starboard no longer knows becomes a plain link. Help: [Back up and restore Starboard's settings](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/back-up-settings.md).
 - **Disk health:** the page script works again (broken since 0.7.0).
 - **Apps on a phone:** the Apps page works at 175% text.
-- **Ready-made image:** Docker access works, as it needs the socket's group (`group_add` in `compose.image.yaml`).
+- **Ready-made image:** Docker access works, as it needs the socket's group (`group_add` in `compose.image.yaml`). Help: [Change what Starboard can access](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-what-starboard-can-access.md#if-you-used-the-ready-made-image).
 - **Address hint:** Manage apps now suggests 127.0.0.1 and the port.
 
 ### Security
@@ -655,20 +669,20 @@ short-lived process, the next step of DASH-79.
 
 - **Updates:** each app has its logo beside its name (no tile, as tall as the name and the line under it);
   Installed and Latest are left-aligned; every category's table has the same column widths, so the
-  columns line up down the page; and each row's cells sit on the middle of the row.
+  columns line up down the page; and each row's cells sit on the middle of the row. Help: [Update your apps](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-your-apps.md).
 
 ### Fixed
 
 - **Long API keys:** keys were cut to 200 characters when saved, so Audiobookshelf (whose keys are about 211
   characters) refused its key. Keys up to 2000 characters are now kept whole. If Audiobookshelf says the key is
-  wrong, paste it again in Settings, Manage apps.
+  wrong, paste it again in Settings, Manage apps. Help: [Find an app's API key](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/find-an-api-key.md).
 - **Log:** a connection that stayed idle until it timed out no longer writes an error to Docker's log.
 
 ## [0.7.0] (2 November 2026)
 
 ### Added
 
-- **Install apps, for people who have never set up a media server:**
+- **Install apps, for people who have never set up a media server:** The changes are listed below. Help: [Install apps with Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-apps.md).
   - **Start here:** what each app does (find, choose, download, sort, watch), how long it takes and what you
     need. **Advanced settings** (a tick, remembered) shows every app in each group, the settings folder, user
     and group numbers, time zone and the files; without it, the guide picks the apps and folders.
@@ -693,7 +707,7 @@ short-lived process, the next step of DASH-79.
   and major version: tags, custom formats, quality profiles (format scores matched by name), root folders,
   download clients and remote path mappings, naming and media management. A preview says what will be added,
   what is already there and what will be replaced. Passwords the old app hides are asked for; without them a
-  client is added switched off. Indexers: add the new app in Prowlarr.
+  client is added switched off. Indexers: add the new app in Prowlarr. Help: [Copy settings from one app to another](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/copy-app-settings.md).
 - **More detail, from the API gaps (DASH-19):**
   - Apps: Check again in a slide-out checks that app only; Recent checks (the last 20, in memory); "Not
     responding for 12 minutes"; the app's own warnings carry its id, when first seen and a How to fix it link.
@@ -713,7 +727,7 @@ short-lived process, the next step of DASH-79.
 
 - **Slide-outs:** Display and accessibility is a slide-out; every slide-out header (and the phone menu's) is in
   the page background over a white or dark-surface body (library token `--color-slide-header`).
-- **Categories:** renaming or removing a category is one save.
+- **Categories:** renaming or removing a category is one save. Help: [Organise apps into categories](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/organise-categories.md).
 - **Wrong passwords:** a wrong password in a dialog (or Install apps' Start) stays on the page: the server says
   `reason: "password"`.
 - **Raspberry Pi:** images for 32-bit Raspberry Pi (linux/arm/v7). Pillow is installed only where a ready-made
@@ -727,7 +741,7 @@ short-lived process, the next step of DASH-79.
   (your own account, from libraries with book in their name or the Audnexus agent), a Jellyfin or Emby server
   (every user, from Books libraries) or another Audiobookshelf (every user). A book in several files becomes one
   position. Match each account to an Audiobookshelf user, then Apply now, or keep applying every hour so books get
-  their progress once they are scanned in.
+  their progress once they are scanned in. Help: [Copy listening progress into Audiobookshelf](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/copy-listening-progress.md).
   - **Matching:** ASIN, then ISBN, then title and author (first author, ignoring punctuation and a leading The),
     then the book's folder. A position from a copy of a different length is scaled to fit. Books not found are
     listed, with their account.
@@ -774,15 +788,15 @@ From a design consistency review of Starboard and the shared component library (
 
 - **System, Logs:** what Starboard did (start-up, sign-ins, settings and apps changing, alerts, download hours,
   updates, storage readings, background jobs) and every problem it met, newest first, with Everything,
-  Problems and Detailed, a search, Download and Delete logs.
+  Problems and Detailed, a search, Download and Delete logs. Help: [Read the log and report a problem](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/read-the-log.md#read-the-log).
   - Personal details are removed before anything is written, in both modes: passwords, API keys and tokens, IP
     addresses, host and computer names, email addresses, user names in folder paths and the dashboard's name.
 - **Settings, General, Logs:** keep logs for 7 days to a year (60 by default); older days are removed once a day,
   with no thread of its own. **Detailed logging** (Off, For 24 hours, Until I turn it off) adds each page request
-  and each call to your apps, and the full detail of errors.
+  and each call to your apps, and the full detail of errors. Help: [Read the log and report a problem](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/read-the-log.md).
 - **Report a problem:** turn on detailed logging, do the thing again, then Copy the details (versions, how it
   runs, what is switched on, the kinds of apps, recent entries) and Open a new issue on GitHub, which uses a new
-  issue template.
+  issue template. Help: [Read the log and report a problem](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/read-the-log.md#report-a-problem).
 
 ### Changed
 
@@ -806,7 +820,7 @@ From a design consistency review of Starboard and the shared component library (
 
 - **Ready-made image** for amd64 and arm64 at `ghcr.io/themightytrex/starboard` (each version, its minor
   version and `latest`), published by a workflow for every release tag. `compose.image.yaml` runs it with no
-  build.
+  build. Help: [Install Starboard from the ready-made image](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-from-the-ready-made-image.md).
 
 ### Changed
 
@@ -834,12 +848,12 @@ From a design consistency review of Starboard and the shared component library (
 - **Search for new apps** (Settings, Manage apps): Starboard tries the usual port of about 40 apps, and every
   port a container publishes, on this computer only. It recognises each app by its page, leaves out the ones you
   have, and adds the ones you tick. With Docker access it reads the API keys of Sonarr, Radarr, Lidarr, Readarr,
-  Prowlarr, SABnzbd and Seerr from their own settings files, if you tick "Fill in API keys for me".
+  Prowlarr, SABnzbd and Seerr from their own settings files, if you tick "Fill in API keys for me". Help: [Search for apps already on your server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/search-for-new-apps.md).
   - It runs only when you press the button: no background work.
 - **System, Storage** shows each pool as a bar (how full) and a ring (what fills it) by type: TV, films,
   audiobooks, music, books and comics, downloads waiting and everything else, with free space. Also each drive
   in the pool (fullest first), space used over time with a forecast of when it fills, and the biggest series and
-  films. Every chart has a table view.
+  films. Every chart has a table view. Help: [Check free space and what is using it](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/check-storage.md).
   - Sorting by type reads every file name, so Settings, Performance (and the set-up and upgrade guides) choose
     when: only when you press Work it out (the default), when you open Storage if over a day old, every night or
     every week at 3 am, or off. It now reads a pool once, skipping its drives, and stays on one file system: on
@@ -848,7 +862,7 @@ From a design consistency review of Starboard and the shared component library (
     press Check again (the default), or every minute or 5 minutes while the page is open.
 - **Install apps** (Settings, Manage apps, or the first step of the set-up guide): tick groups such as Movies,
   TV, Music, Ebooks, Audiobooks, Comics, Watching, Downloads, VPN and Subtitles, and change the apps inside each.
-  Apps already running are left alone; ports in use move to the next free one; each app shows its memory use.
+  Apps already running are left alone; ports in use move to the next free one; each app shows its memory use. Help: [Install apps with Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-apps.md).
   - Starboard writes `data/stack/compose.yaml` and `.env` (private, with database passwords made up for you),
     shows both, and keeps older copies. With Docker access, Start asks for your password, then makes the folders
     and starts the apps; without it, it gives you the one command to run.
@@ -877,12 +891,12 @@ A full security check found no critical issues. Its fixes are listed under Secur
 
 - **Settings, Performance:** Starboard's own memory, processor and threads, measured live; four presets (Small
   server, Balanced, Everything, Custom); and every piece of background work with a switch, how often it runs
-  and what it costs. Changing anything by hand makes it Custom.
+  and what it costs. Changing anything by hand makes it Custom. Help: [Make Starboard use less of your server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/make-starboard-lighter.md).
 
 ### Changed
 
 - **Background threads** exist only while their feature is on: history, watching, download hours and the Jellyfin
-  jobs each start when turned on and end when turned off. With Small server, Starboard runs only its web server.
+  jobs each start when turned on and end when turned off. With Small server, Starboard runs only its web server. Help: [Make Starboard use less of your server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/make-starboard-lighter.md#background-work).
 - **System history** can be off, or every 1, 5 or 15 minutes (5 by default, was 1), and no longer reads each
   container's use. The download hours check can run every 5 minutes. Downloads and Monitor update at the rate
   you choose, or Downloads only when you press Check again. Card numbers can be switched off.
@@ -909,7 +923,7 @@ A full security check found no critical issues. Its fixes are listed under Secur
 ### Added
 
 - **Costs:** every setting that uses processor time or memory says what it costs, measured on a home server, so a small
-  server can keep only what it needs. The access list on About and updates says the same for each item.
+  server can keep only what it needs. The access list on About and updates says the same for each item. Help: [Make Starboard use less of your server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/make-starboard-lighter.md#what-each-item-costs).
 
 ## [0.3.3] (2 November 2026)
 
@@ -940,14 +954,14 @@ A full security check found no critical issues. Its fixes are listed under Secur
 
 - **Settings, Jellyfin:** jobs moved in from the old launcher, each off until you turn it on.
   - **Live TV:** free channels and guides for Jellyfin (Free-TV, Samsung TV Plus, Pluto TV), Sky-style
-    numbers, and white logos made with Pillow (switchable). Needs Jellyfin's Live TV folder (`./install.sh`).
+    numbers, and white logos made with Pillow (switchable). Needs Jellyfin's Live TV folder (`./install.sh`). Help: [Set up free Live TV in Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md).
   - **Import watch history** into Jellyfin from a Plex database file, a Plex server, Emby, another Jellyfin or a
-    history file, with account matching; applied once per item, and every hour if you choose.
-  - **User defaults** for every Jellyfin user.
+    history file, with account matching; applied once per item, and every hour if you choose. Help: [Import watch history into Jellyfin](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/import-watch-history.md).
+  - **User defaults** for every Jellyfin user. Help: [Give every Jellyfin user the same defaults](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/jellyfin-user-defaults.md).
 
 ### Changed
 
-- **Apps, Other services** lists Starboard's own jobs and whether each is on.
+- **Apps, Other services** lists Starboard's own jobs and whether each is on. Help: [Add a background service](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/add-a-background-service.md).
 - **Set-up** offers the Jellyfin jobs when it finds Jellyfin.
 - **Credits:** Pillow and the data sources are credited in THIRD-PARTY.md.
 
@@ -960,12 +974,12 @@ Lightweight first: a dashboard for smaller servers that uses very little process
 
 - **Alerts:** to ntfy, Gotify or a webhook when an app stops answering, a disk has a problem or gets full, a
   download is stuck, a backup fails or a certificate runs out; uptime history for each app; a weekly
-  summary. Off until you turn it on.
+  summary. Off until you turn it on. Help: [Activate alerts](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/activate-alerts.md) and [Get a weekly summary](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/weekly-summary.md).
 - **Apps:** small numbers on each card; Updates is its own page again, with each app's container, Check for
   updates, Update all and Update (needs Docker access).
 - **Downloads:** download hours for qBittorrent and SABnzbd, with Resume, Pause and Follow the hours;
-  speeds and the VPN's state (Gluetun); Finished this week; Requests from Seerr with Approve and Decline.
-- **Coming up:** posters, a List or Calendar view, and how far ahead to look.
+  speeds and the VPN's state (Gluetun); Finished this week; Requests from Seerr with Approve and Decline. Help: [Download only at certain hours](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-download-hours.md) and [Approve or decline requests](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/approve-requests.md).
+- **Coming up:** posters, a List or Calendar view, and how far ahead to look. Help: [Find out what is coming up](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/coming-up.md).
 - **System:** Jellyfin's state, what is playing and what was added; server jobs with Run now; 30-day disk
   temperatures and the drive's own log; Read disks now; what is using the space; every drive; each app's
   processor and memory on Monitor; certificate expiry on Network.
@@ -977,7 +991,7 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   week; background work starts only when needed.
 - **Installer:** explains each step, and asks before each kind of access (home network, Docker for app
   updates, per-app use, folders for free space, Disk health). Run it again to change your answers.
-  Settings, About and updates lists what Starboard can access, with the switch or command to change each.
+  Settings, About and updates lists what Starboard can access, with the switch or command to change each. Help: [What the installer asks, and what each answer means](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/what-the-installer-asks.md) and [Change what Starboard can access](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-what-starboard-can-access.md).
 - **Settings:** one column; Manage apps and the access list show each state as an icon beside the name;
   a new Alerts page; Coming up and Download hours settings in General.
 
@@ -986,7 +1000,7 @@ Lightweight first: a dashboard for smaller servers that uses very little process
 ### Added
 
 - **Backup and restore:** an option to include a rebuild prompt for an AI assistant with the server backup
-  (the job is asked for `backup-with-prompt`). The page says what the server backup covers.
+  (the job is asked for `backup-with-prompt`). The page says what the server backup covers. Help: [Back up the whole server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/back-up-the-server.md).
 
 ## [0.1.7] (2 November 2026)
 
@@ -1000,7 +1014,7 @@ Lightweight first: a dashboard for smaller servers that uses very little process
 
 - **System, Backup and restore:** download Starboard's settings as a file, restore from a file or from a copy
   Starboard saved, and start the server's own backup job and see its result and files. Downloading or
-  restoring needs your password again.
+  restoring needs your password again. Help: [Back up and restore Starboard's settings](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/back-up-settings.md) and [Back up the whole server](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/back-up-the-server.md).
 
 ### Changed
 
@@ -1020,8 +1034,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   for processor, memory, network, disk activity and temperature over the last hour, 6 hours or 24 hours.
   Storage, Disk health and Network have their own charts. Every chart can be read with the arrow keys and
   shown as a table.
-- **Disk health:** reads SMART reports saved by a small job on the server (`deploy/install-smart.sh`).
-- **Your own folders and disks** go in `compose.override.yaml`, which updates leave alone.
+- **Disk health:** reads SMART reports saved by a small job on the server (`deploy/install-smart.sh`). Help: [Check your disks' health](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/check-disk-health.md).
+- **Your own folders and disks** go in `compose.override.yaml`, which updates leave alone. Help: [What the installer asks, and what each answer means](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/what-the-installer-asks.md#your-own-folders-composeoverrideyaml).
 
 ## [0.1.4] (1 November 2026)
 
@@ -1036,10 +1050,10 @@ Lightweight first: a dashboard for smaller servers that uses very little process
 
 - **Dashboard name:** the installer and the setup page ask you to name your dashboard. Change it in Settings, General.
 - **App icons:** each app's own icon on its card, from the dashboard-icons collection. Starboard keeps a copy, so icons
-  still show without the internet. Choose another icon in the app's settings.
+  still show without the internet. Choose another icon in the app's settings. Help: [Change an app's icon](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/change-an-icon.md).
 - **Apps are grouped by category:** Watch, listen and request; Find and organise; Search and download;
   Dashboards and tools. New apps get a category chosen for them; change it in the app's settings. Health
-  first still puts apps that are not responding at the top.
+  first still puts apps that are not responding at the top. Help: [Organise apps into categories](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/organise-categories.md).
 - **A footer on every page:** "Starboard: v" and the version, a link to the GitHub repository and to Updates.
 
 ### Changed
@@ -1065,33 +1079,34 @@ Lightweight first: a dashboard for smaller servers that uses very little process
 ### Added
 
 - **Remember me** on the sign-in and setup pages. Without it, you are signed out when the browser closes, or after
-  a day. With it, you stay signed in for the number of days set in Settings, Security.
+  a day. With it, you stay signed in for the number of days set in Settings, Security. Help: [Create your password and sign in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/create-your-password.md).
 
 ### Changed
 
-- **Passwords** need 10 characters or more (was 12).
+- **Passwords** need 10 characters or more (was 12). Help: [Create your password and sign in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/create-your-password.md).
 - **The setup code** stays the same when Starboard restarts or updates, so the code the installer printed keeps
-  working until a password is set.
+  working until a password is set. Help: [Find the setup code](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/find-the-setup-code.md).
 
 ## [0.1.0] (1 November 2026)
 
 ### Added
 
 - **Pages:** Apps, Search, Downloads, Coming up, System and Settings, each on its own page.
-- **Search:** Search Sonarr, Radarr, Lidarr and Readarr at once and add what you find.
+- **Search:** Search Sonarr, Radarr, Lidarr and Readarr at once and add what you find. Help: [Search for and add films, series, music and books](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/search-and-add.md#without-reelix).
 - **Five designs:** Health first (the default), Tiles, Shelf, Command and Status board, plus the Display and
-  accessibility panel.
-- **Installer and updater:** installer (Docker or systemd) and updater with backup and automatic roll-back.
-- **Sign-in:** password sign-in with a one-time setup code; API keys never reach the browser.
+  accessibility panel. Help: [Choose a design for the Apps page](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-a-design.md) and [Change text size, theme and other display settings](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/display-and-accessibility.md).
+- **Installer and updater:** installer (Docker or systemd) and updater with backup and automatic roll-back. Help: [Install Starboard with the installer](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/install-with-the-installer.md) and [Update Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/update-starboard.md).
+- **Sign-in:** password sign-in with a one-time setup code; API keys never reach the browser. Help: [Create your password and sign in](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/create-your-password.md).
 - **Home network:** open it from phones and other computers on your home network, or switch that off in Settings so only the
-  computer it runs on can connect. Docker uses host networking for this.
+  computer it runs on can connect. Docker uses host networking for this. Help: [Choose who can open Starboard](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/choose-who-can-open-starboard.md) and [Open Starboard from a phone or another computer](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/open-from-another-device.md).
 - **Phones:** phone layout on every page; add it to your home screen.
 - **App addresses:** each app's home address and outside address on its card, each with a copy button. Both are on by default;
   turn them off in Settings, General. Apps saved as 127.0.0.1 open on the address your browser used, so they
   work from a phone.
-- **Downloads:** show the download client's own state, so a paused client shows Paused.
+- **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.3...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.15.4...HEAD
+[0.15.4]: https://github.com/TheMightyTRex/starboard/compare/v0.15.3...v0.15.4
 [0.15.3]: https://github.com/TheMightyTRex/starboard/compare/v0.15.2...v0.15.3
 [0.15.2]: https://github.com/TheMightyTRex/starboard/compare/v0.15.1...v0.15.2
 [0.15.1]: https://github.com/TheMightyTRex/starboard/compare/v0.15.0...v0.15.1

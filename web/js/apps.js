@@ -296,7 +296,7 @@ async function renderSetupLeft() {
       el("p", { class: "small muted", text: done ? `${done} done. Each one goes from this list when it is done.` : "Each one goes from this list when it is done." }),
       el("div", { class: "actions" }, walk, back),
       el("ul", { class: "stack-2" }, todo.map((i) => el("li", {},
-        el("a", { href: i.href, text: i.title, ...(i.guided && i.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {}) }),
+        el("a", { href: i.href.startsWith("http") ? reachableUrl(i.href) : i.href, text: i.title, ...(i.guided && i.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {}) }),
         el("span", { class: "small muted", text: ` ${i.why}` }), i.guided ? doneButton(i) : null))))));
   box.hidden = false;
   setupWizardOnce(renderSetupLeft);

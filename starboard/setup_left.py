@@ -143,7 +143,9 @@ def items(cfg, data_dir):
     finished = set(state.get("guided_done") or [])
     for key, title, why in GUIDED:
         if key in keys:
-            url = next((s.get("url") for s in svcs if (s.get("icon") or s.get("type")) == key and s.get("url")), None)
+            # The address to open in a browser first; the page makes 127.0.0.1 the address Starboard was opened at.
+            app = next((s for s in svcs if (s.get("icon") or s.get("type")) == key and (s.get("link") or s.get("url"))), None)
+            url = (app.get("link") or app.get("url")) if app else None
             out.append({"key": key, "title": title, "why": why, "href": url or "/index.html", "done": key in finished, "guided": True})
     ignored = set(state.get("ignored") or [])  # Ignore in the set-up wizard: not asked again until brought back
     out = [i for i in out if i["done"] is not None]  # one Starboard could not ask is left out, not guessed

@@ -26,6 +26,7 @@ async function pageFor(shot) {
   const key = `${w}x${h}-${scheme}`;
   if (!contexts[key]) {
     const context = await browser.newContext({ viewport: { width: w, height: h }, colorScheme: scheme });
+    await context.addInitScript(() => { try { sessionStorage.setItem("starboard.setup-wizard", JSON.stringify({ opened: true })); } catch { /* fine */ } });  // the set-up wizard counts as seen (DASH-289)
     const page = await context.newPage();
     page.on("pageerror", (e) => problems.push(`${page.url()}: ${e.message}`));
     await page.goto(`${base}/login.html`);

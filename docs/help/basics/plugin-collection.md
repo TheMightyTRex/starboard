@@ -22,8 +22,13 @@ Eight styles for Starboard, chosen from current interface trends and checked for
 
 - **What it may do:** add styles to **Display**. Risk: low.
 - **What it runs:** nothing. No container, no code and no network access.
-- **How to add it:** run its installer, `python3 install.py`, or choose its `starboard-plugin.json` in
-  **Settings**, **Plug-ins**.
+- **Install address:** `https://raw.githubusercontent.com/TheMightyTRex/starboard/main/plugins-collection/styles/starboard-plugin.json`.
+  Copy it into **The plug-in's manifest address** in **Settings**, **Plug-ins**, **Add a plug-in**.
+- **Download:** [styles.zip](https://github.com/TheMightyTRex/starboard/raw/main/plugins-collection/styles.zip)
+  (5 KB): the manifest, its installer, readme and licence.
+  [See its files](https://github.com/TheMightyTRex/starboard/tree/main/plugins-collection/styles).
+- **How to add it:** paste the install address, as above. Or unzip the download and run its installer,
+  `python3 install.py`, or choose its `starboard-plugin.json` under **Or its manifest file**.
 - **Version:** 1.0.0. Made by TheMightyTRexUK. Licence: MIT.
 - **Choosing a style:** in **Settings**, **Plug-ins**, the Styles section shows a picture of each style, light and
   dark, with **Use this style**. **Display**, **Style** has the same choice.
@@ -37,6 +42,8 @@ so no style in the collection uses them.
 
 Free TV channels and guides for Jellyfin's Live TV, from Samsung TV Plus, Pluto TV and Free-TV, numbered like Sky.
 It comes with Starboard: add it in **Settings**, **Plug-ins**, under **Built into Starboard**.
+
+- **Install address and download:** none needed. It is part of Starboard, so there is nothing to download.
 
 - **What it may do:** reach the internet and your home network (to fetch guides and test channels), and use
   Jellyfin's API key, kept by Starboard (to add the channels to Jellyfin). Risk: medium and high.

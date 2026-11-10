@@ -85,6 +85,7 @@ async function pageFor(shot) {
   const key = `${shot.width}x${shot.height}-${shot.scheme || "light"}`;
   if (!contexts[key]) {
     const context = await browser.newContext({ viewport: { width: shot.width, height: shot.height }, colorScheme: shot.scheme || "light" });
+    await context.addInitScript(() => { try { sessionStorage.setItem("starboard.setup-wizard", JSON.stringify({ opened: true })); } catch { /* fine */ } });  // the set-up wizard counts as seen (DASH-289)
     const page = await context.newPage();
     page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
     page.on("console", (m) => { if (m.type() === "error" && !/40[04]/.test(m.text())) errors.push(`${page.url()}: ${m.text()}`); });

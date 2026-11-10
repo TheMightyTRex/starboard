@@ -29,6 +29,7 @@ function check(id, what, ok, detail = "") {
 
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+await context.addInitScript(() => { try { sessionStorage.setItem("starboard.setup-wizard", JSON.stringify({ opened: true })); } catch { /* fine */ } });  // the set-up wizard counts as seen (DASH-289)
 const page = await context.newPage();
 const problems = [];
 page.on("pageerror", (e) => problems.push(`${page.url()}: ${e.message}`));

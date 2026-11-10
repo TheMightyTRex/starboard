@@ -558,6 +558,7 @@ work() {
       if [ "$t" -gt 0 ] && [ $(( t % ${STILL_EVERY:-120} )) = 0 ]; then
         local more=""
         if [ -n "$JOB_COUNT" ]; then COUNT_NOW="$("$JOB_COUNT" 2>/dev/null)"; [ -z "$COUNT_NOW" ] || more=", $COUNT_NOW"; fi
+        if [ -n "$JOB_DETAIL" ]; then DETAIL_NOW="$("$JOB_DETAIL" 2>/dev/null)"; [ -z "$DETAIL_NOW" ] || more+=", $DETAIL_NOW"; fi
         say "Still working: $name ($(( t / 60 )) min$more)."
       fi
     done
@@ -677,19 +678,43 @@ card_end() { [ "$FANCY" = 0 ] || say "  $(c 36 "╰$(rep ─ $(( CARD_W - 1 )))�
 # stop with RF-12. These find it, and wait for it with a moving bar and a timer instead (owner, 10 November 2026).
 UPDATES_WAIT_MAX="${UPDATES_WAIT_MAX:-2700}"  # 45 minutes, then RF-12 as before
 updates_busy() {
-  local name
-  for name in apt apt-get aptitude dpkg unattended-upgr apt.systemd.dai packagekitd-inst dnf dnf-3 dnf-automatic yum rpm zypper; do
-    if pgrep -x "$name" >/dev/null 2>&1; then printf '%s' "$name"; return 0; fi
-  done
+  # The package lock itself, when sudo can be asked without a password (the script asked for it already): only a
+  # program really installing holds it. Prints what holds it.
+  local held pid
+  if sudo -n true 2>/dev/null && command -v fuser >/dev/null 2>&1; then
+    held="$(sudo -n fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/rpm/.rpm.lock 2>/dev/null | tr -s ' ' '\n' | grep -E '^[0-9]+$' | head -n 1)"
+    if [ -n "$held" ]; then ps -o args= -p "$held" 2>/dev/null | cut -c1-80; return 0; fi
+    # Nothing holds the lock: also no download or list refresh in progress before it takes it.
+    pid="$(pgrep -f '^(/usr/bin/)?(apt-get|apt|aptitude|dnf|yum|zypper) ' 2>/dev/null | head -n 1)"
+    if [ -n "$pid" ]; then ps -o args= -p "$pid" 2>/dev/null | cut -c1-80; return 0; fi
+    return 1
+  fi
+  # Without sudo: the full command line, so Ubuntu's always-running unattended-upgrade-shutdown is never counted
+  # (its short process name is the same as the updater's, which made the script wait for nothing).
+  ps -eo args= 2>/dev/null | grep -E '(^|/)(apt-get|apt|aptitude|dpkg|dnf|yum|zypper|rpm) |/unattended-upgrade( |$)|apt\.systemd\.daily|dnf-automatic' \
+    | grep -v -e unattended-upgrade-shutdown -e grep | head -n 1 | cut -c1-80 | grep . && return 0
   return 1
 }
+# What the wait shows beside its bar (owner, 10 November 2026: "some more detail to show where it is up to"): who is
+# installing, the package now, how many finished since the wait began, and how much is downloaded so far.
+WAIT_SINCE=""
 updates_detail() {
-  local name; name="$(updates_busy)" || { printf 'nearly done'; return; }
-  case "$name" in
-    unattended-upgr|apt.systemd.dai) printf 'automatic updates are running' ;;
-    dnf-automatic) printf 'automatic updates are running' ;;
-    *) printf '%s is running' "$name" ;;
+  local who now finished dl
+  who="$(updates_busy)" || { printf 'finishing'; return; }
+  case "$who" in
+    *unattended-upgrade*|*apt.systemd.daily*) who="Linux's automatic updates" ;;
+    *dnf-automatic*) who="Linux's automatic updates" ;;
+    *) who="$(printf '%s' "$who" | awk '{n=$1; sub(".*/", "", n); print n}')" ;;
   esac
+  if [ -r ${DPKG_LOG:-/var/log/dpkg.log} ]; then
+    now="$(tail -n 400 ${DPKG_LOG:-/var/log/dpkg.log} 2>/dev/null | awk -v since="$WAIT_SINCE" '$1" "$2 >= since && ($3 == "install" || $3 == "upgrade" || ($3 == "status" && ($4 == "unpacked" || $4 == "half-configured"))) {p = ($3 == "status") ? $5 : $4} END {sub(":.*", "", p); print p}')"
+    finished="$(tail -n 2000 ${DPKG_LOG:-/var/log/dpkg.log} 2>/dev/null | awk -v since="$WAIT_SINCE" '$1" "$2 >= since && $3 == "status" && $4 == "installed" {n++} END {print n + 0}')"
+  fi
+  dl="$(sudo -n du -sk /var/cache/apt/archives/partial 2>/dev/null | awk '$1 > 1024 {printf "%d MB downloaded", $1 / 1024}')"
+  printf '%s' "$who"
+  [ -z "$now" ] || printf ': installing %s' "$now"
+  [ "${finished:-0}" = 0 ] || printf ', %s done' "$finished"
+  [ -z "$dl" ] || printf ', %s' "$dl"
 }
 wait_for_updates_job() {
   local start=$SECONDS
@@ -705,6 +730,7 @@ wait_for_updates_job() {
 # wait_for_updates n of: when updates are running, a bar waits for them; returns at once when nothing is.
 wait_for_updates() {
   updates_busy >/dev/null || return 0
+  WAIT_SINCE="$(date '+%Y-%m-%d %H:%M:%S')"
   local detail_was="$JOB_DETAIL"
   JOB_DETAIL=updates_detail
   work "Waiting for Linux to finish installing its updates" wait_for_updates_job "$1" "$2"

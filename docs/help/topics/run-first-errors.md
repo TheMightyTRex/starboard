@@ -80,7 +80,7 @@ Wi-Fi, then choose **Try again**.
 
 **Another program is still installing updates.** This often happens just after Linux is installed, when it
 updates itself. The script waits for it on its own, with a progress bar called **Waiting for Linux to finish
-installing its updates**, and carries on when it is done. You see this error only when the updates take more than
+installing its updates**, which says what is installing, how many are done and how much is downloaded, and carries on when it is done. You see this error only when the updates take more than
 45 minutes. Wait until they finish, or restart the computer, then choose **Try again**.
 
 ### RF-13

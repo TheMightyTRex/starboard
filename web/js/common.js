@@ -665,7 +665,7 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
     wizardMemory({ at: item.key });
     const heading = el("h3", { tabindex: "-1", text: item.title });
     const outside = item.href.startsWith("http");
-    const doIt = el("a", { class: "btn btn--primary", href: item.href, ...(outside ? { target: "_blank", rel: "noopener" } : {}) },
+    const doIt = el("a", { class: "btn btn--primary", href: outside ? reachableUrl(item.href) : item.href, ...(outside ? { target: "_blank", rel: "noopener" } : {}) },
       "Do it now", outside ? el("span", { class: "visually-hidden", text: " (opens in a new tab)" }) : null);
     const doneBtn = item.guided ? el("button", { type: "button", class: "btn" }, "Done") : null;
     doneBtn?.addEventListener("click", async () => {

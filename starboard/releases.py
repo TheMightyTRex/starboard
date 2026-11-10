@@ -890,6 +890,42 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your settings. To go back, run ./update.sh --to v0.15.2."
+    },
+    {
+        "version": "0.15.4",
+        "date": "10 November 2026",
+        "added": [
+            [
+                "Still to set up, one at a time",
+                "Go through them opens a slide-out that walks through each thing left to set up, with Do it now, Skip, Ignore, Done and Next step. It also opens by itself once in each browser session while anything is left."
+            ],
+            [
+                "Plug-in install addresses and downloads",
+                "The plug-in collection in the help centre now gives each plug-in's install address, to paste into Add a plug-in, and a zip to download. The Styles plug-in lives in Starboard's own repository, under plugins-collection."
+            ]
+        ],
+        "fixed": [
+            [
+                "Links to apps in Still to set up",
+                "Links in Still to set up, such as Tell Tdarr what to convert, open at the address you opened Starboard at, instead of 127.0.0.1, which another device cannot reach."
+            ],
+            [
+                "Waiting for Linux's updates",
+                "Run first no longer waits for Ubuntu's always-running shutdown helper as if it were updates, and its bar now says what is installing, how many are done and how much is downloaded."
+            ],
+            [
+                "Done on guided steps",
+                "Done on a guided step, such as Tdarr's, now saves instead of failing."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests, the browser journeys, the API contract tests, the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your apps. Ignored items can be brought back on Apps. To go back, run ./update.sh --to v0.15.3."
     }
 ]
 

@@ -78,9 +78,13 @@ if __name__ == "__main__":
 
 
 class WaitForUpdatesTest(unittest.TestCase):
-    """Linux installing its own updates (RF-12): Run first waits with a bar, then carries on (owner, 10 November 2026)."""
+    """Linux installing its own updates (RF-12): Run first waits with a bar and says where the updates are up to,
+    then carries on (owner, 10 November 2026). Ubuntu's always-running unattended-upgrade-shutdown is not updates."""
 
-    def run_part(self, busy_checks, wait_max):
+    SHUTDOWN = "/usr/bin/python3 /usr/share/unattended-upgrades/unattended-upgrade-shutdown --wait-for-signal"
+    UPDATER = "/usr/bin/python3 /usr/bin/unattended-upgrade"
+
+    def run_part(self, busy_checks, wait_max, extra=""):
         import os
         import subprocess
         import tempfile
@@ -90,19 +94,31 @@ class WaitForUpdatesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             count = os.path.join(d, "count")
             open(count, "w").write("0")
-            fake = os.path.join(d, "pgrep")  # says unattended-upgrades runs for the first few checks
-            open(fake, "w").write(f'#!/bin/sh\nn=$(cat {count}); echo $((n + 1)) > {count}\n'
-                                  f'[ "$2" = unattended-upgr ] && [ "$n" -lt {busy_checks} ] && exit 0\nexit 1\n')
-            os.chmod(fake, 0o755)
-            body = (f"UPDATES_WAIT_MAX={wait_max}\n" + part.replace("UPDATES_WAIT_MAX=\"${UPDATES_WAIT_MAX:-2700}\"", "")
-                    .replace("sleep 3", "sleep 0.05").replace("sleep 2", "sleep 0") +
-                    "\nupdates_busy && echo BUSY; updates_detail; echo; wait_for_updates_job; echo \"status=$?\"\n")
+            for name, body in (
+                    ("sudo", "#!/bin/sh\nexit 1\n"),  # no sudo without a password: the command-line check
+                    ("ps", f'#!/bin/sh\nn=$(cat {count}); echo $((n + 1)) > {count}\necho "{self.SHUTDOWN}"\n'
+                           f'[ "$n" -lt {busy_checks} ] && echo "{self.UPDATER}"\nexit 0\n')):
+                open(os.path.join(d, name), "w").write(body)
+                os.chmod(os.path.join(d, name), 0o755)
+            log = os.path.join(d, "dpkg.log")
+            open(log, "w").write("2026-11-10 09:59:00 status installed old-one:amd64 1\n"
+                                 "2026-11-10 10:01:00 status installed libc6:amd64 2\n"
+                                 "2026-11-10 10:02:00 upgrade linux-firmware:all 1 2\n"
+                                 "2026-11-10 10:02:01 status unpacked linux-firmware:all 2\n")
+            body = (f"UPDATES_WAIT_MAX={wait_max}\nDPKG_LOG={log}\n" + part.replace("UPDATES_WAIT_MAX=\"${UPDATES_WAIT_MAX:-2700}\"", "")
+                    .replace("sleep 3", "sleep 0.05").replace("sleep 2", "sleep 0") + extra +
+                    "\nWAIT_SINCE='2026-11-10 10:00:00'; updates_busy >/dev/null && echo BUSY; updates_detail; echo; wait_for_updates_job; echo \"status=$?\"\n")
             return subprocess.run(["bash", "-c", body], env={"PATH": f"{d}:/usr/bin:/bin"}, capture_output=True, text=True, timeout=30).stdout
 
     def test_waits_until_the_updates_finish_then_carries_on(self):
         out = self.run_part(busy_checks=40, wait_max=60)
         self.assertIn("BUSY", out)
-        self.assertIn("automatic updates are running", out)
+        self.assertIn("Linux's automatic updates: installing linux-firmware, 1 done", out)
+        self.assertIn("status=0", out)
+
+    def test_the_shutdown_helper_alone_is_not_updates(self):
+        out = self.run_part(busy_checks=0, wait_max=60)
+        self.assertNotIn("BUSY", out)
         self.assertIn("status=0", out)
 
     def test_gives_up_after_the_longest_wait_with_the_lock_words(self):

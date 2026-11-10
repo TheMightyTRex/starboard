@@ -40,7 +40,7 @@ const CARDS = {
     const walk = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
     walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: () => draw() }));
     if (!editing) setupWizardOnce(() => draw());
-    return el("div", { class: "stack-2" }, el("div", { class: "actions" }, walk), el("ul", { class: "rows" }, todo.map((i) => line(i.title, i.why, i.href))));
+    return el("div", { class: "stack-2" }, el("div", { class: "actions" }, walk), el("ul", { class: "rows" }, todo.map((i) => line(i.title, i.why, i.href.startsWith("http") ? reachableUrl(i.href) : i.href))));
   },
   async playing() {
     const r = await ask("/api/jellyfin");

@@ -481,6 +481,7 @@ work() {
       if [ "$t" -gt 0 ] && [ $(( t % ${STILL_EVERY:-120} )) = 0 ]; then
         local more=""
         if [ -n "$JOB_COUNT" ]; then COUNT_NOW="$("$JOB_COUNT" 2>/dev/null)"; [ -z "$COUNT_NOW" ] || more=", $COUNT_NOW"; fi
+        if [ -n "$JOB_DETAIL" ]; then DETAIL_NOW="$("$JOB_DETAIL" 2>/dev/null)"; [ -z "$DETAIL_NOW" ] || more+=", $DETAIL_NOW"; fi
         say "Still working: $name ($(( t / 60 )) min$more)."
       fi
     done
