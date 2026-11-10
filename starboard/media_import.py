@@ -4,6 +4,7 @@ manager key (Reelix's "manage library" permission, so no admin password): list t
 for each in batches of 25, then import the ones you keep. Nothing is downloaded or moved: Reelix adds each film or
 series for the folder it is already in and scans its files. Books and music use Reelix's book and music import,
 which this does not cover yet."""
+import os
 import json
 import urllib.error
 import urllib.parse
@@ -43,19 +44,63 @@ def _call(cfg, method, path, body=None, timeout=60):
     return json.loads(raw) if raw else None
 
 
+LEFT_OUT = "import-left-out.json"  # folders the person chose to leave out (owner, 10 November 2026)
+
+
+def left_out(cfg):
+    import json
+    try:
+        with open(os.path.join(cfg.data_dir, LEFT_OUT), encoding="utf-8") as f:
+            return set(json.load(f))
+    except (OSError, ValueError, TypeError):
+        return set()
+
+
+def leave_out(cfg, paths):
+    """Remembers folders the person left out, so Still to set up and the note stop counting them."""
+    import json
+    keep = sorted((left_out(cfg) | {str(p) for p in paths or [] if isinstance(p, str)}))[-2000:]
+    tmp = os.path.join(cfg.data_dir, LEFT_OUT + ".new")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(keep, f)
+    os.replace(tmp, os.path.join(cfg.data_dir, LEFT_OUT))
+    return len(keep)
+
+
+def _folder_path(u):
+    return u.get("path") if isinstance(u, dict) else str(u)
+
+
 def folders(cfg, tab):
-    """The library folders for films or series, each with how many sub-folders Reelix does not know yet."""
+    """The library folders for films or series, each with how many sub-folders Reelix does not know yet (less the
+    ones the person left out)."""
     want = {v: k for k, v in KINDS.items()}.get(tab)
     if not want:
         return []
-    return [{"id": f["id"], "path": f["path"], "waiting": len(f.get("unmapped_folders") or [])}
+    skip = left_out(cfg)
+    return [{"id": f["id"], "path": f["path"],
+             "waiting": len([u for u in f.get("unmapped_folders") or [] if _folder_path(u) not in skip])}
             for f in _call(cfg, "GET", "/rootfolders") or [] if f.get("media_kind") == want and f.get("accessible", True)]
 
 
-def _slim(c):
+def _in_library(cfg, kind):
+    """{tmdb_id: (title, folder)} of what Reelix already has, so a folder matched to one is shown as such."""
+    path = "/movies" if kind == "movie" else "/series"
+    try:
+        got = _call(cfg, "GET", f"{path}?page_size=5000", timeout=60) or {}
+    except ImportError_:
+        return {}
+    rows = got.get("items", []) if isinstance(got, dict) else got
+    return {r["tmdb_id"]: (r.get("title") or "", os.path.basename(str(r.get("path") or "")))
+            for r in rows if isinstance(r, dict) and r.get("tmdb_id")}
+
+
+def _slim(c, have=None):
+    have = have or {}
     return {"path": c["folder"]["path"], "name": c["folder"]["name"], "title": c.get("parsed_title"), "year": c.get("parsed_year"),
             "files": c.get("file_count", 0), "size": c.get("size", 0), "problem": c.get("lookup_error"),
-            "matches": [{"tmdb_id": m.get("tmdb_id"), "title": m.get("title"), "year": m.get("year")}
+            "matches": [{"tmdb_id": m.get("tmdb_id"), "title": m.get("title"), "year": m.get("year"),
+                         "already": have[m["tmdb_id"]][1] if m.get("tmdb_id") in have else None}
                         for m in (c.get("suggestions") or [])[:5] if m.get("tmdb_id")]}
 
 
@@ -63,9 +108,14 @@ def scan(cfg, root_id, start=0):
     """One page of folders (25), each with Reelix's best matches, and how many there are in all."""
     root_id = int(root_id)
     listed = _call(cfg, "GET", f"/libraryimport/scan?{urllib.parse.urlencode({'root_folder_id': root_id, 'lookup': 'false'})}") or []
+    skip = left_out(cfg)
+    listed = [c for c in listed if c["folder"]["path"] not in skip]
     page = listed[int(start):int(start) + BATCH]
     matched = _call(cfg, "POST", "/libraryimport/match", {"root_folder_id": root_id, "paths": [c["folder"]["path"] for c in page]}) if page else []
-    return {"total": len(listed), "start": int(start), "items": [_slim(c) for c in matched or []]}
+    kind = next((c.get("media_kind") for c in matched or [] if c.get("media_kind")), None) or \
+        next((f.get("media_kind") for f in _call(cfg, "GET", "/rootfolders") or [] if f.get("id") == root_id), "series")
+    have = _in_library(cfg, kind) if matched else {}
+    return {"total": len(listed), "start": int(start), "items": [_slim(c, have) for c in matched or []]}
 
 
 def run(cfg, root_id, items):

@@ -1052,6 +1052,8 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(200, radio_import.scan(app.config, body.get("start", 0)))
                     if path == "/api/library/radio-import/run" and method == "POST":
                         out = radio_import.run(app.config, body.get("items"), str(body.get("follow") or radio_import.DEFAULT_FOLLOW))
+                        from . import setup_left
+                        setup_left.forget()
                         logs.event("info", "library", f"Brought in {out['added']} radio shows from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))
                         return self.json(200, out)
                 except (ValueError, TypeError) as e:
@@ -1068,7 +1070,15 @@ class Handler(BaseHTTPRequestHandler):
                     if path == "/api/library/import/scan" and method == "POST":
                         return self.json(200, media_import.scan(app.config, body.get("root"), body.get("start", 0)))
                     if path == "/api/library/import/run" and method == "POST":
+                        if body.get("leave"):  # folders left out: not counted again (10 November 2026)
+                            media_import.leave_out(app.config, [str(p) for p in body["leave"]][:500])
+                            from . import setup_left
+                            setup_left.forget()
+                        if not body.get("items"):
+                            return self.json(200, {"added": 0, "errors": []})
                         out = media_import.run(app.config, body.get("root"), body.get("items"))
+                        from . import setup_left
+                        setup_left.forget()  # Still to set up counts the folders again
                         logs.event("info", "library", f"Brought in {out['added']} from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))
                         return self.json(200, out)
                 except (media_import.ImportError_, ValueError, TypeError) as e:

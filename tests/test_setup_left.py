@@ -35,6 +35,18 @@ class SetupLeft(unittest.TestCase):
         self.assertEqual(out["left"], 0)
 
 
+    def test_radio_step_follows_what_reelix_reads(self):
+        # Owner, 10 November 2026: radio connected outside the set-up wizard stayed on Still to set up.
+        from starboard import radio_import
+        with open(os.path.join(stack.folder(self.tmp.name), "compose.yaml"), "a") as f:
+            f.write("  audiobookshelf:\n    container_name: audiobookshelf\n")
+        with mock.patch.object(setup_left, "_reelix_health", return_value=None), \
+                mock.patch.object(setup_left, "_usenet_server", return_value=None):
+            for status, done in (({"connected": True, "waiting": 0}, True), ({"connected": False, "waiting": 0}, False)):
+                with mock.patch.object(radio_import, "status", return_value=status):
+                    radio = [i for i in setup_left.items(self.cfg(), self.tmp.name) if i["key"].startswith("radio")]
+                self.assertEqual([(i["key"], i["done"]) for i in radio], [("radio", done)])
+
     def test_guided_steps_go_when_done(self):
         with open(os.path.join(stack.folder(self.tmp.name), "compose.yaml"), "a") as f:
             f.write("  tdarr:\n    container_name: tdarr\n")

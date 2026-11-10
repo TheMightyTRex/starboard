@@ -241,12 +241,19 @@ async function importDialog(folder, start = 0, added = 0) {
   catch (e) { problem(e.message); return; }
   const rows = page.items.map((it) => {
     const pick = el("select", { class: "select", "aria-label": `Match for ${it.name}` },
-      it.matches.map((m, i) => el("option", { value: String(m.tmdb_id), text: `${m.title}${m.year ? ` (${m.year})` : ""}`, selected: i === 0 })),
+      it.matches.map((m, i) => el("option", { value: String(m.tmdb_id), text: `${m.title}${m.year ? ` (${m.year})` : ""}${m.already ? ", already in your library" : ""}`, selected: i === 0 })),
       el("option", { value: "", text: it.matches.length ? "None of these" : "No match found" }));
-    const keep = el("input", { type: "checkbox", checked: it.matches.length > 0, "aria-label": `Bring in ${it.name}` });
-    pick.addEventListener("change", () => { keep.checked = !!pick.value; });
-    return { it, pick, keep, node: el("tr", {}, el("td", {}, keep), el("th", { scope: "row", text: it.name }),
-      el("td", {}, pick, it.problem ? el("p", { class: "small muted", text: it.problem }) : null)) };
+    // A folder whose match is already in the library (in another folder) is unticked: bringing it in would fail.
+    const first = it.matches[0];
+    const keep = el("input", { type: "checkbox", checked: !!first && !first.already, "aria-label": `Bring in ${it.name}` });
+    const said = el("p", { class: "small muted" });
+    const explain = () => {
+      const m = it.matches.find((x) => String(x.tmdb_id) === pick.value);
+      said.textContent = m && m.already ? `Already in your library, in the folder ${m.already}. Leave this folder out, or choose another match.` : (it.problem || "");
+    };
+    pick.addEventListener("change", () => { const m = it.matches.find((x) => String(x.tmdb_id) === pick.value); keep.checked = !!m && !m.already; explain(); });
+    explain();
+    return { it, pick, keep, node: el("tr", {}, el("td", {}, keep), el("th", { scope: "row", text: it.name }), el("td", {}, pick, said)) };
   });
   const table = el("div", { class: "table-wrap" }, el("table", { class: "table table--middle" },
     el("caption", { class: "visually-hidden", text: "Folders and their matches" }),
@@ -255,13 +262,14 @@ async function importDialog(folder, start = 0, added = 0) {
     el("tbody", {}, rows.map((r) => r.node))));
   const end = Math.min(page.start + page.items.length, page.total);
   const ok = await confirmDialog({ title: `Bring in ${NOUN[TAB][1]} from disk`, confirm: "Bring in the ticked ones",
-    message: el("div", { class: "stack-2" }, el("p", { text: `Folders ${page.start + 1} to ${end} of ${page.total} in ${folder.path}. Check each match; untick any that are wrong.` })),
+    message: el("div", { class: "stack-2" }, el("p", { text: `Folders ${page.start + 1} to ${end} of ${page.total} in ${folder.path}. Check each match; untick any that are wrong. Unticked folders are left out and not asked about again.` })),
     fields: [table] });
   if (!ok) return;
   const items = rows.filter((r) => r.keep.checked && r.pick.value).map((r) => ({ path: r.it.path, tmdb_id: Number(r.pick.value) }));
+  const leave = rows.filter((r) => !r.keep.checked || !r.pick.value).map((r) => r.it.path);
   let out;
   try {
-    out = items.length ? await api("/api/library/import/run", { method: "POST", body: { root: folder.id, items } }) : { added: 0, errors: [] };
+    out = items.length || leave.length ? await api("/api/library/import/run", { method: "POST", body: { root: folder.id, items, leave } }) : { added: 0, errors: [] };
     if (out.errors.length) problem(out.errors.map((e) => `${e.path}: ${e.message}`).join(". "));
   } catch (e) { problem(e.message); return; }
   added += out.added;

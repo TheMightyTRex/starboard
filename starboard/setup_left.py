@@ -27,6 +27,8 @@ def record(data_dir, **values):
             current = json.load(f)
     except (OSError, ValueError):
         current = {}
+    if all(current.get(k) == v for k, v in values.items()):
+        return  # already noted: opening Basics each time writes nothing
     current.update(values)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -127,10 +129,12 @@ def items(cfg, data_dir):
             radio = radio_import.status(cfg)
         except (ValueError, OSError):
             radio = None
-        if radio and not radio["connected"]:
-            out.append({"key": "radio-connect", "title": "Let Reelix see your radio shows", "why": "It reads Audiobookshelf's Radio library, so the shows you have come in.",
-                        "href": "/settings-reelix.html#rx-radio-h", "done": False})
-        elif radio and radio["waiting"]:
+        if radio or "radio" in groups:
+            out.append({"key": "radio", "title": "Point Reelix's radio at Audiobookshelf",
+                        "why": "Radio shows then play in Audiobookshelf, and the ones you have come in.",
+                        "href": "/settings-reelix.html#rx-radio-h",
+                        "done": radio["connected"] if radio else bool(state.get("radio"))})
+        if radio and radio["connected"] and radio["waiting"]:
             out.append({"key": "import-radio", "title": "Bring in radio shows already on disk",
                         "why": f"{radio['waiting']} {'show is' if radio['waiting'] == 1 else 'shows are'} not in your library yet.",
                         "href": "/library-radio.html", "done": False})
@@ -147,9 +151,6 @@ def items(cfg, data_dir):
     if "reelix" in keys and keys & {"jellyfin", "audiobookshelf"}:
         out.append({"key": "mediaservers", "title": "Connect Reelix to your media servers", "why": "New files then show in them at once.",
                     "href": "/settings-reelix.html#rx-mediaservers-h", "done": bool(state.get("media_servers"))})
-    if "reelix" in keys and "radio" in groups and "audiobookshelf" in keys:
-        out.append({"key": "radio", "title": "Point Reelix's radio at Audiobookshelf", "why": "Radio shows then play in Audiobookshelf.",
-                    "href": "/settings-reelix.html", "done": bool(state.get("radio"))})
     # Apps Starboard does not set up by itself, on purpose (DASH-230, DASH-231): one short step in the app, then
     # Done on the checklist. Tdarr's choice of what to convert to is the person's; Wizarr's and Dispatcharr's own
     # pages change with their updates, so Starboard does not script them.

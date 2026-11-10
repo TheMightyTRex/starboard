@@ -10,6 +10,7 @@ from starboard import media_import
 
 class Reelix(http.server.BaseHTTPRequestHandler):
     seen = []
+    have = False
 
     def _send(self, body, code=200):
         raw = json.dumps(body).encode()
@@ -27,6 +28,8 @@ class Reelix(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/api/v1/libraryimport/scan"):
             return self._send([{"folder": {"name": "Arrival (2016)", "path": "/data/media/movies/Arrival (2016)"}, "parsed_title": "Arrival",
                                 "parsed_year": 2016, "file_count": 1, "size": 9, "suggestions": []}])
+        if self.path.startswith("/api/v1/movies?"):
+            return self._send({"items": [{"tmdb_id": 329865, "title": "Arrival", "path": "/data/media/movies/Arrival"}] if Reelix.have else []})
         if self.path == "/api/v1/qualityprofiles":
             return self._send([{"id": 7, "name": "HD"}, {"id": 8, "name": "Music", "family": "music"}])
         self._send({"message": "no"}, 404)
@@ -63,6 +66,18 @@ class MediaImport(unittest.TestCase):
         self.assertEqual(out, {"added": 1, "errors": []})
         sent = Reelix.seen[-1][1]
         self.assertEqual((sent["items"][0]["quality_profile_id"], sent["search_on_add"]), (7, False))
+
+    def test_a_match_already_in_the_library_is_marked_and_a_left_out_folder_not_counted(self):
+        # Owner, 10 November 2026: two series folders of shows already in the library stayed on Still to set up.
+        import tempfile
+        self.cfg.data_dir = tempfile.mkdtemp()
+        Reelix.have = True
+        self.addCleanup(setattr, Reelix, "have", False)
+        page = media_import.scan(self.cfg, 1)
+        self.assertEqual(page["items"][0]["matches"][0]["already"], "Arrival")
+        media_import.leave_out(self.cfg, ["/data/media/movies/Arrival (2016)"])
+        self.assertEqual(media_import.folders(self.cfg, "films")[0]["waiting"], 0)
+        self.assertEqual(media_import.scan(self.cfg, 1)["total"], 0)
 
     def test_nothing_chosen_is_said(self):
         with self.assertRaisesRegex(media_import.ImportError_, "Choose a match"):

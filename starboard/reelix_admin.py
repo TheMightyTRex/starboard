@@ -344,7 +344,11 @@ def _act(app, reelix, base, kind, action, body):
     if kind == "basics":  # the basic settings (DASH-226)
         from . import reelix_basics, setup_answers
         if action == "open":
-            return reelix_basics.state(reelix)
+            out = reelix_basics.state(reelix)
+            if out.get("tmdb"):  # a key added in Reelix or in Basics also clears Still to set up
+                from . import setup_left
+                setup_left.record(app.config.data_dir, tmdb=True)
+            return out
         if action == "test-tmdb":
             setup_answers.test_tmdb(body.get("tmdb"))
             return {"ok": True, "message": setup_answers.WORDS["tmdb"]["ok"]}
@@ -352,6 +356,9 @@ def _act(app, reelix, base, kind, action, body):
             out = reelix_basics.save(reelix, body.get("changes"))
             for line in out["done"]:
                 logs.event("info", "reelix", line)
+            if (body.get("changes") or {}).get("tmdb"):
+                from . import setup_left
+                setup_left.record(app.config.data_dir, tmdb=True)
             return out
         raise ValueError("Not something Starboard does")
     if kind == "quality":  # Picture quality in full (DASH-196)
@@ -368,6 +375,8 @@ def _act(app, reelix, base, kind, action, body):
         from . import radio_import
         if action == "connect":
             out = radio_import.connect(reelix, app.config)
+            from . import setup_left
+            setup_left.record(app.config.data_dir, radio=True)
             for line in out["done"]:
                 logs.event("info", "reelix", line)
             return out
