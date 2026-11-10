@@ -1355,6 +1355,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, discovery.search(cfg.data["services"]))
             if path == "/api/discover/add" and method == "POST":
                 return self.json(200, self.add_found(self.body().get("items")))
+            if path == "/api/services/read-keys" and method == "POST":
+                # The set-up's keys step: each missing key read from the app's own files (owner, 10 November 2026).
+                out = discovery.read_missing_keys(cfg)
+                services.forget()
+                if out["found"]:
+                    logs.event("info", "settings", "Keys read for " + ", ".join(out["found"]))
+                return self.json(200, {**out, "config": cfg.public()})
             if path == "/api/stack" and method == "GET":
                 return self.json(200, self.stack_overview())
             if path == "/api/stack/install" and method == "POST":

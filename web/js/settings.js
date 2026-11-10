@@ -947,10 +947,9 @@ async function appFinder(onAdded, { expect = null, shown = null } = {}) {
         i.needs_key ? (i.can_read_key ? "API key can be read for you" : "needs its API key") : ""].filter(Boolean).join(" · ") })));
     return { i, input, label };
   });
-  const readKeys = el("input", { type: "checkbox", checked: true });
   const anyKey = fresh.some((i) => i.can_read_key);
   const add = async () => {
-    const items = picks.filter((p) => p.input.checked).map((p) => ({ ...p.i, read_key: anyKey && readKeys.checked }));
+    const items = picks.filter((p) => p.input.checked).map((p) => ({ ...p.i, read_key: anyKey }));
     if (!items.length) { problem("Tick the apps to add"); return null; }
     const r = await api("/api/discover/add", { method: "POST", body: { items } });
     config = r.config;
@@ -961,8 +960,7 @@ async function appFinder(onAdded, { expect = null, shown = null } = {}) {
   box.replaceChildren(...[
     el("p", { text: `Found ${fresh.length} ${fresh.length === 1 ? "app" : "apps"} that ${fresh.length === 1 ? "is" : "are"} not in your list yet${known.length ? `, and ${known.length} you already have` : ""}. Untick any you do not want.` }),
     el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Apps to add" }), el("div", { class: "switch-list" }, picks.map((p) => p.label))),
-    anyKey ? el("label", { class: "check" }, readKeys, el("span", { class: "check__text" }, el("strong", { text: "Fill in API keys for me" }),
-      el("span", { class: "check__hint", text: "Reads each app's key from its own settings file through Docker, so you do not have to copy it. The keys stay on the server." }))) : null,
+    anyKey ? el("p", { class: "small muted", text: "Starboard reads each app's API key from its own settings through Docker, so there is nothing to copy. The keys stay on the server." }) : null,
     !found.docker ? el("p", { class: "small muted", text: "With Docker access (./install.sh --docker) Starboard could also read API keys for you and find apps on other ports." }) : null,
   ].filter(Boolean));
   return { box, add, ticked: () => picks.filter((p) => p.input.checked).length };
@@ -1085,11 +1083,20 @@ async function stepContent(id, root) {
     nodes = [finder.box];
     save = async () => (finder.add && finder.ticked() ? !!(await finder.add()) : true);  // nothing ticked: just go on
   } else if (id === "keys") {
+    // Starboard reads each key from the app's own files first (owner, 10 November 2026: nothing to type during
+    // set-up). A box shows only for an app whose key it could not read.
+    let read = { found: [], missing: [] };
+    try { read = await api("/api/services/read-keys", { method: "POST", body: {} }); config = read.config; } catch { /* the boxes below still work */ }
     const rows = types(Object.keys(KEY_PLACE)).filter((s) => !s.has_api_key).map((s) => {
       const input = el("input", { class: "input", type: "password", autocomplete: "off", "aria-label": `API key for ${s.name}` });
       return { s, input, node: field(`${s.name} API key`, input, { hint: `In ${s.name}: ${KEY_PLACE[s.type]}.`, span: true }) };
     });
-    nodes = [el("div", { class: "form-stack" }, rows.map((r) => r.node)), el("p", { class: "small muted", text: "Leave a box empty to add that key later in Manage apps." })];
+    const got = read.found.length ? notice("success", `Starboard has ${read.found.length === 1 ? "the key" : "the keys"} for ${read.found.join(", ")}`,
+      "It read them from each app's own settings, so there is nothing to type for them.") : null;
+    nodes = rows.length
+      ? [got, el("p", { text: `Starboard could not read ${rows.length === 1 ? "this key" : "these keys"} itself, so ${rows.length === 1 ? "it is" : "they are"} asked for here.` }),
+        el("div", { class: "form-stack" }, rows.map((r) => r.node)), el("p", { class: "small muted", text: "Leave a box empty to add that key later in Manage apps." })].filter(Boolean)
+      : [got || notice("success", "Starboard has every key it needs", "There is nothing to type here.")];
     save = async () => {
       for (const r of rows.filter((x) => x.input.value.trim())) {
         const saved = await api("/api/services", { method: "POST", body: serviceBody(r.s, { api_key: r.input.value.trim() }) });

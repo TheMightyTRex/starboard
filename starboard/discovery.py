@@ -9,6 +9,7 @@ Lidarr, Readarr, Prowlarr, SABnzbd and Seerr from their own settings files, so y
 import concurrent.futures as cf
 import io
 import json
+import os
 import re
 import tarfile
 import urllib.error
@@ -78,7 +79,20 @@ KEY_FILES = {
     "prowlarr": ("/config/config.xml", r"<ApiKey>([A-Za-z0-9]{20,64})</ApiKey>"),
     "sabnzbd": ("/config/sabnzbd.ini", r"(?m)^api_key\s*=\s*([A-Za-z0-9]{16,64})\s*$"),
     "seerr": ("/app/config/settings.json", r'"apiKey"\s*:\s*"([A-Za-z0-9=+/]{20,120})"'),
+    # Bazarr's own key, under auth: (its config also holds Sonarr's and Radarr's keys, under their own names).
+    "bazarr": ("/config/config/config.yaml", r"(?m)^auth:[ \t]*\n(?:[ \t]+.*\n)*?[ \t]+apikey:[ \t]*['\"]?([A-Za-z0-9]{32})['\"]?[ \t]*$"),
 }
+# Apps whose key is not one line of a settings file: read by a function of their own (below), from the files the
+# app keeps in its container. Each returns the key, or None.
+KEY_DATABASES = {
+    # Jellyfin: an API key it already has (Dashboard, API keys), from its database, newest first.
+    "jellyfin": (("/config/data/jellyfin.db", "/config/jellyfin.db", "/data/data/jellyfin.db"),
+                 "SELECT AccessToken FROM ApiKeys WHERE length(AccessToken) >= 32 ORDER BY DateCreated DESC LIMIT 1"),
+    # Audiobookshelf: the root user's API token, which its API takes as a key.
+    "audiobookshelf": (("/config/absdatabase.sqlite",),
+                       "SELECT token FROM users WHERE type = 'root' AND token IS NOT NULL AND length(token) >= 20 LIMIT 1"),
+}
+READABLE = set(KEY_FILES) | set(KEY_DATABASES) | {"nzbget"}
 
 TIMEOUT = 2.5
 
@@ -166,25 +180,90 @@ def search(services):
                 docker_names.get(port, "")
             out.append({"key": key, "name": name, "type": kind, "url": f"http://127.0.0.1:{port}", "port": port,
                         "needs_key": needs_key, "background": background, "container": own,
-                        "already": already, "can_read_key": key in KEY_FILES and bool(own)})
+                        "already": already, "can_read_key": key in READABLE and bool(own)})
     # "known": every app this can recognise, so a set-up waiting for new apps knows which of them to wait for.
     return {"items": out, "docker": containers.available(), "known": sorted(CATALOGUE)}
 
 
-def read_key(key, container_name):
-    """An app's API key from its own settings file, through Docker. None when it cannot be read."""
-    if key not in KEY_FILES or not containers.available() or not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$", container_name or ""):
-        return None
-    path, pattern = KEY_FILES[key]
+def _file(container_name, path, limit):
+    """One file from inside a container, through Docker's archive call (read only). None when it cannot be read."""
     try:
         raw = containers.docker("GET", f"/containers/{container_name}/archive?path={urllib.parse.quote(path)}", raw=True, timeout=10)
     except containers.DockerError:
         return None
     try:
-        with tarfile.open(fileobj=io.BytesIO(raw[:2_000_000])) as tar:
+        with tarfile.open(fileobj=io.BytesIO(raw[:limit + 1_000_000])) as tar:
             member = next((m for m in tar.getmembers() if m.isfile()), None)
-            text = tar.extractfile(member).read(1_000_000).decode("utf-8", "replace") if member else ""
+            return tar.extractfile(member).read(limit) if member else None
     except (tarfile.TarError, OSError):
         return None
+
+
+def _from_database(container_name, paths, query):
+    """A value from an app's SQLite database, copied out first (with its write-ahead log) and opened read only, so the
+    app's own file is never touched."""
+    import sqlite3
+    import tempfile
+    for path in paths:
+        data = _file(container_name, path, 200_000_000)
+        if not data:
+            continue
+        with tempfile.TemporaryDirectory() as d:
+            copy = os.path.join(d, "app.db")
+            with open(copy, "wb") as f:
+                f.write(data)
+            wal = _file(container_name, path + "-wal", 200_000_000)
+            if wal:
+                with open(copy + "-wal", "wb") as f:
+                    f.write(wal)
+            try:
+                db = sqlite3.connect(copy)
+                try:
+                    row = db.execute(query).fetchone()
+                finally:
+                    db.close()
+            except sqlite3.Error:
+                continue
+            if row and row[0]:
+                return str(row[0])
+    return None
+
+
+def _nzbget(container_name):
+    """NZBGet signs in with its control user name and password, which Starboard keeps as user:password."""
+    text = (_file(container_name, "/config/nzbget.conf", 1_000_000) or b"").decode("utf-8", "replace")
+    user = re.search(r"(?m)^ControlUsername=(\S+)\s*$", text)
+    word = re.search(r"(?m)^ControlPassword=(\S+)\s*$", text)
+    return f"{user.group(1)}:{word.group(1)}" if user and word else None
+
+
+def read_key(key, container_name):
+    """An app's API key from its own files, through Docker. None when it cannot be read."""
+    if key not in READABLE or not containers.available() or not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$", container_name or ""):
+        return None
+    if key == "nzbget":
+        return _nzbget(container_name)
+    if key in KEY_DATABASES:
+        return _from_database(container_name, *KEY_DATABASES[key])
+    path, pattern = KEY_FILES[key]
+    text = (_file(container_name, path, 1_000_000) or b"").decode("utf-8", "replace")
     m = re.search(pattern, text)
     return m.group(1) if m else None
+
+
+def read_missing_keys(cfg):
+    """The set-up's keys step (owner, 10 November 2026: nothing to type): for each app on the dashboard that needs a
+    key and has none, its key read from its own files and saved. Returns {"found": [names], "missing": [services]}."""
+    found, missing = [], []
+    needs = {v[1]: k for k, v in CATALOGUE.items() if v[4] or k in KEY_DATABASES}  # service type -> catalogue key
+    for s in list(cfg.data["services"]):
+        key = needs.get(s.get("type"))
+        if not key or s.get("api_key"):
+            continue
+        value = read_key(key, s.get("container") or key)
+        if value:
+            cfg.upsert_service({**s, "api_key": value})
+            found.append(s["name"])
+        else:
+            missing.append({"name": s["name"], "type": s["type"], "url": s.get("url", "")})
+    return {"found": found, "missing": missing}
