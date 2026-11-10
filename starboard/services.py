@@ -77,6 +77,21 @@ class ServiceError(Exception):
 _cache = {}
 _cache_lock = threading.Lock()
 _flight = {}
+# Answers are forgotten once out of date, and at most CACHE_MAX are kept (DASH-298: many are named by what was asked,
+# such as each search or item page, and were kept until a restart, so memory grew with use).
+CACHE_MAX = 200
+
+
+def _sweep(now):
+    """Drops answers past their time, then the oldest beyond CACHE_MAX, and the locks of names no longer asked.
+    Called with _cache_lock held."""
+    for k in [k for k, (at, _, seconds) in _cache.items() if now - at >= max(seconds, 1)]:
+        del _cache[k]
+    if len(_cache) > CACHE_MAX:
+        for k in sorted(_cache, key=lambda k: _cache[k][0])[:len(_cache) - CACHE_MAX]:
+            del _cache[k]
+    for k in [k for k, lock in _flight.items() if k not in _cache and not lock.locked()]:
+        del _flight[k]
 
 
 def cached(key, seconds, fn, fresh=False):
@@ -92,7 +107,9 @@ def cached(key, seconds, fn, fresh=False):
                 return hit[1]
         value = fn()
         with _cache_lock:
-            _cache[key] = (time.monotonic(), value)
+            now = time.monotonic()
+            _cache[key] = (now, value, seconds)
+            _sweep(now)
         return value
 
 
@@ -312,7 +329,7 @@ def status_one(services, service_id):
     with _cache_lock:
         hit = _cache.get("status")
         if hit and rows:
-            _cache["status"] = (hit[0], [rows[0] if r["id"] == service_id else r for r in hit[1]])
+            _cache["status"] = (hit[0], [rows[0] if r["id"] == service_id else r for r in hit[1]], hit[2])
     return rows
 
 

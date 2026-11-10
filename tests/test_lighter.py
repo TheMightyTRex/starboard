@@ -165,3 +165,33 @@ class LighterTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SharedAnswersTest(unittest.TestCase):
+    """DASH-298: the shared answers forget what is out of date and keep at most CACHE_MAX, so memory does not grow
+    with every search and item page."""
+
+    def setUp(self):
+        from starboard import services
+        self.s = services
+        services.forget()
+        services._flight.clear()
+
+    def test_many_names_are_capped(self):
+        for i in range(self.s.CACHE_MAX + 150):
+            self.s.cached(f"library-item-films-{i}", 600, lambda: "x" * 100)
+        self.assertLessEqual(len(self.s._cache), self.s.CACHE_MAX)
+        self.assertIn(f"library-item-films-{self.s.CACHE_MAX + 149}", self.s._cache)  # the newest stays
+        self.assertNotIn("library-item-films-0", self.s._cache)  # the oldest goes
+        self.assertLessEqual(len(self.s._flight), self.s.CACHE_MAX)
+
+    def test_out_of_date_answers_are_dropped_and_fresh_ones_kept(self):
+        from unittest import mock
+        with mock.patch.object(self.s.time, "monotonic", return_value=1000.0):
+            self.s.cached("short", 10, lambda: 1)
+            self.s.cached("long", 600, lambda: 2)
+        with mock.patch.object(self.s.time, "monotonic", return_value=1100.0):
+            self.s.cached("another", 10, lambda: 3)
+            self.assertNotIn("short", self.s._cache)
+            self.assertIn("long", self.s._cache)
+            self.assertEqual(self.s.cached("long", 600, lambda: 99), 2)

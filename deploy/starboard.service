@@ -7,6 +7,8 @@ After=network-online.target
 WorkingDirectory=@DIR@
 Environment=STARBOARD_PORT=@PORT@
 Environment=STARBOARD_DATA=@DIR@/data
+# Two memory pools for all of Starboard's threads, not one each (DASH-298); the Docker image uses Alpine's allocator, which has no such setting.
+Environment=MALLOC_ARENA_MAX=2
 EnvironmentFile=-@DIR@/.env
 ExecStart=/usr/bin/env python3 -m starboard
 Restart=on-failure
