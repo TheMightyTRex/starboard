@@ -56,7 +56,7 @@ class PluginsTest(unittest.TestCase):
     def test_the_compose_file_has_the_hardened_defaults(self):
         text = plugins.compose(ON_DEMAND, "/srv/starboard/data/plugins/on-demand", "/srv/media")
         for line in ("read_only: true", "- ALL", "- no-new-privileges:true", "pids_limit: 64", "mem_limit: 40m", "mem_limit: 250m",
-                     'network_mode: "service:gluetun"', '"/srv/media/on-demand:/media/on-demand"', "starboard.idle_stop_minutes"):
+                     'network_mode: "container:gluetun"', '"/srv/media/on-demand:/media/on-demand"', "starboard.idle_stop_minutes"):
             self.assertIn(line, text)
         for never in ("privileged", "docker.sock", "network_mode: host", "devices", "cap_add"):
             self.assertNotIn(never, text)

@@ -199,8 +199,8 @@ def compose(manifest, plugin_dir, media_dir):
         if c.get("start") == "when_needed":
             lines.append(f"      starboard.idle_stop_minutes: \"{int(c.get('idle_stop_minutes') or 15)}\"")
         net = c.get("network", "default")
-        if net == "vpn":
-            lines += ['    network_mode: "service:gluetun"']
+        if net == "vpn":  # Gluetun runs in the apps' own Compose project, so the plug-in joins its container by name
+            lines += ['    network_mode: "container:gluetun"']
         else:
             lines += ["    networks:", f"      - plugin-{pid}"] + (["      - lan"] if net == "lan" else [])
             networks.add(net)
@@ -213,12 +213,14 @@ def compose(manifest, plugin_dir, media_dir):
             else:
                 vols.append(f"{media_dir}/{v.split('/', 1)[1]}:/{v}")
         vols.append(f"{plugin_dir}/settings.json:/run/starboard/settings.json:ro")
+        vols.append(f"{plugin_dir}/key:/run/starboard/key:ro")  # its own API key (P8), owner-only on the host
         lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
         env = {**{k: str(v) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
                "STARBOARD_API_KEY_FILE": "/run/starboard/key"}
         lines += ["    environment:"] + [f"      {k}: {json.dumps(v)}" for k, v in sorted(env.items())]
     if networks:
-        lines += ["networks:", f"  plugin-{pid}:", "    internal: true"]
+        # Its own network, which reaches nothing outside; Starboard joins it so the plug-in can call the API (PS5).
+        lines += ["networks:", f"  plugin-{pid}:", f"    name: plugin-{pid}", "    internal: true"]
         if "lan" in networks:
             lines += ["  lan:", "    driver: bridge"]
     return "\n".join(lines) + "\n"

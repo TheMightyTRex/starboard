@@ -48,6 +48,14 @@ def example_snapshot(disk_paths):
 
 sysinfo.snapshot = example_snapshot
 containers.available = lambda: False
+
+
+def _never_docker(*a, **k):  # the test copy never reaches this computer's Docker, whatever a page asks
+    raise containers.DockerError("Example data: Docker is not used")
+
+
+containers.docker = _never_docker
+containers._helper = _never_docker
 # EXAMPLE_CONTAINERS=1: a made-up Reelix container on 0.7.1 with 0.7.2 waiting, for What is new (journeys and
 # screenshots). Docker itself is never called: every other request to it fails as if Docker were busy.
 EXAMPLE_CONTAINERS = os.environ.get("EXAMPLE_CONTAINERS") == "1"

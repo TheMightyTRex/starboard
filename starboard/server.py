@@ -1901,6 +1901,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
+            if path.startswith("/api/plugins"):  # Settings, Plug-ins (DASH-149)
+                return self.plugins_route(method, path)
             if path == "/api/keys" and method == "GET":  # API keys (DASH-274): never their secrets
                 from . import api_v1
                 return self.json(200, {"keys": api_v1.list_keys(app.data_dir), "scopes": api_v1.SCOPES, "rights": api_v1.RIGHTS},
@@ -1967,6 +1969,45 @@ class Handler(BaseHTTPRequestHandler):
         days = app.config.data["session_days"] if remember else auth.FORGET_AFTER_DAYS
         token = app.sessions.create(days, app.session_version, remember)
         return {"Set-Cookie": self.session_cookie(token, days * 86400 if remember else None)}
+
+    def plugins_route(self, method, path):
+        """Settings, Plug-ins (DASH-149): add (password), enable, disable, remove (password), Stop all, settings."""
+        from . import plugins_admin as pa
+        app = self.app
+        media = (stack.env_values(app.data_dir).get("DATA_DIR") or "").rstrip("/")
+        media = f"{media}/media" if media else "/nonexistent-media-folder"
+        if path == "/api/plugins" and method == "GET":
+            return self.json(200, {"plugins": pa.listing(app.data_dir)})
+        if path in ("/api/plugins/preview", "/api/plugins/add") and method == "POST":
+            body = self.body()
+            manifest = pa.parse(body["manifest"]) if body.get("manifest") else pa.fetch_manifest(body.get("address"))
+            if path.endswith("preview"):
+                return self.json(200, pa.summary(manifest))
+            self.check_password(body)
+            item = pa.install(app.data_dir, manifest, media)
+            logs.event("info", "plug-ins", f"Added {item['name']} {item['version']}")
+            return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
+        if path == "/api/plugins/stop-all" and method == "POST":
+            stopped = pa.stop_all(app.data_dir)
+            logs.event("info", "plug-ins", f"Stopped every plug-in ({len(stopped)})")
+            return self.json(200, {"stopped": stopped, "plugins": pa.listing(app.data_dir)})
+        m = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/(enable|disable|remove|settings)$", path)
+        if not m or not any(p["id"] == m.group(1) for p in pa.listing(app.data_dir)):
+            return self.error(404, "No plug-in with that id")
+        pid, what = m.groups()
+        if what == "settings" and method == "PUT":
+            return self.json(200, {"settings": pa.save_settings(app.data_dir, pid, self.body().get("settings") or {})})
+        if method != "POST":
+            return self.error(405, "Not allowed")
+        if what == "remove":
+            self.check_password(self.body())
+            pa.uninstall(app.data_dir, pid)
+            logs.event("info", "plug-ins", f"Removed {pid}; its folder is kept in data/plugins/.removed")
+        elif what == "enable":
+            pa.enable(app.data_dir, pid)
+        else:
+            pa.disable(app.data_dir, pid)
+        return self.json(200, {"plugins": pa.listing(app.data_dir)})
 
     def start_stack(self):
         """Starts the apps in data/stack: through Docker when Starboard has access, else through the Run first window
