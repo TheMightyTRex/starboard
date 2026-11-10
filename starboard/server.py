@@ -1952,6 +1952,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
+            if path in ("/api/folders", "/api/folders/check") and method == "GET":  # the folder picker (DASH-240)
+                from . import folders
+                where = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("path", [""])[0]
+                if path.endswith("check"):
+                    return self.json(200, folders.check(where))
+                try:
+                    return self.json(200, folders.browse(where))
+                except LookupError as e:
+                    return self.error(404, str(e))
             if path == "/api/app-logs" and method == "GET":  # App logs on System, Logs (DASH-223): in place of Dozzle
                 from . import app_logs
                 return self.json(200, app_logs.listing())

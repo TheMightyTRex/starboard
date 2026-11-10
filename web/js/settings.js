@@ -1045,7 +1045,7 @@ async function stepContent(id, root) {
     nodes = [el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Where your media goes" }),
       el("div", { class: "option-cards" }, radios.map(({ c, input }) => el("label", { class: "option-card" }, input,
         el("strong", { text: c.title + (c.recommended ? " (recommended)" : "") }), el("small", { text: c.about }))))),
-      field("Media folder", folder, { required: true, hint: "Made for you when the apps start.", span: true }),
+      folderField({ input: folder, label: "Media folder", required: true, hint: "Made for you when the apps start. Type it, or choose it with Browse." }).node,
       el("p", { class: "small muted", text: found.help })];
     save = async () => {
       const picked = radios.find((r) => r.input.checked)?.c || found.choices[0];
@@ -2684,8 +2684,8 @@ function takeoverSection() {
         list(p.copies.map((c) => `${c.from} to ${c.to}`))),
       ...p.warnings.map((w) => notice("warning", "Before you start", w)),
       el("div", { class: "form-stack" },
-        field("Settings folder", cfg, { hint: `Where the copies go. Not inside ${p.config_base || "your old settings folder"}.`, span: true }),
-        field("Media folder", media, { hint: "Where your media and downloads are now. Nothing in it is moved.", span: true }),
+        folderField({ input: cfg, label: "Settings folder", hint: `Where the copies go. Not inside ${p.config_base || "your old settings folder"}.` }).node,
+        folderField({ input: media, label: "Media folder", hint: "Where your media and downloads are now. Nothing in it is moved." }).node,
         unmoved.length ? el("label", { class: "check" }, ok, el("span", { class: "check__text" }, el("strong", { text: `Stop ${p.unmoved_apps.join(", ")} without moving them into Reelix` }),
           el("span", { class: "check__hint", text: "Only if you do not need what they hold. Their settings folders stay either way." }))) : null,
         p3f),

@@ -108,6 +108,16 @@ _HELLO = {"manifest_version": 1, "id": "hello-card", "name": "Hello card", "vers
 plugins_admin.fetch_manifest = lambda address, opener=None: dict(_HELLO)
 
 
+def _example_folders(data):
+    """The folder picker (DASH-240) browses a made-up tree, never this computer's own folders."""
+    from starboard import folders
+    root = data / "example-computer"
+    for d in ("mnt/disk1/media/movies", "mnt/disk1/media/tv", "mnt/disk1/media/books", "mnt/disk2/backups", "mnt/pool/media",
+              "srv/media/downloads", "srv/apps/config", "home/sam/media"):
+        (root / d).mkdir(parents=True, exist_ok=True)
+    folders.ROOTS = tuple(str(root / r) for r in ("mnt", "srv", "home"))
+
+
 def _example_plugins(data_dir):
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "example-plugin-styles.json"), encoding="utf-8") as f:
         styles = json.load(f)
@@ -418,6 +428,7 @@ def main():
                                             "vpn": {"provider": "mullvad", "type": "wireguard",
                                                     "wireguard_private_key": "made-up", "wireguard_addresses": "192.168.1.20/32"}}))
     _example_plugins(str(DATA))
+    _example_folders(DATA)
     server, app = make_server("127.0.0.1", PORT, str(DATA))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     if app.needs_setup:

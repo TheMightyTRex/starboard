@@ -611,6 +611,7 @@ job_save() {
   set_env STARBOARD_ALLOW_DOCKER "$DOCKER"
   set_env STARBOARD_ALLOW_APPUSE "$APPUSE"
   set_env STARBOARD_LIVETV_PATH "$LIVETV"
+  set_env STARBOARD_HOST_HOME "$HOME"  # so a folder typed as ~/media is understood (DASH-240)
   # The graphics chip's maker (0x8086 Intel, 0x1002 AMD), which Starboard in Docker cannot read itself (DASH-82).
   set_env STARBOARD_GRAPHICS_VENDOR "$(cat /sys/class/drm/renderD128/device/vendor 2>/dev/null || true)"
   if [ -n "$LIVETV" ]; then

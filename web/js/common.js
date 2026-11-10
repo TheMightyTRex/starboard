@@ -631,6 +631,99 @@ async function appChangeNotices() {
 // The upgrade guide inside a slide-out (?panel=1): only its steps, without the menus around them.
 if (new URLSearchParams(location.search).get("panel") === "1" && window.parent !== window) document.documentElement.classList.add("in-panel");
 
+// The folder picker (DASH-240, decided 10 November 2026): a field for a folder on this computer with Browse. Typing
+// still works; leaving the field checks it and says in plain words what happens (there, made for you, free space,
+// a folder Starboard never uses). Browse opens a slide-out of folders, one level at a time, to choose from.
+// folderField({ id, label, value, hint }) returns { node, input }; read input.value as usual.
+let folderCount = 0;
+function folderField({ id, label, value = "", hint = "", input: given = null, required = false }) {
+  const input = given || el("input", { class: "input", id, value, spellcheck: "false", autocomplete: "off" });
+  id = input.id || id || `folder-${++folderCount}`;
+  input.id = id;
+  if (required) input.required = true;
+  input.setAttribute("aria-describedby", `${hint ? `${id}-hint ` : ""}${id}-check ${id}-error`);
+  // The same error spot as Settings' field(), so a page's setError and showProblemNear still work.
+  const error = el("span", { class: "field-error", id: `${id}-error`, hidden: true });
+  input.fieldError = error;
+  const browse = el("button", { type: "button", class: "btn", "aria-haspopup": "dialog" }, icon("folder-open"), "Browse",
+    el("span", { class: "visually-hidden", text: ` for ${label.toLowerCase()}` }));
+  const said = el("div", { class: "small folder-check", id: `${id}-check`, "aria-live": "polite" });
+  let last = "";
+  const check = async () => {
+    const v = input.value.trim();
+    if (!v || v === last) return;
+    last = v;
+    try {
+      const r = await api(`/api/folders/check?path=${encodeURIComponent(v)}`);
+      if (r.ok && r.path !== input.value) input.value = r.path;  // tidied: spaces and a trailing slash gone
+      last = input.value;
+      said.dataset.tone = r.ok ? "" : "danger";
+      said.replaceChildren(...r.lines.map((l) => el("p", { text: l })));
+    } catch { said.replaceChildren(); }
+  };
+  input.addEventListener("change", check);
+  input.addEventListener("blur", check);
+  browse.addEventListener("click", () => folderBrowser(input.value.trim(), browse, (chosen) => { input.value = chosen; input.dispatchEvent(new Event("input", { bubbles: true })); check(); input.focus(); }));
+  if (input.value) setTimeout(check, 0);
+  const hintNode = hint ? el("span", { class: "hint", id: `${id}-hint`, text: hint }) : null;
+  input.fieldHint = hintNode;
+  const node = el("div", { class: "field", "data-span": "all" }, el("label", { for: id, text: label }), hintNode,
+    el("div", { class: "folder-field" }, input, browse), error, said);
+  return { node, input };
+}
+
+async function folderBrowser(start, opener, onChoose) {
+  const list = el("ul", { class: "folder-list", role: "listbox", "aria-label": "Folders", tabindex: "0" });
+  const crumbs = el("nav", { class: "folder-crumbs", "aria-label": "Where you are" });
+  const info = el("p", { class: "small muted", "aria-live": "polite" });
+  const choose = el("button", { type: "button", class: "btn btn--primary", text: "Choose this folder" });
+  const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
+  const panel = sidePanel({ title: "Choose a folder", opener, body: [crumbs, info, list], foot: [choose, cancel] });
+  cancel.addEventListener("click", () => panel.close());
+  let here = "", active = 0, typed = "", typedAt = 0;
+  const pick = (i) => {
+    const items = [...list.children];
+    if (!items.length) return;
+    active = Math.max(0, Math.min(i, items.length - 1));
+    items.forEach((n, k) => n.setAttribute("aria-selected", String(k === active)));
+    list.setAttribute("aria-activedescendant", items[active].id);
+    items[active].scrollIntoView({ block: "nearest" });
+  };
+  const open = async (path) => {
+    let r;
+    try { r = await api(`/api/folders?path=${encodeURIComponent(path || "")}`); }
+    catch (e) { if (path) { info.textContent = `${e.message}. Showing the places to start from.`; return open(""); } info.textContent = e.message; return; }
+    here = r.path;
+    choose.disabled = !here;
+    crumbs.replaceChildren(el("button", { type: "button", class: "btn btn--quiet btn--compact", text: "All places", onclick: () => open("") }),
+      ...r.crumbs.map((c, k) => [el("span", { "aria-hidden": "true", text: "/" }),
+        el("button", { type: "button", class: "btn btn--quiet btn--compact", text: c.name, "aria-current": k === r.crumbs.length - 1 ? "location" : null, onclick: () => open(c.path) })]).flat());
+    info.textContent = r.why || [here ? `In ${r.crumbs.map((c) => c.name).join("/").replace(/^\/\//, "/")}` : "Choose where to start", r.free != null ? `${formatBytes(r.free)} free on its disk` : "",
+      r.folders.length ? `${r.folders.length} ${r.folders.length === 1 ? "folder" : "folders"}` : "No folders inside"].filter(Boolean).join(" · ");
+    list.replaceChildren(...r.folders.map((f, k) => el("li", { role: "option", id: `folder-opt-${k}`, "aria-selected": "false", "data-path": f.path,
+      onclick: () => open(f.path) }, icon("folder"), el("span", { text: f.name }))));
+    active = 0;
+    if (r.folders.length) pick(0);
+    list.focus();
+  };
+  // Up and Down move, Enter or Right opens, Left or Backspace goes up, letters jump to a folder.
+  list.addEventListener("keydown", (e) => {
+    const items = [...list.children];
+    if (e.key === "ArrowDown") { e.preventDefault(); pick(active + 1); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); pick(active - 1); }
+    else if ((e.key === "Enter" || e.key === "ArrowRight") && items[active]) { e.preventDefault(); open(items[active].dataset.path); }
+    else if ((e.key === "ArrowLeft" || e.key === "Backspace") && here) { e.preventDefault(); open(here.split("/").slice(0, -1).join("/") || ""); }
+    else if (e.key.length === 1 && /\S/.test(e.key)) {
+      typed = Date.now() - typedAt < 700 ? typed + e.key.toLowerCase() : e.key.toLowerCase();
+      typedAt = Date.now();
+      const k = items.findIndex((n) => n.textContent.toLowerCase().startsWith(typed));
+      if (k >= 0) pick(k);
+    }
+  });
+  choose.addEventListener("click", () => { if (here) { panel.close(); onChoose(here); } });
+  open(start);
+}
+
 // Still to set up, one at a time (DASH-289, owner, 10 November 2026): a slide-out that walks through each item left,
 // with Do it now (the place that does it), Skip (later), Ignore (not asked again; Bring back in the list), Done for
 // a guided step, and Next step. It opens by itself once in each browser session while anything is left, and
