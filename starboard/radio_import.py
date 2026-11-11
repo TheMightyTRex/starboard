@@ -83,12 +83,25 @@ def connect(reelix_admin, cfg, opener=None):
     return {"done": [f"Reelix now reads Audiobookshelf's Radio library ({abs_folder}) and is reading it now"]}
 
 
+def _exact(text):
+    """Folded but keeping "The": "Castle" is not "The Castle" (owner, 11 November 2026: The Castle matched a Dari
+    children's programme called Castle)."""
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", unicodedata.normalize("NFKD", str(text or "")).encode("ascii", "ignore").decode().lower().replace("&", " and ")).split())
+
+
+def _latin(text):
+    """True when a station's name is in the Latin alphabet: BBC Radio 4, not a BBC language service."""
+    return not re.search(r"[^\x00-\u024f\u2018-\u201f\u2026\u2013\u2014 ]", str(text or ""))
+
+
 def _best(title, hits):
     want = _fold(title)
-    same = [h for h in hits if _fold(h.get("title")) == want]
-    near = [h for h in hits if want and (want in _fold(h.get("title")) or _fold(h.get("title")) in want)]
-    ordered = same + [h for h in near if h not in same] + [h for h in hits if h not in same and h not in near]
-    return ordered
+    exact = [h for h in hits if _exact(h.get("title")) == _exact(title)]
+    same = [h for h in hits if _fold(h.get("title")) == want and h not in exact]
+    near = [h for h in hits if want and (want in _fold(h.get("title")) or _fold(h.get("title")) in want) and h not in exact + same]
+    rest = [h for h in hits if h not in exact + same + near]
+    english = lambda group: sorted(group, key=lambda h: not _latin(h.get("station_name") or h.get("author")))  # noqa: E731
+    return english(exact) + english(same) + english(near) + rest
 
 
 def scan(cfg, start=0):
@@ -119,7 +132,7 @@ def scan(cfg, start=0):
                     "already": h.get("show_id")} for h in _best(title, hits)[:5] if h.get("provider") and h.get("external_id")]
         # Ticked only when the best match has the same title: a near one ("Night Train Hour" for "Night Train") waits
         # for a person to choose it.
-        sure = bool(matches) and _fold(matches[0]["title"]) == _fold(title)
+        sure = bool(matches) and _exact(matches[0]["title"]) == _exact(title) and _latin(matches[0]["station"])
         items.append({"key": show.get("abs_item_id"), "title": title, "files": show.get("file_count", 0),
                       "matches": matches, "sure": sure, "problem": problem})
     return {"total": len(waiting), "start": int(start), "items": items}

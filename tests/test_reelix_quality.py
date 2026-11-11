@@ -126,6 +126,15 @@ class RecommendedTest(unittest.TestCase):
 class RadioImportTest(unittest.TestCase):
     """Bring in radio shows already on disk (owner, 10 November 2026). Reelix's answers are stand-ins."""
 
+    def test_a_title_without_the_or_from_another_language_service_is_not_sure(self):
+        # Owner, 11 November 2026: The Castle matched a Dari children's programme called Castle.
+        from starboard import radio_import as ri
+        hits = [{"title": "Castle", "station_name": "\u0628\u06cc \u0628\u06cc \u0633\u06cc"},
+                {"title": "The Castle", "station_name": "BBC Radio 4 Extra"}]
+        self.assertEqual(ri._best("The Castle", hits)[0]["station_name"], "BBC Radio 4 Extra")
+        self.assertFalse(ri._latin("\u0628\u06cc \u0628\u06cc \u0633\u06cc"))
+        self.assertNotEqual(ri._exact("Castle"), ri._exact("The Castle"))
+
     def test_matches_are_found_by_title_and_shows_added_following_every_episode(self):
         from unittest import mock
         from starboard import radio_import as ri
