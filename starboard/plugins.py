@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.0.0"
+API_VERSION = "1.1.0"  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -103,8 +103,8 @@ def check(manifest, dev=False, builtin=False):
     styles = m.get("styles")
     if styles is not None:
         from . import plugin_styles
-        if not (isinstance(styles, list) and 1 <= len(styles) <= 12):
-            out.append("styles must list one to twelve styles")
+        if not (isinstance(styles, list) and 1 <= len(styles) <= 16):
+            out.append("styles must list one to sixteen styles")
         else:
             if "appearance:styles" not in perms:
                 out.append("styles need the permission appearance:styles, so people see it before adding")
@@ -293,12 +293,14 @@ def write_schema(path):
             "starboard_api": {"type": "string"}, "health": {"type": "string", "pattern": "^/"},
             "permissions": {"type": "array", "items": {"enum": sorted(PERMISSIONS)}, "uniqueItems": True},
             "needs": {"type": "array", "items": {"type": "string"}},
-            "styles": {"type": "array", "minItems": 1, "maxItems": 12, "items": {
+            "styles": {"type": "array", "minItems": 1, "maxItems": 16, "items": {
                 "type": "object", "additionalProperties": False, "required": ["id", "name", "light", "dark"],
                 "properties": {"id": {"type": "string"}, "name": {"type": "string", "maxLength": 30}, "description": {"type": "string", "maxLength": 120},
                                "radius": {"type": "integer", "minimum": 0, "maximum": 24},
                                "font": {"enum": ["hyperlegible", "system", "rounded", "serif", "mono"]},
-                               "shadow": {"enum": ["none", "soft", "strong"]},
+                               "shadow": {"enum": ["none", "soft", "strong", "layered", "glow"]},
+                               "heading_font": {"enum": ["hyperlegible", "system", "rounded", "serif", "mono"]},
+                               "heading_weight": {"enum": [600, 700, 800]}, "focus_width": {"type": "integer", "minimum": 3, "maximum": 5},
                                "light": {"$ref": "#/$defs/colours"}, "dark": {"$ref": "#/$defs/colours"}}}},
             "containers": {"type": "array", "minItems": 0, "maxItems": 4, "items": {
                 "type": "object", "additionalProperties": False, "required": ["name", "image"],

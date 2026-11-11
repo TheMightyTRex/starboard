@@ -75,11 +75,28 @@ class PluginCardsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             pa.install(d, styles, "/srv/media")
             looks = pa.listing(d)[0]["looks"]
-            self.assertEqual(len(looks), 8)
+            self.assertEqual(len(looks), 13)  # Styles 1.1.0: five more (11 November 2026)
             self.assertEqual(looks[2]["value"], "styles.bold")
             self.assertIn("text", looks[2]["dark"])
             self.assertEqual(plugin_tester.report(styles)["ok"], True)
 
+
+    def test_a_style_may_set_more_and_every_extra_pair_is_checked(self):
+        # Owner, 11 November 2026: styles may change most things, still accessible.
+        from starboard import plugin_styles as ps
+        path = os.path.join(os.path.dirname(__file__), "..", "tools", "screenshots", "example-plugin-styles.json")
+        with open(path) as f:
+            graphite = next(s for s in json.load(f)["styles"] if s["id"] == "graphite")
+        self.assertEqual([p for p in ps.check_style(graphite) if p["severity"] == "error"], [])
+        css = ps.css("styles", [graphite])
+        for var in ("--color-rail:", "--status-danger-fg:", "--series-7:", "--weight-heading: 800", "--focus-w: 4px"):
+            self.assertIn(var, css)
+        bad = json.loads(json.dumps(graphite))
+        bad["light"]["rail"] = "#111113"  # black side menu behind dark words
+        self.assertIn("text on rail", " ".join(p["what"] for p in ps.check_style(bad)))
+        bad = json.loads(json.dumps(graphite))
+        bad["focus_width"] = 2
+        self.assertIn("focus_width", " ".join(p["what"] for p in ps.check_style(bad)))
 
 if __name__ == "__main__":
     unittest.main()

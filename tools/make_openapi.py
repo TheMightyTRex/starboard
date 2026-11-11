@@ -24,7 +24,7 @@ def listing(item, extra=None):
 ANY = {"type": "object", "additionalProperties": True}
 spec = {
     "openapi": "3.1.0",
-    "info": {"title": "Starboard API", "version": "1.0.0",
+    "info": {"title": "Starboard API", "version": "1.1.0",
              "description": "Read only for now. Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... "
                             "Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
              "license": {"name": "MIT", "identifier": "MIT"}},

@@ -22,6 +22,10 @@
   [hidden] {
     display: none !important;
   }
+  /* Headings may have a font of their own from a style (Starboard's styles, 11 November 2026); otherwise the body's. */
+  :is(h1, h2, h3, h4) {
+    font-family: var(--font-heading, var(--font));
+  }
   body {
     margin: 0;
     font-family: var(--font);
@@ -270,7 +274,7 @@
     align-items: stretch;
     gap: var(--space-1);
     padding: var(--space-3) var(--space-2);
-    background: var(--color-header);
+    background: var(--color-rail, var(--color-header)); /* a style may give the side menu its own colour */
     border-right: 1px solid var(--color-divider);
   }
   .rail__logo {
