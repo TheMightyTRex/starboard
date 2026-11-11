@@ -139,7 +139,62 @@ function pluginCard(p, redraw) {
     p.looks?.length ? styleGallery(p) : null,
     el("h3", { text: "What it may do" }), pluginPermissions(p.permissions),
     pluginSettingsForm(p, redraw),
-    custom.length ? el("p", { class: "small muted", text: `${custom.map((s) => s.label).join(", ")}: on its own screen, which comes with the next part of plug-ins.` }) : null);
+    ...custom.map((s) => customScreen(p, s)));
+}
+
+// A plug-in's own screen (11 November 2026): a managed list the plug-in describes as data, drawn here. Rows grouped
+// with a state, Test, Turn on or off, Move and Remove; Add takes an address; Test all checks everything at once.
+const CUSTOM_STATE = { ok: ["Works", "success"], warning: ["Slow", "warning"], problem: ["Not answering", "danger"],
+  off: ["Off", "muted"], unknown: ["Not tested", "muted"] };
+function customScreen(p, s) {
+  const box = el("div", { class: "stack-4", "aria-live": "polite" }, el("p", { class: "muted", text: "Loading…" }));
+  const said = el("p", { class: "small", role: "status" });
+  const path = `/api/plugins/${p.id}/custom/${s.key}`;
+  const run = async (body, button) => {
+    if (button) button.disabled = true;
+    try { const out = await api(path, { method: "POST", body }); if (out.said) { said.textContent = out.said; toast(out.said); } draw(out); }
+    catch (err) { problem(err.message, button); }
+    finally { if (button) button.disabled = false; }
+  };
+  const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"] };
+  const draw = (data) => {
+    const groups = new Map();
+    for (const it of data.items) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
+    const add = data.add ? (() => {
+      const id = `add-${p.id}-${s.key}`;
+      const input = el("input", { class: "input", id, type: "url", placeholder: data.add.placeholder || "", autocomplete: "off" });
+      const go = el("button", { type: "submit", class: "btn btn--primary" }, icon("plus"), data.add.label || "Add");
+      const form = el("form", { class: "stack-2" }, el("label", { class: "field__label", for: id, text: data.add.label || "Add" }),
+        data.add.hint ? el("p", { class: "hint", text: data.add.hint }) : null, el("div", { class: "actions" }, input, go));
+      form.addEventListener("submit", (e) => { e.preventDefault(); if (input.value.trim()) run({ action: "add", value: input.value.trim() }, go); });
+      return form;
+    })() : null;
+    const testAll = el("button", { type: "button", class: "btn" }, icon("activity"), "Test all");
+    testAll.addEventListener("click", () => run({ action: "test_all" }, testAll));
+    box.replaceChildren(
+      data.intro ? el("p", { class: "small muted", text: data.intro }) : null,
+      el("div", { class: "actions" }, testAll), said,
+      ...[...groups].map(([g, rows]) => el("section", { class: "stack-2", "aria-label": g || data.title },
+        g ? el("h4", { text: g }) : null,
+        el("ul", { class: "rows" }, rows.map((it) => el("li", { class: "row row--no-lead" },
+          el("div", {}, el("h5", { class: "row__title", text: it.title }),
+            el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") })),
+          el("div", { class: "row__side" }, chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)),
+            ...it.actions.map((a) => {
+              const [label, ic] = a === "toggle" ? [it.on ? "Turn off" : "Turn on", it.on ? "pause" : "play"] : ACTION_WORDS[a];
+              const b = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, ic ? icon(ic) : null, label,
+                el("span", { class: "visually-hidden", text: ` ${it.title}` }));
+              b.addEventListener("click", async () => {
+                if (a === "remove" && !(await confirmDialog({ title: `Remove ${it.title}?`, confirm: "Remove", message: "You can add it again by its address." }))) return;
+                run({ action: a, id: it.id }, b);
+              });
+              return b;
+            }))))))),
+      add);
+  };
+  if (p.state !== "enabled") box.replaceChildren(el("p", { class: "small muted", text: `${s.label}: activate ${p.name} to see it.` }));
+  else api(path).then(draw).catch((err) => box.replaceChildren(notice("info", `${p.name} did not answer`, err.message)));
+  return el("div", { class: "stack-2" }, el("h3", { text: s.label }), s.hint ? el("p", { class: "small muted", text: s.hint }) : null, box);
 }
 
 // Test a plug-in (DASH-284): for authors, before sharing it. Nothing is added.

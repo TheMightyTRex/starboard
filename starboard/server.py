@@ -2179,6 +2179,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, plugin_cards.answer(app.data_dir, mc.group(1), mc.group(2)))
             except LookupError as e:
                 return self.error(404, str(e))
+        mx = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/custom/([a-z][a-z0-9_]{0,40})$", path)
+        if mx and method in ("GET", "POST"):  # a plug-in's own screen, drawn by Starboard (11 November 2026)
+            from . import plugin_custom
+            try:
+                out = plugin_custom.call(app.data_dir, mx.group(1), mx.group(2), self.body() if method == "POST" else None)
+            except LookupError as e:
+                return self.error(404, str(e))
+            except ValueError as e:
+                return self.error(400, str(e))
+            if method == "POST" and out.get("said"):
+                logs.event("info", "plug-ins", f"{mx.group(1)}: {out['said']}")
+            return self.json(200, out)
         if path == "/api/plugins/stop-all" and method == "POST":
             stopped = pa.stop_all(app.data_dir)
             logs.event("info", "plug-ins", f"Deactivated every plug-in ({len(stopped)})")
