@@ -100,6 +100,50 @@ def loop(stop=None):
         _wake.clear()
 
 
+DATA = os.path.dirname(STATUS)
+
+
+def channels_screen(said=""):
+    """Every channel by section, on or off, for the plug-in's Channels screen in Starboard (DASH-313)."""
+    from . import livetv
+    hidden = livetv.hidden_ids(DATA)
+    rows = []
+    for c in sorted(livetv.all_channels(livetv.folder()), key=lambda c: int(c.get("number") or 0)):
+        on = c["id"] not in hidden
+        rows.append({"id": c["id"], "title": f"{c['number']} {c['name']}", "group": c.get("section") or "Other",
+                     "detail": {"channels.m3u": "Free-TV", "samsung.m3u": "Samsung TV Plus", "pluto.m3u": "Pluto TV"}.get(c.get("list"), ""),
+                     "state": "ok" if on else "off", "on": on, "actions": ["toggle"]})
+    out = {"type": "list", "title": "Channels", "items": rows,
+           "intro": f"{sum(1 for r in rows if r['on'])} of {len(rows)} channels are in Jellyfin. A channel you turn off stays off when the lists are rebuilt."}
+    if said:
+        out["said"] = said
+    return out
+
+
+def channels_act(body):
+    from . import livetv, livetv_jellyfin
+    if body.get("action") != "toggle":
+        raise ValueError("Channels can be turned on or off")
+    cid = str(body.get("id") or "")
+    known = {c["id"]: c for c in livetv.all_channels(livetv.folder())}
+    if cid not in known:
+        raise ValueError("Not one of the channels")
+    hidden = livetv.hidden_ids(DATA)
+    name = known[cid]["name"]
+    jf = _read(JELLYFIN, {})
+    services = [{"type": "jellyfin", "url": jf["url"], "api_key": jf["api_key"]}] if jf.get("url") and jf.get("api_key") else []
+    if cid in hidden:  # back on: the lists are built again, with it
+        livetv.save_hidden(DATA, hidden - {cid})
+        with _lock:
+            _force["now"] = True
+        _wake.set()
+        return channels_screen(f"{name} is coming back: the lists are being rebuilt, which takes a few minutes")
+    livetv.save_hidden(DATA, hidden | {cid})
+    livetv.drop_hidden(livetv.folder(), hidden | {cid})
+    livetv_jellyfin.refresh_guide(services)
+    return channels_screen(f"{name} turned off; Jellyfin drops it at its guide refresh, starting now")
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -117,9 +161,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.answer(200, {"ok": True})
         if self.path == "/card":
             return self.answer(200, card())
+        if self.path == "/channels":
+            return self.answer(200, channels_screen())
         return self.answer(404, {"error": "Not found"})
 
     def do_POST(self):
+        if self.path == "/channels":
+            n = int(self.headers.get("Content-Length") or 0)
+            try:
+                return self.answer(200, channels_act(json.loads(self.rfile.read(n) or b"{}")))
+            except (ValueError, KeyError) as e:
+                return self.answer(400, {"error": str(e)})
         if self.path == "/run":
             with _lock:
                 _force["now"] = True

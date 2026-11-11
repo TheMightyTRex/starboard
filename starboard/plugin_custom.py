@@ -12,7 +12,7 @@ import json
 import urllib.error
 import urllib.request
 
-MAX_BYTES = 256 * 1024
+MAX_BYTES = 512 * 1024
 ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down")
 STATES = ("ok", "warning", "problem", "off", "unknown")
 
@@ -27,7 +27,7 @@ def clean(data):
         raise ValueError("The plug-in's screen is not a list Starboard can draw")
     add = data.get("add") if isinstance(data.get("add"), dict) else None
     items = []
-    for it in data["items"][:300]:
+    for it in data["items"][:1000]:  # Live TV's channels (DASH-313): 546 found on the owner's server
         if not isinstance(it, dict) or not it.get("id"):
             continue
         items.append({"id": _text(it["id"], 600), "title": _text(it.get("title"), 120), "detail": _text(it.get("detail"), 200),

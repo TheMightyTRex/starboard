@@ -146,6 +146,27 @@ class LiveTvPluginTest(unittest.TestCase):
             livetv_plugin.run_once(build=lambda *a, **k: "Nothing due", connect=lambda *a, **k: "", refresh=lambda svc: asked.append(svc))
             self.assertEqual(asked, [])  # no new guide: Jellyfin is not asked
 
+    def test_channels_can_be_turned_off_and_stay_off(self):
+        # DASH-313 (owner, 11 November 2026): 330 of 546 channels removed by hand; now a screen in Starboard.
+        from starboard import livetv
+        d = self.tmp.name
+        with open(os.path.join(d, "samsung.m3u"), "w") as f:
+            f.write('#EXTM3U\n#EXTINF:-1 tvg-id="A1" tvg-chno="101",Keep\nhttp://a\n#EXTINF:-1 tvg-id="B2" tvg-chno="102",Drop\nhttp://b\n')
+        with open(os.path.join(d, livetv.ALL), "w") as f:
+            json.dump([{"id": "A1", "name": "Keep", "number": "101", "section": "Entertainment", "list": "samsung.m3u"},
+                       {"id": "B2", "name": "Drop", "number": "102", "section": "Entertainment", "list": "samsung.m3u"}], f)
+        with mock.patch.object(livetv, "folder", return_value=d), mock.patch.object(livetv_plugin, "DATA", d), \
+                mock.patch.object(livetv_plugin, "JELLYFIN", os.path.join(d, "none.json")):
+            out = livetv_plugin.channels_act({"action": "toggle", "id": "B2"})
+            self.assertIn("Drop turned off", out["said"])
+            self.assertEqual([(r["title"], r["on"]) for r in out["items"]], [("101 Keep", True), ("102 Drop", False)])
+            self.assertEqual([c["name"] for c in livetv._parse(os.path.join(d, "samsung.m3u"))], ["Keep"])
+            out = livetv_plugin.channels_act({"action": "toggle", "id": "B2"})
+            self.assertIn("coming back", out["said"])
+            self.assertEqual(livetv.hidden_ids(d), set())
+            with self.assertRaises(ValueError):
+                livetv_plugin.channels_act({"action": "toggle", "id": "nope"})
+
     def test_built_in_plug_ins_follow_starboards_update(self):
         cfg = FakeConfig(self.tmp.name, {"livetv": True})
         runs = []

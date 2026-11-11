@@ -569,7 +569,54 @@ def _stamp(path):
         return ""
 
 
-def number_and_logos(d, self_url, white):
+HIDDEN = "hidden-channels.json"  # in the plug-in's own data folder (DASH-313)
+ALL = ".starboard-channels.json"  # every channel found, hidden ones too, so one can be turned back on
+
+
+def hidden_ids(data_dir):
+    try:
+        with open(os.path.join(data_dir, HIDDEN), encoding="utf-8") as f:
+            got = json.load(f)
+        return {str(h["id"]) if isinstance(h, dict) else str(h) for h in got}
+    except (OSError, ValueError, TypeError, KeyError):
+        return set()
+
+
+def save_hidden(data_dir, ids):
+    tmp = os.path.join(data_dir, HIDDEN + ".new")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(sorted(ids), f)
+    os.replace(tmp, os.path.join(data_dir, HIDDEN))
+
+
+def all_channels(d):
+    try:
+        with open(os.path.join(d, ALL), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return []
+
+
+def drop_hidden(d, hidden):
+    """Takes hidden channels out of the lists Jellyfin reads, now, without fetching anything. Returns how many."""
+    gone = 0
+    for name in FILES:
+        path = os.path.join(d, name)
+        if not os.path.exists(path):
+            continue
+        chans = _parse(path)
+        keep = [c for c in chans if c["attrs"].get("tvg-id") not in hidden]
+        if len(keep) == len(chans):
+            continue
+        gone += len(chans) - len(keep)
+        lines = ["#EXTM3U"]
+        for c in keep:
+            lines += ["#EXTINF:-1 " + " ".join(f'{k}="{v}"' for k, v in c["attrs"].items()) + f",{c['name']}", c["url"]]
+        _write(path, "\n".join(lines) + "\n")
+    return gone
+
+
+def number_and_logos(d, self_url, white, hidden=frozenset()):
     logos = os.path.join(d, "logos")
     os.makedirs(logos, exist_ok=True)
     chans = []
@@ -595,6 +642,10 @@ def number_and_logos(d, self_url, white):
         ch["attrs"]["group-title"] = ch["cat"]
         if have.get(logo_key(ch)):
             ch["attrs"]["tvg-logo"] = f"{self_url}/iptv/logos/{logo_key(ch)}.png"
+    # Every channel, hidden ones too, for the plug-in's Channels screen (DASH-313); then the hidden ones go.
+    _write(os.path.join(d, ALL), json.dumps([{"id": c["attrs"].get("tvg-id", ""), "name": c["name"], "number": c["attrs"]["tvg-chno"],
+                                              "section": c["cat"], "list": os.path.basename(c["file"])} for c in chans]))
+    chans = [c for c in chans if c["attrs"].get("tvg-id") not in hidden]
     for name in FILES:
         path = os.path.join(d, name)
         mine = [c for c in chans if c["file"] == path]
@@ -692,7 +743,7 @@ def run(self_url, white, force=False):
         elif due:
             guide_step(name, f"{name} guide", lambda: guide(d))
     if rebuilt:
-        done.append(number_and_logos(d, self_url, white))
+        done.append(number_and_logos(d, self_url, white, hidden_ids(os.environ.get("STARBOARD_DATA", "/data"))))
     state["self_url"] = self_url
     tmp = state_path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
