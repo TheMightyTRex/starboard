@@ -21,7 +21,9 @@ function drawGroups(words) {
   let current = "";
   // TV networks: one grid of square cards, A to Z, the A to Z bar jumping to each letter's first card (owner,
   // 10 November 2026). Other groups: a list under a heading for each letter.
-  const grid = G_TAB === "tv" ? el("ul", { class: "network-grid", "aria-label": "Networks, A to Z" }) : null;
+  // Radio stations the same way (owner, 11 November 2026, DASH-321).
+  const square = G_TAB === "tv" || G_TAB === "radio";
+  const grid = square ? el("ul", { class: "network-grid", "aria-label": G_TAB === "tv" ? "Networks, A to Z" : "Stations, A to Z" }) : null;
   if (grid) box.append(grid);
   let firstOfLetter = false;
   for (const g of shown) {
@@ -38,14 +40,14 @@ function drawGroups(words) {
     const href = `/${G_WALL[G_TAB]}?group=${encodeURIComponent(g.name)}${G_BY ? `&by=${G_BY}` : ""}`;
     // TV, Networks (DASH-264): the network's logo in one colour, or its name on a plain tile; never a series' cover.
     const nameTile = () => el("div", { class: "cover cover--result network-logo", "aria-hidden": "true" }, el("span", { class: "network-logo__name", text: g.name }));
-    const picture = G_TAB === "tv"
+    const picture = square
       ? (g.logo ? el("div", { class: "cover cover--result network-logo", "aria-hidden": "true" },
         el("img", { src: g.logo, alt: "", loading: "lazy", onerror: (e) => e.target.closest(".network-logo").replaceWith(nameTile()) })) : nameTile())
       : g.poster ? el("div", { class: "cover cover--result", "aria-hidden": "true" }, el("img", { src: g.poster, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }))
         : el("div", { class: "cover cover--result", "aria-hidden": "true" });
     const meta = `${gCount(g.count, G_NOUN[G_TAB])}, ${g.have.toLocaleString("en-GB")} in your library`;
     // The whole card opens the network: its link covers the card (network-card__link::after), so one tab stop each.
-    ul.append(G_TAB === "tv"
+    ul.append(square
       ? el("li", { class: "network-card", ...(firstOfLetter ? { id: gLetterId(current), tabindex: "-1" } : {}) }, picture,
         el("h3", { class: "network-card__name" }, el("a", { class: "network-card__link", href, text: g.name })),
         el("p", { class: "network-card__meta", text: meta }))
