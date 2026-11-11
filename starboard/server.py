@@ -1284,6 +1284,16 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except services.ServiceError as e:
                     return self.error(502, f"Reelix said no: {e}")
+            if path == "/api/wanted/detail" and method == "GET":  # DASH-305: one wanted film or episode in full
+                from . import wanted
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                try:
+                    return self.json(200, wanted.detail(cfg.data["services"], q.get("kind", [""])[0], int(q.get("id", ["0"])[0] or 0),
+                                                        q.get("series", [""])[0]))
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
             if path in ("/api/wanted", "/api/wanted/search"):
                 from . import wanted  # DASH-207: Missing and Below the quality wanted, from Reelix
                 try:
