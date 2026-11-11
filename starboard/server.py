@@ -1907,6 +1907,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, result)
             if path == "/api/access" and method == "GET":
                 return self.json(200, {"items": access.summary(app)})
+            m = re.match(r"^/api/transfer/([A-Za-z0-9_-]{1,64})/resume-unpacking$", path)
+            if m and method == "POST":  # DASH-304: unpacking and folder scanning on again; downloading is left alone
+                s = cfg.service(m.group(1))
+                if not s or s["type"] != "nzbget":
+                    return self.error(404, "No NZBGet with that id")
+                try:
+                    services.nzbget(s, "resumepost")
+                    services.nzbget(s, "resumescan")
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
+                services.forget("transfer")
+                logs.event("info", "downloads", f"{s['name']}: unpacking and folder scanning resumed")
+                return self.json(200, {"said": f"{s['name']} is unpacking again"})
             if path == "/api/transfer" and method == "GET":
                 return self.json(200, services.cached("transfer", 5, lambda: services.transfer(cfg.data["services"]), fresh))
             if path == "/api/numbers" and method == "GET":

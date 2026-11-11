@@ -334,6 +334,22 @@ async function loadTransfer(fresh = false) {
   for (const e of t.errors) tiles.push(stat("Not answering", e.message, "danger"));
   $("#transfer").hidden = !tiles.length;
   $("#transfer").replaceChildren(...tiles);
+  // DASH-304: NZBGet's unpacking paused, so finished downloads wait and nothing reaches the library.
+  const held = t.clients.filter((c) => c.post_paused);
+  $("#unpack-paused")?.remove();
+  if (held.length) {
+    const c = held[0];
+    const go = el("button", { type: "button", class: "btn" }, icon("play"), "Resume unpacking");
+    go.addEventListener("click", async () => {
+      go.disabled = true;
+      try { toast((await api(`/api/transfer/${c.id}/resume-unpacking`, { method: "POST" })).said); loadTransfer(true); }
+      catch (err) { problem(err.message, go); go.disabled = false; }
+    });
+    $("#transfer").before(el("div", { id: "unpack-paused", class: "notice", "data-tone": "warning", role: "status" }, icon("triangle-alert"),
+      el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${c.name} is not unpacking` }),
+        el("p", { text: `Its unpacking is paused, so ${c.waiting_unpack ? `${c.waiting_unpack} finished ${c.waiting_unpack === 1 ? "download waits" : "downloads wait"}` : "finished downloads wait"} and nothing new reaches your library. Downloading follows your download hours as before.` })),
+      go));
+  }
 }
 
 // Finished this week: the newest imports from each app's history. Loaded once when the page opens.

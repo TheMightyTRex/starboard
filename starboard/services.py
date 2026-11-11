@@ -1008,7 +1008,12 @@ def transfer(services):
             left = int(st.get("RemainingSizeMB") or 0)
             return "clients", {"name": s["name"], "kind": "usenet", "down": down, "down_text": _speed(down),
                                "paused": bool(st.get("DownloadPaused")), "left": f"{left / 1024:.1f} GB" if left else "",
-                               "count": len(groups)}
+                               "count": len(groups), "id": s["id"],
+                               # Unpacking or folder scanning paused (DASH-304, found on the owner's server, 10 November
+                               # 2026): finished downloads then wait and nothing reaches the library. Starboard never
+                               # pauses these; the person or another app did.
+                               "post_paused": bool(st.get("PostPaused")) or bool(st.get("ScanPaused")),
+                               "waiting_unpack": sum(1 for g in groups if str(g.get("Status", "")).startswith("PP_"))}
         if s["type"] == "sabnzbd" and s.get("api_key"):
             q = (sab(s, "queue", limit=0) or {}).get("queue") or {}
             down = float(q.get("kbpersec") or 0) * 1000
