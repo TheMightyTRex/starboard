@@ -156,7 +156,14 @@ def run_books(cfg, root_id, items):
             if isinstance(i, dict) and i.get("id") and str(i["id"]).startswith("OL")]
     if not keep:
         raise ImportError_("Choose a match for at least one folder")
-    body = {"root_folder_id": root_id, "items": [{**i, "monitor": BOOK_MONITOR} for i in keep]}
+    # Reelix needs a quality profile of the folder's own kind: an audiobook folder an audiobook profile, a book folder
+    # an ebook profile (owner's server, 11 November 2026: without one every author was refused).
+    kind = next((f.get("kind") for f in _call(cfg, "GET", "/bookrootfolders") or [] if f.get("id") == root_id), "audiobook")
+    profiles = _call(cfg, "GET", f"/qualityprofiles?kind={'audiobook' if kind == 'audiobook' else 'ebook'}") or []
+    if not profiles:
+        raise ImportError_(f"Reelix has no {'audiobook' if kind == 'audiobook' else 'ebook'} quality profile. Add one in Reelix first")
+    field = "audio_quality_profile_id" if kind == "audiobook" else "quality_profile_id"
+    body = {"root_folder_id": root_id, "items": [{**i, "monitor": BOOK_MONITOR, field: profiles[0]["id"]} for i in keep]}
     out = _call(cfg, "POST", "/bookimport", body, timeout=300) or {}
     return {"added": len(out.get("added") or []), "errors": [{"path": e.get("path"), "message": e.get("message")} for e in out.get("errors") or []]}
 

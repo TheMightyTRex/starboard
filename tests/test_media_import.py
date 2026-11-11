@@ -34,6 +34,8 @@ class Reelix(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/api/v1/bookimport/scan"):
             return self._send([{"folder": "Made-up Author", "path": "/data/media/audiobooks/Made-up Author", "kind": "audiobook",
                                 "guessed_author": "Made-up Author", "suggestions": [], "lookup_error": None}])
+        if self.path == "/api/v1/qualityprofiles?kind=audiobook":
+            return self._send([{"id": 9, "name": "Audiobook: Any"}])
         if self.path.startswith("/api/v1/movies?"):
             return self._send({"items": [{"tmdb_id": 329865, "title": "Arrival", "path": "/data/media/movies/Arrival"}] if Reelix.have else []})
         if self.path == "/api/v1/qualityprofiles":
@@ -101,7 +103,8 @@ class MediaImport(unittest.TestCase):
         out = media_import.run_books(self.cfg, 4, [{"path": page["items"][0]["path"], "id": "OL1A"}])
         self.assertEqual(out, {"added": 1, "errors": []})
         self.assertEqual(Reelix.seen[-1], ("/api/v1/bookimport", {"root_folder_id": 4, "items": [
-            {"path": "/data/media/audiobooks/Made-up Author", "openlibrary_id": "OL1A", "monitor": "existing"}]}))
+            {"path": "/data/media/audiobooks/Made-up Author", "openlibrary_id": "OL1A", "monitor": "existing",
+             "audio_quality_profile_id": 9}]}))
         with self.assertRaisesRegex(media_import.ImportError_, "Choose a match"):
             media_import.run_books(self.cfg, 4, [{"path": "/x", "id": "tt1"}])
 
