@@ -4,9 +4,10 @@
 FROM python:3.12-alpine
 LABEL org.opencontainers.image.source="https://github.com/TheMightyTRex/starboard"
 
-# tzdata: download hours follow the server's local time (TZ). --upgrade zlib: the base image's zlib 1.3.2 has
-# CVE-2026-4738, fixed in Alpine's 1.4 (8 November 2026); upgrading at build takes the fixed one.
-RUN apk add --no-cache --upgrade zlib tzdata \
+# tzdata: download hours follow the server's local time (TZ). apk upgrade: every package of the base image takes
+# Alpine's fixed version at build (zlib's CVE-2026-4738 on 8 November 2026; krb5-libs, 16 high CVEs fixed in
+# 1.22.3, on 11 November 2026), so a fix in Alpine reaches the next build with no change here.
+RUN apk upgrade --no-cache && apk add --no-cache tzdata \
  && (pip install --no-cache-dir --only-binary=:all: "pillow==13.0.0" \
      || echo "No ready-made Pillow for this processor: white logos are off") \
  && pip uninstall -y -q pip  # not needed to run Starboard, and one less thing to keep patched
