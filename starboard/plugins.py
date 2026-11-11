@@ -301,6 +301,8 @@ def write_schema(path):
                                "shadow": {"enum": ["none", "soft", "strong", "layered", "glow"]},
                                "heading_font": {"enum": ["hyperlegible", "system", "rounded", "serif", "mono"]},
                                "heading_weight": {"enum": [600, 700, 800]}, "focus_width": {"type": "integer", "minimum": 3, "maximum": 5},
+                               "gradient": {"enum": ["none", "linear", "radial", "mesh"]}, "gradient_angle": {"type": "integer", "minimum": 0, "maximum": 360},
+                               "texture": {"enum": ["none", "dots", "grid", "lines", "grain"]}, "glass": {"type": "boolean"}, "rounded_controls": {"type": "boolean"},
                                "light": {"$ref": "#/$defs/colours"}, "dark": {"$ref": "#/$defs/colours"}}}},
             "containers": {"type": "array", "minItems": 0, "maxItems": 4, "items": {
                 "type": "object", "additionalProperties": False, "required": ["name", "image"],

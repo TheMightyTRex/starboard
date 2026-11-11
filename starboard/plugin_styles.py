@@ -55,6 +55,29 @@ EXTRA_PAIRS = [
     *[(f"series_{n}", ("surface",), 3.0, "chart series") for n in range(1, 8)],
 ]
 HEADING_WEIGHTS = (600, 700, 800)
+# The page behind the panels (11 November 2026). Each mode may set bg_to (a second page colour) and glow_1, glow_2
+# (soft lights for "mesh"); all are checked with the page's text.
+GRADIENTS = ("none", "linear", "radial", "mesh")
+TEXTURES = {  # drawn by CSS from the text colour at 5%, nothing downloaded
+    "none": None,
+    "dots": "radial-gradient({c} 1px, transparent 1.4px) 0 0 / 18px 18px",
+    "grid": "linear-gradient({c} 1px, transparent 1px) 0 0 / 28px 28px, linear-gradient(90deg, {c} 1px, transparent 1px) 0 0 / 28px 28px",
+    "lines": "repeating-linear-gradient(135deg, {c} 0 1px, transparent 1px 9px)",
+    "grain": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E\")",
+}
+GLASS_OPACITY = 0.74  # panels let 26% of the page through
+# The parts that turn to glass: the header, the side menu, panels, slide-outs, menus and messages.
+GLASS_PARTS = ".site-header, .rail, .panel, .side-panel, .phone-menu, .menu, .toast, .app-card, .notice"
+# Rounded controls: buttons, fields, choices and chips become pills.
+PILL_PARTS = ".btn, .input, .select, .textarea, .chip, .filter-chip, .segmented, .search-field .input"
+PAGE_COLOURS = {"bg_to", "glow_1", "glow_2"}
+
+
+def _mix(a, b, t):
+    """a with t of b mixed in (both #rrggbb)."""
+    x = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
+    y = [int(b[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(p + (q - p) * t):02x}" for p, q in zip(x, y))
 MAX_RADIUS = 24
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -91,7 +114,18 @@ def check_style(style, where="style"):
 
     if not isinstance(style, dict):
         return [{"severity": "error", "where": where, "what": "A style must be an object", "fix": "See the manifest reference"}]
-    allowed = {"id", "name", "description", "light", "dark", "radius", "font", "shadow", "heading_font", "heading_weight", "focus_width"}
+    allowed = {"id", "name", "description", "light", "dark", "radius", "font", "shadow", "heading_font", "heading_weight", "focus_width",
+               "gradient", "gradient_angle", "texture", "glass", "rounded_controls"}
+    if style.get("gradient", "none") not in GRADIENTS:
+        add("error", f"gradient must be one of {', '.join(GRADIENTS)}", "Pick a gradient from the list")
+    ang = style.get("gradient_angle", 160)
+    if not isinstance(ang, int) or isinstance(ang, bool) or not 0 <= ang <= 360:
+        add("error", "gradient_angle must be a whole number from 0 to 360", "Degrees, as in CSS")
+    if style.get("texture", "none") not in TEXTURES:
+        add("error", f"texture must be one of {', '.join(TEXTURES)}", "Textures are drawn by Starboard, never downloaded")
+    for flag in ("glass", "rounded_controls"):
+        if flag in style and not isinstance(style[flag], bool):
+            add("error", f"{flag} must be true or false", "Leave it out for no")
     for k in sorted(set(style) - allowed):
         add("error", f"Unknown field {k}", "Styles may set colours, radius, fonts, heading weight, focus ring width and shadow")
     if style.get("heading_font") is not None and style["heading_font"] not in FONTS:
@@ -124,12 +158,12 @@ def check_style(style, where="style"):
         if not isinstance(colours, dict):
             add("error", f"No {mode} colours", "Every style has a light and a dark set, so it follows the person's choice", at)
             continue
-        for k in sorted(set(colours) - set(TOKENS) - set(EXTRA)):
-            add("error", f"Unknown colour {k}", f"Colours are: {', '.join(list(TOKENS) + list(EXTRA))}", at)
+        for k in sorted(set(colours) - set(TOKENS) - set(EXTRA) - PAGE_COLOURS):
+            add("error", f"Unknown colour {k}", f"Colours are: {', '.join(list(TOKENS) + list(EXTRA) + sorted(PAGE_COLOURS))}", at)
         missing = [k for k in TOKENS if k not in colours]
         if missing:
             add("error", f"Missing colours: {', '.join(missing)}", "Set every colour, so nothing falls back to a clash", at)
-        bad = [k for k in list(TOKENS) + list(EXTRA) if k in colours and not (isinstance(colours[k], str) and HEX.match(colours[k]))]
+        bad = [k for k in list(TOKENS) + list(EXTRA) + sorted(PAGE_COLOURS) if k in colours and not (isinstance(colours[k], str) and HEX.match(colours[k]))]
         if bad:
             add("error", f"Not a solid colour: {', '.join(bad)}", "Use #rrggbb. See-through colours change contrast with whatever is behind them", at)
         if missing or bad:
@@ -155,6 +189,32 @@ def check_style(style, where="style"):
                 if ratio < need:
                     add("error", f"{fg} on {bk} is {ratio:.2f}:1; {why} need {need:g}:1 (WCAG 2.2)",
                         f"Make {fg} {'darker' if mode == 'light' else 'lighter'} or {bk} {'lighter' if mode == 'light' else 'darker'}", at)
+        # Every colour the page can show behind text: the page, the gradient's other end, the glows, and the texture's
+        # lines over each (the text colour at 5%).
+        g = style.get("gradient", "none")
+        need_page = {"linear": ["bg_to"], "radial": ["bg_to"], "mesh": ["glow_1", "glow_2"]}.get(g, [])
+        for k in need_page:
+            if k not in colours:
+                add("error", f"A {g} gradient needs {k}", f"Set {k} in the {mode} colours", at)
+        page = [colours["bg"]] + [colours[k] for k in need_page if k in colours]
+        if style.get("texture", "none") != "none":
+            page += [_mix(p, colours["text"], 0.05) for p in page]
+        for p in page[1:]:
+            for fg, need, why in (("text", 4.5, "text on the page"), ("text_muted", 4.5, "secondary text on the page"),
+                                  ("accent", 4.5, "links on the page")):
+                ratio = contrast(colours[fg], p)
+                if ratio < need:
+                    add("error", f"{fg} on the page's {p} is {ratio:.2f}:1; {why} needs {need:g}:1 (WCAG 2.2)",
+                        "Keep the gradient and its glows close to the page colour", at)
+        if style.get("glass"):  # a glass panel over each page colour behind it
+            for base in ("surface_raised", "header", "surface"):
+                for p in page:
+                    seen = _mix(colours[base], p, 1 - GLASS_OPACITY)
+                    for fg in ("text", "text_muted", "accent"):
+                        ratio = contrast(colours[fg], seen)
+                        if ratio < 4.5:
+                            add("error", f"{fg} on glass ({base} over {p}) is {ratio:.2f}:1; needs 4.5:1 (WCAG 2.2)",
+                                "Bring the page colours nearer the panels, or leave glass out", at)
         if mode == "light" and _lum(colours["bg"]) < 0.4:
             add("warning", "The light background is dark", "People who choose Light expect a light page", at)
         if mode == "dark" and _lum(colours["bg"]) > 0.1:
@@ -178,6 +238,30 @@ def css(plugin_id, styles):
             shape.append(f"--weight-heading: {int(s['heading_weight'])}")
         if s.get("focus_width"):
             shape.append(f"--focus-w: {int(s['focus_width'])}px")
+        root = f':root[data-style="{name}"]'
+        for mode, sel in (("light", ":not(.is-dark)"), ("dark", ".is-dark")):
+            c = s[mode]
+            layers = []
+            tex = TEXTURES.get(s.get("texture", "none"))
+            if tex:
+                layers.append(tex.format(c="color-mix(in srgb, var(--color-text) 5%, transparent)"))
+            g, ang = s.get("gradient", "none"), int(s.get("gradient_angle", 160))
+            if g == "linear":
+                layers.append(f"linear-gradient({ang}deg, {c['bg']} 0%, {c['bg_to']} 100%)")
+            elif g == "radial":
+                layers.append(f"radial-gradient(130% 130% at 0% 0%, {c['bg_to']} 0%, {c['bg']} 65%)")
+            elif g == "mesh":
+                layers += [f"radial-gradient(55% 45% at 12% 8%, {c['glow_1']} 0%, transparent 72%)",
+                           f"radial-gradient(50% 45% at 88% 92%, {c['glow_2']} 0%, transparent 72%)"]
+            if layers:
+                rules.append(f'{root}{sel}:not(.pref-contrast) body {{ background: {", ".join(layers)}, {c["bg"]}; background-attachment: fixed; }}')
+        if s.get("glass"):
+            rules.append(f"{root}:not(.pref-contrast) :is({GLASS_PARTS}) {{ background-color: color-mix(in srgb, var(--color-surface-raised) {round(GLASS_OPACITY * 100)}%, transparent); "
+                         "-webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }")
+            rules.append(f"@media (prefers-reduced-transparency: reduce) {{ {root} :is({GLASS_PARTS}) {{ background-color: var(--color-surface-raised); "
+                         "-webkit-backdrop-filter: none; backdrop-filter: none; } }")
+        if s.get("rounded_controls"):
+            rules.append(f"{root}:not(.pref-contrast) :is({PILL_PARTS}) {{ border-radius: 999px; }}")
         for mode, sel in (("light", ":not(.is-dark)"), ("dark", ".is-dark")):
             colours = [f"{TOKENS[k]}: {s[mode][k]}" for k in TOKENS]
             if "panel_header" not in s[mode]:

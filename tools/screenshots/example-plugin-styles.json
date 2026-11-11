@@ -72,7 +72,8 @@
     "accent": "#2b5cb8",
     "accent_text": "#ffffff",
     "accent_soft": "#e0e9fa",
-    "focus": "#2b5cb8"
+    "focus": "#2b5cb8",
+    "bg_to": "#d7e3f6"
    },
    "dark": {
     "bg": "#0f1522",
@@ -87,8 +88,12 @@
     "accent": "#9cc0ff",
     "accent_text": "#0f1522",
     "accent_soft": "#1e2e4f",
-    "focus": "#9cc0ff"
-   }
+    "focus": "#9cc0ff",
+    "bg_to": "#17233d"
+   },
+   "gradient": "radial",
+   "glass": true,
+   "rounded_controls": true
   },
   {
    "id": "bold",
@@ -164,7 +169,9 @@
     "accent_text": "#16131f",
     "accent_soft": "#2e2549",
     "focus": "#c4b0ff"
-   }
+   },
+   "texture": "dots",
+   "rounded_controls": true
   },
   {
    "id": "paper",
@@ -300,7 +307,9 @@
     "accent": "#a3126a",
     "accent_text": "#ffffff",
     "accent_soft": "#fbe0ef",
-    "focus": "#a3126a"
+    "focus": "#a3126a",
+    "glow_1": "#ffd6ef",
+    "glow_2": "#e3d6ff"
    },
    "dark": {
     "bg": "#170a14",
@@ -315,8 +324,12 @@
     "accent": "#ff8cc8",
     "accent_text": "#170a14",
     "accent_soft": "#4a1838",
-    "focus": "#ff8cc8"
-   }
+    "focus": "#ff8cc8",
+    "glow_1": "#3d0f35",
+    "glow_2": "#22124a"
+   },
+   "gradient": "mesh",
+   "rounded_controls": true
   },
   {
    "id": "aurora",
@@ -363,7 +376,9 @@
     "series_6": "#a16207",
     "series_7": "#be123c",
     "chart_1": "#5b3fd1",
-    "chart_2": "#0f766e"
+    "chart_2": "#0f766e",
+    "glow_1": "#e0d8fe",
+    "glow_2": "#cff3ed"
    },
    "dark": {
     "bg": "#0b0a1d",
@@ -401,8 +416,14 @@
     "series_6": "#fde68a",
     "series_7": "#fda4af",
     "chart_1": "#a996ff",
-    "chart_2": "#5eead4"
-   }
+    "chart_2": "#5eead4",
+    "glow_1": "#251c62",
+    "glow_2": "#0e3436"
+   },
+   "gradient": "mesh",
+   "texture": "grain",
+   "glass": true,
+   "rounded_controls": true
   },
   {
    "id": "nordic",
@@ -448,7 +469,8 @@
     "series_6": "#1f7a7a",
     "series_7": "#9b3b5a",
     "chart_1": "#2f5f7a",
-    "chart_2": "#a24b2a"
+    "chart_2": "#a24b2a",
+    "bg_to": "#e4e9ec"
    },
    "dark": {
     "bg": "#16191b",
@@ -486,8 +508,12 @@
     "series_6": "#7fd6d6",
     "series_7": "#eda3bd",
     "chart_1": "#8fc1dc",
-    "chart_2": "#e7a07f"
-   }
+    "chart_2": "#e7a07f",
+    "bg_to": "#1d2428"
+   },
+   "gradient": "linear",
+   "gradient_angle": 180,
+   "texture": "grain"
   },
   {
    "id": "sunset",
@@ -534,7 +560,8 @@
     "series_6": "#1d4ed8",
     "series_7": "#4d7c0f",
     "chart_1": "#b4325a",
-    "chart_2": "#7a2e8c"
+    "chart_2": "#7a2e8c",
+    "bg_to": "#ffe1e7"
    },
    "dark": {
     "bg": "#1d0f17",
@@ -572,8 +599,13 @@
     "series_6": "#a5c8ff",
     "series_7": "#c5e88a",
     "chart_1": "#ff8fb0",
-    "chart_2": "#ffc38f"
-   }
+    "chart_2": "#ffc38f",
+    "bg_to": "#2b1030"
+   },
+   "gradient": "linear",
+   "gradient_angle": 150,
+   "glass": true,
+   "rounded_controls": true
   },
   {
    "id": "graphite",
@@ -659,7 +691,8 @@
     "series_7": "#d8b4fe",
     "chart_1": "#bef264",
     "chart_2": "#d4d4d8"
-   }
+   },
+   "texture": "grid"
   },
   {
    "id": "editorial",
@@ -745,7 +778,8 @@
     "series_7": "#bdb8ae",
     "chart_1": "#ff8a8a",
     "chart_2": "#f2efe9"
-   }
+   },
+   "texture": "grain"
   }
  ]
 }
