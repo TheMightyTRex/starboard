@@ -25,7 +25,9 @@ const SORT_LABEL = { attention: "Needs you first", time: "Time left", title: "Na
 
 function words(item) {
   if (item.problem) return ["Needs attention", "warning"];
-  return STATE_WORDS[item.status] || [item.status ? item.status[0].toUpperCase() + item.status.slice(1) : "Waiting", "neutral"];
+  // An app's own state word, such as post_processing, as words: "Post processing" (issue #7).
+  const plain = (item.status || "").replace(/[_-]+/g, " ").trim().toLowerCase();
+  return STATE_WORDS[item.status] || [plain ? plain[0].toUpperCase() + plain.slice(1) : "Waiting", "neutral"];
 }
 
 // "00:12:00" or "1.02:30:00" (days.hours:minutes:seconds) from the apps, as seconds.
