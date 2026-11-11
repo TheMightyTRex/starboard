@@ -28,6 +28,12 @@ class Reelix(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/api/v1/libraryimport/scan"):
             return self._send([{"folder": {"name": "Arrival (2016)", "path": "/data/media/movies/Arrival (2016)"}, "parsed_title": "Arrival",
                                 "parsed_year": 2016, "file_count": 1, "size": 9, "suggestions": []}])
+        if self.path == "/api/v1/bookrootfolders":
+            return self._send([{"id": 4, "path": "/data/media/audiobooks", "kind": "audiobook", "accessible": True,
+                                "unmapped_folders": [{"name": "Made-up Author", "path": "/data/media/audiobooks/Made-up Author"}]}])
+        if self.path.startswith("/api/v1/bookimport/scan"):
+            return self._send([{"folder": "Made-up Author", "path": "/data/media/audiobooks/Made-up Author", "kind": "audiobook",
+                                "guessed_author": "Made-up Author", "suggestions": [], "lookup_error": None}])
         if self.path.startswith("/api/v1/movies?"):
             return self._send({"items": [{"tmdb_id": 329865, "title": "Arrival", "path": "/data/media/movies/Arrival"}] if Reelix.have else []})
         if self.path == "/api/v1/qualityprofiles":
@@ -41,6 +47,12 @@ class Reelix(http.server.BaseHTTPRequestHandler):
             return self._send([{"folder": {"name": "Arrival (2016)", "path": body["paths"][0]}, "parsed_title": "Arrival",
                                 "parsed_year": 2016, "file_count": 1, "size": 9,
                                 "suggestions": [{"tmdb_id": 329865, "title": "Arrival", "year": 2016}]}])
+        if self.path == "/api/v1/bookimport/match":
+            return self._send([{"folder": "Made-up Author", "path": body["paths"][0], "kind": "audiobook", "guessed_author": "Made-up Author",
+                                "suggestions": [{"openlibrary_id": "OL1A", "name": "Made-up Author", "top_work": "A Made-up Book",
+                                                 "work_count": 12, "author_id": None}], "lookup_error": None}])
+        if self.path == "/api/v1/bookimport":
+            return self._send({"added": [7], "errors": []})
         if self.path == "/api/v1/libraryimport":
             return self._send({"added": [41], "errors": []})
         self._send({"message": "no"}, 404)
@@ -78,6 +90,20 @@ class MediaImport(unittest.TestCase):
         media_import.leave_out(self.cfg, ["/data/media/movies/Arrival (2016)"])
         self.assertEqual(media_import.folders(self.cfg, "films")[0]["waiting"], 0)
         self.assertEqual(media_import.scan(self.cfg, 1)["total"], 0)
+
+    def test_audiobooks_come_in_by_author_following_only_what_is_there(self):
+        # Owner, 11 November 2026: Library, Audiobooks was empty with 49 author folders on disk (DASH-282).
+        self.assertEqual(media_import.folders(self.cfg, "audiobooks"), [{"id": 4, "path": "/data/media/audiobooks", "waiting": 1}])
+        page = media_import.scan_books(self.cfg, 4)
+        m = page["items"][0]["matches"][0]
+        self.assertEqual((m["id"], m["title"], m["detail"]), ("OL1A", "Made-up Author", "best known for A Made-up Book, 12 works"))
+        self.assertTrue(page["items"][0]["sure"])  # one author of that exact name
+        out = media_import.run_books(self.cfg, 4, [{"path": page["items"][0]["path"], "id": "OL1A"}])
+        self.assertEqual(out, {"added": 1, "errors": []})
+        self.assertEqual(Reelix.seen[-1], ("/api/v1/bookimport", {"root_folder_id": 4, "items": [
+            {"path": "/data/media/audiobooks/Made-up Author", "openlibrary_id": "OL1A", "monitor": "existing"}]}))
+        with self.assertRaisesRegex(media_import.ImportError_, "Choose a match"):
+            media_import.run_books(self.cfg, 4, [{"path": "/x", "id": "tt1"}])
 
     def test_nothing_chosen_is_said(self):
         with self.assertRaisesRegex(media_import.ImportError_, "Choose a match"):

@@ -11,6 +11,11 @@ import urllib.parse
 import urllib.request
 
 KINDS = {"movie": "films", "series": "tv"}
+# Books and audiobooks (DASH-282): Reelix keeps their folders apart (/bookrootfolders) and imports by author, matched
+# on Open Library. Each author follows only the books already there ("existing"), so bringing in a folder never makes
+# Reelix want everything that author wrote.
+BOOK_KINDS = {"audiobook": "audiobooks", "ebook": "books"}
+BOOK_MONITOR = "existing"
 BATCH = 25
 
 
@@ -71,13 +76,22 @@ def _folder_path(u):
     return u.get("path") if isinstance(u, dict) else str(u)
 
 
+def _book_tab(tab):
+    return tab in BOOK_KINDS.values()
+
+
 def folders(cfg, tab):
     """The library folders for films or series, each with how many sub-folders Reelix does not know yet (less the
     ones the person left out)."""
+    skip = left_out(cfg)
+    if _book_tab(tab):
+        kind = {v: k for k, v in BOOK_KINDS.items()}[tab]
+        return [{"id": f["id"], "path": f["path"],
+                 "waiting": len([u for u in f.get("unmapped_folders") or [] if _folder_path(u) not in skip])}
+                for f in _call(cfg, "GET", "/bookrootfolders") or [] if f.get("kind") == kind and f.get("accessible", True)]
     want = {v: k for k, v in KINDS.items()}.get(tab)
     if not want:
         return []
-    skip = left_out(cfg)
     return [{"id": f["id"], "path": f["path"],
              "waiting": len([u for u in f.get("unmapped_folders") or [] if _folder_path(u) not in skip])}
             for f in _call(cfg, "GET", "/rootfolders") or [] if f.get("media_kind") == want and f.get("accessible", True)]
@@ -102,6 +116,49 @@ def _slim(c, have=None):
             "matches": [{"tmdb_id": m.get("tmdb_id"), "title": m.get("title"), "year": m.get("year"),
                          "already": have[m["tmdb_id"]][1] if m.get("tmdb_id") in have else None}
                         for m in (c.get("suggestions") or [])[:5] if m.get("tmdb_id")]}
+
+
+def _slim_book(c, have):
+    """A book folder for the dialog: the author Reelix guessed, and Open Library's authors to choose from. `sure`
+    (ticked) when the first match has exactly the folder's name and at least three times the works of any other
+    author of that name (Open Library keeps small duplicates); two real David Wongs (24 and 14 works) wait for a
+    person to choose."""
+    fold = lambda t: " ".join(str(t or "").lower().replace(".", " ").split())  # noqa: E731
+    sugg = c.get("suggestions") or []
+    same = [m for m in sugg if fold(m.get("name")) == fold(c.get("guessed_author") or c.get("folder"))]
+    best = max(same, key=lambda m: m.get("work_count") or 0) if same else None
+    others = [m.get("work_count") or 0 for m in same if m is not best]
+    sure = bool(best) and best is sugg[0] and all((best.get("work_count") or 0) >= 3 * max(n, 1) for n in others)
+    return {"sure": sure,"path": c["path"], "name": c.get("folder") or os.path.basename(c["path"]), "title": c.get("guessed_author"),
+            "year": None, "files": c.get("file_count", 0), "size": c.get("size", 0), "problem": c.get("lookup_error"),
+            "matches": [{"id": m["openlibrary_id"], "title": m.get("name"), "year": None,
+                         "detail": ", ".join(x for x in (f"best known for {m['top_work']}" if m.get("top_work") else "",
+                                                         f"{m['work_count']} works" if m.get("work_count") else "") if x),
+                         "already": "your library" if m.get("author_id") else None}
+                        for m in (c.get("suggestions") or [])[:5] if m.get("openlibrary_id")]}
+
+
+def scan_books(cfg, root_id, start=0):
+    """One page of book or audiobook folders (author folders), each with Open Library's best authors."""
+    root_id = int(root_id)
+    listed = _call(cfg, "GET", f"/bookimport/scan?{urllib.parse.urlencode({'root_folder_id': root_id, 'lookup': 'false'})}", timeout=120) or []
+    skip = left_out(cfg)
+    listed = [c for c in listed if c["path"] not in skip]
+    page = listed[int(start):int(start) + BATCH]
+    matched = _call(cfg, "POST", "/bookimport/match", {"root_folder_id": root_id, "paths": [c["path"] for c in page]}, timeout=180) if page else []
+    return {"total": len(listed), "start": int(start), "items": [_slim_book(c, None) for c in matched or []]}
+
+
+def run_books(cfg, root_id, items):
+    """Adds the kept author folders, each following only the books already there. Returns {added, errors}."""
+    root_id = int(root_id)
+    keep = [{"path": str(i["path"]), "openlibrary_id": str(i["id"])} for i in items or []
+            if isinstance(i, dict) and i.get("id") and str(i["id"]).startswith("OL")]
+    if not keep:
+        raise ImportError_("Choose a match for at least one folder")
+    body = {"root_folder_id": root_id, "items": [{**i, "monitor": BOOK_MONITOR} for i in keep]}
+    out = _call(cfg, "POST", "/bookimport", body, timeout=300) or {}
+    return {"added": len(out.get("added") or []), "errors": [{"path": e.get("path"), "message": e.get("message")} for e in out.get("errors") or []]}
 
 
 def scan(cfg, root_id, start=0):

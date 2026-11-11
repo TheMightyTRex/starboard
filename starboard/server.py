@@ -1067,8 +1067,10 @@ class Handler(BaseHTTPRequestHandler):
                         tab = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("tab", [""])[0]
                         return self.json(200, {"folders": media_import.folders(app.config, tab)})
                     body = self.body()
+                    books = media_import._book_tab(str(body.get("tab") or ""))  # audiobooks and books (DASH-282)
                     if path == "/api/library/import/scan" and method == "POST":
-                        return self.json(200, media_import.scan(app.config, body.get("root"), body.get("start", 0)))
+                        scan = media_import.scan_books if books else media_import.scan
+                        return self.json(200, scan(app.config, body.get("root"), body.get("start", 0)))
                     if path == "/api/library/import/run" and method == "POST":
                         if body.get("leave"):  # folders left out: not counted again (10 November 2026)
                             media_import.leave_out(app.config, [str(p) for p in body["leave"]][:500])
@@ -1076,7 +1078,7 @@ class Handler(BaseHTTPRequestHandler):
                             setup_left.forget()
                         if not body.get("items"):
                             return self.json(200, {"added": 0, "errors": []})
-                        out = media_import.run(app.config, body.get("root"), body.get("items"))
+                        out = (media_import.run_books if books else media_import.run)(app.config, body.get("root"), body.get("items"))
                         from . import setup_left
                         setup_left.forget()  # Still to set up counts the folders again
                         logs.event("info", "library", f"Brought in {out['added']} from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))

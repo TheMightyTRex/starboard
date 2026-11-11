@@ -223,7 +223,7 @@ function showGroup() {
 // DASH-186: films and series already on disk that Reelix does not know yet. A note above the wall, then a dialog of
 // up to 25 folders at a time with Reelix's best match for each; change a doubtful one or untick it, then bring them in.
 async function importNote() {
-  if (!["films", "tv"].includes(TAB)) return;
+  if (!["films", "tv", "audiobooks", "books"].includes(TAB)) return;
   let folders = [];
   try { folders = (await api(`/api/library/import?tab=${TAB}`)).folders.filter((f) => f.waiting); } catch { return; }
   if (!folders.length) return;
@@ -231,27 +231,32 @@ async function importNote() {
   const box = el("div", { id: "lib-import" }, el("div", { class: "notice", role: "status" }, icon("folder-input"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${plural(waiting, ["folder", "folders"])} on disk ${waiting === 1 ? "is" : "are"} not in your library yet` }),
       el("p", { text: `In ${folders.map((f) => f.path).join(" and ")}. Starboard can bring them in: Reelix finds each one and adds the files where they are. Nothing is downloaded or moved.` })),
-    el("button", { type: "button", class: "btn", onclick: () => importDialog(folders[0]) }, "Bring them in")));
+    el("button", { type: "button", class: "btn", onclick: (e) => importDialog(folders[0], 0, 0, e.currentTarget) }, "Bring them in")));
   $(".page-head").after(box);
 }
 
-async function importDialog(folder, start = 0, added = 0) {
+async function importDialog(folder, start = 0, added = 0, button = null) {
+  // Reelix looks each folder up (TMDB, or Open Library for books), which can take a while: say so at once.
+  const busy = button || $("#lib-import button");
+  const label = busy?.textContent;
+  if (busy) { busy.disabled = true; busy.textContent = "Finding matches…"; }
   let page;
-  try { page = await api("/api/library/import/scan", { method: "POST", body: { root: folder.id, start } }); }
+  try { page = await api("/api/library/import/scan", { method: "POST", body: { root: folder.id, start, tab: TAB } }); }
   catch (e) { problem(e.message); return; }
+  finally { if (busy) { busy.disabled = false; busy.textContent = label; } }
   const rows = page.items.map((it) => {
     const pick = el("select", { class: "select", "aria-label": `Match for ${it.name}` },
-      it.matches.map((m, i) => el("option", { value: String(m.tmdb_id), text: `${m.title}${m.year ? ` (${m.year})` : ""}${m.already ? ", already in your library" : ""}`, selected: i === 0 })),
+      it.matches.map((m, i) => el("option", { value: String(m.tmdb_id ?? m.id), text: `${m.title}${m.year ? ` (${m.year})` : ""}${m.detail ? `, ${m.detail}` : ""}${m.already ? ", already in your library" : ""}`, selected: i === 0 })),
       el("option", { value: "", text: it.matches.length ? "None of these" : "No match found" }));
     // A folder whose match is already in the library (in another folder) is unticked: bringing it in would fail.
     const first = it.matches[0];
-    const keep = el("input", { type: "checkbox", checked: !!first && !first.already, "aria-label": `Bring in ${it.name}` });
+    const keep = el("input", { type: "checkbox", checked: (it.sure ?? true) && !!first && !first.already, "aria-label": `Bring in ${it.name}` });
     const said = el("p", { class: "small muted" });
     const explain = () => {
-      const m = it.matches.find((x) => String(x.tmdb_id) === pick.value);
+      const m = it.matches.find((x) => String(x.tmdb_id ?? x.id) === pick.value);
       said.textContent = m && m.already ? `Already in your library, in the folder ${m.already}. Leave this folder out, or choose another match.` : (it.problem || "");
     };
-    pick.addEventListener("change", () => { const m = it.matches.find((x) => String(x.tmdb_id) === pick.value); keep.checked = !!m && !m.already; explain(); });
+    pick.addEventListener("change", () => { const m = it.matches.find((x) => String(x.tmdb_id ?? x.id) === pick.value); keep.checked = !!m && !m.already; explain(); });
     explain();
     return { it, pick, keep, node: el("tr", {}, el("td", {}, keep), el("th", { scope: "row", text: it.name }), el("td", {}, pick, said)) };
   });
@@ -265,17 +270,19 @@ async function importDialog(folder, start = 0, added = 0) {
     message: el("div", { class: "stack-2" }, el("p", { text: `Folders ${page.start + 1} to ${end} of ${page.total} in ${folder.path}. Check each match; untick any that are wrong. Unticked folders are left out and not asked about again.` })),
     fields: [table] });
   if (!ok) return;
-  const items = rows.filter((r) => r.keep.checked && r.pick.value).map((r) => ({ path: r.it.path, tmdb_id: Number(r.pick.value) }));
+  const books = ["audiobooks", "books"].includes(TAB);
+  const items = rows.filter((r) => r.keep.checked && r.pick.value).map((r) => (books ? { path: r.it.path, id: r.pick.value } : { path: r.it.path, tmdb_id: Number(r.pick.value) }));
   const leave = rows.filter((r) => !r.keep.checked || !r.pick.value).map((r) => r.it.path);
   let out;
   try {
-    out = items.length || leave.length ? await api("/api/library/import/run", { method: "POST", body: { root: folder.id, items, leave } }) : { added: 0, errors: [] };
+    out = items.length || leave.length ? await api("/api/library/import/run", { method: "POST", body: { root: folder.id, items, leave, tab: TAB } }) : { added: 0, errors: [] };
     if (out.errors.length) problem(out.errors.map((e) => `${e.path}: ${e.message}`).join(". "));
   } catch (e) { problem(e.message); return; }
   added += out.added;
   if (end < page.total) { importDialog(folder, end, added); return; }
   // Said where the note was, so it is seen, not only announced (the wall reloads behind it).
-  const text = added ? `Brought in ${plural(added, NOUN[TAB])}. Reelix is reading their files; they show here as it finds them.` : "Nothing was brought in.";
+  const what = ["audiobooks", "books"].includes(TAB) ? ["author", "authors"] : NOUN[TAB];  // books come in by author
+  const text = added ? `Brought in ${plural(added, what)}. Reelix is reading their files; they show here as it finds them.` : "Nothing was brought in.";
   $("#lib-import")?.replaceChildren(el("div", { class: "notice", "data-tone": added ? "success" : null, role: "status" }, icon(added ? "circle-check" : "info"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: added ? "Brought in from disk" : "Nothing brought in" }), el("p", { text }))));
   reload();

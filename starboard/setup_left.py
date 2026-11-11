@@ -114,7 +114,7 @@ def items(cfg, data_dir):
                     "href": "/settings-reelix.html#rx-basics-h", "done": bool(state.get("tmdb"))})
     if "reelix" in keys:  # DASH-186: media already on disk that Reelix does not know yet
         from . import media_import
-        for tab, words in (("films", "films"), ("tv", "series")):
+        for tab, words in (("films", "films"), ("tv", "series"), ("audiobooks", "audiobooks"), ("books", "books")):
             try:
                 waiting = sum(f["waiting"] for f in media_import.folders(cfg, tab))
             except media_import.ImportError_:
@@ -122,7 +122,7 @@ def items(cfg, data_dir):
             if waiting:
                 out.append({"key": f"import-{tab}", "title": f"Bring in {words} already on disk",
                             "why": f"{waiting} {'folder is' if waiting == 1 else 'folders are'} not in your library yet.",
-                            "href": f"/library-{'films' if tab == 'films' else 'tv'}.html", "done": False})
+                            "href": f"/library-{tab}.html", "done": False})
     if "reelix" in keys and "audiobookshelf" in keys:  # radio shows already on disk (10 November 2026)
         from . import radio_import
         try:
@@ -171,7 +171,8 @@ def items(cfg, data_dir):
 # The pages Still to set up shows inside its slide-out (Starboard's own steps). The server lets only Starboard's own
 # pages frame them; tests/test_setup_left.py checks every step's page is here.
 PANEL_PAGES = frozenset({"/settings-reelix.html", "/settings-jellyfin.html", "/settings-audiobookshelf.html",
-                         "/install-apps.html", "/library-films.html", "/library-tv.html", "/library-radio.html"})
+                         "/install-apps.html", "/library-films.html", "/library-tv.html", "/library-radio.html",
+                         "/library-audiobooks.html", "/library-books.html"})
 
 
 GUIDED = [
