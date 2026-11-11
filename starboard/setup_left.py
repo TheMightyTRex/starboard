@@ -138,6 +138,9 @@ def items(cfg, data_dir):
             out.append({"key": "import-radio", "title": "Bring in radio shows already on disk",
                         "why": f"{radio['waiting']} {'show is' if radio['waiting'] == 1 else 'shows are'} not in your library yet.",
                         "href": "/library-radio.html", "done": False})
+    if "tdarr" in keys:  # DASH-306: Tdarr's choices are in Starboard now, not a guided step in Tdarr's own page
+        out.append({"key": "tdarr", "title": "Choose what Tdarr converts", "why": "Starboard sets up Tdarr's libraries and when it works.",
+                    "href": "/settings-tdarr.html", "done": bool(state.get("tdarr"))})
     if keys & {"nzbget", "sabnzbd"}:
         server = _usenet_server(svcs)
         out.append({"key": "usenet", "title": "Add your Usenet provider's server", "why": "The Usenet app downloads nothing without one.",
@@ -172,13 +175,10 @@ def items(cfg, data_dir):
 # pages frame them; tests/test_setup_left.py checks every step's page is here.
 PANEL_PAGES = frozenset({"/settings-reelix.html", "/settings-jellyfin.html", "/settings-audiobookshelf.html",
                          "/install-apps.html", "/library-films.html", "/library-tv.html", "/library-radio.html",
-                         "/library-audiobooks.html", "/library-books.html"})
+                         "/library-audiobooks.html", "/library-books.html", "/settings-tdarr.html"})
 
 
 GUIDED = [
-    ("tdarr", "Tell Tdarr what to convert",
-     "In Tdarr, Libraries: add your films (/media/movies) and series (/media/tv), set the cache folder to /temp, "
-     "and choose what to convert to. Then select Done."),
     ("wizarr", "Finish Wizarr's set-up",
      "In Wizarr, make its admin, then add Jellyfin at http://jellyfin:8096 with Jellyfin's API key from Apps, Jellyfin. "
      "Then select Done."),

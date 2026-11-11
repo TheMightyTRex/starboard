@@ -23,7 +23,8 @@ SERVICE_TYPES = {
     # NZBGet signs in with its control user name and password, kept as "user:password" in the API key field.
     "nzbget": {"label": "NZBGet", "api": "/jsonrpc", "searchable": False},
     "gluetun": {"label": "Gluetun (VPN)", "api": "", "searchable": False},
-    "slskd": {"label": "Soulseek (slskd)", "api": "/api/v0", "searchable": False},  # DASH-94: download hours pause it
+    "slskd": {"label": "Soulseek (slskd)", "api": "/api/v0", "searchable": False},
+    "tdarr": {"label": "Tdarr", "api": "/api/v2", "searchable": False},  # DASH-306: set up and run from Starboard  # DASH-94: download hours pause it
     "seerr": {"label": "Seerr, Jellyseerr or Overseerr", "api": "/api/v1", "searchable": False},
     "audiobookshelf": {"label": "Audiobookshelf", "api": "/api", "searchable": False},
     "link": {"label": "Other app", "api": "", "searchable": False},
@@ -161,6 +162,12 @@ class Config:
             data["performance"].setdefault(key, value)
         for key, value in DEFAULTS["logs"].items():
             data["logs"].setdefault(key, value)
+        tdarr_links = [s for s in data.get("services") or [] if s.get("type") == "link" and (s.get("icon") or "") == "tdarr"]
+        for s in tdarr_links:  # DASH-306: Tdarr is set up from Starboard now, with a key it gives Tdarr
+            s["type"] = "tdarr"
+            s.setdefault("api_key", "")
+        if tdarr_links:
+            self._write(data)
         if data.get("design") not in DESIGNS:  # a design that has since been removed
             data["design"] = DEFAULTS["design"]
             self._write(data)

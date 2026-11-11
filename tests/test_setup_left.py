@@ -49,14 +49,14 @@ class SetupLeft(unittest.TestCase):
 
     def test_guided_steps_go_when_done(self):
         with open(os.path.join(stack.folder(self.tmp.name), "compose.yaml"), "a") as f:
-            f.write("  tdarr:\n    container_name: tdarr\n")
-        tdarr = {"type": "link", "icon": "tdarr", "name": "Tdarr", "url": "http://127.0.0.1:8265", "link": "http://tdarr.example:8265"}
+            f.write("  wizarr:\n    container_name: wizarr\n")
+        tdarr = {"type": "link", "icon": "wizarr", "name": "Wizarr", "url": "http://127.0.0.1:5690", "link": "http://wizarr.example:5690"}
         with mock.patch.object(setup_left, "_reelix_health", return_value=None), \
                 mock.patch.object(setup_left, "_usenet_server", return_value=None):
-            item = next(i for i in setup_left.items(self.cfg(tdarr), self.tmp.name) if i["key"] == "tdarr")
-            self.assertEqual((item["href"], item["done"], item["guided"]), ("http://tdarr.example:8265", False, True))
-            setup_left.mark_done(self.tmp.name, "tdarr")
-            self.assertTrue(next(i for i in setup_left.items(self.cfg(tdarr), self.tmp.name) if i["key"] == "tdarr")["done"])
+            item = next(i for i in setup_left.items(self.cfg(tdarr), self.tmp.name) if i["key"] == "wizarr")
+            self.assertEqual((item["href"], item["done"], item["guided"]), ("http://wizarr.example:5690", False, True))
+            setup_left.mark_done(self.tmp.name, "wizarr")
+            self.assertTrue(next(i for i in setup_left.items(self.cfg(tdarr), self.tmp.name) if i["key"] == "wizarr")["done"])
         with self.assertRaises(ValueError):
             setup_left.mark_done(self.tmp.name, "reelix")
 

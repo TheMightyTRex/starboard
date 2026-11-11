@@ -87,6 +87,35 @@ def docker(method, path, body=None, raw=False, timeout=30):
     return json.loads(data) if data else None
 
 
+def put_file(container_name, path, data, mode=0o644):
+    """Writes one small file into a container (Docker's archive upload), keeping the owner of the folder it goes in.
+    Used once, to give Tdarr the API key Starboard keeps (DASH-306)."""
+    import io
+    import os
+    import tarfile
+    env = dict(e.split("=", 1) for e in ((docker("GET", f"/containers/{container_name}/json") or {}).get("Config") or {}).get("Env") or [] if "=" in e)
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w") as tar:
+        info = tarfile.TarInfo(os.path.basename(path))
+        info.size, info.mode = len(data), mode
+        # The app's own user (PUID and PGID, as LinuxServer and Tdarr images use), so it can still change the file
+        info.uid = int(env.get("PUID", "1000")) if str(env.get("PUID", "1000")).isdigit() else 1000
+        info.gid = int(env.get("PGID", "1000")) if str(env.get("PGID", "1000")).isdigit() else 1000
+        tar.addfile(info, io.BytesIO(data))
+    c = _UnixConnection(60)
+    try:
+        c.request("PUT", f"/containers/{container_name}/archive?path={urllib.parse.quote(os.path.dirname(path))}", body=buf.getvalue(),
+                  headers={"Content-Type": "application/x-tar"})
+        r = c.getresponse()
+        r.read()
+    except OSError as e:
+        raise DockerError(f"Cannot reach Docker: {e}") from None
+    finally:
+        c.close()
+    if r.status >= 400:
+        raise DockerError(f"Docker answered {r.status}")
+
+
 def docker_to_file(path, dest, limit=2 * 1024 ** 3, timeout=120):
     """A GET whose answer goes straight to a file, 1 MB at a time, so a large one (an app's database) never sits in
     memory. Refused past `limit` bytes; the file is removed then."""

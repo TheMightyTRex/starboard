@@ -55,7 +55,7 @@ CATALOGUE = {
     "kapowarr": ("Kapowarr", "link", [5656, 5757], ("title", "kapowarr"), False, False),
     "dispatcharr": ("Dispatcharr", "link", [9191], ("title", "dispatcharr"), False, False),
     "dozzle": ("Dozzle", "link", [9999, 8080], ("title", "dozzle"), False, False),
-    "tdarr": ("Tdarr", "link", [8265], ("title", "tdarr"), False, False),  # DASH-221: the Full install's converter
+    "tdarr": ("Tdarr", "tdarr", [8265], ("title", "tdarr"), True, False),  # DASH-306: set up from Starboard, with a key it gives
     "uptime-kuma": ("Uptime Kuma", "link", [3001], ("title", "uptime kuma"), False, False),
     "portainer": ("Portainer", "link", [9000, 9443], ("title", "portainer"), False, False),
     "home-assistant": ("Home Assistant", "link", [8123], ("title", "home assistant"), False, False),
@@ -92,7 +92,7 @@ KEY_DATABASES = {
     "audiobookshelf": (("/config/absdatabase.sqlite",),
                        "SELECT token FROM users WHERE type = 'root' AND token IS NOT NULL AND length(token) >= 20 LIMIT 1"),
 }
-READABLE = set(KEY_FILES) | set(KEY_DATABASES) | {"nzbget"}
+READABLE = set(KEY_FILES) | set(KEY_DATABASES) | {"nzbget", "tdarr"}
 
 TIMEOUT = 2.5
 
@@ -254,12 +254,42 @@ def _nzbget(container_name):
     return f"{user.group(1)}:{word.group(1)}" if user and word else None
 
 
+TDARR_CONFIG = "/app/configs/Tdarr_Server_Config.json"
+
+
+def _tdarr(container_name):
+    """Tdarr's API key, which Starboard gives it (DASH-306, owner, 10 November 2026: "not need to be logged into"):
+    Tdarr takes a key in its own settings (seededApiKey, starting tapi_) and accepts it from its next start, whether
+    or not its sign-in is on. When there is none yet, Starboard writes one and restarts Tdarr once."""
+    import secrets
+    raw = _file(container_name, TDARR_CONFIG, 200_000)
+    if not raw:
+        return None
+    try:
+        conf = json.loads(raw.decode("utf-8"))
+    except ValueError:
+        return None
+    key = str(conf.get("seededApiKey") or "")
+    if re.match(r"^tapi_[A-Za-z0-9_]{9,64}$", key):
+        return key
+    key = "tapi_" + secrets.token_hex(16)
+    conf["seededApiKey"] = key
+    try:
+        containers.put_file(container_name, TDARR_CONFIG, json.dumps(conf, indent=2).encode())
+        containers.docker("POST", f"/containers/{container_name}/restart?t=30", timeout=90)
+    except containers.DockerError:
+        return None
+    return key
+
+
 def read_key(key, container_name):
     """An app's API key from its own files, through Docker. None when it cannot be read."""
     if key not in READABLE or not containers.available() or not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$", container_name or ""):
         return None
     if key == "nzbget":
         return _nzbget(container_name)
+    if key == "tdarr":
+        return _tdarr(container_name)
     if key in KEY_DATABASES:
         return _from_database(container_name, *KEY_DATABASES[key])
     path, pattern = KEY_FILES[key]

@@ -212,6 +212,16 @@ def slskd(service, method, path, timeout=TIMEOUT):
     return _fetch(service, req, timeout)
 
 
+def tdarr(service, path, body=None, timeout=TIMEOUT):
+    """Tdarr's API (/api/v2) with the key Starboard gave it (DASH-306): GET without a body, POST with one."""
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(service["url"].rstrip("/") + "/api/v2/" + path.lstrip("/"), data=data,
+                                 method="POST" if data is not None else "GET",
+                                 headers={"x-api-key": service.get("api_key", ""), "Content-Type": "application/json",
+                                          "Accept": "application/json", "User-Agent": USER_AGENT})
+    return _fetch(service, req, timeout)
+
+
 def sab(service, mode, timeout=TIMEOUT, **params):
     """One SABnzbd API call. SABnzbd 4 and later answer on /api (with no URL base, /sabnzbd/api only redirects);
     older ones and those with the URL base /sabnzbd answer on /sabnzbd/api, which is tried second."""
@@ -273,6 +283,9 @@ def check(service):
             sab(service, "queue", timeout=5, limit=0)  # "version" works without a key; this one does not
         elif kind == "seerr":
             version = (_api(service, "/status", timeout=5) or {}).get("version", "")
+        elif kind == "tdarr":  # DASH-306: its version; the key reaches the libraries
+            version = (tdarr(service, "status", timeout=5) or {}).get("version", "")
+            tdarr(service, "cruddb", {"data": {"collection": "LibrarySettingsJSONDB", "mode": "getAll", "docID": "", "obj": {}}}, timeout=5)
         elif kind == "slskd":  # DASH-94: its version, and whether it is signed in to Soulseek
             version = (slskd(service, "GET", "application", timeout=5) or {}).get("version", {})
             version = version.get("current", "") if isinstance(version, dict) else str(version)

@@ -1284,6 +1284,19 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except services.ServiceError as e:
                     return self.error(502, f"Reelix said no: {e}")
+            if path == "/api/tdarr" and method in ("GET", "PUT"):  # Settings, Apps, Tdarr (DASH-306)
+                from . import tdarr
+                try:
+                    if method == "GET":
+                        return self.json(200, tdarr.state(cfg))
+                    out = tdarr.save(cfg, self.body())
+                    for line in out["done"]:
+                        logs.event("info", "tdarr", line)
+                    return self.json(200, out)
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, str(e))
             if path == "/api/wanted/detail" and method == "GET":  # DASH-305: one wanted film or episode in full
                 from . import wanted
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
