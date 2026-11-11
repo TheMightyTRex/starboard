@@ -28,7 +28,7 @@ async function tdDraw(said) {
     box.removeAttribute("aria-busy");
     box.replaceChildren(el("div", { class: "notice", role: "status" }, icon("info"),
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Tdarr is not connected yet" }),
-        el("p", { text: `${e.message}. Connect gives Tdarr a key Starboard keeps, so you never sign in to it. Tdarr restarts once.` })), go));
+        el("p", { text: "Connect gives Tdarr a key that Starboard keeps, so you never sign in to Tdarr. Tdarr restarts once." })), go));
     return;
   }
   const form = el("form", { class: "stack-4" });

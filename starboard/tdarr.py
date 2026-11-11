@@ -36,7 +36,7 @@ TEMPLATE = {  # Tdarr 2.x library fields, as its own page writes them
 def _svc(cfg):
     s = next((x for x in cfg.data["services"] if x.get("type") == "tdarr" and x.get("api_key")), None)
     if not s:
-        raise ValueError("Add Tdarr in Settings, Manage apps; Starboard gives it its key")
+        raise ValueError("Starboard has no key for Tdarr yet")
     return s
 
 

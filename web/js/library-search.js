@@ -54,7 +54,7 @@ async function searchLibrary(q) {
   if (libAsked !== q || legacyMode) return;
   const total = data.library.reduce((n, g) => n + g.count, 0);
   box.replaceChildren(el("h2", { id: "found-h", text: total ? `In your library, ${total.toLocaleString("en-GB")}` : "In your library" }),
-    ...(total ? data.library.map((g) => el("section", { class: "lib-search-group", "aria-label": g.label },
+    ...(total ? data.library.map((g) => el("section", { class: "lib-search-group", "aria-label": g.label, "data-kind": g.tab },
       el("h3", {}, g.label, " ", el("span", { class: "muted", text: `(${g.count.toLocaleString("en-GB")})` })),
       el("ul", { class: "rows" }, ...g.items.map((c) => el("li", { class: "row row--opens lib-row" },
         smallCover(c.poster, c.title),
@@ -65,6 +65,7 @@ async function searchLibrary(q) {
       : [el("p", { class: "muted", text: `Nothing in your library matches "${q}".` })]));
   box.hidden = false;
   $("#lib-start").hidden = true;
+  applyFilters();
   return total;
 }
 
@@ -169,12 +170,55 @@ async function lookupReelix(q) {
     }
   }));
   if (lookAsked !== q) return;
+  applyFilters();
   heading.textContent = found ? `Not in your library, ${found}` : "Not in your library";
   status.textContent = found ? "" : `Reelix found nothing else for "${q}". Check the spelling or try fewer words.`;
   status.hidden = !found ? false : true;
   box.setAttribute("aria-busy", "false");
   if (legacyMode) box.hidden = true;
   announce(`${found} found that are not in your library`);
+}
+
+// Filters on the results (owner, 10 November 2026, DASH-301): where (in your library or not) and which kind. Kept in
+// this browser; they hide groups, nothing is searched again.
+const FILTER_KEY = "starboard.search-filters";
+const FILTER_KINDS = [["all", "Everything"], ["films", "Films"], ["tv", "Series"], ["music", "Music"], ["radio", "Radio"],
+  ["books", "Books"], ["audiobooks", "Audiobooks"]];
+let searchFilter = { where: "all", kind: "all" };
+try { searchFilter = { ...searchFilter, ...JSON.parse(localStorage.getItem(FILTER_KEY) || "{}") }; } catch { searchFilter = { where: "all", kind: "all" }; }
+
+function saveFilter() {
+  try { localStorage.setItem(FILTER_KEY, JSON.stringify(searchFilter)); } catch { /* a private window keeps it until reload */ }
+}
+
+function applyFilters() {
+  const show = (node, on) => { if (node) node.classList.toggle("is-filtered", !on); };
+  const bar = $("#search-filters");
+  if (bar) bar.hidden = !$("#q").value.trim();
+  show($("#lib-found"), searchFilter.where !== "out");
+  show($("#lookup"), searchFilter.where !== "in");
+  $$("#lib-found [data-kind], #lookup [data-kind]").forEach((g) => {
+    const k = g.dataset.kind;
+    show(g, searchFilter.kind === "all" || k === searchFilter.kind || (searchFilter.kind === "audiobooks" && k === "books" && !!g.closest("#lookup")));
+  });
+}
+
+function filterBar() {
+  const where = el("fieldset", { class: "segmented" }, el("legend", { class: "visually-hidden", text: "Show" }),
+    ...[["all", "All"], ["in", "In your library"], ["out", "Not in your library"]].map(([v, t]) => el("label", {},
+      el("input", { type: "radio", name: "sf-where", value: v, checked: searchFilter.where === v }), el("span", { text: t }))));
+  const kinds = el("div", { class: "filter-chips", role: "group", "aria-label": "Kind" }, ...FILTER_KINDS.map(([v, t]) => {
+    const b = el("button", { type: "button", class: "filter-chip", "aria-pressed": String(searchFilter.kind === v) }, t);
+    b.addEventListener("click", () => {
+      searchFilter.kind = v;
+      $$(".filter-chip", kinds).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      saveFilter();
+      applyFilters();
+    });
+    return b;
+  }));
+  where.addEventListener("change", (e) => { searchFilter.where = e.target.value; saveFilter(); applyFilters(); });
+  return el("div", { id: "search-filters", class: "stack-2", hidden: true }, where, kinds);
 }
 
 function remember(q) {
@@ -206,6 +250,8 @@ startPage().then(async () => {
   const typed = () => { if (!legacyMode) runBoth($("#q").value.trim()); };
   $("#search-form").addEventListener("submit", submit);
   $("#q").addEventListener("input", typed);
+  $("#lib-found").before(filterBar());
+  $("#q").addEventListener("input", applyFilters);
   if (q) { $("#q").value = q; runBoth(q, true); } else $("#q").focus();
   try {
     await drawStart();
