@@ -899,8 +899,37 @@ def search_library(data_dir, q, limit=8):
     return out
 
 
-def overview(data_dir):
-    """Before anything is typed: recently added across the Library, then each tab with its count."""
+def _arrivals(reelix):
+    """{(tab, id): unix time} of the newest import of each film, series, book or artist: what actually arrived, so a
+    new episode moves its series to the front (owner, 10 November 2026: a library brought in at once never changed,
+    DASH-303). Kept for ten minutes; nothing when Reelix cannot be asked."""
+    tabs = {"movie": "films", "series": "tv", "book": "books", "audiobook": "audiobooks", "author": "audiobooks", "artist": "music"}
+
+    def ask():
+        got = services._api(reelix, "/history", {"event_type": "imported", "page_size": 200}) or {}
+        out = {}
+        for r in got.get("items") or []:
+            m = r.get("media") or {}
+            tab = tabs.get(m.get("kind"))
+            if not tab or not m.get("id"):
+                continue
+            try:
+                when = dt.datetime.fromisoformat(str(r.get("date", "")).replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                continue
+            key = (tab, m["id"])
+            out[key] = max(out.get(key, 0), when)
+        return out
+    try:
+        return services.cached("library-arrivals", 600, ask)
+    except services.ServiceError:
+        return {}
+
+
+def overview(data_dir, reelix=None):
+    """Before anything is typed: recently added across the Library, then each tab with its count. Recently added is
+    ordered by what arrived last (Reelix's imports), then by when Reelix listed it."""
+    arrived = _arrivals(reelix) if reelix else {}
     recent, tabs = [], []
     for tab in TABS:
         try:
@@ -910,8 +939,9 @@ def overview(data_dir):
             tabs.append({"tab": tab, "label": LABELS[tab], "count": None})
             continue
         tabs.append({"tab": tab, "label": LABELS[tab], "count": len(items), "noun": NOUNS[tab]})
-        newest = sorted(items, key=lambda e: -(e.get("a") or 0))[:12]
-        recent.extend((e.get("a") or 0, tab, e) for e in newest)
+        when = lambda e: max(arrived.get((tab, e["i"]), 0), e.get("a") or 0)  # noqa: E731
+        newest = sorted(items, key=lambda e: -when(e))[:12]
+        recent.extend((when(e), tab, e) for e in newest)
     recent.sort(key=lambda x: -x[0])
     return {"recent": [dict(_card(tab, e), tab=tab) for _, tab, e in recent[:12]], "tabs": tabs}
 
@@ -1154,7 +1184,7 @@ def handle(h, method, path):
         for t in TABS:  # tabs never opened yet are built in the background, so the counts fill in
             if not os.path.exists(_path(data_dir, t)):
                 _background(data_dir, reelix, t)
-        return h.json(200, overview(data_dir))
+        return h.json(200, overview(data_dir, reelix))
     if path == "/api/library/search" and method == "GET":
         used(data_dir, "", get_reelix)
         return h.json(200, {"library": search_library(data_dir, q.get("q", "")[:120])})

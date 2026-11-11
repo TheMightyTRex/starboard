@@ -293,6 +293,25 @@ class HandleTest(unittest.TestCase):
         self.assertEqual(h.sent[2], {"reelix": False})
 
 
+class ArrivalsTest(unittest.TestCase):
+    def test_recently_added_follows_what_arrived(self):
+        # DASH-303 (owner, 10 November 2026): a library brought in at once never changed; a new episode now leads.
+        import tempfile
+        from unittest import mock
+        from starboard import library, services
+        services._cache.clear()
+        d = tempfile.mkdtemp()
+        os.makedirs(os.path.dirname(library._path(d, "tv")), exist_ok=True)
+        for tab in library.TABS:
+            items = [{"i": 1, "t": "Old Series", "s": "old series", "l": "O", "a": 100, "w": "in_library"},
+                     {"i": 2, "t": "Newer Listing", "s": "newer listing", "l": "N", "a": 200, "w": "in_library"}] if tab == "tv" else []
+            with open(library._path(d, tab), "w") as f:
+                json.dump({"built": 1, "items": items}, f)
+        hist = {"items": [{"date": "2026-11-11T05:26:00Z", "media": {"kind": "series", "id": 1}}]}
+        with mock.patch.object(services, "_api", return_value=hist):
+            out = library.overview(d, {"url": "x"})
+        self.assertEqual([c["title"] for c in out["recent"]], ["Old Series", "Newer Listing"])
+
 if __name__ == "__main__":
     unittest.main()
 
