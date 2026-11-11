@@ -1266,6 +1266,23 @@ def handle(h, method, path):
         if b.get("action") in ("delete",):
             _background(data_dir, reelix, tab)  # the wall loses it
         return h.json(200, {"said": said, "item": None if b.get("action") == "delete" else item(data_dir, reelix, tab, item_id, cfg)})
+    if path == "/api/library/match" and method == "GET":  # Change match: what it could be (11 November 2026)
+        from . import rematch
+        try:
+            return h.json(200, {"results": rematch.search(reelix, tab, q.get("q", ""))})
+        except (ValueError, services.ServiceError) as e:
+            return h.error(400, str(e))
+    if path == "/api/library/match" and method == "POST":
+        from . import rematch
+        body = h.body()
+        try:
+            out = rematch.change(reelix, tab, body.get("id"), body.get("key"))
+        except (ValueError, services.ServiceError) as e:
+            return h.error(400, str(e))
+        services.forget(f"library-item-{tab}-{body.get('id')}")
+        _background(data_dir, reelix, tab)  # the tab's list reads Reelix again
+        logs.event("info", "library", f"Change match ({tab}): {out['said']}")
+        return h.json(200, out)
     if path == "/api/library/item" and method == "GET":
         item_id = _int(q.get("id"), 0, 0, 10 ** 12)
         return h.json(200, services.cached(f"library-item-{tab}-{item_id}", ITEM_SECONDS,

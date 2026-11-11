@@ -154,6 +154,45 @@ async function removeItem(item, button) {
   if (ok) act("delete", { delete_files: files.checked }, button);
 }
 
+// Change match (owner, 11 November 2026): search for what it really is, choose it, and Starboard moves it in Reelix
+// (the files stay where they are; if Reelix will not take the new match, the old one is put back).
+async function changeMatch(item, button) {
+  const search = el("input", { class: "input", type: "search", id: "match-q", value: item.title || "", autocomplete: "off" });
+  const results = el("div", { class: "stack-2", "aria-live": "polite" });
+  let chosen = null;
+  const find = async () => {
+    results.replaceChildren(el("p", { class: "muted", text: "Searching…" }));
+    try {
+      const r = await api(`/api/library/match?tab=${ITEM_TAB}&q=${encodeURIComponent(search.value.trim())}`);
+      const name = `match-${Date.now()}`;
+      results.replaceChildren(r.results.length ? el("fieldset", { class: "stack-2" }, el("legend", { class: "visually-hidden", text: "Matches" }),
+        el("div", { class: "option-cards" }, r.results.map((m) => el("label", { class: "option-card" },
+          el("input", { type: "radio", name, value: m.key, onchange: () => { chosen = m.key; } }),
+          el("strong", { text: `${m.title}${m.year ? ` (${m.year})` : ""}` }),
+          el("small", { text: [m.detail, m.in_library ? "Already in your library" : ""].filter(Boolean).join(". ") }))))) :
+        el("p", { class: "muted", text: "Nothing found. Try other words." }));
+    } catch (e) { results.replaceChildren(notice("danger", "Search did not work", e.message)); }
+  };
+  const go = el("button", { type: "button", class: "btn" }, icon("search"), "Search");
+  go.addEventListener("click", find);
+  search.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); find(); } });
+  find();
+  const ok = await confirmDialog({ title: `Change what ${item.title} is matched to`, confirm: "Use this match",
+    message: el("p", { text: "Search, then choose the right one. Its files stay where they are; Reelix reads them again under the new match." }),
+    fields: [el("div", { class: "stack-2" }, el("label", { class: "field__label", for: "match-q", text: "Search for" }),
+      el("div", { class: "actions" }, search, go)), results] });
+  if (!ok) return;
+  if (!chosen) { problem("Choose one of the matches first", button); return; }
+  button.disabled = true;
+  try {
+    const out = await api(`/api/library/match?tab=${ITEM_TAB}`, { method: "POST", body: { id: current.id, key: chosen } });
+    toast(out.said);
+    if (out.id && String(out.id) !== String(current.id)) { const u = new URL(location.href); u.searchParams.set("id", out.id); location.replace(u); }
+    else location.reload();
+  } catch (e) { problem(e.message, button); }
+  finally { button.disabled = false; }
+}
+
 function head(item) {
   const fan = item.poster ? el("div", { class: "cover-fan lib-fan", "aria-hidden": "true" },
     el("img", { src: item.poster, alt: "", decoding: "async", onerror: (e) => e.target.closest(".cover-fan")?.remove() })) : null;
@@ -177,6 +216,8 @@ function head(item) {
       icon("list"), "Choose a download") : null,
     watchedButton(item.watched, item.title, false),
     item.open ? newTabLink(item.open.href, item.open.label, { className: "btn btn--quiet" }) : null,
+    ["films", "tv", "radio", "audiobooks", "books"].includes(ITEM_TAB) ? el("button", { type: "button", class: "btn btn--quiet",
+      onclick: (e) => changeMatch(item, e.currentTarget) }, icon("refresh-cw"), "Change match") : null,
     can.delete ? el("button", { type: "button", class: "btn btn--quiet btn--danger", onclick: (e) => removeItem(item, e.currentTarget) }, "Delete") : null,
   ].filter(Boolean);
   return el("header", { class: "series-head" },
