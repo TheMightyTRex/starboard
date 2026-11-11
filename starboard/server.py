@@ -1086,6 +1086,27 @@ class Handler(BaseHTTPRequestHandler):
                 except (media_import.ImportError_, ValueError, TypeError) as e:
                     return self.error(400, str(e))
                 return self.error(404, "Not found")
+            if path.startswith("/api/ondemand/history"):  # Discover, On demand history (DASH-324)
+                from . import library as _lib, ondemand_history
+                reelix = _lib.reelix_of(app.config.data["services"])
+                try:
+                    if path == "/api/ondemand/history" and method == "GET":
+                        kind = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("kind", ["all"])[0]
+                        return self.json(200, ondemand_history.listing(app.data_dir, reelix, kind))
+                    body = self.body()
+                    if path == "/api/ondemand/history/want" and method == "POST":
+                        if not reelix:
+                            return self.error(409, "Add Reelix in Settings, Manage apps, with its key")
+                        out = ondemand_history.want(app.data_dir, reelix, str(body.get("kind", "")), str(body.get("id", "")))
+                        logs.event("info", "library", f"On demand history: {out['said']}")
+                        return self.json(200, out)
+                    if path == "/api/ondemand/history/forget" and method == "POST":
+                        return self.json(200, ondemand_history.forget(app.data_dir, str(body.get("id", ""))[:40]))
+                except LookupError as e:
+                    return self.error(404, str(e))
+                except (ValueError, services.ServiceError) as e:
+                    return self.error(400, str(e))
+                return self.error(404, "Not found")
             if path.startswith("/api/library/"):  # the Library and Search, from Reelix (starboard/library.py)
                 return library.handle(self, method, path)
 

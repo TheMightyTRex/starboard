@@ -41,6 +41,7 @@ MENU = [
         ("Search", "search", [("search.html", "Search", "search")]),
         ("Trending", "sparkles", [("discover-trending.html", "Trending", "sparkles")]),
         ("Coming up", "calendar-days", [("upcoming.html", "Coming up", "calendar-days")]),
+        ("On demand history", "history", [("discover-ondemand.html", "On demand history", "history")]),
     ]),
     ("activity", "Activity", "activity", [
         ("Downloads", "download", [("downloads.html", "Queue", "download"), ("downloads-finished.html", "Recently finished", "history"),
@@ -98,6 +99,7 @@ HELP = {
     "search.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "discover-trending.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "upcoming.html": ("topics/coming-up.md", "finding out what is coming up"),
+    "discover-ondemand.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "downloads.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
     "downloads-finished.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
     "wanted.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
