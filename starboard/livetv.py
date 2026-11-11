@@ -24,6 +24,7 @@ import re
 import tempfile
 import threading
 import time
+import unicodedata
 import urllib.parse
 import urllib.request
 import uuid
@@ -48,7 +49,7 @@ LOGO_OVERRIDES = {"CNN": f"{TVL}/united-states/cnn-us.png", "ABC News": f"{TVL}/
 FREE_TV = {"CBBC": "Kids", "CBeebies": "Kids", "Pop": "Kids", "BBC News": "News", "GB News": "News", "CNN": "News",
            "ABC News": "News", "CBS News": "News", "NBC News": "News", "FOX Live Now": "News", "Bloomberg": "News",
            "WeatherNation": "News", "Great! Movies": "Movies", "True Crime": "Documentaries"}
-LOGO_VERSION = "v3"
+LOGO_VERSION = "v4"  # v4 (11 November 2026): solid shapes keep their cut-out words; nothing legible becomes the name
 DAY = 20 * 3600  # "older than a day", with room for the hourly check
 RETRY = 12 * 3600  # a guide that failed is tried again after this, not every hour
 
@@ -499,6 +500,79 @@ def whiten(data):
     return buf.getvalue()
 
 
+def _pieces(mask):
+    """(share of the white in its largest piece, number of pieces) of a white mask, on a half-size copy."""
+    m = mask.resize((max(1, mask.width // 2), max(1, mask.height // 2))).point(lambda v: 255 if v > 128 else 0)
+    px, (w, h) = m.load(), m.size
+    seen, sizes = bytearray(w * h), []
+    for y in range(h):
+        for x in range(w):
+            if px[x, y] and not seen[y * w + x]:
+                stack, n = [(x, y)], 0
+                seen[y * w + x] = 1
+                while stack:
+                    cx, cy = stack.pop()
+                    n += 1
+                    for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                        if 0 <= nx < w and 0 <= ny < h and px[nx, ny] and not seen[ny * w + nx]:
+                            seen[ny * w + nx] = 1
+                            stack.append((nx, ny))
+                sizes.append(n)
+    total = sum(sizes)
+    return (max(sizes) / total if total else 0.0), len(sizes)
+
+
+def legible(png):
+    """A white logo that reads (DASH-312, 11 November 2026: 67 of 622 came out as solid boxes, blobs or smudges).
+    A solid shape (mostly one large piece) keeps only the words cut out of it, as euronews, abc and DW do; when
+    nothing readable is inside, or the logo is a picture, ValueError, and the channel's name is used instead."""
+    from PIL import Image, ImageChops, ImageDraw, ImageFilter
+    a = Image.open(io.BytesIO(png)).convert("RGBA").getchannel("A")
+    box = a.point(lambda v: 255 if v > 128 else 0).getbbox()
+    if not box:
+        raise ValueError("blank logo")
+    c = a.crop(box)
+    m = c.point(lambda v: 255 if v > 128 else 0)
+    on = sum(1 for v in m.getdata() if v)
+    fill = on / (c.width * c.height)
+    edge = sum(1 for v in m.filter(ImageFilter.FIND_EDGES).getdata() if v) / max(1, on)
+    mid = sum(1 for v in c.getdata() if 40 < v < 215) / max(1, on)
+    biggest, _n = _pieces(c)
+    if fill > 0.55 and edge < 0.13 and biggest >= 0.8:  # a solid shape: keep what is cut out of it
+        inv = c.point(lambda v: 255 - v)
+        holes = inv.point(lambda v: 255 if v > 128 else 0)
+        w, h = holes.size
+        for s in [(x, y) for x in range(0, w, 3) for y in (0, h - 1)] + [(x, y) for y in range(0, h, 3) for x in (0, w - 1)]:
+            if holes.getpixel(s) == 255:  # holes open to the outside are not words
+                ImageDraw.floodfill(holes, s, 0)
+        inside = Image.composite(inv, Image.new("L", inv.size, 0), holes)
+        if sum(1 for v in inside.getdata() if v > 128) < 0.04 * w * h:
+            raise ValueError("nothing readable inside the shape")
+        # Words beside the shape stay too (Sky News: "sky" above its box): every white piece but the largest.
+        probe, best = m.copy(), None
+        for y in range(0, h, 3):
+            for x in range(0, w, 3):
+                if probe.getpixel((x, y)) == 255:
+                    before = probe.histogram()[255]
+                    ImageDraw.floodfill(probe, (x, y), 100)
+                    size = before - probe.histogram()[255]
+                    if not best or size > best[0]:
+                        best = (size, (x, y))
+        largest = m.copy()
+        ImageDraw.floodfill(largest, best[1], 77)
+        largest = largest.point(lambda v: 255 if v == 77 else 0)
+        others = Image.composite(c, Image.new("L", c.size, 0), largest.point(lambda v: 255 - v))
+        inside = ImageChops.lighter(inside, others)
+        white = Image.new("RGBA", inside.size, (255, 255, 255, 255))
+        white.putalpha(inside)
+        buf = io.BytesIO()
+        white.save(buf, "PNG")
+        return whiten(buf.getvalue())
+    if fill > 0.4 and edge > 0.2 and mid > 0.25 and biggest >= 0.6:
+        raise ValueError("a picture, not a logo")
+    return png
+
+
 def text_logo(name):
     """The channel's name in white, for channels whose artwork is a photo or missing. Pillow's own font."""
     from PIL import Image, ImageDraw, ImageFont
@@ -506,6 +580,7 @@ def text_logo(name):
     out = Image.new("RGBA", (W, H), (255, 255, 255, 0))
     d = ImageDraw.Draw(out)
     name = re.split(r"[:(]| - |'powered", name, flags=re.I)[0].strip(" '")
+    name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode() or name  # Pokémon draws as Pokemon
     words, lines, size, font = name.upper().split(), [], 58, None
     for size in range(58, 20, -2):
         font = ImageFont.load_default(size)
@@ -544,7 +619,7 @@ def _make_logo(ch, logos, white):
     try:
         if not src:
             raise ValueError("no logo")
-        png = whiten(fetch(src, ua="Mozilla/5.0", timeout=20, limit=5_000_000))
+        png = legible(whiten(fetch(src, ua="Mozilla/5.0", timeout=20, limit=5_000_000)))
     except Exception as e:
         if "429" in str(e):  # rate limited: keep what is there, try again next time
             return key, os.path.exists(path)
