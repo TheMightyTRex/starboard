@@ -65,10 +65,10 @@ class CleanupTest(unittest.TestCase):
         cleanup.hold(self.data, [i["id"] for i in cleanup.left_over(self.data)])
         self.assertEqual(cleanup.left_over(self.data), [])
         held = cleanup.holding(self.data)
-        self.assertEqual(len(held), 4)
+        self.assertEqual(len(held), 2)  # the removed plug-in and the work folder; saved copies are DASH-109's
         freed = cleanup.delete_for_good(self.data, next(i for i in held if i["kind"] == "plugin")["id"])
         self.assertEqual(freed, 1000)
-        self.assertEqual(len(cleanup.holding(self.data)), 3)
+        self.assertEqual(len(cleanup.holding(self.data)), 1)
 
     def test_a_request_never_names_a_path(self):
         with self.assertRaises(ValueError):
@@ -98,7 +98,7 @@ class CleanupApiTest(unittest.TestCase):
 
     def test_deleting_needs_the_password(self):
         found = self.api.call("GET", "/api/cleanup")
-        self.assertEqual(len(found["left_over"]), 4)
+        self.assertEqual(len(found["left_over"]), 2)
         moved = self.api.call("POST", "/api/cleanup/hold", {"ids": [found["left_over"][0]["id"]]})
         self.assertEqual(len(moved["holding"]), 1)
         item = moved["holding"][0]["id"]
