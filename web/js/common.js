@@ -1343,7 +1343,7 @@ function logoTone(img, name, tone, kind = "network") {
       const x = c.getContext("2d", { willReadFrequently: true });
       x.drawImage(img, 0, 0, 48, 48);
       const px = x.getImageData(0, 0, 48, 48).data;
-      let seen = 0, solid = 0, light = 0, pale = 0;
+      let seen = 0, solid = 0, light = 0, pale = 0, vivid = 0;
       for (let i = 0; i < px.length; i += 4) {
         const a = px[i + 3] / 255;
         if (a < 0.12) continue;
@@ -1352,12 +1352,18 @@ function logoTone(img, name, tone, kind = "network") {
         const lum = (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255;
         light += a * lum;
         if (lum > 0.6) pale += 1;
+        if (Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]) > 80) vivid += 1;
       }
       if (!seen) return;
       // A picture that fills its whole square with paint has its own background; otherwise light or dark ink.
       // Light and dark ink together (a dark disc with light letters) also keeps its own look, or its letters would go.
-      const mixed = pale / seen > 0.15 && pale / seen < 0.85;
-      const t = (seen / (48 * 48) > 0.92 && solid / seen > 0.9) || mixed ? "solid" : light / seen > 0.6 ? "light" : "dark";
+      // Light and dark ink together on a painted shape goes on a black tile (issues #12 and #13): mostly pale paint
+      // with dark letters (Cinemax) has its shades reversed, so the letters are white; coloured paint with white
+      // letters (Sky Max) keeps its colours, so the white letters stay white.
+      // A strongly coloured logo with some white in it counts too: Sky Max is only 15% white (issue #13).
+      const mixed = (pale / seen > 0.15 && pale / seen < 0.85) || (vivid / seen > 0.5 && pale / seen > 0.05 && pale / seen < 0.5);
+      const t = seen / (48 * 48) > 0.92 && solid / seen > 0.9 ? "solid"
+        : mixed ? (pale / seen >= 0.5 ? "invert" : "boxed") : light / seen > 0.6 ? "light" : "dark";
       img.dataset.tone = t;
       api("/api/library/network-logo/tone", { method: "POST", body: { name, tone: t, kind } }).catch(() => { /* measured again next time */ });
     } catch { /* a picture the browser will not let us read: it keeps the standard look */ }
@@ -1411,4 +1417,23 @@ async function startPage() {
     if (session.ux_notes) startFeedback(session).catch(() => { /* the page works without it */ });
     return session;
   } catch { return null; }
+}
+
+// A row of cards that goes past the screen's edge (issue #17): the design system's shelf (UX-30), with no scroll bar,
+// the edges fading into the page where there is more, and an arrow over each fade. Wraps `list` (a ul) and returns
+// the wrapper to put in its place; the shelf sets itself up once it is on the page. The arrows are for the mouse and
+// touch: Tab goes through the cards themselves and the row follows the focus, so the arrows are left out of the Tab
+// order (they sit halfway up the row, so Tab would jump back up to them); they keep their names for screen readers
+// and voice control.
+function shelfScroller(list, name) {
+  list.classList.add("shelf-track");
+  const box = el("div", { class: "shelf-scroller" },
+    list,
+    el("div", { class: "shelf-edge shelf-edge--start", hidden: true },
+      el("button", { type: "button", class: "shelf-arrow", tabindex: "-1", "aria-label": `Earlier in ${name}` }, icon("chevron-left"))),
+    el("div", { class: "shelf-edge shelf-edge--end", hidden: true },
+      el("button", { type: "button", class: "shelf-arrow", tabindex: "-1", "aria-label": `More in ${name}` }, icon("chevron-right"))));
+  const outer = el("div", { class: "shelf-holder" }, box);  // setup() looks inside what it is given
+  requestAnimationFrame(() => window.SharedComponents?.setup(outer));
+  return outer;
 }

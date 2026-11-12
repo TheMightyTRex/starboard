@@ -2891,8 +2891,9 @@ function advancedSwitch() {
   const apply = () => {
     document.body.classList.toggle("show-advanced", input.checked);
     const n = $$("[data-advanced]", main).length;
-    // Only on a page that has advanced settings to show (Manage apps has none).
-    box.hidden = !n && !input.checked;
+    // Only on a page that has advanced settings to show (Manage apps and Plug-ins have none), whether or not it is
+    // on: it was left showing on those pages while on (issue #11).
+    box.hidden = !n;
     const text = input.checked ? "Showing every setting. Your choice is saved for every Settings page."
       : n ? `${n} more ${n === 1 ? "section is" : "sections are"} under Advanced settings.` : "";
     if (note.textContent !== text) note.textContent = text;  // only a real change, or the watcher below would loop

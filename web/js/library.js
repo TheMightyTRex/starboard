@@ -217,17 +217,25 @@ function updateSaveButton() {
   $("#lib-save").hidden = isDefault;
 }
 
+// An opened group (a collection, network, station, series or author) takes over the page's heading: its name, and its
+// logo for a network; the back link goes at the top of the page, above the heading, as on every item page (issue #15).
+const IN_GROUP = { Collections: "in this collection", Networks: "on this network", Stations: "from this station",
+  Series: "in this series", Authors: "by this author" };
 function showGroup() {
   if (!state.group) return;
   const [page, label] = state.by === "authors" ? [`library-${TAB}-authors.html`, "Authors"] : GROUP_PAGE[TAB] || ["", ""];
-  $("#lib-group").hidden = false;
+  const head = $(".page-head");
+  if (page) head.before(el("a", { class: "back-link", href: `/${page}` }, icon("arrow-left"), `All ${label.toLowerCase()}`));
   // A TV network's own page shows its logo beside its name (owner, 10 November 2026), in the same one colour as the
   // Networks grid; decorative, as the name is written beside it, and left out when the network has none.
   const logo = TAB === "tv" && state.by !== "authors"
     ? el("img", { class: "lib-group-logo", src: `/api/library/network-logo?tab=tv&name=${encodeURIComponent(state.group)}`, alt: "",
       onerror: (e) => e.target.remove() }) : null;
-  $("#lib-group").replaceChildren(...[logo].filter(Boolean), el("h2", { text: state.group }),
-    page ? el("a", { class: "back-link", href: `/${page}` }, icon("arrow-left"), `All ${label.toLowerCase()}`) : null);
+  const h1 = $("h1", head);
+  h1.replaceChildren(...[logo, document.createTextNode(state.group)].filter(Boolean));
+  h1.classList.toggle("lib-group-title", !!logo);
+  const words = NOUN[TAB][1];
+  $(".page-head__summary", head).textContent = `${words[0].toUpperCase()}${words.slice(1)} ${IN_GROUP[label] || "in this group"}, A to Z.`;
   document.title = `${state.group} · ${document.title}`;
   if (["films", "audiobooks", "books"].includes(TAB) && state.by !== "authors") groupComplete();
 }
@@ -236,7 +244,8 @@ function showGroup() {
 // order with the missing ones as outlines, and Add missing, which adds them all to Reelix.
 async function groupComplete() {
   const box = el("section", { class: "group-complete", "aria-label": "The whole collection" }, el("p", { class: "small muted", text: "Looking for the rest…" }));
-  $("#lib-group").after(box);
+  $(".page-head").after(box);
+  $("#lib-add-missing")?.remove();
   let d;
   try { d = await api(`/api/library/group-detail?tab=${TAB}&group=${encodeURIComponent(state.group)}`); }
   catch (e) { box.replaceChildren(notice("info", "Could not look for the rest", e.message)); return; }
@@ -266,10 +275,12 @@ async function groupComplete() {
     i.poster ? el("img", { src: i.poster, alt: "", loading: "lazy" }) : el("span", { class: "group-complete__blank", "aria-hidden": "true" }),
     el("span", { class: "group-complete__title", text: i.title }),
     el("span", { class: "small muted", text: [i.when, i.have ? "" : i.wanted ? "Wanted" : "Missing"].filter(Boolean).join(" · ") }))));
+  // Add missing at the right of the heading's line (issue #14), where a page's own buttons go.
+  $(".page-head").append(el("div", { class: "actions", id: "lib-add-missing" }, add));
   box.replaceChildren(
     titleChip(el("p", { class: "group-complete__count", text: `${d.have} of ${d.total} ${d.total === 1 ? noun[0] : noun[1]} in your library` }), ring),
-    strip,
-    el("div", { class: "actions" }, add, el("span", { class: "small muted", text: `From ${d.source}.` })));
+    shelfScroller(strip, "the whole collection"),
+    el("p", { class: "small muted", text: `From ${d.source}.` }));
 }
 
 // DASH-186: films and series already on disk that Reelix does not know yet. A note above the wall, then a dialog of

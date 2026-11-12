@@ -16,7 +16,7 @@ import zipfile
 
 PICTURES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
 MAX_FILE, MAX_FILES = 2 * 1024 * 1024, 1000
-TONES = ("light", "dark", "solid")
+TONES = ("light", "dark", "solid", "invert", "boxed")  # invert and boxed: issues #12 and #13
 _lock = threading.Lock()
 
 # Short forms in logo file names, as whole words (lower case).
@@ -131,7 +131,7 @@ def picture(data_dir, name):
 
 def set_tone(data_dir, name, tone):
     if tone not in TONES:
-        raise ValueError("A tone is light, dark or solid")
+        raise ValueError("A tone is light, dark, solid, invert or boxed")
     k = key_of_station(name)
     with _lock:
         data = _read(data_dir)

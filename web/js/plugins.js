@@ -413,10 +413,15 @@ function pluginPage(p, redraw) {
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: (STATE[st.state] || ["", ""])[0] }), el("p", { text: st.sentence }))) : null;
   const first = st.action === "rollback" ? rollbackButton(p, redraw, true)
     : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw, true);
+  // State (issue #8): the chip at the right of the heading's line, and Activate or Deactivate at the right of the
+  // version line under it.
+  const stateSec = section(`pl-${p.id}-state`, "State", p.builtin ? "Built into Starboard: it runs on Starboard's own image and updates with Starboard." : `Version ${p.version}${p.author ? `, by ${p.author}` : ""}.`,
+    headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
+  const about = $(".settings-section__head > p", stateSec);
+  const stateLine = el("div", { class: "state-line" }, about || el("span"), el("div", { class: "actions" }, first));
+  if (about) $(".settings-section__head", stateSec).append(stateLine); else stateSec.append(stateLine);
   return [
-    section(`pl-${p.id}-state`, "State", p.builtin ? "Built into Starboard: it runs on Starboard's own image and updates with Starboard." : `Version ${p.version}${p.author ? `, by ${p.author}` : ""}.`,
-      headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null),
-      el("div", { class: "actions" }, first)),
+    stateSec,
     !p.builtin ? section(`pl-${p.id}-versions`, "Versions",
       p.update ? `Version ${p.update.version} is available.${p.update.changelog ? ` ${p.update.changelog}` : ""}`
         : st.can_roll_back ? `Version ${st.previous_version} is kept, in case this one does not suit you.` : `Version ${p.version}. No newer version is known.`,
@@ -654,7 +659,8 @@ async function startPlugins() {
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row row--no-lead" },
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
-          el("div", { class: "row__side" }, chip(...chipOf(p)), p.update ? chip("Update", "info") : null,
+          // Three fixed columns, so the chips, Settings and the state button line up from row to row (issue #10).
+          el("div", { class: "row__side plugin-row__side" }, el("span", { class: "plugin-row__chips" }, chip(...chipOf(p)), p.update ? chip("Update", "info") : null),
             el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}` }, icon("settings"), "Settings",
               el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
             stateButton(p, draw))))),

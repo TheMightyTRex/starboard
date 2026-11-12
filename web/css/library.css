@@ -24,6 +24,8 @@
 /* Item pages: a single cover in the fan's place, the in-page tabs, and the numbered list. */
 .lib-item { display: grid; gap: var(--space-5); }
 .lib > .back-link { justify-self: start; width: fit-content; }
+/* An opened network: its logo before its name in the page's heading (issue #15). */
+.lib-group-title { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .lib-item .series-head__meta .chip { align-self: center; }
 .lib-fan { width: clamp(120px, 18vw, 200px); aspect-ratio: 2 / 3; }
 .lib-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--color-divider); overflow-x: auto; }
@@ -110,6 +112,11 @@
 :is(.network-logo, .series-head__network, .lib-group) img[data-tone="light"] { filter: var(--logo-light); }
 :is(.network-logo, .series-head__network, .lib-group) img[data-tone="dark"] { filter: var(--logo-dark); }
 :is(.network-logo, .series-head__network, .lib-group) img[data-tone="solid"] { filter: none; border-radius: var(--radius-1, 4px); }
+/* Light and dark ink together (issues #12 and #13): on a black tile in every theme, white letters either way. */
+:is(.network-logo, .series-head__network, .lib-group) img[data-tone="invert"] { filter: grayscale(1) invert(1) contrast(1.15); }
+:is(.network-logo, .series-head__network, .lib-group) img[data-tone="boxed"] { filter: none; }
+.network-logo:has(img[data-tone="invert"], img[data-tone="boxed"]) { background: #000; }
+:is(.series-head__network, .lib-group) img:is([data-tone="invert"], [data-tone="boxed"]) { background: #000; padding: 4px 6px; border-radius: var(--radius-1, 4px); }
 /* Films, Collections as banners with a completion ring (owner chose idea C, 12 November 2026). */
 .collection-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4, 16px);
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
@@ -155,7 +162,8 @@
 .discover-card__cover { width: 100%; aspect-ratio: 2 / 3; }
 .discover-card__cover img { width: 100%; height: 100%; object-fit: cover; }
 .discover-card__title { margin: 4px 0 0; font-size: var(--text-sm, 0.875rem); font-weight: var(--weight-strong, 700); overflow-wrap: anywhere;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  line-height: 1.3; min-height: 2.6em; }  /* always two lines' room, so every card's Add button lines up (issue #16) */
 .discover-card__meta { margin: 0; font-size: var(--text-xs, 0.75rem); color: var(--color-text-muted); overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
 .discover-card__action { margin-top: 4px; }
@@ -197,3 +205,13 @@
 
 /* Item extras (DASH-209): long file names wrap rather than push the Delete button off the row. */
 .lib-files__name, .lib-rename .row__title, .lib-rename .row__meta { overflow-wrap: anywhere; }
+/* Add missing on the line of the opened collection's name, at the right (issue #14). */
+.page-head > #lib-add-missing { align-self: start; }
+
+/* Rows that go past the screen's edge (issue #17) use the design system's shelf: the shelf track's columns win. */
+.shelf-scroller .discover-shelf { grid-auto-columns: 140px; }
+.shelf-scroller .group-complete__strip { grid-auto-columns: 96px; }
+.shelf-scroller:has(.group-complete__strip) { --shelf-cover-w: 96px; }
+.shelf-scroller:has(.discover-shelf) { --shelf-cover-w: 140px; }
+/* Discover: Wanted and In your library sit where the Add button does, centred on its height (owner, 12 November 2026). */
+.discover-card__action { min-height: var(--control-h-compact, 32px); display: flex; align-items: center; }

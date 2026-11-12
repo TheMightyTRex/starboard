@@ -41,27 +41,31 @@ def logo_of(data_dir, name):
     return (known(data_dir).get(name.lower()) or {}).get("url", "")
 
 
-TONES = ("light", "dark", "solid")
+TONES = ("light", "dark", "solid", "invert", "boxed")
+MEASURE = 2  # 2 (issues #12 and #13): light and dark ink together is "invert" or "boxed", on a black tile
 
 
 def tone_of(data_dir, name):
     """How a network's logo looks, measured once by the first browser that shows it: "light" (white or pale on
-    nothing), "dark", "solid" (it has its own background), or "" (not measured yet)."""
-    t = (known(data_dir).get(name.lower()) or {}).get("tone", "")
-    return t if t in TONES else ""
+    nothing), "dark", "solid" (it fills its square with its own background), "invert" (mostly pale paint with dark
+    letters, such as Cinemax: shades reversed on a black tile), "boxed" (coloured paint with white letters, such as
+    Sky Max: its own colours on a black tile), or "" (not measured yet, or measured by the older rule)."""
+    e = known(data_dir).get(name.lower()) or {}
+    t = e.get("tone", "")
+    return t if t in TONES and (t != "solid" or e.get("v", 1) >= MEASURE) else ""
 
 
 def set_tone(data_dir, name, tone):
     """Keeps a logo's tone for everyone, so it is never measured again (until its picture changes)."""
     if tone not in TONES:
-        raise ValueError("A tone is light, dark or solid")
+        raise ValueError("A tone is light, dark, solid, invert or boxed")
     with _lock:
         data = known(data_dir)
         entry = data.get(name.lower())
         if not entry or not entry.get("url"):
             raise LookupError("No logo for that network")
-        if entry.get("tone") != tone:
-            data[name.lower()] = {**entry, "tone": tone}
+        if entry.get("tone") != tone or entry.get("v", 1) < MEASURE:
+            data[name.lower()] = {**entry, "tone": tone, "v": MEASURE}
             _save(data_dir, data)
 
 
