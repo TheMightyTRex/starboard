@@ -206,7 +206,7 @@ def _starboard_files(data_dir, pictures):
         for name in sorted(files):
             full = os.path.join(root, name)
             rel = os.path.relpath(full, data_dir).replace(os.sep, "/")
-            if any(rel == s or rel.startswith(s) for s in STARBOARD_SKIP) or ".bak" in name or ".before-" in name:
+            if any(rel == s or rel.startswith(s) for s in STARBOARD_SKIP) or ".bak" in name or ".before-" in name or "cache" in rel.lower():
                 continue
             if "/data/" in rel and rel.startswith("plugins/") and name.lower().endswith(PICTURE_EXT):
                 continue  # a plug-in's fetched posters come back by themselves
@@ -477,11 +477,11 @@ def app_sizes(data_dir):
     config_dir = stack.env_values(data_dir).get("CONFIG_DIR")
     if not config_dir:
         return None
-    pics = " ".join(f"-o -path {_q('*/' + p.strip('*/') + '/*')}" for p in APP_PICTURES)
-    skip = " ".join(f"-o -path {_q('*/' + p.strip('*/') + '/*')}" for p in APP_SKIP if p.startswith("*/") and p.endswith("/*"))
-    script = (f"cd /r || exit 1; all=$(find . -type f ! \\( -false {skip} \\) -exec stat -c %s {{}} + 2>/dev/null | awk '{{s+=$1}} END {{print s+0}}'); "
-              f"pic=$(find . -type f \\( -false {pics} \\) ! \\( -false {skip} \\) -exec stat -c %s {{}} + 2>/dev/null | awk '{{s+=$1}} END {{print s+0}}'); "
-              "echo \"$all $pic\"")
+    skip = " ".join(f"! -path {_q(p)}" for p in APP_SKIP)
+    pics = " -o ".join(f"-path {_q(p)}" for p in APP_PICTURES)
+    total = "-exec stat -c %s {} + 2>/dev/null | awk '{s+=$1} END {print s+0}'"
+    script = (f"cd /r || exit 1; all=$(find . -type f {skip} {total}); "
+              f"pic=$(find . -type f {skip} \\( {pics} \\) {total}); echo \"$all $pic\"")
     code, text = _helper(script, [f"{config_dir}:/r:ro"], timeout=600)
     try:
         everything, pictures = (int(x) for x in text.split()[-2:])
