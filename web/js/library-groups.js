@@ -16,14 +16,16 @@ const gLetterId = (letter) => (letter === "#" ? "letter-num" : `letter-${letter.
 const gCount = (n, [one, many]) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
 
 // One collection: a banner made from its first poster, blurred, with its films in release order in front (a dashed
-// outline for each one not in your library yet), then its name, years and a ring showing how complete it is.
+// outline for each one not in your library yet, over its faded cover when it has one), then its name, years and a ring showing how complete it is.
 function collectionCard(g, href) {
   const films = g.films || [];
   const back = films.find((f) => f.poster)?.poster || g.poster;
   const art = el("div", { class: "collection-card__art", "aria-hidden": "true" },
     back ? el("img", { class: "collection-card__back", src: back, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }) : null,
-    el("div", { class: "collection-card__posters" }, films.map((f) => f.have && f.poster
-      ? el("img", { class: "collection-card__poster", src: f.poster, alt: "", loading: "lazy", onerror: (e) => e.target.replaceWith(el("span", { class: "collection-card__poster is-missing" })) })
+    // A wanted one shows its cover too, faded behind the dashed outline: a series of books you only want had no
+    // covers at all before (owner, 12 November 2026).
+    el("div", { class: "collection-card__posters" }, films.map((f) => f.poster
+      ? el("img", { class: `collection-card__poster${f.have ? "" : " is-wanted"}`, src: f.poster, alt: "", loading: "lazy", onerror: (e) => e.target.replaceWith(el("span", { class: "collection-card__poster is-missing" })) })
       : el("span", { class: "collection-card__poster is-missing" }))));
   const share = g.count ? g.have / g.count : 0;
   const ring = el("span", { class: `collection-ring${g.have === g.count ? " is-complete" : ""}`, role: "img",

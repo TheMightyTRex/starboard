@@ -123,6 +123,8 @@
 .collection-card__poster { width: 58px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 8px rgb(0 0 0 / 0.35); flex: none; }
 .collection-card__poster.is-missing { background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.18) 0 6px, rgb(255 255 255 / 0.06) 6px 12px);
   border: 2px dashed rgb(255 255 255 / 0.7); box-shadow: none; }
+.collection-card__poster.is-wanted { opacity: 0.55; border: 2px dashed rgb(255 255 255 / 0.85); box-shadow: none; }
+@media (forced-colors: active) { .collection-card__poster.is-wanted { opacity: 1; border-color: CanvasText; } }
 .collection-card__body { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3, 12px); padding: var(--space-3, 12px); }
 .collection-card__words { min-width: 0; }
 .collection-card__name { margin: 0; font-size: var(--text-md, 1rem); overflow-wrap: anywhere; }
