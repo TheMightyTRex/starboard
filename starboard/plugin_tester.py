@@ -65,6 +65,10 @@ def run(manifest, dev=False, builtin=False):
             if dev and "@sha256:" not in str(c.get("image", "")):
                 issues.append({"severity": "warning", "area": "security", "where": f"containers[{i}]", "what": "The image is not pinned by digest",
                                "fix": "Pin it as name@sha256:... before anyone else installs it"})
+            if i and c.get("start") == "when_needed":  # DASH-357: only the container Starboard calls can be started again
+                issues.append({"severity": "warning", "area": "quality", "where": f"containers[{i}]",
+                               "what": "Only the first container can rest when idle, because Starboard only calls that one; this one runs always",
+                               "fix": "Leave out start and idle_stop_minutes here, or make it the first container if Starboard alone calls it"})
             if c.get("network") == "lan":
                 issues.append({"severity": "info", "area": "security", "where": f"containers[{i}]", "what": "It can reach your home network",
                                "fix": "Use the default network unless it really needs other computers"})

@@ -73,8 +73,9 @@ The list shows when each key was last used, to the nearest minute, so you can fi
 - Wrong keys count towards the same lockout as wrong passwords, for each address. Too many, and the address gets
   `429` [`too_many_attempts`](../../api/errors.md#too_many_attempts) for 15 minutes.
 
-To stay well inside the limit, use `If-None-Match` with the last `ETag`, and ask no more often than the answer's
-`Cache-Control` says it stays fresh. Read [API quickstart](api-quickstart.md#5-ask-again-only-when-it-changed).
+Every request counts, a `304` included. To stay well inside the limit, ask no more often than the answer's
+`Cache-Control` says it stays fresh, and use `If-None-Match` with the last `ETag` so an answer that has not changed
+has no body to read. Read [API quickstart](api-quickstart.md#5-ask-again-only-when-it-changed).
 
 ## The audit log
 

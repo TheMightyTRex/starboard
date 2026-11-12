@@ -46,7 +46,7 @@ class LiveTvPluginTest(unittest.TestCase):
     def test_its_compose_file_runs_starboards_image_on_the_same_folder(self):
         text = plugins.compose(self.manifest, "/srv/p", "/srv/media", HOST)
         for line in ('image: "starboard:local"', 'command: ["python", "-m", "starboard.livetv_plugin"]', 'user: "1000:1000"',
-                     '"/srv/apps/jellyfin/iptv:/iptv"', "host.docker.internal:host-gateway", "jellyfin.json:/run/starboard/jellyfin.json:ro",
+                     '"/srv/apps/jellyfin/iptv:/iptv"', "host.docker.internal:host-gateway", "/srv/p/run:/run/starboard:ro",  # DASH-357: one folder
                      "read_only: true", "- ALL", "mem_limit: 192m", 'TZ: "Europe/London"',
                      '"http://127.0.0.1:8080/health"'):
             self.assertIn(line, text)

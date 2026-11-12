@@ -70,8 +70,8 @@ settings, events and jobs.
 | `network` | Which network it joins | `default`, `lan` or `vpn`. Read [Networks](#networks) |
 | `volumes` | Folders it gets | `data`, `media:ro` or `media/<one folder>`. Read [Volumes](#volumes) |
 | `env` | Settings passed as environment variables | Names in `UPPER_CASE`; values text, numbers or `true` and `false` |
-| `start` | When it runs | `always` (the default) or `when_needed` |
-| `idle_stop_minutes` | For `when_needed`: minutes idle before it stops | A whole number; 15 when left out |
+| `start` | When it runs | `always` (the default) or `when_needed`, for the first container only. Read [Resting when idle](plugin-api-reference.md#resting-when-idle) |
+| `idle_stop_minutes` | For `when_needed`: minutes idle before it rests | A whole number; 15 when left out |
 | `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out |
 | `command` | The command it runs | Only plug-ins built into Starboard may set it |
 
@@ -190,7 +190,7 @@ Each item in `actions` is a button in the plug-in's section of **Settings**, the
 
 | Field | What it is |
 |---|---|
-| `id` | Its id: letters, numbers, hyphens and underscores, up to 40. Give every button one; Starboard finds the button by it |
+| `id` | Its id: letters, numbers, hyphens and underscores, up to 40. Give every button one. A button without one is known by its place in the list, counting from 0, which changes when you move it |
 | `label` | The words on the button, saying what it does, such as `Run Live TV now`. Required |
 | `path` | The path on the first container that Starboard sends a POST to. Required |
 | `confirm` | Accepted, reserved for a question before the button runs |
@@ -198,8 +198,9 @@ Each item in `actions` is a button in the plug-in's section of **Settings**, the
 ## Health
 
 `health` is a path, such as `/health`, that answers 200 while the plug-in works. Keep it cheap: no calls to other
-apps. The tester warns when a plug-in with containers has none. For plug-ins built into Starboard, it is the
-container's health check.
+apps. The tester warns when a plug-in with containers has none. Starboard asks it when **Settings**, then
+**Plug-ins**, is opened, and shows **Not answering** when it does not answer 200. For plug-ins built into
+Starboard, it is also the container's health check.
 
 ## Styles
 

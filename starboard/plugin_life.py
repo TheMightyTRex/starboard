@@ -383,14 +383,9 @@ def run_job(data_dir, pid, jid, helper=None):
             return "It is already running"
         _running.add(key)
     main = m["containers"][0]
-    started_here = False
     _record(data_dir, key, started=time.time(), status="running", summary="")
     try:
-        if main.get("start") == "when_needed":
-            ok, text = pa._compose_run(data_dir, pid, "up -d", helper)
-            if not ok:
-                raise ValueError(f"It did not start: {text.strip()[-160:]}")
-            started_here = True
+        # A resting when_needed container is started by _host, and rests again once idle (DASH-357, plugin_watch).
         url = f"http://{plugin_cards._host(pid, main)}:{int(main.get('port') or 80)}{job['path']}"
         req = urllib.request.Request(url, data=b"", method="POST", headers={"Accept": "application/json", "User-Agent": "Starboard"})
         with urllib.request.build_opener().open(req, timeout=60 * int(job.get("time_limit_minutes") or 10)) as r:  # its own container  # nosec B310
@@ -404,8 +399,6 @@ def run_job(data_dir, pid, jid, helper=None):
         logs.event("warning", "plug-ins", f"Job {key} failed: {e}")
         return f"It failed: {e}"
     finally:
-        if started_here:
-            pa._compose_run(data_dir, pid, "stop", helper)
         with _jobs_lock:
             _running.discard(key)
 

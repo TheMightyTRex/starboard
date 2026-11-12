@@ -14,6 +14,23 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.4.0, fixes, 12 November 2026
+
+- **Fixed:** what a plug-in reads comes as the folder `/run/starboard`, readable by any container user. Before,
+  only a container running as Starboard's own user could read it, and a running plug-in kept the settings it
+  started with. Older plug-ins change over when Starboard starts.
+- **Fixed:** a button without an `id` runs. It is known by its place in the list.
+- **Fixed:** `health` is asked by Starboard for every plug-in, not only those built into Starboard.
+- **Fixed:** `start: when_needed` and `idle_stop_minutes` work, for the first container. Read
+  [Resting when idle](plugin-api-reference.md#resting-when-idle).
+- **Added:** **Update from an address** on a plug-in's own page, in **Versions**.
+
+## Starboard API, description 1.0.0 again, 12 November 2026
+
+- **Fixed:** the description's `info.version` is 1.0.0 again, the same as `api_version`. It became 1.1.0 by
+  mistake on 11 November. A test now keeps them the same.
+- **Added:** each route in the description has `x-scope`, the scope a key needs for it (`null` for none).
+
 ## Plug-in API 1.4.0, 12 November 2026
 
 - **Added:** settings may be `required`, and a plug-in may set `setup_required`. Until it is set up, it is in the

@@ -165,9 +165,13 @@ class App:
         plugin_life.listen(self.data_dir)
         services.ON_CHANGE = plugin_life.emit
         self.plugin_clock = plugin_life.Clock(self.data_dir, self.config)
+        from . import plugin_watch  # idle stop and health for every plug-in (DASH-357)
+        plugin_watch.DATA_DIR = self.data_dir
+        self.plugin_idle = plugin_watch.Watcher(self.data_dir)
         if os.environ.get("STARBOARD_JOBS", "1") != "0":
             self.jobs.ensure()
             self.plugin_clock.ensure()
+            self.plugin_idle.ensure()
             threading.Thread(target=_move_livetv, args=(self,), name="livetv-move", daemon=True).start()
         self.importing = None  # the watch history import that is running, if any
         self.import_result = None
@@ -627,6 +631,7 @@ def _move_livetv(app):
             # Built-in plug-ins follow Starboard's update: their files are written again and active ones restarted.
             from . import plugins_admin
             again = plugins_admin.refresh_builtins(app.data_dir, media_dir, app.config.data["services"])
+            again += [n for n in plugins_admin.upgrade_all(app.data_dir, app.config.data["services"]) if n not in again]
             if again:
                 logs.event("info", "plug-ins", f"Started again with this version of Starboard: {', '.join(again)}")
     except Exception as e:  # Live TV carries on inside Starboard
@@ -2302,7 +2307,11 @@ class Handler(BaseHTTPRequestHandler):
                       "why_not": livetv_move.can_run(app.data_dir) if m["id"] == livetv_move.PID else ""}
                      for m in pa.builtins().values()]
             updates = plugin_life.updates_known(app.data_dir)  # from catalogues already read; nothing fetched here
-            return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"])} for p in pa.listing(app.data_dir)], "builtin": built})
+            from . import plugin_watch
+            listed = pa.listing(app.data_dir)
+            well = plugin_watch.health(app.data_dir, listed)  # asked now, at most once a minute each (DASH-357)
+            return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"]), "health": well.get(p["id"]),
+                                                "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built})
         if path == "/api/plugins/jobs" and method == "GET":  # System, Jobs: every plug-in's jobs (DASH-330)
             return self.json(200, {"jobs": plugin_life.jobs(app.data_dir)})
         mj = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/jobs/([a-z][a-z0-9-]{0,30})$", path)
@@ -2344,6 +2353,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.error(404, str(e))
             logs.event("info", "plug-ins", said)
             app.plugin_clock.ensure()
+            app.plugin_idle.ensure()
             return self.json(200, {"said": said, "plugins": pa.listing(app.data_dir)})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
@@ -2453,6 +2463,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             pa.disable(app.data_dir, pid)
         app.plugin_clock.ensure()  # jobs start or stop with their plug-in
+        app.plugin_idle.ensure()  # and idle stop with a when_needed one (DASH-357)
         return self.json(200, {"plugins": pa.listing(app.data_dir)})
 
     def start_stack(self):

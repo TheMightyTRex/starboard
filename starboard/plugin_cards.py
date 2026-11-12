@@ -52,10 +52,14 @@ def clean(card_type, data):
     raise ValueError("Cards are stat, list or status")
 
 
-def _host(pid, main):
+def _host(pid, main, wake=True):
     """Where Starboard reaches a plug-in's main container: by name when Docker's names resolve here; when Starboard
-    uses the computer's own network (they do not), at the container's address on its own network."""
+    uses the computer's own network (they do not), at the container's address on its own network. `wake`: this is a
+    real call, so a plug-in resting after idle stop is started first (DASH-357); a health check passes False."""
     import socket
+    if wake:
+        from . import plugin_watch
+        plugin_watch.used(pid, main)
     name = "gluetun" if main.get("network") == "vpn" else f"plugin-{pid}-{main['name']}"
     try:
         socket.gethostbyname(name)
@@ -121,7 +125,8 @@ def action(data_dir, pid, aid, opener=None):
     """Runs one of a plug-in's buttons: a POST to its path on the plug-in's main container. {said}."""
     from . import plugins_admin
     m = plugins_admin._read(f"{plugins_admin.folder(data_dir, pid)}/manifest.json", {}) or {}
-    act = next((a for a in m.get("actions") or [] if (a.get("id") or "") == aid), None)
+    # A button without an id is known by its place, as the listing gives it (DASH-357: it never ran before).
+    act = next((a for i, a in enumerate(m.get("actions") or []) if isinstance(a, dict) and (a.get("id") or str(i)) == aid), None)
     if not act or not m.get("containers"):
         raise LookupError("No such button")
     main = m["containers"][0]

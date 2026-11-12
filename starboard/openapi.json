@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "description": "Read only for now. Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -27,6 +27,7 @@
     "tags": [
      "About"
     ],
+    "x-scope": null,
     "responses": {
      "200": {
       "description": "It worked.",
@@ -65,6 +66,7 @@
     "tags": [
      "About"
     ],
+    "x-scope": null,
     "responses": {
      "200": {
       "description": "It worked.",
@@ -126,6 +128,7 @@
     "tags": [
      "Apps"
     ],
+    "x-scope": "apps",
     "parameters": [
      {
       "$ref": "#/components/parameters/limit"
@@ -190,6 +193,7 @@
     "tags": [
      "Apps"
     ],
+    "x-scope": "apps",
     "parameters": [
      {
       "name": "id",
@@ -241,6 +245,7 @@
     "tags": [
      "Apps"
     ],
+    "x-scope": "apps",
     "parameters": [
      {
       "$ref": "#/components/parameters/limit"
@@ -306,6 +311,7 @@
     "tags": [
      "Apps"
     ],
+    "x-scope": "apps",
     "parameters": [
      {
       "$ref": "#/components/parameters/limit"
@@ -378,6 +384,7 @@
     "tags": [
      "Downloads"
     ],
+    "x-scope": "downloads",
     "parameters": [
      {
       "$ref": "#/components/parameters/limit"
@@ -450,6 +457,7 @@
     "tags": [
      "Media"
     ],
+    "x-scope": "media",
     "parameters": [
      {
       "$ref": "#/components/parameters/limit"
@@ -515,6 +523,7 @@
     "tags": [
      "Media"
     ],
+    "x-scope": "media",
     "responses": {
      "200": {
       "description": "It worked.",
@@ -569,6 +578,7 @@
     "tags": [
      "System"
     ],
+    "x-scope": "system",
     "responses": {
      "200": {
       "description": "It worked.",

@@ -102,8 +102,10 @@ added: one sentence, up to 200 characters, that Starboard shows. To refuse, answ
 
 ## Health
 
-Answer GET on the `health` path with status 200 while the plug-in works. Keep it cheap. For plug-ins built into
-Starboard, it is the container's Docker health check, every 60 seconds.
+Answer GET on the `health` path with status 200 while the plug-in works. Keep it cheap. Starboard asks it when
+someone opens **Settings**, then **Plug-ins**, at most once a minute, and waits 2 seconds. Any other answer shows
+the plug-in as **Not answering**, with the reason. For plug-ins built into Starboard, it is also the container's
+Docker health check, every 60 seconds.
 
 ## Events
 
@@ -141,14 +143,16 @@ is a POST with an empty body to the job's `path`.
 - `quiet_hours` runs it only in quiet hours: the download hours, when they are set, or from 01:00 to 06:00.
 - Answer within `time_limit_minutes` (10 when left out) with `{"said": "Tidied 12 files"}`. Starboard keeps `said`,
   cut to 160 characters, as the job's summary in **System**, then **Jobs**. With no `said`, the summary is "Done".
-- A container with `"start": "when_needed"` is started before the job and stopped after it.
+- When the main container is resting (read [Resting when idle](#resting-when-idle)), Starboard starts it before
+  the job.
 - A job never runs twice at once. People can also run it now from **System**, then **Jobs**, while the plug-in is
   active.
 
 ## Settings and key files
 
-Starboard keeps each plug-in in its own folder on the server, `data/plugins/<id>/`, and gives each container these
-files, read only:
+Starboard keeps each plug-in in its own folder on the server, `data/plugins/<id>/`, which only Starboard can open.
+It copies what the containers read into `data/plugins/<id>/run/` and mounts that folder as `/run/starboard`, read
+only, so any user a container runs as can read these files:
 
 | In the container | What it is |
 |---|---|
@@ -164,8 +168,27 @@ And these environment variables, with the `env` from the manifest:
 | `STARBOARD_API` | `http://starboard:8095/api/v1/` |
 | `STARBOARD_API_KEY_FILE` | `/run/starboard/key` |
 
-Starboard does not restart a plug-in when its settings change. Read `settings.json` when you need a value, rather
-than once at start. Never write secrets to the container's log.
+Starboard does not restart a plug-in when its settings change, but the new `settings.json` is there at once:
+Starboard replaces each file whole, so you never read half of one. Read `settings.json` when you need a value,
+rather than once at start. Never write secrets to the container's log.
+
+Plug-ins added before 12 November 2026 got each file mounted on its own. A file mounted that way kept the copy the
+container started with. Starboard changes them to the folder when it starts, and starts each active one again
+once.
+
+## Resting when idle
+
+A plug-in whose first container has `"start": "when_needed"` rests when it is not used:
+
+- Starboard stops that container once two things are both true for `idle_stop_minutes` (15 when left out):
+  Starboard has not called it, and its network has been quiet.
+- Network traffic keeps it running, so Jellyfin or another app streaming from it straight away does not count as
+  idle. A container on the VPN shares Gluetun's network, so Starboard cannot tell, and it never rests.
+- The next time Starboard calls it, for a card, a button, its own page, an event or a job, Starboard starts it
+  first and waits up to 20 seconds for it to answer.
+- Only Starboard can start it again. Use `when_needed` only when Starboard is how people reach it.
+- Only the first container can rest. The tester warns about `when_needed` on any other container, which runs
+  always.
 
 ## The plug-in's API key
 

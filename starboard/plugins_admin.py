@@ -1,8 +1,10 @@
 """Settings, Plug-ins (DASH-149): adding, enabling, disabling and removing plug-ins, their settings, and Stop all.
 The manifest, permissions and Compose file are in plugins.py; the design is PLUGIN-SYSTEM-DESIGN (DASH-272).
 
-Each plug-in lives in data/plugins/<id>/: manifest.json, settings.json (secrets owner-only), key (its API key,
-owner-only), compose.yaml and state.json. Removing one moves the folder to data/plugins/.removed/<id>-<date>;
+Each plug-in lives in data/plugins/<id>/ (owner-only): manifest.json, settings.json, key (its API key), compose.yaml
+and state.json. What its containers read (settings.json, key and jellyfin.json) is copied into run/, which they mount
+as the folder /run/starboard (DASH-357): readable by any user a container runs as, while the 0700 folder around it
+keeps everyone else on the computer out, and a saved setting reaches a running plug-in at once. Removing one moves the folder to data/plugins/.removed/<id>-<date>;
 Starboard never deletes it (the owner removes it by hand).
 """
 import datetime as dt
@@ -28,11 +30,60 @@ def folder(data_dir, pid):
     return os.path.join(root(data_dir), pid)
 
 
+SHARED = ("settings.json", "key", "jellyfin.json")  # what a plug-in's containers read, from run/ (DASH-357)
+
+
 def _write(path, data, mode=0o600):
     tmp = path + ".new"
     with os.fdopen(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode), "w", encoding="utf-8") as f:
         f.write(data if isinstance(data, str) else json.dumps(data, indent=1))
     os.replace(tmp, path)
+    where, name = os.path.split(path)
+    if name in SHARED and os.path.basename(os.path.dirname(where)) == "plugins":
+        share(where)
+
+
+def share(where):
+    """Copies what the plug-in's containers read into run/ (0755, files 0644) inside its 0700 folder. Each file is
+    replaced whole, so a container never reads half a file, and the folder mount shows the new one at once."""
+    run = os.path.join(where, "run")
+    os.makedirs(run, exist_ok=True)
+    os.chmod(where, 0o700)
+    os.chmod(run, 0o755)
+    for name in SHARED:
+        src, dst = os.path.join(where, name), os.path.join(run, name)
+        if not os.path.exists(src):
+            if os.path.exists(dst):
+                os.remove(dst)  # a copy of something Starboard no longer keeps, such as Jellyfin's key once not allowed
+            continue
+        with open(src, "rb") as f:
+            raw = f.read()
+        tmp = dst + ".new"
+        with os.fdopen(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644), "wb") as f:
+            f.write(raw)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, dst)
+
+
+_ONE = r'(\s*- )"([^"\n]*)/(?:settings\.json|key|jellyfin\.json):/run/starboard/(?:settings\.json|key|jellyfin\.json):ro"\n'
+OLD_MOUNTS = re.compile(rf"^{_ONE}(?:\s*- \"[^\"\n]*/(?:settings\.json|key|jellyfin\.json):/run/starboard/[a-z.]+:ro\"\n)*", re.M)
+
+
+def upgrade_mounts(where):
+    """A Compose file from before DASH-357 mounts settings.json, key and jellyfin.json one by one, so a running
+    plug-in kept the file it started with. Rewrites each container's lines as the one run/ folder. True if changed."""
+    path = os.path.join(where, "compose.yaml")
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return False
+    new = OLD_MOUNTS.sub(lambda m: f'{m.group(1)}"{m.group(2)}/run:/run/starboard:ro"\n', text)
+    if new == text:
+        return False
+    share(where)
+    _write(path, new, 0o644)
+    return True
 
 
 def _read(path, default=None):
@@ -397,7 +448,13 @@ def enable(data_dir, pid, helper=None, services=None):
         api_v1.audit(data_dir, "plugin_enabled", plugin=pid)
         return
     write_jellyfin(data_dir, pid, services)
+    where = folder(data_dir, pid)
+    upgrade_mounts(where)
+    share(where)  # also after Roll back, which moves files rather than writing them
     ok, text = _compose_run(data_dir, pid, "up -d --remove-orphans", helper)
+    st = _read(os.path.join(where, "state.json"), {}) or {}
+    if st.pop("resting", None) is not None:  # up -d started every container, resting ones too (DASH-357)
+        _write(os.path.join(where, "state.json"), st)
     set_state(data_dir, pid, "enabled" if ok else "failed", "" if ok else text[-300:])
     api_v1.audit(data_dir, "plugin_enabled" if ok else "plugin_failed", plugin=pid)
     if not ok:
@@ -457,6 +514,27 @@ def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
                 done.append(p["name"])
             except ValueError:
                 pass  # enable() has recorded why, for its section in Settings, Plug-ins
+    return done
+
+
+def upgrade_all(data_dir, services, helper=None):
+    """At each start, for plug-ins added before DASH-357: run/ is filled and the Compose file mounts it; an active
+    one is started again once so it reads the folder. Returns the names started again."""
+    done = []
+    for p in listing(data_dir):
+        where = folder(data_dir, p["id"])
+        try:
+            share(where)
+            changed = upgrade_mounts(where)
+        except OSError as e:
+            set_state(data_dir, p["id"], p["state"], f"Its files could not be shared: {e}")
+            continue
+        if changed and p["state"] == "enabled":
+            try:
+                enable(data_dir, p["id"], helper=helper, services=services)
+                done.append(p["name"])
+            except ValueError:
+                pass
     return done
 
 

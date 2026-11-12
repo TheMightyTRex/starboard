@@ -15,8 +15,9 @@ that works.
 
 ## rate_limited
 
-**429.** More than 120 requests a minute with one key. Wait the seconds in `Retry-After`. Send `If-None-Match` with
-the last `ETag`: an answer that has not changed costs you nothing to read again.
+**429.** More than 120 requests a minute with one key. Wait the seconds in `Retry-After`. A `304` counts as a
+request too, but it has no body to read, so send `If-None-Match` with the last `ETag` and ask no more often than
+`Cache-Control` says.
 
 ## not_found
 

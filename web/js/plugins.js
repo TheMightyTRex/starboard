@@ -6,6 +6,20 @@ const RISK = { low: ["Low", "success"], medium: ["Medium", "warning"], high: ["H
 const STATE = { installed: ["Added, not active", "muted"], enabled: ["Active", "success"], disabled: ["Inactive", "muted"], failed: ["Did not start", "danger"],
   "needs-setup": ["Needs setting up", "warning"], "not-supported": ["Not supported", "danger"] };  // DASH-330
 const stateOf = (p) => p.status?.state || p.state;
+// An active plug-in that is not answering its health path, or resting after idle stop (DASH-357).
+const chipOf = (p) => {
+  if (stateOf(p) === "enabled" && p.health && p.health !== "ok") return ["Not answering", "warning"];
+  if (stateOf(p) === "enabled" && p.resting?.length) return ["Resting", "muted"];
+  return STATE[stateOf(p)] || ["Unknown", "muted"];
+};
+const healthNote = (p) => {
+  if (stateOf(p) !== "enabled") return null;
+  if (p.health && p.health !== "ok") return el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Not answering" }),
+      el("p", { text: `It is active, but it is not answering. ${p.health}. Deactivate it and activate it again to restart it.` })));
+  if (p.resting?.length) return el("p", { class: "small", text: "Resting: nothing has used it for a while, so it is stopped to save memory. It starts again by itself when Starboard needs it." });
+  return null;
+};
 
 function pluginPermissions(list) {
   if (!list.length) return el("p", { class: "small", text: "It asks for nothing beyond its own folder." });
@@ -283,6 +297,36 @@ function rollbackButton(p, redraw, primary = false) {
   return b;
 }
 
+// Update from an address (DASH-357): for a plug-in that is not in a catalogue, such as one from its maker's own
+// page. The same warning as installing, with what is new, then the password.
+function updateFromAddress(p, redraw) {
+  const address = el("input", { class: "input", id: `pl-${p.id}-update-address`, type: "url", placeholder: "https://", autocomplete: "off", spellcheck: "false" });
+  const go = el("button", { type: "submit", class: "btn" }, "See what is new");
+  const form = el("form", { class: "form-stack", novalidate: true, "aria-labelledby": `pl-${p.id}-update-h` },
+    el("h3", { id: `pl-${p.id}-update-h`, text: "Update from an address" }),
+    field("Address of the new version", address, { hint: "The https address of its starboard-plugin.json, from the plug-in's own page." }),
+    el("div", { class: "actions" }, go));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setError(address, "");
+    const where = address.value.trim();
+    if (!where) { setError(address, "Paste the address of the new version"); address.focus(); return; }
+    let s;
+    try { s = await api(`/api/plugins/${p.id}/update`, { method: "POST", body: { address: where, preview: true } }); }
+    catch (err) { setError(address, err.message); address.focus(); return; }
+    const password = await installWarning(s, { opener: go, verb: "Update" });
+    if (password === null) return;
+    try {
+      const r = await api(`/api/plugins/${p.id}/update`, { method: "POST", body: { address: where, password } });
+      announce(r.said);
+      toast(r.said);
+      await redraw();
+      focusState(p);
+    } catch (err) { problem(err.message, go); }
+  });
+  return form;
+}
+
 // A plug-in's own page, Settings, Plug-ins, <its name> (DASH-318), laid out like every Settings page (DASH-307):
 // its state and buttons at the top, then its styles, settings and screens, what it may do, and Remove at the foot.
 function pluginPage(p, redraw) {
@@ -307,12 +351,15 @@ function pluginPage(p, redraw) {
     : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw);
   return [
     section(`pl-${p.id}-state`, "State", p.builtin ? "Built into Starboard: it runs on Starboard's own image and updates with Starboard." : `Version ${p.version}${p.author ? `, by ${p.author}` : ""}.`,
-      headChip(...(STATE[stateOf(p)] || ["Unknown", "muted"])), fix || (p.message ? el("p", { class: "small", text: p.message }) : null),
+      headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null),
       el("div", { class: "actions" }, first, ...buttons)),
-    !p.builtin && (p.update || st.can_roll_back) ? section(`pl-${p.id}-versions`, "Versions",
-      p.update ? `Version ${p.update.version} is available.${p.update.changelog ? ` ${p.update.changelog}` : ""}` : `Version ${st.previous_version} is kept, in case this one does not suit you.`,
-      el("div", { class: "actions" }, p.update && st.action !== "update" ? updateButton(p, redraw) : null,
-        st.can_roll_back && st.action !== "rollback" ? rollbackButton(p, redraw) : null)) : null,
+    !p.builtin ? section(`pl-${p.id}-versions`, "Versions",
+      p.update ? `Version ${p.update.version} is available.${p.update.changelog ? ` ${p.update.changelog}` : ""}`
+        : st.can_roll_back ? `Version ${st.previous_version} is kept, in case this one does not suit you.` : `Version ${p.version}. No newer version is known.`,
+      (p.update && st.action !== "update") || (st.can_roll_back && st.action !== "rollback")
+        ? el("div", { class: "actions" }, p.update && st.action !== "update" ? updateButton(p, redraw) : null,
+          st.can_roll_back && st.action !== "rollback" ? rollbackButton(p, redraw) : null) : null,
+      updateFromAddress(p, redraw)) : null,
     p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
       el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null,
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "", styleGallery(p)) : null,
@@ -391,7 +438,7 @@ function testerSection() {
   const out = el("div", { "aria-live": "polite" });
   const form = el("form", { class: "form-stack", novalidate: true },
     field("Manifest file to test", file, { hint: "starboard-plugin.json. Accessibility is always tested." }),
-    el("label", { class: "check", for: dev.id }, dev, el("span", { text: "Allow images without a digest (while you develop it)" })),
+    el("label", { class: "check", for: dev.id }, dev, el("span", { text: "Allow images without a digest (testing only: adding a plug-in always needs one)" })),
     el("div", { class: "actions" }, el("button", { type: "submit", class: "btn", text: "Test it" })));
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -493,7 +540,7 @@ async function startPlugins() {
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row row--no-lead" },
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
-          el("div", { class: "row__side" }, chip(...(STATE[stateOf(p)] || ["Unknown", "muted"])), p.update ? chip("Update", "info") : null,
+          el("div", { class: "row__side" }, chip(...chipOf(p)), p.update ? chip("Update", "info") : null,
             el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}` }, icon("settings"), "Settings",
               el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
             stateButton(p, draw))))),

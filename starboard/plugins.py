@@ -380,10 +380,9 @@ def compose(manifest, plugin_dir, media_dir, host=None):
                 vols.append(f"{host['iptv']}:/iptv")
             else:
                 vols.append(f"{media_dir}/{v.split('/', 1)[1]}:/{v}")
-        vols.append(f"{plugin_dir}/settings.json:/run/starboard/settings.json:ro")
-        vols.append(f"{plugin_dir}/key:/run/starboard/key:ro")  # its own API key (P8), owner-only on the host
-        if "jellyfin:key" in (manifest.get("permissions") or []):  # Jellyfin's address and key, kept by Starboard
-            vols.append(f"{plugin_dir}/jellyfin.json:/run/starboard/jellyfin.json:ro")
+        # settings.json, its own API key (P8) and, with jellyfin:key, Jellyfin's address and key: one folder, so a
+        # saved setting reaches it at once and any container user can read it (DASH-357). Owner-only on the host.
+        vols.append(f"{plugin_dir}/run:/run/starboard:ro")
         lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
         env = {**({"TZ": host["tz"]} if host.get("tz") else {}), **{k: str(v) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
                "STARBOARD_API_KEY_FILE": "/run/starboard/key"}

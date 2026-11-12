@@ -81,6 +81,17 @@ class ApiV1Test(unittest.TestCase):
         for p in patterns:
             self.assertTrue(any(re.match(p, d.replace("{id}", "abc")) for d in described), f"{p} is not in openapi.json")
 
+    def test_the_description_has_the_api_version(self):  # DASH-357: it said 1.1.0 while the API said 1.0.0
+        self.assertEqual(self.spec["info"]["version"], api_v1.API_VERSION)
+
+    def test_each_route_says_the_scope_it_needs(self):  # DASH-357: x-scope, the same as the code checks
+        for path, ops in self.spec["paths"].items():
+            if path.endswith("openapi.json"):
+                continue
+            scope = next(sc for p, sc, *_ in api_v1.routes() if re.match(p, path.replace("{id}", "abc")))
+            self.assertIn("x-scope", ops["get"], path)
+            self.assertEqual(ops["get"]["x-scope"], scope, path)
+
     def test_each_answer_matches_its_description(self):
         app_id = self.app.config.data["services"][0]["id"]
         for path, ops in self.spec["paths"].items():
