@@ -126,7 +126,8 @@ def added(data_dir):
 
 CATALOGUE_URL = "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/catalogue.json"
 CATALOGUE_FILE = os.path.join(plugins.BUILTIN_DIR, "catalogue.json")  # the copy Starboard ships, used until the first fetch
-_catalogue = {"at": 0, "items": None}
+MAX_SOURCES = 10
+_catalogues = {}  # address -> {"at", "name", "items", "error"}
 
 
 def _clean_entry(e):
@@ -136,28 +137,90 @@ def _clean_entry(e):
     return {"id": e["id"], "name": str(e.get("name") or e["id"])[:40], "description": str(e.get("description") or "")[:240],
             "kind": str(e.get("kind") or "Other")[:30], "author": str(e.get("author") or "")[:60],
             "permissions": [p for p in e.get("permissions") or [] if p in plugins.PERMISSIONS],
-            "manifest": address if re.match(r"^https://\S{1,400}$", address) else "", "published": bool(e.get("published"))}
+            "manifest": address if re.match(r"^https://\S{1,400}$", address) else "", "published": bool(e.get("published", True))}
 
 
-def catalogue(opener=None, now=None):
-    """The Starboard plug-ins collection: its catalogue.json, fetched at most once a day (checked like any outside
-    address, 5 seconds, 256 KB), else the copy Starboard ships."""
+def fetch_catalogue(address, opener=None):
+    """One catalogue.json from an https address: {"name", "plugins": [...]}, checked like any outside address
+    (5 seconds, 256 KB). ValueError says what is wrong in plain words."""
+    from . import outside
+    address = str(address or "").strip()
+    if not re.match(r"^https://\S{1,400}$", address):
+        raise ValueError("Give the catalogue's https address, such as a repository's raw catalogue.json")
+    outside.check_url(address)
+    req = urllib.request.Request(address, headers={"User-Agent": "Starboard", "Accept": "application/json"})
+    try:
+        with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
+            raw = r.read(MAX_MANIFEST + 1)
+    except OSError as e:
+        raise ValueError(f"That address did not answer: {e}") from None
+    if len(raw) > MAX_MANIFEST:
+        raise ValueError("That catalogue is too large")
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        raise ValueError("That is not a plug-in catalogue (catalogue.json)") from None
+    if not isinstance(data, dict) or not isinstance(data.get("plugins"), list):
+        raise ValueError("That is not a plug-in catalogue: it has no list of plug-ins")
+    items = [x for x in map(_clean_entry, data["plugins"]) if x][:200]
+    return {"name": str(data.get("name") or address.split("/")[2])[:60], "items": items}
+
+
+def sources(cfg):
+    """The catalogues Starboard reads: its own collection first (always), then the ones added from a link."""
+    extra = [x for x in cfg.data.get("plugin_catalogues") or [] if isinstance(x, dict) and x.get("url")]
+    return [{"url": CATALOGUE_URL, "own": True}] + [{"url": x["url"], "own": False} for x in extra][:MAX_SOURCES]
+
+
+def add_source(cfg, address, opener=None):
+    got = fetch_catalogue(address, opener)
+    have = [x for x in cfg.data.get("plugin_catalogues") or [] if isinstance(x, dict)]
+    if address.strip() == CATALOGUE_URL or any(x.get("url") == address.strip() for x in have):
+        raise ValueError("That catalogue is already in the list")
+    if len(have) >= MAX_SOURCES:
+        raise ValueError(f"Starboard reads {MAX_SOURCES} catalogues at most. Remove one first")
+    cfg.data["plugin_catalogues"] = have + [{"url": address.strip(), "name": got["name"]}]
+    cfg.save()
+    _catalogues.pop(address.strip(), None)
+    return got
+
+
+def remove_source(cfg, address):
+    have = [x for x in cfg.data.get("plugin_catalogues") or [] if isinstance(x, dict)]
+    left = [x for x in have if x.get("url") != address]
+    if len(left) == len(have):
+        raise LookupError("That catalogue is not in the list")
+    cfg.data["plugin_catalogues"] = left
+    cfg.save()
+    _catalogues.pop(address, None)
+
+
+def catalogue(cfg=None, opener=None, now=None):
+    """Every catalogue's plug-ins, each read at most once a day. Starboard's own collection falls back to the copy it
+    ships; another catalogue that does not answer keeps its last good list and says so.
+    Returns (catalogues [{url, name, own, count, error}], plug-ins [... with "catalogue" and "own"])."""
     import time
     now = now or time.time()
-    if _catalogue["items"] is None or now - _catalogue["at"] > 86400:
-        items = None
-        try:
-            from . import outside
-            outside.check_url(CATALOGUE_URL)
-            req = urllib.request.Request(CATALOGUE_URL, headers={"User-Agent": "Starboard", "Accept": "application/json"})
-            with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
-                items = json.loads(r.read(MAX_MANIFEST)).get("plugins")
-        except Exception:  # noqa: BLE001 - offline or not there yet: the shipped copy
-            items = None
-        if not isinstance(items, list):
-            items = (_read(CATALOGUE_FILE, {}) or {}).get("plugins") or []
-        _catalogue.update(at=now, items=[x for x in map(_clean_entry, items) if x][:200])
-    return list(_catalogue["items"])
+    srcs = sources(cfg) if cfg is not None else [{"url": CATALOGUE_URL, "own": True}]
+    out_sources, out_items = [], []
+    for src in srcs:
+        url = src["url"]
+        hit = _catalogues.get(url)
+        if not hit or now - hit["at"] > 86400:
+            try:
+                got = fetch_catalogue(url, opener)
+                hit = {"at": now, "name": got["name"], "items": got["items"], "error": ""}
+            except Exception as e:  # noqa: BLE001 - offline, moved or broken: say so, keep what we had
+                if src["own"] and not (hit and hit["items"]):
+                    shipped = _read(CATALOGUE_FILE, {}) or {}
+                    hit = {"at": now, "name": shipped.get("name") or "Starboard plug-ins",
+                           "items": [x for x in map(_clean_entry, shipped.get("plugins") or []) if x], "error": ""}
+                else:
+                    hit = {**(hit or {"name": url.split("/")[2], "items": []}), "at": now, "error": str(e)[:200]}
+            _catalogues[url] = hit
+        out_sources.append({"url": url, "name": hit["name"], "own": src["own"], "count": len(hit["items"]), "error": hit["error"]})
+        out_items += [{**x, "catalogue": hit["name"], "own": src["own"]} for x in hit["items"]]
+    return out_sources, out_items
 
 
 def listing(data_dir):

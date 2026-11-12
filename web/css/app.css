@@ -130,7 +130,9 @@ body.first-setup.with-rail { padding-left: 0; }
 .is-filtered { display: none !important; } /* Search filters (DASH-301) */
 [data-plugin][hidden] { display: none !important; } /* plug-in menu items, until the plug-in is added */
 /* Install warning (owner, 12 November 2026) */
-.install-warning__list { margin: 0; padding-inline-start: 1.25rem; display: grid; gap: var(--space-1, 0.25rem); }
+.install-warning__list { margin: 0; padding-inline-start: 1.25rem; display: grid; gap: var(--space-1, 0.25rem); overflow-wrap: anywhere; min-width: 0; }
 .panel-off { display: none !important; } /* Still to set up: only the step's own part (12 November 2026) */
 .panel-only #main .page { padding-block-start: var(--space-4, 1rem); }
 html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: grid; }
+.install-warning__head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3, 0.75rem); }
+.install-warning__by { margin-block-start: calc(-1 * var(--space-2, 0.5rem)); overflow-wrap: anywhere; }

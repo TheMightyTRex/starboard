@@ -13,7 +13,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/disk-forecast/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "dns-blocking",
@@ -26,7 +26,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/dns-blocking/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "download-summary",
@@ -39,7 +39,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/download-summary/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "home-assistant",
@@ -52,7 +52,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/home-assistant/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "library-health",
@@ -66,7 +66,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/library-health/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "line-speed",
@@ -79,7 +79,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/line-speed/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "most-watched",
@@ -93,7 +93,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/most-watched/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "outside-services",
@@ -106,7 +106,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/outside-services/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "seasonal-styles",
@@ -119,7 +119,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/seasonal-styles/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "styles",
@@ -145,7 +145,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/vpn-check/starboard-plugin.json",
-   "published": false
+   "published": true
   },
   {
    "id": "watching-now",
@@ -159,7 +159,7 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/watching-now/starboard-plugin.json",
-   "published": false
+   "published": true
   }
  ]
 }

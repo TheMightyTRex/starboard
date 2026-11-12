@@ -2198,7 +2198,21 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
-            return self.json(200, {"plugins": [{**e, "added": e["id"] in have} for e in pa.catalogue()]})
+            cats, items = pa.catalogue(app.config)
+            return self.json(200, {"catalogues": cats, "plugins": [{**e, "added": e["id"] in have} for e in items]})
+        if path == "/api/plugins/catalogues" and method == "POST":
+            # Catalogue sources added from a link (owner, 12 November 2026). Adding one installs nothing.
+            body = self.body()
+            try:
+                if body.get("action") == "remove":
+                    pa.remove_source(app.config, str(body.get("url") or ""))
+                    return self.json(200, {"said": "Catalogue removed. Plug-ins you added from it stay"})
+                got = pa.add_source(app.config, str(body.get("url") or ""))
+            except LookupError as e:
+                return self.error(404, str(e))
+            except ValueError as e:
+                return self.error(400, str(e))
+            return self.json(200, {"said": f"{got['name']} added, with {len(got['items'])} plug-ins"})
         if path == "/api/plugins/add-builtin" and method == "POST":
             # A plug-in that ships inside Starboard, such as Live TV (DASH-285): the password, then added and active.
             from . import livetv_move

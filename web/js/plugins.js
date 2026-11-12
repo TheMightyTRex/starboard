@@ -36,9 +36,10 @@ function installWarning(s, { builtin = false, opener } = {}) {
             el("p", { text: (builtin ? "It comes with Starboard, but it still runs on your server with the access below. "
               : "Starboard checks plug-ins and keeps them in a locked-down container, but it cannot vouch for what one does with the access below. ")
               + "Install it only if you trust who made it." }))),
-        el("p", {}, el("strong", { text: `${s.name} ${s.version || ""}` }), el("br"),
-          el("span", { class: "small", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
-          w.risk ? el("span", {}, " ", chip(`${RISK[w.risk][0]} risk`, RISK[w.risk][1])) : null),
+        // The name with the risk on the same line, at the right (owner, 12 November 2026); who made it below.
+        el("div", { class: "install-warning__head" }, el("strong", { text: `${s.name} ${s.version || ""}` }),
+          w.risk ? chip(`${RISK[w.risk][0]} risk`, RISK[w.risk][1]) : null),
+        el("p", { class: "small install-warning__by", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
         s.description ? el("p", { text: s.description }) : null,
         group("It can see", "eye", w.see, "Nothing of yours."),
         group("It can change", "pencil", w.change, "Nothing: it has no folder and no keys."),
@@ -344,6 +345,8 @@ function addPluginSection(redraw) {
 // Settings, Plug-ins, Manage (DASH-318): the plug-ins added, each with its state, Settings, Activate or Deactivate
 // and Remove; Deactivate all. Adding is on the Catalogue page.
 async function startPlugins() {
+  // Plug-in installers open this page with #manifest=...: adding is on the Catalogue page now.
+  if (location.hash.startsWith("#manifest=")) { location.replace(`/settings-plugins-catalogue.html${location.hash}`); return; }
   const holder = $("#plugins-sections");
   const draw = async () => {
     let r;
@@ -384,13 +387,16 @@ async function startCatalogue() {
     try { [r, c] = await Promise.all([api("/api/plugins"), api("/api/plugins/catalogue")]); }
     catch (e) { holder.replaceChildren(notice("danger", "Could not load the catalogue", e.message)); return; }
     holder.removeAttribute("aria-busy");
-    const kinds = new Map();
     const ORDER = ["Look", "Jellyfin", "Downloads", "Network", "Home", "System"];
     const rank = (k) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
-    for (const e of [...c.plugins].sort((a, b) => rank(a.kind) - rank(b.kind) || a.name.localeCompare(b.name))) {
-      if (!kinds.has(e.kind)) kinds.set(e.kind, []);
-      kinds.get(e.kind).push(e);
-    }
+    const byKind = (list) => {
+      const kinds = new Map();
+      for (const e of [...list].sort((a, b) => rank(a.kind) - rank(b.kind) || a.name.localeCompare(b.name))) {
+        if (!kinds.has(e.kind)) kinds.set(e.kind, []);
+        kinds.get(e.kind).push(e);
+      }
+      return [...kinds].map(([k, rows]) => el("section", { class: "stack-2", "aria-label": k }, el("h3", { text: k }), el("ul", { class: "rows" }, rows.map(entry))));
+    };
     const entry = (e) => {
       let side;
       if (e.added) side = el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(e.id)}` }, icon("circle-check"), "Added");
@@ -418,11 +424,57 @@ async function startCatalogue() {
     };
     holder.replaceChildren(...[
       builtinSection(r.builtin || [], draw),
-      section("pl-collection", "The Starboard plug-ins collection", "Made by TheMightyTRexUK and tested with each Starboard release. Coming soon: built and waiting to be published.",
-        ...[...kinds].map(([k, rows]) => el("section", { class: "stack-2", "aria-label": k }, el("h3", { text: k }), el("ul", { class: "rows" }, rows.map(entry))))),
+      ...c.catalogues.map((cat, n) => {
+        const rows = c.plugins.filter((e) => e.catalogue === cat.name && e.own === cat.own);
+        return section(`pl-cat-${n}`, cat.own ? "The Starboard plug-ins collection" : cat.name,
+          cat.own ? "Made by TheMightyTRexUK and tested with each Starboard release."
+            : `From ${cat.url.split("/")[2]}, added by you. Starboard did not make these: check each one's warning before you install it.`,
+          cat.error ? notice("warning", "This catalogue did not answer", `${cat.error}. Showing the list from the last time it did.`) : null,
+          rows.length ? byKind(rows) : el("p", { class: "small muted", text: "It lists no plug-ins." }));
+      }),
+      sourcesSection(c.catalogues, draw),
       addPluginSection(draw), testerSection()].filter(Boolean));
   };
   draw();
+}
+
+// Catalogue sources (owner, 12 November 2026): other catalogues added from a link, listed above with their plug-ins.
+// Adding a catalogue installs nothing; each plug-in still shows its warning before it is installed.
+function sourcesSection(cats, redraw) {
+  const input = el("input", { class: "input", id: "pl-cat-address", type: "url", placeholder: "https://", autocomplete: "off", spellcheck: "false" });
+  const go = el("button", { type: "submit", class: "btn btn--primary" }, icon("plus"), "Add catalogue");
+  const form = el("form", { class: "form-stack", novalidate: true },
+    field("Catalogue address", input, { hint: "The https address of a catalogue.json, from the page of the person who made it." }),
+    el("div", { class: "actions" }, go,
+      el("a", { class: "btn btn--quiet", href: `${($("[data-help-link]")?.getAttribute("href") || "https://themightytrex.github.io/starboard/help/").replace(/(\/help\/).*$/, "$1")}topics/add-a-plugin.html#add-a-catalogue-from-a-link`, target: "_blank", rel: "noopener noreferrer" },
+        icon("help-new-tab"), "How to add a catalogue", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setError(input, "");
+    if (!input.value.trim()) { setError(input, "Paste the catalogue's address"); input.focus(); return; }
+    go.disabled = true;
+    try { toast((await api("/api/plugins/catalogues", { method: "POST", body: { action: "add", url: input.value.trim() } })).said); redraw(); }
+    catch (err) { setError(input, err.message); input.focus(); }
+    finally { go.disabled = false; }
+  });
+  const rows = cats.map((cat) => {
+    const side = cat.own ? chip("Always here", "muted") : (() => {
+      const b = el("button", { type: "button", class: "btn btn--quiet btn--compact btn--danger" }, icon("trash-2"), "Remove",
+        el("span", { class: "visually-hidden", text: ` ${cat.name}` }));
+      b.addEventListener("click", async () => {
+        if (!await confirmDialog({ title: `Remove ${cat.name}?`, confirm: "Remove", message: "Its plug-ins leave the catalogue. Plug-ins you already added from it stay." })) return;
+        try { toast((await api("/api/plugins/catalogues", { method: "POST", body: { action: "remove", url: cat.url } })).said); redraw(); }
+        catch (err) { problem(err.message, b); }
+      });
+      return b;
+    })();
+    return el("li", { class: "row row--no-lead" },
+      el("div", {}, el("div", { class: "row__title", text: cat.own ? "The Starboard plug-ins collection" : cat.name }),
+        el("div", { class: "row__meta", text: [`${cat.count} plug-in${cat.count === 1 ? "" : "s"}`, cat.url, cat.error && "Not answering"].filter(Boolean).join(" · ") })),
+      el("div", { class: "row__side" }, side));
+  });
+  return section("pl-sources", "Catalogue sources", "Where this page finds plug-ins. Add another catalogue by its link; each is read at most once a day.",
+    el("ul", { class: "rows" }, rows), form);
 }
 
 // Settings, Plug-ins, <a plug-in> (DASH-318): ?id= names it; its name and description become the page's heading.

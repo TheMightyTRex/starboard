@@ -40,6 +40,8 @@ UPCOMING_DAYS = (7, 14, 30, 60, 90)
 DEFAULTS = {
     "schema": SCHEMA,
     "site_name": "Starboard",
+    # Plug-in catalogues added from a link (12 November 2026): [{"url", "name"}]. Starboard's own is always read too.
+    "plugin_catalogues": [],
     # The server's own name, up to 10 characters, at the start of the level 1 menu. Empty shows nothing.
     "server_name": "",
     "design": "health",
