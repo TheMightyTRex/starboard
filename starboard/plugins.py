@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.2.0"  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.3.0"  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -168,6 +168,9 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"{where}: type must be one of {', '.join(SETTING_TYPES)}")
         if s.get("type") == "custom" and not re.match(r"^/[A-Za-z0-9/_-]{1,80}$", str(s.get("choices", ""))):
             out.append(f"{where}: a custom setting names the path that gives its choices")
+        if s.get("type") == "folder" and not media_mounts(m):  # API 1.3, owner's choice A (12 November 2026)
+            out.append(f"{where}: a folder setting needs a container that mounts media:ro or media/<one folder>; "
+                       "the folder is chosen inside it")
     for i, card in enumerate(m.get("cards") or []):
         where = f"cards[{i}]"
         if not isinstance(card, dict):
@@ -377,3 +380,15 @@ def write_schema(path):
 
 if __name__ == "__main__":
     write_schema(os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin-manifest.schema.json"))
+
+
+def media_mounts(manifest):
+    """The media folders a plug-in mounts, as it sees them: /media (read only) or /media/<one folder>."""
+    out = []
+    for c in (manifest or {}).get("containers") or []:
+        for v in c.get("volumes") or []:
+            if v == "media:ro":
+                out.append("/media")
+            elif isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v):
+                out.append("/" + v)
+    return sorted(set(out))

@@ -26,10 +26,13 @@ NICE = {"movies": "Films", "tv": "Series"}
 SKIP = {"reelix": ("/config", "/app/config"), "jellyfin": ()}
 
 
-def mounts_of(app, inspect=None):
-    """[(host folder, the app's folder)] longest first; the computer itself for "host"; [] when the app is not there."""
+def mounts_of(app, inspect=None, data_dir=None):
+    """[(host folder, the app's folder)] longest first; the computer itself for "host"; [] when the app is not there.
+    "plugin:<id>" is a plug-in's media folders (API 1.3): the media folder, or one folder in it, as /media."""
     if app == "host":
         return [("/", "/")]
+    if app.startswith("plugin:"):
+        return _plugin_mounts(app[7:], data_dir)
     if app not in SKIP:
         raise ValueError("Starboard does not know that app's folders")
     from . import containers
@@ -45,6 +48,24 @@ def mounts_of(app, inspect=None):
     out = [(m.get("Source", ""), m.get("Destination", "")) for m in info.get("Mounts") or []
            if m.get("Type") == "bind" and m.get("Source") and m.get("Destination") not in SKIP[app]]
     return sorted(out, key=lambda m: -len(m[1]))
+
+
+def _plugin_mounts(pid, data_dir):
+    import json
+    import os
+    import re
+    from . import plugins, stack
+    if not data_dir or not re.match(r"^[a-z0-9][a-z0-9-]{0,39}$", pid or ""):
+        raise ValueError("Starboard does not know that plug-in")
+    try:
+        with open(os.path.join(data_dir, "plugins", pid, "manifest.json"), encoding="utf-8") as f:
+            manifest = json.load(f)
+    except (OSError, ValueError):
+        raise ValueError("Starboard does not know that plug-in") from None
+    media = (stack.env_values(data_dir).get("DATA_DIR") or "").rstrip("/")
+    if not media:
+        return []
+    return sorted(((f"{media}/media" + inside[len("/media"):], inside) for inside in plugins.media_mounts(manifest)), key=lambda m: -len(m[1]))
 
 
 def _under(path, top):
@@ -80,14 +101,14 @@ def words(path, mounts):
     return ", ".join(nice(p) for p in parts)
 
 
-def describe(app, path, setting="", read=None, mounts=None, host_defaults=None):
+def describe(app, path, setting="", read=None, mounts=None, host_defaults=None, data_dir=None):
     """{path, host, words, free, exists, ok, lines, suggest, start, mounts}: what the picker shows for one folder."""
     if mounts is None:
-        mounts = mounts_of(app)
+        mounts = mounts_of(app, data_dir=data_dir)
     suggest = SUGGEST.get(app, {}).get(setting, "")
     if app == "host" and host_defaults:
         suggest = host_defaults.get(setting, "")
-    name = NAMES.get(app, app)
+    name = NAMES.get(app, "The plug-in" if app.startswith("plugin:") else app)
     out = {"app": app, "path": path, "host": None, "words": "", "free": None, "exists": None, "ok": True, "lines": [],
            "suggest": suggest, "mounts": [{"host": h, "app": a} for h, a in mounts], "can_browse": bool(mounts)}
     start = [h for h, a in mounts if a not in ("/",)]
@@ -103,7 +124,7 @@ def describe(app, path, setting="", read=None, mounts=None, host_defaults=None):
     except ValueError as e:
         return {**out, "ok": False, "lines": [str(e)]}
     out["path"] = clean
-    out["words"] = words(clean, mounts or [("", TOP.get(app, "/"))])
+    out["words"] = words(clean, mounts or [("", TOP.get(app, "/media" if app.startswith("plugin:") else "/"))])
     host = to_host(clean, mounts) if mounts else None
     if mounts and host is None:
         tops = ", ".join(a for _, a in mounts)
@@ -123,10 +144,10 @@ def describe(app, path, setting="", read=None, mounts=None, host_defaults=None):
     return out
 
 
-def chosen(app, host_path, mounts=None):
+def chosen(app, host_path, mounts=None, data_dir=None):
     """A folder chosen in Browse (as the computer sees it), given back as the app sees it."""
     if mounts is None:
-        mounts = mounts_of(app)
+        mounts = mounts_of(app, data_dir=data_dir)
     inside = to_app(folders.tidy(host_path), mounts)
     if inside is None:
         tops = ", ".join(h for h, _ in mounts) or "its folders"

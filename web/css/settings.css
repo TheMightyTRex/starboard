@@ -171,3 +171,6 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 
 /* Make the change now: the installer's output, live, in a box of its own height that scrolls. */
 .host-output { max-block-size: 50vh; overflow: auto; white-space: pre-wrap; }
+
+/* A location in a list of settings (plug-in folder settings, API 1.3) takes the whole row. */
+.settings-rows > .setting--location { display: block; }

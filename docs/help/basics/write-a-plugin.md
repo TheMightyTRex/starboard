@@ -59,6 +59,13 @@ size and move it. Use a card for something worth seeing at a glance. Long lists,
 on belong in the plug-in's own section of **Settings**, then **Plug-ins**. Read
 [Use and change the dashboard](../topics/use-the-dashboard.md) for how people add cards.
 
+### A folder setting
+
+A setting of type `folder` lets people choose a folder for your plug-in with Browse, as they do everywhere else in
+Starboard. It needs plug-in API 1.3 (`"starboard_api": ">=1.3 <2.0"`) and a container that mounts the media folder,
+`media:ro`, or one folder in it, `media/<folder>`. The folder is always inside what you mount, and your plug-in reads
+it as it sees it, such as `/media/music`. Nothing outside the media folder can be chosen.
+
 ### The three kinds
 
 | Kind | Shows | Use it for |

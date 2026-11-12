@@ -497,8 +497,12 @@ def save_settings(data_dir, pid, incoming):
             v = str(v)[:2000]
         elif t in ("text", "folder"):
             v = str(v)[:500]
-            if t == "folder" and (".." in v or not v.startswith("/")):
-                raise ValueError(f"{s['label']}: give a folder inside the plug-in's own folders")
+            if t == "folder":
+                from .plugins import media_mounts
+                inside = media_mounts(m)
+                v = v.rstrip("/") or "/"
+                if ".." in v.split("/") or not any(v == top or v.startswith(top + "/") for top in inside):
+                    raise ValueError(f"{s['label']}: choose a folder inside {', '.join(inside) or 'the media folder'}")
         elif t == "list":
             if not isinstance(v, list):
                 raise ValueError(f"{s['label']}: give a list")

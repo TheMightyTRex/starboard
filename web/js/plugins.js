@@ -92,6 +92,14 @@ function pluginSettingsForm(p, redraw) {
         catch (err) { input.checked = !input.checked; problem(err.message, input); }
       });
       rows.push(settingRow(s.label, s.hint, el("label", { class: "switch" }, input), `${id}-l`));
+    } else if (s.type === "folder") {  // API 1.3: a folder inside the media folders the plug-in mounts, applied at once
+      let was = s.value ?? "";
+      const picker = locationPicker({ id, label: s.label, value: was, app: `plugin:${p.id}`, hint: s.hint,
+        onChange: async (v) => {
+          try { await put({ [s.key]: v }); was = v; toast("Saved"); }
+          catch (err) { picker.input.value = was; picker.refresh(); problem(err.message, picker.input); }
+        } });
+      rows.push(el("li", { class: "setting setting--location" }, picker.node));
     } else if (s.type === "choice") {
       const select = el("select", { class: "select", id, "aria-labelledby": `${id}-l` }, (s.choices || []).map((c) => el("option", { value: c, text: c, selected: c === s.value })));
       let was = select.value;

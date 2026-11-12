@@ -2178,14 +2178,14 @@ class Handler(BaseHTTPRequestHandler):
                 app_name = q.get("app", ["host"])[0]
                 try:
                     if path.endswith("chosen"):
-                        return self.json(200, {"path": locations.chosen(app_name, q.get("host", [""])[0])})
+                        return self.json(200, {"path": locations.chosen(app_name, q.get("host", [""])[0], data_dir=app.data_dir)})
                     host_defaults = None
                     if app_name == "host":
                         d = self.takeover_defaults()
                         from . import full_backup
                         host_defaults = {"media": d["data_dir"], "config": d["config_dir"], "backups": full_backup.default_folder(app.data_dir)}
                     return self.json(200, locations.describe(app_name, q.get("path", [""])[0], q.get("for", [""])[0],
-                                                             host_defaults=host_defaults))
+                                                             host_defaults=host_defaults, data_dir=app.data_dir))
                 except ValueError as e:
                     return self.error(400, str(e))
             if path in ("/api/folders", "/api/folders/check") and method == "GET":  # the folder picker (DASH-240)

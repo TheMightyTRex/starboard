@@ -66,5 +66,52 @@ class Locations(unittest.TestCase):
         self.assertEqual(got["words"], "Not set")
 
 
+class PluginFolders(unittest.TestCase):
+    """API 1.3 (owner's choice A): a plug-in's folder is inside the media folders it mounts."""
+
+    def setUp(self):
+        import json
+        import os
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        self.data = self.tmp.name
+        os.makedirs(os.path.join(self.data, "plugins", "tagger"))
+        os.makedirs(os.path.join(self.data, "stack"))
+        with open(os.path.join(self.data, "stack", ".env"), "w") as f:
+            f.write("DATA_DIR=/mnt/pool\n")
+        self.manifest = {"id": "tagger", "containers": [{"name": "app", "volumes": ["data", "media/music"]}],
+                         "settings": [{"key": "where", "label": "Where", "type": "folder"}]}
+        with open(os.path.join(self.data, "plugins", "tagger", "manifest.json"), "w") as f:
+            json.dump(self.manifest, f)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_mounts_and_both_ways(self):
+        m = locations.mounts_of("plugin:tagger", data_dir=self.data)
+        self.assertEqual(m, [("/mnt/pool/media/music", "/media/music")])
+        self.assertEqual(locations.chosen("plugin:tagger", "/mnt/pool/media/music/new", data_dir=self.data), "/media/music/new")
+        with self.assertRaises(ValueError):
+            locations.chosen("plugin:tagger", "/mnt/pool/media/films", data_dir=self.data)
+
+    def test_unknown_plugin(self):
+        with self.assertRaises(ValueError):
+            locations.mounts_of("plugin:../etc", data_dir=self.data)
+
+    def test_manifest_needs_the_media_folder(self):
+        from starboard import plugins
+        self.assertEqual(plugins.media_mounts(self.manifest), ["/media/music"])
+        bare = {"containers": [{"name": "app", "volumes": ["data"]}], "settings": [{"key": "where", "label": "Where", "type": "folder"}]}
+        self.assertEqual(plugins.media_mounts(bare), [])
+
+    def test_saving_only_inside(self):
+        from starboard import plugins_admin
+        plugins_admin.save_settings(self.data, "tagger", {"where": "/media/music/inbox/"})
+        with self.assertRaisesRegex(ValueError, "inside /media/music"):
+            plugins_admin.save_settings(self.data, "tagger", {"where": "/media/films"})
+        with self.assertRaises(ValueError):
+            plugins_admin.save_settings(self.data, "tagger", {"where": "/media/music/../films"})
+
+
 if __name__ == "__main__":
     unittest.main()
