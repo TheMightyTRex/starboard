@@ -53,6 +53,19 @@ async function hold(ids, button, index) {
   } catch (e) { problem(e.message, button); button.disabled = false; }
 }
 
+// Folders Clear away put beside the old apps' settings folders (DASH-191): on the computer, outside Starboard's own
+// folder, so they are listed with where they are, to remove by hand when you are sure.
+function renderBesideApps() {
+  const list = cleanup.beside_apps || [];
+  const box = $("#beside-apps");
+  if (!box) return;
+  box.hidden = !list.length;
+  if (!list.length) return;
+  $("#beside-apps-list").replaceChildren(el("ul", { class: "rows" }, list.map((c) => el("li", { class: "row row--no-lead" },
+    el("div", {}, el("div", { class: "row__title", text: `${c.app}'s settings` }),
+      el("div", { class: "row__meta" }, el("code", { text: c.to }), c.at ? ` · moved ${heldWhen(c.at)}` : ""))))));
+}
+
 function renderHolding() {
   const items = cleanup.holding;
   $("#cleanup-summary").textContent = items.length
@@ -116,6 +129,7 @@ startPage().then(async () => {
   catch (e) { $("#cleanup-list").replaceChildren(emptyState("Could not look", e.message)); return; }
   if (HOLDING_PAGE) {
     renderHolding();
+    renderBesideApps();
     const all = $("#delete-all");
     all.prepend(icon("trash-2"));
     all.addEventListener("click", () => deleteForGood(cleanup.holding, all, 0));

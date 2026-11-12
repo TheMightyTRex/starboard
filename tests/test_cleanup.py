@@ -70,6 +70,14 @@ class CleanupTest(unittest.TestCase):
         self.assertEqual(freed, 1000)
         self.assertEqual(len(cleanup.holding(self.data)), 1)
 
+    def test_clear_away_folders_are_listed_beside_the_apps(self):  # DASH-191 with DASH-77
+        from unittest import mock
+        from starboard import takeover
+        with mock.patch.object(takeover, "cleared", return_value=[{"name": "radarr", "app": "Radarr", "from": "/srv/radarr/config",
+                                                                   "to": "/srv/starboard-holding/20261113/radarr-config", "at": 1}]):
+            got = cleanup.summary(self.data)["beside_apps"]
+        self.assertEqual([(c["app"], c["to"]) for c in got], [("Radarr", "/srv/starboard-holding/20261113/radarr-config")])
+
     def test_a_request_never_names_a_path(self):
         with self.assertRaises(ValueError):
             cleanup.hold(self.data, ["/etc"])

@@ -139,10 +139,19 @@ def _note(path):
         return {}
 
 
+def beside_apps(data_dir):
+    """Folders Clear away (DASH-191) moved into starboard-holding beside the old apps' settings folders: on the
+    computer, outside Starboard's data, so they are listed here to remove by hand, never moved or deleted from here."""
+    from . import takeover
+    return [{"app": c.get("app") or c.get("name") or "", "from": c.get("from", ""), "to": c.get("to", ""), "at": c.get("at")}
+            for c in takeover.cleared(data_dir) if isinstance(c, dict) and c.get("to")]
+
+
 def summary(data_dir, backup_running=False):
     left, held = left_over(data_dir, backup_running), holding(data_dir)
     return {"left_over": left, "holding": held, "left_over_size": sum(i["size"] for i in left),
-            "holding_size": sum(i["size"] for i in held), "holding_path": os.path.join(os.path.basename(os.path.abspath(data_dir)), HOLDING)}
+            "holding_size": sum(i["size"] for i in held), "holding_path": os.path.join(os.path.basename(os.path.abspath(data_dir)), HOLDING),
+            "beside_apps": beside_apps(data_dir)}
 
 
 def hold(data_dir, ids, backup_running=False):
