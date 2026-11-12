@@ -26,7 +26,7 @@
   {"key": "sources", "label": "Your lists and guides", "type": "custom", "choices": "/sources",
    "hint": "Add your own channel lists (M3U or JSON) and guides (XMLTV) by address. Each has its own switch."},
   {"key": "channels", "label": "Channels", "type": "custom", "choices": "/channels",
-   "hint": "A switch for each list, region and section, then every channel by section. A channel you deactivate stays inactive when the lists are rebuilt."}
+   "hint": "Open a list to see its regions, sections and channels, each with its own switches. A channel you deactivate stays inactive when the lists are rebuilt."}
  ],
  "actions": [{"id": "run", "label": "Run Live TV now", "path": "/run"}],
  "cards": [{"id": "status", "title": "Live TV", "type": "status", "path": "/card",

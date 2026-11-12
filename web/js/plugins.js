@@ -388,6 +388,14 @@ function updateFromAddress(p, redraw) {
   return form;
 }
 
+// The words on a plug-in's State line: its version first, built into Starboard too (DASH-360, owner, 12 November 2026:
+// "plugins need to show the version number in the state page in settings").
+function stateWords(p) {
+  const version = p.version ? `Version ${p.version}` : "Version not known";
+  if (p.builtin) return `${version}, built into Starboard: it runs on Starboard's own image and updates with Starboard.`;
+  return `${version}${p.author ? `, by ${p.author}` : ""}.`;
+}
+
 // A plug-in's own page, Settings, Plug-ins, <its name> (DASH-318), laid out like every Settings page (DASH-307):
 // its state and its one button at the top, then versions, jobs, styles, settings by group and its screens, then
 // its own buttons (Actions), what it may do, and Remove at the foot.
@@ -415,7 +423,7 @@ function pluginPage(p, redraw) {
     : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw, true);
   // State (issue #8): the chip at the right of the heading's line, and Activate or Deactivate at the right of the
   // version line under it.
-  const stateSec = section(`pl-${p.id}-state`, "State", p.builtin ? "Built into Starboard: it runs on Starboard's own image and updates with Starboard." : `Version ${p.version}${p.author ? `, by ${p.author}` : ""}.`,
+  const stateSec = section(`pl-${p.id}-state`, "State", stateWords(p),
     headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null));
   const about = $(".settings-section__head > p", stateSec);
   const stateLine = el("div", { class: "state-line" }, about || el("span"), el("div", { class: "actions" }, first));
@@ -464,18 +472,19 @@ function customScreen(p, s) {
     finally { if (button) button.disabled = false; }
   };
   // Bulk switches (DASH-359): each set the plug-in names (Live TV: each whole list, every channel, regions, sections).
-  // A switch is active when every item in it is, or as the plug-in says; changing it applies at once.
-  const bulkPanel = (data) => {
-    if (!data.bulk || !data.bulk.length) return null;
+  // A switch is active when every item in it is, or as the plug-in says; changing it applies at once. `sets` are the
+  // switches of the level that is open (plug-in API 1.7).
+  const bulkPanel = (data, sets) => {
+    if (!sets.length) return null;
     const noun = (data.title || "items").toLowerCase();
     const kinds = new Map();
-    for (const b of data.bulk) { if (!kinds.has(b.kind)) kinds.set(b.kind, []); kinds.get(b.kind).push(b); }
+    for (const b of sets) { if (!kinds.has(b.kind)) kinds.set(b.kind, []); kinds.get(b.kind).push(b); }
     const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-");
     const head = `bulk-${p.id}-${s.key}`;
     const row = (b) => {
       const id = `${head}-${slug(b.id)}`;
       const input = el("input", { type: "checkbox", role: "switch", id, checked: typeof b.active === "boolean" ? b.active : b.total > 0 && b.on === b.total,
-        "aria-labelledby": `${id}-l`, "aria-describedby": `${id}-h` });
+        "aria-labelledby": `${id}-l`, "aria-describedby": `${id}-h`, "data-key": `bulk:${b.id}` });  // focus comes back to it, drawn again
       const note = el("span", { class: "saved-note", id: `${id}-saved`, hidden: true });
       input.addEventListener("change", () => run({ action: "bulk", id: b.id, value: input.checked ? "on" : "off" }, input, (out) => {
         const again = document.getElementById(`${id}-saved`);
@@ -483,24 +492,25 @@ function customScreen(p, s) {
       }));
       return el("li", { class: "setting" },
         el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: `${id}-l`, text: b.label }),
-          el("span", { class: "setting__hint", id: `${id}-h`, text: b.hint || `${b.on} of ${b.total} ${noun} active` })),
+          el("span", { class: "setting__hint", id: `${id}-h`, text: b.hint || `${b.on} of ${b.total} active` })),
         el("div", { class: "setting__control" }, el("label", { class: "switch" }, input), note));
     };
     return el("section", { class: "stack-2", "aria-labelledby": `${head}-h` },
       el("h4", { id: `${head}-h`, text: "Activate or deactivate in bulk" }),
-      el("p", { class: "small muted", text: `Each switch applies at once. A group of ${noun} shows as active when all of them are.` }),
+      at ? null : el("p", { class: "small muted", text: `Each switch applies at once. A group of ${noun} shows as active when all of them are.` }),
       ...[...kinds].map(([k, list]) => el("div", { class: "stack-2" }, k ? el("h5", { text: k }) : null,
         el("ul", { class: "settings-rows" }, list.map(row)))));
   };
   const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"] };
   // Show all, active or inactive items (owner, 12 November 2026: "a filter to the channel list for active and not
-  // active channels"), on any list whose rows can be activated; kept while the list is drawn again.
+  // active channels"), on any list whose rows can be activated; kept while the list is drawn again. `pool` is every
+  // item in the open level and the sub menus under it.
   let show = "all";
   let last = null;
-  const showFilter = (data) => {
-    if (!data.items.some((it) => it.actions.includes("toggle"))) return null;
+  const showFilter = (data, pool) => {
+    if (!pool.some((it) => it.actions.includes("toggle"))) return null;
     const noun = (data.title || "items").toLowerCase();
-    const count = { all: data.items.length, on: data.items.filter((it) => it.on).length };
+    const count = { all: pool.length, on: pool.filter((it) => it.on).length };
     count.off = count.all - count.on;
     return el("fieldset", { class: "segmented" }, el("legend", { class: "visually-hidden", text: `Show ${noun}` }),
       [["all", "All"], ["on", "Active"], ["off", "Inactive"]].map(([value, label]) => {
@@ -514,18 +524,99 @@ function customScreen(p, s) {
         return el("label", { for: input.id }, input, el("span", { text: `${label} (${count[value]})` }));
       }));
   };
+  // Sub menus (plug-in API 1.7, DASH-361, owner, 12 November 2026: "simplify the channels with sub menus"): the
+  // first level lists the menus as rows that open (Settings pattern 8, in place of a slide-out); an opened menu has a
+  // back link above its heading (issue #15), its own switches, sub menus and items. Focus goes to the opened menu's
+  // heading, and back to its row on return. `at` is the open menu, "" for the first level.
+  let at = "";
+  const levelHead = `level-${p.id}-${s.key}-h`;
+  const go = (id, back) => {
+    const from = at;
+    at = id;
+    draw(last);  // drawn at once, so focus moves now
+    (back ? [...box.querySelectorAll("[data-menu]")].find((x) => x.dataset.menu === from) : document.getElementById(levelHead))?.focus();
+  };
+  const keep = (it) => show === "all" || (show === "on" ? it.on : !it.on);
+  const itemRows = (data, shown) => {
+    const groups = new Map();
+    for (const it of shown) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
+    return [...groups].map(([g, rows]) => el("section", { class: "stack-2", "aria-label": g || data.title },
+      g ? el("h4", { text: g }) : null,
+      el("ul", { class: "rows" }, rows.map((it) => el("li", { class: "row row--no-lead" },
+        el("div", {}, el("h5", { class: "row__title", text: it.title }),
+          el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__side" }, chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)),
+          it.choice ? (() => {  // a small choice on the row, such as a catalogue's weight (12 November 2026)
+            const sel = el("select", { class: "select select--compact", "aria-label": `${it.choice.label}: ${it.title}`, "data-key": `${it.id}:choose` },
+              it.choice.options.map(([v, words]) => el("option", { value: v, text: words, selected: v === it.choice.value })));
+            sel.addEventListener("change", () => run({ action: "choose", id: it.id, value: sel.value }, sel));
+            return el("label", { class: "row-choice" }, el("span", { class: "small", text: it.choice.label }), sel);
+          })() : null,
+          // Test and Activate or Deactivate as buttons; Move up, Move down and Remove in a More menu, so a row has
+          // at most two buttons after its state (DASH-309, section 10).
+          ...it.actions.filter((a) => a === "test" || a === "toggle").map((a) => {
+            const [label, ic] = a === "toggle" ? [it.on ? "Deactivate" : "Activate", it.on ? "pause" : "play"] : ACTION_WORDS[a];
+            const b = el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:${a}` }, ic ? icon(ic) : null, label,
+              el("span", { class: "visually-hidden", text: ` ${it.title}` }));
+            b.addEventListener("click", () => run({ action: a, id: it.id }, b));
+            return b;
+          }),
+          (() => {
+            const more = it.actions.filter((a) => a !== "test" && a !== "toggle");
+            if (!more.length) return null;
+            let menu = null;
+            menu = menuButton(`More for ${it.title}`, more.map((a) => ({ label: ACTION_WORDS[a][0], icon: ACTION_WORDS[a][1], danger: a === "remove",
+              onSelect: async () => {
+                const opener = menu.querySelector("button");
+                if (a === "remove" && !(await confirmDialog({ title: `Remove ${it.title}?`, confirm: "Remove", danger: true, message: "You can add it again by its address." }))) return;
+                run({ action: a, id: it.id }, opener);
+              } })));
+            return menu;
+          })()))))));
+  };
+  // The rows that open the sub menus of one level, grouped by the plug-in's group, each with its state and count.
+  const menuRows = (data, kids, under) => {
+    const noun = (data.title || "items").toLowerCase();
+    const groups = new Map();
+    for (const m of kids) { if (!groups.has(m.group)) groups.set(m.group, []); groups.get(m.group).push(m); }
+    return [...groups].map(([g, list]) => el("section", { class: "stack-2", "aria-label": g || data.title },
+      g ? el("h4", { text: g }) : null,
+      el("ul", { class: "rows" }, list.map((m) => {
+        const its = under.get(m.id) || [];
+        const can = its.filter((it) => it.actions.includes("toggle"));
+        const on = can.filter((it) => it.on).length;
+        const state = m.active === false ? ["Inactive", "muted"] : !can.length ? null
+          : on === can.length ? ["Active", "success"] : on ? ["Partly active", "info"] : ["Inactive", "muted"];
+        const open = el("button", { type: "button", "data-menu": m.id }, m.title);
+        open.addEventListener("click", () => go(m.id, false));
+        return el("li", { class: "row row--no-lead row--opens" },
+          el("div", {}, el("h5", { class: "row__title" }, open),
+            el("div", { class: "row__meta", text: [m.detail, can.length ? `${on} of ${can.length} active` : its.length ? `${its.length} ${noun}` : ""].filter(Boolean).join(" · ") })),
+          el("div", { class: "row__side" }, state ? chip(...state) : null, icon("chevron-right")));
+      }))));
+  };
   const draw = (data) => {
     last = data;
-    const groups = new Map();
-    const shown = data.items.filter((it) => show === "all" || (show === "on" ? it.on : !it.on));
-    for (const it of shown) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
-    const add = data.add ? (() => {
+    const menus = data.menus || [];
+    const byId = new Map(menus.map((m) => [m.id, m]));
+    if (!byId.has(at)) at = "";
+    // Every item under each menu, its sub menus' too, for the counts on its row and the filter.
+    const under = new Map(menus.map((m) => [m.id, []]));
+    for (const it of data.items) {
+      for (let m = byId.get(it.menu || ""); m; m = byId.get(m.parent)) under.get(m.id).push(it);
+    }
+    const pool = at ? under.get(at) : data.items;
+    const kids = menus.filter((m) => m.parent === at && (show === "all" || (under.get(m.id) || []).some(keep)));
+    const shown = data.items.filter((it) => (it.menu || "") === at && keep(it));
+    const sets = (data.bulk || []).filter((b) => (b.menu || "") === at);
+    const here = byId.get(at);
+    const add = !here && data.add ? (() => {
       const id = `add-${p.id}-${s.key}`;
       const input = el("input", { class: "input", id, type: "url", placeholder: data.add.placeholder || "", autocomplete: "off" });
-      const go = el("button", { type: "submit", class: "btn btn--primary" }, icon("plus"), data.add.label || "Add");
+      const addBtn = el("button", { type: "submit", class: "btn btn--primary" }, icon("plus"), data.add.label || "Add");
       const form = el("form", { class: "stack-2" }, el("label", { class: "field__label", for: id, text: data.add.label || "Add" }),
-        data.add.hint ? el("p", { class: "hint", text: data.add.hint }) : null, el("div", { class: "actions" }, input, go));
-      form.addEventListener("submit", (e) => { e.preventDefault(); if (input.value.trim()) run({ action: "add", value: input.value.trim() }, go); });
+        data.add.hint ? el("p", { class: "hint", text: data.add.hint }) : null, el("div", { class: "actions" }, input, addBtn));
+      form.addEventListener("submit", (e) => { e.preventDefault(); if (input.value.trim()) run({ action: "add", value: input.value.trim() }, addBtn); });
       // A file instead of an address (DASH-359): streamed to the plug-in as it is, never read into the page.
       const f = data.add.file;
       if (!f) return form;
@@ -553,46 +644,28 @@ function customScreen(p, s) {
       });
       return el("div", { class: "stack-4" }, form, fileForm);
     })() : null;
-    const testAll = el("button", { type: "button", class: "btn" }, icon("activity"), "Test all");
-    testAll.addEventListener("click", () => run({ action: "test_all" }, testAll));
-    box.replaceChildren(
-      ...[data.intro ? el("p", { class: "small muted", text: data.intro }) : null, bulkPanel(data)].filter(Boolean),  // replaceChildren writes null as text
-      el("div", { class: "actions" }, ...[showFilter(data), testAll].filter(Boolean)), said,
-      ...(data.items.length && !shown.length ? [emptyState(show === "on" ? "None active" : "None inactive", "Choose All to see every one.")] : []),
-      ...[...groups].map(([g, rows]) => el("section", { class: "stack-2", "aria-label": g || data.title },
-        g ? el("h4", { text: g }) : null,
-        el("ul", { class: "rows" }, rows.map((it) => el("li", { class: "row row--no-lead" },
-          el("div", {}, el("h5", { class: "row__title", text: it.title }),
-            el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") })),
-          el("div", { class: "row__side" }, chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)),
-            it.choice ? (() => {  // a small choice on the row, such as a catalogue's weight (12 November 2026)
-              const sel = el("select", { class: "select select--compact", "aria-label": `${it.choice.label}: ${it.title}` },
-                it.choice.options.map(([v, words]) => el("option", { value: v, text: words, selected: v === it.choice.value })));
-              sel.addEventListener("change", () => run({ action: "choose", id: it.id, value: sel.value }, sel));
-              return el("label", { class: "row-choice" }, el("span", { class: "small", text: it.choice.label }), sel);
-            })() : null,
-            // Test and Activate or Deactivate as buttons; Move up, Move down and Remove in a More menu, so a row has
-            // at most two buttons after its state (DASH-309, section 10).
-            ...it.actions.filter((a) => a === "test" || a === "toggle").map((a) => {
-              const [label, ic] = a === "toggle" ? [it.on ? "Deactivate" : "Activate", it.on ? "pause" : "play"] : ACTION_WORDS[a];
-              const b = el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:${a}` }, ic ? icon(ic) : null, label,
-                el("span", { class: "visually-hidden", text: ` ${it.title}` }));
-              b.addEventListener("click", () => run({ action: a, id: it.id }, b));
-              return b;
-            }),
-            (() => {
-              const more = it.actions.filter((a) => a !== "test" && a !== "toggle");
-              if (!more.length) return null;
-              let menu = null;
-              menu = menuButton(`More for ${it.title}`, more.map((a) => ({ label: ACTION_WORDS[a][0], icon: ACTION_WORDS[a][1], danger: a === "remove",
-                onSelect: async () => {
-                  const opener = menu.querySelector("button");
-                  if (a === "remove" && !(await confirmDialog({ title: `Remove ${it.title}?`, confirm: "Remove", danger: true, message: "You can add it again by its address." }))) return;
-                  run({ action: a, id: it.id }, opener);
-                } })));
-              return menu;
-            })())))))),
-      ...(add ? [add] : []));
+    // Test all only where it can test something: a list with rows to test, or one still empty.
+    const testAll = !here && (!data.items.length || data.items.some((it) => it.actions.includes("test")))
+      ? el("button", { type: "button", class: "btn" }, icon("activity"), "Test all") : null;
+    testAll?.addEventListener("click", () => run({ action: "test_all" }, testAll));
+    // An opened menu: the back link above its heading, named for where it goes.
+    const top = here ? (() => {
+      const parent = byId.get(here.parent);
+      const back = el("button", { type: "button", class: "back-link back-link--button" }, icon("arrow-left"), `Back to ${parent ? parent.title : data.title || "the list"}`);
+      back.addEventListener("click", () => go(here.parent, true));
+      const trail = [];  // where it is, such as "In Samsung TV Plus, UK", under its heading
+      for (let m = parent; m; m = byId.get(m.parent)) trail.unshift(m.title);
+      return [back, el("h3", { id: levelHead, tabindex: "-1", text: here.title }),
+        trail.length ? el("p", { class: "small muted", text: `In ${trail.join(", ")}` }) : null,
+        here.detail ? el("p", { class: "small muted", text: here.detail }) : null];
+    })() : [data.intro ? el("p", { class: "small muted", text: data.intro }) : null];
+    const controls = [showFilter(data, pool), testAll].filter(Boolean);
+    box.replaceChildren(...[
+      ...top, bulkPanel(data, sets),
+      controls.length ? el("div", { class: "actions" }, ...controls) : null, said,
+      pool.length && !shown.length && !kids.length ? emptyState(show === "on" ? "None active" : "None inactive", "Choose All to see every one.")
+        : here && !pool.length && !kids.length ? emptyState(`No ${(data.title || "items").toLowerCase()} here`, null) : null,
+      ...menuRows(data, kids, under), ...itemRows(data, shown), add].filter(Boolean));  // replaceChildren writes null as text
   };
   if (p.state !== "enabled") box.replaceChildren(emptyState(`${p.name} is not active`, `Activate it on State to see ${s.label.toLowerCase()}.`));
   else api(path).then(draw).catch((err) => box.replaceChildren(notice("info", `${p.name} did not answer`, err.message)));

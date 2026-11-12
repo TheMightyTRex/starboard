@@ -112,3 +112,30 @@ class Choice(unittest.TestCase):
         self.assertIs(plugin_custom.clean({"type": "list", "items": [], "bulk": [{"id": "a", "label": "A", "active": False}]})["bulk"][0]["active"], False)
         self.assertEqual(plugin_custom.clean({"type": "list", "items": [], "bulk": "nope"})["bulk"], [])
         self.assertIn("bulk", plugin_custom.ACTIONS)
+
+    def test_sub_menus_cleaned(self):
+        # Plug-in API 1.7 (DASH-361): sub menus, each after its parent, at most four deep; items and switches placed in them.
+        out = plugin_custom.clean({"type": "list", "items": [
+            {"id": "a", "title": "A", "menu": "news"}, {"id": "b", "title": "B", "menu": "nowhere"}, {"id": "c", "title": "C"}],
+            "bulk": [{"id": "news", "label": "Every news channel", "menu": "news", "on": 1, "total": 1}, {"id": "all", "label": "All", "menu": "gone"}],
+            "menus": [{"id": "uk", "title": "UK", "group": "Regions", "onclick": "x"}, {"id": "news", "title": "News", "parent": "uk", "active": False},
+                      {"id": "orphan", "title": "Orphan", "parent": "later"}, {"id": "later", "title": "Later"}, {"id": "uk", "title": "Again"},
+                      {"id": "no-title"}, "bad", {"id": "d3", "title": "3", "parent": "news"}, {"id": "d4", "title": "4", "parent": "d3"},
+                      {"id": "d5", "title": "5", "parent": "d4"}]})
+        self.assertEqual(out["menus"], [
+            {"id": "uk", "title": "UK", "detail": "", "group": "Regions", "parent": "", "active": None},
+            {"id": "news", "title": "News", "detail": "", "group": "", "parent": "uk", "active": False},
+            {"id": "later", "title": "Later", "detail": "", "group": "", "parent": "", "active": None},
+            {"id": "d3", "title": "3", "detail": "", "group": "", "parent": "news", "active": None},
+            {"id": "d4", "title": "4", "detail": "", "group": "", "parent": "d3", "active": None}])
+        self.assertEqual([it.get("menu") for it in out["items"]], ["news", None, None])
+        self.assertEqual([b.get("menu") for b in out["bulk"]], ["news", None])
+        # A screen without menus is the same as before: no menus, and nothing placed
+        old = plugin_custom.clean({"type": "list", "items": [{"id": "a", "title": "A", "menu": "x"}], "bulk": [{"id": "s", "label": "S", "menu": "x"}]})
+        self.assertNotIn("menus", old)
+        self.assertNotIn("menu", old["items"][0])
+        self.assertNotIn("menu", old["bulk"][0])
+        # Up to 400 switches with menus, 60 without
+        many = [{"id": f"s{i}", "label": "S"} for i in range(500)]
+        self.assertEqual(len(plugin_custom.clean({"type": "list", "items": [], "bulk": many})["bulk"]), 60)
+        self.assertEqual(len(plugin_custom.clean({"type": "list", "items": [], "bulk": many, "menus": [{"id": "m", "title": "M"}]})["bulk"]), 400)

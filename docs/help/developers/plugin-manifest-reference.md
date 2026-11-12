@@ -278,6 +278,7 @@ in. API 1.4. Read [Jobs](plugin-api-reference.md#jobs) for what Starboard sends.
 | 1.4 | 12 November 2026 | `required` settings, `setup_required`, `notices`, `events`, `jobs` and card `refresh_minutes` |
 | 1.5 | 12 November 2026 | A setting's `group`, and choices with a `label` |
 | 1.6 | 12 November 2026 | The `reelix:key` and `usenet:servers` permissions, with `/run/starboard/reelix.json` and `/run/starboard/usenet.json` |
+| 1.7 | 13 November 2026 | Sub menus in a custom setting's list: `menus`, and `menu` on its items and switches |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

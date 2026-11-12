@@ -126,6 +126,87 @@ def _example_plugins(data_dir):
         plugins_admin.enable(data_dir, "styles")
 
 
+# Live TV (DASH-361): the built-in plug-in added and active, with made-up channels in three lists and one of your own,
+# so its Channels sub menus can be tried. Its screens run Live TV's own code here, in this process: nothing is fetched,
+# no container starts, and Jellyfin is never told.
+_LIVETV_CHANNELS = [  # (name, section, list, region)
+    ("Harbour One", "Entertainment", "channels.m3u", "UK"), ("Harbour Two", "Entertainment", "channels.m3u", "UK"),
+    ("Coast News", "News", "channels.m3u", "UK"), ("Little Lanterns", "Kids", "channels.m3u", "UK"),
+    ("Saltmarsh Drama", "Entertainment", "samsung.m3u", "UK"), ("Quiet Coast Comedy", "Entertainment", "samsung.m3u", "UK"),
+    ("Paper Planets Kids", "Kids", "samsung.m3u", "UK"), ("Northern Line News", "News", "samsung.m3u", "UK"),
+    ("Copper Valley Sport", "Sport", "samsung.m3u", "UK"), ("Tidewater Films", "Movies", "samsung.m3u", "UK"),
+    ("Midnight Garden Music", "Music", "samsung.m3u", "UK"), ("Long Field Living", "Lifestyle", "samsung.m3u", "UK"),
+    ("Glass Orchard Docs", "Documentaries", "samsung.m3u", "UK"), ("Station Eleven Classics", "Movies", "samsung.m3u", "UK"),
+    ("Lighthouse Westerns", "Movies", "samsung.m3u", "US"), ("Small Hours News", "News", "samsung.m3u", "US"),
+    ("Winter Map Weather", "News", "samsung.m3u", "US"), ("Harbour Street Sport", "Sport", "samsung.m3u", "US"),
+    ("Riverbend Cooking", "Lifestyle", "samsung.m3u", "US"), ("Cartoon Coves", "Kids", "samsung.m3u", "US"),
+    ("Open Road Comedy", "Entertainment", "samsung.m3u", "US"), ("Desert Docs", "Documentaries", "samsung.m3u", "US"),
+    ("Pier Films", "Movies", "pluto.m3u", "UK"), ("Pier Thrillers", "Movies", "pluto.m3u", "UK"),
+    ("Pier Mysteries", "Entertainment", "pluto.m3u", "UK"), ("Pier Nature", "Documentaries", "pluto.m3u", "UK"),
+    ("Pier Retro", "Entertainment", "pluto.m3u", "UK"), ("Community Radio Vision", "Other", "own.m3u", ""),
+    ("Harbour Council Live", "News", "own.m3u", "")]
+_LIVETV_HIDDEN = ("Quiet Coast Comedy", "Station Eleven Classics", "Lighthouse Westerns", "Winter Map Weather", "Pier Retro")
+
+
+def _example_livetv(data_dir):
+    from starboard import livetv, livetv_own, livetv_plugin, plugin_cards, plugin_custom, plugin_watch
+    root = os.path.join(data_dir, "example-livetv")
+    iptv, own = os.path.join(root, "iptv"), os.path.join(root, "data")
+    os.makedirs(iptv, exist_ok=True)
+    os.makedirs(own, exist_ok=True)
+    livetv.folder = lambda: iptv
+    livetv_plugin.DATA = own
+    livetv_plugin.JELLYFIN = os.path.join(own, "no-jellyfin.json")  # no Jellyfin: nothing is told
+    if not os.path.exists(os.path.join(iptv, livetv.ALL)):
+        src = "a1b2c3d4e5"
+        with open(os.path.join(own, livetv_own.FILE), "w", encoding="utf-8") as f:
+            json.dump([{"id": src, "url": "https://example.invalid/harbour.m3u", "kind": "list", "name": "Harbour community",
+                        "on": True, "said": "2 channels", "state": "ok"}], f)
+        nxt = {b: n for b, n in livetv.BLOCKS}
+        chans = []
+        for i, (name, section, lst, region) in enumerate(_LIVETV_CHANNELS):
+            chans.append({"id": f"example-{i}", "name": name, "number": str(nxt[section]), "section": section, "list": lst,
+                          "region": region, "source": src if lst == "own.m3u" else ""})
+            nxt[section] += 1
+        with open(os.path.join(iptv, livetv.ALL), "w", encoding="utf-8") as f:
+            json.dump(chans, f)
+        livetv.save_hidden(own, {c["id"] for c in chans if c["name"] in _LIVETV_HIDDEN})
+    if not any(p["id"] == "livetv" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, plugins_admin.builtins()["livetv"], "/nonexistent-media", builtin=True,
+                              defaults={"address": "http://192.168.1.20:8095", "jellyfin_folder": "/config/iptv"},
+                              host={"image": "starboard", "user": "1000:1000", "iptv": iptv, "tz": None})
+        plugins_admin.set_state(data_dir, "livetv", "enabled")
+
+    def nothing_fetched(url, *a, **k):
+        raise OSError("this is example data, so nothing is fetched")
+
+    screens = {"channels": (livetv_plugin.channels_screen, livetv_plugin.channels_act),
+               "sources": (livetv_plugin.sources_screen, lambda body: livetv_plugin.sources_act(body, nothing_fetched))}
+    real_call, real_upload, real_ask, real_action = plugin_custom.call, plugin_custom.upload, plugin_watch._ask, plugin_cards.action
+
+    def call(data_dir_, pid, key, body=None, opener=None):
+        if pid != "livetv":
+            return real_call(data_dir_, pid, key, body, opener)
+        if key not in screens:
+            raise LookupError("No such screen")
+        if body is not None and body.get("action") not in plugin_custom.ACTIONS:
+            raise ValueError("Not something this screen does")
+        try:
+            return plugin_custom.clean(screens[key][0]() if body is None else screens[key][1](body))
+        except (OSError, KeyError) as e:
+            raise ValueError(f"That address did not answer: {e}"[:200]) from None
+
+    def upload(data_dir_, pid, key, name, length, stream):
+        if pid != "livetv" or key != "sources":
+            return real_upload(data_dir_, pid, key, name, length, stream)
+        return plugin_custom.clean(livetv_plugin.sources_upload(name, stream, length))
+
+    plugin_custom.call, plugin_custom.upload = call, upload
+    plugin_watch._ask = lambda pid, main, path: "ok" if pid == "livetv" else real_ask(pid, main, path)
+    plugin_cards.action = lambda d, pid, aid, opener=None: (
+        {"said": "Live TV is running now. This is example data, so nothing is fetched."} if pid == "livetv" else real_action(d, pid, aid, opener))
+
+
 from starboard import noip  # noqa: E402  The No-IP updater (DASH-170), with made-up addresses
 noip.status = lambda data_dir, **k: {"installed": True, "running": True, "state": "refused", "last_update": "2026-11-09T10:19:01Z",
                                      "address": "203.0.113.7", "said": "Type a new DDNS key or password below, then save. The updater starts again with it.",
@@ -456,6 +537,7 @@ def main():
                                             "vpn": {"provider": "mullvad", "type": "wireguard",
                                                     "wireguard_private_key": "made-up", "wireguard_addresses": "192.168.1.20/32"}}))
     _example_plugins(str(DATA))
+    _example_livetv(str(DATA))
     _example_folders(DATA)
     server, app = make_server("127.0.0.1", PORT, str(DATA))
     threading.Thread(target=server.serve_forever, daemon=True).start()

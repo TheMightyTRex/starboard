@@ -248,6 +248,43 @@ if (await keepBtn.count()) {
   check("T11", "the change is said", /keeps/i.test(s11), s11);
 } else console.log("note T11 the example has no podcast with Keep");
 
+// T12 Live TV's channels in sub menus (DASH-361): Enter on a list's row opens it with focus on its heading; Space on
+// a channel's switch keeps focus on it and says what it did; the back link returns focus to the row that opened it.
+await page.goto(`${base}/settings-plugin.html?id=livetv`);
+await settle();
+const chTab = page.getByRole("tab", { name: "Channels" });
+if (await chTab.count() && await page.locator('[data-menu="in:samsung"]').count()) {
+  await chTab.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const row = await tabTo((f) => f.text === "Samsung TV Plus" && f.tag === "BUTTON", 60);
+  check("T12", "Tab reaches a list's row in Channels", !!row, row ? row.text : "not reached");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const h = await focus();
+  check("T12", "Enter opens the list with focus on its heading", h.tag === "H3" && h.text === "Samsung TV Plus", `${h.tag} ${h.text}`);
+  const sub = await tabTo((f) => f.text === "US" && f.tag === "BUTTON", 40);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const sec = await tabTo((f) => f.text === "News" && f.tag === "BUTTON", 40);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const toggle = await tabTo((f) => /^(Activate|Deactivate) /.test(f.text) && f.tag === "BUTTON", 40);
+  check("T12", "a region and a section open by keyboard, down to the channels", !!(sub && sec && toggle), toggle ? toggle.text : "not reached");
+  if (toggle) {
+    await page.keyboard.press("Space");
+    await settle();
+    const t2 = await focus(), s12 = await said();
+    check("T12", "after Activate or Deactivate, focus is on the channel's button again", /^(Activate|Deactivate) /.test(t2.text) && t2.inMain, t2.text);
+    check("T12", "what it did is said", /activated|deactivated/i.test(s12), s12);
+  }
+  await page.locator(".back-link--button").first().focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const b12 = await focus();
+  check("T12", "the back link returns focus to the row that opened it", b12.text === "News" && b12.tag === "BUTTON", `${b12.tag} ${b12.text}`);
+} else console.log("note T12 the example has no Live TV channels");
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
