@@ -1005,6 +1005,7 @@ class Handler(BaseHTTPRequestHandler):
             # Open routes
             if path == "/api/session" and method == "GET":
                 signed_in = self.signed_in()
+                from . import plugins_admin
                 return self.json(200, {
                     "signed_in": signed_in, "needs_setup": app.needs_setup,
                     # DASH-238: until the first set-up has finished, pages show only the set-up wizard.
@@ -1019,6 +1020,8 @@ class Handler(BaseHTTPRequestHandler):
                     "latest": app._latest["tag"] if signed_in else None,
                     "upgrade": self.upgrade_summary() if signed_in else None,
                     "ux_notes": bool(signed_in and app.config.data.get("ux_notes")),
+                    # The plug-ins added: their menu items show only then (owner, 12 November 2026).
+                    "plugins": plugins_admin.added(app.data_dir) if signed_in else [],
                 })
             if path == "/api/feedback" and method == "POST":
                 # Snaglist sends without cookies, so the key it was given while signed in stands in for them.

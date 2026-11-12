@@ -199,6 +199,47 @@ def permission_words(manifest):
     return [{"permission": p, "words": PERMISSIONS[p][0], "risk": PERMISSIONS[p][1]} for p in manifest.get("permissions") or []]
 
 
+# The install warning (owner, 12 November 2026): every permission and folder in plain words, grouped as what the
+# plug-in can see, change and reach, and what it runs. Nothing here is left out to make it look safer.
+SEES = {"apps:read": "Your apps and whether they answer", "downloads:read": "What is downloading",
+        "media:read": "Your library: films, series, music and books", "system:read": "Processor, memory and disk use"}
+CHANGES = {"jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, which can change users, libraries and settings",
+           "appearance:styles": "How Starboard looks, through styles in Display (checked for accessibility first)"}
+REACHES = {"network:lan": "Other computers on your home network, and the internet",
+           "network:vpn": "The internet, through your VPN connection"}
+NEVER = ("Docker itself, the host's network, devices, other apps' folders and settings, or your Starboard password. "
+         "Starboard never gives a plug-in these.")
+
+
+def install_warning(manifest):
+    perms = [p for p in manifest.get("permissions") or [] if p in PERMISSIONS]
+    containers = [c for c in manifest.get("containers") or [] if isinstance(c, dict)]
+    vols = {v for c in containers for v in c.get("volumes") or []}
+    see = [SEES[p] for p in perms if p in SEES]
+    if "media:ro" in vols:
+        see.append("Every file in your media folder (read only)")
+    change = []
+    if containers:
+        change.append("Its own folder in Starboard's data (data/plugins/" + str(manifest.get("id")) + ")")
+    change += [f"Files in your media folder under {v.split('/', 1)[1]}" for v in sorted(vols) if v.startswith("media/")]
+    if "iptv" in vols:
+        change.append("The Live TV folder Jellyfin reads")
+    change += [CHANGES[p] for p in perms if p in CHANGES]
+    reach = [REACHES[p] for p in perms if p in REACHES]
+    if containers and not reach:
+        reach.append("Only Starboard: it has no way out to your network or the internet")
+    res = manifest.get("resources") or {}
+    runs = []
+    for c in containers:
+        r = res.get(c.get("name")) or {}
+        runs.append(f"{c.get('image')}, up to {int(r.get('memory', DEFAULT_MEMORY))} MB of memory and "
+                    f"{float(r.get('cpus', DEFAULT_CPUS)):g} of a processor core"
+                    + (", started only when needed" if c.get("start") == "when_needed" else ", always running"))
+    risk = "high" if any(PERMISSIONS[p][1] == "high" for p in perms) else "medium" if any(PERMISSIONS[p][1] == "medium" for p in perms) else "low"
+    return {"risk": risk, "see": see, "change": change, "reach": reach, "runs": runs, "never": NEVER,
+            "buttons": [a.get("label", "") for a in manifest.get("actions") or [] if isinstance(a, dict)]}
+
+
 def key_scopes(manifest):
     """The API key's scopes: exactly the read permissions approved (P8)."""
     return sorted({PERMISSIONS[p][2] for p in manifest.get("permissions") or [] if PERMISSIONS[p][2]})

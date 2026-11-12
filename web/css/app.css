@@ -128,3 +128,6 @@ body.first-setup .rail, body.first-setup .site-header__tabs, body.first-setup .m
 body.first-setup .site-header__search, body.first-setup .site-header__search-btn { display: none !important; }
 body.first-setup.with-rail { padding-left: 0; }
 .is-filtered { display: none !important; } /* Search filters (DASH-301) */
+[data-plugin][hidden] { display: none !important; } /* plug-in menu items, until the plug-in is added */
+/* Install warning (owner, 12 November 2026) */
+.install-warning__list { margin: 0; padding-inline-start: 1.25rem; display: grid; gap: var(--space-1, 0.25rem); }

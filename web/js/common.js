@@ -1057,6 +1057,9 @@ async function startPage() {
       const allowed = ["/setup-guide.html", "/install-apps.html", "/login.html", "/setup.html"];
       if (!allowed.some((p) => location.pathname.endsWith(p))) { location.replace("/setup-guide.html"); return null; }
     }
+    // Menu items that belong to a plug-in show only once it is added (owner, 12 November 2026).
+    const added = new Set(session.plugins || []);
+    $$("[data-plugin]").forEach((n) => { n.hidden = !added.has(n.dataset.plugin); });
     showVersion(session.version, session.repo, session.latest);
     upgradeNotice(session.upgrade);
     if (session.ux_notes) startFeedback(session).catch(() => { /* the page works without it */ });

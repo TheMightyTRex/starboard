@@ -79,6 +79,7 @@ def summary(manifest, problems=None):
                         if isinstance(a, dict)],
             "styles": [{"id": st.get("id"), "name": st.get("name"), "description": st.get("description", "")}
                        for st in manifest.get("styles") or [] if isinstance(st, dict)],
+            "warning": plugins.install_warning(manifest),
             "problems": problems if problems is not None else plugins.check(manifest)}
 
 
@@ -106,6 +107,15 @@ def parse(raw):
     if not isinstance(m, dict):
         raise ValueError("That is not a plug-in manifest (starboard-plugin.json)")
     return m
+
+
+def added(data_dir):
+    """The ids of the plug-ins added (any state), for the menus: a plug-in's pages show only once it is added."""
+    try:
+        names = os.listdir(root(data_dir))
+    except OSError:
+        return []
+    return sorted(p for p in names if re.match(plugins.ID, p) and os.path.isfile(os.path.join(root(data_dir), p, "manifest.json")))
 
 
 def listing(data_dir):

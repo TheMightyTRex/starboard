@@ -12,6 +12,55 @@ function pluginPermissions(list) {
     el("div", { class: "row__side" }, chip(...RISK[p.risk])))));
 }
 
+// The install warning (owner, 12 November 2026): a slide-out that says the plug-in is added at your own risk, then
+// what it can see, change and reach and what it runs, with Install and Cancel. Resolves with the password, or null.
+function installWarning(s, { builtin = false, opener } = {}) {
+  return new Promise((resolve) => {
+    const w = s.warning;
+    let answer = null;
+    const group = (title, ic, items, empty) => el("section", { class: "stack-2", "aria-label": title },
+      el("h3", {}, icon(ic), ` ${title}`),
+      items.length ? el("ul", { class: "install-warning__list" }, items.map((t) => el("li", { text: t }))) : el("p", { class: "small muted", text: empty }));
+    const pw = el("input", { class: "input", type: "password", id: "pl-install-password", autocomplete: "current-password", required: true });
+    const install = el("button", { type: "submit", class: "btn btn--primary", form: "pl-install-form" }, `Install ${s.name}`);
+    const cancel = el("button", { type: "button", class: "btn" }, "Cancel");
+    const form = el("form", { id: "pl-install-form", class: "form-stack", novalidate: true },
+      field("Your Starboard password", pw, { hint: "To show it is you who is installing it." }));
+    const panel = sidePanel({
+      title: `Install ${s.name}?`, opener, wide: true,
+      onClose: () => resolve(answer),
+      body: [
+        el("div", { class: "notice", "data-tone": w.risk === "high" ? "danger" : "warning", role: "note" }, icon("triangle-alert"),
+          el("div", { class: "notice__body" },
+            el("span", { class: "notice__title", text: builtin ? "Installed at your own risk" : "Made by someone else, installed at your own risk" }),
+            el("p", { text: (builtin ? "It comes with Starboard, but it still runs on your server with the access below. "
+              : "Starboard checks plug-ins and keeps them in a locked-down container, but it cannot vouch for what one does with the access below. ")
+              + "Install it only if you trust who made it." }))),
+        el("p", {}, el("strong", { text: `${s.name} ${s.version || ""}` }), el("br"),
+          el("span", { class: "small", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
+          w.risk ? el("span", {}, " ", chip(`${RISK[w.risk][0]} risk`, RISK[w.risk][1])) : null),
+        s.description ? el("p", { text: s.description }) : null,
+        group("It can see", "eye", w.see, "Nothing of yours."),
+        group("It can change", "pencil", w.change, "Nothing: it has no folder and no keys."),
+        group("It can reach", "globe", w.reach, "Nothing: it runs no containers."),
+        w.runs.length ? group("It runs", "server", w.runs, "") : null,
+        w.buttons.length ? el("p", { class: "small", text: `Its buttons: ${w.buttons.join(", ")}.` }) : null,
+        el("p", { class: "small muted" }, el("strong", { text: "It can never reach " }), w.never),
+        form],
+      foot: [install, cancel],
+    });
+    cancel.addEventListener("click", () => panel.close());
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      setError(pw, "");
+      if (!pw.value) { setError(pw, "Enter your Starboard password"); pw.focus(); return; }
+      answer = pw.value;
+      panel.close();
+    });
+    pw.focus();
+  });
+}
+
 // The tester's issues (DASH-284): errors first, each with where, what and how to fix it.
 const SEVERITY = { error: ["Error", "danger"], warning: ["Warning", "warning"], info: ["Tip", "muted"] };
 const count = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
@@ -224,12 +273,9 @@ function builtinSection(list, redraw) {
     el("ul", { class: "rows" }, rows.map((b) => {
       const add = el("button", { type: "button", class: "btn btn--primary", disabled: !!b.why_not }, `Add ${b.name}`);
       add.addEventListener("click", async () => {
-        const pw = el("input", { class: "input", type: "password", id: `pl-bi-${b.id}`, autocomplete: "current-password" });
-        const ok = await confirmDialog({ title: `Add ${b.name}?`, confirm: `Add ${b.name}`,
-          message: [el("p", { text: b.description }), el("h3", { text: "What it may do" }), pluginPermissions(b.permissions)],
-          fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
-        if (!ok) return;
-        try { await api("/api/plugins/add-builtin", { method: "POST", body: { id: b.id, password: pw.value } }); toast(`${b.name} added and active`); redraw(); }
+        const password = await installWarning(b, { builtin: true, opener: add });
+        if (password === null) return;
+        try { await api("/api/plugins/add-builtin", { method: "POST", body: { id: b.id, password } }); toast(`${b.name} installed and active`); redraw(); }
         catch (err) { problem(err.message, add); }
       });
       return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: b.name }),
@@ -263,10 +309,11 @@ function addPluginSection(redraw) {
     let s;
     try { s = await api("/api/plugins/preview", { method: "POST", body: source() }); }
     catch (err) { setError(address, err.message); address.focus(); return; }
-    const pw = el("input", { class: "input", type: "password", id: "pl-add-password", autocomplete: "current-password" });
-    const add = el("button", { type: "button", class: "btn btn--primary", text: `Add ${s.name || "it"}` });
+    const add = el("button", { type: "button", class: "btn btn--primary", text: `Install ${s.name || "it"}…` });
     add.addEventListener("click", async () => {
-      try { await api("/api/plugins/add", { method: "POST", body: { ...source(), password: pw.value } }); toast(`${s.name} added. Activate it when you are ready`); address.value = ""; given = null; seen.replaceChildren(); redraw(); }
+      const password = await installWarning(s, { opener: add });
+      if (password === null) return;
+      try { await api("/api/plugins/add", { method: "POST", body: { ...source(), password } }); toast(`${s.name} installed. Activate it when you are ready`); address.value = ""; given = null; seen.replaceChildren(); redraw(); }
       catch (err) { problem(err.message, add); }
     });
     seen.replaceChildren(...[
@@ -275,7 +322,7 @@ function addPluginSection(redraw) {
       el("h3", { text: "What it may do" }), pluginPermissions(s.permissions),
       s.styles.length ? el("p", { class: "small", text: `Styles: ${s.styles.map((x) => x.name).join(", ")}.` }) : null,
       el("h3", { text: "Test results" }), testReport(s.test),
-      s.test.ok ? el("div", { class: "form-stack" }, field("Your Starboard password", pw), el("div", { class: "actions" }, add)) : null].filter(Boolean));
+      s.test.ok ? el("div", { class: "actions" }, add) : null].filter(Boolean));
     seen.querySelector("h3")?.focus?.();
   });
   return section("pl-add", "Add a plug-in", "Starboard shows what a plug-in may do before anything is installed. Plug-ins never get the Docker socket, the host network or other apps' settings.", form, seen);

@@ -78,6 +78,15 @@ MENU = [
 ]
 HOME = "index.html"  # the logo opens it
 
+# Pages that belong to a plug-in (owner, 12 November 2026: "All plug-in menu items should only show when installed").
+# Their menu items are written hidden, with the plug-in's id; common.js shows them when /api/session lists it as added.
+PLUGIN_PAGES = {"discover-ondemand.html": "on-demand"}
+
+
+def plugin_attr(page):
+    pid = PLUGIN_PAGES.get(page)
+    return f' data-plugin="{pid}" hidden' if pid else ""
+
 # Help for each page, from the Help button in the header: the help centre article for what the page does, or the
 # help index's section when no one article covers the page. Page: (path in docs/help, what the help is about). Every
 # page with the header must be here (check_help_links below). Change them here, in one place.
@@ -174,7 +183,7 @@ def icon(name, size=18):
 
 
 def tab(href, label, icon_name, current):
-    here = ' aria-current="page"' if current else ""
+    here = (' aria-current="page"' if current else "") + plugin_attr(href)
     return f'<a href="/{href}"{here}>{icon(icon_name)}<span class="menu-tabs__label">{label}</span></a>'
 
 
@@ -220,7 +229,7 @@ def shell(current):
     for k, s_label, ic, items in MENU:
         open_ = k == key
         links = "\n            ".join(
-            f'<li><a href="/{pages[0][0]}"{" aria-current=\"page\"" if open_ and n == at else ""}>{icon(i2, 18)}<span>{l}</span></a></li>'
+            f'<li{plugin_attr(pages[0][0])}><a href="/{pages[0][0]}"{" aria-current=\"page\"" if open_ and n == at else ""}>{icon(i2, 18)}<span>{l}</span></a></li>'
             for n, (l, i2, pages) in enumerate(items))
         phone_sections.append(f'''<div class="phone-menu__section"{" data-current" if open_ else ""}>
           <button type="button" aria-expanded="{"true" if open_ else "false"}" aria-controls="phone-sub-{k}">{icon(ic, 20)}<span>{s_label}</span>{icon("chevron-right", 18).replace('aria-hidden', 'class="phone-menu__chevron" aria-hidden')}</button>
