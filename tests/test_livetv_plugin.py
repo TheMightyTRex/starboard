@@ -158,14 +158,86 @@ class LiveTvPluginTest(unittest.TestCase):
         with mock.patch.object(livetv, "folder", return_value=d), mock.patch.object(livetv_plugin, "DATA", d), \
                 mock.patch.object(livetv_plugin, "JELLYFIN", os.path.join(d, "none.json")):
             out = livetv_plugin.channels_act({"action": "toggle", "id": "B2"})
-            self.assertIn("Drop turned off", out["said"])
+            self.assertIn("Drop deactivated", out["said"])
             self.assertEqual([(r["title"], r["on"]) for r in out["items"]], [("101 Keep", True), ("102 Drop", False)])
             self.assertEqual([c["name"] for c in livetv._parse(os.path.join(d, "samsung.m3u"))], ["Keep"])
             out = livetv_plugin.channels_act({"action": "toggle", "id": "B2"})
-            self.assertIn("coming back", out["said"])
+            self.assertIn("Drop activated", out["said"])
             self.assertEqual(livetv.hidden_ids(d), set())
             with self.assertRaises(ValueError):
                 livetv_plugin.channels_act({"action": "toggle", "id": "nope"})
+
+    def test_whole_sources_regions_and_sections_activate_and_deactivate_at_once(self):
+        # DASH-359 (owner, 12 November 2026): switches for each source and group, and for every channel at once.
+        from starboard import livetv
+        d = self.tmp.name
+        chans = [("F1", "BBC One", "101", "Entertainment", "channels.m3u", "UK"), ("S1", "Sky News", "801", "News", "samsung.m3u", "UK"),
+                 ("S2", "CBS News", "802", "News", "samsung.m3u", "US"), ("P1", "Pluto Films", "451", "Movies", "pluto.m3u", None)]
+        for name in livetv.FILES:
+            with open(os.path.join(d, name), "w") as f:
+                f.write("#EXTM3U\n" + "".join(f'#EXTINF:-1 tvg-id="{i}" tvg-chno="{n}",{t}\nhttp://{i}\n' for i, t, n, _, lst, _r in chans if lst == name))
+        with open(os.path.join(d, livetv.ALL), "w") as f:
+            json.dump([{"id": i, "name": t, "number": n, "section": sec, "list": lst, **({"region": r} if r else {})}
+                       for i, t, n, sec, lst, r in chans], f)
+        refreshed = []
+        with mock.patch.object(livetv, "folder", return_value=d), mock.patch.object(livetv_plugin, "DATA", d), \
+                mock.patch.object(livetv_plugin, "JELLYFIN", os.path.join(d, "none.json")), \
+                mock.patch("starboard.livetv_jellyfin.refresh_guide", side_effect=lambda svc: refreshed.append(svc)):
+            screen = livetv_plugin.channels_screen()
+            sets = {b["id"]: (b["kind"], b["on"], b["total"]) for b in screen["bulk"]}
+            self.assertEqual([b["id"] for b in screen["bulk"][:4]], ["lists:freetv", "lists:samsung", "lists:pluto", "all"])
+            self.assertEqual(sets["all"], ("Channels", 4, 4))
+            self.assertEqual(sets["lists:samsung"], ("Lists", 2, 2))
+            self.assertEqual(sets["regions:UK"], ("Regions", 3, 3))  # Pluto TV, saved before regions were, is UK
+            self.assertEqual(sets["regions:US"], ("Regions", 1, 1))
+            self.assertEqual(sets["sections:News"], ("Sections", 2, 2))
+            self.assertEqual([(b["label"], b["active"]) for b in screen["bulk"] if b["kind"] == "Lists"],
+                             [("Free-TV", True), ("Samsung TV Plus", True), ("Pluto TV", True)])
+            self.assertIn("Free-TV · UK", [r["detail"] for r in screen["items"]])
+
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "sections:News", "value": "off"})
+            self.assertEqual(out["said"], "News: 2 channels deactivated; Jellyfin drops them at its guide refresh, starting now")
+            self.assertEqual(livetv.hidden_ids(d), {"S1", "S2"})
+            self.assertEqual(livetv._parse(os.path.join(d, "samsung.m3u")), [])
+            self.assertEqual(len(refreshed), 1)
+            self.assertEqual({b["id"]: b["on"] for b in out["bulk"]}["lists:samsung"], 0)
+
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "regions:US", "value": "on"})
+            self.assertIn("US: 1 channel activated", out["said"])
+            self.assertEqual(livetv.hidden_ids(d), {"S1"})
+            self.assertTrue(livetv_plugin._force["now"])  # the lists are rebuilt with it
+
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "all", "value": "off"})
+            self.assertEqual(livetv.hidden_ids(d), {"F1", "S1", "S2", "P1"})
+            self.assertEqual({b["id"]: b["on"] for b in out["bulk"]}["all"], 0)
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "all", "value": "off"})
+            self.assertEqual(out["said"], "Every channel: 4 channels already inactive")
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "all", "value": "on"})
+            self.assertEqual(livetv.hidden_ids(d), set())
+
+            # A whole list (owner, 12 November 2026: the original list off in full, a switch for each of the others)
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:freetv", "value": "off"})
+            self.assertIn("Free-TV deactivated: not fetched, and its 1 channel leaves Jellyfin now", out["said"])
+            self.assertEqual(livetv.lists_off(d), {"freetv"})
+            self.assertEqual(livetv._parse(os.path.join(d, "channels.m3u")), [])
+            self.assertNotIn("F1", [c["id"] for c in livetv.all_channels(d)])
+            lists = {b["id"]: b for b in out["bulk"] if b["kind"] == "Lists"}
+            self.assertFalse(lists["lists:freetv"]["active"])
+            self.assertIn("not fetched", lists["lists:freetv"]["hint"])
+            self.assertTrue(lists["lists:pluto"]["active"])
+            self.assertIn("already inactive", livetv_plugin.channels_act({"action": "bulk", "id": "lists:freetv", "value": "off"})["said"])
+            livetv_plugin._force["now"] = False
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:freetv", "value": "on"})
+            self.assertIn("Free-TV activated", out["said"])
+            self.assertEqual(livetv.lists_off(d), set())
+            self.assertTrue(livetv_plugin._force["now"])
+            with self.assertRaises(ValueError):
+                livetv_plugin.channels_act({"action": "bulk", "id": "lists:nope", "value": "on"})
+
+            for bad in ({"id": "sections:Nope", "value": "on"}, {"id": "all", "value": "maybe"}):
+                with self.assertRaises(ValueError):
+                    livetv_plugin.channels_act({"action": "bulk", **bad})
+        livetv_plugin._force["now"] = False
 
     def test_built_in_plug_ins_follow_starboards_update(self):
         cfg = FakeConfig(self.tmp.name, {"livetv": True})
@@ -193,3 +265,35 @@ class LiveTvPluginTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InactiveListTest(unittest.TestCase):
+    def test_an_inactive_list_is_not_fetched_and_is_emptied_once(self):
+        # DASH-359 (owner, 12 November 2026): the original list off in full; the others each with a switch.
+        from starboard import livetv
+        with tempfile.TemporaryDirectory() as d, tempfile.TemporaryDirectory() as data:
+            with open(os.path.join(d, "freetv-source.m3u"), "w") as f:
+                f.write('#EXTM3U\n#EXTINF:-1 tvg-id="F1",BBC One\nhttp://f1\n')
+            with open(os.path.join(d, "channels.m3u"), "w") as f:
+                f.write('#EXTM3U\n#EXTINF:-1 tvg-id="F1" tvg-chno="101",BBC One\nhttp://f1\n')
+            with open(os.path.join(d, livetv.ALL), "w") as f:
+                json.dump([{"id": "F1", "name": "BBC One", "number": "101", "section": "Entertainment", "list": "channels.m3u"}], f)
+            livetv.save_lists_off(data, {"freetv", "samsung", "pluto", "made-up"})
+            self.assertEqual(livetv.lists_off(data), {"freetv", "samsung", "pluto"})
+            fetched = []
+            with mock.patch.object(livetv, "folder", return_value=d), mock.patch.dict(os.environ, {"STARBOARD_DATA": data}), \
+                    mock.patch.object(livetv, "build_guide", side_effect=lambda dd: fetched.append("guide") or "Guide"), \
+                    mock.patch.object(livetv, "build_freetv", side_effect=lambda dd: fetched.append("freetv") or "Free-TV"), \
+                    mock.patch.object(livetv, "_channels_json", side_effect=lambda s: fetched.append(s)), \
+                    mock.patch.object(livetv, "number_and_logos", return_value="Numbered 0 channels"):
+                said = livetv.run("http://starboard:8090", False, force=True)
+                self.assertEqual(fetched, [])
+                self.assertIn("Free-TV: inactive, emptied", said)
+                self.assertEqual(livetv._parse(os.path.join(d, "channels.m3u")), [])
+                self.assertEqual(livetv.all_channels(d), [])
+                with open(os.path.join(d, "guide.xml")) as f:
+                    self.assertIn("<tv", f.read())
+                self.assertNotIn("inactive", livetv.run("http://starboard:8090", False, force=True))  # once only
+                livetv.save_lists_off(data, {"samsung", "pluto"})
+                livetv.run("http://starboard:8090", False)
+                self.assertEqual(fetched, ["guide", "freetv"])  # activated: built again as new

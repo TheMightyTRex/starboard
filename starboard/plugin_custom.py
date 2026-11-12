@@ -6,15 +6,20 @@ The plug-in's `choices` path answers GET with:
    "add": {"label": text, "hint": text, "placeholder": text} (optional),
    "items": [{"id": text, "title": text, "detail": text, "state": ok|warning|problem|off|unknown, "group": text,
               "on": true|false (optional), "address": text (optional), "actions": [test, toggle, remove, up, down],
-              "choice": {"label": text, "value": text, "options": [[value, words], ...]} (optional, 12 November 2026)}]}
-and POST with {"action": add|test|test_all|toggle|remove|up|down|choose, "id": text, "value": text}, answering the same shape
-with "said", a sentence. Starboard keeps only these fields, cuts every text, and calls the plug-in with its own key."""
+              "choice": {"label": text, "value": text, "options": [[value, words], ...]} (optional, 12 November 2026)}],
+   "bulk": [{"id": text, "label": text, "kind": text, "on": number, "total": number,
+             "active": true|false (optional), "hint": text (optional)}] (optional, DASH-359)}
+and POST with {"action": add|test|test_all|toggle|remove|up|down|choose|bulk, "id": text, "value": text}, answering the same shape
+with "said", a sentence. "bulk" activates (value "on") or deactivates (value "off") a whole set of items at once: Starboard
+draws one switch per set, grouped by its kind in the order given. A switch is active when all of its items are, or as
+"active" says (a whole source that can be stopped); "hint" replaces the words "3 of 5 active" under it.
+Starboard keeps only these fields, cuts every text, and calls the plug-in with its own key."""
 import json
 import urllib.error
 import urllib.request
 
 MAX_BYTES = 512 * 1024
-ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose")
+ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose", "bulk")
 STATES = ("ok", "warning", "problem", "off", "unknown")
 
 
@@ -33,6 +38,25 @@ def _choice(c):
     return {"label": _text(c.get("label"), 40), "value": value if any(o[0] == value for o in opts) else opts[0][0], "options": opts}
 
 
+def _count(v):
+    try:
+        return max(0, min(int(v), 100000))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _bulk(sets):
+    """Switches for whole sets of items (DASH-359): up to 60, each with how many of its items are active."""
+    out = []
+    for b in sets[:60] if isinstance(sets, list) else []:
+        if isinstance(b, dict) and b.get("id") and b.get("label"):
+            total = _count(b.get("total"))
+            out.append({"id": _text(b["id"], 120), "label": _text(b["label"], 60), "kind": _text(b.get("kind"), 40),
+                        "on": min(_count(b.get("on")), total), "total": total,
+                        "active": b["active"] if isinstance(b.get("active"), bool) else None, "hint": _text(b.get("hint"), 160)})
+    return out
+
+
 def clean(data):
     """Only the fields Starboard draws, every text cut to size; anything else is dropped."""
     if not isinstance(data, dict) or data.get("type") != "list" or not isinstance(data.get("items"), list):
@@ -47,7 +71,8 @@ def clean(data):
                       "on": bool(it.get("on", True)), "address": _text(it.get("address"), 500),
                       "actions": [a for a in it.get("actions") or [] if a in ACTIONS], "choice": _choice(it.get("choice"))})
     out = {"type": "list", "title": _text(data.get("title"), 80), "intro": _text(data.get("intro"), 400), "items": items,
-           "add": {k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")} if add else None}
+           "add": {k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")} if add else None,
+           "bulk": _bulk(data.get("bulk"))}
     if data.get("said"):
         out["said"] = _text(data["said"], 200)
     return out

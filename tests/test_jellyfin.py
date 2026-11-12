@@ -104,6 +104,8 @@ class JellyfinTest(unittest.TestCase):
             self.assertIn('tvg-chno="701"', text)
             self.assertIn('tvg-chno="451"', text)
             self.assertIn('tvg-logo="https://x/a.png"', text)  # no white logo made: its own logo stays
+            with open(os.path.join(d, livetv.ALL)) as f:  # each channel's region, for the Live TV switches (DASH-359)
+                self.assertEqual({c["region"] for c in json.load(f)}, {"UK"})
 
     def test_pluto_ids_are_checked(self):
         with self.assertRaises(ValueError):

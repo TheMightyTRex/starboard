@@ -444,11 +444,46 @@ function customScreen(p, s) {
   const box = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
   const said = el("p", { class: "small", role: "status" });
   const path = `/api/plugins/${p.id}/custom/${s.key}`;
-  const run = async (body, button) => {
+  // `after`: a bulk switch says what it did in a saved note beside itself (Settings pattern 2), not in the line above.
+  const run = async (body, button, after) => {
     if (button) button.disabled = true;
-    try { const out = await api(path, { method: "POST", body }); if (out.said) said.textContent = out.said; draw(out); }
-    catch (err) { problem(err.message, button); }
+    try {
+      const out = await api(path, { method: "POST", body });
+      if (out.said && !after) said.textContent = out.said;
+      draw(out);
+      if (after) after(out);
+    }
+    catch (err) { if (button && button.type === "checkbox") button.checked = !button.checked; problem(err.message, button); }
     finally { if (button) button.disabled = false; }
+  };
+  // Bulk switches (DASH-359): each set the plug-in names (Live TV: each whole list, every channel, regions, sections).
+  // A switch is active when every item in it is, or as the plug-in says; changing it applies at once.
+  const bulkPanel = (data) => {
+    if (!data.bulk || !data.bulk.length) return null;
+    const noun = (data.title || "items").toLowerCase();
+    const kinds = new Map();
+    for (const b of data.bulk) { if (!kinds.has(b.kind)) kinds.set(b.kind, []); kinds.get(b.kind).push(b); }
+    const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const head = `bulk-${p.id}-${s.key}`;
+    const row = (b) => {
+      const id = `${head}-${slug(b.id)}`;
+      const input = el("input", { type: "checkbox", role: "switch", id, checked: typeof b.active === "boolean" ? b.active : b.total > 0 && b.on === b.total,
+        "aria-labelledby": `${id}-l`, "aria-describedby": `${id}-h` });
+      const note = el("span", { class: "saved-note", id: `${id}-saved`, hidden: true });
+      input.addEventListener("change", () => run({ action: "bulk", id: b.id, value: input.checked ? "on" : "off" }, input, (out) => {
+        const again = document.getElementById(`${id}-saved`);
+        if (again && out.said) window.SharedComponents.savedNote(again, out.said);
+      }));
+      return el("li", { class: "setting" },
+        el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: `${id}-l`, text: b.label }),
+          el("span", { class: "setting__hint", id: `${id}-h`, text: b.hint || `${b.on} of ${b.total} ${noun} active` })),
+        el("div", { class: "setting__control" }, el("label", { class: "switch" }, input), note));
+    };
+    return el("section", { class: "stack-2", "aria-labelledby": `${head}-h` },
+      el("h4", { id: `${head}-h`, text: "Activate or deactivate in bulk" }),
+      el("p", { class: "small muted", text: `Each switch applies at once. A group of ${noun} shows as active when all of them are.` }),
+      ...[...kinds].map(([k, list]) => el("div", { class: "stack-2" }, k ? el("h5", { text: k }) : null,
+        el("ul", { class: "settings-rows" }, list.map(row)))));
   };
   const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"] };
   const draw = (data) => {
@@ -467,6 +502,7 @@ function customScreen(p, s) {
     testAll.addEventListener("click", () => run({ action: "test_all" }, testAll));
     box.replaceChildren(
       data.intro ? el("p", { class: "small muted", text: data.intro }) : null,
+      bulkPanel(data),
       el("div", { class: "actions" }, testAll), said,
       ...[...groups].map(([g, rows]) => el("section", { class: "stack-2", "aria-label": g || data.title },
         g ? el("h4", { text: g }) : null,

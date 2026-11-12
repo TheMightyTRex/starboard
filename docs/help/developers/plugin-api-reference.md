@@ -88,6 +88,7 @@ plug-in's own API key in the `X-Api-Key` header, so the plug-in can tell the cal
 | `address` | Shown under the title, cut to 500 characters |
 | `actions` | The buttons on the row, from `test`, `toggle`, `remove`, `up` and `down` |
 | `choice` | Optional. A small list on the row: up to 12 `options`, each `[value, words]`, cut to 40 characters |
+| `bulk` | Optional. Up to 60 switches for whole sets of items, each `{"id", "label", "kind", "on", "total"}`: `on` is how many of its `total` items are active. Starboard groups them by `kind`, in the order given. Optional: `active` (`true` or `false`) when the set is more than its items, such as a whole source that can be stopped, and `hint`, up to 160 characters, in place of the words "3 of 5 active" |
 
 **POST** the path when the person does something. The body is:
 
@@ -95,8 +96,9 @@ plug-in's own API key in the `X-Api-Key` header, so the plug-in can tell the cal
 {"action": "toggle", "id": "news-1", "value": ""}
 ```
 
-`action` is one of `add`, `test`, `test_all`, `toggle`, `remove`, `up`, `down` and `choose`. `id` is the row,
-and `value` is what the person entered or chose. Answer with the whole list again, in the same shape, with `said`
+`action` is one of `add`, `test`, `test_all`, `toggle`, `remove`, `up`, `down`, `choose` and `bulk`. `id` is the row,
+and `value` is what the person entered or chose. For `bulk`, `id` is the set and `value` is `on` to activate every item
+in it or `off` to deactivate them. Answer with the whole list again, in the same shape, with `said`
 added: one sentence, up to 200 characters, that Starboard shows. To refuse, answer with an HTTP error status and
 `{"error": "A sentence saying why"}`; Starboard shows the sentence.
 

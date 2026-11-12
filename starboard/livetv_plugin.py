@@ -103,45 +103,155 @@ def loop(stop=None):
 DATA = os.path.dirname(STATUS)
 
 
+SOURCES = {"channels.m3u": "Free-TV", "samsung.m3u": "Samsung TV Plus", "pluto.m3u": "Pluto TV"}
+
+
+def _region(c):
+    """UK or US. Lists from before DASH-359 did not save it: Free-TV and Pluto TV are UK only; Samsung is unknown."""
+    return c.get("region") or ("UK" if c.get("list") in ("channels.m3u", "pluto.m3u") else "")
+
+
+def _sets(chans):
+    """The bulk sets of channels (DASH-359, owner 12 November 2026): each region and each section, with the ids in it.
+    Whole lists (sources) have their own switches, which stop the list itself: see _lists."""
+    from . import livetv
+    sets = []
+    for kind, key, order in (("Regions", _region, ["UK", "US"]),
+                             ("Sections", lambda c: c.get("section") or "Other", [b for b, _ in livetv.BLOCKS])):
+        found = {}
+        for c in chans:
+            k = key(c)
+            if k:
+                found.setdefault(k, []).append(c["id"])
+        for name in sorted(found, key=lambda n: (order.index(n) if n in order else len(order), n)):
+            sets.append({"id": f"{kind.lower()}:{name}", "label": name, "kind": kind, "ids": found[name]})
+    return sets
+
+
+def _lists(chans, hidden):
+    """One switch per list (owner, 12 November 2026: deactivate the original list in full, a switch for each of the
+    others). Inactive: the list is not fetched at all and its channels leave Jellyfin."""
+    from . import livetv
+    off = livetv.lists_off(DATA)
+    out = []
+    for name, (label, playlist, _) in livetv.LISTS.items():
+        ids = [c["id"] for c in chans if c.get("list") == playlist]
+        on = sum(1 for i in ids if i not in hidden)
+        out.append({"id": f"lists:{name}", "label": label, "kind": "Lists", "on": on, "total": len(ids), "active": name not in off,
+                    "hint": "Inactive: not fetched, and none of its channels are in Jellyfin" if name in off
+                    else f"Active: {on} of {len(ids)} channels in Jellyfin" if ids else "Active: its channels arrive at the next run"})
+    return out
+
+
 def channels_screen(said=""):
-    """Every channel by section, on or off, for the plug-in's Channels screen in Starboard (DASH-313)."""
+    """Every channel by section, active or inactive, for the plug-in's Channels screen in Starboard (DASH-313), with
+    a switch for each whole list, then every channel at once, each region and each section (DASH-359)."""
     from . import livetv
     hidden = livetv.hidden_ids(DATA)
+    chans = livetv.all_channels(livetv.folder())
     rows = []
-    for c in sorted(livetv.all_channels(livetv.folder()), key=lambda c: int(c.get("number") or 0)):
+    for c in sorted(chans, key=lambda c: int(c.get("number") or 0)):
         on = c["id"] not in hidden
         rows.append({"id": c["id"], "title": f"{c['number']} {c['name']}", "group": c.get("section") or "Other",
-                     "detail": {"channels.m3u": "Free-TV", "samsung.m3u": "Samsung TV Plus", "pluto.m3u": "Pluto TV"}.get(c.get("list"), ""),
+                     "detail": " · ".join(x for x in (SOURCES.get(c.get("list"), ""), _region(c)) if x),
                      "state": "ok" if on else "off", "on": on, "actions": ["toggle"]})
-    out = {"type": "list", "title": "Channels", "items": rows,
-           "intro": f"{sum(1 for r in rows if r['on'])} of {len(rows)} channels are in Jellyfin. A channel you turn off stays off when the lists are rebuilt."}
+    bulk = _lists(chans, hidden)
+    if rows:
+        bulk.append({"id": "all", "label": "Every channel", "kind": "Channels", "on": sum(1 for r in rows if r["on"]), "total": len(rows)})
+    bulk += [{"id": x["id"], "label": x["label"], "kind": x["kind"], "on": sum(1 for i in x["ids"] if i not in hidden), "total": len(x["ids"])}
+             for x in _sets(chans)]
+    out = {"type": "list", "title": "Channels", "items": rows, "bulk": bulk,
+           "intro": f"{sum(1 for r in rows if r['on'])} of {len(rows)} channels are in Jellyfin."}
     if said:
         out["said"] = said
     return out
 
 
-def channels_act(body):
+def _services():
+    jf = _read(JELLYFIN, {})
+    return [{"type": "jellyfin", "url": jf["url"], "api_key": jf["api_key"]}] if jf.get("url") and jf.get("api_key") else []
+
+
+def _apply(hidden_before, hidden_after):
+    """Saves the hidden channels. Back on: the lists are built again. Off: taken out now and Jellyfin told."""
     from . import livetv, livetv_jellyfin
+    livetv.save_hidden(DATA, hidden_after)
+    if hidden_before - hidden_after:
+        with _lock:
+            _force["now"] = True
+        _wake.set()
+        return "back"
+    if hidden_after - hidden_before:
+        livetv.drop_hidden(livetv.folder(), hidden_after)
+        livetv_jellyfin.refresh_guide(_services())
+        return "gone"
+    return ""
+
+
+def _bulk(body):
+    from . import livetv
+    want = str(body.get("value") or "")
+    if want not in ("on", "off"):
+        raise ValueError("Choose Activate or Deactivate")
+    chans = livetv.all_channels(livetv.folder())
+    sid = str(body.get("id") or "")
+    if sid.startswith("lists:"):
+        return _list_switch(sid[6:], want == "on")
+    if sid == "all":
+        name, ids = "Every channel", {c["id"] for c in chans}
+    else:
+        found = next((x for x in _sets(chans) if x["id"] == sid), None)
+        if not found:
+            raise ValueError("Not one of the lists, regions or sections")
+        name, ids = found["label"], set(found["ids"])
+    hidden = livetv.hidden_ids(DATA)
+    after = hidden - ids if want == "on" else hidden | ids
+    done = _apply(hidden, after)
+    n = len(ids)
+    what = f"{name}: {n} {'channel' if n == 1 else 'channels'}"
+    if want == "on":
+        return channels_screen(f"{what} activated; the lists are being rebuilt, which takes a few minutes" if done
+                               else f"{what} already active")
+    return channels_screen(f"{what} deactivated; Jellyfin drops them at its guide refresh, starting now" if done
+                           else f"{what} already inactive")
+
+
+def _list_switch(name, on):
+    from . import livetv, livetv_jellyfin
+    if name not in livetv.LISTS:
+        raise ValueError("Not one of the lists")
+    label = livetv.LISTS[name][0]
+    off = livetv.lists_off(DATA)
+    if on == (name not in off):
+        return channels_screen(f"{label} is already {'active' if on else 'inactive'}")
+    livetv.save_lists_off(DATA, off - {name} if on else off | {name})
+    if on:
+        with _lock:
+            _force["now"] = True
+        _wake.set()
+        return channels_screen(f"{label} activated: its channels arrive in a few minutes, once it is fetched and tested")
+    gone = livetv.empty_list(livetv.folder(), name)
+    livetv_jellyfin.refresh_guide(_services())
+    return channels_screen(f"{label} deactivated: not fetched, and its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now")
+
+
+def channels_act(body):
+    from . import livetv
+    if body.get("action") == "bulk":
+        return _bulk(body)
     if body.get("action") != "toggle":
-        raise ValueError("Channels can be turned on or off")
+        raise ValueError("Channels can be activated or deactivated")
     cid = str(body.get("id") or "")
     known = {c["id"]: c for c in livetv.all_channels(livetv.folder())}
     if cid not in known:
         raise ValueError("Not one of the channels")
     hidden = livetv.hidden_ids(DATA)
     name = known[cid]["name"]
-    jf = _read(JELLYFIN, {})
-    services = [{"type": "jellyfin", "url": jf["url"], "api_key": jf["api_key"]}] if jf.get("url") and jf.get("api_key") else []
     if cid in hidden:  # back on: the lists are built again, with it
-        livetv.save_hidden(DATA, hidden - {cid})
-        with _lock:
-            _force["now"] = True
-        _wake.set()
-        return channels_screen(f"{name} is coming back: the lists are being rebuilt, which takes a few minutes")
-    livetv.save_hidden(DATA, hidden | {cid})
-    livetv.drop_hidden(livetv.folder(), hidden | {cid})
-    livetv_jellyfin.refresh_guide(services)
-    return channels_screen(f"{name} turned off; Jellyfin drops it at its guide refresh, starting now")
+        _apply(hidden, hidden - {cid})
+        return channels_screen(f"{name} activated: the lists are being rebuilt, which takes a few minutes")
+    _apply(hidden, hidden | {cid})
+    return channels_screen(f"{name} deactivated; Jellyfin drops it at its guide refresh, starting now")
 
 
 class Handler(http.server.BaseHTTPRequestHandler):

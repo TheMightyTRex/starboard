@@ -81,3 +81,17 @@ class Choice(unittest.TestCase):
         self.assertEqual(out["items"][0]["choice"], {"label": "Share", "value": "1", "options": [["1", "Less"], ["3", "Normal"]]})
         self.assertIsNone(out["items"][1]["choice"])
         self.assertIn("choose", plugin_custom.ACTIONS)
+
+    def test_bulk_switches_cleaned(self):
+        # DASH-359 (owner, 12 November 2026): switches for whole sets, such as Live TV's sources and sections.
+        out = plugin_custom.clean({"type": "list", "items": [], "bulk": [
+            {"id": "all", "label": "Every channel", "kind": "", "on": 3, "total": 5},
+            {"id": "lists:pluto", "label": "Pluto TV", "kind": "Lists", "on": 99, "total": "4", "onclick": "x", "active": "yes", "hint": "h" * 300},
+            {"id": "no-label"}, "bad", {"id": "x", "label": "X", "on": "many", "total": None}]})
+        self.assertEqual(out["bulk"], [
+            {"id": "all", "label": "Every channel", "kind": "", "on": 3, "total": 5, "active": None, "hint": ""},
+            {"id": "lists:pluto", "label": "Pluto TV", "kind": "Lists", "on": 4, "total": 4, "active": None, "hint": "h" * 160},
+            {"id": "x", "label": "X", "kind": "", "on": 0, "total": 0, "active": None, "hint": ""}])
+        self.assertIs(plugin_custom.clean({"type": "list", "items": [], "bulk": [{"id": "a", "label": "A", "active": False}]})["bulk"][0]["active"], False)
+        self.assertEqual(plugin_custom.clean({"type": "list", "items": [], "bulk": "nope"})["bulk"], [])
+        self.assertIn("bulk", plugin_custom.ACTIONS)

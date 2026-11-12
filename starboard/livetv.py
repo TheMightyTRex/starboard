@@ -664,6 +664,39 @@ def save_hidden(data_dir, ids):
     os.replace(tmp, os.path.join(data_dir, HIDDEN))
 
 
+# Whole lists (DASH-359, owner 12 November 2026): an inactive list is not fetched, its playlist and guide are emptied,
+# so Jellyfin drops its channels, and it is built again as new when it is activated.
+LISTS = {"freetv": ("Free-TV", "channels.m3u", "guide.xml"), "samsung": ("Samsung TV Plus", "samsung.m3u", "guide-samsung.xml"),
+         "pluto": ("Pluto TV", "pluto.m3u", "guide-pluto.xml")}
+LISTS_OFF = "lists-off.json"  # in the plug-in's own data folder
+
+
+def lists_off(data_dir):
+    try:
+        with open(os.path.join(data_dir, LISTS_OFF), encoding="utf-8") as f:
+            return {str(x) for x in json.load(f)} & set(LISTS)
+    except (OSError, ValueError, TypeError):
+        return set()
+
+
+def save_lists_off(data_dir, names):
+    tmp = os.path.join(data_dir, LISTS_OFF + ".new")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(sorted(set(names) & set(LISTS)), f)
+    os.replace(tmp, os.path.join(data_dir, LISTS_OFF))
+
+
+def empty_list(d, name):
+    """Empties one list's playlist and guide and takes its channels off the full list. Returns how many went."""
+    _, playlist, guide = LISTS[name]
+    _write(os.path.join(d, playlist), "#EXTM3U\n")
+    _write(os.path.join(d, guide), '<?xml version="1.0" encoding="utf-8"?>\n<tv generator-info-name="Starboard"></tv>\n')
+    every = all_channels(d)
+    rest = [c for c in every if c.get("list") != playlist]
+    _write(os.path.join(d, ALL), json.dumps(rest))
+    return len(every) - len(rest)
+
+
 def all_channels(d):
     try:
         with open(os.path.join(d, ALL), encoding="utf-8") as f:
@@ -719,7 +752,8 @@ def number_and_logos(d, self_url, white, hidden=frozenset()):
             ch["attrs"]["tvg-logo"] = f"{self_url}/iptv/logos/{logo_key(ch)}.png"
     # Every channel, hidden ones too, for the plug-in's Channels screen (DASH-313); then the hidden ones go.
     _write(os.path.join(d, ALL), json.dumps([{"id": c["attrs"].get("tvg-id", ""), "name": c["name"], "number": c["attrs"]["tvg-chno"],
-                                              "section": c["cat"], "list": os.path.basename(c["file"])} for c in chans]))
+                                              "section": c["cat"], "list": os.path.basename(c["file"]),
+                                              "region": "US" if region(c) else "UK"} for c in chans]))
     chans = [c for c in chans if c["attrs"].get("tvg-id") not in hidden]
     for name in FILES:
         path = os.path.join(d, name)
@@ -786,7 +820,14 @@ def run(self_url, white, force=False):
             failed[name] = now
         return ok
 
-    if guide_due("guide", os.path.join(d, "guide.xml")):
+    off = lists_off(os.environ.get("STARBOARD_DATA", "/data"))
+    for name in sorted(off):  # inactive lists: emptied once, then left alone until activated
+        state.pop(name, None)  # so it is built again as new when it is activated
+        if any(c["file"] for c in (_parse(os.path.join(d, LISTS[name][1])) if os.path.exists(os.path.join(d, LISTS[name][1])) else [])):
+            empty_list(d, name)
+            done.append(f"{LISTS[name][0]}: inactive, emptied")
+            rebuilt = True
+    if "freetv" not in off and guide_due("guide", os.path.join(d, "guide.xml")):
         guide_step("guide", "Guide", lambda: build_guide(d))
     # Free-TV: its source is a file in the folder.
     try:
@@ -794,13 +835,15 @@ def run(self_url, white, force=False):
             fp = _fingerprint(f.read().decode("utf-8", "replace"))
     except OSError:
         fp = None
-    if fp and due_list("freetv", fp):
+    if fp and "freetv" not in off and due_list("freetv", fp):
         if step("Free-TV", lambda: build_freetv(d)):
             state["freetv"] = {"fp": fp, "built": now}
             rebuilt = True
     # Samsung TV Plus and Pluto TV: their channel lists are small; fetch them only when a guide is due.
     for name, service, build, guide in (("samsung", "SamsungTVPlus", build_samsung, samsung_guide),
                                         ("pluto", "PlutoTV", lambda dd, data: build_pluto(dd, self_url, data), pluto_guide)):
+        if name in off:
+            continue
         due = guide_due(name, os.path.join(d, f"guide-{name}.xml"))
         if not due and not address_changed and now - state.get(name, {}).get("built", 0) <= WEEK:
             continue

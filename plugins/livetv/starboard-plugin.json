@@ -24,7 +24,7 @@
   {"key": "jellyfin_folder", "label": "Live TV folder as Jellyfin sees it", "type": "text",
    "hint": "Such as /config/iptv. Live TV adds its channels and guides to Jellyfin from there."},
   {"key": "channels", "label": "Channels", "type": "custom", "choices": "/channels",
-   "hint": "Every channel by section. Turn off the ones you do not want; they stay off when the lists are rebuilt."}
+   "hint": "A switch for each list, region and section, then every channel by section. A channel you deactivate stays inactive when the lists are rebuilt."}
  ],
  "actions": [{"id": "run", "label": "Run Live TV now", "path": "/run"}],
  "cards": [{"id": "status", "title": "Live TV", "type": "status", "path": "/card",
