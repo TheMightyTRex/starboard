@@ -57,7 +57,7 @@ function installWarning(s, { builtin = false, opener } = {}) {
       answer = pw.value;
       panel.close();
     });
-    pw.focus();
+    // Focus stays at the top (the shared slide-out's own start), so the warning is read before the password.
   });
 }
 

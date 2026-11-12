@@ -202,13 +202,14 @@ def permission_words(manifest):
 # The install warning (owner, 12 November 2026): every permission and folder in plain words, grouped as what the
 # plug-in can see, change and reach, and what it runs. Nothing here is left out to make it look safer.
 SEES = {"apps:read": "Your apps and whether they answer", "downloads:read": "What is downloading",
-        "media:read": "Your library: films, series, music and books", "system:read": "Processor, memory and disk use"}
+        "media:read": "Your library: films, series, music and books", "system:read": "Processor, memory and disk use",
+        "jellyfin:key": "Everything in Jellyfin: your library, the people who use it and what each one watched"}
 CHANGES = {"jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, which can change users, libraries and settings",
            "appearance:styles": "How Starboard looks, through styles in Display (checked for accessibility first)"}
 REACHES = {"network:lan": "Other computers on your home network, and the internet",
            "network:vpn": "The internet, through your VPN connection"}
-NEVER = ("Docker itself, the host's network, devices, other apps' folders and settings, or your Starboard password. "
-         "Starboard never gives a plug-in these.")
+NEVER = ("Docker itself, devices such as disks and graphics cards, other apps' folders and settings, or your Starboard "
+         "password. Starboard never gives a plug-in these.")
 
 
 def install_warning(manifest):
