@@ -109,28 +109,15 @@
    "published": true
   },
   {
-   "id": "seasonal-styles",
-   "name": "Seasonal styles",
-   "description": "Two more styles for Display: Winter, in deep green and berry red, and Large and clear, for easy reading.",
-   "kind": "Look",
-   "author": "TheMightyTRexUK",
-   "permissions": [
-    "appearance:styles"
-   ],
-   "version": "1.0.0",
-   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/seasonal-styles/starboard-plugin.json",
-   "published": true
-  },
-  {
    "id": "styles",
    "name": "Styles",
-   "description": "Thirteen accessible styles for Display: colours, corners, fonts, headings and shadows, checked for contrast.",
+   "description": "Fifteen accessible styles for Display: colours, corners, fonts, headings and shadows, gradients, textures and glass, checked for contrast.",
    "kind": "Look",
    "author": "TheMightyTRexUK",
    "permissions": [
     "appearance:styles"
    ],
-   "version": "1.1.0",
+   "version": "1.2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json",
    "published": true
   },
