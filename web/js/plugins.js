@@ -243,6 +243,12 @@ function customScreen(p, s) {
           el("div", {}, el("h5", { class: "row__title", text: it.title }),
             el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") })),
           el("div", { class: "row__side" }, chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)),
+            it.choice ? (() => {  // a small choice on the row, such as a catalogue's weight (12 November 2026)
+              const sel = el("select", { class: "select select--compact", "aria-label": `${it.choice.label}: ${it.title}` },
+                it.choice.options.map(([v, words]) => el("option", { value: v, text: words, selected: v === it.choice.value })));
+              sel.addEventListener("change", () => run({ action: "choose", id: it.id, value: sel.value }, sel));
+              return el("label", { class: "row-choice" }, el("span", { class: "small", text: it.choice.label }), sel);
+            })() : null,
             ...it.actions.map((a) => {
               const [label, ic] = a === "toggle" ? [it.on ? "Turn off" : "Turn on", it.on ? "pause" : "play"] : ACTION_WORDS[a];
               const b = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, ic ? icon(ic) : null, label,
@@ -253,7 +259,7 @@ function customScreen(p, s) {
               });
               return b;
             }))))))),
-      add);
+      ...(add ? [add] : []));
   };
   if (p.state !== "enabled") box.replaceChildren(el("p", { class: "small muted", text: `${s.label}: activate ${p.name} to see it.` }));
   else api(path).then(draw).catch((err) => box.replaceChildren(notice("info", `${p.name} did not answer`, err.message)));

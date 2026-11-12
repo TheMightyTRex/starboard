@@ -6,8 +6,11 @@
 .num { font-variant-numeric: tabular-nums; }
 .summary { color: var(--color-text-muted); font-size: var(--text-sm); }
 .site-header__brand svg { width: 28px; height: 28px; }
-/* Between phone and wide screens the header has no room for search; the Search page is one tab away. */
-@media (max-width: 1199px) { .site-header__search { display: none; } .site-header__actions { margin-left: auto; } }
+/* Between phone and wide screens the header has no room for the search box: the Search button opens it as a row
+   under the header, as on phones (owner, 12 November 2026: Search left the side menu). */
+@media (max-width: 1199px) { .site-header__search { display: none; } .site-header__actions { margin-left: auto; }
+  .site-header .site-header__search-btn { display: inline-flex; }
+  .site-header.is-search-open .site-header__search { display: block; } }
 @media (max-width: 720px) { .site-header__brand span { white-space: nowrap; } }
 .version-label { color: var(--color-text-muted); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
 .address { display: flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: var(--text-sm); }
@@ -136,3 +139,18 @@ body.first-setup.with-rail { padding-left: 0; }
 html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: grid; }
 .install-warning__head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3, 0.75rem); }
 .install-warning__by { margin-block-start: calc(-1 * var(--space-2, 0.5rem)); overflow-wrap: anywhere; }
+/* Sign out in the side menu (issue #9) */
+.rail__signout { position: relative; display: grid; justify-items: center; gap: var(--space-1); width: 100%;
+  padding: var(--space-2) 0; min-height: 56px; border: 0; border-top: 1px solid var(--color-divider); background: none;
+  color: var(--color-text-muted); font-family: inherit; font-size: var(--text-xs); font-weight: var(--weight-strong); cursor: pointer; }
+.rail__signout:hover { background: var(--color-control-active); color: var(--color-text); }
+/* Topic tabs on long Settings pages (12 November 2026) */
+.topic-tabs { margin-block: 0 var(--space-6, 1.5rem); border-bottom: 1px solid var(--color-divider); overflow-x: auto; }
+.topic-tabs [role=tablist] { display: flex; gap: var(--space-1, 0.25rem); min-width: max-content; }
+.topic-tabs__tab { padding: var(--space-2, 0.5rem) var(--space-3, 0.75rem); min-height: var(--control-h, 40px); border: 0;
+  border-bottom: 3px solid transparent; background: none; color: var(--color-text-muted); font: inherit; font-weight: var(--weight-strong); cursor: pointer; }
+.topic-tabs__tab:hover { color: var(--color-text); background: var(--color-control-active); }
+.topic-tabs__tab[aria-selected=true] { color: var(--color-text); border-bottom-color: var(--color-accent); }
+.topic-off { display: none !important; }
+.row-choice { display: inline-flex; align-items: center; gap: var(--space-2, 0.5rem); }
+/* The Search icon button in every search box is in the shared library (components.css and .js, 12 November 2026). */

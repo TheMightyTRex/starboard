@@ -847,13 +847,45 @@
     background: var(--color-surface-sunken);
     color: var(--color-text-muted);
   }
-  /* Search field: a plain box. Enter searches; the button is for screen readers and voice control. */
+  /* Search field: a box with a Search button inside it at the right, the search icon (12 November 2026: the
+     default for every search box; components.js adds the button to any input type="search"). Enter searches too. */
   .search-field {
     position: relative;
     display: flex;
   }
   .search-field .input {
     flex: 1;
+  }
+  .search-box {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+  }
+  .search-box .input,
+  .search-field:has(> .search-field__btn) .input {
+    flex: 1;
+    min-width: 0;
+    padding-inline-end: 44px;
+  }
+  .search-field__btn {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+  .search-field__btn:hover {
+    color: var(--color-text);
+  }
+  .search-field__btn:focus-visible {
+    outline: var(--focus-width, 3px) solid var(--color-focus);
+    outline-offset: -3px;
   }
   /* Input with a unit or a button joined to it. */
   .input-group {

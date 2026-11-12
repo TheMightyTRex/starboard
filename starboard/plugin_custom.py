@@ -5,20 +5,32 @@ The plug-in's `choices` path answers GET with:
   {"type": "list", "title": text, "intro": text,
    "add": {"label": text, "hint": text, "placeholder": text} (optional),
    "items": [{"id": text, "title": text, "detail": text, "state": ok|warning|problem|off|unknown, "group": text,
-              "on": true|false (optional), "address": text (optional), "actions": [test, toggle, remove, up, down]}]}
-and POST with {"action": add|test|test_all|toggle|remove|up|down, "id": text, "value": text}, answering the same shape
+              "on": true|false (optional), "address": text (optional), "actions": [test, toggle, remove, up, down],
+              "choice": {"label": text, "value": text, "options": [[value, words], ...]} (optional, 12 November 2026)}]}
+and POST with {"action": add|test|test_all|toggle|remove|up|down|choose, "id": text, "value": text}, answering the same shape
 with "said", a sentence. Starboard keeps only these fields, cuts every text, and calls the plug-in with its own key."""
 import json
 import urllib.error
 import urllib.request
 
 MAX_BYTES = 512 * 1024
-ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down")
+ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose")
 STATES = ("ok", "warning", "problem", "off", "unknown")
 
 
 def _text(v, limit):
     return str(v or "")[:limit]
+
+
+def _choice(c):
+    """A small choice on a row, such as a catalogue's weight: up to 12 options, each [value, words]."""
+    if not isinstance(c, dict) or not isinstance(c.get("options"), list):
+        return None
+    opts = [[_text(o[0], 40), _text(o[1], 40)] for o in c["options"][:12] if isinstance(o, (list, tuple)) and len(o) == 2]
+    if not opts:
+        return None
+    value = _text(c.get("value"), 40)
+    return {"label": _text(c.get("label"), 40), "value": value if any(o[0] == value for o in opts) else opts[0][0], "options": opts}
 
 
 def clean(data):
@@ -33,7 +45,7 @@ def clean(data):
         items.append({"id": _text(it["id"], 600), "title": _text(it.get("title"), 120), "detail": _text(it.get("detail"), 200),
                       "state": it.get("state") if it.get("state") in STATES else "unknown", "group": _text(it.get("group"), 40),
                       "on": bool(it.get("on", True)), "address": _text(it.get("address"), 500),
-                      "actions": [a for a in it.get("actions") or [] if a in ACTIONS]})
+                      "actions": [a for a in it.get("actions") or [] if a in ACTIONS], "choice": _choice(it.get("choice"))})
     out = {"type": "list", "title": _text(data.get("title"), 80), "intro": _text(data.get("intro"), 400), "items": items,
            "add": {k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")} if add else None}
     if data.get("said"):

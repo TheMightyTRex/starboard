@@ -67,6 +67,7 @@ MENU = [
                                 ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
                                 ("settings-tdarr.html", "Tdarr", "film")]),
         ("Downloads", "download", [("settings-downloads.html", "Downloads", "download")]),
+        ("Radio", "radio", [("settings-radio.html", "Radio", "radio")]),
         ("Alerts", "bell", [("settings-alerts.html", "Alerts", "bell")]),
         ("Performance", "gauge", [("settings-performance.html", "Performance", "gauge")]),
         ("Security", "shield-check", [("settings-security.html", "Security", "shield-check")]),
@@ -144,6 +145,7 @@ HELP = {
     "settings-security.html": ("README.md#security", "security"),
     "settings-downloads.html": ("topics/set-download-hours.md", "your VPN, Usenet server and download hours"),
     "settings-plugins.html": ("topics/add-a-plugin.md", "plug-ins"),
+    "settings-radio.html": ("topics/add-a-plugin.md", "radio sources and station logos"),
     "settings-plugins-catalogue.html": ("topics/add-a-plugin.md", "adding a plug-in"),
     "settings-plugin.html": ("topics/add-a-plugin.md", "a plug-in's settings"),
     "dashboard.html": ("topics/use-the-dashboard.md", "your dashboard"),
@@ -196,7 +198,7 @@ def search_form(id_, cls, form_id=""):
     return (f'<form class="{cls}"{form_id} action="/search.html" role="search">'
             f'<label class="visually-hidden" for="{id_}">Search films, series, music and books</label>'
             f'<input class="input" id="{id_}" name="q" type="search" placeholder="Search films, series, music and books">'
-            f'<button type="submit" class="visually-hidden">Search</button></form>')
+            f'<button type="submit" class="search-field__btn">{icon("search", 18)}<span class="visually-hidden">Search</span></button></form>')
 
 
 # The Screen logo (DASH-73): a screen with four tiles and a star.
@@ -246,10 +248,10 @@ def shell(current):
     return f'''<a class="skip-link" href="#main">Skip to main content</a>
 <nav class="rail" aria-label="Side menu">
   <a class="rail__brand" href="/{HOME}">{LOGO.format(s=32)}<span class="rail__name">Starboard</span></a>
-  <a class="rail__search" href="/search.html">{icon("search", 24)}<span>Search</span></a>
   {rail_links}
   <div class="rail__end">
     <button type="button" class="rail__feedback" data-feedback-open hidden>{icon("message-square-warning", 24)}<span>Feedback</span><span class="visually-hidden"> (send feedback)</span></button>
+    <button type="button" class="rail__signout" data-sign-out>{icon("log-out", 24)}<span>Sign out</span></button>
     <a class="rail__update" href="/settings-updates.html" data-update-available hidden><span class="update-dot" aria-hidden="true"></span><span>Update</span></a>
     <span class="rail__version" data-version-short></span>
   </div>

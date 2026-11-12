@@ -69,3 +69,15 @@ class PluginCustomTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Choice(unittest.TestCase):
+    """A small choice on a row, such as a catalogue's share (12 November 2026)."""
+    def test_choice_cleaned(self):
+        from starboard import plugin_custom
+        out = plugin_custom.clean({"type": "list", "items": [
+            {"id": "a", "title": "A", "choice": {"label": "Share", "value": "9", "options": [["1", "Less"], ["3", "Normal"], "bad"]}},
+            {"id": "b", "title": "B", "choice": {"options": "nope"}}]})
+        self.assertEqual(out["items"][0]["choice"], {"label": "Share", "value": "1", "options": [["1", "Less"], ["3", "Normal"]]})
+        self.assertIsNone(out["items"][1]["choice"])
+        self.assertIn("choose", plugin_custom.ACTIONS)

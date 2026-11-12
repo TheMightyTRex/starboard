@@ -159,7 +159,63 @@
   /* Search buttons: data-search-open on a button names the header search form (aria-controls). Where the
      box is visible (computers), the button moves focus into it. Where it is hidden (phones), the button
      opens it as a row under the header; Escape, or a press outside, closes it and returns focus. */
+  // Search icon (owner, 12 November 2026: "add the search icon to all searches, make it the default"): every
+  // input type="search" gets a Search button with the icon, at the right inside the box. In a form it submits the
+  // form; a box that filters as you type gets a button that searches now (Enter's "search" event) and keeps focus.
+  // Boxes added later (slide-outs, dialogs) get theirs too. A box can opt out with data-no-search-icon.
+  const SEARCH_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>';
+  function addSearchIcon(input) {
+    if (input.dataset.searchIcon || input.hasAttribute("data-no-search-icon")) return;
+    input.dataset.searchIcon = "1";
+    const parent = input.parentElement;
+    if (!parent || parent.querySelector(":scope > .search-field__btn")) return;  // it has one already (the header's)
+    let box = parent;
+    if (!parent.classList.contains("search-box") && !(parent.classList.contains("search-field") && parent.children.length <= 2)) {
+      box = document.createElement("span");
+      box.className = "search-box";
+      parent.insertBefore(box, input);
+      box.append(input);
+    } else {
+      box.classList.add("search-box");
+    }
+    const form = input.form;
+    const words = input.getAttribute("aria-label") || (input.labels && input.labels[0] && input.labels[0].textContent.trim()) || "";
+    const button = document.createElement("button");
+    button.type = form ? "submit" : "button";
+    button.className = "search-field__btn";
+    button.innerHTML = SEARCH_ICON;
+    const label = document.createElement("span");
+    label.className = "visually-hidden";
+    label.textContent = words && /^search/i.test(words) ? words : "Search";
+    button.append(label);
+    if (!form) {
+      button.addEventListener("click", () => {
+        input.focus();
+        input.dispatchEvent(new Event("search", { bubbles: true }));
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
+    box.append(button);
+  }
+  let searchWatch = null;
+  function setupSearchIcons(root = document) {
+    root.querySelectorAll('input[type="search"]').forEach(addSearchIcon);
+    if (searchWatch || !document.body) return;
+    searchWatch = new MutationObserver((changes) => {
+      for (const c of changes) {
+        for (const n of c.addedNodes) {
+          if (n.nodeType !== 1) continue;
+          if (n.matches('input[type="search"]')) addSearchIcon(n);
+          else if (n.querySelector) n.querySelectorAll('input[type="search"]').forEach(addSearchIcon);
+        }
+      }
+    });
+    searchWatch.observe(document.body, { childList: true, subtree: true });
+  }
+
   function setupSearch(root = document) {
+    setupSearchIcons(root);
     root.querySelectorAll("[data-search-open]").forEach((button) => {
       if (button.dataset.ready) return;
       button.dataset.ready = "1";
@@ -669,7 +725,7 @@
     setupAzJump(root);
     setupSortables(root);
   }
-  window.SharedComponents = { setup, setupSearch, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo };
+  window.SharedComponents = { setup, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo };
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");

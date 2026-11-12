@@ -224,7 +224,7 @@ function head(item) {
     el("div", { class: "series-head__text" },
       el("h1", { class: "series-head__name wordmark", text: item.title }),
       el("p", { class: "series-head__meta" }, ...item.meta.map((m) => item.network_logo && m === item.network_logo.name
-        ? el("span", { class: "series-head__network" }, el("img", { src: item.network_logo.src, alt: "", onerror: (e) => e.target.remove() }), el("span", { text: m }))
+        ? el("span", { class: "series-head__network" }, logoTone(el("img", { src: item.network_logo.src, alt: "", onerror: (e) => e.target.remove() }), item.network_logo.name, item.network_logo.tone), el("span", { text: m }))
         : el("span", { text: m })), item.status ? chip(item.status, item.tone) : null),
       item.overview ? el("p", { class: "series-head__desc clamp-3", text: item.overview }) : null,
       item.progress ? el("div", { class: "series-head__progress" }, el("span", { text: item.progress.text }),

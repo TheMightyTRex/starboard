@@ -131,8 +131,12 @@
 body:not(.show-advanced) [data-advanced] { display: none; }
 /* A link to a part under Advanced settings (#rx-mediaservers-h, #categories) shows that part anyway. */
 body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:target, :target [data-advanced]) { display: revert; }
-.advanced-toggle { padding: var(--space-3, 12px) var(--space-4, 16px); border: 1px solid var(--color-divider); border-radius: var(--radius-2, 6px);
-  background: var(--color-surface); max-width: 40rem; }
+/* A small switch at the right of the heading (12 November 2026). */
+.switch.advanced-toggle { display: inline-flex; justify-content: flex-start; gap: var(--space-2); min-height: auto;
+  font-size: var(--text-sm); font-weight: var(--weight-strong); white-space: nowrap; }
+.switch.advanced-toggle input { width: 40px; height: 24px; }
+.switch.advanced-toggle input::after { width: 14px; height: 14px; }
+.switch.advanced-toggle input:checked::after { transform: translateX(16px); }
 
 /* Pictures of plug-in styles (DASH-284): small pages drawn in each style's colours, decoration only. */
 .style-gallery { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4);

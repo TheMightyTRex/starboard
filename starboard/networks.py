@@ -41,6 +41,30 @@ def logo_of(data_dir, name):
     return (known(data_dir).get(name.lower()) or {}).get("url", "")
 
 
+TONES = ("light", "dark", "solid")
+
+
+def tone_of(data_dir, name):
+    """How a network's logo looks, measured once by the first browser that shows it: "light" (white or pale on
+    nothing), "dark", "solid" (it has its own background), or "" (not measured yet)."""
+    t = (known(data_dir).get(name.lower()) or {}).get("tone", "")
+    return t if t in TONES else ""
+
+
+def set_tone(data_dir, name, tone):
+    """Keeps a logo's tone for everyone, so it is never measured again (until its picture changes)."""
+    if tone not in TONES:
+        raise ValueError("A tone is light, dark or solid")
+    with _lock:
+        data = known(data_dir)
+        entry = data.get(name.lower())
+        if not entry or not entry.get("url"):
+            raise LookupError("No logo for that network")
+        if entry.get("tone") != tone:
+            data[name.lower()] = {**entry, "tone": tone}
+            _save(data_dir, data)
+
+
 def _look_up(reelix, series_id, name):
     s = services._api(reelix, f"/series/{int(series_id)}", timeout=15) or {}
     if not s.get("tmdb_id"):

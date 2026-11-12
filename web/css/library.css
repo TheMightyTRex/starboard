@@ -102,3 +102,38 @@
 .network-card__link:focus-visible { outline: none; }
 .network-card__meta { margin: 0; font-size: var(--text-xs, 0.75rem); color: var(--color-text-muted); }
 
+/* Logos by tone (12 November 2026): light ink shows black in light mode, dark ink shows white in dark mode, and a
+   logo with its own background keeps it. Untested logos keep the standard look until they are measured. */
+:root { --logo-light: grayscale(1) brightness(0); --logo-dark: grayscale(1) brightness(0); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --logo-light: grayscale(1) brightness(0) invert(1); --logo-dark: grayscale(1) brightness(0) invert(1); } }
+:root[data-theme="dark"], :root.is-dark { --logo-light: grayscale(1) brightness(0) invert(1); --logo-dark: grayscale(1) brightness(0) invert(1); }
+:is(.network-logo, .series-head__network, .lib-group) img[data-tone="light"] { filter: var(--logo-light); }
+:is(.network-logo, .series-head__network, .lib-group) img[data-tone="dark"] { filter: var(--logo-dark); }
+:is(.network-logo, .series-head__network, .lib-group) img[data-tone="solid"] { filter: none; border-radius: var(--radius-1, 4px); }
+/* Films, Collections as banners with a completion ring (owner chose idea C, 12 November 2026). */
+.collection-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4, 16px);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.collection-card { position: relative; display: grid; border: 1px solid var(--color-divider); border-radius: var(--radius-2, 8px);
+  overflow: hidden; background: var(--color-surface-raised, var(--color-surface)); }
+.collection-card:hover { border-color: var(--color-border); }
+.collection-card__art { position: relative; height: 128px; overflow: hidden; background: var(--color-surface-sunken); }
+.collection-card__back { position: absolute; inset: -20px; width: calc(100% + 40px); height: calc(100% + 40px); object-fit: cover;
+  filter: blur(14px) saturate(1.2) brightness(0.7); }
+.collection-card__posters { position: relative; display: flex; align-items: flex-end; gap: 6px; height: 100%; padding: 10px; }
+.collection-card__poster { width: 58px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 8px rgb(0 0 0 / 0.35); flex: none; }
+.collection-card__poster.is-missing { background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.18) 0 6px, rgb(255 255 255 / 0.06) 6px 12px);
+  border: 2px dashed rgb(255 255 255 / 0.7); box-shadow: none; }
+.collection-card__body { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3, 12px); padding: var(--space-3, 12px); }
+.collection-card__words { min-width: 0; }
+.collection-card__name { margin: 0; font-size: var(--text-md, 1rem); overflow-wrap: anywhere; }
+.collection-card__link { color: inherit; text-decoration: none; }
+.collection-card__link::after { content: ""; position: absolute; inset: 0; }  /* the whole card opens the collection */
+.collection-card__link:focus-visible { outline: none; }
+.collection-card:has(.collection-card__link:focus-visible) { outline: var(--focus-width, 3px) solid var(--color-focus); outline-offset: 2px; }
+.collection-card__meta { margin: 2px 0 0; color: var(--color-text-muted); font-size: var(--text-sm, 0.875rem); }
+.collection-ring { --done: 0; position: relative; flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--status-warning-fg) calc(var(--done) * 1%), var(--color-divider) 0); }
+.collection-ring.is-complete { background: conic-gradient(var(--color-accent) 100%, var(--color-divider) 0); }
+.collection-ring::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--color-surface-raised, var(--color-surface)); }
+.collection-ring__text { position: relative; font-size: var(--text-xs, 0.75rem); font-weight: var(--weight-strong, 700); font-variant-numeric: tabular-nums; }
+@media (forced-colors: active) { .collection-ring { background: none; border: 3px solid CanvasText; } }

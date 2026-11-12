@@ -541,6 +541,11 @@ def wall(index, tab, q="", chip="", sort="az", group="", offset=0, limit=40, unt
             "chips": [{"key": k, "label": label, "count": counts[k]} for k, label in CHIPS.get(tab, [])]}
 
 
+# Groups drawn as banners with a completion ring (owner, 12 November 2026): Films, Collections, and Audiobooks, Series
+# and Authors.
+BANNER_TABS = ("films", "audiobooks")
+
+
 def groups(index, tab, kind=""):
     """The groups of a tab (collections, networks, stations, book series, authors) with how many items each."""
     found = {}
@@ -553,9 +558,17 @@ def groups(index, tab, kind=""):
                 g["have"] += e["w"] == "in_library"
                 if not g["poster"] and e.get("p"):
                     g["poster"] = f"/api/library/poster?tab={tab}&id={e['i']}"
+                if tab in BANNER_TABS:  # banners (12 November 2026): each item, in release order
+                    g.setdefault("_films", []).append(e)
     out = sorted(found.values(), key=lambda g: sort_key(g["name"]))
     for g in out:
         g["letter"] = letter(sort_key(g["name"]))
+        films = sorted(g.pop("_films", []), key=lambda e: (str(e.get("y") or "9999"), sort_key(e.get("t") or "")))
+        if films:
+            years = [str(e["y"]) for e in films if e.get("y")]
+            g["years"] = (years[0] if years[0] == years[-1] else f"{years[0]} to {years[-1]}") if years else ""
+            g["films"] = [{"title": e.get("t") or "", "year": str(e.get("y") or ""), "have": e["w"] == "in_library",
+                           "poster": f"/api/library/poster?tab={tab}&id={e['i']}" if e.get("p") else ""} for e in films[:6]]
     return out
 
 
@@ -690,7 +703,8 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                        "has_file": have > 0}}
         from . import networks  # DASH-264: the network's logo beside its name, when one is known
         if s.get("network") and networks.logo_of(data_dir, s["network"]):
-            out["network_logo"] = {"name": s["network"], "src": f"/api/library/network-logo?tab=tv&name={urllib.parse.quote(s['network'])}"}
+            out["network_logo"] = {"name": s["network"], "src": f"/api/library/network-logo?tab=tv&name={urllib.parse.quote(s['network'])}",
+                                   "tone": networks.tone_of(data_dir, s["network"])}
         have_jf = [r for r in rows if r.get("jf")]
         out["watched"] = {"watched": bool(have_jf) and all(r["watched"] for r in have_jf), "ids": [r["jf"] for r in have_jf],
                           "user": w["user"]} if have_jf else None
@@ -1236,6 +1250,40 @@ def handle(h, method, path):
             out["refreshing"] = tab in _building
         out["view"] = views(data_dir).get(tab, {})
         return h.json(200, out)
+    if path == "/api/library/network-logo/tone" and method == "POST":
+        # A browser measured a logo (12 November 2026): kept for everyone, so no logo is measured twice. Networks and
+        # radio stations ("kind": "station").
+        from . import networks, station_logos
+        body = h.body()
+        try:
+            (station_logos if body.get("kind") == "station" else networks).set_tone(data_dir, str(body.get("name") or "")[:200], str(body.get("tone") or ""))
+        except LookupError as e:
+            return h.error(404, str(e))
+        except ValueError as e:
+            return h.error(400, str(e))
+        return h.json(200, {"ok": True})
+    if path == "/api/library/radio-logos" and method == "GET":  # Settings, Radio, Station logos (12 November 2026)
+        from . import station_logos
+        stations = [g["name"] for g in groups(load(data_dir, reelix, "radio"), "radio")]
+        return h.json(200, station_logos.summary(data_dir, stations))
+    if path == "/api/library/radio-logos" and method == "POST":
+        from . import station_logos
+        length = h.content_length()
+        if length > 60 * 1024 * 1024:
+            return h.error(413, "That zip is larger than 60 MB")
+        raw = h.rfile.read(length) if length else b""
+        h._body_read = True
+        try:
+            return h.json(200, station_logos.add_zip(data_dir, raw))
+        except ValueError as e:
+            return h.error(400, str(e))
+    if path == "/api/library/station-logo" and method == "GET":
+        # The owner's own station logos (12 November 2026), from data/library/station-logos/.
+        from . import station_logos
+        found = station_logos.picture(data_dir, q.get("name", "")[:200])
+        if not found:
+            return h.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "private, max-age=600"})
+        return h.send(200, found[0], found[1], {"Cache-Control": "private, max-age=86400"})
     if path == "/api/library/network-logo" and method == "GET":
         from . import networks
         url = networks.logo_of(data_dir, q.get("name", "")[:200])
@@ -1246,12 +1294,20 @@ def handle(h, method, path):
     if path == "/api/library/groups" and method == "GET":
         index = load(data_dir, reelix, tab)
         found = groups(index, tab, "authors" if q.get("by") == "authors" else "")
+        if tab == "radio" and not q.get("by"):  # station logos, from the owner's own files (12 November 2026)
+            from . import station_logos
+            for g in found:
+                logo = station_logos.logo_of(data_dir, g["name"])
+                g["logo"] = f"/api/library/station-logo?tab=radio&name={urllib.parse.quote(g['name'])}" if logo else ""
+                g["logo_tone"] = logo.get("tone", "") if logo else ""
+                g["logo_kind"] = "station"
         if tab == "tv":  # DASH-264: network logos, looked up in the background the first time
             from . import networks
             networks.refresh(data_dir, reelix, index)
             have = networks.known(data_dir)
             for g in found:
                 g["logo"] = f"/api/library/network-logo?tab=tv&name={urllib.parse.quote(g['name'])}" if (have.get(g["name"].lower()) or {}).get("url") else ""
+                g["logo_tone"] = (have.get(g["name"].lower()) or {}).get("tone", "") if g["logo"] else ""
         return h.json(200, {"groups": found,
                             "label": GROUPS.get(f"{tab}-authors" if q.get("by") == "authors" else tab, "Group")})
     if path == "/api/library/watched" and method == "POST":

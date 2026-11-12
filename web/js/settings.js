@@ -2776,9 +2776,17 @@ function advancedSwitch() {
     apply();
     try { await saveGeneral({ settings_advanced: input.checked }); } catch (e) { problem(e.message); }
   });
-  const box = el("div", { class: "advanced-toggle stack-1" },
-    switchRow("Advanced settings", "Shows everything each app can change.", input), note);
-  ($(".page-head", main) || main.firstElementChild).after(box);
+  // A small switch at the right of the page's heading, where Sign out was (owner, 12 November 2026).
+  note.classList.add("visually-hidden");
+  input.setAttribute("aria-describedby", "advanced-note");
+  const box = el("label", { class: "switch advanced-toggle", title: "Shows everything each app can change" },
+    el("span", { text: "Advanced settings" }), input, note);
+  const head = $(".page-head", main);
+  if (head) {
+    let actions = $(":scope > .actions", head);
+    if (!actions) { actions = el("div", { class: "actions" }); head.append(actions); }
+    actions.prepend(box);
+  } else main.prepend(box);
   // Sections are drawn as their data arrives: mark each one as it appears, and keep the note's count right.
   new MutationObserver((changes) => {
     if (changes.every((c) => box.contains(c.target))) return;  // the switch's own note changing is not a new section
@@ -2787,6 +2795,82 @@ function advancedSwitch() {
   }).observe(main, { childList: true, subtree: true });
   markAdvanced(main);
   apply();
+  input.addEventListener("change", () => topicTabs());
+}
+
+// Topic tabs (owner, 12 November 2026: "with long settings pages, a tab menu on each page covering each topic"):
+// under the heading and description, one tab per section on a page with four sections or more, showing that section
+// only. A link to a part (#rx-indexers-h) opens its tab. Sections are drawn as their data arrives, so the tabs
+// follow; Advanced settings adds its sections' tabs. Not inside a slide-out, which already shows one part.
+let topicCurrent = null;
+function topicTabs() {
+  const main = $("main .page");
+  const holder = main && $(".settings-sections", main);
+  if (!holder || IN_PANEL) return;
+  let off = false;
+  try { off = localStorage.getItem("starboard.topic-tabs") === "off"; } catch { /* tabs on */ }
+  const topics = $$("section.settings-section", holder).filter((s) => !s.parentElement.closest("section.settings-section")
+    && !(s.hasAttribute("data-advanced") && !document.body.classList.contains("show-advanced")) && $("h2", s));
+  let nav = $("#topic-tabs");
+  if (off || topics.length < 4) {
+    nav?.remove();
+    topics.forEach((s) => s.classList.remove("topic-off"));
+    return;
+  }
+  topics.forEach((s, n) => { if (!s.id) s.id = `topic-${n}`; });
+  const key = topics.map((s) => `${s.id}:${$("h2", s).textContent}`).join("|");
+  if (!nav) {
+    nav = el("nav", { id: "topic-tabs", class: "topic-tabs", "aria-label": "Topics on this page" }, el("div", { role: "tablist", "aria-label": "Topics on this page" }));
+    ($(".page-head", main) || holder).after(nav);
+  }
+  const want = decodeURIComponent(location.hash.slice(1));
+  const fromHash = want && topics.find((s) => s.id === want || $(`[id="${CSS.escape(want)}"]`, s));
+  if (fromHash && nav.dataset.hash !== want) { topicCurrent = fromHash.id; nav.dataset.hash = want; }
+  if (!topics.some((s) => s.id === topicCurrent)) topicCurrent = topics[0].id;
+  const show = (id, focus) => {
+    topicCurrent = id;
+    topics.forEach((s) => s.classList.toggle("topic-off", s.id !== id));
+    $$("[role=tab]", nav).forEach((t) => {
+      const on = t.getAttribute("aria-controls") === id;
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+      if (on && focus) t.focus();
+    });
+  };
+  if (nav.dataset.key !== key) {
+    nav.dataset.key = key;
+    const list = $("[role=tablist]", nav);
+    list.replaceChildren(...topics.map((s) => {
+      const t = el("button", { type: "button", role: "tab", id: `${s.id}-tab`, "aria-controls": s.id, class: "topic-tabs__tab", text: $("h2", s).textContent });
+      t.addEventListener("click", () => show(s.id));
+      return t;
+    }));
+    list.onkeydown = (e) => {
+      const tabs = $$("[role=tab]", list);
+      const at = tabs.indexOf(document.activeElement);
+      if (at < 0) return;
+      const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      const next = tabs[(to + tabs.length) % tabs.length];
+      show(next.getAttribute("aria-controls"), true);
+    };
+    topics.forEach((s) => { s.setAttribute("role", "tabpanel"); s.setAttribute("aria-labelledby", `${s.id}-tab`); });
+  }
+  show(topicCurrent);
+}
+
+function watchTopics() {
+  const holder = $("main .page .settings-sections");
+  if (!holder || IN_PANEL) return;
+  let queued = false;
+  new MutationObserver(() => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; topicTabs(); });
+  }).observe(holder, { childList: true, subtree: true });
+  window.addEventListener("hashchange", () => topicTabs());
+  topicTabs();
 }
 
 // Settings, Downloads (DASH-226): the VPN (provider, connection, countries, key), the Usenet provider's server with
@@ -2877,12 +2961,14 @@ startPage().then(async (session) => {
   if ($("#releases-list")) { startReleases(session.repo); return; }
   try { config = await api("/api/config"); } catch (e) { problem(e.message); return; }
   advancedSwitch();
+  watchTopics();
   if ($("#app-sections")) startManageApps();
   if ($("#general-sections")) startGeneral();
   if ($("#security-sections")) startSecurity();
   if ($("#alerts-sections")) startAlerts();
   if ($("#jellyfin-sections")) startJellyfin();
   if ($("#listening-sections")) startListening();
+  if ($("#radio-sections")) startRadioSettings();
   if ($("#performance-sections")) startPerformance();
   if ($("#reelix-sections")) startReelix();
   if ($("#install-sections")) startYourInstall();

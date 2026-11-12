@@ -43,6 +43,8 @@ const open = async (p) => { await page.goto(`${base}/${p}`, { waitUntil: "networ
 // The journeys use every setting, so Advanced settings is on for them (DASH-225: each page opens on its basics).
 await page.goto(`${base}/settings-general.html`, { waitUntil: "networkidle" });
 await api("/api/config/general", { method: "PUT", body: { settings_advanced: true } });
+// They also open every section, so the topic tabs are off for them; TAB-01 below checks the tabs themselves.
+await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
 
 // USE-02: add, change, test and remove an app, through the page as a person would
 console.log("\n== USE-02 Manage apps");
@@ -245,7 +247,16 @@ check("LIB-01", "a series opens the wall with only its books", /group=/.test(pag
 
 console.log("\n== SRCH-01 Search");
 await open("index.html");
-check("SRCH-01", "on a computer, Search in the side menu is a link to the Search page", await page.locator('nav.rail a.rail__search[href="/search.html"]').count() === 1);
+// 12 November 2026: Search left the side menu (phones keep it in their menu); the search box has its own button.
+check("SRCH-01", "Search is not in the side menu", await page.locator("nav.rail .rail__search").count() === 0);
+const searchBtn = page.locator("#header-search .search-field__btn");
+const vw = page.viewportSize()?.width || 1280;
+if (vw < 1200) await page.locator("[data-search-open]").click();
+check("SRCH-01", "the search box has a Search button you can see", await searchBtn.isVisible());
+await page.locator("#header-search-input").fill("harbour");
+await searchBtn.click();
+await page.waitForURL(/search\.html\?q=harbour/, { timeout: 5000 }).catch(() => {});
+check("SRCH-01", "the Search button opens the Search page with the words", /search\.html\?q=harbour/.test(page.url()));
 await open("search.html");
 await page.locator("#lib-start .lib-kinds a").first().waitFor({ timeout: 8000 }).catch(() => {});
 check("SRCH-01", "the Search page opens on the Library, with each kind and its count", await page.locator("#lib-start .lib-kinds a").count() === 6);
@@ -341,6 +352,23 @@ check("RX-01", "the page keeps no copy in browser storage",
   !(await page.evaluate((p) => JSON.stringify({ ...localStorage, ...sessionStorage }).includes(p) || document.cookie.includes(p), RXPASS)));
 
 // Phone width: no page scrolls sideways
+// TAB-01: topic tabs on a long Settings page (12 November 2026): one tab per section, one section shown at a time,
+// arrow keys move between tabs, and Sign out is in the side menu (issue #9).
+console.log("\n== TAB-01 Topic tabs");
+await page.evaluate(() => localStorage.removeItem("starboard.topic-tabs"));
+await open("settings-general.html");
+const tabs = await page.locator("#topic-tabs [role=tab]").count();
+check("TAB-01", "a long Settings page has a tab per topic", tabs >= 4, `${tabs} tabs`);
+const shown = () => page.evaluate(() => [...document.querySelectorAll(".settings-sections section.settings-section[role=tabpanel]")].filter((s) => getComputedStyle(s).display !== "none").length);
+check("TAB-01", "one topic shows at a time", (await shown()) === 1);
+await page.locator("#topic-tabs [role=tab]").nth(1).click();
+check("TAB-01", "choosing a tab shows its topic", (await page.locator("#topic-tabs [role=tab]").nth(1).getAttribute("aria-selected")) === "true" && (await shown()) === 1);
+await page.keyboard.press("ArrowRight");
+check("TAB-01", "the arrow keys move to the next tab", (await page.locator("#topic-tabs [role=tab]").nth(2).getAttribute("aria-selected")) === "true");
+check("TAB-01", "Advanced settings is a switch in the heading", (await page.locator(".page-head #advanced-switch").count()) === 1);
+check("TAB-01", "Sign out is in the side menu", (await page.locator(".rail [data-sign-out]").count()) === 1);
+await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

@@ -454,14 +454,7 @@ function setUpHeader() {
   window.addEventListener("resize", fit);
   SharedComponents.setupSearch();
   document.fonts?.ready.then(fit);
-  // Sign out beside the title on every Settings page (design system, Sign out); the phone menu has it too. Not on the
-  // set-up and upgrade guides, which are wizards.
-  const head = $("#main-nav")?.getAttribute("aria-label") === "Settings" && !$("#guide, #upgrade") ? $(".page-head") : null;
-  if (head && !head.querySelector("[data-sign-out]")) {
-    let actions = head.querySelector(".actions");
-    if (!actions) { actions = el("div", { class: "actions" }); head.append(actions); }
-    actions.append(el("button", { type: "button", class: "btn", "data-sign-out": "" }, icon("log-out"), "Sign out"));
-  }
+  // Sign out is in the side menu on every page (issue #9, 12 November 2026) and in the phone menu.
   $$("[data-sign-out]").forEach((b) => b.addEventListener("click", async () => {
     await api("/api/logout", { method: "POST" }).catch(() => {});
     location.href = "/login.html";
@@ -1082,6 +1075,40 @@ function pluginTabs(list) {
     a.querySelector(".menu-tabs__label").textContent = p.name;
     nav.append(a);
   }
+}
+
+// Logos legible in light and dark (owner, 12 November 2026): a network's logo is measured once, in the first browser
+// that shows it (mostly light, mostly dark, or on its own solid background), and the answer is kept on the server, so
+// no logo is measured again. CSS then shows light logos black in light mode and dark logos white in dark mode.
+function logoTone(img, name, tone, kind = "network") {
+  if (tone) { img.dataset.tone = tone; return img; }
+  img.addEventListener("load", () => {
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = 48;
+      const x = c.getContext("2d", { willReadFrequently: true });
+      x.drawImage(img, 0, 0, 48, 48);
+      const px = x.getImageData(0, 0, 48, 48).data;
+      let seen = 0, solid = 0, light = 0, pale = 0;
+      for (let i = 0; i < px.length; i += 4) {
+        const a = px[i + 3] / 255;
+        if (a < 0.12) continue;
+        seen += 1;
+        if (a > 0.9) solid += 1;
+        const lum = (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255;
+        light += a * lum;
+        if (lum > 0.6) pale += 1;
+      }
+      if (!seen) return;
+      // A picture that fills its whole square with paint has its own background; otherwise light or dark ink.
+      // Light and dark ink together (a dark disc with light letters) also keeps its own look, or its letters would go.
+      const mixed = pale / seen > 0.15 && pale / seen < 0.85;
+      const t = (seen / (48 * 48) > 0.92 && solid / seen > 0.9) || mixed ? "solid" : light / seen > 0.6 ? "light" : "dark";
+      img.dataset.tone = t;
+      api("/api/library/network-logo/tone", { method: "POST", body: { name, tone: t, kind } }).catch(() => { /* measured again next time */ });
+    } catch { /* a picture the browser will not let us read: it keeps the standard look */ }
+  }, { once: true });
+  return img;
 }
 
 async function startPage() {

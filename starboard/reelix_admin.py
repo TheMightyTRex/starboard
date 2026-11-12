@@ -373,6 +373,13 @@ def _act(app, reelix, base, kind, action, body):
         raise ValueError("Not something Starboard does")
     if kind == "radio":  # point Reelix's radio at Audiobookshelf's Radio library (radio import, 10 November 2026)
         from . import radio_import
+        if action in ("sources", "sources-save"):  # Settings, Radio (12 November 2026)
+            from . import radio_settings
+            if action == "sources":
+                return radio_settings.state(reelix)
+            out = radio_settings.save(reelix, body)
+            logs.event("info", "reelix", "Radio sources saved: " + "; ".join(out["done"]))
+            return out
         if action == "connect":
             out = radio_import.connect(reelix, app.config)
             from . import setup_left
