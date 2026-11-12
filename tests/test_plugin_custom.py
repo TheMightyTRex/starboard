@@ -18,7 +18,8 @@ class Plugin(http.server.BaseHTTPRequestHandler):
 
     def answer(self):
         n = int(self.headers.get("Content-Length") or 0)
-        Plugin.seen.append((self.command, self.headers.get("X-Api-Key"), json.loads(self.rfile.read(n)) if n else None))
+        raw = self.rfile.read(n) if n else b""
+        Plugin.seen.append((self.command, self.headers.get("X-Api-Key"), (self.path, raw) if "/file?" in self.path else json.loads(raw) if raw else None))
         body = {"type": "list", "title": "Add-ons", "intro": "x" * 900, "evil": "<script>",
                 "add": {"label": "Add an add-on", "placeholder": "https://…/manifest.json", "onclick": "alert(1)"},
                 "items": [{"id": "streams|https://a.example/manifest.json", "title": "A", "state": "boom", "group": "Streams",
@@ -53,12 +54,28 @@ class PluginCustomTest(unittest.TestCase):
         out = self.call()
         self.assertNotIn("evil", out)
         self.assertEqual(len(out["intro"]), 400)
-        self.assertEqual(out["add"], {"label": "Add an add-on", "hint": "", "placeholder": "https://…/manifest.json"})
+        self.assertEqual(out["add"], {"label": "Add an add-on", "hint": "", "placeholder": "https://…/manifest.json", "file": None})
         self.assertEqual((out["items"][0]["state"], out["items"][0]["actions"]), ("unknown", ["test", "remove"]))
         self.assertEqual(Plugin.seen[-1][:2], ("GET", "plugin-key"))
         out = self.call({"action": "remove", "id": "streams|https://a.example/manifest.json", "extra": "dropped"})
         self.assertEqual(out["said"], "Done")
         self.assertEqual(Plugin.seen[-1], ("POST", "plugin-key", {"action": "remove", "id": "streams|https://a.example/manifest.json", "value": ""}))
+
+    def test_a_chosen_file_is_streamed_to_the_plugin(self):
+        # DASH-359 (owner, 12 November 2026): a file picker beside Add a list or guide.
+        import io
+        data = b"#EXTM3U\n" + b"x" * 3_000_000
+        with mock.patch.object(plugin_cards, "_host", return_value="127.0.0.1"):
+            out = plugin_custom.upload(self.d, "made-up", "sources", "my list.m3u", len(data), io.BytesIO(data))
+            self.assertEqual(out["said"], "Done")
+            self.assertEqual(Plugin.seen[-1], ("POST", "plugin-key", ("/api/sources/file?name=my%20list.m3u", data)))
+            with self.assertRaisesRegex(ValueError, "60 MB"):
+                plugin_custom.upload(self.d, "made-up", "sources", "big.xml", 61 * 1024 * 1024, io.BytesIO(b""))
+            with self.assertRaisesRegex(ValueError, "stopped before the end"):
+                plugin_custom.upload(self.d, "made-up", "sources", "short.m3u", 100, io.BytesIO(b"only this"))
+        self.assertEqual(plugin_custom._file({"label": "Or choose a file", "accept": ".m3u,.json,evil;js,.xml.gz,.gz", "hint": "Up to 60 MB"}),
+                         {"label": "Or choose a file", "hint": "Up to 60 MB", "accept": ".m3u,.json,.gz"})
+        self.assertIsNone(plugin_custom._file("nope"))
 
     def test_unknown_actions_and_screens_are_refused(self):
         with self.assertRaises(ValueError):

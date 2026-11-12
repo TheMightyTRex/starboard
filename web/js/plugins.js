@@ -493,9 +493,32 @@ function customScreen(p, s) {
         el("ul", { class: "settings-rows" }, list.map(row)))));
   };
   const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"] };
+  // Show all, active or inactive items (owner, 12 November 2026: "a filter to the channel list for active and not
+  // active channels"), on any list whose rows can be activated; kept while the list is drawn again.
+  let show = "all";
+  let last = null;
+  const showFilter = (data) => {
+    if (!data.items.some((it) => it.actions.includes("toggle"))) return null;
+    const noun = (data.title || "items").toLowerCase();
+    const count = { all: data.items.length, on: data.items.filter((it) => it.on).length };
+    count.off = count.all - count.on;
+    return el("fieldset", { class: "segmented" }, el("legend", { class: "visually-hidden", text: `Show ${noun}` }),
+      [["all", "All"], ["on", "Active"], ["off", "Inactive"]].map(([value, label]) => {
+        const input = el("input", { type: "radio", name: `show-${p.id}-${s.key}`, id: `show-${p.id}-${s.key}-${value}`, value, checked: value === show });
+        input.addEventListener("change", () => {
+          show = value;
+          draw(last);
+          document.getElementById(input.id)?.focus();
+          announce(`${count[value]} ${noun} shown`);
+        });
+        return el("label", { for: input.id }, input, el("span", { text: `${label} (${count[value]})` }));
+      }));
+  };
   const draw = (data) => {
+    last = data;
     const groups = new Map();
-    for (const it of data.items) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
+    const shown = data.items.filter((it) => show === "all" || (show === "on" ? it.on : !it.on));
+    for (const it of shown) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
     const add = data.add ? (() => {
       const id = `add-${p.id}-${s.key}`;
       const input = el("input", { class: "input", id, type: "url", placeholder: data.add.placeholder || "", autocomplete: "off" });
@@ -503,13 +526,39 @@ function customScreen(p, s) {
       const form = el("form", { class: "stack-2" }, el("label", { class: "field__label", for: id, text: data.add.label || "Add" }),
         data.add.hint ? el("p", { class: "hint", text: data.add.hint }) : null, el("div", { class: "actions" }, input, go));
       form.addEventListener("submit", (e) => { e.preventDefault(); if (input.value.trim()) run({ action: "add", value: input.value.trim() }, go); });
-      return form;
+      // A file instead of an address (DASH-359): streamed to the plug-in as it is, never read into the page.
+      const f = data.add.file;
+      if (!f) return form;
+      const fileId = `${id}-file`;
+      const file = el("input", { class: "input", id: fileId, type: "file", accept: f.accept || "", ...(f.hint ? { "aria-describedby": `${fileId}-h` } : {}) });
+      const send = el("button", { type: "submit", class: "btn" }, icon("upload"), "Upload");
+      const fileForm = el("form", { class: "stack-2" }, el("label", { class: "field__label", for: fileId, text: f.label }),
+        f.hint ? el("p", { class: "hint", id: `${fileId}-h`, text: f.hint }) : null, el("div", { class: "actions" }, file, send));
+      fileForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const chosen = file.files[0];
+        if (!chosen) { problem("Choose a file first", file); return; }
+        send.disabled = true;
+        loading.start();
+        try {
+          const res = await fetch(`${path}/file?name=${encodeURIComponent(chosen.name)}`, { method: "POST", headers: { "X-Starboard": "1", Accept: "application/json" }, credentials: "same-origin", body: chosen });
+          let out = {};
+          try { out = await res.json(); } catch { /* empty */ }
+          if (!res.ok) throw new Error(out.error || `Something went wrong (error ${res.status})`);
+          if (out.said) said.textContent = out.said;
+          draw(out);
+          document.getElementById(fileId)?.focus();
+        } catch (err) { problem(err.message, send); }
+        finally { send.disabled = false; loading.stop(); }
+      });
+      return el("div", { class: "stack-4" }, form, fileForm);
     })() : null;
     const testAll = el("button", { type: "button", class: "btn" }, icon("activity"), "Test all");
     testAll.addEventListener("click", () => run({ action: "test_all" }, testAll));
     box.replaceChildren(
       ...[data.intro ? el("p", { class: "small muted", text: data.intro }) : null, bulkPanel(data)].filter(Boolean),  // replaceChildren writes null as text
-      el("div", { class: "actions" }, testAll), said,
+      el("div", { class: "actions" }, ...[showFilter(data), testAll].filter(Boolean)), said,
+      ...(data.items.length && !shown.length ? [emptyState(show === "on" ? "None active" : "None inactive", "Choose All to see every one.")] : []),
       ...[...groups].map(([g, rows]) => el("section", { class: "stack-2", "aria-label": g || data.title },
         g ? el("h4", { text: g }) : null,
         el("ul", { class: "rows" }, rows.map((it) => el("li", { class: "row row--no-lead" },

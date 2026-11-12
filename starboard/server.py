@@ -2448,6 +2448,26 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, plugin_cards.answer(app.data_dir, mc.group(1), mc.group(2)))
             except LookupError as e:
                 return self.error(404, str(e))
+        mf = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/custom/([a-z][a-z0-9_]{0,40})/file$", path)
+        if mf and method == "POST":  # a file chosen beside a plug-in screen's add box, streamed through (DASH-359)
+            from . import plugin_custom
+            length = self.content_length()
+            name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
+            if not 0 < length <= plugin_custom.MAX_UPLOAD:
+                self.close_connection = True
+                return self.error(400, "Choose a file up to 60 MB")
+            try:
+                out = plugin_custom.upload(app.data_dir, mf.group(1), mf.group(2), name, length, self.rfile)
+                self._body_read = True
+            except LookupError as e:
+                self.close_connection = True
+                return self.error(404, str(e))
+            except ValueError as e:
+                self.close_connection = True
+                return self.error(400, str(e))
+            if out.get("said"):
+                logs.event("info", "plug-ins", f"{mf.group(1)}: {out['said']}")
+            return self.json(200, out)
         mx = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/custom/([a-z][a-z0-9_]{0,40})$", path)
         if mx and method in ("GET", "POST"):  # a plug-in's own screen, drawn by Starboard (11 November 2026)
             from . import plugin_custom

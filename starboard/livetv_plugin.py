@@ -264,17 +264,27 @@ def sources_screen(said=""):
     for x in livetv_own.sources(DATA):
         on = x.get("on", True)
         rows.append({"id": x["id"], "title": x.get("name") or x["url"], "group": "Channel lists" if x.get("kind") == "list" else "Guides",
-                     "detail": x.get("said", ""), "address": x["url"], "state": "off" if not on else x.get("state", "ok"),
+                     "detail": x.get("said", ""), "address": "Uploaded file" if x["url"].startswith("file:") else x["url"], "state": "off" if not on else x.get("state", "ok"),
                      "on": on, "actions": ["toggle", "test", "remove"]})
     out = {"type": "list", "title": "Lists and guides", "items": rows,
            "add": {"label": "Add a list or guide", "placeholder": "https://example.com/channels.m3u",
-                   "hint": "The address of an M3U playlist, a JSON channel list or an XMLTV guide (.xml or .xml.gz)."},
+                   "hint": "The address of an M3U playlist, a JSON channel list or an XMLTV guide (.xml or .xml.gz).",
+                   "file": {"label": "Or choose a file", "accept": ".m3u,.m3u8,.json,.xml,.gz",
+                            "hint": "An M3U, JSON or XMLTV file from this computer, up to 60 MB. Starboard keeps a copy."}},
            "intro": (f"{sum(1 for r in rows if r['on'])} of {len(rows)} active. Channels from your lists are tested, then go into "
                      "Jellyfin as one more tuner, grouped under each list's name; guides fill in their programmes.") if rows
            else "None yet. Channels from your lists are tested, then go into Jellyfin as one more tuner, grouped under each list's name."}
     if said:
         out["said"] = said
     return out
+
+
+def sources_upload(name, stream, length):
+    from . import livetv_own
+    item = livetv_own.add_file(DATA, name, stream, length)
+    _rebuild()
+    what = "Channel list" if item["kind"] == "list" else "Guide"
+    return sources_screen(f"{what} added from {item['name']}: {item['said']}. It is tested and added to Jellyfin in a few minutes")
 
 
 def _rebuild():
@@ -312,6 +322,7 @@ def sources_act(body, fetch=None):
         return sources_screen(f"{item['name']} deactivated" + (f": its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now" if gone else ""))
     if action == "remove":
         livetv_own.save(DATA, [x for x in items if x["id"] != sid])
+        livetv_own.forget(DATA, item)
         if item["kind"] == "list":
             livetv_own.drop(livetv.folder(), sid)
             livetv_jellyfin.refresh_guide(_services())
@@ -323,7 +334,7 @@ def sources_act(body, fetch=None):
 def _test(item, fetch=None):
     from . import livetv_own
     try:
-        kind, chans = livetv_own.read(item["url"], fetch)
+        kind, chans = livetv_own.read(item["url"], fetch, DATA)
         return f"answers: {len(chans)} channels" if chans is not None else "answers: a guide"
     except Exception as e:  # said on the screen, in words
         return f"did not answer: {str(e)[:100]}"
@@ -359,6 +370,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.answer(200, channels_act(json.loads(self.rfile.read(n) or b"{}")))
             except (ValueError, KeyError) as e:
                 return self.answer(400, {"error": str(e)})
+        if self.path.startswith("/sources/file?"):  # an uploaded file, streamed here by Starboard (DASH-359)
+            import urllib.parse
+            name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
+            try:
+                return self.answer(200, sources_upload(name, self.rfile, int(self.headers.get("Content-Length") or 0)))
+            except (ValueError, OSError) as e:
+                self.close_connection = True  # the rest of the body may not have been read
+                return self.answer(400, {"error": str(e)[:200]})
         if self.path == "/sources":
             n = int(self.headers.get("Content-Length") or 0)
             try:

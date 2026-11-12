@@ -67,6 +67,36 @@ class OwnSourcesTest(unittest.TestCase):
         notes = {s["url"]: (s["said"], s.get("state")) for s in livetv_own.sources(self.data)}
         self.assertEqual(notes["https://a.example/list.m3u"], ("1 of 2 channels play", "ok"))
 
+    def test_a_file_can_be_uploaded_instead_of_an_address(self):
+        # DASH-359 (owner, 12 November 2026): "allow a file picker ... as well as the URL".
+        item = livetv_own.add_file(self.data, "../My channels.m3u", io.BytesIO(M3U), len(M3U))
+        self.assertEqual((item["kind"], item["name"], item["said"]), ("list", "My channels.m3u", "2 channels found"))
+        stored = livetv_own.local_path(self.data, item["url"])
+        self.assertTrue(stored.startswith(os.path.join(self.data, "own-files")) and os.path.exists(stored))
+        guide = livetv_own.add_file(self.data, "gb.xml.gz", io.BytesIO(BIG), len(BIG))
+        self.assertEqual(guide["kind"], "guide")
+        with self.assertRaisesRegex(ValueError, "already added"):
+            livetv_own.add_file(self.data, "again.m3u", io.BytesIO(M3U), len(M3U))
+        with self.assertRaisesRegex(ValueError, "Stremio"):
+            livetv_own.add_file(self.data, "manifest.json", io.BytesIO(STREMIO), len(STREMIO))
+        with self.assertRaisesRegex(ValueError, "stopped before the end"):
+            livetv_own.add_file(self.data, "short.m3u", io.BytesIO(b"#EXTM3U"), 500)
+        self.assertEqual(sorted(os.listdir(os.path.join(self.data, "own-files"))), sorted([os.path.basename(stored), guide["url"][5:]]))
+        self.assertIsNone(livetv_own.local_path(self.data, "file:../../etc/passwd"))
+        # Built like an address: the uploaded list's channels and the uploaded guide's programmes
+        livetv_own.build(self.d, self.data, plays=lambda url, ua: True)
+        self.assertEqual(len(livetv._parse(os.path.join(self.d, "own.m3u"))), 2)
+        with open(os.path.join(self.d, "guide-own.xml")) as f:
+            self.assertIn("Evening", f.read())  # read from the stored .gz copy, a piece at a time
+        livetv_own.forget(self.data, item)
+        self.assertFalse(os.path.exists(stored))
+
+    def test_a_guide_that_is_not_packed_is_read_as_it_is(self):
+        path = os.path.join(self.data, "plain.xml")
+        with open(path, "wb") as f:
+            f.write(XML)
+        self.assertEqual(sum(1 for _, el in livetv._guide_events(path) if el.tag == "programme"), 2)
+
     def test_the_screen_activates_deactivates_tests_and_removes_each_one(self):
         with mock.patch.object(livetv_plugin, "DATA", self.data), mock.patch.object(livetv, "folder", return_value=self.d), \
                 mock.patch.object(livetv_plugin, "JELLYFIN", os.path.join(self.data, "none.json")), \

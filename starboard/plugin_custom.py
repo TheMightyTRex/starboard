@@ -15,6 +15,7 @@ draws one switch per set, grouped by its kind in the order given. A switch is ac
 "active" says (a whole source that can be stopped); "hint" replaces the words "3 of 5 active" under it.
 Starboard keeps only these fields, cuts every text, and calls the plug-in with its own key."""
 import json
+import re
 import urllib.error
 import urllib.request
 
@@ -57,6 +58,14 @@ def _bulk(sets):
     return out
 
 
+def _file(f):
+    """A file picker beside the add box (DASH-359): its label, hint and the file types it offers."""
+    if not isinstance(f, dict):
+        return None
+    accept = ",".join(a for a in str(f.get("accept") or "").split(",") if re.fullmatch(r"\.[a-z0-9]{1,8}", a.strip().lower()))
+    return {"label": _text(f.get("label"), 80) or "Or choose a file", "hint": _text(f.get("hint"), 200), "accept": accept}
+
+
 def clean(data):
     """Only the fields Starboard draws, every text cut to size; anything else is dropped."""
     if not isinstance(data, dict) or data.get("type") != "list" or not isinstance(data.get("items"), list):
@@ -71,7 +80,7 @@ def clean(data):
                       "on": bool(it.get("on", True)), "address": _text(it.get("address"), 500),
                       "actions": [a for a in it.get("actions") or [] if a in ACTIONS], "choice": _choice(it.get("choice"))})
     out = {"type": "list", "title": _text(data.get("title"), 80), "intro": _text(data.get("intro"), 400), "items": items,
-           "add": {k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")} if add else None,
+           "add": {**{k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")}, "file": _file(add.get("file"))} if add else None,
            "bulk": _bulk(data.get("bulk"))}
     if data.get("said"):
         out["said"] = _text(data["said"], 200)
@@ -85,6 +94,57 @@ def _setting(data_dir, pid, key):
     if not s or not m.get("containers"):
         raise LookupError("No such screen")
     return m, s
+
+
+MAX_UPLOAD = 60 * 1024 * 1024
+
+
+def upload(data_dir, pid, key, name, length, stream):
+    """A file chosen beside a screen's add box (DASH-359), streamed to the plug-in's `choices` path plus /file a
+    piece at a time, so neither Starboard nor the browser's request is held in memory. Returns the cleaned list."""
+    import http.client
+    import urllib.parse
+    from . import plugin_cards, plugins_admin
+    m, s = _setting(data_dir, pid, key)
+    if not 0 < length <= MAX_UPLOAD:
+        raise ValueError("Choose a file up to 60 MB")
+    main = m["containers"][0]
+    try:
+        with open(f"{plugins_admin.folder(data_dir, pid)}/key", encoding="utf-8") as f:
+            key_text = f.read().strip()
+    except OSError:
+        key_text = ""
+    conn = http.client.HTTPConnection(plugin_cards._host(pid, main), int(main.get("port") or 80), timeout=120)
+    try:
+        conn.putrequest("POST", f"{s['choices']}/file?name={urllib.parse.quote(_text(name, 120))}")
+        for h, v in (("Content-Type", "application/octet-stream"), ("Content-Length", str(length)), ("Accept", "application/json"),
+                     ("User-Agent", "Starboard"), ("X-Api-Key", key_text)):
+            conn.putheader(h, v)
+        conn.endheaders()
+        left = length
+        while left:
+            chunk = stream.read(min(1 << 20, left))
+            if not chunk:
+                raise ValueError("The upload stopped before the end")
+            conn.send(chunk)
+            left -= len(chunk)
+        r = conn.getresponse()
+        raw = r.read(MAX_BYTES + 1)
+    except OSError:
+        raise ValueError(f"Starboard could not reach {m.get('name', pid)}. Check that it is active on State") from None
+    finally:
+        conn.close()
+    if r.status == 404:
+        raise ValueError(f"{m.get('name', pid)} does not take files")
+    if r.status >= 400:
+        try:
+            said = (json.loads(raw or b"{}") or {}).get("error")
+        except ValueError:
+            said = None
+        raise ValueError(_text(said, 200) or f"{m.get('name', pid)} answered {r.status}")
+    if len(raw) > MAX_BYTES:
+        raise ValueError("The answer is too large")
+    return clean(json.loads(raw))
 
 
 def call(data_dir, pid, key, body=None, opener=None):

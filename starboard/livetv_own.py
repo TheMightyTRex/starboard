@@ -124,11 +124,36 @@ def m3u_channels(text):
     return out[:MAX_CHANNELS]
 
 
-def read(url, fetch=None):
-    """(kind, channels or None) for an address; raises ValueError in words."""
-    raw = (fetch or livetv.fetch)(url, timeout=60)
+FILES = "own-files"  # uploaded files, in the plug-in's own data folder; a source's url is then "file:<name in it>"
+MAX_UPLOAD = 60 * 1024 * 1024
+MAX_LIST = 20 * 1024 * 1024  # a channel list is read whole; a guide never is
+
+
+def local_path(data_dir, url):
+    """The stored copy of an uploaded file, for a source whose url is file:<name>; None for a web address."""
+    if not url.startswith("file:"):
+        return None
+    name = os.path.basename(url[5:])
+    return os.path.join(data_dir, FILES, name) if re.fullmatch(r"[0-9a-f]{10}\.[a-z.]{1,8}", name) else None
+
+
+def read(url, fetch=None, data_dir=None):
+    """(kind, channels or None) for an address or an uploaded file; raises ValueError in words."""
+    path = local_path(data_dir or "", url) if data_dir else None
+    if url.startswith("file:"):
+        if not path or not os.path.exists(path):
+            raise ValueError("The uploaded file is missing: add it again")
+        with open(path, "rb") as f:
+            raw = f.read(1 << 20)
+    else:
+        raw = (fetch or livetv.fetch)(url, timeout=60)
     if _is_guide(_head(raw)):  # a guide is only looked at, never unpacked whole here (it is read a piece at a time later)
         return "guide", None
+    if path:
+        if os.path.getsize(path) > MAX_LIST:
+            raise ValueError("A channel list can be up to 20 MB")
+        with open(path, "rb") as f:
+            raw = f.read()
     text = _text(raw)
     kind = kind_of(text)
     if kind == "guide":
@@ -151,9 +176,64 @@ def add(data_dir, url, fetch=None):
     kind, chans = read(url, fetch)
     sid = hashlib.sha256(url.encode()).hexdigest()[:10]
     item = {"id": sid, "url": url, "kind": kind, "name": _name(url), "on": True, "added": time.time(),
-            "said": f"{len(chans)} channels found" if chans is not None else "A guide"}
+            "said": _found(chans)}
     save(data_dir, have + [item])
     return item
+
+
+def add_file(data_dir, filename, stream, length):
+    """An uploaded M3U, JSON or XMLTV file (DASH-359, owner 12 November 2026: "allow a file picker ... as well as the
+    URL"). Read from `stream` a piece at a time into the plug-in's folder, then looked at like an address."""
+    if not 0 < length <= MAX_UPLOAD:
+        raise ValueError("Choose a file up to 60 MB (a large guide can be packed as .xml.gz)")
+    have = sources(data_dir)
+    if len(have) >= MAX_SOURCES:
+        raise ValueError(f"Up to {MAX_SOURCES} lists and guides")
+    shown = livetv._clean(os.path.basename(str(filename or "file")), 80) or "file"
+    os.makedirs(os.path.join(data_dir, FILES), exist_ok=True)
+    tmp = os.path.join(data_dir, FILES, ".upload")
+    digest, left = hashlib.sha256(), length
+    with open(tmp, "wb") as f:
+        while left:
+            chunk = stream.read(min(1 << 20, left))
+            if not chunk:
+                break
+            f.write(chunk)
+            digest.update(chunk)
+            left -= len(chunk)
+    if left:
+        os.remove(tmp)
+        raise ValueError("The upload stopped before the end")
+    sid = digest.hexdigest()[:10]
+    if any(s["id"] == sid for s in have):
+        os.remove(tmp)
+        raise ValueError("That file is already added")
+    ext = ".gz" if shown.lower().endswith(".gz") else ""
+    stored = os.path.join(data_dir, FILES, sid + (ext or ".file"))
+    os.replace(tmp, stored)
+    url = f"file:{os.path.basename(stored)}"
+    try:
+        kind, chans = read(url, data_dir=data_dir)
+    except Exception:
+        os.remove(stored)  # the plug-in's own copy of a file it cannot use
+        raise
+    item = {"id": sid, "url": url, "kind": kind, "name": shown, "on": True, "added": time.time(),
+            "said": _found(chans)}
+    save(data_dir, have + [item])
+    return item
+
+
+def forget(data_dir, item):
+    """Removes an uploaded file's stored copy (Remove on the screen); the person's own file is untouched."""
+    path = local_path(data_dir, item.get("url", ""))
+    if path and os.path.exists(path):
+        os.remove(path)
+
+
+def _found(chans):
+    if chans is None:
+        return "A guide"
+    return f"{len(chans)} {'channel' if len(chans) == 1 else 'channels'} found"
 
 
 def fingerprint(data_dir):
@@ -166,7 +246,7 @@ def build(d, data_dir, fetch=None, plays=None):
     entries, seen, notes = [], set(), {}
     for s in lists:
         try:
-            _, chans = read(s["url"], fetch)
+            _, chans = read(s["url"], fetch, data_dir)
         except Exception as e:  # one list failing does not stop the others
             notes[s["id"]] = (f"Could not be read: {str(e)[:100]}", "problem")
             continue
@@ -188,7 +268,7 @@ def build(d, data_dir, fetch=None, plays=None):
 
 
 def guide(d, data_dir):
-    urls = [s["url"] for s in sources(data_dir) if s.get("on", True) and s.get("kind") == "guide"]
+    urls = [local_path(data_dir, s["url"]) or s["url"] for s in sources(data_dir) if s.get("on", True) and s.get("kind") == "guide"]
     ids = livetv._ids_in(os.path.join(d, PLAYLIST))
     if not urls or not ids:
         livetv._write(os.path.join(d, GUIDE), '<?xml version="1.0" encoding="utf-8"?>\n<tv generator-info-name="Starboard"></tv>\n')

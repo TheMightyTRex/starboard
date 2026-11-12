@@ -135,23 +135,28 @@ def _xml_events(data):
 def _guide_events(url, timeout=300):
     """Downloads a gzip'd XMLTV guide to a temporary file and parses it while it unpacks, so neither the download
     nor the unpacked guide is held in memory (a 147 MB guide peaked at about 213 MB before, about 30 MB now).
-    The file goes away when parsing ends."""
-    if not url.lower().startswith(("https://", "http://")):
+    The file goes away when parsing ends. `url` can also be an uploaded guide's stored copy, an absolute path that
+    only livetv_own passes; and a guide that is not packed is read as it is (DASH-359)."""
+    local = url.startswith("/")
+    if not local and not url.lower().startswith(("https://", "http://")):
         raise ValueError("Only http and https addresses")
-    tmp = tempfile.TemporaryFile()
+    tmp = open(url, "rb") if local else tempfile.TemporaryFile()  # noqa: SIM115  (closed below)
     try:
-        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Starboard"}), timeout=timeout) as r:  # checked to be http(s) above  # nosec B310
-            copied = 0
-            while True:
-                chunk = r.read(1024 * 1024)
-                if not chunk:
-                    break
-                copied += len(chunk)
-                if copied > MAX_DOWNLOAD:
-                    raise ValueError("The download is too large")
-                tmp.write(chunk)
+        if not local:
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Starboard"}), timeout=timeout) as r:  # checked to be http(s) above  # nosec B310
+                copied = 0
+                while True:
+                    chunk = r.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    copied += len(chunk)
+                    if copied > MAX_DOWNLOAD:
+                        raise ValueError("The download is too large")
+                    tmp.write(chunk)
         tmp.seek(0)
-        g = gzip.GzipFile(fileobj=tmp)
+        packed = tmp.read(2) == b"\x1f\x8b"
+        tmp.seek(0)
+        g = gzip.GzipFile(fileobj=tmp) if packed else tmp
         head = g.read(65536)
         _check_head(head)
         events = _et().iterparse(io.BufferedReader(_Capped(head, g), 1024 * 1024), events=("start", "end"))

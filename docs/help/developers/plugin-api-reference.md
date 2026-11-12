@@ -79,7 +79,7 @@ plug-in's own API key in the `X-Api-Key` header, so the plug-in can tell the cal
 |---|---|
 | `type` | Must be `list` |
 | `title`, `intro` | Cut to 80 and 400 characters |
-| `add` | Optional. Shows an add box; `label`, `hint` and `placeholder` are cut to 120 characters |
+| `add` | Optional. Shows an add box; `label`, `hint` and `placeholder` are cut to 120 characters. Optional `file`: `{"label", "hint", "accept"}` also shows a file picker, where `accept` lists file endings such as `.m3u,.json,.gz` |
 | `items` | Up to 1000. An item without an `id` is left out |
 | `id`, `title`, `detail` | Cut to 600, 120 and 200 characters |
 | `state` | `ok`, `warning`, `problem`, `off` or `unknown`; anything else is `unknown` |
@@ -101,6 +101,12 @@ and `value` is what the person entered or chose. For `bulk`, `id` is the set and
 in it or `off` to deactivate them. Answer with the whole list again, in the same shape, with `said`
 added: one sentence, up to 200 characters, that Starboard shows. To refuse, answer with an HTTP error status and
 `{"error": "A sentence saying why"}`; Starboard shows the sentence.
+
+When `add` has a `file`, a chosen file is sent as it is, not as JSON: Starboard streams it to your `choices` path
+plus `/file`, such as `/sources/file?name=channels.m3u`, with `Content-Type: application/octet-stream`, the file's size
+in `Content-Length` and the file's name in `name`. Files can be up to 60 MB. Read the body a piece at a time and answer
+with the whole list, in the same shape, with `said` added; to refuse, answer with an HTTP error status and `{"error": ...}`.
+A plug-in without this path answers 404, and Starboard says the plug-in does not take files.
 
 ## Health
 
