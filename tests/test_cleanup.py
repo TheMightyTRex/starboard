@@ -43,7 +43,7 @@ class CleanupTest(unittest.TestCase):
         items = cleanup.left_over(self.data)
         kinds = [i["kind"] for i in items]
         self.assertEqual(kinds.count("plugin"), 1)
-        self.assertEqual(kinds.count("copy"), 2)  # the newest 10 saved copies stay
+        self.assertEqual(kinds.count("copy"), 0)  # saved copies are kept or removed by their own setting (DASH-109)
         self.assertEqual(kinds.count("work"), 1)
         plugin = next(i for i in items if i["kind"] == "plugin")
         self.assertEqual(plugin["what"], "A removed plug-in: radio")

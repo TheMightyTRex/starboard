@@ -7,11 +7,11 @@ dialog that says it cannot be undone and the Starboard password.
 
 What is left over:
 - removed plug-ins, in data/plugins/.removed;
-- old saved copies of the settings (data/backups/config-*.json) beyond the newest KEEP_COPIES and older than
-  OLD_DAYS days;
+- (old saved copies of the settings are not listed: Starboard keeps those of the last versions chosen in Settings,
+  Updates, Restore and removes older ones itself, DASH-109);
 - a full backup's work folder left by one that did not finish (data/backup-work), when no backup is running;
-- update.sh's backups (backups/ beside data/, seen only when Starboard runs without Docker) beyond the newest
-  KEEP_UPDATES.
+- update.sh's backups (backups/ beside data/, seen only when Starboard runs without Docker) beyond the number
+  update.sh keeps (the same setting, backup_keep_versions, 5 unless changed).
 
 Sizes are read only when the page asks, never in the background. Each item is named to the browser by an id made
 from its path, and the path is found again from the id on this computer, so a request can never name a path.
@@ -24,9 +24,6 @@ import shutil
 import time
 
 HOLDING = "holding"
-KEEP_COPIES = 10
-OLD_DAYS = 90
-KEEP_UPDATES = 3
 SIZE_LIMIT = 200_000  # files counted at most for one item; the size then says "at least"
 
 
@@ -87,27 +84,25 @@ def _candidates(data_dir, backup_running=False):
     if os.path.isdir(removed) and not os.path.islink(removed):
         for name in sorted(os.listdir(removed), reverse=True):
             out.append((os.path.join(removed, name), "plugin", f"A removed plug-in: {name.rsplit('-', 2)[0] or name}"))
-    copies = os.path.join(data_dir, "backups")
-    if os.path.isdir(copies) and not os.path.islink(copies):
-        files = sorted((f for f in os.listdir(copies) if f.startswith("config-") and f.endswith(".json")), reverse=True)
-        cutoff = time.time() - OLD_DAYS * 86400
-        for name in files[KEEP_COPIES:]:
-            path = os.path.join(copies, name)
-            try:
-                old = os.lstat(path).st_mtime < cutoff
-            except OSError:
-                continue
-            if old:
-                out.append((path, "copy", "An old saved copy of Starboard's settings"))
     work = os.path.join(data_dir, "backup-work")
     if os.path.isdir(work) and not os.path.islink(work) and not backup_running:
         out.append((work, "work", "What a full backup that did not finish left behind"))
     updates = os.path.join(os.path.dirname(os.path.abspath(data_dir)), "backups")
     if os.path.isdir(updates) and not os.path.islink(updates):
         names = sorted((n for n in os.listdir(updates) if not n.startswith(".")), reverse=True)
-        for name in names[KEEP_UPDATES:]:
+        for name in names[_keep_updates(data_dir):]:
             out.append((os.path.join(updates, name), "update", "A backup update.sh made before an update"))
     return out
+
+
+def _keep_updates(data_dir):
+    """How many update.sh backups update.sh keeps: Settings, Updates, Restore's choice (DASH-109), 5 unless changed."""
+    try:
+        with open(os.path.join(data_dir, "config.json"), encoding="utf-8") as f:
+            n = json.load(f).get("backup_keep_versions", 5)
+        return n if isinstance(n, int) and 1 <= n <= 50 else 5
+    except (OSError, ValueError):
+        return 5
 
 
 def left_over(data_dir, backup_running=False):
