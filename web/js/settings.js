@@ -169,6 +169,7 @@ function serviceRow(s, items, index) {
   menuItems.push(s.enabled
     ? { label: "Hide from the dashboard", icon: "eye-off", onSelect: () => later(() => setShown(s, false)) }
     : { label: "Show on the dashboard", icon: "eye", onSelect: () => later(() => setShown(s, true)) });
+  menuItems.push({ label: "Restart", icon: "rotate-ccw", onSelect: () => later(() => restartService(s)) });
   menuItems.push({ label: "Remove", icon: "trash-2", danger: true, onSelect: () => later(() => removeService(s)) });
   return el("li", { class: "row row--opens" },
     appIcon(s, "app-icon"),
@@ -225,6 +226,26 @@ async function moveService(s, by) {
     renderServices();
     announce(`${s.name} moved ${by < 0 ? "up" : "down"}, now ${at + by + 1} of ${peers.length}`);
   } catch (e) { problem(e.message); }
+}
+
+// Restart (owner, 12 November 2026): stops the app's container and starts it again. For Gluetun, the apps that use
+// its network restart after it. Focus goes back to the app's name, and the result is said.
+async function restartService(s) {
+  const ok = await confirmDialog({
+    title: `Restart ${s.name}?`,
+    message: `${s.name} stops and starts again, which takes a few seconds. Its settings and files stay as they are, and anything it was doing carries on once it is back.${s.type === "gluetun" ? " The apps that use its VPN connection restart after it." : ""}`,
+    confirm: `Restart ${s.name}`,
+  });
+  if (!ok) return;
+  const focusRow = () => $(`#app-sections [data-key="${CSS.escape(s.id)}"] .row__title button`)?.focus();
+  announce(`Restarting ${s.name}`);
+  try {
+    const r = await api(`/api/services/${s.id}/restart`, { method: "POST" });
+    toast(r.said);
+    announce(r.said);
+    await loadStatus();
+  } catch (e) { problem(e.message); }
+  focusRow();
 }
 
 async function setShown(s, shown) {

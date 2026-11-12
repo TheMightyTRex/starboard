@@ -169,6 +169,16 @@ class Watch:
                     pass
 
     def tick(self):
+        # Apps on Gluetun's network that started before Gluetun last did have no network: restart them so they join
+        # its new one (Bazarr and FlareSolverr, 12 November 2026). Two Docker calls when nothing needs it.
+        from . import containers
+        if containers.available():
+            try:
+                again = containers.rejoin()
+                if again:
+                    logs.event("info", "apps", f"Restarted {', '.join(again)}: the VPN restarted, so they had no network")
+            except containers.DockerError:
+                pass
         w = self.settings()
         on = w["alerts"]
         cfg = self.app.config.data

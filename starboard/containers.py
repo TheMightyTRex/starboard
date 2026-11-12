@@ -237,6 +237,62 @@ def match(service, found):
     return None
 
 
+# Restart (owner, 12 November 2026) ------------------------------------------------------------------------
+
+def restart(name, wait=20):
+    """Restarts one container by name, giving it `wait` seconds to stop cleanly. Raises DockerError."""
+    docker("POST", f"/containers/{urllib.parse.quote(name, safe='')}/restart?t={int(wait)}", timeout=wait + 60)
+
+
+def stale_sharers():
+    """Running containers that share another container's network (Gluetun's VPN) but started before it last did.
+    Such a container keeps the network from before that restart, which has nothing in it: no addresses can be
+    looked up and nothing can be reached (Bazarr and FlareSolverr, 12 November 2026)."""
+    out = []
+    listed = docker("GET", "/containers/json")
+    started = {}
+
+    def started_at(ref):
+        if ref not in started:
+            try:
+                info = docker("GET", f"/containers/{urllib.parse.quote(ref, safe='')}/json")
+                started[ref] = ((info.get("State") or {}).get("StartedAt") or "", info.get("Name", "").lstrip("/"))
+            except DockerError:
+                started[ref] = ("", "")
+        return started[ref]
+    for c in listed:
+        mode = (c.get("HostConfig") or {}).get("NetworkMode") or ""
+        if not mode.startswith("container:"):
+            continue
+        host_at, host_name = started_at(mode.split(":", 1)[1])
+        own_at, _ = started_at(c["Id"])
+        if host_at and own_at and own_at < host_at:  # RFC 3339 times in UTC sort as text
+            out.append({"name": c["Names"][0].lstrip("/"), "shares": host_name})
+    return out
+
+
+def rejoin():
+    """Restarts each container that shares a network it lost (stale_sharers). Returns the names restarted."""
+    done = []
+    for c in stale_sharers():
+        try:
+            restart(c["name"])
+            done.append(c["name"])
+        except DockerError:
+            pass
+    return done
+
+
+def sharers(name):
+    """Running containers that use `name`'s network, by name."""
+    try:
+        target = docker("GET", f"/containers/{urllib.parse.quote(name, safe='')}/json").get("Id", "")
+    except DockerError:
+        return []
+    return [c["Names"][0].lstrip("/") for c in docker("GET", "/containers/json")
+            if (c.get("HostConfig") or {}).get("NetworkMode") in (f"container:{target}", f"container:{name}")]
+
+
 # Registries (OCI distribution API, anonymous pull tokens) ---------------------------
 
 def parse_ref(ref):

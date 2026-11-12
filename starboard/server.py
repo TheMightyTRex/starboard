@@ -638,6 +638,28 @@ def _move_livetv(app):
         logs.error("live tv", f"Live TV stays in Starboard for now: {e}", e)
 
 
+def restart_app(service):
+    """Restarts the container an app runs in; for one whose network others share (Gluetun), those too, after it, so
+    they join its new network. Returns the sentence to show. Raises ValueError in words for the page."""
+    if not containers.available():
+        raise ValueError("Starboard has no access to Docker here, so it cannot restart apps")
+    found = containers.match(service, [{"name": c["name"], "service": ""} for c in containers.containers(light=True)])
+    if not found:
+        raise ValueError(f"Starboard cannot find the container {service['name']} runs in. Choose it under Container in Edit")
+    name = found["name"]
+    after = containers.sharers(name)
+    try:
+        containers.restart(name)
+        for other in after:
+            containers.restart(other)
+    except containers.DockerError as e:
+        raise ValueError(f"{service['name']} did not restart: {e}") from None
+    services.forget()
+    said = f"{service['name']} restarted" + (f", then {', '.join(after)}, which use its network" if after else "")
+    logs.event("info", "apps", said)
+    return said
+
+
 class Handler(BaseHTTPRequestHandler):
     # HTTP/1.1 keeps the connection open for the page's styles, scripts and API calls, so a page costs one
     # connection and one thread instead of about 15 (a page took a third of the processor time in testing).
@@ -1230,13 +1252,15 @@ class Handler(BaseHTTPRequestHandler):
                 if out["found"]:
                     logs.event("info", "settings", "Keys read for " + ", ".join(out["found"]))
                 return self.json(200, {**out, "config": cfg.public()})
-            m = re.match(r"^/api/services/([a-z0-9-]+)(/options)?$", path)
+            m = re.match(r"^/api/services/([a-z0-9-]+)(/options|/restart)?$", path)
             if m:
                 service = cfg.service(m.group(1))
                 if not service:
                     return self.error(404, "That app is not in your list")
                 if m.group(2) and method == "GET":
                     return self.json(200, services.options(service))
+                if m.group(2) == "/restart" and method == "POST":  # Manage apps, Restart (owner, 12 November 2026)
+                    return self.json(200, {"said": restart_app(service)})
                 if not m.group(2) and method == "DELETE":
                     cfg.remove_service(service["id"])
                     logs.event("info", "apps", f"Removed {service['name']}")
