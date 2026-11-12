@@ -144,6 +144,7 @@ class App:
             self._reset_password(data_dir)
         self.limits = auth.RateLimit()
         self.version = read_version()
+        self.config.version = self.version  # saved settings copies record the version (DASH-109)
         since = self.config.data.get("version_since") or {}
         if since.get("version") != self.version:  # the time this version first started: About shows it
             self.config.data["version_since"] = {"version": self.version, "since": time.time()}
@@ -183,6 +184,12 @@ class App:
         self.schedule = schedule.Schedule(self.config)
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.schedule.start()
+        from .config import prune_saved
+        prune_saved(os.path.join(data_dir, "backups"), self.config.data.get("backup_keep_versions", 5))  # DASH-109
+        from . import backup_schedule  # DASH-17: a thread only while Weekly or Nightly is chosen
+        self.backup_schedule = backup_schedule.Scheduler(self)
+        if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
+            self.backup_schedule.ensure()
         self.repo = os.environ.get("STARBOARD_REPO", "")  # "owner/name" for the update check; optional
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
         self.machine_name = socket.gethostname().split(".", 1)[0].lower()
@@ -1166,6 +1173,8 @@ class Handler(BaseHTTPRequestHandler):
                     app.watch.ensure()
                 if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
                     app.schedule.ensure()
+                    if "backup_schedule" in incoming:
+                        app.backup_schedule.ensure()
                 if app.history:
                     app.history.ensure()
                 app.usage.ensure()
@@ -2112,8 +2121,28 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/version" and method == "GET":
                 return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo,
                                        "since": (cfg.data.get("version_since") or {}).get("since")})
+            if path.startswith("/api/backup/schedule"):  # Scheduled backups (DASH-17)
+                from . import backup_schedule, full_backup
+                if path == "/api/backup/schedule" and method == "GET":
+                    return self.json(200, app.backup_schedule.status())
+                if path == "/api/backup/schedule/key" and method == "POST":
+                    # Kept so a scheduled copy can be made with nobody there: the key made from the password, never the password.
+                    data = self.body()
+                    self.check_password(data)
+                    try:
+                        full_backup.save_key(app.data_dir, str(data.get("backup_password") or ""), str(data.get("folder") or ""),
+                                             bool(data.get("pictures")))
+                    except (full_backup.BackupError, ValueError) as e:
+                        return self.error(400, str(e))
+                    logs.event("info", "backup", "The key for scheduled full backups was saved")
+                    return self.json(200, app.backup_schedule.status())
+                if path == "/api/backup/schedule/forget" and method == "POST":
+                    self.check_password(self.body())
+                    full_backup.forget_key(app.data_dir)
+                    logs.event("info", "backup", "The key for scheduled full backups was removed")
+                    return self.json(200, app.backup_schedule.status())
             if path.startswith("/api/backup/full"):  # Full without media (DASH-260)
-                from . import full_backup
+                from . import backup_schedule, full_backup
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                 try:
                     if path == "/api/backup/full" and method == "GET":
@@ -2124,7 +2153,8 @@ class Handler(BaseHTTPRequestHandler):
                             can = str(e)
                         return self.json(200, {"status": full_backup.status(app.data_dir), "folder": full_backup.default_folder(app.data_dir),
                                                "cannot": can, "installed": bool(stack.env_values(app.data_dir).get("CONFIG_DIR")),
-                                               "docker": containers.available(), "starboard": full_backup.sizes(app.data_dir)})
+                                               "docker": containers.available(), "starboard": full_backup.sizes(app.data_dir),
+                                               "keep": backup_schedule.keep_for(app.backup_schedule.mode())})
                     if path == "/api/backup/full/sizes" and method == "GET":
                         return self.json(200, {"apps": full_backup.app_sizes(app.data_dir), "starboard": full_backup.sizes(app.data_dir)})
                     if path == "/api/backup/full/found" and method == "GET":
@@ -2133,7 +2163,8 @@ class Handler(BaseHTTPRequestHandler):
                         data = self.body()
                         self.check_password(data)
                         full_backup.start(app.data_dir, app.version, str(data.get("backup_password") or ""), str(data.get("folder") or ""),
-                                          bool(data.get("pictures")), cfg.data.get("site_name", ""))
+                                          bool(data.get("pictures")), cfg.data.get("site_name", ""),
+                                          keep=backup_schedule.keep_for(app.backup_schedule.mode()))
                         logs.event("info", "backup", "Full backup started")
                         return self.json(202, {"status": full_backup.status(app.data_dir)})
                     if path == "/api/backup/full/restore" and method == "POST":
@@ -2205,7 +2236,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/backup/server" and method == "GET":
                 return self.json(200, backup.server_status())
             if path == "/api/backup/server" and method == "POST":
-                backup.request_server_backup(bool(self.body().get("with_prompt")))
+                from . import backup_schedule
+                backup.request_server_backup(bool(self.body().get("with_prompt")), keep=backup_schedule.keep_for(app.backup_schedule.mode()))
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()

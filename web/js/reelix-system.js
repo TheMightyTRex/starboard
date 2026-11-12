@@ -80,7 +80,7 @@ async function rsBackups(body, locked) {
         el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-every", text: "Days between backups" }), el("p", { class: "hint", text: "0 turns scheduled backups off." }), every),
         el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-keep", text: "Backups to keep" }), el("p", { class: "hint", text: "Ones made by hand are always kept." }), keep)),
       el("div", { class: "actions" }, now, saveSched),
-      r.folder ? el("p", { class: "small muted", text: `Inside Reelix they are in ${r.folder}. Starboard's server backup copies the newest one.` }) : null);
+      r.folder ? el("p", { class: "small muted", text: `Inside Reelix they are in ${r.folder}, next to its settings. Starboard's Full without media copies Reelix's library and settings itself, so these are extra copies on the same disk.` }) : null);
   };
   try { const r = await rsCall("backups", {}, "show Reelix's backups"); if (r) draw(r); else locked(); } catch (e) { rsFailed(body, locked, e); }
 }

@@ -7,6 +7,19 @@ add features.
 
 ## [Unreleased]
 
+### Added
+
+- System, Backup and restore: When backups are made, with Off, Manual, Weekly (Sunday at 03:00, keeping 4) and Nightly
+  (at 03:00, keeping 7). It makes a full backup without media when you let Starboard keep the backup password's key,
+  then asks the server's own backup job, and shows the next run (DASH-17).
+- Settings, Updates, Restore: Keep the copies of the last 5, 10 or 20 versions. Older saved settings copies, and
+  update.sh's older data copies, are removed by themselves (DASH-109).
+
+### Fixed
+
+- A full backup that fails now sends the backup alert; a copy cut off part way no longer stays in the backup folder;
+  Reelix's backups section no longer says Starboard copies them (DASH-78).
+
 ## [0.16.5] (11 November 2026)
 
 ### Added

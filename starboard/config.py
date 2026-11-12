@@ -9,6 +9,8 @@ import threading
 import time
 
 SCHEMA = 2
+BACKUP_SCHEDULES = ("off", "manual", "weekly", "nightly")
+KEEP_VERSIONS = (5, 10, 20)
 
 SERVICE_TYPES = {
     "sonarr": {"label": "Sonarr", "api": "/api/v3", "searchable": True, "kind": "Series"},
@@ -79,6 +81,11 @@ DEFAULTS = {
                     "storage_refresh": 0, "usage_every": "ask", "space_log": True},
     # Starboard's own log (System, Logs): days to keep, and detailed logging for reporting a problem.
     "logs": {"keep_days": 60, "detail": "off", "detail_until": 0},
+    # Scheduled backups (DASH-17, owner, 9 November 2026): off, manual (by hand only, with a reminder when the newest
+    # is a month old), weekly (Sunday 03:00, keeping 4) or nightly (03:00, keeping 7). System, Backup and restore.
+    "backup_schedule": "off",
+    # Settings copies Starboard saves by itself (DASH-109): those of the newest this many versions stay, older go.
+    "backup_keep_versions": 5,
     "setup_guide_done": False,
     "ux_notes": True,  # Send feedback (Snaglist) on every page: on by default since 0.15.2 (owner); Settings, General
     "feedback_default_on": True,  # the one-time switch-on for installs from before 0.15.2 is done (or never needed)
@@ -123,8 +130,65 @@ class ConfigError(ValueError):
     pass
 
 
+# Saved settings copies (DASH-109) ---------------------------------------------------------------------------------
+# data/backups/config-<date>-<reason>.json, made by Starboard itself before an update changes the settings and before
+# a restore. versions.json says which Starboard version made each. Those of the newest backup_keep_versions versions
+# stay; older ones are removed, because they are Starboard's own rolling copies (owner's rule: what Starboard made
+# itself as rotation may go beyond the kept number). Copies from before versions were recorded count as one version,
+# the oldest.
+
+def _running_version():
+    try:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "VERSION"), encoding="utf-8") as f:
+            return f.read().strip()[:20]
+    except OSError:
+        return ""
+
+
+def saved_versions(folder):
+    try:
+        with open(os.path.join(folder, "versions.json"), encoding="utf-8") as f:
+            got = json.load(f)
+        return {str(k): str(v)[:20] for k, v in got.items()} if isinstance(got, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_versions(folder, versions):
+    tmp = os.path.join(folder, "versions.json.tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump(versions, f)
+    os.replace(tmp, os.path.join(folder, "versions.json"))
+
+
+def prune_saved(folder, keep_versions, keep_name=None):
+    """Removes the saved copies older than the newest keep_versions versions. Returns the names removed."""
+    if not os.path.isdir(folder):
+        return []
+    keep_versions = keep_versions if keep_versions in KEEP_VERSIONS else 5
+    names = sorted((n for n in os.listdir(folder) if re.match(r"^config-\d{4}-\d{2}-\d{2}-\d{6}-[a-z-]+\.json$", n)), reverse=True)
+    versions = saved_versions(folder)
+    seen, gone = [], []
+    for name in names:  # newest first: the date is in the name
+        v = versions.get(name) or "?"
+        if v not in seen:
+            seen.append(v)
+        if len(seen) > keep_versions and name != keep_name:
+            try:
+                os.remove(os.path.join(folder, name))
+                gone.append(name)
+            except OSError:
+                pass
+    if gone or set(versions) - set(names):
+        _write_versions(folder, {k: v for k, v in versions.items() if k in names and k not in gone})
+    return gone
+
+
 class Config:
     """Thread-safe settings stored as JSON in the data folder (never in the repository)."""
+
+    version = ""  # the running Starboard's version, set by the app: saved copies record it (DASH-109)
 
     def __init__(self, data_dir):
         self.data_dir = data_dir
@@ -199,6 +263,10 @@ class Config:
             name = f"config-{time.strftime('%Y-%m-%d-%H%M%S')}-{reason}.json"
             shutil.copy2(self.path, os.path.join(folder, name))
             os.chmod(os.path.join(folder, name), 0o600)
+            versions = saved_versions(folder)
+            versions[name] = self.version or _running_version()
+            _write_versions(folder, versions)
+            prune_saved(folder, getattr(self, "data", {}).get("backup_keep_versions", 5), keep_name=name)
 
     # Services -----------------------------------------------------------
 
@@ -283,6 +351,8 @@ class Config:
             "logs": d["logs"],
             "setup_guide_done": d["setup_guide_done"],
             "ux_notes": d["ux_notes"],
+            "backup_schedule": d.get("backup_schedule", "off"),
+            "backup_keep_versions": d.get("backup_keep_versions", 5),
             "last_version": d["last_version"],  # what the settings really match
             "presets": {k: v["title"] for k, v in PRESETS.items()},
             "preset_about": PRESET_ABOUT,
@@ -360,12 +430,26 @@ class Config:
                 d["performance"]["preset"] = matching_preset(d)  # a change by hand is Custom, unless it matches one
             if "logs" in incoming:
                 d["logs"] = clean_logs(incoming["logs"], d["logs"])
+            if "backup_schedule" in incoming:
+                if incoming["backup_schedule"] not in BACKUP_SCHEDULES:
+                    raise ConfigError("Choose Off, Manual, Weekly or Nightly")
+                d["backup_schedule"] = incoming["backup_schedule"]
+            if "backup_keep_versions" in incoming:
+                try:
+                    keep = int(incoming["backup_keep_versions"])
+                except (TypeError, ValueError):
+                    keep = 0
+                if keep not in KEEP_VERSIONS:
+                    raise ConfigError("Choose 5, 10 or 20 versions")
+                d["backup_keep_versions"] = keep
             if "session_days" in incoming:
                 days = int(incoming["session_days"])
                 if not 1 <= days <= 90:
                     raise ConfigError("Keep people signed in for 1 to 90 days")
                 d["session_days"] = days
             self.save()
+            if "backup_keep_versions" in incoming:
+                prune_saved(os.path.join(self.data_dir, "backups"), d["backup_keep_versions"])
 
 
 # The right each key of PUT /api/config/general needs (DASH-278, from the capabilities list): "manage" for everyday
@@ -380,7 +464,7 @@ GENERAL_RIGHTS = {
     "setup_guide_done": "manage",
     # What Starboard does by itself or reaches out to
     "update_check": "admin", "ux_notes": "admin", "reelix_auto_update": "admin", "extras": "admin", "watch": "admin",
-    "logs": "admin",
+    "logs": "admin", "backup_schedule": "admin", "backup_keep_versions": "admin",
     # Security: never by key
     "network_access": "never", "secure_cookies": "never", "session_days": "never", "last_version": "never",
 }
