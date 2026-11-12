@@ -23,6 +23,8 @@
    "hint": "For channel logos and Pluto TV streams, such as http://192.168.1.20:8095. Jellyfin must be able to open it."},
   {"key": "jellyfin_folder", "label": "Live TV folder as Jellyfin sees it", "type": "text",
    "hint": "Such as /config/iptv. Live TV adds its channels and guides to Jellyfin from there."},
+  {"key": "sources", "label": "Your lists and guides", "type": "custom", "choices": "/sources",
+   "hint": "Add your own channel lists (M3U or JSON) and guides (XMLTV) by address. Each has its own switch."},
   {"key": "channels", "label": "Channels", "type": "custom", "choices": "/channels",
    "hint": "A switch for each list, region and section, then every channel by section. A channel you deactivate stays inactive when the lists are rebuilt."}
  ],

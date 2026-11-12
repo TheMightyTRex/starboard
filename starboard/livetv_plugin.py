@@ -148,12 +148,14 @@ def channels_screen(said=""):
     a switch for each whole list, then every channel at once, each region and each section (DASH-359)."""
     from . import livetv
     hidden = livetv.hidden_ids(DATA)
+    from . import livetv_own
+    own = {x["id"]: x.get("name", "") for x in livetv_own.sources(DATA)}
     chans = livetv.all_channels(livetv.folder())
     rows = []
     for c in sorted(chans, key=lambda c: int(c.get("number") or 0)):
         on = c["id"] not in hidden
         rows.append({"id": c["id"], "title": f"{c['number']} {c['name']}", "group": c.get("section") or "Other",
-                     "detail": " · ".join(x for x in (SOURCES.get(c.get("list"), ""), _region(c)) if x),
+                     "detail": " · ".join(x for x in (SOURCES.get(c.get("list")) or own.get(c.get("source"), "Your lists"), _region(c)) if x),
                      "state": "ok" if on else "off", "on": on, "actions": ["toggle"]})
     bulk = _lists(chans, hidden)
     if rows:
@@ -254,6 +256,79 @@ def channels_act(body):
     return channels_screen(f"{name} deactivated; Jellyfin drops it at its guide refresh, starting now")
 
 
+def sources_screen(said=""):
+    """The owner's own lists and guides (DASH-359): each address its own row, with Activate or Deactivate, Test
+    and Remove; Add takes an M3U playlist, a JSON channel list or an XMLTV guide."""
+    from . import livetv_own
+    rows = []
+    for x in livetv_own.sources(DATA):
+        on = x.get("on", True)
+        rows.append({"id": x["id"], "title": x.get("name") or x["url"], "group": "Channel lists" if x.get("kind") == "list" else "Guides",
+                     "detail": x.get("said", ""), "address": x["url"], "state": "off" if not on else x.get("state", "ok"),
+                     "on": on, "actions": ["toggle", "test", "remove"]})
+    out = {"type": "list", "title": "Lists and guides", "items": rows,
+           "add": {"label": "Add a list or guide", "placeholder": "https://example.com/channels.m3u",
+                   "hint": "The address of an M3U playlist, a JSON channel list or an XMLTV guide (.xml or .xml.gz)."},
+           "intro": (f"{sum(1 for r in rows if r['on'])} of {len(rows)} active. Channels from your lists are tested, then go into "
+                     "Jellyfin as one more tuner, grouped under each list's name; guides fill in their programmes.") if rows
+           else "None yet. Channels from your lists are tested, then go into Jellyfin as one more tuner, grouped under each list's name."}
+    if said:
+        out["said"] = said
+    return out
+
+
+def _rebuild():
+    with _lock:
+        _force["now"] = True
+    _wake.set()
+
+
+def sources_act(body, fetch=None):
+    from . import livetv, livetv_jellyfin, livetv_own
+    action, sid = body.get("action"), str(body.get("id") or "")
+    if action == "add":
+        item = livetv_own.add(DATA, str(body.get("value") or ""), fetch)
+        _rebuild()
+        what = "Channel list" if item["kind"] == "list" else "Guide"
+        return sources_screen(f"{what} added: {item['said']}. It is tested and added to Jellyfin in a few minutes")
+    if action == "test_all":
+        return sources_screen("; ".join(f"{x['name']}: {_test(x, fetch)}" for x in livetv_own.sources(DATA))[:200] or "Nothing to test")
+    items = livetv_own.sources(DATA)
+    item = next((x for x in items if x["id"] == sid), None)
+    if not item:
+        raise ValueError("Not one of your lists or guides")
+    if action == "test":
+        return sources_screen(f"{item['name']}: {_test(item, fetch)}")
+    if action == "toggle":
+        item["on"] = not item.get("on", True)
+        livetv_own.save(DATA, items)
+        if item["on"]:
+            _rebuild()
+            return sources_screen(f"{item['name']} activated: in Jellyfin in a few minutes, once it is tested")
+        gone = livetv_own.drop(livetv.folder(), sid) if item["kind"] == "list" else 0
+        if item["kind"] == "guide":
+            _rebuild()
+        livetv_jellyfin.refresh_guide(_services())
+        return sources_screen(f"{item['name']} deactivated" + (f": its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now" if gone else ""))
+    if action == "remove":
+        livetv_own.save(DATA, [x for x in items if x["id"] != sid])
+        if item["kind"] == "list":
+            livetv_own.drop(livetv.folder(), sid)
+            livetv_jellyfin.refresh_guide(_services())
+        _rebuild()
+        return sources_screen(f"{item['name']} removed")
+    raise ValueError("Not something this screen does")
+
+
+def _test(item, fetch=None):
+    from . import livetv_own
+    try:
+        kind, chans = livetv_own.read(item["url"], fetch)
+        return f"answers: {len(chans)} channels" if chans is not None else "answers: a guide"
+    except Exception as e:  # said on the screen, in words
+        return f"did not answer: {str(e)[:100]}"
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *a):
         pass
@@ -273,6 +348,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.answer(200, card())
         if self.path == "/channels":
             return self.answer(200, channels_screen())
+        if self.path == "/sources":
+            return self.answer(200, sources_screen())
         return self.answer(404, {"error": "Not found"})
 
     def do_POST(self):
@@ -282,6 +359,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.answer(200, channels_act(json.loads(self.rfile.read(n) or b"{}")))
             except (ValueError, KeyError) as e:
                 return self.answer(400, {"error": str(e)})
+        if self.path == "/sources":
+            n = int(self.headers.get("Content-Length") or 0)
+            try:
+                return self.answer(200, sources_act(json.loads(self.rfile.read(n) or b"{}")))
+            except (ValueError, KeyError) as e:
+                return self.answer(400, {"error": str(e)})
+            except OSError as e:  # the address did not answer
+                return self.answer(400, {"error": f"That address did not answer: {getattr(e, 'reason', e)}"[:200]})
         if self.path == "/run":
             with _lock:
                 _force["now"] = True

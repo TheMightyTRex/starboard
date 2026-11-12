@@ -447,10 +447,12 @@ function customScreen(p, s) {
   // `after`: a bulk switch says what it did in a saved note beside itself (Settings pattern 2), not in the line above.
   const run = async (body, button, after) => {
     if (button) button.disabled = true;
+    const key = button && button.dataset.key;  // a row's button: focus goes back to it, drawn again (WCAG 2.4.3)
     try {
       const out = await api(path, { method: "POST", body });
       if (out.said && !after) said.textContent = out.said;
       draw(out);
+      if (key) [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === key)?.focus();
       if (after) after(out);
     }
     catch (err) { if (button && button.type === "checkbox") button.checked = !button.checked; problem(err.message, button); }
@@ -501,8 +503,7 @@ function customScreen(p, s) {
     const testAll = el("button", { type: "button", class: "btn" }, icon("activity"), "Test all");
     testAll.addEventListener("click", () => run({ action: "test_all" }, testAll));
     box.replaceChildren(
-      data.intro ? el("p", { class: "small muted", text: data.intro }) : null,
-      bulkPanel(data),
+      ...[data.intro ? el("p", { class: "small muted", text: data.intro }) : null, bulkPanel(data)].filter(Boolean),  // replaceChildren writes null as text
       el("div", { class: "actions" }, testAll), said,
       ...[...groups].map(([g, rows]) => el("section", { class: "stack-2", "aria-label": g || data.title },
         g ? el("h4", { text: g }) : null,
@@ -520,7 +521,7 @@ function customScreen(p, s) {
             // at most two buttons after its state (DASH-309, section 10).
             ...it.actions.filter((a) => a === "test" || a === "toggle").map((a) => {
               const [label, ic] = a === "toggle" ? [it.on ? "Deactivate" : "Activate", it.on ? "pause" : "play"] : ACTION_WORDS[a];
-              const b = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, ic ? icon(ic) : null, label,
+              const b = el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:${a}` }, ic ? icon(ic) : null, label,
                 el("span", { class: "visually-hidden", text: ` ${it.title}` }));
               b.addEventListener("click", () => run({ action: a, id: it.id }, b));
               return b;

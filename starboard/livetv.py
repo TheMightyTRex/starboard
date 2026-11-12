@@ -37,7 +37,7 @@ GUIDES = [
 ]
 ADULT = ("erotica", "adult", "xxx", "playboy")
 SAMSUNG_UA = "okhttp/4.12.0"
-FILES = ["channels.m3u", "samsung.m3u", "pluto.m3u"]  # Free-TV first, so its channels lead each block
+FILES = ["channels.m3u", "samsung.m3u", "pluto.m3u", "own.m3u"]  # Free-TV first, so its channels lead each block; own.m3u: the owner's own lists (livetv_own.py)
 BLOCKS = [("Entertainment", 101), ("Lifestyle", 401), ("Movies", 451), ("Music", 501), ("Sport", 601),
           ("News", 701), ("Documentaries", 801), ("Kids", 1001), ("Other", 1101)]
 TVL = "https://raw.githubusercontent.com/tv-logo/tv-logos/main/countries"
@@ -753,7 +753,8 @@ def number_and_logos(d, self_url, white, hidden=frozenset()):
     # Every channel, hidden ones too, for the plug-in's Channels screen (DASH-313); then the hidden ones go.
     _write(os.path.join(d, ALL), json.dumps([{"id": c["attrs"].get("tvg-id", ""), "name": c["name"], "number": c["attrs"]["tvg-chno"],
                                               "section": c["cat"], "list": os.path.basename(c["file"]),
-                                              "region": "US" if region(c) else "UK"} for c in chans]))
+                                              "region": "" if c["file"].endswith("own.m3u") else "US" if region(c) else "UK",
+                                              "source": c["attrs"].get("starboard-src", "")} for c in chans]))
     chans = [c for c in chans if c["attrs"].get("tvg-id") not in hidden]
     for name in FILES:
         path = os.path.join(d, name)
@@ -860,6 +861,17 @@ def run(self_url, white, force=False):
                 rebuilt = True
         elif due:
             guide_step(name, f"{name} guide", lambda: guide(d))
+    # The owner's own lists and guides (DASH-359): built when they change, weekly, or with force; guides daily.
+    from . import livetv_own
+    data_dir = os.environ.get("STARBOARD_DATA", "/data")
+    own_fp = livetv_own.fingerprint(data_dir)
+    if livetv_own.sources(data_dir) or os.path.exists(os.path.join(d, livetv_own.PLAYLIST)):
+        if due_list("own", own_fp):
+            if step("Your lists", lambda: livetv_own.build(d, data_dir)):
+                state["own"] = {"fp": own_fp, "built": now}
+                rebuilt = True
+        elif guide_due("own", os.path.join(d, livetv_own.GUIDE)):
+            guide_step("own", "Your guides", lambda: livetv_own.guide(d, data_dir))
     if rebuilt:
         done.append(number_and_logos(d, self_url, white, hidden_ids(os.environ.get("STARBOARD_DATA", "/data"))))
     state["self_url"] = self_url

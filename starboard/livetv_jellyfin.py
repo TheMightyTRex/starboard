@@ -14,11 +14,11 @@ import urllib.request
 
 from . import livetv
 
-PLAYLISTS = [("channels.m3u", "Free-TV"), ("samsung.m3u", "Samsung TV Plus"), ("pluto.m3u", "Pluto TV")]
-GUIDES = ["guide.xml", "guide-samsung.xml", "guide-pluto.xml"]
+PLAYLISTS = [("channels.m3u", "Free-TV"), ("samsung.m3u", "Samsung TV Plus"), ("pluto.m3u", "Pluto TV"), ("own.m3u", "Your lists")]
+GUIDES = ["guide.xml", "guide-samsung.xml", "guide-pluto.xml", "guide-own.xml"]
 # Each guide belongs to one channel list. Set to every tuner, Jellyfin takes programmes from the first guide only
 # (owner's server, 10 November 2026: Samsung TV Plus and Pluto TV had no listings), so each is linked to its own.
-GUIDE_OF = {"guide.xml": "channels.m3u", "guide-samsung.xml": "samsung.m3u", "guide-pluto.xml": "pluto.m3u"}
+GUIDE_OF = {"guide.xml": "channels.m3u", "guide-samsung.xml": "samsung.m3u", "guide-pluto.xml": "pluto.m3u", "guide-own.xml": "own.m3u"}
 TIMEOUT = 20
 
 
