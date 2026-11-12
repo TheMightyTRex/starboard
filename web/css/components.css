@@ -1703,13 +1703,23 @@
     height: 3px;
     overflow: hidden;
   }
-  .loading-bar[data-active]::before {
+  /* Chase (TheMightyTRexUK, 12 November 2026): a long bar and a short bar follow each other across until loading
+     ends. Reduce motion shows a still line instead. */
+  .loading-bar[data-active]::before,
+  .loading-bar[data-active]::after {
     content: "";
     position: absolute;
-    inset: 0 auto 0 0;
-    width: 35%;
+    top: 0;
+    bottom: 0;
+    left: 0;
     background: var(--color-accent);
-    animation: loading 1.1s ease-in-out infinite;
+    will-change: left, right;
+  }
+  .loading-bar[data-active]::before {
+    animation: loading-long 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+  }
+  .loading-bar[data-active]::after {
+    animation: loading-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) 1.15s infinite;
   }
   /* Toast (option C, TheMightyTRexUK, 3 November 2026): a card in the corner with a status edge, an icon, a title,
      an optional line of detail, one optional action and Close. Tones: success, info, warning and danger
@@ -2934,11 +2944,15 @@
     font-size: var(--text-sm);
   }
 
-  /* Settings: a section with a heading, then rows of label, explanation and control. */
+  /* Settings: a section with a heading, then rows of label, explanation and control. It takes the page's width, as
+     every other page does (TheMightyTRexUK, 12 November 2026); only its text keeps a readable length. */
   .settings-section {
     display: grid;
     gap: var(--space-4);
-    max-width: 880px;
+  }
+  .settings-section__head p,
+  .setting__text {
+    max-width: 75ch;
   }
   .settings-section__head {
     display: grid;
@@ -4891,29 +4905,65 @@
       background-position: -200% 0;
     }
   }
-  @keyframes loading {
-    from {
-      transform: translateX(-100%);
+  @keyframes loading-fade {
+    0%,
+    100% {
+      opacity: 0.25;
     }
-    to {
-      transform: translateX(300%);
+    50% {
+      opacity: 1;
+    }
+  }
+  @keyframes loading-long {
+    0% {
+      left: -35%;
+      right: 100%;
+    }
+    60%,
+    100% {
+      left: 100%;
+      right: -90%;
+    }
+  }
+  @keyframes loading-short {
+    0% {
+      left: -200%;
+      right: 100%;
+    }
+    60%,
+    100% {
+      left: 107%;
+      right: -8%;
     }
   }
   @media (prefers-reduced-motion: reduce) {
     .skeleton,
-    .loading-bar[data-active]::before {
+    .loading-bar[data-active]::before,
+    .loading-bar[data-active]::after {
       animation: none;
     }
+    /* Reduce motion: nothing slides, but the line still shows that something is happening by fading in and out
+       across its whole width (owner, 12 November 2026: a still line looked as if nothing was loading). */
     .loading-bar[data-active]::before {
-      width: 100%;
-      opacity: 0.6;
+      right: 0;
+      animation: loading-fade 1.6s ease-in-out infinite;
+    }
+    .loading-bar[data-active]::after {
+      display: none;
     }
   }
   :root.pref-motion .skeleton,
-  :root.pref-motion .loading-bar[data-active]::before,
+  :root.pref-motion .loading-bar[data-active]::after,
   :root.pref-motion .side-panel,
   :root.pref-motion .phone-menu {
     animation: none;
+  }
+  :root.pref-motion .loading-bar[data-active]::before {
+    right: 0;
+    animation: loading-fade 1.6s ease-in-out infinite;
+  }
+  :root.pref-motion .loading-bar[data-active]::after {
+    display: none;
   }
   /* UX notes (ux-notes.js): a tester's Note an issue button in the corner, a banner while a part of the page
      is chosen, an outline round that part, and the note and list dialogs. Only while testing is turned on. */
@@ -5165,7 +5215,7 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
 /* A location (DASH-310): the folder in words with its free space, the path small under it, Browse that opens in
    the right place, Set automatically, and the typed path under Advanced. */
 .location { display: grid; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-divider);
-  background: var(--color-surface); max-inline-size: 880px; }
+  background: var(--color-surface); }
 .location__now { display: grid; gap: 2px; min-inline-size: 0; }
 .location__label { font-weight: var(--weight-strong); }
 .location__words { color: var(--color-text-muted); font-size: var(--text-sm); }

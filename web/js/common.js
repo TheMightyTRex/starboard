@@ -169,7 +169,49 @@ function chip(text, tone, iconName) {
   return el("span", { class: "chip", "data-tone": tone }, icon(name, 14), el("span", { text }));
 }
 
-async function api(path, { method = "GET", body } = {}) {
+// The loading line under the menu (owner, 12 November 2026): the shared .loading-bar on the header's lower edge.
+// It shows once any request has taken longer than WAIT_MS, so quick answers never flicker it, and while the next
+// page loads after a link is followed. Decorative: what is loading is said by the page itself.
+const loading = (() => {
+  const WAIT_MS = 300;
+  let bar = null, busy = 0, timer = 0;
+  const node = () => {
+    if (bar?.isConnected) return bar;
+    bar = el("div", { class: "loading-bar", "aria-hidden": "true" });
+    const header = document.querySelector(".site-header");
+    if (header) header.append(bar); else { bar.classList.add("loading-bar--top"); document.body?.prepend(bar); }
+    return bar;
+  };
+  const show = (on) => { const b = document.body ? node() : null; if (b) b.toggleAttribute("data-active", on); };
+  const start = () => {
+    busy += 1;
+    if (busy === 1) timer = setTimeout(() => show(true), WAIT_MS);
+  };
+  const stop = () => {
+    busy = Math.max(0, busy - 1);
+    if (!busy) { clearTimeout(timer); show(false); }
+  };
+  // A new page: from the moment a link takes you to another page here until this one is replaced. Links the page
+  // handles itself, downloads, new tabs and links within the page are left alone; ten seconds is the limit.
+  window.addEventListener("click", (e) => {
+    const a = e.target.closest?.("a[href]");
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (a.target && a.target !== "_self" || a.hasAttribute("download") || a.origin !== location.origin) return;
+    if (a.pathname === location.pathname && a.search === location.search) return;  // a part of this page
+    show(true);
+    setTimeout(() => { if (!busy) show(false); }, 10000);
+  });
+  window.addEventListener("pageshow", () => { if (!busy) show(false); });  // back to a page kept in memory
+  return { start, stop };
+})();
+
+async function api(path, opts = {}) {
+  loading.start();
+  try { return await apiCall(path, opts); }
+  finally { loading.stop(); }
+}
+
+async function apiCall(path, { method = "GET", body } = {}) {
   const opts = { method, headers: { Accept: "application/json" }, credentials: "same-origin" };
   if (method !== "GET") {
     opts.headers["X-Starboard"] = "1";

@@ -26,7 +26,7 @@
 .network-addresses { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
 .update-steps { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); }
 .command { max-width: 560px; }
-.notice--page { max-width: 880px; }
+.notice--page { max-width: 75ch; }  /* a page-wide message keeps a readable line */
 
 /* The add and edit slide-out. */
 .step-section { display: grid; gap: var(--space-4); }
@@ -75,9 +75,11 @@
   .notice > .btn { grid-column: 2; justify-self: start; }
 }
 
-/* Settings pages: one column, 880px at most, for the heading as well as the sections, so the heading's
-   button lines up with the rows' buttons. A little more room between the heading and the first section. */
-.page--settings > * { width: 100%; max-width: 880px; }
+/* Settings pages: the same width as every other page (owner, 12 November 2026), with the heading and the sections
+   in one column so the heading's button lines up with the rows' buttons. Only text keeps a readable length; the
+   controls sit at the right edge. A little more room between the heading and the first section. */
+.page--settings > * { width: 100%; }
+.page--settings .page-head__summary, .page--settings .field .hint { max-width: 75ch; }  /* rows and section lines: the library */
 .page--settings > .page-head { margin-bottom: var(--space-2); }
 .page--settings .settings-sections { gap: var(--space-10); }
 
