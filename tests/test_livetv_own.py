@@ -17,7 +17,9 @@ XML = b'<?xml version="1.0"?>\n<tv><channel id="news.uk"><display-name>Made-up N
       b'<programme channel="news.uk" start="20261112180000 +0000" stop="20261112190000 +0000"><title>Evening</title></programme>' \
       b'<programme channel="other" start="20261112180000 +0000" stop="20261112190000 +0000"><title>Elsewhere</title></programme></tv>'
 STREMIO = json.dumps({"id": "org.example", "resources": ["stream"], "catalogs": []}).encode()
-PAGES = {"https://a.example/list.m3u": M3U, "https://b.example/list.json": JSON, "https://c.example/guide.xml": XML,
+import gzip  # noqa: E402
+BIG = gzip.compress(XML.replace(b"</tv>", b"<!-- " + b"x" * 5_000_000 + b" --></tv>"))  # like xmltv.live's gb.xml.gz
+PAGES = {"https://f.example/gb.xml.gz": BIG, "https://a.example/list.m3u": M3U, "https://b.example/list.json": JSON, "https://c.example/guide.xml": XML,
          "https://d.example/manifest.json": STREMIO, "https://e.example/page": b"<html><body>Hello</body></html>"}
 
 
@@ -40,11 +42,13 @@ class OwnSourcesTest(unittest.TestCase):
         self.assertEqual(livetv_own.add(self.data, "https://a.example/list.m3u", fetch)["said"], "2 channels found")
         self.assertEqual(livetv_own.add(self.data, "https://b.example/list.json", fetch)["kind"], "list")
         self.assertEqual(livetv_own.add(self.data, "https://c.example/guide.xml", fetch)["kind"], "guide")
+        with mock.patch.object(livetv, "_gunzip", side_effect=AssertionError("a guide is never unpacked whole to look at it")):
+            self.assertEqual(livetv_own.add(self.data, "https://f.example/gb.xml.gz", fetch)["kind"], "guide")
         for url, words in (("https://d.example/manifest.json", "Stremio add-on"), ("https://e.example/page", "not an M3U"),
                            ("ftp://x.example/a.m3u", "http"), ("https://a.example/list.m3u", "already added")):
             with self.assertRaisesRegex(ValueError, words):
                 livetv_own.add(self.data, url, fetch)
-        self.assertEqual(len(livetv_own.sources(self.data)), 3)
+        self.assertEqual(len(livetv_own.sources(self.data)), 4)
 
     def test_active_lists_are_built_into_one_playlist_with_their_guide(self):
         for url in ("https://a.example/list.m3u", "https://b.example/list.json", "https://c.example/guide.xml"):

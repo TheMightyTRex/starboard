@@ -58,6 +58,21 @@ def _text(raw):
     return raw.decode("utf-8", "replace").lstrip("﻿ \r\n\t")
 
 
+def _head(raw, size=65536):
+    """The first bytes of a download as text, unpacking only those (xmltv.live's gb.xml.gz unpacks to 40 MB, too
+    much for the plug-in's 192 MB just to see what it is)."""
+    if raw[:2] == b"\x1f\x8b":
+        import gzip
+        import io
+        with gzip.GzipFile(fileobj=io.BytesIO(raw)) as g:
+            raw = g.read(size)
+    return raw[:size].decode("utf-8", "replace").lstrip("﻿ \r\n\t")
+
+
+def _is_guide(text):
+    return text.startswith("<") and bool(re.search(r"<tv[\s>]", text[:4000]))
+
+
 def kind_of(text):
     """'list' (M3U or JSON channels), 'guide' (XMLTV), or a ValueError saying what it is not."""
     if text.startswith("#EXTM3U") or text.startswith("#EXTINF"):
@@ -111,7 +126,10 @@ def m3u_channels(text):
 
 def read(url, fetch=None):
     """(kind, channels or None) for an address; raises ValueError in words."""
-    text = _text((fetch or livetv.fetch)(url, timeout=60))
+    raw = (fetch or livetv.fetch)(url, timeout=60)
+    if _is_guide(_head(raw)):  # a guide is only looked at, never unpacked whole here (it is read a piece at a time later)
+        return "guide", None
+    text = _text(raw)
     kind = kind_of(text)
     if kind == "guide":
         return kind, None
