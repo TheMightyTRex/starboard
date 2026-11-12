@@ -1,0 +1,25 @@
+# Starboard
+
+> Starboard is a lightweight home-server dashboard and installer, with a read-only API at /api/v1 and plug-ins that run in locked-down containers. These are its developer pages.
+
+## Plug-ins
+
+- [Make your first plug-in](developers/make-a-plugin.md): a tutorial that builds, tests and adds a tiny plug-in with one stat card.
+- [Plug-in manifest reference](developers/plugin-manifest-reference.md): every field of starboard-plugin.json, its check and the security rules.
+- [Plug-in API reference](developers/plugin-api-reference.md): what Starboard calls on a plug-in (cards, actions, custom settings, events, jobs) and what a plug-in may call.
+- [Test and publish a plug-in](developers/test-and-publish-a-plugin.md): the plug-in tester, pinning images by digest, and writing a catalogue.json.
+- [Write a plug-in](basics/write-a-plugin.md): the overview, with styles and dashboard cards.
+
+## Starboard's API
+
+- [API quickstart](developers/api-quickstart.md): make a key and make a first call with curl or Python, with paging and ETags.
+- [Authentication and keys](developers/api-authentication.md): keys, scopes, expiry, revoking, rate limits and the audit log.
+- [API reference](developers/api-reference.md): every address in version 1, generated from openapi.json.
+- [List of API errors](../api/errors.md): each problem code, its cause and its fix.
+- [API changelog](developers/api-changelog.md): what each version of the API and the plug-in API added.
+
+## Optional
+
+- [AI prompts for developers](developers/ai-prompts-for-developers.md): copy-ready prompts for building a plug-in or a script with an AI assistant.
+- [OpenAPI description](../../starboard/openapi.json): the machine-readable API description, also served at /api/v1/openapi.json.
+- [Plug-in manifest JSON Schema](../../starboard/plugin-manifest.schema.json): the manifest's rules for editors and tools.

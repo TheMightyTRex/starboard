@@ -2314,8 +2314,13 @@ function apiKeys() {
   const add = el("button", { type: "button", class: "btn" }, icon("plus"), "Make a key");
   add.addEventListener("click", () => make(add));
   api("/api/keys").then((r) => draw(r.keys)).catch((e) => list.replaceChildren(el("li", {}, notice("danger", "Could not list the keys", e.message))));
+  // The developers' pages in the help centre (DASH-275): how to start, and every route.
+  const helpBase = ($("[data-help-link]")?.getAttribute("href") || "https://themightytrex.github.io/starboard/help/").replace(/(\/help\/).*$/, "$1");
+  const helpLink = (page, text) => el("a", { href: `${helpBase}developers/${page}.html`, target: "_blank", rel: "noopener noreferrer" },
+    text, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }));
   box.append(list, el("div", { class: "actions" }, add, savedNote("keys-saved")),
-    el("p", { class: "small muted" }, "What the API offers: ", el("a", { href: "/api/v1/openapi.json", text: "the API description (OpenAPI)" }), "."));
+    el("p", { class: "small muted" }, "What the API offers: ", helpLink("api-quickstart", "the API quickstart"), ", ",
+      helpLink("api-reference", "every route"), " and ", el("a", { href: "/api/v1/openapi.json", text: "the API description (OpenAPI)" }), "."));
   return box;
 }
 

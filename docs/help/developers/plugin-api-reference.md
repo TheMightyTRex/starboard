@@ -1,0 +1,300 @@
+[Help centre](../README.md) · Developers
+
+# Plug-in API reference
+
+What Starboard calls on a plug-in, what it sends and what it expects back, and what a plug-in finds and may call in
+return. This page matches plug-in API 1.4.0. The fields that ask for each of these are in the
+[Plug-in manifest reference](plugin-manifest-reference.md).
+
+## How Starboard reaches a plug-in
+
+- Starboard always calls the **first** container in `containers`, on its `port` (80 when it is left out).
+- It reaches the container by its name, `plugin-<id>-<name>`, on the plug-in's own network. A container on the
+  `vpn` network is reached through Gluetun.
+- Every request has `User-Agent: Starboard` and asks for JSON. Answer with `Content-Type: application/json`.
+- Starboard never puts what a plug-in sends into a page as HTML. It keeps only the fields below, cuts each text to
+  its length, and draws everything itself.
+
+| What | Method and path | Time limit | Largest answer read |
+|---|---|---|---|
+| A card | GET the card's `path` | 3 seconds | 64 KB |
+| A button | POST the action's `path` | 10 seconds | 64 KB |
+| A custom setting | GET or POST the setting's `choices` path | 60 seconds | 512 KB |
+| An event | POST `/events` | 3 seconds, tried twice | not read |
+| A job | POST the job's `path` | its `time_limit_minutes` | 64 KB |
+
+## Card answers
+
+Starboard asks a card's path only while someone has a dashboard with the card open, and at most once a minute, or
+once every `refresh_minutes`. Answer with one JSON object in the shape for the card's type.
+
+| Type | Answer | Rules |
+|---|---|---|
+| `stat` | `{"value": 42, "label": "titles", "note": "3 added today"}` | `value` must be a number. `label` is cut to 40 characters, `note` to 80 |
+| `list` | `{"items": [{"title": "Dune", "detail": "Added today", "link": "https://example.invalid/dune"}]}` | Up to 10 items are shown. Each needs a `title` (80 characters); `detail` is cut to 120. A `link` must start with `http://` or `https://`, or it is left out |
+| `status` | `{"state": "ok", "text": "Up to date"}` | `state` is `ok`, `warning` or `problem`. `text` is cut to 160 characters |
+
+A `stat` card's `format` in the manifest says how `value` is shown: `number`, `bytes`, `percent`, `duration`
+(seconds) or `date` (seconds since 1970).
+
+When the path does not answer in 3 seconds, answers more than 64 KB, or answers the wrong shape, the card says
+"No answer from" and the plug-in's name, with what was wrong.
+
+## Actions
+
+A button in the plug-in's section of **Settings**, then **Plug-ins**, sends a POST with an empty body to the
+action's `path`. Answer within 10 seconds with:
+
+```json
+{"said": "Started building the channel list"}
+```
+
+Starboard shows `said` to the person, cut to 160 characters. With no `said`, it shows the button's label and
+"started". When the plug-in does not answer, it shows the plug-in's name and "did not answer". Do long work in the
+background and answer at once.
+
+## Custom screens
+
+A setting of type `custom` lets the plug-in describe a list, such as a list of channels or sources, and Starboard
+draws it with its own controls. The setting's `choices` is a path on the plug-in. Starboard calls it with the
+plug-in's own API key in the `X-Api-Key` header, so the plug-in can tell the call came from Starboard.
+
+**GET** the path. Answer with:
+
+```json
+{
+  "type": "list",
+  "title": "Channels",
+  "intro": "Every channel by section.",
+  "add": {"label": "Add a channel", "hint": "Its stream address", "placeholder": "https://"},
+  "items": [
+    {"id": "news-1", "title": "News one", "detail": "Guide refreshed today", "state": "ok", "group": "News",
+     "on": true, "address": "https://example.invalid/news-1", "actions": ["test", "toggle", "remove", "up", "down"],
+     "choice": {"label": "Weight", "value": "2", "options": [["1", "Low"], ["2", "Normal"], ["3", "High"]]}}
+  ]
+}
+```
+
+| Field | Rules |
+|---|---|
+| `type` | Must be `list` |
+| `title`, `intro` | Cut to 80 and 400 characters |
+| `add` | Optional. Shows an add box; `label`, `hint` and `placeholder` are cut to 120 characters |
+| `items` | Up to 1000. An item without an `id` is left out |
+| `id`, `title`, `detail` | Cut to 600, 120 and 200 characters |
+| `state` | `ok`, `warning`, `problem`, `off` or `unknown`; anything else is `unknown` |
+| `group` | A heading the item sits under, cut to 40 characters |
+| `on` | `true` or `false`; `true` when left out |
+| `address` | Shown under the title, cut to 500 characters |
+| `actions` | The buttons on the row, from `test`, `toggle`, `remove`, `up` and `down` |
+| `choice` | Optional. A small list on the row: up to 12 `options`, each `[value, words]`, cut to 40 characters |
+
+**POST** the path when the person does something. The body is:
+
+```json
+{"action": "toggle", "id": "news-1", "value": ""}
+```
+
+`action` is one of `add`, `test`, `test_all`, `toggle`, `remove`, `up`, `down` and `choose`. `id` is the row,
+and `value` is what the person entered or chose. Answer with the whole list again, in the same shape, with `said`
+added: one sentence, up to 200 characters, that Starboard shows. To refuse, answer with an HTTP error status and
+`{"error": "A sentence saying why"}`; Starboard shows the sentence.
+
+## Health
+
+Answer GET on the `health` path with status 200 while the plug-in works. Keep it cheap. For plug-ins built into
+Starboard, it is the container's Docker health check, every 60 seconds.
+
+## Events
+
+When a plug-in lists `events` in its manifest, and it is active, Starboard sends each event as a POST to `/events`
+on its first container. Your plug-in must answer that path.
+
+```json
+{"event": "item.added", "at": "2026-11-12T09:30:00+00:00", "data": {"title": "Dune", "series": null, "type": "Movie", "year": 2021}}
+```
+
+- `at` is when Starboard saw it, in UTC (RFC 3339).
+- Starboard waits 3 seconds, tries once more a second later, then gives up. Nothing is queued or kept, so an
+  event can be missed while the plug-in is stopped.
+- No key is sent with an event.
+
+| Event | `data` | How Starboard finds out |
+|---|---|---|
+| `item.added` | `title`, `series`, `type`, `year` | Jellyfin's recently added list, checked every 5 minutes |
+| `playback.started` | `title`, `series`, `type`, `user`, `client` | What is playing in Jellyfin, checked every 5 minutes |
+| `download.finished` | `title`, `app` | The download queue, checked every 5 minutes: an item that reaches 100% |
+| `app.down` | `app` (its name), `type` | After two of Starboard's checks in a row with no answer |
+| `app.up` | `app` (its name), `type` | When an app that was down answers again |
+
+For the three events checked every 5 minutes, the first check after Starboard starts only sets a starting point,
+so nothing old is sent, and something that comes and goes between two checks is not seen.
+
+## Jobs
+
+Starboard runs plug-in jobs on its own clock, which wakes every 5 minutes while an active plug-in has a job. A job
+is a POST with an empty body to the job's `path`.
+
+- `daily` runs within 5 minutes after its time, in the server's own time zone.
+- `every_hours` runs when that many hours have passed since it last started.
+- `at_start` runs once after each start of Starboard.
+- `quiet_hours` runs it only in quiet hours: the download hours, when they are set, or from 01:00 to 06:00.
+- Answer within `time_limit_minutes` (10 when left out) with `{"said": "Tidied 12 files"}`. Starboard keeps `said`,
+  cut to 160 characters, as the job's summary in **System**, then **Jobs**. With no `said`, the summary is "Done".
+- A container with `"start": "when_needed"` is started before the job and stopped after it.
+- A job never runs twice at once. People can also run it now from **System**, then **Jobs**, while the plug-in is
+  active.
+
+## Settings and key files
+
+Starboard keeps each plug-in in its own folder on the server, `data/plugins/<id>/`, and gives each container these
+files, read only:
+
+| In the container | What it is |
+|---|---|
+| `/run/starboard/settings.json` | The settings, as one JSON object of `key` and value, secrets included |
+| `/run/starboard/key` | The plug-in's own API key, as one line of text |
+| `/run/starboard/jellyfin.json` | Only with `jellyfin:key`: `{"url": ..., "api_key": ...}`. An address on the server itself is given as `host.docker.internal` |
+| `/data` | Only with the `data` volume: its own folder, read and write |
+
+And these environment variables, with the `env` from the manifest:
+
+| Name | Value |
+|---|---|
+| `STARBOARD_API` | `http://starboard:8095/api/v1/` |
+| `STARBOARD_API_KEY_FILE` | `/run/starboard/key` |
+
+Starboard does not restart a plug-in when its settings change. Read `settings.json` when you need a value, rather
+than once at start. Never write secrets to the container's log.
+
+## The plug-in's API key
+
+Every plug-in with a container gets its own key to [Starboard's API](api-reference.md), made when it is added.
+
+- It is named `Plug-in:` and the plug-in's name, and it can only read.
+- Its scopes are the read permissions the person approved: `apps:read` gives `apps`, `downloads:read` gives
+  `downloads`, `media:read` gives `media` and `system:read` gives `system`.
+- It does not expire. It stops working when the plug-in is removed.
+- When an update or **Roll back** changes the read permissions, Starboard revokes the key and writes a new one to
+  the same file. Read the file again when a call answers `401`.
+- With the `default` network, Starboard's API is the only thing the plug-in can reach.
+
+Send it as for any key:
+
+```python
+import json, os, urllib.request
+
+key = open(os.environ["STARBOARD_API_KEY_FILE"]).read().strip()
+req = urllib.request.Request(os.environ["STARBOARD_API"] + "downloads", headers={"Authorization": "Bearer " + key})
+with urllib.request.urlopen(req, timeout=10) as r:
+    print(json.load(r)["items"])
+```
+
+The rules for every key, such as 120 requests a minute, are in [Authentication and keys](api-authentication.md).
+
+## States
+
+Starboard keeps one state for each plug-in, and shows each with one sentence and one button.
+
+| State | What it means | The button |
+|---|---|---|
+| `installed` | Added, not started yet | **Activate** |
+| `enabled` | Active and running | **Deactivate** |
+| `disabled` | Deactivated: stopped, with its settings and data kept | **Activate** |
+| `failed` | It did not start, or stopped answering. The message says why | **Try again**, or **Roll back** to the version before within 10 minutes of an update |
+| `needs-setup` | A required setting is empty, or `setup_required` and it has never been set up | **Finish setting up** |
+| `not-supported` | This Starboard's plug-in API is outside the plug-in's `starboard_api`, so it is stopped | **Look for an update** |
+
+The first four are stored in the plug-in's `state.json`. Starboard works out `needs-setup` and `not-supported` each
+time, and a plug-in in either cannot be activated. **Deactivate all plug-ins** stops every active plug-in at once.
+
+## Updates and Roll back
+
+- When a catalogue lists a newer version, the plug-in's tab offers **Update to** and that version. Starboard
+  shows the same warning as when adding it, with any new permissions marked, and the changelog. It asks for the
+  password.
+- Settings stay. A new setting gets its `default`.
+- An active plug-in is started again on the new version.
+- Starboard keeps the version before in `data/plugins/<id>/previous/`: its manifest, settings and Compose file. Only
+  one earlier version is kept.
+- **Roll back** swaps the two, with no download, and asks for the password. The newer version is kept in its place.
+- Plug-ins built into Starboard update with Starboard.
+- Each update and roll back is written to the audit log.
+
+## Catalogues
+
+A catalogue is one file, `catalogue.json`, at an `https` address, that lists plug-ins and their versions. People
+add it from a link. Starboard reads each catalogue at most once a day, 256 KB and 5 seconds at most, and up to 10
+catalogues besides its own.
+
+```json
+{
+  "name": "Sam's plug-ins",
+  "plugins": [
+    {
+      "id": "hello-card",
+      "name": "Hello card",
+      "description": "Shows on your dashboard how long it has been running.",
+      "kind": "System",
+      "author": "Sam",
+      "permissions": [],
+      "notices": [],
+      "published": true,
+      "versions": [
+        {"version": "0.2.0", "starboard_api": ">=1.4 <2.0", "released": "2026-11-12",
+         "manifest": "https://example.invalid/hello-card/0.2.0/starboard-plugin.json",
+         "manifest_sha256": "9b1d3f5a7c2e4b6d8f0a1c3e5b7d9f2a4c6e8b0d1f3a5c7e9b2d4f6a8c0e1b3d",
+         "changelog": "A list card of the last five starts."},
+        {"version": "0.1.0", "starboard_api": ">=1.0 <2.0", "released": "2026-11-10",
+         "manifest": "https://example.invalid/hello-card/0.1.0/starboard-plugin.json",
+         "manifest_sha256": "2e4c6a8b0d1f3e5a7c9b2d4f6e8a0c1b3d5f7a9c2e4b6d8f0a1c3e5b7d9f2a4c"}
+      ]
+    }
+  ]
+}
+```
+
+| Field | Rules |
+|---|---|
+| `name` | The catalogue's name, up to 60 characters. Its address's host name when left out |
+| `plugins` | Required. Up to 200 are read |
+| `id` | The plug-in's `id`. An entry with a wrong id is left out |
+| `name`, `description`, `kind`, `author` | Up to 40, 240, 30 and 60 characters. `kind` groups the plug-ins, `Other` when left out |
+| `permissions`, `notices` | Shown before anyone opens the plug-in. Unknown ones are left out |
+| `published` | `false` shows it as **Coming soon**, with no way to add it |
+| `versions` | Up to 50, in any order |
+| `version` | The plug-in's version |
+| `starboard_api` | The range it needs, as in the manifest. Left out, it fits any Starboard |
+| `manifest` | Required: the `https` address of that version's `starboard-plugin.json` |
+| `manifest_sha256` | The SHA-256 of that file, 64 hex characters |
+| `changelog`, `released` | Shown with an update. Up to 600 and 10 characters |
+
+How Starboard uses it:
+
+- It offers the newest version whose `starboard_api` includes this Starboard, and says how many newer versions it
+  hid and which API they need.
+- When it fetches a manifest, it checks the file's SHA-256 against `manifest_sha256`. If the file changed since the
+  catalogue listed it, Starboard refuses it.
+- An entry with no `versions` is one version, read from the entry's own `version`, `starboard_api`, `manifest` and
+  `manifest_sha256`.
+
+How to write one is in [Test and publish a plug-in](test-and-publish-a-plugin.md#write-a-catalogue).
+
+## Find out more
+
+- [Plug-in manifest reference](plugin-manifest-reference.md)
+- [Make your first plug-in](make-a-plugin.md)
+- [Test and publish a plug-in](test-and-publish-a-plugin.md)
+- [API reference](api-reference.md)
+- [What a plug-in can change](../basics/what-plugins-can-change.md)
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

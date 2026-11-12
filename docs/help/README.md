@@ -171,6 +171,21 @@ Each guide is a journey through several topics, in order.
 - [The plug-in collection](basics/plugin-collection.md)
 - [Write a plug-in](basics/write-a-plugin.md)
 
+## Developers: plug-ins and the API
+
+For people who make plug-ins, or write scripts and apps that read Starboard. AI assistants can start from
+[llms.txt](llms.txt), a plain list of these pages.
+
+- [Make your first plug-in](developers/make-a-plugin.md)
+- [Plug-in manifest reference](developers/plugin-manifest-reference.md)
+- [Plug-in API reference](developers/plugin-api-reference.md)
+- [Test and publish a plug-in](developers/test-and-publish-a-plugin.md)
+- [API quickstart](developers/api-quickstart.md)
+- [Authentication and keys](developers/api-authentication.md)
+- [API reference](developers/api-reference.md)
+- [API changelog](developers/api-changelog.md)
+- [AI prompts for developers](developers/ai-prompts-for-developers.md)
+
 ---
 
 How these articles are written, for anyone who wants to help: [How this help is written](HOW-THIS-HELP-IS-WRITTEN.md).
