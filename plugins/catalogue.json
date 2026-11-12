@@ -111,13 +111,13 @@
   {
    "id": "styles",
    "name": "Styles",
-   "description": "Fifteen accessible styles for Display: colours, corners, fonts, headings and shadows, gradients, textures and glass, checked for contrast.",
+   "description": "Twenty-one accessible styles for Display: six reskin the whole look (cards, buttons, tabs, menus), checked for contrast.",
    "kind": "Look",
    "author": "TheMightyTRexUK",
    "permissions": [
     "appearance:styles"
    ],
-   "version": "1.2.0",
+   "version": "1.3.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json",
    "published": true
   },

@@ -1194,6 +1194,14 @@ class Handler(BaseHTTPRequestHandler):
                 candidate = validate_service(incoming)
                 candidate["id"] = candidate.get("id") or "test"
                 return self.json(200, services.check(candidate))
+            if path == "/api/pictures" and method == "GET":  # Settings, Performance, Pictures (12 November 2026)
+                from . import picture_cache
+                return self.json(200, picture_cache.stats(cfg.data_dir))
+            if path == "/api/pictures/clear" and method == "POST":
+                from . import picture_cache
+                gone = picture_cache.clear(cfg.data_dir)
+                logs.event("info", "starboard", f"Picture cache cleared: {gone} pictures")
+                return self.json(200, {"cleared": gone, **picture_cache.stats(cfg.data_dir)})
             m = re.match(r"^/api/posters/([a-z0-9-]+)/([a-z]+)/(\d{1,10})$", path)
             if m and method == "GET":
                 service = cfg.service(m.group(1))

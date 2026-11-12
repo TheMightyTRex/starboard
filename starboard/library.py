@@ -57,7 +57,9 @@ CHIPS = {  # filter chips for each tab: key, label
 }
 GROUPS = {"films": "Collection", "tv": "Network", "radio": "Station", "books": "Series", "audiobooks": "Series",
           "books-authors": "Author", "audiobooks-authors": "Author"}
-IMAGE_HOSTS = ("image.tmdb.org", "covers.openlibrary.org", "coverartarchive.org")
+IMAGE_HOSTS = ("image.tmdb.org", "covers.openlibrary.org", "coverartarchive.org",
+               # Discover, Radio (12 November 2026): BBC Sounds' and Apple Podcasts' covers
+               "ichef.bbci.co.uk", *(f"is{n}-ssl.mzstatic.com" for n in range(1, 6)))
 POSTER_KEEP = 7 * 86400
 POSTER_FILES = 400  # the least kept; the real limit follows the libraries (poster_limit)
 POSTER_MARGIN = 50  # room for pictures of items added since the last count, and the larger page posters
@@ -205,6 +207,8 @@ def poster_limit(data_dir):
 
 
 def _prune(folder, limit=POSTER_FILES):
+    from . import picture_cache
+    picture_cache.maybe_sweep(os.path.dirname(os.path.dirname(folder)))  # pictures unused for four weeks go
     files = [os.path.join(folder, n) for n in os.listdir(folder) if n.endswith(".img")]
     if len(files) <= limit:
         return
@@ -1262,6 +1266,20 @@ def handle(h, method, path):
         except ValueError as e:
             return h.error(400, str(e))
         return h.json(200, {"ok": True})
+    if path == "/api/library/discover" and method == "GET":  # Discover by area (12 November 2026)
+        from . import discover_feeds
+        try:
+            return h.json(200, discover_feeds.rows(reelix, tab))
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix did not answer: {e}")
+    if path == "/api/library/discover-row" and method == "GET":
+        from . import discover_feeds
+        try:
+            return h.json(200, discover_feeds.row(reelix, tab, q.get("row", "")))
+        except ValueError as e:
+            return h.error(400, str(e))
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix did not answer: {e}")
     if path == "/api/library/radio-logos" and method == "GET":  # Settings, Radio, Station logos (12 November 2026)
         from . import station_logos
         stations = [g["name"] for g in groups(load(data_dir, reelix, "radio"), "radio")]

@@ -448,7 +448,8 @@ function rxRadioSection() {
   });
   api("/api/library/radio-import").then((s) => {
     if (s.connected) go.replaceChildren(icon("link"), "Connect again");
-    body.replaceChildren(el("p", {}, chip(s.connected ? "Connected" : "Not connected", s.connected ? "success" : "warning")),
+    onTitle(body.closest("section")?.querySelector("h2"), chip(s.connected ? "Connected" : "Not connected", s.connected ? "success" : "warning"));
+    body.replaceChildren(
       el("p", { class: "small muted", text: s.connected
         ? `Reelix reads Audiobookshelf's Radio library. ${s.waiting ? `${s.waiting} ${s.waiting === 1 ? "show there is" : "shows there are"} not in your library yet: bring ${s.waiting === 1 ? "it" : "them"} in on Library, Radio.` : "Every show there is in your library."}`
         : "Reelix cannot see the radio shows you already have until it reads Audiobookshelf's Radio library." }),
@@ -591,9 +592,8 @@ function rxBasicsSection() {
     const who = el("select", { class: "select", id: "rx-who" }, r.whos.map((w) => el("option", { value: w.value, text: w.label, selected: w.value === r.who })));
     who.addEventListener("change", () => save({ who: who.value }, "change who can ask", who));
     body.replaceChildren(
-      el("div", { class: "stack-2" }, el("h3", { text: "Films and series information" }),
+      el("div", { class: "stack-2" }, titleChip(el("h3", { text: "Films and series information" }), chip(r.tmdb ? "Connected" : "No key yet", r.tmdb ? "success" : "warning")),
         el("p", { class: "small muted", text: "A free key from The Movie Database. Without it Reelix uses open data and matches fewer titles." }),
-        el("p", {}, chip(r.tmdb ? "Connected" : "No key yet", r.tmdb ? "success" : "warning")),
         field(r.tmdb ? "Change the key" : "TMDB key", key, { hint: "Paste the API Read Access Token or the API key from themoviedb.org, Settings, API." }),
         el("div", { class: "actions" }, keep, test), said),
       field("Language", lang, { hint: "Reelix skips releases in other languages, unless you choose any language." }),
@@ -732,8 +732,7 @@ function rxDirectSection() {
       field("Folder, inside /data", folder, { hint: "Such as /data/downloads/direct, or /data/media/music to put music straight into the library." }),
       el("div", { class: "actions" }, save),
       el("p", { class: "small", text: `Tools: ${r.tools.map((t) => `${t.tool} ${t.ok ? "ready" : "missing"}`).join(", ") || "not reported"}.` }),
-      el("h3", { text: "Spotify" }),
-      el("p", {}, chip(sp.connected ? `Connected${sp.user ? ` as ${sp.user}` : ""}` : sp.waiting ? "Waiting for you to finish" : "Not connected", sp.connected ? "success" : "muted")),
+      titleChip(el("h3", { text: "Spotify" }), chip(sp.connected ? `Connected${sp.user ? ` as ${sp.user}` : ""}` : sp.waiting ? "Waiting for you to finish" : "Not connected", sp.connected ? "success" : "muted")),
       sp.problem ? el("p", { class: "small", text: sp.problem }) : null,
       el("div", { class: "actions" }, connect, off), step2);
   };

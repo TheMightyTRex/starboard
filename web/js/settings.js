@@ -61,9 +61,12 @@ function notice(tone, title, text, action) {
 // One section of a settings page: an h2, a one-line description and its content.
 function pageSection(id, title, description, ...content) { return section(id, title, description, ...content); }
 function section(id, title, description, ...content) {
+  const chipNode = content.find((n) => n?.dataset?.headChip);  // the rule: a state chip on the title's line
+  const h2 = el("h2", { id: `${id}-h`, text: title });
   return el("section", { class: "settings-section", "aria-labelledby": `${id}-h` },
-    el("div", { class: "settings-section__head" }, el("h2", { id: `${id}-h`, text: title }), description ? el("p", { class: "small muted" }, description) : null),
-    ...content);
+    el("div", { class: "settings-section__head" }, chipNode ? titleChip(h2, chipNode) : h2,
+      description ? el("p", { class: "small muted" }, description) : null),
+    ...content.filter((n) => n !== chipNode));
 }
 
 // A settings page confirms a save beside its button ("Saved at 16:31"), not in a toast (CONTENT-DESIGN.md).
@@ -2035,7 +2038,28 @@ async function startPerformance() {
     section("pf-preset", "Preset", "Sets everything below at once. Features you chose for what they do, such as Live TV and download hours, stay as they are.", presetForm),
     section("pf-bg", "Background work", "Runs with no page open. Each part's thread exists only while it is active.", background),
     section("pf-pages", "While a page is open", "Only while the page is open and in view; a hidden tab asks for nothing.", pages),
+    picturesSection(),
   ].filter(Boolean));
+}
+
+// Pictures (owner, 12 November 2026): the picture cache's size, how long pictures are kept, and Clear.
+function picturesSection() {
+  const facts = el("dl", { class: "facts" });
+  const clear = el("button", { type: "button", class: "btn" }, icon("trash-2"), "Clear the picture cache");
+  const draw = (s) => facts.replaceChildren(el("dt", { text: "Pictures kept" }), el("dd", { text: s.pictures.toLocaleString("en-GB") }),
+    el("dt", { text: "Space they use" }), el("dd", { text: formatBytes(s.bytes) }),
+    el("dt", { text: "Removed when not shown for" }), el("dd", { text: `${s.unused_days} days` }));
+  api("/api/pictures").then(draw).catch(() => facts.replaceChildren(el("p", { class: "small muted", text: "Could not count the pictures." })));
+  clear.addEventListener("click", async () => {
+    if (!await confirmDialog({ title: "Clear the picture cache?", confirm: "Clear",
+      message: "Every poster, cover and logo is fetched again the next time a page shows it, so pages are slower to fill for a while. Nothing else changes." })) return;
+    clear.disabled = true;
+    try { const out = await api("/api/pictures/clear", { method: "POST" }); toast(`Cleared ${out.cleared.toLocaleString("en-GB")} pictures`); draw(out); }
+    catch (e) { problem(e.message, clear); }
+    finally { clear.disabled = false; }
+  });
+  return section("pf-pictures", "Pictures", "Posters, covers and logos are fetched once and kept on this server, so your browser never calls image sites. Each is fetched again after a week when shown.", facts,
+    el("div", { class: "actions" }, clear));
 }
 
 // Security ------------------------------------------------------------------

@@ -39,7 +39,13 @@ MENU = [
     ]),
     ("discover", "Discover", "compass", [
         ("Search", "search", [("search.html", "Search", "search")]),
-        ("Trending", "sparkles", [("discover-trending.html", "Trending", "sparkles")]),
+        # One item for each area, each with its own feeds (owner, 12 November 2026). Trending is in Films and TV now.
+        ("Films", "film", [("discover-films.html", "Films", "film")]),
+        ("TV", "tv", [("discover-tv.html", "TV", "tv")]),
+        ("Music", "music", [("discover-music.html", "Music", "music")]),
+        ("Radio", "radio", [("discover-radio.html", "Radio", "radio")]),
+        ("Books", "book-open", [("discover-books.html", "Books", "book-open")]),
+        ("Audiobooks", "headphones", [("discover-audiobooks.html", "Audiobooks", "headphones")]),
         ("Coming up", "calendar-days", [("upcoming.html", "Coming up", "calendar-days")]),
         ("On demand history", "history", [("discover-ondemand.html", "On demand history", "history")]),
     ]),
@@ -111,6 +117,8 @@ HELP = {
         "library-artist.html", "library-radio-show.html", "library-book.html", "library-audiobook.html")},
     "search.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "discover-trending.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
+    **{f"discover-{a}.html": ("topics/search-and-add.md", "discovering and adding films, series, music, radio and books")
+       for a in ("films", "tv", "music", "radio", "books", "audiobooks")},
     "upcoming.html": ("topics/coming-up.md", "finding out what is coming up"),
     "discover-ondemand.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "downloads.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
@@ -174,7 +182,7 @@ for key, _, _, items in MENU:
             PAGES[page] = (key, n)
 # Pages with no tab of their own show the page they open from as current: the guides open from Settings,
 # General, and Copy settings from Manage apps.
-TAB_OF = {"setup-guide.html": "settings-general.html", "settings-plugin.html": "settings-plugins.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
+TAB_OF = {"setup-guide.html": "settings-general.html", "discover-trending.html": "discover-films.html", "settings-plugin.html": "settings-plugins.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
           # An item's page shows its Library tab as current.
           "library-film.html": "library-films.html", "library-tv-show.html": "library-tv.html", "library-artist.html": "library-music.html",
           "library-radio-show.html": "library-radio.html", "library-book.html": "library-books.html",

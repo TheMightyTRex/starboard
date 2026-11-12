@@ -112,7 +112,7 @@
   "styles": {
    "type": "array",
    "minItems": 1,
-   "maxItems": 16,
+   "maxItems": 32,
    "items": {
     "type": "object",
     "additionalProperties": false,
@@ -154,8 +154,77 @@
        "soft",
        "strong",
        "layered",
-       "glow"
+       "glow",
+       "clay",
+       "hairline"
       ]
+     },
+     "card_style": {
+      "enum": [
+       "flat",
+       "outlined",
+       "elevated",
+       "tonal"
+      ]
+     },
+     "button_fill": {
+      "enum": [
+       "solid",
+       "outline",
+       "soft",
+       "ghost"
+      ]
+     },
+     "border_width": {
+      "enum": [
+       1,
+       2,
+       3
+      ]
+     },
+     "tab_style": {
+      "enum": [
+       "underline",
+       "pill",
+       "boxed"
+      ]
+     },
+     "header_style": {
+      "enum": [
+       "solid",
+       "blurred",
+       "accent_bar",
+       "rule"
+      ]
+     },
+     "rail_style": {
+      "enum": [
+       "solid",
+       "floating",
+       "tinted"
+      ]
+     },
+     "chip_style": {
+      "enum": [
+       "soft",
+       "outline"
+      ]
+     },
+     "heading_case": {
+      "enum": [
+       "none",
+       "labels"
+      ]
+     },
+     "heading_tracking": {
+      "enum": [
+       "tight",
+       "normal",
+       "wide"
+      ]
+     },
+     "primary_gradient": {
+      "type": "boolean"
      },
      "heading_font": {
       "enum": [

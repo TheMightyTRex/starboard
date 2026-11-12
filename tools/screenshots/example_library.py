@@ -194,6 +194,29 @@ def answer(path, q):
         return [{"id": 1, "title": "The Harbour Films", "movies": [{"title": FILMS[k - 1]["title"], "year": FILMS[k - 1]["year"], "movie_id": k,
                                                                      "has_file": FILMS[k - 1]["has_file"]} for k in (3, 9, 27)]
                  + [{"title": "Harbour Lights Returns", "year": 2027, "movie_id": None, "has_file": False}]}]
+    # Discover by area (12 November 2026): made-up feeds, so the pages can be shown
+    if path in ("/discover/genres/movie", "/discover/genres/tv"):
+        return [{"id": n, "name": g} for n, g in enumerate(["Action", "Comedy", "Drama", "Family", "Mystery", "Science Fiction"], 1)]
+    if path == "/discover/genres/radio":
+        return {"rows": [{"id": "bbc-popular", "name": "Popular on BBC Sounds", "provider": "bbc", "provider_name": "BBC"},
+                         {"id": "apple-top", "name": "Top podcasts", "provider": "apple", "provider_name": "Apple Podcasts"}],
+                "categories": [{"id": f"bbc-cat-{c.lower()}", "name": c} for c in ("Comedy", "Drama", "Documentaries", "Music", "Sport")]}
+    if path.startswith("/discover/content/"):
+        kind, row = path.split("/")[3], path.split("/")[4]
+        names = _titles(12, f"{kind}-{row}")
+        if kind == "radio":
+            return {"results": [{"kind": "radio", "foreign_id": f"bbc:ex{n}", "title": t, "subtitle": "Example Radio 4",
+                                 "availability": "monitored" if n == 1 else "unknown"} for n, t in enumerate(names)]}
+        if kind == "album":
+            return {"results": [{"kind": "music", "foreign_id": f"rg{n}", "title": t, "subtitle": AUTHORS[n % len(AUTHORS)],
+                                 "subtitle_id": f"00000000-0000-4000-8000-{n:012d}", "year": 2026} for n, t in enumerate(names)]}
+        return {"results": [{"kind": "book", "foreign_id": f"OL{700 + n}W", "title": t, "subtitle": AUTHORS[n % len(AUTHORS)], "year": 1990 + n,
+                             "availability": "available" if n == 2 else "unknown"} for n, t in enumerate(names)]}
+    if path.startswith("/discover/"):
+        names = _titles(12, path)
+        return {"results": [{"kind": "movie", "tmdb_id": 8000 + n, "title": t, "year": 2026 - n % 5, "overview": "A made-up result for the preview.",
+                             "poster": None, "availability": "available" if n == 3 else "monitored" if n == 5 else "unknown"}
+                            for n, t in enumerate(names)]}
     if path in ("/movies/lookup", "/series/lookup"):
         term = q.get("term", "")
         return [{"tmdb_id": 9000 + n, "title": f"{term.title()} {['Rising', 'at Dawn', 'Returns'][n]}", "year": 2019 + n,

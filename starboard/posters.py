@@ -45,13 +45,17 @@ def get(service, kind, item_id, folder):
         pass
     url = service["url"].rstrip("/") + KINDS[kind][1].format(id=item_id)
     req = urllib.request.Request(url, headers={"X-Api-Key": service.get("api_key", ""), "User-Agent": "Starboard"})
+    data = None
     try:
         with urllib.request.urlopen(req, timeout=8) as resp:  # app addresses are checked to be http(s) when saved (config.validate_service)  # nosec B310
-            if not (resp.headers.get("Content-Type") or "").startswith("image/"):
-                return None
-            data = resp.read(MAX_BYTES + 1)
+            if (resp.headers.get("Content-Type") or "").startswith("image/"):
+                data = resp.read(MAX_BYTES + 1)
     except (urllib.error.URLError, OSError, ValueError):
-        return None
+        data = None
+    if data is None:  # Reelix (12 November 2026): no mediacover; its own API names the poster, fetched like the Library's
+        data = _from_reelix(service, kind, item_id)
+        if data is None:
+            return None
     if len(data) > MAX_BYTES:
         return None
     with _lock:
@@ -63,8 +67,39 @@ def get(service, kind, item_id, folder):
     return data, "image/jpeg"
 
 
+NATIVE = {"movie": "movies", "series": "series"}
+
+
+def _from_reelix(service, kind, item_id):
+    """The poster Reelix's own API names for a film or series (its Radarr and Sonarr addresses have no mediacover),
+    fetched through the Library's checked picture fetcher (image sites Reelix uses only)."""
+    import json
+    m = re.match(r"^(https?://[^/]+)/(radarr|sonarr)/?$", service.get("url", "").rstrip("/") + "/")
+    if kind not in NATIVE or not m:
+        return None
+    req = urllib.request.Request(f"{m.group(1)}/api/v1/{NATIVE[kind]}/{int(item_id)}",
+                                 headers={"X-Api-Key": service.get("api_key", ""), "User-Agent": "Starboard", "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:  # the app's own address, as above  # nosec B310
+            item = json.loads(resp.read(512 * 1024) or b"{}")
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    poster = ((item.get("images") or {}).get("poster") if isinstance(item, dict) else "") or ""
+    from . import library
+    url = library.small(poster)
+    if not library.poster_allowed(url):
+        return None
+    try:
+        with library._image_opener.open(urllib.request.Request(url, headers={"User-Agent": "Starboard", "Accept": "image/*"}), timeout=8) as resp:  # checked  # nosec B310
+            return resp.read(MAX_BYTES + 1) if (resp.headers.get("Content-Type") or "").startswith("image/") else None
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+
+
 def _prune(folder):
     """Keeps the newest MAX_FILES posters, so the folder stays a few megabytes."""
+    from . import picture_cache
+    picture_cache.maybe_sweep(os.path.dirname(folder))  # pictures unused for four weeks go
     files = [os.path.join(folder, n) for n in os.listdir(folder) if n.endswith(".jpg")]
     if len(files) <= MAX_FILES:
         return

@@ -154,3 +154,5 @@ html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: g
 .topic-off { display: none !important; }
 .row-choice { display: inline-flex; align-items: center; gap: var(--space-2, 0.5rem); }
 /* The Search icon button in every search box is in the shared library (components.css and .js, 12 November 2026). */
+/* A state chip on its title's line: .title-chip is in the shared library (components.css, 12 November 2026). */
+.dash-card__head .title-chip { flex: 1 1 auto; }

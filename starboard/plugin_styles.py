@@ -29,7 +29,10 @@ FONTS = {
 SHADOWS = {"none": "none", "soft": "0 6px 24px rgb(16 24 40 / 0.12)", "strong": "4px 4px 0 var(--color-text)",
            # 11 November 2026: a layered lift, and a soft glow in the accent colour
            "layered": "0 1px 2px rgb(16 24 40 / 0.06), 0 4px 8px rgb(16 24 40 / 0.06), 0 12px 32px rgb(16 24 40 / 0.10)",
-           "glow": "0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent), 0 8px 28px color-mix(in srgb, var(--color-accent) 22%, transparent)"}
+           "glow": "0 0 0 1px color-mix(in srgb, var(--color-accent) 25%, transparent), 0 8px 28px color-mix(in srgb, var(--color-accent) 22%, transparent)",
+           # 12 November 2026: soft clay (a drop with an inner highlight and shade), and a hairline edge only
+           "clay": "inset 0 2px 3px rgb(255 255 255 / 0.45), inset 0 -3px 6px rgb(0 0 0 / 0.10), 0 10px 24px rgb(31 33 64 / 0.16)",
+           "hairline": "0 0 0 1px var(--color-divider)"}
 # Optional colours a style may also set (11 November 2026), each into the design system's own variable. A style that
 # leaves one out keeps Starboard's.
 EXTRA = {
@@ -70,7 +73,21 @@ GLASS_OPACITY = 0.74  # panels let 26% of the page through
 GLASS_PARTS = ".site-header, .rail, .panel, .side-panel, .phone-menu, .menu, .toast, .app-card, .notice"
 # Rounded controls: buttons, fields, choices and chips become pills.
 PILL_PARTS = ".btn, .input, .select, .textarea, .chip, .filter-chip, .segmented, .search-field .input"
-PAGE_COLOURS = {"bg_to", "glow_1", "glow_2"}
+PAGE_COLOURS = {"bg_to", "glow_1", "glow_2", "accent_to"}  # accent_to: the primary buttons' gradient end (1.2)
+
+# A full reskin (API 1.2, 12 November 2026): how each part is drawn, each a fixed list of values.
+CARD_PARTS = ".dash-card, .app-card, .panel, .card, .collection-card, .notice"
+PARTS = {
+    "card_style": ("flat", "outlined", "elevated", "tonal"),
+    "button_fill": ("solid", "outline", "soft", "ghost"),
+    "border_width": (1, 2, 3),
+    "tab_style": ("underline", "pill", "boxed"),
+    "header_style": ("solid", "blurred", "accent_bar", "rule"),
+    "rail_style": ("solid", "floating", "tinted"),
+    "chip_style": ("soft", "outline"),
+    "heading_case": ("none", "labels"),
+    "heading_tracking": ("tight", "normal", "wide"),
+}
 
 
 def _mix(a, b, t):
@@ -115,7 +132,12 @@ def check_style(style, where="style"):
     if not isinstance(style, dict):
         return [{"severity": "error", "where": where, "what": "A style must be an object", "fix": "See the manifest reference"}]
     allowed = {"id", "name", "description", "light", "dark", "radius", "font", "shadow", "heading_font", "heading_weight", "focus_width",
-               "gradient", "gradient_angle", "texture", "glass", "rounded_controls"}
+               "gradient", "gradient_angle", "texture", "glass", "rounded_controls", "primary_gradient", *PARTS}
+    for k, values in PARTS.items():
+        if k in style and style[k] not in values:
+            add("error", f"{k} must be one of {', '.join(str(v) for v in values)}", "Pick a value from the list")
+    if "primary_gradient" in style and not isinstance(style["primary_gradient"], bool):
+        add("error", "primary_gradient must be true or false", "Leave it out for no")
     if style.get("gradient", "none") not in GRADIENTS:
         add("error", f"gradient must be one of {', '.join(GRADIENTS)}", "Pick a gradient from the list")
     ang = style.get("gradient_angle", 160)
@@ -189,6 +211,25 @@ def check_style(style, where="style"):
                 if ratio < need:
                     add("error", f"{fg} on {bk} is {ratio:.2f}:1; {why} need {need:g}:1 (WCAG 2.2)",
                         f"Make {fg} {'darker' if mode == 'light' else 'lighter'} or {bk} {'lighter' if mode == 'light' else 'darker'}", at)
+        # API 1.2's pairs: tonal cards and soft buttons put text and the accent on accent_soft; a gradient button
+        # puts accent_text on accent_to as well as on accent.
+        new_pairs = []
+        if style.get("card_style") == "tonal":
+            new_pairs += [("text", "accent_soft", 4.5, "text on tonal cards"), ("text_muted", "accent_soft", 4.5, "secondary text on tonal cards")]
+        if style.get("button_fill") == "soft":
+            new_pairs.append(("accent", "accent_soft", 4.5, "words on soft buttons"))
+        if style.get("primary_gradient"):
+            if "accent_to" not in colours:
+                add("error", "A primary gradient needs accent_to", f"Set accent_to in the {mode} colours", at)
+            else:
+                new_pairs.append(("accent_text", "accent_to", 4.5, "words on the primary buttons' gradient"))
+        if style.get("tab_style") == "pill":
+            new_pairs.append(("text", "control_active" if "control_active" in colours else "surface", 4.5, "the chosen tab"))
+        for fg, bk, need, why in new_pairs:
+            ratio = contrast(colours[fg], colours[bk])
+            if ratio < need:
+                add("error", f"{fg} on {bk} is {ratio:.2f}:1; {why} need {need:g}:1 (WCAG 2.2)",
+                    f"Make {fg} {'darker' if mode == 'light' else 'lighter'} or {bk} {'lighter' if mode == 'light' else 'darker'}", at)
         # Every colour the page can show behind text: the page, the gradient's other end, the glows, and the texture's
         # lines over each (the text colour at 5%).
         g = style.get("gradient", "none")
@@ -220,6 +261,66 @@ def check_style(style, where="style"):
         if mode == "dark" and _lum(colours["bg"]) > 0.1:
             add("warning", "The dark background is light", "People who choose Dark expect a dark page", at)
     return out
+
+
+def _parts_css(root, s):
+    """API 1.2: how each part is drawn. Only checked values reach here."""
+    r, on = [], f"{root}:not(.pref-contrast)"
+    bw = int(s.get("border_width", 1))
+    if bw > 1:
+        r.append(f"{on} :is(.btn, .input, .select, .textarea, {CARD_PARTS}) {{ border-width: {bw}px; }}")
+    card = s.get("card_style")
+    if card == "flat":
+        r.append(f"{on} :is({CARD_PARTS}) {{ box-shadow: none; border-color: transparent; }}")
+    elif card == "outlined":
+        r.append(f"{on} :is({CARD_PARTS}) {{ box-shadow: none; border: {bw}px solid var(--color-border); }}")
+    elif card == "elevated":
+        r.append(f"{on} :is({CARD_PARTS}) {{ box-shadow: var(--shadow-raised); border-color: var(--color-divider); }}")
+    elif card == "tonal":
+        r.append(f"{on} :is({CARD_PARTS}) {{ background-color: var(--color-accent-soft); border-color: transparent; box-shadow: none; }}")
+    secondary = ".btn:not(.btn--primary):not(.btn--danger):not(.btn--quiet)"
+    fill = s.get("button_fill")
+    if fill == "outline":
+        r.append(f"{on} {secondary} {{ background: transparent; border: {bw}px solid var(--color-border); }}")
+    elif fill == "soft":
+        r.append(f"{on} {secondary} {{ background: var(--color-accent-soft); color: var(--color-accent); border-color: transparent; }}")
+    elif fill == "ghost":
+        r.append(f"{on} {secondary} {{ background: transparent; border-color: transparent; color: var(--color-accent); text-decoration: underline; text-underline-offset: 3px; }}")
+    if s.get("primary_gradient"):
+        for mode, sel in (("light", ":not(.is-dark)"), ("dark", ".is-dark")):
+            c = s[mode]
+            r.append(f'{root}{sel}:not(.pref-contrast) .btn--primary {{ background-image: linear-gradient(135deg, {c["accent"]}, {c["accent_to"]}); border-color: transparent; }}')
+    chosen_tab = ':is(.menu-tabs a[aria-current="page"], .topic-tabs__tab[aria-selected="true"])'
+    tab = s.get("tab_style")
+    if tab == "pill":
+        r.append(f"{on} {chosen_tab} {{ background: var(--color-control-active); border-radius: 999px; box-shadow: none; border-bottom-color: transparent; }}")
+    elif tab == "boxed":
+        r.append(f"{on} {chosen_tab} {{ background: var(--color-surface-raised); border: {bw}px solid var(--color-border); border-bottom-color: transparent; box-shadow: none; }}")
+    elif tab == "underline":
+        r.append(f"{on} {chosen_tab} {{ background: transparent; box-shadow: inset 0 -3px 0 var(--color-accent); }}")
+    head = s.get("header_style")
+    if head == "blurred":
+        r.append(f"{on} .site-header {{ background-color: color-mix(in srgb, var(--color-header) {round(GLASS_OPACITY * 100)}%, transparent); "
+                 "-webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3); }")
+        r.append(f"@media (prefers-reduced-transparency: reduce) {{ {root} .site-header {{ background-color: var(--color-header); backdrop-filter: none; -webkit-backdrop-filter: none; }} }}")
+    elif head == "accent_bar":
+        r.append(f"{on} .site-header {{ border-top: 3px solid var(--color-accent); }}")
+    elif head == "rule":
+        r.append(f"{on} .site-header {{ border-bottom: 3px solid var(--color-text); }}")
+    rail = s.get("rail_style")
+    if rail == "floating":
+        r.append(f"{on} .rail {{ border-right: 0; box-shadow: var(--shadow-raised); border-radius: 0 var(--radius) var(--radius) 0; }}")
+    elif rail == "tinted":
+        r.append(f'{on} .rail a[aria-current="page"] {{ background: var(--color-control-active); color: var(--color-text); }}')
+    if s.get("chip_style") == "outline":
+        r.append(f"{on} .chip {{ background: transparent; border: 1px solid currentColor; }}")
+    if s.get("heading_case") == "labels":  # small labels only, never long headings or body text
+        r.append(f"{on} :is(.dash-card__title, .field__label, legend, .discover-row__head h2, .settings-section__head h2) "
+                 "{ text-transform: uppercase; letter-spacing: 0.06em; }")
+    track = {"tight": "-0.02em", "wide": "0.04em"}.get(s.get("heading_tracking"))
+    if track:
+        r.append(f"{on} :is(h1, h2) {{ letter-spacing: {track}; }}")
+    return r
 
 
 def css(plugin_id, styles):
@@ -262,6 +363,7 @@ def css(plugin_id, styles):
                          "-webkit-backdrop-filter: none; backdrop-filter: none; } }")
         if s.get("rounded_controls"):
             rules.append(f"{root}:not(.pref-contrast) :is({PILL_PARTS}) {{ border-radius: 999px; }}")
+        rules += _parts_css(root, s)
         for mode, sel in (("light", ":not(.is-dark)"), ("dark", ".is-dark")):
             colours = [f"{TOKENS[k]}: {s[mode][k]}" for k in TOKENS]
             if "panel_header" not in s[mode]:

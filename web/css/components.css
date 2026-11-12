@@ -847,6 +847,22 @@
     background: var(--color-surface-sunken);
     color: var(--color-text-muted);
   }
+  /* A state chip on its title's line, at the right and centred (layout rule, 12 November 2026). */
+  .title-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .title-chip > :first-child {
+    margin: 0;
+    min-width: 0;
+  }
+  .title-chip > .chip {
+    flex: none;
+  }
   /* Search field: a box with a Search button inside it at the right, the search icon (12 November 2026: the
      default for every search box; components.js adds the button to any input type="search"). Enter searches too. */
   .search-field {

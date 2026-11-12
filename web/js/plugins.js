@@ -195,7 +195,7 @@ function pluginPage(p, redraw) {
   const form = pluginSettingsForm(p, redraw);
   return [
     section(`pl-${p.id}-state`, "State", p.builtin ? "Built into Starboard: it runs on Starboard's own image and updates with Starboard." : `Version ${p.version}${p.author ? `, by ${p.author}` : ""}.`,
-      el("p", {}, chip(...(STATE[p.state] || ["Unknown", "muted"])), p.message ? el("span", { class: "small", text: ` ${p.message}` }) : null),
+      headChip(...(STATE[p.state] || ["Unknown", "muted"])), p.message ? el("p", { class: "small", text: p.message }) : null,
       el("div", { class: "actions" }, stateButton(p, redraw), ...buttons)),
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "", styleGallery(p)) : null,
     form ? section(`pl-${p.id}-settings`, "Settings", "Saved for everyone who uses this Starboard.", form) : null,

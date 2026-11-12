@@ -93,8 +93,8 @@ const CARDS = {
     const names = Object.fromEntries((cfg.services || []).map((x) => [x.id, x.name]));
     const items = (r.items || []).map((i) => ({ ...i, name: names[i.id] || i.id }));
     const down = items.filter((i) => i.state === "down");
-    return el("div", { class: "stack-2" }, el("p", {}, chip(down.length ? `${down.length} not responding` : "All running", down.length ? "danger" : "success"),
-      el("span", { class: "small muted", text: ` ${items.length} apps` })),
+    return el("div", { class: "stack-2" }, headChip(down.length ? `${down.length} not responding` : "All running", down.length ? "danger" : "success"),
+      el("p", { class: "small muted", text: `${items.length} apps` }),
       down.length ? el("ul", { class: "rows" }, down.slice(0, 4).map((d) => line(d.name || d.id, d.message || "", "/index.html"))) : null);
   },
   async requests() {
@@ -133,8 +133,8 @@ async function pluginCard(id) {
   const d = r.data;
   if (r.type === "stat") return el("p", { class: "dash-stat" }, el("strong", { text: (FORMATS[r.format] || FORMATS.number)(d.value) }),
     d.label ? ` ${d.label}` : null, d.note ? el("span", { class: "small muted", text: ` ${d.note}` }) : null);
-  if (r.type === "status") return el("p", {}, chip({ ok: "OK", warning: "Warning", problem: "Problem" }[d.state], { ok: "success", warning: "warning", problem: "danger" }[d.state]),
-    d.text ? el("span", { text: ` ${d.text}` }) : null);
+  if (r.type === "status") return el("div", {}, headChip({ ok: "OK", warning: "Warning", problem: "Problem" }[d.state], { ok: "success", warning: "warning", problem: "danger" }[d.state]),
+    d.text ? el("p", { text: d.text }) : null);
   return d.items.length ? el("ul", { class: "rows" }, d.items.map((it) => el("li", { class: "row row--no-lead" }, el("div", {},
     el("div", { class: "row__title" }, it.link ? el("a", { href: it.link, target: "_blank", rel: "noopener noreferrer", text: it.title }) : it.title),
     it.detail ? el("div", { class: "row__meta", text: it.detail }) : null)))) : empty("Nothing to show.");
@@ -163,6 +163,8 @@ async function fill(c, body, card) {
     const node = c.id.startsWith("plugin:") ? (pluginCards[c.id] ? await pluginCard(c.id) : empty("Its plug-in is not active.")) : await CARDS[c.id]();
     if (node === null && c.id === "setup" && !editing) { card.remove(); return; }  // everything is set up
     body.replaceChildren(node || empty("Nothing to show."));
+    const headed = body.querySelector("[data-head-chip]");  // the rule: a state chip on the card title's line
+    if (headed) onTitle(card.querySelector(".dash-card__title"), headed);
   } catch (e) {
     body.replaceChildren(empty(e.status === 409 || e.status === 400 ? e.message : "Could not ask."));
   }

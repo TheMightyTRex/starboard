@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.1.0"  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.2.0"  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -103,8 +103,8 @@ def check(manifest, dev=False, builtin=False):
     styles = m.get("styles")
     if styles is not None:
         from . import plugin_styles
-        if not (isinstance(styles, list) and 1 <= len(styles) <= 16):
-            out.append("styles must list one to sixteen styles")
+        if not (isinstance(styles, list) and 1 <= len(styles) <= 32):
+            out.append("styles must list one to 32 styles (API 1.2; 16 before)")
         else:
             if "appearance:styles" not in perms:
                 out.append("styles need the permission appearance:styles, so people see it before adding")
@@ -335,12 +335,19 @@ def write_schema(path):
             "starboard_api": {"type": "string"}, "health": {"type": "string", "pattern": "^/"},
             "permissions": {"type": "array", "items": {"enum": sorted(PERMISSIONS)}, "uniqueItems": True},
             "needs": {"type": "array", "items": {"type": "string"}},
-            "styles": {"type": "array", "minItems": 1, "maxItems": 16, "items": {
+            "styles": {"type": "array", "minItems": 1, "maxItems": 32, "items": {
                 "type": "object", "additionalProperties": False, "required": ["id", "name", "light", "dark"],
                 "properties": {"id": {"type": "string"}, "name": {"type": "string", "maxLength": 30}, "description": {"type": "string", "maxLength": 120},
                                "radius": {"type": "integer", "minimum": 0, "maximum": 24},
                                "font": {"enum": ["hyperlegible", "system", "rounded", "serif", "mono"]},
-                               "shadow": {"enum": ["none", "soft", "strong", "layered", "glow"]},
+                               "shadow": {"enum": ["none", "soft", "strong", "layered", "glow", "clay", "hairline"]},
+                               # API 1.2 (12 November 2026): a full reskin
+                               "card_style": {"enum": ["flat", "outlined", "elevated", "tonal"]},
+                               "button_fill": {"enum": ["solid", "outline", "soft", "ghost"]}, "border_width": {"enum": [1, 2, 3]},
+                               "tab_style": {"enum": ["underline", "pill", "boxed"]}, "header_style": {"enum": ["solid", "blurred", "accent_bar", "rule"]},
+                               "rail_style": {"enum": ["solid", "floating", "tinted"]}, "chip_style": {"enum": ["soft", "outline"]},
+                               "heading_case": {"enum": ["none", "labels"]}, "heading_tracking": {"enum": ["tight", "normal", "wide"]},
+                               "primary_gradient": {"type": "boolean"},
                                "heading_font": {"enum": ["hyperlegible", "system", "rounded", "serif", "mono"]},
                                "heading_weight": {"enum": [600, 700, 800]}, "focus_width": {"type": "integer", "minimum": 3, "maximum": 5},
                                "gradient": {"enum": ["none", "linear", "radial", "mesh"]}, "gradient_angle": {"type": "integer", "minimum": 0, "maximum": 360},

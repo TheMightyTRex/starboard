@@ -1111,6 +1111,26 @@ function logoTone(img, name, tone, kind = "network") {
   return img;
 }
 
+// A state chip on its title's line (owner, 12 November 2026, a rule: DESIGN-SYSTEM.md, Chips): the title on the left,
+// the chip at the right, centred on the line. headChip() marks a chip for a section's or a card's heading; onTitle()
+// puts one beside any title now (a heading drawn earlier, such as a section's h2).
+function headChip(...args) {
+  const c = chip(...args);
+  c.dataset.headChip = "1";
+  return c;
+}
+function titleChip(title, chipNode) {
+  return el("div", { class: "title-chip" }, title, chipNode);
+}
+function onTitle(title, chipNode) {
+  if (!title) return;
+  const row = title.parentElement?.classList.contains("title-chip") ? title.parentElement : null;
+  if (row) { row.querySelector(":scope > .chip")?.remove(); row.append(chipNode); return; }
+  const wrap = el("div", { class: "title-chip" });
+  title.replaceWith(wrap);
+  wrap.append(title, chipNode);
+}
+
 async function startPage() {
   setUpHeader();
   setUpDisplayPanel();

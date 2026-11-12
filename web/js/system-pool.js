@@ -103,14 +103,15 @@ function jobView(job) {
   if (!job) return null;
   const words = { running: ["Running", "info", "hourglass"], done: ["Finished", "success"], failed: ["Failed", "danger"], stopped: ["Stopped", "warning"] }[job.state] || ["", "muted"];
   const what = { add: "Add a drive", remove: "Take out of the pool", balance: "Balance the files" }[job.action] || "Change";
-  const parts = [el("p", {}, chip(words[0], words[1], words[2]), ` ${what}${job.of ? `: ${job.moved} of ${plural(job.of, "folder", "folders")} moved` : ""}${job.paused ? ", paused for download hours" : ""}`)];
+  const parts = [titleChip(el("p", { class: "strong", text: `${what}${job.of ? `: ${job.moved} of ${plural(job.of, "folder", "folders")} moved` : ""}${job.paused ? ", paused for download hours" : ""}` }), chip(words[0], words[1], words[2]))];
   if (job.current) parts.push(el("p", { class: "small muted", text: `Now moving ${job.current}` }));
   if (job.of) {
     const pct = Math.round((job.moved / job.of) * 100);
     parts.push(el("div", { class: "progress", role: "img", "aria-label": `${pct}% done` }, widthOf(el("span"), pct)));
   }
   parts.push(el("ul", { class: "rows", "aria-label": "Steps done" }, job.steps.map((s) => el("li", { class: "row row--no-lead" },
-    el("p", {}, chip({ done: "Done", failed: "Failed", skipped: "Stopped" }[s.state] || s.state, { done: "success", failed: "danger", skipped: "warning" }[s.state] || "muted"), ` ${s.say}`)))));
+    el("div", {}, el("div", { class: "row__title", text: s.say })),
+    el("div", { class: "row__side" }, chip({ done: "Done", failed: "Failed", skipped: "Stopped" }[s.state] || s.state, { done: "success", failed: "danger", skipped: "warning" }[s.state] || "muted"))))));
   if (job.state === "running") parts.push(el("div", { class: "actions" }, el("button", { type: "button", class: "btn", text: "Stop after this folder", onclick: stopJob })));
   return parts;
 }
