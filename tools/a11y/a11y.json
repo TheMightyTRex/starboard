@@ -1,23 +1,30 @@
 [
  {
   "page": "index.html",
-  "area": "size",
-  "rule": "target-24px",
-  "detail": "Not running, Example TV, Example films, Example TV 4K, Reelix, Example music",
-  "count": 9
+  "area": "axe dark",
+  "rule": "target-size",
+  "detail": "serious: All touch targets must be 24px large, or leave sufficient space (.btn--primary)",
+  "count": 1
  },
  {
   "page": "index.html",
-  "area": "keyboard",
-  "rule": "focus-visible",
-  "detail": "|BUTTON|Not running ; |BUTTON|Example TV ; |BUTTON|Example films",
-  "count": 3
+  "area": "axe high contrast",
+  "rule": "target-size",
+  "detail": "serious: All touch targets must be 24px large, or leave sufficient space (.btn--primary)",
+  "count": 1
  },
  {
-  "page": "system-backup.html",
-  "area": "reflow",
-  "rule": "320px",
-  "detail": "40px sideways scroll",
+  "page": "system-storage.html",
+  "area": "axe dark",
+  "rule": "target-size",
+  "detail": "serious: All touch targets must be 24px large, or leave sufficient space (li[data-key=\"System disk\"] > div:nth-child(1) > .row__title > button[aria-haspopup=\"dialog\"][type=\"button\"])",
+  "count": 1
+ },
+ {
+  "page": "system-storage.html",
+  "area": "axe high contrast",
+  "rule": "target-size",
+  "detail": "serious: All touch targets must be 24px large, or leave sufficient space (li[data-key=\"System disk\"] > div:nth-child(1) > .row__title > button[aria-haspopup=\"dialog\"][type=\"button\"])",
   "count": 1
  }
 ]

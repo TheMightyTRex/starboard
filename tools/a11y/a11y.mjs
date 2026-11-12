@@ -25,7 +25,10 @@ await page.waitForURL((u) => !u.pathname.endsWith("login.html"), { timeout: 1500
 
 async function settle() {
   await page.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
-  await page.waitForTimeout(400);
+  // Content drawn after the first answer: wait until nothing says it is busy, then a moment more.
+  await page.waitForFunction(() => !document.querySelector("[aria-busy=true]"), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
+  await page.waitForTimeout(900);
 }
 
 async function axe(name, mode) {
@@ -83,12 +86,18 @@ async function keyboard(name) {
       if (!e || e === document.body) return null;
       const cs = getComputedStyle(e);
       const r = e.getBoundingClientRect();
-      const ring = (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) >= 2) || (cs.boxShadow && cs.boxShadow !== "none");
+      // The ring may be on the element, on the card around it, or on its cover (a whole-card link), or an SVG stroke.
+      const shows = (n) => { const s = getComputedStyle(n); return (s.outlineStyle !== "none" && parseFloat(s.outlineWidth) >= 2) ||
+        (s.boxShadow && s.boxShadow !== "none") || (n instanceof SVGElement && s.stroke !== "none" && parseFloat(s.strokeWidth) >= 2); };
+      const card = e.closest(".media-card, .network-card, .collection-card, .card, .row, li");
+      const near = [e, e.parentElement, e.parentElement?.parentElement, ...(card ? [card, ...card.querySelectorAll(".cover, img")] : [])].filter(Boolean);
+      const ring = near.some(shows);
       const header = document.querySelector(".site-header");
       const hb = header ? header.getBoundingClientRect() : null;
       const sticky = header && getComputedStyle(header).position === "sticky";
       const top = document.elementFromPoint(Math.max(0, Math.min(innerWidth - 1, r.left + r.width / 2)), Math.max(0, Math.min(innerHeight - 1, r.top + Math.min(r.height / 2, 10))));
-      return { key: (e.id || "") + "|" + e.tagName + "|" + (e.getAttribute("aria-label") || e.textContent || "").trim().slice(0, 30),
+      const all = [...document.querySelectorAll("*")];
+      return { key: (e.id || "") + "|" + e.tagName + "|" + (e.getAttribute("aria-label") || e.textContent || e.name || "").trim().slice(0, 30) + "#" + all.indexOf(e),
         ring, size: r.width * r.height, inside: e.closest("dialog,[role=dialog]") ? 1 : 0,
         covered: !!(sticky && hb && r.top < hb.bottom - 2 && r.bottom > 0 && !header.contains(e) && top && header.contains(top)) };
     });

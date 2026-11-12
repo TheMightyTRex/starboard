@@ -255,7 +255,10 @@ startPage().then(async () => {
   $("#item-back").replaceChildren(icon("arrow-left"), wallLabel);
   $("#item-back").href = `/${wallPage}`;
   if (!/^\d{1,12}$/.test(id)) {
-    box.replaceChildren(el("div", { class: "empty" }, el("p", { text: "That page needs an item from the Library." })));
+    // Every page has one h1, an error page too (ACCESSIBILITY.md).
+    box.replaceChildren(el("h1", { class: "visually-hidden", text: wallLabel }),
+      emptyState("Nothing chosen", "That page needs an item from the Library.", el("a", { class: "btn btn--primary", href: `/${wallPage}`, text: `Open ${wallLabel}` })));
+    box.setAttribute("aria-busy", "false");
     return;
   }
   try {
@@ -264,7 +267,7 @@ startPage().then(async () => {
     show(item);
   } catch (e) {
     box.setAttribute("aria-busy", "false");
-    box.replaceChildren(el("div", { class: "notice", "data-tone": e.status === 409 ? "info" : "danger", role: "alert" },
+    box.replaceChildren(el("h1", { class: "visually-hidden", text: wallLabel }), el("div", { class: "notice", "data-tone": e.status === 409 ? "info" : "danger", role: "alert" },
       icon(e.status === 409 ? "info" : "circle-x"),
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: e.status === 502 ? "Reelix did not find it" : "This page could not be read" }),
         el("p", { text: e.message }))));

@@ -5184,3 +5184,11 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
 /* An empty list on a settings page: left aligned with the section, what is missing and the one thing to do. */
 .settings-section .empty { justify-items: start; text-align: start; padding: var(--space-4); }
 @media (max-width: 560px) { .location__actions .btn { flex: 1 1 auto; } }
+
+/* Accessibility check, 12 November 2026 (WCAG 2.5.8, target size): every tick and choice is at least 24 by 24
+   pixels, and the name that opens a row or a card is at least 24 pixels tall. Switches keep their own size. */
+:where(input[type="checkbox"]:not([role="switch"]), input[type="radio"]) { inline-size: 24px; block-size: 24px; accent-color: var(--color-accent); }
+.check input, .row--select > input[type="checkbox"] { width: 24px; height: 24px; }
+.row__title > a, .row__title > button, .card__title > button, .card__title > a { padding-block: 2px; }
+/* A long word, such as a folder path, wraps inside a message instead of pushing the page sideways (WCAG 1.4.10). */
+.notice p, .notice__title, .empty p { overflow-wrap: anywhere; }
