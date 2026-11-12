@@ -89,7 +89,8 @@ function pluginSettingsForm(p, redraw) {
       value: s.value ?? "", min: s.min, max: s.max, autocomplete: s.type === "secret" ? "new-password" : "off",
       placeholder: s.type === "secret" && s.set ? "Set. Leave empty to keep it" : "" });
     inputs[s.key] = [s, input];
-    return field(s.unit ? `${s.label} (${s.unit})` : s.label, input, { hint: s.hint });
+    if (s.type === "switch") return switchRow(s.label, s.hint, input);
+    return field(s.label, s.unit ? unitInput(input, s.unit) : input, { hint: s.hint });
   });
   const form = el("form", { class: "form-stack", novalidate: true }, rows, el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save" })));
   form.addEventListener("submit", async (e) => {
@@ -201,7 +202,7 @@ function pluginPage(p, redraw) {
     form ? section(`pl-${p.id}-settings`, "Settings", "Saved for everyone who uses this Starboard.", form) : null,
     ...custom.map((c) => section(`pl-${p.id}-${c.key}`, c.label, c.hint || "", customScreen(p, c))),
     section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions)),
-    section(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
+    dangerSection(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
       el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })))].filter(Boolean);
 }
 
@@ -254,7 +255,7 @@ function customScreen(p, s) {
               const b = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, ic ? icon(ic) : null, label,
                 el("span", { class: "visually-hidden", text: ` ${it.title}` }));
               b.addEventListener("click", async () => {
-                if (a === "remove" && !(await confirmDialog({ title: `Remove ${it.title}?`, confirm: "Remove", message: "You can add it again by its address." }))) return;
+                if (a === "remove" && !(await confirmDialog({ title: `Remove ${it.title}?`, confirm: "Remove", danger: true, message: "You can add it again by its address." }))) return;
                 run({ action: a, id: it.id }, b);
               });
               return b;
@@ -359,8 +360,8 @@ async function startPlugins() {
     try { r = await api("/api/plugins"); } catch (e) { holder.replaceChildren(notice("danger", "Could not load the plug-ins", e.message)); return; }
     holder.removeAttribute("aria-busy");
     if (!r.plugins.length) {
-      holder.replaceChildren(section("pl-yours", "Your plug-ins", "None added yet.",
-        el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/settings-plugins-catalogue.html" }, icon("layout-grid"), "Open the catalogue"))));
+      holder.replaceChildren(section("pl-yours", "Your plug-ins", "Plug-ins add pages and settings to Starboard.",
+        emptyState("No plug-ins yet", "Add one from the catalogue.", el("a", { class: "btn btn--primary", href: "/settings-plugins-catalogue.html" }, icon("layout-grid"), "Open the catalogue"))));
       return;
     }
     const stopAll = el("button", { type: "button", class: "btn btn--danger", text: "Deactivate all plug-ins" });
@@ -378,8 +379,9 @@ async function startPlugins() {
           el("div", { class: "row__side" }, chip(...(STATE[p.state] || ["Unknown", "muted"])),
             el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}` }, icon("settings"), "Settings",
               el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
-            stateButton(p, draw), removeButton(p, draw)))))),
-      section("pl-all", "All plug-ins at once", "Stops every plug-in, for example while you look into a problem.", el("div", { class: "actions" }, stopAll)));
+            stateButton(p, draw))))),
+        el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-plugins-catalogue.html" }, icon("plus"), "Add a plug-in"))),
+      dangerSection("pl-all", "All plug-ins at once", "Stops every plug-in, for example while you look into a problem.", el("div", { class: "actions" }, stopAll)));
   };
   draw();
 }
@@ -468,7 +470,7 @@ function sourcesSection(cats, redraw) {
       const b = el("button", { type: "button", class: "btn btn--quiet btn--compact btn--danger" }, icon("trash-2"), "Remove",
         el("span", { class: "visually-hidden", text: ` ${cat.name}` }));
       b.addEventListener("click", async () => {
-        if (!await confirmDialog({ title: `Remove ${cat.name}?`, confirm: "Remove", message: "Its plug-ins leave the catalogue. Plug-ins you already added from it stay." })) return;
+        if (!await confirmDialog({ title: `Remove ${cat.name}?`, confirm: "Remove", danger: true, message: "Its plug-ins leave the catalogue. Plug-ins you already added from it stay." })) return;
         try { toast((await api("/api/plugins/catalogues", { method: "POST", body: { action: "remove", url: cat.url } })).said); redraw(); }
         catch (err) { problem(err.message, b); }
       });

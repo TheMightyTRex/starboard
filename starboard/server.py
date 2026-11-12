@@ -2130,6 +2130,21 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, backup.server_status())
             if path == "/api/password" and method == "POST":
                 return self.change_password()
+            if path in ("/api/locations", "/api/locations/chosen") and method == "GET":  # settings pattern 4 (DASH-310)
+                from . import locations
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                app_name = q.get("app", ["host"])[0]
+                try:
+                    if path.endswith("chosen"):
+                        return self.json(200, {"path": locations.chosen(app_name, q.get("host", [""])[0])})
+                    host_defaults = None
+                    if app_name == "host":
+                        d = self.takeover_defaults()
+                        host_defaults = {"media": d["data_dir"], "config": d["config_dir"]}
+                    return self.json(200, locations.describe(app_name, q.get("path", [""])[0], q.get("for", [""])[0],
+                                                             host_defaults=host_defaults))
+                except ValueError as e:
+                    return self.error(400, str(e))
             if path in ("/api/folders", "/api/folders/check") and method == "GET":  # the folder picker (DASH-240)
                 from . import folders
                 where = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("path", [""])[0]

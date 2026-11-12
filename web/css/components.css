@@ -5148,3 +5148,39 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
 .folder-list [role="option"][aria-selected="true"] { background: var(--color-control-active); outline: 2px solid var(--color-focus); outline-offset: -2px; }
 .folder-list [role="option"]:hover { background: var(--color-surface-sunken); }
 @media (max-width: 560px) { .folder-field { flex-wrap: wrap; } .folder-field .btn { inline-size: 100%; } }
+
+/* Settings patterns (DASH-308, approved by TheMightyTRexUK, 12 November 2026). Every Settings page is built from
+   nine patterns only: section, setting rows, choice cards, location, form with Save, status line, empty state,
+   lists that open and the danger zone. DESIGN-SYSTEM.md section 9 has the rules. */
+.setting__control { align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.setting__control .saved-note { white-space: nowrap; }
+
+/* A number with its unit beside it (20 MB/s, 28 days): the unit is part of the control, not the label. */
+.input-unit { display: inline-flex; align-items: stretch; max-inline-size: 100%; }
+.input-unit .input { inline-size: 7rem; min-inline-size: 0; border-start-end-radius: 0; border-end-end-radius: 0; }
+.input-unit__unit { display: grid; place-items: center; padding-inline: var(--space-3); border: 1px solid var(--color-border);
+  border-inline-start: 0; background: var(--color-surface-sunken); color: var(--color-text-muted); font-size: var(--text-sm);
+  white-space: nowrap; border-start-end-radius: var(--radius-control, 0); border-end-end-radius: var(--radius-control, 0); }
+
+/* A location (DASH-310): the folder in words with its free space, the path small under it, Browse that opens in
+   the right place, Set automatically, and the typed path under Advanced. */
+.location { display: grid; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-divider);
+  background: var(--color-surface); max-inline-size: 880px; }
+.location__now { display: grid; gap: 2px; min-inline-size: 0; }
+.location__label { font-weight: var(--weight-strong); }
+.location__words { color: var(--color-text-muted); font-size: var(--text-sm); }
+.location__path { font-family: var(--font-mono, ui-monospace, monospace); font-size: var(--text-xs); color: var(--color-text-muted);
+  overflow-wrap: anywhere; }
+.location__words[data-tone="danger"] { color: var(--status-danger-fg); }
+.location__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.location__type > summary { cursor: pointer; font-size: var(--text-sm); font-weight: var(--weight-strong); inline-size: fit-content; }
+.location__type[open] > summary { margin-block-end: var(--space-2); }
+.location__type .input { max-inline-size: 32rem; }
+
+/* The danger zone: last on the page, its own section, with a red edge. Each button opens a dialog that says what
+   happens. */
+.settings-section--danger { border-inline-start: 4px solid var(--status-danger-fg); padding-inline-start: var(--space-4); }
+
+/* An empty list on a settings page: left aligned with the section, what is missing and the one thing to do. */
+.settings-section .empty { justify-items: start; text-align: start; padding: var(--space-4); }
+@media (max-width: 560px) { .location__actions .btn { flex: 1 1 auto; } }

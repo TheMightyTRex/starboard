@@ -10,7 +10,9 @@ const NO_KEY = ["link"];
 
 // A field with its label, hint and an error tied to the control.
 let fieldCount = 0;
-function field(label, control, { hint, span, short, required } = {}) {
+function field(label, wrapper, { hint, span, short, required } = {}) {
+  // A wrapper (a number with its unit) is shown; its input takes the label, hint and error.
+  const control = wrapper.matches("input, select, textarea") ? wrapper : wrapper.querySelector("input, select, textarea") || wrapper;
   if (!control.id) control.id = `field-${++fieldCount}`;
   if (required) control.required = true;
   const hintNode = hint ? el("span", { class: "hint", id: `${control.id}-hint` }, hint) : null;
@@ -19,7 +21,7 @@ function field(label, control, { hint, span, short, required } = {}) {
   control.fieldError = error;
   control.fieldHint = hintNode;
   return el("div", { class: short ? "field field--short" : "field", "data-span": span ? "all" : null },
-    el("label", { for: control.id }, label, control.required ? requiredMark() : null), hintNode, control, error);
+    el("label", { for: control.id }, label, control.required ? requiredMark() : null), hintNode, wrapper, error);
 }
 
 function setError(control, message) {
@@ -67,6 +69,14 @@ function section(id, title, description, ...content) {
     el("div", { class: "settings-section__head" }, chipNode ? titleChip(h2, chipNode) : h2,
       description ? el("p", { class: "small muted" }, description) : null),
     ...content.filter((n) => n !== chipNode));
+}
+
+// Settings pattern 9, the danger zone: last on the page, its own section with a red edge; each button opens a
+// danger dialog that says what happens.
+function dangerSection(id, title, description, ...content) {
+  const s = section(id, title, description, ...content);
+  s.classList.add("settings-section--danger");
+  return s;
 }
 
 // A settings page confirms a save beside its button ("Saved at 16:31"), not in a toast (CONTENT-DESIGN.md).
@@ -1686,14 +1696,9 @@ async function startJellyfin() {
     if (await save({ livetv_address: address.value })) { await startJellyfin(); showSaved("livetv-address-saved"); }
   });
   // Where Jellyfin sees the files (DASH-229): blank lets Starboard work it out for an Install apps stack.
-  const jfFolder = el("input", { class: "input", autocomplete: "off", spellcheck: "false", value: x().livetv_jellyfin_folder || "", placeholder: "/config/iptv" });
-  const jfFolderForm = el("form", { class: "inline-save", novalidate: true },
-    field("Live TV folder as Jellyfin sees it", jfFolder, { hint: "Starboard adds the channels and guides to Jellyfin itself. Blank: Starboard works it out when it installed Jellyfin." }),
-    el("button", { type: "submit", class: "btn", text: "Save folder" }), savedNote("livetv-folder-saved"));
-  jfFolderForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (await save({ livetv_jellyfin_folder: jfFolder.value })) { showSaved("livetv-folder-saved"); }
-  });
+  const jfFolderForm = locationPicker({ id: "livetv-folder", label: "Live TV folder, as Jellyfin sees it", app: "jellyfin", value: x().livetv_jellyfin_folder || "",
+    hint: "Starboard adds the channels and guides to Jellyfin itself. Empty: Starboard works it out when it installed Jellyfin.",
+    onChange: (v) => save({ livetv_jellyfin_folder: v }, "Saved") }).node;
   const liveRows = el("ul", { class: "settings-rows" },
     settingRow("Build Live TV channels and guide", withCost(lt.what + ". Free channels only: Samsung TV Plus, Pluto TV and Free-TV, with Sky-style numbers.", "livetv"),
       sw("lt-on-l", x().livetv, (on) => save({ livetv: on }, on ? "Live TV activated" : "Live TV deactivated")), "lt-on-l"),
@@ -2038,28 +2043,28 @@ async function startPerformance() {
     section("pf-preset", "Preset", "Sets everything below at once. Features you chose for what they do, such as Live TV and download hours, stay as they are.", presetForm),
     section("pf-bg", "Background work", "Runs with no page open. Each part's thread exists only while it is active.", background),
     section("pf-pages", "While a page is open", "Only while the page is open and in view; a hidden tab asks for nothing.", pages),
-    picturesSection(),
+    ...picturesSection(),
   ].filter(Boolean));
 }
 
 // Pictures (owner, 12 November 2026): the picture cache's size, how long pictures are kept, and Clear.
 function picturesSection() {
   const facts = el("dl", { class: "facts" });
-  const clear = el("button", { type: "button", class: "btn" }, icon("trash-2"), "Clear the picture cache");
+  const clear = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Clear the picture cache");
   const draw = (s) => facts.replaceChildren(el("dt", { text: "Pictures kept" }), el("dd", { text: s.pictures.toLocaleString("en-GB") }),
     el("dt", { text: "Space they use" }), el("dd", { text: formatBytes(s.bytes) }),
     el("dt", { text: "Removed when not shown for" }), el("dd", { text: `${s.unused_days} days` }));
   api("/api/pictures").then(draw).catch(() => facts.replaceChildren(el("p", { class: "small muted", text: "Could not count the pictures." })));
   clear.addEventListener("click", async () => {
-    if (!await confirmDialog({ title: "Clear the picture cache?", confirm: "Clear",
+    if (!await confirmDialog({ title: "Clear the picture cache?", confirm: "Clear", danger: true,
       message: "Every poster, cover and logo is fetched again the next time a page shows it, so pages are slower to fill for a while. Nothing else changes." })) return;
     clear.disabled = true;
     try { const out = await api("/api/pictures/clear", { method: "POST" }); toast(`Cleared ${out.cleared.toLocaleString("en-GB")} pictures`); draw(out); }
     catch (e) { problem(e.message, clear); }
     finally { clear.disabled = false; }
   });
-  return section("pf-pictures", "Pictures", "Posters, covers and logos are fetched once and kept on this server, so your browser never calls image sites. Each is fetched again after a week when shown.", facts,
-    el("div", { class: "actions" }, clear));
+  return [section("pf-pictures", "Pictures", "Posters, covers and logos are fetched once and kept on this server, so your browser never calls image sites. Each is fetched again after a week when shown.", facts),
+    dangerSection("pf-danger", "Clear", "Each button asks before it does anything.", el("div", { class: "actions" }, clear))];
 }
 
 // Security ------------------------------------------------------------------
@@ -2202,7 +2207,9 @@ async function startSecurity() {
               el("button", { type: "submit", class: "btn" }, "Save", el("span", { class: "visually-hidden", text: " how long" }))),
             daysError))),
         settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Activate when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
-        settingRow("Sign out", "This browser, or every browser and phone at once.", el("div", { class: "actions session-actions" }, signOut, everywhere), "signout-l")));
+        settingRow("Sign out", "This browser only.", el("div", { class: "actions session-actions" }, signOut), "signout-l")));
+  $("#security-sections").append(dangerSection("sc-danger", "Sign out everywhere", "Every browser and phone signed in to Starboard, this one too. It asks for your password first.",
+    el("div", { class: "actions" }, everywhere)));
   showNetwork();
 }
 
@@ -2220,7 +2227,7 @@ function apiKeys() {
       k.last_used_at ? `last used ${new Date(k.last_used_at).toLocaleString()}` : "not used yet"].join(" · ");
     return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: k.name }), el("div", { class: "row__meta", text: `${k.prefix}… · ${meta}` })),
       el("div", { class: "row__side" }, revoke));
-  }) : [el("li", { class: "empty", text: "No keys yet." })]));
+  }) : [el("li", {}, emptyState("No keys yet", "Make one below for each app or script that reads Starboard."))]));
   const name = el("input", { class: "input", id: "key-name", autocomplete: "off", placeholder: "Home Assistant" });
   const ends = el("select", { class: "select", id: "key-ends" }, [["90", "In 90 days"], ["365", "In a year"], ["never", "Never"]].map(([v, t]) => el("option", { value: v, text: t })));
   const pw = el("input", { class: "input", id: "key-password", type: "password", autocomplete: "current-password" });
@@ -2746,8 +2753,8 @@ function takeoverSection() {
         list(p.copies.map((c) => `${c.from} to ${c.to}`))),
       ...p.warnings.map((w) => notice("warning", "Before you start", w)),
       el("div", { class: "form-stack" },
-        folderField({ input: cfg, label: "Settings folder", hint: `Where the copies go. Not inside ${p.config_base || "your old settings folder"}.` }).node,
-        folderField({ input: media, label: "Media folder", hint: "Where your media and downloads are now. Nothing in it is moved." }).node,
+        locationPicker({ input: cfg, label: "Settings folder", app: "host", setting: "config", hint: `Where the copies go. Not inside ${p.config_base || "your old settings folder"}.` }).node,
+        locationPicker({ input: media, label: "Media folder", app: "host", setting: "media", hint: "Where your media and downloads are now. Nothing in it is moved." }).node,
         unmoved.length ? el("label", { class: "check" }, ok, el("span", { class: "check__text" }, el("strong", { text: `Stop ${p.unmoved_apps.join(", ")} without moving them into Reelix` }),
           el("span", { class: "check__hint", text: "Only if you do not need what they hold. Their settings folders stay either way." }))) : null,
         p3f),
@@ -2828,12 +2835,14 @@ function advancedSwitch() {
 let topicCurrent = null;
 function topicTabs() {
   const main = $("main .page");
-  const holder = main && $(".settings-sections", main);
-  // Not where the sections are one list in groups (Manage apps: apps by category, dragged between them).
-  if (!holder || IN_PANEL || holder.closest("[data-no-topic-tabs]") || holder.id === "app-sections") return;
+  // Every list of sections on the page (General has its own and Library views'), except where the sections are
+  // one list in groups (Manage apps: apps by category, dragged between them).
+  const holders = main ? $$(".settings-sections", main).filter((h) => !h.closest("[data-no-topic-tabs]")) : [];
+  const holder = holders[0];
+  if (!holder || IN_PANEL || holders.some((h) => h.id === "app-sections")) return;
   let off = false;
   try { off = localStorage.getItem("starboard.topic-tabs") === "off"; } catch { /* tabs on */ }
-  const topics = $$("section.settings-section", holder).filter((s) => !s.parentElement.closest("section.settings-section")
+  const topics = holders.flatMap((h) => $$("section.settings-section", h)).filter((s) => !s.parentElement.closest("section.settings-section")
     && !(s.hasAttribute("data-advanced") && !document.body.classList.contains("show-advanced")) && $("h2", s));
   let nav = $("#topic-tabs");
   if (off || topics.length < 4) {
@@ -2885,14 +2894,15 @@ function topicTabs() {
 }
 
 function watchTopics() {
-  const holder = $("main .page .settings-sections");
-  if (!holder || IN_PANEL) return;
+  const holders = $$("main .page .settings-sections");
+  if (!holders.length || IN_PANEL) return;
   let queued = false;
-  new MutationObserver(() => {
+  const seen = new MutationObserver(() => {
     if (queued) return;
     queued = true;
     requestAnimationFrame(() => { queued = false; topicTabs(); });
-  }).observe(holder, { childList: true, subtree: true });
+  });
+  holders.forEach((h) => seen.observe(h, { childList: true, subtree: true }));
   window.addEventListener("hashchange", () => topicTabs());
   topicTabs();
 }

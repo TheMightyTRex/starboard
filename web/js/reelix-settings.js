@@ -327,7 +327,7 @@ function rxKindSection(kind, description) {
       el("colgroup", {}, el("col", { class: "col-third" }), el("col", { class: "col-quarter" }), el("col"), el("col", { class: "col-state" })),
       el("thead", {}, el("tr", {}, el("th", { scope: "col", text: words.one[0].toUpperCase() + words.one.slice(1) }), el("th", { scope: "col", text: "State" }),
         el("th", { scope: "col", text: kind === "indexers" ? "Results" : "Address" }), el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Actions" })))),
-      el("tbody", {}, rows))) : el("p", { class: "muted", text: kind === "indexers" ? "Reelix has no sites to search yet, so it cannot find anything to download. Add one below." : `Reelix has no ${words.many} yet.` });
+      el("tbody", {}, rows))) : emptyState(`No ${words.many} yet`, kind === "indexers" ? "Reelix cannot find anything to download until it has a site to search." : `Add ${words.a} below when you need one.`);
     const buttons = el("div", { class: "actions" },
       el("button", { type: "button", class: "btn btn--primary", onclick: () => rxAddPanel(kind, words,
         kind === "indexers" ? data.catalogue.filter((c) => c.source === "definition") : data.catalogue, add,
@@ -521,7 +521,7 @@ function rxQualitySection() {
       el("label", { class: "check" }, upgrades, el("span", { class: "check__text", text: "Upgrade when a better copy comes out" })),
       lvl.extras.length ? el("div", { class: "stack-2" }, el("h4", { text: "Extras" }),
         el("p", { class: "small muted", text: "Prefer picks a release with it when there is a choice. Never refuses a release with it." }), ...extras) : null,
-      field("Largest file, in GB", largest, { hint: "Leave it empty for no limit. Films over this size are not downloaded." }),
+      field("Largest file", unitInput(largest, "GB"), { hint: "Leave it empty for no limit. Films over this size are not downloaded." }),
       el("div", { class: "actions" }, go));
   };
   const draw = (r) => {
@@ -629,6 +629,11 @@ function rxFormSection(name, title, about) {
         read.push(() => [f.key, input.checked]);
         return switchRow(f.label, f.hint, input);
       }
+      if (f.type === "path") {  // settings pattern 4: a location, as Reelix sees it
+        const picker = locationPicker({ id, label: f.label, value: f.value ?? "", app: "reelix", hint: f.hint });
+        read.push(() => [f.key, picker.input.value.trim()]);
+        return picker.node;
+      }
       if (f.type === "select") {
         input = el("select", { class: "select", id }, f.choices.map((c) => el("option", { value: c.value, text: c.label, selected: c.value === f.value })));
       } else {
@@ -636,7 +641,7 @@ function rxFormSection(name, title, about) {
           inputmode: f.type.includes("number") ? "numeric" : null, value: f.value ?? "" });
       }
       read.push(() => [f.key, input.value]);
-      return field(f.label, input, { hint: f.hint });
+      return field(f.label, f.unit ? unitInput(input, f.unit) : input, { hint: f.hint });
     });
     const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
     const note = savedNote(`rx-${name}-saved`);
@@ -653,31 +658,54 @@ function rxFormSection(name, title, about) {
   return rxLockedSection(`rx-${name}`, title, about, "form", { name }, draw, `show ${title.toLowerCase()}`);
 }
 
-// Folders (DASH-194): the library folders for each kind, with Add and Remove.
+// Folders (DASH-194): the library folders for each kind, as a list that opens (settings pattern 8). Edit opens the
+// folder in a slide-out, with Take out; Add a folder at the foot chooses the kind and the location (pattern 4).
 function rxFoldersSection() {
   const draw = (r, body) => {
-    const rows = r.folders.map((f) => {
-      const remove = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Remove", el("span", { class: "visually-hidden", text: ` ${f.path}` }));
-      remove.addEventListener("click", async () => {
+    const editFolder = (f, opener) => {
+      const out = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Take out of Reelix");
+      const panel = sidePanel({ title: `${f.kind_name} folder`, opener, body: [
+        el("dl", { class: "facts" }, el("dt", { text: "Folder, as Reelix sees it" }), el("dd", { text: f.path }),
+          el("dt", { text: "For" }), el("dd", { text: f.kind_name }),
+          el("dt", { text: "Free" }), el("dd", { text: f.free != null ? formatBytes(f.free) : "Not known" })),
+        f.ok ? null : notice("danger", "Reelix cannot reach it", "Check the folder is there and Reelix can write to it.")], foot: [out] });
+      out.addEventListener("click", async () => {
         if (!await confirmDialog({ title: `Take ${f.path} out of Reelix?`, confirm: "Take out", danger: true,
           message: "Reelix stops using this folder for new files. The files in it stay on disk." })) return;
-        try { const out = await rxCall("folders", "remove", { kind: f.kind, id: f.id }, "change Reelix's folders"); if (out) { draw(out, body); toast(out.done); } }
-        catch (e) { problem(e.message, remove); }
+        try { const o = await rxCall("folders", "remove", { kind: f.kind, id: f.id }, "change Reelix's folders"); if (o) { panel.close(); draw(o, body); showSaved("rx-folders-saved", o.done); } }
+        catch (e) { problem(e.message, out); }
       });
+    };
+    const addFolder = (opener) => {
+      const kind = el("select", { class: "select", id: "rx-folder-kind" }, r.kinds.map((k) => el("option", { value: k.value, text: k.label })));
+      let picker = locationPicker({ id: "rx-folder-path", label: "Folder", app: "reelix", setting: kind.value });
+      const holder = el("div", {}, picker.node);
+      kind.addEventListener("change", () => {
+        picker = locationPicker({ id: "rx-folder-path", label: "Folder", app: "reelix", setting: kind.value, value: picker.input.value });
+        holder.replaceChildren(picker.node);
+      });
+      const add = el("button", { type: "button", class: "btn btn--primary" }, "Add the folder");
+      const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
+      const panel = sidePanel({ title: "Add a folder", opener, body: [el("div", { class: "form-stack" }, field("For", kind), holder,
+        el("p", { class: "small muted", text: "Inside the media folder, such as /data/media/films-4k. Reelix makes it if it is not there." }))], foot: [add, cancel] });
+      cancel.addEventListener("click", () => panel.close());
+      add.addEventListener("click", async () => {
+        try { const o = await rxCall("folders", "add", { kind: kind.value, path: picker.input.value.trim() }, "change Reelix's folders"); if (o) { panel.close(); draw(o, body); showSaved("rx-folders-saved", o.done); } }
+        catch (e) { setError(picker.input, e.message); picker.input.focus(); }
+      });
+    };
+    const rows = r.folders.map((f) => {
+      const edit = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Edit", el("span", { class: "visually-hidden", text: ` ${f.path}` }));
+      edit.addEventListener("click", () => editFolder(f, edit));
       return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: f.path }),
-        el("div", { class: "row__meta", text: [f.kind_name, f.free != null ? `${formatBytes(f.free)} free` : "", f.ok ? "" : "Reelix cannot reach it"].filter(Boolean).join(" · ") })),
-        el("div", { class: "row__side" }, remove));
+        el("div", { class: "row__meta", text: [f.kind_name, f.free != null ? `${formatBytes(f.free)} free` : ""].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__side" }, chip(f.ok ? "Works" : "Cannot reach", f.ok ? "success" : "danger"), edit));
     });
-    const kind = el("select", { class: "select", id: "rx-folder-kind" }, r.kinds.map((k) => el("option", { value: k.value, text: k.label })));
-    const path = el("input", { class: "input", id: "rx-folder-path", placeholder: "/data/media/", spellcheck: "false", autocomplete: "off" });
-    const add = el("button", { type: "button", class: "btn" }, "Add the folder");
-    add.addEventListener("click", async () => {
-      try { const out = await rxCall("folders", "add", { kind: kind.value, path: path.value.trim() }, "change Reelix's folders"); if (out) { draw(out, body); toast(out.done); } }
-      catch (e) { setError(path, e.message); path.focus(); }
-    });
-    body.replaceChildren(el("ul", { class: "rows" }, rows),
-      el("div", { class: "form-stack" }, field("For", kind), field("Folder, as Reelix sees it", path, { hint: "Inside the media folder, such as /data/media/films-4k. Make the folder on disk first." })),
-      el("div", { class: "actions" }, add));
+    const add = el("button", { type: "button", class: "btn" }, icon("plus"), "Add a folder");
+    add.addEventListener("click", () => addFolder(add));
+    body.replaceChildren(rows.length ? el("ul", { class: "rows" }, rows)
+      : emptyState("No folders yet", "Reelix has nowhere to put what it finds until it has one.", null),
+      el("div", { class: "actions" }, add, savedNote("rx-folders-saved")));
   };
   return rxLockedSection("rx-folders", "Folders", "Where Reelix keeps each kind of media.", "folders", {}, draw, "show Reelix's folders");
 }
@@ -704,7 +732,9 @@ function rxPeopleSection() {
 function rxDirectSection() {
   const draw = (r, body) => {
     const on = el("input", { type: "checkbox", id: "rx-direct-on", checked: r.on });
-    const folder = el("input", { class: "input", id: "rx-direct-folder", value: r.folder, spellcheck: "false", autocomplete: "off" });
+    const where = locationPicker({ id: "rx-direct-folder", label: "Folder", app: "reelix", setting: "direct", value: r.folder,
+      hint: "Inside /data: /data/downloads/direct, or /data/media/music to put music straight into the library." });
+    const folder = where.input;
     const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
     save.addEventListener("click", async () => {
       try { const o = await rxCall("direct", "save", { on: on.checked, folder: folder.value.trim() }, "change YouTube and Spotify"); if (o) { draw(o, body); toast(o.done); } }
@@ -729,7 +759,7 @@ function rxDirectSection() {
     body.replaceChildren(
       r.folder_warning ? notice("warning", "Downloads go to the wrong place", r.folder_warning) : null,
       switchRow("YouTube and Spotify downloads", "Paste a link on Downloads, From a link.", on),
-      field("Folder, inside /data", folder, { hint: "Such as /data/downloads/direct, or /data/media/music to put music straight into the library." }),
+      where.node,
       el("div", { class: "actions" }, save),
       el("p", { class: "small", text: `Tools: ${r.tools.map((t) => `${t.tool} ${t.ok ? "ready" : "missing"}`).join(", ") || "not reported"}.` }),
       titleChip(el("h3", { text: "Spotify" }), chip(sp.connected ? `Connected${sp.user ? ` as ${sp.user}` : ""}` : sp.waiting ? "Waiting for you to finish" : "Not connected", sp.connected ? "success" : "muted")),

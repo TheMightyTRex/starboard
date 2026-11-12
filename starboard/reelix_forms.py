@@ -33,9 +33,9 @@ FORMS = {
     "files": ("/settings/mediamanagement", "Files", "How Reelix moves finished downloads into your library.", [
         ("import_mode", "How finished files move in", "A hard link adds the file without a copy, so torrents keep sharing.", "select",
          [("hardlink_or_copy", "Hard link, or copy when it cannot (recommended)"), ("copy", "Always copy"), ("move", "Move")]),
-        ("minimum_free_space_mb", "Space to keep free (MB)", "Reelix stops adding files when a library folder has less free than this.", "number", (0, 10 ** 7)),
-        ("recycle_bin_path", "Recycle bin folder", "Deleted and replaced files go here. Empty deletes them for good.", "text", r"^(/[^\x00]*)?$"),
-        ("recycle_bin_retention_days", "Days to keep recycled files", "0 keeps them for ever.", "number", (0, 3650)),
+        ("minimum_free_space_mb", "Space to keep free", "Reelix stops adding files when a library folder has less free than this.", "number", (0, 10 ** 7)),
+        ("recycle_bin_path", "Recycle bin folder", "Deleted and replaced files go here. Empty deletes them for good.", "path", r"^(/[^\x00]*)?$"),
+        ("recycle_bin_retention_days", "Keep recycled files for", "0 keeps them for ever.", "number", (0, 3650)),
         ("delete_empty_folders", "Delete empty folders", "After the last file in a folder is deleted.", "bool", None),
         ("unmonitor_deleted", "Stop following what you delete", "When a file is deleted outside Reelix, Reelix stops looking for it.", "bool", None),
         ("import_extra_files", "Bring in extra files", "Subtitles and other files that come with a download.", "bool", None),
@@ -50,9 +50,9 @@ FORMS = {
         ("minimum_availability", "When a film counts as out", None, "select",
          [("released", "When it is released to buy or stream (recommended)"), ("in_cinemas", "When it is in cinemas"), ("announced", "When it is announced")]),
         ("movie_quota_limit", "Films each person can ask for", "Empty for no limit.", "optional_number", (1, 1000)),
-        ("movie_quota_days", "In how many days (films)", None, "number", (1, 365)),
+        ("movie_quota_days", "Over (films)", None, "number", (1, 365)),
         ("tv_quota_limit", "Series each person can ask for", "Empty for no limit.", "optional_number", (1, 1000)),
-        ("tv_quota_days", "In how many days (series)", None, "number", (1, 365)),
+        ("tv_quota_days", "Over (series)", None, "number", (1, 365)),
     ]),
     "books": ("/settings/books", "Books", "How Reelix handles books and audiobooks.", [
         ("metadata_language", "Language of book details", "Such as en.", "text", r"^([a-z]{2,3})?$"),
@@ -68,6 +68,9 @@ FORMS = {
     ]),
 }
 MASK = "********"
+# The unit beside a number (settings pattern 2): part of the control, not the label.
+UNITS = {"minimum_free_space_mb": "MB", "recycle_bin_retention_days": "days", "movie_quota_days": "days",
+         "tv_quota_days": "days", "movie_quota_limit": "films", "tv_quota_limit": "series"}
 
 
 def _shown(kind, value):
@@ -93,7 +96,7 @@ def open_form(reelix, name):
             listed.insert(0, (have, f"{have} (as Reelix has it now)"))
         return [{"value": v, "label": t} for v, t in listed]
     return {"name": name, "title": title, "about": about,
-            "fields": [{"key": k, "label": label, "hint": hint or "", "type": kind, "choices": choices(k, kind, rule),
+            "fields": [{"key": k, "label": label, "hint": hint or "", "type": kind, "choices": choices(k, kind, rule), "unit": UNITS.get(k, ""),
                         "value": _shown(kind, current.get(k)) if current.get(k) is not None else ("" if kind == "select" else None)}
                        for k, label, hint, kind, rule in fields]}
 

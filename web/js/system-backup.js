@@ -288,7 +288,7 @@ async function loadSaved() {
       el("div", { class: "row__meta", text: `${item.reason} · ${formatBytes(item.size)}` })),
     el("div", { class: "row__side" },
       el("button", { type: "button", class: "btn btn--danger", onclick: () => restoreSaved(item) }, "Restore", el("span", { class: "visually-hidden", text: ` the copy from ${when(item.saved)}` })))))
-    : [el("li", { class: "empty", text: "No saved copies yet. Starboard makes one before every restore and before an update changes the settings." })]));
+    : [el("li", {}, emptyState("No saved copies yet", "Starboard makes one before every restore and before an update changes the settings. To bring back a copy from elsewhere, use Restore from a file."))]));
 }
 
 // Settings, Updates, Restore: the command to go back names the version before this one.

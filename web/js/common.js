@@ -201,7 +201,34 @@ function toast(message, options = {}) {
   const split = title.indexOf(". ");
   if (!detail && split > 0) { detail = title.slice(split + 2); title = title.slice(0, split); }
   title = title.replace(/\.$/, "");
+  if (savedBeside(title, options)) return null;
   return window.SharedComponents.toast(title, { ...options, detail });
+}
+// Settings pattern 2 and 5 (DASH-308): on a Settings page a success says itself beside the control that was just
+// used (or, when the section was drawn again, at the foot of that section), never in a toast. Warnings, errors and
+// news from elsewhere (no control used in the last 15 seconds) stay toasts.
+function savedBeside(text, options) {
+  if (options.tone && options.tone !== "success") return false;
+  if (!document.querySelector(".page--settings") || !lastUsed || Date.now() - lastUsed.at > 15000) return false;
+  const { control, sectionHead } = lastUsed;
+  let spot = null;
+  if (control.isConnected && control.getClientRects().length && !control.closest(".side-panel, dialog")) {
+    const holder = control.closest(".setting__control, .actions, .inline-save, .switch, .field") || control;
+    spot = holder.classList.contains("switch") && holder.closest(".setting__control") ? holder.closest(".setting__control") : holder;
+  } else if (sectionHead) {
+    const sec = document.getElementById(sectionHead)?.closest(".settings-section");
+    if (!sec) return false;
+    spot = [...sec.querySelectorAll(".actions")].pop() || sec.querySelector(".settings-section__head");
+  }
+  if (!spot) return false;
+  const inside = spot.matches(".setting__control, .actions, .settings-section__head");
+  let note = inside ? spot.querySelector(":scope > .saved-note") : spot.nextElementSibling?.matches(".saved-note") ? spot.nextElementSibling : null;
+  if (!note) {
+    note = el("span", { class: "saved-note", hidden: true });
+    if (inside) spot.append(note); else spot.after(note);
+  }
+  window.SharedComponents.savedNote(note, text === "Saved" ? "" : text);
+  return true;
 }
 // An error shows beside what it belongs to (content rule): the control named, or the one just used. With
 // neither (an error while a page loads), it is an error toast, which stays until it is closed.
@@ -211,7 +238,7 @@ for (const type of ["click", "change"]) {
   document.addEventListener(type, (e) => {
     const control = e.target.closest?.(CONTROLS);
     // A confirm dialog closes before its answer comes, so the button that opened it stays the one in use.
-    if (control && !control.closest(".toasts, dialog.dialog")) lastUsed = { control, at: Date.now() };
+    if (control && !control.closest(".toasts, dialog.dialog")) lastUsed = { control, at: Date.now(), sectionHead: control.closest(".settings-section")?.getAttribute("aria-labelledby") || null };
   }, true);
 }
 function problem(message, near) {
@@ -721,6 +748,90 @@ function folderField({ id, label, value = "", hint = "", input: given = null, re
   const node = el("div", { class: "field", "data-span": "all" }, el("label", { for: id, text: label }), hintNode,
     el("div", { class: "folder-field" }, input, browse), error, said);
   return { node, input };
+}
+
+// Settings pattern 4, a location (DASH-310, approved 12 November 2026): the folder in words with its free space, the
+// path small under it, Browse that opens where the folder is, Set automatically (the right folder for this setting)
+// and the typed path under Advanced. app is whose view of the folders the path is in: "reelix" (inside /data) or
+// "host" (this computer). setting picks what Set automatically gives. onChange(path) runs after Browse, Set
+// automatically or typing; without it, read input.value when saving.
+// locationPicker({ id, label, value, app, setting, hint, onChange }) returns { node, input, refresh }.
+let locationCount = 0;
+function locationPicker({ id, label, value = "", app = "host", setting = "", hint = "", onChange = null, input: given = null }) {
+  const input = given || el("input", { class: "input", value, spellcheck: "false", autocomplete: "off" });
+  id = input.id || id || `location-${++locationCount}`;
+  input.id = id;
+  const error = el("span", { class: "field-error", id: `${id}-error`, hidden: true });
+  input.fieldError = error;
+  input.setAttribute("aria-describedby", `${id}-words ${id}-error`);
+  const words = el("span", { class: "location__words", id: `${id}-words`, "aria-live": "polite" });
+  const path = el("span", { class: "location__path" });
+  const browse = el("button", { type: "button", class: "btn", "aria-haspopup": "dialog" }, icon("folder-open"), "Browse",
+    el("span", { class: "visually-hidden", text: ` for ${label.toLowerCase()}` }));
+  const auto = el("button", { type: "button", class: "btn btn--quiet", hidden: true }, "Set automatically",
+    el("span", { class: "visually-hidden", text: ` for ${label.toLowerCase()}` }));
+  const type = el("details", { class: "location__type" }, el("summary", {}, "Type a path (Advanced)"),
+    el("label", { for: id, class: "visually-hidden", text: label }), input, error);
+  let last = null, seen = null;
+  const show = (r) => {
+    seen = r;
+    path.textContent = r.path || "";
+    path.hidden = !r.path;
+    const free = r.free != null ? `${formatBytes(r.free)} free` : "";
+    words.dataset.tone = r.ok ? "" : "danger";
+    words.textContent = [r.ok ? r.words : "", free, ...r.lines].filter(Boolean).join(" · ");
+    browse.disabled = !r.can_browse;
+    auto.hidden = !r.suggest || r.suggest === r.path;
+  };
+  const refresh = async () => {
+    const v = input.value.trim();
+    if (v === last) return seen;
+    last = v;
+    try { show(await api(`/api/locations?app=${encodeURIComponent(app)}&for=${encodeURIComponent(setting)}&path=${encodeURIComponent(v)}`)); }
+    catch (e) { words.dataset.tone = "danger"; words.textContent = e.message; }
+    return seen;
+  };
+  const set = async (v) => {
+    input.value = v;
+    error.hidden = true;
+    input.removeAttribute("aria-invalid");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await refresh();
+    if (onChange && seen?.ok !== false) onChange(v);
+  };
+  input.addEventListener("change", () => set(input.value.trim()));
+  auto.addEventListener("click", () => { if (seen?.suggest) set(seen.suggest); });
+  browse.addEventListener("click", async () => {
+    const r = seen || await refresh();
+    folderBrowser(r?.start || r?.host || "", browse, async (host) => {
+      try {
+        const out = await api(`/api/locations/chosen?app=${encodeURIComponent(app)}&host=${encodeURIComponent(host)}`);
+        await set(out.path);
+      } catch (e) { words.dataset.tone = "danger"; words.textContent = e.message; }
+      browse.focus();
+    });
+  });
+  const node = el("div", { class: "location", "data-span": "all" },
+    el("div", { class: "location__now" }, el("span", { class: "location__label", text: label }),
+      hint ? el("span", { class: "small muted", text: hint }) : null, words, path),
+    el("div", { class: "location__actions" }, browse, auto), type);
+  // A problem shown by setError opens the typed path, so the message is next to it.
+  input.addEventListener("invalid", () => { type.open = true; });
+  new MutationObserver(() => { if (!error.hidden) type.open = true; }).observe(error, { attributes: true, attributeFilter: ["hidden"] });
+  setTimeout(refresh, 0);
+  return { node, input, refresh };
+}
+
+// Settings pattern 2: a number with its unit beside it (20 | MB/s), the unit part of the control.
+function unitInput(input, unit) {
+  input.classList.add("input");
+  if (!input.getAttribute("inputmode")) input.setAttribute("inputmode", "numeric");
+  return el("span", { class: "input-unit" }, input, el("span", { class: "input-unit__unit", "aria-hidden": "true", text: unit }));
+}
+
+// Settings pattern 7: what is missing and the one thing to do.
+function emptyState(title, text, action = null) {
+  return el("div", { class: "empty" }, el("p", {}, el("strong", { text: title })), text ? el("p", { text }) : null, action);
 }
 
 async function folderBrowser(start, opener, onChoose) {
