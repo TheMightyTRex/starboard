@@ -16,6 +16,7 @@ function radioSourcesSection() {
     let saved = s;
     const send = (extra = {}) => rxCall("radio", "sources-save", {
       on: $$("input[name=src]", body).filter((i) => i.checked).map((i) => i.value),
+      catchup: $$("input[name=catchup]", body).filter((i) => i.checked).map((i) => i.value),
       country: $("#radio-country", body).value, language: $("#radio-language", body).value,
       podcastindex_key: saved.podcastindex_key, podcastindex_secret: "", ...extra }, "save the radio sources");
     const now = async (control, undo) => {
@@ -27,8 +28,23 @@ function radioSourcesSection() {
       const id = `radio-src-${src.id}`;
       const input = el("input", { type: "checkbox", role: "switch", name: "src", value: src.id, checked: src.on, "aria-labelledby": `${id}-l` });
       input.addEventListener("change", () => now(input, () => { input.checked = !input.checked; }));
-      return settingRow(src.name, src.about + (src.search ? "" : " Added by its address, not searched."), el("label", { class: "switch" }, input), `${id}-l`);
-    });
+      const row = settingRow(src.name, src.about + (src.search ? "" : " Added by its address, not searched."), el("label", { class: "switch" }, input), `${id}-l`);
+      if (!src.catchup) return row;
+      // RFX-96: catch-up downloads, off unless switched on, with what the source's terms say.
+      const catchId = `radio-catch-${src.id}`;
+      const catchInput = el("input", { type: "checkbox", role: "switch", name: "catchup", value: src.id, checked: src.catchup_on, "aria-labelledby": `${catchId}-l` });
+      catchInput.addEventListener("change", () => {
+        // Catch-up needs its source on: turning catch-up on turns the source on too, in the same save.
+        const turnedOn = catchInput.checked && !input.checked;
+        if (turnedOn) input.checked = true;
+        now(catchInput, () => { catchInput.checked = !catchInput.checked; if (turnedOn) input.checked = false; });
+      });
+      const catchRow = settingRow(`Catch-up downloads from ${src.name}`,
+        `Fetches wanted episodes from ${src.name}'s own pages with yt-dlp (the full Reelix). ${src.risk || "For your personal use only."}`,
+        el("label", { class: "switch" }, catchInput), `${catchId}-l`);
+      catchRow.classList.add("setting--sub");
+      return [row, catchRow];
+    }).flat();
     const choice = (id, label, list, value, hint) => {
       const select = el("select", { class: "select", id, "aria-labelledby": `${id}-l` }, list.map(([v, t]) => el("option", { value: v, text: t, selected: v === value })));
       let was = select.value;

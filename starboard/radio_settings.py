@@ -10,6 +10,9 @@ ABOUT = {
     "apple": "Apple Podcasts: radio shows from every broadcaster that publishes them as podcasts, such as LBC, Times Radio and talkSPORT, with genre charts.",
     "podcastindex": "Podcast Index: an open podcast directory with categories. Needs a free key and secret from podcastindex.org.",
     "archive": "The Internet Archive: old-time radio and other recordings in the public domain.",
+    "globalplayer": "Global Player: catch-up of LBC, Capital, Heart, Smooth, Radio X, Gold and Classic FM shows.",
+    "nts": "NTS: NTS 1 and 2's shows, with genres and moods, many of them music.",
+    "mixcloud": "Mixcloud: stations and DJs who put their shows there, such as Worldwide FM and Soho Radio.",
     "rss": "A podcast feed: any show by its feed address.",
 }
 COUNTRIES = [("", "Anywhere"), ("GB", "United Kingdom"), ("IE", "Ireland"), ("US", "United States"), ("CA", "Canada"),
@@ -34,10 +37,15 @@ def state(reelix):
         stations = [s for s in p.get("stations") or [] if isinstance(s, dict)]
         about = ABOUT.get(pid, "")
         extra = " ".join(x for x in (f"Episodes: {arrive[:1].lower() + arrive[1:]}." if arrive else "",
-                                      f"{len(stations)} stations." if stations else "", risk) if x)
+                                      f"{len(stations)} stations." if stations else "") if x)
+        # With no list saved, a source is on when Reelix says so (NTS, Mixcloud and Global Player are off by
+        # default), or when it is only waiting for its key.
+        on = pid in allowed if allowed else bool(p.get("enabled") or p.get("key_needed") or pid == "podcastindex")
         out.append({"id": pid, "name": p.get("name") or pid, "about": " ".join(x for x in (about, extra) if x),
-                    "search": bool(p.get("supports_search")), "on": (not allowed or pid in allowed),
-                    "needs_key": bool(p.get("key_needed")) or pid == "podcastindex", "works": bool(p.get("enabled"))})
+                    "search": bool(p.get("supports_search")), "on": on,
+                    "needs_key": bool(p.get("key_needed")) or pid == "podcastindex", "works": bool(p.get("enabled")),
+                    # RFX-96: catch-up downloads for this source, off unless switched on.
+                    "catchup": bool(p.get("catchup")), "catchup_on": pid in (s.get("catchup_providers") or []), "risk": risk})
     return {"sources": out, "country": s.get("country") or "", "language": s.get("language") or "",
             "countries": COUNTRIES, "languages": LANGUAGES,
             "podcastindex_key": s.get("podcastindex_api_key") or "", "podcastindex_secret_set": bool(s.get("podcastindex_api_secret"))}
@@ -54,14 +62,18 @@ def save(reelix, body):
     if country not in {c for c, _ in COUNTRIES} or language not in {c for c, _ in LANGUAGES}:
         raise ValueError("Choose a country and a language from the lists")
     _, current = reelix.call("GET", "/radio/settings")
-    new = {**(current or {}), "enabled_providers": [] if set(on) == set(known) else on,
-           "country": country or None, "language": language or None}
+    # Always the list itself: to a newer Reelix an empty list means only the sources on by default.
+    with_catchup = {str(p.get("id")) for p in providers or [] if p.get("catchup")}
+    catchup = [p for p in body.get("catchup") or [] if p in with_catchup and p in on]
+    new = {**(current or {}), "enabled_providers": on, "country": country or None, "language": language or None}
+    if with_catchup:  # an older Reelix has no catch-up and no such setting
+        new["catchup_providers"] = catchup
     key = str(body.get("podcastindex_key") or "").strip()
     secret = str(body.get("podcastindex_secret") or "").strip()
     new["podcastindex_api_key"] = key or None
     new["podcastindex_api_secret"] = MASK if (not secret and (current or {}).get("podcastindex_api_secret") and key) else (secret or None)
     reelix.call("PUT", "/radio/settings", new)
-    done = [f"{len(on)} of {len(known)} sources on"]
+    done = [f"{len(on)} of {len(known)} sources on"] + ([f"Catch-up on for {len(catchup)}"] if catchup else [])
     if "podcastindex" in on and not key:
         done.append("Podcast Index stays off until it has a key and secret")
     return {"state": state(reelix), "done": done}

@@ -125,6 +125,8 @@ class StandIn:
             {"id": 3, "name": "Music", "family": "music", "language": None, "items": [], "cutoff": 0, "upgrade_allowed": False}]
         self.formats = [{"id": 1, "name": "HEVC (smaller files)", "specifications": []}, {"id": 2, "name": "HDR", "specifications": []},
                         {"id": 3, "name": "English audio", "specifications": []}, {"id": 4, "name": "3D", "specifications": []}]
+        self.radio = {"enabled_providers": [], "catchup_providers": [], "country": "GB", "language": "en",
+                      "podcastindex_api_key": None, "podcastindex_api_secret": None, "default_follow": "all"}
         self.calls = []
 
     def preview(self, naming):
@@ -276,6 +278,26 @@ class StandIn:
             pid = int(path.rsplit("/", 1)[1])
             self.profiles = [body if p["id"] == pid else p for p in self.profiles]
             return 200, body, None
+        # Radio sources as a Reelix with RFX-93 to 102 lists them (catch-up off for all by default).
+        if path == "/radio/providers" and method == "GET":
+            on = self.radio["enabled_providers"]
+            def dto(pid, name, default_on, catchup, risk=None, key=False, arrive="Podcast feeds", stations=0):
+                return {"id": pid, "name": name, "supports_search": True, "enabled": (pid in on) if on else default_on,
+                        "key_needed": key, "episodes_arrive": arrive, "risk": risk, "catchup": catchup,
+                        "stations": [{"id": f"s{n}", "name": f"Station {n}"} for n in range(stations)]}
+            return 200, [dto("bbc", "BBC", True, True, "The BBC's terms allow downloads in its own app only; podcast feeds are fine.",
+                             arrive="Programme pages; audio from the programme's podcast feed, your download sites, or catch-up when it is on", stations=66),
+                         dto("apple", "Apple Podcasts", True, False),
+                         dto("podcastindex", "Podcast Index", False, False, key=True),
+                         dto("globalplayer", "Global Player", False, True, "Global's terms are for listening in its own apps, and episodes go after 7 days.",
+                             arrive="Catch-up, kept for 7 days: follow from now on", stations=9),
+                         dto("nts", "NTS", False, True, "NTS's terms are for listening on its own site and apps.", arrive="Catch-up from NTS's pages"),
+                         dto("mixcloud", "Mixcloud", False, True, "Mixcloud's terms allow streaming on its own site and apps only.", arrive="Catch-up from Mixcloud's pages"),
+                         dto("rss", "Podcast feed", True, False)], None
+        if path == "/radio/settings":
+            if method == "PUT":
+                self.radio.update(body or {})
+            return 200, dict(self.radio), None
         if path == "/settings/naming":
             if method == "PUT":
                 self.naming = {**self.naming, **body}
