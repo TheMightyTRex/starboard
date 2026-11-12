@@ -382,6 +382,44 @@
      },
      "required": {
       "type": "boolean"
+     },
+     "group": {
+      "type": "string",
+      "maxLength": 40
+     },
+     "choices": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "array",
+        "items": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "object",
+           "required": [
+            "value",
+            "label"
+           ],
+           "additionalProperties": false,
+           "properties": {
+            "value": {
+             "type": "string"
+            },
+            "label": {
+             "type": "string",
+             "maxLength": 60
+            }
+           }
+          }
+         ]
+        }
+       }
+      ]
      }
     }
    }

@@ -14,6 +14,15 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.5.0, 12 November 2026
+
+- **Added:** a setting may have a `group`. Each group is its own section of the plug-in's page in Settings.
+- **Added:** a choice may be `{"value": ..., "label": ...}`, so people choose by name. `settings.json` still holds
+  the value.
+- **Changed:** the plug-in's page follows Starboard's settings patterns. Numbers save as soon as they change,
+  the plug-in's buttons are in an Actions section, and nothing shows a toast for a saved setting.
+- A manifest that uses either needs `">=1.5 <2.0"` in `starboard_api`. An older Starboard refuses it.
+
 ## Plug-in API 1.4.0, fixes, 12 November 2026
 
 - **Fixed:** what a plug-in reads comes as the folder `/run/starboard`, readable by any container user. Before,

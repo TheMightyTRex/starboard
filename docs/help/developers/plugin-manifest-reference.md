@@ -142,8 +142,9 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 | `hint` | One sentence under the field |
 | `default` | Its value when the plug-in is added, or when an update adds the setting |
 | `min`, `max`, `unit` | For `number` |
-| `choices` | For `choice`: the list to choose from. For `custom`: the path that gives its choices |
+| `choices` | For `choice`: the list to choose from, each a value such as `"eng"` or, from API 1.5, `{"value": "eng", "label": "English"}` so people read words, not codes. For `custom`: the path that gives its choices |
 | `required` | `true` when the plug-in cannot start without it. API 1.4 |
+| `group` | The section it goes in, such as `Picture and sound`: up to 40 characters, in sentence case. Settings without one go in **Settings**. API 1.5 |
 | `restart`, `item` | Accepted, reserved for later |
 
 | Type | What people get | What Starboard checks |
@@ -166,6 +167,16 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 - People are told before install that it needs setting up.
 
 Both came in API 1.4. Read [States](plugin-api-reference.md#states).
+
+### How Starboard lays them out
+
+Starboard draws every plug-in's settings the same way, as Starboard's own Settings pages are drawn:
+
+- Each `group` is its own section, with a topic tab, in the order the groups first appear. Settings with no group
+  come first, under **Settings**. Use groups once a plug-in has more than about six settings.
+- Switches, choices, numbers and folders save as soon as they change, with **Saved at** and the time beside them.
+- Text, addresses, secrets, lists and required numbers are one form per section with one **Save** at its foot.
+- The plug-in's `actions` are buttons in an **Actions** section, after its settings and screens.
 
 ## Cards
 
@@ -263,6 +274,7 @@ in. API 1.4. Read [Jobs](plugin-api-reference.md#jobs) for what Starboard sends.
 | 1.2 | 12 November 2026 | Styles may also set card, button, border, tab, header, side menu and chip styles; up to 32 styles |
 | 1.3 | 12 November 2026 | The `folder` setting: a folder inside the media folders the plug-in mounts, chosen with Browse |
 | 1.4 | 12 November 2026 | `required` settings, `setup_required`, `notices`, `events`, `jobs` and card `refresh_minutes` |
+| 1.5 | 12 November 2026 | A setting's `group`, and choices with a `label` |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

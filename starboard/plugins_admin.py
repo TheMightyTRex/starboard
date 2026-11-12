@@ -557,7 +557,9 @@ def public_settings(data_dir, pid, manifest=None):
     out = []
     for s in m.get("settings") or []:
         v = values.get(s["key"])
-        out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "choices", "required") if k in s},
+        out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "required", "group") if k in s},
+                    **({"choices": [{"value": v, "label": w} for v, w in plugins.choices(s)]} if s["type"] == "choice"
+                       else {"choices": s["choices"]} if "choices" in s else {}),
                     "value": (None if s["type"] == "secret" else v), "set": v not in (None, "")})
     return out
 
@@ -580,7 +582,7 @@ def save_settings(data_dir, pid, incoming):
             if not isinstance(v, (int, float)) or isinstance(v, bool) or v < s.get("min", float("-inf")) or v > s.get("max", float("inf")):
                 raise ValueError(f"{s['label']}: give a number from {s.get('min', '')} to {s.get('max', '')}".replace("from  to ", ""))
         elif t == "choice":
-            if v not in (s.get("choices") or []):
+            if v not in [value for value, _ in plugins.choices(s)]:
                 raise ValueError(f"{s['label']}: choose one from the list")
         elif t == "address":
             from . import outside

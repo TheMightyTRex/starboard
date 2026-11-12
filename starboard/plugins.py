@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.4.0"  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.5.0"  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -45,7 +45,7 @@ CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idl
 # ("image": "starboard") with a command, and Live TV may use the Live TV folder the installer gave ("iptv").
 BUILTIN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plugins")
 BUILTIN_VOLUMES = {"iptv"}
-SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item", "required"}
+SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item", "required", "group"}
 CARD = {"id", "title", "type", "path", "format", "label", "example", "refresh_minutes"}
 # API 1.4 (DASH-330, from Stremio and Jellyfin): notices shown before install, events a plug-in hears, and jobs Starboard
 # runs for it. Each event needs the read permission that already covers what it tells.
@@ -180,6 +180,14 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"{where}: type must be one of {', '.join(SETTING_TYPES)}")
         if s.get("type") == "custom" and not re.match(r"^/[A-Za-z0-9/_-]{1,80}$", str(s.get("choices", ""))):
             out.append(f"{where}: a custom setting names the path that gives its choices")
+        if "group" in s and not (isinstance(s["group"], str) and 0 < len(s["group"].strip()) <= 40):  # API 1.5
+            out.append(f"{where}: group must be text of up to 40 characters")
+        if s.get("type") == "choice":
+            raw = s.get("choices")
+            if not isinstance(raw, list) or not raw or not all(
+                    isinstance(c, str) or (isinstance(c, dict) and set(c) <= {"value", "label"} and isinstance(c.get("value"), str)
+                                           and isinstance(c.get("label"), str) and 0 < len(c["label"]) <= 60) for c in raw):
+                out.append(f"{where}: choices must be a list of values, or of {{value, label}} with a label of up to 60 characters")
         if s.get("type") == "folder" and not media_mounts(m):  # API 1.3, owner's choice A (12 November 2026)
             out.append(f"{where}: a folder setting needs a container that mounts media:ro or media/<one folder>; "
                        "the folder is chosen inside it")
@@ -442,7 +450,11 @@ def write_schema(path):
                                                                       "properties": {"memory": {"type": "integer", "maximum": CEILING_MEMORY},
                                                                                      "cpus": {"type": "number", "maximum": CEILING_CPUS}}}},
             "settings": {"type": "array", "items": {"type": "object", "required": ["key", "label", "type"],
-                                                    "properties": {"type": {"enum": list(SETTING_TYPES)}, "required": {"type": "boolean"}}}},
+                                                    "properties": {"type": {"enum": list(SETTING_TYPES)}, "required": {"type": "boolean"},
+                                                                   "group": {"type": "string", "maxLength": 40},
+                                                                   "choices": {"anyOf": [{"type": "string"}, {"type": "array", "items": {"anyOf": [
+                                                                       {"type": "string"}, {"type": "object", "required": ["value", "label"], "additionalProperties": False,
+                                                                        "properties": {"value": {"type": "string"}, "label": {"type": "string", "maxLength": 60}}}]}}]}}}},
             "cards": {"type": "array", "items": {"type": "object", "required": ["type", "path"],
                                                  "properties": {"type": {"enum": list(CARD_TYPES)}, "format": {"enum": list(CARD_FORMATS)},
                                                                 "refresh_minutes": {"type": "integer", "minimum": 1, "maximum": 1440}}}},
@@ -466,6 +478,17 @@ def write_schema(path):
 
 if __name__ == "__main__":
     write_schema(os.path.join(os.path.dirname(os.path.abspath(__file__)), "plugin-manifest.schema.json"))
+
+
+def choices(setting):
+    """A choice setting's choices as [(value, words)]: a plain value is its own words (API 1.5 added labels)."""
+    out = []
+    for c in setting.get("choices") or []:
+        if isinstance(c, dict):
+            out.append((str(c.get("value", "")), str(c.get("label") or c.get("value", ""))))
+        else:
+            out.append((str(c), str(c)))
+    return out
 
 
 def media_mounts(manifest):

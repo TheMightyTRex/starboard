@@ -89,8 +89,10 @@ def call(data_dir, pid, key, body=None, opener=None):
         except ValueError:
             said = None
         raise ValueError(_text(said, 200) or f"{m.get('name', pid)} answered {e.code}") from None
-    except OSError as e:
-        raise ValueError(f"No answer from {m.get('name', pid)}: {e}") from None
+    except OSError as e:  # in words, not the system's own message (DASH-307)
+        late = isinstance(getattr(e, "reason", e), TimeoutError)
+        raise ValueError(f"{m.get('name', pid)} did not answer within a minute" if late else
+                         f"Starboard could not reach {m.get('name', pid)}. Check that it is active on State") from None
     if len(raw) > MAX_BYTES:
         raise ValueError("The answer is too large")
     return clean(json.loads(raw))

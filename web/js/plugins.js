@@ -90,8 +90,9 @@ const count = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
 function testReport(r) {
   const head = r.ok ? notice("success", "Ready to add", `${count(r.warnings, "warning")} and ${count(r.infos, "tip")}.`)
     : notice("danger", `${count(r.errors, "error")} to fix before it can be added`, `${count(r.warnings, "warning")} and ${count(r.infos, "tip")} as well.`);
-  const acc = el("p", {}, chip(r.accessibility.passed ? "Accessibility passed" : "Accessibility failed", r.accessibility.passed ? "success" : "danger"),
-    el("span", { class: "small", text: ` Checked: ${r.accessibility.checked}.` }));
+  const acc = el("div", {}, el("div", { class: "title-chip" }, el("h4", { text: "Accessibility" }),  // DASH-309: the chip on its title's line
+    chip(r.accessibility.passed ? "Passed" : "Failed", r.accessibility.passed ? "success" : "danger")),
+    el("p", { class: "small", text: `Checked: ${r.accessibility.checked}.` }));
   const list = r.issues.length ? el("ul", { class: "rows" }, r.issues.map((i) => el("li", { class: "row row--no-lead" },
     el("div", {}, el("div", { class: "row__title", text: i.what }), el("div", { class: "row__meta", text: `${i.where} · ${i.area} · Fix: ${i.fix}` })),
     el("div", { class: "row__side" }, chip(...SEVERITY[i.severity]))))) : el("p", { class: "small", text: "No issues found." });
@@ -100,64 +101,95 @@ function testReport(r) {
 
 // A plug-in's own settings: switches and choices apply at once and say so beside themselves (settings pattern 2);
 // typed settings (words, numbers, keys) are one form with one Save at its foot (pattern 5).
-function pluginSettingsForm(p, redraw) {
+// A plug-in's settings (DASH-307, Settings patterns 2 and 5): one section per group (plug-in API 1.5), the
+// ungrouped ones in Settings. Switches, choices, numbers and folders apply at once with a saved note beside them
+// (a required number stays in the form, so set-up is one Save); typed text is one form per section with one Save at
+// its foot. Returns [{group, body}].
+function pluginSettingsGroups(p, redraw) {
   const plain = p.settings.filter((s) => s.type !== "custom");
-  if (!plain.length) return null;
+  if (!plain.length) return [];
   const put = (settings) => api(`/api/plugins/${p.id}/settings`, { method: "PUT", body: { settings } });
-  const rows = [], typed = [], inputs = {};
+  const groups = new Map();
   for (const s of plain) {
-    const id = `pl-${p.id}-${s.key}`;
-    if (s.type === "switch") {
-      const input = el("input", { type: "checkbox", role: "switch", id, checked: !!s.value, "aria-labelledby": `${id}-l` });
-      input.addEventListener("change", async () => {
-        try { await put({ [s.key]: input.checked }); toast("Saved"); }
-        catch (err) { input.checked = !input.checked; problem(err.message, input); }
-      });
-      rows.push(settingRow(s.label, s.hint, el("label", { class: "switch" }, input), `${id}-l`));
-    } else if (s.type === "folder") {  // API 1.3: a folder inside the media folders the plug-in mounts, applied at once
-      let was = s.value ?? "";
-      const picker = locationPicker({ id, label: s.label, value: was, app: `plugin:${p.id}`, hint: s.hint,
-        onChange: async (v) => {
-          try { await put({ [s.key]: v }); was = v; toast("Saved"); }
-          catch (err) { picker.input.value = was; picker.refresh(); problem(err.message, picker.input); }
-        } });
-      rows.push(el("li", { class: "setting setting--location" }, picker.node));
-    } else if (s.type === "choice") {
-      const select = el("select", { class: "select", id, "aria-labelledby": `${id}-l` }, (s.choices || []).map((c) => el("option", { value: c, text: c, selected: c === s.value })));
-      let was = select.value;
-      select.addEventListener("change", async () => {
-        try { await put({ [s.key]: select.value }); was = select.value; toast("Saved"); }
-        catch (err) { select.value = was; problem(err.message, select); }
-      });
-      rows.push(settingRow(s.label, s.hint, select, `${id}-l`));
-    } else {
-      const input = el("input", { class: "input", id, type: s.type === "number" ? "number" : s.type === "secret" ? "password" : "text",
-        value: s.value ?? "", min: s.min, max: s.max, autocomplete: s.type === "secret" ? "new-password" : "off",
-        placeholder: s.type === "secret" && s.set ? "Set. Leave empty to keep it" : "" });
-      inputs[s.key] = [s, input];
-      if (s.required) { input.required = true; input.setAttribute("aria-required", "true"); }  // DASH-330
-      const hint = s.required ? [s.hint, "Needed before it can start."].filter(Boolean).join(" ") : s.hint;
-      typed.push(field(s.label, s.unit ? unitInput(input, s.unit) : input, { hint }));
-    }
+    const g = s.group || "";
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(s);
   }
-  let form = null;
-  if (typed.length) {
-    const note = savedNote(`pl-${p.id}-saved`);
-    form = el("form", { class: "form-stack", novalidate: true }, typed,
-      el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save" }), note));
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const settings = {};
-      for (const [key, [s, input]] of Object.entries(inputs)) settings[key] = s.type === "number" ? Number(input.value) : input.value;
-      try {
-        await put(settings);
-        showSaved(`pl-${p.id}-saved`);
-        if (p.status?.state === "needs-setup") { announce("Saved. Activate it on State when you are ready"); redraw(); }  // the state may have changed
+  // Ungrouped settings come first, under Settings.
+  const order = [...groups.keys()].sort((x, y) => (x === "" ? -1 : y === "" ? 1 : 0));
+  return order.map((g, n) => {
+    const tag = `pl-${p.id}-g${n}`;
+    const rows = [], typed = [], inputs = {};
+    for (const s of groups.get(g)) {
+      const id = `pl-${p.id}-${s.key}`;
+      const noteId = `${id}-saved`;
+      const row = (control) => {  // the saved note sits beside the control (.setting__control .saved-note)
+        const li = settingRow(s.label, s.hint, control, `${id}-l`);
+        li.querySelector(".setting__control").append(savedNote(noteId));
+        return li;
+      };
+      if (s.type === "switch") {
+        const input = el("input", { type: "checkbox", role: "switch", id, checked: !!s.value, "aria-labelledby": `${id}-l` });
+        input.addEventListener("change", async () => {
+          try { await put({ [s.key]: input.checked }); showSaved(noteId); }
+          catch (err) { input.checked = !input.checked; problem(err.message, input); }
+        });
+        rows.push(row(el("label", { class: "switch" }, input)));
+      } else if (s.type === "folder") {  // API 1.3: a folder inside the media folders the plug-in mounts, applied at once
+        let was = s.value ?? "";
+        const picker = locationPicker({ id, label: s.label, value: was, app: `plugin:${p.id}`, hint: s.hint,
+          onChange: async (v) => {
+            try { await put({ [s.key]: v }); was = v; showSaved(noteId); }
+            catch (err) { picker.input.value = was; picker.refresh(); problem(err.message, picker.input); }
+          } });
+        rows.push(el("li", { class: "setting setting--location" }, picker.node, savedNote(noteId)));
+      } else if (s.type === "choice") {
+        const select = el("select", { class: "select", id, "aria-labelledby": `${id}-l` },
+          (s.choices || []).map((c) => el("option", { value: c.value, text: c.label, selected: c.value === s.value })));
+        let was = select.value;
+        select.addEventListener("change", async () => {
+          try { await put({ [s.key]: select.value }); was = select.value; showSaved(noteId); }
+          catch (err) { select.value = was; problem(err.message, select); }
+        });
+        rows.push(row(select));
+      } else if (s.type === "number" && !s.required) {  // pattern 2: a number applies when you leave it, unit beside it
+        const input = el("input", { class: "input", id, type: "number", value: s.value ?? "", min: s.min, max: s.max, "aria-labelledby": `${id}-l` });
+        let was = input.value;
+        input.addEventListener("change", async () => {
+          if (input.value === "" || !input.checkValidity()) { problem(`${s.label}: give a number from ${s.min ?? ""} to ${s.max ?? ""}`.replace("from  to ", ""), input); input.value = was; return; }
+          try { await put({ [s.key]: Number(input.value) }); was = input.value; showSaved(noteId); }
+          catch (err) { input.value = was; problem(err.message, input); }
+        });
+        rows.push(row(s.unit ? unitInput(input, s.unit) : input));
+      } else {
+        const input = el("input", { class: "input", id, type: s.type === "number" ? "number" : s.type === "secret" ? "password" : "text",
+          value: s.value ?? "", min: s.min, max: s.max, autocomplete: s.type === "secret" ? "new-password" : "off",
+          placeholder: s.type === "secret" && s.set ? "Set. Leave empty to keep it" : "" });
+        inputs[s.key] = [s, input];
+        if (s.required) { input.required = true; input.setAttribute("aria-required", "true"); }  // DASH-330
+        const hint = s.required ? [s.hint, "Needed before it can start."].filter(Boolean).join(" ") : s.hint;
+        typed.push(field(s.label, s.unit ? unitInput(input, s.unit) : input, { hint }));
       }
-      catch (err) { problem(err.message, form.querySelector("button[type=submit]")); }
-    });
-  }
-  return el("div", { class: "stack-4" }, ...[rows.length ? el("ul", { class: "settings-rows" }, rows) : null, form].filter(Boolean));
+    }
+    let form = null;
+    if (typed.length) {
+      form = el("form", { class: "form-stack", novalidate: true }, typed,
+        el("div", { class: "actions" }, el("button", { type: "submit", class: "btn", text: "Save" }), savedNote(`${tag}-saved`)));
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const settings = {};
+        for (const [key, [s, input]] of Object.entries(inputs)) settings[key] = s.type === "number" ? Number(input.value) : input.value;
+        try {
+          await put(settings);
+          showSaved(`${tag}-saved`);
+          if (p.status?.state === "needs-setup") { announce("Saved. Activate it on State when you are ready"); redraw(); }  // the state may have changed
+        }
+        catch (err) { problem(err.message, form.querySelector("button[type=submit]")); }
+      });
+    }
+    return { group: g, id: n === 0 && g === "" ? `pl-${p.id}-settings` : tag,
+      body: el("div", { class: "stack-4" }, ...[rows.length ? el("ul", { class: "settings-rows" }, rows) : null, form].filter(Boolean)) };
+  });
 }
 
 // A picture of a style (DASH-284): a small page drawn by Starboard in the style's own colours, light and dark side
@@ -207,7 +239,7 @@ function styleGallery(p) {
 }
 
 // Activate or Deactivate one plug-in.
-function stateButton(p, redraw) {
+function stateButton(p, redraw, primary = false) {
   if (stateOf(p) === "needs-setup") {  // set up first (DASH-330): Activate waits until the required settings are in
     return el("button", { type: "button", class: "btn btn--primary", onclick: () => {
       // The Settings part may be in a topic tab that is not showing: show it, then go to the first empty required field.
@@ -220,11 +252,12 @@ function stateButton(p, redraw) {
     } }, "Set it up", el("span", { class: "visually-hidden", text: ` ${p.name}` }));
   }
   const what = p.state === "enabled" ? "disable" : "enable";
-  const b = el("button", { type: "button", class: what === "enable" ? "btn btn--primary" : "btn" }, what === "enable" ? "Activate" : "Deactivate",
+  // Primary only on the plug-in's own page: in the Manage list every row would be primary (DASH-309).
+  const b = el("button", { type: "button", class: what === "enable" && primary ? "btn btn--primary" : "btn" }, what === "enable" ? "Activate" : "Deactivate",
     el("span", { class: "visually-hidden", text: ` ${p.name}` }));
   b.addEventListener("click", async () => {
     b.disabled = true;
-    try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); toast(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw(); }
+    try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); announce(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw(); }
     catch (err) { problem(err.message, b); b.disabled = false; }
   });
   return b;
@@ -328,31 +361,34 @@ function updateFromAddress(p, redraw) {
 }
 
 // A plug-in's own page, Settings, Plug-ins, <its name> (DASH-318), laid out like every Settings page (DASH-307):
-// its state and buttons at the top, then its styles, settings and screens, what it may do, and Remove at the foot.
+// its state and its one button at the top, then versions, jobs, styles, settings by group and its screens, then
+// its own buttons (Actions), what it may do, and Remove at the foot.
 function pluginPage(p, redraw) {
+  const said = el("p", { class: "small", role: "status" });  // what a button did, said here rather than in a toast
   const buttons = (p.actions || []).map((a) => {
     const b = el("button", { type: "button", class: "btn", disabled: p.state !== "enabled" }, a.label);
     b.addEventListener("click", async () => {
       b.disabled = true;
-      try { toast((await api(`/api/plugins/${p.id}/actions/${a.id}`, { method: "POST" })).said); }
+      said.textContent = "";
+      try { said.textContent = (await api(`/api/plugins/${p.id}/actions/${a.id}`, { method: "POST" })).said; }
       catch (err) { problem(err.message, b); }
       finally { b.disabled = false; }
     });
     return b;
   });
   const custom = p.settings.filter((s) => s.type === "custom");
-  const form = pluginSettingsForm(p, redraw);
+  const groups = pluginSettingsGroups(p, redraw);
   const st = p.status || {};
   // One sentence and one button for a state that needs something (DASH-330).
   const fix = st.sentence ? el("div", { class: "notice", "data-tone": st.state === "needs-setup" ? "info" : "warning", role: "note" },
     icon(st.state === "needs-setup" ? "info" : "triangle-alert"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: (STATE[st.state] || ["", ""])[0] }), el("p", { text: st.sentence }))) : null;
   const first = st.action === "rollback" ? rollbackButton(p, redraw, true)
-    : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw);
+    : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw, true);
   return [
     section(`pl-${p.id}-state`, "State", p.builtin ? "Built into Starboard: it runs on Starboard's own image and updates with Starboard." : `Version ${p.version}${p.author ? `, by ${p.author}` : ""}.`,
       headChip(...chipOf(p)), fix || healthNote(p) || (p.message ? el("p", { class: "small", text: p.message }) : null),
-      el("div", { class: "actions" }, first, ...buttons)),
+      el("div", { class: "actions" }, first)),
     !p.builtin ? section(`pl-${p.id}-versions`, "Versions",
       p.update ? `Version ${p.update.version} is available.${p.update.changelog ? ` ${p.update.changelog}` : ""}`
         : st.can_roll_back ? `Version ${st.previous_version} is kept, in case this one does not suit you.` : `Version ${p.version}. No newer version is known.`,
@@ -362,25 +398,27 @@ function pluginPage(p, redraw) {
       updateFromAddress(p, redraw)) : null,
     p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
       el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null,
-    p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "", styleGallery(p)) : null,
-    form ? section(`pl-${p.id}-settings`, "Settings", "Saved for everyone who uses this Starboard.", form) : null,
+    p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
+    ...groups.map((g) => section(g.id, g.group || "Settings", "Saved for everyone who uses this Starboard.", g.body)),
     ...custom.map((c) => section(`pl-${p.id}-${c.key}`, c.label, c.hint || "", customScreen(p, c))),
+    buttons.length ? section(`pl-${p.id}-actions`, "Actions", p.state === "enabled" ? "Things it can do now, as well as on its own schedule." : "Activate it to use these.",
+      el("div", { class: "actions" }, ...buttons), said) : null,
     section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions)),
     dangerSection(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
       el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })))].filter(Boolean);
 }
 
 // A plug-in's own screen (11 November 2026): a managed list the plug-in describes as data, drawn here. Rows grouped
-// with a state, Test, Turn on or off, Move and Remove; Add takes an address; Test all checks everything at once.
+// with a state, Test, Activate or Deactivate, Move and Remove; Add takes an address; Test all checks everything.
 const CUSTOM_STATE = { ok: ["Works", "success"], warning: ["Slow", "warning"], problem: ["Not answering", "danger"],
-  off: ["Off", "muted"], unknown: ["Not tested", "muted"] };
+  off: ["Inactive", "muted"], unknown: ["Not tested", "muted"] };
 function customScreen(p, s) {
   const box = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
   const said = el("p", { class: "small", role: "status" });
   const path = `/api/plugins/${p.id}/custom/${s.key}`;
   const run = async (body, button) => {
     if (button) button.disabled = true;
-    try { const out = await api(path, { method: "POST", body }); if (out.said) { said.textContent = out.said; toast(out.said); } draw(out); }
+    try { const out = await api(path, { method: "POST", body }); if (out.said) said.textContent = out.said; draw(out); }
     catch (err) { problem(err.message, button); }
     finally { if (button) button.disabled = false; }
   };
@@ -414,19 +452,30 @@ function customScreen(p, s) {
               sel.addEventListener("change", () => run({ action: "choose", id: it.id, value: sel.value }, sel));
               return el("label", { class: "row-choice" }, el("span", { class: "small", text: it.choice.label }), sel);
             })() : null,
-            ...it.actions.map((a) => {
-              const [label, ic] = a === "toggle" ? [it.on ? "Turn off" : "Turn on", it.on ? "pause" : "play"] : ACTION_WORDS[a];
+            // Test and Activate or Deactivate as buttons; Move up, Move down and Remove in a More menu, so a row has
+            // at most two buttons after its state (DASH-309, section 10).
+            ...it.actions.filter((a) => a === "test" || a === "toggle").map((a) => {
+              const [label, ic] = a === "toggle" ? [it.on ? "Deactivate" : "Activate", it.on ? "pause" : "play"] : ACTION_WORDS[a];
               const b = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, ic ? icon(ic) : null, label,
                 el("span", { class: "visually-hidden", text: ` ${it.title}` }));
-              b.addEventListener("click", async () => {
-                if (a === "remove" && !(await confirmDialog({ title: `Remove ${it.title}?`, confirm: "Remove", danger: true, message: "You can add it again by its address." }))) return;
-                run({ action: a, id: it.id }, b);
-              });
+              b.addEventListener("click", () => run({ action: a, id: it.id }, b));
               return b;
-            }))))))),
+            }),
+            (() => {
+              const more = it.actions.filter((a) => a !== "test" && a !== "toggle");
+              if (!more.length) return null;
+              let menu = null;
+              menu = menuButton(`More for ${it.title}`, more.map((a) => ({ label: ACTION_WORDS[a][0], icon: ACTION_WORDS[a][1], danger: a === "remove",
+                onSelect: async () => {
+                  const opener = menu.querySelector("button");
+                  if (a === "remove" && !(await confirmDialog({ title: `Remove ${it.title}?`, confirm: "Remove", danger: true, message: "You can add it again by its address." }))) return;
+                  run({ action: a, id: it.id }, opener);
+                } })));
+              return menu;
+            })())))))),
       ...(add ? [add] : []));
   };
-  if (p.state !== "enabled") box.replaceChildren(el("p", { class: "small muted", text: `${s.label}: activate ${p.name} to see it.` }));
+  if (p.state !== "enabled") box.replaceChildren(emptyState(`${p.name} is not active`, `Activate it on State to see ${s.label.toLowerCase()}.`));
   else api(path).then(draw).catch((err) => box.replaceChildren(notice("info", `${p.name} did not answer`, err.message)));
   return box;
 }
@@ -456,11 +505,11 @@ function builtinSection(list, redraw) {
   if (!rows.length) return null;
   return section("pl-builtin", "Built into Starboard", "Plug-ins that come with Starboard. Add one only if you want it.",
     el("ul", { class: "rows" }, rows.map((b) => {
-      const add = el("button", { type: "button", class: "btn btn--primary", disabled: !!b.why_not }, `Add ${b.name}`);
+      const add = el("button", { type: "button", class: "btn", disabled: !!b.why_not }, `Add ${b.name}`);
       add.addEventListener("click", async () => {
         const password = await installWarning(b, { builtin: true, opener: add });
         if (password === null) return;
-        try { await api("/api/plugins/add-builtin", { method: "POST", body: { id: b.id, password } }); toast(`${b.name} installed and active`); redraw(); }
+        try { await api("/api/plugins/add-builtin", { method: "POST", body: { id: b.id, password } }); announce(`${b.name} installed and active`); redraw(); }
         catch (err) { problem(err.message, add); }
       });
       return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: b.name }),
@@ -583,7 +632,6 @@ async function startCatalogue() {
             const password = await installWarning(s, { opener: side });
             if (password === null) return;
             await api("/api/plugins/add", { method: "POST", body: { catalogue_id: e.id, password } });
-            toast(`${e.name} installed. Activate it on its own tab when you are ready`);
             location.href = `/settings-plugin.html?id=${encodeURIComponent(e.id)}`;
           } catch (err) { problem(err.message, side); }
           finally { side.disabled = false; }
