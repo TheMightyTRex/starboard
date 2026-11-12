@@ -87,7 +87,7 @@ class MoveTest(unittest.TestCase):
         self.assertTrue(all(r["search_missing"] is False for r in runs))
         self.assertNotIn("download_client", runs[0]["categories"])
         self.assertEqual(report[0]["counts"], {"movie": {"create": 1, "skip": 1}})
-        self.assertEqual(report[0]["not_moved"], [{"name": "Disc", "category": "movie", "why": "iso"}])
+        self.assertEqual(report[0]["not_moved"], [{"name": "Disc", "category": "movie", "why": "iso", "key": None}])
         joined = [c for c in self.docker.call_args_list if c[0][1].endswith("/connect")]
         left = [c for c in self.docker.call_args_list if c[0][1].endswith("/disconnect")]
         self.assertEqual(len(joined), 1)  # one network, joined once
@@ -117,7 +117,7 @@ class MoveTest(unittest.TestCase):
         puts = [(p, b) for m, p, b in admin.calls if m == "PUT"]
         self.assertEqual(puts, [("/indexers/1", {"implementation": "torznab", "name": "A", "priority": 25, "tags": [],
                                                  "settings": {"api_key": "********"}, "enabled": False})])
-        self.assertEqual(report[-1], {"held": 1})
+        self.assertEqual(report[-1], {"held": 1, "held_sites": [{"id": 1, "name": "A"}]})
 
     def test_an_app_without_a_key_is_reported_not_sent(self):
         admin = FakeAdmin()

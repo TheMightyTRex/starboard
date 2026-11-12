@@ -29,7 +29,7 @@ import threading
 import time
 import urllib.parse
 
-from . import containers, stack
+from . import containers, stack, tasklist
 
 # Container names that mean a catalogue app under another name.
 ALIASES = {"readarr": "bookshelf", "jellyseerr": "seerr", "overseerr": "seerr"}
@@ -277,8 +277,9 @@ def _globals(infos):
     return {}
 
 
-def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=None, check=None):
-    """What taking over the apps found here means, for one of stack.INSTALLS. Nothing changes.
+def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=None, check=None, keep_apps=()):
+    """What taking over the apps found here means, for one of stack.INSTALLS. Nothing changes. `keep_apps` are apps
+    taken over although the install does not have them (Seerr, when the person keeps it beside Reelix: DASH-192).
 
     Returns {take, replace, leave, new, choice, keep, copies, shared, sab, warnings}: `take` are the containers that
     become Starboard's, `replace` the ones stopped because Reelix or NZBGet takes their place, `leave` the ones left as
@@ -287,7 +288,8 @@ def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=N
         raise ValueError("Starboard needs Docker access to take over your apps")
     now = stack.current_choice(data_dir)
     spec = stack.install_choice(install, check=check, usenet=usenet)
-    wanted = set(spec["apps"]) | {stack.APPS[k]["db"]["service"] for k in spec["apps"] if stack.APPS[k].get("db")}
+    extra = [k for k in keep_apps if k in stack.APPS]
+    wanted = set(spec["apps"]) | set(extra) | {stack.APPS[k]["db"]["service"] for k in spec["apps"] if stack.APPS[k].get("db")}
     usenet = spec["usenet"]
     have = set(now["apps"]) if now else set()
     take, replace, leave = [], [], []
@@ -321,7 +323,7 @@ def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=N
     if base and (_under(cfg, base) or _under(base, cfg)):
         raise ValueError(f"Choose a settings folder outside {base}: that is where your apps keep their settings now, and "
                          "Starboard copies them from there")
-    keep, copies, shared, warnings = {}, [], [], []
+    keep, copies, shared, warnings, copy_apps = {}, [], [], [], []
     vpn_bindings = {}
     for c in found():
         if c["key"] == "gluetun" and c["running"]:
@@ -332,6 +334,8 @@ def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=N
                              vpn_bindings)
         keep[c["key"]] = k
         copies += cp
+        label = f"{stack.APPS[c['key']]['name']}'s settings" if c["key"] in stack.APPS else f"{stack.APPS[_db_services()[c['key']]]['name']}'s database"
+        copy_apps += [label] * len(cp)
         shared += [f"{c['name']}: {s}" for s in sh]
     targets = [new for _, new in copies]
     for src, _ in copies:  # a copy never lands in, or contains, a folder it copies from
@@ -345,7 +349,7 @@ def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=N
               "pgid": int((now or {}).get("pgid") or glob.get("PGID") or 1000),
               "tz": (now or {}).get("tz") or glob.get("TZ") or "Etc/UTC",
               "reelix_edition": (now or {}).get("reelix_edition") or spec["reelix_edition"]}
-    choice["apps"], _ = stack.with_needs(sorted(have | set(spec["apps"])))
+    choice["apps"], _ = stack.with_needs(sorted(have | set(spec["apps"]) | set(extra)))
     choice["keep"] = {**((now or {}).get("keep") or {}), **keep}
     if "gluetun" in choice["apps"] and not (now or {}).get("vpn"):
         g = next((c for c in take if c["key"] == "gluetun"), None)
@@ -368,7 +372,7 @@ def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=N
             "replace": [{"name": c["name"], "key": c["key"], "app": names.get(c["key"], c["name"]), "by": c["by"]} for c in replace],
             "leave": [{"name": c["name"], "why": c["why"]} for c in leave],
             "new": [names[k] for k in choice["apps"] if k not in have and k not in keys.values()],
-            "choice": choice, "copies": copies, "warnings": warnings, "sab": bool(sab),
+            "choice": choice, "copies": copies, "copy_apps": copy_apps, "warnings": warnings, "sab": bool(sab),
             "containers": take + replace, "config_base": base}
 
 
@@ -427,7 +431,9 @@ def make_record(data_dir, p, stamp, tag=None):
         tag(info["Image"], repo, stamp)
         entries.append({"name": c["name"], "key": c["key"], "project": c["project"], "service": c["service"],
                         "folder": c["folder"], "files": c["files"], "image": (info.get("Config") or {}).get("Image"),
-                        "image_id": info["Image"], "rollback_image": f"{repo}:{stamp}"})
+                        "image_id": info["Image"], "rollback_image": f"{repo}:{stamp}",
+                        # Its settings folders, so a replaced app's can go to the holding folder later (DASH-191).
+                        "settings": settings_folders(info)})
     projects = sorted({e["project"] for e in entries})
     for proj in projects:
         with open(os.path.join(folder_, f"rollback-{proj}.yaml"), "w", encoding="utf-8") as f:
@@ -440,9 +446,38 @@ def make_record(data_dir, p, stamp, tag=None):
     return record
 
 
-def takeover_script(record, host_stack, cfg, data=None, folders=(), owner=(1000, 1000)):
+def settings_folders(info):
+    """The host folders a container mounts as its settings (/config, /app/config)."""
+    return [m["Source"] for m in info.get("Mounts") or [] if m.get("Type") == "bind" and m.get("Source")
+            and m.get("Destination") in ("/config", "/app/config") and _SAFE_HOST_PATH.match(m["Source"])]
+
+
+PROGRESS = "takeover-progress"  # in data/stack: the helper writes the id of each step as it starts it (DASH-252)
+
+
+def _mark(progress, task_id):
+    return f"echo {containers._quote(task_id)} >> {containers._quote(progress)}" if progress else ":"
+
+
+def takeover_tasks(p):
+    """The steps of a takeover, in order, as the dialog lists them (DASH-252, DASH-254)."""
+    items = [("record", "Save the way back"), ("stop", "Stop your old apps")]
+    for i, (_, _) in enumerate(p["copies"]):
+        owner = (p.get("copy_apps") or [""] * len(p["copies"]))[i]
+        items.append((f"copy-{i}", f"Copy {owner}" if owner else "Copy settings"))
+    items += [("remove", "Remove the old containers"), ("start", "Start your apps in Starboard")]
+    if p.get("sab"):
+        items.append(("usenet", "Move the Usenet servers into NZBGet"))
+    if "reelix" in p["choice"]["apps"]:
+        items.append(("reelix", "Connect Reelix to the download apps"))
+    items.append(("dashboard", "Update your dashboard"))
+    return items
+
+
+def takeover_script(record, host_stack, cfg, data=None, folders=(), owner=(1000, 1000), progress=None):
     """The helper's script: stop the old apps, copy their settings, remove the old containers, start Starboard's
-    stack. Until the old containers are removed, a failure starts them again and changes nothing else."""
+    stack. Until the old containers are removed, a failure starts them again and changes nothing else. With
+    `progress`, each step writes its id there as it starts (takeover_tasks)."""
     q = containers._quote
     names = " ".join(q(e["name"]) for e in record["containers"])
     back = f"docker start {names} >/dev/null 2>&1; exit 1"
@@ -452,13 +487,15 @@ def takeover_script(record, host_stack, cfg, data=None, folders=(), owner=(1000,
         for f in e["files"]:
             lines.append(f"cp -p {q(f)} {q(host_stack)}/takeover/old/{q(e['project'] + '--' + os.path.basename(f))} 2>/dev/null || true")
         lines.append(f"[ -f {q(e['folder'])}/.env ] && cp -p {q(e['folder'])}/.env {q(host_stack)}/takeover/old/{q(e['project'] + '--.env')} || true")
+    lines.append(_mark(progress, "stop"))
     lines.append(f"echo 'Stopping the old apps'; docker stop -t 60 {names} || {{ {back}; }}")
     need = " ".join(q(a) for a, _ in record["copies"])
     if need:
         lines += [f"mkdir -p {q(cfg)}",
                   f"need=$(du -sk {need} | awk '{{s+=$1}} END {{print s+0}}'); free=$(df -Pk {q(cfg)} | awk 'NR==2 {{print $4}}')",
                   f"if [ \"$need\" -gt \"$free\" ]; then echo \"Not enough space: the settings need $need KB and {cfg} has $free KB\"; {back}; fi"]
-    for src, dst in record["copies"]:
+    for i, (src, dst) in enumerate(record["copies"]):
+        lines.append(_mark(progress, f"copy-{i}"))
         lines += [f"if [ -e {q(dst)} ] && [ -n \"$(ls -A {q(dst)} 2>/dev/null)\" ]; then echo {q('Already has files, so nothing was copied over it: ' + dst)}; {back}; fi",
                   f"mkdir -p {q(dst)} && cp -a {q(src.rstrip('/') + '/.')} {q(dst + '/')} && "
                   f"chown \"$(stat -c '%u:%g' {q(src)})\" {q(dst)} && chmod \"$(stat -c '%a' {q(src)})\" {q(dst)} "
@@ -467,7 +504,9 @@ def takeover_script(record, host_stack, cfg, data=None, folders=(), owner=(1000,
     if folders:  # the folders new apps use, made and owned as Install apps does (stack._start)
         lines.append("mkdir -p " + " ".join(q(f) for f in folders) + " || true")
     lines.append(stack.ffmpeg_wrap_script(cfg, uid, gid) + " || echo 'Could not give Jellyfin the Live TV wrapper'")
-    lines += [f"echo 'Removing the old containers (their settings folders and images stay)'; docker rm {names} || {{ {back}; }}",
+    lines += [_mark(progress, "remove"),
+              f"echo 'Removing the old containers (their settings folders and images stay)'; docker rm {names} || {{ {back}; }}",
+              _mark(progress, "start"),
               f"docker compose -p {stack.PROJECT} --env-file .env -f compose.yaml up -d --remove-orphans 2>&1"]
     if data:  # as Install apps does (stack._start): the folders themselves, then each app's, not a database's
         lines.append(f"chown {uid}:{gid} {q(cfg)} {q(data)} || true")
@@ -476,13 +515,21 @@ def takeover_script(record, host_stack, cfg, data=None, folders=(), owner=(1000,
     return "\n".join(lines)
 
 
-def rollback_script(record, host_stack):
+def rollback_tasks(record):
+    """The steps of going back, in order, as the dialog lists them (DASH-252)."""
+    items = [("files", "Put Starboard's set-up files back"), ("stop", "Stop the apps Starboard took over")]
+    for proj in dict.fromkeys(e["project"] for e in record["containers"]):
+        items.append((f"old-{proj}", f"Start your old apps from {proj}"))
+    return items + [("aside", "Put the way back aside")]
+
+
+def rollback_script(record, host_stack, progress=None):
     """The helper's script for going back: Starboard's set-up files as they were, Starboard's stack without the
     taken-over apps, then the old apps from their own Compose files on the images they ran."""
     q = containers._quote
     hs = q(host_stack)
     names = " ".join(q(e["name"]) for e in record["containers"])
-    lines = ["set -u", f"cd {hs}"]
+    lines = ["set -u", f"cd {hs}", _mark(progress, "files")]
     if record.get("had_stack"):
         lines += [f"cp -p {hs}/takeover/stack-before/compose.yaml {hs}/compose.yaml",
                   f"cp -p {hs}/takeover/stack-before/.env {hs}/.env",
@@ -491,14 +538,17 @@ def rollback_script(record, host_stack):
     else:
         lines += [f"docker compose -p {stack.PROJECT} --env-file .env -f compose.yaml down 2>&1",
                   f"mkdir -p {hs}/takeover/after && mv {hs}/compose.yaml {hs}/.env {hs}/takeover/after/ 2>/dev/null; rm -f {hs}/{stack.KEEP_FILE}"]
+    lines.append(_mark(progress, "stop"))
     lines.append(f"docker rm -f {names} >/dev/null 2>&1 || true")  # any of the names Starboard's stack still holds
     by_project = {}
     for e in record["containers"]:
         by_project.setdefault((e["project"], e["folder"], tuple(e["files"])), []).append(e["service"])
     for (proj, folder_, files), services in by_project.items():
         fs = " ".join(f"-f {q(f)}" for f in files)
+        lines.append(_mark(progress, f"old-{proj}"))
         lines.append(f"cd {q(folder_)} && docker compose -p {q(proj)} {fs} -f {hs}/takeover/rollback-{q(proj)}.yaml "
                      f"up -d --no-deps {' '.join(q(s) for s in services)} 2>&1")
+    lines.append(_mark(progress, "aside"))
     lines.append(f"cd {hs} && mkdir -p {hs}/takeover-rolled-back && mv {hs}/takeover {hs}/takeover-rolled-back/$(date +%Y%m%d-%H%M%S)")
     return "\n".join(lines)
 
@@ -521,22 +571,40 @@ def binds_for(record, cfg, data=None):
 
 _lock = threading.Lock()
 _job = {}
+_tasks = tasklist.Tasks()
 
 
 def job():
     with _lock:
-        return dict(_job)
+        return dict(_job) | (_tasks.public() if _job else {})
 
 
-def _run(kind, host_stack, script, binds, after=None):
+def _run(kind, host_stack, script, binds, after=None, tasks=None, progress=None):
+    """Runs the helper's script in the background. `tasks` (tasklist.Tasks) is what the dialog lists; `progress` is
+    where Starboard reads the step the script has started (data/stack/takeover-progress), read every two seconds
+    while it runs and never afterwards."""
+    global _tasks
     with _lock:
         if _job and not _job.get("finished"):
             raise ValueError("Starboard is already changing your apps. Wait until it finishes")
         _job.clear()
         _job.update(kind=kind, started=time.time(), finished=False, ok=None, log="", notes=[])
+        _tasks = tasks or tasklist.Tasks()
+    if progress:
+        try:
+            os.remove(progress)
+        except OSError:
+            pass
+    running = threading.Event()
+
+    def watch():
+        while not running.wait(2.0):
+            _read_progress(progress)
 
     def go():
         ok, log = False, ""
+        if progress:
+            threading.Thread(target=watch, name=f"takeover-{kind}-progress", daemon=True).start()
         try:
             try:
                 containers.docker("POST", f"/images/create?fromImage={urllib.parse.quote(containers.HELPER_IMAGE, safe='')}",
@@ -547,22 +615,46 @@ def _run(kind, host_stack, script, binds, after=None):
             ok = code == 0
         except containers.DockerError as e:
             log = str(e)
+        running.set()
+        if progress:
+            _read_progress(progress)
+        script_ids = [t["id"] for t in _tasks.public()["tasks"] if t["id"] not in AFTER_TASKS]
+        if ok:
+            for task_id in script_ids:
+                if _tasks.state(task_id) in ("waiting", "working"):
+                    _tasks.done(task_id)
+        else:
+            _tasks.stop_rest("Not started, because the step before it did not finish")
         notes = []
         if after:
             try:
                 notes = after(ok) or []
             except Exception as e:  # noqa: BLE001  the follow-up never hides the result of the change itself
                 notes = [f"The follow-up did not finish: {e}"]
+        _tasks.finish_all()
         with _lock:
             _job.update(ok=ok, log=log[-6000:], notes=notes, finished=True, ended=time.time())
     threading.Thread(target=go, name=f"takeover-{kind}", daemon=True).start()
     return job()
 
 
+AFTER_TASKS = ("usenet", "reelix", "dashboard")  # done by Starboard after the script, not by the script
+
+
+def _read_progress(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            tasklist.from_progress(_tasks, f.read(20000).splitlines())
+    except OSError:
+        pass
+
+
 def start(data_dir, host_stack, p, after=None, stamp=None):
     """Takes over the apps in plan `p`: the rollback point, Starboard's set-up files, then the switch in the helper.
     If the switch fails before the old containers are removed, they start again and Starboard's files go back."""
     stamp = stamp or time.strftime("%Y%m%d-%H%M%S")
+    tasks = tasklist.Tasks(takeover_tasks(p))
+    tasks.start("record")
     record = make_record(data_dir, p, stamp)
     built = stack.build(p["choice"])
     own = stack.own_services(data_dir)
@@ -570,14 +662,18 @@ def start(data_dir, host_stack, p, after=None, stamp=None):
         built = {**built, "compose": built["compose"].rstrip() + "\n" + "".join(own)}
     stack.write(data_dir, built)
     stack.save_keep(data_dir, p["choice"]["keep"])
+    tasks.done("record")
 
     def finish(ok):
         if not ok:
             _restore_files(data_dir, record)
-        return after(ok) if after else []
+        return after(ok, tasks) if after else []
     c = p["choice"]
-    script = takeover_script(record, host_stack, c["config_dir"], c["data_dir"], built.get("folders") or [], (c["puid"], c["pgid"]))
-    return _run("takeover", host_stack, script, binds_for(record, c["config_dir"], c["data_dir"]), finish)
+    progress = os.path.join(host_stack, PROGRESS)
+    script = takeover_script(record, host_stack, c["config_dir"], c["data_dir"], built.get("folders") or [], (c["puid"], c["pgid"]),
+                             progress=progress)
+    return _run("takeover", host_stack, script, binds_for(record, c["config_dir"], c["data_dir"]), finish, tasks,
+                os.path.join(stack.folder(data_dir), PROGRESS))
 
 
 def _restore_files(data_dir, record):
@@ -600,7 +696,9 @@ def roll_back(data_dir, host_stack, after=None):
     record = read_record(data_dir)
     if not record:
         raise ValueError("There is nothing to roll back")
-    return _run("rollback", host_stack, rollback_script(record, host_stack), binds_for(record, None), after)
+    progress = os.path.join(host_stack, PROGRESS)
+    return _run("rollback", host_stack, rollback_script(record, host_stack, progress), binds_for(record, None), after,
+                tasklist.Tasks(rollback_tasks(record)), os.path.join(stack.folder(data_dir), PROGRESS))
 
 
 def clear(data_dir):
@@ -612,3 +710,146 @@ def clear(data_dir):
     folder_ = record_folder(data_dir)
     shutil.move(folder_, folder_ + f"-kept-{time.strftime('%Y%m%d-%H%M%S')}")
     return record
+
+
+# Clearing away the apps Reelix replaced, once the takeover is kept (DASH-191) ------------------------------------
+
+# Apps Reelix does the work of: offered to stop and remove once the person chose Keep it.
+CLEAR_AWAY = ("prowlarr", "radarr", "sonarr", "bookshelf", "lidarr", "kapowarr", "profilarr", "decluttarr", "unpackerr")
+HOLDING = "starboard-holding"  # beside the old settings folders; the person empties it (never deleted for good here)
+CLEARED = "cleared.json"  # in data/stack: what was put in the holding folder, and when
+_TOP = ("/", "/home", "/mnt", "/srv", "/opt", "/var", "/root", "/data")
+
+
+def kept_records(data_dir):
+    """The records of takeovers the person kept (Keep it moves the rollback point to takeover-kept-<time>)."""
+    base = stack.folder(data_dir)
+    out = []
+    try:
+        names = sorted(os.listdir(base))
+    except OSError:
+        return out
+    for name in names:
+        if name.startswith(RECORD + "-kept-"):
+            try:
+                with open(os.path.join(base, name, "record.json"), encoding="utf-8") as f:
+                    rec = json.load(f)
+                if isinstance(rec, dict) and rec.get("containers"):
+                    out.append(rec)
+            except (OSError, ValueError):
+                continue
+    return out
+
+
+def cleared(data_dir):
+    try:
+        with open(os.path.join(stack.folder(data_dir), CLEARED), encoding="utf-8") as f:
+            got = json.load(f)
+        return got if isinstance(got, list) else []
+    except (OSError, ValueError):
+        return []
+
+
+def holding_for(folder, name, stamp):
+    """Where a settings folder goes: a starboard-holding folder beside the apps' settings folders, so the move stays
+    on the same drive and is instant. None when the folder is too near the top of the computer to move safely."""
+    folder = folder.rstrip("/")
+    parent = os.path.dirname(folder)
+    if os.path.basename(folder) in ("config", "data") and os.path.dirname(parent) not in _TOP:
+        parent = os.path.dirname(parent)
+    if parent in _TOP or not _SAFE_HOST_PATH.match(folder):
+        return None
+    label = re.sub(r"[^A-Za-z0-9._-]+", "-", f"{name}-{os.path.basename(folder)}" if os.path.basename(folder) in ("config", "data") else os.path.basename(folder))
+    return f"{parent}/{HOLDING}/{stamp}/{label}"
+
+
+def leftovers(data_dir, inspect=None):
+    """What can be cleared away now: None until a takeover was kept; then the apps Reelix replaced that still have a
+    container here (running or stopped, outside Starboard's own apps) or a settings folder Starboard recorded and
+    has not put aside yet. Each with its name, app, whether it runs, and its settings folders."""
+    kept = kept_records(data_dir)
+    if not kept:
+        return None
+    inspect = inspect or _inspect
+    done = {c.get("from") for c in cleared(data_dir)}
+    out, seen = [], set()
+    try:
+        here = found() if containers.available() else []
+    except containers.DockerError:
+        here = []
+    for c in here:
+        if c["key"] in CLEAR_AWAY:
+            try:
+                folders = settings_folders(inspect(c["name"]))
+            except containers.DockerError:
+                folders = []
+            out.append({"name": c["name"], "app": stack.APPS[c["key"]]["name"], "running": c["running"], "container": True,
+                        "settings": [f for f in folders if f not in done]})
+            seen.add(c["name"])
+    for rec in kept:
+        for e in rec["containers"]:
+            folders = [f for f in e.get("settings") or [] if f not in done]
+            if e.get("key") in CLEAR_AWAY and e["name"] not in seen and folders:
+                out.append({"name": e["name"], "app": stack.APPS[e["key"]]["name"], "running": False, "container": False,
+                            "settings": folders})
+                seen.add(e["name"])
+    return out
+
+
+def clear_tasks(items):
+    return [(f"app-{i}", f"Clear away {it['app']}") for i, it in enumerate(items)]
+
+
+def clear_script(items, stamp, progress=None):
+    """Stops and removes each container, then moves its settings folders into the holding folder. One app that
+    cannot be cleared away does not stop the others; its line in the progress file says so."""
+    q = containers._quote
+    lines = ["set -u"]
+    for i, it in enumerate(items):
+        tid = f"app-{i}"
+        lines.append(_mark(progress, tid))
+        steps = []
+        if it.get("container"):
+            steps.append(f"docker stop -t 30 {q(it['name'])} >/dev/null 2>&1; docker rm {q(it['name'])} >/dev/null")
+        for folder in it.get("settings") or []:
+            dest = holding_for(folder, it["name"], stamp)
+            if not dest:
+                continue
+            steps.append(f"{{ [ ! -e {q(folder)} ] || {{ mkdir -p {q(os.path.dirname(dest))} && mv {q(folder)} {q(dest)}; }}; }}")
+        if steps:
+            fail = _mark(progress, f"{tid} failed")
+            lines.append(f"{{ {' && '.join(steps)}; }} || {{ echo {q('Could not clear away ' + it['app'])}; {fail}; }}")
+    return "\n".join(lines)
+
+
+def clear_away(data_dir, host_stack, names, after=None, stamp=None):
+    """Clears away the chosen leftovers (container names) in the helper. Returns the job."""
+    items = [it for it in leftovers(data_dir) or [] if it["name"] in set(names)]
+    if not items:
+        raise ValueError("Choose at least one app to clear away")
+    stamp = stamp or time.strftime("%Y%m%d-%H%M%S")
+    binds = []
+    for it in items:
+        for folder in it["settings"]:
+            dest = holding_for(folder, it["name"], stamp)
+            if dest:
+                parent = dest.split(f"/{HOLDING}/")[0]
+                binds.append(f"{parent}:{parent}")
+    binds = list(dict.fromkeys(binds))
+    tasks = tasklist.Tasks(clear_tasks(items) + [("dashboard", "Update your dashboard")])
+    progress = os.path.join(host_stack, PROGRESS)
+
+    def finish(ok):
+        moved = cleared(data_dir)
+        for i, it in enumerate(items):
+            if tasks.state(f"app-{i}") == "failed":
+                continue
+            for folder in it["settings"]:
+                dest = holding_for(folder, it["name"], stamp)
+                if dest:
+                    moved.append({"name": it["name"], "app": it["app"], "from": folder, "to": dest, "at": time.time()})
+        with open(os.path.join(stack.folder(data_dir), CLEARED), "w", encoding="utf-8") as f:
+            json.dump(moved, f, indent=1)
+        return after(ok, items, tasks) if after else []
+    return _run("clear", host_stack, clear_script(items, stamp, progress), binds, finish, tasks,
+                os.path.join(stack.folder(data_dir), PROGRESS))

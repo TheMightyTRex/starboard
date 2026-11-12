@@ -229,6 +229,7 @@ async function apiCall(path, { method = "GET", body } = {}) {
   if (!res.ok) {
     const error = new Error(data.error || `Something went wrong (error ${res.status})`);
     error.status = res.status;
+    error.data = data;  // which field the problem is about, when the server says (DASH-251)
     throw error;
   }
   return data;

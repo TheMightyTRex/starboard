@@ -2584,8 +2584,10 @@ async function startYourInstall() {
       r.addEventListener("change", () => { want.install = i.key; want.reelix_edition = i.reelix_edition; reelixRadios(); describe(); });
       const lines = i.error ? [i.error] : [i.about,
         cur.install === i.key ? "In use now" : [i.add.length ? `Adds ${i.add.join(", ")}` : "", i.remove.length ? `Takes away ${i.remove.join(", ")}` : ""].filter(Boolean).join(". ") || "Nothing to add or take away",
+        // DASH-250: apps from the person's own Compose file are not added again as new, empty apps.
+        (i.outside || []).length ? `${i.outside.join(", ")} already ${i.outside.length === 1 ? "runs" : "run"} from your own Compose file: ${i.outside.length === 1 ? "it joins" : "they join"} once taken over below` : "",
         `About ${(i.memory / 1000).toFixed(1)} GB of memory`];
-      return el("label", { class: "option-card" }, r, el("strong", { text: i.name }), ...lines.map((t) => el("small", { text: t })));
+      return el("label", { class: "option-card" }, r, el("strong", { text: i.name }), ...lines.filter(Boolean).map((t) => el("small", { text: t })));
     })));
   const usenetCards = cur.usenet ? el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Usenet app" }),
     el("div", { class: "option-cards option-cards--row" }, d.usenet_apps.map((u) => {
@@ -2666,16 +2668,127 @@ async function startYourInstall() {
   });
 
   root.replaceChildren(now,
-    section("in-change", "Change your install", "Bigger or smaller, either way. Apps you added yourself outside Starboard are not touched.", installCards),
+    section("in-change", "Change your install", "Bigger or smaller, either way. Apps you added yourself outside Starboard are not touched.",
+      (d.outside || []).length ? notice("info", `${d.outside.join(", ")} ${d.outside.length === 1 ? "runs" : "run"} from your own Compose file`,
+        "So a change here does not add them again as new, empty apps. Take them over in Apps you already run, below: then they are part of your install.",
+        el("a", { class: "btn", href: "#in-takeover-h" }, "Apps you already run")) : null, installCards),
     section("in-usenet", "Usenet app", "The app that downloads from Usenet. Your Usenet servers move across from SABnzbd to NZBGet.", usenetCards),
     section("in-reelix", "Reelix", "Reelix, or Reelix with YouTube and Spotify downloads. The library, users and settings stay.", reelixBox),
     section("in-confirm", "Make the change", "", form, status), takeoverSection(), how);
   describe();
 }
 
+// A long change's dialog (DASH-252, 13 November 2026): Move them into Reelix, Take over my apps, Roll back and Clear
+// away the old apps run for minutes. This opens the library's dialog with a working bar (still, with less motion), a
+// task list (each app or step with its state, and what it is doing), what is happening now, and the result at the
+// end. Closing it does not stop the work: the step on the page says it is still running, with Show progress.
+// taskJob({ title, url, failedWord }) returns { open(), running(), node, done: Promise of the last job }.
+const TASK_WORDS = { waiting: ["Waiting", "muted"], working: ["Working", "info"], done: ["Done", "success"], failed: ["Did not finish", "danger"], skipped: ["Not started", "warning"] };
+let taskJobCount = 0;
+function taskJob({ title, url, failedWord = "Did not finish", intro = "", returnTo = "" }) {
+  const id = `task-job-${++taskJobCount}`;
+  const words = { ...TASK_WORDS, failed: [failedWord, "danger"] };
+  const heading = el("h2", { class: "panel-header__title", id: `${id}-h`, text: title, tabindex: "-1" });
+  const close = el("button", { type: "button", class: "icon-btn", "aria-label": `Close ${title}` }, icon("x", 20));
+  const label = el("span", { text: "Working. Please wait, this can take some time." });
+  const count = el("span", { class: "numeric" });
+  const bar = el("div", { class: "progress progress--busy", role: "progressbar", "aria-labelledby": `${id}-bar`, "aria-valuetext": "Starting" }, el("span"));
+  const meter = el("div", { class: "meter" }, el("div", { class: "meter__label", id: `${id}-bar` }, label, count), bar);
+  const now = el("p", { class: "task-now small" });
+  const list = el("ul", { class: "task-list", "aria-label": "Steps" });
+  const result = el("div", { class: "stack-2" });
+  const live = el("div", { class: "visually-hidden", role: "status", "aria-live": "polite" });
+  const shut = el("button", { type: "button", class: "btn", text: "Close" });
+  const shutHint = el("p", { class: "small muted", text: "Closing this does not stop it. The page shows it is still running." });
+  const dialog = el("dialog", { class: "dialog dialog--scroll task-dialog", "aria-labelledby": `${id}-h` },
+    el("div", { class: "panel-header" }, heading, close),
+    el("div", { class: "dialog__body" }, intro ? el("p", { text: intro }) : null, meter, now, list, result, live),
+    el("div", { class: "dialog__foot" }, shut, shutHint));
+  close.addEventListener("click", () => dialog.close());
+  shut.addEventListener("click", () => dialog.close());
+  let opener = null;
+  // Focus goes back to what opened it; when the page was drawn again meanwhile, to the step's heading.
+  dialog.addEventListener("close", () => {
+    if (finished) setTimeout(() => dialog.remove(), 0);  // nothing more to show once it has finished
+    if (opener?.isConnected) { opener.focus(); return; }
+    const head = returnTo && document.getElementById(returnTo);
+    if (head) { head.setAttribute("tabindex", "-1"); head.focus(); }
+  });
+  // The page's own line while it runs: still running, with Show progress to open the dialog again.
+  const showAgain = el("button", { type: "button", class: "btn", text: "Show progress" });
+  showAgain.addEventListener("click", () => open());
+  const pageLine = el("div", { class: "notice", role: "status" }, icon("info"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${title}: still running` }),
+      el("p", { text: "It carries on if you close the dialog or leave this page." })), showAgain);
+  const states = new Map();
+  let finished = false;
+  let lastNow = "";
+  const draw = (j) => {
+    const tasks = j.tasks || [];
+    const doneCount = tasks.filter((t) => ["done", "failed", "skipped"].includes(t.state)).length;
+    count.textContent = tasks.length ? `${doneCount} of ${tasks.length}` : "";
+    bar.setAttribute("aria-valuetext", tasks.length ? `${doneCount} of ${tasks.length} steps` : "Starting");
+    const items = tasks.map((t) => {
+      const [word, tone] = words[t.state] || words.waiting;
+      const li = el("li", { class: "task-list__item", "data-state": t.state },
+        el("span", { class: "task-list__name", text: t.label }), chip(word, tone),
+        t.detail ? el("span", { class: "task-list__detail small muted", text: t.detail }) : null);
+      if (t.state === "working") li.setAttribute("aria-current", "step");
+      const before = states.get(t.id);
+      if (before && before !== t.state && t.state !== "working") live.textContent = `${t.label}: ${word}`;
+      states.set(t.id, t.state);
+      return li;
+    });
+    list.replaceChildren(...items);
+    const nowText = j.now || (j.step && !j.finished ? `${j.step}…` : "");
+    if (nowText !== lastNow) { now.textContent = nowText ? `Now: ${nowText}` : ""; now.hidden = !nowText; lastNow = nowText; }
+  };
+  const end = (j, onResult) => {
+    finished = true;
+    const tasks = j.tasks || [];
+    const bad = tasks.filter((t) => t.state === "failed" || t.state === "skipped");
+    const ok = j.ok !== false && !bad.length && !j.error;
+    bar.classList.remove("progress--busy");
+    bar.firstChild.style.width = "100%";
+    if (!ok) bar.dataset.tone = j.ok === false ? "danger" : "warning";
+    label.textContent = ok ? "Finished" : j.ok === false ? "Stopped" : "Finished, with things to look at";
+    now.textContent = "";
+    now.hidden = true;
+    shutHint.hidden = true;
+    shut.textContent = "Done";
+    const summary = onResult ? onResult(j, ok) : null;
+    const box = notice(ok ? "success" : j.ok === false ? "danger" : "warning", summary?.title || (ok ? "Finished" : "Not everything finished"),
+      summary?.text || (j.notes || []).join(". ") || j.error || "");
+    box.setAttribute("tabindex", "-1");
+    result.replaceChildren(...[box, j.ok === false && j.log ? el("details", {}, el("summary", { text: "Show the details" }), el("pre", { class: "code-block", text: j.log })) : null].filter(Boolean));
+    live.textContent = `${title}: ${summary?.title || (ok ? "finished" : "not everything finished")}`;
+    pageLine.replaceWith(el("span"));  // the page draws its own result
+    if (dialog.open) box.focus();
+  };
+  const open = () => {
+    opener = document.activeElement instanceof HTMLElement && !dialog.contains(document.activeElement) ? document.activeElement : opener;
+    if (!dialog.isConnected) document.body.append(dialog);
+    if (!dialog.open) dialog.showModal();
+    heading.focus();
+  };
+  // Follows the job until it finishes: every two seconds while it runs, never afterwards (lightweight first).
+  const follow = (onResult) => new Promise((resolve) => {
+    const look = async () => {
+      const j = await api(url).catch(() => null);
+      if (j) draw(j);
+      if (j && j.finished) { end(j, onResult); resolve(j); return; }
+      setTimeout(look, 2000);
+    };
+    look();
+  });
+  return { open, follow, pageLine, dialog, running: () => !finished };
+}
+
 // Settings, Your install: apps someone already runs from their own Compose file (DASH-151, 127 to 129; 8 November
-// 2026). Step 1 moves Radarr, Sonarr and the others into Reelix through Reelix's own migrator (reelix_move.py); step 2
-// takes the rest over into Starboard's stack, with copies of their settings and a way back (takeover.py).
+// 2026; clearer at every stage on 13 November 2026: DASH-190 to 192, 251 to 254). Step 1 moves Radarr, Sonarr and the
+// others into Reelix through Reelix's own migrator (reelix_move.py); then the review, the requests route when Seerr
+// runs, and the takeover into Starboard's stack, with copies of their settings and a way back (takeover.py). Once the
+// takeover is kept, the apps Reelix replaced can be cleared away into the holding folder.
 function takeoverSection() {
   // A step inside this section: an h3 under the section's h2.
   const section = (id, title, description, ...content) => el("div", { class: "stack-2", role: "group", "aria-labelledby": `${id}-h` },
@@ -2683,29 +2796,56 @@ function takeoverSection() {
   const box = el("div", { class: "stack-2", "aria-busy": "true" }, el("p", { class: "muted", text: "Looking for apps you already run…" }));
   const list = (items) => el("ul", { class: "stack-1" }, items.map((t) => el("li", { text: t })));
   const pw = (hint) => { const i = el("input", { class: "input", type: "password", autocomplete: "current-password", required: true }); return [i, field("Your password", i, { required: true, hint })]; };
-  // Each step says what happens under its own buttons (owner, 8 November 2026: a message at the end of the section
-  // was out of sight). `out` is that step's message area.
-  let status = el("div");
-  const failed = (input, err, title, out = status) => {
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  // Each step says what happens under its own buttons (owner, 8 November 2026). A new try clears what the last one
+  // said, so an earlier wrong password never stays beside the right one (DASH-254).
+  const failed = (input, err, title, out) => {
     if (err.status === 401 || err.status === 429) { setError(input, err.message); input.focus(); }
     else { out.replaceChildren(notice("danger", title, err.message)); out.scrollIntoView({ block: "nearest" }); }
   };
-  const follow = async (url, done, out = status) => {
-    for (;;) {
-      await new Promise((res) => setTimeout(res, 3000));
-      const j = await api(url).catch(() => ({}));
-      if (j.step) out.replaceChildren(el("p", { class: "muted", text: `${j.step}…` }));
-      if (j.finished) return done(j);
+  const fresh = (...things) => things.forEach((t) => (t.matches?.("input") ? setError(t, "") : t.replaceChildren()));
+  const needPassword = (input) => { if (input.value) return true; setError(input, "Enter your password"); input.focus(); return false; };
+
+  // The three jobs, each with its dialog. A job already running when the page opens shows its line and dialog too.
+  const moveJob = () => taskJob({ title: "Moving your apps into Reelix", url: "/api/reelix/move/job", failedWord: "Not moved", returnTo: "tk-review-h",
+    intro: "Reelix reads each app in turn. Films and series move in a minute or two each; Reelix then finds their files, which can take an hour for a big library." });
+  const takeJob = () => taskJob({ title: "Taking over your apps", url: "/api/takeover/job", returnTo: "in-takeover-h",
+    intro: "Your apps stop for a few minutes while their settings are copied. Before anything stops, Starboard saves the way back." });
+  const backJob = () => taskJob({ title: "Rolling back", url: "/api/takeover/job", returnTo: "in-takeover-h", intro: "Your old apps start again from their own Compose file, on the versions they ran." });
+  const clearJob = () => taskJob({ title: "Clearing away the old apps", url: "/api/takeover/job", returnTo: "in-takeover-h", intro: "Each app stops and is removed; its settings folder goes into the holding folder." });
+  const kindJob = { takeover: takeJob, rollback: backJob, clear: clearJob };
+
+  // Drawn again after a change: focus that was in this section (or lost with the old nodes) goes to its heading.
+  const redraw = async () => {
+    const inside = box.contains(document.activeElement) || document.activeElement === document.body;
+    await draw();
+    const dialogOpen = document.querySelector("dialog[open]");
+    if (inside && !dialogOpen && !box.contains(document.activeElement)) {
+      const head = document.getElementById("in-takeover-h");
+      if (head) { head.setAttribute("tabindex", "-1"); head.focus(); }
     }
   };
-
   const draw = async () => {
-    status = el("div", { class: "stack-2", "aria-live": "polite" });
     let t, m;
     try { [t, m] = await Promise.all([api("/api/takeover"), api("/api/reelix/move")]); }
     catch (e) { box.replaceChildren(notice("danger", "Could not look", e.message)); box.removeAttribute("aria-busy"); return; }
     box.removeAttribute("aria-busy");
     const parts = [];
+    // A change that is still running (started here or elsewhere): its line on the page, and its dialog on request.
+    const stillRunning = (j, make, after) => {
+      if (!j || !j.started || j.finished) return null;
+      const job = make();
+      job.follow(after).then(() => setTimeout(redraw, 1500));
+      return job.pageLine;
+    };
+    const resultOfTake = (j, ok) => ({ title: ok ? "Starboard runs your apps now" : "Nothing was changed",
+      text: (j.notes || []).join(". ") || (ok ? "Finished." : "Your old apps run again as they were.") });
+    const takeRunning = stillRunning(t.job, kindJob[t.job?.kind] || takeJob, t.job?.kind === "takeover" ? resultOfTake : null);
+    const moveRunning = stillRunning(m.job, moveJob, null);
+    if (takeRunning) parts.push(takeRunning);
+
+    // DASH-253: titles a move could not match, waiting until they do; shown at every stage while there are any.
+    const waitingPart = t.waiting_count ? waitingSection(t) : null;
 
     // A takeover that can still be rolled back: Roll back, or Keep it.
     if (t.record) {
@@ -2713,33 +2853,52 @@ function takeoverSection() {
       const [p1, p1f] = pw("Rolling back stops the apps Starboard took over and starts your old ones from their own Compose file, on the versions they ran.");
       const back = el("button", { type: "button", class: "btn btn--danger", text: "Roll back" });
       const keep = el("button", { type: "button", class: "btn", text: "Keep it" });
+      const said = el("div", { class: "stack-2", "aria-live": "polite" });
       back.addEventListener("click", async () => {
-        if (!p1.value) { setError(p1, "Enter your password"); p1.focus(); return; }
+        fresh(p1, said);
+        if (!needPassword(p1)) return;
         back.disabled = keep.disabled = true;
         try { await api("/api/takeover/rollback", { method: "POST", body: { password: p1.value } }); }
-        catch (err) { back.disabled = keep.disabled = false; failed(p1, err, "Nothing was rolled back"); return; }
+        catch (err) { back.disabled = keep.disabled = false; failed(p1, err, "Nothing was rolled back", said); return; }
         p1.value = "";
-        status.replaceChildren(el("p", { class: "muted", text: "Rolling back…" }));
-        follow("/api/takeover/job", (j) => {
-          status.replaceChildren(notice(j.ok ? "success" : "danger", j.ok ? "Rolled back" : "Rolling back did not finish", (j.notes || []).join(". ")),
-            j.ok ? "" : el("pre", { class: "code-block", text: j.log || "" }));
-          if (j.ok) { announce("Rolled back"); setTimeout(draw, 5000); }
-        });
+        const job = backJob();
+        said.replaceChildren(job.pageLine);
+        job.open();
+        const j = await job.follow((j, ok) => ({ title: ok ? "Rolled back" : "Rolling back did not finish", text: (j.notes || []).join(". ") }));
+        said.replaceChildren(notice(j.ok ? "success" : "danger", j.ok ? "Rolled back" : "Rolling back did not finish", (j.notes || []).join(". ")));
+        if (j.ok) { announce("Rolled back"); setTimeout(redraw, 5000); }
+        else back.disabled = keep.disabled = false;
       });
       keep.addEventListener("click", async () => {
-        if (!p1.value) { setError(p1, "Enter your password"); p1.focus(); return; }
+        fresh(p1, said);
+        if (!needPassword(p1)) return;
         try { await api("/api/takeover/clear", { method: "POST", body: { password: p1.value } }); }
-        catch (err) { failed(p1, err, "Nothing was changed"); return; }
-        p1.value = ""; announce("Kept"); draw();
+        catch (err) { failed(p1, err, "Nothing was changed", said); return; }
+        p1.value = ""; announce("Kept. The way back is put aside"); await draw();
+        $("#tk-clear-h")?.setAttribute("tabindex", "-1");
+        ($("#tk-clear-h") || $("#in-takeover-h"))?.focus();
       });
-      parts.push(notice("info", `Starboard took over ${t.record.containers.length} apps on ${when}`,
-        "Your old settings folders, Compose file and app versions are kept, so you can go back. Keep it once everything works: the way back is then put aside, and nothing is deleted."),
-        el("div", { class: "form-stack" }, p1f), el("div", { class: "actions" }, back, keep));
-      box.replaceChildren(...parts, status);
+      parts.push(notice("info", `Starboard took over ${plural(t.record.containers.length, "app", "apps")} on ${when}`,
+        "Your old settings folders, Compose file and app versions are kept, so you can go back. Keep it once everything works: the way back is then put aside, and nothing is deleted. After that, Starboard offers to clear away the apps Reelix replaced."),
+        el("div", { class: "form-stack" }, p1f), el("div", { class: "actions" }, back, keep), said);
+      if (waitingPart) parts.push(waitingPart);
+      box.replaceChildren(...parts);
       return;
     }
+
+    // DASH-191: after Keep it, the apps Reelix replaced can be stopped and removed, their folders into the holding folder.
+    if (t.leftovers && t.leftovers.length) parts.push(clearAwaySection(t.leftovers));
+    else if (t.cleared && t.cleared.length) {
+      parts.push(section("tk-cleared", "Old apps cleared away", "Their settings folders are in the holding folder. Nothing was deleted: empty it yourself once you are sure.",
+        list([...new Map(t.cleared.map((c) => [c.from, c])).values()].map((c) => `${c.app}: ${c.to}`))));
+    }
+
     if (t.error) {
-      box.replaceChildren(el("p", { class: "muted", text: t.error === "Starboard found no apps here to take over" ? "Starboard found no apps to take over: every app here is Starboard's already." : t.error }));
+      parts.push(el("p", { class: "muted", text: t.error === "Starboard found no apps here to take over" ? "Starboard runs every app here: there is nothing else to take over." : t.error }));
+      if (m.review) parts.push(reviewSection(m.review));
+      if (t.requests) parts.push(requestsSection(t.requests));
+      if (waitingPart) parts.push(waitingPart);
+      box.replaceChildren(...parts);
       return;
     }
     const p = t.plan;
@@ -2758,101 +2917,293 @@ function takeoverSection() {
       parts.push(section("tk-setup", `Step ${step}: finish setting up Reelix`,
         "Reelix runs, but its set-up did not finish, so it cannot read your apps yet.",
         el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/settings-reelix.html" }, icon("settings"), "Finish setting up Reelix"))));
-      box.replaceChildren(...parts, status);
+      box.replaceChildren(...parts);
       return;
     }
-    if (m.sources && m.sources.length) {
-      step++;
+    if (m.sources && m.sources.length) parts.push(moveSection(m, step++, unmoved, moveRunning));
+    if (m.review) parts.push(reviewSection(m.review, step++));
+    if (t.requests) parts.push(requestsSection(t.requests, step++));
+    parts.push(takeSection(p, step, unmoved, !!takeRunning));
+    if (waitingPart) parts.push(waitingPart);
+    box.replaceChildren(...parts);
+
+    // Step: move them into Reelix (DASH-251, DASH-254).
+    function moveSection(m, n, unmoved, running) {
       const last = m.last;
       const lines = [];
-      if (last && last.apps) last.apps.forEach((a) => lines.push(`${a.app}: ${a.state === "finished" ? "moved" : `not finished${a.error ? ` (${a.error})` : ""}`}${(a.not_moved || []).length ? `, ${a.not_moved.length} items not moved` : ""}`));
+      if (last && last.apps) last.apps.forEach((a) => lines.push(`${a.app}: ${a.state === "finished" ? "moved" : `not finished${a.error ? ` (${a.error})` : ""}`}${(a.not_moved || []).length ? `, ${plural(a.not_moved.length, "item", "items")} not moved` : ""}`));
+      if (last && last.error) lines.push(`The move stopped: ${last.error}`);
       const [p2, p2f] = pw("Reelix's admin password is the same as Starboard's.");
+      const q = m.qbittorrent || {};
+      const quser = m.qbittorrent_user;
       const qbit = el("input", { class: "input", type: "password", autocomplete: "off" });
+      const userLine = quser
+        ? `Reelix signs in to qBittorrent as ${quser}, the user name in qBittorrent's own settings file.`
+        : q.read ? "qBittorrent's settings file names no user, so Reelix signs in as admin, qBittorrent's first user name."
+          : "Starboard could not read qBittorrent's settings file, so Reelix signs in as admin, qBittorrent's first user name.";
       const hold = el("input", { type: "checkbox", checked: true });
       const preview = el("button", { type: "button", class: "btn", text: "Show what moves" });
       const run = el("button", { type: "button", class: "btn btn--primary", text: "Move them into Reelix" });
-      const shown = el("div", { class: "stack-1" });
+      const shown = el("div", { class: "stack-2", "aria-live": "polite" });
       const said = el("div", { class: "stack-2", "aria-live": "polite" });
+      if (running) { run.disabled = preview.disabled = true; said.replaceChildren(running); }
       const body = () => ({ password: p2.value, qbittorrent_password: qbit.value, hold: hold.checked });
       preview.addEventListener("click", async () => {
-        if (!p2.value) { setError(p2, "Enter your password"); p2.focus(); return; }
-        preview.disabled = true; shown.replaceChildren(el("p", { class: "muted", text: "Asking Reelix…" }));
+        fresh(p2, qbit, shown, said);
+        if (!needPassword(p2)) return;
+        preview.disabled = true; shown.replaceChildren(el("p", { class: "muted", text: "Asking Reelix what moves…" }));
         try {
           const r = await api("/api/reelix/move/preview", { method: "POST", body: body() });
           shown.replaceChildren(...r.apps.map((a) => {
             if (a.error) return notice("warning", a.app, a.error);
             const made = Object.entries(a.counts).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v.create || 0} new, ${v.existing || 0} there already${v.skip ? `, ${v.skip} not moved` : ""}`);
-            return el("details", {}, el("summary", { text: `${a.app}${a.still_missing.length ? ` (${a.still_missing.length} hidden keys still needed)` : ""}` }),
+            return el("details", {}, el("summary", { text: `${a.app}${a.still_missing.length ? ` (${plural(a.still_missing.length, "hidden key", "hidden keys")} still needed)` : ""}` }),
               list(made), a.skipped.length ? el("p", { class: "small muted", text: "Not moved: " + a.skipped.map((s) => `${s.name} (${s.why})`).join("; ") }) : null);
           }));
-        } catch (err) { shown.replaceChildren(); failed(p2, err, "Reelix could not show what moves", said); }
+        } catch (err) { shown.replaceChildren(); failed(p2, err, "Reelix could not show what moves", shown); }
         preview.disabled = false;
       });
       run.addEventListener("click", async () => {
-        if (!p2.value) { setError(p2, "Enter your password"); p2.focus(); return; }
+        fresh(p2, qbit, shown, said);
+        if (!needPassword(p2)) return;
         run.disabled = preview.disabled = true;
+        said.replaceChildren(el("p", { class: "muted", text: qbit.value ? "Checking qBittorrent's password, then starting…" : "Starting…" }));
         try { await api("/api/reelix/move/run", { method: "POST", body: body() }); }
-        catch (err) { run.disabled = preview.disabled = false; failed(p2, err, "Nothing was moved", said); return; }
+        catch (err) {
+          run.disabled = preview.disabled = false; said.replaceChildren();
+          if (err.data?.field === "qbittorrent") { setError(qbit, err.message); qbit.focus(); return; }
+          failed(p2, err, "Nothing was moved", said); return;
+        }
         p2.value = ""; qbit.value = "";
-        said.replaceChildren(el("p", { class: "muted", text: "Moving your apps into Reelix. Films and series move in a minute or two; Reelix then finds their files, which can take an hour for a big library." }));
-        follow("/api/reelix/move/job", (j) => {
-          said.replaceChildren(notice(j.ok ? "success" : "warning", j.ok ? "Moved into Reelix" : "Not everything moved", "What moved, and what did not, is listed in step 1."));
-          setTimeout(draw, 3000);
-        }, said);
+        const job = moveJob();
+        said.replaceChildren(job.pageLine);
+        job.open();
+        const j = await job.follow((j, ok) => ({ title: ok ? "Moved into Reelix" : j.error ? "The move stopped" : "Not everything moved",
+          text: j.error ? `${j.error}. Steps after it did not start. Fix it, then choose Move them into Reelix again: what moved already is not moved twice.`
+            : ok ? "Look at the review below: sites held off, and titles that did not move." : "What did not move is listed in the review below." }));
+        said.replaceChildren(notice(j.ok ? "success" : "warning", j.ok ? "Moved into Reelix" : j.error ? "The move stopped" : "Not everything moved",
+          j.error ? `${j.error}. Steps after it did not start.` : "The review below lists what to look at."));
+        announce(j.ok ? "Moved into Reelix" : "The move into Reelix did not all finish");
+        setTimeout(redraw, 1500);
       });
-      parts.push(section("tk-reelix", `Step ${step - 1}: move them into Reelix`,
+      return section("tk-reelix", `Step ${n}: move them into Reelix`,
         "Reelix reads each app and adds its films, series, music, books, quality profiles, sites to search and requests. The apps themselves do not change.",
-        list(m.sources.map((s) => `${s.app}${s.has_key ? "" : " (Starboard cannot read its key)"}`)),
-        lines.length ? notice(unmoved.length ? "warning" : "success", "Last move", lines.join(". ")) : null,
+        list(m.sources.map((s) => `${s.app}${s.has_key ? "" : " (Starboard cannot read its key, so it is not moved)"}`)),
+        lines.length ? notice(unmoved.length || (last && last.error) ? "warning" : "success", "Last move", lines.join(". ")) : null,
         el("div", { class: "form-stack" }, p2f,
-          field("qBittorrent's password", qbit, { hint: `Optional. The password qBittorrent's user ${m.qbittorrent_user || "admin"} signs in with, so Reelix can send downloads to qBittorrent. Starboard checks it with qBittorrent first, and keeps it only in Reelix. Leave it empty to add qBittorrent in Reelix yourself.` }),
+          field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps.` }),
           el("label", { class: "check" }, hold, el("span", { class: "check__text" }, el("strong", { text: "Hold the sites to search" }),
-            el("span", { class: "check__hint", text: "Switched off in Reelix after the move, so only your old apps search until step 2. Switch them on in Settings, Reelix, Sites to search." })))),
-        el("div", { class: "actions" }, preview, run), said, shown));
+            el("span", { class: "check__hint", text: "Deactivated in Reelix after the move, so only your old apps search until Starboard runs your apps. Activate them in the review step." })))),
+        el("div", { class: "actions" }, preview), shown,
+        el("div", { class: "actions" }, run), said);
     }
 
-    // Step 2: take over.
-    const cfg = el("input", { class: "input", value: p.settings_folder, autocomplete: "off", spellcheck: false });
-    const media = el("input", { class: "input", value: p.media_folder, autocomplete: "off", spellcheck: false });
-    const [p3, p3f] = pw("This stops your apps for a few minutes while their settings are copied.");
-    const ok = el("input", { type: "checkbox" });
-    const go = el("button", { type: "button", class: "btn btn--primary", text: "Take over my apps" });
-    const takeSaid = el("div", { class: "stack-2", "aria-live": "polite" });
-    go.addEventListener("click", async () => {
-      if (!p3.value) { setError(p3, "Enter your password"); p3.focus(); return; }
-      go.disabled = true;
-      takeSaid.replaceChildren(el("p", { class: "muted", text: "Saving the way back, then stopping your apps and copying their settings…" }));
-      try { await api("/api/takeover/start", { method: "POST", body: { password: p3.value, install: p.install, usenet: p.usenet, config_dir: cfg.value, media_dir: media.value, unmoved_ok: ok.checked } }); }
-      catch (err) { go.disabled = false; takeSaid.replaceChildren(); failed(p3, err, "Nothing was changed", takeSaid); return; }
-      p3.value = "";
-      follow("/api/takeover/job", (j) => {
+    // DASH-190: after a move, the sites held off (Activate), sites Reelix cannot search yet, and titles that did not move.
+    function reviewSection(r, n) {
+      const [p4, p4f] = pw("Activating a site changes Reelix's settings, so Starboard checks it is you.");
+      const said = el("div", { class: "stack-2", "aria-live": "polite" });
+      const activate = async (ids, button) => {
+        fresh(p4, said);
+        if (!needPassword(p4)) return;
+        button.disabled = true;
+        try {
+          const out = await api("/api/reelix/move/activate", { method: "POST", body: { password: p4.value, ids } });
+          p4.value = "";
+          announce(`Activated ${plural(out.changed, "site", "sites")}`);
+          await draw();
+          $("#tk-review-h")?.setAttribute("tabindex", "-1");
+          $("#tk-review-h")?.focus();
+        } catch (err) { button.disabled = false; failed(p4, err, "Nothing was activated", said); }
+      };
+      const held = r.held.map((h) => {
+        const b = el("button", { type: "button", class: "btn", text: "Activate" }, el("span", { class: "visually-hidden", text: ` ${h.name}` }));
+        b.addEventListener("click", () => activate([h.id], b));
+        return el("li", { class: "row" }, el("div", { class: "row__text" }, el("span", { class: "row__title", text: h.name })),
+          el("div", { class: "row__side" }, chip("Held", "muted"), b));
+      });
+      const all = el("button", { type: "button", class: "btn btn--primary", text: "Activate all" });
+      all.addEventListener("click", () => activate(null, all));
+      const sites = r.sites.map((s) => el("li", {}, el("strong", { text: s.name }), ` (from ${s.app}): `,
+        s.no_definition ? "Reelix has no way to search this site yet. Add it by its Torznab or Newznab address, or wait for a Reelix update." : s.why));
+      // Titles waiting for a match are listed once, in their own section below; here only their number.
+      const waitingTitles = r.titles.filter((x) => x.waiting).length;
+      const otherTitles = r.titles.filter((x) => !x.waiting);
+      const shownTitles = otherTitles.slice(0, 50).map((x) => el("li", { class: "row" },
+        el("div", { class: "row__text" }, el("span", { class: "row__title", text: x.name }),
+          el("span", { class: "small muted", text: `${x.kind === "movie" ? "Film" : x.kind === "series" ? "Series" : x.kind === "author" ? "Author" : "Artist"} from ${x.app}: ${x.why}` })),
+        el("div", { class: "row__side" },
+          el("a", { class: "btn", href: `/search.html?q=${encodeURIComponent(String(x.name).replace(/\s*\(\d{4}\)$/, ""))}` }, "Add by hand",
+            el("span", { class: "visually-hidden", text: ` ${x.name}` })))));
+      return section("tk-review", n ? `Step ${n}: review the move` : "Review the move", "What the move left for you to look at. Nothing here is urgent.",
+        r.held.length ? el("h4", { text: `Sites to search held off (${r.held.length})` }) : null,
+        r.held.length ? el("p", { class: "small muted", text: "Held so only your old apps searched until the switch. Activate them once Starboard runs your apps, or now if your old apps no longer search." }) : null,
+        r.held.length ? el("ul", { class: "rows" }, held) : null,
+        r.held.length ? el("div", { class: "form-stack" }, p4f) : null,
+        r.held.length ? el("div", { class: "actions" }, all) : null, said,
+        sites.length ? el("h4", { text: `Sites Reelix cannot search yet (${sites.length})` }) : null,
+        sites.length ? el("ul", { class: "stack-1" }, sites) : null,
+        sites.length ? el("p", {}, el("a", { href: "/settings-reelix.html#rx-indexers", text: "Add a site in Settings, Reelix, Sites to search" })) : null,
+        r.titles_count ? el("h4", { text: `Titles that did not move (${r.titles_count})` }) : null,
+        waitingTitles ? el("p", {}, `${plural(waitingTitles, "title is", "titles are")} waiting for a match: Starboard adds them by itself once they match. They are listed in `,
+          el("a", { href: "#tk-waiting-h", text: "Titles waiting for a match" }), ".") : null,
+        otherTitles.length ? el("ul", { class: "rows" }, shownTitles) : null,
+        otherTitles.length > 50 ? el("p", { class: "small muted", text: `And ${otherTitles.length - 50} more.` }) : null,
+        r.other.length ? el("details", {}, el("summary", { text: `Other things that did not move (${r.other.length})` }),
+          list(r.other.map((o) => `${o.name} (${String(o.category).replace(/_/g, " ")}, from ${o.app}): ${o.why}`))) : null,
+        !r.held.length && !sites.length && !r.titles_count && !r.other.length ? el("p", { class: "muted", text: "Everything moved, and no site is held. Nothing to review." }) : null);
+    }
+
+    // DASH-192: Seerr beside Reelix: keep it, or use Reelix's own requests. A choice saves as soon as it changes.
+    function requestsSection(rq, n) {
+      const name = `requests-${Date.now()}`;
+      const note = savedNote("tk-requests-saved");
+      const said = el("div", { class: "stack-2", "aria-live": "polite" });
+      const message = el("div", { class: "stack-2" });
+      const showMessage = (choice) => {
+        if (!choice) { message.replaceChildren(); return; }
+        const text = rq.messages[choice];
+        message.replaceChildren(el("h4", { text: "A message for the people who use Seerr" }),
+          el("blockquote", { class: "message-to-send" }, el("p", { text })), el("div", { class: "actions" }, copyButton(text, "the message")));
+      };
+      const cards = [["reelix", "Use Reelix's own requests", "People ask for films and series in Reelix. The move brought Seerr's users and requests across, and Starboard's Requests page shows them. Seerr stops when Starboard takes over your apps, so there is one app fewer to run."],
+        ["seerr", "Keep Seerr", "People keep asking in Seerr as before. Starboard takes Seerr over with your other apps and points it at Reelix, in place of Radarr and Sonarr."]]
+        .sort((a, b) => (b[0] === rq.recommended) - (a[0] === rq.recommended))
+        .map(([v, title, about]) => {
+          const r = el("input", { type: "radio", name, value: v, checked: rq.choice === v });
+          r.addEventListener("change", async () => {
+            said.replaceChildren();
+            try {
+              await api("/api/requests-route", { method: "POST", body: { choice: v } });
+              // The takeover's list changes with it (Seerr taken over, or stopped), so the section is drawn again.
+              await draw();
+              $(`[aria-labelledby="tk-requests-h"] input[value="${v}"]`)?.focus();
+              showSaved("tk-requests-saved", "Saved");
+            } catch (err) { said.replaceChildren(notice("danger", "Not saved", err.message)); }
+          });
+          return el("label", { class: "option-card" }, r, el("strong", { text: title + (v === rq.recommended ? " (recommended)" : "") }), el("small", { text: about }));
+        });
+      showMessage(rq.choice);
+      return section("tk-requests", n ? `Step ${n}: requests` : "Requests", "Seerr runs beside Reelix. Choose where people ask for films and series.",
+        el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Where people ask for films and series" }), el("div", { class: "option-cards" }, cards)),
+        note, said, rq.choice && rq.notes.length ? notice("info", rq.applied ? "Set up" : "Set up when Starboard runs your apps", rq.notes.join(". ")) : null,
+        message);
+    }
+
+    // Step: take over (DASH-254: what is happening now, in the dialog).
+    function takeSection(p, n, unmoved, running) {
+      const cfg = el("input", { class: "input", value: p.settings_folder, autocomplete: "off", spellcheck: false });
+      const media = el("input", { class: "input", value: p.media_folder, autocomplete: "off", spellcheck: false });
+      const [p3, p3f] = pw("This stops your apps for a few minutes while their settings are copied.");
+      const ok = el("input", { type: "checkbox" });
+      const go = el("button", { type: "button", class: "btn btn--primary", text: "Take over my apps", disabled: running });
+      const takeSaid = el("div", { class: "stack-2", "aria-live": "polite" });
+      go.addEventListener("click", async () => {
+        fresh(p3, takeSaid);
+        if (!needPassword(p3)) return;
+        go.disabled = true;
+        takeSaid.replaceChildren(el("p", { class: "muted", text: "Saving the way back…" }));
+        try { await api("/api/takeover/start", { method: "POST", body: { password: p3.value, install: p.install, usenet: p.usenet, config_dir: cfg.value, media_dir: media.value, unmoved_ok: ok.checked } }); }
+        catch (err) { go.disabled = false; takeSaid.replaceChildren(); failed(p3, err, "Nothing was changed", takeSaid); return; }
+        p3.value = "";
+        const job = takeJob();
+        takeSaid.replaceChildren(job.pageLine);
+        job.open();
+        const j = await job.follow(resultOfTake);
         takeSaid.replaceChildren(notice(j.ok ? "success" : "danger", j.ok ? "Starboard runs your apps now" : "Nothing was changed",
-          (j.notes || []).join(". ") || (j.ok ? "Finished." : "Your old apps run again as they were.")), j.ok ? "" : el("pre", { class: "code-block", text: j.log || "" }));
-        if (j.ok) { announce("Starboard runs your apps now"); setTimeout(draw, 5000); }
-      }, takeSaid);
-    });
-    const keptLines = Object.entries(p.kept).map(([k, v]) => [k, [v.port_map && `ports ${Object.values(v.port_map).join(", ")}`, v.ports && `also ${v.ports.join(", ")}`,
-      v.devices && `devices ${v.devices.join(", ")}`, v.volumes && `${v.volumes.length} folders it uses as they are`, v.image && `its own version (${v.image})`,
-      v.env && `${v.env.length} of its own settings`, v.vpn === true && "through the VPN", v.vpn === false && "not through the VPN"].filter(Boolean).join(", ")]).map(([k, t]) => `${k}: ${t || "nothing extra"}`);
-    parts.push(section("tk-take", `Step ${step}: Starboard runs your apps`,
-      `Starboard takes over the apps in ${p.install_name}. Their settings are copied, never moved, and each keeps its port and what it relies on.`,
-      el("h4", { text: "Taken over" }), list(p.take.map((a) => a.app)),
-      p.replace.length ? el("h4", { text: "Stopped and removed (settings folders stay)" }) : null,
-      p.replace.length ? list(p.replace.map((a) => `${a.app}, replaced by ${a.by}${unmoved.includes(a.name) ? " (not moved into Reelix yet)" : ""}`)) : null,
-      p.new.length ? el("h4", { text: "Installed new" }) : null, p.new.length ? list(p.new) : null,
-      p.leave.length ? el("h4", { text: "Left as they are" }) : null, p.leave.length ? list(p.leave.map((a) => `${a.name}: ${a.why}`)) : null,
-      el("details", {}, el("summary", { text: `What each app keeps, and the ${p.copies.length} folders copied` }), list(keptLines),
-        list(p.copies.map((c) => `${c.from} to ${c.to}`))),
-      ...p.warnings.map((w) => notice("warning", "Before you start", w)),
-      el("div", { class: "form-stack" },
-        locationPicker({ input: cfg, label: "Settings folder", app: "host", setting: "config", hint: `Where the copies go. Not inside ${p.config_base || "your old settings folder"}.` }).node,
-        locationPicker({ input: media, label: "Media folder", app: "host", setting: "media", hint: "Where your media and downloads are now. Nothing in it is moved." }).node,
-        unmoved.length ? el("label", { class: "check" }, ok, el("span", { class: "check__text" }, el("strong", { text: `Stop ${p.unmoved_apps.join(", ")} without moving them into Reelix` }),
-          el("span", { class: "check__hint", text: "Only if you do not need what they hold. Their settings folders stay either way." }))) : null,
-        p3f),
-      el("div", { class: "actions" }, go), takeSaid,
-      el("p", { class: "small muted", text: "Before anything stops, Starboard saves the way back: every app's version, your Compose file and Starboard's own set-up files. Roll back appears here afterwards." })));
-    box.replaceChildren(...parts, status);
+          (j.notes || []).join(". ") || (j.ok ? "Finished." : "Your old apps run again as they were.")));
+        if (j.ok) { announce("Starboard runs your apps now"); setTimeout(redraw, 5000); } else go.disabled = false;
+      });
+      const keptLines = Object.entries(p.kept).map(([k, v]) => [k, [v.port_map && `ports ${Object.values(v.port_map).join(", ")}`, v.ports && `also ${v.ports.join(", ")}`,
+        v.devices && `devices ${v.devices.join(", ")}`, v.volumes && `${v.volumes.length} folders it uses as they are`, v.image && `its own version (${v.image})`,
+        v.env && `${v.env.length} of its own settings`, v.vpn === true && "through the VPN", v.vpn === false && "not through the VPN"].filter(Boolean).join(", ")]).map(([k, t]) => `${k}: ${t || "nothing extra"}`);
+      return section("tk-take", `Step ${n}: Starboard runs your apps`,
+        `Starboard takes over the apps in ${p.install_name}. Their settings are copied, never moved, and each keeps its port and what it relies on.`,
+        el("h4", { text: "Taken over" }), list(p.take.map((a) => a.app)),
+        p.replace.length ? el("h4", { text: "Stopped and removed (settings folders stay)" }) : null,
+        p.replace.length ? list(p.replace.map((a) => `${a.app}, replaced by ${a.by}${unmoved.includes(a.name) ? " (not moved into Reelix yet)" : ""}`)) : null,
+        p.new.length ? el("h4", { text: "Installed new" }) : null, p.new.length ? list(p.new) : null,
+        p.leave.length ? el("h4", { text: "Left as they are" }) : null, p.leave.length ? list(p.leave.map((a) => `${a.name}: ${a.why}`)) : null,
+        el("details", {}, el("summary", { text: `What each app keeps, and the ${p.copies.length} folders copied` }), list(keptLines),
+          list(p.copies.map((c) => `${c.from} to ${c.to}`))),
+        ...p.warnings.map((w) => notice("warning", "Before you start", w)),
+        el("div", { class: "form-stack" },
+          locationPicker({ input: cfg, label: "Settings folder", app: "host", setting: "config", hint: `Where the copies go. Not inside ${p.config_base || "your old settings folder"}.` }).node,
+          locationPicker({ input: media, label: "Media folder", app: "host", setting: "media", hint: "Where your media and downloads are now. Nothing in it is moved." }).node,
+          unmoved.length ? el("label", { class: "check" }, ok, el("span", { class: "check__text" }, el("strong", { text: `Stop ${p.unmoved_apps.join(", ")} without moving them into Reelix` }),
+            el("span", { class: "check__hint", text: "Only if you do not need what they hold. Their settings folders stay either way." }))) : null,
+          p3f),
+        el("div", { class: "actions" }, go), takeSaid,
+        el("p", { class: "small muted", text: "Before anything stops, Starboard saves the way back: every app's version, your Compose file and Starboard's own set-up files. Roll back appears here afterwards." }));
+    }
+
+    // DASH-191: once the takeover is kept, stop and remove the apps Reelix replaced; their folders go to the holding folder.
+    function clearAwaySection(items) {
+      const boxes = items.map((it) => {
+        const c = el("input", { type: "checkbox", checked: true, value: it.name });
+        const what = [it.container ? (it.running ? "Runs now: stopped and removed" : "Stopped: removed") : "Already removed",
+          it.settings.length ? `settings folder ${it.settings.join(", ")} to the holding folder` : "no settings folder Starboard knows"].join("; ");
+        return { it, c, node: el("label", { class: "check" }, c, el("span", { class: "check__text" }, el("strong", { text: it.app }), el("span", { class: "check__hint", text: what }))) };
+      });
+      const [p5, p5f] = pw("Stopping and removing apps changes this computer, so Starboard checks it is you.");
+      const go = el("button", { type: "button", class: "btn btn--danger", text: "Clear away" });
+      const said = el("div", { class: "stack-2", "aria-live": "polite" });
+      go.addEventListener("click", async () => {
+        fresh(p5, said);
+        const names = boxes.filter((b) => b.c.checked).map((b) => b.it.name);
+        if (!names.length) { said.replaceChildren(notice("warning", "Nothing chosen", "Tick at least one app to clear away.")); return; }
+        if (!needPassword(p5)) return;
+        const sure = await confirmDialog({ title: "Clear away the old apps?", danger: true, confirm: "Clear away",
+          message: `${names.length === 1 ? "This app stops" : `These ${names.length} apps stop`} and ${names.length === 1 ? "is" : "are"} removed, and ${names.length === 1 ? "its settings folder goes" : "their settings folders go"} into a folder named starboard-holding beside your old settings folders. Nothing is deleted: empty that folder yourself once you are sure. The app versions Docker downloaded stay too, until you remove them.` });
+        if (!sure) return;
+        go.disabled = true;
+        try { await api("/api/takeover/clear-away", { method: "POST", body: { password: p5.value, names } }); }
+        catch (err) { go.disabled = false; failed(p5, err, "Nothing was cleared away", said); return; }
+        p5.value = "";
+        const job = clearJob();
+        said.replaceChildren(job.pageLine);
+        job.open();
+        const j = await job.follow((j, ok) => ({ title: ok ? "Cleared away" : "Not everything was cleared away", text: (j.notes || []).join(". ") }));
+        said.replaceChildren(notice(j.ok ? "success" : "warning", j.ok ? "Cleared away" : "Not everything was cleared away", (j.notes || []).join(". ")));
+        announce(j.ok ? "Cleared away" : "Not everything was cleared away");
+        setTimeout(redraw, 3000);
+      });
+      return section("tk-clear", "Clear away the apps Reelix replaced",
+        "You kept the takeover, so these are no longer needed. Each stops and is removed, and its settings folder goes into the holding folder, which you empty yourself.",
+        el("fieldset", { class: "stack-1" }, el("legend", { class: "visually-hidden", text: "Apps to clear away" }), ...boxes.map((b) => b.node)),
+        el("div", { class: "form-stack" }, p5f), el("div", { class: "actions" }, go), said);
+    }
+
+    // DASH-253: the waiting list, with Try again now.
+    function waitingSection(t) {
+      const said = el("div", { class: "stack-2", "aria-live": "polite" });
+      const again = el("button", { type: "button", class: "btn", text: "Try again now" });
+      const rows = el("ul", { class: "rows" });
+      const fill = (items) => rows.replaceChildren(...items.slice(0, 50).map((w) => {
+        const ids = [w.tmdb && `TMDB ${w.tmdb}`, w.tvdb && `TVDB ${w.tvdb}`, w.imdb && `IMDb ${w.imdb}`].filter(Boolean).join(", ") || "no ids";
+        const tried = w.last_try ? `Last tried ${new Date(w.last_try * 1000).toLocaleString()}${w.last_error ? `: ${w.last_error}` : ""}` : "Not tried yet";
+        return el("li", { class: "row" }, el("div", { class: "row__text" }, el("span", { class: "row__title", text: w.title }),
+          el("span", { class: "small muted", text: `${w.kind === "movie" ? "Film" : "Series"} from ${w.source}; ${ids}. ${tried}` })),
+          el("div", { class: "row__side" }, chip("Waiting for a match", "muted"),
+            el("a", { class: "btn", href: `/search.html?q=${encodeURIComponent(String(w.title).replace(/\s*\(\d{4}\)$/, ""))}` }, "Add by hand", el("span", { class: "visually-hidden", text: ` ${w.title}` }))));
+      }));
+      fill(t.waiting);
+      const more = el("p", { class: "small muted", text: t.waiting_count > 50 ? `And ${t.waiting_count - 50} more.` : "" });
+      again.addEventListener("click", async () => {
+        said.replaceChildren(el("p", { class: "muted", text: "Trying each title again…" }));
+        again.disabled = true;
+        try {
+          const r = await api("/api/reelix/waiting/retry", { method: "POST" });
+          fill(r.items);
+          more.textContent = r.count > 50 ? `And ${r.count - 50} more.` : "";
+          said.replaceChildren(notice(r.added ? "success" : "info", r.added ? `Added ${plural(r.added, "title", "titles")} to Reelix` : "None matched yet",
+            r.waiting ? `${plural(r.waiting, "title is", "titles are")} still waiting. Starboard tries again every six hours, and when a TMDB key is added.` : "Nothing is waiting now."));
+        } catch (err) { said.replaceChildren(notice("danger", "Could not try again", err.message)); }
+        again.disabled = false;
+      });
+      return section("tk-waiting", `Titles waiting for a match (${t.waiting_count})`,
+        "Films and series the move into Reelix could not match. Starboard keeps the ids Radarr and Sonarr had for them and adds each to Reelix once it matches: every six hours, and as soon as a TMDB key is added.",
+        rows, more, el("div", { class: "actions" }, again), said);
+    }
   };
   draw();
   return pageSection("in-takeover", "Apps you already run", "Apps on this server from your own Compose file: moved into Reelix where Reelix replaces them, and run by Starboard from then on, with a way back.", box);

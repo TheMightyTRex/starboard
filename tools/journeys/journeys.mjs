@@ -10,7 +10,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "upcoming.html", "system.html", "system-storage.html", "system-disks.html", "system-monitor.html", "system-network.html",
   "system-logs.html", "system-backup.html", "settings.html", "settings-general.html", "settings-security.html",
   "settings-alerts.html", "settings-updates.html", "settings-releases.html", "settings-restore.html", "settings-performance.html", "settings-jellyfin.html",
-  "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "upgrade.html",
+  "settings-audiobookshelf.html", "copy-settings.html", "install-apps.html", "setup-guide.html", "upgrade.html", "settings-install.html",
   // The Library, from the made-up Reelix (DASH-163)
   "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
   "library-radio.html", "library-radio-stations.html", "library-books.html", "library-books-series.html",
@@ -352,6 +352,84 @@ await page.setViewportSize({ width: 1280, height: 860 });
 check("RX-01", "the password is never in an address", !addresses.some((a) => a.includes(RXPASS)));
 check("RX-01", "the page keeps no copy in browser storage",
   !(await page.evaluate((p) => JSON.stringify({ ...localStorage, ...sessionStorage }).includes(p) || document.cookie.includes(p), RXPASS)));
+
+// MOVE-01: Apps you already run (DASH-249 to 254, DASH-190 to 192), on the example server's made-up server set up by
+// hand: Moving over says what moves where; a qBittorrent ban is said under its field and goes when the next try
+// starts; the move opens a dialog with a task list and a result, focus goes to the dialog and back; the review lists
+// held sites with Activate, a site Reelix cannot search and the waiting titles; the requests choice; the takeover's
+// dialog; Keep it; Clear away; Change your install leaves out the apps from the person's own Compose file.
+console.log("\n== MOVE-01 Apps you already run");
+await open("settings-install.html#in-takeover-h");
+const tk = page.locator("section[aria-labelledby=in-takeover-h]");
+await tk.locator("[aria-labelledby=tk-reelix-h]").waitFor({ timeout: 15000 });
+const reelixStep = tk.locator("[aria-labelledby=tk-reelix-h]");
+check("MOVE-01", "the qBittorrent user name comes from its settings file", (await reelixStep.textContent()).includes("signs in to qBittorrent as harbour"));
+check("MOVE-01", "the qBittorrent password says what it is for and that it is optional",
+  (await reelixStep.textContent()).includes("qBittorrent's password (optional)") && (await reelixStep.textContent()).includes("What it is for"));
+const [mpw, qpw] = [reelixStep.locator("input[type=password]").nth(0), reelixStep.locator("input[type=password]").nth(1)];
+await mpw.fill(password);
+await qpw.fill("banned");
+await reelixStep.getByRole("button", { name: "Move them into Reelix" }).click();
+await reelixStep.locator(".field-error:not([hidden])").waitFor({ timeout: 10000 });
+check("MOVE-01", "a ban after wrong passwords is said under the qBittorrent field, with how to clear it",
+  /stopped accepting sign-ins[\s\S]*docker restart qbittorrent/.test(await reelixStep.locator(".field-error:not([hidden])").textContent()));
+check("MOVE-01", "focus goes to the qBittorrent field", await qpw.evaluate((n) => n === document.activeElement));
+await qpw.fill("right");
+await reelixStep.getByRole("button", { name: "Move them into Reelix" }).click();
+check("MOVE-01", "the earlier error goes as soon as the next try starts", await reelixStep.locator(".field-error:not([hidden])").count() === 0);
+const dlg = page.locator("dialog.task-dialog[open]");
+await dlg.waitFor({ timeout: 10000 });
+check("MOVE-01", "a dialog opens with a task list", await dlg.locator(".task-list__item").count() >= 4);
+check("MOVE-01", "focus is in the dialog", await page.evaluate(() => !!document.activeElement.closest("dialog[open]")));
+check("MOVE-01", "it has a working bar and a Close that says the work carries on",
+  await dlg.locator("[role=progressbar]").count() === 1 && (await dlg.textContent()).includes("Closing this does not stop it"));
+await dlg.getByRole("button", { name: "Close", exact: true }).first().click();
+check("MOVE-01", "closed, the page says it is still running", await reelixStep.getByText(/still running/).count() === 1);
+await reelixStep.getByRole("button", { name: "Show progress" }).click();
+await dlg.locator(".notice").waitFor({ timeout: 30000 });
+check("MOVE-01", "the result is in the dialog at the end", (await dlg.locator(".notice").textContent()).includes("Moved into Reelix"));
+await dlg.getByRole("button", { name: "Done" }).click();
+await tk.locator("[aria-labelledby=tk-review-h]").waitFor({ timeout: 10000 });
+const review = tk.locator("[aria-labelledby=tk-review-h]");
+check("MOVE-01", "the review lists held sites, each with Activate", await review.getByRole("button", { name: /^Activate (?!all)/ }).count() === 3);
+check("MOVE-01", "and a site Reelix cannot search yet", (await review.textContent()).includes("Knaben"));
+check("MOVE-01", "and points to the titles waiting for a match", await tk.locator("[aria-labelledby=tk-waiting-h] .row").count() === 3);
+await review.locator("input[type=password]").fill(password);
+await review.getByRole("button", { name: "Activate all" }).click();
+await page.waitForTimeout(1500);
+check("MOVE-01", "Activate all leaves no held site", await tk.locator("[aria-labelledby=tk-review-h]").getByRole("button", { name: /^Activate / }).count() === 0);
+const rq = tk.locator("[aria-labelledby=tk-requests-h]");
+check("MOVE-01", "Seerr beside Reelix: Reelix's own requests is recommended", (await rq.locator(".option-card").first().textContent()).includes("Use Reelix's own requests (recommended)"));
+await rq.locator("input[value=seerr]").check();
+await page.waitForTimeout(1500);
+check("MOVE-01", "Keep Seerr takes Seerr over", (await tk.locator("[aria-labelledby=tk-take-h]").textContent()).includes("Taken overSeerr"));
+check("MOVE-01", "with a message for Seerr's users", (await tk.locator("[aria-labelledby=tk-requests-h] .message-to-send").textContent()).includes("keep asking for films and series in Seerr"));
+await tk.locator("[aria-labelledby=tk-requests-h] input[value=reelix]").check();
+await page.waitForTimeout(1500);
+const take = tk.locator("[aria-labelledby=tk-take-h]");
+await take.locator("input[type=password]").fill(password);
+await take.getByRole("button", { name: "Take over my apps" }).click();
+await dlg.waitFor({ timeout: 10000 });
+await dlg.locator(".notice").waitFor({ timeout: 30000 });
+const takeSteps = await dlg.locator(".task-list").textContent();
+check("MOVE-01", "the takeover's dialog lists saving the way back, stopping, copying each app and starting",
+  ["Save the way back", "Stop your old apps", "Copy Jellyfin's settings", "Start your apps in Starboard"].every((x) => takeSteps.includes(x)), takeSteps);
+await dlg.getByRole("button", { name: "Done" }).click();
+await tk.getByRole("button", { name: "Keep it" }).waitFor({ timeout: 15000 });
+await tk.locator("input[type=password]").first().fill(password);
+await tk.getByRole("button", { name: "Keep it" }).click();
+await tk.locator("[aria-labelledby=tk-clear-h]").waitFor({ timeout: 10000 });
+check("MOVE-01", "after Keep it, the apps Reelix replaced can be cleared away", await tk.locator("[aria-labelledby=tk-clear-h] input[type=checkbox]").count() >= 3);
+await tk.locator("[aria-labelledby=tk-clear-h] input[type=password]").fill(password);
+await tk.getByRole("button", { name: "Clear away", exact: true }).click();
+await page.locator("dialog[open]").getByRole("button", { name: "Clear away", exact: true }).click();
+await dlg.locator(".notice").waitFor({ timeout: 30000 });
+check("MOVE-01", "clearing away says what was cleared", (await dlg.locator(".notice").textContent()).includes("Cleared away"));
+await dlg.getByRole("button", { name: "Done" }).click();
+await page.waitForTimeout(3500);
+check("MOVE-01", "and lists the holding folder", (await tk.textContent()).includes("starboard-holding"));
+await open("install-apps.html");
+check("MOVE-01", "Install apps opens", await page.locator("h1").count() === 1);
 
 // Phone width: no page scrolls sideways
 // TAB-01: topic tabs on a long Settings page (12 November 2026): one tab per section, one section shown at a time,

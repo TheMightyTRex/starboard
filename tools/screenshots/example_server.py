@@ -410,7 +410,184 @@ def example_pool(data):
     threading.Thread(target=loop, daemon=True).start()
 
 
+# Apps you already run (DASH-249 to 254, DASH-190 to 192): a made-up server set up by hand, with Radarr, Sonarr,
+# Prowlarr, Seerr and Profilarr beside Jellyfin, qBittorrent and Gluetun in its own Compose file. The move into Reelix,
+# the takeover, Roll back, Keep it and Clear away run as made-up jobs that step through their task lists, so the
+# dialog and every stage can be tested. Docker is never called. EXAMPLE_TAKEOVER=1 (on with EXAMPLE_CONTAINERS).
+EXAMPLE_TAKEOVER = os.environ.get("EXAMPLE_TAKEOVER", os.environ.get("EXAMPLE_CONTAINERS", "")) == "1"
+EXAMPLE_STEP = float(os.environ.get("EXAMPLE_STEP", "0.4"))  # seconds per step of a made-up job
+EX = {"taken": False, "record": None, "kept": False, "cleared": []}
+OWN = [("radarr", "radarr"), ("sonarr", "sonarr"), ("prowlarr", "prowlarr"), ("seerr", "jellyseerr"), ("profilarr", "profilarr"),
+       ("jellyfin", "jellyfin"), ("qbittorrent", "qbittorrent"), ("gluetun", "gluetun")]
+
+
+def example_takeover():
+    import time as _time
+    from starboard import reelix_move, reelix_waiting, takeover, tasklist
+    names = {k: a["name"] for k, a in stack.APPS.items()}
+
+    def found():
+        if EX["taken"]:
+            return []
+        return [{"name": c, "key": k, "running": True, "project": "media", "service": c, "folder": "/srv/apps",
+                 "files": ["/srv/apps/compose.yaml"]} for k, c in OWN]
+    takeover.found = found
+
+    def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=None, check=None, keep_apps=()):
+        if EX["taken"]:
+            raise ValueError("Starboard found no apps here to take over")
+        taken = [c for c in found() if c["key"] in ("jellyfin", "qbittorrent", "gluetun") or c["key"] in keep_apps]
+        gone = [c for c in found() if c not in taken]
+        return {"install": install, "install_name": stack.INSTALLS[install]["name"], "usenet": usenet, "sab": False,
+                "take": [{"name": c["name"], "key": c["key"], "app": names[c["key"]]} for c in taken],
+                "replace": [{"name": c["name"], "key": c["key"], "app": names[c["key"]], "by": "Reelix"} for c in gone],
+                "leave": [], "new": ["Reelix", "NZBGet", "Bazarr"], "warnings": [], "config_base": "/srv/apps/config",
+                "copies": [(f"/srv/apps/config/{c['name']}", f"/srv/media-stack/config/{c['key']}") for c in taken],
+                "copy_apps": [f"{names[c['key']]}'s settings" for c in taken],
+                "choice": {"config_dir": config_dir or "/srv/media-stack/config", "data_dir": media_dir or "/srv/media",
+                           "apps": ["reelix", "nzbget", "bazarr"] + [c["key"] for c in taken],
+                           "keep": {"jellyfin": {"port_map": {"8096": 8096}, "devices": ["/dev/dri"]}, "qbittorrent": {"vpn": True}}},
+                "containers": taken + gone}
+    takeover.plan = plan
+
+    def fake_job(module, kind, items, then=None, notes=(), fail=()):
+        tasks = tasklist.Tasks(items)
+        with module._lock:
+            if module._job and not module._job.get("finished"):
+                raise ValueError("Starboard is already changing your apps. Wait until it finishes")
+            module._job.clear()
+            module._job.update(kind=kind, started=_time.time(), finished=False, ok=None, log="", notes=[], step="Starting")
+            module._tasks = tasks
+
+        def go():
+            for tid, label in items:
+                tasks.start(tid)
+                for k in range(2):
+                    _time.sleep(EXAMPLE_STEP)
+                    tasks.note(tid, f"{k + 1} of 2", now=f"{label}: {k + 1} of 2")
+                if tid in fail:
+                    tasks.fail(tid, "Made up: this one did not finish")
+                else:
+                    tasks.done(tid)
+            tasks.finish_all()
+            out = then() if then else None
+            with module._lock:
+                module._job.update(finished=True, ok=not fail, ended=_time.time(), notes=list(notes) + list(out or []),
+                                   step="Finished")
+        threading.Thread(target=go, daemon=True).start()
+        return module.job()
+
+    def start(data_dir, host_stack, p, after=None, stamp=None):
+        def then():
+            EX["taken"] = True
+            EX["record"] = {"made": _time.time(), "stamp": "example", "install": p["install"],
+                            "containers": [dict(c, rollback_image="example") for c in p["containers"]], "copies": p["copies"]}
+            return ["Took Radarr, Sonarr, Prowlarr and Profilarr off your apps"]
+        return fake_job(takeover, "takeover", takeover.takeover_tasks(p), then)
+    takeover.start = start
+    takeover.read_record = lambda data_dir: EX["record"]
+
+    def roll_back(data_dir, host_stack, after=None):
+        def then():
+            EX.update(taken=False, record=None)
+            return ["Your old apps run again as they were before the takeover"]
+        return fake_job(takeover, "rollback", takeover.rollback_tasks(EX["record"]), then)
+    takeover.roll_back = roll_back
+
+    def keep(data_dir):
+        EX.update(record=None, kept=True)
+    takeover.clear = keep
+
+    def leftovers(data_dir, inspect=None):
+        if not EX["kept"]:
+            return None
+        done = {c["name"] for c in EX["cleared"]}
+        return [{"name": n, "app": names[k], "running": False, "container": False, "settings": [f"/srv/apps/config/{n}"]}
+                for k, n in OWN if k in takeover.CLEAR_AWAY and n not in done]
+    takeover.leftovers = leftovers
+    takeover.cleared = lambda data_dir: EX["cleared"]
+
+    def clear_away(data_dir, host_stack, wanted, after=None, stamp=None):
+        items = [it for it in leftovers(data_dir) or [] if it["name"] in set(wanted)]
+        if not items:
+            raise ValueError("Choose at least one app to clear away")
+
+        def then():
+            for it in items:
+                EX["cleared"].append({"name": it["name"], "app": it["app"], "from": it["settings"][0],
+                                      "to": f"/srv/apps/config/starboard-holding/example/{it['name']}", "at": _time.time()})
+            return [f"Cleared away {', '.join(it['app'] for it in items)}"]
+        return fake_job(takeover, "clear", takeover.clear_tasks(items) + [("dashboard", "Update your dashboard")], then)
+    takeover.clear_away = clear_away
+
+    _host = stack.host_folder
+
+    def host_folder(data_dir):  # the takeover's routes need a folder on the computer; nothing else changes
+        f = sys._getframe(1)
+        while f:
+            if f.f_code.co_name == "api" and str(f.f_locals.get("path", "")).startswith("/api/takeover"):
+                return "/example/stack"
+            f = f.f_back
+        return _host(data_dir)
+    stack.host_folder = host_folder
+
+    # The move into Reelix
+    sources = [{"source": k, "app": reelix_move.LABELS[k], "container": c, "url": f"http://{c}:1", "api_key": "made-up",
+                "networks": ["media_default"], "path_rewrites": []}
+               for k, c in (("prowlarr", "prowlarr"), ("radarr", "radarr"), ("sonarr", "sonarr"), ("jellyseerr", "jellyseerr"))]
+    reelix_move.sources = lambda: [dict(x) for x in sources] if not EX["taken"] else []
+    reelix_move.qbit_conf = lambda container="qbittorrent": {"user": "harbour", "read": True, "ban_minutes": 60}
+    reelix_move.qbit_sign_in = lambda password, base="", user="admin", opener=None: \
+        {"banned": "banned", "wrong": "wrong"}.get(password, "ok")
+    reelix_move.preview = lambda base, password, srcs, typed=None, opener=None, docker=None: [
+        {"source": x["source"], "app": x["app"], "version": "made up", "notes": [], "still_missing": [], "filled": 0,
+         "counts": {"movie" if x["source"] == "radarr" else "series" if x["source"] == "sonarr" else "indexer": {"create": 12, "existing": 3, "skip": 1}},
+         "skipped": [{"name": "Mystery Corner (2009)", "category": "movie", "why": "TMDB isn't configured"}] if x["source"] == "radarr" else []}
+        for x in srcs]
+
+    def move_start(data_dir, password, typed=None, hold=True, qbit_password=None, qbit_host=None, srcs=None,
+                   qbit_user_name="admin", lookup_urls=None):
+        srcs = reelix_move.sources()
+
+        def then():
+            result = {"started": _time.time(), "finished": _time.time(), "held": 3,
+                      "held_sites": [{"id": 1, "name": "Internet Archive"}, {"id": 2, "name": "1337x"}, {"id": 3, "name": "YTS"}],
+                      "apps": [{"source": x["source"], "app": x["app"], "container": x["container"], "state": "finished", "error": None,
+                                "counts": {}, "not_moved": []} for x in srcs]}
+            for a in result["apps"]:
+                if a["source"] == "prowlarr":
+                    a["not_moved"] = [{"name": "Knaben", "category": "indexer", "key": "indexer:9",
+                                       "why": "Reelix has no definition for knaben; sync indexer definitions and try again"}]
+                if a["source"] == "radarr":
+                    a["not_moved"] = [{"name": "Mystery Corner (2009)", "category": "movie", "key": "movie:41", "why": "TMDB isn't configured"},
+                                      {"name": "The Lost Reel (1998)", "category": "movie", "key": "movie:42", "why": "it has no TMDB id"}]
+                if a["source"] == "sonarr":
+                    a["not_moved"] = [{"name": "Harbour Lights", "category": "series", "key": "series:7", "why": "TMDB isn't configured"}]
+            reelix_move.save_result(data_dir, result)
+            entries = [reelix_waiting.entry("Radarr", {"category": "movie", "name": "Mystery Corner (2009)", "key": "movie:41", "why": "TMDB isn't configured"},
+                                            {"tmdb": 99001, "imdb": "tt0099001"}),
+                       reelix_waiting.entry("Radarr", {"category": "movie", "name": "The Lost Reel (1998)", "key": "movie:42", "why": "it has no TMDB id"},
+                                            {"imdb": "tt0099002"}),
+                       reelix_waiting.entry("Sonarr", {"category": "series", "name": "Harbour Lights", "key": "series:7", "why": "TMDB isn't configured"},
+                                            {"tvdb": 99003, "imdb": "tt0099003"})]
+            reelix_waiting._write(data_dir, reelix_waiting.read(data_dir) + entries)  # held without waking the retry
+        return fake_job(reelix_move, "move", reelix_move.move_tasks(srcs, hold, bool(qbit_password)), then)
+    reelix_move.start = move_start
+
+    def activate(data_dir, password, ids):
+        result = reelix_move.last_result(data_dir) or {}
+        held = result.get("held_sites") or []
+        want = {h["id"] for h in held} if ids is None else set(ids)
+        result["held_sites"] = [h for h in held if h["id"] not in want]
+        result["held"] = len(result["held_sites"])
+        reelix_move.save_result(data_dir, result)
+        return len(held) - len(result["held_sites"])
+    reelix_move.activate = activate
+
+
 def main():
+    if EXAMPLE_TAKEOVER:
+        example_takeover()
     fake = ThreadingHTTPServer(("127.0.0.1", FAKE_PORT), FakeArr)
     threading.Thread(target=fake.serve_forever, daemon=True).start()
     DATA.mkdir(parents=True, exist_ok=True)
