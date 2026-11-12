@@ -41,7 +41,8 @@ WORK = "backup-work"
 # download"): caches, logs, transcodes, fetched artwork and posters, guides, queued download files. On the owner's
 # server that leaves about 1.3 GB, mostly Jellyfin's database, which compresses to about a third.
 # Starboard's own folder: what never goes in, and the pictures only the person added (station logos from a zip).
-STARBOARD_SKIP = ("sessions.json", "logs/", "backups/", WORK + "/", "plugins/.removed/", "setup-token", "posters/", "icons/",
+KEY_FILE = "backup-key.json"  # the scheduled copies' key (DASH-17): never in a backup itself
+STARBOARD_SKIP = ("sessions.json", "logs/", "backups/", WORK + "/", "plugins/.removed/", "setup-token", "posters/", "icons/", KEY_FILE,
                   "library/films.json", "library/tv.json", "library/music.json", "library/books.json", "library/audiobooks.json",
                   "library/radio.json", "library/network-logos.json", "space.json", "usage.json", "disk-temps.json", "imports/")
 STARBOARD_PICTURES = ("library/station-logos/",)
@@ -74,6 +75,42 @@ def key_of(password, salt):
     if len(password or "") < 10:
         raise BackupError("Use a backup password of at least 10 characters")
     return hashlib.scrypt(password.encode("utf-8"), salt=salt, dklen=32, maxmem=64 * 1024 * 1024, **SCRYPT)
+
+
+# Scheduled copies (DASH-17) run with nobody there to type the password, so the person can let Starboard keep the key
+# made from it (never the password itself) in its own folder, readable by Starboard only. A copy made with it opens with
+# the same password as any other, because the salt the key was made with goes in each copy's header.
+
+def save_key(data_dir, password, folder, pictures):
+    _place(folder)
+    salt = secrets.token_bytes(16)
+    key = key_of(password, salt)
+    path = os.path.join(data_dir, KEY_FILE)
+    fd = os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        json.dump({"salt": base64.b64encode(salt).decode(), "key": base64.b64encode(key).decode(), "folder": folders.tidy(folder),
+                   "pictures": bool(pictures), "saved": time.time()}, f)
+    os.replace(path + ".tmp", path)
+
+
+def saved_key(data_dir):
+    """{"salt", "key" (bytes), "folder", "pictures", "saved"}, or None when no key is kept."""
+    try:
+        with open(os.path.join(data_dir, KEY_FILE), encoding="utf-8") as f:
+            raw = json.load(f)
+        salt, key = base64.b64decode(raw["salt"]), base64.b64decode(raw["key"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if len(salt) != 16 or len(key) != 32 or not raw.get("folder"):
+        return None
+    return {"salt": salt, "key": key, "folder": str(raw["folder"]), "pictures": bool(raw.get("pictures")), "saved": raw.get("saved")}
+
+
+def forget_key(data_dir):
+    try:
+        os.remove(os.path.join(data_dir, KEY_FILE))
+    except FileNotFoundError:
+        pass
 
 
 class Sealed(io.RawIOBase):
@@ -266,11 +303,14 @@ def _say(data_dir, **kw):
 
 # Making one -----------------------------------------------------------------------------------------------------------
 
-def start(data_dir, version, password, target, pictures, site_name=""):
-    """Starts making one in the background; refuses when one is running or a part is missing."""
+def start(data_dir, version, password, target, pictures, site_name="", keep=KEEP, saved=None):
+    """Starts making one in the background; refuses when one is running or a part is missing. A scheduled copy passes
+    the kept key as saved (from saved_key) instead of a password. keep: how many copies stay in the folder."""
     from . import containers, stack
     _aes()
-    key_of(password, b"0" * 16)
+    if saved is None:
+        key_of(password, b"0" * 16)
+    keep = max(1, min(int(keep), 50))
     if not containers.available():
         raise BackupError("Starboard needs Docker access to copy your apps' settings")
     env = stack.env_values(data_dir)
@@ -284,12 +324,13 @@ def start(data_dir, version, password, target, pictures, site_name=""):
         raise BackupError("Starboard cannot find its own folder on this computer")
     if not _lock.acquire(blocking=False):
         raise BackupError("A backup is being made already")
-    _say(data_dir, state="running", step="Starting", started=time.time(), finished=None, error="", file="", target=target, pictures=bool(pictures))
-    threading.Thread(target=_make, args=(data_dir, version, password, target, bool(pictures), config_dir, host_data, site_name, env),
+    _say(data_dir, state="running", step="Starting", started=time.time(), finished=None, error="", file="", target=target, pictures=bool(pictures),
+         scheduled=saved is not None)
+    threading.Thread(target=_make, args=(data_dir, version, password, target, bool(pictures), config_dir, host_data, site_name, env, keep, saved),
                      daemon=True).start()
 
 
-def _make(data_dir, version, password, target, pictures, config_dir, host_data, site_name, env):
+def _make(data_dir, version, password, target, pictures, config_dir, host_data, site_name, env, keep=KEEP, saved=None):
     from . import containers
     work = os.path.join(data_dir, WORK)
     try:
@@ -318,7 +359,8 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
             if code not in (0, 1):  # tar's 1: a file changed while it was read
                 raise BackupError(f"Copying {app} did not work: {said.strip()[-200:]}")
         _say(data_dir, step="Encrypting")
-        salt, nonce = secrets.token_bytes(16), secrets.token_bytes(8)
+        salt, nonce = (saved["salt"], secrets.token_bytes(8)) if saved else (secrets.token_bytes(16), secrets.token_bytes(8))
+        key = saved["key"] if saved else key_of(password, salt)
         stamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")
         name = f"starboard-full-{stamp}{'-pictures' if pictures else ''}.starboard"
         header = {"format": 1, "kind": "full", "created": time.strftime("%Y-%m-%dT%H:%M:%S"), "version": version,
@@ -326,7 +368,7 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
                   "data_dir": env.get("DATA_DIR", ""), "salt": base64.b64encode(salt).decode(), "nonce": base64.b64encode(nonce).decode(),
                   "kdf": {"name": "scrypt", **SCRYPT}, "cipher": "AES-256-GCM", "part": CHUNK}
         with open(os.path.join(work, name), "wb") as raw:
-            sealed = Sealed(raw, key_of(password, salt), header)
+            sealed = Sealed(raw, key, header)
             with tarfile.open(fileobj=sealed, mode="w|") as tar:
                 manifest = json.dumps({k: v for k, v in header.items() if k not in ("salt", "nonce")}).encode()
                 info = tarfile.TarInfo("manifest.json")
@@ -345,11 +387,13 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
         root, path = _place(target)
         inner = "/t" + path[len(root):]
         owner = f"{int(env.get('PUID') or 1000)}:{int(env.get('PGID') or 1000)}"  # the person's own user, so they can tidy the folder
-        keep = f"ls -1t {_q(inner)} | grep -E '^starboard-full-[0-9-]+(-pictures)?\\.starboard$' | tail -n +{KEEP + 1}"
-        code, said = _helper(f"mkdir -p {_q(inner)} && cp /w/{_q(name)} {_q(inner)}/{_q(name + '.part')} && "
+        prune = f"ls -1t {_q(inner)} | grep -E '^starboard-full-[0-9-]+(-pictures)?\\.starboard$' | tail -n +{int(keep) + 1}"
+        # A .part left by a copy that was cut off (the computer stopped) is never a backup: it goes first (DASH-78).
+        code, said = _helper(f"mkdir -p {_q(inner)} && find {_q(inner)} -maxdepth 1 -name 'starboard-full-*.starboard.part' -delete && "
+                             f"cp /w/{_q(name)} {_q(inner)}/{_q(name + '.part')} && "
                              f"mv {_q(inner)}/{_q(name + '.part')} {_q(inner)}/{_q(name)} && "
                              f"chown {owner} {_q(inner)} {_q(inner)}/{_q(name)} && chmod 600 {_q(inner)}/{_q(name)} && "
-                             f"{keep} | while read -r old; do rm -f {_q(inner)}/\"$old\"; done",
+                             f"{prune} | while read -r old; do rm -f {_q(inner)}/\"$old\"; done",
                              [f"{host_data}/{WORK}:/w:ro", f"{root}:/t"])
         if code:
             raise BackupError(f"Writing to {target} did not work: {said.strip()[-200:]}")

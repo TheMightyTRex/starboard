@@ -282,7 +282,7 @@ async function loadSaved() {
     el("span", { class: "app-icon", "aria-hidden": "true" }, icon("history", 20)),
     el("div", { class: "row__text" },
       el("div", { class: "row__title" }, el("button", { type: "button", onclick: (e) => openSaved(item, e.currentTarget) }, when(item.saved))),
-      el("div", { class: "row__meta", text: `${item.reason} · ${formatBytes(item.size)}` })),
+      el("div", { class: "row__meta", text: [item.reason, item.version ? `Starboard ${item.version}` : null, formatBytes(item.size)].filter(Boolean).join(" · ") })),
     el("div", { class: "row__side" },
       el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => openSaved(item, e.currentTarget) }, "Open",
         el("span", { class: "visually-hidden", text: ` the copy from ${when(item.saved)}` })))))
@@ -305,7 +305,7 @@ async function loadFull() {
     return;
   }
   const folder = locationPicker({ id: "full-folder", label: "Where the copies go", app: "host", setting: "backups", value: f.status.target || f.folder,
-    hint: "On another disk than the system disk, so a copy outlives it. Starboard keeps the newest 5 here." });
+    hint: `On another disk than the system disk, so a copy outlives it. Starboard keeps the newest ${f.keep || 5} here.` });
   const pictures = el("input", { type: "checkbox", role: "switch", id: "full-pictures", "aria-labelledby": "full-pictures-l", "aria-describedby": "full-pictures-h", checked: !!f.status.pictures });
   const hint = el("span", { class: "setting__hint", id: "full-pictures-h", text: "Station logos you uploaded and Audiobookshelf's covers. Artwork the apps fetched comes back by itself and is never in it." });
   const measure = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Work out the size");
@@ -400,6 +400,143 @@ function openMakeFull(folder, pictures, opener) {
   pw1.focus();
 }
 
+// When backups are made (DASH-17) ---------------------------------------------------------------------------------
+// Settings pattern 3: four choice cards that apply at once, with the saved note under them. Then one status line: when
+// the next one is, and what it makes, with at most one button.
+
+const SCHEDULES = [
+  ["off", "Off", "Starboard makes no backup by itself."],
+  ["manual", "Manual", "You make each backup on this page. Starboard reminds you when the newest is more than 30 days old."],
+  ["weekly", "Weekly", "Every Sunday at 03:00. The newest 4 are kept."],
+  ["nightly", "Nightly", "Every night at 03:00. The newest 7 are kept."],
+];
+
+async function loadSchedule(focusAfter) {
+  const body = $("#schedule-body");
+  let s, full = null;
+  try {
+    [s, full] = await Promise.all([api("/api/backup/schedule"), api("/api/backup/full").catch(() => null)]);
+  } catch (e) { body.replaceChildren(notice("danger", "Could not read when backups are made", e.message)); return; }
+  body.removeAttribute("aria-busy");
+  const canFull = !!(full && full.installed && full.docker && !full.cannot);
+  const note = el("span", { class: "saved-note", id: "schedule-saved", hidden: true });
+  const cards = el("fieldset", { class: "option-cards" }, el("legend", { class: "visually-hidden", text: "When backups are made" }),
+    SCHEDULES.map(([value, title, text]) => el("label", { class: "option-card" },
+      el("input", { type: "radio", name: "backup-schedule", value, checked: value === s.mode, onchange: () => chooseSchedule(value) }),
+      el("strong", { text: title }), el("small", { text }))));
+  body.replaceChildren(cards, note, scheduleState(s, canFull));
+  if (focusAfter) $(`input[name=backup-schedule][value=${focusAfter}]`)?.focus();
+}
+
+function scheduleState(s, canFull) {
+  const scheduled = s.mode === "weekly" || s.mode === "nightly";
+  const parts = [];
+  if (scheduled) {
+    const makes = [s.key ? "a full backup without media" : null, s.server_job ? "the server's own backup" : null].filter(Boolean);
+    const next = s.next ? formatDate(s.next * 1000, true) : "not worked out yet";
+    if (makes.length) parts.push(notice("info", `Next backup: ${next}`, `It makes ${makes.join(", then ")}.${s.last_run ? ` Last time, ${formatDate(s.last_run * 1000, true)}: ${s.last_result}` : ""}`));
+    else parts.push(notice("warning", "Nothing to back up yet", canFull
+      ? "Scheduled full backups need the backup password, kept by Starboard so it can make them with nobody there."
+      : "Starboard did not set up your apps and no backup job on the server is set up, so there is nothing it can make by itself.",
+    canFull ? el("button", { type: "button", class: "btn btn--compact", id: "keep-key", onclick: (e) => openKeepKey(e.currentTarget) }, "Keep the backup password") : null));
+  } else if (s.remind) {
+    parts.push(notice("warning", s.newest ? "Your newest backup is more than 30 days old" : "No backup has been made yet",
+      s.newest ? `It was made ${formatDate(s.newest * 1000, true)}. Make one below.` : "Make one below."));
+  }
+  if (s.key) {
+    const forget = el("button", { type: "button", class: "btn btn--quiet btn--compact", id: "forget-key" }, "Forget it");
+    forget.addEventListener("click", () => forgetKey());
+    parts.push(el("div", { class: "notice", role: "status" }, icon("key-round"), el("div", { class: "notice__body" },
+      el("span", { class: "notice__title", text: "Starboard keeps the key for scheduled full backups" }),
+      el("p", { text: `Made from your backup password, never the password itself. Copies go to ${s.key.folder}, ${s.key.pictures ? "with" : "without"} the pictures you added.` })), forget));
+  } else if (scheduled && canFull && (s.server_job)) {
+    parts.push(el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn--compact", id: "keep-key", onclick: (e) => openKeepKey(e.currentTarget) }, "Also make full backups")));
+  }
+  return el("div", { class: "stack-2", "aria-live": "polite" }, ...parts);
+}
+
+async function chooseSchedule(value) {
+  try {
+    await api("/api/config/general", { method: "PUT", body: { backup_schedule: value } });
+  } catch (e) { problem(e.message); await loadSchedule(); return; }
+  await loadSchedule(value);
+  const note = $("#schedule-saved");
+  if (note) window.SharedComponents.savedNote(note);
+  const s = SCHEDULES.find(([v]) => v === value);
+  announce(`Saved: ${s ? s[1] : value}`);
+}
+
+function openKeepKey(opener) {
+  const folder = $("#full-folder")?.value?.trim() || "";
+  const pictures = !!$("#full-pictures")?.checked;
+  const pw1 = el("input", { class: "input", id: "key-pw-1", type: "password", autocomplete: "new-password", minlength: "10", "aria-describedby": "key-pw-1-hint" });
+  const pw2 = el("input", { class: "input", id: "key-pw-2", type: "password", autocomplete: "new-password" });
+  const mine = el("input", { class: "input", id: "key-mine", type: "password", autocomplete: "current-password" });
+  const field = (label, input, hint) => el("div", { class: "field" }, el("label", { for: input.id, text: label }),
+    hint ? el("span", { class: "hint", id: `${input.id}-hint`, text: hint }) : null, input, el("span", { class: "field-error", id: `${input.id}-error`, hidden: true }));
+  const go = el("button", { type: "submit", class: "btn btn--primary", form: "key-form", text: "Keep it" });
+  const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
+  const form = el("form", { class: "form-stack", id: "key-form", novalidate: true },
+    el("p", { text: `Scheduled full backups go into ${folder || "the folder chosen under Full without media"}, ${pictures ? "with" : "without"} the pictures you added. To change either, change it under Full without media first.` }),
+    el("p", { class: "small muted", text: "Starboard keeps a key made from the password, never the password itself, in its own folder. Anyone who can read that folder can already read your apps' keys. The backups still open only with the password." }),
+    field("A password for the backups", pw1, "At least 10 characters. Write it down: without it, nobody can open the backups, Starboard included."),
+    field("The same password again", pw2), field("Your Starboard password", mine));
+  const panel = sidePanel({ title: "Keep the backup password", opener, body: [form], foot: [go, cancel] });
+  cancel.addEventListener("click", () => panel.close());
+  const say = (input, text) => { const e = $(`#${input.id}-error`); e.textContent = text; e.hidden = !text; input.setAttribute("aria-invalid", text ? "true" : "false"); if (text) input.focus(); };
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    [pw1, pw2, mine].forEach((i) => say(i, ""));
+    if (pw1.value.length < 10) { say(pw1, "Use at least 10 characters"); return; }
+    if (pw1.value !== pw2.value) { say(pw2, "The two passwords are not the same"); return; }
+    go.disabled = true;
+    try {
+      await api("/api/backup/schedule/key", { method: "POST", body: { password: mine.value, backup_password: pw1.value, folder, pictures } });
+      panel.close(false);
+      await loadSchedule();
+      $("#forget-key")?.focus();
+      announce("The backup password is kept for scheduled full backups");
+    } catch (err) { say(/not right|attempts/i.test(err.message) ? mine : pw1, err.message); }
+    finally { go.disabled = false; }
+  });
+  pw1.focus();
+}
+
+async function forgetKey() {
+  const r = await withPassword({
+    title: "Forget the key for scheduled full backups?",
+    message: "Scheduled backups then make no full backup until you keep the password again. The backups already made still open with the password.",
+    confirm: "Forget it", danger: true,
+    run: (password) => api("/api/backup/schedule/forget", { method: "POST", body: { password } }),
+  });
+  if (!r) return;
+  await loadSchedule();
+  $("input[name=backup-schedule]:checked")?.focus();
+  announce("The key is forgotten");
+}
+
+// Settings, Updates, Restore: how many versions' copies stay (DASH-109). Settings pattern 2: a select that applies at
+// once, with the saved note beside it.
+async function showKeepVersions() {
+  const row = $("#keep-versions");
+  let config;
+  try { config = await api("/api/config"); } catch { row.hidden = true; return; }
+  const select = el("select", { class: "select", id: "keep-versions-select", "aria-labelledby": "keep-versions-l", "aria-describedby": "keep-versions-h" },
+    [5, 10, 20].map((n) => el("option", { value: String(n), text: `${n} versions`, selected: n === config.backup_keep_versions })));
+  const note = el("span", { class: "saved-note", hidden: true });
+  select.addEventListener("change", async () => {
+    try {
+      await api("/api/config/general", { method: "PUT", body: { backup_keep_versions: Number(select.value) } });
+      window.SharedComponents.savedNote(note);
+      await loadSaved();
+    } catch (e) { problem(e.message, select); }
+  });
+  row.replaceChildren(el("li", { class: "setting" },
+    el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "keep-versions-l", text: "Keep the copies of the last" }),
+      el("span", { class: "setting__hint", id: "keep-versions-h", text: "Older copies are removed by themselves when a new one is made. Each version can have several copies." })),
+    el("div", { class: "setting__control" }, select, note)));
+}
+
 // Settings, Updates, Restore: the command to go back names the version before this one.
 async function showGoBack() {
   const box = $("#back-command");
@@ -414,7 +551,7 @@ async function showGoBack() {
 startPage().then((session) => {
   if (!session) return;
   // The same script runs System, Backup and restore and Settings, Updates, Restore (no download or server there).
-  if ($("#back-command")) { showGoBack(); loadSaved(); }
+  if ($("#back-command")) { showGoBack(); loadSaved(); showKeepVersions(); }
   const picker = $("#restore-input");
   $("#restore-file").addEventListener("click", () => picker.click());
   picker.addEventListener("change", async () => {
@@ -425,7 +562,7 @@ startPage().then((session) => {
   });
   if ($("#back-command")) return;
   $("#download").addEventListener("click", download);
-  loadFull();
+  loadFull().then(() => loadSchedule());
   loadServer();
   loadSaved();
 });

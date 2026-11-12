@@ -108,6 +108,17 @@ chmod 700 backups
 BACKUP="backups/starboard-data-$(date +%Y-%m-%d-%H%M%S)-$(git rev-parse --short HEAD).tar.gz"
 (umask 077 && tar -czf "$BACKUP" data)  # private backup; the code files below must stay readable
 echo "Saved $BACKUP"
+# DASH-109: keep the copies of the last versions only (Settings, Updates, Restore: 5, 10 or 20; 5 if unset). These are
+# update.sh's own rolling copies, one per update, so the older ones are removed rather than kept elsewhere.
+KEEP_COPIES="$(python3 -I -c 'import json, sys
+try:
+    n = int(json.load(open(sys.argv[1])).get("backup_keep_versions", 5))
+except Exception:
+    n = 5
+print(n if n in (5, 10, 20) else 5)' data/config.json 2>/dev/null || echo 5)"
+{ ls -1t backups/starboard-data-*.tar.gz 2>/dev/null || true; } | tail -n +$((KEEP_COPIES + 1)) | while read -r old; do
+  if [ "$old" != "$BACKUP" ]; then rm -f -- "$old"; echo "Removed the older copy $old"; fi
+done
 
 say "Installing $WANT_NAME"
 git -c advice.detachedHead=false checkout --quiet "$WANT"

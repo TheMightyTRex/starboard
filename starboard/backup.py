@@ -5,7 +5,8 @@ sessions. Restoring saves a copy of the current settings first.
 
 Server backup: Starboard cannot read the whole server, so a job on the host does the work. Starboard only drops
 an empty file into STARBOARD_JOBS_DIR/requests, named "backup", or "backup-with-prompt" to ask for a rebuild
-prompt for an AI assistant as well, and reads STARBOARD_JOBS_DIR/<that name>.json
+prompt for an AI assistant as well (since DASH-17 the file holds {"keep": n, "scheduled": true or false}: how many
+backups the job should keep, which a job may read or ignore), and reads STARBOARD_JOBS_DIR/<that name>.json
 ({"status", "started", "finished", "summary"}) for the result. STARBOARD_BACKUP_DIR (read-only) lists the
 backup files that job made.
 """
@@ -22,7 +23,7 @@ FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "server_name", "design", "groups", "show_home_address", "show_outside_address",
                 "session_days", "secure_cookies", "update_check", "network_access", "upcoming_view", "upcoming_days", "download_hours",
                 "fetch_icons", "show_posters", "watch", "extras", "performance", "dashboard", "logs", "ux_notes", "settings_advanced",
-                "reelix_auto_update", "infinite_scroll")
+                "reelix_auto_update", "infinite_scroll", "backup_schedule", "backup_keep_versions")
 # Settings kept with their own checks when restored (DASH-350, catalogue sources).
 OTHER_KEYS = ("history_keep_days", "history_cleared_at", "plugin_catalogues")
 # Never in a backup: the sign-in, and what belongs to this install only. tests/test_backup_layout.py fails when a
@@ -207,12 +208,14 @@ def restore(config, backup):
 
 
 def saved_copies(config):
+    from .config import saved_versions
     folder = os.path.join(config.data_dir, "backups")
+    versions = saved_versions(folder)
     out = []
     for path in sorted(glob.glob(os.path.join(folder, "config-*.json")), reverse=True)[:30]:
         name = os.path.basename(path)
         reason = name.rsplit("-", 1)[-1].removesuffix(".json")
-        out.append({"name": name, "saved": os.path.getmtime(path), "size": os.path.getsize(path),
+        out.append({"name": name, "saved": os.path.getmtime(path), "size": os.path.getsize(path), "version": versions.get(name, ""),
                     "reason": {"migration": "Before an update changed the settings", "restore": "Before a restore"}.get(reason, reason)})
     return out
 
@@ -302,14 +305,14 @@ def server_file(name):
     return path if ok else None
 
 
-def request_server_backup(with_prompt=False):
+def request_server_backup(with_prompt=False, keep=None, scheduled=False):
     jobs = jobs_dir()
     if not jobs:
         raise ConfigError("No server backup job is set up. See the help article Back up the whole server")
     path = os.path.join(jobs, "requests", "backup-with-prompt" if with_prompt else "backup")
     try:
-        with open(path, "w"):
-            pass
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"keep": int(keep) if keep else None, "scheduled": bool(scheduled)}, f)
     except OSError:
         raise ConfigError("Starboard cannot ask for a backup: the requests folder is not writable") from None
 
