@@ -70,9 +70,9 @@ if ! { : < /dev/tty; } 2>/dev/null; then
 fi
 [ "$(id -u)" -ne 0 ] || { echo "Stopped: run this as your normal user, not root or sudo. It asks for your password when it needs it." >&2; err RF-03 >&2; exit 1; }
 
-STEPS=6
-TITLES=("" "Welcome" "Check this computer" "Install what is missing" "Download Starboard" "Ready to install"
-        "Install Starboard" "Done")
+STEPS=8
+TITLES=("" "Welcome" "Where you are" "Your keyboard" "Check this computer" "Install what is missing" "Download Starboard"
+        "Ready to install" "Install Starboard" "Done")
 
 # terminal-frame: start (a copy of lib/terminal-frame.sh; change that file, then copy it here)
 # shellcheck shell=bash
@@ -855,6 +855,26 @@ check() {
       fix "Allowing your user to use Docker" "sudo usermod -aG docker $USER"
     fi
   fi
+  place_fixes
+}
+# The time zone, keyboard and system language chosen in steps 2 and 3, when this computer has others (DASH-259).
+# Only where timedatectl and localectl answer: a computer without them keeps its own.
+place_fixes() {
+  read_place
+  local i
+  if [ -n "$CHOSEN_TZ" ] && [ -n "$NOW_TZ" ] && [ "$CHOSEN_TZ" != "$NOW_TZ" ]; then
+    NEED+=("Time zone"); fix "Setting the time zone to $CHOSEN_TZ" "sudo timedatectl set-timezone $CHOSEN_TZ"
+  fi
+  if [ -n "$CHOSEN_KB" ] && [ "$CHOSEN_KB" != "$NOW_KB" ] && has localectl && localectl status >/dev/null 2>&1; then
+    i="$(kb_index "$CHOSEN_KB")"
+    NEED+=("Keyboard")
+    fix "Setting the keyboard to ${KB_TITLE[$i]}" "sudo localectl set-x11-keymap ${KB_LAYOUT[$i]} pc105 ${KB_VARIANT[$i]} && { ! command -v setupcon >/dev/null || sudo setupcon -k --force || true; }"
+  fi
+  # The system language only when it is already on this computer: making a new one is a bigger change.
+  if [ -n "$CHOSEN_LANG" ] && [ "$CHOSEN_LANG" != "$NOW_LANG" ] && [ -n "$NOW_LANG" ] \
+     && locale -a 2>/dev/null | tr 'A-Z' 'a-z' | sed 's/utf-8/utf8/' | grep -qx "$(printf '%s' "$CHOSEN_LANG" | tr 'A-Z' 'a-z' | sed 's/utf-8/utf8/')"; then
+    NEED+=("System language"); fix "Setting the system language to $CHOSEN_LANG" "sudo localectl set-locale LANG=$CHOSEN_LANG"
+  fi
 }
 fix() { FIX_NAME+=("$1"); FIX+=("$2"); }
 # "git", "git and python3", "curl, git and python3"
@@ -879,6 +899,10 @@ show_checks() {
     if is_missing "$item"; then bad "$item"; else ok "$item"; fi
   done
   if [ -d "$DIR/.git" ]; then ok "Starboard downloaded, in ${DIR/#$HOME/~}"; else bad "Starboard downloaded"; fi
+  if is_missing "Time zone"; then bad "Time zone: $CHOSEN_TZ (now $NOW_TZ)"; elif [ -n "$NOW_TZ" ]; then ok "Time zone: $NOW_TZ"; fi
+  if is_missing "Keyboard"; then bad "Keyboard: $(kb_title "$CHOSEN_KB") (now ${NOW_LAYOUT:-not set})"
+  elif [ -n "$NOW_KB" ]; then ok "Keyboard: $(kb_title "$NOW_KB")"; fi
+  if is_missing "System language"; then bad "System language: $CHOSEN_LANG (now $NOW_LANG)"; fi
 }
 
 # Work happens quietly. What the commands print goes to this log, and the person sees a progress bar with an
@@ -973,6 +997,178 @@ sudo_once() {
   KEEP=$!
 }
 
+# Location and keyboard (DASH-259) ---------------------------------------------------------------------------------
+# The lists are starboard/places.py's, copied here because this script arrives on its own through curl; the
+# browser and terminal set-ups read the same lists from Starboard (tests/test_places.py checks the copy).
+# places: start (written from starboard/places.py by bash_block(); change that file, then copy it here)
+PLACE_TITLE=('United Kingdom' 'Ireland' 'United States, Eastern' 'United States, Central' 'United States, Mountain' 'United States, Pacific' 'Canada, Eastern' 'Canada, Atlantic' 'Canada, Pacific' 'Australia, Sydney' 'Australia, Perth' 'New Zealand' 'South Africa' 'India' 'Germany' 'Austria' 'France' 'Spain' 'Italy' 'Portugal' 'Netherlands' 'Belgium' 'Switzerland' 'Sweden' 'Norway' 'Denmark' 'Finland' 'Poland' 'Other: Coordinated Universal Time')
+PLACE_TZ=('Europe/London' 'Europe/Dublin' 'America/New_York' 'America/Chicago' 'America/Denver' 'America/Los_Angeles' 'America/Toronto' 'America/Halifax' 'America/Vancouver' 'Australia/Sydney' 'Australia/Perth' 'Pacific/Auckland' 'Africa/Johannesburg' 'Asia/Kolkata' 'Europe/Berlin' 'Europe/Vienna' 'Europe/Paris' 'Europe/Madrid' 'Europe/Rome' 'Europe/Lisbon' 'Europe/Amsterdam' 'Europe/Brussels' 'Europe/Zurich' 'Europe/Stockholm' 'Europe/Oslo' 'Europe/Copenhagen' 'Europe/Helsinki' 'Europe/Warsaw' 'Etc/UTC')
+PLACE_KB=('gb' 'ie' 'us' 'us' 'us' 'us' 'us' 'us' 'us' 'us' 'us' 'us' 'us' 'us' 'de' 'de' 'fr' 'es' 'it' 'pt' 'us-intl' 'be' 'ch' 'se' 'no' 'dk' 'fi' 'pl' 'us')
+PLACE_LANG=('en_GB.UTF-8' 'en_IE.UTF-8' 'en_US.UTF-8' 'en_US.UTF-8' 'en_US.UTF-8' 'en_US.UTF-8' 'en_CA.UTF-8' 'en_CA.UTF-8' 'en_CA.UTF-8' 'en_AU.UTF-8' 'en_AU.UTF-8' 'en_NZ.UTF-8' 'en_ZA.UTF-8' 'en_IN.UTF-8' 'de_DE.UTF-8' 'de_AT.UTF-8' 'fr_FR.UTF-8' 'es_ES.UTF-8' 'it_IT.UTF-8' 'pt_PT.UTF-8' 'nl_NL.UTF-8' 'nl_BE.UTF-8' 'de_CH.UTF-8' 'sv_SE.UTF-8' 'nb_NO.UTF-8' 'da_DK.UTF-8' 'fi_FI.UTF-8' 'pl_PL.UTF-8' 'C.UTF-8')
+KB_ID=('gb' 'us' 'ie' 'gb-mac' 'us-mac' 'us-intl' 'de' 'fr' 'es' 'it' 'pt' 'nl' 'be' 'ch' 'ch-fr' 'se' 'no' 'dk' 'fi' 'pl' 'ca')
+KB_TITLE=('UK' 'US' 'Irish' 'Apple UK' 'Apple US' 'US international (accents with '\'' and ")' 'German' 'French' 'Spanish' 'Italian' 'Portuguese' 'Dutch' 'Belgian' 'Swiss German' 'Swiss French' 'Swedish' 'Norwegian' 'Danish' 'Finnish' 'Polish' 'Canadian French')
+KB_LAYOUT=('gb' 'us' 'ie' 'gb' 'us' 'us' 'de' 'fr' 'es' 'it' 'pt' 'nl' 'be' 'ch' 'ch' 'se' 'no' 'dk' 'fi' 'pl' 'ca')
+KB_VARIANT=('' '' '' 'mac' 'mac' 'intl' '' '' '' '' '' '' '' '' 'fr' '' '' '' '' '' '')
+# Where the symbols are with the US layout set, by keyboard: one line each, | between the six (DASH-112).
+declare -A KB_SYMBOLS=([de]='Shift and the key marked # '\'' (beside Enter)|the key marked # '\'' (beside Enter)|Shift and 3 (the key marked §)|Shift and the key marked ^ ° (left of 1)|Shift and 2 (the key marked ")|Shift and the key marked Ä' [es]='Shift and the key marked Ç (beside Enter)|the key marked Ç (beside Enter)|Shift and 3 (the key marked ·)|Shift and the key marked º ª (left of 1)|Shift and 2 (the key marked ")|Shift and the key marked ´ ¨ (right of Ñ)' [fr]='Shift and the key marked * µ (beside Enter)|the key marked * µ (beside Enter)|Shift and the key marked 3 "|Shift and the key marked ² (left of the & 1 key)|Shift and the key marked 2 é|Shift and the key marked ù %' [gb]='Shift and the key marked # ~ (beside Enter)|the key marked # ~ (beside Enter)|Shift and 3 (the key marked £)|Shift and the key marked ` ¬ (left of 1)|Shift and 2 (the key marked ")|Shift and the key marked '\'' @ (left of the # ~ key)' [ie]='Shift and the key marked # ~ (beside Enter)|the key marked # ~ (beside Enter)|Shift and 3 (the key marked £)|Shift and the key marked ` ¬ (left of 1)|Shift and 2 (the key marked ")|Shift and the key marked '\'' @ (left of the # ~ key)' [it]='Shift and the key marked ù § (beside Enter)|the key marked ù § (beside Enter)|Shift and 3 (the key marked £)|Shift and the key marked \ ¦ (left of 1)|Shift and 2 (the key marked ")|Shift and the key marked à ° (right of ò)')
+# places: end
+# What this computer has now, read only: the time zone, the keyboard (an XKB layout and variant, which the console
+# follows on Debian, Ubuntu, Linux Mint and Raspberry Pi OS) and the system language.
+NOW_TZ=""; NOW_KB=""; NOW_LAYOUT=""; NOW_VARIANT=""; NOW_LANG=""
+CHOSEN_TZ=""; CHOSEN_KB=""; CHOSEN_LANG=""; KB_TESTED=0
+read_place() {
+  local status
+  NOW_TZ="$(timedatectl show -p Timezone --value 2>/dev/null || true)"
+  [[ "$NOW_TZ" =~ ^[A-Za-z0-9_+/-]{1,40}$ ]] || NOW_TZ=""
+  status="$(localectl status 2>/dev/null || true)"
+  NOW_LAYOUT="$(printf '%s\n' "$status" | sed -n 's/^ *X11 Layout: *//p' | cut -d, -f1)"
+  NOW_VARIANT="$(printf '%s\n' "$status" | sed -n 's/^ *X11 Variant: *//p' | cut -d, -f1)"
+  NOW_LANG="$(printf '%s\n' "$status" | sed -n 's/^ *System Locale: *LANG=//p' | head -n 1)"
+  if [ -z "$NOW_LAYOUT" ] && [ -r /etc/default/keyboard ]; then
+    NOW_LAYOUT="$(sed -n 's/^XKBLAYOUT="\{0,1\}\([^",]*\).*/\1/p' /etc/default/keyboard | head -n 1)"
+    NOW_VARIANT="$(sed -n 's/^XKBVARIANT="\{0,1\}\([^",]*\).*/\1/p' /etc/default/keyboard | head -n 1)"
+  fi
+  NOW_KB=""
+  local i
+  for i in "${!KB_ID[@]}"; do
+    if [ "${KB_LAYOUT[$i]}" = "$NOW_LAYOUT" ] && [ "${KB_VARIANT[$i]}" = "$NOW_VARIANT" ]; then NOW_KB="${KB_ID[$i]}"; break; fi
+  done
+}
+kb_index() { local i; for i in "${!KB_ID[@]}"; do [ "${KB_ID[$i]}" = "$1" ] && { echo "$i"; return 0; }; done; return 1; }
+place_index() { local i; for i in "${!PLACE_TZ[@]}"; do [ "${PLACE_TZ[$i]}" = "$1" ] && { echo "$i"; return 0; }; done; return 1; }
+kb_title() { local i; i="$(kb_index "$1")" && printf '%s' "${KB_TITLE[$i]}"; }
+# Over SSH the keys come from the other computer's own settings, so the test line and the symbols help say so.
+over_ssh() { [ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]; }
+
+# DASH-112: where the symbols are on this keyboard when the US layout is set (the usual default), as help text.
+symbols_help() {
+  local kb="$1" i lines sym=('|' '\' '#' '~' '@' '"') out
+  if [ -z "${KB_SYMBOLS[$kb]:-}" ]; then
+    printf '%s' "When a symbol such as | or \\ does not come out as marked on the key, the keyboard layout set does not match the keyboard. Choose your keyboard in this step to put it right."
+    return
+  fi
+  IFS='|' read -ra lines <<< "${KB_SYMBOLS[$kb]}"
+  out="On a $(kb_title "$kb") keyboard with the US layout set (the usual default), the symbols are not where they are marked:"
+  for i in "${!sym[@]}"; do out+=$'\n'"  ${sym[$i]} is ${lines[$i]//¦/|}"; done
+  out+=$'\n\n'"Once the right layout is set, every key types what is marked on it. To set it later: run this script again, or type sudo localectl set-x11-keymap followed by your keyboard's code (gb, ie, de, fr and so on), then sudo setupcon."
+  printf '%s' "$out"
+}
+
+# pick "question" default "help" "answer|about" ...: a list moved through with the Up and Down arrows and chosen with
+# Enter (DASH-259). Typing letters jumps to the first answer starting with them; a number and Enter chooses that line.
+# The recommended answer is first and says so. Because letters jump, the menu keys here are Esc Back, ? Help, Tab
+# Feedback and Ctrl+C Stop. Plain mode (screen readers) and a run with no terminal ask with numbers instead
+# (choose). Sets CHOICE. Returns as choose does: 10 for Back, 11 to draw the step again.
+pick() {
+  if [ "$FANCY" != 1 ] || [ -z "$IN" ] || [ "${ASK:-1}" = 0 ]; then choose "$@"; return $?; fi
+  local question="$1" default="$2" helptext="$3"; shift 3
+  local opts=("$@") n=$# at=$(( default - 1 )) top=0 room typed="" typed_at=0 key rest i drawn=0 keys_were="$KEYS"
+  say ""
+  para "$question"
+  say "$(dim "  Up and Down move, Enter chooses. Type the first letters of a name to jump to it.")"
+  KEYS="Esc ? Tab Ctrl+C"
+  MENU_RIGHT="Enter: choose"
+  pick_menu
+  pick_room
+  local stty_was; stty_was="$(stty -g < "$IN" 2>/dev/null)"
+  ECHO_WAS="$stty_was"  # Ctrl+C (the frame's finish) gives the keys back as they were
+  stty -echo -icanon < "$IN" 2>/dev/null
+  printf '\033[?25l'  # the marker shows where you are; the cursor would only distract
+  while :; do
+    [ "$at" -ge "$top" ] || top=$at
+    [ "$at" -lt $(( top + room )) ] || top=$(( at - room + 1 ))
+    pick_draw
+    key=""
+    IFS= read -rsn1 -t 1 key < "$IN"; rest=$?
+    if [ "$rest" -gt 128 ]; then
+      if [ "$RESIZED" = 1 ]; then RESIZED=0; redraw_step; pick_menu; pick_room; drawn=0; fi
+      [ $(( SECONDS - typed_at )) -lt 2 ] || typed=""
+      continue
+    fi
+    case "$key" in
+      $'\e')
+        rest=""; IFS= read -rsn2 -t 0.05 rest < "$IN" || true
+        case "$rest" in
+          "[A"|OA) [ "$at" -gt 0 ] && at=$(( at - 1 )) ;;
+          "[B"|OB) [ "$at" -lt $(( n - 1 )) ] && at=$(( at + 1 )) ;;
+          "[5") IFS= read -rsn1 -t 0.05 key < "$IN" || true; at=$(( at - room > 0 ? at - room : 0 )) ;;
+          "[6") IFS= read -rsn1 -t 0.05 key < "$IN" || true; at=$(( at + room < n - 1 ? at + room : n - 1 )) ;;
+          "[H"|OH) at=0 ;;
+          "[F"|OF) at=$(( n - 1 )) ;;
+          "")  # Esc on its own: Back
+            if [ "$STEP" -gt "${FIRST_BACK:-1}" ]; then pick_end "$stty_was" "$keys_were"; return 10; fi ;;
+        esac
+        typed="" ;;
+      "")  # Enter
+        if [[ "$typed" =~ ^[0-9]+$ ]] && [ "$typed" -ge 1 ] && [ "$typed" -le "$n" ]; then at=$(( typed - 1 )); fi
+        CHOICE=$(( at + 1 ))
+        pick_end "$stty_was" "$keys_were"
+        say "  $(accent "›") ${opts[$at]%%|*}"
+        return 0 ;;
+      $'\t'|"?")
+        pick_end "$stty_was" "$keys_were"
+        if [ "$key" = "?" ]; then popup "Help: ${question%:}" "$helptext"; else feedback ""; fi
+        # The question and its hint are asked again below: take them off the step, draw it, and ask.
+        SCREEN=("${SCREEN[@]:0:$(( ${#SCREEN[@]} > 3 ? ${#SCREEN[@]} - 3 : 0 ))}")
+        redraw_step
+        pick "$question" "$default" "$helptext" "${opts[@]}"; return $? ;;
+      $'\x7f'|$'\b') typed="${typed%?}" ;;
+      [0-9])
+        [ $(( SECONDS - typed_at )) -lt 2 ] && [[ "$typed" =~ ^[0-9]+$ ]] || typed=""
+        typed+="$key"; typed_at=$SECONDS
+        if [ "$typed" -ge 1 ] && [ "$typed" -le "$n" ]; then at=$(( typed - 1 )); fi ;;
+      [[:alpha:]]|" ")
+        [ $(( SECONDS - typed_at )) -lt 2 ] || typed=""
+        [[ "$typed" =~ ^[0-9]+$ ]] && typed=""
+        typed+="$key"; typed_at=$SECONDS
+        for i in "${!opts[@]}"; do
+          if [[ "${opts[$i],,}" == "${typed,,}"* ]]; then at=$i; break; fi
+        done ;;
+    esac
+  done
+}
+# The menu on the bottom line, as the frame's, with this list's own keys.
+pick_menu() {
+  [ "$FANCY" = 1 ] || return 0
+  [ "$KEYS" = "Esc ? Tab Ctrl+C" ] || { menu; return 0; }
+  local line="" plain="" k label right="Enter: choose" gap
+  for k in Esc "?" Tab Ctrl+C; do
+    case "$k" in Esc) [ "$STEP" -gt "${FIRST_BACK:-1}" ] || continue; label="Back" ;; "?") label="Help" ;; Tab) label="Feedback" ;; *) label="Stop" ;; esac
+    line+="$(accent "$k") $label   "; plain+="$k $label   "
+  done
+  gap=$(( W - 4 - ${#plain} - ${#right} )); [ "$gap" -ge 1 ] || { gap=1; right=""; }
+  printf '\0337\033[%d;1H\033[2K\033[%d;%dH%s\033[%d;1H\033[2K\033[%d;%dH  %s%s%s\0338' $(( ROWS - 1 )) $(( ROWS - 1 )) \
+    $(( L + 1 )) "$(dim "$(rep ─ "$W")")" "$ROWS" "$ROWS" $(( L + 1 )) "$line" "$(rep " " "$gap")" "$(dim "$right")"
+}
+# How many answers fit between the question and the menu: the window less the heading (4 lines), the menu (2), the
+# question and its hint (3), and a line for "more above or below".
+pick_room() { room=$(( ROWS - 10 )); [ "$room" -ge 3 ] || room=3; [ "$room" -le "$n" ] || room=$n; }
+pick_draw() {
+  local i line mark dot name about more=""
+  [ "$drawn" = 0 ] || printf '\033[%dA' $(( room + 1 ))
+  for (( i = top; i < top + room; i++ )); do
+    name="${opts[$i]%%|*}"; about=""
+    [[ "${opts[$i]}" == *"|"* ]] && about="${opts[$i]#*|}"
+    dot=" "; [ $(( i + 1 )) = "$default" ] && dot="$(accent "●")"
+    if [ "$i" = "$at" ]; then mark="$(accent "›")"; name="$(c "1;7" " $name ")"
+    else mark=" "; name=" ${name//(recommended)/$(c 32 "(recommended)")} "; fi
+    line="  $mark $dot $(dim "$(printf '%2d' $(( i + 1 )))") $name"
+    [ -z "$about" ] || line+=" $(dim "$about")"
+    printf '\r\033[2K%s%s\n' "$PAD" "$line"
+  done
+  [ "$top" -gt 0 ] && more="↑ $top more above"
+  if [ $(( top + room )) -lt "$n" ]; then [ -z "$more" ] || more+=" · "; more+="↓ $(( n - top - room )) more below"; fi
+  printf '\r\033[2K%s  %s' "$PAD" "$(dim "$more")"
+  drawn=1
+}
+pick_end() {
+  stty "$1" < "$IN" 2>/dev/null || stty echo icanon < "$IN" 2>/dev/null
+  ECHO_WAS=""
+  printf '\033[?25h\n'
+  KEYS="$2"; MENU_RIGHT=""
+  pick_menu
+}
+
 # The steps ------------------------------------------------------------------------------------------------------
 
 welcome() {
@@ -1025,8 +1221,89 @@ You can change your mind later: the terminal set-up can be run again, and the br
   fi
 }
 
+# Step 2: where this computer is (DASH-259). The recommended answer is what the computer has now (or the last
+# answer, after Back); a time zone not in the list is kept, first. Nothing changes until step 5 asks.
 step_2() {
   page 2
+  read_place
+  local opts=() tzs=() i want="${CHOSEN_TZ:-$NOW_TZ}" first=-1 mark
+  [ -n "$want" ] || want="Etc/UTC"
+  first="$(place_index "$want" || echo -1)"
+  mark="(recommended)"; [ "${CAME_BACK:-0}" = 1 ] && [ -n "$CHOSEN_TZ" ] && mark="(your last answer)"
+  if [ "$first" -ge 0 ]; then
+    opts+=("${PLACE_TITLE[$first]} $mark|${PLACE_TZ[$first]}"); tzs+=("${PLACE_TZ[$first]}")
+  else
+    opts+=("Keep this computer's time zone $mark|$want"); tzs+=("$want")
+  fi
+  for i in "${!PLACE_TZ[@]}"; do
+    [ "$i" = "$first" ] && continue
+    opts+=("${PLACE_TITLE[$i]}|${PLACE_TZ[$i]}"); tzs+=("${PLACE_TZ[$i]}")
+  done
+  para "Where is this computer? Its clock is set to your time zone, so download hours, schedules and the log use your time. Your keyboard is suggested from it next."
+  [ -z "$NOW_TZ" ] || para "It is set to $NOW_TZ now. Nothing changes until you say yes, after the checks."
+  pick "Where are you?" 1 \
+"Choose the country, or the part of a large country, this computer is in. It sets the time zone, which download hours, schedules and the log use, and suggests the keyboard on the next step.
+
+A place that is not in the list: choose Other, Coordinated Universal Time, or keep the time zone the computer has. You can change it later with: sudo timedatectl set-timezone Europe/London (with your own time zone)." \
+    "${opts[@]}" || return $?
+  CHOSEN_TZ="${tzs[$(( CHOICE - 1 ))]}"
+  i="$(place_index "$CHOSEN_TZ" || echo -1)"
+  if [ "$i" -ge 0 ]; then CHOSEN_LANG="${PLACE_LANG[$i]}"; else CHOSEN_LANG=""; fi
+}
+
+# Step 3: the keyboard (DASH-259), chosen with the arrow keys and Enter. Recommended: the last answer, then a layout
+# someone set on purpose (anything but the US default), then the one the location suggests.
+step_3() {
+  page 3
+  read_place
+  local want="$CHOSEN_KB" i p opts=() ids=() first mark help
+  if [ -z "$want" ]; then
+    p="$(place_index "$CHOSEN_TZ" || echo -1)"
+    if [ -n "$NOW_KB" ] && [ "$NOW_KB" != us ]; then want="$NOW_KB"
+    elif [ "$p" -ge 0 ]; then want="${PLACE_KB[$p]}"
+    else want="${NOW_KB:-us}"; fi
+  fi
+  first="$(kb_index "$want" || echo 0)"
+  mark="(recommended)"; [ "${CAME_BACK:-0}" = 1 ] && [ -n "$CHOSEN_KB" ] && mark="(your last answer)"
+  opts+=("${KB_TITLE[$first]} $mark"); ids+=("${KB_ID[$first]}")
+  for i in "${!KB_ID[@]}"; do
+    [ "$i" = "$first" ] && continue
+    opts+=("${KB_TITLE[$i]}"); ids+=("${KB_ID[$i]}")
+  done
+  if over_ssh; then
+    para "You are connected from another computer, so the keys you type now follow that computer's own settings. This sets the keyboard for when one is plugged into this computer."
+  elif [ -n "$NOW_LAYOUT" ]; then
+    para "The keyboard layout set now is $(kb_title "$NOW_KB" || printf '%s' "$NOW_LAYOUT"). If a symbol such as | or \\ does not come out as marked on the key, it does not match your keyboard: type ? for where the symbols are."
+  else
+    para "If a symbol such as | or \\ does not come out as marked on the key, the layout set does not match your keyboard: type ? for where the symbols are."
+  fi
+  help="Choose the keyboard you type on, by the language printed on its keys. The UK keyboard has £ above 3 and # ~ beside Enter; the US one has \$ above 4 and a long Enter key.
+
+$(symbols_help "$want")"
+  pick "Which keyboard do you have?" 1 "$help" "${opts[@]}" || return $?
+  CHOSEN_KB="${ids[$(( CHOICE - 1 ))]}"
+  KB_TESTED=0
+}
+
+# The test line (DASH-259): after the keyboard is set, a line to try the keys before going on. Over SSH it would
+# test the other computer's keys, so it is left out there.
+try_keys() {
+  [ -n "$IN" ] && [ "${ASK:-1}" = 1 ] && [ "$KB_TESTED" = 0 ] || return 0
+  over_ssh && return 0
+  KB_TESTED=1
+  say ""
+  para "Try your keys: type the symbols marked on them, | \\ # ~ @ \" in that order, then press Enter. Press Enter alone to skip."
+  ask "Your symbols:" "" "$(symbols_help "$CHOSEN_KB")" || return $?
+  if [ -z "$ANSWER" ]; then return 0; fi
+  if [ "$ANSWER" = '| \ # ~ @ "' ] || [ "${ANSWER// /}" = '|\#~@"' ]; then ok "Every key typed what is marked on it."
+  else
+    note "That came out as $ANSWER, so the layout does not match every key yet. It may need the computer to start again. Where each symbol is now:"
+    para "$(symbols_help "$CHOSEN_KB")"
+  fi
+}
+
+step_4() {
+  page 4
   para "Checking what this computer already has. This changes nothing."
   say ""
   check
@@ -1042,24 +1319,28 @@ step_2() {
 Your user needs to be allowed to use Docker, so Starboard's installer does not need your password every time. This is the same as administrator control of the computer, so only do it for your own user." || return $?
 }
 
-step_3() {
-  page 3
+step_5() {
+  page 5
   check
   if [ ${#NEED[@]} -eq 0 ]; then
     ok "Nothing to install."
+    try_keys || return $?
     ask "Press Enter to carry on" "" "Everything Starboard needs is already on this computer." || return $?
     return 0
   fi
-  if [ -z "$PKG" ] || [ ${#FIX[@]} -eq 0 ]; then
+  local software=0 item
+  for item in "${NEED[@]}"; do case "$item" in "Time zone"|"Keyboard"|"System language") ;; *) software=1 ;; esac; done
+  if [ "$software" = 1 ] && { [ -z "$PKG" ] || [ ${#FIX[@]} -eq 0 ]; }; then
     note "This Linux is not one this script knows how to install on. It knows Debian, Ubuntu, Linux Mint, Fedora and Raspberry Pi OS."
     para "Install Docker by hand, then run this again: https://themightytrex.github.io/starboard/help/topics/install-docker.html"
     finish; err RF-05; exit 1
   fi
-  local items=() item list="" start="" allow=""
+  local items=() list="" start="" allow="" place=""
   for item in "${NEED[@]}"; do
     case "$item" in
       "Docker running") start=" Then Docker is started." ;;
       "Your user allowed to use Docker") allow=" Your user is allowed to use Docker." ;;
+      "Time zone"|"Keyboard"|"System language") place=" Then the time zone, keyboard and language are set as you chose." ;;
       *) items+=("$item") ;;
     esac
   done
@@ -1069,7 +1350,7 @@ step_3() {
     else list+=", ${items[$item]}"; fi
   done
   [ -z "$list" ] || list="To install: $list."
-  para "${list:-Nothing to install.}$start$allow"
+  para "${list:-Nothing to install.}$start$allow$place"
   say ""
   local i
   for i in "${!FIX_NAME[@]}"; do hang "  $(dim "$(( i + 1 )).") " "" "${FIX_NAME[$i]}"; done
@@ -1080,7 +1361,10 @@ step_3() {
     choose "Install them now?" 1 \
 "These are the same steps as Starboard's help page, Install Docker. Docker's own install script is used on Debian, Ubuntu, Fedora and Raspberry Pi OS; Linux Mint uses its own packages.
 
-Show the commands first lists the exact command for each job. Choose No to install them yourself: the commands are printed so you can copy them. Then run this script again." \
+Show the commands first lists the exact command for each job. Choose No to install them yourself: the commands are printed so you can copy them. Then run this script again.
+
+The keyboard you chose is set after sudo has the password. If your password has a symbol in it, such as | or \\, that symbol may not be on the key marked with it yet:
+$(symbols_help "${CHOSEN_KB:-gb}")" \
       "Yes, install them (recommended)|sudo asks for your password once." "Show the commands first|The exact command for each job." \
       "No, I will do it myself|The commands are printed to copy." || return $?
     [ "$CHOICE" = 2 ] || break
@@ -1094,7 +1378,7 @@ Show the commands first lists the exact command for each job. Choose No to insta
       printf '  %s\n' "${FIX[@]}"
       exit 1 ;;
   esac
-  page 3
+  page 5
   : > "$LOG"
   [[ " ${FIX[*]} " != *"sudo "* ]] || sudo_once
   para "Please wait, this can take some time..."
@@ -1109,12 +1393,12 @@ Show the commands first lists the exact command for each job. Choose No to insta
       if is_package_job "${FIX[$i]}" && held_lock && [ "$lock_tries" -lt 2 ]; then
         lock_tries=$(( lock_tries + 1 ))
         printf 'The package lock was held: waiting for the updates, then trying again\n' >> "$LOG"
-        jobs_page 3 "Please wait, this can take some time..."
+        jobs_page 5 "Please wait, this can take some time..."
         sleep 5
         continue
       fi
       problem "${FIX_NAME[$i]}"
-      jobs_page 3 "Please wait, this can take some time..."
+      jobs_page 5 "Please wait, this can take some time..."
     done
   done
   [[ " ${FIX[*]} " == *"usermod -aG docker"* ]] && NEW_GROUP=1
@@ -1126,11 +1410,12 @@ Show the commands first lists the exact command for each job. Choose No to insta
     finish; err RF-20; exit 1
   fi
   ok "Everything is installed."
+  try_keys || return $?
   ask "Press Enter to carry on" "" "Docker is installed and running. You do not need to sign out: the installer runs with your new Docker access straight away." || return $?
 }
 
-step_4() {
-  page 4
+step_6() {
+  page 6
   local where="${DIR/#$HOME/~}"
   if [ -d "$DIR/.git" ]; then
     para "Starboard is already in $where. Updating it to the newest version."
@@ -1146,14 +1431,14 @@ step_4() {
     until work "Downloading Starboard" "git clone -q $(printf '%q %q' "$REPO" "$DIR")" 1 1; do
       rm -rf "$DIR"
       problem "Downloading Starboard"
-      jobs_page 4 "Downloading Starboard into ${DIR/#$HOME/~}. Please wait, this can take a minute or two..."
+      jobs_page 6 "Downloading Starboard into ${DIR/#$HOME/~}. Please wait, this can take a minute or two..."
     done
   fi
   ask "Press Enter to carry on" "" "Starboard's own files go in this folder, with your settings in its data folder. Updates come with ./update.sh, from the same folder." || return $?
 }
 
-step_5() {
-  page 5
+step_7() {
+  page 7
   local look="Standard"; [ "$FANCY" = 0 ] && look="Accessible: plain lines"
   local how="In a browser"; [ "$FINISH" = terminal ] && how="Here in the terminal"
   card "Ready" "Finish set-up" "$how"
@@ -1182,7 +1467,7 @@ fi
 if [ "$SMALL" = 1 ]; then
   para "This window is $COLS by $ROWS characters, so set-up shows plain lines. For the boxed look, make it at least 60 by 20 and run this again."
 fi
-if [ "$CHECK" = 1 ]; then n=2; else n=1; fi
+if [ "$CHECK" = 1 ]; then n=4; else n=1; fi
 while [ "$n" -lt "$STEPS" ]; do
   "step_$n"; rc=$?
   case "$rc" in
@@ -1203,6 +1488,9 @@ apply_host() {
       value="${host[$((i + 1))]:-}"
       case "${host[$i]}" in
         --disk-health) apply+=(--disk-health) ;;
+        --timezone|--keyboard)  # DASH-259: from fixed lists, checked again here
+          if [[ "$value" =~ ^[A-Za-z0-9_+/-]{1,40}$ ]]; then apply+=("${host[$i]}" "$value"); fi
+          i=$(( i + 1 )) ;;
         --disk|--livetv-folder)
           folder="${value#Media=}"
           [ "${host[$i]}" = --livetv-folder ] && folder="$value"
@@ -1225,6 +1513,8 @@ apply_host() {
           --disk-health) tell "  - Check each disk's health every 30 minutes (installs smartmontools; sudo asks for your password)" ;;
           --disk) tell "  - Watch the free space of the media folder, ${apply[$((i + 1))]#Media=}"; i=$(( i + 1 )) ;;
           --livetv-folder) tell "  - Let Starboard write Live TV files into ${apply[$((i + 1))]}"; i=$(( i + 1 )) ;;
+          --timezone) tell "  - Set this computer's time zone to ${apply[$((i + 1))]} (sudo asks for your password)"; i=$(( i + 1 )) ;;
+          --keyboard) tell "  - Set this computer's keyboard to $(kb_title "${apply[$((i + 1))]}" || printf '%s' "${apply[$((i + 1))]}") (sudo asks for your password)"; i=$(( i + 1 )) ;;
         esac
       done
       # Numbered answers, as every question (TERMINAL.md, Questions). Nothing changes unless the person says so.
@@ -1291,14 +1581,18 @@ handover() {
            | sed 's/.*/"&"/' | paste -sd, -)"
   memory="$(awk '/MemTotal/ {printf "%d", $2 / 1024}' /proc/meminfo 2>/dev/null)"
   mkdir -p data && chmod 700 data
-  printf '{"written": "%s", "memory_mb": %s, "apps": [%s], "lsblk": %s}\n' "$(date -Iseconds)" "${memory:-0}" "$apps" "$drives" \
+  # The location and keyboard chosen in steps 2 and 3 (DASH-259), so both set-ups recommend the same: from fixed lists.
+  local tz="${CHOSEN_TZ:-$NOW_TZ}" kb="${CHOSEN_KB:-$NOW_KB}"
+  [[ "$tz" =~ ^[A-Za-z0-9_+/-]{1,40}$ ]] || tz=""
+  kb_index "$kb" >/dev/null || kb=""
+  printf '{"written": "%s", "memory_mb": %s, "apps": [%s], "tz": "%s", "keyboard": "%s", "lsblk": %s}\n' "$(date -Iseconds)" "${memory:-0}" "$apps" "$tz" "$kb" "$drives" \
     > data/.run-first.json.new && mv -f data/.run-first.json.new data/run-first.json
 }
 handover
 
 # Step 6: Starboard's installer takes the window and draws the same frame (lib/terminal-frame.sh): what Starboard may
 # access, one question at a time, then a bar for each job. On the terminal path, the terminal set-up follows it.
-page 6
+page 8
 para "Starting Starboard's installer. It asks what Starboard may access, one question at a time, then builds and starts Starboard."
 finish
 export STARBOARD_FROM_RUN_FIRST=1
@@ -1344,7 +1638,7 @@ url="http://localhost:$port/"
 [ -n "$code" ] && url="http://localhost:$port/setup.html#code=$code"
 
 # The end: "Done", where to open Starboard and the setup code, then the window goes back to the terminal.
-page 7
+page 9
 KEYS=""; MENU_RIGHT=""
 [ "$FANCY" = 1 ] && menu
 ok "Starboard is installed and running."
@@ -1354,6 +1648,8 @@ card "Open Starboard" "On this computer" "http://localhost:$port"
 [ -n "$code" ] && card_row "Setup code" "$code"
 card_row "Ask again" "cd ${DIR/#$HOME/~} && ./install.sh"
 card_row "Update later" "cd ${DIR/#$HOME/~} && ./update.sh"
+# DASH-89: a server with no desktop usually runs with no screen either.
+[ "$DESKTOP" = 1 ] || card_row "With no screen" "cd ${DIR/#$HOME/~} && sudo deploy/headless.sh"
 card_end
 say ""
 if [ "$DESKTOP" = 1 ]; then

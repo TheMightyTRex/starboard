@@ -1,9 +1,10 @@
 """Run with: python -m starboard  (settings: STARBOARD_PORT, STARBOARD_DATA; STARBOARD_HOST fixes the address)."""
 
 import os
+import signal
 import threading
 
-from . import logs
+from . import logs, recovery
 from .server import App, make_server
 
 
@@ -44,10 +45,16 @@ def main():
     runner = Runner(App(data_dir))
     runner.start()
     stop = threading.Event()
-    try:
-        stop.wait()
-    except KeyboardInterrupt:
-        pass
+
+    def stop_cleanly(_signum, _frame):
+        # Docker, systemd and Ctrl+C stop Starboard this way: noted, so the next start knows the stop was clean
+        # (DASH-88). Without the handler, Python as the container's first process would ignore SIGTERM until killed.
+        recovery.mark_clean(data_dir)
+        stop.set()
+    signal.signal(signal.SIGTERM, stop_cleanly)
+    signal.signal(signal.SIGINT, stop_cleanly)
+    stop.wait()
+    logs.event("info", "start", "Starboard stopped")
 
 
 if __name__ == "__main__":

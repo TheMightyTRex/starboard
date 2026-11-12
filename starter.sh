@@ -66,6 +66,11 @@ host_change() {
     case "${args[$i]}" in
       --disk-health)
         if sudo -n true 2>/dev/null; then apply+=(--disk-health); else later+=(--disk-health); fi ;;
+      --timezone|--keyboard)  # DASH-259: needs sudo, so it waits for the password unless sudo is ready
+        if [[ "$value" =~ ^[A-Za-z0-9_+/-]{1,40}$ ]]; then
+          if sudo -n true 2>/dev/null; then apply+=("${args[$i]}" "$value"); else later+=("${args[$i]}" "$value"); fi
+        fi
+        i=$(( i + 1 )) ;;
       --disk|--livetv-folder)
         folder="$value"; [ "${args[$i]}" = --disk ] && folder="${value#Media=}"
         if [ "${args[$i]}" = --disk ] && [ "${value:0:6}" != "Media=" ]; then folder=""; fi
@@ -88,7 +93,8 @@ host_change() {
     # Saved for the command the browser shows: the part that needs the server's password.
     python3 -I -c 'import json,sys; json.dump({"args": sys.argv[1:]}, open("data/setup-host.json", "w"))' "${later[@]}"
     echo "Needs the server's password: ./install.sh ${later[*]}" >> data/stack/host.log
-    progress needs-password "Disk health needs the server's password"
+    if [[ " ${later[*]} " == *" --disk-health "* ]]; then progress needs-password "Disk health needs the server's password"
+    else progress needs-password "The time zone and keyboard need the server's password"; fi
   else
     rm -f data/setup-host.json
     progress finished "Done"

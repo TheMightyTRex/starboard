@@ -59,7 +59,7 @@ class WizardRulesTest(unittest.TestCase):
         for path in ("web/js/settings.js", "web/js/install.js"):
             for used in re.findall(r'stepNamed\(T, "([a-z-]+)"\)', (ROOT / path).read_text(encoding="utf-8")):
                 self.assertIn(used, ids, f"{path} asks for a step the table does not have")
-        self.assertEqual(terminal_setup.STEPS[:3], [terminal_setup.title(i) for i in ("password", "start", "storage")])
+        self.assertEqual(terminal_setup.STEPS[:5], [terminal_setup.title(i) for i in ("password", "place", "keyboard", "start", "storage")])
         self.assertIn(terminal_setup.title("extras"), terminal_setup.STEPS)
 
     def test_keys_sent_together_are_taken_one_at_a_time(self):

@@ -129,6 +129,13 @@ def host_args(wanted):
         args.append("--disk-health")
     if wanted.get("docker"):  # DASH-139, DASH-267: asked by both set-ups when Starboard has no Docker access
         args.append("--docker")
+    # DASH-259: the location and keyboard, when they differ from this computer's (places.host_args checked them).
+    tz, kid = str(wanted.get("timezone") or ""), str(wanted.get("keyboard") or "")
+    if tz and re.fullmatch(r"[A-Za-z0-9_+/-]{1,40}", tz) and ".." not in tz:
+        args += ["--timezone", tz]
+    from . import places
+    if kid in places.KEYBOARD_IDS:
+        args += ["--keyboard", kid]
     return args
 
 

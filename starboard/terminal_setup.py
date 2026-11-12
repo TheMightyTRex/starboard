@@ -152,7 +152,8 @@ HELP_PAGES = {
     "health": "topics/check-disk-health.html", "name": "guides/set-up-your-dashboard.html",
     "restore": "topics/restore-a-saved-copy.html", "found": "topics/search-for-new-apps.html",
     "sites": "topics/choose-sites-to-search.html", "films": "topics/choose-sites-to-search.html",
-    "docker": "topics/install-apps.html",
+    "docker": "topics/install-apps.html", "place": "topics/run-first.html", "keyboard": "topics/run-first.html",
+    "cleanup": "topics/remove-starboard.html",
 }
 
 HELP = {
@@ -227,6 +228,14 @@ HELP = {
            "stays done, and you can run the set-up again later.",
     "found": "These apps are running on this computer and are not in Starboard yet. Starboard adds the ones you "
              "choose and reads their API keys where it can. Nothing in the apps changes.",
+    "place": "Choose the country, or the part of a large country, this computer is in. It sets the time zone, which "
+             "download hours, schedules, the log and the apps use, and suggests the keyboard on the next step. A place "
+             "that is not in the list: choose Other, Coordinated Universal Time, or keep the time zone the computer has.",
+    "keyboard": "Choose the keyboard you type on, by the language printed on its keys. The UK keyboard has £ above 3 "
+                "and # ~ beside Enter; the US one has $ above 4 and a long Enter key.",
+    "cleanup": "What earlier versions, removed plug-ins and old backups left behind. Moving them to the holding folder "
+               "deletes nothing: each can be put back, or deleted for good by you, in Starboard, System, Clean up. "
+               "Starboard never deletes them by itself.",
 }
 
 
@@ -539,8 +548,8 @@ def question(step_id):
     return STEP_TABLE[step_id]["question"]
 
 
-STEPS = [title(i) for i in ("password", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "check", "extras",
-                            "hours", "alerts", "docker")]  # the move's own steps are counted by job_steps
+STEPS = [title(i) for i in ("password", "place", "keyboard", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "check", "extras",
+                            "hours", "alerts", "docker", "cleanup")]  # the move's own steps are counted by job_steps
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -1238,6 +1247,129 @@ class Terminal:
                 return int(answer) - 1
             self.refuse(f"Type a number from 1 to {len(options)}, ? for help or q to stop.")
 
+    LIST_KEYS = [("Esc", "Back"), ("?", "Help"), ("Tab", "Feedback"), ("Ctrl+C", "Stop")]
+
+    def choose_list(self, question, options, default=1, help_key=None):
+        """One answer from a long list, moved through with the Up and Down arrows and chosen with Enter (DASH-259), as
+        the Run first script's pick: typing letters jumps to the first answer that starts with them, and a number
+        then Enter chooses that line. Because letters jump, Back is Esc and Feedback is Tab here; ? is Help. Plain
+        mode (screen readers) and a test's answers ask with numbers instead (choose). Returns the index."""
+        if not self._keys_work():
+            return self.choose(question, options, default, help_key)
+        import termios
+        import time
+        import tty
+        state = {"at": max(default - 1, 0), "top": 0, "typed": "", "when": 0.0}
+        names = [o[0] if isinstance(o, tuple) else o for o in options]
+
+        def room():
+            return max(min(len(options), self._region() - 6), 3)
+
+        def render(width):
+            at, n = state["at"], room()
+            state["top"] = min(max(state["top"], at - n + 1), at)
+            top = state["top"]
+            green = lambda s: re.sub(r"\(recommended[^)]*\)|\(your last answer\)", lambda m: self.good(m.group(0)), s)  # noqa: E731
+            out = []
+            for i in range(top, min(top + n, len(options))):
+                name, about = options[i] if isinstance(options[i], tuple) else (options[i], "")
+                dot = self.accent("●") if i == default - 1 else " "
+                label = f" {name} "
+                label = self._c("1;7", label) if i == at else green(label)
+                line = f"  {self.accent('›') if i == at else ' '} {dot} {self.dim(str(i + 1).rjust(2))} {label}"
+                if about and len(name) + len(about) + 12 < width:
+                    line += " " + self.dim(about)
+                out.append(line)
+            more = []
+            if top:
+                more.append(f"↑ {top} more above")
+            if top + n < len(options):
+                more.append(f"↓ {len(options) - top - n} more below")
+            return out + ["  " + self.dim(" · ".join(more))]
+
+        self.say("")
+        self.note(question)
+        self.say("  " + self.dim("Up and Down move, Enter chooses. Type the first letters of a name to jump to it."))
+        self._show(render)
+        was = getattr(self, "keys", None)
+        self.keys = (self.LIST_KEYS if self.can_back else self.LIST_KEYS[1:], "Enter: choose")
+        self._menu(*self.keys)
+
+        def draw():
+            lines = render(self.width)
+            self._write(f"\033[{len(lines)}A\r")
+            for line in lines:
+                self._write("\033[2K" + getattr(self, "pad", "") + line + "\n")
+
+        def restore():
+            self.keys = was or self.step_keys()
+            if self.fancy and self.drawn:
+                self._menu(*self.keys)
+
+        fd = sys.stdin.fileno()
+        saved = termios.tcgetattr(fd)
+        try:
+            tty.setcbreak(fd)
+            queue = []
+            while True:
+                if self.resize_due:
+                    self.catch_up()
+                if not queue:
+                    queue = _keys(_read_keys(fd))
+                    if not queue:
+                        continue
+                key, n = queue.pop(0), len(options)
+                now = time.monotonic()
+                if now - state["when"] > 1.5:
+                    state["typed"] = ""
+                if key in ("\x1b[A", "\x1bOA"):
+                    state["at"] = max(state["at"] - 1, 0)
+                elif key in ("\x1b[B", "\x1bOB"):
+                    state["at"] = min(state["at"] + 1, n - 1)
+                elif key == "\x1b[5~":
+                    state["at"] = max(state["at"] - room(), 0)
+                elif key == "\x1b[6~":
+                    state["at"] = min(state["at"] + room(), n - 1)
+                elif key in ("\x1b[H", "\x1bOH"):
+                    state["at"] = 0
+                elif key in ("\x1b[F", "\x1bOF"):
+                    state["at"] = n - 1
+                elif key in ("\r", "\n"):
+                    typed = state["typed"]
+                    if typed.isdigit() and 1 <= int(typed) <= n:
+                        state["at"] = int(typed) - 1
+                    restore()
+                    return state["at"]
+                elif key == "\x1b":
+                    if self.can_back:
+                        restore()
+                        raise Back()
+                elif key in ("?", "\t"):
+                    termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+                    if key == "?":
+                        self.help(help_key, self._title(question))
+                    else:
+                        self._feedback_key("f")
+                    self._menu(*self.keys)
+                    tty.setcbreak(fd)
+                    continue  # the help or feedback drew the step again, with the list last
+                elif key in ("\x7f", "\b"):
+                    state["typed"] = state["typed"][:-1]
+                elif key.isdigit():
+                    state["typed"] = (state["typed"] if state["typed"].isdigit() else "") + key
+                    state["when"] = now
+                    if 1 <= int(state["typed"]) <= n:
+                        state["at"] = int(state["typed"]) - 1
+                elif key.isalpha() or key == " ":
+                    state["typed"] = ("" if state["typed"].isdigit() else state["typed"]) + key
+                    state["when"] = now
+                    found = next((i for i, name in enumerate(names) if name.lower().startswith(state["typed"].lower())), None)
+                    if found is not None:
+                        state["at"] = found
+                draw()
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+
     def yes_no(self, question, default=True, help_key=None):
         """Yes or no as numbered answers, the default first and marked recommended. y and n work too."""
         if default:
@@ -1720,7 +1852,8 @@ def job_steps(state):
     disk health, because the backup brought the rest."""
     job = state.get("start", "new")
     apps = None if "choice" not in state else set((state.get("choice") or {}).get("apps") or [])
-    ids = ["password", "start"]
+    ids = ["password"] + ([] if state.get("place_answered") else ["place", "keyboard"]) + ["start"]
+    end = ["cleanup"] if state.get("left_over") else []  # DASH-77: only when something is left over (read early)
     no_docker = not state.get("docker_access", False)
     if job == "restore":
         install = state.get("restore_install")
@@ -1729,7 +1862,7 @@ def job_steps(state):
             if "gluetun" in (install.get("apps") or []):
                 ids.append("vpn")
             ids.append("check")
-        return ids + ["alerts"]
+        return ids + ["alerts"] + end
     if job == "move" and no_docker:
         ids.append("docker")  # DASH-267: before anything is moved, Yes recommended
     if job == "move":
@@ -1765,7 +1898,7 @@ def job_steps(state):
     ids += ["hours", "alerts"]
     if job == "new" and no_docker:
         ids.append("docker")  # DASH-139: the last question of a new install
-    return ids
+    return ids + end
 
 
 def head(term, state, step_id, text=None):
@@ -1839,6 +1972,74 @@ def step_password(api, term, state):
         except Problem as e:
             term.note(f"Starboard said: {e}")
     raise Problem("Too many wrong passwords. Run this again later")
+
+
+def _place(api, state):
+    if "place_data" not in state:
+        state["place_data"] = api.call("GET", "/api/setup/place")
+        try:  # DASH-77: read once, early, so the step count knows whether Clean up comes at the end
+            state["left_over"] = [i for i in api.call("GET", "/api/cleanup").get("left_over", []) if i.get("movable")]
+        except Problem:
+            state["left_over"] = []
+    return state["place_data"]
+
+
+def step_place(api, term, state):
+    """Where you are (DASH-259): the same list, order and help as the browser set-up and the Run first script
+    (starboard/places.py). Left out when the Run first script asked it just before; its answer is saved for both."""
+    data = _place(api, state)
+    if data.get("answered"):
+        state["place_answered"] = True
+        state.setdefault("tz", data["tz"])
+        state.setdefault("keyboard", data["keyboard"])
+        api.call("POST", "/api/setup/place", {"tz": state["tz"], "keyboard": state["keyboard"]})
+        return False
+    head(term, state, "place")
+    places = data["locations"]
+    want = state.get("tz") or data["tz"]
+    mark = "(your last answer)" if term.came_back and state.get("tz") else "(recommended)"
+    options = [(f"{p['title']} {mark}" if p["tz"] == want else p["title"], p["tz"]) for p in places]
+    first = next((i for i, p in enumerate(places) if p["tz"] == want), 0)
+    options.insert(0, options.pop(first))
+    places = [places[first]] + places[:first] + places[first + 1:]
+    term.note("Where is this computer? Its clock is set to your time zone, so download hours, schedules and the log "
+              "use your time. Your keyboard is suggested from it next.")
+    picked = term.choose_list(question("place"), options, 1, help_key="place")
+    if places[picked]["tz"] != state.get("tz"):
+        state.pop("keyboard_chosen", None)  # a new place suggests its own keyboard
+    state["tz"] = places[picked]["tz"]
+    state["place_keyboard"] = places[picked]["keyboard"]
+    return True
+
+
+def step_keyboard(api, term, state):
+    """Your keyboard (DASH-259), chosen with the arrow keys and Enter; ? shows where the symbols are when the layout
+    set does not match the keyboard (DASH-112). Saved, and set on this computer with the set-up's change at the end."""
+    if state.get("place_answered"):
+        return False
+    data = _place(api, state)
+    head(term, state, "keyboard")
+    boards = data["keyboards"]
+    found = data.get("found", {}).get("keyboard") or ""
+    want = state.get("keyboard_chosen") or (found if found and found != "us" else "") \
+        or (data["keyboard"] if state.get("tz") == data["tz"] else state.get("place_keyboard")) or data["keyboard"]
+    mark = "(your last answer)" if term.came_back and state.get("keyboard_chosen") else "(recommended)"
+    first = next((i for i, b in enumerate(boards) if b["id"] == want), 0)
+    boards = [boards[first]] + boards[:first] + boards[first + 1:]
+    options = [f"{b['title']} {mark}" if i == 0 else b["title"] for i, b in enumerate(boards)]
+    symbols = boards[0].get("symbols") or []
+    HELP["keyboard-now"] = HELP["keyboard"] + ("\n\n" + "\n".join(symbols) + "\n\n" + data.get("set_it_right", "") if symbols else "")
+    HELP_PAGES["keyboard-now"] = HELP_PAGES["keyboard"]
+    term.note("If a symbol such as | or \\ does not come out as marked on the key, the layout set does not match your "
+              "keyboard: type ? for where the symbols are.")
+    picked = term.choose_list(question("keyboard"), options, 1, help_key="keyboard-now")
+    state["keyboard_chosen"] = boards[picked]["id"]
+    saved = api.call("POST", "/api/setup/place", {"tz": state["tz"], "keyboard": state["keyboard_chosen"]})
+    host = state.setdefault("host", {})
+    host["timezone"], host["keyboard"] = saved["change"]["timezone"], saved["change"]["keyboard"]
+    if host["timezone"] or host["keyboard"]:
+        term.note("This computer is changed to match at the end, with the set-up's other changes.")
+    return True
 
 
 def step_start(api, term, state):
@@ -2908,7 +3109,8 @@ def host_changes(state, data_dir):
     options as the browser set-up (starboard/start.py)."""
     host = state.get("host") or {}
     args = start.host_args({"media": host.get("disk", "").split("=", 1)[-1], "livetv": host.get("livetv"),
-                            "health": host.get("health"), "docker": host.get("docker")})
+                            "health": host.get("health"), "docker": host.get("docker"),
+                            "timezone": host.get("timezone"), "keyboard": host.get("keyboard")})
     if args:
         try:
             with open(os.path.join(data_dir, "setup-host.json"), "w", encoding="utf-8") as f:
@@ -3075,16 +3277,46 @@ def step_preset(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_start, step_docker_move, step_movehow, step_storage, step_apps, step_vpn, step_usenet, step_sites,
-                  step_films, step_preset, step_check, step_move, step_connect, step_hours, step_alerts, step_docker_end]
+def step_cleanup(api, term, state):
+    """Clean up (DASH-77), at the end of all three jobs: what earlier versions, removed plug-ins and old backups left
+    behind, with sizes. The same words and answers as the browser set-up. Moving them to the holding folder deletes
+    nothing; only the person deletes for good, in System, Clean up (owner rule). Left out when nothing is left over."""
+    try:  # read again: the set-up may have left something since
+        found = api.call("GET", "/api/cleanup")
+    except Problem:
+        found = {"left_over": []}
+    items = [i for i in found.get("left_over", []) if i.get("movable")]
+    state["left_over"] = items
+    if not items:
+        return False
+    head(term, state, "cleanup")
+    term.note(f"{len(items)} {'thing' if len(items) == 1 else 'things'} left over, {_size(sum(i['size'] for i in items))} in all:")
+    for i in items[:8]:
+        term.say(f"  {'•' if term.fancy else '-'} {i['what']}, {_size(i['size'])}{' or more' if i.get('at_least') else ''}")
+    if len(items) > 8:
+        term.say(f"  {len(items) - 8} more, listed in Starboard, System, Clean up")
+    picked = term.choose(question("cleanup"), [
+        ("Move them to the holding folder (recommended)", "Nothing is deleted. Put each back, or delete it for good, in System, Clean up."),
+        ("Leave them where they are", "System, Clean up lists them, to do later.")], 1, help_key="cleanup")
+    if picked == 0:
+        try:
+            moved = api.call("POST", "/api/cleanup/hold", {"ids": [i["id"] for i in items]}).get("moved", [])
+            term.ok(f"Moved {len(moved)} to the holding folder. Delete them for good, when you are sure, in System, Clean up, Holding folder.")
+        except Problem as e:
+            refused(term, e)
+    return True
+
+
+STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_docker_move, step_movehow, step_storage, step_apps, step_vpn, step_usenet, step_sites,
+                  step_films, step_preset, step_check, step_move, step_connect, step_hours, step_alerts, step_docker_end, step_cleanup]
 
 
 def add_drives_step(available=None):
     """Your drives goes after Storage when the pool helper is installed and the pool is chosen (DASH-87)."""
     available = os.path.exists(POOL_HELPER) if available is None else available
     if available and step_drives not in STEP_FUNCTIONS:
-        STEP_FUNCTIONS.insert(3, step_drives)  # after Storage, when the pool was chosen
-        STEPS.insert(3, title("drives"))
+        STEP_FUNCTIONS.insert(STEP_FUNCTIONS.index(step_docker_move) + 1, step_drives)  # job_steps puts it after Storage
+        STEPS.insert(STEPS.index(title("storage")) + 1, title("drives"))
 
 
 def run(api, term, data_dir, port, address=""):
@@ -3132,6 +3364,9 @@ def run(api, term, data_dir, port, address=""):
         if args:
             rows.append(("Changes to this computer", "./install.sh " + " ".join(args)))
         rows.append(("Ask these again", f"python3 -m starboard.terminal_setup --port {port}"))
+        rows.append(("Settings later", "./settings.sh"))  # DASH-90: settings from the terminal
+        if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+            rows.append(("With no screen", "sudo deploy/headless.sh"))  # DASH-89: never sleep, no boot menu wait
         term.card("Starboard is ready", rows, colour="32")
         # DASH-185: what is left to set up, the same list as on Starboard's Apps page.
         try:

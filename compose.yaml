@@ -28,6 +28,7 @@ services:
       - STARBOARD_GRAPHICS_VENDOR=${STARBOARD_GRAPHICS_VENDOR:-}  # the graphics chip's maker, from the installer
       - STARBOARD_LIVETV_PATH=${STARBOARD_LIVETV_PATH:-}  # the Live TV folder on this computer, for the Live TV plug-in
       - STARBOARD_HOST_HOME=${STARBOARD_HOST_HOME:-}  # your home folder, for folders typed with ~
+      - STARBOARD_HOST_KEYBOARD=${STARBOARD_HOST_KEYBOARD:-}  # this computer's keyboard layout, from the installer (DASH-259)
       - STARBOARD_TRUST_PROXY=${STARBOARD_TRUST_PROXY:-0}
       - STARBOARD_PROXY_ADDRESSES=${STARBOARD_PROXY_ADDRESSES:-}
       - STARBOARD_ALLOWED_HOSTS=${STARBOARD_ALLOWED_HOSTS:-}
