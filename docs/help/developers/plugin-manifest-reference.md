@@ -52,6 +52,8 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `network:lan` | Reach other computers on your home network | medium | none |
 | `network:vpn` | Run inside your VPN connection | medium | none |
 | `jellyfin:key` | Use Jellyfin's API key, kept by Starboard | high | none |
+| `reelix:key` | Use Reelix's API key, kept by Starboard (API 1.6) | high | none |
+| `usenet:servers` | Use your news server's address and sign-in, from NZBGet or SABnzbd (API 1.6) | high | none |
 | `appearance:styles` | Add styles to Display: colours, corners, a font and shadows, checked for accessibility | low | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
@@ -275,6 +277,7 @@ in. API 1.4. Read [Jobs](plugin-api-reference.md#jobs) for what Starboard sends.
 | 1.3 | 12 November 2026 | The `folder` setting: a folder inside the media folders the plug-in mounts, chosen with Browse |
 | 1.4 | 12 November 2026 | `required` settings, `setup_required`, `notices`, `events`, `jobs` and card `refresh_minutes` |
 | 1.5 | 12 November 2026 | A setting's `group`, and choices with a `label` |
+| 1.6 | 12 November 2026 | The `reelix:key` and `usenet:servers` permissions, with `/run/starboard/reelix.json` and `/run/starboard/usenet.json` |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

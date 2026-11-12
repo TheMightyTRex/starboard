@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.5.0"  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.6.0"  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -27,6 +27,8 @@ PERMISSIONS = {
     "network:lan": ("Reach other computers on your home network", "medium", None),
     "network:vpn": ("Run inside your VPN connection", "medium", None),
     "jellyfin:key": ("Use Jellyfin's API key, kept by Starboard", "high", None),
+    "reelix:key": ("Use Reelix's API key, kept by Starboard", "high", None),  # API 1.6
+    "usenet:servers": ("Use your news server's address and sign-in, from NZBGet or SABnzbd", "high", None),  # API 1.6
     "appearance:styles": ("Add styles to Display: colours, corners, a font and shadows, checked for accessibility", "low", None),
 }
 NETWORKS = {"default": None, "lan": "network:lan", "vpn": "network:vpn"}
@@ -281,8 +283,12 @@ def permission_words(manifest):
 # plug-in can see, change and reach, and what it runs. Nothing here is left out to make it look safer.
 SEES = {"apps:read": "Your apps and whether they answer", "downloads:read": "What is downloading",
         "media:read": "Your library: films, series, music and books", "system:read": "Processor, memory and disk use",
-        "jellyfin:key": "Everything in Jellyfin: your library, the people who use it and what each one watched"}
+        "jellyfin:key": "Everything in Jellyfin: your library, the people who use it and what each one watched",
+        "reelix:key": "Everything in Reelix: what you follow, your download sites and its search",
+        "usenet:servers": "Your news server's address, user name and password (the Usenet account you pay for)"}
 CHANGES = {"jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, which can change users, libraries and settings",
+           "reelix:key": "Anything in Reelix: it gets Reelix's API key, which can add, search for and remove what you follow",
+           "usenet:servers": "It can download from your news server with your account, using some of its connections",
            "appearance:styles": "How Starboard looks, through styles in Display (checked for accessibility first)"}
 REACHES = {"network:lan": "Other computers on your home network, and the internet",
            "network:vpn": "The internet, through your VPN connection"}

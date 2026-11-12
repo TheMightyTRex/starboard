@@ -98,7 +98,9 @@
      "media:read",
      "network:lan",
      "network:vpn",
-     "system:read"
+     "reelix:key",
+     "system:read",
+     "usenet:servers"
     ]
    },
    "uniqueItems": true

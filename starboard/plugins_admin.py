@@ -30,7 +30,7 @@ def folder(data_dir, pid):
     return os.path.join(root(data_dir), pid)
 
 
-SHARED = ("settings.json", "key", "jellyfin.json")  # what a plug-in's containers read, from run/ (DASH-357)
+SHARED = ("settings.json", "key", "jellyfin.json", "reelix.json", "usenet.json")  # what a plug-in's containers read, from run/ (DASH-357)
 
 
 def _write(path, data, mode=0o600):
@@ -440,6 +440,74 @@ def write_jellyfin(data_dir, pid, services):
     return bool(jf)
 
 
+def _to_plugin(url):
+    """An address on this computer as a plug-in's container reaches it."""
+    return re.sub(r"^(https?://)(127\.0\.0\.1|localhost)(?=[:/]|$)", r"\1host.docker.internal", url or "")
+
+
+def write_reelix(data_dir, pid, services):
+    """Reelix's address and API key for a plug-in allowed them (reelix:key, API 1.6). The key is the one on
+    Starboard's own Reelix entry. Removes the file when the plug-in is not allowed it."""
+    where = folder(data_dir, pid)
+    m = _read(os.path.join(where, "manifest.json"), {}) or {}
+    if "reelix:key" not in (m.get("permissions") or []):
+        if os.path.exists(os.path.join(where, "reelix.json")):
+            os.remove(os.path.join(where, "reelix.json"))
+        return False
+    rx = next((s for s in services or [] if s.get("icon") == "reelix" and s.get("api_key")), None)
+    from . import stack
+    url = stack.reelix_url(data_dir) or (rx or {}).get("url", "")
+    _write(os.path.join(where, "reelix.json"), {"url": _to_plugin(url), "api_key": (rx or {}).get("api_key", "")})
+    return bool(rx)
+
+
+def usenet_servers(services):
+    """The news servers the Usenet app uses, as [{name, host, port, ssl, user, password, connections}]: NZBGet's own
+    settings over its API, else SABnzbd's sabnzbd.ini through Docker. Active servers only, first priority first."""
+    from . import services as svc
+    nz = next((s for s in services or [] if s.get("type") == "nzbget" and s.get("url") and s.get("api_key")), None)
+    out = []
+    if nz:
+        try:
+            conf = {o.get("Name", ""): o.get("Value", "") for o in svc.nzbget(nz, "config") or []}
+        except Exception:  # noqa: BLE001 - NZBGet not answering: no servers, said by the plug-in
+            conf = {}
+        n = 1
+        while f"Server{n}.Host" in conf:
+            g = lambda k, n=n: conf.get(f"Server{n}.{k}", "")  # noqa: E731
+            if g("Host") and g("Active").lower() != "no":
+                out.append({"name": g("Name") or g("Host"), "host": g("Host"), "port": int(g("Port") or 563),
+                            "ssl": g("Encryption").lower() == "yes", "user": g("Username"), "password": g("Password"),
+                            "connections": int(g("Connections") or 0), "level": int(g("Level") or 0)})
+            n += 1
+        out.sort(key=lambda s: s["level"])
+    if not out and any(s.get("type") == "sabnzbd" for s in services or []):
+        from . import usenet_move
+        try:
+            for s in usenet_move.parse_sab_servers(usenet_move.read_sab_ini() or ""):
+                if s.get("host") and str(s.get("enable", "1")) != "0":
+                    out.append({"name": s.get("displayname") or s["host"], "host": s["host"], "port": int(s.get("port") or 563),
+                                "ssl": str(s.get("ssl", "1")) == "1", "user": s.get("username", ""), "password": s.get("password", ""),
+                                "connections": int(s.get("connections") or 0), "level": int(s.get("priority") or 0)})
+        except Exception:  # noqa: BLE001 - SABnzbd's file not readable here
+            pass
+    return out
+
+
+def write_usenet(data_dir, pid, services):
+    """The news servers for a plug-in allowed them (usenet:servers, API 1.6), owner-only on the computer. Removes
+    the file when the plug-in is not allowed it."""
+    where = folder(data_dir, pid)
+    m = _read(os.path.join(where, "manifest.json"), {}) or {}
+    if "usenet:servers" not in (m.get("permissions") or []):
+        if os.path.exists(os.path.join(where, "usenet.json")):
+            os.remove(os.path.join(where, "usenet.json"))
+        return False
+    servers = usenet_servers(services)
+    _write(os.path.join(where, "usenet.json"), {"servers": servers})
+    return bool(servers)
+
+
 def enable(data_dir, pid, helper=None, services=None):
     from . import plugin_life
     plugin_life.can_enable(data_dir, pid)  # set up first, and only on a Starboard it was made for (DASH-330)
@@ -448,6 +516,8 @@ def enable(data_dir, pid, helper=None, services=None):
         api_v1.audit(data_dir, "plugin_enabled", plugin=pid)
         return
     write_jellyfin(data_dir, pid, services)
+    write_reelix(data_dir, pid, services)
+    write_usenet(data_dir, pid, services)
     where = folder(data_dir, pid)
     upgrade_mounts(where)
     share(where)  # also after Roll back, which moves files rather than writing them
@@ -524,6 +594,9 @@ def upgrade_all(data_dir, services, helper=None):
     for p in listing(data_dir):
         where = folder(data_dir, p["id"])
         try:
+            if p["state"] == "enabled":  # Reelix's key and the news servers as they are now (API 1.6)
+                write_reelix(data_dir, p["id"], services)
+                write_usenet(data_dir, p["id"], services)
             share(where)
             changed = upgrade_mounts(where)
         except OSError as e:

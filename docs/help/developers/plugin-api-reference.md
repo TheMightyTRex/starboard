@@ -167,6 +167,8 @@ only, so any user a container runs as can read these files:
 | `/run/starboard/settings.json` | The settings, as one JSON object of `key` and value, secrets included |
 | `/run/starboard/key` | The plug-in's own API key, as one line of text |
 | `/run/starboard/jellyfin.json` | Only with `jellyfin:key`: `{"url": ..., "api_key": ...}`. An address on the server itself is given as `host.docker.internal` |
+| `/run/starboard/reelix.json` | Only with `reelix:key` (API 1.6): `{"url": ..., "api_key": ...}`, Reelix's address and key |
+| `/run/starboard/usenet.json` | Only with `usenet:servers` (API 1.6): `{"servers": [{"name", "host", "port", "ssl", "user", "password", "connections", "level"}]}`, the active news servers from NZBGet (or SABnzbd), first choice first. Use fewer connections than `connections`: the download app uses the same account |
 | `/data` | Only with the `data` volume: its own folder, read and write |
 
 And these environment variables, with the `env` from the manifest:
@@ -175,6 +177,9 @@ And these environment variables, with the `env` from the manifest:
 |---|---|
 | `STARBOARD_API` | `http://starboard:8095/api/v1/` |
 | `STARBOARD_API_KEY_FILE` | `/run/starboard/key` |
+
+Starboard writes `reelix.json` and `usenet.json` again each time it starts and each time the plug-in is activated,
+so a changed password reaches the plug-in without a reinstall.
 
 Starboard does not restart a plug-in when its settings change, but the new `settings.json` is there at once:
 Starboard replaces each file whole, so you never read half of one. Read `settings.json` when you need a value,
