@@ -51,7 +51,7 @@ CHIPS = {  # filter chips for each tab: key, label
     "films": [("released", "Released"), ("coming", "Coming soon"), ("missing", "Missing")],
     "tv": [("continuing", "Continuing"), ("ended", "Ended"), ("missing", "Missing episodes")],
     "music": [("complete", "Complete"), ("missing", "Missing tracks")],
-    "radio": [("in_library", "Has episodes"), ("wanted", "Wanted")],
+    "radio": [("in_library", "Has episodes"), ("wanted", "Wanted"), ("podcast", "Podcasts"), ("radio_show", "Radio shows")],
     "books": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
     "audiobooks": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
 }
@@ -310,15 +310,23 @@ def _artist(a):
                   ["complete" if total and have >= total else "missing"], a.get("disambiguation") or a.get("country") or "")
 
 
+PODCAST_SOURCES = ("podcastindex", "apple")  # Podcasts (DASH-319): shows from a podcast directory, or a feed with no station
+
+
+def is_podcast(r):
+    return r.get("provider") in PODCAST_SOURCES or (not r.get("station_name") and bool(r.get("feed_url")))
+
+
 def _show(r, base):
     st = r.get("statistics") or {}
     have, wanted = int(st.get("in_library_count") or 0), int(st.get("wanted_count") or 0)
     status = "in_library" if have and not wanted else "partly" if have else "wanted" if wanted else "not_released"
-    filters = (["in_library"] if have else []) + (["wanted"] if wanted else [])
+    podcast = is_podcast(r)
+    filters = (["in_library"] if have else []) + (["wanted"] if wanted else []) + (["podcast"] if podcast else ["radio_show"])
     art = f"{base}/api/v1/radio/shows/{int(r['id'])}/artwork" if r.get("has_artwork") else ""
     return _entry(r["id"], r.get("title"), r.get("sort_title"), (r.get("first_broadcast") or "")[:4] or None, art, status,
                   _plural(have, "episode", "episodes") if have else "", _added(r.get("added_at")), filters,
-                  r.get("station_name") or "", [r.get("station_name") or ""])
+                  r.get("station_name") or "", [r.get("station_name") or ("Podcasts" if podcast else "")])
 
 
 def build(reelix, tab):
@@ -662,7 +670,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                "overview": m.get("overview") or "", "status": "downloading" if downloading else e["w"], "progress": None,
                "open": _open(reelix, f"/movies/{item_id}"),
                # DASH-276, DASH-206: what Starboard can do with it here.
-               "can": {"get": not m.get("has_file") and not downloading, "follow": bool(m.get("monitored")), "delete": True,
+               "can": {"get": not m.get("has_file") and not downloading, "follow": bool(m.get("monitored")), "delete": True, "change": True,
                        "has_file": bool(m.get("has_file"))}}
         w = _watched.film(cfg, m.get("tmdb_id")) if cfg else None
         out["watched"] = {"watched": w["watched"], "ids": [w["id"]], "user": w["user"]} if w else None
@@ -703,7 +711,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                "overview": s.get("overview") or "", "status": e["w"],
                "progress": {"have": have, "total": total, "text": f"{have:,} of {total:,} episodes in your library"} if total else None,
                "open": _open(reelix, f"/series/{item_id}"),
-               "can": {"get": any(r.get("can_get") for r in rows), "follow": bool(s.get("monitored")), "delete": True,
+               "can": {"get": any(r.get("can_get") for r in rows), "follow": bool(s.get("monitored")), "delete": True, "change": True,
                        "has_file": have > 0}}
         from . import networks  # DASH-264: the network's logo beside its name, when one is known
         if s.get("network") and networks.logo_of(data_dir, s["network"]):
@@ -723,7 +731,9 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
         both = [label for key, label in (("ebook_file", "ebook"), ("audiobook_file", "audiobook")) if b.get(key)]
         out = {"title": b.get("title"), "meta": [x for x in (b.get("author_name") or "", str(b.get("year") or "")) if x],
                "overview": b.get("overview") or "", "status": e["w"], "progress": None,
-               "open": _open(reelix, f"/books/book/{item_id}")}
+               "open": _open(reelix, f"/books/book/{item_id}"),
+               # DASH-206: follow, Get it and delete for this tab's format.
+               "can": {"get": not b.get(f"{fmt}_file"), "follow": bool(b.get(f"monitored_{fmt}")), "delete": True}}
         f = b.get(f"{fmt}_file") or {}
         facts = [("Author", b.get("author_name")), ("Published", _date(b.get("release_date"))), ("Pages", b.get("page_count")),
                  ("In your library as", " and ".join(both) or "Neither yet"), ("Narrated by", (b.get("audiobook_file") or {}).get("narrator")),
@@ -767,7 +777,9 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                                                             _plural(len(albums), "album", "albums")) if x],
                "overview": a.get("overview") or "", "status": e["w"],
                "progress": {"have": have, "total": total, "text": f"{have:,} of {total:,} tracks in your library"} if total else None,
-               "open": _open(reelix, f"/music/artists/{item_id}")}
+               "open": _open(reelix, f"/music/artists/{item_id}"),
+               # DASH-206: follow the artist, Get it searches its wanted albums, delete.
+               "can": {"get": total > have, "follow": bool(a.get("monitored")), "delete": True}}
         facts = [("Type", a.get("artist_type")), ("Country", a.get("country")), ("Genres", ", ".join(a.get("genres") or []))]
         lists = [{"key": "albums", "label": "Albums", "heading": "Albums", "rows": rows}]
     elif tab == "radio":
@@ -789,7 +801,9 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                "progress": {"have": have, "total": count, "text": f"{have:,} of {count:,} episodes in your library"} if count else None,
                "open": _open(reelix, f"/radio/shows/{item_id}"),
                "listen": {"label": "Listen in Audiobookshelf", "href": r["abs_web_url"]} if str(r.get("abs_web_url") or "").startswith(("http://", "https://")) else None,
-               "following": r.get("follow") or "none"}
+               "following": r.get("follow") or "none",
+               # Keep (DASH-319): how many of the newest episodes stay; only when this Reelix can (RFX-106).
+               "keep": ({"value": r.get("keep_episodes") or "all", "choices": list(KEEP)} if "keep_episodes" in r else None)}
         facts = [("Station", r.get("station_name")), ("Presented by", r.get("author")),
                  ("Following", {"all": "Every episode", "from_now_on": "New episodes", "none": "Not following"}.get(r.get("follow"), "")),
                  ("Series", st.get("series_count")), ("Episodes", count), ("Wanted", st.get("wanted_count"))]
@@ -805,7 +819,65 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
 
 # Changing things from the Library (DASH-276, DASH-206) --------------------------------------------------------
 
-ACTIONS = ("get", "follow", "unfollow", "delete")
+ACTIONS = ("get", "follow", "unfollow", "delete", "keep")
+KEEP = (5, 10, 25, 50, 100)  # Keep (DASH-319): the newest this many episodes of a podcast
+
+
+def change(reelix, tab, item_id, profile_id=None, folder_id=None, move_files=True):
+    """DASH-206: a film's or a series' quality and folder, moving its files when the folder changes."""
+    item_id = int(item_id)
+    body = {}
+    if profile_id not in (None, ""):
+        body["quality_profile_id"] = int(profile_id)
+    if folder_id not in (None, ""):
+        body["root_folder_id"] = int(folder_id)
+        body["move_files"] = bool(move_files)
+    if not body:
+        raise ValueError("Choose a quality or a folder")
+    if tab not in ("films", "tv"):
+        raise ValueError("Quality and folder can be changed for films and series")
+    services._api(reelix, f"/{'movies' if tab == 'films' else 'series'}/{item_id}", method="PUT", body=body)
+    said = []
+    if "quality_profile_id" in body:
+        said.append("Quality changed")
+    if "root_folder_id" in body:
+        said.append("folder changed" + ("; Reelix moves its files" if body["move_files"] else "; its files stay where they are"))
+    return ", ".join(said)[:1].upper() + ", ".join(said)[1:]
+
+
+def change_choices(reelix, tab, item_id):
+    """The quality profiles and folders a film or series can move to, with the ones it has now."""
+    if tab not in ("films", "tv"):
+        raise ValueError("Quality and folder can be changed for films and series")
+    now = services._api(reelix, f"/{'movies' if tab == 'films' else 'series'}/{int(item_id)}") or {}
+    profiles = [p for p in services._api(reelix, "/qualityprofiles") or [] if p.get("family") in (None, "", "video")]
+    kind = "movie" if tab == "films" else "series"
+    folders = [f for f in services._api(reelix, "/rootfolders") or [] if f.get("media_kind") in (None, kind)]
+    folder_id = now.get("root_folder_id")
+    if folder_id is None and now.get("path"):  # older items have no folder id: the folder whose path holds it
+        holds = [f for f in folders if f.get("path") and str(now["path"]).startswith(str(f["path"]).rstrip("/") + "/")]
+        folder_id = max(holds, key=lambda f: len(str(f["path"])))["id"] if holds else None
+    return {"profile_id": now.get("quality_profile_id"), "folder_id": folder_id, "path": now.get("path"),
+            "profiles": [{"id": p["id"], "name": p.get("name")} for p in profiles if p.get("id")],
+            "folders": [{"id": f["id"], "path": f.get("path"), "free": f.get("free_space")} for f in folders if f.get("id")]}
+
+
+def bulk(reelix, tab, ids, action, delete_files=False):
+    """DASH-206, several at once: follow, stop following or delete films or series in one go."""
+    ids = sorted({int(i) for i in ids if str(i).isdigit()})[:500]
+    if not ids:
+        raise ValueError("Tick at least one")
+    if tab not in ("films", "tv"):
+        raise ValueError("Several at once works for films and series")
+    base = "/movies/bulk" if tab == "films" else "/series/bulk"
+    what = f"{len(ids)} " + ("series" if tab == "tv" else "film" if len(ids) == 1 else "films")
+    if action == "delete":
+        services._api(reelix, base, method="DELETE", body={"ids": ids, "delete_files": bool(delete_files)})
+        return f"Deleted {what}" + (", with their files" if delete_files else "; their files stay")
+    if action not in ("follow", "unfollow"):
+        raise ValueError("Choose Follow, Stop following or Delete")
+    services._api(reelix, base, method="PUT", body={"ids": ids, "edit": {"monitored": action == "follow"}})
+    return f"Reelix {'follows' if action == 'follow' else 'no longer follows'} {what}"
 
 
 def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, delete_files=False):
@@ -814,6 +886,8 @@ def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, d
     item_id = int(item_id)
     if action not in ACTIONS:
         raise ValueError("Choose Get it, Follow, Stop following or Delete")
+    if action == "keep" and tab != "radio":
+        raise ValueError("Keep is for radio shows and podcasts")
     on = action in ("get", "follow")
     if tab == "films":
         if action == "delete":
@@ -850,6 +924,45 @@ def act(reelix, tab, item_id, action, scope="item", season=None, episode=None, d
         if action == "get":
             return f"Reelix is searching for {what} now"
         return f"Reelix follows {what}" if on else f"Reelix no longer follows {what}"
+    if tab in ("books", "audiobooks"):  # DASH-206: a book, in this tab's format
+        fmt = "ebook" if tab == "books" else "audiobook"
+        word = "ebook" if fmt == "ebook" else "audiobook"
+        if action == "delete":
+            services._api(reelix, f"/books/{item_id}", {"delete_files": "true" if delete_files else "false"}, method="DELETE")
+            return "Deleted from your library" + (", with its files" if delete_files else "; its files stay")
+        services._api(reelix, "/books/monitor", method="PUT", body={"book_ids": [item_id], "format": fmt, "monitored": on})
+        if action == "get":
+            services._api(reelix, "/books/search", method="POST", body={"kind": "item", "ids": [item_id], "format": fmt})
+            return f"Reelix is searching for the {word} now"
+        return f"Reelix follows the {word}" if on else f"Reelix no longer follows the {word}"
+    if tab == "music":  # DASH-206: the artist, or one album (scope "album", its id in `season`)
+        if scope == "album":
+            album = int(season)
+            if action == "delete":
+                services._api(reelix, f"/albums/{album}", {"delete_files": "true" if delete_files else "false"}, method="DELETE")
+                return "Album deleted from your library" + (", with its files" if delete_files else "; its files stay")
+            services._api(reelix, "/albums/monitor", method="PUT", body={"album_ids": [album], "monitored": on})
+            if action == "get":
+                services._api(reelix, f"/albums/{album}/search", method="POST", body={})
+                return "Reelix is searching for the album now"
+            return "Reelix follows the album" if on else "Reelix no longer follows the album"
+        if action == "delete":
+            services._api(reelix, f"/artists/{item_id}", {"delete_files": "true" if delete_files else "false"}, method="DELETE")
+            return "Deleted from your library" + (", with its files" if delete_files else "; its files stay")
+        services._api(reelix, f"/artists/{item_id}", method="PUT", body={"monitored": on})
+        if action == "get":
+            albums = (services._api(reelix, "/albums", {"artist_id": item_id, "page_size": 0}) or {}).get("items") or []
+            wanted = [a["id"] for a in albums if a.get("monitored") and int((a.get("statistics") or {}).get("track_file_count") or 0) == 0]
+            for a in wanted[:20]:
+                services._api(reelix, f"/albums/{a}/search", method="POST", body={})
+            return f"Reelix is searching for {len(wanted[:20])} {'album' if len(wanted[:20]) == 1 else 'albums'} now"
+        return "Reelix follows the artist" if on else "Reelix no longer follows the artist"
+    if tab == "radio" and action == "keep":  # DASH-319: the newest N episodes, or all
+        keep = None if scope in ("all", "", None) else int(scope)
+        if keep is not None and keep not in KEEP:
+            raise ValueError("Choose how many episodes to keep")
+        services._api(reelix, f"/radio/shows/{item_id}", method="PUT", body={"keep_episodes": keep})
+        return "Reelix keeps every episode" if keep is None else f"Reelix keeps the newest {keep} episodes and deletes older ones"
     if tab == "radio" and action in ("follow", "unfollow"):
         # DASH-158: Every episode, New episodes from now on, or Not following.
         choice = scope if scope in ("all", "from_now_on", "none") else ("all" if action == "follow" else "none")
@@ -1404,6 +1517,62 @@ def handle(h, method, path):
         if b.get("action") in ("delete",):
             _background(data_dir, reelix, tab)  # the wall loses it
         return h.json(200, {"said": said, "item": None if b.get("action") == "delete" else item(data_dir, reelix, tab, item_id, cfg)})
+    if path == "/api/library/change" and method in ("GET", "POST"):  # DASH-206: quality and folder
+        try:
+            if method == "GET":
+                return h.json(200, change_choices(reelix, tab, _int(q.get("id"), 0, 1, 10 ** 12)))
+            b = h.body()
+            item_id = _int(b.get("id"), 0, 1, 10 ** 12)
+            said = change(reelix, tab, item_id, b.get("profile_id"), b.get("folder_id"), b.get("move_files", True))
+        except ValueError as e:
+            return h.error(400, str(e))
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix said no: {e}")
+        logs.event("info", "library", f"{tab} {item_id}: {said}")
+        services.forget(f"library-item-{tab}-{item_id}")
+        return h.json(200, {"said": said, "item": item(data_dir, reelix, tab, item_id, cfg)})
+    if path == "/api/library/extras" and method in ("GET", "POST"):  # DASH-209: item page extras
+        from . import item_extras as ex
+        try:
+            if method == "GET":
+                item_id = _int(q.get("id"), 0, 1, 10 ** 12)
+                part = q.get("part", "")
+                if part == "files":
+                    return h.json(200, {"files": ex.files(reelix, tab, item_id)})
+                if part == "rename":
+                    return h.json(200, {"changes": ex.rename_preview(reelix, tab, item_id)})
+                if part == "history":
+                    return h.json(200, {"history": ex.history(reelix, tab, item_id)})
+                return h.error(400, "Ask for files, rename or history")
+            b = h.body()
+            item_id = _int(b.get("id"), 0, 1, 10 ** 12)
+            action = str(b.get("action", ""))
+            if action in ("refresh", "rescan"):
+                said = ex.refresh(reelix, tab, item_id, rescan=action == "rescan")
+            elif action == "rename":
+                said = ex.rename(reelix, tab, item_id, b.get("file_ids"))
+            elif action == "delete-file":
+                said = ex.delete_file(reelix, tab, _int(b.get("file_id"), 0, 1, 10 ** 12))
+            else:
+                return h.error(400, "Choose Refresh, Rescan, Rename or Delete this file")
+        except ValueError as e:
+            return h.error(400, str(e))
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix said no: {e}")
+        logs.event("info", "library", f"{tab} {item_id}: {said}")
+        services.forget(f"library-item-{tab}-{item_id}")
+        return h.json(200, {"said": said})
+    if path == "/api/library/bulk" and method == "POST":  # DASH-206: several at once
+        b = h.body()
+        try:
+            said = bulk(reelix, tab, b.get("ids") or [], str(b.get("action", "")), bool(b.get("delete_files")))
+        except ValueError as e:
+            return h.error(400, str(e))
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix said no: {e}")
+        logs.event("info", "library", f"{tab}: {said}")
+        _background(data_dir, reelix, tab)
+        return h.json(200, {"said": said})
     if path == "/api/library/match" and method == "GET":  # Change match: what it could be (11 November 2026)
         from . import rematch
         try:

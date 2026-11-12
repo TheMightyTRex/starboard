@@ -123,6 +123,8 @@ function tabs(parts) {
       t.tabIndex = on ? 0 : -1;
       document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
     });
+    const part = parts.find((p) => `tab-${p.key}` === tab.id);
+    if (part?.onOpen && !part.opened) { part.opened = true; part.onOpen(); }
   };
   list.addEventListener("click", (e) => { const t = e.target.closest("[role=tab]"); if (t) select(t); });
   list.addEventListener("keydown", (e) => {
@@ -143,6 +145,127 @@ function bar(progress) {
   const span = el("span");
   span.style.width = `${Math.round(100 * progress.have / Math.max(1, progress.total))}%`;
   return span;
+}
+
+// DASH-206: a film's or series' quality and folder, in a slide-out (settings pattern 8): two choices and Save.
+async function qualityAndFolder(item, opener) {
+  let c;
+  try { c = await api(`/api/library/change?tab=${ITEM_TAB}&id=${item.id}`); } catch (e) { problem(e.message, opener); return; }
+  const profile = el("select", { class: "select", id: "qf-profile" }, c.profiles.map((p) => el("option", { value: p.id, text: p.name, selected: p.id === c.profile_id })));
+  const folder = el("select", { class: "select", id: "qf-folder" }, c.folders.map((f) => el("option", { value: f.id,
+    text: `${f.path}${f.free != null ? ` (${formatBytes(f.free)} free)` : ""}`, selected: f.id === c.folder_id })));
+  const move = el("input", { type: "checkbox", id: "qf-move", checked: true });
+  const save = el("button", { type: "submit", class: "btn btn--primary", form: "qf-form", text: "Save" });
+  const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
+  const field = (label, control, hint) => el("div", { class: "field" }, el("label", { for: control.id, text: label }),
+    hint ? el("span", { class: "hint", text: hint }) : null, control);
+  const form = el("form", { class: "form-stack", id: "qf-form", novalidate: true },
+    field("Quality", profile, "What Reelix looks for and when it stops upgrading."),
+    field("Folder", folder, c.path ? `Now in ${c.path}.` : ""),
+    el("label", { class: "check" }, move, el("span", { class: "check__text" }, el("strong", { text: "Move its files to the new folder" }),
+      el("span", { class: "check__hint", text: "Otherwise the files stay where they are and Reelix looks in the new folder from now on." }))));
+  const start = { profile: profile.value, folder: folder.value };  // only what the person changes is sent
+  const panel = sidePanel({ title: `${item.title}: quality and folder`, opener, body: [form], foot: [save, cancel] });
+  setTimeout(() => profile.focus(), 0);
+  cancel.addEventListener("click", () => panel.close());
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const body = { id: item.id };
+    if (profile.value !== start.profile) body.profile_id = Number(profile.value);
+    if (folder.value !== start.folder) { body.folder_id = Number(folder.value); body.move_files = move.checked; }
+    if (!body.profile_id && !body.folder_id) { panel.close(); return; }
+    save.disabled = true;
+    try {
+      const r = await api(`/api/library/change?tab=${ITEM_TAB}`, { method: "POST", body });
+      panel.close();
+      announce(r.said);
+      toast(r.said);
+      if (r.item) show(r.item);
+    } catch (err) { problem(err.message, save); save.disabled = false; }
+  });
+}
+
+// DASH-209, the item's extras in their own tab, read only when the tab is opened: Refresh, Rescan and Rename (films
+// and series), the files on disk with Delete this file, and the item's own history, newest first.
+function extras(item) {
+  const video = ["films", "tv"].includes(ITEM_TAB);
+  const filesBox = el("div", { "aria-busy": "true" });
+  const historyBox = el("div", { "aria-busy": "true" });
+  const run = async (action, button, extra = {}) => {
+    button.disabled = true;
+    try {
+      const r = await api(`/api/library/extras?tab=${ITEM_TAB}`, { method: "POST", body: { id: item.id, action, ...extra } });
+      announce(r.said);
+      toast(r.said);
+      return true;
+    } catch (e) { problem(e.message, button); return false; }
+    finally { button.disabled = false; }
+  };
+  const loadFiles = async () => {
+    filesBox.setAttribute("aria-busy", "true");
+    try {
+      const { files } = await api(`/api/library/extras?tab=${ITEM_TAB}&id=${item.id}&part=files`);
+      filesBox.replaceChildren(files.length ? el("ul", { class: "rows lib-files", "aria-label": "Files" }, ...files.map((f) => el("li", { class: "row row--no-lead" },
+        el("div", {}, el("h3", { class: "row__title lib-files__name", text: f.name }),
+          el("div", { class: "row__meta", text: [formatBytes(f.size), f.quality, f.group].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__side" }, el("button", { type: "button", class: "btn btn--quiet btn--compact btn--danger", "aria-label": `Delete ${f.name}`,
+          onclick: async (e) => {
+            const button = e.currentTarget;  // read before the dialog: currentTarget is empty after an await
+            const ok = await confirmDialog({ title: "Delete this file?", danger: true, confirm: "Delete",
+              message: `${f.name} is deleted from the disk. Reelix keeps the ${ITEM_TAB === "films" ? "film" : "series"} and looks for it again only if you follow it.` });
+            if (ok && await run("delete-file", button, { file_id: f.id })) { await loadFiles(); $("#extras-files-heading").focus(); }
+          } }, icon("trash-2"), "Delete")))))
+        : el("p", { class: "muted", text: "No files on disk yet." }));
+    } catch (e) { filesBox.replaceChildren(el("p", { class: "muted", text: e.message })); }
+    filesBox.setAttribute("aria-busy", "false");
+  };
+  const loadHistory = async () => {
+    try {
+      const { history } = await api(`/api/library/extras?tab=${ITEM_TAB}&id=${item.id}&part=history`);
+      historyBox.replaceChildren(history.length ? el("ul", { class: "rows" }, ...history.map((h) => el("li", { class: "row row--no-lead" },
+        el("div", {}, el("h3", { class: "row__title", text: [h.what, h.episode].filter(Boolean).join(", ") }),
+          el("div", { class: "row__meta", text: [h.date ? formatDate(h.date, true) : "", h.title, h.where].filter(Boolean).join(" · ") })))))
+        : el("p", { class: "muted", text: "Nothing has happened to it yet." }));
+    } catch (e) { historyBox.replaceChildren(el("p", { class: "muted", text: e.message })); }
+    historyBox.setAttribute("aria-busy", "false");
+  };
+  const buttons = video ? el("div", { class: "actions" },
+    el("button", { type: "button", class: "btn", onclick: (e) => run("refresh", e.currentTarget) }, icon("refresh-cw"), "Refresh"),
+    el("button", { type: "button", class: "btn", onclick: (e) => run("rescan", e.currentTarget).then((ok) => ok && loadFiles()) }, icon("hard-drive"), "Rescan the files"),
+    el("button", { type: "button", class: "btn", onclick: (e) => renameFiles(item, e.currentTarget, loadFiles) }, icon("pencil"), "Rename the files")) : null;
+  const body = el("div", { class: "stack-4" },
+    buttons ? el("p", { class: "muted", text: "Refresh reads its details again. Rescan only looks at the files on disk." }) : null, buttons,
+    video ? el("section", { class: "stack-2", "aria-labelledby": "extras-files-heading" },
+      el("h2", { class: "lib-panel-heading", id: "extras-files-heading", tabindex: "-1", text: "Files" }), filesBox) : null,
+    el("section", { class: "stack-2", "aria-labelledby": "extras-history-heading" },
+      el("h2", { class: "lib-panel-heading", id: "extras-history-heading", text: "History" }), historyBox));
+  return { key: "extras", label: video ? "Files and history" : "History", heading: "", body,
+    onOpen: () => { if (video) loadFiles(); loadHistory(); } };
+}
+
+// Rename the files (DASH-209): a slide-out with each name now and after, and Rename only when something changes.
+async function renameFiles(item, opener, after) {
+  let changes;
+  try { ({ changes } = await api(`/api/library/extras?tab=${ITEM_TAB}&id=${item.id}&part=rename`)); } catch (e) { problem(e.message, opener); return; }
+  const rename = el("button", { type: "button", class: "btn btn--primary", text: "Rename", disabled: !changes.length });
+  const cancel = el("button", { type: "button", class: "btn", text: changes.length ? "Cancel" : "Close" });
+  const body = changes.length ? [el("p", { text: `${changes.length} ${changes.length === 1 ? "file changes" : "files change"} to match your naming settings.` }),
+    el("ul", { class: "rows lib-rename" }, ...changes.map((c) => el("li", { class: "row row--no-lead" }, el("div", {},
+      el("div", { class: "row__meta", text: `Now: ${c.now}` }), el("div", { class: "row__title", text: `After: ${c.after}` })))))]
+    : [el("p", { text: "Every file already matches your naming settings. Nothing to rename." })];
+  const panel = sidePanel({ title: `Rename the files of ${item.title}`, opener, body, foot: [rename, cancel], wide: true });
+  setTimeout(() => (changes.length ? rename : cancel).focus(), 0);
+  cancel.addEventListener("click", () => panel.close());
+  rename.addEventListener("click", async () => {
+    rename.disabled = true;
+    try {
+      const r = await api(`/api/library/extras?tab=${ITEM_TAB}`, { method: "POST", body: { id: item.id, action: "rename", file_ids: changes.map((c) => c.file_id) } });
+      panel.close();
+      announce(r.said);
+      toast(r.said);
+      setTimeout(after, 1500);
+    } catch (e) { problem(e.message, rename); rename.disabled = false; }
+  });
 }
 
 async function removeItem(item, button) {
@@ -205,16 +328,34 @@ function head(item) {
     pick.addEventListener("change", () => act(pick.value === "none" ? "unfollow" : "follow", { scope: pick.value }, pick));
     return el("label", { class: "series-head__follow" }, el("span", { class: "field__label", text: "Following" }), pick);
   })() : null;
+  // DASH-319: how many of a podcast's newest episodes to keep (older ones are deleted by Reelix). A button that
+  // opens a choice and Save, so moving through the choices with the arrow keys does nothing until Save.
+  const keepLabel = (v) => (v === "all" ? "Every episode" : `The newest ${v}`);
+  const keep = ITEM_TAB === "radio" && item.keep ? el("button", { type: "button", class: "btn", id: "radio-keep",
+    onclick: async (e) => {
+      const button = e.currentTarget;
+      const choices = ["all", ...item.keep.choices];
+      const radios = choices.map((v) => el("input", { type: "radio", name: "keep", value: String(v), checked: String(item.keep.value) === String(v) }));
+      const group = el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Keep" }),
+        ...choices.map((v, n) => el("label", { class: "check" }, radios[n], el("span", { class: "check__text", text: keepLabel(v) }))));
+      const ok = await confirmDialog({ title: `How many episodes of ${item.title} to keep`, confirm: "Save",
+        message: "With a number, Reelix deletes the files of older episodes and does not download them again.", fields: [group] });
+      const chosen = radios.find((r) => r.checked)?.value;
+      if (ok && chosen && chosen !== String(item.keep.value)) act("keep", { scope: chosen }, button);
+    } }, "Keep: ", keepLabel(item.keep.value)) : null;
   const actions = [
     can.get ? el("button", { type: "button", class: "btn btn--primary", onclick: (e) => act("get", {}, e.currentTarget) },
       icon("download"), ITEM_TAB === "tv" ? "Get the missing episodes" : "Get it") : null,
     item.listen ? newTabLink(item.listen.href, item.listen.label, { className: "btn btn--primary" }) : null,
     follow,
+    keep,
     item.can ? el("button", { type: "button", class: "btn", "aria-pressed": String(!!can.follow),
       onclick: (e) => act(can.follow ? "unfollow" : "follow", {}, e.currentTarget) }, can.follow ? "Stop following" : "Follow") : null,
     ITEM_TAB === "films" && !can.has_file ? el("button", { type: "button", class: "btn", onclick: () => chooseDownload({ scope: "item" }, item.title) },
       icon("list"), "Choose a download") : null,
     watchedButton(item.watched, item.title, false),
+    can.change ? el("button", { type: "button", class: "btn btn--quiet", onclick: (e) => qualityAndFolder(item, e.currentTarget) },
+      icon("sliders-horizontal"), "Quality and folder") : null,
     item.open ? newTabLink(item.open.href, item.open.label, { className: "btn btn--quiet" }) : null,
     ["films", "tv", "radio", "audiobooks", "books"].includes(ITEM_TAB) ? el("button", { type: "button", class: "btn btn--quiet",
       onclick: (e) => changeMatch(item, e.currentTarget) }, icon("refresh-cw"), "Change match") : null,
@@ -241,6 +382,7 @@ function show(item, said = "") {
   const parts = item.lists.filter((l) => l.rows.length).map((l) => ({ key: l.key, label: l.label, heading: l.heading, body: groupList(l) }));
   parts.push({ key: "about", label: "About", heading: "", body: about(item) });
   if (ITEM_TAB === "films") parts.unshift(parts.pop()); // a film opens on About, then its collection
+  if (ITEM_TAB !== "radio") parts.push(extras(item));
   const note = said ? el("div", { class: "notice", "data-tone": "success", role: "status" }, icon("circle-check"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: said }))) : null;
   box.replaceChildren(head(item), ...(note ? [note] : []), ...(parts.length > 1 ? tabs(parts) : [parts[0].body]));

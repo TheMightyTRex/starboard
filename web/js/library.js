@@ -34,8 +34,16 @@ function statusChip(card) {
   return card.status ? chip(card.status, card.tone) : null;
 }
 
+// DASH-206, several at once (films and series): a tick on each card while Select several is on.
+function tick(card) {
+  if (!state.selecting) return null;
+  return el("input", { type: "checkbox", class: "lib-tick", value: String(card.id), "aria-label": `Tick ${card.title}`,
+    checked: state.ticked?.has(String(card.id)), onchange: (e) => { e.target.checked ? state.ticked.add(e.target.value) : state.ticked.delete(e.target.value); bulkCount(); } });
+}
+
 function coverCard(card) {
-  return el("li", { class: "media-card lib-card" },
+  return el("li", { class: "media-card lib-card", "data-id": String(card.id) },
+    tick(card),
     posterBox(card),
     el("span", { class: "media-card__title" }, el("a", { href: itemHref(card.id), text: card.title })),
     el("span", { class: "media-card__meta", text: [card.meta, card.count].filter(Boolean).join(" · ") }),
@@ -43,7 +51,8 @@ function coverCard(card) {
 }
 
 function listRow(card) {
-  return el("li", { class: "row row--opens lib-row" },
+  return el("li", { class: "row row--opens lib-row", "data-id": String(card.id) },
+    tick(card),
     posterBox(card, "cover cover--result"),
     el("div", {},
       el("h3", { class: "row__title" }, el("a", { href: itemHref(card.id), text: card.title })),
@@ -408,6 +417,7 @@ startPage().then(async () => {
   try { saved = (await api("/api/library/views")).views[TAB] || {}; } catch { saved = {}; }
   applyView(saved);
   showGroup();
+  setUpBulk();
   $("#lib-q").value = state.q;
   let typing = 0;
   $("#lib-q").addEventListener("input", () => {
@@ -470,3 +480,66 @@ startPage().then(async () => {
   await reload();
   updateSaveButton();
 });
+
+// Several at once (DASH-206): Select several shows a tick on each film or series and a bar with Follow, Stop
+// following and Delete for the ticked ones. Not sticky (the header is the only sticky part).
+function bulkCount() {
+  const n = state.ticked.size;
+  const said = $("#lib-bulk-count");
+  if (said) said.textContent = n ? `${n} ticked` : "Tick the ones to change";
+  $$("#lib-bulk [data-needs-ticks]").forEach((b) => { b.disabled = !n; });
+}
+
+function setUpBulk() {
+  if (!["films", "tv"].includes(TAB)) return;
+  state.ticked = new Set();
+  const start = el("button", { type: "button", class: "btn btn--quiet", id: "lib-select", "aria-pressed": "false" }, icon("list-checks"), "Select several");
+  $(".toolbar__end")?.append(start);
+  const run = async (action, button) => {
+    let deleteFiles = false;
+    if (action === "delete") {
+      const files = el("input", { type: "checkbox", id: "bulk-files" });
+      const ok = await confirmDialog({ title: `Delete ${state.ticked.size} from your library?`, confirm: "Delete", danger: true,
+        message: "Reelix stops tracking them. Their files stay unless you tick below.",
+        fields: [el("label", { class: "check" }, files, el("span", { class: "check__text", text: "Delete their files too" }))] });
+      if (!ok) return;
+      deleteFiles = files.checked;
+    }
+    button.disabled = true;
+    try {
+      const r = await api(`/api/library/bulk?tab=${TAB}`, { method: "POST", body: { ids: [...state.ticked], action, delete_files: deleteFiles } });
+      announce(r.said);
+      toast(r.said);
+      state.ticked.clear();
+      stop();
+      start.focus();  // the bar has gone: focus goes back to Select several
+      reload();
+    } catch (e) { problem(e.message, button); }
+    finally { button.disabled = false; }
+  };
+  const bar = el("div", { class: "lib-bulk", id: "lib-bulk", role: "region", "aria-label": "Change several", hidden: true },
+    el("span", { id: "lib-bulk-count", "aria-live": "polite" }),
+    el("button", { type: "button", class: "btn", "data-needs-ticks": "", onclick: (e) => run("follow", e.currentTarget) }, "Follow"),
+    el("button", { type: "button", class: "btn", "data-needs-ticks": "", onclick: (e) => run("unfollow", e.currentTarget) }, "Stop following"),
+    el("button", { type: "button", class: "btn btn--danger", "data-needs-ticks": "", onclick: (e) => run("delete", e.currentTarget) }, icon("trash-2"), "Delete"),
+    el("button", { type: "button", class: "btn btn--quiet", onclick: () => { stop(); start.focus(); } }, "Done"));
+  $("#lib-wall").before(bar);
+  const redraw = () => {
+    $$("#lib-wall li[data-id]").forEach((li) => {
+      li.querySelector(".lib-tick")?.remove();
+      const card = { id: li.dataset.id, title: li.querySelector("a")?.textContent || "" };
+      const box = tick(card);
+      if (box) li.prepend(box);
+    });
+  };
+  const stop = () => { state.selecting = false; start.setAttribute("aria-pressed", "false"); bar.hidden = true; redraw(); };
+  start.addEventListener("click", () => {
+    state.selecting = !state.selecting;
+    start.setAttribute("aria-pressed", String(state.selecting));
+    bar.hidden = !state.selecting;
+    redraw();
+    bulkCount();
+    if (state.selecting) $("#lib-wall .lib-tick")?.focus();
+  });
+}
+

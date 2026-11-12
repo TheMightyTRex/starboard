@@ -181,6 +181,73 @@ if (await more.first().isVisible().catch(() => false)) {
   check("T8", "after Show more, focus is on the first new row", !f8.lost && f8.inMain && !/more/i.test(f8.text), f8.text);
 } else console.log("note T8 the example has no second page of Wanted");
 
+// T9 A film's Files and history (DASH-209): arrow to the tab, Delete this file by keyboard; after it, focus is on the
+// Files heading and the deletion is said.
+await page.goto(`${base}/library-film.html?id=1`);
+await settle();
+const extrasTab = page.locator("#tab-extras");
+if (await extrasTab.count()) {
+  await page.locator("[role=tab][aria-selected=true]").focus();
+  await page.keyboard.press("End");
+  await settle();
+  check("T9", "End moves to the Files and history tab and opens it", await page.locator("#panel-extras").isVisible());
+  const del = page.locator("#panel-extras .lib-files button").first();
+  if (await del.count()) {
+    await del.focus();
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(400);
+    const inDialog = await focus();
+    check("T9", "Delete this file opens a dialog with focus in it", inDialog.inPanel, inDialog.text);
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Enter");
+    await settle();
+    const f9 = await focus(), s9 = await said();
+    check("T9", "after Delete this file, focus is on the Files heading", f9.id === "extras-files-heading", f9.text);
+    check("T9", "the deletion is said", /deleted/i.test(s9), s9);
+  } else console.log("note T9 the example film has no file");
+} else check("T9", "the film page has a Files and history tab", false);
+
+// T10 Select several (DASH-206): Space ticks, the count is said, an action returns focus to Select several.
+await page.goto(`${base}/library-films.html`);
+await settle();
+const selectBtn = page.locator("#lib-select");
+if (await selectBtn.count()) {
+  await selectBtn.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const t10 = await focus();
+  check("T10", "Select several moves focus to the first tick", /^Tick /.test(t10.text), t10.text);
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(300);
+  const count = await page.locator("#lib-bulk-count").textContent();
+  check("T10", "the ticked count updates in a polite live region", /1 ticked/.test(count), count);
+  await page.locator("#lib-bulk button", { hasText: "Stop following" }).focus();
+  await page.keyboard.press("Enter");
+  await settle();
+  const f10 = await focus();
+  check("T10", "after the action, focus is back on Select several", f10.id === "lib-select", f10.text);
+} else check("T10", "the Films wall has Select several", false);
+
+// T11 Keep for a podcast (DASH-319): the choice opens in a dialog, arrows move without saving, Save gives focus back.
+await page.goto(`${base}/library-radio-show.html?id=13`);
+await settle();
+const keepBtn = page.locator("#radio-keep");
+if (await keepBtn.count()) {
+  await keepBtn.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  const k1 = await focus();
+  check("T11", "Keep opens with focus on the chosen option", k1.inPanel && k1.tag === "INPUT", k1.text);
+  await page.keyboard.press("ArrowDown");
+  check("T11", "moving through the options saves nothing", (await page.locator("dialog[open]").count()) === 1);
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  await settle();
+  const k2 = await focus(), s11 = await said();
+  check("T11", "after Save, focus is back on Keep", k2.id === "radio-keep", k2.text);
+  check("T11", "the change is said", /keeps/i.test(s11), s11);
+} else console.log("note T11 the example has no podcast with Keep");
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

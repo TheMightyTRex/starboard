@@ -180,3 +180,13 @@
 .discover-shelf--wrap { flex-wrap: wrap; overflow: visible; }
 @media (max-width: 560px) { .radio-picker__row, .radio-search .search-field { flex-wrap: wrap; } .radio-picker .select { min-inline-size: 0; inline-size: 100%; } }
 
+/* Several at once (DASH-206): the ticks on the cards and the bar of actions above the wall. */
+.lib-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3); margin-block: var(--space-3);
+  border: 1px solid var(--color-divider); background: var(--color-surface); }
+.lib-bulk #lib-bulk-count { margin-inline-end: auto; font-weight: var(--weight-strong); }
+.lib-card { position: relative; }
+.lib-card > .lib-tick { position: absolute; inset-block-start: var(--space-2); inset-inline-start: var(--space-2); z-index: 1; }
+.lib-row > .lib-tick { align-self: center; }
+
+/* Item extras (DASH-209): long file names wrap rather than push the Delete button off the row. */
+.lib-files__name, .lib-rename .row__title, .lib-rename .row__meta { overflow-wrap: anywhere; }

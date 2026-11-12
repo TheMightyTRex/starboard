@@ -91,6 +91,12 @@ SHOWS = [{"id": i, "title": t, "sort_title": "", "station_name": ["BBC Radio 4",
           "has_artwork": False, "added_at": _added(i + 9), "synopsis": "A made-up radio show for the preview.", "follow": "all",
           "statistics": {"in_library_count": 4 + i % 9, "wanted_count": i % 3, "episode_count": 6 + i % 9, "series_count": 2}}
          for i, t in enumerate(["The Example Hour", "Sample Science Weekly"] + _titles(10, 5), 1)]
+for _i, _t in enumerate(["The Made-Up Podcast", "Pretend History", "Imaginary Interviews"], len(SHOWS) + 1):  # podcasts (DASH-319)
+    SHOWS.append({"id": _i, "title": _t, "sort_title": "", "station_name": None, "provider": "podcastindex", "feed_url": "https://example.invalid/feed",
+                  "author": "Example Media", "has_artwork": False, "added_at": _added(_i), "synopsis": "A made-up podcast for the preview.",
+                  "follow": "from_now_on", "statistics": {"in_library_count": 8, "wanted_count": 0, "episode_count": 30, "series_count": 1}})
+for _s in SHOWS:
+    _s.setdefault("keep_episodes", None)  # as Reelix with RFX-106
 
 
 def _paged(items, q):
@@ -128,6 +134,24 @@ def answer(path, q):
         return {"items": rows, "total": len(rows), "page": 1, "page_size": 50}
     if path.startswith("/issues/") and path.split("/")[2].isdigit():
         return next((i for i in ISSUES if i["id"] == int(path.split("/")[2])), None)
+    parts = path.strip("/").split("/")
+    if len(parts) == 3 and parts[0] == "movies" and parts[1].isdigit() and parts[2] == "files":  # item extras (DASH-209)
+        film = next((f for f in FILMS if f["id"] == int(parts[1])), None)
+        if not film or not film["has_file"] or int(parts[1]) in CHANGED.setdefault("deleted_files", set()):
+            return []
+        return [{"file": {"id": 5000 + film["id"], "relative_path": f"{film['title']}.{film['year']}.1080p.WEB-DL.mkv", "size": 4_200_000_000 + film["id"],
+                          "quality_name": "WEBDL-1080p", "release_group": "MADEUP"}}]
+    if path == "/episodefiles":
+        sid = int(q.get("series_id") or 0)
+        return [{"id": 7000 + sid * 10 + n, "relative_path": f"Season 1/Show.S01E0{n + 1}.720p.HDTV.mkv", "size": 900_000_000, "season_number": 1,
+                 "quality_name": "HDTV-720p", "release_group": "MADEUP"} for n in range(3)]
+    if path == "/rename/preview":
+        mid = int(q.get("movie_id") or 0)
+        film = next((f for f in FILMS if f["id"] == mid), None)
+        if film and not CHANGED.get("renamed"):
+            return [{"kind": "movie", "media_id": mid, "file_id": 5000 + mid, "existing_path": f"{film['title']}.{film['year']}.1080p.WEB-DL.mkv",
+                     "new_path": f"{film['title']} ({film['year']}) WEBDL-1080p.mkv"}]
+        return []
     if path == "/history":  # History (DASH-159)
         kinds = ["grabbed", "imported", "download_failed", "grabbed", "imported", "renamed"]
         rows = [{"id": n, "event_type": kinds[n % 6], "date": (TODAY - dt.timedelta(hours=5 * n)).isoformat() + "T12:00:00Z",
@@ -136,6 +160,8 @@ def answer(path, q):
                  "data": {"message": "The download app stopped answering" if kinds[n % 6] == "download_failed" else ""}} for n in range(12)]
         if q.get("event_type"):
             rows = [r for r in rows if r["event_type"] == q["event_type"]]
+        if q.get("movie_id"):
+            rows = [r for r in rows if r["media"]["id"] == int(q["movie_id"])] or rows[:3]
         return {"items": rows, "total": len(rows), "page": 1, "page_size": 50}
     if path == "/blocklist":
         return {"items": [{"id": n, "media": {"kind": "movie", "id": FILMS[n]["id"], "title": FILMS[n]["title"], "year": FILMS[n]["year"]},
@@ -280,6 +306,19 @@ def change(method, path, body, q):
             return {}
         found["monitored"] = bool((body or {}).get("monitored", found.get("monitored")))
         return found
+    if len(parts) == 2 and parts[0] in ("moviefiles", "episodefiles") and parts[1].isdigit() and method == "DELETE":  # DASH-209
+        CHANGED.setdefault("deleted_files", set()).add(int(parts[1]) - 5000)
+        return {}
+    if path in ("/movies/bulk", "/series/bulk"):  # several at once (DASH-206)
+        items = FILMS if path == "/movies/bulk" else SERIES
+        ids = set(body.get("ids") or [])
+        if method == "DELETE":
+            items[:] = [x for x in items if x["id"] not in ids]
+        else:
+            for x in items:
+                if x["id"] in ids:
+                    x["monitored"] = bool((body.get("edit") or {}).get("monitored"))
+        return {}
     if path == "/episodes/monitor":
         for e in body.get("episode_ids") or []:
             CHANGED["episodes"][e] = bool(body.get("monitored"))
@@ -290,6 +329,8 @@ def change(method, path, body, q):
         show = next((x for x in SHOWS if x["id"] == int(parts[2])), None)
         if show:
             show["follow"] = body.get("follow", show.get("follow"))
+            if "keep_episodes" in body:
+                show["keep_episodes"] = body["keep_episodes"]
         return show
     if len(parts) == 2 and parts[0] == "blocklist" and parts[1].isdigit() and method == "DELETE":
         CHANGED.setdefault("unblocked", set()).add(int(parts[1]))
@@ -310,6 +351,11 @@ def add(path, body):
         elif issue and parts[2] in ("resolve", "reopen"):
             issue["status"] = "resolved" if parts[2] == "resolve" else "open"
         return issue
+    if len(parts) == 3 and parts[0] in ("movies", "series") and parts[2] in ("refresh", "rescan"):  # DASH-209
+        return {"queued": True}
+    if path == "/rename":
+        CHANGED["renamed"] = True
+        return {"renamed": len(body.get("file_ids") or [])}
     if path == "/releases/grab":
         return {"queue_id": 1, "download_client": "qBittorrent", "download_id": "made-up"}
     if path == "/libraryimport/match":
