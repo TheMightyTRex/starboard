@@ -67,6 +67,7 @@ MENU = [
                                    ("system-disks.html", "Disk health", "heart-pulse")]),
         ("Network", "network", [("system-network.html", "Network", "network")]),
         ("Backup", "archive-restore", [("system-backup.html", "Backup and restore", "archive-restore")]),
+        ("Clean up", "trash-2", [("system-cleanup.html", "What is left over", "trash-2"), ("system-holding.html", "Holding folder", "archive")]),
         ("Logs", "scroll-text", [("system-logs.html", "Logs", "scroll-text")]),
     ]),
     ("settings", "Settings", "settings", [
@@ -149,6 +150,8 @@ HELP = {
     "system-network.html": ("topics/open-from-another-device.md", "opening Starboard from another device"),
     "system-backup.html": ("README.md#backup-and-restore", "backup and restore"),
     "system-logs.html": ("topics/read-the-log.md", "reading the log and reporting a problem"),
+    "system-cleanup.html": ("topics/remove-starboard.md", "removing what Starboard leaves behind"),
+    "system-holding.html": ("topics/remove-starboard.md", "removing what Starboard leaves behind"),
     "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),

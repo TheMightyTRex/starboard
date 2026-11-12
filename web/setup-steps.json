@@ -8,6 +8,18 @@
    "help": "topics/create-your-password.md"
   },
   {
+   "id": "place",
+   "title": "Where you are",
+   "question": "Where are you?",
+   "help": "topics/run-first.md"
+  },
+  {
+   "id": "keyboard",
+   "title": "Your keyboard",
+   "question": "Which keyboard do you have?",
+   "help": "topics/run-first.md"
+  },
+  {
    "id": "start",
    "title": "How to start",
    "question": "How do you want to start?",
@@ -144,6 +156,12 @@
    "title": "How much it does",
    "question": "How much should Starboard do in the background?",
    "help": "topics/make-starboard-lighter.md"
+  },
+  {
+   "id": "cleanup",
+   "title": "Clean up",
+   "question": "Clean up what is left over?",
+   "help": "topics/remove-starboard.md"
   },
   {
    "id": "finish",

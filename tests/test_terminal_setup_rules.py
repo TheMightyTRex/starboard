@@ -121,28 +121,30 @@ class RefusalsTest(unittest.TestCase):
 class StepCountTest(unittest.TestCase):
     def test_a_restore_counts_only_its_own_steps(self):
         # DASH-265: a restore asks only disk health; the backup brought the rest.
-        self.assertEqual(ts.job_steps({"start": "restore"}), ["password", "start", "alerts"])
+        self.assertEqual(ts.job_steps({"start": "restore", "place_answered": True}), ["password", "start", "alerts"])
         term, out = plain()
         ts.head(term, {"start": "restore"}, "alerts")
-        self.assertIn("(step 3 of 3)", out.getvalue())
-        moving = ts.job_steps({"start": "move", "no_extras": True, "reelix_there": True})
+        self.assertIn("(step 5 of 5)", out.getvalue())  # Where you are and Your keyboard after the password (DASH-259)
+        # DASH-77: Clean up last, in each job, when something is left over.
+        self.assertEqual(ts.job_steps({"start": "restore", "place_answered": True, "left_over": [{"id": "a"}]})[-1], "cleanup")
+        moving = ts.job_steps({"start": "move", "no_extras": True, "reelix_there": True, "place_answered": True})
         # DASH-267 and DASH-266: Docker access before any move, then what happens to the apps, then the move itself.
         self.assertEqual(moving, ["password", "start", "docker", "movehow", "preset", "move", "hours", "alerts"])
-        beside = ts.job_steps({"start": "move", "no_extras": True, "choice": {"apps": ["reelix", "nzbget"]}})
+        beside = ts.job_steps({"start": "move", "no_extras": True, "choice": {"apps": ["reelix", "nzbget"]}, "place_answered": True})
         self.assertEqual(beside, ["password", "start", "docker", "movehow", "apps", "usenet", "films", "preset", "check", "move",
                                   "hours", "alerts"])  # Reelix beside the old apps first; sites come with the move
-        kept = ts.job_steps({"start": "move", "no_extras": True, "move_into": False})
+        kept = ts.job_steps({"start": "move", "no_extras": True, "move_into": False, "place_answered": True})
         self.assertEqual(kept, ["password", "start", "docker", "movehow", "preset", "hours", "alerts"])
         self.assertNotIn("docker", ts.job_steps({"start": "move", "docker_access": True}))
 
     def test_a_new_install_leaves_out_what_the_apps_do_not_need(self):
         state = {"start": "new", "storage": {"key": "disk"}, "choice": {"apps": ["jellyfin"]}}
-        self.assertEqual(ts.job_steps(state), ["password", "start", "storage", "apps", "preset", "check", "extras", "hours",
-                                               "alerts", "docker"])  # DASH-265: How much it does before Check; Docker last
+        self.assertEqual(ts.job_steps(state), ["password", "place", "keyboard", "start", "storage", "apps", "preset", "check",
+                                               "extras", "hours", "alerts", "docker"])  # DASH-265: How much it does before Check; Docker last
         term, _ = boxed()
         term._page = lambda *a: None
         ts.head(term, state, "check")
-        self.assertIn("step 6 of 10", term.header[1])
+        self.assertIn("step 8 of 12", term.header[1])
 
 
 class ResizeTest(unittest.TestCase):
@@ -487,7 +489,7 @@ class RestoreBringsAppsBackTest(unittest.TestCase):
                    "vpn": {"provider": "surfshark", "type": "wireguard", "wireguard_addresses": "10.2.0.2/32"}}
         state = {"start": "restore", "restore_install": install, "media_dir": "/mnt/pool/media",
                  "overview": {"defaults": {"data_dir": "/srv/media"}}}
-        self.assertEqual(ts.job_steps(state), ["password", "start", "storage", "vpn", "check", "alerts"])
+        self.assertEqual(ts.job_steps(state), ["password", "place", "keyboard", "start", "storage", "vpn", "check", "alerts"])
         term, _ = plain()
         self.assertFalse(ts.step_apps(None, term, state))
         self.assertEqual(state["choice"]["data_dir"], "/mnt/pool/media")

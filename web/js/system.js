@@ -237,8 +237,36 @@ async function runJob(j) {
   catch (e) { problem(`Not started: ${e.message}`); }
 }
 
+// After an unexpected shutdown (DASH-88): Starboard's one check at start, as one notice until it is dismissed. Every
+// result is in words with an icon, never colour alone. The same report goes out through Alerts.
+async function loadRecovery() {
+  const box = $("#recovery");
+  let r = null;
+  try { r = (await api("/api/system/recovery")).report; } catch { return; }
+  if (!r) { box.replaceChildren(); return; }
+  const tone = r.problems.length ? "warning" : null;
+  const list = (title, items) => items.length ? [el("p", { class: "small" }, el("strong", { text: title })), el("ul", { class: "small" }, items.map((t) => el("li", { text: t })))] : [];
+  const dismiss = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Dismiss", el("span", { class: "visually-hidden", text: " the shutdown report" }));
+  dismiss.addEventListener("click", async () => {
+    dismiss.disabled = true;
+    try {
+      await api("/api/system/recovery/dismiss", { method: "POST" });
+      box.replaceChildren();
+      announce("Shutdown report dismissed.");
+      $("h1")?.setAttribute("tabindex", "-1");
+      $("h1")?.focus();
+    } catch (e) { problem(e.message, dismiss); dismiss.disabled = false; }
+  });
+  box.replaceChildren(el("div", { class: "notice", "data-tone": tone, role: "status" }, icon(r.problems.length ? "triangle-alert" : "info"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: r.title }),
+      el("p", { text: r.problems.length ? "Starboard checked what a power cut can leave behind. Some things need you:" : "Starboard checked what a power cut can leave behind. Nothing needed fixing." }),
+      ...list("Needs you", r.problems), ...list("Checked", r.checked), ...list("Put right", r.fixed)),
+    dismiss));
+}
+
 startPage().then(async () => {
   checkAgainLabel($("#refresh"));
+  loadRecovery();
   range = rangePicker(() => load(), { live: true });
   $("#range-row").append(range.element);
   makeCharts();

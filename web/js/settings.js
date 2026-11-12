@@ -1041,6 +1041,74 @@ async function stepContent(id, root) {
       location.href = "/install-apps.html?from=guide";
       return false;
     };
+  } else if (id === "place") {
+    // Where you are (DASH-259): the same list, order and help as the terminal set-up and the Run first script
+    // (starboard/places.py). A list moved through with the arrow keys and chosen with Enter; typing letters jumps.
+    const data = await api("/api/setup/place");
+    const want = guideMemory().tz || data.tz;
+    const select = el("select", { class: "select", id: "guide-place" }, data.locations.map((p) =>
+      el("option", { value: p.tz, text: `${p.title}${p.tz === want ? (guideMemory().tz ? " (your last answer)" : " (recommended)") : ""} · ${p.tz}`, selected: p.tz === want })));
+    nodes = [field("Where is this computer?", select, { span: true,
+        hint: "Its clock is set to your time zone, so download hours, schedules and the log use your time. Your keyboard is suggested from it next." }),
+      el("p", { class: "help-links" }, helpButton("Which one is right for me?", { back: "Back to set-up", body: [
+        el("p", { text: "Choose the country, or the part of a large country, this computer is in. It sets the time zone, which download hours, schedules, the log and the apps use, and suggests the keyboard on the next step." }),
+        el("p", { text: "A place that is not in the list: choose Other, Coordinated Universal Time, or keep the time zone the computer has." })] }))];
+    save = async () => {
+      const p = data.locations.find((x) => x.tz === select.value) || data.locations[0];
+      remember({ tz: p.tz, placeKeyboard: p.keyboard, keyboard: p.tz === guideMemory().tz ? guideMemory().keyboard : "" });
+      return true;
+    };
+  } else if (id === "keyboard") {
+    // Your keyboard (DASH-259) with where the symbols are when the layout set does not match it (DASH-112).
+    const data = await api("/api/setup/place");
+    const m = guideMemory();
+    const found = data.found?.keyboard || "";
+    const want = m.keyboard || (found && found !== "us" ? found : "") || ((m.tz || data.tz) === data.tz ? data.keyboard : m.placeKeyboard) || data.keyboard;
+    const boards = [...data.keyboards].sort((a, b) => (b.id === want) - (a.id === want));
+    const select = el("select", { class: "select", id: "guide-keyboard" }, boards.map((b) =>
+      el("option", { value: b.id, text: b.title + (b.id === want ? (m.keyboard ? " (your last answer)" : " (recommended)") : ""), selected: b.id === want })));
+    const where = el("div", { class: "stack-1", id: "guide-symbols", "aria-live": "polite" });
+    const showSymbols = () => {
+      const b = data.keyboards.find((x) => x.id === select.value);
+      where.replaceChildren(...(b?.symbols?.length
+        ? [el("p", { class: "small", text: b.symbols[0] }), el("ul", { class: "small" }, b.symbols.slice(1).map((line) => el("li", { text: line }))),
+          el("p", { class: "small muted", text: data.set_it_right })]
+        : [el("p", { class: "small muted", text: "Once the right layout is set, every key types what is marked on it." })]));
+    };
+    select.addEventListener("change", showSymbols);
+    showSymbols();
+    nodes = [field("Which keyboard do you have?", select, { span: true,
+        hint: "The keyboard plugged into this computer, by the language printed on its keys. The UK one has £ above 3 and # ~ beside Enter." }),
+      el("details", { class: "disclosure" }, el("summary", { text: "A symbol such as | or \\ does not come out as marked" }), el("div", { class: "disclosure__body" }, where))];
+    save = async () => {
+      const r = await api("/api/setup/place", { method: "POST", body: { tz: guideMemory().tz || data.tz, keyboard: select.value } });
+      remember({ keyboard: select.value, hostTz: r.change.timezone, hostKb: r.change.keyboard });
+      if (r.change.timezone || r.change.keyboard) await saveHost();
+      return true;
+    };
+  } else if (id === "cleanup") {
+    // Clean up (DASH-77), at the end of all three jobs. Moving to the holding folder deletes nothing: only the person
+    // deletes for good, in System, Clean up (owner rule). The same words and answers as the terminal set-up.
+    const found = await api("/api/cleanup");
+    const items = found.left_over.filter((i) => i.movable);
+    const name = `cleanup-${Date.now()}`;
+    const choices = [{ value: "hold", title: "Move them to the holding folder (recommended)", about: "Nothing is deleted. Put each back, or delete it for good, in System, Clean up." },
+      { value: "leave", title: "Leave them where they are", about: "System, Clean up lists them, to do later." }].map(({ value, title, about }, n) =>
+      ({ value, input: el("input", { type: "radio", name, value, checked: n === 0 }), title, about }));
+    nodes = [el("p", { text: `${items.length} ${items.length === 1 ? "thing" : "things"} left over, ${formatBytes(items.reduce((t, i) => t + i.size, 0))} in all:` }),
+      el("ul", { class: "small" }, items.slice(0, 8).map((i) => el("li", { text: `${i.what}, ${formatBytes(i.size)}${i.at_least ? " or more" : ""}` }))),
+      items.length > 8 ? el("p", { class: "small muted", text: `${items.length - 8} more, listed in System, Clean up.` }) : null,
+      el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Clean up what is left over?" }),
+        el("div", { class: "option-cards" }, choices.map((c) => el("label", { class: "option-card" }, c.input, el("strong", { text: c.title }), el("small", { text: c.about }))))),
+      el("p", { class: "help-links" }, helpButton("What is this?", { back: "Back to set-up", body: [
+        el("p", { text: "What earlier versions, removed plug-ins and old backups left behind. Moving them to the holding folder deletes nothing: each can be put back, or deleted for good by you, in System, Clean up. Starboard never deletes them by itself." })] }))];
+    save = async () => {
+      if (choices[0].input.checked && items.length) {
+        const r = await api("/api/cleanup/hold", { method: "POST", body: { ids: items.map((i) => i.id) } });
+        toast(`Moved ${r.moved.length} to the holding folder. Delete them for good, when you are sure, in System, Clean up.`);
+      }
+      return true;
+    };
   } else if (id === "how-to-start") {  // not "start": that is Install apps' Start the apps step, drawn by install.js
     // How to start: the same question, answers and help as the terminal set-up (starboard/start.py).
     const found = await api("/api/setup/start");
@@ -1320,7 +1388,8 @@ function remember(values) {
 // The changes to this computer, for ./install.sh: the same options as the terminal set-up (starboard/start.py).
 async function saveHost() {
   const m = guideMemory();
-  return api("/api/setup/host", { method: "POST", body: { media: m.media || "", livetv: m.livetv || "", health: m.health !== false, docker: !!m.docker } });
+  return api("/api/setup/host", { method: "POST", body: { media: m.media || "", livetv: m.livetv || "", health: m.health !== false, docker: !!m.docker,
+    timezone: m.hostTz || "", keyboard: m.hostKb || "" } });
 }
 function showProblemNear(input, message) {
   problem(message, input);
@@ -1376,6 +1445,19 @@ async function startGuide() {
   let index = 0;
   let hasDisks = false;
   try { hasDisks = (await api("/api/system")).disks.length > 0; } catch { /* leave the step out */ }
+  // DASH-259: Where you are and Your keyboard come first, unless the Run first script asked both just before; then
+  // its answers are saved for the set-up, as the terminal set-up does.
+  let placeAsked = true;
+  try {
+    const place = await api("/api/setup/place");
+    if (place.answered) {
+      placeAsked = false;
+      await api("/api/setup/place", { method: "POST", body: { tz: place.tz, keyboard: place.keyboard } });
+    }
+  } catch { placeAsked = false; }
+  // DASH-77: Clean up comes last in each job when something is left over.
+  let leftOver = false;
+  try { leftOver = (await api("/api/cleanup")).left_over.some((i) => i.movable); } catch { /* left out */ }
   let dockerAccess = true;  // asked only when Starboard does not have it (DASH-139, DASH-267)
   try { dockerAccess = !!(await api("/api/stack")).docker; } catch { /* not asked */ }
   // DASH-269: a new install runs Install apps' steps here, in this wizard, with one step count (install.js).
@@ -1408,6 +1490,10 @@ async function startGuide() {
   const build = () => {
     const list = [];
     const start = guideMemory().start || "new";
+    if (placeAsked) {
+      list.push({ id: "place", ...stepNamed(T, "place"), skippable: false },
+        { id: "keyboard", ...stepNamed(T, "keyboard"), skippable: false });
+    }
     list.push({ id: "how-to-start", ...stepNamed(T, "start"), skippable: false,
       intro: "A new media server, the apps you already run, or a backup." });
     if (start === "restore") {
@@ -1419,6 +1505,7 @@ async function startGuide() {
           ...flow.before().filter((x) => x.id === "vpn"), ...flow.finish());
       }
       list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Disk health is a change to this computer, so it is asked again." });
+      if (leftOver) list.push({ id: "cleanup", ...stepNamed(T, "cleanup"), intro: "What earlier versions, removed plug-ins and old backups left behind." });
       list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
       return list;
     }
@@ -1456,6 +1543,7 @@ async function startGuide() {
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
     if (!(start === "new" && flow) && !moveInto()) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
     if (!dockerAccess && start === "new") list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // the last question
+    if (leftOver) list.push({ id: "cleanup", ...stepNamed(T, "cleanup"), intro: "What earlier versions, removed plug-ins and old backups left behind." });
     list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
     return list;
   };

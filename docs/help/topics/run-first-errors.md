@@ -334,6 +334,12 @@ with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in
 set-up again with `python3 -m starboard.terminal_setup` in the Starboard folder, or finish in a browser, and
 choose **Report this problem** with those lines so it can be fixed.
 
+### IN-39
+
+**The time zone or keyboard could not be set.** The set-up asked the installer to set this computer's time zone or
+keyboard layout (`--timezone` or `--keyboard`), and `timedatectl` or `localectl` refused. Check the name, such as
+`Europe/London` or `gb`, then run `./install.sh --timezone Europe/London --keyboard gb` again with your own.
+
 ## Find out more
 
 - [Set up everything with the Run first script](run-first.md)

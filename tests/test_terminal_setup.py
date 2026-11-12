@@ -40,6 +40,10 @@ class TerminalSetupTest(unittest.TestCase):
         offline = mock.patch("starboard.stack.can_download", return_value=False)  # no registry calls in tests
         offline.start()
         self.addCleanup(offline.stop)
+        # The Run first script asked Where you are and Your keyboard (DASH-259), so the set-up leaves them out here;
+        # tests/test_places.py answers them.
+        with open(os.path.join(self.tmp.name, "run-first.json"), "w", encoding="utf-8") as f:
+            f.write('{"tz": "Europe/London", "keyboard": "gb"}')
         self.server, self.app = make_server("127.0.0.1", 0, self.tmp.name)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.port = self.server.server_address[1]
@@ -179,8 +183,8 @@ class TerminalSetupTest(unittest.TestCase):
         term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
         term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
         lines = term.header + out.getvalue().splitlines()  # the heading is drawn in place, not printed
-        self.assertTrue(any("step 2 of 14" in l for l in lines))
-        self.assertTrue(any("█" in l and " 7%" in l for l in lines))
+        self.assertTrue(any("step 2 of 17" in l for l in lines))
+        self.assertTrue(any("█" in l and " 6%" in l for l in lines))
         boxed = [l for l in lines if l and l[0] in "┌│└╭╰"]
         self.assertTrue(boxed)
         self.assertEqual({len(l) for l in boxed}, {70})  # every box line ends at the same column

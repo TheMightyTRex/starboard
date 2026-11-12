@@ -20,6 +20,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import start as how_to_start
+from . import places  # location and keyboard, both set-ups' first questions (DASH-259)
 from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
 from . import access, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import GENERAL_RIGHTS, Config, ConfigError, general_right, new_setup_token, same_server, validate_service
@@ -158,6 +159,9 @@ class App:
         self.space = sysinfo.SpaceLog(data_dir, perf)
         if self.history:
             self.history.on_tick = self.record_space
+        from . import recovery  # after an unexpected shutdown: one check at start (DASH-88)
+        if os.environ.get("STARBOARD_RECOVERY", "1") != "0":
+            recovery.start(self)
         self.watch = watch.Watch(self)
         if os.environ.get("STARBOARD_WATCH", "1") != "0":
             self.watch.start()
@@ -281,7 +285,10 @@ class App:
         }
 
     def record_space(self, snap=None):
-        """The day's reading of used space, if not taken yet (no thread of its own)."""
+        """The day's reading of used space, if not taken yet (no thread of its own). Also notes that Starboard is
+        still running, for the check after an unexpected shutdown (DASH-88)."""
+        from . import recovery
+        recovery.heartbeat(self.data_dir)
         if self.disks and self.space.due():
             self.space.record((snap or sysinfo.snapshot(self.disks))["disks"])
 
@@ -1001,7 +1008,7 @@ class Handler(BaseHTTPRequestHandler):
                             if i["key"] in ("plex", "emby", "jellyfin", "audiobookshelf", "sonarr", "radarr", "lidarr")],
                 "written": os.path.exists(os.path.join(stack.folder(app.data_dir), "compose.yaml")),
                 "defaults": {"config_dir": f"{base}/media-stack/config", "data_dir": data_dir, "puid": os.getuid() or 1000,
-                             "pgid": os.getgid() or 1000, "tz": os.environ.get("TZ") or "Etc/UTC"}}
+                             "pgid": os.getgid() or 1000, "tz": places.saved(app.data_dir).get("tz") or os.environ.get("TZ") or "Etc/UTC"}}
 
     def takeover_defaults(self):
         """The folders a takeover offers first: the same as Install apps (stack_overview)."""
@@ -1490,6 +1497,18 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/setup/start" and method == "GET":
                 # How to start, for both set-ups: the same answers and help, recommended from what is here.
                 return self.json(200, how_to_start.options(cfg.data["services"], app.data_dir))
+            if path == "/api/setup/place" and method == "GET":
+                # Where you are and Your keyboard, for both set-ups: the same lists, recommended from the last answer,
+                # what the Run first script chose, then this computer's own (DASH-259).
+                found = places.computer_from_env()
+                handover, saved = how_to_start.handover(app.data_dir), places.saved(app.data_dir)
+                # Left out of both set-ups when the Run first script asked both just before (WIZARD.md: ask nothing
+                # the app can find out); asked again on a later run, with the saved answer recommended.
+                answered = not saved and handover.get("tz") and handover.get("keyboard") in places.KEYBOARD_IDS
+                return self.json(200, {**places.options(found, saved or handover), "answered": bool(answered)})
+            if path == "/api/setup/place" and method == "POST":
+                choice = places.save(app.data_dir, self.body())
+                return self.json(200, {**choice, "change": places.change(choice, places.computer_from_env())})
             if path == "/api/setup/storage" and method == "GET":
                 # Storage, for both set-ups: the main disk, a separate disk or a pool, with the folder for each.
                 base = self.stack_overview()["defaults"]["data_dir"]
@@ -2116,6 +2135,37 @@ class Handler(BaseHTTPRequestHandler):
                 app.record_space(snap)
                 snap["pools"] = sysinfo.pools([dict(d, path=p) for (_, p), d in zip(app.disks, snap["disks"])])
                 return self.json(200, snap)
+            if path == "/api/system/recovery" and method == "GET":  # after an unexpected shutdown (DASH-88)
+                from . import recovery
+                return self.json(200, {"report": recovery.report(app.data_dir)})
+            if path == "/api/system/recovery/dismiss" and method == "POST":
+                from . import recovery
+                recovery.dismiss(app.data_dir)
+                return self.json(200, {"report": None})
+            if path == "/api/cleanup" and method == "GET":  # System, Clean up (DASH-77)
+                from . import cleanup, full_backup
+                busy = full_backup.status(app.data_dir).get("state") == "running"
+                return self.json(200, cleanup.summary(app.data_dir, busy))
+            if path == "/api/cleanup/hold" and method == "POST":
+                from . import cleanup, full_backup
+                busy = full_backup.status(app.data_dir).get("state") == "running"
+                moved = cleanup.hold(app.data_dir, [str(i) for i in (self.body().get("ids") or [])][:200], busy)
+                logs.event("info", "clean up", f"Moved {len(moved)} to the holding folder: " + "; ".join(moved))
+                return self.json(200, {"moved": moved, **cleanup.summary(app.data_dir, busy)})
+            if path == "/api/cleanup/put-back" and method == "POST":
+                from . import cleanup
+                where = cleanup.put_back(app.data_dir, str(self.body().get("id", "")))
+                logs.event("info", "clean up", f"Put back from the holding folder: {os.path.basename(where)}")
+                return self.json(200, cleanup.summary(app.data_dir))
+            if path == "/api/cleanup/delete" and method == "POST":
+                # Delete for good: only from the holding folder, only when the person asks, with their password
+                # (owner rule: Starboard never deletes for good by itself).
+                from . import cleanup
+                data = self.body()
+                self.check_password(data)
+                freed = cleanup.delete_for_good(app.data_dir, str(data.get("id", "")))
+                logs.event("warning", "clean up", f"Deleted for good from the holding folder, {freed} bytes, by the owner")
+                return self.json(200, {"freed": freed, **cleanup.summary(app.data_dir)})
             if path == "/api/space-history" and method == "GET":
                 return self.json(200, {"on": cfg.data["performance"].get("space_log", True), "days": app.space.get()})
             if path == "/api/version" and method == "GET":

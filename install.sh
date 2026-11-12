@@ -17,6 +17,10 @@
 #   --no-livetv           Take that away
 #   --disk-health         Set up Disk health reports (installs a timer with sudo; asks for your password)
 #   --no-disk-health      Stop reading Disk health reports (and say how to remove the timer)
+#   --timezone ZONE       Set this computer's time zone, and Starboard's, such as Europe/London (sudo asks for
+#                         your password)
+#   --keyboard ID         Set this computer's keyboard layout, such as gb, ie, us, de or fr (the ids in
+#                         starboard/places.py; sudo asks for your password)
 #   --pool                Set up Drive pools: the pool helper, which joins drives into one folder and looks after
 #                         backup drives (installs it with sudo; asks for your password)
 #   --no-pool             Stop using the pool helper (and say how to remove it)
@@ -55,6 +59,8 @@ NETWORK=1
 ASK=1
 DOCKER=""
 HEALTH=""
+TIMEZONE=""  # DASH-259: the location and keyboard the set-up chose, when this computer has others
+KEYBOARD=""
 POOL=""
 STARTER=1
 STARTER_SAID=0  # --starter or --no-starter given this time; otherwise an earlier --no-starter (data/starter-off) stands
@@ -79,6 +85,8 @@ while [ $# -gt 0 ]; do
     --app-use) APPUSE=1 ;;
     --no-app-use) APPUSE=0 ;;
     --disk-health) HEALTH=1 ;;
+    --timezone) TIMEZONE="${2:?--timezone needs a time zone such as Europe/London}"; shift ;;
+    --keyboard) KEYBOARD="${2:?--keyboard needs a keyboard such as gb}"; shift ;;
     --no-disk-health) HEALTH=0 ;;
     --pool) POOL=1 ;;
     --no-pool) POOL=0 ;;
@@ -690,6 +698,16 @@ job_save() {
   set_env STARBOARD_ALLOW_APPUSE "$APPUSE"
   set_env STARBOARD_LIVETV_PATH "$LIVETV"
   set_env STARBOARD_HOST_HOME "$HOME"  # so a folder typed as ~/media is understood (DASH-240)
+  # The apps' time zone (DASH-259): the one the set-up chose, else this computer's, which the Run first script set.
+  # An earlier answer stays unless it is the example's Etc/UTC or a new one is given.
+  local tz="$TIMEZONE"
+  [ -n "$tz" ] || tz="$(timedatectl show -p Timezone --value 2>/dev/null || true)"
+  [ -n "$tz" ] || tz="$(cat /etc/timezone 2>/dev/null || true)"
+  if [[ "$tz" =~ ^[A-Za-z0-9_+/-]{1,40}$ ]] && { [ -n "$TIMEZONE" ] || ! grep -q '^TZ=.' .env || grep -qx 'TZ=Etc/UTC' .env; }; then
+    set_env TZ "$tz"
+  fi
+  # This computer's keyboard, which Starboard in Docker cannot read itself, so both set-ups recommend the same.
+  set_env STARBOARD_HOST_KEYBOARD "${KEYBOARD:-$(python3 -I -c 'import sys; sys.path.insert(0, "."); from starboard import places; print(places.read_computer()["keyboard"])' 2>/dev/null || true)}"
   # The graphics chip's maker (0x8086 Intel, 0x1002 AMD), which Starboard in Docker cannot read itself (DASH-82).
   set_env STARBOARD_GRAPHICS_VENDOR "$(cat /sys/class/drm/renderD128/device/vendor 2>/dev/null || true)"
   if [ -n "$LIVETV" ]; then
@@ -867,7 +885,26 @@ job_wait() {
   stop IN-24 "Starboard did not start. See: docker compose logs starboard (or journalctl --user -u starboard)"
 }
 
+# The location and keyboard the set-up chose (DASH-259): the same commands as the Run first script's.
+place_layout() {
+  python3 -I -c 'import sys; sys.path.insert(0, "."); from starboard import places; k = places.keyboard(sys.argv[1]); print(k[2], k[3]) if k else sys.exit(1)' "$1"
+}
+job_place() {
+  local lv
+  if [ -n "$TIMEZONE" ]; then
+    sudo -n timedatectl set-timezone "$TIMEZONE" || stop IN-39 "the time zone $TIMEZONE could not be set. Check the name, such as Europe/London"
+    echo "The time zone is $TIMEZONE."
+  fi
+  if [ -n "$KEYBOARD" ]; then
+    lv="$(place_layout "$KEYBOARD")" || stop IN-39 "there is no keyboard called $KEYBOARD. Use one of the ids in starboard/places.py, such as gb"
+    # shellcheck disable=SC2086  # the layout and its variant (which may be empty) are two words on purpose
+    sudo -n localectl set-x11-keymap ${lv%% *} pc105 ${lv#* } || stop IN-39 "the keyboard could not be set"
+    if command -v setupcon >/dev/null; then sudo -n setupcon -k --force >/dev/null 2>&1 || true; fi
+    echo "The keyboard layout is ${lv%% *}${lv#* }."
+  fi
+}
 needs_sudo() {
+  [ -n "$TIMEZONE$KEYBOARD" ] || \
   { [ "$HEALTH" = 1 ] && [ ! -f /etc/systemd/system/starboard-smart.timer ]; } || \
   { [ "$POOL" = 1 ] && ! { [ -f /etc/systemd/system/starboard-pool.path ] && cmp -s starboard/pool_helper.py /usr/local/bin/starboard-pool; }; }
 }
@@ -896,6 +933,8 @@ step_install() {
   say ""
   JOB_N=0
   JOB_OF=4; [ "$HEALTH" = 1 ] && JOB_OF=$(( JOB_OF + 1 )); [ "$POOL" = 1 ] && JOB_OF=$(( JOB_OF + 1 ))
+  [ -n "$TIMEZONE$KEYBOARD" ] && JOB_OF=$(( JOB_OF + 1 ))
+  if [ -n "$TIMEZONE$KEYBOARD" ]; then job "Setting the time zone and keyboard" job_place; fi
   job "Saving your answers" job_save
   if [ "$HEALTH" = 1 ]; then job "Setting up Disk health" job_health; fi
   if [ "$POOL" = 1 ]; then job "Setting up Drive pools" job_pool; fi
