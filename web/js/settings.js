@@ -2792,6 +2792,8 @@ function advancedSwitch() {
   const apply = () => {
     document.body.classList.toggle("show-advanced", input.checked);
     const n = $$("[data-advanced]", main).length;
+    // Only on a page that has advanced settings to show (Manage apps has none).
+    box.hidden = !n && !input.checked;
     const text = input.checked ? "Showing every setting. Your choice is saved for every Settings page."
       : n ? `${n} more ${n === 1 ? "section is" : "sections are"} under Advanced settings.` : "";
     if (note.textContent !== text) note.textContent = text;  // only a real change, or the watcher below would loop
@@ -2805,12 +2807,9 @@ function advancedSwitch() {
   input.setAttribute("aria-describedby", "advanced-note");
   const box = el("label", { class: "switch advanced-toggle", title: "Shows everything each app can change" },
     el("span", { text: "Advanced settings" }), input, note);
-  const head = $(".page-head", main);
-  if (head) {
-    let actions = $(":scope > .actions", head);
-    if (!actions) { actions = el("div", { class: "actions" }); head.append(actions); }
-    actions.prepend(box);
-  } else main.prepend(box);
+  // On the heading's line, at the right (12 November 2026: it was among the page's own buttons on Manage apps).
+  const h1 = $(".page-head h1", main);
+  if (h1) onTitle(h1, box); else main.prepend(box);
   // Sections are drawn as their data arrives: mark each one as it appears, and keep the note's count right.
   new MutationObserver((changes) => {
     if (changes.every((c) => box.contains(c.target))) return;  // the switch's own note changing is not a new section
@@ -2830,7 +2829,8 @@ let topicCurrent = null;
 function topicTabs() {
   const main = $("main .page");
   const holder = main && $(".settings-sections", main);
-  if (!holder || IN_PANEL) return;
+  // Not where the sections are one list in groups (Manage apps: apps by category, dragged between them).
+  if (!holder || IN_PANEL || holder.closest("[data-no-topic-tabs]") || holder.id === "app-sections") return;
   let off = false;
   try { off = localStorage.getItem("starboard.topic-tabs") === "off"; } catch { /* tabs on */ }
   const topics = $$("section.settings-section", holder).filter((s) => !s.parentElement.closest("section.settings-section")

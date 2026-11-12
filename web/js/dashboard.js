@@ -51,7 +51,7 @@ const CARDS = {
   async downloads() {
     const r = await ask("/api/queue");
     const items = r.items || [];
-    if (!items.length) return empty("Nothing is downloading.", "/wanted.html", "See what is wanted");
+    if (!items.length) return empty("Nothing is downloading.", "/wanted-films.html", "See what is wanted");
     return el("ul", { class: "rows" }, items.slice(0, 5).map((q) => line(q.title, [`${Math.round(q.progress || 0)}%`, q.time_left].filter(Boolean).join(" · "), "/downloads.html")));
   },
   async coming() {

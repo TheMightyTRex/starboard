@@ -52,7 +52,10 @@ MENU = [
     ("activity", "Activity", "activity", [
         ("Downloads", "download", [("downloads.html", "Queue", "download"), ("downloads-finished.html", "Recently finished", "history"),
                                    ("downloads-direct.html", "From a link", "link")]),
-        ("Wanted", "list-checks", [("wanted.html", "Missing", "list-checks"), ("wanted-quality.html", "Below the quality wanted", "gauge")]),
+        # A level 2 item for each media type, with Missing and Below the quality wanted as tabs (12 November 2026)
+        ("Wanted", "list-checks", [("wanted-films.html", "Films", "film"), ("wanted-tv.html", "TV", "tv"),
+                                   ("wanted-music.html", "Music", "music"), ("wanted-books.html", "Books", "book-open"),
+                                   ("wanted-audiobooks.html", "Audiobooks", "headphones")]),
         ("Requests", "inbox", [("downloads-requests.html", "Requests", "inbox"), ("downloads-issues.html", "Issues", "circle-alert")]),
         ("History", "history", [("history.html", "History", "history")]),
     ]),
@@ -124,6 +127,11 @@ HELP = {
     "downloads.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
     "downloads-finished.html": ("topics/manage-downloads.md", "pausing, resuming and removing downloads"),
     "wanted.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
+    "wanted-films.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
+    "wanted-tv.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
+    "wanted-music.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
+    "wanted-books.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
+    "wanted-audiobooks.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
     "wanted-quality.html": ("topics/get-what-is-missing.md", "finding and getting what is missing"),
     "downloads-requests.html": ("topics/approve-requests.md", "approving or declining requests"),
     "downloads-issues.html": ("topics/approve-requests.md", "issues people report"),
@@ -182,7 +190,7 @@ for key, _, _, items in MENU:
             PAGES[page] = (key, n)
 # Pages with no tab of their own show the page they open from as current: the guides open from Settings,
 # General, and Copy settings from Manage apps.
-TAB_OF = {"setup-guide.html": "settings-general.html", "discover-trending.html": "discover-films.html", "settings-plugin.html": "settings-plugins.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
+TAB_OF = {"setup-guide.html": "settings-general.html", "wanted.html": "wanted-films.html", "wanted-quality.html": "wanted-films.html", "discover-trending.html": "discover-films.html", "settings-plugin.html": "settings-plugins.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
           # An item's page shows its Library tab as current.
           "library-film.html": "library-films.html", "library-tv-show.html": "library-tv.html", "library-artist.html": "library-music.html",
           "library-radio-show.html": "library-radio.html", "library-book.html": "library-books.html",

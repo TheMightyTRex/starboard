@@ -42,6 +42,9 @@ DEFAULTS = {
     "site_name": "Starboard",
     # Plug-in catalogues added from a link (12 November 2026): [{"url", "name"}]. Starboard's own is always read too.
     "plugin_catalogues": [],
+    # History (12 November 2026): days of Reelix history to show (0 = all), and when Delete history was last used.
+    "history_keep_days": 0,
+    "history_cleared_at": "",
     # The server's own name, up to 10 characters, at the start of the level 1 menu. Empty shows nothing.
     "server_name": "",
     "design": "health",

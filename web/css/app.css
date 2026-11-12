@@ -156,3 +156,7 @@ html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: g
 /* The Search icon button in every search box is in the shared library (components.css and .js, 12 November 2026). */
 /* A state chip on its title's line: .title-chip is in the shared library (components.css, 12 November 2026). */
 .dash-card__head .title-chip { flex: 1 1 auto; }
+.history-keep { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3, 12px); margin-bottom: var(--space-4, 16px); }
+.history-keep .select { width: auto; }
+.history-keep .btn--danger { margin-left: auto; }
+.page-head__text:has(> .title-chip) { flex: 1 1 auto; min-width: 0; } /* the heading line, with Advanced settings at the right edge */

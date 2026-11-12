@@ -5,7 +5,9 @@ Reelix; this covers films and series."""
 from . import services
 
 WHICH = {"missing": "/wanted/missing", "cutoff": "/wanted/cutoff"}
-KINDS = ("movie", "episode")
+KINDS = ("movie", "episode", "album", "ebook", "audiobook")  # albums and books since 12 November 2026
+NOUNS = {"movie": ("film", "films"), "episode": ("episode", "episodes"), "album": ("album", "albums"),
+         "ebook": ("book", "books"), "audiobook": ("audiobook", "audiobooks")}
 PAGE = 50
 
 
@@ -20,6 +22,8 @@ def listing(all_services, which, kind, page=1):
     if which not in WHICH or kind not in KINDS:
         raise ValueError("Choose Missing or Below the quality wanted, and films or episodes")
     r = _reelix(all_services)
+    if kind in ("album", "ebook", "audiobook"):
+        return _content(r, which, kind, page)
     answer = services._api(r, WHICH[which], {"kind": kind, "page": max(1, int(page)), "page_size": PAGE, "sort": "date", "dir": "desc"}) or {}
     out = []
     for w in answer.get("items") or []:
@@ -71,12 +75,39 @@ def detail(all_services, kind, item_id, series_id=None):
     return out
 
 
+def _content(r, which, kind, page):
+    """Albums and books: Reelix's own wanted lists for them (/albums/wanted, /books/wanted with a format)."""
+    params = {"kind": which, "page": max(1, int(page)), "page_size": PAGE}
+    if kind == "album":
+        answer = services._api(r, "/albums/wanted", params) or {}
+    else:
+        answer = services._api(r, "/books/wanted", {**params, "format": kind}) or {}
+    out = []
+    for w in answer.get("items") or []:
+        who = w.get("artist_name") if kind == "album" else w.get("author_name")
+        year = w.get("year") or (str(w.get("release_date") or "")[:4] or None)
+        out.append({"id": w["id"], "series_id": None, "title": w.get("title") or "Untitled", "year": year,
+                    "detail": " · ".join(x for x in (who or "", w.get("album_type") or "") if x),
+                    "date": w.get("release_date") or "", "quality": "", "cutoff": "",
+                    "href": f"/library-book.html?id={w['id']}" if kind != "album" else ""})
+    return {"items": out, "total": int(answer.get("total") or 0), "page": int(answer.get("page") or page), "page_size": PAGE}
+
+
 def search(all_services, which, kind, ids=None):
     """Searches the ticked ones now, or every one on the list when ids is empty. Returns a sentence."""
     if which not in WHICH or kind not in KINDS:
         raise ValueError("Choose Missing or Below the quality wanted, and films or episodes")
     r = _reelix(all_services)
     ids = [int(i) for i in ids or [] if str(i).isdigit()][:500]
+    if kind in ("album", "ebook", "audiobook"):  # Reelix's own book and album searches
+        body = {"kind": "item" if ids else which, "ids": ids}
+        if kind == "album":
+            services._api(r, "/music/search", method="POST", body=body)
+        else:
+            services._api(r, "/books/search", method="POST", body={**body, "format": kind})
+        one, many = NOUNS[kind]
+        return (f"Reelix is searching for {len(ids)} {one if len(ids) == 1 else many} now" if ids else
+                "Reelix is searching for everything on this list now. It goes a few at a time, so the sites are not overloaded")
     if ids:
         services._api(r, "/search", method="POST", body={"kind": kind, "ids": ids})
         return f"Reelix is searching for {len(ids)} {'film' if kind == 'movie' and len(ids) == 1 else 'films' if kind == 'movie' else 'episode' if len(ids) == 1 else 'episodes'} now"

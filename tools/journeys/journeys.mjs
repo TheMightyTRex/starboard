@@ -17,7 +17,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "library-books-authors.html", "library-audiobooks.html", "library-audiobooks-series.html", "library-audiobooks-authors.html",
   "library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=1", "library-radio-show.html?id=1",
   "library-book.html?id=4", "library-audiobook.html?id=6",
-  "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted.html", "wanted-quality.html", "history.html", "settings-reelix.html"];
+  "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "settings-reelix.html"];
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 

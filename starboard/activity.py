@@ -32,7 +32,34 @@ def _href(media):
     return {"movie": f"/library-film.html?id={i}", "series": f"/library-tv-show.html?id={i}"}.get(kind, "") if i else ""
 
 
-def history(all_services, which="all", page=1):
+KEEP_CHOICES = (0, 7, 30, 90, 365)  # days; 0 keeps everything
+
+
+def _cutoff(prefs):
+    """The oldest moment History shows: the keep choice, or the last Delete history, whichever is later (ISO text)."""
+    import datetime as dt
+    keep = int((prefs or {}).get("history_keep_days") or 0)
+    cleared = str((prefs or {}).get("history_cleared_at") or "")
+    edges = [cleared] if cleared else []
+    if keep:
+        edges.append((dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=keep)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    return max(edges) if edges else ""
+
+
+def delete_history(all_services, prefs, now_iso):
+    """Delete history: asks Reelix to delete when it can; Starboard hides what came before now either way. Returns
+    the words to show."""
+    try:
+        services._api(_reelix(all_services), "/history", {"before": now_iso}, method="DELETE")
+        deleted = True
+    except services.ServiceError:
+        deleted = False  # Reelix cannot delete yet (RFX-105): hidden here instead
+    prefs["history_cleared_at"] = now_iso
+    return ("History deleted" if deleted else
+            "History cleared here. Reelix keeps its own copy until it can delete history (planned)")
+
+
+def history(all_services, which="all", page=1, prefs=None):
     if which not in FILTERS:
         raise ValueError("Choose All, Sent, Added or Failed")
     params = {"page": max(1, int(page)), "page_size": PAGE}
@@ -40,7 +67,12 @@ def history(all_services, which="all", page=1):
         params["event_type"] = FILTERS[which]
     answer = services._api(_reelix(all_services), "/history", params) or {}
     out = []
+    cutoff = _cutoff(prefs)
+    older = False
     for h in answer.get("items") or []:
+        if cutoff and str(h.get("date") or "") < cutoff:
+            older = True  # newest first: everything after this is older too
+            continue
         q = (h.get("quality") or {}).get("quality") or ""
         data = h.get("data") or {}
         out.append({"id": h["id"], "event": EVENTS.get(h.get("event_type"), h.get("event_type") or ""), "tone": TONES.get(h.get("event_type"), "muted"),
@@ -48,7 +80,9 @@ def history(all_services, which="all", page=1):
                     "release": h.get("source_title") or "", "quality": q if isinstance(q, str) else "",
                     "where": h.get("indexer") or h.get("download_client") or "",
                     "message": str(data.get("message") or data.get("reason") or "")[:300]})
-    return {"items": out, "total": int(answer.get("total") or 0), "page": params["page"], "page_size": PAGE}
+    total = (params["page"] - 1) * PAGE + len(out) if older else int(answer.get("total") or 0)
+    return {"items": out, "total": total, "page": params["page"], "page_size": PAGE,
+            "keep_days": int((prefs or {}).get("history_keep_days") or 0), "cleared_at": (prefs or {}).get("history_cleared_at") or ""}
 
 
 def refused(all_services, page=1):

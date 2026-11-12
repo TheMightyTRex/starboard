@@ -1275,13 +1275,29 @@ class Handler(BaseHTTPRequestHandler):
                 except services.ServiceError as e:
                     return self.error(502, f"Reelix said no: {e}")
                 return self.error(404, "Not found")
+            if path == "/api/reelix-history/keep" and method == "PUT":  # History, how much to keep (12 November 2026)
+                from . import activity
+                days = int(self.body().get("days") or 0)
+                if days not in activity.KEEP_CHOICES:
+                    return self.error(400, "Choose how long to keep history from the list")
+                cfg.data["history_keep_days"] = days
+                cfg.save()
+                return self.json(200, {"keep_days": days})
+            if path == "/api/reelix-history/delete" and method == "POST":  # Delete history
+                import datetime as _dt
+                from . import activity
+                now = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                said = activity.delete_history(cfg.data["services"], cfg.data, now)
+                cfg.save()
+                logs.event("info", "history", said)
+                return self.json(200, {"said": said})
             if path in ("/api/reelix-history", "/api/reelix-history/refused", "/api/reelix-history/refused/take-off"):
                 from . import activity  # DASH-159: History and the refused list, from Reelix
                 try:
                     q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                     page = int((q.get("page") or ["1"])[0] or 1)
                     if path == "/api/reelix-history" and method == "GET":
-                        return self.json(200, activity.history(cfg.data["services"], (q.get("which") or ["all"])[0], page))
+                        return self.json(200, activity.history(cfg.data["services"], (q.get("which") or ["all"])[0], page, cfg.data))
                     if path == "/api/reelix-history/refused" and method == "GET":
                         return self.json(200, activity.refused(cfg.data["services"], page))
                     if method == "POST":

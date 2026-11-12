@@ -1,8 +1,34 @@
 // Wanted (DASH-207): Missing, and Below the quality wanted, for films and episodes, from Reelix. Tick some and
 // search for them, or search for everything on the list. A page at a time, with Show more.
 
-const WHICH = document.querySelector("[data-wanted]")?.dataset.wanted || "missing";
-const wantedState = { kind: "movie", page: 1, total: 0, items: [] };
+// 12 November 2026: one page per media type (the level 2 menu), with Missing and Below the quality wanted as tabs.
+let WHICH = new URLSearchParams(location.search).get("list") === "cutoff" ? "cutoff" : "missing";
+const W_KIND = document.querySelector("[data-wanted-kind]")?.dataset.wantedKind;
+const wantedState = { kind: W_KIND || "movie", page: 1, total: 0, items: [] };
+const W_NOUN = { movie: ["film", "films"], episode: ["episode", "episodes"], album: ["album", "albums"], ebook: ["book", "books"],
+  audiobook: ["audiobook", "audiobooks"] };
+
+function wantedTabs() {
+  const tabs = [["missing", "Missing"], ["cutoff", "Below the quality wanted"]];
+  const list = el("div", { role: "tablist", "aria-label": "Which list" }, tabs.map(([v, t]) => {
+    const b = el("button", { type: "button", role: "tab", class: "topic-tabs__tab", "aria-selected": String(v === WHICH), "aria-controls": "wanted-list", text: t });
+    b.addEventListener("click", () => {
+      WHICH = v;
+      $$("[role=tab]", list).forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+      const u = new URL(location.href); if (v === "cutoff") u.searchParams.set("list", "cutoff"); else u.searchParams.delete("list");
+      history.replaceState(null, "", u);
+      wantedLoad(); wantedTicked();
+    });
+    return b;
+  }));
+  list.addEventListener("keydown", (e) => {
+    if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+    const bs = $$("[role=tab]", list); const i = bs.indexOf(document.activeElement);
+    if (i < 0) return;
+    e.preventDefault(); const n = bs[(i + (e.key === "ArrowRight" ? 1 : -1) + bs.length) % bs.length]; n.focus(); n.click();
+  });
+  return el("nav", { class: "topic-tabs", "aria-label": "Which list" }, list);
+}
 
 function wantedRow(w) {
   const box = el("input", { type: "checkbox", value: String(w.id), "aria-label": `Tick ${w.title}${w.detail ? `, ${w.detail}` : ""}` });
@@ -12,10 +38,10 @@ function wantedRow(w) {
     icon("search"), "Search", el("span", { class: "visually-hidden", text: ` for ${w.title}${w.detail ? `, ${w.detail}` : ""}` }));
   // DASH-171: while download hours pause downloads, Download now gets this one straight away.
   const name = w.detail ? `${w.title}, ${w.detail}` : w.title;
-  const now = wantedState.paused ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => downloadNow(w, name, e.currentTarget) },
+  const now = wantedState.paused && ["movie", "episode"].includes(wantedState.kind) ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => downloadNow(w, name, e.currentTarget) },
     icon("zap"), "Download now", el("span", { class: "visually-hidden", text: ` ${name}` })) : null;
-  const more = el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => wantedDetail(w, name, e.currentTarget) },
-    icon("info"), "Details", el("span", { class: "visually-hidden", text: ` for ${name}` }));
+  const more = ["movie", "episode"].includes(wantedState.kind) ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => wantedDetail(w, name, e.currentTarget) },
+    icon("info"), "Details", el("span", { class: "visually-hidden", text: ` for ${name}` })) : null;
   return el("li", { class: "row" }, box,
     el("div", {}, el("h3", { class: "row__title" }, w.href ? el("a", { href: w.href, text: w.year ? `${w.title} (${w.year})` : w.title }) : w.title),
       el("div", { class: "row__meta", text: meta })),
@@ -79,7 +105,7 @@ async function wantedLoad(more = false) {
     if (!more) list.replaceChildren();
     list.append(...r.items.map(wantedRow));
     if (!wantedState.items.length) list.replaceChildren(el("li", { class: "empty", text: WHICH === "missing" ? "Nothing is missing." : "Everything is at the quality wanted." }));
-    const noun = wantedState.kind === "movie" ? ["film", "films"] : ["episode", "episodes"];
+    const noun = W_NOUN[wantedState.kind] || ["item", "items"];
     $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " missing" : " below the quality wanted"}`;
     $("#wanted-more").hidden = wantedState.items.length >= r.total;
     $("#wanted-all").disabled = !r.total;
@@ -123,6 +149,7 @@ function wantedTicked() {
 startPage().then(async () => {
   try { wantedState.paused = (await api("/api/schedule")).mode === "pause"; } catch { wantedState.paused = false; }
   $$('input[name="wanted-kind"]').forEach((r) => r.addEventListener("change", () => { wantedState.kind = r.value; wantedLoad(); wantedTicked(); }));
+  if (W_KIND) $(".page-head")?.after(wantedTabs());
   $("#wanted-list").addEventListener("change", wantedTicked);
   $("#wanted-ticked").addEventListener("click", (e) => wantedSearch($$("#wanted-list input[type=checkbox]:checked").map((b) => Number(b.value)), e.currentTarget));
   $("#wanted-all").addEventListener("click", (e) => wantedSearch([], e.currentTarget));

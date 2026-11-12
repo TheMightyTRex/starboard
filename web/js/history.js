@@ -65,3 +65,32 @@ startPage().then(() => {
   autoLoadMore($("#history-more"), async () => { const before = historyState.items; historyState.page += 1; await historyLoad(true); return historyState.items - before; }, "more");
   historyLoad();
 });
+
+// How much history to keep, and Delete history (owner, 12 November 2026). Reelix keeps its own copy until it can
+// delete history; Starboard then shows only what is newer.
+function historyKeep() {
+  const choices = [[0, "Everything"], [365, "A year"], [90, "90 days"], [30, "30 days"], [7, "A week"]];
+  const select = el("select", { class: "select", id: "history-keep" }, choices.map(([v, t]) => el("option", { value: String(v), text: t })));
+  const del = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Delete history");
+  select.addEventListener("change", async () => {
+    try { await api("/api/reelix-history/keep", { method: "PUT", body: { days: Number(select.value) } }); toast("Saved"); historyLoad(); }
+    catch (e) { problem(e.message, select); }
+  });
+  del.addEventListener("click", async () => {
+    if (!await confirmDialog({ title: "Delete the history?", confirm: "Delete history", danger: true,
+      message: "Everything on this page before now goes. Your films, series, music and books are not touched, and Reelix still knows what it has." })) return;
+    del.disabled = true;
+    try { toast((await api("/api/reelix-history/delete", { method: "POST" })).said); historyLoad(); }
+    catch (e) { problem(e.message, del); }
+    finally { del.disabled = false; }
+  });
+  return { select, node: el("div", { class: "history-keep" },
+    el("label", { class: "field__label", for: select.id, text: "Keep history for" }), select, del) };
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const head = document.querySelector(".page-head");
+  if (!head) return;
+  const k = historyKeep();
+  head.after(k.node);
+  api("/api/reelix-history?which=all&page=1").then((c) => { k.select.value = String(c.keep_days || 0); }).catch(() => {});
+});
