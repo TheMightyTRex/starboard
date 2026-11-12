@@ -218,6 +218,46 @@ function showGroup() {
   $("#lib-group").replaceChildren(...[logo].filter(Boolean), el("h2", { text: state.group }),
     page ? el("a", { class: "back-link", href: `/${page}` }, icon("arrow-left"), `All ${label.toLowerCase()}`) : null);
   document.title = `${state.group} · ${document.title}`;
+  if ((TAB === "films" || TAB === "audiobooks") && state.by !== "authors") groupComplete();
+}
+
+// An opened collection or series, complete (owner, 12 November 2026): how many you have of how many, every one in
+// order with the missing ones as outlines, and Add missing, which adds them all to Reelix.
+async function groupComplete() {
+  const box = el("section", { class: "group-complete", "aria-label": "The whole collection" }, el("p", { class: "small muted", text: "Looking for the rest…" }));
+  $("#lib-group").after(box);
+  let d;
+  try { d = await api(`/api/library/group-detail?tab=${TAB}&group=${encodeURIComponent(state.group)}`); }
+  catch (e) { box.replaceChildren(notice("info", "Could not look for the rest", e.message)); return; }
+  if (!d.total) { box.remove(); return; }
+  const noun = TAB === "films" ? ["film", "films"] : ["book", "books"];
+  const add = el("button", { type: "button", class: "btn btn--primary" }, icon("plus"), `Add missing (${d.missing})`);
+  add.disabled = !d.missing;
+  add.addEventListener("click", async () => {
+    const titles = d.items.filter((i) => !i.have && !i.wanted).map((i) => i.title);
+    if (!await confirmDialog({ title: `Add ${titles.length} missing ${titles.length === 1 ? noun[0] : noun[1]}?`, confirm: "Add them",
+      message: [el("p", { text: TAB === "films" ? "Reelix adds each one with the collection's quality and folder, and starts looking for them." : "Reelix adds each one as an audiobook and starts looking for them." }),
+        el("ul", {}, titles.slice(0, 30).map((t) => el("li", { text: t })))] })) return;
+    add.disabled = true;
+    add.textContent = "Adding…";
+    try {
+      const out = await api("/api/library/group-missing", { method: "POST", body: { tab: TAB, group: state.group } });
+      toast(`Added ${out.added.length}${out.failed.length ? `; ${out.failed.length} could not be found: ${out.failed.join(", ")}` : ""}`);
+      box.remove();
+      groupComplete();
+    } catch (e) { problem(e.message, add); add.disabled = false; add.textContent = `Add missing (${d.missing})`; }
+  });
+  const ring = el("span", { class: `collection-ring${d.have === d.total ? " is-complete" : ""}`, role: "img", "aria-label": `${d.have} of ${d.total} in your library` },
+    el("span", { class: "collection-ring__text", "aria-hidden": "true", text: `${d.have}/${d.total}` }));
+  ring.style.setProperty("--done", `${Math.round((d.have / d.total) * 100)}`);
+  const strip = el("ol", { class: "group-complete__strip" }, d.items.map((i) => el("li", { class: i.have ? "" : "is-missing" },
+    i.poster ? el("img", { src: i.poster, alt: "", loading: "lazy" }) : el("span", { class: "group-complete__blank", "aria-hidden": "true" }),
+    el("span", { class: "group-complete__title", text: i.title }),
+    el("span", { class: "small muted", text: [i.when, i.have ? "" : i.wanted ? "Wanted" : "Missing"].filter(Boolean).join(" · ") }))));
+  box.replaceChildren(
+    titleChip(el("p", { class: "group-complete__count", text: `${d.have} of ${d.total} ${d.total === 1 ? noun[0] : noun[1]} in your library` }), ring),
+    strip,
+    el("div", { class: "actions" }, add, el("span", { class: "small muted", text: `From ${d.source}.` })));
 }
 
 // DASH-186: films and series already on disk that Reelix does not know yet. A note above the wall, then a dialog of

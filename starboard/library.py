@@ -1244,6 +1244,9 @@ def handle(h, method, path):
     used(data_dir, tab, get_reelix)
     if path == "/api/library/wall" and method == "GET":
         index = load(data_dir, reelix, tab)
+        if tab == "audiobooks" and q.get("group"):  # an opened series (12 November 2026)
+            from . import group_complete
+            index = group_complete.tag_audiobooks(index, cfg.data["services"])
         sort = q.get("sort") if q.get("sort") in ("az", "added", "year") else "az"
         until = q.get("until", "") if re.match(r"^[A-Z#]$", q.get("until", "")) else ""
         out = wall(index, tab, q.get("q", "")[:120], q.get("chip", ""), sort, q.get("group", "")[:200],
@@ -1266,6 +1269,21 @@ def handle(h, method, path):
         except ValueError as e:
             return h.error(400, str(e))
         return h.json(200, {"ok": True})
+    if path == "/api/library/group-detail" and method == "GET":  # an opened collection or series, complete
+        from . import group_complete
+        try:
+            got = group_complete.detail(reelix, cfg.data["services"], tab, q.get("group", "")[:200])
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix did not answer: {e}")
+        return h.json(200, got or {"name": q.get("group", ""), "total": 0, "have": 0, "missing": 0, "items": []})
+    if path == "/api/library/group-missing" and method == "POST":  # Add missing
+        from . import group_complete
+        body = h.body()
+        try:
+            out = group_complete.add_missing(data_dir, reelix, cfg.data["services"], tab, str(body.get("group") or "")[:200])
+        except LookupError as e:
+            return h.error(404, str(e))
+        return h.json(200, out)
     if path == "/api/library/discover" and method == "GET":  # Discover by area (12 November 2026)
         from . import discover_feeds
         try:
@@ -1311,7 +1329,15 @@ def handle(h, method, path):
         return h.send(200, found[0], found[1], {"Cache-Control": "private, max-age=604800"})
     if path == "/api/library/groups" and method == "GET":
         index = load(data_dir, reelix, tab)
+        from . import group_complete
+        if tab == "audiobooks":  # series from Audiobookshelf (12 November 2026)
+            index = group_complete.tag_audiobooks(index, cfg.data["services"])
         found = groups(index, tab, "authors" if q.get("by") == "authors" else "")
+        if tab in ("films", "audiobooks") and q.get("by") != "authors":
+            try:  # whole collections and series, with what is missing (12 November 2026)
+                found = group_complete.banners(tab, found, reelix, cfg.data["services"])
+            except Exception:  # noqa: BLE001 - the groups still show what you have
+                pass
         if tab == "radio" and not q.get("by"):  # station logos, from the owner's own files (12 November 2026)
             from . import station_logos
             for g in found:

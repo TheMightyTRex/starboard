@@ -191,9 +191,11 @@ def answer(path, q):
     if path == "/bookseries":
         return [{"id": 1, "title": "The Glass Harbour", "books": [[str(n + 1), (n + 1) * 4] for n in range(10)]}]
     if path == "/collections":
-        return [{"id": 1, "title": "The Harbour Films", "movies": [{"title": FILMS[k - 1]["title"], "year": FILMS[k - 1]["year"], "movie_id": k,
+        return [{"id": 1, "title": "The Harbour Films", "movies": [{"title": FILMS[k - 1]["title"], "year": FILMS[k - 1]["year"], "movie_id": k, "tmdb_id": 7000 + k,
                                                                      "has_file": FILMS[k - 1]["has_file"]} for k in (3, 9, 27)]
-                 + [{"title": "Harbour Lights Returns", "year": 2027, "movie_id": None, "has_file": False}]}]
+                 + [{"title": "Harbour Lights Returns", "year": 2027, "movie_id": None, "tmdb_id": 7999, "has_file": False},
+                    {"title": "Harbour at Midnight", "year": 2024, "movie_id": None, "tmdb_id": 7998, "has_file": False}],
+                 "quality_profile_id": 1, "root_folder_id": 1}]
     # Discover by area (12 November 2026): made-up feeds, so the pages can be shown
     if path in ("/discover/genres/movie", "/discover/genres/tv"):
         return [{"id": n, "name": g} for n, g in enumerate(["Action", "Comedy", "Drama", "Family", "Mystery", "Science Fiction"], 1)]
