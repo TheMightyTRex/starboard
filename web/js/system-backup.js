@@ -143,9 +143,8 @@ async function loadServer() {
   const s = server.status;
   const busy = s && (s.status === "running" || s.status === "waiting");
   if (!server.configured) {
-    box.replaceChildren(el("div", { class: "empty" },
-      el("p", { text: "No server backup job is set up, so Starboard cannot back up the whole server. The help article Back up the whole server explains how to set one up." })));
-    $("#backup-summary").textContent = "Keep a copy of the whole server, and of Starboard's settings.";
+    // Full without media covers a server Starboard set up; this part is only for a job of the server's own.
+    box.closest("section").hidden = true;
     return;
   }
   const focusKey = box.contains(document.activeElement) ? document.activeElement.closest("[data-key]")?.dataset.key : null;
@@ -178,9 +177,7 @@ async function loadServer() {
     rows.length ? el("ul", { class: "rows", "aria-label": "Server backups, newest first" }, rows) : el("p", { class: "muted", text: "No backup has run yet." }),
     archives ? notice("warning", "Keep a copy somewhere else", `${archives === 1 ? "The backup is" : `All ${archives} backups are`} on the server. If its disk fails, ${archives === 1 ? "it goes" : "they go"} with it. Copy the newest one to another disk or computer.`) : "");
   if (focusKey) [...box.querySelectorAll("[data-key]")].find((n) => n.dataset.key === focusKey)?.querySelector("button")?.focus();
-  $("#backup-summary").textContent = s && s.status
-    ? [`Last server backup ${runTime(s)}`, (STATUS_WORDS[s.status] || [s.status])[0].toLowerCase()].join(" · ")
-    : "No server backup has run yet.";
+
   // While a backup runs, look again every 5 seconds.
   clearTimeout(serverTimer);
   if (busy) serverTimer = setTimeout(loadServer, 5000);
@@ -292,6 +289,117 @@ async function loadSaved() {
     : [el("li", {}, emptyState("No saved copies yet", "Starboard makes one before every restore and before an update changes the settings. To bring back a copy from elsewhere, use Restore from a file."))]));
 }
 
+
+// Full without media (DASH-260) ----------------------------------------------------------------------------------
+
+function sizeWords(n) { return n == null ? "not measured" : formatBytes(n); }
+
+async function loadFull() {
+  const body = $("#full-body");
+  let f;
+  try { f = await api("/api/backup/full"); } catch (e) { body.replaceChildren(notice("danger", "Could not read the full backups", e.message)); return; }
+  body.removeAttribute("aria-busy");
+  if (!f.installed || !f.docker || f.cannot) {
+    body.replaceChildren(notice("info", f.cannot ? "This Starboard cannot make full backups yet" : "Full backups are for servers Starboard set up",
+      f.cannot || (!f.docker ? "Starboard needs Docker access to copy the apps' settings." : "Install apps writes the apps' folders that a full backup copies; Settings only still works.")));
+    return;
+  }
+  const folder = locationPicker({ id: "full-folder", label: "Where the copies go", app: "host", setting: "backups", value: f.status.target || f.folder,
+    hint: "On another disk than the system disk, so a copy outlives it. Starboard keeps the newest 5 here." });
+  const pictures = el("input", { type: "checkbox", role: "switch", id: "full-pictures", "aria-labelledby": "full-pictures-l", "aria-describedby": "full-pictures-h", checked: !!f.status.pictures });
+  const hint = el("span", { class: "setting__hint", id: "full-pictures-h", text: "Station logos you uploaded and Audiobookshelf's covers. Artwork the apps fetched comes back by itself and is never in it." });
+  const measure = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Work out the size");
+  const sizes = el("p", { class: "small", "aria-live": "polite" });
+  measure.addEventListener("click", async () => {
+    measure.disabled = true;
+    sizes.textContent = "Measuring the apps' settings folder…";
+    try {
+      const s = await api("/api/backup/full/sizes");
+      const without = (s.apps?.without_pictures || 0) + s.starboard.starboard - s.starboard.starboard_pictures;
+      const withPics = (s.apps?.with_pictures || 0) + s.starboard.starboard;
+      sizes.textContent = `About ${formatBytes(without)} before it is compressed, ${formatBytes(withPics)} with your pictures. Databases shrink to about a third.`;
+    } catch (e) { sizes.textContent = e.message; }
+    finally { measure.disabled = false; }
+  });
+  const make = el("button", { type: "button", class: "btn btn--primary" }, icon("archive"), "Make a full backup");
+  make.addEventListener("click", () => openMakeFull(folder.input.value.trim(), pictures.checked, make));
+  const state = el("div", { "aria-live": "polite" });
+  const list = el("ul", { class: "rows", "aria-label": "Full backups in the folder, newest first" });
+  body.replaceChildren(
+    folder.node,
+    el("ul", { class: "settings-rows" }, el("li", { class: "setting" },
+      el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "full-pictures-l", text: "Pictures you added" }), hint),
+      el("div", { class: "setting__control" }, el("label", { class: "switch" }, pictures)))),
+    el("div", { class: "actions" }, measure), sizes,
+    el("div", { class: "actions" }, make), state,
+    el("h3", { text: "Full backups in the folder" }), list,
+    el("p", { class: "small muted", text: "To restore one, install Starboard on the new server and choose Restore a backup in the set-up. Each app stops for a moment while its own folder is copied." }));
+  const showState = (s) => {
+    if (s.state === "running") state.replaceChildren(notice("info", "Making a full backup", `${s.step || "Starting"}. You can leave this page.`));
+    else if (s.state === "failed") state.replaceChildren(notice("danger", "The full backup did not finish", s.error));
+    else if (s.state === "done") state.replaceChildren(notice("success", `Made ${formatDate(s.finished * 1000, true)}`, `${formatBytes(s.size)} in ${s.file}.`));
+    else state.replaceChildren();
+    make.disabled = s.state === "running";
+  };
+  const showList = async () => {
+    try {
+      const r = await api(`/api/backup/full/found?folder=${encodeURIComponent(folder.input.value.trim())}`);
+      list.replaceChildren(...(r.found.length ? r.found.map((b) => el("li", { class: "row row--no-lead" },
+        el("div", {}, el("div", { class: "row__title", text: formatDate(b.created, true) }),
+          el("div", { class: "row__meta", text: [formatBytes(b.size), `${b.apps.length} apps`, b.version ? `Starboard ${b.version}` : ""].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__side" }, chip(b.pictures ? "With your pictures" : "Without pictures", "muted")))) :
+        [el("li", {}, emptyState("No full backups here yet", "Make one, and it appears here."))]));
+    } catch (e) { list.replaceChildren(el("li", {}, notice("danger", "Could not look in the folder", e.message))); }
+  };
+  showState(f.status);
+  showList();
+  folder.input.addEventListener("change", showList);
+  let was = f.status.state;
+  const poll = setInterval(async () => {
+    if (!document.body.contains(state)) { clearInterval(poll); return; }
+    if (!make.disabled) return;
+    try {
+      const s = (await api("/api/backup/full")).status;
+      showState(s);
+      if (was === "running" && s.state !== "running") showList();
+      was = s.state;
+    } catch { /* try again next time */ }
+  }, 3000);
+  document.addEventListener("full-backup-started", () => { make.disabled = true; was = "running"; showState({ state: "running" }); });
+}
+
+function openMakeFull(folder, pictures, opener) {
+  const pw1 = el("input", { class: "input", id: "full-pw-1", type: "password", autocomplete: "new-password", minlength: "10" });
+  const pw2 = el("input", { class: "input", id: "full-pw-2", type: "password", autocomplete: "new-password" });
+  const mine = el("input", { class: "input", id: "full-mine", type: "password", autocomplete: "current-password" });
+  const field = (label, input, hint) => el("div", { class: "field" }, el("label", { for: input.id, text: label }),
+    hint ? el("span", { class: "hint", id: `${input.id}-hint`, text: hint }) : null, input, el("span", { class: "field-error", id: `${input.id}-error`, hidden: true }));
+  if (pw1) pw1.setAttribute("aria-describedby", "full-pw-1-hint");
+  const go = el("button", { type: "submit", class: "btn btn--primary", form: "full-form", text: "Make it" });
+  const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
+  const form = el("form", { class: "form-stack", id: "full-form", novalidate: true },
+    el("p", { text: `Into ${folder}, ${pictures ? "with" : "without"} the pictures you added.` }),
+    field("A password for the backup", pw1, "At least 10 characters. Write it down: without it, nobody can open the backup, Starboard included."),
+    field("The same password again", pw2), field("Your Starboard password", mine));
+  const panel = sidePanel({ title: "Make a full backup", opener, body: [form], foot: [go, cancel] });
+  cancel.addEventListener("click", () => panel.close());
+  const say = (input, text) => { const e = $(`#${input.id}-error`); e.textContent = text; e.hidden = !text; input.setAttribute("aria-invalid", text ? "true" : "false"); if (text) input.focus(); };
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    [pw1, pw2, mine].forEach((i) => say(i, ""));
+    if (pw1.value.length < 10) { say(pw1, "Use at least 10 characters"); return; }
+    if (pw1.value !== pw2.value) { say(pw2, "The two passwords are not the same"); return; }
+    go.disabled = true;
+    try {
+      await api("/api/backup/full", { method: "POST", body: { password: mine.value, backup_password: pw1.value, folder, pictures } });
+      panel.close();
+      document.dispatchEvent(new Event("full-backup-started"));
+    } catch (err) { say(/password/i.test(err.message) && /not right|attempts/i.test(err.message) ? mine : pw1, err.message); }
+    finally { go.disabled = false; }
+  });
+  pw1.focus();
+}
+
 // Settings, Updates, Restore: the command to go back names the version before this one.
 async function showGoBack() {
   const box = $("#back-command");
@@ -317,6 +425,7 @@ startPage().then((session) => {
   });
   if ($("#back-command")) return;
   $("#download").addEventListener("click", download);
+  loadFull();
   loadServer();
   loadSaved();
 });

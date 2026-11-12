@@ -216,9 +216,12 @@ HELP = {
               "you before a disk fails. Setting it up needs sudo once, so it is done at the end.",
     "name": "The name is shown in the header of every page and in the browser tab, so you can tell this server "
             "from another one. Change it later in Settings, General.",
-    "restore": "The backup file is the one downloaded from Starboard's System, Backup and restore, Download a copy of "
-               "the settings. Type where it is, such as ~/Downloads/starboard-settings.json. It is checked before "
-               "anything changes.",
+    "restore": "Full without media brings back Starboard, its plug-ins and every app's settings from a .starboard file "
+               "on this computer's disks. Settings only brings back Starboard's settings from the .json file downloaded "
+               "from System, Backup and restore, Settings only, such as ~/Downloads/starboard-settings.json. Each is "
+               "checked before anything changes.",
+    "restore_full": "A full backup is in the folder chosen when it was made, such as /mnt/pool/backups/starboard. Its "
+                    "password is the one chosen then; without it nobody can open the backup, Starboard included.",
     "job": "Try again runs the job once more. Show the details shows the last lines the job wrote. Report this "
            "problem opens feedback with the error already in the report. Stop ends the set-up here: what is done "
            "stays done, and you can run the set-up again later.",
@@ -1864,7 +1867,12 @@ def step_start(api, term, state):
 
 
 def restore_backup(api, term, state):
-    """Restore a backup: a settings file, checked by Starboard, restored through its API."""
+    """Restore a backup (DASH-260), in step with the browser: Full without media (a .starboard file on this
+    computer, opened with its own password) or Settings only (a .json file), each checked by Starboard."""
+    kinds = ["Full without media: Starboard, its plug-ins and every app's settings, from a .starboard file on this computer",
+             "Settings only: Starboard's settings from a .json file you downloaded"]
+    if term.choose("What kind of backup?", kinds, 1, help_key="restore") == 0:
+        return restore_full(api, term, state)
     guess = ""
     for folder in ("~/Downloads", "~"):
         try:
@@ -1896,6 +1904,46 @@ def restore_backup(api, term, state):
             names = ", ".join(done["install"].get("apps") or [])
             term.note(f"The apps in the backup are not on this computer yet ({names}). Next, choose where your media "
                       "goes; then Starboard writes and starts the same apps.")
+        return True
+
+
+def restore_full(api, term, state):
+    folder = state.get("full_folder") or ""
+    if not folder:
+        for root in ("/mnt", "/srv", "/media"):
+            try:
+                hits = [os.path.join(root, d, "backups", "starboard") for d in sorted(os.listdir(root))
+                        if os.path.isdir(os.path.join(root, d, "backups", "starboard"))]
+            except OSError:
+                hits = []
+            if hits:
+                folder = hits[0]
+                break
+    while True:
+        folder = os.path.expanduser(term.text("Folder with your full backups", folder, help_key="restore_full"))
+        try:
+            found = api.call("GET", "/api/backup/full/found?folder=" + urllib.parse.quote(folder)).get("found", [])
+        except Problem as e:
+            term.failed(f"Starboard could not look there: {e}", str(e))
+            continue
+        if not found:
+            term.failed("No full backups in that folder. Type the folder they are in.", "none found")
+            continue
+        options = [f"{b['created'].replace('T', ' ')[:16]}, {b['size'] // 1_000_000} MB, {len(b['apps'])} apps, "
+                   f"{'with' if b['pictures'] else 'without'} your pictures" + (" (newest)" if n == 0 else "") for n, b in enumerate(found[:5])]
+        chosen = found[term.choose("Which backup?", options, 1, help_key="restore_full")]
+        password = term.hidden("The backup's password", help_key="restore_full")
+        term.note("Restoring: this takes a few minutes for the apps' settings.")
+        try:
+            done = api.call("POST", "/api/backup/full/restore", {"file": chosen["path"], "backup_password": password,
+                                                                 "password": state["password"]})
+        except Problem as e:
+            term.failed(f"Starboard did not restore it: {e}", str(e))
+            continue
+        state["full_folder"] = folder
+        term.ok(f"Restored: {done['apps']} apps and the settings of {len(done['folders'])} apps. Next, where your media is, then the apps start.")
+        if done.get("install"):
+            state["restore_install"] = done["install"]
         return True
 
 

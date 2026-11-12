@@ -1,4 +1,5 @@
-# Starboard: Python's standard library, plus Pillow (open source, see THIRD-PARTY.md) for white Live TV logos.
+# Starboard: Python's standard library, plus Pillow (open source, see THIRD-PARTY.md) for white Live TV logos, and
+# cryptography (open source, see THIRD-PARTY.md) to encrypt full backups (DASH-260); it is loaded only while one is made.
 # Pillow is optional: where no ready-made Pillow exists (such as 32-bit Raspberry Pi), the image builds without it
 # and channels keep their own logos. Nothing is compiled, so every build stays small and quick.
 FROM python:3.12-alpine
@@ -10,6 +11,8 @@ LABEL org.opencontainers.image.source="https://github.com/TheMightyTRex/starboar
 RUN apk upgrade --no-cache && apk add --no-cache tzdata \
  && (pip install --no-cache-dir --only-binary=:all: "pillow==13.0.0" \
      || echo "No ready-made Pillow for this processor: white logos are off") \
+ && (pip install --no-cache-dir --only-binary=:all: "cryptography==50.0.2" \
+     || echo "No ready-made cryptography for this processor: full backups cannot be made here") \
  && pip uninstall -y -q pip  # not needed to run Starboard, and one less thing to keep patched
 
 RUN addgroup -S -g 10001 starboard && adduser -S -u 10001 -G starboard -H -h /app starboard \

@@ -8,6 +8,7 @@ projects and free data sources are used too, with thanks.
 | Project | Used for | Licence |
 |---|---|---|
 | [Pillow](https://python-pillow.github.io/) | Turning Live TV channel logos white (only while Live TV and White channel logos are on; Settings, Jellyfin) | MIT-CMU (HPND) |
+| [cryptography](https://cryptography.io/) | Encrypting full backups (AES-256-GCM; only while a full backup is made or restored; System, Backup and restore) | Apache-2.0 or BSD-3-Clause |
 | [Lucide](https://lucide.dev/) | Icons | ISC (`tools/LICENSE-lucide.txt`) |
 | [Atkinson Hyperlegible Next](https://www.brailleinstitute.org/freefont/) | The typeface | SIL Open Font Licence (`web/fonts/LICENSE-OFL.txt`) |
 

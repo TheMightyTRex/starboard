@@ -24,10 +24,11 @@ CHOICES = [
              "keys where it can. Nothing in the apps changes, and your films, series and books stay where they are. "
              "You can install more apps later in Settings, Install apps."},
     {"key": "restore", "title": "Restore a backup",
-     "about": "Bring back Starboard's settings from a backup file: your apps, categories, design and alerts.",
-     "help": "For moving Starboard to a new computer, or starting again. Use a file downloaded from System, Backup "
-             "and restore, Download a copy of the settings. It is checked before anything changes, and your "
-             "password stays the one you just chose."},
+     "about": "Bring back a full backup (Starboard, its plug-ins and every app's settings) or Starboard's settings only.",
+     "help": "For moving to a new computer, or starting again. Full without media is a .starboard file on this "
+             "computer's disks, made in System, Backup and restore; it brings the same apps back with their "
+             "settings. Settings only is a .json file downloaded there. Each is checked before anything changes, and "
+             "your password stays the one you just chose."},
 ]
 # Apps that mean "this computer already runs a media server".
 MEDIA = {"sonarr", "radarr", "lidarr", "readarr", "prowlarr", "bazarr", "jellyfin", "emby", "plex", "seerr",

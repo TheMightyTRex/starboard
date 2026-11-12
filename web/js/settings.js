@@ -1028,9 +1028,45 @@ async function stepContent(id, root) {
     const radios = found.choices.map((c) => ({ c, input: el("input", { type: "radio", name, value: c.key, checked: c.key === chosen }) }));
     const file = el("input", { type: "file", class: "input", accept: ".json,application/json", id: "guide-backup-file" });
     const password = el("input", { type: "password", class: "input", autocomplete: "current-password", id: "guide-backup-password" });
+    // Two kinds of backup (DASH-260): Settings only, a file from this browser; Full without media, a file on this
+    // computer's disks, found with the location picker and opened with its own password.
+    const kindName = `restore-kind-${Date.now()}`;
+    const kinds = [["full", "Full without media", "Starboard, its plug-ins and every app's settings, from a .starboard file on this computer."],
+      ["settings", "Settings only", "Starboard's settings from a .json file you downloaded."]].map(([value, title, about]) =>
+      ({ value, input: el("input", { type: "radio", name: kindName, value, checked: value === "full" }), title, about }));
+    const where = locationPicker({ id: "guide-full-folder", label: "Folder with your full backups", app: "host", setting: "backups",
+      hint: "Such as /mnt/pool/backups/starboard on the disk you kept." });
+    const fullList = el("div", { class: "stack-2", "aria-live": "polite" });
+    const backupPassword = el("input", { type: "password", class: "input", autocomplete: "off", id: "guide-full-password" });
+    let fullChoice = null;
+    const showFound = async () => {
+      fullList.replaceChildren(el("p", { class: "small muted", text: "Looking…" }));
+      try {
+        const r = await api(`/api/backup/full/found?folder=${encodeURIComponent(where.input.value.trim())}`);
+        if (!r.found.length) { fullChoice = null; fullList.replaceChildren(emptyState("No full backups in this folder", "Choose the folder they are in with Browse.")); return; }
+        const group = `full-pick-${Date.now()}`;
+        fullList.replaceChildren(el("fieldset", {}, el("legend", { class: "field__label", text: "Which backup" }),
+          el("div", { class: "option-cards" }, r.found.slice(0, 5).map((b, n) => {
+            const input = el("input", { type: "radio", name: group, value: b.path, checked: n === 0 });
+            input.addEventListener("change", () => { if (input.checked) fullChoice = b.path; });
+            return el("label", { class: "option-card" }, input, el("strong", { text: formatDate(b.created, true) + (n === 0 ? " (newest)" : "") }),
+              el("small", { text: [formatBytes(b.size), `${b.apps.length} apps: ${b.apps.join(", ")}`, b.pictures ? "with your pictures" : "without pictures"].join(" · ") }));
+          }))));
+        fullChoice = r.found[0].path;
+      } catch (e) { fullChoice = null; fullList.replaceChildren(notice("danger", "Could not look in the folder", e.message)); }
+    };
+    where.input.addEventListener("change", showFound);
+    const fullBox = el("div", { class: "form-stack" }, where.node, fullList,
+      field("The backup's password", backupPassword, { required: true, hint: "The one chosen when the backup was made.", span: true }));
+    const fileBox = el("div", { class: "form-stack", hidden: true },
+      field("Backup file", file, { required: true, hint: "From System, Backup and restore, Settings only, Download a backup.", span: true }));
+    kinds.forEach(({ value, input }) => input.addEventListener("change", () => { if (input.checked) { fullBox.hidden = value !== "full"; fileBox.hidden = value !== "settings"; } }));
     const restoreBox = el("div", { class: "form-stack", hidden: chosen !== "restore" },
-      field("Backup file", file, { required: true, hint: "From System, Backup and restore, Download a copy of the settings.", span: true }),
+      el("fieldset", {}, el("legend", { class: "field__label", text: "What kind of backup" }),
+        el("div", { class: "option-cards" }, kinds.map((k) => el("label", { class: "option-card" }, k.input, el("strong", { text: k.title }), el("small", { text: k.about }))))),
+      fullBox, fileBox,
       field("Your Starboard password", password, { required: true, hint: "The one you just chose. Starboard checks it before it restores.", span: true }));
+    setTimeout(() => { if (where.input.value) showFound(); }, 0);
     radios.forEach(({ input }) => input.addEventListener("change", () => { restoreBox.hidden = input.value !== "restore" || !input.checked; }));
     nodes = [found.found.length ? notice("info", "Found on this computer", found.found.join(", ")) : null,
       el("fieldset", {}, el("legend", { class: "visually-hidden", text: "How to start" }),
@@ -1041,6 +1077,18 @@ async function stepContent(id, root) {
         body: found.choices.map((c) => el("p", {}, el("strong", { text: `${c.title}: ` }), c.help)) }))];
     save = async () => {
       const key = radios.find((r) => r.input.checked)?.input.value || found.recommended;
+      if (key === "restore" && kinds.find((k) => k.input.checked)?.value === "full") {
+        if (!fullChoice) { showProblemNear(where.input, "Choose the folder with your full backups."); return false; }
+        if (backupPassword.value.length < 10) { showProblemNear(backupPassword, "Enter the backup's password."); return false; }
+        announce("Restoring: this takes a few minutes for the apps' settings.");
+        let done;
+        try { done = await api("/api/backup/full/restore", { method: "POST", body: { file: fullChoice, backup_password: backupPassword.value, password: password.value } }); }
+        catch (e) { showProblemNear(/backup|password does not open/i.test(e.message) ? backupPassword : password, e.message); return false; }
+        config = done.config;
+        announce(`Restored: ${done.apps} apps and the settings of ${done.folders.length} apps. Next, where your media is, then the apps start.`);
+        remember({ restoreInstall: done.install || null, start: key });
+        return true;
+      }
       if (key === "restore") {
         if (!file.files.length) { showProblemNear(file, "Choose the backup file."); return false; }
         let backup;
@@ -1328,8 +1376,8 @@ async function startGuide() {
       Object.assign(flow.state, { apps: new Set(install.apps || []), install: "custom", installApplied: true,
         config_dir: install.config_dir || flow.state.config_dir, puid: install.puid ?? flow.state.puid, pgid: install.pgid ?? flow.state.pgid,
         tz: install.tz || flow.state.tz, reelix_edition: install.reelix_edition || "lite",
-        vpn: { provider: install.vpn?.provider || "", type: install.vpn?.type || "wireguard", countries: install.vpn?.countries || "",
-          wireguard_addresses: install.vpn?.wireguard_addresses || "" } });
+        vpn: { ...(install.vpn || {}), provider: install.vpn?.provider || "", type: install.vpn?.type || "wireguard", countries: install.vpn?.countries || "",
+          wireguard_addresses: install.vpn?.wireguard_addresses || "" } });  // a full backup brings the VPN's secrets too
     }
   };
   await loadFlow();
@@ -1340,7 +1388,7 @@ async function startGuide() {
     const list = [];
     const start = guideMemory().start || "new";
     list.push({ id: "how-to-start", ...stepNamed(T, "start"), skippable: false,
-      intro: "A new media server, the apps you already run, or a backup of Starboard's settings." });
+      intro: "A new media server, the apps you already run, or a backup." });
     if (start === "restore") {
       // DASH-265, DASH-268: the backup brought the settings back, so they are not asked again. When its apps are not
       // on this computer, Storage, the VPN (its secrets are not in backups) and Check bring them back.

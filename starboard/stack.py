@@ -1062,6 +1062,17 @@ def host_folder(data_dir):
     if not containers.available():
         return None
     try:
+        # Its own container first (Docker names the host after the container's id), so a second Starboard on the same
+        # computer, such as a test one, never finds the other's folder.
+        me = os.environ.get("HOSTNAME", "")
+        if re.match(r"^[0-9a-f]{12,64}$", me):
+            try:
+                own = containers.docker("GET", f"/containers/{me}/json")
+                for m in own.get("Mounts") or []:
+                    if m.get("Destination") == data_dir.rstrip("/") and _SAFE_PATH.match(m.get("Source", "")):
+                        return m["Source"] + "/stack"
+            except containers.DockerError:
+                pass
         for c in containers.docker("GET", "/containers/json"):
             if (c.get("Labels") or {}).get("com.docker.compose.service") != "starboard":
                 continue

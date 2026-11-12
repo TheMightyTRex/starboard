@@ -2075,6 +2075,45 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/version" and method == "GET":
                 return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo,
                                        "since": (cfg.data.get("version_since") or {}).get("since")})
+            if path.startswith("/api/backup/full"):  # Full without media (DASH-260)
+                from . import full_backup
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                try:
+                    if path == "/api/backup/full" and method == "GET":
+                        try:
+                            full_backup._aes()
+                            can = ""
+                        except full_backup.BackupError as e:
+                            can = str(e)
+                        return self.json(200, {"status": full_backup.status(app.data_dir), "folder": full_backup.default_folder(app.data_dir),
+                                               "cannot": can, "installed": bool(stack.env_values(app.data_dir).get("CONFIG_DIR")),
+                                               "docker": containers.available(), "starboard": full_backup.sizes(app.data_dir)})
+                    if path == "/api/backup/full/sizes" and method == "GET":
+                        return self.json(200, {"apps": full_backup.app_sizes(app.data_dir), "starboard": full_backup.sizes(app.data_dir)})
+                    if path == "/api/backup/full/found" and method == "GET":
+                        return self.json(200, {"found": full_backup.found(q.get("folder", [""])[0])})
+                    if path == "/api/backup/full" and method == "POST":
+                        data = self.body()
+                        self.check_password(data)
+                        full_backup.start(app.data_dir, app.version, str(data.get("backup_password") or ""), str(data.get("folder") or ""),
+                                          bool(data.get("pictures")), cfg.data.get("site_name", ""))
+                        logs.event("info", "backup", "Full backup started")
+                        return self.json(202, {"status": full_backup.status(app.data_dir)})
+                    if path == "/api/backup/full/restore" and method == "POST":
+                        data = self.body()
+                        self.check_password(data)
+                        out = full_backup.restore(app.data_dir, str(data.get("file") or ""), str(data.get("backup_password") or ""))
+                        raw = out["settings"] or {}
+                        count = backup.restore(cfg, {"format": backup.FORMAT, "schema": raw.get("schema"), "services": raw.get("services") or [],
+                                                     "settings": {k: raw[k] for k in backup.GENERAL_KEYS + backup.OTHER_KEYS if k in raw}})
+                        logs.event("info", "backup", f"Full backup restored ({count} apps, {len(out['apps'])} app folders)")
+                        choice = stack.current_choice(app.data_dir)
+                        return self.json(200, {"apps": count, "folders": out["apps"], "config": cfg.public(), "install": choice,
+                                               "header": out["header"]})
+                except full_backup.BackupError as e:
+                    return self.error(400, str(e))
+                except ValueError as e:
+                    return self.error(400, str(e))
             if path == "/api/backup/settings" and method == "POST":
                 self.check_password(self.body())
                 return self.json(200, backup.export(cfg, app.version, app.data_dir))
@@ -2082,9 +2121,12 @@ class Handler(BaseHTTPRequestHandler):
                 data = self.body(limit=2 * 1024 * 1024)
                 self.check_password(data)
                 count = backup.restore(cfg, data.get("backup"))
+                saved = data.get("backup") or {}
+                backup.restore_logo_choices(app.data_dir, saved.get("logos"))
+                plugins_missing = backup.restore_plugin_settings(app.data_dir, saved.get("plugins"))
                 logs.event("info", "backup", f"Settings restored from a file ({count} apps)")
                 # DASH-268: on a rebuilt server, the set-ups bring the backup's apps back (Storage, then Check).
-                return self.json(200, {"apps": count, "config": cfg.public(),
+                return self.json(200, {"apps": count, "config": cfg.public(), "plugins_missing": plugins_missing,
                                        "install": backup.apps_to_bring_back(data.get("backup"), app.data_dir)})
             if path == "/api/backup/saved" and method == "GET":
                 one = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
@@ -2140,7 +2182,8 @@ class Handler(BaseHTTPRequestHandler):
                     host_defaults = None
                     if app_name == "host":
                         d = self.takeover_defaults()
-                        host_defaults = {"media": d["data_dir"], "config": d["config_dir"]}
+                        from . import full_backup
+                        host_defaults = {"media": d["data_dir"], "config": d["config_dir"], "backups": full_backup.default_folder(app.data_dir)}
                     return self.json(200, locations.describe(app_name, q.get("path", [""])[0], q.get("for", [""])[0],
                                                              host_defaults=host_defaults))
                 except ValueError as e:

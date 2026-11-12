@@ -21,7 +21,14 @@ from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPC
 FORMAT = "starboard-settings"
 GENERAL_KEYS = ("site_name", "server_name", "design", "groups", "show_home_address", "show_outside_address",
                 "session_days", "secure_cookies", "update_check", "network_access", "upcoming_view", "upcoming_days", "download_hours",
-                "fetch_icons", "show_posters", "watch", "extras", "performance")
+                "fetch_icons", "show_posters", "watch", "extras", "performance", "dashboard", "logs", "ux_notes", "settings_advanced",
+                "reelix_auto_update", "infinite_scroll")
+# Settings kept with their own checks when restored (DASH-350, catalogue sources).
+OTHER_KEYS = ("history_keep_days", "history_cleared_at", "plugin_catalogues")
+# Never in a backup: the sign-in, and what belongs to this install only. tests/test_backup_layout.py fails when a
+# setting is in none of these three lists, so a new setting cannot be left out by mistake.
+NEVER_KEYS = ("auth", "schema", "last_version", "setup_guide_done", "feedback_default_on", "services", "first_setup_pending",
+              "version_since")
 SAVED_RE = re.compile(r"^config-\d{4}-\d{2}-\d{2}-\d{6}-[a-z]+(-[a-z]+)*\.json$")  # each part can match only one way
 
 
@@ -52,10 +59,96 @@ def export(config, version, data_dir=None):
         "settings": {k: d[k] for k in GENERAL_KEYS if k in d},
         "services": d["services"],
     }
+    out["settings"].update({k: d[k] for k in OTHER_KEYS if k in d})
     install = install_choice(data_dir)
     if install:
         out["install"] = install
+    if data_dir:
+        out["plugins"] = plugin_settings(data_dir)
+        out["logos"] = logo_choices(data_dir)
     return out
+
+
+def plugin_settings(data_dir):
+    """Each added plug-in: where it came from, whether it is active, and its settings (secrets as the apps' keys)."""
+    from . import plugins_admin
+    out = {}
+    root = os.path.join(data_dir, "plugins")
+    for pid in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+        if pid.startswith(".") or not os.path.isfile(os.path.join(root, pid, "manifest.json")):
+            continue
+        read = lambda name, default: plugins_admin._read(os.path.join(root, pid, name), default)  # noqa: E731
+        manifest = read("manifest.json", {})
+        out[pid] = {"name": manifest.get("name", pid), "version": manifest.get("version", ""), "manifest": manifest,
+                    "state": read("state.json", {}), "settings": read("settings.json", {})}
+    return out
+
+
+def logo_choices(data_dir):
+    """The tone chosen for each channel and station logo, and which station logo file is whose."""
+    out = {}
+    for name in ("network-logos.json", "station-logos.json"):
+        try:
+            with open(os.path.join(data_dir, "library", name), encoding="utf-8") as f:
+                got = json.load(f)
+        except (OSError, ValueError):
+            continue
+        out[name] = {k: {f: v[f] for f in ("tone", "file") if f in v} for k, v in got.items()
+                     if isinstance(v, dict) and ("tone" in v or "file" in v)}
+    return out
+
+
+def _restore_others(config, settings):
+    from .activity import KEEP_CHOICES
+    d = config.data
+    if settings.get("history_keep_days") in KEEP_CHOICES:
+        d["history_keep_days"] = settings["history_keep_days"]
+    if isinstance(settings.get("history_cleared_at"), str) and len(settings["history_cleared_at"]) <= 40:
+        d["history_cleared_at"] = settings["history_cleared_at"]
+    cats = settings.get("plugin_catalogues")
+    if isinstance(cats, list):
+        d["plugin_catalogues"] = [{"url": str(c["url"])[:300], "name": str(c.get("name", ""))[:80]} for c in cats[:20]
+                                  if isinstance(c, dict) and str(c.get("url", "")).startswith("https://")]
+
+
+def restore_plugin_settings(data_dir, saved):
+    """Puts back the settings of plug-ins added here; returns the names of those that are not added here yet."""
+    from . import plugins_admin
+    missing = []
+    for pid, p in (saved or {}).items() if isinstance(saved, dict) else []:
+        if not re.match(r"^[a-z0-9][a-z0-9-]{0,39}$", str(pid)) or not isinstance(p, dict):
+            continue
+        where = os.path.join(data_dir, "plugins", pid)
+        if not os.path.isfile(os.path.join(where, "manifest.json")):
+            missing.append(str(p.get("name") or pid))
+            continue
+        if isinstance(p.get("settings"), dict):
+            spec = {s.get("key"): s.get("type") for s in (plugins_admin._read(os.path.join(where, "manifest.json"), {}) or {}).get("settings") or []}
+            fits = {k: v for k, v in p["settings"].items() if spec.get(k) not in (None, "custom")}
+            try:
+                plugins_admin.save_settings(data_dir, pid, fits)
+            except (ValueError, OSError):
+                missing.append(f"{p.get('name') or pid} (its settings did not fit this version)")
+    return missing
+
+
+def restore_logo_choices(data_dir, saved):
+    for name in ("network-logos.json", "station-logos.json"):
+        got = (saved or {}).get(name) if isinstance(saved, dict) else None
+        if not isinstance(got, dict):
+            continue
+        path = os.path.join(data_dir, "library", name)
+        try:
+            with open(path, encoding="utf-8") as f:
+                now = json.load(f)
+        except (OSError, ValueError):
+            now = {}
+        for k, v in list(got.items())[:5000]:
+            if isinstance(v, dict):
+                now.setdefault(str(k)[:120], {}).update({f: str(v[f])[:200] for f in ("tone", "file") if f in v})
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(now, f)
 
 
 def apps_to_bring_back(backup, data_dir):
@@ -101,6 +194,7 @@ def restore(config, backup):
         saved = dict(config.data)
         try:
             config.update_general({k: settings[k] for k in GENERAL_KEYS if k in settings})
+            _restore_others(config, settings)
             config.data.pop("first_setup_pending", None)  # a restored server counts as set up (DASH-238)
             config.data["services"] = clean
             config.save()

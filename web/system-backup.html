@@ -175,21 +175,22 @@
 <main id="main" tabindex="-1">
 <div class="page">
   <div class="page-head">
-    <div class="page-head__text"><h1>Backup and restore</h1><p class="page-head__summary" id="backup-summary">Keep a copy of the whole server, and of Starboard's settings.</p></div>
+    <div class="page-head__text"><h1>Backup and restore</h1><p class="page-head__summary" id="backup-summary">Two kinds of copy: Settings only, a small file, and Full without media, which rebuilds the server on a new install.</p></div>
   </div>
 
-  <section class="panel" aria-labelledby="bk-server-h">
+
+  <section class="panel" aria-labelledby="bk-full-h">
     <div class="panel__head">
-      <h2 id="bk-server-h">The whole server</h2>
-      <p class="small muted">Every app's settings and databases, system settings and the package list. Not your media.</p>
+      <h2 id="bk-full-h">Full without media</h2>
+      <p class="small muted">Starboard, its plug-ins and every app's settings and database, encrypted with a password you choose. Restore it on a new install to get the same server back. Nothing that can be downloaded again goes in.</p>
     </div>
-    <div class="stack-4" id="server-body" aria-busy="true"></div>
+    <div class="stack-4" id="full-body" aria-busy="true"></div>
   </section>
 
   <section class="panel" aria-labelledby="bk-sb-h">
     <div class="panel__head">
-      <h2 id="bk-sb-h">Starboard's settings</h2>
-      <p class="small muted">Your apps, their API keys, categories and other settings, in one file. Not your password.</p>
+      <h2 id="bk-sb-h">Settings only</h2>
+      <p class="small muted">Starboard's settings, your apps and their API keys, categories, plug-in settings and logo choices, in one small file. Not your password, and not the apps' own settings.</p>
     </div>
     <div class="actions">
       <button type="button" class="btn btn--primary" id="download"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-download"/></svg>Download a backup</button>
@@ -200,6 +201,14 @@
     <h3>Copies Starboard saved</h3>
     <p class="small muted">Made before every restore and before an update changes the settings.</p>
     <ul class="rows" id="saved" aria-label="Saved copies, newest first"></ul>
+  </section>
+
+  <section class="panel" aria-labelledby="bk-server-h">
+    <div class="panel__head">
+      <h2 id="bk-server-h">The whole server, by its own job</h2>
+      <p class="small muted">Every app's settings and databases, system settings and the package list. Not your media.</p>
+    </div>
+    <div class="stack-4" id="server-body" aria-busy="true"></div>
   </section>
 </div>
 </main>
