@@ -1055,7 +1055,6 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(200, radio_import.scan(app.config, body.get("start", 0)))
                     if path == "/api/library/radio-import/run" and method == "POST":
                         out = radio_import.run(app.config, body.get("items"), str(body.get("follow") or radio_import.DEFAULT_FOLLOW))
-                        from . import setup_left
                         setup_left.forget()
                         logs.event("info", "library", f"Brought in {out['added']} radio shows from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))
                         return self.json(200, out)
@@ -1077,12 +1076,10 @@ class Handler(BaseHTTPRequestHandler):
                     if path == "/api/library/import/run" and method == "POST":
                         if body.get("leave"):  # folders left out: not counted again (10 November 2026)
                             media_import.leave_out(app.config, [str(p) for p in body["leave"]][:500])
-                            from . import setup_left
                             setup_left.forget()
                         if not body.get("items"):
                             return self.json(200, {"added": 0, "errors": []})
                         out = (media_import.run_books if books else media_import.run)(app.config, body.get("root"), body.get("items"))
-                        from . import setup_left
                         setup_left.forget()  # Still to set up counts the folders again
                         logs.event("info", "library", f"Brought in {out['added']} from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))
                         return self.json(200, out)
@@ -1629,10 +1626,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"started": started, "add": plan["add"], "remove": plan["remove"],
                                        "sab_servers": len(usenet_move.parse_sab_servers(sab_ini)) if sab_ini else 0})
             if path == "/api/setup/left" and method == "GET":
-                from . import setup_left  # DASH-185: what is left to set up
+                # DASH-185: what is left to set up
                 return self.json(200, setup_left.left(app.config, app.data_dir))
             if path == "/api/setup/left/ignore" and method == "POST":
-                from . import setup_left  # Ignore, or bring back, in the set-up wizard (DASH-289)
+                # Ignore, or bring back, in the set-up wizard (DASH-289)
                 body = self.body()
                 try:
                     setup_left.ignore(app.data_dir, str(body.get("key", "")), body.get("ignore", True) is not False)
@@ -1640,7 +1637,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(400, {"error": str(e)})
                 return self.json(200, setup_left.left(app.config, app.data_dir))
             if path == "/api/setup/left/done" and method == "POST":
-                from . import setup_left  # Done on a guided step (DASH-230, DASH-231)
+                # Done on a guided step (DASH-230, DASH-231)
                 body = self.body()
                 try:
                     setup_left.mark_done(app.data_dir, str(body.get("key", "")))
