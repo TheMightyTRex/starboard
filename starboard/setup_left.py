@@ -122,7 +122,7 @@ def items(cfg, data_dir):
             if waiting:
                 out.append({"key": f"import-{tab}", "title": f"Bring in {words} already on disk",
                             "why": f"{waiting} {'folder is' if waiting == 1 else 'folders are'} not in your library yet.",
-                            "href": f"/library-{tab}.html", "done": False})
+                            "href": f"/library-{tab}.html#lib-import", "done": False})
     if "reelix" in keys and "audiobookshelf" in keys:  # radio shows already on disk (10 November 2026)
         from . import radio_import
         try:
@@ -137,10 +137,10 @@ def items(cfg, data_dir):
         if radio and radio["connected"] and radio["waiting"]:
             out.append({"key": "import-radio", "title": "Bring in radio shows already on disk",
                         "why": f"{radio['waiting']} {'show is' if radio['waiting'] == 1 else 'shows are'} not in your library yet.",
-                        "href": "/library-radio.html", "done": False})
+                        "href": "/library-radio.html#lib-import", "done": False})
     if "tdarr" in keys:  # DASH-306: Tdarr's choices are in Starboard now, not a guided step in Tdarr's own page
         out.append({"key": "tdarr", "title": "Choose what Tdarr converts", "why": "Starboard sets up Tdarr's libraries and when it works.",
-                    "href": "/settings-tdarr.html", "done": bool(state.get("tdarr"))})
+                    "href": "/settings-tdarr.html#td-choices-h", "done": bool(state.get("tdarr"))})
     if keys & {"nzbget", "sabnzbd"}:
         server = _usenet_server(svcs)
         out.append({"key": "usenet", "title": "Add your Usenet provider's server", "why": "The Usenet app downloads nothing without one.",

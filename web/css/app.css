@@ -131,3 +131,6 @@ body.first-setup.with-rail { padding-left: 0; }
 [data-plugin][hidden] { display: none !important; } /* plug-in menu items, until the plug-in is added */
 /* Install warning (owner, 12 November 2026) */
 .install-warning__list { margin: 0; padding-inline-start: 1.25rem; display: grid; gap: var(--space-1, 0.25rem); }
+.panel-off { display: none !important; } /* Still to set up: only the step's own part (12 November 2026) */
+.panel-only #main .page { padding-block-start: var(--space-4, 1rem); }
+html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: grid; }

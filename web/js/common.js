@@ -656,10 +656,36 @@ if (location.hash.length > 1) {
     setTimeout(stop, 8000);
   });
 }
+// Only the part a step needs (owner, 12 November 2026: "just the setting that is needed for each step"): with
+// ?only=1 and a #part, the page in the slide-out shows that part's section and nothing else of the page. Pages redraw
+// as they load, so it is kept that way while the page is open (one small check per change, nothing on a timer).
+if (IN_PANEL && location.hash.length > 1 && new URLSearchParams(location.search).get("only") === "1") {
+  const want = decodeURIComponent(location.hash.slice(1));
+  const narrow = () => {
+    const target = document.getElementById(want);
+    const main = document.getElementById("main");
+    if (!target || !main || !main.contains(target)) return;
+    const keep = target.closest("section") || target;
+    document.documentElement.classList.add("panel-only");
+    keep.classList.add("panel-keep");  // shown even when it is an advanced section and Advanced settings is off
+    for (let node = keep; node && node !== main; node = node.parentElement) {
+      for (const sib of node.parentElement.children) {
+        if (sib !== node && !sib.matches("script, template, #announcer")) sib.classList.add("panel-off");
+      }
+      node.classList.remove("panel-off");
+    }
+  };
+  document.addEventListener("DOMContentLoaded", () => {
+    narrow();
+    new MutationObserver(narrow).observe(document.body, { childList: true, subtree: true });
+  });
+}
 // The address of a Starboard page for a slide-out: ?panel=1 before any #part, such as /settings-reelix.html#rx-indexers-h.
-function panelUrl(href) {
+// { only: true } shows just that part (Still to set up).
+function panelUrl(href, { only = false } = {}) {
   const url = new URL(href, location.origin);
   url.searchParams.set("panel", "1");
+  if (only && url.hash) url.searchParams.set("only", "1");
   return url.pathname + url.search + url.hash;
 }
 
@@ -802,7 +828,7 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
     const doIt = outside ? el("a", { class: "btn btn--primary", href: reachableUrl(item.href), target: "_blank", rel: "noopener" },
       "Open the app", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
       : el("a", { class: "btn btn--quiet", href: item.href }, "Open as a page");
-    const frame = outside ? null : el("iframe", { class: "panel-frame wizard-frame", src: panelUrl(item.href), title: `${item.title}: set it up here` });
+    const frame = outside ? null : el("iframe", { class: "panel-frame wizard-frame", src: panelUrl(item.href, { only: true }), title: `${item.title}: set it up here` });
     const doneBtn = item.guided ? el("button", { type: "button", class: "btn" }, "Done") : null;
     doneBtn?.addEventListener("click", async () => {
       try { await api("/api/setup/left/done", { method: "POST", body: { key: item.key } }); announce(`${item.title}: done`); items.splice(index, 1); draw(); onChange?.(); }
