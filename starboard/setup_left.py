@@ -185,6 +185,9 @@ GUIDED = [
     ("slskd", "Add your Soulseek name",
      "In slskd, Options: type a Soulseek name and password under soulseek (a new name makes a free account), and "
      "choose what to share. Then select Done."),
+    ("kavita", "Finish Kavita's set-up",
+     "In Kavita, make its admin, then add a library: Books, at /media/books (and Comics at /media/comics if you have "
+     "them). Kavita reads them where they are. Then select Done."),
     ("dispatcharr", "Finish Dispatcharr's set-up",
      "In Dispatcharr, make its admin and add your IPTV playlist and guide. In Jellyfin, Live TV, add an HDHomeRun tuner "
      "at http://dispatcharr:9191/hdhr. Then select Done."),

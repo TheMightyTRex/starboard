@@ -100,6 +100,11 @@ APPS = {
                         "env": {"POSTGRES_DB": "storyarr", "POSTGRES_USER": "storyarr", "POSTGRES_PASSWORD": "${STORYARR_DB_PASSWORD}"},
                         "secret": "STORYARR_DB_PASSWORD"},
                  "default": False, "notes": "Ebooks and audiobooks in one place, with series and reading lists."},
+    # Kavita (owner, 12 November 2026: "Add Kavita"): the ebook reader, for books, comics and PDFs in the browser and in
+    # reading apps (OPDS), with progress kept. It reads the media folder only; Reelix keeps adding the books.
+    "kavita": {"name": "Kavita", "groups": ["ebooks"], "image": "lscr.io/linuxserver/kavita:latest", "ports": ["5000:5000"],
+               "volumes": [f"{CFG}/kavita:/config", f"{DATA}/media:/media:ro"], "env": LSIO, "memory": 200,
+               "notes": "Read your ebooks, comics and PDFs in the browser or a reading app, with your place kept."},
     "audiobookshelf": {"name": "Audiobookshelf", "groups": ["audiobooks", "radio"], "image": "ghcr.io/advplyr/audiobookshelf:latest",
                        "ports": ["13378:80"], "env": {"TZ": "${TZ}"}, "memory": 150,
                        "volumes": [f"{CFG}/audiobookshelf/config:/config", f"{CFG}/audiobookshelf/metadata:/metadata", f"{DATA}/media:/media"]},
