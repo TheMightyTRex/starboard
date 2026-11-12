@@ -379,6 +379,9 @@
        "list",
        "custom"
       ]
+     },
+     "required": {
+      "type": "boolean"
      }
     }
    }
@@ -407,6 +410,84 @@
        "duration",
        "date"
       ]
+     },
+     "refresh_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1440
+     }
+    }
+   }
+  },
+  "setup_required": {
+   "type": "boolean"
+  },
+  "notices": {
+   "type": "array",
+   "items": {
+    "enum": [
+     "adult",
+     "p2p"
+    ]
+   },
+   "uniqueItems": true
+  },
+  "events": {
+   "type": "array",
+   "items": {
+    "enum": [
+     "app.down",
+     "app.up",
+     "download.finished",
+     "item.added",
+     "playback.started"
+    ]
+   },
+   "uniqueItems": true
+  },
+  "jobs": {
+   "type": "array",
+   "maxItems": 8,
+   "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+     "id",
+     "label",
+     "path"
+    ],
+    "properties": {
+     "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,30}$"
+     },
+     "label": {
+      "type": "string",
+      "maxLength": 60
+     },
+     "path": {
+      "type": "string",
+      "pattern": "^/"
+     },
+     "daily": {
+      "type": "string",
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+     },
+     "every_hours": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 168
+     },
+     "at_start": {
+      "const": true
+     },
+     "time_limit_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120
+     },
+     "quiet_hours": {
+      "type": "boolean"
      }
     }
    }

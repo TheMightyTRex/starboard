@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.3.0"  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.4.0"  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -36,15 +36,27 @@ CARD_FORMATS = ("number", "bytes", "percent", "duration", "date")
 DEFAULT_MEMORY, DEFAULT_CPUS, CEILING_MEMORY, CEILING_CPUS = 128, 0.25, 512, 1.0
 
 TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
-       "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles"}
-REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers"}
+       "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles",
+       "setup_required", "notices", "events", "jobs"}
+REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers",
+                  "setup_required", "notices", "events", "jobs"}
 CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command"}
 # Plug-ins that ship inside Starboard (plugins/<id>/ in its own folder): they may run Starboard's own image
 # ("image": "starboard") with a command, and Live TV may use the Live TV folder the installer gave ("iptv").
 BUILTIN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plugins")
 BUILTIN_VOLUMES = {"iptv"}
-SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item"}
-CARD = {"id", "title", "type", "path", "format", "label", "example"}
+SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item", "required"}
+CARD = {"id", "title", "type", "path", "format", "label", "example", "refresh_minutes"}
+# API 1.4 (DASH-330, from Stremio and Jellyfin): notices shown before install, events a plug-in hears, and jobs Starboard
+# runs for it. Each event needs the read permission that already covers what it tells.
+NOTICES = {"p2p": "Shares files with other people over the internet, which can show your internet address",
+           "adult": "Has adult content"}
+EVENTS = {"item.added": ("media:read", "When something new arrives in your library"),
+          "download.finished": ("downloads:read", "When a download finishes"),
+          "app.down": ("apps:read", "When one of your apps stops answering"),
+          "app.up": ("apps:read", "When one of your apps answers again"),
+          "playback.started": ("media:read", "When someone starts playing something")}
+JOB = {"id", "label", "path", "daily", "every_hours", "at_start", "time_limit_minutes", "quiet_hours"}
 ACTION = {"id", "label", "path", "confirm"}
 
 
@@ -171,6 +183,61 @@ def check(manifest, dev=False, builtin=False):
         if s.get("type") == "folder" and not media_mounts(m):  # API 1.3, owner's choice A (12 November 2026)
             out.append(f"{where}: a folder setting needs a container that mounts media:ro or media/<one folder>; "
                        "the folder is chosen inside it")
+    if "setup_required" in m and not isinstance(m["setup_required"], bool):
+        out.append("setup_required must be true or false")
+    for i, s in enumerate(m.get("settings") or []):
+        if isinstance(s, dict) and "required" in s and not isinstance(s["required"], bool):
+            out.append(f"settings[{i}]: required must be true or false")
+    notices = m.get("notices")
+    if notices is not None and not (isinstance(notices, list) and all(n in NOTICES for n in notices)):
+        out.append("notices must list from: " + ", ".join(NOTICES))
+    events = m.get("events")
+    if events is not None:
+        if not (isinstance(events, list) and all(e in EVENTS for e in events)):
+            out.append("events must list from: " + ", ".join(EVENTS))
+        elif not containers:
+            out.append("events need a container to send them to")
+        else:
+            for e in events:
+                if EVENTS[e][0] not in perms:
+                    out.append(f"the event {e} needs the permission {EVENTS[e][0]}")
+    jobs = m.get("jobs")
+    if jobs is not None:
+        if not (isinstance(jobs, list) and len(jobs) <= 8):
+            out.append("jobs must list up to eight jobs")
+            jobs = []
+        if jobs and not containers:
+            out.append("jobs need a container to run in")
+        ids = set()
+        for i, j in enumerate(jobs or []):
+            where = f"jobs[{i}]"
+            if not isinstance(j, dict):
+                out.append(f"{where} must be an object")
+                continue
+            for k in sorted(set(j) - JOB):
+                out.append(f"{where}: unknown field {k}")
+            if not re.match(r"^[a-z][a-z0-9-]{0,30}$", str(j.get("id", ""))) or j.get("id") in ids or not j.get("label"):
+                out.append(f"{where}: needs its own id (lower case) and a label")
+            ids.add(j.get("id"))
+            if not re.match(r"^/[A-Za-z0-9/_-]{1,80}$", str(j.get("path", ""))):
+                out.append(f"{where}: needs a path on the plug-in")
+            when = [k for k in ("daily", "every_hours", "at_start") if k in j]
+            if len(when) != 1:
+                out.append(f"{where}: give one of daily (a time such as 03:30), every_hours or at_start")
+            elif "daily" in j and not re.match(r"^([01]\d|2[0-3]):[0-5]\d$", str(j["daily"])):
+                out.append(f"{where}: daily must be a time such as 03:30")
+            elif "every_hours" in j and not (isinstance(j["every_hours"], int) and 1 <= j["every_hours"] <= 168):
+                out.append(f"{where}: every_hours must be a whole number from 1 to 168")
+            elif "at_start" in j and j["at_start"] is not True:
+                out.append(f"{where}: at_start must be true")
+            limit = j.get("time_limit_minutes", 10)
+            if not (isinstance(limit, int) and 1 <= limit <= 120):
+                out.append(f"{where}: time_limit_minutes must be from 1 to 120")
+            if "quiet_hours" in j and not isinstance(j["quiet_hours"], bool):
+                out.append(f"{where}: quiet_hours must be true or false")
+    for i, card in enumerate(m.get("cards") or []):
+        if isinstance(card, dict) and "refresh_minutes" in card and not (isinstance(card["refresh_minutes"], int) and 1 <= card["refresh_minutes"] <= 1440):
+            out.append(f"cards[{i}]: refresh_minutes must be from 1 to 1440")
     for i, card in enumerate(m.get("cards") or []):
         where = f"cards[{i}]"
         if not isinstance(card, dict):
@@ -220,6 +287,7 @@ def install_warning(manifest):
     containers = [c for c in manifest.get("containers") or [] if isinstance(c, dict)]
     vols = {v for c in containers for v in c.get("volumes") or []}
     see = [SEES[p] for p in perms if p in SEES]
+    see += [EVENTS[e][1] for e in manifest.get("events") or [] if e in EVENTS]
     if "media:ro" in vols:
         see.append("Every file in your media folder (read only)")
     change = []
@@ -239,8 +307,16 @@ def install_warning(manifest):
         runs.append(f"{c.get('image')}, up to {int(r.get('memory', DEFAULT_MEMORY))} MB of memory and "
                     f"{float(r.get('cpus', DEFAULT_CPUS)):g} of a processor core"
                     + (", started only when needed" if c.get("start") == "when_needed" else ", always running"))
+    for j in manifest.get("jobs") or []:
+        if isinstance(j, dict):
+            when = (f"daily at {j['daily']}" if "daily" in j else f"every {j['every_hours']} hours" if "every_hours" in j
+                    else "each time it starts")
+            runs.append(f"A job, {j.get('label', '')}, {when}" + (", only in quiet hours" if j.get("quiet_hours") else ""))
+    notices = [NOTICES[n] for n in manifest.get("notices") or [] if n in NOTICES]
+    if manifest.get("setup_required") or any(isinstance(s, dict) and s.get("required") for s in manifest.get("settings") or []):
+        notices.append("Needs setting up before it can start")
     risk = "high" if any(PERMISSIONS[p][1] == "high" for p in perms) else "medium" if any(PERMISSIONS[p][1] == "medium" for p in perms) else "low"
-    return {"risk": risk, "see": see, "change": change, "reach": reach, "runs": runs, "never": NEVER,
+    return {"risk": risk, "see": see, "change": change, "reach": reach, "runs": runs, "notices": notices, "never": NEVER,
             "buttons": [a.get("label", "") for a in manifest.get("actions") or [] if isinstance(a, dict)]}
 
 
@@ -367,9 +443,20 @@ def write_schema(path):
                                                                       "properties": {"memory": {"type": "integer", "maximum": CEILING_MEMORY},
                                                                                      "cpus": {"type": "number", "maximum": CEILING_CPUS}}}},
             "settings": {"type": "array", "items": {"type": "object", "required": ["key", "label", "type"],
-                                                    "properties": {"type": {"enum": list(SETTING_TYPES)}}}},
+                                                    "properties": {"type": {"enum": list(SETTING_TYPES)}, "required": {"type": "boolean"}}}},
             "cards": {"type": "array", "items": {"type": "object", "required": ["type", "path"],
-                                                 "properties": {"type": {"enum": list(CARD_TYPES)}, "format": {"enum": list(CARD_FORMATS)}}}},
+                                                 "properties": {"type": {"enum": list(CARD_TYPES)}, "format": {"enum": list(CARD_FORMATS)},
+                                                                "refresh_minutes": {"type": "integer", "minimum": 1, "maximum": 1440}}}},
+            # API 1.4 (DASH-330)
+            "setup_required": {"type": "boolean"},
+            "notices": {"type": "array", "items": {"enum": sorted(NOTICES)}, "uniqueItems": True},
+            "events": {"type": "array", "items": {"enum": sorted(EVENTS)}, "uniqueItems": True},
+            "jobs": {"type": "array", "maxItems": 8, "items": {
+                "type": "object", "additionalProperties": False, "required": ["id", "label", "path"],
+                "properties": {"id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,30}$"}, "label": {"type": "string", "maxLength": 60},
+                               "path": {"type": "string", "pattern": "^/"}, "daily": {"type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"},
+                               "every_hours": {"type": "integer", "minimum": 1, "maximum": 168}, "at_start": {"const": True},
+                               "time_limit_minutes": {"type": "integer", "minimum": 1, "maximum": 120}, "quiet_hours": {"type": "boolean"}}}},
             "actions": {"type": "array", "items": {"type": "object", "required": ["label", "path"]}},
         },
     }

@@ -201,7 +201,11 @@ const JOB_WORDS = { done: ["Finished", "success"], failed: ["Failed", "danger"],
 let jobTimer = null;
 
 function renderJobs(d) {
-  $("#jobs-panel").hidden = !d.configured || !d.items.length;
+  // Plug-ins' jobs (DASH-330) sit with the server's, each with its own Run now.
+  const fromPlugins = (d.plugin_jobs || []).map((j) => ({ name: j.key, title: j.title, status: j.status, summary: [j.when, j.summary].filter(Boolean).join(" · "),
+    finished: j.finished, run: j.enabled ? `/api/plugins/${j.plugin}/jobs/${j.job}` : "" }));
+  d = { ...d, items: [...(d.configured ? d.items : []), ...fromPlugins] };
+  $("#jobs-panel").hidden = !d.items.length;
   renderKeyed($("#jobs"), d.items, (j) => j.name, (j) => {
     const [words, tone] = JOB_WORDS[j.status] || ["Not run yet", "muted"];
     const finished = j.finished ? new Date(j.finished * 1000).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
@@ -210,7 +214,7 @@ function renderJobs(d) {
       el("div", {}, el("div", { class: "row__title", text: j.title }),
         el("div", { class: "row__meta", text: [j.summary, finished && !busy ? `finished ${finished}` : ""].filter(Boolean).join(" · ") })),
       el("div", { class: "row__side" }, chip(words, tone),
-        d.can_run ? el("button", { type: "button", class: "btn", disabled: busy, onclick: () => runJob(j) },
+        (j.run !== undefined ? j.run : d.can_run) ? el("button", { type: "button", class: "btn", disabled: busy, onclick: () => runJob(j) },
           icon("play"), "Run now", el("span", { class: "visually-hidden", text: ` ${j.title}` })) : null),
       j.output ? el("details", { class: "disclosure" }, el("summary", { text: "What it found" }), el("div", { class: "disclosure__body" }, el("pre", { class: "code-block", text: j.output }))) : null);
   });
@@ -224,6 +228,11 @@ async function loadJobs() {
 }
 
 async function runJob(j) {
+  if (j.run) {  // a plug-in's job: started now, the list read again in a moment
+    try { await api(j.run, { method: "POST" }); announce(`${j.title} started`); setTimeout(loadJobs, 1500); }
+    catch (e) { problem(`Not started: ${e.message}`); }
+    return;
+  }
   try { renderJobs(await api(`/api/jobs/${j.name}`, { method: "POST" })); announce(`${j.title} asked to run`); }
   catch (e) { problem(`Not started: ${e.message}`); }
 }

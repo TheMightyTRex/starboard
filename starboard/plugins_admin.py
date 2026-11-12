@@ -14,7 +14,7 @@ import urllib.request
 
 from . import api_v1, plugins
 
-STATES = ("installed", "enabled", "disabled", "failed")
+STATES = ("installed", "enabled", "disabled", "failed")  # stored; plugin_life.status adds needs-setup and not-supported
 MAX_MANIFEST = 256 * 1024
 
 
@@ -83,7 +83,7 @@ def summary(manifest, problems=None):
             "problems": problems if problems is not None else plugins.check(manifest)}
 
 
-def fetch_manifest(address, opener=None):
+def fetch_manifest(address, opener=None, sha256=""):
     """A manifest from an https address (a repository's raw starboard-plugin.json), checked like any address
     Starboard is told to call (DASH-279), 5 seconds and 256 KB at most."""
     from . import outside
@@ -96,6 +96,10 @@ def fetch_manifest(address, opener=None):
         raw = r.read(MAX_MANIFEST + 1)
     if len(raw) > MAX_MANIFEST:
         raise ValueError("That manifest is too large")
+    if sha256:  # from a catalogue (DASH-330): the file must be the one the catalogue listed
+        import hashlib
+        if hashlib.sha256(raw).hexdigest() != sha256:
+            raise ValueError("The file changed since the catalogue listed it, so Starboard did not use it")
     return parse(raw)
 
 
@@ -133,11 +137,19 @@ _catalogues = {}  # address -> {"at", "name", "items", "error"}
 def _clean_entry(e):
     if not isinstance(e, dict) or not re.match(plugins.ID, str(e.get("id", ""))):
         return None
-    address = str(e.get("manifest") or "")
+    # Versions (DASH-330): each with the Starboard API it needs and its manifest's SHA-256. Only the newest version
+    # this Starboard can run is offered; how many newer ones were hidden, and what they need, is said under it.
+    from . import plugin_life
+    versions = plugin_life.clean_versions(e)
+    best, hidden, needs = plugin_life.best_version(versions)
     return {"id": e["id"], "name": str(e.get("name") or e["id"])[:40], "description": str(e.get("description") or "")[:240],
             "kind": str(e.get("kind") or "Other")[:30], "author": str(e.get("author") or "")[:60],
             "permissions": [p for p in e.get("permissions") or [] if p in plugins.PERMISSIONS],
-            "manifest": address if re.match(r"^https://\S{1,400}$", address) else "", "published": bool(e.get("published", True))}
+            "notices": [n for n in e.get("notices") or [] if n in plugins.NOTICES],
+            "manifest": (best or {}).get("manifest", ""), "version": (best or {}).get("version", ""),
+            "sha256": (best or {}).get("sha256", ""), "changelog": (best or {}).get("changelog", ""),
+            "versions": [best] if best else [], "hidden": hidden, "hidden_needs": needs,
+            "published": bool(e.get("published", True))}
 
 
 def fetch_catalogue(address, opener=None):
@@ -241,7 +253,9 @@ def listing(data_dir):
                       "light": x["light"], "dark": x["dark"], "radius": x.get("radius", 0), "shadow": x.get("shadow", "none"),
                       "font": fonts.get(x.get("font", "hyperlegible"), fonts["hyperlegible"])}
                      for x in m.get("styles") or [] if isinstance(x, dict)]
+            from . import plugin_life
             out.append({**summary(m, []), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
+                        "status": plugin_life.status(data_dir, pid, m, st), "jobs": [j.get("label") for j in m.get("jobs") or []],
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m)})
     return out
 
@@ -376,6 +390,8 @@ def write_jellyfin(data_dir, pid, services):
 
 
 def enable(data_dir, pid, helper=None, services=None):
+    from . import plugin_life
+    plugin_life.can_enable(data_dir, pid)  # set up first, and only on a Starboard it was made for (DASH-330)
     if _runs_nothing(data_dir, pid):  # only styles: nothing to start (DASH-284)
         set_state(data_dir, pid, "enabled")
         api_v1.audit(data_dir, "plugin_enabled", plugin=pid)
@@ -463,7 +479,7 @@ def public_settings(data_dir, pid, manifest=None):
     out = []
     for s in m.get("settings") or []:
         v = values.get(s["key"])
-        out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "choices") if k in s},
+        out.append({**{k: s[k] for k in ("key", "label", "type", "hint", "min", "max", "unit", "choices", "required") if k in s},
                     "value": (None if s["type"] == "secret" else v), "set": v not in (None, "")})
     return out
 
@@ -510,4 +526,7 @@ def save_settings(data_dir, pid, incoming):
         values[key] = v
     _write(path, values)
     api_v1.audit(data_dir, "plugin_settings", plugin=pid, keys=sorted(incoming or {}))
+    from . import plugin_life
+    if not plugin_life.missing_settings(m, values):
+        plugin_life.mark_set_up(data_dir, pid)
     return public_settings(data_dir, pid, m)

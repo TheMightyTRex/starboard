@@ -161,8 +161,13 @@ class App:
         if os.environ.get("STARBOARD_WATCH", "1") != "0":
             self.watch.start()
         self.jobs = jobs.Jobs(self)
+        from . import plugin_life  # plug-in events and jobs (DASH-330): nothing runs until a plug-in asks
+        plugin_life.listen(self.data_dir)
+        services.ON_CHANGE = plugin_life.emit
+        self.plugin_clock = plugin_life.Clock(self.data_dir, self.config)
         if os.environ.get("STARBOARD_JOBS", "1") != "0":
             self.jobs.ensure()
+            self.plugin_clock.ensure()
             threading.Thread(target=_move_livetv, args=(self,), name="livetv-move", daemon=True).start()
         self.importing = None  # the watch history import that is running, if any
         self.import_result = None
@@ -2000,11 +2005,13 @@ class Handler(BaseHTTPRequestHandler):
                 services.forget()
                 return self.json(200, services.requests(cfg.data["services"]))
             if path == "/api/jobs" and method == "GET":
-                return self.json(200, backup.jobs_status())
+                from . import plugin_life  # plug-ins' jobs are listed with the server's (DASH-330)
+                return self.json(200, {**backup.jobs_status(), "plugin_jobs": plugin_life.jobs(app.data_dir)})
             m = re.match(r"^/api/jobs/([a-z][a-z0-9-]{0,30})$", path)
             if m and method == "POST":
+                from . import plugin_life
                 backup.request_job(m.group(1))
-                return self.json(200, backup.jobs_status())
+                return self.json(200, {**backup.jobs_status(), "plugin_jobs": plugin_life.jobs(app.data_dir)})
             if path == "/api/recent" and method == "GET":
                 return self.json(200, services.cached("recent", 300, lambda: services.recent(cfg.data["services"]), fresh))
             if path == "/api/jellyfin" and method == "GET":
@@ -2287,13 +2294,57 @@ class Handler(BaseHTTPRequestHandler):
         app = self.app
         media = (stack.env_values(app.data_dir).get("DATA_DIR") or "").rstrip("/")
         media = f"{media}/media" if media else "/nonexistent-media-folder"
+        from . import plugin_life
         if path == "/api/plugins" and method == "GET":
             from . import livetv_move
             added = {p["id"] for p in pa.listing(app.data_dir)}
             built = [{**pa.summary(m, []), "added": m["id"] in added,
                       "why_not": livetv_move.can_run(app.data_dir) if m["id"] == livetv_move.PID else ""}
                      for m in pa.builtins().values()]
-            return self.json(200, {"plugins": pa.listing(app.data_dir), "builtin": built})
+            updates = plugin_life.updates_known(app.data_dir)  # from catalogues already read; nothing fetched here
+            return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"])} for p in pa.listing(app.data_dir)], "builtin": built})
+        if path == "/api/plugins/jobs" and method == "GET":  # System, Jobs: every plug-in's jobs (DASH-330)
+            return self.json(200, {"jobs": plugin_life.jobs(app.data_dir)})
+        mj = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/jobs/([a-z][a-z0-9-]{0,30})$", path)
+        if mj and method == "POST":
+            try:
+                if not any(j["plugin"] == mj.group(1) and j["job"] == mj.group(2) and j["enabled"] for j in plugin_life.jobs(app.data_dir)):
+                    return self.error(409, "Turn the plug-in on first")
+                threading.Thread(target=plugin_life.run_job, args=(app.data_dir, mj.group(1), mj.group(2)), name="plugin-job", daemon=True).start()
+            except LookupError as e:
+                return self.error(404, str(e))
+            return self.json(200, {"said": "Started", "jobs": plugin_life.jobs(app.data_dir)})
+        mu = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/(update|rollback)$", path)
+        if mu and method == "POST":
+            # Update to a newer version (from a catalogue, checked by SHA-256, or from an address), keeping the one
+            # before for Roll back; or Roll back. Both need the password, as adding does. preview: what is new.
+            pid, what = mu.groups()
+            if not any(p["id"] == pid for p in pa.listing(app.data_dir)):
+                return self.error(404, "No plug-in with that id")
+            body = self.body()
+            try:
+                if what == "rollback":
+                    self.check_password(body)
+                    said = plugin_life.rollback(app.data_dir, pid, media, services=app.config.data["services"])
+                else:
+                    known = plugin_life.updates_known(app.data_dir).get(pid)
+                    if body.get("address"):
+                        manifest = pa.fetch_manifest(body["address"])
+                    elif known:
+                        manifest = pa.fetch_manifest(known["manifest"], sha256=known.get("sha256", ""))
+                    else:
+                        return self.error(404, "No newer version is known. Open the Catalogue to look again, or give an address")
+                    if body.get("preview"):
+                        old = pa._read(os.path.join(pa.folder(app.data_dir, pid), "manifest.json"), {}) or {}
+                        return self.json(200, {**pa.summary(manifest), "new_permissions": plugin_life.new_permissions(old, manifest),
+                                               "changelog": (known or {}).get("changelog", ""), "from": old.get("version")})
+                    self.check_password(body)
+                    said = plugin_life.update(app.data_dir, pid, manifest, media, services=app.config.data["services"])
+            except LookupError as e:
+                return self.error(404, str(e))
+            logs.event("info", "plug-ins", said)
+            app.plugin_clock.ensure()
+            return self.json(200, {"said": said, "plugins": pa.listing(app.data_dir)})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}
@@ -2335,7 +2386,13 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/api/plugins/preview", "/api/plugins/add", "/api/plugins/test") and method == "POST":
             from . import plugin_tester
             body = self.body()
-            manifest = pa.parse(body["manifest"]) if body.get("manifest") else pa.fetch_manifest(body.get("address"))
+            listed = None
+            if body.get("catalogue_id"):  # from a catalogue (DASH-330): its newest fitting version, checked by SHA-256
+                listed = next((e for e in pa.catalogue(app.config)[1] if e["id"] == body["catalogue_id"] and e.get("manifest")), None)
+                if not listed:
+                    return self.error(404, "That plug-in has no version for this Starboard in the catalogue")
+            manifest = (pa.parse(body["manifest"]) if body.get("manifest") else
+                        pa.fetch_manifest(listed["manifest"], sha256=listed.get("sha256", "")) if listed else pa.fetch_manifest(body.get("address")))
             if path.endswith("test"):  # the plug-in tester: every issue, accessibility always (DASH-284)
                 return self.json(200, plugin_tester.report(manifest, dev=bool(body.get("dev"))))
             if path.endswith("preview"):
@@ -2395,6 +2452,7 @@ class Handler(BaseHTTPRequestHandler):
             pa.enable(app.data_dir, pid, services=app.config.data["services"])
         else:
             pa.disable(app.data_dir, pid)
+        app.plugin_clock.ensure()  # jobs start or stop with their plug-in
         return self.json(200, {"plugins": pa.listing(app.data_dir)})
 
     def start_stack(self):

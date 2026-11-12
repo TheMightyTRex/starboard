@@ -90,13 +90,14 @@ def answer(data_dir, pid, cid, opener=None):
     """One card's checked answer, kept for a minute: {type, format, data} or {type, problem}."""
     from . import plugins_admin
     key = (pid, cid)
-    with _lock:
-        hit = _cache.get(key)
-        if hit and time.time() - hit[0] < KEEP:
-            return hit[1]
     m = plugins_admin._read(f"{plugins_admin.folder(data_dir, pid)}/manifest.json", {}) or {}
     cards = {(c.get("id") or str(i)): c for i, c in enumerate(m.get("cards") or [])}
     card = cards.get(cid)
+    keep = max(KEEP, 60 * int((card or {}).get("refresh_minutes") or 1))  # a card may ask to be read less often (DASH-330)
+    with _lock:
+        hit = _cache.get(key)
+        if hit and time.time() - hit[0] < keep:
+            return hit[1]
     if not card or not m.get("containers"):
         raise LookupError("No such card")
     main = m["containers"][0]

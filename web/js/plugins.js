@@ -3,7 +3,9 @@
 // drawn by Starboard from its manifest. A plug-in never adds code to this page.
 
 const RISK = { low: ["Low", "success"], medium: ["Medium", "warning"], high: ["High", "danger"] };
-const STATE = { installed: ["Added, not active", "muted"], enabled: ["Active", "success"], disabled: ["Inactive", "muted"], failed: ["Did not start", "danger"] };
+const STATE = { installed: ["Added, not active", "muted"], enabled: ["Active", "success"], disabled: ["Inactive", "muted"], failed: ["Did not start", "danger"],
+  "needs-setup": ["Needs setting up", "warning"], "not-supported": ["Not supported", "danger"] };  // DASH-330
+const stateOf = (p) => p.status?.state || p.state;
 
 function pluginPermissions(list) {
   if (!list.length) return el("p", { class: "small", text: "It asks for nothing beyond its own folder." });
@@ -14,7 +16,7 @@ function pluginPermissions(list) {
 
 // The install warning (owner, 12 November 2026): a slide-out that says the plug-in is added at your own risk, then
 // what it can see, change and reach and what it runs, with Install and Cancel. Resolves with the password, or null.
-function installWarning(s, { builtin = false, opener } = {}) {
+function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
   return new Promise((resolve) => {
     const w = s.warning;
     let answer = null;
@@ -22,12 +24,12 @@ function installWarning(s, { builtin = false, opener } = {}) {
       el("h3", {}, icon(ic), ` ${title}`),
       items.length ? el("ul", { class: "install-warning__list" }, items.map((t) => el("li", { text: t }))) : el("p", { class: "small muted", text: empty }));
     const pw = el("input", { class: "input", type: "password", id: "pl-install-password", autocomplete: "current-password", required: true });
-    const install = el("button", { type: "submit", class: "btn btn--primary", form: "pl-install-form" }, `Install ${s.name}`);
+    const install = el("button", { type: "submit", class: "btn btn--primary", form: "pl-install-form" }, `${verb} ${s.name}`);
     const cancel = el("button", { type: "button", class: "btn" }, "Cancel");
     const form = el("form", { id: "pl-install-form", class: "form-stack", novalidate: true },
       field("Your Starboard password", pw, { hint: "To show it is you who is installing it." }));
     const panel = sidePanel({
-      title: `Install ${s.name}?`, opener, wide: true,
+      title: verb === "Install" ? `Install ${s.name}?` : `${verb} ${s.name} to ${s.version}?`, opener, wide: true,
       onClose: () => resolve(answer),
       body: [
         el("div", { class: "notice", "data-tone": w.risk === "high" ? "danger" : "warning", role: "note" }, icon("triangle-alert"),
@@ -41,10 +43,16 @@ function installWarning(s, { builtin = false, opener } = {}) {
           w.risk ? chip(`${RISK[w.risk][0]} risk`, RISK[w.risk][1]) : null),
         el("p", { class: "small install-warning__by", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
         s.description ? el("p", { text: s.description }) : null,
+        // An update (DASH-330): what changed, and anything it may do that the installed version may not.
+        s.changelog ? el("p", { class: "small" }, el("strong", { text: `New in ${s.version}: ` }), s.changelog) : null,
+        s.new_permissions?.length ? el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
+          el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "This version asks for more" }),
+            el("ul", {}, s.permissions.filter((x) => s.new_permissions.includes(x.permission)).map((x) => el("li", { text: `New: ${x.words}` }))))) : null,
         group("It can see", "eye", w.see, "Nothing of yours."),
         group("It can change", "pencil", w.change, "Nothing: it has no folder and no keys."),
         group("It can reach", "globe", w.reach, "Nothing: it runs no containers."),
         w.runs.length ? group("It runs", "server", w.runs, "") : null,
+        w.notices?.length ? group("Notices", "info", w.notices, "") : null,
         w.buttons.length ? el("p", { class: "small", text: `Its buttons: ${w.buttons.join(", ")}.` }) : null,
         el("p", { class: "small muted" }, el("strong", { text: "It can never reach " }), w.never),
         form],
@@ -113,7 +121,9 @@ function pluginSettingsForm(p, redraw) {
         value: s.value ?? "", min: s.min, max: s.max, autocomplete: s.type === "secret" ? "new-password" : "off",
         placeholder: s.type === "secret" && s.set ? "Set. Leave empty to keep it" : "" });
       inputs[s.key] = [s, input];
-      typed.push(field(s.label, s.unit ? unitInput(input, s.unit) : input, { hint: s.hint }));
+      if (s.required) { input.required = true; input.setAttribute("aria-required", "true"); }  // DASH-330
+      const hint = s.required ? [s.hint, "Needed before it can start."].filter(Boolean).join(" ") : s.hint;
+      typed.push(field(s.label, s.unit ? unitInput(input, s.unit) : input, { hint }));
     }
   }
   let form = null;
@@ -125,7 +135,11 @@ function pluginSettingsForm(p, redraw) {
       e.preventDefault();
       const settings = {};
       for (const [key, [s, input]] of Object.entries(inputs)) settings[key] = s.type === "number" ? Number(input.value) : input.value;
-      try { await put(settings); showSaved(`pl-${p.id}-saved`); }
+      try {
+        await put(settings);
+        showSaved(`pl-${p.id}-saved`);
+        if (p.status?.state === "needs-setup") { announce("Saved. Activate it on State when you are ready"); redraw(); }  // the state may have changed
+      }
       catch (err) { problem(err.message, form.querySelector("button[type=submit]")); }
     });
   }
@@ -180,6 +194,17 @@ function styleGallery(p) {
 
 // Activate or Deactivate one plug-in.
 function stateButton(p, redraw) {
+  if (stateOf(p) === "needs-setup") {  // set up first (DASH-330): Activate waits until the required settings are in
+    return el("button", { type: "button", class: "btn btn--primary", onclick: () => {
+      // The Settings part may be in a topic tab that is not showing: show it, then go to the first empty required field.
+      const part = $(`#pl-${p.id}-settings-h`)?.closest("section.settings-section");
+      if (part?.classList.contains("topic-off")) $(`#topic-tabs [aria-controls="${part.id}"]`)?.click();
+      const fields = part ? $$("input, select, textarea", part).filter((f) => f.type !== "hidden") : [];
+      const first = fields.find((f) => (p.status?.missing || []).some((m) => document.querySelector(`label[for="${f.id}"]`)?.textContent.startsWith(m))) || fields[0];
+      first?.scrollIntoView({ block: "center" });
+      first?.focus();
+    } }, "Set it up", el("span", { class: "visually-hidden", text: ` ${p.name}` }));
+  }
   const what = p.state === "enabled" ? "disable" : "enable";
   const b = el("button", { type: "button", class: what === "enable" ? "btn btn--primary" : "btn" }, what === "enable" ? "Activate" : "Deactivate",
     el("span", { class: "visually-hidden", text: ` ${p.name}` }));
@@ -206,6 +231,58 @@ function removeButton(p, after) {
   return remove;
 }
 
+// After an update or a roll back the page is drawn again: show the State topic and put focus on its heading, so the
+// person hears the new version and state rather than losing their place.
+function focusState(p) {
+  // Two frames later: the topic tabs are drawn again in the next frame after the page changes.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const h = $(`#pl-${p.id}-state-h`);
+    const part = h?.closest("section.settings-section");
+    if (part?.classList.contains("topic-off")) $(`#topic-tabs [aria-controls="${part.id}"]`)?.click();
+    if (h) { h.tabIndex = -1; h.focus(); }
+  }));
+}
+
+// Update and Roll back (DASH-330): the update shows the same warning as installing, with what is new; both take the
+// password. Roll back needs no download: the version before is kept.
+function updateButton(p, redraw) {
+  const b = el("button", { type: "button", class: "btn btn--primary" }, icon("download"), `Update to ${p.update.version}…`);
+  b.addEventListener("click", async () => {
+    b.disabled = true;
+    try {
+      const s = await api(`/api/plugins/${p.id}/update`, { method: "POST", body: { preview: true } });
+      const password = await installWarning(s, { opener: b, verb: "Update" });
+      if (password === null) return;
+      const r = await api(`/api/plugins/${p.id}/update`, { method: "POST", body: { password } });
+      announce(r.said);
+      toast(r.said);
+      await redraw();
+      focusState(p);
+    } catch (err) { problem(err.message, b); }
+    finally { b.disabled = false; }
+  });
+  return b;
+}
+
+function rollbackButton(p, redraw, primary = false) {
+  const b = el("button", { type: "button", class: primary ? "btn btn--primary" : "btn" }, icon("undo-2"), `Roll back to ${p.status.previous_version}`);
+  b.addEventListener("click", async () => {
+    const pw = el("input", { class: "input", type: "password", id: `pl-rb-${p.id}`, autocomplete: "current-password" });
+    const ok = await confirmDialog({ title: `Roll back ${p.name} to ${p.status.previous_version}?`, confirm: "Roll back",
+      message: `${p.name} goes back to the version you had before, with no download. Version ${p.version} is kept, in case you want it again.`,
+      fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+    if (!ok) return;
+    try {
+      const r = await api(`/api/plugins/${p.id}/rollback`, { method: "POST", body: { password: pw.value } });
+      announce(r.said);
+      toast(r.said);
+      await redraw();
+      focusState(p);
+    } catch (err) { problem(err.message, b); }
+  });
+  return b;
+}
+
 // A plug-in's own page, Settings, Plug-ins, <its name> (DASH-318), laid out like every Settings page (DASH-307):
 // its state and buttons at the top, then its styles, settings and screens, what it may do, and Remove at the foot.
 function pluginPage(p, redraw) {
@@ -221,10 +298,23 @@ function pluginPage(p, redraw) {
   });
   const custom = p.settings.filter((s) => s.type === "custom");
   const form = pluginSettingsForm(p, redraw);
+  const st = p.status || {};
+  // One sentence and one button for a state that needs something (DASH-330).
+  const fix = st.sentence ? el("div", { class: "notice", "data-tone": st.state === "needs-setup" ? "info" : "warning", role: "note" },
+    icon(st.state === "needs-setup" ? "info" : "triangle-alert"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: (STATE[st.state] || ["", ""])[0] }), el("p", { text: st.sentence }))) : null;
+  const first = st.action === "rollback" ? rollbackButton(p, redraw, true)
+    : st.action === "update" && p.update ? updateButton(p, redraw) : stateButton(p, redraw);
   return [
     section(`pl-${p.id}-state`, "State", p.builtin ? "Built into Starboard: it runs on Starboard's own image and updates with Starboard." : `Version ${p.version}${p.author ? `, by ${p.author}` : ""}.`,
-      headChip(...(STATE[p.state] || ["Unknown", "muted"])), p.message ? el("p", { class: "small", text: p.message }) : null,
-      el("div", { class: "actions" }, stateButton(p, redraw), ...buttons)),
+      headChip(...(STATE[stateOf(p)] || ["Unknown", "muted"])), fix || (p.message ? el("p", { class: "small", text: p.message }) : null),
+      el("div", { class: "actions" }, first, ...buttons)),
+    !p.builtin && (p.update || st.can_roll_back) ? section(`pl-${p.id}-versions`, "Versions",
+      p.update ? `Version ${p.update.version} is available.${p.update.changelog ? ` ${p.update.changelog}` : ""}` : `Version ${st.previous_version} is kept, in case this one does not suit you.`,
+      el("div", { class: "actions" }, p.update && st.action !== "update" ? updateButton(p, redraw) : null,
+        st.can_roll_back && st.action !== "rollback" ? rollbackButton(p, redraw) : null)) : null,
+    p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
+      el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null,
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "", styleGallery(p)) : null,
     form ? section(`pl-${p.id}-settings`, "Settings", "Saved for everyone who uses this Starboard.", form) : null,
     ...custom.map((c) => section(`pl-${p.id}-${c.key}`, c.label, c.hint || "", customScreen(p, c))),
@@ -403,7 +493,7 @@ async function startPlugins() {
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row row--no-lead" },
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
-          el("div", { class: "row__side" }, chip(...(STATE[p.state] || ["Unknown", "muted"])),
+          el("div", { class: "row__side" }, chip(...(STATE[stateOf(p)] || ["Unknown", "muted"])), p.update ? chip("Update", "info") : null,
             el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}` }, icon("settings"), "Settings",
               el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
             stateButton(p, draw))))),
@@ -441,11 +531,11 @@ async function startCatalogue() {
         side.addEventListener("click", async () => {
           side.disabled = true;
           try {
-            const s = await api("/api/plugins/preview", { method: "POST", body: { address: e.manifest } });
+            const s = await api("/api/plugins/preview", { method: "POST", body: { catalogue_id: e.id } });
             if (!s.test.ok) { problem(`${e.name} did not pass Starboard's tests: ${s.test.issues.filter((i) => i.severity === "error").map((i) => i.what).join("; ")}`, side); return; }
             const password = await installWarning(s, { opener: side });
             if (password === null) return;
-            await api("/api/plugins/add", { method: "POST", body: { address: e.manifest, password } });
+            await api("/api/plugins/add", { method: "POST", body: { catalogue_id: e.id, password } });
             toast(`${e.name} installed. Activate it on its own tab when you are ready`);
             location.href = `/settings-plugin.html?id=${encodeURIComponent(e.id)}`;
           } catch (err) { problem(err.message, side); }
@@ -454,7 +544,10 @@ async function startCatalogue() {
       }
       return el("li", { class: "row row--no-lead" },
         el("div", {}, el("h4", { class: "row__title", text: e.name }),
-          el("div", { class: "row__meta", text: e.description })),
+          el("div", { class: "row__meta", text: e.description }),
+          // Versions for this Starboard only (DASH-330): newer ones that need a newer Starboard are said, not offered.
+          e.version || e.hidden ? el("div", { class: "row__meta", text: [e.version ? `Version ${e.version}` : "",
+            e.hidden ? `${e.hidden} newer ${e.hidden === 1 ? "version needs" : "versions need"} Starboard's API ${e.hidden_needs}` : ""].filter(Boolean).join(" · ") }) : null),
         el("div", { class: "row__side" }, side));
     };
     holder.replaceChildren(...[

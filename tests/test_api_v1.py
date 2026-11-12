@@ -132,6 +132,14 @@ class ApiV1Test(unittest.TestCase):
         r, body = self.get("/api/v1/apps", key=key)
         self.assertEqual((r.status, body["code"]), (404, "not_found"))
 
+    def test_a_plugin_key_without_scopes_reads_nothing(self):
+        # No scopes means everything only for people's own keys; a plug-in reads exactly what was approved (P8).
+        key, _ = api_v1.create_key(self.tmp.name, "Plug-in: Network only", "read", [], None)
+        r, body = self.get("/api/v1/apps", key=key)
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        mine, _ = api_v1.create_key(self.tmp.name, "My script", "read", [], None)
+        self.assertEqual(self.get("/api/v1/apps", key=mine)[0].status, 200)
+
     def test_rate_limit_answers_429_with_retry_after(self):
         key, item = api_v1.create_key(self.tmp.name, "Busy", "read", [], 1)
         api_v1._buckets[item["id"]] = (0, __import__("time").monotonic())

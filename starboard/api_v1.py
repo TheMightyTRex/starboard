@@ -338,7 +338,10 @@ def handle(h, method, path):
         m = re.match(pattern, path)
         if not m:
             continue
-        if scope and k.get("scopes") and scope not in k["scopes"]:
+        # No scopes means everything only for keys people make themselves. A plug-in's key reads exactly what was
+        # approved (P8), so a plug-in with no read permission reads nothing, however old its key (DASH-330 review).
+        exact = str(k.get("name", "")).startswith("Plug-in: ")
+        if scope and (k.get("scopes") or exact) and scope not in (k.get("scopes") or []):
             return problem(404, "not_found", "Nothing here for this key")  # AS6: 404, not 403
         try:
             body = fn(h, m, query)

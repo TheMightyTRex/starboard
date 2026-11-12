@@ -22,6 +22,8 @@ TIMEOUT = 8
 # The last checks of each app, in memory only: about 40 KB for 20 apps. Lost on restart, which is fine.
 RECENT = collections.defaultdict(lambda: collections.deque(maxlen=20))
 DOWN_SINCE = {}  # app id: when it first stopped answering, cleared when it answers again
+ON_CHANGE = None  # set at start to plugin_life.emit: an app going down or coming back is an event for plug-ins
+SAID_DOWN = set()  # apps said to be down to plug-ins, so each change is said once
 FIRST_SEEN = {}  # (app id, message): when an app's own health warning was first seen
 
 
@@ -333,6 +335,21 @@ def _record(service, result):
             result["down_since"] = DOWN_SINCE.setdefault(sid, now)
         else:
             DOWN_SINCE.pop(sid, None)
+        # Plug-ins that asked for app.down or app.up (DASH-330): down after two checks in a row without an answer
+        # (as alerts, so a restart says nothing), up when one that was said to be down answers again.
+        last_two = [c["state"] for c in list(RECENT[sid])[-2:]]
+        event = None
+        if result["state"] == "down" and last_two == ["down", "down"] and sid not in SAID_DOWN:
+            SAID_DOWN.add(sid)
+            event = "app.down"
+        elif result["state"] != "down" and sid in SAID_DOWN:
+            SAID_DOWN.discard(sid)
+            event = "app.up"
+        if event and ON_CHANGE:
+            try:  # never in the way of the check itself
+                ON_CHANGE(event, {"app": service.get("name"), "type": service.get("type")})
+            except Exception:  # noqa: BLE001
+                pass
     return result
 
 
