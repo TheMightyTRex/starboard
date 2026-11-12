@@ -76,33 +76,52 @@ function testReport(r) {
   return el("div", { class: "stack-4" }, head, acc, list);
 }
 
+// A plug-in's own settings: switches and choices apply at once and say so beside themselves (settings pattern 2);
+// typed settings (words, numbers, keys) are one form with one Save at its foot (pattern 5).
 function pluginSettingsForm(p, redraw) {
   const plain = p.settings.filter((s) => s.type !== "custom");
   if (!plain.length) return null;
-  const inputs = {};
-  const rows = plain.map((s) => {
-    let input;
+  const put = (settings) => api(`/api/plugins/${p.id}/settings`, { method: "PUT", body: { settings } });
+  const rows = [], typed = [], inputs = {};
+  for (const s of plain) {
     const id = `pl-${p.id}-${s.key}`;
-    if (s.type === "switch") input = el("input", { type: "checkbox", id, checked: !!s.value });
-    else if (s.type === "choice") input = el("select", { class: "select", id }, (s.choices || []).map((c) => el("option", { value: c, text: c, selected: c === s.value })));
-    else input = el("input", { class: "input", id, type: s.type === "number" ? "number" : s.type === "secret" ? "password" : "text",
-      value: s.value ?? "", min: s.min, max: s.max, autocomplete: s.type === "secret" ? "new-password" : "off",
-      placeholder: s.type === "secret" && s.set ? "Set. Leave empty to keep it" : "" });
-    inputs[s.key] = [s, input];
-    if (s.type === "switch") return switchRow(s.label, s.hint, input);
-    return field(s.label, s.unit ? unitInput(input, s.unit) : input, { hint: s.hint });
-  });
-  const form = el("form", { class: "form-stack", novalidate: true }, rows, el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save" })));
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const settings = {};
-    for (const [key, [s, input]] of Object.entries(inputs)) {
-      settings[key] = s.type === "switch" ? input.checked : s.type === "number" ? Number(input.value) : input.value;
+    if (s.type === "switch") {
+      const input = el("input", { type: "checkbox", role: "switch", id, checked: !!s.value, "aria-labelledby": `${id}-l` });
+      input.addEventListener("change", async () => {
+        try { await put({ [s.key]: input.checked }); toast("Saved"); }
+        catch (err) { input.checked = !input.checked; problem(err.message, input); }
+      });
+      rows.push(settingRow(s.label, s.hint, el("label", { class: "switch" }, input), `${id}-l`));
+    } else if (s.type === "choice") {
+      const select = el("select", { class: "select", id, "aria-labelledby": `${id}-l` }, (s.choices || []).map((c) => el("option", { value: c, text: c, selected: c === s.value })));
+      let was = select.value;
+      select.addEventListener("change", async () => {
+        try { await put({ [s.key]: select.value }); was = select.value; toast("Saved"); }
+        catch (err) { select.value = was; problem(err.message, select); }
+      });
+      rows.push(settingRow(s.label, s.hint, select, `${id}-l`));
+    } else {
+      const input = el("input", { class: "input", id, type: s.type === "number" ? "number" : s.type === "secret" ? "password" : "text",
+        value: s.value ?? "", min: s.min, max: s.max, autocomplete: s.type === "secret" ? "new-password" : "off",
+        placeholder: s.type === "secret" && s.set ? "Set. Leave empty to keep it" : "" });
+      inputs[s.key] = [s, input];
+      typed.push(field(s.label, s.unit ? unitInput(input, s.unit) : input, { hint: s.hint }));
     }
-    try { await api(`/api/plugins/${p.id}/settings`, { method: "PUT", body: { settings } }); toast(`${p.name}: saved`); redraw(); }
-    catch (err) { problem(err.message, form); }
-  });
-  return form;
+  }
+  let form = null;
+  if (typed.length) {
+    const note = savedNote(`pl-${p.id}-saved`);
+    form = el("form", { class: "form-stack", novalidate: true }, typed,
+      el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Save" }), note));
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const settings = {};
+      for (const [key, [s, input]] of Object.entries(inputs)) settings[key] = s.type === "number" ? Number(input.value) : input.value;
+      try { await put(settings); showSaved(`pl-${p.id}-saved`); }
+      catch (err) { problem(err.message, form.querySelector("button[type=submit]")); }
+    });
+  }
+  return el("div", { class: "stack-4" }, ...[rows.length ? el("ul", { class: "settings-rows" }, rows) : null, form].filter(Boolean));
 }
 
 // A picture of a style (DASH-284): a small page drawn by Starboard in the style's own colours, light and dark side

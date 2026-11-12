@@ -189,28 +189,32 @@
       <p class="page-head__summary">Put back settings Starboard saved, or go back to an earlier version.</p>
     </div>
   </div>
-  <div class="stack-2" id="restore-sections">
-    <details class="disclosure" open>
-      <summary>Restore your settings</summary>
-      <div class="disclosure__body">
-        <p>Starboard saves a copy of your settings before every update and every restore. Restoring puts back your apps, categories, design and alerts from that copy. Your library and downloads are not touched, and your password and sign-ins stay as they are.</p>
-        <div id="settings-message" role="alert"></div>
-        <ul class="rows" id="saved" aria-label="Saved copies, newest first"></ul>
-        <h3>Restore from a file</h3>
+  <div class="settings-sections" id="restore-sections">
+    <section class="settings-section" aria-labelledby="rs-copies-h">
+      <div class="settings-section__head">
+        <h2 id="rs-copies-h">Restore your settings</h2>
+        <p class="small muted">Starboard saves a copy before every update and every restore. Restoring puts back your apps, categories, design and alerts; your library, downloads, password and sign-ins stay as they are.</p>
+      </div>
+      <div id="settings-message" role="alert"></div>
+      <ul class="rows" id="saved" aria-label="Saved copies, newest first"></ul>
+    </section>
+    <section class="settings-section" aria-labelledby="rs-file-h">
+      <div class="settings-section__head">
+        <h2 id="rs-file-h">Restore from a file</h2>
         <p class="small muted">A file you downloaded from System, Backup and restore.</p>
-        <div class="actions">
-          <button type="button" class="btn" id="restore-file"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-upload"/></svg>Restore from a file</button>
-          <input type="file" class="file-pick" id="restore-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
-        </div>
       </div>
-    </details>
-    <details class="disclosure">
-      <summary>Go back to an earlier version</summary>
-      <div class="disclosure__body">
-        <p>If a new version does not work for you, run this on the server, in the folder you installed Starboard into. It backs up your settings first.</p>
-        <div class="command" id="back-command"><code class="code-block">./update.sh --to v0.9.0</code></div>
+      <div class="actions">
+        <button type="button" class="btn" id="restore-file"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-upload"/></svg>Restore from a file</button>
+        <input type="file" class="file-pick" id="restore-input" accept=".json,application/json" tabindex="-1" aria-hidden="true">
       </div>
-    </details>
+    </section>
+    <section class="settings-section" aria-labelledby="rs-back-h">
+      <div class="settings-section__head">
+        <h2 id="rs-back-h">Go back to an earlier version</h2>
+        <p class="small muted">If a new version does not work for you, run this on the server, in Starboard's folder. It backs up your settings first.</p>
+      </div>
+      <div class="command" id="back-command"><code class="code-block">./update.sh --to v0.9.0</code></div>
+    </section>
   </div>
 </div>
 </main>

@@ -213,7 +213,8 @@ function savedBeside(text, options) {
   const { control, sectionHead } = lastUsed;
   let spot = null;
   if (control.isConnected && control.getClientRects().length && !control.closest(".side-panel, dialog")) {
-    const holder = control.closest(".setting__control, .actions, .inline-save, .switch, .field") || control;
+    // A choice card or a tick in a group says it under the group, not inside the card.
+    const holder = control.closest(".setting__control, .actions, .inline-save, .switch, .field, fieldset, .option-cards") || control;
     spot = holder.classList.contains("switch") && holder.closest(".setting__control") ? holder.closest(".setting__control") : holder;
   } else if (sectionHead) {
     const sec = document.getElementById(sectionHead)?.closest(".settings-section");

@@ -122,7 +122,7 @@ function rxTestResult(result) {
 }
 
 // The side panel to add or change one: name, on or off, the schema's fields, then Test and Save.
-function rxEditPanel(kind, words, schema, existing, done) {
+function rxEditPanel(kind, words, schema, existing, done, onRemove = null) {
   const editing = !!existing;
   const name = el("input", { class: "input", type: "text", value: existing?.name || schema.name, autocomplete: "off" });
   const on = el("input", { type: "checkbox", checked: existing ? existing.enabled : true });
@@ -163,6 +163,12 @@ function rxEditPanel(kind, words, schema, existing, done) {
         field("Priority", priority, { hint: "From 1 to 50. Lower comes first when two give the same thing." }))),
       status)],
     foot: [save, test] });
+  // Settings pattern 8: Remove sits in the slide-out's foot, apart on the right, and asks first.
+  if (editing && onRemove) {
+    const remove = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Remove");
+    remove.addEventListener("click", () => onRemove(panel));
+    panel.setFoot([save, test, remove]);
+  }
   return panel;
 }
 
@@ -268,19 +274,14 @@ function rxKindSection(kind, description) {
   const change = (i) => reopen(async () => {
     const c = data.catalogue.find((x) => x.implementation === i.implementation) || { implementation: i.implementation, name: i.implementation_name };
     const schema = await schemaFor(c);
-    if (schema) rxEditPanel(kind, words, schema, i, (r) => { data = { ...data, ...r }; draw(); });
+    if (schema) rxEditPanel(kind, words, schema, i, (r) => { data = { ...data, ...r }; draw(); }, (panel) => removeOne(i, panel));
   });
-  const testOne = (i, where) => reopen(async () => {
-    where.replaceChildren(el("span", { class: "muted", text: "Testing…" }));
-    const r = await rxCall(kind, "test", { item: { id: i.id, implementation: i.implementation, name: i.name, enabled: i.enabled, priority: i.priority, settings: i.settings } }, `test ${i.name}`);
-    where.replaceChildren(r ? rxTestResult(r) : "");
-  });
-  const removeOne = (i) => reopen(async () => {
+  const removeOne = (i, panel) => reopen(async () => {
     const yes = await confirmDialog({ title: `Remove ${i.name}?`, danger: true, confirm: "Remove",
       message: `Reelix stops using ${i.name} and forgets its settings. You can add it again later.` });
     if (!yes) return;
     const r = await rxCall(kind, "remove", { id: i.id }, `remove ${i.name}`);
-    if (r) { data = { ...data, ...r }; toast(`${i.name} removed`); draw(); }
+    if (r) { panel?.close(); data = { ...data, ...r }; draw(); showSaved(`rx-${kind}-saved`, `${i.name} removed`); }
   });
 
   const searchSettings = () => {
@@ -310,35 +311,33 @@ function rxKindSection(kind, description) {
 
   const draw = () => {
     const items = data.items || [];
+    // Settings pattern 8: each one a row with its state chip and Edit, which opens it in a slide-out (Test and
+    // Remove are there); Add at the foot of the list.
     const rows = items.map((i) => {
-      const result = el("div", {});
-      return el("tr", { "data-key": String(i.id) },
-        el("th", { scope: "row", "data-label": words.one[0].toUpperCase() + words.one.slice(1) }, el("strong", { text: i.name }),
-          i.name !== i.implementation_name ? el("div", { class: "small muted", text: i.implementation_name }) : null, result),
-        el("td", { "data-label": "State" }, rxState(i), i.error || i.status?.last_failure_reason ? el("div", { class: "small muted", text: i.error || i.status.last_failure_reason }) : null),
-        kind === "indexers" ? el("td", { "data-label": "Results", class: "small", text: rxResults(i) || "Not searched yet" }) : el("td", { "data-label": "Address", class: "small" }, el("code", { text: i.settings?.url || i.settings?.host || i.settings?.base_url || "" })),
-        el("td", { "data-label": "" }, menuButton(`More for ${i.name}`, [
-          { label: "Change", icon: "pencil", onSelect: () => later(() => change(i)) },
-          { label: "Test", icon: "activity", onSelect: () => later(() => testOne(i, result)) },
-          { label: "Remove", icon: "trash-2", danger: true, onSelect: () => later(() => removeOne(i)) }])));
+      const edit = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, icon("pencil"), "Edit",
+        el("span", { class: "visually-hidden", text: ` ${i.name}` }));
+      edit.addEventListener("click", () => change(i));
+      const where = kind === "indexers" ? rxResults(i) || "Not searched yet" : i.settings?.url || i.settings?.host || i.settings?.base_url || "";
+      const why = i.error || i.status?.last_failure_reason || "";
+      return el("li", { class: "row row--no-lead", "data-key": String(i.id) },
+        el("div", {}, el("div", { class: "row__title", text: i.name }),
+          el("div", { class: "row__meta", text: [i.name !== i.implementation_name ? i.implementation_name : "", where, why].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__side" }, rxState(i), edit));
     });
-    const table = items.length ? el("div", { class: "table-wrap", "data-stack": "" }, el("table", { class: "table table--fixed table--middle" },
-      el("caption", { class: "visually-hidden", text: words.title }),
-      el("colgroup", {}, el("col", { class: "col-third" }), el("col", { class: "col-quarter" }), el("col"), el("col", { class: "col-state" })),
-      el("thead", {}, el("tr", {}, el("th", { scope: "col", text: words.one[0].toUpperCase() + words.one.slice(1) }), el("th", { scope: "col", text: "State" }),
-        el("th", { scope: "col", text: kind === "indexers" ? "Results" : "Address" }), el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Actions" })))),
-      el("tbody", {}, rows))) : emptyState(`No ${words.many} yet`, kind === "indexers" ? "Reelix cannot find anything to download until it has a site to search." : `Add ${words.a} below when you need one.`);
+    const table = items.length ? el("ul", { class: "rows", "aria-label": words.title }, rows)
+      : emptyState(`No ${words.many} yet`, kind === "indexers" ? "Reelix cannot find anything to download until it has a site to search." : `Add ${words.a} below when you need one.`);
     const buttons = el("div", { class: "actions" },
       el("button", { type: "button", class: "btn btn--primary", onclick: () => rxAddPanel(kind, words,
         kind === "indexers" ? data.catalogue.filter((c) => c.source === "definition") : data.catalogue, add,
         { have: data.items || [], suggested: data.suggested || [] }) }, icon("plus"), `Add ${words.a}`),
-      kind === "indexers" ? el("button", { type: "button", class: "btn", onclick: () => rxAddPanel(kind, { ...words, a: "your own Torznab or Newznab address", many: "kinds" },
-        data.catalogue.filter((c) => ["torznab", "newznab"].includes(c.implementation)), add) }, "Add your own Torznab or Newznab address") : null);
+      kind === "indexers" ? el("button", { type: "button", class: "btn btn--quiet", onclick: () => rxAddPanel(kind, { ...words, a: "your own Torznab or Newznab address", many: "kinds" },
+        data.catalogue.filter((c) => ["torznab", "newznab"].includes(c.implementation)), add) }, "Your own Torznab or Newznab address") : null,
+      savedNote(`rx-${kind}-saved`));
     const known = data.definitions ? el("p", { class: "small muted", text: `Reelix knows ${data.definitions.loaded} sites${data.definitions.last_sync ? `, from a list it last updated on ${formatDate(data.definitions.last_sync)}` : ""}. Nothing is added unless you add it.` }) : null;
     const offers = kind === "mediaservers" ? rxOffers(data.offers || [], (r) => { data = { ...data, ...r }; draw(); }) : null;
     // DASH-257: a download app whose address or user differs from what Starboard set up, with Repair.
     const repair = kind === "downloadclients" && data.repair?.length ? notice("warning", "Reelix cannot reach some download apps the way Starboard set them up",
-      `${data.repair.join(", ")} ${data.repair.length === 1 ? "has" : "have"} a different address or user name in Reelix. Repair writes the ones Starboard made, so you need not look up a password.`,
+      `Repair puts back what Starboard set up for ${data.repair.join(", ")}, so you need not look up a password.`,
       el("button", { type: "button", class: "btn", onclick: (e) => reopen(async () => {
         e.currentTarget.disabled = true;
         const r = await rxCall("downloadclients", "repair", {}, "repair Reelix's download apps");
@@ -619,41 +618,55 @@ function rxLockedSection(id, title, about, kind, openBody, draw, what) {
 
 // Information, Files, Requests, Books and Music (DASH-193, 195, 197): one form each, from Reelix's own settings.
 function rxFormSection(name, title, about) {
+  // Settings patterns 2 and 5: switches, choices and folders apply at once and say so beside themselves; typed text
+  // (numbers, words, keys) is one form with one Save at its foot.
   const draw = (r, body) => {
     const read = [];
-    const rows = r.fields.map((f) => {
-      const id = `rx-${name}-${f.key}`;
-      let input;
-      if (f.type === "bool") {
-        input = el("input", { type: "checkbox", id, checked: !!f.value });
-        read.push(() => [f.key, input.checked]);
-        return switchRow(f.label, f.hint, input);
-      }
-      if (f.type === "path") {  // settings pattern 4: a location, as Reelix sees it
-        const picker = locationPicker({ id, label: f.label, value: f.value ?? "", app: "reelix", hint: f.hint });
-        read.push(() => [f.key, picker.input.value.trim()]);
-        return picker.node;
-      }
-      if (f.type === "select") {
-        input = el("select", { class: "select", id }, f.choices.map((c) => el("option", { value: c.value, text: c.label, selected: c.value === f.value })));
-      } else {
-        input = el("input", { class: "input", id, type: f.type === "secret" ? "password" : "text", autocomplete: "off", spellcheck: "false",
-          inputmode: f.type.includes("number") ? "numeric" : null, value: f.value ?? "" });
-      }
-      read.push(() => [f.key, input.value]);
-      return field(f.label, f.unit ? unitInput(input, f.unit) : input, { hint: f.hint });
-    });
-    const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
-    const note = savedNote(`rx-${name}-saved`);
-    save.addEventListener("click", async () => {
-      save.disabled = true;
+    const now = async (key, value, control, undo) => {
       try {
-        const out = await rxCall("form", "save", { name, values: Object.fromEntries(read.map((fn) => fn())) }, `change ${title.toLowerCase()}`);
-        if (out) { draw(out, body); showSaved(`rx-${name}-saved`); }
-      } catch (e) { problem(e.message, save); }
-      finally { save.disabled = false; }
-    });
-    body.replaceChildren(el("div", { class: "form-stack" }, ...rows), el("div", { class: "actions" }, save, note));
+        const out = await rxCall("form", "save", { name, values: { [key]: value } }, `change ${title.toLowerCase()}`);
+        if (out) toast("Saved"); else undo();
+      } catch (e) { undo(); problem(e.message, control); }
+    };
+    const rows = [], places = [], typed = [];
+    for (const f of r.fields) {
+      const id = `rx-${name}-${f.key}`;
+      if (f.type === "bool") {
+        const input = el("input", { type: "checkbox", role: "switch", id, "aria-labelledby": `${id}-l`, checked: !!f.value });
+        input.addEventListener("change", () => now(f.key, input.checked, input, () => { input.checked = !input.checked; }));
+        rows.push(settingRow(f.label, f.hint, el("label", { class: "switch" }, input), `${id}-l`));
+      } else if (f.type === "select") {
+        const select = el("select", { class: "select", id, "aria-labelledby": `${id}-l` }, f.choices.map((c) => el("option", { value: c.value, text: c.label, selected: c.value === f.value })));
+        let was = select.value;
+        select.addEventListener("change", () => { const v = select.value; now(f.key, v, select, () => { select.value = was; }).then(() => { was = select.value; }); });
+        rows.push(settingRow(f.label, f.hint, select, `${id}-l`));
+      } else if (f.type === "path") {  // pattern 4: a location, as Reelix sees it
+        let was = f.value ?? "";
+        const picker = locationPicker({ id, label: f.label, value: was, app: "reelix", hint: f.hint,
+          onChange: (v) => now(f.key, v, picker.input, () => { picker.input.value = was; picker.refresh(); }).then(() => { was = picker.input.value; }) });
+        places.push(picker.node);
+      } else {
+        const input = el("input", { class: "input", id, type: f.type === "secret" ? "password" : "text", autocomplete: "off", spellcheck: "false",
+          inputmode: f.type.includes("number") ? "numeric" : null, value: f.value ?? "" });
+        read.push(() => [f.key, input.value]);
+        typed.push(field(f.label, f.unit ? unitInput(input, f.unit) : input, { hint: f.hint }));
+      }
+    }
+    let form = null;
+    if (typed.length) {
+      const save = el("button", { type: "submit", class: "btn btn--primary" }, "Save");
+      form = el("form", { class: "form-stack", novalidate: true }, ...typed, el("div", { class: "actions" }, save, savedNote(`rx-${name}-saved`)));
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        save.disabled = true;
+        try {
+          const out = await rxCall("form", "save", { name, values: Object.fromEntries(read.map((fn) => fn())) }, `change ${title.toLowerCase()}`);
+          if (out) { draw(out, body); showSaved(`rx-${name}-saved`); }
+        } catch (err) { problem(err.message, save); }
+        finally { save.disabled = false; }
+      });
+    }
+    body.replaceChildren(...[rows.length ? el("ul", { class: "settings-rows" }, rows) : null, ...places, form].filter(Boolean));
   };
   return rxLockedSection(`rx-${name}`, title, about, "form", { name }, draw, `show ${title.toLowerCase()}`);
 }
@@ -731,15 +744,21 @@ function rxPeopleSection() {
 // it went to.
 function rxDirectSection() {
   const draw = (r, body) => {
-    const on = el("input", { type: "checkbox", id: "rx-direct-on", checked: r.on });
+    // The switch and the folder apply at once (settings patterns 2 and 4).
+    const on = el("input", { type: "checkbox", role: "switch", id: "rx-direct-on", "aria-labelledby": "rx-direct-on-l", checked: r.on });
+    let saved = { on: r.on, folder: r.folder };
+    const apply = async (control) => {
+      const want = { on: on.checked, folder: folder.value.trim() };
+      try {
+        const o = await rxCall("direct", "save", want, "change YouTube and Spotify");
+        if (o) { saved = want; toast("Saved"); return; }
+      } catch (e) { problem(e.message, control); }
+      on.checked = saved.on; folder.value = saved.folder; where.refresh();
+    };
     const where = locationPicker({ id: "rx-direct-folder", label: "Folder", app: "reelix", setting: "direct", value: r.folder,
-      hint: "Inside /data: /data/downloads/direct, or /data/media/music to put music straight into the library." });
+      hint: "Inside /data: /data/downloads/direct, or /data/media/music to put music straight into the library.", onChange: () => apply(folder) });
     const folder = where.input;
-    const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
-    save.addEventListener("click", async () => {
-      try { const o = await rxCall("direct", "save", { on: on.checked, folder: folder.value.trim() }, "change YouTube and Spotify"); if (o) { draw(o, body); toast(o.done); } }
-      catch (e) { setError(folder, e.message); folder.focus(); }
-    });
+    on.addEventListener("change", () => apply(on));
     const sp = r.spotify;
     const address = el("input", { class: "input", id: "rx-spotify-back", autocomplete: "off", spellcheck: "false", placeholder: "https://" });
     const connect = el("button", { type: "button", class: "btn" }, sp.connected ? "Connect again" : "Connect Spotify");
@@ -755,12 +774,12 @@ function rxDirectSection() {
       catch (e) { setError(address, e.message); address.focus(); }
     });
     const off = sp.connected ? el("button", { type: "button", class: "btn btn--quiet" }, "Disconnect Spotify") : null;
-    off?.addEventListener("click", async () => { try { const o = await rxCall("direct", "spotify-off", {}, "disconnect Spotify"); if (o) { draw(o, body); toast(o.done); } } catch (e) { problem(e.message, off); } });
+    off?.addEventListener("click", async () => { if (!await confirmDialog({ title: "Disconnect Spotify?", confirm: "Disconnect", danger: true,
+      message: "Spotify links stop working until you connect again. Nothing you downloaded is removed." })) return; try { const o = await rxCall("direct", "spotify-off", {}, "disconnect Spotify"); if (o) { draw(o, body); toast(o.done); } } catch (e) { problem(e.message, off); } });
     body.replaceChildren(
       r.folder_warning ? notice("warning", "Downloads go to the wrong place", r.folder_warning) : null,
-      switchRow("YouTube and Spotify downloads", "Paste a link on Downloads, From a link.", on),
+      el("ul", { class: "settings-rows" }, settingRow("YouTube and Spotify downloads", "Paste a link on Downloads, From a link.", el("label", { class: "switch" }, on), "rx-direct-on-l")),
       where.node,
-      el("div", { class: "actions" }, save),
       el("p", { class: "small", text: `Tools: ${r.tools.map((t) => `${t.tool} ${t.ok ? "ready" : "missing"}`).join(", ") || "not reported"}.` }),
       titleChip(el("h3", { text: "Spotify" }), chip(sp.connected ? `Connected${sp.user ? ` as ${sp.user}` : ""}` : sp.waiting ? "Waiting for you to finish" : "Not connected", sp.connected ? "success" : "muted")),
       sp.problem ? el("p", { class: "small", text: sp.problem }) : null,
@@ -774,8 +793,9 @@ function reelixAdminSections() {
   api("/api/reelix/admin/about").then((a) => {
     rxAbout = a;
     if (!a.address) {
-      holder.replaceChildren(section("rx-admin", "Sites, download apps and media servers", "",
-        notice("info", "Reelix is not on your dashboard", "Add Reelix in Settings, Manage apps, or install it with Install apps, and its settings show here.")));
+      holder.replaceChildren(section("rx-admin", "Sites, download apps and media servers", "Reelix's own settings show here once it is on your dashboard.",
+        notice("info", "Reelix is not on your dashboard", "Add it in Manage apps, or install it with Install apps.",
+          el("a", { class: "btn", href: "/settings.html" }, "Manage apps"))));
       return;
     }
     const full = a.edition === "full";

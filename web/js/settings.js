@@ -629,27 +629,14 @@ async function removeCategory(name) {
 }
 
 function startGeneral() {
-  // Dashboard name
+  // Names (settings pattern 5): the server name and the dashboard name, one form with one Save at its foot.
   const siteName = el("input", { class: "input", name: "site_name", maxlength: "60", required: true, value: config.site_name });
-  const nameForm = el("form", { novalidate: true, class: "inline-save" }, field("Dashboard name", siteName, { required: true }),
-    el("button", { type: "submit", class: "btn", text: "Save name" }), savedNote("name-saved"));
-  nameForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    setError(siteName, "");
-    if (!siteName.value.trim()) { setError(siteName, "Enter a name for the dashboard"); siteName.focus(); return; }
-    try {
-      await saveGeneral({ site_name: siteName.value });
-      showSaved("name-saved");
-      document.title = document.title.replace(/ · [^·]*$/, ` · ${config.site_name}`);
-    } catch (err) { setError(siteName, err.message); siteName.focus(); }
-  });
-
-  // Server name: up to 10 characters, at the start of the level 1 menu
   const serverName = el("input", { class: "input", name: "server_name", maxlength: String(config.server_name_max || 10),
     value: config.server_name || "", autocomplete: "off", spellcheck: "false" });
-  const serverForm = el("form", { novalidate: true, class: "inline-save" },
-    field("Server name", serverName, { hint: `Up to ${config.server_name_max || 10} characters, such as T-Rex. Shown at the start of the level 1 menu on every page. Leave it empty to show no name.`, short: true }),
-    el("button", { type: "submit", class: "btn", text: "Save server name" }), savedNote("server-name-saved"));
+  const serverField = field("Server name", serverName, { hint: `Up to ${config.server_name_max || 10} characters, such as T-Rex. Shown at the start of the level 1 menu on every page. Leave it empty to show no name.`, short: true });
+  const namesForm = el("form", { novalidate: true, class: "form-stack" }, serverField,
+    field("Dashboard name", siteName, { required: true }),
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn", text: "Save" }), savedNote("names-saved")));
   // A count under the box, read with the hint but not announced on every key.
   const max = config.server_name_max || 10;
   const count = el("span", { class: "hint", id: `${serverName.id}-count` });
@@ -659,12 +646,15 @@ function startGeneral() {
   serverName.setAttribute("aria-describedby", `${serverName.fieldHint.id} ${count.id}`);
   serverName.addEventListener("input", recount);
   recount();
-  serverForm.addEventListener("submit", async (e) => {
+  namesForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    setError(siteName, "");
     setError(serverName, "");
+    if (!siteName.value.trim()) { setError(siteName, "Enter a name for the dashboard"); siteName.focus(); return; }
     try {
-      await saveGeneral({ server_name: serverName.value });
-      showSaved("server-name-saved");
+      await saveGeneral({ site_name: siteName.value, server_name: serverName.value });
+      showSaved("names-saved");
+      document.title = document.title.replace(/ · [^·]*$/, ` · ${config.site_name}`);
       showServerName(config.server_name);
     } catch (err) { setError(serverName, err.message); serverName.focus(); }
   });
@@ -771,7 +761,7 @@ function startGeneral() {
 
   $("#general-sections").removeAttribute("aria-busy");
   $("#general-sections").replaceChildren(
-    section("gn-name", "Names", "The server name shows at the start of the menu. The dashboard name shows in the browser tab and in alerts.", serverForm, nameForm),
+    section("gn-name", "Names", "The server name shows at the start of the menu. The dashboard name shows in the browser tab and in alerts.", namesForm),
     el("div", { id: "categories" }, section("gn-cat", "Categories", "The headings apps sit under on the Apps page, in this order. Changes apply at once.",
       el("ul", { class: "rows", id: "category-list" }), el("div", { id: "category-loose" }), addForm)),
     section("gn-card", "App cards", "What everyone sees on each card. These apply at once.",
@@ -1678,8 +1668,8 @@ async function startJellyfin() {
     const found = await api("/api/jellyfin/detect").catch(() => null);
     top = notice("info", found?.found ? `Starboard found Jellyfin ${found.found.version} at ${found.found.url}` : "Add Jellyfin first",
       found?.found && !found.in_apps
-        ? "Add it in Manage apps with its API key (in Jellyfin: Dashboard, API keys). Live TV works without the key; the import and user defaults need it."
-        : "In Manage apps, give your Jellyfin app its API key (in Jellyfin: Dashboard, API keys). Live TV works without it.",
+        ? "Add it in Manage apps with its API key, from Jellyfin's Dashboard, API keys."
+        : "Give your Jellyfin app its API key in Manage apps, from Jellyfin's Dashboard, API keys.",
       el("a", { class: "btn", href: found?.found && !found.in_apps ? `/settings.html?add=jellyfin&url=${encodeURIComponent(found.found.url)}` : "/settings.html" }, "Manage apps"));
   }
 
@@ -1688,9 +1678,9 @@ async function startJellyfin() {
   try { livePlugin = (await api("/api/plugins")).plugins.find((x) => x.id === "livetv") || null; } catch { /* as before */ }
   const lt = jobs.livetv;
   const address = el("input", { class: "input", inputmode: "url", autocomplete: "off", value: x().livetv_address, placeholder: d.self_url });
-  const addressForm = el("form", { class: "inline-save", novalidate: true },
+  const addressForm = el("form", { class: "form-stack", novalidate: true },
     field("Address Jellyfin uses to reach Starboard", address, { hint: `For channel logos and Pluto streams. Blank: ${d.self_url}. Jellyfin must be able to open it, so Starboard needs home network access on.` }),
-    el("button", { type: "submit", class: "btn", text: "Save address" }), savedNote("livetv-address-saved"));
+    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn", text: "Save" }), savedNote("livetv-address-saved")));
   addressForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (await save({ livetv_address: address.value })) { await startJellyfin(); showSaved("livetv-address-saved"); }
@@ -1803,9 +1793,9 @@ async function startJellyfin() {
     welcome ? notice("success", "Starboard found Jellyfin", "These are all inactive. Activate what you want; you can change them here at any time.") : null,
     top,
     livePlugin ? section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV.",
-      notice("info", "Live TV is a plug-in now", `Its settings, Run Live TV now and its status are in Settings, Plug-ins, Live TV. It is ${livePlugin.state === "enabled" ? "active" : "not active"}. Your channels and guides in Jellyfin are unchanged.`),
-      el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-plugin.html?id=livetv", text: "Open Live TV's settings" })))
-    : section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV: guides refreshed daily, channels only when a list changes.", liveNeeds, liveRows, addressForm, jfFolderForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
+      notice("info", `Live TV is a plug-in now, and ${livePlugin.state === "enabled" ? "active" : "not active"}`, "Its settings and status are on its own page.",
+        el("a", { class: "btn", href: "/settings-plugin.html?id=livetv", text: "Open Live TV's settings" })))
+    : section("jf-live", "Live TV", "Free channels and guides for Jellyfin's Live TV: guides refreshed daily, channels only when a list changes.", liveNeeds, liveRows, jfFolderForm, addressForm, el("div", { class: "actions" }, jobRun(lt), runNow("livetv", "Live TV")), liveHelp),
     section("jf-import", "Import watch history", "Move what people watched, and where they stopped, from Plex, Emby or another Jellyfin into this Jellyfin.",
       importForm, result, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
       el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply", "Apply now") : null)),
@@ -1838,9 +1828,10 @@ async function startListening() {
   // Audiobookshelf itself
   const top = !d.abs
     ? notice("info", "Give Audiobookshelf an admin API key first",
-      "In Audiobookshelf: Settings, API Keys, Add API key, for an admin user. Then, in Manage apps, add Audiobookshelf (or edit it) and paste the key. You can read progress before that; applying it needs the key.",
+      "Make one in Audiobookshelf (Settings, API Keys, for an admin user) and paste it into Audiobookshelf in Manage apps.",
       el("a", { class: "btn", href: "/settings.html" }, "Manage apps"))
-    : d.abs_problem ? notice("danger", "Starboard cannot reach Audiobookshelf", `${d.abs_problem}. Check its address and API key in Manage apps.`) : null;
+    : d.abs_problem ? notice("danger", "Starboard cannot reach Audiobookshelf", `${d.abs_problem}. Check its address and API key in Manage apps.`,
+      el("a", { class: "btn", href: "/settings.html" }, "Manage apps")) : null;
 
   // Read
   const kind = el("select", { class: "select" }, LISTEN_FROM.map(([v, t]) => el("option", { value: v, text: t })));
@@ -2213,43 +2204,69 @@ async function startSecurity() {
   showNetwork();
 }
 
-// API keys (DASH-274): read-only keys for /api/v1, made with the password and shown once.
+// API keys (DASH-274): read-only keys for /api/v1, made with the password and shown once. Settings pattern 8: each
+// key a row with its state and Edit, which opens it in a slide-out with Revoke; Make a key at the foot.
 function apiKeys() {
   const box = el("div", { class: "stack-4" });
   const list = el("ul", { class: "rows", "aria-live": "polite" });
-  const draw = (keys) => list.replaceChildren(...(keys.length ? keys.map((k) => {
-    const revoke = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Revoke", el("span", { class: "visually-hidden", text: ` ${k.name}` }));
+  const when = (d) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const stateOf = (k) => {
+    if (k.expires_at && new Date(k.expires_at) - Date.now() < 14 * 864e5) return chip("Ends soon", "warning");
+    return k.last_used_at ? chip("In use", "success") : chip("Not used yet", "muted");
+  };
+  const openKey = (k, opener) => {
+    const revoke = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Revoke");
+    const panel = sidePanel({ title: k.name, opener, body: [el("dl", { class: "facts" },
+      el("dt", { text: "Starts with" }), el("dd", { text: `${k.prefix}…` }),
+      el("dt", { text: "Reads" }), el("dd", { text: k.scopes.length ? k.scopes.join(", ") : "Everything the API offers" }),
+      el("dt", { text: "Ends" }), el("dd", { text: k.expires_at ? when(k.expires_at) : "Never" }),
+      el("dt", { text: "Last used" }), el("dd", { text: k.last_used_at ? new Date(k.last_used_at).toLocaleString("en-GB") : "Not used yet" }))],
+      foot: [revoke] });
     revoke.addEventListener("click", async () => {
       if (!await confirmDialog({ title: `Revoke ${k.name}?`, message: "Anything using this key stops working at once.", confirm: "Revoke", danger: true })) return;
-      try { draw((await api(`/api/keys/${k.id}`, { method: "DELETE" })).keys); toast(`${k.name} revoked`); } catch (e) { problem(e.message, revoke); }
+      try { draw((await api(`/api/keys/${k.id}`, { method: "DELETE" })).keys); panel.close(); showSaved("keys-saved", `${k.name} revoked`); }
+      catch (e) { problem(e.message, revoke); }
     });
-    const meta = [k.scopes.length ? `Reads ${k.scopes.join(", ")}` : "Reads everything", k.expires_at ? `ends ${new Date(k.expires_at).toLocaleDateString()}` : "never ends",
-      k.last_used_at ? `last used ${new Date(k.last_used_at).toLocaleString()}` : "not used yet"].join(" · ");
-    return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: k.name }), el("div", { class: "row__meta", text: `${k.prefix}… · ${meta}` })),
-      el("div", { class: "row__side" }, revoke));
-  }) : [el("li", {}, emptyState("No keys yet", "Make one below for each app or script that reads Starboard."))]));
-  const name = el("input", { class: "input", id: "key-name", autocomplete: "off", placeholder: "Home Assistant" });
-  const ends = el("select", { class: "select", id: "key-ends" }, [["90", "In 90 days"], ["365", "In a year"], ["never", "Never"]].map(([v, t]) => el("option", { value: v, text: t })));
-  const pw = el("input", { class: "input", id: "key-password", type: "password", autocomplete: "current-password" });
-  const shown = el("div", { "aria-live": "polite" });
-  const form = el("form", { class: "form-stack", novalidate: true }, field("Name it after what will use it", name), field("Ends", ends), field("Your Starboard password", pw),
-    el("div", { class: "actions" }, el("button", { type: "submit", class: "btn btn--primary", text: "Make a key" })));
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    try {
-      const r = await api("/api/keys", { method: "POST", body: { name: name.value, expires_days: ends.value, password: pw.value } });
-      pw.value = ""; name.value = "";
-      const value = el("input", { class: "input", id: "key-made", readonly: true, value: r.key, spellcheck: "false" });
-      const copy = el("button", { type: "button", class: "btn" }, icon("copy"), "Copy");
-      copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(r.key); toast("Key copied"); } catch { value.select(); } });
-      shown.replaceChildren(notice("success", "Copy the key now", "Starboard shows it only this once. Send it as Authorization: Bearer, never in an address."),
-        field(`${r.item.name}'s key`, value), el("div", { class: "actions" }, copy));
-      value.focus(); value.select();
-      draw((await api("/api/keys")).keys);
-    } catch (err) { problem(err.message, form); }
-  });
-  api("/api/keys").then((r) => draw(r.keys)).catch((e) => list.replaceChildren(el("li", { class: "empty", text: e.message })));
-  box.append(list, shown, form, el("p", { class: "small muted" }, "What the API offers: ", el("a", { href: "/api/v1/openapi.json", text: "the API description (OpenAPI)" }), "."));
+  };
+  const draw = (keys) => list.replaceChildren(...(keys.length ? keys.map((k) => {
+    const edit = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, icon("pencil"), "Edit", el("span", { class: "visually-hidden", text: ` ${k.name}` }));
+    edit.addEventListener("click", () => openKey(k, edit));
+    const meta = [`${k.prefix}…`, k.expires_at ? `ends ${when(k.expires_at)}` : "never ends"].join(" · ");
+    return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: k.name }), el("div", { class: "row__meta", text: meta })),
+      el("div", { class: "row__side" }, stateOf(k), edit));
+  }) : [el("li", {}, emptyState("No keys yet", "Make one for each app or script that reads Starboard."))]));
+  const make = (opener) => {
+    const name = el("input", { class: "input", id: "key-name", autocomplete: "off", placeholder: "Home Assistant" });
+    const ends = el("select", { class: "select", id: "key-ends" }, [["90", "In 90 days"], ["365", "In a year"], ["never", "Never"]].map(([v, t]) => el("option", { value: v, text: t })));
+    const pw = el("input", { class: "input", id: "key-password", type: "password", autocomplete: "current-password" });
+    const go = el("button", { type: "submit", class: "btn btn--primary", form: "key-form", text: "Make a key" });
+    const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
+    const form = el("form", { class: "form-stack", id: "key-form", novalidate: true }, field("Name it after what will use it", name), field("Ends", ends), field("Your Starboard password", pw));
+    const panel = sidePanel({ title: "Make a key", opener, body: [form], foot: [go, cancel] });
+    cancel.addEventListener("click", () => panel.close());
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        const r = await api("/api/keys", { method: "POST", body: { name: name.value, expires_days: ends.value, password: pw.value } });
+        const value = el("input", { class: "input", id: "key-made", readonly: true, value: r.key, spellcheck: "false" });
+        const copy = el("button", { type: "button", class: "btn btn--primary" }, icon("copy"), "Copy");
+        copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(r.key); toast("Key copied"); } catch { value.select(); } });
+        const done = el("button", { type: "button", class: "btn", text: "Done" });
+        done.addEventListener("click", () => panel.close());
+        panel.setTitle(`${r.item.name}'s key`);
+        panel.body.replaceChildren(notice("success", "Copy the key now", "Starboard shows it only this once; send it as Authorization: Bearer, never in an address."),
+          field("The key", value));
+        panel.setFoot([copy, done]);
+        value.focus(); value.select();
+        draw((await api("/api/keys")).keys);
+      } catch (err) { problem(err.message, go); }
+    });
+  };
+  const add = el("button", { type: "button", class: "btn" }, icon("plus"), "Make a key");
+  add.addEventListener("click", () => make(add));
+  api("/api/keys").then((r) => draw(r.keys)).catch((e) => list.replaceChildren(el("li", {}, notice("danger", "Could not list the keys", e.message))));
+  box.append(list, el("div", { class: "actions" }, add, savedNote("keys-saved")),
+    el("p", { class: "small muted" }, "What the API offers: ", el("a", { href: "/api/v1/openapi.json", text: "the API description (OpenAPI)" }), "."));
   return box;
 }
 

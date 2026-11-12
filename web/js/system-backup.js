@@ -280,14 +280,15 @@ function openSaved(item, opener) {
 
 async function loadSaved() {
   let items = [];
-  try { ({ items } = await api("/api/backup/saved")); } catch (e) { $("#saved").replaceChildren(el("li", { class: "empty", text: e.message })); return; }
+  try { ({ items } = await api("/api/backup/saved")); } catch (e) { $("#saved").replaceChildren(el("li", {}, notice("danger", "Could not list the saved copies", e.message))); return; }
   $("#saved").replaceChildren(...(items.length ? items.map((item) => el("li", { class: "row row--opens", "data-key": item.name },
     el("span", { class: "app-icon", "aria-hidden": "true" }, icon("history", 20)),
     el("div", { class: "row__text" },
       el("div", { class: "row__title" }, el("button", { type: "button", onclick: (e) => openSaved(item, e.currentTarget) }, when(item.saved))),
       el("div", { class: "row__meta", text: `${item.reason} · ${formatBytes(item.size)}` })),
     el("div", { class: "row__side" },
-      el("button", { type: "button", class: "btn btn--danger", onclick: () => restoreSaved(item) }, "Restore", el("span", { class: "visually-hidden", text: ` the copy from ${when(item.saved)}` })))))
+      el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => openSaved(item, e.currentTarget) }, "Open",
+        el("span", { class: "visually-hidden", text: ` the copy from ${when(item.saved)}` })))))
     : [el("li", {}, emptyState("No saved copies yet", "Starboard makes one before every restore and before an update changes the settings. To bring back a copy from elsewhere, use Restore from a file."))]));
 }
 
