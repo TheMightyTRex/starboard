@@ -1066,6 +1066,24 @@ function autoLoadMore(button, load, noun = "more") {
   }, { rootMargin: "600px 0px" }).observe(button);
 }
 
+// Settings, Plug-ins (DASH-318): the level 2 menu is Manage, Catalogue, then one tab for each plug-in added.
+function pluginTabs(list) {
+  const nav = $('.site-header__tabs nav[aria-label="Plug-ins"]');
+  if (!nav || !list.length) return;
+  const here = location.pathname.endsWith("/settings-plugin.html") ? new URLSearchParams(location.search).get("id") : null;
+  if (here) $$("a[aria-current]", nav).forEach((a) => a.removeAttribute("aria-current"));
+  const tpl = $("a", nav);
+  for (const p of list) {
+    const a = tpl.cloneNode(true);
+    a.href = `/settings-plugin.html?id=${encodeURIComponent(p.id)}`;
+    a.removeAttribute("aria-current");
+    if (p.id === here) a.setAttribute("aria-current", "page");
+    a.querySelector("svg")?.replaceWith(icon("puzzle"));
+    a.querySelector(".menu-tabs__label").textContent = p.name;
+    nav.append(a);
+  }
+}
+
 async function startPage() {
   setUpHeader();
   setUpDisplayPanel();
@@ -1084,8 +1102,9 @@ async function startPage() {
       if (!allowed.some((p) => location.pathname.endsWith(p))) { location.replace("/setup-guide.html"); return null; }
     }
     // Menu items that belong to a plug-in show only once it is added (owner, 12 November 2026).
-    const added = new Set(session.plugins || []);
+    const added = new Set((session.plugins || []).map((p) => p.id));
     $$("[data-plugin]").forEach((n) => { n.hidden = !added.has(n.dataset.plugin); });
+    pluginTabs(session.plugins || []);
     showVersion(session.version, session.repo, session.latest);
     upgradeNotice(session.upgrade);
     if (session.ux_notes) startFeedback(session).catch(() => { /* the page works without it */ });

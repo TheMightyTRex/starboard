@@ -144,21 +144,26 @@ function styleGallery(p) {
     }));
   };
   draw();
-  return el("div", { class: "stack-4" }, el("h3", { text: "Styles" }),
+  return el("div", { class: "stack-4" },
     el("p", { class: "small", text: active ? "Light on the left, dark on the right. Your choice applies to this browser, as in Display. High contrast always wins." : "Activate the plug-in to use its styles." }),
     grid);
 }
 
-function pluginCard(p, redraw) {
-  const act = (label, what, primary) => {
-    const b = el("button", { type: "button", class: primary ? "btn btn--primary" : "btn" }, label);
-    b.addEventListener("click", async () => {
-      b.disabled = true;
-      try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); toast(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw(); }
-      catch (err) { problem(err.message, b); b.disabled = false; }
-    });
-    return b;
-  };
+// Activate or Deactivate one plug-in.
+function stateButton(p, redraw) {
+  const what = p.state === "enabled" ? "disable" : "enable";
+  const b = el("button", { type: "button", class: what === "enable" ? "btn btn--primary" : "btn" }, what === "enable" ? "Activate" : "Deactivate",
+    el("span", { class: "visually-hidden", text: ` ${p.name}` }));
+  b.addEventListener("click", async () => {
+    b.disabled = true;
+    try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); toast(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw(); }
+    catch (err) { problem(err.message, b); b.disabled = false; }
+  });
+  return b;
+}
+
+// Remove one plug-in, after the password. Its folder is kept.
+function removeButton(p, after) {
   const remove = el("button", { type: "button", class: "btn btn--quiet btn--danger" }, `Remove ${p.name}`);
   remove.addEventListener("click", async () => {
     const pw = el("input", { class: "input", type: "password", id: `pl-rm-${p.id}`, autocomplete: "current-password" });
@@ -166,10 +171,15 @@ function pluginCard(p, redraw) {
       message: "Its containers stop and go, and its API key stops working. Its folder is kept in data/plugins/.removed, for you to delete when you are sure.",
       fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
     if (!ok) return;
-    try { await api(`/api/plugins/${p.id}/remove`, { method: "POST", body: { password: pw.value } }); toast(`${p.name} removed`); redraw(); }
+    try { await api(`/api/plugins/${p.id}/remove`, { method: "POST", body: { password: pw.value } }); toast(`${p.name} removed`); after(); }
     catch (err) { problem(err.message, remove); }
   });
-  // Its buttons, from the manifest (such as Run Live TV now): Starboard asks the plug-in and shows its answer.
+  return remove;
+}
+
+// A plug-in's own page, Settings, Plug-ins, <its name> (DASH-318), laid out like every Settings page (DASH-307):
+// its state and buttons at the top, then its styles, settings and screens, what it may do, and Remove at the foot.
+function pluginPage(p, redraw) {
   const buttons = (p.actions || []).map((a) => {
     const b = el("button", { type: "button", class: "btn", disabled: p.state !== "enabled" }, a.label);
     b.addEventListener("click", async () => {
@@ -181,14 +191,17 @@ function pluginCard(p, redraw) {
     return b;
   });
   const custom = p.settings.filter((s) => s.type === "custom");
-  return section(`pl-${p.id}`, `${p.name} ${p.version}`, p.description,
-    el("p", {}, chip(...(STATE[p.state] || ["Unknown", "muted"])), p.message ? el("span", { class: "small", text: ` ${p.message}` }) : null),
-    el("div", { class: "actions" }, p.state === "enabled" ? act("Deactivate", "disable") : act("Activate", "enable", true), ...buttons, remove),
-    p.builtin ? el("p", { class: "small muted", text: "Built into Starboard: it runs on Starboard's own image and updates with Starboard." }) : null,
-    p.looks?.length ? styleGallery(p) : null,
-    el("h3", { text: "What it may do" }), pluginPermissions(p.permissions),
-    pluginSettingsForm(p, redraw),
-    ...custom.map((s) => customScreen(p, s)));
+  const form = pluginSettingsForm(p, redraw);
+  return [
+    section(`pl-${p.id}-state`, "State", p.builtin ? "Built into Starboard: it runs on Starboard's own image and updates with Starboard." : `Version ${p.version}${p.author ? `, by ${p.author}` : ""}.`,
+      el("p", {}, chip(...(STATE[p.state] || ["Unknown", "muted"])), p.message ? el("span", { class: "small", text: ` ${p.message}` }) : null),
+      el("div", { class: "actions" }, stateButton(p, redraw), ...buttons)),
+    p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "", styleGallery(p)) : null,
+    form ? section(`pl-${p.id}-settings`, "Settings", "Saved for everyone who uses this Starboard.", form) : null,
+    ...custom.map((c) => section(`pl-${p.id}-${c.key}`, c.label, c.hint || "", customScreen(p, c))),
+    section(`pl-${p.id}-may`, "What it may do", "What you allowed when you installed it.", pluginPermissions(p.permissions)),
+    section(`pl-${p.id}-remove`, "Remove", "Stops it and takes it off this Starboard. Its folder is kept.",
+      el("div", { class: "actions" }, removeButton(p, () => { location.href = "/settings-plugins.html"; })))].filter(Boolean);
 }
 
 // A plug-in's own screen (11 November 2026): a managed list the plug-in describes as data, drawn here. Rows grouped
@@ -243,7 +256,7 @@ function customScreen(p, s) {
   };
   if (p.state !== "enabled") box.replaceChildren(el("p", { class: "small muted", text: `${s.label}: activate ${p.name} to see it.` }));
   else api(path).then(draw).catch((err) => box.replaceChildren(notice("info", `${p.name} did not answer`, err.message)));
-  return el("div", { class: "stack-2" }, el("h3", { text: s.label }), s.hint ? el("p", { class: "small muted", text: s.hint }) : null, box);
+  return box;
 }
 
 // Test a plug-in (DASH-284): for authors, before sharing it. Nothing is added.
@@ -313,7 +326,7 @@ function addPluginSection(redraw) {
     add.addEventListener("click", async () => {
       const password = await installWarning(s, { opener: add });
       if (password === null) return;
-      try { await api("/api/plugins/add", { method: "POST", body: { ...source(), password } }); toast(`${s.name} installed. Activate it when you are ready`); address.value = ""; given = null; seen.replaceChildren(); redraw(); }
+      try { await api("/api/plugins/add", { method: "POST", body: { ...source(), password } }); toast(`${s.name} installed. Activate it when you are ready`); location.href = `/settings-plugin.html?id=${encodeURIComponent(s.id)}`; }
       catch (err) { problem(err.message, add); }
     });
     seen.replaceChildren(...[
@@ -325,27 +338,117 @@ function addPluginSection(redraw) {
       s.test.ok ? el("div", { class: "actions" }, add) : null].filter(Boolean));
     seen.querySelector("h3")?.focus?.();
   });
-  return section("pl-add", "Add a plug-in", "Starboard shows what a plug-in may do before anything is installed. Plug-ins never get the Docker socket, the host network or other apps' settings.", form, seen);
+  return section("pl-add", "Add one from elsewhere", "By its address or its manifest file. Starboard tests it and shows what it may do before anything is installed.", form, seen);
 }
 
+// Settings, Plug-ins, Manage (DASH-318): the plug-ins added, each with its state, Settings, Activate or Deactivate
+// and Remove; Deactivate all. Adding is on the Catalogue page.
 async function startPlugins() {
   const holder = $("#plugins-sections");
   const draw = async () => {
     let r;
     try { r = await api("/api/plugins"); } catch (e) { holder.replaceChildren(notice("danger", "Could not load the plug-ins", e.message)); return; }
     holder.removeAttribute("aria-busy");
+    if (!r.plugins.length) {
+      holder.replaceChildren(section("pl-yours", "Your plug-ins", "None added yet.",
+        el("div", { class: "actions" }, el("a", { class: "btn btn--primary", href: "/settings-plugins-catalogue.html" }, icon("layout-grid"), "Open the catalogue"))));
+      return;
+    }
     const stopAll = el("button", { type: "button", class: "btn btn--danger", text: "Deactivate all plug-ins" });
     stopAll.addEventListener("click", async () => {
-      if (!await confirmDialog({ title: "Deactivate all plug-ins?", message: "Every active plug-in is deactivated. Their settings stay; activate each again from its section.", confirm: "Deactivate all", danger: true })) return;
+      if (!await confirmDialog({ title: "Deactivate all plug-ins?", message: "Every active plug-in is deactivated. Their settings stay; activate each again here.", confirm: "Deactivate all", danger: true })) return;
       try { const o = await api("/api/plugins/stop-all", { method: "POST" }); toast(o.stopped.length ? `Deactivated ${o.stopped.join(", ")}` : "No plug-in was active"); draw(); }
       catch (err) { problem(err.message, stopAll); }
     });
-    holder.replaceChildren(...[
-      r.plugins.length ? section("pl-yours", "Your plug-ins", `${r.plugins.length} added.`, el("div", { class: "actions" }, stopAll)) : null,
-      ...r.plugins.map((p) => pluginCard(p, draw)),
-      builtinSection(r.builtin || [], draw), addPluginSection(draw), testerSection()].filter(Boolean));
+    const active = r.plugins.filter((p) => p.state === "enabled").length;
+    holder.replaceChildren(
+      section("pl-yours", "Your plug-ins", `${r.plugins.length} added, ${active} active. Each one's settings are in its own tab above.`,
+        el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row row--no-lead" },
+          el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
+            el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
+          el("div", { class: "row__side" }, chip(...(STATE[p.state] || ["Unknown", "muted"])),
+            el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}` }, icon("settings"), "Settings",
+              el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
+            stateButton(p, draw), removeButton(p, draw)))))),
+      section("pl-all", "All plug-ins at once", "Stops every plug-in, for example while you look into a problem.", el("div", { class: "actions" }, stopAll)));
   };
   draw();
 }
 
-document.addEventListener("DOMContentLoaded", () => { if ($("#plugins-sections")) startPlugins(); });
+// Settings, Plug-ins, Catalogue (DASH-318, owner, 12 November 2026: "in its own menu 2 and needs a description"):
+// Starboard's own plug-ins, the Starboard plug-ins collection by kind, any other by its address, and the tester.
+async function startCatalogue() {
+  const holder = $("#plugins-catalogue");
+  const draw = async () => {
+    let r, c;
+    try { [r, c] = await Promise.all([api("/api/plugins"), api("/api/plugins/catalogue")]); }
+    catch (e) { holder.replaceChildren(notice("danger", "Could not load the catalogue", e.message)); return; }
+    holder.removeAttribute("aria-busy");
+    const kinds = new Map();
+    const ORDER = ["Look", "Jellyfin", "Downloads", "Network", "Home", "System"];
+    const rank = (k) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
+    for (const e of [...c.plugins].sort((a, b) => rank(a.kind) - rank(b.kind) || a.name.localeCompare(b.name))) {
+      if (!kinds.has(e.kind)) kinds.set(e.kind, []);
+      kinds.get(e.kind).push(e);
+    }
+    const entry = (e) => {
+      let side;
+      if (e.added) side = el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(e.id)}` }, icon("circle-check"), "Added");
+      else if (!e.published || !e.manifest) side = chip("Coming soon", "muted");
+      else {
+        side = el("button", { type: "button", class: "btn btn--compact" }, icon("plus"), "Install…", el("span", { class: "visually-hidden", text: ` ${e.name}` }));
+        side.addEventListener("click", async () => {
+          side.disabled = true;
+          try {
+            const s = await api("/api/plugins/preview", { method: "POST", body: { address: e.manifest } });
+            if (!s.test.ok) { problem(`${e.name} did not pass Starboard's tests: ${s.test.issues.filter((i) => i.severity === "error").map((i) => i.what).join("; ")}`, side); return; }
+            const password = await installWarning(s, { opener: side });
+            if (password === null) return;
+            await api("/api/plugins/add", { method: "POST", body: { address: e.manifest, password } });
+            toast(`${e.name} installed. Activate it on its own tab when you are ready`);
+            location.href = `/settings-plugin.html?id=${encodeURIComponent(e.id)}`;
+          } catch (err) { problem(err.message, side); }
+          finally { side.disabled = false; }
+        });
+      }
+      return el("li", { class: "row row--no-lead" },
+        el("div", {}, el("h4", { class: "row__title", text: e.name }),
+          el("div", { class: "row__meta", text: e.description })),
+        el("div", { class: "row__side" }, side));
+    };
+    holder.replaceChildren(...[
+      builtinSection(r.builtin || [], draw),
+      section("pl-collection", "The Starboard plug-ins collection", "Made by TheMightyTRexUK and tested with each Starboard release. Coming soon: built and waiting to be published.",
+        ...[...kinds].map(([k, rows]) => el("section", { class: "stack-2", "aria-label": k }, el("h3", { text: k }), el("ul", { class: "rows" }, rows.map(entry))))),
+      addPluginSection(draw), testerSection()].filter(Boolean));
+  };
+  draw();
+}
+
+// Settings, Plug-ins, <a plug-in> (DASH-318): ?id= names it; its name and description become the page's heading.
+async function startPluginPage() {
+  const holder = $("#plugin-page");
+  const id = new URLSearchParams(location.search).get("id") || "";
+  const draw = async () => {
+    let r;
+    try { r = await api("/api/plugins"); } catch (e) { holder.replaceChildren(notice("danger", "Could not load the plug-in", e.message)); return; }
+    holder.removeAttribute("aria-busy");
+    const p = r.plugins.find((x) => x.id === id);
+    if (!p) {
+      holder.replaceChildren(notice("info", "That plug-in is not added", "It may have been removed. Manage lists the plug-ins you have."),
+        el("div", { class: "actions" }, el("a", { class: "btn", href: "/settings-plugins.html" }, "Manage plug-ins")));
+      return;
+    }
+    $("#plugin-title").textContent = p.name;
+    $("#plugin-summary").textContent = p.description || "";
+    document.title = document.title.replace(/^[^·]*·/, `${p.name} ·`);
+    holder.replaceChildren(...pluginPage(p, draw));
+  };
+  draw();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if ($("#plugins-sections")) startPlugins();
+  if ($("#plugins-catalogue")) startCatalogue();
+  if ($("#plugin-page")) startPluginPage();
+});

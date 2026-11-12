@@ -1,0 +1,165 @@
+{
+ "catalogue_version": 1,
+ "name": "Starboard plug-ins",
+ "plugins": [
+  {
+   "id": "disk-forecast",
+   "name": "Disk forecast",
+   "description": "When each disk fills at the rate it has been filling over the last month.",
+   "kind": "System",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "system:read"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/disk-forecast/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "dns-blocking",
+   "name": "Ad blocking",
+   "description": "How many adverts and trackers Pi-hole or AdGuard Home blocked today.",
+   "kind": "Network",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/dns-blocking/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "download-summary",
+   "name": "Download summary",
+   "description": "How much has downloaded today and this week, from what Starboard sees in the queue.",
+   "kind": "Downloads",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "downloads:read"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/download-summary/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "home-assistant",
+   "name": "Home Assistant",
+   "description": "Your house in one sentence on the dashboard: the things you choose from Home Assistant.",
+   "kind": "Home",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/home-assistant/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "library-health",
+   "name": "Library health",
+   "description": "Films and series in Jellyfin with no poster, no description or no year, so you can fix them.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/library-health/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "line-speed",
+   "name": "Line speed",
+   "description": "Tests your internet download speed once a night, outside download hours, and keeps a week of results.",
+   "kind": "Network",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/line-speed/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "most-watched",
+   "name": "Most watched",
+   "description": "The films and series most people watched in Jellyfin in the last week.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/most-watched/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "outside-services",
+   "name": "Outside services",
+   "description": "Up or down for things that are not on this server: your router, a NAS, a website.",
+   "kind": "Network",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/outside-services/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "seasonal-styles",
+   "name": "Seasonal styles",
+   "description": "Two more styles for Display: Winter, in deep green and berry red, and Large and clear, for easy reading.",
+   "kind": "Look",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "appearance:styles"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/seasonal-styles/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "styles",
+   "name": "Styles",
+   "description": "Thirteen accessible styles for Display: colours, corners, fonts, headings and shadows, checked for contrast.",
+   "kind": "Look",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "appearance:styles"
+   ],
+   "version": "1.1.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json",
+   "published": true
+  },
+  {
+   "id": "vpn-check",
+   "name": "VPN check",
+   "description": "Shows the address and country your downloads use through the VPN, and warns if it is your home address.",
+   "kind": "Downloads",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:vpn"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/vpn-check/starboard-plugin.json",
+   "published": false
+  },
+  {
+   "id": "watching-now",
+   "name": "Watching now",
+   "description": "Who is watching what in Jellyfin right now, with how far through they are.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/watching-now/starboard-plugin.json",
+   "published": false
+  }
+ ]
+}

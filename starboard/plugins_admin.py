@@ -110,12 +110,54 @@ def parse(raw):
 
 
 def added(data_dir):
-    """The ids of the plug-ins added (any state), for the menus: a plug-in's pages show only once it is added."""
+    """The plug-ins added (any state), [{id, name}], for the menus: a plug-in's pages and its tab in Settings,
+    Plug-ins show only once it is added."""
     try:
-        names = os.listdir(root(data_dir))
+        names = sorted(os.listdir(root(data_dir)))
     except OSError:
         return []
-    return sorted(p for p in names if re.match(plugins.ID, p) and os.path.isfile(os.path.join(root(data_dir), p, "manifest.json")))
+    out = []
+    for p in names:
+        m = _read(os.path.join(root(data_dir), p, "manifest.json")) if re.match(plugins.ID, p) else None
+        if isinstance(m, dict):
+            out.append({"id": p, "name": str(m.get("name") or p)[:40]})
+    return sorted(out, key=lambda x: x["name"].lower())
+
+
+CATALOGUE_URL = "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/catalogue.json"
+CATALOGUE_FILE = os.path.join(plugins.BUILTIN_DIR, "catalogue.json")  # the copy Starboard ships, used until the first fetch
+_catalogue = {"at": 0, "items": None}
+
+
+def _clean_entry(e):
+    if not isinstance(e, dict) or not re.match(plugins.ID, str(e.get("id", ""))):
+        return None
+    address = str(e.get("manifest") or "")
+    return {"id": e["id"], "name": str(e.get("name") or e["id"])[:40], "description": str(e.get("description") or "")[:240],
+            "kind": str(e.get("kind") or "Other")[:30], "author": str(e.get("author") or "")[:60],
+            "permissions": [p for p in e.get("permissions") or [] if p in plugins.PERMISSIONS],
+            "manifest": address if re.match(r"^https://\S{1,400}$", address) else "", "published": bool(e.get("published"))}
+
+
+def catalogue(opener=None, now=None):
+    """The Starboard plug-ins collection: its catalogue.json, fetched at most once a day (checked like any outside
+    address, 5 seconds, 256 KB), else the copy Starboard ships."""
+    import time
+    now = now or time.time()
+    if _catalogue["items"] is None or now - _catalogue["at"] > 86400:
+        items = None
+        try:
+            from . import outside
+            outside.check_url(CATALOGUE_URL)
+            req = urllib.request.Request(CATALOGUE_URL, headers={"User-Agent": "Starboard", "Accept": "application/json"})
+            with (opener or urllib.request.build_opener()).open(req, timeout=5) as r:  # checked above  # nosec B310
+                items = json.loads(r.read(MAX_MANIFEST)).get("plugins")
+        except Exception:  # noqa: BLE001 - offline or not there yet: the shipped copy
+            items = None
+        if not isinstance(items, list):
+            items = (_read(CATALOGUE_FILE, {}) or {}).get("plugins") or []
+        _catalogue.update(at=now, items=[x for x in map(_clean_entry, items) if x][:200])
+    return list(_catalogue["items"])
 
 
 def listing(data_dir):

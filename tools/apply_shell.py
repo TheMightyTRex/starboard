@@ -70,7 +70,9 @@ MENU = [
         ("Alerts", "bell", [("settings-alerts.html", "Alerts", "bell")]),
         ("Performance", "gauge", [("settings-performance.html", "Performance", "gauge")]),
         ("Security", "shield-check", [("settings-security.html", "Security", "shield-check")]),
-        ("Plug-ins", "puzzle", [("settings-plugins.html", "Plug-ins", "puzzle")]),
+        # Level 2: Manage, Catalogue, then one tab per added plug-in, which common.js adds from /api/session (DASH-318).
+        ("Plug-ins", "puzzle", [("settings-plugins.html", "Manage", "list-checks"),
+                                ("settings-plugins-catalogue.html", "Catalogue", "layout-grid")]),
         ("Updates", "circle-arrow-up", [("settings-updates.html", "Update settings", "sliders-horizontal"),
                                          ("settings-releases.html", "Releases", "scroll-text"),
                                          ("settings-restore.html", "Restore", "archive-restore")]),
@@ -142,6 +144,8 @@ HELP = {
     "settings-security.html": ("README.md#security", "security"),
     "settings-downloads.html": ("topics/set-download-hours.md", "your VPN, Usenet server and download hours"),
     "settings-plugins.html": ("topics/add-a-plugin.md", "plug-ins"),
+    "settings-plugins-catalogue.html": ("topics/add-a-plugin.md", "adding a plug-in"),
+    "settings-plugin.html": ("topics/add-a-plugin.md", "a plug-in's settings"),
     "dashboard.html": ("topics/use-the-dashboard.md", "your dashboard"),
     "settings-updates.html": ("topics/update-starboard.md", "updating Starboard"),
     "settings-releases.html": ("topics/update-starboard.md", "updating Starboard"),
@@ -168,7 +172,7 @@ for key, _, _, items in MENU:
             PAGES[page] = (key, n)
 # Pages with no tab of their own show the page they open from as current: the guides open from Settings,
 # General, and Copy settings from Manage apps.
-TAB_OF = {"setup-guide.html": "settings-general.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
+TAB_OF = {"setup-guide.html": "settings-general.html", "settings-plugin.html": "settings-plugins.html", "upgrade.html": "settings-general.html", "copy-settings.html": "settings.html",
           # An item's page shows its Library tab as current.
           "library-film.html": "library-films.html", "library-tv-show.html": "library-tv.html", "library-artist.html": "library-music.html",
           "library-radio-show.html": "library-radio.html", "library-book.html": "library-books.html",

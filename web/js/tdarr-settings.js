@@ -21,8 +21,18 @@ async function tdDraw(said) {
     go.addEventListener("click", async () => {
       go.disabled = true;
       go.textContent = "Connecting… Tdarr restarts once";
-      try { const r = await api("/api/services/read-keys", { method: "POST" });
-        if (!r.found.includes("Tdarr")) throw new Error("Tdarr did not take a key. Check it is running in Apps."); tdDraw("Connected"); }
+      // Tdarr restarts to take its key and needs a little while to answer again (owner's server, 12 November 2026:
+      // the first try asked too soon), so wait for it, up to 90 seconds.
+      try {
+        await api("/api/services/read-keys", { method: "POST" });
+        go.textContent = "Waiting for Tdarr to restart…";
+        let ok = false;
+        for (let i = 0; i < 30 && !ok; i += 1) {
+          try { await api("/api/tdarr"); ok = true; } catch { await new Promise((r) => setTimeout(r, 3000)); }
+        }
+        if (!ok) throw new Error("Tdarr did not answer after restarting. Check it is running in Apps, then try again.");
+        tdDraw("Connected. Starboard keeps Tdarr's key");
+      }
       catch (err) { problem(err.message, go); go.disabled = false; go.textContent = "Connect Tdarr"; }
     });
     box.removeAttribute("aria-busy");

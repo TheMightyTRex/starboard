@@ -54,7 +54,7 @@ class Added(unittest.TestCase):
                 if has:
                     with open(os.path.join(root, pid, "manifest.json"), "w") as f:
                         json.dump({}, f)
-            self.assertEqual(plugins_admin.added(d), ["on-demand"])
+            self.assertEqual(plugins_admin.added(d), [{"id": "on-demand", "name": "on-demand"}])
             self.assertEqual(plugins_admin.added(os.path.join(d, "none")), [])
 
 

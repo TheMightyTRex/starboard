@@ -2195,6 +2195,10 @@ class Handler(BaseHTTPRequestHandler):
                       "why_not": livetv_move.can_run(app.data_dir) if m["id"] == livetv_move.PID else ""}
                      for m in pa.builtins().values()]
             return self.json(200, {"plugins": pa.listing(app.data_dir), "builtin": built})
+        if path == "/api/plugins/catalogue" and method == "GET":
+            # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
+            have = {p["id"] for p in pa.added(app.data_dir)}
+            return self.json(200, {"plugins": [{**e, "added": e["id"] in have} for e in pa.catalogue()]})
         if path == "/api/plugins/add-builtin" and method == "POST":
             # A plug-in that ships inside Starboard, such as Live TV (DASH-285): the password, then added and active.
             from . import livetv_move
