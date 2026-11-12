@@ -1941,6 +1941,25 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, result)
             if path == "/api/access" and method == "GET":
                 return self.json(200, {"items": access.summary(app)})
+            if path == "/api/queue/episodes" and method in ("GET", "POST"):  # Choose the episode (12 November 2026)
+                from . import episode_fix, library
+                reelix = library.reelix_of(cfg.data["services"])
+                if not reelix:
+                    return self.error(409, "Add Reelix in Settings, Manage apps first")
+                qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                download_id = (qs.get("download_id") or [""])[0]
+                try:
+                    if method == "GET":
+                        return self.json(200, episode_fix.options(reelix, download_id))
+                    out = episode_fix.apply(reelix, download_id, self.body().get("choices"))
+                    logs.event("info", "reelix", f"Chose the episode for {out['sent']} file(s) of download {download_id}")
+                    return self.json(200, out)
+                except LookupError as e:
+                    return self.error(404, str(e))
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except services.ServiceError as e:
+                    return self.error(502, f"Reelix did not answer: {e}")
             m = re.match(r"^/api/transfer/([A-Za-z0-9_-]{1,64})/resume-unpacking$", path)
             if m and method == "POST":  # DASH-304: unpacking and folder scanning on again; downloading is left alone
                 s = cfg.service(m.group(1))

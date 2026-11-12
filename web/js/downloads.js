@@ -247,7 +247,50 @@ function detailsFoot(item) {
       title: "Ignore this download?", message: `Reelix stops warning about it and leaves the files in ${item.client || "the download client"}'s folder. Nothing is deleted.`,
       confirm: "Ignore" }) }, icon("eye-off"), "Ignore"),
   ] : [];
-  return [...fix, ...out, another, remove];
+  // Choose the episode (12 November 2026): a file Reelix refused because its episode number is not one of the
+  // series' (broadcast or TVDB numbering against TMDB's).
+  const numbering = item.reelix && item.download_id && item.messages.some((m) => /not part of the series/i.test(m));
+  const choose = numbering ? [el("button", { type: "button", class: "btn btn--primary", onclick: () => chooseEpisode(item) }, icon("list-checks"), "Choose the episode")] : [];
+  return [...choose, ...fix, ...out, another, remove];
+}
+
+async function chooseEpisode(item) {
+  const panel = sidePanel({ title: "Choose the episode", wide: true, body: [el("p", { class: "muted", text: "Asking Reelix…" })] });
+  let o;
+  try { o = await api(`/api/queue/episodes?download_id=${encodeURIComponent(item.download_id)}`); }
+  catch (e) { panel.body.replaceChildren(notice("danger", "Reelix could not be asked", e.message)); return; }
+  const byId = Object.fromEntries(o.episodes.map((e) => [e.id, e]));
+  const label = (e) => `${e.season === 0 ? "Special" : `S${String(e.season).padStart(2, "0")}E${String(e.number).padStart(2, "0")}`} · ${e.title}${e.have ? " · in your library" : ""}`;
+  const seasons = [...new Set(o.episodes.map((e) => e.season))];
+  const picks = o.files.map((f, n) => {
+    const select = el("select", { class: "select", id: `ep-pick-${n}` },
+      el("option", { value: "", text: "Leave this file out" }),
+      seasons.map((s) => el("optgroup", { label: s === 0 ? "Specials" : `Season ${s}` },
+        o.episodes.filter((e) => e.season === s).map((e) => el("option", { value: e.id, text: label(e), selected: e.id === f.guess })))));
+    const note = el("p", { class: "small", role: "status" });
+    const say = () => {
+      const e = byId[select.value];
+      note.textContent = !e ? "" : e.have ? "You already have this episode: importing replaces your copy if this one is better. If it is the same episode, remove the download instead." : "Not in your library yet.";
+    };
+    select.addEventListener("change", say);
+    say();
+    return { f, select, node: el("div", { class: "stack-2 media-panel-section" },
+      titleChip(el("h3", { class: "small", text: f.name }), chip(f.sure ? "Sure" : "Check this", f.sure ? "success" : "warning")),
+      el("label", { class: "field__label", for: select.id, text: "Its episode" }), select, note) };
+  });
+  const go = el("button", { type: "button", class: "btn btn--primary" }, icon("download"), "Import");
+  go.addEventListener("click", async () => {
+    const choices = picks.filter((p) => p.select.value).map((p) => ({ path: p.f.path, episode_ids: [Number(p.select.value)] }));
+    if (!choices.length) { problem("Choose an episode for at least one file", go); return; }
+    go.disabled = true;
+    try { await api(`/api/queue/episodes?download_id=${encodeURIComponent(item.download_id)}`, { method: "POST", body: { choices } });
+      toast("Reelix is importing it"); panel.close(); load({ announceIt: true }); }
+    catch (e) { problem(e.message, go); go.disabled = false; }
+  });
+  panel.body.replaceChildren(
+    el("p", { text: `Reelix numbers ${o.series.title}'s episodes as TMDB does, and this download uses another numbering, so Reelix could not tell which episode it is. Check the guess, then import it, or close this and remove the download if you already have the episode.` }),
+    ...picks.map((p) => p.node));
+  panel.setFoot([go, el("button", { type: "button", class: "btn", "data-closes": true, text: "Cancel" })]);
 }
 
 async function queueAction(item, action, dialog) {
