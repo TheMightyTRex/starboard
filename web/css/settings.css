@@ -192,3 +192,7 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 /* A plug-in's State (issue #8): Activate or Deactivate at the right of the version line. */
 .state-line { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .state-line > p { margin: 0; }
+/* A plug-in screen's sub menu (plug-in API 1.7, DASH-361): the back link above its heading is a button, drawn as the
+   shared back link. */
+.back-link--button { justify-self: start; width: fit-content; padding: 0; border: 0; background: none; color: var(--color-accent); font-family: inherit; text-decoration: none; cursor: pointer; }
+.back-link--button:hover { text-decoration: underline; }

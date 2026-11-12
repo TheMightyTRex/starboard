@@ -88,7 +88,43 @@ plug-in's own API key in the `X-Api-Key` header, so the plug-in can tell the cal
 | `address` | Shown under the title, cut to 500 characters |
 | `actions` | The buttons on the row, from `test`, `toggle`, `remove`, `up` and `down` |
 | `choice` | Optional. A small list on the row: up to 12 `options`, each `[value, words]`, cut to 40 characters |
-| `bulk` | Optional. Up to 60 switches for whole sets of items, each `{"id", "label", "kind", "on", "total"}`: `on` is how many of its `total` items are active. Starboard groups them by `kind`, in the order given. Optional: `active` (`true` or `false`) when the set is more than its items, such as a whole source that can be stopped, and `hint`, up to 160 characters, in place of the words "3 of 5 active" |
+| `bulk` | Optional. Up to 60 switches (400 with `menus`) for whole sets of items, each `{"id", "label", "kind", "on", "total"}`: `on` is how many of its `total` items are active. Starboard groups them by `kind`, in the order given. Optional: `active` (`true` or `false`) when the set is more than its items, such as a whole source that can be stopped, and `hint`, up to 160 characters, in place of the words "3 of 5 active" |
+
+### Sub menus
+
+From plug-in API 1.7, a long list can be split into sub menus, so no one page holds every item. Live TV's
+**Channels** uses them: each list opens to its regions and sections, and each section to its channels. Add `menus`,
+and name a menu in each item's and switch's `menu`:
+
+```json
+{
+  "type": "list",
+  "title": "Channels",
+  "menus": [
+    {"id": "uk", "title": "UK", "group": "Regions"},
+    {"id": "uk-news", "title": "News", "group": "Sections", "parent": "uk", "detail": "Refreshed every hour"}
+  ],
+  "bulk": [{"id": "uk-news", "label": "Every channel in News", "kind": "", "on": 1, "total": 2, "menu": "uk-news"}],
+  "items": [{"id": "news-1", "title": "News one", "on": true, "actions": ["toggle"], "menu": "uk-news"}]
+}
+```
+
+| Field | Rules |
+|---|---|
+| `menus` | Optional. Up to 200, each `{"id", "title"}`: `id` up to 120 characters, `title` up to 80. A menu without a title is left out |
+| `parent` | The menu it opens from; left out for the first level. A parent must come before its sub menus, and menus go at most 4 levels deep. Anything else is left out, so a menu can never open itself |
+| `group` | A heading its row sits under, cut to 40 characters |
+| `detail` | Shown under its title, cut to 200 characters |
+| `active` | Optional. `false` marks the menu **Inactive** whatever its items say, such as a whole source that is stopped |
+| `menu`, on an item or a `bulk` switch | The menu it is shown in. Left out, or naming no menu, it stays on the first level |
+
+Starboard draws each level's menus as rows that open, with their state (**Active**, **Partly active** or
+**Inactive**) and how many of their items are active, counting the items in their sub menus too. An opened menu
+shows a back link above its heading, its own switches, sub menus and items, and the All, Active and Inactive
+filter. Focus goes to the opened menu's heading, and back to its row on the way back. **Test all** and the add box
+are on the first level only. With menus, `bulk` can have up to 400 switches.
+
+A list without `menus` is drawn as before, so an older Starboard shows every item in one list.
 
 **POST** the path when the person does something. The body is:
 

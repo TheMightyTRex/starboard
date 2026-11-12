@@ -14,6 +14,15 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.7.0, 13 November 2026
+
+- **Added:** a custom setting's list may have sub menus: `menus`, each with a `parent` for the level it opens from, and
+  `menu` on each item and switch. Read [Sub menus](plugin-api-reference.md#sub-menus).
+- **Changed:** **Test all** shows only on a list whose items can be tested, or that has none yet.
+- **Changed:** a plug-in's **State** says its version, for plug-ins built into Starboard too.
+- Nothing in the manifest changes, so `starboard_api` can stay as it is. An older Starboard leaves `menus` out and
+  shows every item in one list.
+
 ## Plug-in API 1.5.0, 12 November 2026
 
 - **Added:** a setting may have a `group`. Each group is its own section of the plug-in's page in Settings.

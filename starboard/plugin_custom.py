@@ -8,11 +8,17 @@ The plug-in's `choices` path answers GET with:
               "on": true|false (optional), "address": text (optional), "actions": [test, toggle, remove, up, down],
               "choice": {"label": text, "value": text, "options": [[value, words], ...]} (optional, 12 November 2026)}],
    "bulk": [{"id": text, "label": text, "kind": text, "on": number, "total": number,
-             "active": true|false (optional), "hint": text (optional)}] (optional, DASH-359)}
+             "active": true|false (optional), "hint": text (optional), "menu": text (optional, API 1.7)}] (optional, DASH-359),
+   "menus": [{"id": text, "title": text, "detail": text, "group": text, "parent": text, "active": true|false}]
+            (optional, plug-in API 1.7, DASH-361)}
 and POST with {"action": add|test|test_all|toggle|remove|up|down|choose|bulk, "id": text, "value": text}, answering the same shape
 with "said", a sentence. "bulk" activates (value "on") or deactivates (value "off") a whole set of items at once: Starboard
 draws one switch per set, grouped by its kind in the order given. A switch is active when all of its items are, or as
 "active" says (a whole source that can be stopped); "hint" replaces the words "3 of 5 active" under it.
+"menus" (plug-in API 1.7) splits a long list into sub menus: Starboard draws the menus without a parent as rows that open,
+and each opened menu shows its own sub menus, the bulk switches and items whose "menu" names it, with a back link.
+A parent comes before its sub menus, at most four levels deep; anything else is left out. Items and switches without a
+known "menu" stay on the first level, so a screen without menus is drawn as before.
 Starboard keeps only these fields, cuts every text, and calls the plug-in with its own key."""
 import json
 import re
@@ -46,15 +52,42 @@ def _count(v):
         return 0
 
 
-def _bulk(sets):
-    """Switches for whole sets of items (DASH-359): up to 60, each with how many of its items are active."""
+MAX_MENUS = 200
+MAX_DEPTH = 4
+
+
+def _menus(raw):
+    """Sub menus (plug-in API 1.7, DASH-361): up to 200, each after its parent, at most four levels deep."""
+    out, depth = [], {}
+    for m in raw[:MAX_MENUS] if isinstance(raw, list) else []:
+        if not isinstance(m, dict) or not m.get("id") or not m.get("title"):
+            continue
+        mid, parent = _text(m["id"], 120), _text(m.get("parent"), 120)
+        if mid in depth or (parent and depth.get(parent, MAX_DEPTH) >= MAX_DEPTH):
+            continue  # a repeat, a parent not given first, or too deep: never a loop
+        depth[mid] = depth[parent] + 1 if parent else 1
+        out.append({"id": mid, "title": _text(m["title"], 80), "detail": _text(m.get("detail"), 200), "group": _text(m.get("group"), 40),
+                    "parent": parent, "active": m["active"] if isinstance(m.get("active"), bool) else None})
+    return out
+
+
+def _in_menu(thing, known):
+    """{"menu": id} when the thing names a known menu (API 1.7), else nothing: it stays on the first level."""
+    menu = _text(thing.get("menu"), 120)
+    return {"menu": menu} if menu and menu in known else {}
+
+
+def _bulk(sets, known=frozenset()):
+    """Switches for whole sets of items (DASH-359): up to 60, or 400 on a screen with menus (API 1.7), each with how
+    many of its items are active."""
     out = []
-    for b in sets[:60] if isinstance(sets, list) else []:
+    for b in sets[:400 if known else 60] if isinstance(sets, list) else []:
         if isinstance(b, dict) and b.get("id") and b.get("label"):
             total = _count(b.get("total"))
             out.append({"id": _text(b["id"], 120), "label": _text(b["label"], 60), "kind": _text(b.get("kind"), 40),
                         "on": min(_count(b.get("on")), total), "total": total,
-                        "active": b["active"] if isinstance(b.get("active"), bool) else None, "hint": _text(b.get("hint"), 160)})
+                        "active": b["active"] if isinstance(b.get("active"), bool) else None, "hint": _text(b.get("hint"), 160),
+                        **_in_menu(b, known)})
     return out
 
 
@@ -71,6 +104,8 @@ def clean(data):
     if not isinstance(data, dict) or data.get("type") != "list" or not isinstance(data.get("items"), list):
         raise ValueError("The plug-in's screen is not a list Starboard can draw")
     add = data.get("add") if isinstance(data.get("add"), dict) else None
+    menus = _menus(data.get("menus"))
+    known = frozenset(m["id"] for m in menus)
     items = []
     for it in data["items"][:1000]:  # Live TV's channels (DASH-313): 546 found on the owner's server
         if not isinstance(it, dict) or not it.get("id"):
@@ -78,10 +113,13 @@ def clean(data):
         items.append({"id": _text(it["id"], 600), "title": _text(it.get("title"), 120), "detail": _text(it.get("detail"), 200),
                       "state": it.get("state") if it.get("state") in STATES else "unknown", "group": _text(it.get("group"), 40),
                       "on": bool(it.get("on", True)), "address": _text(it.get("address"), 500),
-                      "actions": [a for a in it.get("actions") or [] if a in ACTIONS], "choice": _choice(it.get("choice"))})
+                      "actions": [a for a in it.get("actions") or [] if a in ACTIONS], "choice": _choice(it.get("choice")),
+                      **_in_menu(it, known)})
     out = {"type": "list", "title": _text(data.get("title"), 80), "intro": _text(data.get("intro"), 400), "items": items,
            "add": {**{k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")}, "file": _file(add.get("file"))} if add else None,
-           "bulk": _bulk(data.get("bulk"))}
+           "bulk": _bulk(data.get("bulk"), known)}
+    if menus:
+        out["menus"] = menus
     if data.get("said"):
         out["said"] = _text(data["said"], 200)
     return out

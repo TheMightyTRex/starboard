@@ -143,26 +143,115 @@ def _lists(chans, hidden):
     return out
 
 
+def _list_key(c):
+    """Which list a channel came from: freetv, samsung or pluto, own:<id> for one of the owner's own lists, or other."""
+    from . import livetv, livetv_own
+    for key, (_, playlist, _) in livetv.LISTS.items():
+        if c.get("list") == playlist:
+            return key
+    if c.get("list") == livetv_own.PLAYLIST:
+        return f"own:{c['source']}" if c.get("source") else "own"
+    return "other"
+
+
+def _section(c):
+    return c.get("section") or "Other"
+
+
+def _ordered(values, order):
+    return sorted(set(values), key=lambda n: (order.index(n) if n in order else len(order), n))
+
+
+def _in(chans, sid):
+    """The channels in one sub menu's set, such as in:samsung|r=US|s=News, or None when it is not one."""
+    parts = sid[3:].split("|")
+    want = dict(p.split("=", 1) for p in parts[1:] if "=" in p)
+    if not parts[0] or set(want) - {"r", "s"}:
+        return None
+    return [c for c in chans if _list_key(c) == parts[0] and ("r" not in want or _region(c) == want["r"])
+            and ("s" not in want or _section(c) == want["s"])]
+
+
+def _list_title(key, own):
+    from . import livetv
+    if key in livetv.LISTS:
+        return livetv.LISTS[key][0]
+    if key.startswith("own:"):
+        return own.get(key[4:]) or "Your lists"
+    return "Your lists" if key == "own" else "Other"
+
+
+def _set_name(chans, sid, own):
+    parts = sid[3:].split("|")
+    return ", ".join([_list_title(parts[0], own)] + [p.split("=", 1)[1] or "Region not known" for p in parts[1:]])
+
+
+def _tree(chans, hidden, own):
+    """Sub menus (DASH-361, owner 12 November 2026: "simplify the channels with sub menus"): a menu for each list,
+    split by region when a list has more than one, then by section, so no one screen holds every channel. Returns
+    the menus, a switch for every channel in each of them, and where each channel goes."""
+    from . import livetv
+    off = livetv.lists_off(DATA)
+    keys = list(livetv.LISTS) + _ordered((_list_key(c) for c in chans), list(livetv.LISTS))
+    keys = list(dict.fromkeys(keys))
+    menus, sets, place = [], [], {}
+    count = lambda cs: {"on": sum(1 for c in cs if c["id"] not in hidden), "total": len(cs)}
+    for key in keys:
+        title, lid = _list_title(key, own), f"in:{key}"
+        mine = [c for c in chans if _list_key(c) == key]
+        menus.append({"id": lid, "title": title, "group": "Your lists" if key.startswith("own") else "Lists",
+                      **({"active": False, "detail": "Inactive: not fetched, and none of its channels are in Jellyfin"} if key in off else
+                         {"detail": "Its channels arrive at the next run"} if not mine else {})})
+        if not mine:
+            continue
+        sets.append({"id": lid, "label": f"Every channel in {title}", "kind": "", "menu": lid, **count(mine)})
+        regions = _ordered((_region(c) for c in mine), ["UK", "US"])
+        for r in regions if len(regions) > 1 else [None]:
+            parent, here = lid, mine
+            if r is not None:
+                parent, here = f"{lid}|r={r}", [c for c in mine if _region(c) == r]
+                menus.append({"id": parent, "title": r or "Region not known", "group": "Regions", "parent": lid})
+                sets.append({"id": parent, "label": f"Every channel in {r or 'this region'}", "kind": "", "menu": parent, **count(here)})
+            sections = _ordered((_section(c) for c in here), [b for b, _ in livetv.BLOCKS])
+            if len(sections) < 2:
+                place.update({c["id"]: parent for c in here})
+                continue
+            for name in sections:
+                sid, these = f"{parent}|s={name}", [c for c in here if _section(c) == name]
+                menus.append({"id": sid, "title": name, "group": "Sections", "parent": parent})
+                sets.append({"id": sid, "label": f"Every channel in {name}", "kind": "", "menu": sid, **count(these)})
+                place.update({c["id"]: sid for c in these})
+    return menus, sets, place
+
+
 def channels_screen(said=""):
-    """Every channel by section, active or inactive, for the plug-in's Channels screen in Starboard (DASH-313), with
-    a switch for each whole list, then every channel at once, each region and each section (DASH-359)."""
+    """The plug-in's Channels screen in Starboard (DASH-313), in sub menus (DASH-361): each list opens to its regions
+    and sections, each with its own channels and a switch for all of them; the list's own switch stops it being
+    fetched (DASH-359). The first level has every channel at once, and Regions and sections opens the switches for a
+    region or section in every list."""
     from . import livetv
     hidden = livetv.hidden_ids(DATA)
     from . import livetv_own
     own = {x["id"]: x.get("name", "") for x in livetv_own.sources(DATA)}
     chans = livetv.all_channels(livetv.folder())
+    menus, sets, place = _tree(chans, hidden, own)
     rows = []
     for c in sorted(chans, key=lambda c: int(c.get("number") or 0)):
         on = c["id"] not in hidden
-        rows.append({"id": c["id"], "title": f"{c['number']} {c['name']}", "group": c.get("section") or "Other",
+        menu = place.get(c["id"], "")
+        rows.append({"id": c["id"], "title": f"{c['number']} {c['name']}", "group": "" if "|s=" in menu else _section(c),
                      "detail": " · ".join(x for x in (SOURCES.get(c.get("list")) or own.get(c.get("source"), "Your lists"), _region(c)) if x),
-                     "state": "ok" if on else "off", "on": on, "actions": ["toggle"]})
-    bulk = _lists(chans, hidden)
+                     "state": "ok" if on else "off", "on": on, "actions": ["toggle"], "menu": menu})
+    # Each list's own switch goes in its menu, as "This list": the list's name is the heading above it.
+    bulk = [{**b, "label": "This list", "kind": "", "menu": f"in:{b['id'][6:]}"} for b in _lists(chans, hidden)]
     if rows:
-        bulk.append({"id": "all", "label": "Every channel", "kind": "Channels", "on": sum(1 for r in rows if r["on"]), "total": len(rows)})
-    bulk += [{"id": x["id"], "label": x["label"], "kind": x["kind"], "on": sum(1 for i in x["ids"] if i not in hidden), "total": len(x["ids"])}
-             for x in _sets(chans)]
-    out = {"type": "list", "title": "Channels", "items": rows, "bulk": bulk,
+        bulk.append({"id": "all", "label": "Every channel", "kind": "", "on": sum(1 for r in rows if r["on"]), "total": len(rows)})
+        menus.append({"id": "across", "title": "Regions and sections", "group": "Across every list",
+                      "detail": "A switch for each region and each section, in every list at once"})
+    bulk += [{"id": x["id"], "label": x["label"], "kind": x["kind"], "menu": "across",
+              "on": sum(1 for i in x["ids"] if i not in hidden), "total": len(x["ids"])} for x in _sets(chans)]
+    bulk += sets
+    out = {"type": "list", "title": "Channels", "items": rows, "bulk": bulk, "menus": menus,
            "intro": f"{sum(1 for r in rows if r['on'])} of {len(rows)} channels are in Jellyfin."}
     if said:
         out["said"] = said
@@ -201,6 +290,12 @@ def _bulk(body):
         return _list_switch(sid[6:], want == "on")
     if sid == "all":
         name, ids = "Every channel", {c["id"] for c in chans}
+    elif sid.startswith("in:"):  # one sub menu's channels (DASH-361)
+        found = _in(chans, sid)
+        if not found:
+            raise ValueError("Not one of the lists, regions or sections")
+        from . import livetv_own
+        name, ids = _set_name(chans, sid, {x["id"]: x.get("name", "") for x in livetv_own.sources(DATA)}), {c["id"] for c in found}
     else:
         found = next((x for x in _sets(chans) if x["id"] == sid), None)
         if not found:

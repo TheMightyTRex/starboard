@@ -8,7 +8,7 @@ import urllib.request
 from http.server import ThreadingHTTPServer
 from unittest import mock
 
-from starboard import config as config_mod, livetv_move, livetv_plugin, plugin_cards, plugins, plugins_admin as pa
+from starboard import config as config_mod, livetv_move, livetv_plugin, plugin_cards, plugin_custom, plugins, plugins_admin as pa
 
 HOST = {"image": "starboard:local", "user": "1000:1000", "iptv": "/srv/apps/jellyfin/iptv", "tz": "Europe/London"}
 
@@ -186,13 +186,13 @@ class LiveTvPluginTest(unittest.TestCase):
             screen = livetv_plugin.channels_screen()
             sets = {b["id"]: (b["kind"], b["on"], b["total"]) for b in screen["bulk"]}
             self.assertEqual([b["id"] for b in screen["bulk"][:4]], ["lists:freetv", "lists:samsung", "lists:pluto", "all"])
-            self.assertEqual(sets["all"], ("Channels", 4, 4))
-            self.assertEqual(sets["lists:samsung"], ("Lists", 2, 2))
+            self.assertEqual(sets["all"], ("", 4, 4))
+            self.assertEqual(sets["lists:samsung"], ("", 2, 2))
             self.assertEqual(sets["regions:UK"], ("Regions", 3, 3))  # Pluto TV, saved before regions were, is UK
             self.assertEqual(sets["regions:US"], ("Regions", 1, 1))
             self.assertEqual(sets["sections:News"], ("Sections", 2, 2))
-            self.assertEqual([(b["label"], b["active"]) for b in screen["bulk"] if b["kind"] == "Lists"],
-                             [("Free-TV", True), ("Samsung TV Plus", True), ("Pluto TV", True)])
+            self.assertEqual([(b["menu"], b["label"], b["active"]) for b in screen["bulk"] if b["id"].startswith("lists:")],
+                             [("in:freetv", "This list", True), ("in:samsung", "This list", True), ("in:pluto", "This list", True)])
             self.assertIn("Free-TV · UK", [r["detail"] for r in screen["items"]])
 
             out = livetv_plugin.channels_act({"action": "bulk", "id": "sections:News", "value": "off"})
@@ -221,7 +221,7 @@ class LiveTvPluginTest(unittest.TestCase):
             self.assertEqual(livetv.lists_off(d), {"freetv"})
             self.assertEqual(livetv._parse(os.path.join(d, "channels.m3u")), [])
             self.assertNotIn("F1", [c["id"] for c in livetv.all_channels(d)])
-            lists = {b["id"]: b for b in out["bulk"] if b["kind"] == "Lists"}
+            lists = {b["id"]: b for b in out["bulk"] if b["id"].startswith("lists:")}
             self.assertFalse(lists["lists:freetv"]["active"])
             self.assertIn("not fetched", lists["lists:freetv"]["hint"])
             self.assertTrue(lists["lists:pluto"]["active"])
@@ -237,6 +237,62 @@ class LiveTvPluginTest(unittest.TestCase):
             for bad in ({"id": "sections:Nope", "value": "on"}, {"id": "all", "value": "maybe"}):
                 with self.assertRaises(ValueError):
                     livetv_plugin.channels_act({"action": "bulk", **bad})
+        livetv_plugin._force["now"] = False
+
+    def test_channels_are_in_sub_menus_by_list_region_and_section(self):
+        # DASH-361 (owner, 12 November 2026: "simplify the channels with sub menus"): no one screen holds every channel.
+        from starboard import livetv, livetv_own
+        d = self.tmp.name
+        chans = [("F1", "BBC One", "101", "Entertainment", "channels.m3u", "UK", ""), ("F2", "Pop", "1001", "Kids", "channels.m3u", "UK", ""),
+                 ("S1", "Sky News", "701", "News", "samsung.m3u", "UK", ""), ("S2", "CBS News", "702", "News", "samsung.m3u", "US", ""),
+                 ("S3", "Westerns", "451", "Movies", "samsung.m3u", "US", ""), ("P1", "Pluto Films", "452", "Movies", "pluto.m3u", None, ""),
+                 ("O1", "Town hall", "703", "News", "own.m3u", "", "abc123")]
+        for name in livetv.FILES:
+            with open(os.path.join(d, name), "w") as f:
+                f.write("#EXTM3U\n" + "".join(f'#EXTINF:-1 tvg-id="{i}" tvg-chno="{n}",{t}\nhttp://{i}\n' for i, t, n, _, lst, _r, _s in chans if lst == name))
+        with open(os.path.join(d, livetv.ALL), "w") as f:
+            json.dump([{"id": i, "name": t, "number": n, "section": sec, "list": lst, "source": src, **({"region": r} if r is not None else {})}
+                       for i, t, n, sec, lst, r, src in chans], f)
+        with open(os.path.join(d, livetv_own.FILE), "w") as f:
+            json.dump([{"id": "abc123", "url": "https://example.invalid/town.m3u", "kind": "list", "name": "Town lists"}], f)
+        with mock.patch.object(livetv, "folder", return_value=d), mock.patch.object(livetv_plugin, "DATA", d), \
+                mock.patch.object(livetv_plugin, "JELLYFIN", os.path.join(d, "none.json")), \
+                mock.patch("starboard.livetv_jellyfin.refresh_guide", return_value=""):
+            screen = plugin_custom.clean(livetv_plugin.channels_screen())
+            menus = {m["id"]: m for m in screen["menus"]}
+            self.assertEqual([m["title"] for m in screen["menus"] if not m["parent"]], ["Free-TV", "Samsung TV Plus", "Pluto TV", "Town lists", "Regions and sections"])
+            self.assertEqual(menus["in:own:abc123"]["group"], "Your lists")
+            # Samsung TV Plus has two regions, so it opens to them, and each region to its sections
+            self.assertEqual([m["title"] for m in screen["menus"] if m["parent"] == "in:samsung"], ["UK", "US"])
+            self.assertEqual([m["title"] for m in screen["menus"] if m["parent"] == "in:samsung|r=US"], ["Movies", "News"])
+            # Free-TV has one region: its sections are straight under it; Pluto TV has one section: its channels are
+            self.assertEqual([m["id"] for m in screen["menus"] if m["parent"] == "in:freetv"], ["in:freetv|s=Entertainment", "in:freetv|s=Kids"])
+            place = {it["id"]: (it.get("menu"), it["group"]) for it in screen["items"]}
+            self.assertEqual(place["S2"], ("in:samsung|r=US|s=News", ""))
+            self.assertEqual(place["P1"], ("in:pluto", "Movies"))
+            self.assertFalse([it for it in screen["items"] if not it.get("menu")])  # nothing left on the first level
+            first = [b["id"] for b in screen["bulk"] if not b.get("menu")]
+            self.assertEqual(first, ["all"])
+            self.assertEqual({b["id"] for b in screen["bulk"] if b.get("menu") == "across"} >= {"regions:UK", "regions:US", "sections:News"}, True)
+            self.assertIn("in:samsung|r=US|s=News", {b["id"] for b in screen["bulk"] if b.get("menu") == "in:samsung|r=US|s=News"})
+
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "in:samsung|r=US|s=News", "value": "off"})
+            self.assertEqual(out["said"], "Samsung TV Plus, US, News: 1 channel deactivated; Jellyfin drops them at its guide refresh, starting now")
+            self.assertEqual(livetv.hidden_ids(d), {"S2"})
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "in:samsung", "value": "off"})
+            self.assertEqual(livetv.hidden_ids(d), {"S1", "S2", "S3"})
+            self.assertEqual({b["id"]: b["on"] for b in out["bulk"]}["in:samsung|r=UK"], 0)
+            livetv_plugin.channels_act({"action": "bulk", "id": "in:own:abc123", "value": "off"})
+            self.assertIn("O1", livetv.hidden_ids(d))
+            out = livetv_plugin.channels_act({"action": "bulk", "id": "in:samsung|r=UK", "value": "on"})
+            self.assertIn("Samsung TV Plus, UK: 1 channel activated", out["said"])
+            for bad in ("in:nope", "in:samsung|r=FR", "in:samsung|x=1", "in:"):
+                with self.assertRaises(ValueError):
+                    livetv_plugin.channels_act({"action": "bulk", "id": bad, "value": "on"})
+            # An inactive list keeps its menu, marked inactive, so it can be activated again from there
+            livetv.save_lists_off(d, {"pluto"})
+            menus = {m["id"]: m for m in livetv_plugin.channels_screen()["menus"]}
+            self.assertIs(menus["in:pluto"]["active"], False)
         livetv_plugin._force["now"] = False
 
     def test_built_in_plug_ins_follow_starboards_update(self):
