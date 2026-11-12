@@ -125,6 +125,11 @@
   border: 2px dashed rgb(255 255 255 / 0.7); box-shadow: none; }
 .collection-card__poster.is-wanted { opacity: 0.55; border: 2px dashed rgb(255 255 255 / 0.85); box-shadow: none; }
 @media (forced-colors: active) { .collection-card__poster.is-wanted { opacity: 1; border-color: CanvasText; } }
+/* The same on the covers walls and lists: the cover faded, a dashed outline over it (12 November 2026). */
+.cover.is-wanted { position: relative; }
+.cover.is-wanted img { opacity: 0.5; }  /* a title in place of a cover stays readable */
+.cover.is-wanted::after { content: ""; position: absolute; inset: 0; border: 2px dashed var(--color-text-muted); border-radius: inherit; pointer-events: none; }
+@media (forced-colors: active) { .cover.is-wanted img { opacity: 1; } .cover.is-wanted::after { border-color: CanvasText; } }
 .collection-card__body { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3, 12px); padding: var(--space-3, 12px); }
 .collection-card__words { min-width: 0; }
 .collection-card__name { margin: 0; font-size: var(--text-md, 1rem); overflow-wrap: anywhere; }

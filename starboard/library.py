@@ -518,7 +518,7 @@ def forget(data_dir):
 def _card(tab, e):
     word = STATUS.get(e["w"], ("", "muted"))
     return {"id": e["i"], "title": e["t"], "meta": e.get("m", ""), "count": e.get("c", ""), "letter": e["l"],
-            "status": word[0], "tone": word[1],
+            "status": word[0], "tone": word[1], "have": e["w"] in ("in_library", "partly"),  # not had: a faded cover
             "poster": f"/api/library/poster?tab={tab}&id={e['i']}" if e.get("p") else ""}
 
 

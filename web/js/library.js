@@ -19,8 +19,10 @@ let saved = {};
 const plural = (n, [one, many]) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
 const itemHref = (id) => `/${ITEM_PAGE[TAB]}?id=${encodeURIComponent(id)}`;
 
+// Something with nothing in your library yet (wanted, searching, not released) has its cover faded behind a dashed
+// outline, as on the series and collection cards (owner, 12 November 2026); its chip still says which.
 function posterBox(card, className = "cover") {
-  const box = el("div", { class: className, "aria-hidden": "true" });
+  const box = el("div", { class: `${className}${card.have === false ? " is-wanted" : ""}`, "aria-hidden": "true" });
   const plain = () => box.replaceChildren(el("span", { class: "lib-cover-title", text: card.title }));
   if (card.poster) {
     const img = el("img", { src: card.poster, alt: "", loading: "lazy", decoding: "async" });
