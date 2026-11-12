@@ -36,7 +36,7 @@ const CARDS = {
     const r = await ask("/api/setup/left");
     const todo = r.items.filter((i) => !i.done && !i.ignored);
     if (!todo.length) return null;
-    // The wizard (DASH-289): one item at a time; it opens by itself once in each browser session.
+    // The wizard (DASH-289): one item at a time; it opens only from Go through them (owner, 12 November 2026).
     const walk = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
     walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: () => draw() }));
     if (!editing) setupWizardOnce(() => draw());
@@ -142,7 +142,7 @@ async function pluginCard(id) {
 
 function cardShell(c, i, list) {
   const head = el("div", { class: "dash-card__head" }, el("h2", { class: "dash-card__title", id: `dash-${c.id}-h`, text: CARD_TITLES[c.id] || "Plug-in card" }));
-  const body = el("div", { class: "dash-card__body", "aria-live": "polite" }, el("p", { class: "small muted", text: "Asking…" }));
+  const body = el("div", { class: "dash-card__body" }, el("p", { class: "small muted", text: "Asking…" }));
   const card = el("section", { class: `dash-card dash-card--${c.size}`, "aria-labelledby": `dash-${c.id}-h`, "data-card": c.id }, head, body);
   if (editing) {
     const size = el("select", { class: "select select--compact", "aria-label": `Size of ${CARD_TITLES[c.id]}` },

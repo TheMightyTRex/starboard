@@ -238,7 +238,7 @@ function pluginPage(p, redraw) {
 const CUSTOM_STATE = { ok: ["Works", "success"], warning: ["Slow", "warning"], problem: ["Not answering", "danger"],
   off: ["Off", "muted"], unknown: ["Not tested", "muted"] };
 function customScreen(p, s) {
-  const box = el("div", { class: "stack-4", "aria-live": "polite" }, el("p", { class: "muted", text: "Loading…" }));
+  const box = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
   const said = el("p", { class: "small", role: "status" });
   const path = `/api/plugins/${p.id}/custom/${s.key}`;
   const run = async (body, button) => {

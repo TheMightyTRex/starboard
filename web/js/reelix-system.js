@@ -39,7 +39,7 @@ function rsWhen(iso) {
 }
 
 function rsSection(id, title, about, open, label) {
-  const body = el("div", { class: "stack-4", "aria-live": "polite" });
+  const body = el("div", { class: "stack-4" });
   const show = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it first." }),
     el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: () => open(body, show) }, icon("lock"), label)));
   show();

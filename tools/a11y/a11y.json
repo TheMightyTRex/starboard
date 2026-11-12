@@ -12,19 +12,5 @@
   "rule": "target-size",
   "detail": "serious: All touch targets must be 24px large, or leave sufficient space (.btn--primary)",
   "count": 1
- },
- {
-  "page": "system-storage.html",
-  "area": "axe dark",
-  "rule": "target-size",
-  "detail": "serious: All touch targets must be 24px large, or leave sufficient space (li[data-key=\"System disk\"] > div:nth-child(1) > .row__title > button[aria-haspopup=\"dialog\"][type=\"button\"])",
-  "count": 1
- },
- {
-  "page": "system-storage.html",
-  "area": "axe high contrast",
-  "rule": "target-size",
-  "detail": "serious: All touch targets must be 24px large, or leave sufficient space (li[data-key=\"System disk\"] > div:nth-child(1) > .row__title > button[aria-haspopup=\"dialog\"][type=\"button\"])",
-  "count": 1
  }
 ]

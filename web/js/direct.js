@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const seen = el("div", { "aria-live": "polite" });
   const look = el("button", { type: "button", class: "btn" }, "See what it holds");
   const get = el("button", { type: "button", class: "btn btn--primary" }, icon("download"), "Download");
-  const list = el("ul", { class: "rows", "aria-live": "polite" });
+  const list = el("ul", { class: "rows" });
   const body = () => ({ url: link.value.trim(), mode: mode.value, playlist: true });
   const showQueue = (r) => list.replaceChildren(...(r.items.length ? r.items.map((d) => {
     const act = (what, label) => { const b = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, label);

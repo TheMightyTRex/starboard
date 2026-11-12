@@ -41,11 +41,14 @@ async function historyLoad(more = false) {
     const refused = historyState.which === "refused";
     const r = await api(refused ? `/api/reelix-history/refused?page=${historyState.page}` : `/api/reelix-history?which=${historyState.which}&page=${historyState.page}`);
     if (!more) list.replaceChildren();
-    list.append(...r.items.map(refused ? refusedRow : historyRow));
+    const added = r.items.map(refused ? refusedRow : historyRow);
+    list.append(...added);
+    if (more) focusFirstNew(added[0]);
     historyState.items += r.items.length;
     historyState.total = r.total;
     if (!historyState.items) list.replaceChildren(el("li", { class: "empty", text: refused ? "Nothing is on the refused list." : "Nothing has happened yet." }));
     $("#history-more").hidden = historyState.items >= r.total;
+    setTimeout(() => announce(more ? `${r.items.length} more shown` : $("#history-summary").textContent), 0);
     $("#history-summary").textContent = refused
       ? `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? "release" : "releases"} Reelix will not download again`
       : "What Reelix found, downloaded, renamed and removed, newest first.";

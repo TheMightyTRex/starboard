@@ -240,7 +240,7 @@ const RX_WORDS = {
 // One section for a kind: locked until the password is given, then the list with Add, Change, Test and Remove.
 function rxKindSection(kind, description) {
   const words = RX_WORDS[kind];
-  const body = el("div", { class: "stack-4", "aria-live": "polite" });
+  const body = el("div", { class: "stack-4" });
   let data = null;
   let search = null;
 
@@ -374,7 +374,7 @@ function rxOffers(offers, done) {
 // Naming and background work (DASH-188, DASH-200): the folder and file names Reelix gives films and series, with an
 // example of each that changes as you type, and how hard Reelix works in the background.
 function rxLibrarySection() {
-  const body = el("div", { class: "stack-4", "aria-live": "polite" });
+  const body = el("div", { class: "stack-4" });
   const labels = { movie_folder_format: ["Film folder", "movie_folder"], movie_file_format: ["Film file", "movie_file"],
     series_folder_format: ["Series folder", "series_folder"], season_folder_format: ["Season folder", "season_folder"],
     standard_episode_format: ["Episode file", "standard_episode"] };
@@ -562,7 +562,7 @@ function rxQualitySection() {
 // The basics (DASH-226): films and series information, picture quality, language and who can ask, in the approved
 // order. Each change saves at once; the TMDB key has its own Test and Save.
 function rxBasicsSection() {
-  const body = el("div", { class: "stack-4", "aria-live": "polite" });
+  const body = el("div", { class: "stack-4" });
   const unlock = () => el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: open }, icon("lock"), "Show the basic settings"));
   const locked = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it before showing them." }), unlock());
   async function open() {
@@ -604,7 +604,7 @@ function rxBasicsSection() {
 
 // A section that opens behind the Reelix password (the same pattern as the others), drawn by `draw(answer, body)`.
 function rxLockedSection(id, title, about, kind, openBody, draw, what) {
-  const body = el("div", { class: "stack-4", "aria-live": "polite" });
+  const body = el("div", { class: "stack-4" });
   const unlock = () => el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: open }, icon("lock"), `Show ${title.toLowerCase()}`));
   const locked = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it before showing them." }), unlock());
   async function open() {
@@ -702,6 +702,7 @@ function rxFoldersSection() {
       const panel = sidePanel({ title: "Add a folder", opener, body: [el("div", { class: "form-stack" }, field("For", kind), holder,
         el("p", { class: "small muted", text: "Inside the media folder, such as /data/media/films-4k. Reelix makes it if it is not there." }))], foot: [add, cancel] });
       cancel.addEventListener("click", () => panel.close());
+      setTimeout(() => kind.focus(), 0);  // a form in a slide-out starts in its first field
       add.addEventListener("click", async () => {
         try { const o = await rxCall("folders", "add", { kind: kind.value, path: picker.input.value.trim() }, "change Reelix's folders"); if (o) { panel.close(); draw(o, body); showSaved("rx-folders-saved", o.done); } }
         catch (e) { setError(picker.input, e.message); picker.input.focus(); }

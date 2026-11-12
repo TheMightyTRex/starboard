@@ -944,7 +944,7 @@ function withCost(hint, key) {
 // With expect (the keys of apps just started), it looks again until each one it can recognise answers, for up to 4
 // minutes: an app opens its port a while after it starts (Radarr and Sonarr can take over a minute).
 async function appFinder(onAdded, { expect = null, shown = null } = {}) {
-  const box = el("div", { class: "stack-4", "aria-live": "polite" }, el("p", { class: "muted", text: "Looking for apps on this computer…" }));
+  const box = el("div", { class: "stack-4", "aria-busy": "true" }, el("p", { class: "muted", text: "Looking for apps on this computer…" }));
   let found;
   try {
     found = await api("/api/discover");
@@ -2256,7 +2256,7 @@ async function startSecurity() {
 // key a row with its state and Edit, which opens it in a slide-out with Revoke; Make a key at the foot.
 function apiKeys() {
   const box = el("div", { class: "stack-4" });
-  const list = el("ul", { class: "rows", "aria-live": "polite" });
+  const list = el("ul", { class: "rows" });
   const when = (d) => new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const stateOf = (k) => {
     if (k.expires_at && new Date(k.expires_at) - Date.now() < 14 * 864e5) return chip("Ends soon", "warning");
@@ -2291,6 +2291,7 @@ function apiKeys() {
     const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
     const form = el("form", { class: "form-stack", id: "key-form", novalidate: true }, field("Name it after what will use it", name), field("Ends", ends), field("Your Starboard password", pw));
     const panel = sidePanel({ title: "Make a key", opener, body: [form], foot: [go, cancel] });
+    setTimeout(() => name.focus(), 0);  // a form in a slide-out starts in its first field
     cancel.addEventListener("click", () => panel.close());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();

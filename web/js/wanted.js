@@ -103,10 +103,14 @@ async function wantedLoad(more = false) {
     wantedState.total = r.total;
     wantedState.items.push(...r.items);
     if (!more) list.replaceChildren();
-    list.append(...r.items.map(wantedRow));
+    const added = r.items.map(wantedRow);
+    list.append(...added);
+    // Show more: focus goes to the first new one, so a screen reader carries on there, not at the top.
+    if (more) focusFirstNew(added[0]);
     if (!wantedState.items.length) list.replaceChildren(el("li", { class: "empty", text: WHICH === "missing" ? "Nothing is missing." : "Everything is at the quality wanted." }));
     const noun = W_NOUN[wantedState.kind] || ["item", "items"];
     $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " missing" : " below the quality wanted"}`;
+    announce(more ? `${r.items.length} more shown, ${wantedState.items.length} of ${r.total}` : $("#wanted-summary").textContent);
     $("#wanted-more").hidden = wantedState.items.length >= r.total;
     $("#wanted-all").disabled = !r.total;
   } catch (e) {

@@ -231,6 +231,65 @@ function savedBeside(text, options) {
   window.SharedComponents.savedNote(note, text === "Saved" ? "" : text);
   return true;
 }
+// Focus is never lost to the top of the page (screen reader check, 12 November 2026; WCAG 2.4.3 Focus order).
+// Many parts are drawn again after a save, a delete or a refresh. When the control that had focus is taken away
+// that way, focus moves to the same control drawn again (same id; or the same row and place; or the same name in
+// the same section), else to that section's heading, else to the page's h1, so a screen reader carries on from
+// where the person was. Slide-outs and dialogs give focus back themselves, so their own closing is left alone.
+const FocusKeeper = (() => {
+  let last = null;
+  const nameOf = (e) => (e.getAttribute("aria-label") || e.textContent || e.value || "").trim().replace(/\s+/g, " ").slice(0, 80);
+  const controls = (n) => [...n.querySelectorAll("button, a[href], input, select, textarea, [tabindex]")];
+  const describe = (t) => {
+    const row = t.closest("[data-key]");
+    const section = t.closest("section[aria-labelledby], .settings-section, section");
+    return { el: t, id: t.id, name: nameOf(t), tag: t.tagName, key: row?.dataset.key || null, at: row ? controls(row).indexOf(t) : -1,
+      head: section?.getAttribute("aria-labelledby") || null, layer: !!t.closest("#side-panel, dialog, .side-panel-layer") };
+  };
+  document.addEventListener("focusin", (e) => {
+    const t = e.target;
+    if (!(t instanceof Element) || t === document.body || t.closest(".toasts")) return;
+    last = describe(t);
+  }, true);
+  const shown = (e) => e && e.isConnected && e.getClientRects().length && !e.closest("[hidden], [inert]");
+  const land = (e) => {
+    if (!e.matches("button, a[href], input, select, textarea, [tabindex]")) e.setAttribute("tabindex", "-1");
+    e.focus();
+  };
+  const find = (l) => {
+    const byId = l.id && document.getElementById(l.id);
+    if (shown(byId)) return byId;
+    if (l.key) {
+      const row = [...document.querySelectorAll("[data-key]")].find((n) => n.dataset.key === l.key && shown(n));
+      if (row) return (l.at >= 0 && controls(row)[l.at]) || controls(row)[0] || row;
+    }
+    const heading = l.head && document.getElementById(l.head);
+    const scope = heading?.closest("section") || document.querySelector("main");
+    const same = scope && controls(scope).find((n) => n.tagName === l.tag && nameOf(n) === l.name && shown(n));
+    if (same) return same;
+    if (shown(heading)) return heading;
+    return document.querySelector("main h1");
+  };
+  new MutationObserver(() => {
+    if (!last || last.el.isConnected) return;
+    const l = last;
+    last = null;
+    if (l.layer || (document.activeElement && document.activeElement !== document.body)) return;
+    const to = find(l);
+    if (shown(to)) land(to);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+  // A slide-out or dialog closing gives focus back to what opened it; when that was drawn again meanwhile (a
+  // row after Revoke), its stand-in gets focus instead.
+  return {
+    describe,
+    recover(d) {
+      if (!d || (document.activeElement && document.activeElement !== document.body)) return;
+      const to = d.el?.isConnected && shown(d.el) ? d.el : find({ ...d, el: null });
+      if (shown(to)) land(to);
+    },
+  };
+})();
+
 // An error shows beside what it belongs to (content rule): the control named, or the one just used. With
 // neither (an error while a page loads), it is an error toast, which stays until it is closed.
 const CONTROLS = "button, input, select, textarea";
@@ -267,6 +326,14 @@ function inlineError(control, message) {
   };
   for (const type of ["click", "input", "change"]) control.addEventListener(type, clear, { once: true });
   return clear;
+}
+
+// After Show more: focus the first new row's link (or its title), so reading carries on from the new rows.
+function focusFirstNew(row) {
+  if (!row) return;
+  const to = row.querySelector(".row__title a, a[href], button") || row.querySelector(".row__title") || row;
+  if (!to.matches("a[href], button, input, select, textarea, [tabindex]")) to.setAttribute("tabindex", "-1");
+  to.focus();
 }
 
 function announce(message) {
@@ -381,7 +448,12 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
     el("aside", { class: wide ? "side-panel side-panel--wide" : "side-panel", role: "dialog", "aria-modal": "true", "aria-labelledby": "side-panel-title" },
       el("div", { class: "panel-header" }, heading, close), bodyNode, footNode));
   document.body.append(layer);
-  const shut = SharedComponents.openLayer(layer, opener instanceof HTMLElement ? opener : null, () => { layer.remove(); onClose?.(); });
+  const openedBy = opener instanceof HTMLElement ? FocusKeeper.describe(opener) : null;
+  const shut = SharedComponents.openLayer(layer, opener instanceof HTMLElement ? opener : null, () => {
+    layer.remove();
+    onClose?.();
+    setTimeout(() => FocusKeeper.recover(openedBy), 0);
+  });
   return {
     layer, body: bodyNode, foot: footNode, close: shut,
     setTitle(text) { heading.textContent = text; close.setAttribute("aria-label", `Close ${text}`); },
@@ -407,9 +479,19 @@ function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel"
     let result = false;
     form.addEventListener("submit", (e) => { result = e.submitter?.value === "ok"; });
     $("[data-dialog-close]", form).addEventListener("click", () => dialog.close());
-    dialog.addEventListener("close", () => { dialog.remove(); if (opener?.isConnected) opener.focus(); resolve(result); });
+    const openedBy = opener instanceof HTMLElement ? FocusKeeper.describe(opener) : null;
+    dialog.addEventListener("close", () => {
+      dialog.remove();
+      if (opener?.isConnected) opener.focus();
+      resolve(result);
+      setTimeout(() => FocusKeeper.recover(openedBy), 0);
+    });
     document.body.append(dialog);
     dialog.showModal();
+    // Focus starts on the first field it asks for; otherwise on Cancel for a danger choice, so Enter never does
+    // the harm by mistake; otherwise on the main button (screen reader check, 12 November 2026).
+    const start = $("input, select, textarea", form) || (danger ? $('.dialog__foot button[value="cancel"]', form) : $('.dialog__foot button[value="ok"]', form));
+    start?.focus();
   });
 }
 
@@ -642,10 +724,13 @@ async function appChangeNotices() {
         "What is new", el("span", { class: "visually-hidden", text: ` in ${n.name}` })),
       el("button", { type: "button", class: "icon-btn", "aria-label": `Close the notice about ${n.name}`, onclick: () => {
         api("/api/app-changes/seen", { method: "POST", body: { app: n.app } }).catch(() => {});
+        const h1 = $("#main h1");
         box.remove();
-        $("#main h1")?.focus?.();
+        if (h1) { h1.setAttribute("tabindex", "-1"); h1.focus(); }
       } }, icon("x", 20))));
-    main.prepend(box);
+    // After the page's heading, so a screen reader meets the page's name first (reading order check).
+    const head = $(":scope > .page-head", main);
+    if (head) head.after(box); else main.prepend(box);
   }
 }
 
@@ -890,8 +975,8 @@ async function folderBrowser(start, opener, onChoose) {
 // Still to set up, one at a time (DASH-289, owner, 10 November 2026): a slide-out that walks through each item left,
 // with Skip (later), Ignore (not asked again; Bring back in the list), Done for a guided step, and Next step.
 // Starboard's own steps show their page inside the slide-out, so the set-up is done there (owner, 10 November
-// 2026); another app's step (Tdarr, Wizarr...) opens that app in a new tab, as apps do not let Starboard frame them. It opens by itself once in each browser session while anything is left, and
-// remembers where it was when Do it now goes to another page.
+// 2026); another app's step (Tdarr, Wizarr...) opens that app in a new tab, as apps do not let Starboard frame them. It opens only from Go through them,
+// and remembers where it was when Open as a page goes to another page.
 const WIZARD_KEY = "starboard.setup-wizard";
 function wizardMemory(update) {
   let m = {};
@@ -903,10 +988,10 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
   let items;
   try { items = (await api("/api/setup/left")).items.filter((i) => !i.done && !i.ignored); } catch { return; }
   if (!items.length) return;
-  const mem = wizardMemory({ opened: true });
+  const mem = wizardMemory({ opened: true, started: true });
   let index = Math.max(0, items.findIndex((i) => i.key === mem.at));
   // Closing it (X or Escape) ends this session's walk-through; Do it now leaves the page, so it carries on there.
-  const panel = sidePanel({ title: "Still to set up", opener, wide: true, body: [], onClose: () => { wizardMemory({ at: null }); onChange?.(); } });
+  const panel = sidePanel({ title: "Still to set up", opener, wide: true, body: [], onClose: () => { wizardMemory({ at: null, started: false }); onChange?.(); } });
   // After a step's page saves, Next step asks again, so a finished step says so and leaves the list.
   const recheck = async (item) => {
     try {
@@ -934,6 +1019,17 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
       "Open the app", el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
       : el("a", { class: "btn btn--quiet", href: item.href }, "Open as a page");
     const frame = outside ? null : el("iframe", { class: "panel-frame wizard-frame", src: panelUrl(item.href, { only: true }), title: `${item.title}: set it up here` });
+    // The step's page may put focus on its first field as it loads; the step's heading keeps it, so the step is
+    // read first and Tab then goes into the page.
+    if (frame) {
+      let acted = false;
+      const mark = () => { acted = true; };
+      panel.layer.addEventListener("keydown", mark, { once: true });
+      panel.layer.addEventListener("pointerdown", mark, { once: true });
+      const keep = () => { if (!acted && document.activeElement === frame && frame.isConnected) heading.focus(); };
+      window.addEventListener("blur", () => setTimeout(keep, 0));
+      frame.addEventListener("load", () => { keep(); setTimeout(keep, 800); setTimeout(keep, 2000); });
+    }
     const doneBtn = item.guided ? el("button", { type: "button", class: "btn" }, "Done") : null;
     doneBtn?.addEventListener("click", async () => {
       try { await api("/api/setup/left/done", { method: "POST", body: { key: item.key } }); announce(`${item.title}: done`); items.splice(index, 1); draw(); onChange?.(); }
@@ -963,14 +1059,18 @@ async function setupWizard({ opener = document.activeElement, onChange } = {}) {
   };
   draw();
 }
-// Once in each browser session, on the page with the list, while anything is left.
+// Still to set up opens only when the person selects Go through them (owner, 12 November 2026: "it should only open
+// when you select Go through them"; it used to open by itself once a session). A walk-through the person started and
+// left with Open as a page carries on where it was on the next page with the list.
 let wizardStarted = false;
 function setupWizardOnce(onChange) {
-  if (wizardStarted || IN_PANEL || $("#side-panel")) return;  // a page that redraws (the dashboard, each minute) asks only once
+  if (wizardStarted || IN_PANEL || $("#side-panel")) return;
   wizardStarted = true;
   const mem = wizardMemory();
-  if (mem.opened && !mem.at) return;
-  setTimeout(() => setupWizard({ onChange }), 600);
+  if (!mem.at || !mem.started) return;
+  const h1 = $("main h1");
+  if (h1) h1.setAttribute("tabindex", "-1");
+  setTimeout(() => setupWizard({ onChange, opener: h1 || undefined }), 300);
 }
 
 // After an upgrade: with something to choose, a notice opens the upgrade guide (or waits, with Remind me later);

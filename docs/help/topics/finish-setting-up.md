@@ -28,8 +28,8 @@ You can also select an item's name in the list to go straight to the place that 
 ## Things to note
 
 - Each item goes from the list by itself when Starboard finds it done. The list goes when everything is done.
-- The panel opens by itself once in each browser session while anything is left. Close it to stop it until the
-  next session.
+- The panel opens only when you select **Go through them**. If you leave it with **Open as a page**, it carries on
+  where you were when you come back to the list.
 - To get ignored items back, select **Bring back** and the number **ignored** on the Apps page.
 - The items depend on your install. They can include **Add a site to search**, **Connect a download app**,
   **Add a TMDB key**, **Add your Usenet provider's server**, **Finish Jellyfin's set-up** and
