@@ -10,7 +10,7 @@ const G_NOUN = { films: ["film", "films"], tv: ["series", "series"], radio: ["sh
   audiobooks: ["audiobook", "audiobooks"] };
 let allGroups = [];
 // Drawn as banners with a completion ring (12 November 2026): Films, Collections; Audiobooks, Series and Authors.
-const BANNERS = ["films", "audiobooks"];
+const BANNERS = ["films", "audiobooks", "books"];
 
 const gLetterId = (letter) => (letter === "#" ? "letter-num" : `letter-${letter.toLowerCase()}`);
 const gCount = (n, [one, many]) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;

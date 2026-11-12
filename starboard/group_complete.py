@@ -143,7 +143,7 @@ def banners(tab, found, reelix, all_services):
             g.update(count=len(films), have=sum(1 for f in films if f["have"]),
                      years=(years[0] if years[0] == years[-1] else f"{years[0]} to {years[-1]}") if years else g.get("years", ""),
                      films=[{"title": f["title"], "year": str(f["year"] or ""), "have": f["have"], "poster": pic(f["poster"])} for f in films[:6]])
-    elif tab == "audiobooks":
+    elif tab in ("audiobooks", "books"):
         series = abs_series(all_services)
         for g in found:
             s = series.get(fold(g["name"]))
@@ -187,7 +187,7 @@ def detail(reelix, all_services, tab, name):
         items = [{"title": f["title"], "when": str(f["year"] or ""), "have": f["have"], "wanted": f["in_reelix"] and not f["have"],
                   "poster": f["poster"], "key": f"tmdb:{f['tmdb_id']}"} for f in c["films"] if f["tmdb_id"]]
         source = "TMDB, through Reelix"
-    elif tab == "audiobooks":
+    elif tab in ("audiobooks", "books"):  # books share the series (12 November 2026)
         s = abs_series(all_services).get(fold(name))
         if not s:
             return None
@@ -237,7 +237,7 @@ def add_missing(data_dir, reelix, all_services, tab, name):
                     or (rows[0].get("openlibrary_work_id") if rows else None)
                 if not work:
                     raise LookupError
-                library.add(data_dir, reelix, "books", f"olw:{work}", {"formats": ["audiobook"], "search": True})
+                library.add(data_dir, reelix, "books", f"olw:{work}", {"formats": ["ebook" if tab == "books" else "audiobook"], "search": True})
                 added.append(i["title"])
             except Exception:  # noqa: BLE001
                 failed.append(i["title"])

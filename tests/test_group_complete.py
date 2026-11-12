@@ -41,6 +41,15 @@ class Complete(unittest.TestCase):
         self.assertEqual(add.call_args[0][4]["formats"], ["audiobook"])
 
     @mock.patch.object(gc, "abs_series", return_value=SERIES)
+    @mock.patch.object(gc, "audible_series", return_value=AUDIBLE)
+    def test_books_added_as_ebooks(self, *_):
+        self.assertEqual(gc.detail({}, [], "books", "Rivers")["missing"], 1)
+        with mock.patch.object(services, "_api", return_value=[{"openlibrary_work_id": "OL9W", "title": "Three"}]), \
+                mock.patch("starboard.library.add") as add:
+            gc.add_missing("/tmp", {}, [], "books", "Rivers")
+        self.assertEqual(add.call_args[0][4]["formats"], ["ebook"])
+
+    @mock.patch.object(gc, "abs_series", return_value=SERIES)
     def test_tagging(self, *_):
         idx = {"items": [{"t": "Two", "au": "A", "g": []}, {"t": "Other", "au": "B"}]}
         out = gc.tag_audiobooks(idx, [])

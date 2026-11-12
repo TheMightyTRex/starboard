@@ -547,7 +547,7 @@ def wall(index, tab, q="", chip="", sort="az", group="", offset=0, limit=40, unt
 
 # Groups drawn as banners with a completion ring (owner, 12 November 2026): Films, Collections, and Audiobooks, Series
 # and Authors.
-BANNER_TABS = ("films", "audiobooks")
+BANNER_TABS = ("films", "audiobooks", "books")  # Books since 12 November 2026
 
 
 def groups(index, tab, kind=""):
@@ -1244,7 +1244,7 @@ def handle(h, method, path):
     used(data_dir, tab, get_reelix)
     if path == "/api/library/wall" and method == "GET":
         index = load(data_dir, reelix, tab)
-        if tab == "audiobooks" and q.get("group"):  # an opened series (12 November 2026)
+        if tab in ("audiobooks", "books") and q.get("group"):  # an opened series (12 November 2026)
             from . import group_complete
             index = group_complete.tag_audiobooks(index, cfg.data["services"])
         sort = q.get("sort") if q.get("sort") in ("az", "added", "year") else "az"
@@ -1330,10 +1330,10 @@ def handle(h, method, path):
     if path == "/api/library/groups" and method == "GET":
         index = load(data_dir, reelix, tab)
         from . import group_complete
-        if tab == "audiobooks":  # series from Audiobookshelf (12 November 2026)
+        if tab in ("audiobooks", "books"):  # series from Audiobookshelf (12 November 2026)
             index = group_complete.tag_audiobooks(index, cfg.data["services"])
         found = groups(index, tab, "authors" if q.get("by") == "authors" else "")
-        if tab in ("films", "audiobooks") and q.get("by") != "authors":
+        if tab in ("films", "audiobooks", "books") and q.get("by") != "authors":
             try:  # whole collections and series, with what is missing (12 November 2026)
                 found = group_complete.banners(tab, found, reelix, cfg.data["services"])
             except Exception:  # noqa: BLE001 - the groups still show what you have

@@ -241,7 +241,7 @@ const seasons = await page.locator("#panel-episodes details").evaluateAll((ds) =
 check("LIB-01", "a series of two seasons shows each season, only the newest open",
   seasons.length === 2 && !seasons[0][1] && seasons[1][1] && /Season 2/.test(seasons[1][0]), JSON.stringify(seasons));
 await open("library-books-series.html");
-await page.locator("#groups .row__title a").first().click();
+await page.locator("#groups .row__title a, #groups .collection-card__link").first().click();
 await page.waitForLoadState("networkidle");
 check("LIB-01", "a series opens the wall with only its books", /group=/.test(page.url()) && await page.locator("#lib-wall .media-card").count() > 0);
 

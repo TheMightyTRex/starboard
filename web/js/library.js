@@ -218,7 +218,7 @@ function showGroup() {
   $("#lib-group").replaceChildren(...[logo].filter(Boolean), el("h2", { text: state.group }),
     page ? el("a", { class: "back-link", href: `/${page}` }, icon("arrow-left"), `All ${label.toLowerCase()}`) : null);
   document.title = `${state.group} · ${document.title}`;
-  if ((TAB === "films" || TAB === "audiobooks") && state.by !== "authors") groupComplete();
+  if (["films", "audiobooks", "books"].includes(TAB) && state.by !== "authors") groupComplete();
 }
 
 // An opened collection or series, complete (owner, 12 November 2026): how many you have of how many, every one in
@@ -236,7 +236,8 @@ async function groupComplete() {
   add.addEventListener("click", async () => {
     const titles = d.items.filter((i) => !i.have && !i.wanted).map((i) => i.title);
     if (!await confirmDialog({ title: `Add ${titles.length} missing ${titles.length === 1 ? noun[0] : noun[1]}?`, confirm: "Add them",
-      message: [el("p", { text: TAB === "films" ? "Reelix adds each one with the collection's quality and folder, and starts looking for them." : "Reelix adds each one as an audiobook and starts looking for them." }),
+      message: [el("p", { text: TAB === "films" ? "Reelix adds each one with the collection's quality and folder, and starts looking for them."
+        : `Reelix adds each one as ${TAB === "books" ? "an ebook" : "an audiobook"} and starts looking for them.` }),
         el("ul", {}, titles.slice(0, 30).map((t) => el("li", { text: t })))] })) return;
     add.disabled = true;
     add.textContent = "Adding…";
