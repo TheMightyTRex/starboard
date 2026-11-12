@@ -199,10 +199,19 @@ def answer(path, q):
     # Discover by area (12 November 2026): made-up feeds, so the pages can be shown
     if path in ("/discover/genres/movie", "/discover/genres/tv"):
         return [{"id": n, "name": g} for n, g in enumerate(["Action", "Comedy", "Drama", "Family", "Mystery", "Science Fiction"], 1)]
-    if path == "/discover/genres/radio":
+    if path == "/discover/genres/radio":  # as Reelix with RFX-93 and 94: shared genres, BBC stations, each source's categories
+        genres = [("comedy", "Comedy"), ("drama", "Drama"), ("scifi", "Science fiction and fantasy"), ("crime", "Crime"),
+                  ("documentaries", "Documentaries"), ("history", "History"), ("music", "Music")]
+        stations = [("bbc_radio_four", "BBC Radio 4", "national"), ("bbc_radio_four_extra", "BBC Radio 4 Extra", "national"),
+                    ("bbc_radio_scotland", "BBC Radio Scotland", "nations"), ("bbc_radio_wales", "BBC Radio Wales", "nations"),
+                    ("bbc_radio_kent", "BBC Radio Kent", "local"), ("bbc_radio_york", "BBC Radio York", "local")]
         return {"rows": [{"id": "bbc-popular", "name": "Popular on BBC Sounds", "provider": "bbc", "provider_name": "BBC"},
                          {"id": "apple-top", "name": "Top podcasts", "provider": "apple", "provider_name": "Apple Podcasts"}],
-                "categories": [{"id": f"bbc-cat-{c.lower()}", "name": c} for c in ("Comedy", "Drama", "Documentaries", "Music", "Sport")]}
+                "categories": [{"id": f"all-genre-{i}", "name": n, "provider": "all", "provider_name": "Every source", "group": "Genres"} for i, n in genres]
+                + [{"id": f"bbc-network-{i}", "name": n, "provider": "bbc", "provider_name": "BBC", "group": f"BBC stations: {g}"} for i, n, g in stations]
+                + [{"id": f"bbc-category-{c.lower()}", "name": c, "provider": "bbc", "provider_name": "BBC", "group": g}
+                   for c, g in (("Sitcoms", "Comedy"), ("Satire", "Comedy"), ("Thrillers", "Drama"), ("Readings", "Drama"))]
+                + [{"id": f"apple-genre-{n}", "name": c, "provider": "apple", "provider_name": "Apple Podcasts"} for n, c in ((1303, "Comedy"), (1487, "History"))]}
     if path.startswith("/discover/content/"):
         kind, row = path.split("/")[3], path.split("/")[4]
         names = _titles(12, f"{kind}-{row}")
@@ -229,9 +238,15 @@ def answer(path, q):
     if path == "/artists/lookup":
         return [{"musicbrainz_id": "00000000-0000-4000-8000-000000000001", "name": f"{q.get('term', '').title()} Quartet",
                  "artist_type": "Group", "country": "GB"}]
-    if path == "/radio/search":
-        return [{"provider": "bbc", "external_id": "b000test", "title": f"{q.get('q', '').title()} Hour", "station_name": "BBC Radio 4",
-                 "synopsis": "A made-up radio show for the preview."}]
+    if path == "/radio/search":  # as Reelix with RFX-101: each show's broadcaster, and only theirs with from_stations
+        word = q.get("q", "").title()
+        hits = [{"provider": "bbc", "external_id": "b000test", "title": f"{word} Hour", "station_name": "BBC Radio 4", "broadcaster": "BBC",
+                 "synopsis": "A made-up radio show for the preview."},
+                {"provider": "apple", "external_id": "1000001", "title": f"The {word} Podcast", "author": "Example Studios",
+                 "feed_url": "https://feeds.example.com/one.xml", "synopsis": "A made-up podcast with no broadcaster."},
+                {"provider": "apple", "external_id": "1000002", "title": f"{word} at Breakfast", "author": "Times Radio", "broadcaster": "Times Radio",
+                 "feed_url": "https://feeds.example.com/two.xml", "synopsis": "A made-up radio station's podcast."}]
+        return [h for h in hits if h.get("broadcaster")] if q.get("from_stations") == "true" else hits
     if path.startswith("/qualityprofiles"):
         return [{"id": 1, "name": "HD-1080p"}, {"id": 2, "name": "Ultra-HD"}]
     if path in ("/rootfolders",):

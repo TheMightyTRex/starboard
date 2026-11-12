@@ -1,16 +1,1 @@
-[
- {
-  "page": "index.html",
-  "area": "axe dark",
-  "rule": "target-size",
-  "detail": "serious: All touch targets must be 24px large, or leave sufficient space (.btn--primary)",
-  "count": 1
- },
- {
-  "page": "index.html",
-  "area": "axe high contrast",
-  "rule": "target-size",
-  "detail": "serious: All touch targets must be 24px large, or leave sufficient space (.btn--primary)",
-  "count": 1
- }
-]
+[]

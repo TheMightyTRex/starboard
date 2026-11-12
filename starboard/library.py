@@ -1298,6 +1298,14 @@ def handle(h, method, path):
             return h.error(400, str(e))
         except services.ServiceError as e:
             return h.error(502, f"Reelix did not answer: {e}")
+    if path == "/api/library/discover-radio-search" and method == "GET":  # DASH-339: radio search across every source
+        from . import discover_feeds
+        try:
+            return h.json(200, discover_feeds.radio_search(reelix, q.get("q", ""), q.get("stations") == "1", q.get("feeds") == "1"))
+        except ValueError as e:
+            return h.error(400, str(e))
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix did not answer: {e}")
     if path == "/api/library/radio-logos" and method == "GET":  # Settings, Radio, Station logos (12 November 2026)
         from . import station_logos
         stations = [g["name"] for g in groups(load(data_dir, reelix, "radio"), "radio")]

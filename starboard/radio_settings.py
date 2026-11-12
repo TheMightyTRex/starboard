@@ -28,9 +28,16 @@ def state(reelix):
     out = []
     for p in providers or []:
         pid = str(p.get("id") or "")
-        out.append({"id": pid, "name": p.get("name") or pid, "about": ABOUT.get(pid, ""), "search": bool(p.get("supports_search")),
-                    "on": (not allowed or pid in allowed), "needs_key": pid == "podcastindex",
-                    "works": bool(p.get("enabled"))})
+        # Reelix with RFX-102 says how episodes arrive, any risk, and the source's stations; older Reelix does not.
+        arrive = str(p.get("episodes_arrive") or "")
+        risk = str(p.get("risk") or "")
+        stations = [s for s in p.get("stations") or [] if isinstance(s, dict)]
+        about = ABOUT.get(pid, "")
+        extra = " ".join(x for x in (f"Episodes: {arrive[:1].lower() + arrive[1:]}." if arrive else "",
+                                      f"{len(stations)} stations." if stations else "", risk) if x)
+        out.append({"id": pid, "name": p.get("name") or pid, "about": " ".join(x for x in (about, extra) if x),
+                    "search": bool(p.get("supports_search")), "on": (not allowed or pid in allowed),
+                    "needs_key": bool(p.get("key_needed")) or pid == "podcastindex", "works": bool(p.get("enabled"))})
     return {"sources": out, "country": s.get("country") or "", "language": s.get("language") or "",
             "countries": COUNTRIES, "languages": LANGUAGES,
             "podcastindex_key": s.get("podcastindex_api_key") or "", "podcastindex_secret_set": bool(s.get("podcastindex_api_secret"))}
