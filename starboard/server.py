@@ -1942,8 +1942,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/access" and method == "GET":
                 return self.json(200, {"items": access.summary(app)})
             if path == "/api/queue/episodes" and method in ("GET", "POST"):  # Choose the episode (12 November 2026)
-                from . import episode_fix, library
-                reelix = library.reelix_of(cfg.data["services"])
+                from . import episode_fix
+                from .library import reelix_of  # not "library": that name is the module the whole handler uses
+                reelix = reelix_of(cfg.data["services"])
                 if not reelix:
                     return self.error(409, "Add Reelix in Settings, Manage apps first")
                 qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
