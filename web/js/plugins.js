@@ -213,12 +213,36 @@ function stylePicture(look, mode) {
 }
 
 // The Styles section: a picture of every style and Use this style, the same choice as Display's Style list.
+// Starboard's own colours (web/css/tokens.css), for the default card in the Styles section.
+const STARBOARD_LOOK = {
+  value: "", name: "Starboard's own style", radius: 8, font: "\"Atkinson Hyperlegible Next\", sans-serif", shadow: "soft",
+  description: "The standard colours. Choose it to go back from any style, as Reset style does in Display.",
+  light: { bg: "#f0f5ff", header: "#fcfdff", surface_raised: "#ffffff", surface_sunken: "#e4ebf7", text: "#141416", text_muted: "#424b5b",
+    border: "#7d879a", accent: "#0b5f5a", accent_text: "#ffffff" },
+  dark: { bg: "#101827", header: "#141e2e", surface_raised: "#232f42", surface_sunken: "#0c1220", text: "#f3f4f6", text_muted: "#a4aec1",
+    border: "#6f7b91", accent: "#5ed3c6", accent_text: "#101827" },
+};
+
+// The Styles section (owner, 12 November 2026: "you need a default option which resets the style"): Starboard's own
+// style first, in use whenever no plug-in style is, then each of the plug-in's styles.
 function styleGallery(p) {
   const active = p.state === "enabled";
   const grid = el("ul", { class: "style-gallery" });
   const draw = () => {
     const current = readPrefs().style || "";
-    grid.replaceChildren(...p.looks.map((look) => {
+    const own = !current;
+    const back = el("button", { type: "button", class: own ? "btn btn--primary" : "btn", "aria-pressed": String(own) },
+      own ? "In use" : "Use this style", el("span", { class: "visually-hidden", text: `: ${STARBOARD_LOOK.name}` }));
+    back.addEventListener("click", () => {
+      if (own) return;
+      resetStyle();  // the same as Reset style in Display, which says so
+      draw();
+      $(`[aria-pressed="true"]`, grid)?.focus();
+    });
+    const first = el("li", { class: "style-gallery__item" },
+      el("div", { class: "style-gallery__pics" }, stylePicture(STARBOARD_LOOK, "light"), stylePicture(STARBOARD_LOOK, "dark")),
+      el("h4", { text: STARBOARD_LOOK.name }), el("p", { class: "small", text: STARBOARD_LOOK.description }), back);
+    grid.replaceChildren(first, ...p.looks.map((look) => {
       const chosen = current === look.value;
       const use = el("button", { type: "button", class: chosen ? "btn btn--primary" : "btn", "aria-pressed": String(chosen), disabled: !active },
         chosen ? "In use" : "Use this style", el("span", { class: "visually-hidden", text: `: ${look.name}` }));
@@ -226,6 +250,7 @@ function styleGallery(p) {
         const prefs = { ...readPrefs(), style: chosen ? "" : look.value };
         writePrefs(prefs); applyPrefs(prefs); draw();
         announce(chosen ? "Back to Starboard's own style" : `${look.name} style in use`);
+        $(`[aria-pressed="true"]`, grid)?.focus();  // the redraw replaced the button
       });
       return el("li", { class: "style-gallery__item" },
         el("div", { class: "style-gallery__pics" }, stylePicture(look, "light"), stylePicture(look, "dark")),
@@ -233,6 +258,9 @@ function styleGallery(p) {
     }));
   };
   draw();
+  // Reset style in Display changes it too; a redrawn page has a new gallery, so an old one stops listening.
+  const onChange = () => (grid.isConnected ? draw() : document.removeEventListener("stylechange", onChange));
+  document.addEventListener("stylechange", onChange);
   return el("div", { class: "stack-4" },
     el("p", { class: "small", text: active ? "Light on the left, dark on the right. Your choice applies to this browser, as in Display. High contrast always wins." : "Activate the plug-in to use its styles." }),
     grid);
