@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from . import start as how_to_start
 from . import places  # location and keyboard, both set-ups' first questions (DASH-259)
 from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
-from . import access, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import GENERAL_RIGHTS, Config, ConfigError, general_right, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -179,6 +179,8 @@ class App:
             self.plugin_clock.ensure()
             self.plugin_idle.ensure()
             threading.Thread(target=_move_livetv, args=(self,), name="livetv-move", daemon=True).start()
+            # DASH-253: titles a move into Reelix could not match; asleep while there are none.
+            reelix_waiting.start(self.data_dir, lambda: library.reelix_of(self.config.data["services"]))
         self.importing = None  # the watch history import that is running, if any
         self.import_result = None
         self.import_lock = threading.Lock()
@@ -445,25 +447,35 @@ def _installer_started_since(app, since):
         return False
 
 
+MOVED_BY_REELIX = ("radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr")  # what Reelix's migrator reads
+
+
 def after_takeover(app, password, p, sab_ini):
     """Once Starboard's stack runs with the apps it took over: SABnzbd's servers into NZBGet, Reelix's download apps
     by their names on Starboard's stack (gluetun when they run through the VPN), and the apps on the dashboard. The
-    password (just checked) signs in to Reelix and is dropped when this finishes. Returns notes for the page."""
-    def finish(ok):
+    password (just checked) signs in to Reelix and is dropped when this finishes. Returns notes for the page. `tasks`
+    (the dialog's list, DASH-252) hears each of these steps."""
+    def finish(ok, tasks=None):
+        mark = tasks or tasklist.Tasks()
         if not ok:
             return ["Nothing was changed: the old apps run again as they were"]
         notes = []
         apps = p["choice"]["apps"]
         vpn = "gluetun" in apps
         if sab_ini and "nzbget" in apps:
+            mark.start("usenet", now="Moving the Usenet servers into NZBGet")
             try:
                 moved = usenet_move.write_to_nzbget(reelix_setup.nzbget_rpc(stack.nzbget_key(app.data_dir)),
                                                     usenet_move.parse_sab_servers(sab_ini))
                 notes.append(f"Moved {moved} Usenet {'server' if moved == 1 else 'servers'} from SABnzbd to NZBGet")
             except (reelix_setup.ReelixError, OSError, ValueError) as e:
                 notes.append(f"SABnzbd's servers did not move into NZBGet ({e}). Add them in NZBGet, Settings, News-servers")
+                mark.fail("usenet", notes[-1])
+            if mark.state("usenet") == "working":
+                mark.done("usenet", notes[-1])
         base = stack.reelix_url(app.data_dir)
         if base and "reelix" in apps:
+            mark.start("reelix", now="Waiting for Reelix to answer, then connecting it to the download apps")
             try:
                 reelix_setup.wait_until_up(base)
                 if "nzbget" in apps:
@@ -479,6 +491,10 @@ def after_takeover(app, password, p, sab_ini):
                         notes.append(f"Reelix now reaches {c.get('name')} at {want}")
             except (reelix_setup.ReelixError, OSError, ValueError) as e:
                 notes.append(f"Reelix's download apps are not changed yet ({e}). Check them in Starboard: Settings, Reelix, Download apps")
+                mark.fail("reelix", notes[-1])
+            if mark.state("reelix") == "working":
+                mark.done("reelix")
+        mark.start("dashboard", now="Updating your dashboard")
         # DASH-119: a Bazarr taken over still points at the old Radarr and Sonarr; it now points at Reelix, with its
         # own key (from the dashboard) and Starboard's manager key.
         if "bazarr" in apps and "reelix" in apps:
@@ -505,9 +521,30 @@ def after_takeover(app, password, p, sab_ini):
             for s in [s for s in app.config.data["services"] if theirs(s)]:
                 app.config.remove_service(s["id"])
                 notes.append(f"Took {s['name']} off your apps")
+        # DASH-192: Seerr kept beside Reelix runs on Starboard's stack now, so it can be pointed at Reelix.
+        route = requests_route.read(app.data_dir)
+        if route and not route.get("applied"):
+            applied, said = requests_route.apply(app.config, app.data_dir, route["choice"])
+            requests_route.save(app.data_dir, route["choice"], applied, said)
+            notes += said
+        mark.done("dashboard")
         logs.event("info", "take over", "; ".join(notes) or "Took over your apps")
         return notes
     return finish
+
+
+def remove_entries(app, keys_and_names):
+    """Takes the dashboard entries of apps Reelix replaced off the dashboard (DASH-191): matched by their icon, type,
+    container or name, never Reelix's own entries (which use the radarr and sonarr types too). Returns notes."""
+    notes = []
+    for key, name, label in keys_and_names:
+        kinds = {key, name} | ({"readarr"} if key == "bookshelf" else set())
+        for s in [s for s in app.config.data["services"] if s.get("icon") != "reelix" and (
+                s.get("icon") in kinds or s.get("container") == name or s.get("type") in kinds
+                or s.get("name", "").strip().lower() in {name.lower(), label.lower()})]:
+            app.config.remove_service(s["id"])
+            notes.append(f"Took {s['name']} off your apps")
+    return notes
 
 
 def after_install_change(app, password, plan, sab_ini, by_installer=None, sab_from_installer=False):
@@ -1006,9 +1043,86 @@ class Handler(BaseHTTPRequestHandler):
                 "existing_media": media, "drives": sysinfo.pool_candidates(app.data_dir),
                 "servers": [{"key": i["key"], "name": i["name"]} for i in found
                             if i["key"] in ("plex", "emby", "jellyfin", "audiobookshelf", "sonarr", "radarr", "lidarr")],
+                "takeover": self.found_to_take_over(),  # DASH-249: what Moving over says moves, and where
                 "written": os.path.exists(os.path.join(stack.folder(app.data_dir), "compose.yaml")),
                 "defaults": {"config_dir": f"{base}/media-stack/config", "data_dir": data_dir, "puid": os.getuid() or 1000,
                              "pgid": os.getgid() or 1000, "tz": places.saved(app.data_dir).get("tz") or os.environ.get("TZ") or "Etc/UTC"}}
+
+    def found_to_take_over(self):
+        """Apps running here from the person's own Compose file (takeover.found): each with its name and whether Reelix
+        takes its place, so Install apps' Moving over step can say what moves into Reelix and what Starboard takes over
+        (DASH-249)."""
+        try:
+            here = [c for c in takeover.found() if c["running"]]
+        except containers.DockerError:
+            return []
+        names = {k: a["name"] for k, a in stack.APPS.items()}
+        out = []
+        for c in here:
+            key = c["key"]
+            if key not in stack.APPS:
+                continue  # a database: it moves with its app
+            out.append({"key": key, "name": names[key], "container": c["name"],
+                        "into_reelix": key in MOVED_BY_REELIX,
+                        "replaced": key in stack.REPLACED_BY_REELIX})
+        return out
+
+    def outside_apps(self):
+        """Catalogue apps running from the person's own Compose file, not yet taken over (DASH-250)."""
+        try:
+            return sorted({c["key"] for c in takeover.found()
+                           if c["running"] and c["key"] in stack.APPS and c["key"] not in stack.REPLACED_BY_REELIX})
+        except containers.DockerError:
+            return []
+
+    def requests_offer(self, route):
+        """DASH-192: whether to ask Keep Seerr or Reelix's own requests, the choice made, and the message to send."""
+        svcs = self.app.config.data["services"]
+        seerr = requests_route.seerr_entry(svcs)
+        try:
+            outside = any(c["key"] == "seerr" and c["running"] for c in takeover.found())
+        except containers.DockerError:
+            outside = False
+        here = bool(seerr or outside or "seerr" in (stack.chosen_keys(self.app.data_dir) or []))
+        reelix = next((s for s in svcs if s.get("icon") == "reelix" and s["type"] == "link"), None)
+        if not (here and reelix):
+            return None  # asked only while Seerr runs beside Reelix
+        address = (reelix or {}).get("outside_link") or (reelix or {}).get("link") or (reelix or {}).get("url") or ""
+        seerr_address = (seerr or {}).get("outside_link") or (seerr or {}).get("link") or (seerr or {}).get("url") or ""
+        choice = (route or {}).get("choice")
+        return {"choice": choice, "recommended": requests_route.RECOMMENDED, "applied": bool((route or {}).get("applied")),
+                "notes": (route or {}).get("notes") or [],
+                "messages": {c: requests_route.message(c, address, seerr_address) for c in requests_route.CHOICES}}
+
+    def arr_addresses(self):
+        """Where Starboard reaches Radarr and Sonarr itself (their dashboard entries), for the ids of titles that did
+        not match (DASH-253)."""
+        out = {}
+        for s in self.app.config.data["services"]:
+            if s.get("icon") != "reelix" and s["type"] in ("radarr", "sonarr") and s.get("url"):
+                out.setdefault(s["type"], []).append(s["url"])
+        return out
+
+    def move_review(self, last):
+        """DASH-190: after a move, what to look at: sites held off (Activate), sites Reelix has no definition for,
+        and titles that did not move (Add by hand), with the waiting list's titles marked."""
+        if not last or not last.get("apps"):
+            return None
+        waiting = {(w["source"], w["key"]) for w in reelix_waiting.read(self.app.data_dir)}
+        no_site, titles, other = [], [], []
+        for a in last["apps"]:
+            for i in a.get("not_moved") or []:
+                why = str(i.get("why") or "")
+                if i.get("category") == "indexer":
+                    no_site.append({"app": a["app"], "name": i.get("name"), "why": why,
+                                    "no_definition": "no definition" in why or "aren't supported" in why})
+                elif i.get("category") in ("movie", "series", "author", "artist"):
+                    titles.append({"app": a["app"], "name": i.get("name"), "kind": i.get("category"), "why": why,
+                                   "waiting": (a["app"], i.get("key") or "") in waiting})
+                else:
+                    other.append({"app": a["app"], "name": i.get("name"), "category": i.get("category"), "why": why})
+        return {"held": last.get("held_sites") or [], "held_count": int(last.get("held") or 0), "sites": no_site,
+                "titles": titles[:300], "titles_count": len(titles), "other": other[:100]}
 
     def takeover_defaults(self):
         """The folders a takeover offers first: the same as Install apps (stack_overview)."""
@@ -1030,7 +1144,7 @@ class Handler(BaseHTTPRequestHandler):
         return Handler._upgrade["value"]
 
     CHANGES_STACK = {"/api/install/change", "/api/downloads/vpn", "/api/noip", "/api/stack/write", "/api/stack/start", "/api/reelix/edition",
-                     "/api/takeover/start", "/api/takeover/rollback", "/api/takeover/clear"}
+                     "/api/takeover/start", "/api/takeover/rollback", "/api/takeover/clear", "/api/takeover/clear-away"}
 
     def api(self, method, path):
         if method == "POST" and path in self.CHANGES_STACK:
@@ -1586,6 +1700,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = {"written": bool(now), "installs": [], "usenet_apps": [{"key": k, "name": names[k]} for k in stack.USENET_APPS],
                        "editions": stack.reelix_editions(), "can_start": bool(stack.host_folder(app.data_dir) and containers.available()),
                        "starter": stack.starter_waiting(app.data_dir), "command": "cd ~/starboard && ./install.sh --start-apps"}
+                outside = self.outside_apps() if now else []
+                out["outside"] = [names[k] for k in outside]  # DASH-250: running from the person's own Compose file
                 if now:
                     usenet = next((k for k in stack.USENET_APPS if k in now["apps"]), None)
                     current = stack.which_install(now["apps"], now["reelix_edition"])
@@ -1594,12 +1710,13 @@ class Handler(BaseHTTPRequestHandler):
                                       "usenet": usenet, "memory": sum(stack.APPS[k].get("memory", 100) for k in now["apps"])}
                     for key, spec in stack.INSTALLS.items():
                         try:
-                            plan = stack.plan_change(app.data_dir, install=key, usenet=usenet)
+                            plan = stack.plan_change(app.data_dir, install=key, usenet=usenet, outside=outside)
                         except ValueError as e:
                             out["installs"].append({"key": key, "name": spec["name"], "about": spec["about"], "error": str(e)})
                             continue
                         out["installs"].append({"key": key, "name": spec["name"], "about": spec["about"],
                                                 "add": [names[k] for k in plan["add"]], "remove": [names[k] for k in plan["remove"]],
+                                                "outside": [names[k] for k in plan["outside"]],
                                                 "reelix_edition": plan["choice"]["reelix_edition"],
                                                 "memory": sum(stack.APPS[k].get("memory", 100) for k in plan["choice"]["apps"])})
                 try:
@@ -1676,7 +1793,8 @@ class Handler(BaseHTTPRequestHandler):
                 body = self.body()
                 self.check_password(body)
                 plan = stack.plan_change(app.data_dir, install=body.get("install") or None,
-                                         usenet=body.get("usenet") or None, edition=body.get("reelix_edition") or None)
+                                         usenet=body.get("usenet") or None, edition=body.get("reelix_edition") or None,
+                                         outside=self.outside_apps())
                 if not (plan["add"] or plan["remove"] or (plan["reelix"] and plan["reelix"][0] != plan["reelix"][1])):
                     raise ValueError("That is what runs already")
                 job = stack.job()
@@ -1835,16 +1953,25 @@ class Handler(BaseHTTPRequestHandler):
             # Taking over apps someone runs from their own Compose file (Settings, Your install; takeover.py)
             if path == "/api/takeover" and method == "GET":
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                route = requests_route.read(app.data_dir)
                 out = {"record": takeover.read_record(app.data_dir), "job": takeover.job(),
                        "moved": reelix_move.moved(app.data_dir), "docker": containers.available(),
                        "can_start": bool(stack.host_folder(app.data_dir) and containers.available()),
-                       "defaults": self.takeover_defaults()}
+                       "defaults": self.takeover_defaults(), "requests": self.requests_offer(route),
+                       "waiting": reelix_waiting.read(app.data_dir)[:200], "waiting_count": len(reelix_waiting.read(app.data_dir))}
+                try:
+                    out["leftovers"] = takeover.leftovers(app.data_dir)
+                except (ValueError, containers.DockerError):
+                    out["leftovers"] = None
+                out["cleared"] = takeover.cleared(app.data_dir)[-20:]
                 try:
                     p = takeover.plan(app.data_dir, q.get("install", ["full"])[0], q.get("usenet", ["nzbget"])[0],
                                       config_dir=q.get("config_dir", [out["defaults"]["config_dir"]])[0],
-                                      media_dir=q.get("media_dir", [out["defaults"]["data_dir"]])[0])
+                                      media_dir=q.get("media_dir", [out["defaults"]["data_dir"]])[0],
+                                      keep_apps=("seerr",) if (route or {}).get("choice") == "seerr" else ())
                     out["plan"] = takeover.summary(p)
-                    out["plan"]["unmoved"] = [r["name"] for r in p["replace"] if r["by"] == "Reelix" and r["name"] not in out["moved"]]
+                    out["plan"]["unmoved"] = [r["name"] for r in p["replace"] if r["by"] == "Reelix" and r["name"] not in out["moved"]
+                                              and r["key"] in MOVED_BY_REELIX]  # Profilarr and the like have nothing to move
                     out["plan"]["unmoved_apps"] = [r["app"] for r in p["replace"] if r["name"] in out["plan"]["unmoved"]]
                 except (ValueError, containers.DockerError) as e:
                     out["error"] = str(e)
@@ -1857,9 +1984,12 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("Starboard needs Docker access to take over your apps")
                 if stack.job().get("started") and not stack.job().get("finished"):
                     raise ValueError("The apps are already starting. Wait until they finish")
+                route = requests_route.read(app.data_dir)
                 p = takeover.plan(app.data_dir, str(body.get("install") or "full"), str(body.get("usenet") or "nzbget"),
-                                  config_dir=body.get("config_dir"), media_dir=body.get("media_dir"))
-                unmoved = [r["app"] for r in p["replace"] if r["by"] == "Reelix" and r["name"] not in reelix_move.moved(app.data_dir)]
+                                  config_dir=body.get("config_dir"), media_dir=body.get("media_dir"),
+                                  keep_apps=("seerr",) if (route or {}).get("choice") == "seerr" else ())
+                unmoved = [r["app"] for r in p["replace"] if r["by"] == "Reelix" and r["name"] not in reelix_move.moved(app.data_dir)
+                           and r["key"] in MOVED_BY_REELIX]
                 if unmoved and not body.get("unmoved_ok"):
                     raise ValueError("Move " + ", ".join(unmoved) + " into Reelix first (Settings, Reelix, Move your apps "
                                      "into Reelix), or tick that you do not need them moved")
@@ -1888,15 +2018,66 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"cleared": True})
             if path == "/api/takeover/job" and method == "GET":
                 return self.json(200, takeover.job())
+            if path == "/api/takeover/clear-away" and method == "POST":
+                # DASH-191: once the takeover is kept, stop and remove the apps Reelix replaced, their settings
+                # folders into the holding folder (never deleted here), and their entries off the dashboard.
+                body = self.body()
+                self.check_password(body)
+                host = stack.host_folder(app.data_dir)
+                if not host or not containers.available():
+                    raise ValueError("Starboard needs Docker access to clear away your old apps")
+                names = [str(n) for n in body.get("names") or []][:30]
+
+                def after(ok, items, tasks):
+                    tasks.start("dashboard", now="Updating your dashboard")
+                    gone = [it for i, it in enumerate(items) if tasks.state(f"app-{i}") != "failed"]
+                    keys = {it["name"]: takeover.catalogue_key(it["name"]) or it["name"] for it in gone}
+                    notes = remove_entries(app, [(keys[it["name"]], it["name"], it["app"]) for it in gone])
+                    services.forget()
+                    tasks.done("dashboard")
+                    notes = [f"Cleared away {', '.join(it['app'] for it in gone)}"] + notes if gone else notes
+                    logs.event("info", "take over", "; ".join(notes) or "Cleared away nothing")
+                    return notes
+                logs.event("info", "take over", "Clearing away " + ", ".join(names))
+                return self.json(200, takeover.clear_away(app.data_dir, host, names, after))
+            if path == "/api/requests-route" and method == "POST":
+                # DASH-192: keep Seerr beside Reelix, or use Reelix's own requests.
+                body = self.body()
+                choice = str(body.get("choice") or "")
+                if choice not in requests_route.CHOICES:
+                    raise ValueError("Choose Reelix's own requests or Keep Seerr")
+                applied, notes = requests_route.apply(app.config, app.data_dir, choice)
+                requests_route.save(app.data_dir, choice, applied, notes)
+                services.forget()
+                logs.event("info", "requests", f"Requests: {'Reelix' if choice == 'reelix' else 'Seerr'}. " + "; ".join(notes))
+                return self.json(200, self.requests_offer(requests_route.read(app.data_dir)))
+            if path == "/api/reelix/waiting" and method == "GET":
+                items = reelix_waiting.read(app.data_dir)
+                return self.json(200, {"items": items[:200], "count": len(items)})
+            if path == "/api/reelix/waiting/retry" and method == "POST":
+                # DASH-253: Try again now (the background retry also runs every six hours and when a TMDB key is added).
+                reelix = library.reelix_of(app.config.data["services"])
+                if not reelix:
+                    raise ValueError("Reelix is not on your apps with its API key yet")
+                done = reelix_waiting.try_again(app.data_dir, reelix)
+                items = reelix_waiting.read(app.data_dir)
+                return self.json(200, {**done, "items": items[:200], "count": len(items)})
+            if path == "/api/reelix/waiting/forget" and method == "POST":
+                reelix_waiting.forget(app.data_dir, str(self.body().get("key") or ""))
+                items = reelix_waiting.read(app.data_dir)
+                return self.json(200, {"items": items[:200], "count": len(items)})
             # Moving the old apps into Reelix (Settings, Reelix; reelix_move.py)
             if path == "/api/reelix/move" and method == "GET":
                 out = {"job": reelix_move.job(), "last": reelix_move.last_result(app.data_dir),
                        "needs_setup": bool(reelix_setup.read_setup(app.data_dir))}
                 try:
                     out["sources"] = [reelix_move.public(s) for s in reelix_move.sources()]
-                    out["qbittorrent_user"] = reelix_move.qbit_user()
+                    conf = reelix_move.qbit_conf()  # DASH-251: the user name qBittorrent's own settings file gives
+                    out["qbittorrent_user"] = conf["user"]
+                    out["qbittorrent"] = conf
                 except (ValueError, containers.DockerError) as e:
                     out["error"] = str(e)
+                out["review"] = self.move_review(out["last"])
                 return self.json(200, out)
             if path == "/api/reelix/move/preview" and method == "POST":
                 body = self.body()
@@ -1909,18 +2090,30 @@ class Handler(BaseHTTPRequestHandler):
                 self.check_password(body)
                 typed = {str(k): str(v) for k, v in (body.get("secrets") or {}).items() if v}
                 qpw = str(body.get("qbittorrent_password") or "")
-                quser = reelix_move.qbit_user()
-                if qpw and not reelix_move.qbit_check(qpw, user=quser):
-                    raise ValueError(f"qBittorrent did not accept that password for its user {quser}. Check it, or leave "
-                                     "it empty and add qBittorrent in Starboard: Settings, Reelix, Download apps")
+                conf = reelix_move.qbit_conf() if qpw else {"user": None, "ban_minutes": 60}
+                quser = conf["user"] or "admin"
+                if qpw:
+                    state = reelix_move.qbit_sign_in(qpw, user=quser)
+                    if state != "ok":  # DASH-251: said under the qBittorrent field, including a ban after wrong tries
+                        return self.json(400, {"error": reelix_move.qbit_problem(state, quser, conf["ban_minutes"]),
+                                               "field": "qbittorrent", "state": state})
                 vpn = "gluetun" in (stack.chosen_keys(app.data_dir) or []) or any(
                     c["name"] == "gluetun" for c in takeover.found() if c["running"])
                 logs.event("info", "reelix", "Moving the old apps into Reelix")
                 return self.json(200, reelix_move.start(app.data_dir, body["password"], typed, hold=bool(body.get("hold", True)),
                                                         qbit_password=qpw or None, qbit_host="gluetun" if vpn else "qbittorrent",
-                                                        qbit_user_name=quser))
+                                                        qbit_user_name=quser, lookup_urls=self.arr_addresses()))
             if path == "/api/reelix/move/job" and method == "GET":
                 return self.json(200, reelix_move.job())
+            if path == "/api/reelix/move/activate" and method == "POST":
+                # DASH-190: activate the sites held after the move, one or all.
+                body = self.body()
+                self.check_password(body)
+                ids = body.get("ids")
+                changed = reelix_move.activate(app.data_dir, body["password"],
+                                               None if ids is None else [int(i) for i in ids if str(i).isdigit()])
+                logs.event("info", "reelix", f"Activated {changed} held {'site' if changed == 1 else 'sites'} to search")
+                return self.json(200, {"changed": changed, "review": self.move_review(reelix_move.last_result(app.data_dir))})
             if path == "/api/reelix/indexers" and method == "POST":
                 # The indexers held after the move: switched on when the old apps are no longer searching.
                 body = self.body()

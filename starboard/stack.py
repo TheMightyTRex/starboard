@@ -911,9 +911,11 @@ def own_services(data_dir):
     return out
 
 
-def plan_change(data_dir, install=None, usenet=None, edition=None, check=None):
+def plan_change(data_dir, install=None, usenet=None, edition=None, check=None, outside=()):
     """What changing to another install, Usenet app or Reelix means: the new choice, and the apps added and taken
-    away. Raises ValueError when Install apps did not write this server's apps."""
+    away. Raises ValueError when Install apps did not write this server's apps. `outside` are apps running from the
+    person's own Compose file (takeover.found): never added as new, empty apps under the same container names; they
+    join when they are taken over (DASH-250), and are listed in "outside"."""
     now = current_choice(data_dir)
     if not now:
         raise ValueError("Install apps did not set up the apps here, so Starboard cannot change them. Use Install apps first")
@@ -926,13 +928,15 @@ def plan_change(data_dir, install=None, usenet=None, edition=None, check=None):
     if usenet and usenet in USENET_APPS and usenet != next((k for k in USENET_APPS if k in apps), usenet):
         apps = [usenet if k in USENET_APPS else k for k in apps]
     apps, _ = with_needs(apps)
+    left_out = [k for k in apps if k in set(outside) and k not in now["apps"]]
+    apps = [k for k in apps if k not in left_out]
     choice = {**now, "apps": apps, "reelix_edition": edition or now["reelix_edition"], "own_ports": compose_ports(data_dir)}
     if choice["reelix_edition"] == "full" and "reelix" in apps:
         reelix_image("full", check)  # raises when the full Reelix cannot be downloaded
     return {"choice": choice, "own": own_services(data_dir), "add": [k for k in apps if k not in now["apps"]],
             "remove": [k for k in now["apps"] if k not in apps],
             "reelix": (now["reelix_edition"], choice["reelix_edition"]) if "reelix" in apps else None,
-            "usenet": (usenet_now, next((k for k in USENET_APPS if k in apps), None))}
+            "usenet": (usenet_now, next((k for k in USENET_APPS if k in apps), None)), "outside": left_out}
 
 
 def keep_made_up(env_text, old_text, shown):

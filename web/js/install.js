@@ -101,7 +101,7 @@ async function installFlow({ chosenMedia = "" } = {}) {
     ...(state.apps.has("sabnzbd") || state.apps.has("nzbget") ? [{ id: "usenet", ...stepNamed(T, "usenet"), skippable: false }] : []),
     ...(state.apps.has("reelix") ? [{ id: "sites", ...stepNamed(T, "sites"), skippable: false },
       { id: "films", ...stepNamed(T, "films"), skippable: false }] : []),
-    ...(data.servers.length ? [{ id: "moving", ...stepNamed(T, "moving"),
+    ...(movingOffers(state, data, apps).length ? [{ id: "moving", ...stepNamed(T, "moving"),
       intro: "Starboard found these on this computer. Nothing is copied or changed until the new apps are running and you choose." }] : []),
   ];
   const finish = () => [
@@ -189,6 +189,45 @@ function stop(control, message) {
 
 function clearError(control) {
   if (control.fieldError) setError(control, "");
+}
+
+// What the Moving over step offers (DASH-249): never an empty step. On the Reelix route, the apps found running from the
+// person's own Compose file are said to move into Reelix (Radarr, Sonarr, Lidarr, Readarr, Prowlarr, Seerr) or to be
+// run by Starboard (the rest), and where that happens: Settings, Your install, Apps you already run, once the new
+// apps run. The step is left out when there is nothing to offer.
+function movingOffers(state, data, apps) {
+  const offers = [];
+  const has = (keys) => data.servers.filter((s) => keys.includes(s.key));
+  const names = (list) => list.map((s) => s.name).join(", ").replace(/, ([^,]*)$/, " and $1");
+  const where = "Where: Settings, Your install, Apps you already run, once the new apps run.";
+  const found = data.takeover || [];
+  if (state.apps.has("reelix")) {
+    const into = found.filter((f) => f.into_reelix);
+    const stops = found.filter((f) => f.replaced && !f.into_reelix);
+    if (into.length) {
+      offers.push({ id: "reelix", default: true, title: `Move ${names(into)} into Reelix`, where,
+        text: `Reelix reads ${into.length === 1 ? "it" : "each"} and adds the films, series, music, books, quality profiles, sites to search and requests. ${stops.length ? `${names(stops)} ${stops.length === 1 ? "stops" : "stop"} too: Reelix does that work. ` : ""}Nothing changes in the old apps until you choose.` });
+    }
+  }
+  const run = found.filter((f) => !f.replaced && !(state.apps.has("reelix") && f.into_reelix));
+  if (run.length) {
+    offers.push({ id: "takeover", default: true, title: `Starboard runs ${names(run)}`, where,
+      text: `Starboard takes ${run.length === 1 ? "it" : "them"} over from your own Compose file: ${run.length === 1 ? "its settings are" : "their settings are"} copied, ${run.length === 1 ? "it keeps its" : "each keeps its"} port and folders, and you can roll back. Until then ${run.length === 1 ? "it runs" : "they run"} as ${run.length === 1 ? "it does" : "they do"} now.` });
+  }
+  const history = has(["plex", "emby"]);
+  if (history.length && state.apps.has("jellyfin")) {
+    offers.push({ id: "history", title: "Watch history", text: `What everyone has watched in ${history.map((s) => s.name).join(" and ")}, into Jellyfin. Settings, Apps, Jellyfin, Import, once Jellyfin is set up.` });
+  }
+  const listening = has(["plex", "jellyfin", "emby"]);
+  if (listening.length && state.apps.has("audiobookshelf")) {
+    offers.push({ id: "listening", title: "Listening progress", text: `Where everyone is in each audiobook, from ${listening.map((s) => s.name).join(" and ")}, into Audiobookshelf. Settings, Apps, Audiobookshelf, once it has scanned in your books.` });
+  }
+  const arrs = has(["sonarr", "radarr", "lidarr"]);
+  const newArrs = ["sonarr", "radarr", "lidarr"].filter((k) => state.apps.has(k));
+  if (arrs.length && newArrs.length) {
+    offers.push({ id: "settings", title: "App settings", text: `Tags, quality settings, folders, download clients and naming from your ${arrs.map((s) => s.name).join(", ")} into the new ${newArrs.map((k) => apps[k].name).join(", ")}. Settings, Apps, Manage apps, Copy app settings, once they are running. Add the new apps in Prowlarr for search sites.` });
+  }
+  return offers;
 }
 
 async function installStep(id, state, data, apps, go) {
@@ -662,29 +701,14 @@ async function installStep(id, state, data, apps, go) {
       return true;
     };
   } else if (id === "moving") {
-    const offers = [];
-    const has = (keys) => data.servers.filter((s) => keys.includes(s.key));
-    const history = has(["plex", "emby"]);
-    if (history.length && state.apps.has("jellyfin")) {
-      offers.push({ id: "history", title: "Watch history", text: `What everyone has watched in ${history.map((s) => s.name).join(" and ")}, into Jellyfin. Settings, Apps, Jellyfin, Import, once Jellyfin is set up.` });
-    }
-    const listening = has(["plex", "jellyfin", "emby"]);
-    if (listening.length && state.apps.has("audiobookshelf")) {
-      offers.push({ id: "listening", title: "Listening progress", text: `Where everyone is in each audiobook, from ${listening.map((s) => s.name).join(" and ")}, into Audiobookshelf. Settings, Apps, Audiobookshelf, once it has scanned in your books.` });
-    }
-    const arrs = has(["sonarr", "radarr", "lidarr"]);
-    const newArrs = ["sonarr", "radarr", "lidarr"].filter((k) => state.apps.has(k));
-    if (arrs.length && newArrs.length) {
-      offers.push({ id: "settings", title: "App settings", text: `Tags, quality settings, folders, download clients and naming from your ${arrs.map((s) => s.name).join(", ")} into the new ${newArrs.map((k) => apps[k].name).join(", ")}. Settings, Apps, Manage apps, Copy app settings, once they are running. Add the new apps in Prowlarr for search sites.` });
-    }
-    if (!offers.length) offers.push({ id: "none", title: "Nothing to bring over", soon: true, text: "None of the apps you ticked can take anything from the ones you have." });
+    const offers = movingOffers(state, data, apps);
     const boxes = offers.map((o) => {
-      const input = el("input", { type: "checkbox", checked: !o.soon && state.moving.has(o.id), disabled: !!o.soon });
-      return { o, input, node: el("label", { class: "option-card" }, input, el("strong", { text: o.title }), el("small", { text: o.text })) };
+      const input = el("input", { type: "checkbox", checked: state.moving.has(o.id) || (o.default && !state.movingSeen) });
+      return { o, input, node: el("label", { class: "option-card" }, input, el("strong", { text: o.title }), el("small", { text: o.text }), o.where ? el("small", { class: "muted", text: o.where }) : null) };
     });
     nodes = [el("div", { class: "option-cards" }, boxes.map((b) => b.node)),
       el("p", { class: "small muted", text: "Your media itself stays where it is: choose its folder on the Folders step." })];
-    save = async () => { state.moving = new Set(boxes.filter((b) => b.input.checked).map((b) => b.o.id)); return true; };
+    save = async () => { state.moving = new Set(boxes.filter((b) => b.input.checked).map((b) => b.o.id)); state.movingSeen = true; return true; };
   } else if (id === "review") {
     let p;
     try { p = await api("/api/stack/preview", { method: "POST", body: body(state) }); }
@@ -696,7 +720,7 @@ async function installStep(id, state, data, apps, go) {
       el("td", { "data-label": "Your answer" }, value), el("td", { "data-label": "" }, change(step, label.toLowerCase())))];
     const vpnName = (await loadVpnProviders()).find((v) => v.id === state.vpn.provider)?.name || state.vpn.provider;
     const picked = data.groups.filter((g) => state.groups.has(g.key)).map((g) => g.name).join(", ") || "None";
-    const moving = [...state.moving].map((m) => ({ history: "Watch history", listening: "Listening progress", settings: "App settings" })[m]).filter(Boolean).join(", ");
+    const moving = [...state.moving].map((m) => ({ history: "Watch history", listening: "Listening progress", settings: "App settings", reelix: "Into Reelix", takeover: "Starboard runs your apps" })[m]).filter(Boolean).join(", ");
     nodes = [
       el("p", { text: "Nothing is written or started until you choose Write the files. You can change anything first." }),
       el("div", { class: "table-wrap", "data-stack": "" }, el("table", { class: "table table--fixed table--middle" },
@@ -718,7 +742,7 @@ async function installStep(id, state, data, apps, go) {
         ...(state.apps.has("reelix") ? row("Language of releases", (await loadSetupAnswers()).language.choices.find((c) => c.value === state.language)?.label || "English", "films") : []),
         ...(state.usenetServer ? row("Usenet server", state.usenetServer.host, "usenet") : []),
         ...(state.apps.has("gluetun") ? row("VPN", `${vpnName}, ${state.vpn.type === "openvpn" ? "OpenVPN" : "WireGuard"}${state.vpn.countries ? `, ${state.vpn.countries}` : ""}`, "vpn") : []),
-        ...(data.servers.length ? row("Moving over", moving || "Nothing", "moving") : [])))),
+        ...(movingOffers(state, data, apps).length ? row("Moving over", moving || "Nothing", "moving") : [])))),
       p.moved.length ? notice("warning", "Some ports moved", p.moved.join(". ") + ".") : null,
       p.later.length ? notice("info", "Started later", `${p.later.join(", ")} ${p.later.length === 1 ? "needs its" : "need their"} own settings file first, so ${p.later.length === 1 ? "it is" : "they are"} written but not started.`) : null,
       p.hooks?.length ? el("p", { class: "small muted", text: `Before System, Apps, Updates changes ${p.hooks.map((k) => apps[k].name).join(" or ")}, it backs up ${p.hooks.length === 1 ? "its" : "their"} database first. If the backup fails, the update stops.` }) : null,
@@ -986,6 +1010,8 @@ function connectGuide(state, apps) {
     steps.push(el("li", {}, el("strong", { text: "Bazarr. " }), open("bazarr"), ". In Settings, connect Sonarr (", code("sonarr"), ", port 8989) and Radarr (", code("radarr"), ", port 7878) with their API keys, and choose your languages."));
   }
   steps.push(el("li", {}, el("strong", { text: "Starboard. " }), "In ", el("a", { href: "/settings.html", text: "Manage apps" }), ", give each app its API key, so Search, Downloads and Coming up work."));
+  if (state.moving.has("reelix") || state.moving.has("takeover")) steps.push(el("li", {}, state.moving.has("reelix") ? "Move your apps into Reelix, then let Starboard run them: " : "Let Starboard run the apps you already have: ",
+    el("a", { href: "/settings-install.html#in-takeover-h", text: "Settings, Your install, Apps you already run" }), "."));
   if (state.moving.has("history")) steps.push(el("li", {}, "Import watch history: ", el("a", { href: "/settings-jellyfin.html", text: "Settings, Apps, Jellyfin" }), "."));
   if (state.moving.has("settings")) steps.push(el("li", {}, "Copy settings from your old apps: ", el("a", { href: "/copy-settings.html", text: "Copy app settings" }), "."));
   if (state.moving.has("listening")) steps.push(el("li", {}, "Copy listening progress once Audiobookshelf has scanned in your books: ", el("a", { href: "/settings-audiobookshelf.html", text: "Settings, Apps, Audiobookshelf" }), "."));

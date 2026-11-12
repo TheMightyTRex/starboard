@@ -167,3 +167,17 @@ html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: g
    shown by common.js while a request has taken longer than a moment or a new page is loading. It takes no room. */
 .site-header > .loading-bar, body > .loading-bar--top { position: absolute; inset-inline: 0; bottom: -2px; height: 3px; z-index: 5; pointer-events: none; }
 body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; }
+
+/* A long change's dialog (DASH-252, 13 November 2026): the library's dialog and busy bar, with a list of its steps.
+   Each step: its name, its state chip at the right, and what it is doing under it. The step working now is marked
+   with a line at its left edge; nothing moves but the library's bar, which is still with less motion. */
+.task-dialog { width: min(calc(var(--dialog-w) * 1.2), calc(100vw - 32px)); }
+.task-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--color-divider); }
+.task-list__item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center;
+  padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-divider); border-left: 3px solid transparent; }
+.task-list__item[data-state="working"] { border-left-color: var(--color-accent); background: var(--color-surface-sunken); }
+.task-list__name { font-weight: var(--weight-strong); min-width: 0; overflow-wrap: anywhere; }
+.task-list__detail { grid-column: 1 / -1; overflow-wrap: anywhere; }
+.task-now { margin: 0; min-height: 1.5em; color: var(--color-text-muted); overflow-wrap: anywhere; }
+.message-to-send { margin: 0; padding: var(--space-3) var(--space-4); border-left: 3px solid var(--color-accent); background: var(--color-surface-sunken); }
+.message-to-send p { margin: 0; }

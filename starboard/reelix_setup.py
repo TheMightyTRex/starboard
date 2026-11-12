@@ -245,6 +245,8 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
             admin.call("PUT", "/settings/metadata", setup_answers.tmdb_settings(info["tmdb"], meta))
             done.append("Added your TMDB key to Reelix")
             setup_left.record(data_dir, tmdb=True)
+            from . import reelix_waiting
+            reelix_waiting.nudge()  # titles a move could not match may match now (DASH-253)
         except (ReelixError, OSError, ValueError) as e:
             done.append(f"Your TMDB key is not in Reelix yet ({e}). Add it in Settings, Reelix")
     if "language" in info:

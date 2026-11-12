@@ -20,11 +20,24 @@ add features.
 - **After an unexpected shutdown (DASH-88):** Starboard notes when it was stopped properly. At the next start after a power cut or a crash it checks, once, the folders it watches, the pool and any pool job that stopped part-way, a full backup that was cut off, and the apps, then says what it found on System, Overview and through Alerts.
 - **Settings from the terminal (DASH-90):** `./settings.sh` signs in with your Starboard password and changes settings through Starboard's own API, starting with the automatic updates: looking for new versions, Reelix installing its own updates, and the commands to update or go back to an earlier version. The same look as the terminal set-up, with plain lines for screen readers.
 - **Running with no screen (DASH-89):** `sudo deploy/headless.sh` shows what it would change and asks first: never sleep, the lid ignored and the power button shutting down cleanly, no waiting at the boot menu, disk repairs at start without asking, starting again after a crash, and the watchdog where there is one. It saves a copy of each file it edits, and `--undo` puts every change back. `--firmware` lists the firmware settings to make by hand (power back on after a cut, no keyboard needed, Wake on LAN).
+- **A dialog for long changes:** Move them into Reelix, Take over my apps, Roll back and Clear away open a dialog with a working bar and a list of each app or step (Waiting, Working, Done, Not moved, Not started), what it is doing now and the result. Close it and the work carries on; the page says it is still running, with Show progress
+- **Review the move:** after moving into Reelix, the sites held off with Activate and Activate all, the sites Reelix cannot search yet, and the titles that did not move with Add by hand
+- **Titles waiting for a match:** films and series a move could not match wait on Settings, Your install with the TMDB, TVDB and IMDb ids Radarr and Sonarr had for them, and are added to Reelix once they match: when a TMDB key is added, every six hours while any wait, or with Try again now
+- **Requests after the move:** when Seerr runs beside Reelix, choose Reelix's own requests (recommended) or Keep Seerr, which points Seerr at Reelix; with a message for the people who use Seerr
+- **Clear away the apps Reelix replaced:** after Keep it, Prowlarr, Radarr, Sonarr, Readarr, Lidarr, Kapowarr, Profilarr, Decluttarr and Unpackerr can be stopped and removed, their settings folders moved into a holding folder beside them (nothing is deleted) and their dashboard entries taken off
+
+### Changed
+
+- **Moving over on the Reelix route:** Install apps says which of your apps move into Reelix and which Starboard runs for you, and where (Settings, Your install, Apps you already run); the step is left out when there is nothing to bring over
+- **Change your install:** apps running from your own Compose file are no longer offered again as new, empty apps; the page points to Apps you already run
+- **Move them into Reelix:** each message is under its own button; qBittorrent's user name is read from its settings file; the qBittorrent password says what it is for and that it is optional; a new try clears the last error at once
 
 ### Fixed
 
 - A full backup that fails now sends the backup alert; a copy cut off part way no longer stays in the backup folder;
   Reelix's backups section no longer says Starboard copies them (DASH-78).
+- **qBittorrent's ban:** after too many wrong passwords qBittorrent stops accepting sign-ins from Starboard; the page now says so, for how long, and how to clear it
+- **A move that stopped:** the steps after it say they did not start, and why
 
 ## [0.16.5] (11 November 2026)
 

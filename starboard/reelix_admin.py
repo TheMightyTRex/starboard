@@ -357,8 +357,9 @@ def _act(app, reelix, base, kind, action, body):
             for line in out["done"]:
                 logs.event("info", "reelix", line)
             if (body.get("changes") or {}).get("tmdb"):
-                from . import setup_left
+                from . import reelix_waiting, setup_left
                 setup_left.record(app.config.data_dir, tmdb=True)
+                reelix_waiting.nudge()  # titles a move could not match may match now (DASH-253)
             return out
         raise ValueError("Not something Starboard does")
     if kind == "quality":  # Picture quality in full (DASH-196)
