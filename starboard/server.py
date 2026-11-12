@@ -160,6 +160,7 @@ class App:
         self.watch = watch.Watch(self)
         if os.environ.get("STARBOARD_WATCH", "1") != "0":
             self.watch.start()
+            watch.keep_vpn_apps()  # apps on the VPN rejoin it after it restarts (12 November 2026)
         self.jobs = jobs.Jobs(self)
         from . import plugin_life  # plug-in events and jobs (DASH-330): nothing runs until a plug-in asks
         plugin_life.listen(self.data_dir)

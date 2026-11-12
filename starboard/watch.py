@@ -29,6 +29,26 @@ from . import backup, logs, services, sysinfo
 KEEP = 8 * 86400
 
 
+def keep_vpn_apps(every=300):
+    """A thread, whatever Watch's own setting: each 5 minutes, apps on Gluetun's network that started before Gluetun
+    last did are restarted so they join its new network (Bazarr and FlareSolverr, 12 November 2026). Two Docker
+    calls each time when nothing needs it."""
+    from . import containers
+
+    def run():
+        while True:
+            time.sleep(every)
+            if not containers.available():
+                continue
+            try:
+                again = containers.rejoin()
+                if again:
+                    logs.event("info", "apps", f"Restarted {', '.join(again)}: the VPN restarted, so they had no network")
+            except containers.DockerError:
+                pass
+    threading.Thread(target=run, name="vpn-apps", daemon=True).start()
+
+
 def _size(n):
     for unit in ("bytes", "KB", "MB", "GB", "TB"):
         if n < 1000 or unit == "TB":
@@ -169,16 +189,6 @@ class Watch:
                     pass
 
     def tick(self):
-        # Apps on Gluetun's network that started before Gluetun last did have no network: restart them so they join
-        # its new one (Bazarr and FlareSolverr, 12 November 2026). Two Docker calls when nothing needs it.
-        from . import containers
-        if containers.available():
-            try:
-                again = containers.rejoin()
-                if again:
-                    logs.event("info", "apps", f"Restarted {', '.join(again)}: the VPN restarted, so they had no network")
-            except containers.DockerError:
-                pass
         w = self.settings()
         on = w["alerts"]
         cfg = self.app.config.data
