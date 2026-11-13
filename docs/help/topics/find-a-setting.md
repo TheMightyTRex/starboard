@@ -12,7 +12,8 @@ page. The page then says how many more sections it shows. Your choice is saved f
 
 ## General
 
-- **General:** the server and dashboard names, download hours, Library views, long lists and **Send feedback**.
+- **General:** the server and dashboard names, download hours, Library views and long lists. **Send feedback** is on
+  **General**, **Logs and feedback**.
   With **Advanced settings**: categories, what app cards show, Coming up, logs, the default design and the set-up
   guide. Read [Organise apps into categories](organise-categories.md),
   [Download only at certain hours](set-download-hours.md) and [Send feedback about a page](send-feedback.md).

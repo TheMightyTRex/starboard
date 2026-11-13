@@ -24,8 +24,9 @@ each release. Ubuntu 24.04 is still tested indirectly, because Linux Mint 22.3 i
 
 ## Minimum and recommended hardware
 
-The figures are for a whole media server: Starboard and Reelix (49 MB together when idle), Jellyfin (about 590
-MB with a real library), Audiobookshelf, a download app and the operating system. Starboard on its own runs in
+The figures are for a whole media server: Starboard and Reelix Lite (49 MB together at rest with a small library;
+the full Reelix read 350 to 380 MB while working on a large library on 13 November 2026), Jellyfin (150 to 300 MB
+with a small library, 590 to 920 MB with a large one), Audiobookshelf, a download app and the operating system. Starboard on its own runs in
 512 MB.
 
 | System | Minimum | Recommended |

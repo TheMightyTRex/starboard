@@ -79,7 +79,7 @@ When you add an app by hand, Starboard asks which kind it is. These are the kind
 - qBittorrent, NZBGet and SABnzbd
 - Gluetun (VPN)
 - Soulseek (slskd)
-- Seerr, Jellyseerr or Overseerr
+- Seerr, Jellyseerr or Overseerr (Overseerr and Jellyseerr merged into Seerr in 2026)
 - Audiobookshelf
 - Other app, for anything else, such as Plex or Emby, which Starboard shows as a link to its page
 

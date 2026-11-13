@@ -33,6 +33,9 @@ from . import containers, stack, tasklist
 
 # Container names that mean a catalogue app under another name.
 ALIASES = {"readarr": "bookshelf", "jellyseerr": "seerr", "overseerr": "seerr"}
+# Images that say which app a container is whatever it is called: Seerr, and Overseerr and Jellyseerr, which merged
+# into Seerr in 2026 (ghcr.io/seerr-team/seerr, fallenbagel/jellyseerr, sctx/overseerr, linuxserver/overseerr).
+IMAGE_KEYS = {"seerr": "seerr", "jellyseerr": "seerr", "overseerr": "seerr"}
 # Values whose names look secret go in .env (mode 600), never in compose.yaml.
 _SECRET = re.compile(r"(PASS|KEY|TOKEN|SECRET|CREDENTIAL)", re.I)
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")
@@ -45,10 +48,14 @@ def _db_services():
     return {a["db"]["service"]: k for k, a in stack.APPS.items() if a.get("db")}
 
 
-def catalogue_key(name):
-    """The catalogue key (stack.APPS, or a database service) a container name stands for, or None."""
+def catalogue_key(name, image=""):
+    """The catalogue key (stack.APPS, or a database service) a container name stands for, or None. A container with
+    another name is still known by its image where IMAGE_KEYS says so."""
     name = ALIASES.get(name, name)
-    return name if name in stack.APPS or name in _db_services() else None
+    if name in stack.APPS or name in _db_services():
+        return name
+    last = str(image or "").split("@", 1)[0].rsplit("/", 1)[-1]  # seerr:latest from ghcr.io/seerr-team/seerr:latest
+    return IMAGE_KEYS.get(last.split(":", 1)[0].lower())
 
 
 def _inspect(name):
@@ -74,7 +81,7 @@ def found():
         if labels.get("com.docker.compose.project") == stack.PROJECT or labels.get("starboard.updater") or \
                 labels.get("com.docker.compose.service") == "starboard":
             continue
-        key = catalogue_key(name)
+        key = catalogue_key(name, c.get("Image"))
         if not key:
             continue
         out.append({"name": name, "key": key, "running": c.get("State") == "running",

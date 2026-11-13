@@ -10,9 +10,9 @@ it needs. You can change from one to another later, either way: read [Change you
 | | Basics | Full install | Everything |
 |---|---|---|---|
 | Who it is for | Most homes: a complete media server that stays light | A household that wants watch statistics, logs and smaller files | Someone who wants every app Starboard offers |
-| Apps | 7 | 11 | 17 |
-| Memory when idle | about 0.6 to 1.1 GB | about 1.1 to 2.0 GB | about 2.0 to 3.0 GB |
-| Memory at load | about 1.2 to 1.8 GB | about 2.6 to 3.6 GB | about 3.7 to 4.8 GB |
+| Apps | 7 | 11 | 16 |
+| Memory when idle | about 0.6 to 1.6 GB | about 1.1 to 2.6 GB | about 1.9 to 3.4 GB |
+| Memory at load | about 1.2 to 2.3 GB | about 2.6 to 4.1 GB | about 3.7 to 4.9 GB |
 | Processor when idle | under 5% of one core | under 10% of one core | under 10% of one core |
 | Processor at load | 1 to 2 cores in bursts | 2 cores, or every core while Tdarr converts | 2 cores, or every core while Tdarr converts |
 | Disk for the apps | about 3.5 GB | about 9 GB | about 16 GB |
@@ -20,7 +20,8 @@ it needs. You can change from one to another later, either way: read [Change you
 | Recommended computer | 4 cores, 4 GB, or a Raspberry Pi 5 with 4 GB | 4 cores, 8 GB, ideally with an Intel processor | 4 or more cores, 8 GB or more |
 
 The figures include Starboard (about 25 MB) and Docker (about 80 MB). They are for the computer described in
-[Memory and processor](#memory-and-processor). Converting video needs much more processor.
+[Memory and processor](#memory-and-processor). The lower figure is for a small library and the higher one for a
+large library, mostly because of Jellyfin. Converting video needs much more processor.
 
 ## Memory and processor
 
@@ -29,9 +30,12 @@ memory and an NVIDIA GeForce GT 710, which cannot convert video, so the processo
 one of its 12 threads. A Raspberry Pi 5 core does about half as much, so double the processor figures there. A
 recent Intel processor does about the same or more, and converts video with its own hardware.
 
-**Idle** means nothing is downloading, scanning or playing. **At load** means downloading at about 100 Mbit/s through
-the VPN, Reelix scanning a new folder and one film playing directly (not converted), all at once. Figures marked
-**measured** were read on that computer; the rest are typical for each app.
+**Idle**, or at rest, means nothing is downloading, scanning or playing. **At load**, or while working, means
+downloading at about 100 Mbit/s through the VPN, Reelix scanning a new folder and one film playing directly (not
+converted), all at once. Figures marked **measured** were read on that computer; the rest are typical for each app.
+
+**Library size matters.** Reelix and Jellyfin keep more in memory the more films, series and music you have. The
+measurements of 13 November 2026 were taken on a server with a large library while Reelix was working.
 
 ### Each install
 
@@ -48,9 +52,9 @@ Converting video comes on top of the figures in [At a glance](#at-a-glance):
 |---|---|---|---|---|
 | Starboard | 20 to 25 MB | 37 MB (measured, every page open) | about 0 | a few seconds for every page |
 | Docker | about 80 MB | about 100 MB | about 0 | low |
-| Reelix Lite | 37 MB empty, 80 MB with 257 films and 227 series (measured) | 120 to 200 MB while scanning (measured) | under 1% (measured) | 1 core in bursts while scanning |
-| Reelix full | 10 to 30 MB more than Lite | 100 to 300 MB more during a YouTube or Spotify download | as Lite | +1 core while converting a download |
-| Jellyfin | 150 to 300 MB | 300 to 500 MB playing directly; +1 GB converting | under 1% | almost none playing directly; 3 to 4 cores converting 1080p |
+| Reelix Lite | At rest: 37 MB empty, 80 MB with 257 films and 227 series (measured) | While working: 120 to 200 MB scanning a small library (measured); with a large library, as the full Reelix | under 1% at rest (measured) | 1 core in bursts while scanning |
+| Reelix full | At rest: 10 to 30 MB more than Lite | While working with a large library: 350 to 380 MB (measured 13 November 2026); 100 to 300 MB more during a YouTube or Spotify download | 3 to 18% while working (measured) | +1 core while converting a download |
+| Jellyfin | Depends on library size: 150 to 300 MB with a small library; 590 to 920 MB with a large one (measured 4 and 13 November 2026), much of it cache | 300 to 500 MB more playing directly; +1 GB converting | 1 to 3% (measured) | almost none playing directly; 3 to 4 cores converting 1080p |
 | Audiobookshelf | 80 to 150 MB | 150 to 250 MB scanning | under 1% | 1 core briefly while scanning |
 | Bazarr | 120 to 200 MB | 200 to 300 MB | under 1% | short bursts while searching |
 | qBittorrent | 15 MB (measured) | 50 to 150 MB with active torrents | under 1% (measured) | 5 to 20% of a core at 100 Mbit/s |
@@ -64,7 +68,6 @@ Converting video comes on top of the figures in [At a glance](#at-a-glance):
 | Dozzle | 15 to 30 MB | 30 to 50 MB with logs open | under 1% | low |
 | Tdarr | 300 to 500 MB | +1 to 2 GB converting | under 1% | every core it is given |
 | Disk health | none | none | none | a few seconds every 30 minutes |
-| Storyarr and its database | 71 MB and 114 MB (measured) | 300 to 450 MB matching books | under 2% (measured) | 1 core while matching |
 | Kapowarr | 80 to 120 MB | 120 to 200 MB | under 1% | low |
 
 ## What you can do with each
@@ -91,7 +94,6 @@ Converting video comes on top of the figures in [At a glance](#at-a-glance):
 | Paid IPTV or full control of channels (Dispatcharr) | | | ✓ |
 | Music and books from the Soulseek network | | | ✓ |
 | Keep a No-IP address pointing at your server | | | ✓ |
-| Ebooks and audiobooks with series and reading lists (Storyarr) | | | ✓ |
 | Comics and graphic novels | | | ✓ |
 | Starboard's dashboard, alerts, download hours, backups and updates | ✓ | ✓ | ✓ |
 
@@ -122,11 +124,14 @@ Live TV is a plug-in that comes with Starboard, not an app in the install: read
 | Dispatcharr | Paid IPTV, backup streams or full control of channels in Jellyfin | | | ✓ | Jellyfin |
 | Soulseek (slskd) | Music and books from the Soulseek network | | | ✓ | A Soulseek name and password |
 | No-IP updater | Keeps your No-IP address pointing at the server | | | ✓ | A No-IP account |
-| Storyarr | Ebooks and audiobooks with series and reading lists, with its own database | | | ✓ | A download app |
 | Kapowarr | Comics and graphic novels | | | ✓ | A download app |
 
 An app always brings what it needs: choosing Jellystat also installs Jellyfin, and Reelix installs qBittorrent if
 there is no download app.
+
+**Storyarr** was retired on 11 November 2026 and is no longer offered. Reelix does its work: books, audiobooks and
+radio. An install that has Storyarr keeps it until you take it away in [Change your install](change-your-install.md);
+read [Move your apps to Reelix](move-your-apps-to-reelix.md) for what to do with its books.
 
 ## What you need for each
 

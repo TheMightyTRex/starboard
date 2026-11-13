@@ -424,7 +424,28 @@ REELIX_ADMIN.add("downloadclients", "qbittorrent", "qBittorrent", {"host": "glue
 REELIX_ADMIN.search.update(proxy={"kind": "http", "host": "gluetun", "port": 8888}, allow_private_addresses=True)
 
 
+# A stand-in Jellyfin for Settings, Apps, Jellyfin, Recommended plug-ins (DASH-404), answering on the fake port under
+# /jellyfin: Playback Reporting installed and active, the rest not installed. Only that section talks to it, and no
+# real Jellyfin is ever changed (tests/jellyfin_stand_in.py).
+from tests.jellyfin_stand_in import KEY as JF_KEY, StandIn as JellyfinStandIn  # noqa: E402
+from starboard import jellyfin_plugins  # noqa: E402
+JELLYFIN = JellyfinStandIn(plugins=[{"Name": "Playback Reporting", "Version": "19.0.0.0", "Status": "Active",
+                                     "Id": jellyfin_plugins.PACKAGES["playback"]["guid"].replace("-", "")}])
+jellyfin_plugins.find = lambda services: {"type": "jellyfin", "name": "Jellyfin", "url": f"http://127.0.0.1:{FAKE_PORT}/jellyfin", "api_key": JF_KEY}
+
+
 class FakeArr(BaseHTTPRequestHandler):
+    def jellyfin(self, method):
+        length = int(self.headers.get("Content-Length") or 0)
+        body = json.loads(self.rfile.read(length) or b"null") if length else None
+        status, answer = JELLYFIN.handle(method, self.path[len("/jellyfin"):], body, dict(self.headers))
+        raw = json.dumps(answer).encode() if answer is not None else b""
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
     def reelix_admin(self, method):
         """Reelix's admin routes, signed in with a cookie (never the manager key, which reads radio and the queue)."""
         length = int(self.headers.get("Content-Length") or 0)
@@ -476,6 +497,8 @@ class FakeArr(BaseHTTPRequestHandler):
 
     def do_GET(self):
         p = self.path
+        if p.startswith("/jellyfin/"):
+            return self.jellyfin("GET")
         if p.startswith("/abs"):  # a made-up Audiobookshelf, for Settings, Audiobookshelf
             if p == "/abs/status":
                 return self.send_json({"app": "audiobookshelf", "serverVersion": "2.37.2"})
@@ -546,6 +569,8 @@ class FakeArr(BaseHTTPRequestHandler):
 
 
 def _post(self):
+    if self.path.startswith("/jellyfin/"):
+        return self.jellyfin("POST")
     if not self.headers.get("X-Api-Key"):  # Reelix's admin routes, signed in with a cookie (Settings, Reelix)
         return self.reelix_admin("POST")
     length = int(self.headers.get("Content-Length") or 0)

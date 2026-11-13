@@ -53,8 +53,10 @@ FFMPEG_WRAP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ffmpeg-w
 FFMPEG_PATH = "/config/ffmpeg-wrap/ffmpeg"
 JELLYFIN_CONFIG = f"{CFG}/jellyfin:/config"
 
-# Storyarr is pinned to a version, so System, Apps, Updates offers each newer one (with a database backup first).
-# STARBOARD_STORYARR_IMAGE chooses another image, or none to leave Storyarr out.
+# Storyarr was retired on 11 November 2026 (its work goes on in Reelix): it is no longer offered or installed
+# (RETIRED, below), but an install that has it keeps it, pinned to a version, so System, Apps, Updates still offers
+# each newer one (with a database backup first) until it is taken away. STARBOARD_STORYARR_IMAGE chooses another
+# image for such an install.
 STORYARR_IMAGE = "ghcr.io/themightytrex/storyarr:v0.7.0"
 
 # Reelix Lite (the fork's lite image of Reelix) is the one media manager for new installs (owner, 6 November 2026):
@@ -76,12 +78,14 @@ REELIX_EDITIONS = {
 _pullable = {}
 # The apps Reelix replaces. They are no longer offered for new installs, but a stack written with them before still
 # builds, so nothing someone already runs breaks.
+# Apps that are no longer offered at all, kept only so an install that has them still builds (stack.offered).
+RETIRED = {"storyarr"}
 REPLACED_BY_REELIX = {"radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr", "profilarr", "decluttarr", "unpackerr",
                       "janitorr"}
 APPS = {
     "reelix": {"name": "Reelix", "groups": ["movies", "tv", "music", "ebooks", "audiobooks", "radio"],
                "image": os.environ.get("STARBOARD_REELIX_IMAGE") or REELIX_IMAGE, "ports": ["7700:7700"],
-               "volumes": [f"{CFG}/reelix:/config", f"{DATA}:/data"], "env": {**LSIO, "UMASK": "002"}, "memory": 60,
+               "volumes": [f"{CFG}/reelix:/config", f"{DATA}:/data"], "env": {**LSIO, "UMASK": "002"}, "memory": 100,
                "notes": "One app for films, series, books, audiobooks, music and radio, with requests and its own sites to search."},
     "radarr": {"name": "Radarr", "groups": ["movies"], "image": "lscr.io/linuxserver/radarr:latest",
                "ports": ["7878:7878"], "volumes": [f"{CFG}/radarr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200},
@@ -111,7 +115,7 @@ APPS = {
     "kapowarr": {"name": "Kapowarr", "groups": ["comics"], "image": "mrcas/kapowarr:latest", "ports": ["5656:5656"], "memory": 100,
                  "volumes": [f"{CFG}/kapowarr:/app/db", f"{DATA}/downloads/comics:/app/temp_downloads", f"{DATA}/media/comics:/comics-1"]},
     "jellyfin": {"name": "Jellyfin", "groups": ["watching"], "image": "lscr.io/linuxserver/jellyfin:latest",
-                 "ports": ["8096:8096"], "volumes": [f"{CFG}/jellyfin:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 400},
+                 "ports": ["8096:8096"], "volumes": [f"{CFG}/jellyfin:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 600},
     "seerr": {"name": "Seerr", "groups": ["watching"], "image": "ghcr.io/seerr-team/seerr:latest", "ports": ["5055:5055"],
               "volumes": [f"{CFG}/seerr:/app/config"], "env": {"TZ": "${TZ}"}, "memory": 200,
               "notes": "People ask for films and series; it sends them to Radarr and Sonarr."},
@@ -277,9 +281,10 @@ def existing_media():
 
 
 def offered(replaced=False):
-    """Apps with an image to install. STARBOARD_STORYARR_IMAGE=none leaves Storyarr out. The apps Reelix replaces are
-    left out unless `replaced` (writing or checking a stack that has them already)."""
-    return {k: a for k, a in APPS.items() if a["image"] and a["image"] != "none" and (replaced or k not in REPLACED_BY_REELIX)}
+    """Apps with an image to install. The apps Reelix replaces, and retired apps such as Storyarr, are left out unless
+    `replaced` (writing or checking a stack that has them already)."""
+    return {k: a for k, a in APPS.items() if a["image"] and a["image"] != "none"
+            and (replaced or (k not in REPLACED_BY_REELIX and k not in RETIRED))}
 
 
 # What each app needs to work. A tuple means "one of these"; the first is added when none is chosen. A database that
@@ -313,7 +318,7 @@ INSTALLS = {
              "apps": ["reelix", "qbittorrent", "jellyfin", "audiobookshelf", "bazarr", "gluetun", "nzbget",
                       "flaresolverr", "jellystat", "tdarr"], "usenet_choice": True},  # Dozzle: an add-on since DASH-223
     "all": {"name": "Everything", "reelix_edition": "full", "disk_health": True,
-            "about": "Every app Starboard offers, Storyarr and Kapowarr included.", "apps": None, "usenet_choice": True},
+            "about": "Every app Starboard offers, Kapowarr included.", "apps": None, "usenet_choice": True},
 }
 USENET_APPS = ("nzbget", "sabnzbd")
 
@@ -874,7 +879,7 @@ def read_keep(data_dir, env=None):
 def which_install(apps, edition=None):
     """"basics", "full" or "all" when the apps are one of INSTALLS (with either Usenet app where allowed), else "custom".
     The Reelix version is not part of it."""
-    have = set(apps)
+    have = set(apps) - RETIRED  # Storyarr kept from before does not make an install "custom"
     for key in ("all", "full", "basics"):
         for usenet in USENET_APPS:
             spec = INSTALLS[key]

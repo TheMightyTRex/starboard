@@ -2028,6 +2028,9 @@ async function startJellyfin() {
     settingRow("Give every Jellyfin user the defaults", withCost("Every hour, users who have not chosen otherwise get: Live TV opens on the Guide. New users get it too.", "defaults"),
       sw("df-on-l", x().defaults, (on) => save({ defaults: on })), "df-on-l"));
 
+  const plugins = el("div", { class: "stack-4", "aria-busy": "true", id: "jf-plugins-list" }, el("p", { class: "muted", text: "Asking Jellyfin…" }));
+  drawJellyfinPlugins(plugins);
+
   root.removeAttribute("aria-busy");
   root.replaceChildren(...[
     welcome ? notice("success", "Starboard found Jellyfin", "These are all inactive. Activate what you want; you can change them here at any time.") : null,
@@ -2040,10 +2043,72 @@ async function startJellyfin() {
       importForm, result, imported, mapping, matchSame ? el("div", { class: "actions" }, matchSame) : null, applyRows,
       el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply", "Apply now") : null)),
     missing,
+    section("jf-plugins", "Recommended plug-ins", "Skip intros and credits, play statistics, one item for each film with several versions, and Trakt. Installed and set up through Jellyfin, one choice each.", plugins),
     section("jf-defaults", "User defaults", null, defaultRows, el("div", { class: "actions" }, jobRun(df), runNow("defaults", "Defaults"))),
     users.length ? section("jf-you", "Your Jellyfin user",
       "The Library shows what this Jellyfin user has watched, and Mark as watched changes it for them.", whose) : null,
   ].filter(Boolean));
+}
+
+// Recommended Jellyfin plug-ins (DASH-404): one choice each, installed and set up through Jellyfin's own API. The
+// section draws itself again on its own, so a choice never redraws the rest of the page.
+const PLUGIN_STATE = { Active: ["Active", "success"], Restart: ["Active after a restart", "warning"], Disabled: ["Deactivated", "muted"],
+  Malfunctioned: ["Not working", "danger"], NotSupported: ["Not for this Jellyfin", "danger"], Superseded: ["Replaced by a newer version", "muted"], Superceded: ["Replaced by a newer version", "muted"] };
+
+async function drawJellyfinPlugins(holder, result = null) {
+  let d;
+  try { d = await api("/api/jellyfin/plugins"); } catch (e) { holder.replaceChildren(notice("danger", "Could not read Jellyfin's plug-ins", e.message)); return; }
+  holder.removeAttribute("aria-busy");
+  if (!d.connected) {
+    holder.replaceChildren(notice("info", d.problem ? "Jellyfin did not answer" : "Add Jellyfin first", d.problem || "Give your Jellyfin app its API key in Manage apps, from Jellyfin's Dashboard, API keys."));
+    return;
+  }
+  const status = el("div", { class: "stack-2" },
+    result ? notice(result.ok ? "success" : "danger", result.ok ? "Done" : "Jellyfin did not do it", result.text) : null,
+    d.finished?.length ? notice("success", "Set up after the restart", d.finished.join(". ") + ".") : null);
+  const restartButton = el("button", { type: "button", class: "btn btn--primary", onclick: async (e) => {
+    const button = e.currentTarget;  // null once the dialog has been awaited
+    const ok = await confirmDialog({ title: "Restart Jellyfin?", message: "Anyone watching is stopped for about a minute while Jellyfin starts again.", confirm: "Restart Jellyfin" });
+    if (!ok) return;
+    button.disabled = true;
+    try {
+      await api("/api/jellyfin/restart", { method: "POST" });
+      holder.replaceChildren(el("p", { role: "status", class: "muted", text: "Jellyfin is restarting. This page checks again in 30 seconds." }));
+      setTimeout(() => drawJellyfinPlugins(holder, { ok: true, text: "Jellyfin restarted." }), 30000);
+    } catch (err) { problem(err.message); button.disabled = false; }
+  } }, icon("refresh-cw"), "Restart Jellyfin now");
+  const restart = d.restart ? notice("warning", "Jellyfin needs a restart", "Plug-ins are added and removed when Jellyfin starts. Starboard finishes their set-up after the restart.",
+    d.can_restart ? restartButton : null) : null;
+  const groups = d.groups.map((g) => {
+    const name = `jf-plugin-${g.id}`;
+    const radios = g.choices.map((c) => ({ c, input: el("input", { type: "radio", name, value: c.id, checked: c.id === g.chosen, disabled: !c.available }) }));
+    const installed = g.installed.length ? el("div", { class: "stack-1" }, g.installed.map((p) => {
+      const [words, tone] = PLUGIN_STATE[p.status] || [p.status || "Installed", "muted"];
+      return el("p", { class: "small" }, "Installed: ", el("strong", { text: `${p.name} ${p.version}` }), " ", chip(words, tone));
+    })) : el("p", { class: "small muted", text: "Not installed." });
+    const apply = el("button", { type: "submit", class: "btn" }, "Apply this choice");
+    const form = el("form", { class: "stack-4", novalidate: true, "data-key": g.id },
+      el("fieldset", {}, el("legend", { class: "field__label", text: `${g.title}: what to use` }),
+        el("div", { class: "option-cards" }, radios.map(({ c, input }) => el("label", { class: "option-card" }, input,
+          el("strong", { text: c.package && c.id !== "none" ? `${c.label}: ${c.package}` : c.label }), c.hint ? el("small", { text: c.hint }) : null, c.cost ? el("small", { class: "setting__cost", text: c.cost }) : null)))),
+      el("div", { class: "actions" }, apply));
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const picked = radios.find((r) => r.input.checked)?.c.id;
+      if (!picked) return;
+      apply.disabled = true;
+      apply.textContent = "Asking Jellyfin…";
+      try {
+        const r = await api("/api/jellyfin/plugins", { method: "POST", body: { group: g.id, choice: picked } });
+        await drawJellyfinPlugins(holder, { ok: true, text: r.done.join(". ") + "." });
+      } catch (err) { await drawJellyfinPlugins(holder, { ok: false, text: err.message }); }
+    });
+    return el("div", { class: "stack-2" },
+      el("h3", { text: g.title }), el("p", { text: g.what }), installed, form,
+      g.cost ? el("p", { class: "small muted" }, el("span", { class: "setting__cost", text: g.cost })) : null);
+  });
+  if (result) announce(result.text);
+  holder.replaceChildren(status, restart || "", el("p", { class: "small muted", text: `${d.name} ${d.version}. Starboard installs through Jellyfin's own plug-in catalogue, adding a plug-in's repository when Jellyfin does not have it. Another choice deactivates the old plug-in; nothing is uninstalled.` }), ...groups);
 }
 
 // Audiobookshelf ------------------------------------------------------------

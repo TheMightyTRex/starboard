@@ -10,7 +10,9 @@ Sonarr, Lidarr, Readarr, Prowlarr and Seerr.
 
 - **One app instead of six.** One place to search, one list of sites to search, one set of quality settings and
   one queue.
-- **Light.** Reelix idles in under 40 MB of memory, where the six apps it replaces take about 900 MB together.
+- **Light.** Reelix Lite rests in about 40 MB of memory with an empty library and about 80 MB with a few hundred
+  films and series, where the six apps it replaces take about 900 MB together. While it works on a large library
+  it uses more: the full Reelix read 350 to 380 MB on 13 November 2026.
 - **Set up for you.** Install apps installs Reelix and sets it up: the admin account, a key for Starboard, your
   library folders, your download apps, the sites to search and your TMDB key. Read
   [Install apps with Starboard](../topics/install-apps.md).
