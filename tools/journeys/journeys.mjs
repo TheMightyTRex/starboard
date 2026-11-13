@@ -968,6 +968,30 @@ check("DR-06", "Books has Trending and Reelix's nine subjects, all standard rows
   books.rows.length === 10 && books.rows.every((r) => r.shown && !r.genre), books.rows.map((r) => r.id).join(","));
 check("DR-06", "Music has no genre rows (Reelix has no music genres)", (await api("/api/library/discover-layout?tab=music")).rows.every((r) => !r.genre));
 
+// DASH-404: recommended Jellyfin plug-ins, against the example server's stand-in Jellyfin (no real Jellyfin is changed)
+console.log("\n== DASH-404 Recommended Jellyfin plug-ins");
+await open("settings-jellyfin.html");
+const plug = page.locator("#jf-plugins-list");
+await plug.locator("[data-key=skip]").waitFor({ timeout: 10000 });
+check("JF-01", "each recommended plug-in has its own choice", (await plug.locator("form[data-key]").count()) === 4);
+check("JF-01", "what is installed shows with its version", /Installed: Playback Reporting 19\.0\.0\.0/.test(await plug.textContent()));
+check("JF-01", "downloaded times name TheIntroDB on Jellyfin 12", /Downloaded times \(recommended\): TheIntroDB/.test(await plug.locator("[data-key=skip]").textContent()));
+await plug.locator("[data-key=merge] input[value=on]").check();
+await plug.locator("[data-key=merge]").getByRole("button", { name: "Apply this choice" }).click();
+await page.locator("#jf-plugins-list", { hasText: "Installed Merge Versions" }).waitFor({ timeout: 10000 });
+check("JF-02", "installing says so and asks for a restart", /Jellyfin needs a restart/.test(await plug.textContent()));
+check("JF-02", "focus stays in the Merge Versions choice after it is drawn again",
+  await page.evaluate(() => !!document.activeElement?.closest("#jf-plugins-list")));
+await plug.getByRole("button", { name: "Restart Jellyfin now" }).click();
+await page.getByRole("dialog").getByRole("button", { name: "Restart Jellyfin", exact: true }).click();
+await page.waitForTimeout(800);
+const after = await api("/api/jellyfin/plugins");
+check("JF-03", "after the restart Merge Versions is active and set to quiet hours",
+  after.groups.find((g) => g.id === "merge").installed[0]?.status === "Active" && after.finished.length === 1, JSON.stringify(after.finished));
+const moved = await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "none" } });
+check("JF-04", "Do not install deactivates and never uninstalls", moved.done[0] === "Deactivated Playback Reporting (still installed)", moved.done.join("; "));
+await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "on" } });
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

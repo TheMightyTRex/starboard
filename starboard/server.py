@@ -1637,6 +1637,28 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/extras" and method == "GET":
                 return self.json(200, dict(app.jobs.status(), importing=app.importing, import_result=app.import_result,
                                            history=migrate.status(cfg.data_dir, cfg.data["services"])))
+            if path == "/api/jellyfin/plugins" and method == "GET":  # recommended Jellyfin plug-ins (DASH-404)
+                from . import jellyfin_plugins
+                return self.json(200, jellyfin_plugins.status(cfg.data["services"], cfg.data_dir, cfg.data))
+            if path == "/api/jellyfin/plugins" and method == "POST":
+                from . import jellyfin_plugins
+                b = self.body()
+                try:
+                    return self.json(200, jellyfin_plugins.choose(cfg.data["services"], cfg.data_dir, str(b.get("group") or ""),
+                                                                  str(b.get("choice") or ""), cfg.data))
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except OSError as e:
+                    return self.error(502, f"Jellyfin did not do it: {getattr(e, 'reason', e)}")
+            if path == "/api/jellyfin/restart" and method == "POST":
+                from . import jellyfin_plugins
+                try:
+                    jellyfin_plugins.restart(cfg.data["services"])
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except OSError as e:
+                    return self.error(502, f"Jellyfin did not restart: {getattr(e, 'reason', e)}")
+                return self.json(200, {"ok": True})
             m = re.match(r"^/api/extras/(livetv|import|defaults|listening)/run$", path)
             if m and method == "POST":
                 app.jobs.run_soon(m.group(1), force=True)

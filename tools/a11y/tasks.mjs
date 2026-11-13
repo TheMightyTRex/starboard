@@ -343,6 +343,33 @@ if (await wn14.count()) {
   check("T14", "What is new is gone", !(await page.locator("#pl-styles-whats-new").count()));
 } else check("T14", "the example Styles plug-in shows What is new", false, "not shown");
 
+// T15 Recommended Jellyfin plug-ins (DASH-404): arrows choose Trakt's Install and activate without doing anything,
+// Tab to Apply this choice and Enter installs it; focus stays in Trakt's choice and the result is said.
+await page.goto(`${base}/settings-jellyfin.html#jf-plugins`);  // its topic tab
+await settle();
+const trakt = page.locator("#jf-plugins-list form[data-key=trakt]");
+await trakt.waitFor({ state: "attached", timeout: 10000 }).catch(() => {});
+const plugTab = page.getByRole("tab", { name: "Recommended plug-ins" });
+if (await plugTab.count()) {  // a person opens its topic tab with the keyboard
+  await plugTab.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+}
+if (await trakt.count()) {
+  await trakt.locator("input[value=none]").focus();
+  const f15a = await focus();
+  await page.keyboard.press("ArrowUp");
+  check("T15", "an arrow moves to Install and activate without installing", (await trakt.locator("input[value=on]").isChecked())
+    && !/Installed Trakt/.test(await page.locator("#jf-plugins-list").textContent()), `${f15a.tag} ${f15a.text}`);
+  const apply = await tabTo((f) => f.tag === "BUTTON" && /^Apply this choice/.test(f.text), 5);
+  check("T15", "Tab reaches Apply this choice", !!apply, apply ? apply.text : "not reached");
+  await page.keyboard.press("Enter");
+  await settle();
+  const f15 = await focus(), s15 = await said();
+  check("T15", "after Apply, focus stays in Trakt's choice", !f15.lost && await page.evaluate(() => !!document.activeElement.closest("form[data-key=trakt]")), `${f15.tag} ${f15.text}`);
+  check("T15", "the install is said", /Installed Trakt/.test(s15), s15);
+} else check("T15", "the example Jellyfin shows its recommended plug-ins", false, "not shown");
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
