@@ -1337,6 +1337,9 @@ async function stepContent(id, root) {
     const picks = [box("livetv", "Live TV channels and guide", "Free channels for Jellyfin's Live TV, with guides. Needs Jellyfin's Live TV folder (./install.sh asks)."),
       box("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin. You choose where from in Settings, Apps, Jellyfin."),
       box("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone who has not chosen otherwise.")];
+    // DASH-399: Audio description, unticked, in the same words as the terminal set-up (web/setup-answers.json).
+    const ad = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).audio_description;
+    picks.push(box("audio_description", ad.label, ad.hint));
     nodes = [el("div", { class: "switch-list" }, picks.map((x) => x.node))];
     save = async () => {
       await saveGeneral({ extras: Object.fromEntries(picks.map((x) => [x.key, x.input.checked])) });
@@ -1672,7 +1675,7 @@ async function startGuide() {
       const keyless = types(Object.keys(KEY_PLACE)).filter((s) => !s.has_api_key).map((s) => s.name);
       const facts = [
         ["Apps", `${apps} ${apps === 1 ? "app" : "apps"}${keyless.length ? `; still without a key: ${keyless.join(", ")}` : ""}`, "/settings.html"],
-        ["Jellyfin extras", ["livetv", "import_keep", "defaults"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
+        ["Jellyfin extras", ["livetv", "import_keep", "defaults", "audio_description"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults", audio_description: "audio description (to install in Settings, Plug-ins)" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
         ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Off", "/settings-downloads-hours.html"],
         ["Alerts", config.watch.enabled ? `On, to ${config.watch.channel.kind || "nowhere yet"}` : "Off", "/settings-alerts.html"],
         ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-performance.html"],

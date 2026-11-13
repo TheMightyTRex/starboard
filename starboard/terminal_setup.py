@@ -210,7 +210,8 @@ HELP = {
     "storage": "The media folder holds your films, series, books and downloads together.",
     "extras": "Live TV builds free channel playlists and TV guides for Jellyfin once a day. Watch history brings what "
               "everyone has watched from Plex, Emby or another Jellyfin. Defaults set Jellyfin's options for users who "
-              "have not chosen their own.",
+              "have not chosen their own. Audio description adds a plug-in for blind and partially sighted people, "
+              "installed in Settings, Plug-ins.",
     "alerts": "Starboard checks your apps every few minutes and sends an alert when one stops answering or a disk has a "
               "problem. ntfy has a free phone app: choose a long private topic name, such as https://ntfy.sh/a-long-private-name.",
     "health": "A small script reads each disk's health report (SMART) as root every 30 minutes, so Starboard can warn "
@@ -3042,6 +3043,9 @@ def step_connect(api, term, state):
     extras = [("livetv", "Live TV channels and guide", "Free channels for Jellyfin's Live TV, with guides"),
               ("import_keep", "Bring in watch history", "From Plex, Emby or another Jellyfin"),
               ("defaults", "Defaults for every user", "Live TV opens on the Guide for everyone")]
+    from . import setup_answers
+    ad = setup_answers.WORDS["audio_description"]  # DASH-399: the same words as the browser set-up, unticked
+    extras.append(("audio_description", ad["label"], ad["hint"]))
     while True:
         picked = term.choose_many(question("extras"), [(t, a) for _, t, a in extras],
                                   state.get("extras", [i for i, (k, _, _) in enumerate(extras) if config["extras"].get(k)]),
@@ -3057,6 +3061,8 @@ def step_connect(api, term, state):
         if folder:
             state.setdefault("host", {})["livetv"] = folder.rstrip("/") + "/jellyfin/iptv"
         term.note("Live TV needs a folder Jellyfin reads; it is set up at the end, with your other changes to this computer.")
+    if 3 in picked:
+        term.note(ad["chosen"])
     term.ok("Saved. Change them later in Settings, Apps, Jellyfin.")
     return True
 

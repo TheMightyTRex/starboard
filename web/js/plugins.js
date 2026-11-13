@@ -1048,6 +1048,50 @@ function addPluginSection(redraw) {
 
 // Settings, Plug-ins, Manage (DASH-318): the plug-ins added, each with its state, Settings, Activate or Deactivate
 // and Remove; Deactivate all. Adding is on the Catalogue page.
+// Plug-ins ticked in the first set-up (DASH-399), such as Audio description: an offer, never an install. On the
+// Catalogue (c given) it installs as any other, its permissions shown and the password asked; on Your plug-ins it
+// links to the Catalogue. Not now forgets the wish. Focus goes to the page's first heading once the offer has gone.
+// Not now says itself where the offer was (Settings pattern 2: no toast on a Settings page), drawn once.
+let offerSaid = "";
+function setupOffers(r, c, redraw) {
+  const said = offerSaid ? [notice("success", offerSaid)] : [];
+  offerSaid = "";
+  return [...said, ...(r.wanted || []).map((w) => {
+    const entry = c ? c.plugins.find((e) => e.id === w.id && e.own) : null;
+    const later = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, w.later,
+      el("span", { class: "visually-hidden", text: `: ${w.name}` }));
+    later.addEventListener("click", async () => {
+      later.disabled = true;
+      try {
+        const o = await api("/api/plugins/wanted", { method: "POST", body: { id: w.id } });
+        offerSaid = o.said;
+        await redraw();
+        const h = $("main h1");
+        if (h) { h.tabIndex = -1; h.focus(); }
+      } catch (err) { problem(err.message, later); later.disabled = false; }
+    });
+    let go = null;
+    if (!c) go = el("a", { class: "btn btn--compact", href: "/settings-plugins-catalogue.html" }, icon("layout-grid"), "Open the catalogue");
+    else if (entry && entry.published && entry.manifest) {
+      go = el("button", { type: "button", class: "btn btn--primary btn--compact", text: w.install });
+      go.addEventListener("click", async () => {
+        go.disabled = true;
+        try {
+          const s = await api("/api/plugins/preview", { method: "POST", body: { catalogue_id: w.id } });
+          if (!s.test.ok) { problem(`${w.name} did not pass Starboard's tests: ${s.test.issues.filter((i) => i.severity === "error").map((i) => i.what).join("; ")}`, go); return; }
+          const password = await installWarning(s, { opener: go });
+          if (password === null) return;
+          await api("/api/plugins/add", { method: "POST", body: { catalogue_id: w.id, password } });
+          location.href = `/settings-plugin.html?id=${encodeURIComponent(w.id)}`;
+        } catch (err) { problem(err.message, go); }
+        finally { go.disabled = false; }
+      });
+    }
+    const text = c && !go ? w.coming : w.text;
+    return el("div", { class: "stack-2", "data-offer": w.id }, notice("info", w.title, text, el("div", { class: "actions" }, go, later)));
+  })];
+}
+
 async function startPlugins() {
   // Plug-in installers open this page with #manifest=...: adding is on the Catalogue page now.
   if (location.hash.startsWith("#manifest=")) { location.replace(`/settings-plugins-catalogue.html${location.hash}`); return; }
@@ -1057,7 +1101,7 @@ async function startPlugins() {
     try { r = await api("/api/plugins"); } catch (e) { holder.replaceChildren(notice("danger", "Could not load the plug-ins", e.message)); return; }
     holder.removeAttribute("aria-busy");
     if (!r.plugins.length) {
-      holder.replaceChildren(section("pl-yours", "Your plug-ins", "Plug-ins add pages and settings to Starboard.",
+      holder.replaceChildren(...setupOffers(r, null, draw), section("pl-yours", "Your plug-ins", "Plug-ins add pages and settings to Starboard.",
         emptyState("No plug-ins yet", "Add one from the catalogue.", el("a", { class: "btn btn--primary", href: "/settings-plugins-catalogue.html" }, icon("layout-grid"), "Open the catalogue"))));
       return;
     }
@@ -1068,7 +1112,7 @@ async function startPlugins() {
       catch (err) { problem(err.message, stopAll); }
     });
     const active = r.plugins.filter((p) => p.state === "enabled").length;
-    holder.replaceChildren(
+    holder.replaceChildren(...setupOffers(r, null, draw),
       section("pl-yours", "Your plug-ins", `${r.plugins.length} added, ${active} active. Each one's settings are in its own tab above.`,
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row row--no-lead" },
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
@@ -1093,7 +1137,7 @@ async function startCatalogue() {
     try { [r, c] = await Promise.all([api("/api/plugins"), api("/api/plugins/catalogue")]); }
     catch (e) { holder.replaceChildren(notice("danger", "Could not load the catalogue", e.message)); return; }
     holder.removeAttribute("aria-busy");
-    const ORDER = ["Look", "Jellyfin", "Downloads", "Network", "Home", "System"];
+    const ORDER = ["Look", "Accessibility", "Jellyfin", "Downloads", "Network", "Home", "System"];
     const rank = (k) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
     const byKind = (list) => {
       const kinds = new Map();
@@ -1131,6 +1175,7 @@ async function startCatalogue() {
         el("div", { class: "row__side" }, side));
     };
     holder.replaceChildren(...[
+      ...setupOffers(r, c, draw),
       builtinSection(r.builtin || [], draw),
       ...c.catalogues.map((cat, n) => {
         const rows = c.plugins.filter((e) => e.catalogue === cat.name && e.own === cat.own);
@@ -1178,7 +1223,7 @@ function sourcesSection(cats, redraw) {
     })();
     return el("li", { class: "row row--no-lead" },
       el("div", {}, el("div", { class: "row__title", text: cat.own ? "The Starboard plug-ins collection" : cat.name }),
-        el("div", { class: "row__meta", text: [`${cat.count} plug-in${cat.count === 1 ? "" : "s"}`, cat.url, cat.error && "Not answering"].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__meta row__meta--wrap", text: [`${cat.count} plug-in${cat.count === 1 ? "" : "s"}`, cat.url, cat.error && "Not answering"].filter(Boolean).join(" · ") })),
       el("div", { class: "row__side" }, side));
   });
   return section("pl-sources", "Catalogue sources", "Where this page finds plug-ins. Add another catalogue by its link; each is read at most once a day.",

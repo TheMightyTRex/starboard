@@ -222,3 +222,5 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 .dp-button { fill: none; stroke: var(--color-text-muted); stroke-width: 0.6; }
 .dp-search { stroke: var(--color-text-muted); }
 .side-panel .design-picture { max-width: 160px; }
+/* A catalogue's address is one long word: it wraps at phone width rather than push the page sideways. */
+.row__meta--wrap { overflow-wrap: anywhere; }
