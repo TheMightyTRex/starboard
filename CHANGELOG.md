@@ -85,6 +85,31 @@ add features.
 
 ### Changed
 
+- Heavy jobs run in a short-lived process of their own, so the memory they use goes back to the system when they end
+  and the long-running server stays small: the watch history import, listening progress, the built-in Live TV job, the
+  Live TV plug-in's hourly run and building a Library list. Measured: building a 10,000-film Library list left the
+  server 9 MB larger before; now it stays at 35 MB while the job's own process peaks at 38 MB and ends; each start
+  costs about 0.2 seconds. STARBOARD_CHILD_JOBS=0 runs them in the server as before (DASH-79).
+- The hourly watch history import asks Jellyfin for its newest film or episode first (one small request) and reads
+  every film and episode only when something has changed since the last full read (a new item, the history, the
+  accounts or the Jellyfin users), and at least once a day. A full read now works through 1,000 items at a time
+  instead of holding the whole library. On the owner's server it read 51,000 items every hour (about 8 minutes of
+  Jellyfin's time, Starboard from 18 MB to 164 MB, still 61 MB eight minutes later) to find nothing new; with a made-
+  up Jellyfin of the same size the server's peak went from 119 MB to 38 MB and a run with nothing new from 1.7 s to
+  0.01 s. What the page shows is the same (DASH-397).
+- Plug-in files that are only read to show them (each plug-in's manifest, state and settings) are parsed once and kept
+  while the file is unchanged, instead of on every request. Every page's /api/session reads each plug-in's manifest
+  for the menus. Measured on the example server: /api/session 1.28 ms to 0.85 ms, the plug-ins list 7.4 ms to 4.4 ms,
+  the dashboard's plug-in cards 3.1 ms to 1.7 ms, System, Jobs 3.0 ms to 1.3 ms and Display's styles 3.1 ms to 1.5 ms
+  (DASH-397).
+- The Library keeps a tab's list, already read, for 2 minutes after it was last used, with its titles folded for
+  searching once, instead of reading and parsing the whole file for every page, filter and search. Measured with
+  10,000 films (a 2.7 MB list): a wall page from 99 ms to 14 ms, a search from 172 ms to 13 ms. While kept it holds
+  about 14 MB for that size of library (about 1.5 MB for a library of 1,000), and it is let go 2 minutes after the
+  Library was last used, so an unused Library still costs nothing (DASH-397).
+- The Live TV plug-in's listener checks for a shutdown every 5 seconds instead of twice a second, so an idle plug-in
+  wakes the processor about 12 times a minute instead of about 120 (measured on the server: 683 wake-ups in 334
+  seconds at rest). Nothing else changes (DASH-397).
 - Library walls, Wanted and History load their next page with the design system's load more as you scroll (UX-52):
   "Loading the next 40 films" shows while it loads, a screen reader hears "24 more films shown", focus stays where it
   was, and after three lots in a row it pauses so the footer stays in reach; Show 40 more always works and carries on

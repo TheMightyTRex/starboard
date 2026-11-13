@@ -16,6 +16,8 @@ import os
 import threading
 import time
 
+from . import child
+
 SETTINGS = os.environ.get("STARBOARD_PLUGIN_SETTINGS", "/run/starboard/settings.json")
 JELLYFIN = os.environ.get("STARBOARD_PLUGIN_JELLYFIN", "/run/starboard/jellyfin.json")
 STATUS = os.environ.get("STARBOARD_PLUGIN_STATUS", "/data/status.json")
@@ -123,7 +125,8 @@ def loop(stop=None):
         try:
             _save_status(state="running", started=time.time())
             with _build_lock:  # not while a list just added is being tested
-                said = run_once(force=force)  # first: the finish time is taken after the run
+                # In a short-lived process, so the guide's memory goes back to the system when it ends (DASH-79)
+                said = child.run("livetv-plugin", {"force": force}, timeout=3 * 3600)  # the finish time is taken after the run
             _save_status(state="done", finished=time.time(), summary=said)
         except Exception as e:  # recorded for the card and the plug-in's section; the next run tries again
             try:
@@ -641,8 +644,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 def main():
+    child.ENABLED = os.environ.get("STARBOARD_CHILD_JOBS", "1") != "0"
     threading.Thread(target=loop, name="livetv", daemon=True).start()
-    http.server.ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()  # inside its own container  # nosec B104
+    # Inside its own container. It checks for a shutdown every 5 seconds, not twice a second (nothing stops it but
+    # the container ending), so an idle plug-in lets a small server's processor rest.
+    http.server.ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever(poll_interval=5)  # nosec B104
 
 
 if __name__ == "__main__":

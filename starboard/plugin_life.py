@@ -39,16 +39,16 @@ def status(data_dir, pid, manifest=None, st=None):
     """{state, sentence, button, action, missing, can_roll_back, previous_version}. The state is the stored one
     (installed, enabled, disabled, failed) unless the plug-in needs setting up or this Starboard is past its range."""
     where = pa.folder(data_dir, pid)
-    m = manifest or pa._read(os.path.join(where, "manifest.json"), {}) or {}
-    st = st if st is not None else pa._read(os.path.join(where, "state.json"), {}) or {}
-    values = pa._read(os.path.join(where, "settings.json"), {}) or {}
+    m = manifest or pa._read_kept(os.path.join(where, "manifest.json"), {}) or {}
+    st = st if st is not None else pa._read_kept(os.path.join(where, "state.json"), {}) or {}
+    values = pa._read_kept(os.path.join(where, "settings.json"), {}) or {}
     state = st.get("state", "installed")
     missing = missing_settings(m, values)
     if m.get("starboard_api") and not plugins._range_ok(m["starboard_api"], plugins.API_VERSION):
         state = "not-supported"
     elif state != "enabled" and (missing or (m.get("setup_required") and not st.get("set_up"))):
         state = "needs-setup"
-    previous = pa._read(os.path.join(where, "previous", "manifest.json"))
+    previous = pa._read_kept(os.path.join(where, "previous", "manifest.json"))
     out = {"state": state, "missing": missing, "can_roll_back": bool(previous),
            "previous_version": (previous or {}).get("version")}
     if state in STATES:
@@ -280,15 +280,15 @@ def whats_new(data_dir, pid, manifest=None, st=None):
     {version, date, sections: [{type, items: [parts]}]} in the parts the page builds as text."""
     from . import changes
     where = pa.folder(data_dir, pid)
-    st = st if st is not None else pa._read(os.path.join(where, "state.json"), {}) or {}
+    st = st if st is not None else pa._read_kept(os.path.join(where, "state.json"), {}) or {}
     mark = st.get("whats_new")
     if not isinstance(mark, dict) or not mark.get("to"):
         return None
-    m = manifest or pa._read(os.path.join(where, "manifest.json"), {}) or {}
+    m = manifest or pa._read_kept(os.path.join(where, "manifest.json"), {}) or {}
     newer = _newer(mark["to"], mark.get("from") or "0")
     low, high = (mark.get("from"), mark["to"]) if newer else (mark["to"], mark.get("from"))
     # Going back, the words are in the version left behind, kept in previous/ (or the current one, which may list it).
-    source = m if newer else (pa._read(os.path.join(where, "previous", "manifest.json"), {}) or m)
+    source = m if newer else (pa._read_kept(os.path.join(where, "previous", "manifest.json"), {}) or m)
     listed = source.get("changes") if isinstance(source.get("changes"), list) and not plugins.check_changes(source.get("changes")) else []
     picked = [v for v in listed if (low is None or _key(v["version"]) > _key(low)) and _key(v["version"]) <= _key(high)]
     picked.sort(key=lambda v: _key(v["version"]), reverse=True)
@@ -461,10 +461,10 @@ def _jobs_file(data_dir):
 
 def jobs(data_dir):
     """Every job from every added plug-in, for System, Jobs: [{plugin, id, title, when, enabled, last...}]."""
-    last = pa._read(_jobs_file(data_dir), {}) or {}
+    last = pa._read_kept(_jobs_file(data_dir), {}) or {}
     out = []
     for p in pa.listing(data_dir):
-        m = pa._read(os.path.join(pa.folder(data_dir, p["id"]), "manifest.json"), {}) or {}
+        m = pa._read_kept(os.path.join(pa.folder(data_dir, p["id"]), "manifest.json"), {}) or {}
         for j in m.get("jobs") or []:
             key = f"{p['id']}/{j['id']}"
             when = (f"Daily at {j['daily']}" if "daily" in j else f"Every {j['every_hours']} hours" if "every_hours" in j

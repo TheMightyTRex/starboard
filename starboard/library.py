@@ -73,6 +73,81 @@ _building = set()
 _state = {"used": 0.0, "tabs": {}, "thread": None, "errors": {}}
 _state_lock = threading.Lock()
 
+# Indexes read from disk are kept, parsed, for a short time after their last use (optimisation review, 13 November
+# 2026): each wall page, filter and search read and parsed the whole file again, and folded every title for each
+# search (10,000 films: a 2.7 MB file, about 94 ms a wall page and 166 ms a search here). Each is dropped KEEP_INDEX
+# seconds after it was last used, by a thread that runs only while something is kept, so an unused Library still
+# costs nothing. A kept index is shared: treat it as read only.
+KEEP_INDEX = 120
+_kept = {}  # path -> [stamp, index, last used]
+_kept_lock = threading.Lock()
+_sweeper = None
+_sweep_now = threading.Event()  # set when everything is dropped, so the thread ends at once
+
+
+def _stamp(path):
+    st = os.stat(path)
+    return st.st_mtime_ns, st.st_size
+
+
+def _read_index(path):
+    """The parsed index file at path ({built, v, items}), from the kept copy while the file is unchanged. Raises
+    OSError or ValueError as reading the file does."""
+    global _sweeper
+    stamp = _stamp(path)
+    with _kept_lock:
+        hit = _kept.get(path)
+        if hit and hit[0] == stamp:
+            hit[2] = time.time()
+            return hit[1]
+    with open(path, encoding="utf-8") as f:
+        index = json.load(f)
+    if not isinstance(index, dict):
+        raise ValueError("Not a Library index")
+    with _kept_lock:
+        _kept[path] = [stamp, index, time.time()]
+        if _sweeper is None:
+            _sweeper = threading.Thread(target=_sweep, name="library-kept", daemon=True)
+            _sweeper.start()
+    return index
+
+
+def _sweep():
+    """Drops kept indexes not used for KEEP_INDEX seconds; ends when none is left."""
+    global _sweeper
+    while True:
+        _sweep_now.wait(KEEP_INDEX / 2)
+        with _kept_lock:
+            _sweep_now.clear()
+            for path in [p for p, hit in _kept.items() if time.time() - hit[2] > KEEP_INDEX]:
+                del _kept[path]
+            if not _kept:
+                _sweeper = None
+                return
+
+
+def _drop_kept(path=None):
+    with _kept_lock:
+        if path is None:
+            _kept.clear()
+            _sweep_now.set()
+        else:
+            _kept.pop(path, None)
+
+
+def _folded(index):
+    """Each item's title and line below it, folded for matching, worked out once for a kept index."""
+    got = index.get("_folded")
+    if got is None or len(got) != len(index["items"]):
+        got = [fold(e.get("t")) + "\n" + fold(e.get("m", "")) for e in index["items"]]
+        index["_folded"] = got  # a new list each time, never changed after: safe to share between requests
+    return got
+
+
+def _matching(index, words):
+    """The items whose title or line below it holds every word (already folded), in index order."""
+    return [e for e, f in zip(index["items"], _folded(index)) if all(w in f for w in words)]
+
 
 # Letters and sort keys -------------------------------------------------------------------------------------
 
@@ -500,26 +575,33 @@ def warm(data_dir, reelix, tab, urls, pause=0.3):
     threading.Thread(target=run, name=f"posters-{tab}", daemon=True).start()
 
 
+def build_and_write(data_dir, reelix, tab):
+    """Reads one tab from Reelix and writes its index file: {"count", "posters"}. The running server does this in a
+    short-lived process (child.py, DASH-79), so the memory used reading Reelix's lists is given back when it ends."""
+    entries = build(reelix, tab)
+    _write(data_dir, tab, entries)
+    return {"count": len(entries), "posters": [e["p"] for e in entries if isinstance(e, dict) and e.get("p")]}
+
+
 def refresh(data_dir, reelix, tab):
     """Builds one tab's index now. Only one build per tab runs at a time; a second caller waits for it."""
+    from . import child
     with _locks[tab], _one_build:
         started = time.time()
         try:
-            entries = build(reelix, tab)
+            got = child.run("library", {"data_dir": data_dir, "reelix": reelix, "tab": tab}, timeout=1800)
         except services.ServiceError as e:
             with _state_lock:
                 _state["errors"][tab] = str(e)
             raise
-        _write(data_dir, tab, entries)
+        _drop_kept(_path(data_dir, tab))
         _limit.pop(data_dir, None)
-        warm(data_dir, reelix, tab, [e["p"] for e in entries if isinstance(e, dict) and e.get("p")])
-        count = len(entries)
-        del entries
+        warm(data_dir, reelix, tab, got["posters"])
         _give_back()
         with _state_lock:
             _state["errors"].pop(tab, None)
-        logs.detail("library", f"{LABELS[tab]} index: {count} items in {round((time.time() - started) * 1000)} ms")
-        return count
+        logs.detail("library", f"{LABELS[tab]} index: {got['count']} items in {round((time.time() - started) * 1000)} ms")
+        return got["count"]
 
 
 def _refresh_quietly(data_dir, reelix, tab):
@@ -585,8 +667,7 @@ def load(data_dir, reelix, tab):
         refresh(data_dir, reelix, tab)
     elif age > STALE:
         _background(data_dir, reelix, tab)
-    with open(path, encoding="utf-8") as f:
-        index = json.load(f)
+    index = _read_index(path)
     if age is not None and age <= STALE and index.get("v") != INDEX_VERSION:
         _background(data_dir, reelix, tab)  # built by an older Starboard: served now, rebuilt with the new facts
     return index
@@ -599,6 +680,7 @@ def forget(data_dir):
             os.remove(_path(data_dir, tab))
         except OSError:
             pass
+    _drop_kept()
 
 
 # Walls -----------------------------------------------------------------------------------------------------
@@ -623,8 +705,8 @@ def wall(index, tab, q="", chip="", sort="az", group="", offset=0, limit=40, unt
         else:
             items = [e for e in items if any(x.lower() == g for x in e.get("g") or [])]
     if q:
-        words = fold(q).split()
-        items = [e for e in items if all(w in fold(e["t"]) or w in fold(e.get("m", "")) for w in words)]
+        hits = {id(e) for e in _matching(index, fold(q).split())}
+        items = [e for e in items if id(e) in hits]
     counts = {key: sum(1 for e in items if key in e["f"]) for key, _ in CHIPS.get(tab, [])}
     if chip:
         items = [e for e in items if chip in e["f"]]
@@ -1166,11 +1248,9 @@ def search_library(data_dir, q, limit=8, reelix=None):
     out = []
     for tab in TABS:
         try:
-            with open(_path(data_dir, tab), encoding="utf-8") as f:
-                items = json.load(f)["items"]
+            hits = _matching(_read_index(_path(data_dir, tab)), words)
         except (OSError, ValueError, KeyError):
             continue
-        hits = [e for e in items if all(w in fold(e["t"]) or w in fold(e.get("m", "")) for w in words)]
         whole = " ".join(words)
         hits.sort(key=lambda e: (fold(e["t"]) != whole, not e["s"].startswith(whole), e["s"]))
         if hits:
@@ -1213,8 +1293,7 @@ def overview(data_dir, reelix=None):
     recent, tabs = [], []
     for tab in TABS:
         try:
-            with open(_path(data_dir, tab), encoding="utf-8") as f:
-                items = json.load(f)["items"]
+            items = _read_index(_path(data_dir, tab))["items"]
         except (OSError, ValueError, KeyError):
             tabs.append({"tab": tab, "label": LABELS[tab], "count": None})
             continue
