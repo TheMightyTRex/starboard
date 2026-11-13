@@ -109,7 +109,7 @@ def json_channels(data):
             out.append({"id": str(c.get("tvg-id") or c.get("tvg_id") or c.get("epg_id") or c.get("id") or ""), "name": name,
                         "url": url, "logo": str(c.get("logo") or c.get("tvg-logo") or c.get("image") or ""),
                         "group": str(c.get("group") or c.get("group-title") or c.get("category") or "")})
-    return out[:MAX_CHANNELS]
+    return out
 
 
 def m3u_channels(text, skipped=None):
@@ -125,7 +125,7 @@ def m3u_channels(text, skipped=None):
             if livetv._clean_url(url):
                 out.append({"id": attrs.get("tvg-id", ""), "name": line.rsplit(",", 1)[-1].strip(), "url": url,
                             "logo": attrs.get("tvg-logo", ""), "group": attrs.get("group-title", "")})
-    return out[:MAX_CHANNELS]
+    return out
 
 
 FILES = "own-files"  # uploaded files, in the plug-in's own data folder; a source's url is then "file:<name in it>"
@@ -141,8 +141,10 @@ def local_path(data_dir, url):
     return os.path.join(data_dir, FILES, name) if re.fullmatch(r"[0-9a-f]{10}\.[a-z.]{1,8}", name) else None
 
 
-def read(url, fetch=None, data_dir=None, skipped=None):
-    """(kind, channels or None) for an address or an uploaded file; raises ValueError in words."""
+def read(url, fetch=None, data_dir=None, skipped=None, sizes=None):
+    """(kind, channels or None) for an address or an uploaded file; raises ValueError in words. Only the first
+    MAX_CHANNELS of a list are read (owner, 13 November 2026: "Keep 2,000 ... it should be a curated list anyway");
+    `sizes` gets "all", how many the list has."""
     path = local_path(data_dir or "", url) if data_dir else None
     if url.startswith("file:"):
         if not path or not os.path.exists(path):
@@ -165,6 +167,9 @@ def read(url, fetch=None, data_dir=None, skipped=None):
     chans = m3u_channels(text, skipped) if text.startswith("#") else json_channels(json.loads(text))
     if not chans:
         raise ValueError("That list has no channels with a stream address")
+    if sizes is not None:
+        sizes["all"] = len(chans)
+    chans = chans[:MAX_CHANNELS]
     return kind, chans
 
 
@@ -177,10 +182,11 @@ def add(data_dir, url, fetch=None):
         raise ValueError("That address is already added")
     if len(have) >= MAX_SOURCES:
         raise ValueError(f"Up to {MAX_SOURCES} lists and guides")
-    kind, chans = read(url, fetch)
+    sizes = {}
+    kind, chans = read(url, fetch, sizes=sizes)
     sid = hashlib.sha256(url.encode()).hexdigest()[:10]
     item = {"id": sid, "url": url, "kind": kind, "name": _name(url), "on": True, "added": time.time(),
-            "said": _found(chans)}
+            "said": _found(chans, sizes), "found": len(chans) if chans else 0}
     save(data_dir, have + [item])
     return item
 
@@ -217,12 +223,13 @@ def add_file(data_dir, filename, stream, length):
     os.replace(tmp, stored)
     url = f"file:{os.path.basename(stored)}"
     try:
-        kind, chans = read(url, data_dir=data_dir)
+        sizes = {}
+        kind, chans = read(url, data_dir=data_dir, sizes=sizes)
     except Exception:
         os.remove(stored)  # the plug-in's own copy of a file it cannot use
         raise
     item = {"id": sid, "url": url, "kind": kind, "name": shown, "on": True, "added": time.time(),
-            "said": _found(chans)}
+            "said": _found(chans, sizes), "found": len(chans) if chans else 0}
     save(data_dir, have + [item])
     return item
 
@@ -234,10 +241,16 @@ def forget(data_dir, item):
         os.remove(path)
 
 
-def _found(chans):
+def _found(chans, sizes=None):
     if chans is None:
         return "A guide"
+    every = (sizes or {}).get("all", len(chans))
+    if every > len(chans):
+        return f"{every:,} channels found; the first {len(chans):,} are read"
     return f"{len(chans)} {'channel' if len(chans) == 1 else 'channels'} found"
+
+
+CUT = "Only the first {read:,} of {every:,} channels are read: Live TV is for a short, chosen list, so keep it to the channels you want"
 
 
 def fingerprint(data_dir):
@@ -293,7 +306,8 @@ def build(d, data_dir, fetch=None, plays=None, only=None, why=None):
             continue
         skipped = []
         try:
-            _, chans = read(x["url"], fetch, data_dir, skipped)
+            sizes = {}
+            _, chans = read(x["url"], fetch, data_dir, skipped, sizes)
         except Exception as e:  # one list failing does not stop the others
             _update(data_dir, x["id"], said=f"Could not be read: {str(e)[:100]}", state="problem", progress=None,
                     result={"added": 0, "total": 0, "text": f"It could not be read: {str(e)[:160]}"})
@@ -330,6 +344,8 @@ def build(d, data_dir, fetch=None, plays=None, only=None, why=None):
                 for r in ex.map(why or _why, failed[:30]):
                     reasons[r] = reasons.get(r, 0) + 1
         text = []
+        if sizes.get("all", 0) > len(chans):
+            text.append(CUT.format(read=len(chans), every=sizes["all"]))
         if dupes:
             text.append(f"{dupes} {'is' if dupes == 1 else 'are'} already in Live TV, so {'it came' if dupes == 1 else 'they came'} in inactive: activate {'it' if dupes == 1 else 'them'} in Channels when you want")
         for r, k in sorted(reasons.items(), key=lambda kv: -kv[1]):

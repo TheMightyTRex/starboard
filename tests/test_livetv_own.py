@@ -173,6 +173,17 @@ class OwnSourcesTest(unittest.TestCase):
         self.assertEqual(livetv_own.notices(self.data)[0]["title"], "a.example · list.m3u: 2 of 3 channels added")
         self.assertIn("not web addresses", livetv_own.notices(self.data)[0]["text"])
 
+    def test_a_long_list_is_cut_at_2000_and_says_so(self):
+        # Owner, 13 November 2026: "Keep 2,000" and "Add a note - it should be a curated list anyway".
+        big = "#EXTM3U\n" + "".join(f"#EXTINF:-1,Made-up {i}\nhttps://l.example/{i}.m3u8\n" for i in range(2100))
+        PAGES["https://l.example/long.m3u"] = big.encode()
+        item = livetv_own.add(self.data, "https://l.example/long.m3u", fetch)
+        self.assertEqual((item["said"], item["found"]), ("2,100 channels found; the first 2,000 are read", 2000))
+        livetv_own.build(self.d, self.data, fetch, plays=lambda url, ua: True)
+        result = livetv_own.sources(self.data)[0]["result"]
+        self.assertEqual(result["total"], 2000)
+        self.assertTrue(result["text"].startswith("Only the first 2,000 of 2,100 channels are read: Live TV is for a short, chosen list"))
+
     def test_kodi_links_are_said_by_name(self):
         kodi = b'#EXTM3U\n#EXTINF:0,Sky Sport 1\nplugin://plugin.video.sky.sport.now/?_=play\n#EXTINF:-1,Made-up\nhttps://k.example/a.m3u8\n'
         PAGES["https://k.example/kodi.m3u"] = kodi
