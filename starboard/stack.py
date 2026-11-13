@@ -25,7 +25,7 @@ from . import containers
 # "Let me choose" starts from the same apps as Basics in both set-ups; a test keeps them the same.
 GROUPS = [
     # key, name, what it is for, kind ("media", "core" or "extras"), on by default
-    ("movies", "Movies", "Find, download and sort films", "media", True),
+    ("movies", "Films", "Find, download and sort films", "media", True),  # "films", never "movies", on screen (RFX-36)
     ("tv", "TV", "Find, download and sort series", "media", True),
     ("music", "Music", "Albums and artists", "media", True),
     ("ebooks", "Ebooks", "Books to read", "media", True),

@@ -1,5 +1,5 @@
 // Install apps: a guide that sets up a media server (an *arr stack) for someone who has never done it, in groups
-// such as Movies, TV and Ebooks. It explains each part, picks sensible apps and folders, writes a Compose file and
+// such as Films, TV and Ebooks. It explains each part, picks sensible apps and folders, writes a Compose file and
 // a .env file, starts the apps only when you press Start and give your password, then talks you through connecting
 // them. "Advanced settings" shows every app, the settings folder, user and group numbers, and the files themselves.
 // Loaded by install-apps.html and setup-guide.html, after settings.js (it uses field, setError, notice, wizardFrame and appFinder).
