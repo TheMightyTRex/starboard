@@ -285,12 +285,60 @@ async function groupComplete() {
     el("p", { class: "small muted", text: `From ${d.source}.` }));
 }
 
+// Your own details (DASH-322): a folder no outside source matches comes in with the title, year, description, station
+// and picture the person types. Shown only when Reelix has the route for it (RFX-90). The fields open under the
+// folder's name when "Use my own details" is chosen, and focus goes to the first one.
+const OWN = "own";
+const OWN_NAME = { films: "Title", tv: "Title", music: "Artist's name", audiobooks: "Author's name", books: "Author's name", radio: "Show's title" };
+const PICTURE_MAX = 5 * 1024 * 1024;
+let ownCount = 0;
+function ownFields(tab, title, year) {
+  const n = ++ownCount;
+  const field = (label, control, hint) => el("div", { class: "field" }, el("label", { class: "field__label", for: control.id, text: label }),
+    hint ? el("p", { class: "hint", id: `${control.id}-h`, text: hint }) : null, control);
+  const name = el("input", { class: "input", id: `own-title-${n}`, type: "text", value: title || "", maxlength: "200", required: true, autocomplete: "off" });
+  const when = el("input", { class: "input", id: `own-year-${n}`, type: "text", inputmode: "numeric", maxlength: "4", value: year ? String(year) : "",
+    autocomplete: "off", "aria-describedby": `own-year-${n}-h` });
+  const about = el("textarea", { class: "textarea", id: `own-about-${n}`, rows: "3", maxlength: "4000" });
+  const station = tab === "radio" ? el("input", { class: "input", id: `own-station-${n}`, type: "text", maxlength: "200", autocomplete: "off" }) : null;
+  const address = el("input", { class: "input", id: `own-pic-${n}`, type: "url", placeholder: "https://", autocomplete: "off", "aria-describedby": `own-pic-${n}-h` });
+  const file = el("input", { class: "input", id: `own-file-${n}`, type: "file", accept: "image/png,image/jpeg,image/webp", "aria-describedby": `own-file-${n}-h` });
+  // A plain box around the fields: a stack's own display would show it while hidden.
+  const node = el("div", { hidden: true }, el("fieldset", { class: "stack-2" },
+    el("legend", { class: "field__label", text: "Your own details" }),
+    field(OWN_NAME[tab] || "Title", name), field("Year", when, "Optional. Four numbers, such as 2004."),
+    field("Description", about), station ? field("Station", station) : null,
+    field("Picture's address", address, "Optional. Reelix keeps its own copy."), field("Or choose a picture", file, "A PNG, JPEG or WebP file up to 5 MB.")));
+  const read = (f) => new Promise((resolve, reject) => {
+    if (f.size > PICTURE_MAX) { reject(new Error(`${f.name} is larger than 5 MB. Choose a smaller picture`)); return; }
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error(`${f.name} could not be read`));
+    r.readAsDataURL(f);
+  });
+  return {
+    node,
+    show(on) { node.hidden = !on; if (on) name.focus(); },
+    async value() {
+      return { title: name.value.trim() || title || "", year: when.value.trim(), overview: about.value.trim(), station: station?.value.trim() || "",
+        image_url: address.value.trim(), image_data: file.files[0] ? await read(file.files[0]) : "" };
+    },
+  };
+}
+
 // DASH-186: films and series already on disk that Reelix does not know yet. A note above the wall, then a dialog of
 // up to 25 folders at a time with Reelix's best match for each; change a doubtful one or untick it, then bring them in.
+// Books and audiobooks come in by author folder, music by artist folder (DASH-282).
+const BY_FOLDER = { audiobooks: ["author", "authors"], books: ["author", "authors"], music: ["artist", "artists"] };
+let ownDetails = false;  // Reelix can bring in a folder with your own details (DASH-322, Reelix RFX-90)
 async function importNote() {
-  if (!["films", "tv", "audiobooks", "books"].includes(TAB)) return;
+  if (!["films", "tv", "audiobooks", "books", "music"].includes(TAB)) return;
   let folders = [];
-  try { folders = (await api(`/api/library/import?tab=${TAB}`)).folders.filter((f) => f.waiting); } catch { return; }
+  try {
+    const got = await api(`/api/library/import?tab=${TAB}`);
+    folders = got.folders.filter((f) => f.waiting);
+    ownDetails = !!got.own;
+  } catch { return; }
   if (!folders.length) return;
   const waiting = folders.reduce((n, f) => n + f.waiting, 0);
   const box = el("div", { id: "lib-import" }, el("div", { class: "notice", role: "status" }, icon("folder-input"),
@@ -301,7 +349,7 @@ async function importNote() {
 }
 
 async function importDialog(folder, start = 0, added = 0, button = null) {
-  // Reelix looks each folder up (TMDB, or Open Library for books), which can take a while: say so at once.
+  // Reelix looks each folder up (TMDB, Open Library for books, MusicBrainz for music), which can take a while: say so at once.
   const busy = button || $("#lib-import button");
   const label = busy?.textContent;
   if (busy) { busy.disabled = true; busy.textContent = "Finding matches…"; }
@@ -312,20 +360,28 @@ async function importDialog(folder, start = 0, added = 0, button = null) {
   const rows = page.items.map((it) => {
     const pick = el("select", { class: "select", "aria-label": `Match for ${it.name}` },
       it.matches.map((m, i) => el("option", { value: String(m.tmdb_id ?? m.id), text: `${m.title}${m.year ? ` (${m.year})` : ""}${m.detail ? `, ${m.detail}` : ""}${m.already ? ", already in your library" : ""}`, selected: i === 0 })),
-      el("option", { value: "", text: it.matches.length ? "None of these" : "No match found" }));
+      el("option", { value: "", text: it.matches.length ? "None of these" : "No match found" }),
+      ownDetails ? el("option", { value: OWN, text: "Use my own details" }) : null);
     // A folder whose match is already in the library (in another folder) is unticked: bringing it in would fail.
     const first = it.matches[0];
     const keep = el("input", { type: "checkbox", checked: (it.sure ?? true) && !!first && !first.already, "aria-label": `Bring in ${it.name}` });
     const said = el("p", { class: "small muted" });
+    const own = ownFields(TAB, it.title || it.name, it.year);
     const explain = () => {
       const m = it.matches.find((x) => String(x.tmdb_id ?? x.id) === pick.value);
       said.textContent = m && m.already ? `Already in your library, in the folder ${m.already}. Leave this folder out, or choose another match.` : (it.problem || "");
     };
-    pick.addEventListener("change", () => { const m = it.matches.find((x) => String(x.tmdb_id ?? x.id) === pick.value); keep.checked = !!m && !m.already; explain(); });
+    pick.addEventListener("change", () => {
+      const m = it.matches.find((x) => String(x.tmdb_id ?? x.id) === pick.value);
+      keep.checked = pick.value === OWN || (!!m && !m.already);
+      own.show(pick.value === OWN);
+      explain();
+    });
     explain();
-    // A row per folder (DASH-309, R7): the tick, the folder and what is wrong with it, then Reelix's match.
-    return { it, pick, keep, node: el("li", { class: "row" }, keep,
-      el("div", {}, el("div", { class: "row__title", text: it.name }), said), el("div", { class: "row__side" }, pick)) };
+    // A row per folder (DASH-309, R7): the tick, the folder and what is wrong with it, then Reelix's match; your own
+    // details open under the folder's name when chosen.
+    return { it, pick, keep, own, node: el("li", { class: "row" }, keep,
+      el("div", {}, el("div", { class: "row__title", text: it.name }), said, own.node), el("div", { class: "row__side" }, pick)) };
   });
   const list = el("ul", { class: "rows", "aria-label": "Folders and their matches" }, rows.map((r) => r.node));
   const end = Math.min(page.start + page.items.length, page.total);
@@ -333,8 +389,12 @@ async function importDialog(folder, start = 0, added = 0, button = null) {
   const ok = await slideOutConfirm({ title: `Bring in ${NOUN[TAB][1]} from disk`, confirm: "Bring in the ticked ones", opener: button || $("#lib-import button"),
     body: [el("p", { text: `Folders ${page.start + 1} to ${end} of ${page.total} in ${folder.path}. Check each match; untick any that are wrong. Unticked folders are left out and not asked about again.` }), list] });
   if (!ok) return;
-  const books = ["audiobooks", "books"].includes(TAB);
-  const items = rows.filter((r) => r.keep.checked && r.pick.value).map((r) => (books ? { path: r.it.path, id: r.pick.value } : { path: r.it.path, tmdb_id: Number(r.pick.value) }));
+  const byFolder = !!BY_FOLDER[TAB];
+  let items;
+  try {
+    items = await Promise.all(rows.filter((r) => r.keep.checked && r.pick.value).map(async (r) => (r.pick.value === OWN ? { path: r.it.path, own: await r.own.value() }
+      : byFolder ? { path: r.it.path, id: r.pick.value } : { path: r.it.path, tmdb_id: Number(r.pick.value) })));
+  } catch (e) { problem(e.message); return; }
   const leave = rows.filter((r) => !r.keep.checked || !r.pick.value).map((r) => r.it.path);
   let out;
   try {
@@ -344,7 +404,7 @@ async function importDialog(folder, start = 0, added = 0, button = null) {
   added += out.added;
   if (end < page.total) { importDialog(folder, end, added); return; }
   // Said where the note was, so it is seen, not only announced (the wall reloads behind it).
-  const what = ["audiobooks", "books"].includes(TAB) ? ["author", "authors"] : NOUN[TAB];  // books come in by author
+  const what = BY_FOLDER[TAB] || NOUN[TAB];  // books come in by author, music by artist
   const text = added ? `Brought in ${plural(added, what)}. Reelix is reading their files; they show here as it finds them.` : "Nothing was brought in.";
   $("#lib-import")?.replaceChildren(el("div", { class: "notice", "data-tone": added ? "success" : null, role: "status" }, icon(added ? "circle-check" : "info"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: added ? "Brought in from disk" : "Nothing brought in" }), el("p", { text }))));
@@ -358,7 +418,7 @@ const FOLLOW_WORDS = { all: ["Every episode", "Old and new: Reelix fills the gap
 async function radioNote() {
   if (TAB !== "radio") return;
   let s;
-  try { s = await api("/api/library/radio-import"); } catch { return; }
+  try { s = await api("/api/library/radio-import"); ownDetails = !!s.own; } catch { return; }
   const box = (title, text, action) => el("div", { id: "lib-import" }, el("div", { class: "notice", role: "status" }, icon("folder-input"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action));
   if (!s.connected) {
@@ -386,14 +446,16 @@ async function radioDialog(start = 0, added = 0, follow = "all", button = null) 
   const rows = page.items.map((it) => {
     const pick = el("select", { class: "select", "aria-label": `Match for ${it.title}` },
       it.matches.map((m, i) => el("option", { value: String(i), text: `${m.title}${m.station ? `, ${m.station}` : ""}${m.episodes ? ` (${m.episodes} episodes)` : ""}`, selected: i === 0 })),
-      el("option", { value: "", text: it.matches.length ? "None of these" : "No match found" }));
+      el("option", { value: "", text: it.matches.length ? "None of these" : "No match found" }),
+      ownDetails ? el("option", { value: OWN, text: "Use my own details" }) : null);
     // Ticked only for a match with the same title; a near one is shown, unticked, for you to check.
     const keep = el("input", { type: "checkbox", checked: !!it.sure, "aria-label": `Bring in ${it.title}` });
-    pick.addEventListener("change", () => { keep.checked = pick.value !== ""; });
+    const own = ownFields("radio", it.title, null);
+    pick.addEventListener("change", () => { keep.checked = pick.value !== ""; own.show(pick.value === OWN); });
     const note = it.problem || (it.matches.length && !it.sure ? "Not the same title: check it, then tick it." : "");
-    return { it, pick, keep, node: el("li", { class: "row" }, keep,
+    return { it, pick, keep, own, node: el("li", { class: "row" }, keep,
       el("div", {}, el("div", { class: "row__title", text: it.title }),
-        el("div", { class: "row__meta", text: [plural(it.files, ["file", "files"]), note].filter(Boolean).join(" · ") })),
+        el("div", { class: "row__meta", text: [plural(it.files, ["file", "files"]), note].filter(Boolean).join(" · ") }), own.node),
       el("div", { class: "row__side" }, pick)) };
   });
   const name = `radio-follow-${Date.now()}`;
@@ -407,7 +469,11 @@ async function radioDialog(start = 0, added = 0, follow = "all", button = null) 
     body: [el("p", { text: `Shows ${page.start + 1} to ${end} of ${page.total}. Check each match; untick any that are wrong.` }), start ? null : gets, list].filter(Boolean) });
   if (!ok) return;
   if (!start) follow = (gets.querySelector(`input[name="${name}"]:checked`) || {}).value || "all";
-  const items = rows.filter((r) => r.keep.checked && r.pick.value !== "").map((r) => ({ ...r.it.matches[Number(r.pick.value)] }));
+  let items;
+  try {
+    items = await Promise.all(rows.filter((r) => r.keep.checked && r.pick.value !== "").map(async (r) => (r.pick.value === OWN
+      ? { key: r.it.key, title: r.it.title, own: await r.own.value() } : { ...r.it.matches[Number(r.pick.value)] })));
+  } catch (e) { problem(e.message); return; }
   let out;
   try {
     out = items.length ? await api("/api/library/radio-import/run", { method: "POST", body: { items, follow } }) : { added: 0, errors: [] };

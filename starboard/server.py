@@ -1211,15 +1211,19 @@ class Handler(BaseHTTPRequestHandler):
                 return radio_review.route(self, method, path)
             if path.startswith("/api/library/radio-import"):
                 # Radio shows already on disk (owner, 10 November 2026), through Reelix's radio review and search.
-                from . import radio_import
+                from . import own_details, radio_import
                 try:
                     if path == "/api/library/radio-import" and method == "GET":
-                        return self.json(200, radio_import.status(app.config))
+                        out = radio_import.status(app.config)
+                        # Your own details for a show with no match (DASH-322), when Reelix has the route (RFX-90).
+                        out["own"] = bool(out.get("waiting")) and own_details.available(app.config)
+                        return self.json(200, out)
                     body = self.body()
                     if path == "/api/library/radio-import/scan" and method == "POST":
                         return self.json(200, radio_import.scan(app.config, body.get("start", 0)))
                     if path == "/api/library/radio-import/run" and method == "POST":
-                        out = radio_import.run(app.config, body.get("items"), str(body.get("follow") or radio_import.DEFAULT_FOLLOW))
+                        follow = str(body.get("follow") or radio_import.DEFAULT_FOLLOW)
+                        out = own_details.run(app.config, "radio", None, body.get("items"), lambda rest: radio_import.run(app.config, rest, follow))
                         setup_left.forget()
                         logs.event("info", "library", f"Brought in {out['added']} radio shows from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))
                         return self.json(200, out)
@@ -1228,15 +1232,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self.error(404, "Not found")
             if path.startswith("/api/library/import"):
                 # DASH-186: films and series already on disk, through Reelix's own library import.
-                from . import media_import
+                from . import media_import, own_details
                 try:
                     if path == "/api/library/import" and method == "GET":
                         tab = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("tab", [""])[0]
-                        return self.json(200, {"folders": media_import.folders(app.config, tab)})
+                        found = media_import.folders(app.config, tab)
+                        # Your own details for a folder with no match (DASH-322), when Reelix has the route (RFX-90).
+                        own = any(f["waiting"] for f in found) and tab in own_details.KINDS and own_details.available(app.config)
+                        return self.json(200, {"folders": found, "own": own})
                     body = self.body()
-                    books = media_import._book_tab(str(body.get("tab") or ""))  # audiobooks and books (DASH-282)
+                    scan, run = media_import.scanner(str(body.get("tab") or ""))  # audiobooks, books and music (DASH-282)
                     if path == "/api/library/import/scan" and method == "POST":
-                        scan = media_import.scan_books if books else media_import.scan
                         return self.json(200, scan(app.config, body.get("root"), body.get("start", 0)))
                     if path == "/api/library/import/run" and method == "POST":
                         if body.get("leave"):  # folders left out: not counted again (10 November 2026)
@@ -1244,7 +1250,8 @@ class Handler(BaseHTTPRequestHandler):
                             setup_left.forget()
                         if not body.get("items"):
                             return self.json(200, {"added": 0, "errors": []})
-                        out = (media_import.run_books if books else media_import.run)(app.config, body.get("root"), body.get("items"))
+                        out = own_details.run(app.config, str(body.get("tab") or ""), body.get("root"), body.get("items"),
+                                              lambda rest: run(app.config, body.get("root"), rest))
                         setup_left.forget()  # Still to set up counts the folders again
                         logs.event("info", "library", f"Brought in {out['added']} from disk" + (f"; {len(out['errors'])} problems" if out["errors"] else ""))
                         return self.json(200, out)
@@ -1276,6 +1283,9 @@ class Handler(BaseHTTPRequestHandler):
                 return library.handle(self, method, path)
 
             cfg = app.config
+            if path == "/api/held" or path.startswith("/api/held/"):  # Held downloads, with the manager key (DASH-210)
+                from . import held
+                return held.route(self, method, path)
             if path.startswith("/api/reelix/sites/"):  # Search the sites directly, with the manager key (DASH-213)
                 from . import reelix_search
                 return reelix_search.route(self, method, path)

@@ -317,6 +317,53 @@ await page.locator("button", { hasText: "Follow this show" }).click();
 await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).waitFor({ timeout: 5000 }).catch(() => {});
 check("RAD-12", "Follow this show adds it and says so", await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).count() === 1);
 
+// LIB-02: music already on disk (DASH-282): the note on Library, Music, the slide-out of matches, then bring them in
+console.log("\n== LIB-02 bring in music from disk");
+await open("library-music.html");
+await page.locator("#lib-import .notice").waitFor({ timeout: 5000 }).catch(() => {});
+check("LIB-02", "the note counts the artist folders not in the library", /3 folders on disk/.test(await page.locator("#lib-import").textContent().catch(() => "")));
+await page.locator("#lib-import button", { hasText: "Bring them in" }).click();
+await page.locator("#side-panel .rows .row").first().waitFor({ timeout: 10000 }).catch(() => {});
+const musicRows = page.locator("#side-panel .rows .row");
+check("LIB-02", "each artist folder is a row with its matches", await musicRows.count() === 3);
+const ticks = await musicRows.locator("input[type=checkbox]").evaluateAll((xs) => xs.map((x) => x.checked));
+check("LIB-02", "a sure match is ticked; two artists of one name and no match are not", JSON.stringify(ticks) === JSON.stringify([true, false, false]), JSON.stringify(ticks));
+await page.locator("#side-panel button", { hasText: "Bring in the ticked ones" }).click();
+await page.locator("#lib-import .notice", { hasText: "Brought in" }).waitFor({ timeout: 10000 }).catch(() => {});
+check("LIB-02", "it says what was brought in where the note was", /Brought in 1 artist\b/.test(await page.locator("#lib-import").textContent().catch(() => "")));
+
+// LIB-03: a folder with no match comes in with your own details (DASH-322), as the made-up Reelix has RFX-90's route
+console.log("\n== LIB-03 bring in a folder with your own details");
+await open("library-films.html");
+await page.locator("#lib-import button", { hasText: "Bring them in" }).click();
+await page.locator("#side-panel .rows .row").first().waitFor({ timeout: 10000 }).catch(() => {});
+const homeRow = page.locator("#side-panel .rows .row", { hasText: "home movies" });
+await homeRow.locator("select").selectOption("own");
+const ownTitle = homeRow.locator("input[id^=own-title]");
+check("LIB-03", "Use my own details opens the fields, ticks the folder and moves focus to the title",
+  await ownTitle.isVisible() && await homeRow.locator("input[type=checkbox]").isChecked() && await ownTitle.evaluate((x) => x === document.activeElement));
+await ownTitle.fill("Our home movies");
+await homeRow.locator("input[id^=own-year]").fill("2004");
+await page.locator("#side-panel button", { hasText: "Bring in the ticked ones" }).click();
+await page.locator("#lib-import .notice", { hasText: "Brought in" }).waitFor({ timeout: 10000 }).catch(() => {});
+check("LIB-03", "the folder with its own details is brought in with the matched ones", /Brought in 3 films\b/.test(await page.locator("#lib-import").textContent().catch(() => "")));
+
+// DL-02: held downloads on Activity, Downloads (DASH-210): Get it now and Remove, with focus kept in the list
+console.log("\n== DL-02 held downloads");
+await open("downloads.html");
+await page.locator("#held > li").first().waitFor({ timeout: 10000 }).catch(() => {});
+check("DL-02", "each held release is a row with its state, Get it now and Remove", await page.locator("#held > li").count() === 3
+  && await page.locator("#held > li").first().locator(".row__side .chip", { hasText: "Held" }).count() === 1);
+check("DL-02", "the soonest is first, in words", (await page.locator("#held > li .row__title").first().textContent()) === "Iron Valley (1982)");
+await page.locator("#held > li").first().locator("button", { hasText: "Get it now" }).click();
+await page.waitForFunction(() => document.querySelectorAll("#held > li").length === 2, null, { timeout: 5000 }).catch(() => {});
+check("DL-02", "Get it now sends it and says where", await page.locator("#held > li").count() === 2 && /Sent to qBittorrent/.test(await page.locator("#toast-stack").textContent().catch(() => "")));
+check("DL-02", "focus moves to the next row's first button", await page.evaluate(() => document.activeElement?.closest("#held > li") !== null && /Get it now/.test(document.activeElement.textContent)));
+await page.locator("#held > li").first().locator("button", { hasText: "Remove" }).click();
+await page.locator("dialog[open]").getByRole("button", { name: "Remove", exact: true }).click();
+await page.waitForFunction(() => document.querySelectorAll("#held > li").length === 1, null, { timeout: 5000 }).catch(() => {});
+check("DL-02", "Remove asks first, then takes it off the list", await page.locator("#held > li").count() === 1);
+
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");
 const keyed = await api("/api/services", { method: "POST", body: { type: "sonarr", name: "Journey Keyed", url: "http://journey-keyed:8989", api_key: SECRET } });

@@ -114,7 +114,7 @@ def items(cfg, data_dir):
                     "href": "/settings-reelix.html#rx-basics-h", "done": bool(state.get("tmdb"))})
     if "reelix" in keys:  # DASH-186: media already on disk that Reelix does not know yet
         from . import media_import
-        for tab, words in (("films", "films"), ("tv", "series"), ("audiobooks", "audiobooks"), ("books", "books")):
+        for tab, words in (("films", "films"), ("tv", "series"), ("audiobooks", "audiobooks"), ("books", "books"), ("music", "music")):
             try:
                 waiting = sum(f["waiting"] for f in media_import.folders(cfg, tab))
             except media_import.ImportError_:
