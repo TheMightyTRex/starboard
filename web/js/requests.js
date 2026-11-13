@@ -76,12 +76,8 @@ async function act(r, action, button) {
 }
 
 startPage().then(() => {
-  const chips = [$("#show-pending"), $("#show-all")];
-  chips.forEach((c) => c.addEventListener("click", () => {
-    pendingOnly = c.id === "show-pending";
-    chips.forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
-    load();
-  }));
+  // One of several (DASH-309, R4): a segmented control; the radios keep focus and the arrow keys.
+  $("#requests-filters").addEventListener("change", (e) => { pendingOnly = e.target.value === "pending"; load(); });
   $("#requests-refresh").addEventListener("click", async () => { await load(true); announce($("#requests-summary").textContent); });
   load();
 });

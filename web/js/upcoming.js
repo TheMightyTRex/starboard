@@ -6,7 +6,7 @@ let items = [];
 let days = 14;
 let view = "list";
 let status = null; // "Wanted", "In library" or null
-let app = null; // an app name or null
+const apps = new Set(); // the apps shown; empty shows every app (filter chips that combine, DASH-309)
 let services = new Map(); // app name -> app from /api/config (type for the icon, link for "Open in")
 let month = null; // Calendar view, moved to another month: { start: Date (the 1st), items } or null for the normal window
 const ICONS = { sonarr: "tv", radarr: "film", lidarr: "music", readarr: "book", radio: "radio" };
@@ -61,40 +61,44 @@ function notice(tone, title, text) {
 // Filters ----------------------------------------------------------------
 
 function shown() {
-  return (month ? month.items : items).filter((i) => (!status || statusWord(i) === status) && (!app || i.service_name === app));
+  return (month ? month.items : items).filter((i) => (!status || statusWord(i) === status) && (!apps.size || apps.has(i.service_name)));
 }
 
 function chipButton(text, pressed, onclick, iconName) {
   return el("button", { type: "button", class: "filter-chip", "aria-pressed": String(pressed), onclick }, iconName ? icon(iconName) : null, text);
 }
 
-// Chips are built once, then their counts and pressed state change in place, so focus stays on the chip.
+// Built once, then the counts and pressed state change in place, so focus stays where it was (DASH-309): Wanted or
+// In library is one of several, a segmented control with All first; the apps are filter chips that can be on
+// together.
 function renderFilters() {
   const statusBox = $("#status-filters");
   if (!statusBox.children.length) {
-    for (const word of ["Wanted", "In library"]) {
-      const b = chipButton("", false, () => { status = status === word ? null : word; update(); });
-      b.dataset.value = word;
-      statusBox.append(b);
-    }
+    statusBox.removeAttribute("role");
+    statusBox.removeAttribute("aria-label");
+    statusBox.append(segmentedFilter({ name: "cal-status", label: "Show only", value: "",
+      options: [["", "All"], ["Wanted", "Wanted"], ["In library", "In library"]], onChange: (v) => { status = v || null; update(); } }));
     for (const name of [...new Set(items.map((i) => i.service_name))].sort((a, b) => a.localeCompare(b, "en-GB"))) {
-      const b = chipButton("", false, () => { app = app === name ? null : name; update(); }, ICONS[services.get(name)?.type] || (items.some((i) => i.service_name === name && i.kind === "radio") ? "radio" : "calendar"));
+      const b = chipButton("", false, () => { if (apps.has(name)) apps.delete(name); else apps.add(name); update(); }, ICONS[services.get(name)?.type] || (items.some((i) => i.service_name === name && i.kind === "radio") ? "radio" : "calendar"));
       b.append(el("span"));
       b.dataset.value = name;
       $("#app-filters").append(b);
     }
   }
-  for (const b of statusBox.children) {
-    const n = items.filter((i) => statusWord(i) === b.dataset.value && (!app || i.service_name === app)).length;
-    b.textContent = `${b.dataset.value}, ${n}`;
-    b.setAttribute("aria-pressed", String(status === b.dataset.value));
+  const inApps = (i) => !apps.size || apps.has(i.service_name);
+  for (const input of statusBox.querySelectorAll("input")) {
+    const n = items.filter((i) => (!input.value || statusWord(i) === input.value) && inApps(i)).length;
+    input.nextElementSibling.textContent = `${input.value || "All"} ${n.toLocaleString("en-GB")}`;
   }
   for (const b of $("#app-filters").children) {
     const n = items.filter((i) => i.service_name === b.dataset.value && (!status || statusWord(i) === status)).length;
-    b.lastChild.textContent = `${b.dataset.value}, ${n}`;
-    b.setAttribute("aria-pressed", String(app === b.dataset.value));
+    b.lastChild.textContent = `${b.dataset.value} ${n.toLocaleString("en-GB")}`;
+    b.setAttribute("aria-pressed", String(apps.has(b.dataset.value)));
   }
   $("#app-filters").hidden = $("#app-filters").children.length < 2;
+  // The toolbar's count says how many are shown (DASH-309, R8).
+  const all = (month ? month.items : items).length, now = shown().length;
+  $("#calendar-count").textContent = now === all ? `${all.toLocaleString("en-GB")} coming up` : `${now.toLocaleString("en-GB")} of ${all.toLocaleString("en-GB")}`;
 }
 
 function byDay(list) {

@@ -153,22 +153,28 @@ function renderRows() {
     : `${items.length} ${items.length === 1 ? "download" : "downloads"}`;
 }
 
+// One state at a time (DASH-309, R4): a segmented control, All first. The poll only changes the counts in place;
+// the control is drawn again only when the states change, and focus stays on the chosen one (same ids).
+let filterKeys = "";
 function renderFilters() {
   const counts = new Map();
   for (const i of items) { const w = words(i)[0]; counts.set(w, (counts.get(w) || 0) + 1); }
   const rank = (n) => { const r = STATE_ORDER.indexOf(n); return r < 0 ? 99 : r; };
   const names = [...counts.keys()].sort((a, b) => rank(a) - rank(b));
-  if (filter && !counts.has(filter)) names.push(filter); // keep the chosen chip (and focus on it) at 0
-  renderKeyed($("#queue-filters"), names, (n) => n, (name, old) => {
-    const button = old || el("button", { type: "button", class: "filter-chip", onclick: () => {
-      filter = filter === name ? null : name;
-      renderFilters();
-      renderRows();
-    } });
-    button.textContent = `${name}, ${counts.get(name) || 0}`;
-    button.setAttribute("aria-pressed", String(filter === name));
-    return button;
-  });
+  if (filter && !counts.has(filter)) names.push(filter); // keep the chosen one (and focus on it) at 0
+  const box = $("#queue-filters");
+  box.removeAttribute("role");
+  box.removeAttribute("aria-label");
+  const options = [["", "All", items.length], ...names.map((n) => [n, n, counts.get(n) || 0])];
+  const keys = names.join("|");
+  if (keys === filterKeys && box.firstElementChild) {
+    options.forEach(([v, w, n], at) => { const span = box.querySelectorAll(".segmented label span")[at]; if (span) span.textContent = `${w} ${n.toLocaleString("en-GB")}`; });
+    return;
+  }
+  filterKeys = keys;
+  box.hidden = !names.length;
+  box.replaceChildren(names.length ? segmentedFilter({ name: "queue-show", label: "Show only", value: filter || "", options,
+    onChange: (v) => { filter = v || null; renderFilters(); renderRows(); } }) : "");
 }
 
 function renderSummary() {

@@ -185,11 +185,11 @@
   </div>
   <div class="toolbar">
     <div class="toolbar__row">
-      <div class="filter-chips" id="issues-filters" role="group" aria-label="Show">
-        <button type="button" class="filter-chip" data-status="open" aria-pressed="true">Open</button>
-        <button type="button" class="filter-chip" data-status="resolved" aria-pressed="false">Resolved</button>
-        <button type="button" class="filter-chip" data-status="all" aria-pressed="false">All</button>
-      </div>
+      <fieldset class="segmented" id="issues-filters"><legend class="visually-hidden">Show</legend>
+        <label for="issues-show-all"><input type="radio" name="issues-show" id="issues-show-all" value="all"><span>All</span></label>
+        <label for="issues-show-open"><input type="radio" name="issues-show" id="issues-show-open" value="open" checked><span>Open</span></label>
+        <label for="issues-show-resolved"><input type="radio" name="issues-show" id="issues-show-resolved" value="resolved"><span>Resolved</span></label>
+      </fieldset>
     </div>
   </div>
   <h2 class="visually-hidden" id="issues-h">Downloads that need a look</h2>

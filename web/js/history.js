@@ -59,11 +59,8 @@ async function historyLoad(more = false) {
 }
 
 startPage().then(() => {
-  $$("#history-filters button").forEach((b) => b.addEventListener("click", () => {
-    historyState.which = b.dataset.which;
-    $$("#history-filters button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-    historyLoad();
-  }));
+  // One of several (DASH-309, R4): a segmented control; the radios keep focus and the arrow keys.
+  $("#history-filters").addEventListener("change", (e) => { historyState.which = e.target.value; historyLoad(); });
   $("#history-more").addEventListener("click", () => { historyState.page += 1; historyLoad(true); });
   autoLoadMore($("#history-more"), async () => { const before = historyState.items; historyState.page += 1; await historyLoad(true); return historyState.items - before; }, "more");
   historyLoad();

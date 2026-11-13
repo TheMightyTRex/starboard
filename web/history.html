@@ -176,13 +176,13 @@
   </div>
   <div class="toolbar">
     <div class="toolbar__row">
-      <div class="filter-chips" id="history-filters" role="group" aria-label="Show">
-        <button type="button" class="filter-chip" data-which="all" aria-pressed="true">Everything</button>
-        <button type="button" class="filter-chip" data-which="grabbed" aria-pressed="false">Sent to download</button>
-        <button type="button" class="filter-chip" data-which="imported" aria-pressed="false">Added to your library</button>
-        <button type="button" class="filter-chip" data-which="failed" aria-pressed="false">Failed</button>
-        <button type="button" class="filter-chip" data-which="refused" aria-pressed="false">Refused list</button>
-      </div>
+      <fieldset class="segmented" id="history-filters"><legend class="visually-hidden">Show</legend>
+        <label for="history-show-all"><input type="radio" name="history-show" id="history-show-all" value="all" checked><span>Everything</span></label>
+        <label for="history-show-grabbed"><input type="radio" name="history-show" id="history-show-grabbed" value="grabbed"><span>Sent to download</span></label>
+        <label for="history-show-imported"><input type="radio" name="history-show" id="history-show-imported" value="imported"><span>Added to your library</span></label>
+        <label for="history-show-failed"><input type="radio" name="history-show" id="history-show-failed" value="failed"><span>Failed</span></label>
+        <label for="history-show-refused"><input type="radio" name="history-show" id="history-show-refused" value="refused"><span>Refused list</span></label>
+      </fieldset>
     </div>
   </div>
   <h2 class="visually-hidden" id="history-list-h">Everything that happened, newest first</h2>

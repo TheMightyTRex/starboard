@@ -60,11 +60,7 @@ async function issueAct(i, action, button, message = "") {
 }
 
 startPage().then(() => {
-  const chips = $$("#issues-filters button");
-  chips.forEach((c) => c.addEventListener("click", () => {
-    issuesShown = c.dataset.status;
-    chips.forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
-    issuesLoad();
-  }));
+  // One of several (DASH-309, R4): a segmented control; the radios keep focus and the arrow keys.
+  $("#issues-filters").addEventListener("change", (e) => { issuesShown = e.target.value; issuesLoad(); });
   issuesLoad();
 });

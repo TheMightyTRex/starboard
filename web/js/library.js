@@ -93,16 +93,18 @@ function query(extra = {}) {
   return `/api/library/wall?${p}`;
 }
 
+// One at a time (DASH-309, R4): a segmented control with All first, not filter chips that undo each other.
 function renderChips(chips) {
   const box = $("#lib-chips");
   box.hidden = !chips.length;
-  box.replaceChildren(...chips.map((c) => el("button", {
-    type: "button", class: "filter-chip", "aria-pressed": String(state.chip === c.key), "data-chip": c.key,
-    onclick: (e) => {
-      state.chip = state.chip === c.key ? "" : c.key;
-      reload().then(() => e.currentTarget.isConnected && e.currentTarget.focus());
-    },
-  }, `${c.label}, ${c.count.toLocaleString("en-GB")}`)));
+  box.removeAttribute("role");
+  box.removeAttribute("aria-label");
+  if (!chips.length) { box.replaceChildren(); return; }
+  box.replaceChildren(segmentedFilter({
+    name: "lib-chip", label: "Show only", value: state.chip,
+    options: [["", "All", state.total], ...chips.map((c) => [c.key, c.label, c.count])],
+    onChange: (v) => { state.chip = v || ""; reload(); },
+  }));
 }
 
 function renderCount() {
@@ -450,7 +452,7 @@ startPage().then(async () => {
     $$("#lib-wall .media-grid").forEach((g) => { g.dataset.size = state.size; });
     updateSaveButton();
   });
-  $("#lib-chips").addEventListener("click", () => setTimeout(updateSaveButton));
+  $("#lib-chips").addEventListener("change", () => setTimeout(updateSaveButton));
   $("#lib-more button").addEventListener("click", async () => {
     const before = $$("#lib-wall li").length;
     await load();

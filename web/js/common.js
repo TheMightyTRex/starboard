@@ -1383,6 +1383,20 @@ function logoTone(img, name, tone, kind = "network") {
   return img;
 }
 
+// One of several (DASH-309, R4: DESIGN-SYSTEM.md section 10): a segmented control of radios, All first, each
+// choice with its count ("Films 12"). Radios give the arrow keys; the ids stay the same when it is drawn again, so
+// focus comes back to the chosen one. options: [[value, words, count]], count may be left out.
+function segmentedFilter({ name, label, options, value, onChange }) {
+  const box = el("fieldset", { class: "segmented", "data-filter": name }, el("legend", { class: "visually-hidden", text: label }));
+  for (const [v, words, count] of options) {
+    const id = `${name}-${String(v || "all").replace(/[^\w-]+/g, "-").toLowerCase()}`;
+    const input = el("input", { type: "radio", name, id, value: String(v ?? ""), checked: String(v ?? "") === String(value ?? "") });
+    input.addEventListener("change", () => { if (input.checked) onChange(v); });
+    box.append(el("label", { for: id }, input, el("span", { text: count == null ? words : `${words} ${Number(count).toLocaleString("en-GB")}` })));
+  }
+  return box;
+}
+
 // A state chip on its title's line (owner, 12 November 2026, a rule: DESIGN-SYSTEM.md, Chips): the title on the left,
 // the chip at the right, centred on the line. headChip() marks a chip for a section's or a card's heading; onTitle()
 // puts one beside any title now (a heading drawn earlier, such as a section's h2).

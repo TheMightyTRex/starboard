@@ -181,12 +181,16 @@
   <div class="page-head">
     <div class="page-head__text"><h1>On demand history</h1><p class="page-head__summary" id="od-summary">What you started watching in On demand.</p></div>
   </div>
-  <fieldset class="segmented" id="od-filter">
-    <legend class="visually-hidden">Show</legend>
-    <label><input type="radio" name="od-kind" value="all" checked><span>All</span></label>
-    <label><input type="radio" name="od-kind" value="movie"><span>Films</span></label>
-    <label><input type="radio" name="od-kind" value="series"><span>Series</span></label>
-  </fieldset>
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <fieldset class="segmented" id="od-filter">
+        <legend class="visually-hidden">Show</legend>
+        <label><input type="radio" name="od-kind" value="all" checked><span>All</span></label>
+        <label><input type="radio" name="od-kind" value="movie"><span>Films</span></label>
+        <label><input type="radio" name="od-kind" value="series"><span>Series</span></label>
+      </fieldset>
+    </div>
+  </div>
   <ul class="rows" id="od-list"><li class="muted">Loading…</li></ul>
 </div>
 </main>
