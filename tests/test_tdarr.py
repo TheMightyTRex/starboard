@@ -33,6 +33,26 @@ class TdarrTest(unittest.TestCase):
         self.assertEqual(workers.count("transcodecpu"), 2)
         self.assertIn("2 at a time, in quiet hours only", out["done"][-1])
 
+    def test_the_cache_is_on_the_pool_when_the_plugin_mounts_it(self):
+        d = tempfile.mkdtemp()
+        cfg = mock.Mock(data={"services": [{"type": "tdarr", "api_key": "tapi_x", "url": "http://t"}]}, data_dir=d)
+        self.assertEqual(tdarr.cache_folder(cfg), "/temp")  # no plug-in: Tdarr's own /temp
+        os.makedirs(os.path.join(d, "plugins", "tdarr"))
+        with open(os.path.join(d, "plugins", "tdarr", "manifest.json"), "w") as f:
+            json.dump({"containers": [{"name": "server", "volumes": ["data/cache:/temp", "media/tdarr-cache"]}]}, f)
+        self.assertEqual(tdarr.cache_folder(cfg), "/media/tdarr-cache")
+        calls = []
+
+        def fake(s, path, body=None, timeout=None):
+            calls.append((path, body))
+            if path == "cruddb" and body["data"]["mode"] == "getAll":
+                return [{"_id": "sb-films", "cache": "/temp"}, {"_id": "mine", "cache": "/somewhere"}]
+            return {} if path in ("get-nodes", "cruddb") else "OK"
+        with mock.patch.object(services, "tdarr", side_effect=fake):
+            tdarr.save(cfg, {"mode": "check_only", "at_once": 0, "libraries": {"films": True, "series": False}})
+        updates = [b["data"] for p, b in calls if p == "cruddb" and b["data"]["mode"] == "update"]
+        self.assertEqual([(u["docID"], u["obj"]["cache"]) for u in updates], [("sb-films", "/media/tdarr-cache")])  # not the person's own
+
     def test_quiet_hours_follow_the_download_hours(self):
         cfg = mock.Mock(data={"download_hours": {"enabled": True, "start": 23, "end": 7}})
         self.assertEqual(tdarr.quiet_hours(cfg), (23, 7))

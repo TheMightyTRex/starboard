@@ -1,7 +1,9 @@
 """Tdarr from Starboard (owner, 10 November 2026, DASH-306: "Tdarr settings should be used in Starboard and when added,
 not need to be logged into", with basic choices). Starboard gives Tdarr its API key (discovery._tdarr) and sets it up:
 
-- Libraries: films (/media/movies) and series (/media/tv), each on or off, with the cache folder /temp.
+- Libraries: films (/media/movies) and series (/media/tv), each on or off. Their cache folder, where a file is
+  converted, is /media/tdarr-cache on the media pool when the Tdarr plug-in mounts it (1.0.2 and later), so the
+  big working copies never fill the system disk, otherwise /temp (owner, 13 November 2026, OPS-18).
 - What it does: save space (convert to H.265 with the widely used Migz plug-ins, keeping a file only when it got
   smaller), check files only (health checks, nothing converted), or nothing.
 - How many at once: conversions on the processor (health checks run one at a time).
@@ -9,11 +11,28 @@ not need to be logged into", with basic choices). Starboard gives Tdarr its API 
   06:00, the same hours plug-in jobs use. A Tdarr not set up yet starts with quiet hours chosen.
 
 Nothing else of Tdarr's is changed; its own page still shows everything."""
+import json
+import os
+
 from . import services
 
 DAYS = ("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 LIBRARIES = {"films": ("Films", "/media/movies", "sb-films"), "series": ("Series", "/media/tv", "sb-series")}
 MODES = ("save_space", "check_only", "off")
+POOL_CACHE = "/media/tdarr-cache"
+
+
+def cache_folder(cfg):
+    """/media/tdarr-cache when the installed Tdarr plug-in mounts that folder of the media pool, otherwise /temp."""
+    try:
+        from . import plugins_admin
+        with open(os.path.join(plugins_admin.folder(cfg.data_dir, "tdarr"), "manifest.json"), encoding="utf-8") as f:
+            m = json.load(f)
+        if any("media/tdarr-cache" in (c.get("volumes") or []) for c in m.get("containers") or []):
+            return POOL_CACHE
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return "/temp"
 # Save space: remove image streams, put streams in order, convert to H.265 on the processor, keep only if smaller.
 SAVE_SPACE = [("Tdarr_Plugin_MC93_MigzImageRemoval", True), ("Tdarr_Plugin_lmg1_Reorder_Streams", True),
               ("Tdarr_Plugin_MC93_Migz1FFMPEG_CPU", True), ("Tdarr_Plugin_a9he_New_file_size_check", True)]
@@ -103,12 +122,13 @@ def save(cfg, choice):
     wanted = choice.get("libraries") or {}
     libs = {x.get("_id"): x for x in (_db(s, "LibrarySettingsJSONDB", "getAll") or []) if isinstance(x, dict)}
     done = []
+    cache = cache_folder(cfg)
     for key, (name, folder, doc) in LIBRARIES.items():
         on = bool(wanted.get(key, True))
         fields = {"processLibrary": on and mode != "off", "processTranscodes": mode == "save_space",
                   "processHealthChecks": mode != "off", "schedule": _schedule(night, quiet_hours(cfg)),
                   "pluginIDs": [{"_id": f"plugin{i + 1}", "id": pid, "checked": c, "source": "Community", "priority": i, "InputsDB": {}}
-                                for i, (pid, c) in enumerate(SAVE_SPACE)]}
+                                for i, (pid, c) in enumerate(SAVE_SPACE)], "cache": cache}
         if doc in libs:
             _db(s, "LibrarySettingsJSONDB", "update", doc, fields)
         elif on:
