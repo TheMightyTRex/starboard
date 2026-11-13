@@ -17,7 +17,8 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "library-books-authors.html", "library-audiobooks.html", "library-audiobooks-series.html", "library-audiobooks-authors.html",
   "library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=1", "library-radio-show.html?id=1",
   "library-book.html?id=4", "library-audiobook.html?id=6",
-  "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "settings-reelix.html"];
+  "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "settings-reelix.html",
+  "search-sites.html", "settings-radio.html"];  // Search the sites (DASH-213), Settings, Radio (DASH-212)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
@@ -278,6 +279,43 @@ await page.locator("[data-phone-menu-open]").click();
 check("SRCH-01", "and the menu keeps its search field", await page.locator("#phone-search-input").isVisible());
 await page.keyboard.press("Escape");
 await page.setViewportSize({ width: 1280, height: 860 });
+
+// SRCH-02: Search the sites directly (DASH-213)
+console.log("\n== SRCH-02 search the sites");
+await open("search-sites.html");
+await page.locator("#sites-q").fill("blue planet");
+await page.keyboard.press("Enter");
+await page.locator("#sites-table tbody tr").first().waitFor({ timeout: 10000 }).catch(() => {});
+check("SRCH-02", "a search lists each site's releases in a table", await page.locator("#sites-table tbody tr").count() === 5);
+check("SRCH-02", "a site that did not answer is named", await page.locator("#sites-answers .notice", { hasText: "Slow Site" }).count() === 1);
+await page.locator("#sites-site").selectOption({ label: "Harbour Usenet 2" });
+check("SRCH-02", "the Site filter narrows the table and the count", await page.locator("#sites-table tbody tr").count() === 2 && (await page.locator("#sites-count").textContent()) === "2 of 5");
+await page.locator("#sites-table button", { hasText: "Get this one" }).first().click();
+await page.locator("#sites-table .chip", { hasText: "Sent to" }).waitFor({ timeout: 5000 }).catch(() => {});
+check("SRCH-02", "Get this one sends it and says where", await page.locator("#sites-table .chip", { hasText: "Sent to NZBGet" }).count() === 1);
+check("SRCH-02", "focus stays on that row", await page.evaluate(() => document.activeElement?.closest("tr")?.querySelector(".chip") !== null));
+
+// RAD-12: Settings, Radio: a show from a link, and files matched by hand (DASH-212)
+console.log("\n== RAD-12 radio library review and a show from a link");
+await open("settings-radio.html#radio-library-h");
+await page.locator("#radio-library-h").scrollIntoViewIfNeeded();
+await page.locator("button", { hasText: "Match by hand" }).first().waitFor({ timeout: 5000 }).catch(() => {});
+check("RAD-12", "files that match no episode are listed by podcast", await page.locator("section[aria-labelledby=radio-library-h] .rows .row").count() >= 2);
+await page.locator("button", { hasText: "Match by hand" }).first().click();
+await page.locator("#side-panel select").first().waitFor({ timeout: 5000 }).catch(() => {});
+await page.locator("#side-panel select").first().selectOption({ index: 1 });
+await page.locator("#side-panel button", { hasText: "Match" }).first().click();
+await page.locator("#side-panel .chip", { hasText: "Matched" }).waitFor({ timeout: 5000 }).catch(() => {});
+check("RAD-12", "Match by hand matches a file to the chosen episode", await page.locator("#side-panel .chip", { hasText: "Matched" }).count() === 1);
+await page.keyboard.press("Escape");
+await open("settings-radio.html#radio-link-h");
+await page.locator("#radio-link").fill("https://www.bbc.co.uk/programmes/example");
+await page.locator("#radio-link").press("Enter");
+await page.locator("button", { hasText: "Follow this show" }).waitFor({ timeout: 5000 }).catch(() => {});
+check("RAD-12", "Look it up shows the show behind the link", await page.locator("#radio-link-title").textContent().catch(() => "") === "The Lighthouse Keepers");
+await page.locator("button", { hasText: "Follow this show" }).click();
+await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).waitFor({ timeout: 5000 }).catch(() => {});
+check("RAD-12", "Follow this show adds it and says so", await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).count() === 1);
 
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");

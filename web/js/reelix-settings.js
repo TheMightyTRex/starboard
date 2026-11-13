@@ -609,13 +609,13 @@ function rxBasicsSection() {
 }
 
 // A section that opens behind the Reelix password (the same pattern as the others), drawn by `draw(answer, body)`.
-function rxLockedSection(id, title, about, kind, openBody, draw, what) {
+function rxLockedSection(id, title, about, kind, openBody, draw, what, openAction = "open") {
   const body = el("div", { class: "stack-4" });
   const unlock = () => el("div", { class: "actions" }, el("button", { type: "button", class: "btn", onclick: open }, icon("lock"), `Show ${title.toLowerCase()}`));
   const locked = () => body.replaceChildren(el("p", { class: "small muted", text: "Reelix keeps these behind its admin password, so Starboard asks for it before showing them." }), unlock());
   async function open() {
     body.replaceChildren(el("p", { class: "muted", text: "Asking Reelix…" }));
-    try { const r = await rxCall(kind, "open", openBody, what); if (!r) { locked(); return; } draw(r, body); }
+    try { const r = await rxCall(kind, openAction, openBody, what); if (!r) { locked(); return; } draw(r, body); }
     catch (e) { body.replaceChildren(notice("danger", "Reelix could not be asked", e.message), unlock()); }
   }
   locked();
@@ -795,6 +795,174 @@ function rxDirectSection() {
   return rxLockedSection("rx-direct", "YouTube and Spotify", "Downloads from a YouTube or Spotify link, in the full version of Reelix.", "direct", {}, draw, "show YouTube and Spotify");
 }
 
+// Tags, path mappings and the site list (DASH-204): Reelix's smaller settings. Each opens behind the Reelix password,
+// as the other sections do. Tags and path mappings are lists that open (settings pattern 8): each row has Edit, which
+// opens a slide-out with Remove; Add at the foot. The site list's choices apply at once (pattern 2).
+function rxTagsSection() {
+  const draw = (r, body) => {
+    const after = (o, note) => { draw(o, body); showSaved("rx-tags-saved", note || o.done); };
+    const editTag = (t, opener) => {
+      const remove = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Remove");
+      const panel = sidePanel({ title: `Tag ${t.label}`, opener, body: [
+        el("p", { text: "Reelix uses tags to pair sites, download apps, lists and notifications with the films, series and shows that carry the same tag." }),
+        el("p", { class: "small muted", text: "Reelix cannot rename a tag. To change its name, add the new one, tag things with it, then remove this one." })],
+        foot: [remove] });
+      remove.addEventListener("click", async () => {
+        if (!await confirmDialog({ title: `Remove the tag ${t.label}?`, confirm: "Remove", danger: true,
+          message: "Reelix takes it off every site, download app, list and item that has it. Nothing else changes." })) return;
+        try { const o = await rxCall("extras", "tag-remove", { id: t.id }, "change Reelix's tags"); if (o) { panel.close(); after(o); } }
+        catch (e) { problem(e.message, remove); }
+      });
+    };
+    const addTag = (opener) => {
+      const label = el("input", { class: "input", id: "rx-tag-label", autocomplete: "off", spellcheck: "false", maxlength: "40" });
+      const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
+      const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
+      const panel = sidePanel({ title: "Add a tag", opener, body: [el("form", { class: "form-stack", novalidate: true, onsubmit: (e) => { e.preventDefault(); save.click(); } },
+        field("Name", label, { required: true, hint: "Such as 4k, kids or flaresolverr. Letters, numbers, spaces, dots and dashes." }))], foot: [save, cancel] });
+      cancel.addEventListener("click", () => panel.close());
+      setTimeout(() => label.focus(), 0);
+      save.addEventListener("click", async () => {
+        if (!label.value.trim()) { setError(label, "Give the tag a name"); label.focus(); return; }
+        setError(label, "");
+        save.disabled = true;
+        try { const o = await rxCall("extras", "tag-add", { label: label.value }, "add a tag"); if (o) { panel.close(); after(o); } }
+        catch (e) { setError(label, e.message); label.focus(); }
+        finally { if (save.isConnected) save.disabled = false; }
+      });
+    };
+    const rows = r.tags.map((t) => {
+      const edit = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, icon("pencil"), "Edit", el("span", { class: "visually-hidden", text: ` ${t.label}` }));
+      edit.addEventListener("click", () => editTag(t, edit));
+      return el("li", { class: "row row--no-lead", "data-key": `tag-${t.id}` }, el("div", {}, el("div", { class: "row__title", text: t.label })),
+        el("div", { class: "row__side" }, edit));
+    });
+    const add = el("button", { type: "button", class: "btn" }, icon("plus"), "Add a tag");
+    add.addEventListener("click", () => addTag(add));
+    redraw(body, [rows.length ? el("ul", { class: "rows", "aria-label": "Tags" }, rows)
+      : emptyState("No tags yet", "You need one only to keep some sites or download apps for some things, such as 4K films."),
+      el("div", { class: "actions" }, add, savedNote("rx-tags-saved"))]);
+  };
+  return rxLockedSection("rx-tags", "Tags", "Labels that pair sites and download apps with the things they are for.", "extras", {}, draw, "show Reelix's tags", "tags");
+}
+
+function rxMappingsSection() {
+  const draw = (r, body) => {
+    const after = (o) => { draw(o, body); showSaved("rx-mappings-saved", o.done); };
+    const editMapping = (m, opener) => {
+      const editing = !!m;
+      const hostList = [...new Set([...(r.hosts || []), m?.host].filter(Boolean))];
+      const host = el("input", { class: "input", id: "rx-map-host", autocomplete: "off", spellcheck: "false", value: m?.host || hostList[0] || "", list: "rx-map-hosts" });
+      const hosts = el("datalist", { id: "rx-map-hosts" }, hostList.map((h) => el("option", { value: h })));
+      const remote = el("input", { class: "input", id: "rx-map-remote", autocomplete: "off", spellcheck: "false", value: m?.remote || "", placeholder: "/downloads/" });
+      const local = locationPicker({ id: "rx-map-local", label: "The same folder, as Reelix sees it", app: "reelix", value: m?.local || "",
+        hint: "Browse to the folder Reelix can read the finished downloads in." });
+      const save = el("button", { type: "button", class: "btn btn--primary" }, "Save");
+      const status = el("div", { "aria-live": "polite" });
+      const foot = [save];
+      const panel = sidePanel({ title: editing ? `Path mapping for ${m.host}` : "Add a path mapping", opener, wide: true, body: [
+        el("p", { class: "small", text: "Only needed when a download app reports a folder that Reelix sees under another name, such as an app on another computer. Apps Starboard set up share one folder and need none." }),
+        el("div", { class: "form-stack" },
+          field("Download app's host", el("span", {}, host, hosts), { required: true, hint: "As in Reelix's Download apps, such as gluetun or 192.168.1.20." }),
+          field("The folder the download app reports", remote, { required: true, hint: "As the download app shows it, such as /downloads/ or D:\\Downloads\\." }),
+          local.node), status], foot });
+      if (editing) {
+        const remove = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Remove");
+        remove.addEventListener("click", async () => {
+          if (!await confirmDialog({ title: `Remove the path mapping for ${m.host}?`, confirm: "Remove", danger: true,
+            message: `Reelix looks for ${m.host}'s finished downloads where the app says they are. Nothing on disk changes.` })) return;
+          try { const o = await rxCall("extras", "mapping-remove", { id: m.id }, "change Reelix's path mappings"); if (o) { panel.close(); after(o); } }
+          catch (e) { problem(e.message, remove); }
+        });
+        panel.setFoot([save, remove]);
+      } else {
+        const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
+        cancel.addEventListener("click", () => panel.close());
+        panel.setFoot([save, cancel]);
+      }
+      setTimeout(() => host.focus(), 0);
+      save.addEventListener("click", async () => {
+        for (const [input, words] of [[host, "Give the download app's host"], [remote, "Give the folder the download app reports"]]) setError(input, input.value.trim() ? "" : words);
+        const empty = [host, remote].find((i) => !i.value.trim());
+        if (empty) { empty.focus(); return; }
+        if (!local.input.value.trim()) { setError(local.input, "Choose the folder Reelix sees"); local.input.focus(); return; }
+        save.disabled = true;
+        status.replaceChildren();
+        try {
+          const o = await rxCall("extras", "mapping-save", { id: m?.id, host: host.value.trim(), remote: remote.value.trim(), local: local.input.value.trim() }, "change Reelix's path mappings");
+          if (o) { panel.close(); after(o); }
+        } catch (e) { status.replaceChildren(notice("danger", "Not saved", e.message)); }
+        finally { if (save.isConnected) save.disabled = false; }
+      });
+    };
+    const rows = r.mappings.map((m) => {
+      const edit = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, icon("pencil"), "Edit", el("span", { class: "visually-hidden", text: ` the mapping for ${m.host}` }));
+      edit.addEventListener("click", () => editMapping(m, edit));
+      return el("li", { class: "row row--no-lead", "data-key": `map-${m.id}` }, el("div", {}, el("div", { class: "row__title", text: m.host }),
+        el("div", { class: "row__meta", text: `${m.remote} is ${m.local} for Reelix` })), el("div", { class: "row__side" }, edit));
+    });
+    const add = el("button", { type: "button", class: "btn" }, icon("plus"), "Add a path mapping");
+    add.addEventListener("click", () => editMapping(null, add));
+    redraw(body, [rows.length ? el("ul", { class: "rows", "aria-label": "Path mappings" }, rows)
+      : emptyState("No path mappings", "Reelix finds finished downloads where each download app says they are. That is right for apps Starboard set up."),
+      el("div", { class: "actions" }, add, savedNote("rx-mappings-saved"))]);
+  };
+  return rxLockedSection("rx-mappings", "Path mappings", "When a download app and Reelix see the same folder under different names.", "extras", {}, draw, "show Reelix's path mappings", "mappings");
+}
+
+const RX_LIST_STATE = { ok: ["Up to date", "success"], updating: ["Updating", "info"], failed: ["Update failed", "danger"], never: ["Never updated", "warning"] };
+function rxSiteListSection() {
+  const draw = (r, body) => {
+    const sectionNode = body.closest("section");
+    const [words, tone] = RX_LIST_STATE[r.state] || RX_LIST_STATE.ok;
+    if (sectionNode) onTitle(sectionNode.querySelector("h2"), chip(words, tone));
+    const now = async (changes, control, undo) => {
+      try { const o = await rxCall("extras", "site-list-save", { on: on.checked, every: every.value, ...changes }, "change how the site list updates"); if (o) { draw(o, body); settingSaved(); return; } }
+      catch (e) { problem(e.message, control); }
+      undo();
+    };
+    const on = el("input", { type: "checkbox", role: "switch", id: "rx-list-on", "aria-labelledby": "rx-list-on-l", checked: r.on });
+    on.addEventListener("change", () => now({}, on, () => { on.checked = !on.checked; }));
+    const every = el("select", { class: "select", id: "rx-list-every", "aria-labelledby": "rx-list-every-l", disabled: !r.on },
+      r.choices.map((c) => el("option", { value: String(c.value), text: c.label, selected: c.value === r.every })));
+    const was = every.value;
+    every.addEventListener("change", () => now({}, every, () => { every.value = was; }));
+    const update = el("button", { type: "button", class: "btn", disabled: r.syncing }, icon("refresh-cw"), "Update now");
+    update.addEventListener("click", async () => {
+      update.disabled = true;
+      try {
+        const o = await rxCall("extras", "site-list-sync", {}, "update the site list");
+        if (o) { draw(o, body); $("[data-check-again]", body)?.focus(); announce(o.done); } else update.disabled = false;
+      }
+      catch (e) { update.disabled = false; problem(e.message, update); }
+    });
+    // No polling (lightweight): while Reelix updates, Check again asks once.
+    const again = r.syncing ? el("button", { type: "button", class: "btn btn--quiet", "data-check-again": true }, "Check again") : null;
+    again?.addEventListener("click", async () => {
+      try {
+        const o = await rxCall("extras", "site-list", {}, "see the site list");
+        if (o) { draw(o, body); ($("[data-check-again]", body) || $("button", body))?.focus(); announce(RX_LIST_STATE[o.state]?.[0] || ""); }
+      }
+      catch (e) { problem(e.message, again); }
+    });
+    const facts = el("dl", { class: "facts" },
+      el("dt", { text: "Sites Reelix knows" }), el("dd", { text: r.loaded != null ? Number(r.loaded).toLocaleString("en-GB") : "Not known" }),
+      el("dt", { text: "Last updated" }), el("dd", { text: r.last_sync ? formatDate(r.last_sync, true) : "Never" }),
+      el("dt", { text: "Last checked" }), el("dd", { text: r.last_check ? formatDate(r.last_check, true) : "Never" }),
+      r.custom ? el("dt", { text: "Your own site files" }) : null, r.custom ? el("dd", { text: String(r.custom) }) : null);
+    const failed = r.failed_count ? el("details", { class: "disclosure" }, el("summary", { text: `${r.failed_count} ${r.failed_count === 1 ? "site file" : "site files"} Reelix could not read` }),
+      el("div", { class: "disclosure__body" }, el("ul", { class: "small" }, r.failed.map((f) => el("li", { text: `${f.id}: ${f.error}` }))))) : null;
+    body.replaceChildren(...[
+      r.state === "failed" ? notice("danger", "The last update failed", `${r.error} Reelix keeps the list it has. Try Update now later.`) : null,
+      r.syncing ? notice("info", "Reelix is updating the site list", "It takes a minute or so. Press Check again to see how it went.", again) : null,
+      el("ul", { class: "settings-rows" },
+        settingRow("Update the site list automatically", "Reelix fetches the newest list of sites and how to search each one. Your sites and their settings stay as they are. Recommended.", el("label", { class: "switch" }, on), "rx-list-on-l"),
+        settingRow("How often", "", every, "rx-list-every-l")),
+      facts, failed, el("div", { class: "actions" }, update)].filter(Boolean));
+  };
+  return rxLockedSection("rx-sitelist", "Site list updates", "The list of sites Reelix can search, and how it keeps it up to date.", "extras", {}, draw, "show the site list", "site-list");
+}
+
 function reelixAdminSections() {
   const holder = el("div", { class: "rx-admin" });
   api("/api/reelix/admin/about").then((a) => {
@@ -812,8 +980,10 @@ function reelixAdminSections() {
       rxRadioSection(),
       ...(full ? [rxDirectSection()] : []),  // replaceChildren writes a null as the word "null"
       rxKindSection("indexers", "The sites Reelix searches for films, series, books and music. Nothing is added unless you add it."),
+      rxSiteListSection(),
       rxKindSection("mediaservers", "Reelix tells Jellyfin and Audiobookshelf about each new file, so it shows in them at once."),
       rxKindSection("downloadclients", "The apps that download what Reelix chooses."),
+      rxMappingsSection(),
       rxLibrarySection(),
       rxFoldersSection(),
       rxFormSection("information", "Information", "Where Reelix finds details about films and series."),
@@ -821,6 +991,7 @@ function reelixAdminSections() {
       rxFormSection("requests", "Requests", "What happens when someone asks for something."),
       rxKindSection("notifications", "Where Reelix tells you what it did: Discord, email, ntfy and others."),
       rxKindSection("importlists", "Lists Reelix follows, such as a Trakt or IMDb list, to add what is on them."),
+      rxTagsSection(),
       rxPeopleSection(),
       rxFormSection("books", "Books", "How Reelix handles books and audiobooks."),
       rxFormSection("music", "Music", "How Reelix handles albums."));

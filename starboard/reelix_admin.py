@@ -271,7 +271,7 @@ def route(handler, method, path):
     if method != "POST" or not m:
         return handler.error(404, "Not found")
     kind, action = m.group("kind"), m.group("action")
-    if kind not in KINDS and kind not in ("search", "library", "basics", "quality", "radio", "form", "folders", "people", "system", "direct"):
+    if kind not in KINDS and kind not in ("search", "library", "basics", "quality", "radio", "form", "folders", "people", "system", "direct", "extras"):
         return handler.error(404, "Starboard does not change that part of Reelix")
     body = handler.body()
     address = handler.client_address_text()
@@ -289,6 +289,12 @@ def route(handler, method, path):
 
 def _act(app, reelix, base, kind, action, body):
     from . import logs
+    if kind == "extras":  # tags, path mappings and the site list (DASH-204)
+        from . import reelix_extras
+        out = reelix_extras.act(reelix, action, body)
+        if out.get("done"):
+            logs.event("info", "reelix", out["done"])
+        return out
     if kind == "direct":  # YouTube and Spotify in the full version (DASH-216, 217)
         from . import reelix_direct as rd
         acts = {"open": lambda: rd.state(reelix), "save": lambda: rd.save(reelix, body.get("on"), body.get("folder")),
@@ -301,6 +307,10 @@ def _act(app, reelix, base, kind, action, body):
         out = acts[action]()
         if out.get("done"):
             logs.event("info", "reelix", out["done"])
+        # Kept for Starboard's Reelix health, which has only the manager key (DASH-218)
+        from . import reelix_direct_health
+        reelix_direct_health.record(app.data_dir, state=out if "tools" in out else None,
+                                    queue=out if action in ("queue", "start", "change") else None)
         return out
     if kind == "system":  # Reelix's backups, logs and tasks in System (DASH-201, 202, 203)
         from . import reelix_system as rs

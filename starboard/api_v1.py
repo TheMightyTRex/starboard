@@ -266,7 +266,7 @@ def routes():
 
     def health(h, m, q):
         cfg = h.app.config
-        out = services.cached("health", 300, lambda: services.health(cfg.data["services"], stack.chosen_keys(h.app.data_dir)))
+        out = services.cached("health", 300, lambda: services.health(cfg.data["services"], stack.chosen_keys(h.app.data_dir), h.app.data_dir))
         items, nxt = page(scrub(out.get("items") or []), q)
         return {"items": items, "errors": scrub(out.get("errors") or []), "next_cursor": nxt}
 

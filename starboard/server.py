@@ -1205,6 +1205,10 @@ class Handler(BaseHTTPRequestHandler):
 
             if not self.signed_in():
                 return self.error(401, "Sign in first")
+            if path.startswith("/api/radio/review") or path in ("/api/radio/preview", "/api/radio/add-link"):
+                # Settings, Radio: the library review and a show from a link, with the manager key (DASH-212)
+                from . import radio_review
+                return radio_review.route(self, method, path)
             if path.startswith("/api/library/radio-import"):
                 # Radio shows already on disk (owner, 10 November 2026), through Reelix's radio review and search.
                 from . import radio_import
@@ -1272,6 +1276,9 @@ class Handler(BaseHTTPRequestHandler):
                 return library.handle(self, method, path)
 
             cfg = app.config
+            if path.startswith("/api/reelix/sites/"):  # Search the sites directly, with the manager key (DASH-213)
+                from . import reelix_search
+                return reelix_search.route(self, method, path)
             if path.startswith("/api/reelix/admin/"):  # Reelix's admin settings, password each time (reelix_admin.py)
                 return reelix_admin.route(self, method, path)
             if path == "/api/config" and method == "GET":
@@ -2268,7 +2275,7 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/jellyfin" and method == "GET":
                 return self.json(200, services.cached("jellyfin", 20, lambda: services.jellyfin(cfg.data["services"]), fresh))
             if path == "/api/health" and method == "GET":
-                return self.json(200, services.cached("health", 300, lambda: services.health(cfg.data["services"], stack.chosen_keys(app.data_dir)), fresh))
+                return self.json(200, services.cached("health", 300, lambda: services.health(cfg.data["services"], stack.chosen_keys(app.data_dir), app.data_dir), fresh))
             if path == "/api/history" and method == "GET":
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                 hours = {"1": 1, "6": 6, "24": 24}.get(q.get("hours", ["1"])[0], 1)

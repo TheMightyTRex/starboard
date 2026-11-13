@@ -97,6 +97,7 @@ for _i, _t in enumerate(["The Made-Up Podcast", "Pretend History", "Imaginary In
                   "follow": "from_now_on", "statistics": {"in_library_count": 8, "wanted_count": 0, "episode_count": 30, "series_count": 1}})
 for _s in SHOWS:
     _s.setdefault("keep_episodes", None)  # as Reelix with RFX-106
+SHOWS[0]["abs_item_id"] = "li_example"  # its podcast in Audiobookshelf, with files that match no episode (DASH-212)
 
 
 def _paged(items, q):

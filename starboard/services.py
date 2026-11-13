@@ -855,25 +855,46 @@ REELIX_FIX = {"indexers": ("Sites to search", "/settings-reelix.html#rx-indexers
               "media_servers": ("Media servers", "/settings-reelix.html#rx-mediaservers-h"),
               "root_folders": ("Your install", "/settings-install.html"),
               "data_dir": ("Your install", "/settings-install.html"),
-              "database": ("Your install", "/settings-install.html")}
+              "database": ("Your install", "/settings-install.html"),
+              # Should Reelix add its direct downloads to its own checks (DASH-218)
+              "direct": ("YouTube and Spotify", "/settings-reelix.html#rx-direct-h"),
+              "downloads": ("YouTube and Spotify", "/settings-reelix.html#rx-direct-h")}
 
 
 FLARESOLVERR_OFFER = {"label": "Install FlareSolverr: it gets past the browser check this site uses, with about 300 MB of memory",
                       "href": "/install-apps.html?wizard=1&add=flaresolverr"}
 
 
-def _reelix_health_one(reelix, installed=()):
+def _direct_checks(reelix, data_dir):
+    """Reelix's direct downloads (YouTube and Spotify, DASH-218) as checks like its own: from the manager key when Reelix
+    allows it, else from the last look with the admin password (reelix_direct_health.py)."""
+    from . import reelix_direct_health as rdh
+    if not data_dir or not rdh.wanted(data_dir):
+        return []
+    try:
+        live = _api(reelix, "/downloads/health")
+        live = live if isinstance(live, list) and live else None  # an empty answer says nothing
+    except Exception:  # noqa: BLE001 - Reelix keeps it for admins (403), or an older one has no such route
+        live = None
+    return [{"source": "direct", "level": p["level"], "message": p["message"], "fix": p["fix"]}
+            for p in rdh.problems(rdh.read(data_dir), live)]
+
+
+def _reelix_health_one(reelix, installed=(), data_dir=None):
     """Reelix's own checks (/api/v1/system/health with the manager key). Its Sonarr- and Radarr-style health routes
     always answer an empty list (demonzoned/Reelix#74), so they are never asked (DASH-176)."""
     now = time.time()
     out = []
-    for c in (_api(reelix, "/system/health") or {}).get("checks") or []:
+    checks = list((_api(reelix, "/system/health") or {}).get("checks") or [])
+    known = {c.get("message") for c in checks}
+    checks += [c for c in _direct_checks(reelix, data_dir) if c["message"] not in known]
+    for c in checks:
         level = c.get("level") or "warning"
         if level == "ok":
             continue
         message = c.get("message", "")
         where = REELIX_FIX.get(c.get("source", ""))
-        fix = {"label": where[0], "href": where[1]} if where else None
+        fix = c.get("fix") or ({"label": where[0], "href": where[1]} if where else None)
         # A site behind Cloudflare's browser check: offer FlareSolverr in one step, only when it is needed (DASH-84).
         if c.get("source") == "indexers" and "cloudflare" in message.lower() and "flaresolverr" not in installed:
             fix = FLARESOLVERR_OFFER
@@ -886,13 +907,13 @@ def _reelix_health_one(reelix, installed=()):
     return out
 
 
-def health(services, installed=None):
+def health(services, installed=None, data_dir=None):
     """Problems the apps report. `installed`: the apps Install apps installed, so an offer to install one is made only
-    when it is missing."""
+    when it is missing. `data_dir`: where Reelix's last direct download look is kept (DASH-218)."""
     targets = [s for s in services if s.get("enabled", True) and s["type"] in ("sonarr", "radarr", "lidarr", "readarr", "prowlarr")
                and s.get("icon") != "reelix"]
     rows, errors = _gather(targets, _health_one)
-    more, more_errors = _gather(reelix_native(services), lambda r: _reelix_health_one(r, set(installed or ())))
+    more, more_errors = _gather(reelix_native(services), lambda r: _reelix_health_one(r, set(installed or ()), data_dir))
     return {"items": rows + more, "errors": errors + more_errors}
 
 
