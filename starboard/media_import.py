@@ -2,8 +2,8 @@
 for a new install whose media was never run by Radarr or Sonarr. Uses Reelix's own library import with Starboard's
 manager key (Reelix's "manage library" permission, so no admin password): list the folders, look up the best match
 for each in batches of 25, then import the ones you keep. Nothing is downloaded or moved: Reelix adds each film or
-series for the folder it is already in and scans its files. Books and music use Reelix's book and music import,
-which this does not cover yet."""
+series for the folder it is already in and scans its files. Books, audiobooks and music use Reelix's book and music
+import (DASH-282), by author or artist folder."""
 import os
 import json
 import urllib.error
@@ -16,6 +16,10 @@ KINDS = {"movie": "films", "series": "tv"}
 # Reelix want everything that author wrote.
 BOOK_KINDS = {"audiobook": "audiobooks", "ebook": "books"}
 BOOK_MONITOR = "existing"
+# Music (DASH-282): Reelix keeps music folders apart too (/musicrootfolders) and imports by artist, matched on
+# MusicBrainz. Each artist follows only the albums already there, as books do.
+MUSIC_TAB = "music"
+MUSIC_MONITOR = "existing"
 BATCH = 25
 
 
@@ -84,6 +88,10 @@ def folders(cfg, tab):
     """The library folders for films or series, each with how many sub-folders Reelix does not know yet (less the
     ones the person left out)."""
     skip = left_out(cfg)
+    if tab == MUSIC_TAB:
+        return [{"id": f["id"], "path": f["path"],
+                 "waiting": len([u for u in f.get("unmapped_folders") or [] if _folder_path(u) not in skip])}
+                for f in _call(cfg, "GET", "/musicrootfolders") or [] if f.get("kind", "music") == "music" and f.get("accessible", True)]
     if _book_tab(tab):
         kind = {v: k for k, v in BOOK_KINDS.items()}[tab]
         return [{"id": f["id"], "path": f["path"],
@@ -166,6 +174,65 @@ def run_books(cfg, root_id, items):
     body = {"root_folder_id": root_id, "items": [{**i, "monitor": BOOK_MONITOR, field: profiles[0]["id"]} for i in keep]}
     out = _call(cfg, "POST", "/bookimport", body, timeout=300) or {}
     return {"added": len(out.get("added") or []), "errors": [{"path": e.get("path"), "message": e.get("message")} for e in out.get("errors") or []]}
+
+
+def _slim_artist(c):
+    """An artist folder for the dialog: MusicBrainz's artists to choose from, with what tells two of the same name
+    apart (MusicBrainz's own note, group or person, country). `sure` (ticked) when the first match has exactly the
+    folder's name and no other match has it; two bands called Nirvana wait for a person to choose."""
+    fold = lambda t: " ".join(str(t or "").lower().replace(".", " ").split())  # noqa: E731
+    sugg = [m for m in c.get("suggestions") or [] if m.get("musicbrainz_id")]
+    name = fold(c.get("guessed_artist") or c.get("folder"))
+    same = [m for m in sugg if fold(m.get("name")) == name]
+    sure = len(same) == 1 and same[0] is sugg[0] and not sugg[0].get("artist_id")
+    words = {"Group": "band", "Person": "person", "Orchestra": "orchestra", "Choir": "choir"}
+    return {"sure": sure, "path": c["path"], "name": c.get("folder") or os.path.basename(c["path"]), "title": c.get("guessed_artist"),
+            "year": None, "files": c.get("file_count", 0), "size": c.get("size", 0), "problem": c.get("lookup_error"),
+            "matches": [{"id": m["musicbrainz_id"], "title": m.get("name"), "year": None,
+                         "detail": ", ".join(x for x in (m.get("disambiguation") or "", words.get(m.get("artist_type"), ""),
+                                                         m.get("country") or "") if x),
+                         "already": "your library" if m.get("artist_id") else None}
+                        for m in sugg[:5]]}
+
+
+def scan_music(cfg, root_id, start=0):
+    """One page of artist folders, each with MusicBrainz's best artists."""
+    root_id = int(root_id)
+    listed = _call(cfg, "GET", f"/musicimport/scan?{urllib.parse.urlencode({'root_folder_id': root_id, 'lookup': 'false'})}", timeout=120) or []
+    skip = left_out(cfg)
+    listed = [c for c in listed if c["path"] not in skip]
+    page = listed[int(start):int(start) + BATCH]
+    matched = _call(cfg, "POST", "/musicimport/match", {"root_folder_id": root_id, "paths": [c["path"] for c in page]}, timeout=180) if page else []
+    return {"total": len(listed), "start": int(start), "items": [_slim_artist(c) for c in matched or []]}
+
+
+def run_music(cfg, root_id, items):
+    """Adds the kept artist folders, each following only the albums already there, with Reelix's first music quality
+    profile and first metadata profile. Returns {added, errors}."""
+    root_id = int(root_id)
+    keep = [{"path": str(i["path"]), "musicbrainz_id": str(i["id"])} for i in items or []
+            if isinstance(i, dict) and i.get("id") and len(str(i["id"])) == 36 and str(i["id"]).count("-") == 4]
+    if not keep:
+        raise ImportError_("Choose a match for at least one folder")
+    profiles = _call(cfg, "GET", "/qualityprofiles?kind=music") or []
+    if not profiles:
+        raise ImportError_("Reelix has no music quality profile. Add one in Reelix first")
+    metadata = _call(cfg, "GET", "/metadataprofiles") or []
+    if not metadata:
+        raise ImportError_("Reelix has no music metadata profile. Add one in Reelix first")
+    body = {"root_folder_id": root_id, "items": [{**i, "monitor": MUSIC_MONITOR, "quality_profile_id": profiles[0]["id"],
+                                                  "metadata_profile_id": metadata[0]["id"]} for i in keep]}
+    out = _call(cfg, "POST", "/musicimport", body, timeout=300) or {}
+    return {"added": len(out.get("added") or []), "errors": [{"path": e.get("path"), "message": e.get("message")} for e in out.get("errors") or []]}
+
+
+def scanner(tab):
+    """The scan and the run for a Library tab: films and series, books and audiobooks, or music."""
+    if tab == MUSIC_TAB:
+        return scan_music, run_music
+    if _book_tab(tab):
+        return scan_books, run_books
+    return scan, run
 
 
 def scan(cfg, root_id, start=0):

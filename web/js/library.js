@@ -287,8 +287,10 @@ async function groupComplete() {
 
 // DASH-186: films and series already on disk that Reelix does not know yet. A note above the wall, then a dialog of
 // up to 25 folders at a time with Reelix's best match for each; change a doubtful one or untick it, then bring them in.
+// Books and audiobooks come in by author folder, music by artist folder (DASH-282).
+const BY_FOLDER = { audiobooks: ["author", "authors"], books: ["author", "authors"], music: ["artist", "artists"] };
 async function importNote() {
-  if (!["films", "tv", "audiobooks", "books"].includes(TAB)) return;
+  if (!["films", "tv", "audiobooks", "books", "music"].includes(TAB)) return;
   let folders = [];
   try { folders = (await api(`/api/library/import?tab=${TAB}`)).folders.filter((f) => f.waiting); } catch { return; }
   if (!folders.length) return;
@@ -301,7 +303,7 @@ async function importNote() {
 }
 
 async function importDialog(folder, start = 0, added = 0, button = null) {
-  // Reelix looks each folder up (TMDB, or Open Library for books), which can take a while: say so at once.
+  // Reelix looks each folder up (TMDB, Open Library for books, MusicBrainz for music), which can take a while: say so at once.
   const busy = button || $("#lib-import button");
   const label = busy?.textContent;
   if (busy) { busy.disabled = true; busy.textContent = "Finding matches…"; }
@@ -333,8 +335,8 @@ async function importDialog(folder, start = 0, added = 0, button = null) {
   const ok = await slideOutConfirm({ title: `Bring in ${NOUN[TAB][1]} from disk`, confirm: "Bring in the ticked ones", opener: button || $("#lib-import button"),
     body: [el("p", { text: `Folders ${page.start + 1} to ${end} of ${page.total} in ${folder.path}. Check each match; untick any that are wrong. Unticked folders are left out and not asked about again.` }), list] });
   if (!ok) return;
-  const books = ["audiobooks", "books"].includes(TAB);
-  const items = rows.filter((r) => r.keep.checked && r.pick.value).map((r) => (books ? { path: r.it.path, id: r.pick.value } : { path: r.it.path, tmdb_id: Number(r.pick.value) }));
+  const byFolder = !!BY_FOLDER[TAB];
+  const items = rows.filter((r) => r.keep.checked && r.pick.value).map((r) => (byFolder ? { path: r.it.path, id: r.pick.value } : { path: r.it.path, tmdb_id: Number(r.pick.value) }));
   const leave = rows.filter((r) => !r.keep.checked || !r.pick.value).map((r) => r.it.path);
   let out;
   try {
@@ -344,7 +346,7 @@ async function importDialog(folder, start = 0, added = 0, button = null) {
   added += out.added;
   if (end < page.total) { importDialog(folder, end, added); return; }
   // Said where the note was, so it is seen, not only announced (the wall reloads behind it).
-  const what = ["audiobooks", "books"].includes(TAB) ? ["author", "authors"] : NOUN[TAB];  // books come in by author
+  const what = BY_FOLDER[TAB] || NOUN[TAB];  // books come in by author, music by artist
   const text = added ? `Brought in ${plural(added, what)}. Reelix is reading their files; they show here as it finds them.` : "Nothing was brought in.";
   $("#lib-import")?.replaceChildren(el("div", { class: "notice", "data-tone": added ? "success" : null, role: "status" }, icon(added ? "circle-check" : "info"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: added ? "Brought in from disk" : "Nothing brought in" }), el("p", { text }))));

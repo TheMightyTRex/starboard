@@ -119,6 +119,25 @@ def _candidate(name, title, year, tmdb, lookup):
             "lookup_error": None}
 
 
+# Artist folders on disk that the made-up Reelix does not know yet (DASH-282), for Library, Music, Bring them in: one
+# sure match, two artists of the same name to choose from, and one folder that matches nothing.
+MUSIC_ON_DISK = {
+    "Harbour Lights Quartet": [{"musicbrainz_id": "00000000-0000-4000-8000-0000000000a1", "name": "Harbour Lights Quartet",
+                                "artist_type": "Group", "country": "GB", "disambiguation": "made-up jazz quartet"}],
+    "The Lanterns": [{"musicbrainz_id": "00000000-0000-4000-8000-0000000000b1", "name": "The Lanterns", "artist_type": "Group",
+                      "country": "GB", "disambiguation": "made-up folk band"},
+                     {"musicbrainz_id": "00000000-0000-4000-8000-0000000000b2", "name": "The Lanterns", "artist_type": "Group",
+                      "country": "US", "disambiguation": "made-up rock band"}],
+    "field recordings": [],
+}
+MUSIC_ADDED = []
+
+
+def _artist_candidate(name, lookup):
+    return {"folder": name, "path": f"/data/media/music/{name}", "guessed_artist": name,
+            "suggestions": MUSIC_ON_DISK[name] if lookup else [], "lookup_error": None}
+
+
 def answer(path, q):
     """The made-up Reelix's answer for one GET, or None when this module does not know the path."""
     if path.startswith("/posters/"):
@@ -279,7 +298,14 @@ def answer(path, q):
     if path in ("/rootfolders",):
         return [{"id": 1, "path": "/data/media/movies", "media_kind": "movie", "free_space": 4 * 10 ** 12},
                 {"id": 2, "path": "/data/media/series", "media_kind": "series", "free_space": 4 * 10 ** 12}]
-    if path in ("/bookrootfolders", "/musicrootfolders"):
+    if path == "/musicrootfolders":
+        return [{"id": 5, "path": "/data/media/music", "kind": "music", "accessible": True, "free_space": 4 * 10 ** 12,
+                 "unmapped_folders": [{"name": n, "path": f"/data/media/music/{n}"} for n in MUSIC_ON_DISK if n not in MUSIC_ADDED]}]
+    if path == "/musicimport/scan":
+        return [_artist_candidate(n, False) for n in MUSIC_ON_DISK if n not in MUSIC_ADDED]
+    if path == "/metadataprofiles":
+        return [{"id": 1, "name": "Standard"}]
+    if path in ("/bookrootfolders",):
         return [{"id": 3, "path": "/data/media/books", "kind": "ebook", "free_space": 4 * 10 ** 12}]
     return None
 
@@ -363,6 +389,12 @@ def add(path, body):
         return [_candidate(*f, lookup=True) for f in ON_DISK if f"/data/media/movies/{f[0]}" in body.get("paths", [])]
     if path == "/libraryimport":
         return {"added": list(range(len(body.get("items") or []))), "errors": []}
+    if path == "/musicimport/match":
+        return [_artist_candidate(n, True) for n in MUSIC_ON_DISK if f"/data/media/music/{n}" in body.get("paths", [])]
+    if path == "/musicimport":
+        names = [str(i.get("path", "")).rsplit("/", 1)[-1] for i in body.get("items") or []]
+        MUSIC_ADDED.extend(n for n in names if n in MUSIC_ON_DISK)
+        return {"added": list(range(len(names))), "errors": []}
     title = {"/movies": "Added film", "/series": "Added series", "/books": "Added book", "/artists": "Added artist",
              "/radio/shows": "Added show"}.get(path)
     return {"id": 999, "title": title, "name": title} if title else None

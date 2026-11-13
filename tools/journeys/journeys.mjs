@@ -317,6 +317,21 @@ await page.locator("button", { hasText: "Follow this show" }).click();
 await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).waitFor({ timeout: 5000 }).catch(() => {});
 check("RAD-12", "Follow this show adds it and says so", await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).count() === 1);
 
+// LIB-02: music already on disk (DASH-282): the note on Library, Music, the slide-out of matches, then bring them in
+console.log("\n== LIB-02 bring in music from disk");
+await open("library-music.html");
+await page.locator("#lib-import .notice").waitFor({ timeout: 5000 }).catch(() => {});
+check("LIB-02", "the note counts the artist folders not in the library", /3 folders on disk/.test(await page.locator("#lib-import").textContent().catch(() => "")));
+await page.locator("#lib-import button", { hasText: "Bring them in" }).click();
+await page.locator("#side-panel .rows .row").first().waitFor({ timeout: 10000 }).catch(() => {});
+const musicRows = page.locator("#side-panel .rows .row");
+check("LIB-02", "each artist folder is a row with its matches", await musicRows.count() === 3);
+const ticks = await musicRows.locator("input[type=checkbox]").evaluateAll((xs) => xs.map((x) => x.checked));
+check("LIB-02", "a sure match is ticked; two artists of one name and no match are not", JSON.stringify(ticks) === JSON.stringify([true, false, false]), JSON.stringify(ticks));
+await page.locator("#side-panel button", { hasText: "Bring in the ticked ones" }).click();
+await page.locator("#lib-import .notice", { hasText: "Brought in" }).waitFor({ timeout: 10000 }).catch(() => {});
+check("LIB-02", "it says what was brought in where the note was", /Brought in 1 artist\b/.test(await page.locator("#lib-import").textContent().catch(() => "")));
+
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");
 const keyed = await api("/api/services", { method: "POST", body: { type: "sonarr", name: "Journey Keyed", url: "http://journey-keyed:8989", api_key: SECRET } });

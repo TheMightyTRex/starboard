@@ -34,6 +34,17 @@ class Reelix(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/api/v1/bookimport/scan"):
             return self._send([{"folder": "Made-up Author", "path": "/data/media/audiobooks/Made-up Author", "kind": "audiobook",
                                 "guessed_author": "Made-up Author", "suggestions": [], "lookup_error": None}])
+        if self.path == "/api/v1/musicrootfolders":
+            return self._send([{"id": 5, "path": "/data/media/music", "kind": "music", "accessible": True,
+                                "unmapped_folders": [{"name": "Made-up Band", "path": "/data/media/music/Made-up Band"},
+                                                     {"name": "Twin Name", "path": "/data/media/music/Twin Name"}]}])
+        if self.path.startswith("/api/v1/musicimport/scan"):
+            return self._send([{"folder": n, "path": f"/data/media/music/{n}", "guessed_artist": n, "suggestions": [], "lookup_error": None}
+                               for n in ("Made-up Band", "Twin Name")])
+        if self.path == "/api/v1/qualityprofiles?kind=music":
+            return self._send([{"id": 11, "name": "Music: Any"}])
+        if self.path == "/api/v1/metadataprofiles":
+            return self._send([{"id": 1, "name": "Standard"}])
         if self.path == "/api/v1/qualityprofiles?kind=audiobook":
             return self._send([{"id": 9, "name": "Audiobook: Any"}])
         if self.path.startswith("/api/v1/movies?"):
@@ -53,6 +64,17 @@ class Reelix(http.server.BaseHTTPRequestHandler):
             return self._send([{"folder": "Made-up Author", "path": body["paths"][0], "kind": "audiobook", "guessed_author": "Made-up Author",
                                 "suggestions": [{"openlibrary_id": "OL1A", "name": "Made-up Author", "top_work": "A Made-up Book",
                                                  "work_count": 12, "author_id": None}], "lookup_error": None}])
+        if self.path == "/api/v1/musicimport/match":
+            one = {"musicbrainz_id": "11111111-1111-4111-8111-111111111111", "name": "Made-up Band", "artist_type": "Group",
+                   "country": "GB", "disambiguation": "made-up", "artist_id": None}
+            twins = [{"musicbrainz_id": f"2222222{n}-2222-4222-8222-222222222222", "name": "Twin Name", "artist_type": "Person",
+                      "country": c, "artist_id": None} for n, c in ((1, "GB"), (2, "US"))]
+            return self._send([{"folder": "Made-up Band", "path": "/data/media/music/Made-up Band", "guessed_artist": "Made-up Band",
+                                "suggestions": [one], "lookup_error": None},
+                               {"folder": "Twin Name", "path": "/data/media/music/Twin Name", "guessed_artist": "Twin Name",
+                                "suggestions": twins, "lookup_error": None}])
+        if self.path == "/api/v1/musicimport":
+            return self._send({"added": [3], "errors": []})
         if self.path == "/api/v1/bookimport":
             return self._send({"added": [7], "errors": []})
         if self.path == "/api/v1/libraryimport":
@@ -107,6 +129,22 @@ class MediaImport(unittest.TestCase):
              "audio_quality_profile_id": 9}]}))
         with self.assertRaisesRegex(media_import.ImportError_, "Choose a match"):
             media_import.run_books(self.cfg, 4, [{"path": "/x", "id": "tt1"}])
+
+    def test_music_comes_in_by_artist_following_only_what_is_there(self):
+        # DASH-282: Library, Music's note and dialog, through Reelix's music import.
+        self.assertEqual(media_import.folders(self.cfg, "music"), [{"id": 5, "path": "/data/media/music", "waiting": 2}])
+        self.assertIs(media_import.scanner("music")[0], media_import.scan_music)
+        page = media_import.scan_music(self.cfg, 5)
+        one, twins = page["items"]
+        self.assertEqual((one["matches"][0]["title"], one["matches"][0]["detail"], one["sure"]), ("Made-up Band", "made-up, band, GB", True))
+        self.assertFalse(twins["sure"])  # two artists of that name: a person chooses
+        out = media_import.run_music(self.cfg, 5, [{"path": one["path"], "id": one["matches"][0]["id"]}])
+        self.assertEqual(out, {"added": 1, "errors": []})
+        self.assertEqual(Reelix.seen[-1], ("/api/v1/musicimport", {"root_folder_id": 5, "items": [
+            {"path": "/data/media/music/Made-up Band", "musicbrainz_id": "11111111-1111-4111-8111-111111111111", "monitor": "existing",
+             "quality_profile_id": 11, "metadata_profile_id": 1}]}))
+        with self.assertRaisesRegex(media_import.ImportError_, "Choose a match"):
+            media_import.run_music(self.cfg, 5, [{"path": "/x", "id": "OL1A"}])
 
     def test_nothing_chosen_is_said(self):
         with self.assertRaisesRegex(media_import.ImportError_, "Choose a match"):

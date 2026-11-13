@@ -9,6 +9,9 @@ add features.
 
 ### Added
 
+- Library, Music: Bring them in for artist folders already on disk, as films, series, books and audiobooks have. Each
+  folder gets MusicBrainz's best artists (with what tells two of the same name apart); a sure match is ticked, and each
+  artist follows only the albums already there. Still to set up counts them too (DASH-282).
 - System, Backup and restore: When backups are made, with Off, Manual, Weekly (Sunday at 03:00, keeping 4) and Nightly
   (at 03:00, keeping 7). It makes a full backup without media when you let Starboard keep the backup password's key,
   then asks the server's own backup job, and shows the next run (DASH-17).

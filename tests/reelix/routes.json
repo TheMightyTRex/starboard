@@ -129,8 +129,7 @@
    "what": "music information and search"
   },
   "musicimport": {
-   "task": "DASH-186",
-   "what": "bring in music already on disk"
+   "starboard": "Library, Music, Bring them in: artist folders already on disk (DASH-282)"
   },
   "musicrootfolders": {
    "task": "DASH-194",
