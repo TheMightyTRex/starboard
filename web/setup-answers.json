@@ -1,5 +1,5 @@
 {
- "about": "The words of the set-up's TMDB key, language, Usenet server and no-VPN questions (DASH-178, DASH-189, DASH-183, DASH-131). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
+ "about": "The words of the set-up's TMDB key, language, Usenet server and no-VPN questions, and the API keys and Storage page steps (DASH-178, DASH-189, DASH-183, DASH-131). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
  "tmdb": {
   "title": "Films and series information",
   "intro": "Reelix finds each film and series, its posters and its episodes, in The Movie Database (TMDB). A free key lets it find far more, more accurately. Without one it uses open data and matches fewer titles.",
@@ -71,5 +71,65 @@
   "needs_docker": "Moving needs Docker access, which Starboard gets when this set-up finishes. Then finish the move in Starboard, Settings, Your install, or run this set-up again.",
   "waiting": "Waiting for Reelix to finish setting up",
   "hold": "Hold the sites to search: only your old apps search until Starboard runs your apps"
+ },
+ "keys": {
+  "intro": "With its key, Starboard can show an app's queue, calendar, updates and warnings. Each key stays on the server.",
+  "places": {
+   "sonarr": "Settings, General, API key",
+   "radarr": "Settings, General, API key",
+   "lidarr": "Settings, General, API key",
+   "readarr": "Settings, General, API key",
+   "prowlarr": "Settings, General, API key",
+   "bazarr": "Settings, General, API key",
+   "qbittorrent": "Options, Web UI, API key (5.2 or later)",
+   "sabnzbd": "Config, General, API Key",
+   "jellyfin": "Dashboard, API keys",
+   "seerr": "Settings, General, API key",
+   "audiobookshelf": "Settings, API Keys (an admin's key)"
+  }
+ },
+ "storage_page": {
+  "intro": "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance.",
+  "usage_question": "Work out what uses the space",
+  "usage": [
+   {
+    "value": "ask",
+    "label": "Only when I press Sort by type"
+   },
+   {
+    "value": "open",
+    "label": "When I open Storage, if over a day old"
+   },
+   {
+    "value": "nightly",
+    "label": "Every night at 3 am"
+   },
+   {
+    "value": "weekly",
+    "label": "Every week, at 3 am"
+   },
+   {
+    "value": "off",
+    "label": "Off"
+   }
+  ],
+  "refresh_question": "Storage page updates",
+  "refresh_hint": "Sizes update by themselves while the page is open, or only when you press Check again.",
+  "refresh": [
+   {
+    "value": 0,
+    "label": "Only when I press Check again"
+   },
+   {
+    "value": 60,
+    "label": "Every minute"
+   },
+   {
+    "value": 300,
+    "label": "Every 5 minutes"
+   }
+  ],
+  "daily_question": "Keep a daily record of used space",
+  "daily_hint": "For the Space used over time chart and when the pool will be full. Nothing noticeable."
  }
 }

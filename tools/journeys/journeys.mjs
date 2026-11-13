@@ -666,6 +666,18 @@ check("MOVE-01", "Install apps opens", await page.locator("h1").count() === 1);
 await page.locator("#ia-have-h").waitFor({ timeout: 10000 });
 check("MOVE-02", "once Starboard runs them, Install apps no longer offers a move", await page.locator("section[aria-labelledby=in-takeover-h]").count() === 0);
 
+// SETUP-271: Your drives in the browser set-up (DASH-271) hands over to System, Storage, Pool, which then offers the
+// way back to the set-up guide; the guide reads the Storage page's words from the file the terminal set-up reads.
+console.log("\n== SETUP-271 Your drives and the Storage page");
+await open("system-pool.html?from=guide");
+const backToGuide = page.getByRole("link", { name: "Back to the set-up guide" });
+check("SETUP-271", "System, Storage, Pool opened from the set-up offers the way back", await backToGuide.count() === 1);
+check("SETUP-271", "and it leads to the set-up guide", (await backToGuide.getAttribute("href")) === "/setup-guide.html");
+await open("system-pool.html");
+check("SETUP-271", "opened on its own, it does not", await page.getByRole("link", { name: "Back to the set-up guide" }).count() === 0);
+const words = await page.evaluate(async () => (await (await fetch("/setup-answers.json")).json()));
+check("SETUP-271", "the shared words have the Storage page and API keys steps", !!(words.storage_page?.usage?.length && words.keys?.places?.sonarr));
+
 // Phone width: no page scrolls sideways
 // TAB-01: topic tabs on a long Settings page (12 November 2026): one tab per section, one section shown at a time,
 // arrow keys move between tabs, and Sign out is in the side menu (issue #9).

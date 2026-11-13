@@ -11,6 +11,9 @@ from unittest import mock
 from starboard import terminal_setup as ts
 from tests.test_terminal_drives import TB, Helper, drive
 from tests.test_terminal_setup import Answers
+import pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
 class FakeApi:
@@ -52,7 +55,7 @@ class RefusalsTest(unittest.TestCase):
     def test_refused_hours_preset_and_extras_ask_again(self):
         api = FakeApi(refuse=[("PUT", "/api/config/general", "Starboard answered 500")])
         term, out = plain(["2", "2"])
-        self.assertTrue(ts.step_hours(api, term, {}))
+        self.assertTrue(ts.step_hours(api, term, {"choice": {"apps": ["qbittorrent"]}}))
         self.assertIn("Starboard said: Starboard answered 500", out.getvalue())
         self.assertEqual(api.calls[-1][2], {"download_hours": {"enabled": False}})
 
@@ -127,24 +130,26 @@ class StepCountTest(unittest.TestCase):
         self.assertIn("(step 5 of 5)", out.getvalue())  # Where you are and Your keyboard after the password (DASH-259)
         # DASH-77: Clean up last, in each job, when something is left over.
         self.assertEqual(ts.job_steps({"start": "restore", "place_answered": True, "left_over": [{"id": "a"}]})[-1], "cleanup")
-        moving = ts.job_steps({"start": "move", "no_extras": True, "reelix_there": True, "place_answered": True})
+        moving = ts.job_steps({"start": "move", "no_extras": True, "reelix_there": True, "place_answered": True, "no_disks": True})
         # DASH-267 and DASH-266: Docker access before any move, then what happens to the apps, then the move itself.
-        self.assertEqual(moving, ["password", "start", "docker", "movehow", "preset", "move", "hours", "alerts"])
-        beside = ts.job_steps({"start": "move", "no_extras": True, "choice": {"apps": ["reelix", "nzbget"]}, "place_answered": True})
-        self.assertEqual(beside, ["password", "start", "docker", "movehow", "apps", "usenet", "films", "preset", "check", "move",
+        # DASH-271: Find your apps is its own step, and API keys follow the move, as in the browser set-up.
+        self.assertEqual(moving, ["password", "start", "find", "docker", "movehow", "preset", "move", "keys", "hours", "alerts"])
+        beside = ts.job_steps({"start": "move", "no_extras": True, "choice": {"apps": ["reelix", "nzbget"]}, "place_answered": True,
+                               "keys_missing": False, "no_disks": True})
+        self.assertEqual(beside, ["password", "start", "find", "docker", "movehow", "apps", "usenet", "films", "preset", "check", "move",
                                   "hours", "alerts"])  # Reelix beside the old apps first; sites come with the move
-        kept = ts.job_steps({"start": "move", "no_extras": True, "move_into": False, "place_answered": True})
-        self.assertEqual(kept, ["password", "start", "docker", "movehow", "preset", "hours", "alerts"])
+        kept = ts.job_steps({"start": "move", "no_extras": True, "move_into": False, "place_answered": True, "no_hours": True})
+        self.assertEqual(kept, ["password", "start", "find", "docker", "movehow", "preset", "keys", "alerts", "storage-page"])
         self.assertNotIn("docker", ts.job_steps({"start": "move", "docker_access": True}))
 
     def test_a_new_install_leaves_out_what_the_apps_do_not_need(self):
         state = {"start": "new", "storage": {"key": "disk"}, "choice": {"apps": ["jellyfin"]}}
         self.assertEqual(ts.job_steps(state), ["password", "place", "keyboard", "start", "storage", "apps", "preset", "check",
-                                               "extras", "hours", "alerts", "docker"])  # DASH-265: How much it does before Check; Docker last
+                                               "extras", "hours", "alerts", "storage-page", "docker"])  # DASH-265: How much it does before Check; Docker last
         term, _ = boxed()
         term._page = lambda *a: None
         ts.head(term, state, "check")
-        self.assertIn("step 8 of 12", term.header[1])
+        self.assertIn("step 8 of 13", term.header[1])
 
 
 class ResizeTest(unittest.TestCase):
@@ -361,10 +366,80 @@ class WordsTest(unittest.TestCase):
 
     def test_questions_are_the_browser_set_ups(self):
         term, out = plain(["2", "", ""])
-        ts.step_hours(FakeApi(), term, {})
+        ts.step_hours(FakeApi(), term, {"choice": {"apps": ["qbittorrent"]}})
         ts.step_alerts(FakeApi(), term, {})
         for step in ("hours", "alerts"):
             self.assertIn(ts.question(step), out.getvalue())
+
+
+class SameStepsAsTheBrowserTest(unittest.TestCase):
+    """DASH-271: the steps the browser set-up had and the terminal did not: Find your apps on its own, API keys, the
+    Storage page, and Download hours only with a download app. No "Install the apps now?" in either."""
+
+    def test_download_hours_only_with_a_download_app(self):
+        state = {}
+        self.assertFalse(ts.step_hours(FakeApi({("GET", "/api/config"): {"services": [{"type": "jellyfin"}]}}), plain()[0], state))
+        self.assertNotIn("hours", ts.job_steps(state))
+        found = {("GET", "/api/config"): {"services": [{"type": "nzbget", "has_api_key": True}]}}
+        term, _ = plain(["2"])
+        self.assertTrue(ts.step_hours(FakeApi(found), term, state))
+        self.assertIn("hours", ts.job_steps(state))
+
+    def test_keys_read_first_then_asked_hidden_and_saved(self):
+        service = {"id": "s1", "name": "Sonarr", "type": "sonarr", "url": "http://sonarr:8989", "link": "http://sonarr:8989",
+                   "has_api_key": False}
+        api = FakeApi({("GET", "/api/config"): {"services": [service]},
+                       ("POST", "/api/services/read-keys"): {"found": [], "config": {"services": [service]}}})
+        term, out = plain([], ["made-up-key"])
+        state = {"start": "move"}
+        self.assertTrue(ts.step_keys(api, term, state))
+        self.assertIn("Settings, General, API key", out.getvalue())  # where to find it, the browser's words
+        saved = [c for c in api.calls if c[:2] == ("POST", "/api/services")][0][2]
+        self.assertEqual((saved["api_key"], saved["link"]), ("made-up-key", ""))
+        self.assertNotIn("has_api_key", saved)
+        self.assertNotIn("made-up-key", out.getvalue())
+        self.assertIn("keys", ts.job_steps(state))
+
+    def test_no_missing_key_means_no_keys_step(self):
+        api = FakeApi({("GET", "/api/config"): {"services": [{"type": "sonarr", "has_api_key": True}]}})
+        state = {"start": "move"}
+        self.assertFalse(ts.step_keys(api, plain()[0], state))
+        self.assertNotIn("keys", ts.job_steps(state))
+
+    def test_storage_page_saves_the_browser_choices(self):
+        api = FakeApi({("GET", "/api/system"): {"disks": [{"label": "System disk"}]},
+                       ("GET", "/api/config"): {"performance": {"usage_every": "ask", "storage_refresh": 0, "space_log": True}}})
+        term, out = plain(["3", "2", "2"])  # every night, every minute, no daily record
+        self.assertTrue(ts.step_storage_page(api, term, {}))
+        self.assertEqual(api.calls[-1][2], {"performance": {"usage_every": "nightly", "storage_refresh": 60, "space_log": False}})
+        state = {}
+        self.assertFalse(ts.step_storage_page(FakeApi({("GET", "/api/system"): {"disks": []}}), plain()[0], state))
+        self.assertNotIn("storage-page", ts.job_steps(state))
+
+    def test_the_browser_reads_the_same_storage_and_key_words(self):
+        import json
+        js = (ROOT / "web" / "js" / "settings.js").read_text(encoding="utf-8")
+        words = json.loads((ROOT / "web" / "setup-answers.json").read_text(encoding="utf-8"))
+        self.assertIn("storage_page", js)
+        for k, v in words["keys"]["places"].items():
+            self.assertIn(f'{k}: "{v}"', js)  # KEY_PLACE, used on Manage apps too
+
+    def test_no_install_now_question_and_find_is_its_own_step(self):
+        src = (ROOT / "starboard" / "terminal_setup.py").read_text(encoding="utf-8")
+        self.assertNotIn("Install the apps for your media server now?", src)
+        self.assertLess(ts.STEP_FUNCTIONS.index(ts.step_find), ts.STEP_FUNCTIONS.index(ts.step_movehow))
+        self.assertLess(ts.STEP_FUNCTIONS.index(ts.step_move), ts.STEP_FUNCTIONS.index(ts.step_keys))
+        self.assertLess(ts.STEP_FUNCTIONS.index(ts.step_keys), ts.STEP_FUNCTIONS.index(ts.step_connect))
+        self.assertLess(ts.STEP_FUNCTIONS.index(ts.step_alerts), ts.STEP_FUNCTIONS.index(ts.step_storage_page))
+        self.assertLess(ts.STEP_FUNCTIONS.index(ts.step_storage_page), ts.STEP_FUNCTIONS.index(ts.step_docker_end))
+
+    def test_your_drives_runs_straight_after_storage(self):
+        saved = list(ts.STEP_FUNCTIONS), list(ts.STEPS)
+        try:
+            ts.add_drives_step(available=True)
+            self.assertEqual(ts.STEP_FUNCTIONS.index(ts.step_drives), ts.STEP_FUNCTIONS.index(ts.step_storage) + 1)
+        finally:
+            ts.STEP_FUNCTIONS[:], ts.STEPS[:] = saved
 
 
 class NarrowCardTest(unittest.TestCase):
@@ -431,8 +506,8 @@ class AppByAppTest(unittest.TestCase):
         basics = {"name": "Basics", "apps": ["reelix", "gluetun", "bazarr"], "groups": ["movies", "tv", "vpn", "subtitles"],
                   "memory": 300, "reelix_edition": "lite", "disk_health": False}
         api = FakeApi({("GET", "/api/stack"): overview, ("POST", "/api/stack/install"): basics})
-        # Yes, Basics, Let me choose app by app, Enter for the ticked groups, Yes to install them.
-        term, out = plain(["1", "1", "2", "", "1"])
+        # Basics, Let me choose app by app, Enter for the ticked groups, Yes to install them.
+        term, out = plain(["1", "2", "", "1"])
         state = {}
         with mock.patch.object(ts, "ask_reelix_edition", return_value="lite"):
             self.assertTrue(ts.step_apps(api, term, state))

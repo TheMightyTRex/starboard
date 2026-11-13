@@ -1285,18 +1285,48 @@ async function stepContent(id, root) {
       document.dispatchEvent(new CustomEvent("guide-media", { detail: folder.value.trim() }));
       return true;
     };
+  } else if (id === "drives") {
+    // Your drives (DASH-87, DASH-271): the terminal set-up's question. The drives are chosen on System, Storage, Pool,
+    // where the pool helper makes each change; coming back, the guide carries on from the next step.
+    let pool = {};
+    try { pool = await api("/api/pool"); } catch { /* shown as no drives */ }
+    const drives = pool.drives || [];
+    const inPool = drives.filter((d) => d.use === "pool");
+    const free = drives.filter((d) => d.use === "free");
+    const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    const name = `drives-${Date.now()}`;
+    const yes = el("input", { type: "radio", name, value: "yes", checked: true });
+    const no = el("input", { type: "radio", name, value: "no" });
+    nodes = [
+      inPool.length ? notice("success", `The pool is at ${pool.pool || "/mnt/pool"}`, `With ${count(inPool.length, "drive", "drives")}.`) : null,
+      free.length
+        ? el("p", { text: `Starboard found ${count(free.length, "drive", "drives")} besides the system drive and any drive in use.` })
+        : notice("info", "There is no other drive to add", "Add drives later on System, Storage, Pool."),
+      free.length ? el("fieldset", {}, el("legend", { class: "h3", text: inPool.length ? "Add drives to the pool now?" : "Make a pool from your drives now?" }),
+        el("div", { class: "option-cards" },
+          el("label", { class: "option-card" }, yes, el("strong", { text: "Yes (recommended)" }), el("small", { text: "Choose the drives on System, Storage, Pool, then come back to the set-up." })),
+          el("label", { class: "option-card" }, no, el("strong", { text: "No: later, on System, Storage, Pool" }), el("small", { text: "The set-up carries on." })))) : null,
+    ].filter(Boolean);
+    save = async () => {
+      if (!free.length || !yes.checked) return true;
+      remember({ at: "after-drives" });
+      location.href = "/system-pool.html?from=guide";
+      return false;
+    };
   } else if (id === "storage") {
+    // The Storage page: the same words and answers as the terminal set-up (web/setup-answers.json, DASH-271).
     const p = config.performance;
-    const radios = USAGE_CHOICES.map(([v, t]) => ({ v, input: el("input", { type: "radio", name: "usage-every", value: v, checked: p.usage_every === v }), t }));
-    const refresh = el("select", { class: "select", id: "guide-st-refresh" }, STORAGE_REFRESH.map(([v, t]) => el("option", { value: String(v), text: t, selected: Number(v) === p.storage_refresh })));
+    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).storage_page;
+    const radios = w.usage.map((c) => ({ v: c.value, input: el("input", { type: "radio", name: "usage-every", value: c.value, checked: p.usage_every === c.value }), t: c.label }));
+    const refresh = el("select", { class: "select", id: "guide-st-refresh" }, w.refresh.map((c) => el("option", { value: String(c.value), text: c.label, selected: Number(c.value) === p.storage_refresh })));
     const daily = el("input", { type: "checkbox", checked: p.space_log !== false });
     nodes = [
-      el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: "Work out what uses the space" }),
+      el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: w.usage_question }),
         el("p", { class: "small muted", text: COSTS.usage }),
         el("div", { class: "option-cards" }, radios.map((r) => el("label", { class: "option-card" }, r.input, el("strong", { text: r.t }))))),
-      field("Storage page updates", refresh, { hint: "Sizes update by themselves while the page is open, or only when you press Check again." }),
-      el("label", { class: "check" }, daily, el("span", { class: "check__text" }, el("strong", { text: "Keep a daily record of used space" }),
-        el("span", { class: "check__hint", text: "For the Space used over time chart and when the pool will be full. Nothing noticeable." }))),
+      field(w.refresh_question, refresh, { hint: w.refresh_hint }),
+      el("label", { class: "check" }, daily, el("span", { class: "check__text" }, el("strong", { text: w.daily_question }),
+        el("span", { class: "check__hint", text: w.daily_hint }))),
     ];
     save = async () => {
       const picked = radios.find((r) => r.input.checked);
@@ -1513,6 +1543,9 @@ async function startGuide() {
   let index = 0;
   let hasDisks = false;
   try { hasDisks = (await api("/api/system")).disks.length > 0; } catch { /* leave the step out */ }
+  // DASH-271: Your drives, as in the terminal set-up, when the pool is chosen and the pool helper is ready.
+  let poolReady = false;
+  try { poolReady = !!(await api("/api/setup/storage")).choices.find((c) => c.key === "pool")?.ready; } catch { /* left out */ }
   // DASH-259: Where you are and Your keyboard come first, unless the Run first script asked both just before; then
   // its answers are saved for the set-up, as the terminal set-up does.
   let placeAsked = true;
@@ -1580,9 +1613,13 @@ async function startGuide() {
     if (start === "new") {
       list.push({ id: "where", ...stepNamed(T, "storage"), skippable: false,
         intro: "Your films, series, books and downloads go in one media folder. Next, choose what your server does." });
+      if (guideMemory().where === "pool" && poolReady) {
+        list.push({ id: "drives", ...stepNamed(T, "drives"), intro: "A pool joins drives into one folder for your media; each drive stays readable on its own." });
+      }
       if (flow) {
-        // The agreed order (DASH-265): what to set up and its questions, How much it does, then Check and Start.
-        list.push(...flow.before(), { id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." },
+        // The agreed order (DASH-265): what to set up and its questions, How much it does, then Check and Start. No
+        // Moving over here (DASH-271): the terminal set-up does not ask it, and the move is its own route.
+        list.push(...flow.before().filter((x) => x.id !== "moving"), { id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." },
           ...flow.finish());
       }
     } else {
@@ -1598,6 +1635,9 @@ async function startGuide() {
         list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
         if (beside) list.push(...flow.finish());
         list.push({ id: "move", ...stepNamed(T, "move"), skippable: false });
+      } else {
+        // Keep them as they are: How much it does straight after, as the terminal set-up asks it (DASH-271).
+        list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
       }
     }
     if (types(Object.keys(KEY_PLACE)).some((s) => !s.has_api_key)) {
@@ -1609,7 +1649,7 @@ async function startGuide() {
     if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key) || coming(["qbittorrent", "nzbget", "sabnzbd"])) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, for example to keep the internet free in the day." });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
-    if (!(start === "new" && flow) && !moveInto()) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
+    if (start === "new" && !flow) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
     if (!dockerAccess && start === "new") list.push({ id: "docker", ...stepNamed(T, "docker"), skippable: false });  // the last question
     if (leftOver) list.push({ id: "cleanup", ...stepNamed(T, "cleanup"), intro: "What earlier versions, removed plug-ins and old backups left behind." });
     list.push({ id: "finish", ...stepNamed(T, "finish"), skippable: false });
@@ -1703,6 +1743,11 @@ async function startGuide() {
     remember({ at: "" });
     const list = build();
     go(list.findIndex((s) => s.id === "where") + 1);
+  } else if (mem.at === "after-drives") {
+    // Back from System, Storage, Pool (DASH-271): on with the step after Your drives.
+    remember({ at: "" });
+    const list = build();
+    go(list.findIndex((s) => s.id === "drives") + 1);
   } else {
     go(0);
   }
