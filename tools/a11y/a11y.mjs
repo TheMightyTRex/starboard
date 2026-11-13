@@ -128,7 +128,9 @@ async function reflow(name) {
 }
 
 const ALL = pages.length ? pages : fs.readdirSync(process.env.WEB || "/web").filter((f) => f.endsWith(".html") &&
-  !["login.html", "setup.html", "offline.html", "wanted-moved.html", "discover-trending.html", "wanted.html", "wanted-quality.html"].includes(f));
+  !["login.html", "setup.html", "offline.html", "wanted-moved.html", "discover-trending.html", "wanted.html", "wanted-quality.html"].includes(f))
+  // A plug-in's own page with a plug-in: the example Styles plug-in, just updated, shows What is new (DASH-393).
+  .concat(["settings-plugin.html?id=styles"]);
 for (const name of ALL) {
   try {
     await page.goto(`${base}/${name}`);

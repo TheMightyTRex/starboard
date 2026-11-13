@@ -135,12 +135,26 @@ def _example_folders(data):
     folders.ROOTS = tuple(str(root / r) for r in ("mnt", "srv", "home"))
 
 
+_STYLES_CHANGES = [
+    {"version": "1.1.0", "date": "2026-11-12",
+     "added": ["**Three new styles:** Sunset, Graphite and Editorial, each checked for contrast in light and dark.",
+               "Styles may set heading weight and the focus ring's width."],
+     "changed": ["Midnight's accent is a little brighter, so links stand out on cards."],
+     "fixed": ["Paper's chips no longer lose their border in high contrast.",
+               "A style chosen on a phone is kept after Starboard restarts."]},
+    {"version": "1.0.0", "date": "2026-11-10", "added": ["The first ten styles."]}]
+
+
 def _example_plugins(data_dir):
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "example-plugin-styles.json"), encoding="utf-8") as f:
         styles = json.load(f)
     if not plugins_admin.listing(data_dir):
-        plugins_admin.install(data_dir, styles, "/nonexistent-media")
+        # Added at 1.0.0, then updated to 1.1.0 with its changes (API 1.10), so its State shows What is new until
+        # Got it (DASH-393). Nothing is fetched: the update is given the manifest.
+        from starboard import plugin_life
+        plugins_admin.install(data_dir, {**styles, "version": "1.0.0", "styles": styles["styles"][:10]}, "/nonexistent-media")
         plugins_admin.enable(data_dir, "styles")
+        plugin_life.update(data_dir, "styles", {**styles, "starboard_api": ">=1.10 <2.0", "changes": _STYLES_CHANGES}, "/nonexistent-media")
 
 
 # Live TV (DASH-361): the built-in plug-in added and active, with made-up channels in three lists and one of your own,

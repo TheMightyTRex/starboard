@@ -37,6 +37,7 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `notices` | no | Things people must know before install | Read [Notices](#notices). API 1.4 |
 | `events` | no | Events Starboard sends it | Read [Events](#events). API 1.4 |
 | `jobs` | no | Jobs Starboard runs for it | Read [Jobs](#jobs). API 1.4 |
+| `changes` | no | What changed in each version, shown as **What is new** after an update | Read [Changes](#changes). API 1.10 |
 
 ## Permissions
 
@@ -268,6 +269,31 @@ in. API 1.4. Read [Jobs](plugin-api-reference.md#jobs) for what Starboard sends.
 ]
 ```
 
+## Changes
+
+`changes` lists what changed in each version, newest first, in the types of
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Copy the lines from your `CHANGELOG.md`. After an update, a
+Roll back or an update from an address, the plug-in's **State** shows **What is new** with the versions between the
+one people had and the one they have now: each type's first line, and **All changes** for the rest. It stays until
+someone chooses **Got it**, which Starboard keeps, so it is not shown again on any device. API 1.10.
+
+| Field | What it is | Check |
+|---|---|---|
+| `version` | The version these changes are in | Required. A version such as `1.2.0`, different from the others |
+| `date` | When it was released | A date such as `2026-11-13` |
+| `added`, `changed`, `deprecated`, `removed`, `fixed`, `security` | The changes of that type | Give at least one. Each lists 1 to 20 lines of up to 300 characters |
+
+Up to 20 versions. A line may use `**bold**` and `` `code` ``; Starboard shows them as text, never as HTML.
+Start each line with what people notice, in a few words.
+
+```json
+"changes": [
+  {"version": "1.1.0", "date": "2026-11-12", "added": ["**Three new styles:** Sunset, Graphite and Editorial"],
+   "fixed": ["A style chosen on a phone is kept after Starboard restarts"]},
+  {"version": "1.0.0", "date": "2026-11-10", "added": ["The first ten styles"]}
+]
+```
+
 ## What each API version added
 
 | Version | Date | Added |
@@ -280,6 +306,9 @@ in. API 1.4. Read [Jobs](plugin-api-reference.md#jobs) for what Starboard sends.
 | 1.5 | 12 November 2026 | A setting's `group`, and choices with a `label` |
 | 1.6 | 12 November 2026 | The `reelix:key` and `usenet:servers` permissions, with `/run/starboard/reelix.json` and `/run/starboard/usenet.json` |
 | 1.7 | 13 November 2026 | Sub menus in a custom setting's list: `menus`, and `menu` on its items and switches |
+| 1.8 | 13 November 2026 | Sections with tables in a custom setting's list, selecting several, guides, and notices with progress |
+| 1.9 | 13 November 2026 | `publish` on a container with `network: vpn` |
+| 1.10 | 13 November 2026 | `changes`: what changed in each version, shown as **What is new** after an update |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

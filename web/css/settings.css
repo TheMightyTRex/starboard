@@ -224,3 +224,9 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .attach-form { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-divider); background: var(--color-surface-sunken); }
 .attach-form .actions .input { flex: 1 1 260px; }
 .notice__body > .progress { margin-top: var(--space-2); }
+/* What is new on a plug-in's State (DASH-393): a notice with each type's first line, All changes, and Got it. Its
+   list reads in the text colour, as a notice's paragraphs do. */
+.whats-new__list { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-4); color: var(--color-text); }
+:root[data-theme="dark"] .whats-new__list { color: inherit; }
+.whats-new__all { margin-top: var(--space-1); color: var(--color-text); }
+.whats-new .actions { margin-top: var(--space-1); }

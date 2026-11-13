@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.9.0"  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.10.0"  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -39,9 +39,9 @@ DEFAULT_MEMORY, DEFAULT_CPUS, CEILING_MEMORY, CEILING_CPUS = 128, 0.25, 512, 1.0
 
 TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
        "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles",
-       "setup_required", "notices", "events", "jobs"}
+       "setup_required", "notices", "events", "jobs", "changes"}
 REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers",
-                  "setup_required", "notices", "events", "jobs"}
+                  "setup_required", "notices", "events", "jobs", "changes"}
 CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command", "publish"}
 # Plug-ins that ship inside Starboard (plugins/<id>/ in its own folder): they may run Starboard's own image
 # ("image": "starboard") with a command, and Live TV may use the Live TV folder the installer gave ("iptv").
@@ -60,6 +60,10 @@ EVENTS = {"item.added": ("media:read", "When something new arrives in your libra
           "playback.started": ("media:read", "When someone starts playing something")}
 JOB = {"id", "label", "path", "daily", "every_hours", "at_start", "time_limit_minutes", "quiet_hours"}
 ACTION = {"id", "label", "path", "confirm"}
+# API 1.10 (DASH-393): the plug-in's changelog in the manifest, in Keep a Changelog's types, so Starboard can say what
+# is new after an update without fetching anything. Kept short: 20 versions, 20 lines a type, 300 characters a line.
+CHANGE_TYPES = ("added", "changed", "deprecated", "removed", "fixed", "security")
+CHANGE = {"version", "date"} | set(CHANGE_TYPES)
 
 
 def _range_ok(spec, version=API_VERSION):
@@ -273,6 +277,7 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"resources.{name}: name a container and give memory (MB) and cpus")
         elif r.get("memory", 0) > CEILING_MEMORY or r.get("cpus", 0) > CEILING_CPUS:
             out.append(f"resources.{name}: at most {CEILING_MEMORY} MB and {CEILING_CPUS} processor")
+    out += check_changes(m.get("changes"))
     if m.get("needs") is not None and not (isinstance(m["needs"], list) and all(re.match(r"^[a-z0-9-]{2,30}$", str(n)) for n in m["needs"])):
         out.append("needs must list app names such as jellyfin")
     return out
@@ -413,6 +418,34 @@ def compose(manifest, plugin_dir, media_dir, host=None):
     return "\n".join(lines) + "\n"
 
 
+def check_changes(changes):
+    """Problems with the optional changes list (API 1.10), as plain sentences."""
+    if changes is None:
+        return []
+    if not (isinstance(changes, list) and 1 <= len(changes) <= 20):
+        return ["changes must list one to 20 versions, newest first"]
+    out, seen = [], set()
+    for i, v in enumerate(changes):
+        where = f"changes[{i}]"
+        if not isinstance(v, dict):
+            out.append(f"{where} must be an object")
+            continue
+        for k in sorted(set(v) - CHANGE):
+            out.append(f"{where}: unknown field {k}")
+        if not (isinstance(v.get("version"), str) and re.match(SEMVER, v["version"])) or v.get("version") in seen:
+            out.append(f"{where}: needs its own version, such as 1.2.0")
+        seen.add(v.get("version"))
+        if "date" in v and not (isinstance(v["date"], str) and re.match(r"^\d{4}-\d{2}-\d{2}$", v["date"])):
+            out.append(f"{where}: date must be a date such as 2026-11-13")
+        if not any(t in v for t in CHANGE_TYPES):
+            out.append(f"{where}: needs at least one of {', '.join(CHANGE_TYPES)}")
+        for t in CHANGE_TYPES:
+            if t in v and not (isinstance(v[t], list) and 1 <= len(v[t]) <= 20
+                               and all(isinstance(x, str) and 0 < len(x.strip()) <= 300 for x in v[t])):
+                out.append(f"{where}: {t} must list one to 20 lines of up to 300 characters")
+    return out
+
+
 def write_schema(path):
     """The manifest's JSON Schema (P1), for authors and their tools; check() is what Starboard itself runs."""
     schema = {
@@ -479,6 +512,12 @@ def write_schema(path):
                                "every_hours": {"type": "integer", "minimum": 1, "maximum": 168}, "at_start": {"const": True},
                                "time_limit_minutes": {"type": "integer", "minimum": 1, "maximum": 120}, "quiet_hours": {"type": "boolean"}}}},
             "actions": {"type": "array", "items": {"type": "object", "required": ["label", "path"]}},
+            # API 1.10 (DASH-393)
+            "changes": {"type": "array", "minItems": 1, "maxItems": 20, "items": {
+                "type": "object", "additionalProperties": False, "required": ["version"],
+                "properties": {"version": {"type": "string", "pattern": SEMVER}, "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+                               **{t: {"type": "array", "minItems": 1, "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 300}}
+                                  for t in CHANGE_TYPES}}}},
         },
     }
     with open(path, "w", encoding="utf-8") as f:

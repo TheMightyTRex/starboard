@@ -749,6 +749,35 @@ check("OWN-02", "Reset style goes back to the own style in Forest", await page.e
 check("OWN-02", "and the own style's card says Forest", /Forest colours/.test(await page.locator(".style-gallery__item").first().innerText()));
 await api("/api/config/general", { method: "PUT", body: { own_colours: "teal" } });
 await page.evaluate(() => setOwnColours("teal"));
+// What is new on a plug-in's State (DASH-393): the example Styles plug-in was just updated from 1.0.0 to 1.1.0.
+console.log("\n== WN What is new in a plug-in");
+await open("settings-plugin.html?id=styles");
+const wn = page.locator("#pl-styles-whats-new");
+await wn.waitFor({ timeout: 10000 }).catch(() => {});
+const wnText = (await wn.count()) ? await wn.innerText() : "";
+check("WN-01", "an updated plug-in's State shows What is new in its version, and what it was before",
+  /What is new in 1\.1\.0/.test(wnText) && /Updated from 1\.0\.0/.test(wnText), wnText.slice(0, 120));
+check("WN-01", "it is inside the State section, after the version line",
+  await page.evaluate(() => !!document.querySelector("#pl-styles-whats-new")?.closest("section")?.querySelector("#pl-styles-state-h")));
+check("WN-01", "it is said politely", (await wn.getAttribute("role")) === "status");
+check("WN-02", "each type of change shows its first line, with how many more",
+  /Added: Three new styles: Sunset/.test(wnText) && /\(and 1 more\)/.test(wnText) && /Changed: /.test(wnText) && /Fixed: /.test(wnText), wnText);
+check("WN-02", "the older version's changes are left out", !/The first ten styles/.test(wnText));
+await wn.getByText(/^All 5 changes$/).click();
+check("WN-03", "All changes opens the rest", await wn.getByText("A style chosen on a phone is kept after Starboard restarts.").isVisible());
+await page.setViewportSize({ width: 375, height: 812 });
+await open("settings-plugin.html?id=styles");
+check("WN-04", "What is new fits at phone width", await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0
+  && await page.locator("#pl-styles-whats-new").isVisible());
+await page.setViewportSize({ width: 1280, height: 860 });
+await open("settings-plugin.html?id=styles");
+await page.locator("#pl-styles-whats-new").getByRole("button", { name: /^Got it/ }).click();
+await page.locator("#pl-styles-whats-new").waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
+await page.waitForTimeout(200);
+check("WN-05", "Got it hides it and puts focus on the State heading",
+  !(await page.locator("#pl-styles-whats-new").count()) && await page.evaluate(() => document.activeElement.id) === "pl-styles-state-h");
+await open("settings-plugin.html?id=styles");
+check("WN-05", "Got it is kept on the server: it is not shown again", !(await page.locator("#pl-styles-whats-new").count()));
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

@@ -2724,13 +2724,21 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(200, {**pa.summary(manifest), "new_permissions": plugin_life.new_permissions(old, manifest),
                                                "changelog": (known or {}).get("changelog", ""), "from": old.get("version")})
                     self.check_password(body)
-                    said = plugin_life.update(app.data_dir, pid, manifest, media, services=app.config.data["services"])
+                    said = plugin_life.update(app.data_dir, pid, manifest, media, services=app.config.data["services"],
+                                              note="" if body.get("address") else (known or {}).get("changelog", ""))
             except LookupError as e:
                 return self.error(404, str(e))
             logs.event("info", "plug-ins", said)
             app.plugin_clock.ensure()
             app.plugin_idle.ensure()
             return self.json(200, {"said": said, "plugins": pa.listing(app.data_dir)})
+        mw = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/whats-new-seen$", path)
+        if mw and method == "POST":
+            # Got it on What is new (DASH-393): kept on the server, so it is not shown again on any device.
+            if not any(p["id"] == mw.group(1) for p in pa.listing(app.data_dir)):
+                return self.error(404, "No plug-in with that id")
+            plugin_life.whats_new_seen(app.data_dir, mw.group(1))
+            return self.json(200, {"said": "Marked as seen"})
         if path == "/api/plugins/catalogue" and method == "GET":
             # The Catalogue page (DASH-318): the Starboard plug-ins collection, each marked when already added.
             have = {p["id"] for p in pa.added(app.data_dir)}

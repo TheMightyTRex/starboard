@@ -71,6 +71,15 @@ class PluginsTest(unittest.TestCase):
         self.assertFalse(plugins._range_ok(">=1.0 <2.0", "2.0.0"))
         self.assertFalse(plugins._range_ok("~1.0", "1.0.0"))
 
+    def test_changes_are_optional_and_checked(self):  # API 1.10 (DASH-393)
+        self.assertEqual(plugins.check({**ON_DEMAND, "changes": [{"version": "0.2.0", "date": "2026-11-13", "added": ["Usenet"]}]}), [])
+        bad = plugins.check({**ON_DEMAND, "changes": [{"version": "soon", "added": "Usenet", "colour": "red"}, {"version": "0.1.0"}]})
+        self.assertIn("changes[0]: unknown field colour", bad)
+        self.assertIn("changes[0]: needs its own version, such as 1.2.0", bad)
+        self.assertIn("changes[0]: added must list one to 20 lines of up to 300 characters", bad)
+        self.assertTrue(any("changes[1]: needs at least one of" in b for b in bad))
+        self.assertEqual(plugins.check({**ON_DEMAND, "changes": []}), ["changes must list one to 20 versions, newest first"])
+
     def test_the_published_schema_is_up_to_date(self):
         path = os.path.join(os.path.dirname(plugins.__file__), "plugin-manifest.schema.json")
         with open(path) as f:
