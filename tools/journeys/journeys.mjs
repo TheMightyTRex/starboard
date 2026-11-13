@@ -897,6 +897,39 @@ check("WS-05", "Top titles shows the most played series first, with plays, peopl
 await page.setViewportSize({ width: 375, height: 812 });
 check("WS-06", "the tables fit at phone width", await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
 await page.setViewportSize({ width: 1280, height: 860 });
+// DASH-411: app plug-ins (plug-in API 1.13). Jellystat's page on the home network, the clear choice on removal, and
+// Tdarr's offer to copy the Tdarr the main install runs.
+console.log("\n== AP App plug-ins");
+await open("settings-plugin.html?id=jellystat");
+const apLink = page.locator('section[aria-labelledby="pl-jellystat-web-h"] a', { hasText: "Open Jellystat" });
+check("AP-01", "an app plug-in's page has its address on the home network, with Open",
+  (await apLink.count()) === 1 && (await apLink.getAttribute("href")) === "http://127.0.0.1:3000/"
+  && /port 3000/.test(await page.locator('section[aria-labelledby="pl-jellystat-web-h"]').innerText()));
+await page.getByRole("button", { name: "Remove Jellystat" }).click();
+const apDialog = page.locator("dialog[open]");
+await apDialog.waitFor({ timeout: 5000 });
+const apRadios = apDialog.locator("input[type=radio]");
+check("AP-02", "removing asks where its data goes, kept with Starboard's data by default",
+  (await apRadios.count()) === 2 && await apRadios.first().isChecked()
+  && /holding folder/.test(await apDialog.innerText()) && /Nothing is deleted/.test(await apDialog.innerText()));
+await apDialog.getByRole("button", { name: "Cancel" }).click();
+check("AP-03", "Cancel puts focus back on Remove", await page.evaluate(() => /Remove Jellystat/.test(document.activeElement?.textContent || "")));
+await open("settings-plugins.html");
+check("AP-04", "Your plug-ins has Open for an active app plug-in, named for a screen reader",
+  (await page.getByRole("link", { name: /Open Jellystat/ }).count()) === 1);
+await open("settings-plugin.html?id=tdarr");
+const apAdopt = page.getByRole("button", { name: /Bring in the Tdarr you already have/ });
+check("AP-05", "an inactive app plug-in offers to copy the app the main install runs", (await apAdopt.count()) === 1);
+await apAdopt.click();
+await page.waitForTimeout(500);
+const apSaid = await page.locator('section[aria-labelledby="pl-tdarr-adopt-h"] [role=status]').innerText();
+check("AP-06", "with no such app, it says so plainly in a live region", /found no Tdarr|Docker/.test(apSaid), apSaid);
+await open("settings-plugins-catalogue.html");
+const apGroup = page.locator('section[aria-label="Apps you can add"]');
+check("AP-08", "the catalogue groups the apps together, each with what it uses at rest",
+  (await apGroup.count()) === 1 && /At rest: about \d+ MB of memory/.test(await apGroup.innerText()));
+await open("settings-plugin.html?id=tdarr");
+check("AP-07", "an app plug-in that is not active says a port is chosen when it is", /chooses a free port/.test(await page.locator('section[aria-labelledby="pl-tdarr-web-h"]').innerText()));
 // DASH-410: plug-in API 1.12 on the example Audio description plug-ins: a row's link opens in a new tab and says so,
 // the plug-in's own words for each state, and an upload that takes only a file.
 console.log("\n== AD Audio description sources");

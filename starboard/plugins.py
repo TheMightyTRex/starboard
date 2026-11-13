@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.12.0"  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.13.0"  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -29,6 +29,8 @@ PERMISSIONS = {
     "jellyfin:key": ("Use Jellyfin's API key, kept by Starboard", "high", None),
     "reelix:key": ("Use Reelix's API key, kept by Starboard", "high", None),  # API 1.6
     "usenet:servers": ("Use your news server's address and sign-in, from NZBGet or SABnzbd", "high", None),  # API 1.6
+    # API 1.13 (DASH-411): an app plug-in's own web page, opened on the home network at a port Starboard chooses
+    "network:port": ("Open its own web page on your home network, at a port Starboard chooses", "medium", None),
     "appearance:styles": ("Add styles to Display: colours, corners, a font and shadows, checked for accessibility", "low", None),
 }
 NETWORKS = {"default": None, "lan": "network:lan", "vpn": "network:vpn"}
@@ -36,13 +38,23 @@ SETTING_TYPES = ("text", "number", "switch", "choice", "address", "secret", "fol
 CARD_TYPES = ("stat", "list", "status", "guide")  # guide: what is on now (API 1.8, DASH-359)
 CARD_FORMATS = ("number", "bytes", "percent", "duration", "date")
 DEFAULT_MEMORY, DEFAULT_CPUS, CEILING_MEMORY, CEILING_CPUS = 128, 0.25, 512, 1.0
+# API 1.13 (DASH-411): an app plug-in (one with network:port) may ask for more, for an app such as Tdarr converting a
+# film, which Docker would stop part way at 512 MB. Shown before install like any limit; the rest figure is what counts.
+APP_CEILING_MEMORY, APP_CEILING_CPUS = 2048, 4.0
 
 TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
        "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles",
-       "setup_required", "notices", "events", "jobs", "changes"}
+       "setup_required", "notices", "events", "jobs", "changes", "adopt"}
 REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers",
-                  "setup_required", "notices", "events", "jobs", "changes"}
-CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command", "publish"}
+                  "setup_required", "notices", "events", "jobs", "changes", "adopt"}
+CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command", "publish",
+             "host_port", "tmpfs", "entrypoint", "files"}
+# API 1.13 (DASH-411): what an app plug-in needs. A path inside the container (for tmpfs and data:<path>), never
+# Starboard's own /run/starboard, and values in env that Starboard fills in when it writes the Compose file.
+INSIDE = r"^/(?!run/starboard(/|$))(?!.*(^|/)\.\.(/|$))[A-Za-z0-9._/-]{1,100}$"
+DATA_AT = r"^data(/[a-z0-9][a-z0-9._-]{0,39})?:(/[A-Za-z0-9._/-]{1,100})$"
+FILLED = re.compile(r"\{(secret:[a-z][a-z0-9_]{0,29}|jellyfin:url|jellyfin:key)\}")
+MAX_PIDS, MAX_TMPFS = 1024, 6
 # Plug-ins that ship inside Starboard (plugins/<id>/ in its own folder): they may run Starboard's own image
 # ("image": "starboard") with a command, and Live TV may use the Live TV folder the installer gave ("iptv").
 BUILTIN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plugins")
@@ -151,8 +163,19 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"{where}: name must be short, lower case and different from the others")
         names.add(name)
         image = c.get("image")
-        if "command" in c and not (builtin and isinstance(c["command"], list) and all(isinstance(x, str) for x in c["command"])):
-            out.append(f"{where}: only plug-ins built into Starboard may set a command")
+        # API 1.13 (DASH-411): an app plug-in may start its image another way, such as a LinuxServer image without its
+        # s6 start-up, which needs root. The image is the plug-in's own choice anyway, so this adds no reach.
+        for key in ("command", "entrypoint"):
+            if key in c and not (isinstance(c[key], list) and 1 <= len(c[key]) <= 20
+                                 and all(isinstance(x, str) and 0 < len(x) <= 300 for x in c[key])):
+                out.append(f"{where}: {key} must be a list of one to 20 words, such as [\"python3\", \"app.py\"]")
+        files = c.get("files")
+        if files is not None and not (isinstance(files, dict) and 1 <= len(files) <= 4 and all(
+                isinstance(k, str) and re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,60}$", k) and isinstance(v, str) and len(v) <= 16384
+                for k, v in files.items())):
+            out.append(f"{where}: files maps up to four file names to their text (16 KB each), written once into its data folder")
+        elif files and not any(isinstance(v, str) and (v == "data" or re.match(DATA_AT, v) and v.startswith("data:")) for v in c.get("volumes") or []):
+            out.append(f"{where}: files need a data folder (data or data:<path>) to be written into")
         if image == "starboard" and not builtin:
             out.append(f"{where}: only plug-ins built into Starboard may run Starboard's own image")
         elif image != "starboard" and (not isinstance(image, str) or not (re.match(DIGEST_IMAGE, image) or (dev and re.match(TAG_IMAGE, image)))):
@@ -162,8 +185,18 @@ def check(manifest, dev=False, builtin=False):
         net = c.get("network", "default")
         # publish (plug-in API 1.8, 13 November 2026): a container on the VPN whose port the home network must reach,
         # such as On demand's streams for a Roku, which Jellyfin hands the stream's address to play itself.
-        if "publish" in c and not (isinstance(c["publish"], bool) and (not c["publish"] or (net == "vpn" and c.get("port")))):
-            out.append(f"{where}: publish is true or false, and true only for a container on the vpn network with a port")
+        # API 1.13 (DASH-411): on the lan network too, for an app's own web page; that needs network:port.
+        if "publish" in c and not (isinstance(c["publish"], bool) and (not c["publish"] or (net in ("vpn", "lan") and c.get("port")))):
+            out.append(f"{where}: publish is true or false, and true only for a container on the vpn or lan network with a port")
+        elif c.get("publish") and net == "lan" and "network:port" not in perms:
+            out.append(f"{where}: publish on the lan network needs the permission network:port")
+        if "host_port" in c and not (isinstance(c["host_port"], int) and not isinstance(c["host_port"], bool)
+                                     and 1024 <= c["host_port"] <= 65535 and c.get("publish") and net == "lan"):
+            out.append(f"{where}: host_port is a port from 1024 to 65535, only with publish on the lan network")
+        tmp = c.get("tmpfs")
+        if tmp is not None and not (isinstance(tmp, list) and len(tmp) <= MAX_TMPFS
+                                    and all(isinstance(t, str) and re.match(INSIDE, t) and t != "/tmp" for t in tmp)):
+            out.append(f"{where}: tmpfs lists up to {MAX_TMPFS} folders inside the container, such as /var/run/postgresql")
         if net not in NETWORKS:
             out.append(f"{where}: network must be default, lan or vpn")
         elif NETWORKS[net] and NETWORKS[net] not in perms:
@@ -174,11 +207,24 @@ def check(manifest, dev=False, builtin=False):
                     out.append(f"{where}: the media folder needs the permission media:read")
             elif v in BUILTIN_VOLUMES and builtin:
                 pass
+            elif isinstance(v, str) and re.match(DATA_AT, v):  # API 1.13: its own data folder at the path the app expects
+                at = v.split(":", 1)[1]
+                if not re.match(INSIDE, at) or at in ("/", "/tmp", "/media"):
+                    out.append(f"{where}: {v} must mount its data at a folder of its own, such as /config")
+            elif isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}:ro$", v):
+                pass  # API 1.13: one media folder, read only: less than media/<one folder>, so no permission
             elif v != "data" and not re.match(r"^media/[A-Za-z0-9._-]{1,60}$", str(v)):
-                out.append(f"{where}: volumes may be data, media:ro or media/<one folder>, not {v}")
+                out.append(f"{where}: volumes may be data, data:/path, data/<folder>:/path, media:ro or media/<one folder>, not {v}")
         env = c.get("env") or {}
-        if not isinstance(env, dict) or any(not re.match(r"^[A-Z][A-Z0-9_]{0,60}$", str(k)) or not isinstance(v, (str, int, bool)) for k, v in env.items()):
-            out.append(f"{where}: env must map UPPER_CASE names to plain values")
+        if not isinstance(env, dict) or any(not re.match(r"^[A-Za-z][A-Za-z0-9_]{0,60}$", str(k)) or not isinstance(v, (str, int, bool)) for k, v in env.items()):
+            out.append(f"{where}: env must map names (letters, numbers and _, such as TZ or serverIP since API 1.13) to plain values")
+        else:  # API 1.13: values Starboard fills in. Jellyfin's address and key only with jellyfin:key
+            for k, v in env.items():
+                for hole in FILLED.findall(str(v)) if isinstance(v, str) else []:
+                    if hole.startswith("jellyfin:") and "jellyfin:key" not in perms:
+                        out.append(f"{where}: env {k} uses {{{hole}}}, which needs the permission jellyfin:key")
+                if isinstance(v, str) and re.search(r"\{(secret|jellyfin)[^}]*\}", FILLED.sub("", v)):
+                    out.append(f"{where}: env {k} has a {{...}} Starboard does not know; use {{secret:name}}, {{jellyfin:url}} or {{jellyfin:key}}")
         user = c.get("user")
         if user == "media":  # API 1.12 (DASH-410): the media folder's owner, so files it adds belong to the person
             if not any(isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v) for v in c.get("volumes") or []):
@@ -280,11 +326,17 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"actions[{i}]: needs a label and a path on the plug-in")
     if "health" in m and not re.match(r"^/[A-Za-z0-9/_.-]{0,80}$", str(m["health"])):
         out.append("health must be a path on the plug-in, such as /health")
+    app = "network:port" in perms
+    ceiling_mem, ceiling_cpu = (APP_CEILING_MEMORY, APP_CEILING_CPUS) if app else (CEILING_MEMORY, CEILING_CPUS)
     for name, r in (m.get("resources") or {}).items():
-        if name not in names or not isinstance(r, dict) or set(r) - {"memory", "cpus"}:
+        if name not in names or not isinstance(r, dict) or set(r) - {"memory", "cpus", "pids"}:
             out.append(f"resources.{name}: name a container and give memory (MB) and cpus")
-        elif r.get("memory", 0) > CEILING_MEMORY or r.get("cpus", 0) > CEILING_CPUS:
-            out.append(f"resources.{name}: at most {CEILING_MEMORY} MB and {CEILING_CPUS} processor")
+        elif r.get("memory", 0) > ceiling_mem or r.get("cpus", 0) > ceiling_cpu:
+            out.append(f"resources.{name}: at most {ceiling_mem} MB and {ceiling_cpu:g} processor"
+                       + ("" if "network:port" in perms else f" ({APP_CEILING_MEMORY} MB and {APP_CEILING_CPUS:g} for an app plug-in, with network:port)"))
+        elif "pids" in r and not (isinstance(r["pids"], int) and not isinstance(r["pids"], bool) and 16 <= r["pids"] <= MAX_PIDS):
+            out.append(f"resources.{name}: pids is a whole number from 16 to {MAX_PIDS} (API 1.13)")
+    out += check_adopt(m.get("adopt"), containers)
     out += check_changes(m.get("changes"))
     if m.get("needs") is not None and not (isinstance(m["needs"], list) and all(re.match(r"^[a-z0-9-]{2,30}$", str(n)) for n in m["needs"])):
         out.append("needs must list app names such as jellyfin")
@@ -308,6 +360,8 @@ CHANGES = {"jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, wh
            "usenet:servers": "It can download from your news server with your account, using some of its connections",
            "appearance:styles": "How Starboard looks, through styles in Display (checked for accessibility first)"}
 REACHES = {"network:lan": "Other computers on your home network, and the internet",
+           "network:port": "Its own web page is opened on your home network: anyone on your home network can open it, "
+                           "at this computer's address and a port Starboard chooses",
            "network:vpn": "The internet, through your VPN connection"}
 NEVER = ("Docker itself, devices such as disks and graphics cards, other apps' folders and settings, or your Starboard "
          "password. Starboard never gives a plug-in these.")
@@ -324,12 +378,18 @@ def install_warning(manifest):
     change = []
     if containers:
         change.append("Its own folder in Starboard's data (data/plugins/" + str(manifest.get("id")) + ")")
-    change += [f"Files in your media folder under {v.split('/', 1)[1]}" for v in sorted(vols) if v.startswith("media/")]
+    see += [f"Files in your media folder under {v[6:-3]} (read only)" for v in sorted(vols) if v.startswith("media/") and v.endswith(":ro")]
+    change += [f"Files in your media folder under {v.split('/', 1)[1]}: it can change, replace and remove them"
+               for v in sorted(vols) if v.startswith("media/") and not v.endswith(":ro")]
     if any(c.get("user") == "media" for c in containers):  # API 1.12
         change.append("It runs as the owner of your media folder, so the files it adds there are yours to move or delete")
     if "iptv" in vols:
         change.append("The Live TV folder Jellyfin reads")
     change += [CHANGES[p] for p in perms if p in CHANGES]
+    if manifest.get("adopt"):
+        a = manifest["adopt"]
+        change.append(f"Only if you choose it: a copy of the {a.get('name', 'app')} you already have, put in its own folder "
+                      "(your app's own folders are read, never changed)")
     reach = [REACHES[p] for p in perms if p in REACHES]
     if containers and not reach:
         reach.append("Only Starboard: it has no way out to your network or the internet")
@@ -358,12 +418,68 @@ def key_scopes(manifest):
     return sorted({PERMISSIONS[p][2] for p in manifest.get("permissions") or [] if PERMISSIONS[p][2]})
 
 
-def compose(manifest, plugin_dir, media_dir, host=None, media_user=None):
+def check_adopt(adopt, containers):
+    """Problems with adopt (API 1.13, DASH-411): the app you already have, which Starboard can copy into the plug-in.
+    {"app": its container name, "name": what people read, "into": one of the plug-in's containers with a data folder,
+    "copy": {"/folder/in/the/app": "<folder in that data folder>", ...}}. Only copied, never moved or changed."""
+    if adopt is None:
+        return []
+    if not isinstance(adopt, dict) or set(adopt) - {"app", "name", "into", "copy", "stop"}:
+        return ["adopt must be an object with app, name, into and copy"]
+    out = []
+    if not re.match(r"^[a-z0-9][a-z0-9_.-]{1,40}$", str(adopt.get("app", ""))):
+        out.append("adopt.app must be the container name of the app people already have, such as tdarr")
+    if not (isinstance(adopt.get("name"), str) and 0 < len(adopt["name"]) <= 40):
+        out.append("adopt.name must be text of up to 40 characters")
+    into = next((c for c in containers or [] if isinstance(c, dict) and c.get("name") == adopt.get("into")), None)
+    if not into or not any(isinstance(v, str) and (v == "data" or re.match(DATA_AT, v)) for v in into.get("volumes") or []):
+        out.append("adopt.into must name one of its containers that has a data folder")
+    copy = adopt.get("copy")
+    if not (isinstance(copy, dict) and 1 <= len(copy) <= 8 and all(
+            isinstance(k, str) and re.match(INSIDE, k) and isinstance(v, str) and re.match(r"^[a-z0-9][a-z0-9._-]{0,39}$", v)
+            for k, v in copy.items())):
+        out.append("adopt.copy must map one to eight folders in the app to folders in the plug-in's data folder")
+    if "stop" in adopt and not isinstance(adopt["stop"], bool):
+        out.append("adopt.stop must be true or false")
+    return out
+
+
+def _fill(value, extra):
+    """An env value with Starboard's holes filled (API 1.13): a secret made for this plug-in, or Jellyfin's address
+    and key. A hole Starboard has nothing for yet is left empty, so nothing made up reaches the app."""
+    def one(m):
+        hole = m.group(1)
+        if hole.startswith("secret:"):
+            return str((extra.get("secrets") or {}).get(hole[7:], ""))
+        jf = extra.get("jellyfin") or {}
+        return str(jf.get("url" if hole == "jellyfin:url" else "api_key", ""))
+    return FILLED.sub(one, value) if isinstance(value, str) else value
+
+
+def published_lan(manifest):
+    """The containers whose web page is opened on the home network (API 1.13): [(container, its port, preferred)]."""
+    return [(c["name"], int(c["port"]), int(c.get("host_port") or c["port"])) for c in manifest.get("containers") or []
+            if isinstance(c, dict) and c.get("publish") is True and c.get("network") == "lan" and isinstance(c.get("port"), int)]
+
+
+def secret_names(manifest):
+    """The secrets Starboard makes for a plug-in (API 1.13): every {secret:name} in its env."""
+    out = set()
+    for c in manifest.get("containers") or []:
+        values = [*(c.get("env") or {}).values(), *(c.get("files") or {}).values()] if isinstance(c, dict) else []
+        for v in values:
+            out |= {h[7:] for h in FILLED.findall(str(v)) if h.startswith("secret:")}
+    return sorted(out)
+
+
+def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=None):
     """The Compose file Starboard writes for a plug-in, with the hardened defaults the plug-in cannot change (PS2 to
     PS5). `plugin_dir` is data/plugins/<id> on the host; `media_dir` the media folder. `host`, for a plug-in built
     into Starboard: {"image": Starboard's own image, "user": "uid:gid", "iptv": the Live TV folder}. `media_user`:
-    the media folder's owner as "uid:gid", for a container with user "media" (API 1.12); 1000:1000 when unknown."""
+    the media folder's owner as "uid:gid", for a container with user "media" (API 1.12); 1000:1000 when unknown. `extra` (API 1.13):
+    {"ports": {container: port on the home network}, "secrets": {name: value}, "jellyfin": {"url", "api_key"}}."""
     host = host or {}
+    extra = extra or {}
     problems = check(manifest, dev=True, builtin=bool(host))
     if problems:
         raise ValueError("; ".join(problems))
@@ -384,12 +500,19 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None):
         if user == "media":
             user = media_user if media_user and re.match(r"^[1-9]\d{0,5}:\d{1,6}$", media_user) else "1000:1000"
         lines += [f"  {name}:", f"    image: {json.dumps(image)}", f"    container_name: {name}", "    restart: unless-stopped",
-                  "    read_only: true", "    tmpfs:", "      - /tmp:size=64m", "    cap_drop:", "      - ALL",
+                  "    read_only: true", "    tmpfs:", "      - /tmp:size=64m",
+                  # API 1.13: each in memory and owned by the container's own user, as an app such as PostgreSQL
+                  # expects; nothing in it outlives a restart. Docker's tmpfs runs no programs, except for an image
+                  # with s6, which starts its programs from /run, so a /run of its own may run them
+                  *[f"      - {json.dumps(t + ':size=64m,mode=0700,uid=' + user.split(':')[0] + ',gid=' + user.split(':')[1] + (',exec' if t == '/run' else ''))}"
+                    for t in c.get("tmpfs") or []], "    cap_drop:", "      - ALL",
                   "    security_opt:", "      - no-new-privileges:true", f"    user: {json.dumps(user)}",
-                  "    pids_limit: 64", f"    mem_limit: {int(r.get('memory', DEFAULT_MEMORY))}m", f"    cpus: {float(r.get('cpus', DEFAULT_CPUS))}",
+                  f"    pids_limit: {int(r.get('pids', 64))}", f"    mem_limit: {int(r.get('memory', DEFAULT_MEMORY))}m", f"    cpus: {float(r.get('cpus', DEFAULT_CPUS))}",
                   "    labels:", f"      starboard.plugin: {json.dumps(pid)}"]
         if c.get("start") == "when_needed":
             lines.append(f"      starboard.idle_stop_minutes: \"{int(c.get('idle_stop_minutes') or 15)}\"")
+        if c.get("entrypoint"):
+            lines.append(f"    entrypoint: {json.dumps(c['entrypoint'])}")
         if c.get("command"):
             lines.append(f"    command: {json.dumps(c['command'])}")
         if c["image"] == "starboard":  # Starboard's own image checks Starboard's port: a built-in plug-in checks its own
@@ -404,23 +527,31 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None):
         else:
             lines += ["    networks:", f"      - plugin-{pid}"] + (["      - lan"] if net == "lan" else [])
             networks.add(net)
+        port_out = (extra.get("ports") or {}).get(c["name"])
+        if net == "lan" and c.get("publish") and port_out:  # API 1.13: its web page on the home network
+            lines += ["    ports:", f"      - {json.dumps(str(int(port_out)) + ':' + str(int(c['port'])))}"]
         vols = []
         for v in c.get("volumes") or []:
             if v == "data":
                 vols.append(f"{plugin_dir}/data/{c['name']}:/data")
+            elif re.match(DATA_AT, v):  # API 1.13: data:/config, or data/<folder>:/app/server for an app with several
+                sub, at = v.split(":", 1)
+                vols.append(f"{plugin_dir}/data/{c['name']}{sub[4:]}:{at}")
             elif v == "media:ro":
                 vols.append(f"{media_dir}:/media:ro")
             elif v == "iptv":
                 if not host.get("iptv"):
                     raise ValueError("The installer gave Starboard no Live TV folder (./install.sh asks)")
                 vols.append(f"{host['iptv']}:/iptv")
+            elif v.endswith(":ro"):  # API 1.13: one media folder, read only
+                vols.append(f"{media_dir}/{v[6:-3]}:/media/{v[6:-3]}:ro")
             else:
                 vols.append(f"{media_dir}/{v.split('/', 1)[1]}:/{v}")
         # settings.json, its own API key (P8) and, with jellyfin:key, Jellyfin's address and key: one folder, so a
         # saved setting reaches it at once and any container user can read it (DASH-357). Owner-only on the host.
         vols.append(f"{plugin_dir}/run:/run/starboard:ro")
         lines += ["    volumes:"] + [f"      - {json.dumps(v)}" for v in vols]
-        env = {**({"TZ": host["tz"]} if host.get("tz") else {}), **{k: str(v) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
+        env = {**({"TZ": host["tz"]} if host.get("tz") else {}), **{k: str(_fill(v, extra)) for k, v in (c.get("env") or {}).items()}, "STARBOARD_API": "http://starboard:8095/api/v1/",
                "STARBOARD_API_KEY_FILE": "/run/starboard/key"}
         lines += ["    environment:"] + [f"      {k}: {json.dumps(v)}" for k, v in sorted(env.items())]
     if networks:
@@ -501,10 +632,23 @@ def write_schema(path):
                                "port": {"type": "integer", "minimum": 1, "maximum": 65535}, "network": {"enum": sorted(NETWORKS)}, "publish": {"type": "boolean"},
                                "volumes": {"type": "array", "items": {"type": "string"}}, "env": {"type": "object"},
                                "start": {"enum": ["always", "when_needed"]}, "idle_stop_minutes": {"type": "integer"},
-                               "user": {"type": "string", "pattern": r"^([1-9]\d{0,5}:\d{1,6}|media)$"}}}},
+                               "user": {"type": "string", "pattern": r"^([1-9]\d{0,5}:\d{1,6}|media)$"},
+                               # API 1.13 (DASH-411)
+                               "host_port": {"type": "integer", "minimum": 1024, "maximum": 65535},
+                               "tmpfs": {"type": "array", "maxItems": MAX_TMPFS, "items": {"type": "string", "pattern": "^/"}},
+                               "command": {"type": "array", "minItems": 1, "maxItems": 20, "items": {"type": "string"}},
+                               "entrypoint": {"type": "array", "minItems": 1, "maxItems": 20, "items": {"type": "string"}},
+                               "files": {"type": "object", "minProperties": 1, "maxProperties": 4,
+                                         "additionalProperties": {"type": "string", "maxLength": 16384}}}}},
             "resources": {"type": "object", "additionalProperties": {"type": "object", "additionalProperties": False,
-                                                                      "properties": {"memory": {"type": "integer", "maximum": CEILING_MEMORY},
-                                                                                     "cpus": {"type": "number", "maximum": CEILING_CPUS}}}},
+                                                                      "properties": {"memory": {"type": "integer", "maximum": APP_CEILING_MEMORY},
+                                                                                     "cpus": {"type": "number", "maximum": APP_CEILING_CPUS},
+                                                                                     "pids": {"type": "integer", "minimum": 16, "maximum": MAX_PIDS}}}},
+            # API 1.13 (DASH-411)
+            "adopt": {"type": "object", "additionalProperties": False, "required": ["app", "name", "into", "copy"],
+                      "properties": {"app": {"type": "string"}, "name": {"type": "string", "maxLength": 40}, "into": {"type": "string"},
+                                     "copy": {"type": "object", "minProperties": 1, "maxProperties": 8,
+                                              "additionalProperties": {"type": "string"}}, "stop": {"type": "boolean"}}},
             "settings": {"type": "array", "items": {"type": "object", "required": ["key", "label", "type"],
                                                     "properties": {"type": {"enum": list(SETTING_TYPES)}, "required": {"type": "boolean"},
                                                                    "group": {"type": "string", "maxLength": 40},
@@ -560,6 +704,6 @@ def media_mounts(manifest):
         for v in c.get("volumes") or []:
             if v == "media:ro":
                 out.append("/media")
-            elif isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v):
-                out.append("/" + v)
+            elif isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}(:ro)?$", v):
+                out.append("/" + v.removesuffix(":ro"))
     return sorted(set(out))

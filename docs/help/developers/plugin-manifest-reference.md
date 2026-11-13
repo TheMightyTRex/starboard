@@ -3,7 +3,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.12.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.13.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -38,6 +38,7 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `events` | no | Events Starboard sends it | Read [Events](#events). API 1.4 |
 | `jobs` | no | Jobs Starboard runs for it | Read [Jobs](#jobs). API 1.4 |
 | `changes` | no | What changed in each version, shown as **What is new** after an update | Read [Changes](#changes). API 1.10 |
+| `adopt` | no | An app the main install may already run, which Starboard can copy into the plug-in | Read [App plug-ins](#app-plug-ins). API 1.13 |
 
 ## Permissions
 
@@ -55,6 +56,7 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `jellyfin:key` | Use Jellyfin's API key, kept by Starboard | high | none |
 | `reelix:key` | Use Reelix's API key, kept by Starboard (API 1.6) | high | none |
 | `usenet:servers` | Use your news server's address and sign-in, from NZBGet or SABnzbd (API 1.6) | high | none |
+| `network:port` | Open its own web page on your home network, at a port Starboard chooses (API 1.13) | medium | none |
 | `appearance:styles` | Add styles to Display: colours, corners, a font and shadows, checked for accessibility | low | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
@@ -71,11 +73,13 @@ settings, events and jobs.
 | `image` | Its image | Pinned by digest: `registry/name@sha256:` and 64 hex characters. Read [Security rules](#security-rules) |
 | `port` | The port it answers on | 1 to 65535. Starboard uses 80 when it is left out |
 | `network` | Which network it joins | `default`, `lan` or `vpn`. Read [Networks](#networks) |
-| `volumes` | Folders it gets | `data`, `media:ro` or `media/<one folder>`. Read [Volumes](#volumes) |
-| `env` | Settings passed as environment variables | Names in `UPPER_CASE`; values text, numbers or `true` and `false` |
+| `volumes` | Folders it gets | `data`, `data:<path>`, `data/<folder>:<path>`, `media:ro`, `media/<one folder>` or `media/<one folder>:ro`. Read [Volumes](#volumes) |
+| `env` | Settings passed as environment variables | Names of letters, numbers and `_` (`UPPER_CASE` before API 1.13; an app such as Tdarr reads `serverIP`); values text, numbers or `true` and `false`. From API 1.13 a value may hold `{secret:<name>}`, `{jellyfin:url}` or `{jellyfin:key}`. Read [App plug-ins](#app-plug-ins) |
 | `start` | When it runs | `always` (the default) or `when_needed`, for the first container only. Read [Resting when idle](plugin-api-reference.md#resting-when-idle) |
 | `idle_stop_minutes` | For `when_needed`: minutes idle before it rests | A whole number; 15 when left out |
-| `publish` | Puts `port` on Gluetun for the home network (plug-in API 1.9) | true or false; only with `network: vpn` and a `port` |
+| `publish` | Puts `port` on the home network: on Gluetun for `network: vpn` (plug-in API 1.9), or as the app's own web page for `network: lan` (API 1.13) | true or false; only with `network: vpn` or `lan` and a `port`; on `lan` it needs `network:port` |
+| `host_port` | For `publish` on `lan`: the port Starboard tries first, usually the app's own, such as `3000` | 1024 to 65535. Starboard takes the next free port when it is in use. API 1.13 |
+| `tmpfs` | Folders in memory the app writes to, such as `/var/run/postgresql`, owned by its user | Up to 6 paths inside the container, never `/tmp` (it always has one) or `/run/starboard`. Only `/run` may run programs, for images with s6. API 1.13 |
 | `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out. From API 1.12, `media`: the media folder's owner, only for a container that mounts `media/<one folder>`. Read [Adding files to the media folder](#adding-files-to-the-media-folder) |
 | `command` | The command it runs | Only plug-ins built into Starboard may set it |
 
@@ -96,6 +100,9 @@ The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hell
 | `data` | `/data`, read and write: its own folder, `data/plugins/<id>/data/<container name>` | none |
 | `media:ro` | `/media`, read only: the whole media folder | `media:read` |
 | `media/<one folder>` | `/media/<one folder>`, read and write: one folder in the media folder, such as `media/music` | none, but people see it as something it can change |
+| `media/<one folder>:ro` | `/media/<one folder>`, read only (API 1.13) | none; people see it as something it can see |
+| `data:<path>` | Its own folder, at the path the app expects, such as `data:/config` (API 1.13) | none |
+| `data/<folder>:<path>` | A folder inside its own folder, at a path, for an app with several, such as `data/server:/app/server` (API 1.13) | none |
 
 Nothing else can be mounted. The folder name after `media/` is 1 to 60 letters, numbers, dots, underscores and
 hyphens, so it cannot climb out with `..`.
@@ -128,7 +135,8 @@ what it writes. Each rule is there for one reason.
 - **Never root.** `user` must not be uid 0. A program running as root inside a container is one mistake away from
   root on the server.
 - **Read only, with no extra rights.** Every container runs with a read-only file system and a 64 MB `/tmp`, every
-  Linux capability dropped, no new privileges, and at most 64 processes.
+  Linux capability dropped, no new privileges, and at most 64 processes (an app plug-in may ask for up to 1024 with
+  `pids`, API 1.13).
 - **Its own network.** With `default`, the plug-in reaches Starboard and nothing else.
 
 ### Resources
@@ -143,9 +151,57 @@ what it writes. Each rule is there for one reason.
 |---|---|---|---|
 | `memory` | Memory in MB | 128 | 512 |
 | `cpus` | Processor cores | 0.25 | 1.0 |
+| `pids` | Processes and threads, for an app such as Kavita or Tdarr (API 1.13) | 64 | 1024 |
 
 The ceilings keep Starboard light on small servers, such as a Raspberry Pi. People see each container's limits
 before they add the plug-in.
+
+## App plug-ins
+
+From API 1.13 (DASH-411) a plug-in can be a whole app that is kept out of the main install, such as Jellystat with
+its PostgreSQL database, or Navidrome. Starboard still writes its Compose file and every security rule above still
+applies: the app runs read only, as a user that is not root, with no capabilities.
+
+- **An app and its database.** Up to four containers share the plug-in's own network, which reaches nothing else.
+  Each reaches the others by its container name, `plugin-<id>-<name>`, such as `plugin-jellystat-db`.
+- **Its web page.** A container on `lan` with `publish: true` and a `port` is opened on the home network. It needs
+  `network:port`, which people see before they add it. Starboard chooses the port on this computer: `host_port` if it
+  is free, otherwise the next free one, avoiding ports other containers, other plug-ins and Starboard's own apps use.
+  If something outside Docker holds it, the start fails and Starboard takes the next port and tries again. The port is
+  kept, so it stays the same after an update or a Roll back. Starboard shows the address on the plug-in's page,
+  with **Open**, and on **Your plug-ins**.
+- **Passwords made for the install.** `{secret:db_password}` in `env` is a random value Starboard makes once for this
+  install and keeps owner-only in `data/plugins/<id>/secrets.json`. Use the same name in the app and its database.
+- **Jellyfin's address and key.** With `jellyfin:key`, `{jellyfin:url}` and `{jellyfin:key}` in `env` are filled in
+  from Starboard's Jellyfin each time the plug-in starts, as `run/jellyfin.json` is.
+- **Data where the app wants it.** `data:/config` mounts the container's own folder at `/config`;
+  `data/server:/app/server` mounts a folder inside it. `tmpfs` gives folders in memory, such as
+  `/var/run/postgresql`.
+- **Removing it.** Removing any plug-in keeps its folder. People choose where it goes: kept in `data/plugins/.removed`,
+  or moved to the holding folder in **System**, **Clean up**, from where they can put it back or delete it for good.
+- **Taking over an app.** `adopt` names an app the main install may run, so Starboard can copy its settings into the
+  plug-in:
+
+```json
+"adopt": {"app": "tdarr", "name": "Tdarr", "into": "server", "stop": true,
+          "copy": {"/app/server": "server", "/app/configs": "configs", "/app/logs": "logs"}}
+```
+
+| Field | What it is |
+|---|---|
+| `app` | The app's container name in the main install |
+| `name` | What people read, up to 40 characters |
+| `into` | The plug-in's container whose data folder gets the copies |
+| `copy` | One to eight folders: the folder inside the app, and the folder inside `data/plugins/<id>/data/<into>` it is copied to |
+| `stop` | `true` to stop the app first, so its files are copied whole and its port is free. It is stopped, never removed |
+
+Starboard copies with the app's folders mounted read only, so they are never moved, changed or deleted. Anything the
+plug-in already wrote there is put beside, as `<folder>.before-copy-<date>`. The plug-in must be inactive. Only folders
+the app keeps on the computer (bind mounts) can be copied; a Docker volume is said plainly. Afterwards the person
+removes the app from the main install themselves, in **Settings**, **Install apps**.
+
+In a catalogue entry, `rest` says what the app uses at rest, measured: `{"memory_mb": 117, "cpu_percent": 0.22}`.
+Starboard shows it under the plug-in in the catalogue, so people with a small server can choose.
 
 ## Settings
 
@@ -327,8 +383,9 @@ Start each line with what people notice, in a few words.
 | 1.8 | 13 November 2026 | Sections with tables in a custom setting's list, selecting several, guides, and notices with progress |
 | 1.9 | 13 November 2026 | `publish` on a container with `network: vpn` |
 | 1.10 | 13 November 2026 | `changes`: what changed in each version, shown as **What is new** after an update |
-| 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.11 | 13 November 2026 | Four more events (`request.available`, `download.failed`, `disk.nearly_full`, `update.available`), and `readonly` on a custom setting's list with folds |
+| 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
+| 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

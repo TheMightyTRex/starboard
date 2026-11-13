@@ -5,13 +5,13 @@ not need to be logged into", with basic choices). Starboard gives Tdarr its API 
 - What it does: save space (convert to H.265 with the widely used Migz plug-ins, keeping a file only when it got
   smaller), check files only (health checks, nothing converted), or nothing.
 - How many at once: conversions on the processor (health checks run one at a time).
-- When: any time, or overnight (midnight to 07:00).
+- When: any time, or in quiet hours (DASH-411): Starboard's download hours when they are set, otherwise 01:00 to
+  06:00, the same hours plug-in jobs use. A Tdarr not set up yet starts with quiet hours chosen.
 
 Nothing else of Tdarr's is changed; its own page still shows everything."""
 from . import services
 
 DAYS = ("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-NIGHT = range(0, 7)
 LIBRARIES = {"films": ("Films", "/media/movies", "sb-films"), "series": ("Series", "/media/tv", "sb-series")}
 MODES = ("save_space", "check_only", "off")
 # Save space: remove image streams, put streams in order, convert to H.265 on the processor, keep only if smaller.
@@ -44,8 +44,21 @@ def _db(s, collection, mode, doc="", obj=None):
     return services.tdarr(s, "cruddb", {"data": {"collection": collection, "mode": mode, "docID": doc, "obj": obj or {}}})
 
 
-def _schedule(night):
-    return [{"_id": f"{d}:{h:02d}-{(h + 1) % 24:02d}", "checked": (h in NIGHT) if night else True} for d in DAYS for h in range(24)]
+def quiet_hours(cfg):
+    """The hours Tdarr may work in when it is limited to quiet hours: the download hours when they are set, otherwise
+    01:00 to 06:00, as plug-in jobs use (plugin_life._in_quiet_hours). (start, end), the end not included."""
+    hours = (cfg.data.get("download_hours") if cfg is not None else None) or {}
+    if hours.get("enabled"):
+        return int(hours.get("start", 1)) % 24, int(hours.get("end", 6)) % 24
+    return 1, 6
+
+
+def _in(h, start, end):
+    return start <= h < end if start < end else (h >= start or h < end)
+
+
+def _schedule(night, hours=(1, 6)):
+    return [{"_id": f"{d}:{h:02d}-{(h + 1) % 24:02d}", "checked": _in(h, *hours) if night else True} for d in DAYS for h in range(24)]
 
 
 def state(cfg):
@@ -65,14 +78,16 @@ def state(cfg):
     node = next(iter(nodes.values()), {}) if isinstance(nodes, dict) else {}
     limits = node.get("workerLimits") or {}
     sched = any_lib.get("schedule") or []
-    night = bool(sched) and not all(x.get("checked") for x in sched)
+    night = (bool(sched) and not all(x.get("checked") for x in sched)) if any_lib else True  # new: quiet hours (DASH-411)
+    start, end = quiet_hours(cfg)
     stats = _db(s, "StatisticsJSONDB", "getById", "statistics") or {}
     others = [x.get("name") for k, x in libs.items() if k not in {v[2] for v in LIBRARIES.values()}]
     return {"libraries": {k: bool(v and v.get("processLibrary", True)) for k, v in mine.items()}, "mode": mode,
             "at_once": int(limits.get("transcodecpu") or 0), "night": night, "node": node.get("nodeName") or "",
             "files": int(stats.get("totalFileCount") or 0), "converted": int(stats.get("totalTranscodeCount") or 0),
             "checked": int(stats.get("totalHealthCheckCount") or 0), "saved_gb": round(float(stats.get("sizeDiff") or 0), 1),
-            "other_libraries": [o for o in others if o]}
+            "other_libraries": [o for o in others if o], "quiet_hours": f"{start:02d}:00 to {end:02d}:00",
+            "quiet_from_download_hours": bool(((cfg.data.get("download_hours") or {}).get("enabled")))}
 
 
 def save(cfg, choice):
@@ -91,7 +106,7 @@ def save(cfg, choice):
     for key, (name, folder, doc) in LIBRARIES.items():
         on = bool(wanted.get(key, True))
         fields = {"processLibrary": on and mode != "off", "processTranscodes": mode == "save_space",
-                  "processHealthChecks": mode != "off", "schedule": _schedule(night),
+                  "processHealthChecks": mode != "off", "schedule": _schedule(night, quiet_hours(cfg)),
                   "pluginIDs": [{"_id": f"plugin{i + 1}", "id": pid, "checked": c, "source": "Community", "priority": i, "InputsDB": {}}
                                 for i, (pid, c) in enumerate(SAVE_SPACE)]}
         if doc in libs:
@@ -108,7 +123,7 @@ def save(cfg, choice):
                 services.tdarr(s, "alter-worker-limit", {"data": {"nodeID": nid, "process": "increase" if target > have else "decrease",
                                                                   "workerType": kind}})
     done.append({"save_space": "Converting to H.265 to save space", "check_only": "Checking files only", "off": "Not converting or checking"}[mode]
-                + (f", {at_once} at a time" if mode == "save_space" else "") + (", overnight only" if night else ""))
+                + (f", {at_once} at a time" if mode == "save_space" else "") + (", in quiet hours only" if night else ""))
     from . import setup_left
     setup_left.record(cfg.data_dir, tdarr=True)  # Still to set up: done
     return {"state": state(cfg), "done": done}

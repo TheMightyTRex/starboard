@@ -2909,6 +2909,20 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, plugin_cards.action(app.data_dir, ma.group(1), ma.group(2)))
             except LookupError as e:
                 return self.error(404, str(e))
+        mad = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/adopt$", path)
+        if mad and method == "POST":  # API 1.13 (DASH-411): copy the app you already have into the plug-in
+            body = self.body()
+            try:
+                if body.get("preview"):
+                    return self.json(200, pa.adopt_preview(app.data_dir, mad.group(1)))
+                self.check_password(body)
+                said = pa.adopt(app.data_dir, mad.group(1))
+            except LookupError as e:
+                return self.error(404, str(e))
+            except ValueError as e:
+                return self.error(400, str(e))
+            logs.event("info", "plug-ins", f"{mad.group(1)}: {said}")
+            return self.json(200, {"said": said, "plugins": pa.listing(app.data_dir)})
         m = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/(enable|disable|remove|settings)$", path)
         if not m or not any(p["id"] == m.group(1) for p in pa.listing(app.data_dir)):
             return self.error(404, "No plug-in with that id")
@@ -2918,9 +2932,11 @@ class Handler(BaseHTTPRequestHandler):
         if method != "POST":
             return self.error(405, "Not allowed")
         if what == "remove":
-            self.check_password(self.body())
-            pa.uninstall(app.data_dir, pid)
-            logs.event("info", "plug-ins", f"Removed {pid}; its folder is kept in data/plugins/.removed")
+            body = self.body()
+            self.check_password(body)
+            hold = bool(body.get("holding"))  # API 1.13 (DASH-411): its folder straight on to the holding folder
+            pa.uninstall(app.data_dir, pid, to_holding=hold)
+            logs.event("info", "plug-ins", f"Removed {pid}; its folder is kept in " + ("the holding folder" if hold else "data/plugins/.removed"))
         elif what == "enable":
             pa.enable(app.data_dir, pid, services=app.config.data["services"])
         else:

@@ -75,7 +75,7 @@ class PluginsTest(unittest.TestCase):
         self.assertIn('user: "1000:1000"', plugins.compose(tracks, "/srv/p", "/srv/media"))
         self.assertIn('user: "1000:1000"', plugins.compose(tracks, "/srv/p", "/srv/media", media_user="0:0"))  # never root
         warning = plugins.install_warning(tracks)
-        self.assertIn("Files in your media folder under movies", warning["change"])
+        self.assertTrue(any(c.startswith("Files in your media folder under movies") for c in warning["change"]))  # API 1.13 says what it can do there
         self.assertTrue(any("owner of your media folder" in c for c in warning["change"]))
         only_data = {**tracks, "containers": [{**tracks["containers"][0], "volumes": ["data", "media:ro"]}]}
         self.assertIn("containers[0]: user media is only for a container that mounts media/<one folder>", plugins.check(only_data))

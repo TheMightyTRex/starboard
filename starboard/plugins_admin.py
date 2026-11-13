@@ -229,7 +229,18 @@ def _clean_entry(e):
             "manifest": (best or {}).get("manifest", ""), "version": (best or {}).get("version", ""),
             "sha256": (best or {}).get("sha256", ""), "changelog": (best or {}).get("changelog", ""),
             "versions": [best] if best else [], "hidden": hidden, "hidden_needs": needs,
-            "published": bool(e.get("published", True))}
+            "published": bool(e.get("published", True)), "rest": _rest(e.get("rest"))}
+
+
+def _rest(r):
+    """What an app plug-in uses at rest, measured (API 1.13, DASH-411): {memory_mb, cpu_percent}, or None."""
+    if not isinstance(r, dict):
+        return None
+    try:
+        mem, cpu = float(r.get("memory_mb")), float(r.get("cpu_percent", 0))
+    except (TypeError, ValueError):
+        return None
+    return {"memory_mb": round(mem), "cpu_percent": round(cpu, 2)} if 0 < mem < 100000 and 0 <= cpu < 1000 else None
 
 
 def fetch_catalogue(address, opener=None):
@@ -336,7 +347,9 @@ def listing(data_dir):
             from . import plugin_life
             out.append({**summary(m, []), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
                         "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": [j.get("label") for j in m.get("jobs") or []],
-                        "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m)})
+                        "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
+                        "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
+                        "adopt": adopt_info(m), "adopted": st.get("adopted")})
     return out
 
 
@@ -427,7 +440,7 @@ def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=No
         _write(os.path.join(where, "key"), key)
         hosted = (host or host_for_builtin()) if builtin else None
         _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir, hosted,
-                                                                     media_owner(data_dir)), 0o644)
+                                                                     media_owner(data_dir), None), 0o644)  # extra: written by enable()
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _write(os.path.join(where, "state.json"), {"state": "installed", "installed_at": now, "key_id": item["id"], "builtin": builtin})
     api_v1.audit(data_dir, "plugin_installed", plugin=pid, version=manifest["version"], permissions=manifest.get("permissions") or [])
@@ -486,7 +499,9 @@ def _prepare_folders(data_dir, pid):
     st = _read(os.path.join(folder(data_dir, pid), "state.json"), {}) or {}
     lines = []
     for c in m.get("containers") or []:
-        if "data" not in (c.get("volumes") or []):
+        vols = [v for v in c.get("volumes") or [] if isinstance(v, str)]
+        subs = [v.split(":", 1)[0][5:] for v in vols if re.match(plugins.DATA_AT, v) and v.startswith("data/")]
+        if "data" not in vols and not any(re.match(plugins.DATA_AT, v) for v in vols):
             continue
         user = c.get("user") or (f"{os.getuid()}:{os.getgid()}" if st.get("builtin") and c.get("image") == "starboard" else "10001:10001")
         user = media_owner(data_dir) if user == "media" else user  # API 1.12
@@ -494,6 +509,20 @@ def _prepare_folders(data_dir, pid):
             continue
         d = containers._quote(f"data/{c['name']}")
         lines.append(f"mkdir -p {d} && chown {user} {d} && chmod 700 {d}")
+        # API 1.13: files the app needs before its first start, such as Kavita's appsettings.json, written once and
+        # never over what the app or the person changed. Holes such as {secret:token_key} are filled in.
+        made = secrets_for(data_dir, pid, m) if c.get("files") else {}
+        for fname, text in (c.get("files") or {}).items():
+            if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,60}$", fname):
+                continue
+            import base64
+            body = base64.b64encode(str(plugins._fill(text, {"secrets": made})).encode()).decode()
+            f = containers._quote(f"data/{c['name']}/{fname}")
+            lines.append(f"{{ [ -e {f} ] || {{ echo {body} | base64 -d > {f} && chown {user} {f} && chmod 600 {f}; }}; }}")
+        for sub in subs:  # API 1.13: data/<folder>:/path, each its own folder inside the container's data folder
+            if re.match(r"^[a-z0-9][a-z0-9._-]{0,39}$", sub):
+                q = containers._quote(f"data/{c['name']}/{sub}")
+                lines.append(f"mkdir -p {q} && chown {user} {q}")
     return " && ".join(lines)
 
 
@@ -613,6 +642,104 @@ def write_usenet(data_dir, pid, services):
     return bool(servers)
 
 
+# App plug-ins (API 1.13, DASH-411) --------------------------------------------------------------------------------
+# A generated secret for each {secret:name} in its env, made once and kept owner-only in secrets.json; a port on the
+# home network for each published lan container, chosen once and kept in state.json; and the Compose file written
+# again from both before each start, so Roll back and Update keep the same port and the same database password.
+
+RESERVED_PORTS = {22, 53, 80, 443, 8095, 8096, 8920, 13378, 7700, 8080, 6789, 8989, 7878, 8686, 9696}  # Starboard, its apps and common ones
+PORT_TAKEN = re.compile(r"port is already allocated|address already in use|bind: address", re.I)
+
+
+def secrets_for(data_dir, pid, manifest):
+    """{name: value} for every {secret:name} the plug-in uses: made once with the secrets module, kept owner-only."""
+    import secrets as _secrets
+    path = os.path.join(folder(data_dir, pid), "secrets.json")
+    have = _read(path, {}) or {}
+    wanted = plugins.secret_names(manifest)
+    if any(n not in have for n in wanted):
+        have.update({n: _secrets.token_hex(24) for n in wanted if n not in have})
+        _write(path, have)
+    return {n: have[n] for n in wanted}
+
+
+def ports_in_use(skip_pid=None):
+    """Ports on this computer that Docker containers publish (any Compose project), and those other plug-ins chose."""
+    from . import containers
+    out = set()
+    try:
+        for c in containers.docker("GET", "/containers/json?all=1") or []:
+            if (c.get("Labels") or {}).get("com.docker.compose.project") == f"plugin-{skip_pid}":
+                continue
+            out |= {int(p["PublicPort"]) for p in c.get("Ports") or [] if p.get("PublicPort")}
+    except Exception:  # noqa: BLE001 - no Docker here: the start itself says if the port is taken
+        pass
+    return out
+
+
+def choose_ports(data_dir, pid, manifest, refused=()):
+    """{container: port on the home network} for its published lan containers. The port chosen before is kept unless
+    it was refused; otherwise the app's own port (host_port) if free, then the next free one above it."""
+    path = os.path.join(folder(data_dir, pid), "state.json")
+    st = _read(path, {}) or {}
+    kept = dict(st.get("ports") or {})
+    taken = set(RESERVED_PORTS) | ports_in_use(pid) | set(refused)
+    for p in listing(data_dir):
+        if p["id"] != pid:
+            taken |= {int(v) for v in ((_read(os.path.join(folder(data_dir, p["id"]), "state.json"), {}) or {}).get("ports") or {}).values()}
+    out = {}
+    for name, _inner, preferred in plugins.published_lan(manifest):
+        mine = kept.get(name)
+        if isinstance(mine, int) and mine not in taken:
+            out[name] = mine
+            taken.add(mine)
+            continue
+        for port in [preferred, *range(preferred + 1, min(preferred + 200, 65535)), *range(20000, 20500)]:
+            if 1024 <= port <= 65535 and port not in taken:
+                out[name] = port
+                taken.add(port)
+                break
+    if out != {k: v for k, v in kept.items() if k in out} or set(kept) - set(out):
+        st["ports"] = out
+        _write(path, st)
+    return out
+
+
+def write_compose(data_dir, pid, media_dir=None, refused=()):
+    """Writes the plug-in's Compose file again with its ports, secrets and Jellyfin's details (API 1.13)."""
+    where = folder(data_dir, pid)
+    m = _read(os.path.join(where, "manifest.json"), {}) or {}
+    st = _read(os.path.join(where, "state.json"), {}) or {}
+    if not m.get("containers") or st.get("builtin"):
+        return False
+    extra = {"ports": choose_ports(data_dir, pid, m, refused), "secrets": secrets_for(data_dir, pid, m),
+             "jellyfin": _read(os.path.join(where, "jellyfin.json"), {}) or {}}
+    if not (extra["ports"] or extra["secrets"] or any(plugins.FILLED.search(str(v)) for c in m["containers"] for v in (c.get("env") or {}).values())):
+        return False  # nothing of API 1.13: the Compose file written at install stays as it is
+    media = media_dir or _media_dir_from(where)
+    _write(os.path.join(where, "compose.yaml"), plugins.compose(m, host_path(data_dir, pid), media, None,
+                                                                 media_owner(data_dir), extra), 0o644)
+    return True
+
+
+def _media_dir_from(where):
+    """The media folder, by the rule the plug-in routes use: the install's DATA_DIR plus /media."""
+    from . import stack
+    data_dir = os.path.dirname(os.path.dirname(where))
+    media = (stack.env_values(data_dir).get("DATA_DIR") or "").rstrip("/")
+    return f"{media}/media" if media else "/nonexistent-media-folder"
+
+
+def web_pages(data_dir, pid, manifest=None, st=None):
+    """[{container, port, label}] for its pages on the home network (API 1.13), once it has a port."""
+    where = folder(data_dir, pid)
+    m = manifest or _read_kept(os.path.join(where, "manifest.json"), {}) or {}
+    st = st if st is not None else _read_kept(os.path.join(where, "state.json"), {}) or {}
+    ports = st.get("ports") or {}
+    return [{"container": name, "port": ports[name], "label": f"Open {m.get('name', pid)}"}
+            for name, _inner, _pref in plugins.published_lan(m) if isinstance(ports.get(name), int)]
+
+
 def enable(data_dir, pid, helper=None, services=None):
     from . import plugin_life
     plugin_life.can_enable(data_dir, pid)  # set up first, and only on a Starboard it was made for (DASH-330)
@@ -626,7 +753,16 @@ def enable(data_dir, pid, helper=None, services=None):
     where = folder(data_dir, pid)
     upgrade_mounts(where)
     share(where)  # also after Roll back, which moves files rather than writing them
+    write_compose(data_dir, pid)  # API 1.13: its port, secrets and Jellyfin's details, as they are now
     ok, text = _compose_run(data_dir, pid, "up -d --remove-orphans", helper)
+    refused = []
+    while not ok and PORT_TAKEN.search(text or "") and len(refused) < 3:
+        # Something outside Docker, or started since, holds the port: choose the next one and try again.
+        now = (_read(os.path.join(where, "state.json"), {}) or {}).get("ports") or {}
+        refused += [p for p in now.values() if str(p) in text] or list(now.values())
+        if not write_compose(data_dir, pid, refused=refused):
+            break
+        ok, text = _compose_run(data_dir, pid, "up -d --remove-orphans", helper)
     if ok and any(isinstance(c, dict) and c.get("publish") for c in (_read(os.path.join(where, "manifest.json"), {}) or {}).get("containers") or []):
         set_state(data_dir, pid, "enabled")  # counted as active before its port goes on Gluetun
         from . import stack
@@ -650,8 +786,10 @@ def disable(data_dir, pid, helper=None):
     api_v1.audit(data_dir, "plugin_disabled", plugin=pid)
 
 
-def uninstall(data_dir, pid, helper=None):
-    """Stops and removes its containers, revokes its key, and moves its folder aside (never deleted)."""
+def uninstall(data_dir, pid, helper=None, to_holding=False):
+    """Stops and removes its containers, revokes its key, and moves its folder aside (never deleted). With
+    `to_holding` (API 1.13, DASH-411), the folder goes on to the holding folder in System, Clean up, from where it
+    can be put back or deleted for good by the person."""
     where = folder(data_dir, pid)
     st = _read(os.path.join(where, "state.json"), {})
     try:
@@ -666,6 +804,13 @@ def uninstall(data_dir, pid, helper=None):
     target = os.path.join(aside, f"{pid}-{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}")
     shutil.move(where, target)
     api_v1.audit(data_dir, "plugin_removed", plugin=pid)
+    if to_holding:
+        from . import cleanup
+        try:
+            cleanup.hold(data_dir, [cleanup._id(target)])
+            return os.path.join(data_dir, cleanup.HOLDING)
+        except ValueError:
+            pass  # on another disk: it stays in data/plugins/.removed, which Clean up lists
     return target
 
 
@@ -681,7 +826,8 @@ def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
         pid, manifest = p["id"], shipped[p["id"]]
         where = folder(data_dir, pid)
         try:
-            text = plugins.compose(manifest, host_path(data_dir, pid), media_dir, host or host_for_builtin())
+            text = plugins.compose(manifest, host_path(data_dir, pid), media_dir, host or host_for_builtin(),
+                                   media_owner(data_dir), None)
         except ValueError as e:
             set_state(data_dir, pid, p["state"], str(e))
             continue
@@ -792,3 +938,100 @@ def save_settings(data_dir, pid, incoming):
     if not plugin_life.missing_settings(m, values):
         plugin_life.mark_set_up(data_dir, pid)
     return public_settings(data_dir, pid, m)
+
+
+# Adopt (API 1.13, DASH-411) ------------------------------------------------------------------------------------
+# An app plug-in may take over the same app from the main install, such as Tdarr: Starboard copies the folders the
+# manifest names from the app's own folders into the plug-in's data folder, so its settings and history carry over.
+# Copied, never moved or deleted: the app's folders are mounted read only for the copy. With "stop", the app is
+# stopped first (not removed), so its files are copied whole and its port is free for the plug-in.
+
+def adopt_info(manifest):
+    a = manifest.get("adopt")
+    return {"app": a["app"], "name": a["name"]} if isinstance(a, dict) and a.get("app") and a.get("name") else None
+
+
+def _adopt_sources(manifest):
+    """[(path in the app, host folder, folder in the plug-in)] from the app's container, through Docker."""
+    from . import containers
+    a = manifest["adopt"]
+    try:
+        info = containers.docker("GET", f"/containers/{a['app']}/json")
+    except containers.DockerError:
+        raise LookupError(f"Starboard found no {a['name']} on this computer (no container called {a['app']})") from None
+    mounts = {m.get("Destination"): m for m in info.get("Mounts") or []}
+    out = []
+    for inside, to in a["copy"].items():
+        m = mounts.get(inside)
+        if not m:
+            continue
+        if m.get("Type") != "bind" or not str(m.get("Source", "")).startswith("/"):
+            raise ValueError(f"{a['name']} keeps {inside} in a Docker volume, which Starboard cannot copy. Copy it by hand")
+        out.append((inside, m["Source"], to))
+    if not out:
+        raise LookupError(f"{a['name']} has none of the folders this plug-in copies")
+    return out, info
+
+
+def adopt_preview(data_dir, pid):
+    m = _read(os.path.join(folder(data_dir, pid), "manifest.json"), {}) or {}
+    if not adopt_info(m):
+        raise LookupError("This plug-in cannot take over an app")
+    try:
+        found, info = _adopt_sources(m)
+    except LookupError as e:
+        return {"found": False, "said": str(e)}
+    running = bool((info.get("State") or {}).get("Running"))
+    return {"found": True, "running": running, "stops": bool(m["adopt"].get("stop")) and running,
+            "folders": [{"from": src, "inside": inside, "to": f"data/{m['adopt']['into']}/{to}"} for inside, src, to in found]}
+
+
+def adopt(data_dir, pid, helper=None):
+    """Copies the app's folders into the plug-in. The plug-in must be inactive. Returns what was done, in words."""
+    from . import containers
+    where = folder(data_dir, pid)
+    m = _read(os.path.join(where, "manifest.json"), {}) or {}
+    st = _read(os.path.join(where, "state.json"), {}) or {}
+    a = m.get("adopt")
+    if not adopt_info(m):
+        raise LookupError("This plug-in cannot take over an app")
+    if st.get("state") == "enabled":
+        raise ValueError(f"Deactivate {m['name']} first, so nothing writes to its folder while the copy is made")
+    found, info = _adopt_sources(m)
+    stopped = False
+    if a.get("stop") and (info.get("State") or {}).get("Running"):
+        try:
+            containers.docker("POST", f"/containers/{a['app']}/stop?t=60", timeout=90)
+            stopped = True
+        except containers.DockerError as e:
+            raise ValueError(f"Starboard could not stop {a['name']} for the copy: {e}") from None
+    into = next(c for c in m["containers"] if c.get("name") == a["into"])
+    user = into.get("user") or "10001:10001"
+    user = media_owner(data_dir) if user == "media" else user  # API 1.12: Tdarr runs as the media folder's owner
+    q = containers._quote
+    stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    lines = []
+    for inside, src, to in found:
+        dst = q(f"data/{a['into']}/{to}")
+        # Anything the plug-in made there itself is put beside, not deleted.
+        lines.append(f"if [ -d {dst} ] && [ -n \"$(ls -A {dst} 2>/dev/null)\" ]; then mv {dst} {q('data/' + a['into'] + '/' + to + '.before-copy-' + stamp)}; fi")
+        lines.append(f"mkdir -p {dst} && cp -a {q(src)}/. {dst}/ && chown -R {user} {dst}")
+    script = "set -e; " + "; ".join(lines) + f"; du -sm {q('data/' + a['into'])} | cut -f1"
+    binds = [f"{src}:{src}:ro" for _inside, src, _to in found]
+    run = helper or containers._helper
+    try:
+        code, text = run(host_path(data_dir, pid), script, binds) if helper is None else run(host_path(data_dir, pid), script)
+    except containers.DockerError as e:
+        raise ValueError(f"Starboard cannot reach Docker ({e})") from None
+    if code != 0:
+        raise ValueError(f"The copy did not finish: {text.strip()[-200:]}. Your {a['name']} was not changed")
+    size = (text.strip().split() or ["0"])[-1]
+    st = _read(os.path.join(where, "state.json"), {}) or {}
+    st["adopted"] = {"at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "app": a["app"],
+                     "folders": [src for _i, src, _t in found], "stopped": stopped}
+    _write(os.path.join(where, "state.json"), st)
+    api_v1.audit(data_dir, "plugin_adopted", plugin=pid, app=a["app"])
+    return (f"Copied {a['name']}'s {', '.join(t for _i, _s, t in found)} folders into {m['name']} (about {size} MB). "
+            + (f"Your {a['name']} is stopped, not removed. " if stopped else f"Your {a['name']} was not changed. ")
+            + f"Activate {m['name']} and check it has your settings, then remove {a['name']} from the main install "
+            f"in Settings, Install apps. Its own folders stay where they are until you move them.")

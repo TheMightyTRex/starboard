@@ -3,7 +3,7 @@
 # Plug-in API reference
 
 What Starboard calls on a plug-in, what it sends and what it expects back, and what a plug-in finds and may call in
-return. This page matches plug-in API 1.12.0. The fields that ask for each of these are in the
+return. This page matches plug-in API 1.13.0. The fields that ask for each of these are in the
 [Plug-in manifest reference](plugin-manifest-reference.md).
 
 ## How Starboard reaches a plug-in
@@ -11,6 +11,9 @@ return. This page matches plug-in API 1.12.0. The fields that ask for each of th
 - Starboard always calls the **first** container in `containers`, on its `port` (80 when it is left out).
 - It reaches the container by its name, `plugin-<id>-<name>`, on the plug-in's own network. A container on the
   `vpn` network is reached through Gluetun.
+- An app plug-in's own web page (API 1.13) is not called by Starboard: people open it at the port Starboard chose.
+  Read [App plug-ins](plugin-manifest-reference.md#app-plug-ins). Put a small helper first in `containers` if
+  Starboard should show cards or buttons for the app.
 - Every request has `User-Agent: Starboard` and asks for JSON. Answer with `Content-Type: application/json`.
 - Starboard never puts what a plug-in sends into a page as HTML. It keeps only the fields below, cuts each text to
   its length, and draws everything itself.
@@ -383,6 +386,7 @@ catalogues besides its own.
 | `manifest` | Required: the `https` address of that version's `starboard-plugin.json` |
 | `manifest_sha256` | The SHA-256 of that file, 64 hex characters |
 | `changelog`, `released` | Shown with an update. Up to 600 and 10 characters |
+| `rest` | For an app plug-in: `{"memory_mb": 117, "cpu_percent": 0.22}`, what it uses at rest, measured. Shown under it in the catalogue (API 1.13) |
 
 How Starboard uses it:
 
