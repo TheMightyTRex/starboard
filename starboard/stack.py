@@ -21,19 +21,21 @@ import time
 
 from . import containers
 
+# The groups and apps ticked by default are the recommended install, Basics (DASH-83, owner 4 and 7 November 2026), so
+# "Let me choose" starts from the same apps as Basics in both set-ups; a test keeps them the same.
 GROUPS = [
     # key, name, what it is for, kind ("media", "core" or "extras"), on by default
     ("movies", "Movies", "Find, download and sort films", "media", True),
     ("tv", "TV", "Find, download and sort series", "media", True),
-    ("music", "Music", "Albums and artists", "media", False),
-    ("ebooks", "Ebooks", "Books to read", "media", False),
-    ("audiobooks", "Audiobooks", "Books to listen to, with progress on every device", "media", False),
-    ("radio", "Radio", "Radio shows and podcasts, followed in Reelix and played in Audiobookshelf", "media", False),
+    ("music", "Music", "Albums and artists", "media", True),
+    ("ebooks", "Ebooks", "Books to read", "media", True),
+    ("audiobooks", "Audiobooks", "Books to listen to, with progress on every device", "media", True),
+    ("radio", "Radio", "Radio shows and podcasts, followed in Reelix and played in Audiobookshelf", "media", True),
     ("comics", "Comics", "Comics and graphic novels", "media", False),
     ("watching", "Watching", "Play everything, with friends invited", "core", True),
     ("downloads", "Downloads", "The apps Reelix sends downloads to", "core", True),
-    ("vpn", "VPN", "Send downloads through a VPN", "core", False),
-    ("subtitles", "Subtitles", "Subtitles for films and series", "core", False),
+    ("vpn", "VPN", "Send downloads through a VPN", "core", True),
+    ("subtitles", "Subtitles", "Subtitles for films and series", "core", True),
     ("tidy", "Tidy-up", "Clear stuck downloads and old media, sync quality settings", "extras", False),
     ("livetv", "Live TV", "Free TV channels and guides", "extras", False),
     ("logs", "Logs", "Read every container's log in the browser", "extras", False),
@@ -104,7 +106,7 @@ APPS = {
     # reading apps (OPDS), with progress kept. It reads the media folder only; Reelix keeps adding the books.
     "kavita": {"name": "Kavita", "groups": ["ebooks"], "image": "lscr.io/linuxserver/kavita:latest", "ports": ["5000:5000"],
                "volumes": [f"{CFG}/kavita:/config", f"{DATA}/media:/media:ro"], "env": LSIO, "memory": 200,
-               "notes": "Read your ebooks, comics and PDFs in the browser or a reading app, with your place kept."},
+               "default": False, "notes": "Read your ebooks, comics and PDFs in the browser or a reading app, with your place kept."},
     "audiobookshelf": {"name": "Audiobookshelf", "groups": ["audiobooks", "radio"], "image": "ghcr.io/advplyr/audiobookshelf:latest",
                        "ports": ["13378:80"], "env": {"TZ": "${TZ}"}, "memory": 150,
                        "volumes": [f"{CFG}/audiobookshelf/config:/config", f"{CFG}/audiobookshelf/metadata:/metadata", f"{DATA}/media:/media"]},
@@ -147,7 +149,7 @@ APPS = {
                  "volumes": [f"{CFG}/prowlarr:/config"], "env": LSIO, "vpn": True, "memory": 150,
                  "notes": "One list of sites to search, shared with every app."},
     "flaresolverr": {"name": "FlareSolverr", "groups": ["downloads"], "image": "ghcr.io/flaresolverr/flaresolverr:latest",
-                     "ports": ["8191:8191"], "env": {"TZ": "${TZ}"}, "vpn": True, "memory": 300,
+                     "ports": ["8191:8191"], "env": {"TZ": "${TZ}"}, "vpn": True, "memory": 300, "default": False,
                      "notes": "Gets past browser checks on some search sites."},
     "unpackerr": {"name": "Unpackerr", "groups": ["downloads"], "image": "ghcr.io/hotio/unpackerr:latest",
                   "volumes": [f"{CFG}/unpackerr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 50, "default": False, "later": True,

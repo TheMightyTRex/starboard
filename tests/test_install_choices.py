@@ -28,6 +28,15 @@ class InstallChoicesTest(unittest.TestCase):
         self.assertEqual(sorted(c["apps"]), sorted(["reelix", "qbittorrent", "jellyfin", "audiobookshelf", "bazarr",
                                                     "gluetun", "nzbget"]))
 
+    def test_the_default_ticks_are_basics(self):
+        # DASH-83: "Let me choose" starts from the recommended install in both set-ups (they read the same catalogue).
+        cat = stack.catalogue(set())
+        groups = {g["key"] for g in cat["groups"] if g["default"]}
+        ticked = {a["key"] for a in cat["apps"] if a["default"] and set(a["groups"]) & groups}
+        self.assertEqual(ticked, set(stack.INSTALLS["basics"]["apps"]))
+        for later in ("flaresolverr", "kavita", "tdarr", "jellystat", "dozzle", "kapowarr", "storyarr"):
+            self.assertNotIn(later, ticked)
+
     def test_full_is_the_full_reelix_with_more(self):
         c = stack.install_choice("full", check=downloadable)
         self.assertEqual(c["reelix_edition"], "full")
