@@ -1272,6 +1272,9 @@ class Handler(BaseHTTPRequestHandler):
                 return library.handle(self, method, path)
 
             cfg = app.config
+            if path.startswith("/api/reelix/sites/"):  # Search the sites directly, with the manager key (DASH-213)
+                from . import reelix_search
+                return reelix_search.route(self, method, path)
             if path.startswith("/api/reelix/admin/"):  # Reelix's admin settings, password each time (reelix_admin.py)
                 return reelix_admin.route(self, method, path)
             if path == "/api/config" and method == "GET":

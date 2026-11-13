@@ -88,7 +88,7 @@
    "what": "import lists, sync and exclusions"
   },
   "indexers": {
-   "starboard": "Settings, Reelix, Sites to search, with each site's results (DASH-155), and Site list updates (DASH-204); free search in DASH-213"
+   "starboard": "Settings, Reelix, Sites to search, with each site's results (DASH-155), and Site list updates (DASH-204); Search, Search the sites (DASH-213)"
   },
   "issues": {
    "task": "DASH-208",
@@ -170,7 +170,7 @@
   },
   "releases": {
    "task": "DASH-159",
-   "what": "choose a download"
+   "what": "choose a download for an item; the raw grab (POST /releases/grab) is used by Search, Search the sites (DASH-213)"
   },
   "remotepathmappings": {
    "starboard": "Settings, Reelix, Path mappings (DASH-204)"

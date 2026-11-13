@@ -351,6 +351,9 @@ def _post(self):
         return self.reelix_admin("POST")
     length = int(self.headers.get("Content-Length") or 0)
     body = json.loads(self.rfile.read(length) or b"{}")
+    if self.path.split("?")[0] == "/reelix/api/v1/releases/grab":  # Get this one, on Search the sites (DASH-213)
+        return self.send_json({"queue_id": 77, "download_client": "NZBGet" if body.get("indexer_id") == 2 else "qBittorrent",
+                               "download_id": f"ex-{body.get('guid')}"})
     if self.path.split("?")[0] == "/reelix/api/v1/radio/shows":  # a radio show added (the radio import)
         RADIO_ADDED.append({"id": 10 + len(RADIO_ADDED), "title": body.get("external_id", ""), "external_id": body.get("external_id", "")})
         return self.send_json(RADIO_ADDED[-1], 201)
@@ -368,8 +371,33 @@ RADIO_ON_DISK = [  # made-up radio shows in Audiobookshelf's Radio library that 
 RADIO_ADDED = []
 
 
+def example_sites_search(query):
+    """Search the sites (DASH-213): made-up releases for any words, from three made-up sites, one of which fails."""
+    words = " ".join((query or {}).get("q", "").split()) or "Example"
+    title = ".".join(w.capitalize() for w in words.split())
+    now = dt.datetime.now(dt.timezone.utc)
+    rows = []
+    for i, (tag, size, seeders, site, sid, days, flags) in enumerate((
+            ("2160p.WEB-DL.DDP5.1.HDR.H.265-EXAMPLE", 14.2e9, 210, "Example Torrents", 1, 3, ["freeleech"]),
+            ("1080p.BluRay.x264-SAMPLE", 9.8e9, 88, "Example Torrents", 1, 40, []),
+            ("1080p.WEB.H264-MADEUP", 4.1e9, 512, "Harbour Usenet", 2, 1, ["internal"]),
+            ("720p.HDTV.x264-OLD", 1.3e9, 4, "Example Torrents", 1, 900, []),
+            ("PROPER.1080p.WEB.H264-MADEUP", 4.3e9, 120, "Harbour Usenet", 2, 0, []))):
+        rows.append({"guid": f"ex-{i}", "title": f"{title}.{tag}", "protocol": "usenet" if sid == 2 else "torrent", "indexer_id": sid,
+                     "indexer": site, "categories": [2000], "size": int(size), "seeders": None if sid == 2 else seeders,
+                     "peers": None if sid == 2 else seeders + 12, "grabs": seeders // 3, "publish_date": (now - dt.timedelta(days=days)).isoformat(),
+                     "download_url": f"https://example.invalid/get/{i}", "magnet_url": None, "info_url": f"https://example.invalid/release/{i}",
+                     "download_volume_factor": 0 if flags else 1, "upload_volume_factor": 1, "indexer_flags": flags})
+    return {"releases": rows, "indexers": [
+        {"indexer_id": 1, "name": "Example Torrents", "count": 3, "elapsed_ms": 1840, "error": None},
+        {"indexer_id": 2, "name": "Harbour Usenet", "count": 2, "elapsed_ms": 920, "error": None},
+        {"indexer_id": 3, "name": "Slow Site", "count": 0, "elapsed_ms": 30000, "error": "the site took too long to answer"}]}
+
+
 def example_reelix(path, query=None):
     """Reelix's own radio and queue answers, with made-up shows."""
+    if path == "/indexers/search":
+        return example_sites_search(query)
     shows = [{"id": 1, "title": "The Example Hour"}, {"id": 2, "title": "Sample Science Weekly"}] + RADIO_ADDED
     if path == "/radio/library/review":
         added = {a["external_id"] for a in RADIO_ADDED}

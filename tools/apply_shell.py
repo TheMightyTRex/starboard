@@ -38,7 +38,8 @@ MENU = [
                                       ("library-audiobooks-authors.html", "Authors", "users")]),
     ]),
     ("discover", "Discover", "compass", [
-        ("Search", "search", [("search.html", "Search", "search")]),
+        # Search the sites directly (DASH-213): a page people come back to, so its own page under Search.
+        ("Search", "search", [("search.html", "Search", "search"), ("search-sites.html", "Search the sites", "globe")]),
         # One item for each area, each with its own feeds (owner, 12 November 2026). Trending is in Films and TV now.
         ("Films", "film", [("discover-films.html", "Films", "film")]),
         ("TV", "tv", [("discover-tv.html", "TV", "tv")]),
@@ -120,6 +121,7 @@ HELP = {
         "library-audiobooks-series.html", "library-audiobooks-authors.html", "library-film.html", "library-tv-show.html",
         "library-artist.html", "library-radio-show.html", "library-book.html", "library-audiobook.html")},
     "search.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
+    "search-sites.html": ("topics/search-and-add.md", "searching the sites directly"),
     "discover-trending.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     **{f"discover-{a}.html": ("topics/search-and-add.md", "discovering and adding films, series, music, radio and books")
        for a in ("films", "tv", "music", "radio", "books", "audiobooks")},
