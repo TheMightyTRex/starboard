@@ -273,7 +273,7 @@ class LiveTvPluginTest(unittest.TestCase):
             folds = {b["fold"]: (b["on"], b["total"]) for b in screen["bulk"] if b.get("fold")}
             self.assertEqual(folds["News"], (3, 3))
             top = [b["id"] for b in screen["bulk"] if not b.get("fold")]
-            self.assertEqual(top[:4], ["lists:freetv", "lists:samsung", "lists:pluto", "all"])
+            self.assertEqual(top[:5], ["lists:freetv", "lists:samsung", "lists:pluto", "lists:own:abc123", "all"])
             self.assertIn("regions:US", top)
 
             out = livetv_plugin.channels_act({"action": "bulk_ids", "ids": ["S1", "S3", "nope"], "value": "off"})
@@ -297,6 +297,17 @@ class LiveTvPluginTest(unittest.TestCase):
             for bad in ("in:nope", "in:samsung|r=FR", "in:samsung|x=1", "in:"):
                 with self.assertRaises(ValueError):
                     livetv_plugin.channels_act({"action": "bulk", "id": bad, "value": "on"})
+            # Each of the owner's own lists has its switch at the top too (owner, 13 November 2026)
+            own_switch = next(b for b in screen["bulk"] if b["id"] == "lists:own:abc123")
+            self.assertEqual((own_switch["label"], own_switch["kind"], own_switch["total"], own_switch["active"]), ("Town lists", "Lists", 1, True))
+            with mock.patch("starboard.livetv_jellyfin.refresh_guide"):
+                out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:own:abc123", "value": "off"})
+            self.assertIn("Town lists deactivated", out["said"])
+            self.assertIs(livetv_own.sources(d)[0]["on"], False)
+            with mock.patch.object(livetv_plugin, "_quick") as quick:
+                out = livetv_plugin.channels_act({"action": "bulk", "id": "lists:own:abc123", "value": "on"})
+            self.assertIn("Town lists activated", out["said"])
+            self.assertIn("Adding Town lists: reading the list", [n["title"] for n in out["notices"]])
             # An inactive list keeps its switch at the top, so it can be activated again
             livetv.save_lists_off(d, {"pluto"})
             lists = {b["id"]: b for b in livetv_plugin.channels_screen()["bulk"]}
