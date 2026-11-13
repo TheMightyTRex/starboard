@@ -597,8 +597,7 @@ def refresh(data_dir, reelix, tab):
         _drop_kept(_path(data_dir, tab))
         _limit.pop(data_dir, None)
         warm(data_dir, reelix, tab, got["posters"])
-        if not child.ENABLED:
-            _give_back()
+        _give_back()
         with _state_lock:
             _state["errors"].pop(tab, None)
         logs.detail("library", f"{LABELS[tab]} index: {got['count']} items in {round((time.time() - started) * 1000)} ms")
