@@ -105,6 +105,29 @@ const DESIGNS = {
   board: ["Status board", "A dense table for checking everything at a glance."],
 };
 
+// A small picture of each dashboard design (DASH-315): drawn here as fixed SVG, so it costs no image download and
+// follows the theme and high contrast through the .dp-* classes in app.css. The words beside it say what the
+// design is, so the picture is hidden from screen readers.
+const DESIGN_PICTURES = {
+  health: '<rect class="dp-card dp-bad" x="6" y="12" width="108" height="14"/><rect class="dp-edge-bad" x="6" y="12" width="3" height="14"/>'
+    + '<rect class="dp-line" x="13" y="17" width="30" height="4"/>'
+    + [6, 43, 80].map((x) => [32, 51].map((y) => `<rect class="dp-card" x="${x}" y="${y}" width="34" height="15"/><rect class="dp-edge-ok" x="${x}" y="${y}" width="3" height="15"/><rect class="dp-line" x="${x + 6}" y="${y + 5}" width="18" height="3"/>`).join("")).join(""),
+  tiles: [6, 43, 80].map((x) => [12, 40].map((y) => `<rect class="dp-card" x="${x}" y="${y}" width="34" height="24"/><rect class="dp-icon" x="${x + 4}" y="${y + 4}" width="6" height="6"/><rect class="dp-line" x="${x + 13}" y="${y + 5}" width="16" height="3"/><rect class="dp-line dp-soft" x="${x + 4}" y="${y + 14}" width="26" height="2"/><rect class="dp-line dp-soft" x="${x + 4}" y="${y + 18}" width="20" height="2"/>`).join("")).join(""),
+  shelf: [10, 25, 40, 55].map((y) => `<rect class="dp-card" x="6" y="${y}" width="108" height="12"/><rect class="dp-icon" x="9" y="${y + 3}" width="6" height="6"/><rect class="dp-line" x="19" y="${y + 3}" width="26" height="3"/><rect class="dp-line dp-soft" x="19" y="${y + 7.5}" width="44" height="2"/><rect class="dp-button" x="96" y="${y + 3}" width="14" height="6"/>`).join(""),
+  command: '<rect class="dp-card dp-search" x="18" y="10" width="84" height="12"/><rect class="dp-line dp-soft" x="22" y="15" width="30" height="2"/>'
+    + [0, 1, 2, 3, 4, 5].map((n) => [30, 49].map((y) => `<rect class="dp-icon" x="${15 + n * 16}" y="${y}" width="10" height="10"/><rect class="dp-line dp-soft" x="${14 + n * 16}" y="${y + 13}" width="12" height="2"/>`).join("")).join(""),
+  board: '<rect class="dp-head" x="6" y="8" width="108" height="8"/>'
+    + [18, 26, 34, 42, 50, 58].map((y, n) => `<rect class="dp-row" x="6" y="${y}" width="108" height="7"/><circle class="${n === 2 ? "dp-dot-bad" : "dp-dot-ok"}" cx="11" cy="${y + 3.5}" r="2"/><rect class="dp-line" x="16" y="${y + 2.5}" width="24" height="2"/><rect class="dp-line dp-soft" x="52" y="${y + 2.5}" width="18" height="2"/><rect class="dp-line dp-soft" x="84" y="${y + 2.5}" width="22" height="2"/>`).join(""),
+};
+
+function designPicture(key) {
+  const box = el("span", { class: "design-picture", "aria-hidden": "true" });
+  // A fixed string built in this file from numbers only, never from data.
+  box.innerHTML = `<svg viewBox="0 0 120 72" focusable="false"><rect class="dp-frame" x="0.5" y="0.5" width="119" height="71"/>${DESIGN_PICTURES[key] || ""}</svg>`;
+  box.dataset.design = key;
+  return box;
+}
+
 function readPrefs() {
   try { return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(PREF_KEY) || "{}") }; }
   catch { return { ...DEFAULT_PREFS }; }
@@ -705,12 +728,16 @@ function showVersion(version, repo, latest) {
     n.hidden = !newer;
     if (newer) n.setAttribute("aria-label", `Update available: version ${String(latest).replace(/^v/, "")}. About and updates`);
   });
-  if ($(".site-header") && !$(".site-footer")) {
+  // Every page but Sign in and Set up has the footer (the design system's footer rule).
+  const setUp = document.body.classList.contains("first-setup") || /\/(login|setup)\.html$/.test(location.pathname);
+  if ($(".site-header") && !$(".site-footer") && !setUp) {
     const brand = $(".site-header__brand svg")?.cloneNode(true);
     const link = (href, text, outside) => el("li", {}, outside
       ? el("a", { href, target: "_blank", rel: "noopener noreferrer" }, text, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
       : el("a", { href, text }));
-    const notes = el("li", {}, el("a", { href: "#release-notes", onclick: (e) => { e.preventDefault(); openReleaseNotes(e.currentTarget); } }, "Release notes"));
+    // Release notes opens the release notes slide-out (UX-50): focus goes into it, and back here when it closes.
+    const notes = el("li", {}, el("a", { href: "#release-notes", "aria-haspopup": "dialog", "aria-expanded": "false",
+      onclick: (e) => { e.preventDefault(); openReleaseNotes(e.currentTarget); } }, "Release notes"));
     const maker = el("a", { class: "site-footer__maker", href: "https://github.com/TheMightyTRex", rel: "me noopener noreferrer", target: "_blank" });
     maker.innerHTML = MAKER_MARK;  // a fixed string from this file, never from data
     maker.append("TheMightyTRexUK", el("span", { class: "visually-hidden", text: ", on GitHub (opens in a new tab)" }), icon("external-link"));
@@ -721,7 +748,10 @@ function showVersion(version, repo, latest) {
           // The help centre's pages, built from docs/help and published on GitHub Pages.
           link(`${HELP_CENTRE}index.html`, "Help", true), notes,
           repo ? link(`https://github.com/${repo}`, "GitHub repository", true) : null,
-          link("/settings-updates.html", newer ? "About and updates (1)" : "About and updates")))),
+          // A newer release adds "Upgrade available" to About and updates, in words and with the update dot.
+          el("li", {}, el("a", { href: "/settings-updates.html", "data-footer-updates": true }, "About and updates",
+            newer ? el("span", { class: "site-footer__upgrade" }, el("span", { class: "update-dot", "aria-hidden": "true" }),
+              el("span", { class: "visually-hidden", text: ", " }), "Upgrade available") : null))))),
       maker));
   }
 }
@@ -1234,10 +1264,12 @@ function openDisplayPanel(template, opener) {
   }).catch(() => { /* signed out, or no plug-ins: no list */ });
   const choices = [["", "Use the dashboard's default"], ...Object.entries(DESIGNS).map(([k, v]) => [k, v[0], v[1]])];
   for (const [value, label, help] of choices) {
+    // Each design's small picture (DASH-315); the dashboard's default shows the design that is the default.
     designList.append(el("label", { class: "option-card" },
       el("input", { type: "radio", name: "design", value }),
       el("strong", { text: label }),
-      help ? el("small", { text: help }) : null));
+      help ? el("small", { text: help }) : el("small", { text: `The default is ${DESIGNS[serverDesign]?.[0] || "Health first"}.` }),
+      designPicture(value || serverDesign)));
   }
   const fill = () => {
     const p = readPrefs();

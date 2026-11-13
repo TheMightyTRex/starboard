@@ -545,6 +545,49 @@ check("TAB-01", "Advanced settings is a switch in the heading", (await page.loca
 check("TAB-01", "Sign out is in the side menu", (await page.locator(".rail [data-sign-out]").count()) === 1);
 await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
 
+// DASH-104: the version at the bottom of the side menu; the footer's links in the design system's order, with
+// "Upgrade available" when a newer release is out, and TheMightyTRexUK on the right; no footer on Sign in.
+console.log("\n== FOOT Footer and version");
+await open("index.html");
+check("FOOT-01", "the version is plain text at the bottom of the side menu",
+  /^(Starboard version )?v\d+\.\d+\.\d+$/.test((await page.locator(".rail__end .rail__version").textContent()).trim()));
+const footLinks = await page.locator(".site-footer .site-footer__links a").evaluateAll((as) => as.map((a) => a.childNodes[0].textContent.trim()));
+check("FOOT-01", "the footer links are Help, Release notes, GitHub repository, About and updates",
+  footLinks.join("|") === "Help|Release notes|GitHub repository|About and updates", footLinks.join(", "));
+const maker = page.locator(".site-footer > a.site-footer__maker");
+check("FOOT-01", "TheMightyTRexUK is on the right, one link to the GitHub profile, with the dinosaur mark",
+  (await maker.count()) === 1 && (await maker.getAttribute("href")) === "https://github.com/TheMightyTRex"
+  && /TheMightyTRexUK/.test(await maker.innerText()) && (await maker.locator("svg.maker-mark").count()) === 1);
+const footBox = await page.locator(".site-footer").boundingBox(), mainBox = await page.locator("main").boundingBox();
+check("FOOT-01", "the footer is under the page's own part", !!(footBox && mainBox && footBox.y >= mainBox.y + mainBox.height - 1));
+const upgradeText = (latest) => page.evaluate((l) => {
+  document.querySelector(".site-footer")?.remove();
+  showVersion("0.16.5", "TheMightyTRex/starboard", l);
+  return document.querySelector("[data-footer-updates]").textContent;
+}, latest);
+check("FOOT-02", "About and updates says Upgrade available when a newer release is out", /About and updates, ?Upgrade available/.test(await upgradeText("99.0.0")));
+check("FOOT-02", "and says nothing more when Starboard is up to date", (await upgradeText("0.16.5")).trim() === "About and updates");
+const signedOut = await (await browser.newContext()).newPage();
+await signedOut.goto(`${base}/login.html`, { waitUntil: "networkidle" });
+await signedOut.waitForTimeout(500);
+check("FOOT-03", "Sign in has no footer", (await signedOut.locator(".site-footer").count()) === 0);
+await signedOut.context().close();
+
+// DASH-315: a small picture of each design in Settings, General, Default design and in Display's Design list.
+console.log("\n== DES Design pictures");
+await open("settings-general.html");
+const defaultPics = await page.locator(".option-card:has(input[name=design]) .design-picture").evaluateAll((ps) => ps.map((p) => ({
+  key: p.dataset.design, hidden: p.getAttribute("aria-hidden") === "true", drawn: p.querySelectorAll("svg rect, svg circle").length })));
+check("DES-01", "Default design has a picture for each of the 5 designs", defaultPics.map((p) => p.key).join(",") === "health,tiles,shelf,command,board", JSON.stringify(defaultPics));
+check("DES-01", "each picture is drawn and hidden from screen readers (the words say what it is)", defaultPics.every((p) => p.hidden && p.drawn > 5));
+await page.click("[data-display-toggle]");
+await page.waitForTimeout(500);
+const panelPics = await page.locator("#side-panel .option-card:has(input[name=design]) .design-picture").evaluateAll((ps) => ps.map((p) => p.dataset.design));
+const serverDefault = await page.evaluate(() => document.documentElement.dataset.design);
+check("DES-02", "Display's Design list has a picture for each choice", panelPics.length === 6, panelPics.join(","));
+check("DES-02", "Use the dashboard's default shows the default design's picture", panelPics[0] === serverDefault, `${panelPics[0]} and ${serverDefault}`);
+await page.keyboard.press("Escape");
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

@@ -9,6 +9,8 @@ add features.
 
 ### Added
 
+- Settings, General, Default design and Display's Design list show a small picture of each design, drawn in the
+  theme's colours with no image to download, so you can see what you choose (DASH-315).
 - Library, Music: Bring them in for artist folders already on disk, as films, series, books and audiobooks have. Each
   folder gets MusicBrainz's best artists (with what tells two of the same name apart); a sure match is ticked, and each
   artist follows only the albums already there. Still to set up counts them too (DASH-282).
@@ -38,6 +40,10 @@ add features.
 
 ### Changed
 
+- Release notes: the footer's Release notes link says it opens a slide-out, and a test keeps the slide-out's newest 3
+  releases the same as this changelog's, with their dates (UX-50).
+- Footer: About and updates says Upgrade available, with the update dot, when a newer release is out, as the design
+  system's footer sets out; Sign in and Set up have no footer (DASH-104).
 - **The same item for the same job everywhere (DASH-309):** app cards show their state and one more chip at most, with
   one button besides opening the card (Copy is in the app's details); Still to set up has one button; Apps, Updates
   updates the apps you tick from a selection bar instead of an Update on every row; Library's count is at the end of
