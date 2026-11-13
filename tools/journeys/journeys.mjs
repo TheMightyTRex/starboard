@@ -573,6 +573,21 @@ await signedOut.waitForTimeout(500);
 check("FOOT-03", "Sign in has no footer", (await signedOut.locator(".site-footer").count()) === 0);
 await signedOut.context().close();
 
+// DASH-315: a small picture of each design in Settings, General, Default design and in Display's Design list.
+console.log("\n== DES Design pictures");
+await open("settings-general.html");
+const defaultPics = await page.locator(".option-card:has(input[name=design]) .design-picture").evaluateAll((ps) => ps.map((p) => ({
+  key: p.dataset.design, hidden: p.getAttribute("aria-hidden") === "true", drawn: p.querySelectorAll("svg rect, svg circle").length })));
+check("DES-01", "Default design has a picture for each of the 5 designs", defaultPics.map((p) => p.key).join(",") === "health,tiles,shelf,command,board", JSON.stringify(defaultPics));
+check("DES-01", "each picture is drawn and hidden from screen readers (the words say what it is)", defaultPics.every((p) => p.hidden && p.drawn > 5));
+await page.click("[data-display-toggle]");
+await page.waitForTimeout(500);
+const panelPics = await page.locator("#side-panel .option-card:has(input[name=design]) .design-picture").evaluateAll((ps) => ps.map((p) => p.dataset.design));
+const serverDefault = await page.evaluate(() => document.documentElement.dataset.design);
+check("DES-02", "Display's Design list has a picture for each choice", panelPics.length === 6, panelPics.join(","));
+check("DES-02", "Use the dashboard's default shows the default design's picture", panelPics[0] === serverDefault, `${panelPics[0]} and ${serverDefault}`);
+await page.keyboard.press("Escape");
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

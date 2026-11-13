@@ -204,3 +204,21 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
    colour with the update dot, so it is not only a colour. */
 .site-footer__upgrade { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-text); font-weight: var(--weight-strong); }
 .site-footer__upgrade .update-dot { vertical-align: middle; }
+
+/* A small picture of each dashboard design (DASH-315), under the option card's words in Settings, General, Default
+   design and in Display's Design list. Drawn in common.js as SVG in the theme's colours; hidden from screen readers,
+   as the words say what each design is. */
+.design-picture { grid-column: 1 / -1; display: block; width: 100%; max-width: 200px; margin-top: var(--space-1); }
+.design-picture svg { display: block; width: 100%; height: auto; }
+.dp-frame { fill: var(--color-bg); stroke: var(--color-divider); stroke-width: 1; }
+.dp-card, .dp-row { fill: var(--color-surface); stroke: var(--color-divider); stroke-width: 0.6; }
+.dp-head { fill: var(--color-surface-sunken); }
+.dp-bad { fill: var(--status-danger-bg); }
+.dp-edge-bad, .dp-dot-bad { fill: var(--status-danger-fg); }
+.dp-edge-ok, .dp-dot-ok { fill: var(--status-success-fg); }
+.dp-line { fill: var(--color-text); }
+.dp-soft { fill: var(--color-text-muted); }
+.dp-icon { fill: var(--color-accent); }
+.dp-button { fill: none; stroke: var(--color-text-muted); stroke-width: 0.6; }
+.dp-search { stroke: var(--color-text-muted); }
+.side-panel .design-picture { max-width: 160px; }

@@ -719,7 +719,7 @@ function startGeneral() {
   const designForm = el("form", {},
     el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Default design" }),
       el("div", { class: "option-cards option-cards--row" }, Object.entries(DESIGNS).map(([k, [label, help]]) => el("label", { class: "option-card" },
-        el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("strong", { text: label }), el("small", { text: help }))))));
+        el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("strong", { text: label }), el("small", { text: help }), designPicture(k))))));
   designForm.addEventListener("change", async () => {
     const before = config.design;
     try { await saveGeneral({ design: designForm.design.value }, true); }

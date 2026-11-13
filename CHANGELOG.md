@@ -9,6 +9,8 @@ add features.
 
 ### Added
 
+- Settings, General, Default design and Display's Design list show a small picture of each design, drawn in the
+  theme's colours with no image to download, so you can see what you choose (DASH-315).
 - Library, Music: Bring them in for artist folders already on disk, as films, series, books and audiobooks have. Each
   folder gets MusicBrainz's best artists (with what tells two of the same name apart); a sure match is ticked, and each
   artist follows only the albums already there. Still to set up counts them too (DASH-282).
