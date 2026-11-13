@@ -138,10 +138,16 @@ for (const name of ALL) {
     await structure(name);
     await keyboard(name);
     await reflow(name);
+    // Each scheme is scanned as the page is first seen, as the light scan is: from the top, nothing focused. The
+    // keyboard walk scrolls, and a row left partly under the sticky header measured as a small target (13 November
+    // 2026: wanted-films.html, and the index.html target-size flake).
+    const fromTop = () => page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
     await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await fromTop();
     await page.waitForTimeout(150);
     await axe(name, "dark");
     await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await fromTop();
     await page.waitForTimeout(150);
     await axe(name, "high contrast");
     console.log(`checked ${name}`);
