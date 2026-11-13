@@ -11,6 +11,7 @@ const GROUP_PAGE = { films: ["library-films-collections.html", "Collections"], t
 const NOUN = { films: ["film", "films"], tv: ["series", "series"], music: ["artist", "artists"], radio: ["show", "shows"],
   books: ["book", "books"], audiobooks: ["audiobook", "audiobooks"] };
 const PAGE_SIZE = 40;
+let more = null;  // the Show more box's infinite scroll (SharedComponents.loadMore)
 const params = new URLSearchParams(location.search);
 const state = { q: params.get("q") || "", chip: params.get("chip") || "", sort: "az", layout: "covers", size: "medium",
   group: params.get("group") || "", by: params.get("by") || "", start: 0, offset: 0, shown: 0, total: 0, loading: false };
@@ -193,6 +194,7 @@ async function reload() {
   history.replaceState(null, "", url);
   const data = await load();
   if (data) announce($("#lib-count").textContent);
+  more?.reset();
 }
 
 function applyView(view) {
@@ -517,21 +519,22 @@ startPage().then(async () => {
     updateSaveButton();
   });
   $("#lib-chips").addEventListener("change", () => setTimeout(updateSaveButton));
-  $("#lib-more button").addEventListener("click", async () => {
-    const before = $$("#lib-wall li").length;
-    await load();
-    $$("#lib-wall li")[before]?.querySelector("a")?.focus();
+  // Show 40 more, and the next 40 by itself as the end comes into view (DASH-277, the design system's UX-52): the
+  // button moves focus to the first new title; loading by itself leaves focus alone and pauses after three lots.
+  more = loadMore($("#lib-more"), {
+    pageSize: PAGE_SIZE, noun: NOUN[TAB][1], items: () => $$("#lib-wall li"),
+    load: async () => {
+      if (state.loading) return 0;
+      const before = $$("#lib-wall li").length;
+      await load();
+      return $$("#lib-wall li").length - before;
+    },
   });
-  autoLoadMore($("#lib-more button"), async () => {  // DASH-277: the next lot as you near the end, focus left alone
-    if (state.loading) return 0;
-    const before = $$("#lib-wall li").length;
-    await load();
-    return $$("#lib-wall li").length - before;
-  }, NOUN[TAB][1]);
   $("#lib-az").addEventListener("az-jump", async (e) => {
     if (state.loading) return;
     await load({ until: e.detail.letter });
     window.SharedComponents.azGo($("#lib-az"), e.detail.letter);
+    more?.reset();  // a new place in the wall: up to three more lots by itself from here
   });
   $("#lib-earlier button").addEventListener("click", async () => {
     if (state.loading || state.start <= 0) return;

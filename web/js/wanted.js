@@ -112,12 +112,10 @@ async function wantedLoad(more = false) {
     if (!more) list.replaceChildren();
     const added = r.items.map(wantedRow);
     list.append(...added);
-    // Show more: focus goes to the first new one, so a screen reader carries on there, not at the top.
-    if (more) focusFirstNew(added[0]);
     if (!wantedState.items.length) list.replaceChildren(el("li", { class: "empty", text: WHICH === "missing" ? "Nothing is missing." : "Everything is at the quality wanted." }));
     const noun = W_NOUN[wantedState.kind] || ["item", "items"];
     $("#wanted-summary").textContent = `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? noun[0] : noun[1]}${WHICH === "missing" ? " missing" : " below the quality wanted"}`;
-    announce(more ? `${r.items.length} more shown, ${wantedState.items.length} of ${r.total}` : $("#wanted-summary").textContent);
+    if (!more) announce($("#wanted-summary").textContent);  // Show more says its own (SharedComponents.loadMore)
     $("#wanted-more").hidden = wantedState.items.length >= r.total;
     $("#wanted-all").disabled = !r.total;
   } catch (e) {
@@ -170,14 +168,18 @@ function wantedSelecting(on) {
 
 startPage().then(async () => {
   try { wantedState.paused = (await api("/api/schedule")).mode === "pause"; } catch { wantedState.paused = false; }
-  $$('input[name="wanted-kind"]').forEach((r) => r.addEventListener("change", () => { wantedState.kind = r.value; wantedLoad(); wantedTicked(); }));
+  $$('input[name="wanted-kind"]').forEach((r) => r.addEventListener("change", () => { wantedState.kind = r.value; wantedLoad(); wantedTicked(); $("#wanted-more")._loadMore?.reset(); }));
   if (W_KIND) $(".page-head")?.after(wantedTabs());
   $("#wanted-list").addEventListener("change", wantedTicked);
   $("#wanted-ticked").addEventListener("click", (e) => wantedSearch($$("#wanted-list input[type=checkbox]:checked").map((b) => Number(b.value)), e.currentTarget));
   $("#wanted-select").addEventListener("click", () => wantedSelecting(!wantedState.selecting));
   $("#wanted-done").addEventListener("click", () => { wantedSelecting(false); $("#wanted-select").focus(); });
   $("#wanted-all").addEventListener("click", (e) => wantedSearch([], e.currentTarget));
-  $("#wanted-more").addEventListener("click", () => { wantedState.page += 1; wantedLoad(true); });
-  autoLoadMore($("#wanted-more"), async () => { const before = wantedState.items.length; wantedState.page += 1; await wantedLoad(true); return wantedState.items.length - before; }, "more");
+  // Show more, and more by itself near the end (DASH-277, UX-52): the button moves focus to the first new row.
+  loadMore($("#wanted-more"), {
+    items: () => $$("#wanted-list > li"),
+    said: (n) => `${n} more shown, ${wantedState.items.length} of ${wantedState.total}`,
+    load: async () => { const before = wantedState.items.length; wantedState.page += 1; await wantedLoad(true); return wantedState.items.length - before; },
+  });
   wantedLoad();
 });

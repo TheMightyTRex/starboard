@@ -258,6 +258,102 @@ await page.waitForLoadState("networkidle");
 check("LIB-02", "a narrator's page shows their recordings", /by=narrators/.test(page.url()) && await page.locator("#lib-wall .media-card").count() > 0
   && /read by this narrator/.test(await page.locator(".page-head__summary").textContent()));
 
+// INF-01: load more as you scroll (DASH-277 with the design system's UX-52): the Films wall loads its next 40 as its end
+// comes into view, says so politely and leaves focus alone; Show 40 more moves focus; the button alone with the setting
+// or Reduce motion; a pause after three lots so the footer stays in reach; the A to Z list still works.
+console.log("\n== INF-01 Load more as you scroll");
+const generalBefore = await api("/api/config");
+await api("/api/config/general", { method: "PUT", body: { infinite_scroll: true } });
+await page.route("**/api/library/wall?*", async (route) => { await new Promise((r) => setTimeout(r, 700)); await route.continue(); });
+await open("library-films.html");
+await page.locator("#lib-wall .media-card").first().waitFor({ timeout: 10000 }).catch(() => {});
+const cards = () => page.locator("#lib-wall .media-card").count();
+check("INF-01", "the wall starts with 40", await cards() === 40, String(await cards()));
+check("INF-01", "Show 40 more is a real button in the box", await page.locator("#lib-more button", { hasText: "Show 40 more" }).count() === 1);
+await page.locator("#lib-q").focus();
+await page.locator("#lib-more").evaluate((e) => e.scrollIntoView({ block: "end" }));
+await page.waitForTimeout(350);
+check("INF-01", "while loading, a line says Loading the next 40 films", (await page.locator("#lib-more .load-more__status").textContent()) === "Loading the next 40 films"
+  && await page.locator("#lib-more .load-more__status").isVisible());
+await page.waitForTimeout(1500);
+check("INF-01", "the end coming into view loads the rest by itself", await cards() === 64, String(await cards()));
+check("INF-01", "a screen reader hears how many, politely", (await page.locator("#load-more-status").textContent()) === "24 more films shown"
+  && (await page.locator("#load-more-status").getAttribute("role")) === "status");
+check("INF-01", "focus stays where it was", await page.evaluate(() => document.activeElement.id) === "lib-q");
+check("INF-01", "the loading line goes once loaded", await page.locator("#lib-more .load-more__status").isHidden());
+check("INF-01", "with nothing more, the box goes", await page.locator("#lib-more").isHidden());
+
+// The A to Z list: a jump moves focus to its heading, and loading nearby never takes it away.
+await open("library-films.html");
+await page.locator("#lib-wall .media-card").first().waitFor({ timeout: 10000 }).catch(() => {});
+const lastLetter = page.locator("nav.az-jump .az-jump__letter[href]").last();
+const lastText = (await lastLetter.textContent()).trim();
+await lastLetter.click();
+await page.waitForTimeout(2500);
+check("INF-01", `the A to Z list still jumps to ${lastText}, with focus on its heading`, await page.evaluate(() => document.activeElement.className) === "wall-letter"
+  && (await page.evaluate(() => document.activeElement.textContent)).startsWith(lastText));
+
+// The button alone: the setting asks for it.
+await api("/api/config/general", { method: "PUT", body: { infinite_scroll: false } });
+await open("library-films.html");
+await page.locator("#lib-wall .media-card").first().waitFor({ timeout: 10000 }).catch(() => {});
+await page.locator("#lib-more").evaluate((e) => e.scrollIntoView({ block: "end" }));
+await page.waitForTimeout(1800);
+check("INF-01", "with the setting deactivated, nothing loads by itself", await cards() === 40, String(await cards()));
+await page.locator("#lib-more button").focus();
+await page.keyboard.press("Enter");
+await page.waitForTimeout(1800);
+check("INF-01", "Show 40 more by keyboard loads the rest", await cards() === 64, String(await cards()));
+const firstNew = await page.locator("#lib-wall li").nth(40).locator("a").first().getAttribute("href");
+check("INF-01", "and moves focus to the first new title", await page.evaluate(() => document.activeElement.getAttribute("href")) === firstNew, firstNew);
+check("INF-01", "and says how many", (await page.locator("#load-more-status").textContent()) === "24 more films shown");
+
+// The button alone: Reduce motion.
+await api("/api/config/general", { method: "PUT", body: { infinite_scroll: true } });
+await page.emulateMedia({ reducedMotion: "reduce" });
+await open("library-films.html");
+await page.locator("#lib-wall .media-card").first().waitFor({ timeout: 10000 }).catch(() => {});
+await page.locator("#lib-more").evaluate((e) => e.scrollIntoView({ block: "end" }));
+await page.waitForTimeout(1800);
+check("INF-01", "with Reduce motion, nothing loads by itself", await cards() === 40, String(await cards()));
+await page.emulateMedia({ reducedMotion: "no-preference" });
+await page.unroute("**/api/library/wall?*");
+
+// The footer stays in reach: a list that always has more pauses after three lots, and the button carries on.
+await open("history.html");
+const paused = await page.evaluate(async () => {
+  const main = document.querySelector("main");
+  const list = document.createElement("ul");
+  list.className = "rows";
+  const box = document.createElement("div");
+  box.className = "load-more";
+  box.innerHTML = '<span class="load-more__count"></span><button class="btn" type="button">Show 1 more</button>';
+  main.append(list, box);
+  let n = 0;
+  const handle = window.SharedComponents.loadMore(box, { pageSize: 1, items: () => list.children, load: async () => {
+    const li = document.createElement("li");
+    li.className = "row";
+    li.innerHTML = `<a href="#x${n}">Made-up row ${++n}</a>`;
+    list.append(li);
+    return 1;
+  } });
+  box.scrollIntoView({ block: "end" });
+  await new Promise((r) => setTimeout(r, 1500));
+  const out = { rows: list.children.length, paused: handle.paused, line: box.querySelector(".load-more__status").textContent };
+  box.querySelector("button").click();
+  await new Promise((r) => setTimeout(r, 300));
+  out.afterButton = list.children.length;
+  out.focus = document.activeElement.textContent;
+  handle.destroy();
+  list.remove();
+  box.remove();
+  return out;
+});
+check("INF-01", "after three lots in a row it pauses, so the footer stays in reach", paused.rows === 3 && paused.paused, JSON.stringify(paused));
+check("INF-01", "and says so on screen", paused.line === "Paused here so you can reach the end of the page", paused.line);
+check("INF-01", "Show more carries on, with focus on the first new row", paused.afterButton >= 4 && paused.focus === "Made-up row 4", JSON.stringify(paused));
+await api("/api/config/general", { method: "PUT", body: { infinite_scroll: generalBefore.infinite_scroll !== false } });
+
 console.log("\n== SRCH-01 Search");
 await open("index.html");
 // 12 November 2026: Search left the side menu (phones keep it in their menu); the search box has its own button.

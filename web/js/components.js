@@ -712,6 +712,141 @@
     });
   }
 
+  /* Load more as the end comes into view (UX-52): infinite scroll that keeps a real Show more button.
+     SharedComponents.loadMore(box, { load, items, noun, pageSize, auto, maxAuto, said }) wires one .load-more:
+     - The button is always there and always works: keyboard and screen reader users, a setting that asks for the
+       button, Reduce motion, a browser without IntersectionObserver, and a page whose script failed all use it.
+       Pressing it moves focus to the first new item, so reading carries on there.
+     - Otherwise one IntersectionObserver per list watches the box (no scroll handlers) and loads the next page as
+       the box comes within 600px of the screen. Focus stays where it was.
+     - After maxAuto pages in a row (3) it stops and waits for the button, so the footer stays in reach; the button
+       starts a new run. reset() starts again (a new search, a filter or an A to Z jump).
+     - While loading, a visible line says "Loading the next 40"; then a polite status says "40 more shown".
+     load() fetches and adds the next page and returns how many it added (0 or nothing: nothing more, or busy).
+     items: a selector or a function giving the list's items, to find the first new one after Show more.
+     auto: true, false or a function read each time (such as the person's setting). Returns { more, reset, destroy }. */
+  const motionStill = () => {
+    const html = document.documentElement;
+    if (html.classList.contains("pref-motion")) return true;
+    if (html.classList.contains("pref-motion-off")) return false;
+    return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+  };
+  function loadMoreFocus(item) {
+    if (!item) return;
+    const to = item.matches("a[href], button") ? item : item.querySelector("a[href]") || item.querySelector("button") || item; // the title link first
+    if (!to.matches("a[href], button, input, select, textarea, [tabindex]")) to.setAttribute("tabindex", "-1");
+    to.focus();
+  }
+  function loadMore(box, options = {}) {
+    if (!box) return null;
+    box._loadMore?.destroy();
+    const button = box.matches("button") ? box : box.querySelector("button");
+    const holder = box.matches("button") ? box.parentNode : box;
+    const size = options.pageSize || 40;
+    const maxAuto = options.maxAuto ?? 3;
+    const noun = options.noun ? ` ${options.noun}` : "";
+    const said = options.said || ((n) => `${n.toLocaleString("en-GB")} more${noun} shown`);
+    const items = () => [...(typeof options.items === "function" ? options.items() : options.items ? document.querySelectorAll(options.items) : [])];
+    let line = holder?.querySelector(":scope > .load-more__status");
+    if (!line && holder) {
+      line = document.createElement("p");
+      line.className = "load-more__status";
+      line.hidden = true;
+      if (button) button.before(line);
+      else holder.append(line);
+    }
+    const show = (text) => {
+      if (!line) return;
+      line.textContent = text || "";
+      line.hidden = !text;
+    };
+    const tell = (words) => {
+      const region = announcer("load-more-status", "status");
+      region.textContent = "";
+      setTimeout(() => (region.textContent = words), 50);
+    };
+    let busy = false;
+    let run = 0;
+    let paused = false;
+    let watch = null;
+    const shown = () => box.isConnected && !box.hidden && !box.closest("[hidden]");
+    const autoOn = () => (typeof options.auto === "function" ? options.auto() : options.auto !== false) && !motionStill();
+    const look = () => {
+      if (!watch) return;
+      watch.unobserve(box);
+      watch.observe(box);
+    };
+
+    async function more(byButton) {
+      if (busy || !shown()) return 0;
+      busy = true;
+      const before = items().length;
+      button?.setAttribute("aria-disabled", "true"); // not disabled, so focus stays on it
+      show(`Loading the next ${size.toLocaleString("en-GB")}${noun}`);
+      let n = 0;
+      try {
+        n = Number(await options.load?.()) || 0;
+      } catch {
+        busy = false;
+        paused = true;
+        button?.removeAttribute("aria-disabled");
+        show("More could not be loaded. Show more tries again.");
+        tell("More could not be loaded");
+        return 0;
+      }
+      busy = false;
+      button?.removeAttribute("aria-disabled");
+      show("");
+      if (!n) return 0;
+      let words = said(n);
+      if (byButton) {
+        run = 0;
+        paused = false;
+        loadMoreFocus(items()[before]);
+      } else {
+        run += 1;
+        if (run >= maxAuto && shown()) {
+          paused = true;
+          show("Paused here so you can reach the end of the page");
+          words += ". Paused here so you can reach the end of the page";
+        }
+      }
+      tell(words);
+      if (!paused) look(); // still near the end (a short page, a tall screen): look again, with no scroll handler
+      return n;
+    }
+    const onClick = (event) => {
+      event.preventDefault();
+      if (button.getAttribute("aria-disabled") !== "true") more(true);
+    };
+    button?.addEventListener("click", onClick);
+    if ("IntersectionObserver" in window) {
+      watch = new IntersectionObserver((seen) => {
+        if (!paused && !busy && seen.some((s) => s.isIntersecting) && autoOn()) more(false);
+      }, { rootMargin: options.rootMargin || "0px 0px 600px 0px" });
+      watch.observe(box);
+    }
+    const handle = {
+      more: () => more(true),
+      reset() {
+        run = 0;
+        paused = false;
+        show("");
+        look();
+      },
+      destroy() {
+        watch?.disconnect();
+        button?.removeEventListener("click", onClick);
+        delete box._loadMore;
+      },
+      get paused() {
+        return paused;
+      },
+    };
+    box._loadMore = handle;
+    return handle;
+  }
+
   function setup(root) {
     setupMenus(root);
     setupShelves(root);
@@ -725,7 +860,7 @@
     setupAzJump(root);
     setupSortables(root);
   }
-  window.SharedComponents = { setup, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo };
+  window.SharedComponents = { setup, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo, loadMore };
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");
