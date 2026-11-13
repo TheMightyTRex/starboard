@@ -2413,7 +2413,7 @@ async function startSecurity() {
       addresses, forced),
     section("sc-pw", "Password", "At least 10 characters; a short sentence is easy to remember. You stay signed in here and everyone else is signed out.", pwForm),
     section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm),
-    wants(holder, "sc-keys") ? section("sc-keys", "API keys", "For other apps, scripts and AI assistants that read Starboard. Each key only reads, and is shown once.", apiKeys()) : null]));
+    wants(holder, "sc-keys") ? section("sc-keys", "API keys", "For other apps, scripts and AI assistants. Each key reads, or reads and manages, only what you choose, and is shown once.", apiKeys()) : null]));
   daysForm.append(
       el("ul", { class: "settings-rows" },
         el("li", { class: "setting" },
@@ -2433,6 +2433,17 @@ async function startSecurity() {
 
 // API keys (DASH-274): read-only keys for /api/v1, made with the password and shown once. Settings pattern 8: each
 // key a row with its state and Edit, which opens it in a slide-out with Revoke; Make a key at the foot.
+// What each API key right and scope means, in the words the key form and its panel use (DASH-274).
+const KEY_RIGHTS = { read: "Read only", manage: "Read and manage" };
+const KEY_SCOPES = {
+  apps: ["Apps", "Apps, their status, uptime, versions and updates"],
+  downloads: ["Downloads", "The queue, speeds, download hours and history"],
+  media: ["Media", "Coming up, recently added, what is playing and the Jellyfin jobs"],
+  library: ["Library", "The Library and its search"],
+  requests: ["Requests", "Requests from Seerr or Reelix"],
+  system: ["System", "Processor, memory, disks, version and test alerts"],
+};
+
 function apiKeys() {
   const box = el("div", { class: "stack-4" });
   const list = el("ul", { class: "rows" });
@@ -2445,7 +2456,8 @@ function apiKeys() {
     const revoke = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Revoke");
     const panel = sidePanel({ title: k.name, opener, body: [el("dl", { class: "facts" },
       el("dt", { text: "Starts with" }), el("dd", { text: `${k.prefix}…` }),
-      el("dt", { text: "Reads" }), el("dd", { text: k.scopes.length ? k.scopes.join(", ") : "Everything the API offers" }),
+      el("dt", { text: "May" }), el("dd", { text: KEY_RIGHTS[k.right] || k.right }),
+      el("dt", { text: "Sees" }), el("dd", { text: k.scopes.length ? k.scopes.map((s) => (KEY_SCOPES[s] || [s])[0]).join(", ") : "Everything the API offers" }),
       el("dt", { text: "Ends" }), el("dd", { text: k.expires_at ? when(k.expires_at) : "Never" }),
       el("dt", { text: "Last used" }), el("dd", { text: k.last_used_at ? new Date(k.last_used_at).toLocaleString("en-GB") : "Not used yet" }))],
       foot: [revoke] });
@@ -2458,24 +2470,36 @@ function apiKeys() {
   const draw = (keys) => list.replaceChildren(...(keys.length ? keys.map((k) => {
     const edit = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, icon("pencil"), "Edit", el("span", { class: "visually-hidden", text: ` ${k.name}` }));
     edit.addEventListener("click", () => openKey(k, edit));
-    const meta = [`${k.prefix}…`, k.expires_at ? `ends ${when(k.expires_at)}` : "never ends"].join(" · ");
+    const meta = [`${k.prefix}…`, (KEY_RIGHTS[k.right] || k.right).toLowerCase(), k.expires_at ? `ends ${when(k.expires_at)}` : "never ends"].join(" · ");
     return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: k.name }), el("div", { class: "row__meta", text: meta })),
       el("div", { class: "row__side" }, stateOf(k), edit));
   }) : [el("li", {}, emptyState("No keys yet", "Make one for each app or script that reads Starboard."))]));
   const make = (opener) => {
     const name = el("input", { class: "input", id: "key-name", autocomplete: "off", placeholder: "Home Assistant" });
     const ends = el("select", { class: "select", id: "key-ends" }, [["90", "In 90 days"], ["365", "In a year"], ["never", "Never"]].map(([v, t]) => el("option", { value: v, text: t })));
+    const right = el("select", { class: "select", id: "key-right" }, Object.entries(KEY_RIGHTS).map(([v, t]) => el("option", { value: v, text: t })));
+    const boxes = Object.entries(KEY_SCOPES).map(([key, [title, hint]]) => {
+      const input = el("input", { type: "checkbox", value: key, id: `key-scope-${key}` });
+      return { input, node: el("label", { class: "check", for: input.id }, input,
+        el("span", { class: "check__text" }, el("strong", { text: title }), el("span", { class: "check__hint", text: hint }))) };
+    });
+    const scopes = el("fieldset", { class: "form-stack", id: "key-scopes", "aria-describedby": "key-scopes-hint" },
+      el("legend", { class: "field__label", text: "What it may see" }),
+      el("span", { class: "hint", id: "key-scopes-hint", text: "Leave them all empty for everything the API offers. An AI assistant should see only what it needs." }),
+      boxes.map((b) => b.node));
     const pw = el("input", { class: "input", id: "key-password", type: "password", autocomplete: "current-password" });
     const go = el("button", { type: "submit", class: "btn btn--primary", form: "key-form", text: "Make a key" });
     const cancel = el("button", { type: "button", class: "btn", text: "Cancel" });
-    const form = el("form", { class: "form-stack", id: "key-form", novalidate: true }, field("Name it after what will use it", name), field("Ends", ends), field("Your Starboard password", pw));
+    const form = el("form", { class: "form-stack", id: "key-form", novalidate: true }, field("Name it after what will use it", name),
+      field("What it may do", right, { hint: "Read and manage also lets it approve requests, pause downloads and refresh the Library. It never changes settings." }),
+      scopes, field("Ends", ends), field("Your Starboard password", pw));
     const panel = sidePanel({ title: "Make a key", opener, body: [form], foot: [go, cancel] });
     setTimeout(() => name.focus(), 0);  // a form in a slide-out starts in its first field
     cancel.addEventListener("click", () => panel.close());
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       try {
-        const r = await api("/api/keys", { method: "POST", body: { name: name.value, expires_days: ends.value, password: pw.value } });
+        const r = await api("/api/keys", { method: "POST", body: { name: name.value, right: right.value, scopes: boxes.filter((b) => b.input.checked).map((b) => b.input.value), expires_days: ends.value, password: pw.value } });
         const value = el("input", { class: "input", id: "key-made", readonly: true, value: r.key, spellcheck: "false" });
         const copy = el("button", { type: "button", class: "btn btn--primary" }, icon("copy"), "Copy");
         copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(r.key); toast("Key copied"); } catch { value.select(); } });

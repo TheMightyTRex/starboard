@@ -7,8 +7,8 @@ can read, how long it lasts, and the limits on it. To make one and use it, read 
 
 ## What a key is
 
-- A key looks like `sb_read_a1b2c3_` and a long secret: `sb`, its right, its id (six letters and numbers), then
-  the secret.
+- A key looks like `sb_read_a1b2c3_` or `sb_manage_a1b2c3_` and a long secret: `sb`, its right, its id (six
+  letters and numbers), then the secret.
 - Starboard shows the key once, when it is made. It keeps only the key's SHA-256 fingerprint, so nobody can read
   the key back, Starboard included.
 - Keys are separate from signing in. A key cannot open Starboard's pages, and the browser's sign-in cannot call
@@ -29,27 +29,50 @@ A key anywhere else, such as in the address (`?key=...`), is not read, and the c
 
 ## Rights and scopes
 
-| Right | What it allows |
-|---|---|
-| `read` | Read what the API offers. This is the only right in version 1 |
+| Right | Shown as | What it allows |
+|---|---|---|
+| `read` | **Read only** | Read what the API offers |
+| `manage` | **Read and manage** | Read, and the everyday actions of the pages: approve or decline a request, remove or block a download, pause or resume downloads, build a Library tab again, look for container updates, run a Jellyfin job and send a test alert |
 
-A key's scopes narrow what it reads. A key with no scopes reads everything the API offers. Keys made in **Settings**,
-**Security** have no scopes. Plug-in keys have the scopes of the read permissions the person approved. Read
+Every address that changes something is a `POST`, marked **Needs:** `manage` in the [API reference](api-reference.md).
+A read key gets `403` [`right_needed`](../../api/errors.md#right_needed) there.
+
+No key, whatever its right, can change settings, keys or plug-ins, change the install, take over or roll back,
+restore a backup, use Reelix's admin password, or make Starboard call an address the key gives. Those stay with a
+person signed in to Starboard.
+
+A key's scopes narrow what it reads and does. A key with no scopes reaches everything its right allows. In
+**Settings**, **Security**, **What it may see**, tick only what the app or script needs. Plug-in keys only read, with
+the scopes of the read permissions the person approved. Read
 [The plug-in's API key](plugin-api-reference.md#the-plug-ins-api-key).
 
-| Scope | What it reads |
-|---|---|
-| `apps` | `/apps`, `/apps/{id}`, `/status` and `/health`: your apps, whether they answer, and problems they report |
-| `downloads` | `/downloads`: what is downloading |
-| `media` | `/recent` and `/playing`: recently added media, and what is playing in Jellyfin |
-| `system` | `/system`: processor, memory, disks and uptime |
+| Scope | Shown as | What it covers |
+|---|---|---|
+| `apps` | **Apps** | `/apps`, `/apps/{id}`, `/status`, `/health`, `/uptime`, `/app-updates`, `/numbers` and `/containers`; looking for container updates |
+| `downloads` | **Downloads** | `/downloads`, `/transfer`, `/download-hours` and `/history`; download actions and download hours |
+| `media` | **Media** | `/recent`, `/playing`, `/calendar` and `/extras`; running a Jellyfin or Audiobookshelf job |
+| `library` | **Library** | `/library`, `/library/search` and `/library/status`; building a tab again |
+| `requests` | **Requests** | `/requests`; approving and declining |
+| `system` | **System** | `/system`, `/system/history` and `/version`; sending a test alert |
 
-`/api/v1/` and `/me` work with any key. `/openapi.json` needs no key.
+`/api/v1/` and `/me` work with any key. `/openapi.json` needs no key. `/events` works with any key, and each event
+reaches only the keys whose scopes cover it.
 
 A key asking for something outside its scopes gets `404` [`not_found`](../../api/errors.md#not_found), not `403`,
 so a key cannot find out what exists beyond what it may read.
 
-Whatever the key, the API never sends a secret: an app's API key shows only as `api_key_set`, `true` or `false`.
+Whatever the key, the API never sends a secret: an app's API key shows only as `api_key_set`, `true` or `false`,
+and the VPN's own internet address is left out.
+
+## Changes, safely
+
+- Send the body as JSON, of up to 64 KB, such as `{"action": "pause"}`. A larger one gets `413`
+  [`too_large`](../../api/errors.md#too_large).
+- Send an `Idempotency-Key` header, such as a new random value for each action, to make a retry safe: the same key
+  and value within 24 hours gets the first answer again, with `Idempotent-Replayed: true`, and nothing is done twice.
+- Work that takes a while, such as building a Library tab, answers `202` with `status`, the address to read to see
+  how it went.
+- Every change made with a key is written to the audit log with the key's id, the address and the answer.
 
 ## Expiry
 
@@ -79,8 +102,9 @@ has no body to read. Read [API quickstart](api-quickstart.md#5-ask-again-only-wh
 
 ## The audit log
 
-Starboard writes a line to its audit log, `data/logs/audit.jsonl`, each time a key is made or revoked, and each
-time a wrong key is refused, with the address it came from. Plug-ins being added, updated, rolled back, activated
+Starboard writes a line to its audit log, `data/logs/audit.jsonl`, each time a key is made or revoked, each time
+a key changes something (`api_write`, with the key's id, the address and the answer's status), and each time a wrong
+key is refused, with the address it came from. Plug-ins being added, updated, rolled back, activated
 and removed are written there too. The log never holds a key or a password. It keeps 5 files of about 1 MB each.
 
 ## Keep keys safe

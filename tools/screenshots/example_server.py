@@ -179,6 +179,14 @@ _LIVETV_CHANNELS = [  # (name, section, list, region)
 _LIVETV_HIDDEN = ("Quiet Coast Comedy", "Station Eleven Classics", "Lighthouse Westerns", "Winter Map Weather", "Pier Retro")
 
 
+def _example_keys(data_dir):
+    """Two made-up API keys, so Settings, Security, API keys shows a read key and a manage key with scopes (DASH-274)."""
+    from starboard import api_v1
+    if not any(not k["name"].startswith("Plug-in: ") for k in api_v1.list_keys(data_dir)):
+        api_v1.create_key(data_dir, "Home Assistant", "read", ["apps", "system"], 365)
+        api_v1.create_key(data_dir, "Requests helper", "manage", ["requests"], 90)
+
+
 def _example_livetv(data_dir):
     from starboard import livetv, livetv_own, livetv_plugin, plugin_cards, plugin_custom, plugin_watch
     root = os.path.join(data_dir, "example-livetv")
@@ -847,6 +855,7 @@ def main():
                                                     "wireguard_private_key": "made-up", "wireguard_addresses": "192.168.1.20/32"}}))
     _example_plugins(str(DATA))
     _example_livetv(str(DATA))
+    _example_keys(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
     if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":

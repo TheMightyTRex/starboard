@@ -9,6 +9,12 @@ add features.
 
 ### Added
 
+- Starboard's API, version 1.1.0: the rest of the pages' reads (Coming up, requests, speeds, download hours, history,
+  the Library and its search, uptime, app updates, counts, containers, version and processor history), a second right,
+  Read and manage, for the everyday actions (approve or decline a request, remove or block a download, pause or resume
+  downloads, build a Library tab again, look for container updates, run a Jellyfin job, send a test alert), and an
+  event stream, /api/v1/events. Make a key now asks what it may do and what it may see. No key can change settings,
+  keys, plug-ins or the install. Each change made with a key is in the audit log (DASH-274).
 - Settings, General, Discover rows is its own page on the level 2 menu, with a section for each area of Discover
   (Films, TV, Music, Radio, Books and Audiobooks), each with its own rows, ticks, Move up and Move down, and Put back
   the standard rows. Only the area shown asks Reelix for its rows. Each Discover page's Change these rows opens its own

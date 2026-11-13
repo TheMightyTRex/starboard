@@ -2604,7 +2604,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.plugins_route(method, path)
             if path == "/api/keys" and method == "GET":  # API keys (DASH-274): never their secrets
                 from . import api_v1
-                return self.json(200, {"keys": api_v1.list_keys(app.data_dir), "scopes": api_v1.SCOPES, "rights": api_v1.RIGHTS},
+                return self.json(200, {"keys": api_v1.list_keys(app.data_dir), "scopes": api_v1.ALL_SCOPES, "rights": api_v1.RIGHTS},
                                  {"Cache-Control": "no-store"})
             if path == "/api/keys" and method == "POST":
                 from . import api_v1

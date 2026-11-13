@@ -3,7 +3,8 @@
 # API quickstart
 
 Make a key and read your first answer from Starboard's API in about 5 minutes, with curl or with Python's standard
-library. Version 1 of the API only reads: nothing can change Starboard through it.
+library. A key reads, or reads and does the everyday actions of the pages, only in the areas you choose. No key
+can change Starboard's settings.
 
 ## Before you begin
 
@@ -17,9 +18,11 @@ library. Version 1 of the API only reads: nothing can change Starboard through i
 1. Go to **Settings**, then **Security**.
 2. Find **API keys** and select **Make a key**.
 3. In **Name it after what will use it**, enter a name, such as `My script`.
-4. In **Ends**, choose when the key stops working.
-5. Enter your Starboard password, then select **Make a key**.
-6. Select **Copy**. Starboard shows the key only this once.
+4. In **What it may do**, keep **Read only** unless the script must act, such as pausing downloads.
+5. In **What it may see**, tick only what the script needs, or none for everything.
+6. In **Ends**, choose when the key stops working.
+7. Enter your Starboard password, then select **Make a key**.
+8. Select **Copy**. Starboard shows the key only this once.
 
 A key looks like `sb_read_`, six letters and numbers, another `_`, then a long secret. Keep it like a password. Read
 [Authentication and keys](api-authentication.md).

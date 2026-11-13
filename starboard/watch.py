@@ -171,6 +171,8 @@ class Watch:
             return
         self.state["alerted"][key] = time.time()
         logs.event("warning", "alert", f"{title}: {message}")
+        from . import api_v1
+        api_v1.publish("alert.raised", {"title": title, "message": message, "level": level})
         channel = self.settings().get("channel") or {}
         if channel.get("kind") in ("ntfy", "gotify", "webhook"):
             try:
@@ -181,6 +183,8 @@ class Watch:
     def clear(self, key, title=None, message=None):
         if self.state["alerted"].pop(key, None) and title:
             logs.event("info", "alert", f"{title}: {message}")
+            from . import api_v1
+            api_v1.publish("alert.cleared", {"title": title, "message": message or ""})
             channel = self.settings().get("channel") or {}
             if channel.get("kind") in ("ntfy", "gotify", "webhook"):
                 try:

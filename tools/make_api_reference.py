@@ -24,8 +24,10 @@ BASE = "http://192.168.1.20:8095"
 # What each problem status can be, by its code in docs/api/errors.md.
 CODES = {400: ["bad_request"], 401: ["key_needed"], 404: ["not_found"], 405: ["method_not_allowed"],
          429: ["too_many_attempts", "rate_limited"]}
-SCOPE_WORDS = {"apps": "your apps and their status", "downloads": "what is downloading",
-               "media": "your library and what is playing", "system": "processor, memory and disks"}
+SCOPE_WORDS = {"apps": "your apps and their status", "downloads": "downloads, download hours and history",
+               "media": "Coming up, recently added, what is playing and the Jellyfin jobs", "system": "processor, memory, disks and alerts",
+               "library": "the Library", "requests": "requests", "logs": "the logs, only when ticked"}
+CODES.update({403: ["right_needed"], 409: ["not_set_up"], 413: ["too_large"], 502: ["app_failed"], 503: ["too_many_streams"]})
 
 
 def route_table():
@@ -35,9 +37,12 @@ def route_table():
     return [(re.compile(pattern), scope, int(fresh)) for pattern, scope, fresh, *_ in api_v1.routes()]
 
 
+SAMPLES = {"id": "123", "name": "livetv"}
+
+
 def route_for(path, table):
     """The route that answers a described path, trying it with a made-up value in each {name}."""
-    sample = re.sub(r"\{[^}]+\}", "example", path)
+    sample = re.sub(r"\{(\w+)\}", lambda m: SAMPLES.get(m.group(1), "example"), path)
     for pattern, scope, fresh in table:
         if pattern.match(sample):
             return scope, fresh
@@ -111,7 +116,9 @@ def parameter_rows(spec, params):
 
 
 def example_path(path):
-    return re.sub(r"\{[^}]+\}", "sonarr", path)
+    if path.startswith("/api/v1/apps/"):
+        return re.sub(r"\{[^}]+\}", "sonarr", path)  # an app's id
+    return re.sub(r"\{(\w+)\}", lambda m: SAMPLES.get(m.group(1), "example"), path)
 
 
 def operation(spec, path, method, op, table, used):
@@ -120,24 +127,28 @@ def operation(spec, path, method, op, table, used):
         lines += ["", op["description"]]
     lines.append("")
     open_route = op.get("security") == []
-    found = route_for(path, table)
+    found = route_for(path, table) if method == "get" else None
+    right = op.get("x-right") or "read"
     if open_route:
         lines.append("- **Key:** none needed.")
     else:
         scope = op.get("x-scope") or (found[0] if found else None)
+        who = "a key made with Read and manage" if right == "manage" else "any key"
         if scope:
-            lines.append(f"- **Key:** any read key whose scopes are empty or include `{scope}` ({SCOPE_WORDS.get(scope, scope)}). "
+            lines.append(f"- **Key:** {who} whose scopes are empty or include `{scope}` ({SCOPE_WORDS.get(scope, scope)}). "
                          f"A key without it gets `404 not_found`.")
         else:
-            lines.append("- **Key:** any read key.")
-    if found and not open_route:
+            lines.append(f"- **Key:** {who}.")
+        if right == "manage":
+            lines.append("- **Needs:** `manage`. A read key gets `403 right_needed`. Send a JSON body; `Idempotency-Key` makes a retry safe.")
+    if found and found[1] and not open_route:
         lines.append(f"- **Fresh for:** {found[1]} seconds (`Cache-Control: private, max-age={found[1]}`).")
     lines.append(f"- **Operation id:** `{op.get('operationId', '')}`.")
     params = op.get("parameters") or []
     if params:
         lines += ["", "Parameters:", ""] + parameter_rows(spec, params)
     responses = op.get("responses") or {}
-    good = responses.get("200") or {}
+    good = responses.get("200") or responses.get("202") or {}
     schema = ((good.get("content") or {}).get("application/json") or {}).get("schema") or {}
     lines += ["", "The answer:", ""]
     said = (good.get("description") or "").rstrip(".")
@@ -149,7 +160,7 @@ def operation(spec, path, method, op, table, used):
         lines.append(f"- {kind(spec, schema, used)}.")
     errs, also = [], []
     for code in sorted(responses, key=lambda c: int(c) if c.isdigit() else 0):
-        if code == "200":
+        if code in ("200", "202") and responses.get(code) is good:
             continue
         r = responses[code]
         if code.isdigit() and int(code) < 400:
@@ -166,15 +177,31 @@ def operation(spec, path, method, op, table, used):
         lines += ["", "Errors:", ""] + errs
     url = BASE + example_path(path)
     auth = "" if open_route else ' -H "Authorization: Bearer $STARBOARD_KEY"'
-    lines += ["", "Example:", "", "```bash", f'curl -s{auth} "{url}"', "```", "", "```python",
+    body = example_body(spec, op) if method != "get" else None
+    post = f" -X {method.upper()} -H \"Content-Type: application/json\" -d '{body}'" if body is not None else ""
+    lines += ["", "Example:", "", "```bash", f'curl -s{auth}{post} "{url}"', "```", "", "```python",
               "import json, os, urllib.request", ""]
     if open_route:
         lines.append(f'req = urllib.request.Request("{url}")')
+    elif body is not None:
+        lines.append(f'req = urllib.request.Request("{url}", method="{method.upper()}", data=b\'{body}\',')
+        lines.append('                             headers={"Authorization": "Bearer " + os.environ["STARBOARD_KEY"],')
+        lines.append('                                      "Content-Type": "application/json"})')
     else:
         lines.append(f'req = urllib.request.Request("{url}",')
         lines.append('                             headers={"Authorization": "Bearer " + os.environ["STARBOARD_KEY"]})')
     lines += ["with urllib.request.urlopen(req, timeout=10) as r:", "    print(json.load(r))", "```", ""]
     return lines
+
+
+def example_body(spec, op):
+    """A small JSON body for a write's example: each required property with its first allowed value."""
+    schema = (((op.get("requestBody") or {}).get("content") or {}).get("application/json") or {}).get("schema") or {}
+    out = {}
+    for name in schema.get("required") or []:
+        sub = (schema.get("properties") or {}).get(name) or {}
+        out[name] = (sub.get("enum") or [1 if sub.get("type") == "integer" else "example"])[0]
+    return json.dumps(out)
 
 
 def build():
@@ -213,8 +240,9 @@ def build():
         "by `tools/make_api_reference.py`. It lists every address in version 1 of the API.",
         "",
         "- Every address starts with `/api/v1` on your Starboard, such as `http://192.168.1.20:8095/api/v1/apps`.",
-        "- The API only reads. Every request except the description itself needs a key, sent as "
-        "`Authorization: Bearer` and the key. Read [Authentication and keys](api-authentication.md).",
+        "- Every request except the description itself needs a key, sent as `Authorization: Bearer` and the key. "
+        "Addresses that change something are `POST` and need a key made with **Read and manage**. "
+        "Read [Authentication and keys](api-authentication.md).",
         "- The examples read the key from `STARBOARD_KEY`. Set it first, such as `export STARBOARD_KEY=sb_read_...`.",
         "- Lists take `limit` and `cursor`, and every answer has an `ETag`. Read [API quickstart](api-quickstart.md).",
         f"- Errors are problem details (RFC 9457), each explained in the [list of API errors]({ERRORS}).",
