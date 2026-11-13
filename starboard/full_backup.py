@@ -494,11 +494,51 @@ def restore(data_dir, file_path, password, config_dir=None, puid=1000, pgid=1000
         shutil.rmtree(work, ignore_errors=True)
 
 
+POOL = "/mnt/pool"  # the drive pool's one folder (start.storage): its disks are never the system disk
+
+
+def _drives(data_dir):
+    """The mounted drives that are not the system disk (sysinfo.pool_candidates), or None with no drive list."""
+    from . import sysinfo
+    return sysinfo.pool_candidates(data_dir)
+
+
+def disk_of(data_dir, folder, drives=False):
+    """Which disk a folder is on, so the page can say so (DASH-260: never the system disk): {"system": bool, "name",
+    "mount", "others": how many other disks there are}, or None when Starboard has no drive list or the folder is not
+    one it can use. Reads one small file Starboard already has; nothing is measured."""
+    if drives is False:
+        drives = _drives(data_dir)
+    if drives is None:
+        return None
+    try:
+        path = folders.tidy(folder)
+    except ValueError:
+        return None
+    if path == POOL or path.startswith(POOL + "/"):
+        return {"system": False, "name": "the drive pool", "mount": POOL, "others": len(drives)}
+    best = None
+    for d in drives:
+        m = (d.get("mount") or "").rstrip("/") or "/"
+        if m != "/" and (path == m or path.startswith(m + "/")) and (best is None or len(m) > len(best["mount"])):
+            best = {"system": False, "name": d.get("label") or d.get("model") or d.get("device") or m, "mount": m, "others": len(drives)}
+    return best or {"system": True, "name": "the system disk", "mount": "/", "others": len(drives)}
+
+
 def default_folder(data_dir):
-    """Another disk than Starboard's: the media folder's backups folder."""
+    """Another disk than the system disk: the media folder's backups folder when the media is on one, else the biggest
+    other disk's, else the media folder's (the page then says it is on the system disk)."""
     from . import stack
     media = stack.env_values(data_dir).get("DATA_DIR") or ""
-    return f"{media.rstrip('/')}/backups/starboard" if media else ""
+    first = f"{media.rstrip('/')}/backups/starboard" if media else ""
+    drives = _drives(data_dir)
+    if not drives or (first and not (disk_of(data_dir, first, drives) or {}).get("system")):
+        return first
+    for d in sorted(drives, key=lambda d: -int(d.get("size") or 0)):
+        folder = f"{d['mount'].rstrip('/')}/backups/starboard"
+        if folders.allowed(folder):
+            return folder
+    return first
 
 
 def sizes(data_dir):

@@ -37,7 +37,7 @@ PUBLIC_FILES = {"/favicon.svg", "/icon-app.svg", "/manifest.webmanifest"}
 
 
 def _snaglist_style():
-    """Snaglist (Settings, General, Testing) sets its styles with one <style> in its own shadow root. Its hash lets
+    """Snaglist (Settings, General, Logs and feedback) sets its styles with one <style> in its own shadow root. Its hash lets
     exactly that stylesheet in, so the policy still refuses every other inline style."""
     try:
         with open(os.path.join(WEB, "js", "snaglist.js"), encoding="utf-8") as f:
@@ -2477,7 +2477,8 @@ class Handler(BaseHTTPRequestHandler):
                     if path == "/api/backup/full/sizes" and method == "GET":
                         return self.json(200, {"apps": full_backup.app_sizes(app.data_dir), "starboard": full_backup.sizes(app.data_dir)})
                     if path == "/api/backup/full/found" and method == "GET":
-                        return self.json(200, {"found": full_backup.found(q.get("folder", [""])[0])})
+                        folder = q.get("folder", [""])[0]
+                        return self.json(200, {"found": full_backup.found(folder), "disk": full_backup.disk_of(app.data_dir, folder)})
                     if path == "/api/backup/full" and method == "POST":
                         data = self.body()
                         self.check_password(data)
