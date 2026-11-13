@@ -55,10 +55,10 @@ function mediaLegend(parts, of, { free } = {}) {
 
 function mediaTable(caption, parts, of) {
   return el("details", { class: "chart__table" }, el("summary", { text: "Show as a table" }),
-    el("div", { class: "table-scroll" }, el("table", {}, el("caption", { class: "visually-hidden", text: caption }),
+    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" }, el("caption", { class: "visually-hidden", text: caption }),
       el("thead", {}, el("tr", {}, ["Type", "Size", "Share"].map((h) => el("th", { scope: "col", text: h })))),
       el("tbody", {}, parts.map((p) => el("tr", {}, el("th", { scope: "row", text: p.name }),
-        el("td", { class: "num", text: formatBytes(p.bytes) }), el("td", { class: "num", text: share(p.bytes, of) })))))));
+        el("td", { class: "num", "data-label": "Size", text: formatBytes(p.bytes) }), el("td", { class: "num", "data-label": "Share", text: share(p.bytes, of) })))))));
 }
 
 // One bar for the whole pool: each type, then free space. The marks stretch to the width; the labels are HTML
@@ -159,10 +159,10 @@ function drivesChart(drives, onOpen) {
       tone ? chip(tone === "danger" ? "Full" : "Nearly full", tone) : null);
   }));
   return [list, el("details", { class: "chart__table" }, el("summary", { text: "Show as a table" }),
-    el("div", { class: "table-scroll" }, el("table", {}, el("caption", { class: "visually-hidden", text: "Drives in the pool" }),
+    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" }, el("caption", { class: "visually-hidden", text: "Drives in the pool" }),
       el("thead", {}, el("tr", {}, ["Drive", "Size", "Used", "Free"].map((h) => el("th", { scope: "col", text: h })))),
-      el("tbody", {}, sorted.map((d) => el("tr", {}, el("th", { scope: "row", text: d.label }), el("td", { class: "num", text: formatBytes(d.total) }),
-        el("td", { class: "num", text: `${formatBytes(d.used)} (${Math.round((d.used / d.total) * 100)}%)` }), el("td", { class: "num", text: formatBytes(d.free) })))))))];
+      el("tbody", {}, sorted.map((d) => el("tr", {}, el("th", { scope: "row", text: d.label }), el("td", { class: "num", "data-label": "Size", text: formatBytes(d.total) }),
+        el("td", { class: "num", "data-label": "Used", text: `${formatBytes(d.used)} (${Math.round((d.used / d.total) * 100)}%)` }), el("td", { class: "num", "data-label": "Free", text: formatBytes(d.free) })))))))];
 }
 
 // Least squares over the readings: bytes a day. Needs a week, so one busy day does not decide it.
@@ -207,9 +207,10 @@ function growthChart(label, readings, width = 640) {
   const legend = el("p", { class: "chart__legend" }, el("span", {}, el("i", { class: "chart__swatch", "aria-hidden": "true" }), "Used"),
     ahead ? el("span", {}, el("i", { class: "chart__swatch chart__swatch--2", "aria-hidden": "true" }), "Forecast") : null);
   const table = el("details", { class: "chart__table" }, el("summary", { text: "Show as a table" }),
-    el("div", { class: "table-scroll" }, el("table", {}, el("thead", {}, el("tr", {}, ["Day", "Used", "Free"].map((h) => el("th", { scope: "col", text: h })))),
+    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" }, el("caption", { class: "visually-hidden", text: "Space used each day" }),
+      el("thead", {}, el("tr", {}, ["Day", "Used", "Free"].map((h) => el("th", { scope: "col", text: h })))),
       el("tbody", {}, pts.slice().reverse().slice(0, 60).map((p) => el("tr", {}, el("th", { scope: "row", text: p.date }),
-        el("td", { class: "num", text: formatBytes(p.used) }), el("td", { class: "num", text: formatBytes(p.total - p.used) })))))));
+        el("td", { class: "num", "data-label": "Used", text: formatBytes(p.used) }), el("td", { class: "num", "data-label": "Free", text: formatBytes(p.total - p.used) })))))));
   return [el("p", { class: "growth__sentence", text: sentence }), svg, legend, table];
 }
 
