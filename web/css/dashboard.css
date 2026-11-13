@@ -41,3 +41,8 @@
 /* A plug-in stat card (DASH-149): one large number and its label. */
 .dash-stat { margin: 0; }
 .dash-stat strong { font-size: var(--text-2xl); line-height: var(--leading-tight); }
+
+/* A guide card, such as Live TV's On TV now (plug-in API 1.8, DASH-359). */
+.guide-card__item { display: grid; gap: var(--space-1); width: 100%; }
+.guide-card__num { font-variant-numeric: tabular-nums; color: var(--color-text-muted); }
+.guide-card .progress { height: 4px; }

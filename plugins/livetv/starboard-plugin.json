@@ -8,7 +8,7 @@
  "licence": "MIT",
  "homepage": "https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/set-up-live-tv.md",
  "support_url": "https://github.com/TheMightyTRex/starboard/issues",
- "starboard_api": ">=1.0 <2.0",
+ "starboard_api": ">=1.8 <2.0",
  "permissions": ["network:lan", "jellyfin:key"],
  "containers": [
   {"name": "main", "image": "starboard", "command": ["python", "-m", "starboard.livetv_plugin"], "port": 8080,
@@ -19,6 +19,11 @@
  "settings": [
   {"key": "white_logos", "label": "White channel logos", "type": "switch", "default": true,
    "hint": "Turns each logo white on a clear background. Deactivated: channels keep their own logos."},
+  {"key": "now_section", "label": "On TV now card shows", "type": "choice", "default": "",
+   "choices": [{"value": "", "label": "Every section"}, {"value": "Entertainment", "label": "Entertainment"}, {"value": "Lifestyle", "label": "Lifestyle"},
+               {"value": "Movies", "label": "Movies"}, {"value": "Music", "label": "Music"}, {"value": "Sport", "label": "Sport"}, {"value": "News", "label": "News"},
+               {"value": "Documentaries", "label": "Documentaries"}, {"value": "Kids", "label": "Kids"}, {"value": "Other", "label": "Other"}],
+   "hint": "The dashboard's On TV now card: what is on now in this section. Add the card in Edit dashboard."},
   {"key": "address", "label": "Address Jellyfin uses to reach Starboard", "type": "text",
    "hint": "For channel logos and Pluto TV streams, such as http://192.168.1.20:8095. Jellyfin must be able to open it."},
   {"key": "jellyfin_folder", "label": "Live TV folder as Jellyfin sees it", "type": "text",
@@ -30,5 +35,8 @@
  ],
  "actions": [{"id": "run", "label": "Run Live TV now", "path": "/run"}],
  "cards": [{"id": "status", "title": "Live TV", "type": "status", "path": "/card",
-            "example": {"state": "ok", "text": "Guides refreshed at 04:10; 412 channels"}}]
+            "example": {"state": "ok", "text": "Guides refreshed at 04:10; 412 channels"}},
+           {"id": "now", "title": "On TV now", "type": "guide", "path": "/now", "refresh_minutes": 5,
+            "example": {"items": [{"channel": "Kestrel Sport", "number": "601", "now": "Football Extra", "start": 1794600000, "stop": 1794603600,
+                                   "next": "Darts", "next_start": 1794603600}]}}]
 }

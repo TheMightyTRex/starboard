@@ -200,3 +200,27 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 /* Install apps, Check step (DASH-309): each answer a row; the answer in the body's colour, under what it is. */
 .review-row .row__title { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: var(--weight-regular); }
 .review-row__answer { color: var(--color-text); font-size: var(--text-md); overflow-wrap: anywhere; }
+
+/* A plug-in screen's sections that fold, each with a table (plug-in API 1.8, DASH-359, owner 13 November 2026:
+   "Build option 1 with 2 in the accordions"). */
+.fold-tools { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.fold-tools .search-field { flex: 1 1 260px; }
+.fold-tools .search-field .input { width: 100%; }
+.folds { display: grid; gap: var(--space-2); }
+.fold { border: 1px solid var(--color-divider); background: var(--color-surface); }
+.fold__head { display: flex; align-items: center; gap: var(--space-3); padding-right: var(--space-4); }
+.fold__title { margin: 0; flex: 1; font-size: var(--text-md); }
+.fold__toggle { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: var(--control-h); padding: var(--space-2) var(--space-4);
+  border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.fold__toggle:hover { background: var(--color-surface-sunken); }
+.fold__name { flex: 1; font-weight: var(--weight-strong); }
+.fold__switch { display: flex; align-items: center; gap: var(--space-2); }
+.fold__panel { padding: 0 var(--space-4) var(--space-4); }
+.fold .table td.num { font-variant-numeric: tabular-nums; }
+.fold .table tr.is-off td { color: var(--color-text-muted); }
+.sort-btn { display: inline-flex; align-items: center; gap: var(--space-1); padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.picked-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-accent); background: var(--color-accent-soft); }
+.attach-form { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-divider); background: var(--color-surface-sunken); }
+.attach-form .actions .input { flex: 1 1 260px; }
+.notice__body > .progress { margin-top: var(--space-2); }

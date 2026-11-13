@@ -189,7 +189,7 @@ Each item in `cards` is a card people can add with **Edit dashboard**. Read
 |---|---|---|
 | `id` | Its id, in the card's address | Letters, numbers, hyphens and underscores, up to 40. Give every card one |
 | `title` | Its name on the dashboard | A card needs a `title` (or a `label`), so a screen reader can name it |
-| `type` | `stat`, `list` or `status` | Required |
+| `type` | `stat`, `list`, `status` or, from API 1.8, `guide` | Required |
 | `path` | The path on the first container that answers | Required: starts with `/`, up to 80 letters, numbers, `/`, `_`, `.` and `-` |
 | `format` | For `stat`: `number`, `bytes`, `percent`, `duration` (seconds) or `date` (seconds since 1970) | `number` when left out |
 | `label` | Another name for the card | Optional |

@@ -2802,12 +2802,13 @@ class Handler(BaseHTTPRequestHandler):
         if mf and method == "POST":  # a file chosen beside a plug-in screen's add box, streamed through (DASH-359)
             from . import plugin_custom
             length = self.content_length()
-            name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            name, item = q.get("name", [""])[0], q.get("id", [""])[0]
             if not 0 < length <= plugin_custom.MAX_UPLOAD:
                 self.close_connection = True
                 return self.error(400, "Choose a file up to 60 MB")
             try:
-                out = plugin_custom.upload(app.data_dir, mf.group(1), mf.group(2), name, length, self.rfile)
+                out = plugin_custom.upload(app.data_dir, mf.group(1), mf.group(2), name, length, self.rfile, item)
                 self._body_read = True
             except LookupError as e:
                 self.close_connection = True

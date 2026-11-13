@@ -33,6 +33,7 @@ once every `refresh_minutes`. Answer with one JSON object in the shape for the c
 | `stat` | `{"value": 42, "label": "titles", "note": "3 added today"}` | `value` must be a number. `label` is cut to 40 characters, `note` to 80 |
 | `list` | `{"items": [{"title": "Dune", "detail": "Added today", "link": "https://example.invalid/dune"}]}` | Up to 10 items are shown. Each needs a `title` (80 characters); `detail` is cut to 120. A `link` must start with `http://` or `https://`, or it is left out |
 | `status` | `{"state": "ok", "text": "Up to date"}` | `state` is `ok`, `warning` or `problem`. `text` is cut to 160 characters |
+| `guide` | `{"items": [{"channel": "Kestrel Sport", "number": "601", "now": "Football Extra", "start": 1794600000, "stop": 1794603600, "next": "Darts", "next_start": 1794603600}], "note": ""}` | From API 1.8. Up to 12 items, each with a `channel` (80 characters); `now` and `next` are cut to 120. `start`, `stop` and `next_start` are seconds since 1970: Starboard shows the times and how far through the programme it is |
 
 A `stat` card's `format` in the manifest says how `value` is shown: `number`, `bytes`, `percent`, `duration`
 (seconds) or `date` (seconds since 1970).
@@ -126,13 +127,37 @@ are on the first level only. With menus, `bulk` can have up to 400 switches.
 
 A list without `menus` is drawn as before, so an older Starboard shows every item in one list.
 
+### Sections that fold, with a table each (API 1.8)
+
+Send `"layout": "folds"` with `columns` to show each `group` as a section that folds: one line with its name, how many
+of its items are active, and its own switch, which opens to a table of its items. Starboard adds a search, the All,
+Active and Inactive filter, filter chips and a tick box on each row, so several items from any section can be
+activated or deactivated at once. Only open sections draw their rows.
+
+| Field | Rules |
+|---|---|
+| `columns` | Up to 8, each `{"key", "label", "type"}`. `key` is lower case letters, numbers and `_`; `type` `number` sorts as numbers. Every column sorts |
+| `cells`, on an item | `{key: text}` for each column, cut to 80 characters |
+| `filters` | Up to 4, each `{"key", "label"}` naming a column: a chip for each value in it. Chips of one filter add up; filters narrow |
+| `fold`, on a `bulk` switch | The `group` whose line it goes on |
+
+Ticked items are sent as `{"action": "bulk_ids", "ids": ["news-1", "news-2"], "value": "on"}`, up to 1000 ids.
+
+### Something for one item, and notices (API 1.8)
+
+| Field | Rules |
+|---|---|
+| `attach`, on an item | `{"label", "field", "hint", "placeholder", "accept", "value"}`, with `attach` in its `actions`: a button, such as **Add guide**, that opens a small form under the row for an address or a file. The address is sent as `{"action": "attach", "id", "value"}`; a file goes to the `/file` path with `id` added. `detach` in `actions` adds a **Remove guide** item to its More menu |
+| `notices` | Up to 5, each `{"id", "tone", "title", "text", "progress", "dismiss"}`, at the top of the page. `tone` is `info`, `success`, `warning` or `danger`. With `progress` (0 to 100) Starboard shows a bar and asks again every 3 seconds until it has gone. With `dismiss`, a **Close** button sends `{"action": "dismiss", "id"}` |
+
 **POST** the path when the person does something. The body is:
 
 ```json
 {"action": "toggle", "id": "news-1", "value": ""}
 ```
 
-`action` is one of `add`, `test`, `test_all`, `toggle`, `remove`, `up`, `down`, `choose` and `bulk`. `id` is the row,
+`action` is one of `add`, `test`, `test_all`, `toggle`, `remove`, `up`, `down`, `choose`, `bulk` and, from API 1.8,
+`bulk_ids`, `attach`, `detach` and `dismiss`. `id` is the row,
 and `value` is what the person entered or chose. For `bulk`, `id` is the set and `value` is `on` to activate every item
 in it or `off` to deactivate them. Answer with the whole list again, in the same shape, with `said`
 added: one sentence, up to 200 characters, that Starboard shows. To refuse, answer with an HTTP error status and

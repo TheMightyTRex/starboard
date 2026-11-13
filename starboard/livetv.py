@@ -352,6 +352,15 @@ def _ids_in(path):
         return set()
 
 
+def _ids_with_programmes(path):
+    """The channel ids a written guide has programmes for (a filtered guide, small enough to read in one go)."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return set(re.findall(r'<programme[^>]*\bchannel="([^"]+)"', f.read()))
+    except OSError:
+        return set()
+
+
 def samsung_guide(d):
     ids = _ids_in(os.path.join(d, "samsung.m3u"))
     p = _filtered_guide(["https://i.mjh.nz/SamsungTVPlus/gb.xml.gz", "https://i.mjh.nz/SamsungTVPlus/us.xml.gz"], ids,
@@ -700,6 +709,74 @@ def empty_list(d, name):
     rest = [c for c in every if c.get("list") != playlist]
     _write(os.path.join(d, ALL), json.dumps(rest))
     return len(every) - len(rest)
+
+
+NOW = "now.json"  # in the plug-in's data folder: the next few hours, for the On TV now card (DASH-359)
+
+
+def _xmltv_time(value):
+    import calendar
+    m = re.match(r"(\d{14})(?: ?([+-])(\d{2})(\d{2}))?", value or "")
+    if not m:
+        return 0
+    t = calendar.timegm(time.strptime(m.group(1), "%Y%m%d%H%M%S"))
+    if m.group(2):
+        t -= (1 if m.group(2) == "+" else -1) * (int(m.group(3)) * 3600 + int(m.group(4)) * 60)
+    return t
+
+
+def write_now(d, data_dir, before=3 * 3600, after=5 * 3600, now=None):
+    """The programmes from a little before now to a few hours ahead, for every channel in Jellyfin, read from the
+    written guides a piece at a time into a small file (owner, 13 November 2026: option 5, what is on now, as a
+    dashboard card). Written after each run, so the card reads one small file, never the guides."""
+    now = now or time.time()
+    chans = {}
+    for name in FILES:
+        path = os.path.join(d, name)
+        if os.path.exists(path):
+            for c in _parse(path):
+                cid = c["attrs"].get("tvg-id")
+                if cid and cid not in chans:
+                    chans[cid] = {"name": c["name"], "number": c["attrs"].get("tvg-chno", ""), "section": c["attrs"].get("group-title", ""),
+                                  "programmes": []}
+    ET = _et()
+    for g in ["guide.xml", "guide-samsung.xml", "guide-pluto.xml", "guide-own.xml"]:
+        path = os.path.join(d, g)
+        if not os.path.exists(path):
+            continue
+        try:
+            for _, el in ET.iterparse(path):  # the guides Starboard wrote itself  # nosec B314
+                if el.tag == "programme":
+                    c = chans.get(el.get("channel"))
+                    start, stop = _xmltv_time(el.get("start")), _xmltv_time(el.get("stop"))
+                    if c is not None and stop > now - before and start < now + after:
+                        c["programmes"].append([start, stop, (el.findtext("title") or "").strip()[:120]])
+                    el.clear()
+                elif el.tag == "channel":
+                    el.clear()
+        except ET.ParseError:  # a broken guide: the others still count
+            continue
+    for c in chans.values():
+        c["programmes"].sort()
+    tmp = os.path.join(data_dir, NOW + ".new")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"written": now, "channels": chans}, f)
+    os.replace(tmp, os.path.join(data_dir, NOW))
+    return sum(1 for c in chans.values() if c["programmes"])
+
+
+def mark_built(name, fp):
+    """Records that one channel list was just built (a list just added, DASH-359), so the hourly run does not build it
+    again at once."""
+    d = folder()
+    path = os.path.join(d, ".starboard-livetv.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            state = json.load(f)
+    except (OSError, ValueError):
+        state = {}
+    state[name] = {"fp": fp, "built": time.time()}
+    _write(path, json.dumps(state))
 
 
 def all_channels(d):

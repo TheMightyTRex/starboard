@@ -13,6 +13,7 @@ Its settings come from /run/starboard/settings.json (Settings, Plug-ins, Live TV
 import http.server
 import json
 import os
+import re
 import threading
 import time
 
@@ -61,6 +62,10 @@ def run_once(force=False, build=None, connect=None, refresh=None):
                                                  local_folder=livetv.folder(), host_path="", env={})
     if not added and [_mtime(g) for g in guides] != before:  # new guides: Jellyfin reads them now, not tomorrow
         added = (refresh or livetv_jellyfin.refresh_guide)(services)
+    try:
+        livetv.write_now(livetv.folder(), DATA)  # the On TV now card's next few hours (DASH-359)
+    except (OSError, ValueError) as e:
+        print(f"Live TV could not write what is on now: {e}", flush=True)
     return f"{summary} · {added}" if added else summary
 
 
@@ -69,6 +74,35 @@ def _mtime(path):
         return os.path.getmtime(path)
     except OSError:
         return None
+
+
+def now_card(now=None):
+    """The On TV now card (DASH-359, owner 13 November 2026: option 5 on the dashboard): up to 8 channels in Jellyfin
+    with what is on now and next, in number order, from the section chosen in Live TV's settings."""
+    from . import livetv
+    now = now or time.time()
+    got = _read(os.path.join(DATA, livetv.NOW), {})
+    want = str(_read(SETTINGS, {}).get("now_section") or "")
+    items = []
+    for cid, c in sorted((got.get("channels") or {}).items(), key=lambda kv: int(kv[1].get("number") or 0)):
+        if want and c.get("section") != want:
+            continue
+        progs = c.get("programmes") or []
+        cur = next((p for p in progs if p[0] <= now < p[1]), None)
+        if not cur:
+            continue
+        nxt = next((p for p in progs if p[0] >= cur[1]), None)
+        items.append({"channel": c["name"], "number": str(c.get("number") or ""), "now": cur[2], "start": cur[0], "stop": cur[1],
+                      **({"next": nxt[2], "next_start": nxt[0]} if nxt else {})})
+        if len(items) == 8:
+            break
+    if not got:
+        note = "Nothing yet: it fills after Live TV's next run."
+    elif not items:
+        note = f"Nothing on now in {want}." if want else "No programmes now: the guides may not cover this hour."
+    else:
+        note = want or ""
+    return {"items": items, "note": note}
 
 
 def card():
@@ -89,7 +123,8 @@ def loop(stop=None):
             force, _force["now"] = _force["now"], False
         try:
             _save_status(state="running", started=time.time())
-            said = run_once(force=force)  # first: the finish time is taken after the run
+            with _build_lock:  # not while a list just added is being tested
+                said = run_once(force=force)  # first: the finish time is taken after the run
             _save_status(state="done", finished=time.time(), summary=said)
         except Exception as e:  # recorded for the card and the plug-in's section; the next run tries again
             try:
@@ -225,34 +260,33 @@ def _tree(chans, hidden, own):
 
 
 def channels_screen(said=""):
-    """The plug-in's Channels screen in Starboard (DASH-313), in sub menus (DASH-361): each list opens to its regions
-    and sections, each with its own channels and a switch for all of them; the list's own switch stops it being
-    fetched (DASH-359). The first level has every channel at once, and Regions and sections opens the switches for a
-    region or section in every list."""
-    from . import livetv
+    """The plug-in's Channels screen in Starboard (DASH-313). Since 13 November 2026 (DASH-359, owner: "Build option 1
+    with 2 in the accordions"): sections that fold, in Jellyfin's number order, each with its own switch and a table
+    to sort and select from, filtered by list, region and state. The switches for whole lists, every channel and each
+    region stay at the top. The sub menus of DASH-361 (`in:` sets) still work for the bulk action."""
+    from . import livetv, livetv_own
     hidden = livetv.hidden_ids(DATA)
-    from . import livetv_own
     own = {x["id"]: x.get("name", "") for x in livetv_own.sources(DATA)}
     chans = livetv.all_channels(livetv.folder())
-    menus, sets, place = _tree(chans, hidden, own)
     rows = []
     for c in sorted(chans, key=lambda c: int(c.get("number") or 0)):
         on = c["id"] not in hidden
-        menu = place.get(c["id"], "")
-        rows.append({"id": c["id"], "title": f"{c['number']} {c['name']}", "group": "" if "|s=" in menu else _section(c),
-                     "detail": " · ".join(x for x in (SOURCES.get(c.get("list")) or own.get(c.get("source"), "Your lists"), _region(c)) if x),
-                     "state": "ok" if on else "off", "on": on, "actions": ["toggle"], "menu": menu})
-    # Each list's own switch goes in its menu, as "This list": the list's name is the heading above it.
-    bulk = [{**b, "label": "This list", "kind": "", "menu": f"in:{b['id'][6:]}"} for b in _lists(chans, hidden)]
+        where = SOURCES.get(c.get("list")) or own.get(c.get("source")) or "Your lists"
+        rows.append({"id": c["id"], "title": f"{c['number']} {c['name']}", "group": _section(c),
+                     "cells": {"number": str(c.get("number") or ""), "name": c["name"], "list": where, "region": _region(c) or "Not known"},
+                     "state": "ok" if on else "off", "on": on, "actions": ["toggle"]})
+    bulk = _lists(chans, hidden)
     if rows:
-        bulk.append({"id": "all", "label": "Every channel", "kind": "", "on": sum(1 for r in rows if r["on"]), "total": len(rows)})
-        menus.append({"id": "across", "title": "Regions and sections", "group": "Across every list",
-                      "detail": "A switch for each region and each section, in every list at once"})
-    bulk += [{"id": x["id"], "label": x["label"], "kind": x["kind"], "menu": "across",
-              "on": sum(1 for i in x["ids"] if i not in hidden), "total": len(x["ids"])} for x in _sets(chans)]
-    bulk += sets
-    out = {"type": "list", "title": "Channels", "items": rows, "bulk": bulk, "menus": menus,
-           "intro": f"{sum(1 for r in rows if r['on'])} of {len(rows)} channels are in Jellyfin."}
+        bulk.append({"id": "all", "label": "Every channel", "kind": "Channels", "on": sum(1 for r in rows if r["on"]), "total": len(rows)})
+    for x in _sets(chans):
+        b = {"id": x["id"], "label": x["label"], "kind": x["kind"], "on": sum(1 for i in x["ids"] if i not in hidden), "total": len(x["ids"])}
+        bulk.append({**b, "fold": x["label"], "kind": ""} if x["kind"] == "Sections" else b)
+    out = {"type": "list", "title": "Channels", "items": rows, "bulk": bulk, "layout": "folds",
+           "columns": [{"key": "number", "label": "No.", "type": "number"}, {"key": "name", "label": "Channel"},
+                       {"key": "list", "label": "List"}, {"key": "region", "label": "Region"}],
+           "filters": [{"key": "list", "label": "List"}, {"key": "region", "label": "Region"}],
+           "notices": livetv_own.notices(DATA),
+           "intro": f"{sum(1 for r in rows if r['on'])} of {len(rows)} channels are in Jellyfin, in sections numbered as Jellyfin shows them."}
     if said:
         out["said"] = said
     return out
@@ -333,9 +367,25 @@ def _list_switch(name, on):
 
 
 def channels_act(body):
-    from . import livetv
+    from . import livetv, livetv_own
     if body.get("action") == "bulk":
         return _bulk(body)
+    if body.get("action") == "bulk_ids":  # the channels ticked in a table (DASH-359)
+        want = str(body.get("value") or "")
+        if want not in ("on", "off"):
+            raise ValueError("Choose Activate or Deactivate")
+        known = {c["id"] for c in livetv.all_channels(livetv.folder())}
+        ids = {str(i) for i in body.get("ids") or []} & known
+        if not ids:
+            raise ValueError("Tick at least one channel")
+        hidden = livetv.hidden_ids(DATA)
+        _apply(hidden, hidden - ids if want == "on" else hidden | ids)
+        n = len(ids)
+        return channels_screen(f"{n} {'channel' if n == 1 else 'channels'} " + ("activated; the lists are being rebuilt, which takes a few minutes" if want == "on"
+                               else "deactivated; Jellyfin drops them at its guide refresh, starting now"))
+    if body.get("action") == "dismiss":
+        livetv_own.dismiss(DATA, str(body.get("id") or ""))
+        return channels_screen()
     if body.get("action") != "toggle":
         raise ValueError("Channels can be activated or deactivated")
     cid = str(body.get("id") or "")
@@ -358,10 +408,19 @@ def sources_screen(said=""):
     rows = []
     for x in livetv_own.sources(DATA):
         on = x.get("on", True)
-        rows.append({"id": x["id"], "title": x.get("name") or x["url"], "group": "Channel lists" if x.get("kind") == "list" else "Guides",
-                     "detail": x.get("said", ""), "address": "Uploaded file" if x["url"].startswith("file:") else x["url"], "state": "off" if not on else x.get("state", "ok"),
-                     "on": on, "actions": ["toggle", "test", "remove"]})
-    out = {"type": "list", "title": "Lists and guides", "items": rows,
+        is_list = x.get("kind") == "list"
+        has = bool(x.get("guide"))
+        where = lambda u: "uploaded file" if u.startswith("file:") else u
+        guide = (f"Guide: {where(x['guide'])}" + (f", {x['guide_said']}" if x.get("guide_said") else "")) if has else "Guide: none yet" if is_list else ""
+        rows.append({"id": x["id"], "title": x.get("name") or x["url"], "group": "Channel lists" if is_list else "Guides",
+                     "detail": " · ".join(v for v in (x.get("said", ""), guide) if v),
+                     "address": "Uploaded file" if x["url"].startswith("file:") else x["url"], "state": "off" if not on else x.get("state", "ok"),
+                     "on": on, "actions": ["toggle", "test"] + (["attach"] if is_list else []) + (["detach"] if has else []) + ["remove"],
+                     **({"attach": {"label": "Change guide" if has else "Add guide", "field": f"Guide for {x.get('name')}",
+                                    "hint": "The address of an XMLTV guide (.xml or .xml.gz), or choose a file. Its programmes fill this list's channels, matched by channel id or, failing that, by name.",
+                                    "placeholder": "https://example.com/guide.xml.gz", "accept": ".xml,.gz",
+                                    "value": "" if not has or x["guide"].startswith("file:") else x["guide"]}} if is_list else {})})
+    out = {"type": "list", "title": "Lists and guides", "items": rows, "notices": livetv_own.notices(DATA),
            "add": {"label": "Add a list or guide", "placeholder": "https://example.com/channels.m3u",
                    "hint": "The address of an M3U playlist, a JSON channel list or an XMLTV guide (.xml or .xml.gz).",
                    "file": {"label": "Or choose a file", "accept": ".m3u,.m3u8,.json,.xml,.gz",
@@ -374,12 +433,60 @@ def sources_screen(said=""):
     return out
 
 
-def sources_upload(name, stream, length):
+def sources_upload(name, stream, length, sid=""):
     from . import livetv_own
+    if sid:  # a guide file for one channel list (DASH-359)
+        listed = livetv_own.set_guide_file(DATA, sid, name, stream, length)
+        _guides_now()
+        return sources_screen(f"Guide added to {listed}: its programmes arrive in a few minutes")
     item = livetv_own.add_file(DATA, name, stream, length)
-    _rebuild()
-    what = "Channel list" if item["kind"] == "list" else "Guide"
-    return sources_screen(f"{what} added from {item['name']}: {item['said']}. It is tested and added to Jellyfin in a few minutes")
+    return _added(item)
+
+
+def _added(item):
+    """A list just added is tested at once on its own, with its progress on the screen (DASH-359); a guide is read."""
+    from . import livetv_own
+    if item["kind"] == "list":
+        found = int((re.match(r"\d+", item.get("said") or "") or [0])[0] or 0)
+        livetv_own._update(DATA, item["id"], progress={"done": 0, "total": found})  # the notice shows at once
+        threading.Thread(target=_quick, args=(item["id"],), name="livetv-add", daemon=True).start()
+        return sources_screen(f"Channel list added: {item['said']}. Testing them now; this page shows how far it has got")
+    _guides_now()
+    return sources_screen(f"Guide added: its programmes arrive in a few minutes")
+
+
+_build_lock = threading.Lock()  # one build at a time: the hourly run, a list just added, a guide just added
+
+
+def _quick(sid):
+    """Tests one list just added, numbers it in with the rest and tells Jellyfin, without fetching the other lists."""
+    from . import livetv, livetv_jellyfin, livetv_own
+    s = _read(SETTINGS, {})
+    with _build_lock:
+        try:
+            d = livetv.folder()
+            livetv_own.build(d, DATA, only=sid)
+            livetv.number_and_logos(d, str(s.get("address") or "").rstrip("/"), bool(s.get("white_logos", True)), livetv.hidden_ids(DATA))
+            livetv.mark_built("own", livetv_own.fingerprint(DATA))
+            livetv_jellyfin.connect(_services(), {"livetv_jellyfin_folder": s.get("jellyfin_folder") or ""}, "", local_folder=d, host_path="", env={})
+            livetv_jellyfin.refresh_guide(_services())
+            livetv.write_now(d, DATA)
+        except Exception as e:  # kept on the list for its notice
+            livetv_own._update(DATA, sid, progress=None, result={"added": 0, "total": 0, "text": f"It stopped: {str(e)[:160]}"})
+
+
+def _guides_now():
+    from . import livetv, livetv_jellyfin, livetv_own
+
+    def work():
+        with _build_lock:
+            try:
+                livetv_own.guide(livetv.folder(), DATA)
+                livetv_jellyfin.refresh_guide(_services())
+                livetv.write_now(livetv.folder(), DATA)
+            except Exception as e:  # the next hourly run tries again
+                print(f"Live TV could not read the guides: {e}", flush=True)
+    threading.Thread(target=work, name="livetv-guides", daemon=True).start()
 
 
 def _rebuild():
@@ -392,10 +499,10 @@ def sources_act(body, fetch=None):
     from . import livetv, livetv_jellyfin, livetv_own
     action, sid = body.get("action"), str(body.get("id") or "")
     if action == "add":
-        item = livetv_own.add(DATA, str(body.get("value") or ""), fetch)
-        _rebuild()
-        what = "Channel list" if item["kind"] == "list" else "Guide"
-        return sources_screen(f"{what} added: {item['said']}. It is tested and added to Jellyfin in a few minutes")
+        return _added(livetv_own.add(DATA, str(body.get("value") or ""), fetch))
+    if action == "dismiss":
+        livetv_own.dismiss(DATA, sid)
+        return sources_screen()
     if action == "test_all":
         return sources_screen("; ".join(f"{x['name']}: {_test(x, fetch)}" for x in livetv_own.sources(DATA))[:200] or "Nothing to test")
     items = livetv_own.sources(DATA)
@@ -404,6 +511,14 @@ def sources_act(body, fetch=None):
         raise ValueError("Not one of your lists or guides")
     if action == "test":
         return sources_screen(f"{item['name']}: {_test(item, fetch)}")
+    if action == "attach":
+        listed = livetv_own.set_guide(DATA, sid, str(body.get("value") or ""), fetch)
+        _guides_now()
+        return sources_screen(f"Guide added to {listed}: its programmes arrive in a few minutes")
+    if action == "detach":
+        listed = livetv_own.remove_guide(DATA, sid)
+        _guides_now()
+        return sources_screen(f"Guide removed from {listed}")
     if action == "toggle":
         item["on"] = not item.get("on", True)
         livetv_own.save(DATA, items)
@@ -452,6 +567,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.answer(200, {"ok": True})
         if self.path == "/card":
             return self.answer(200, card())
+        if self.path == "/now":
+            return self.answer(200, now_card())
         if self.path == "/channels":
             return self.answer(200, channels_screen())
         if self.path == "/sources":
@@ -467,9 +584,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.answer(400, {"error": str(e)})
         if self.path.startswith("/sources/file?"):  # an uploaded file, streamed here by Starboard (DASH-359)
             import urllib.parse
-            name = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("name", [""])[0]
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            name, sid = q.get("name", [""])[0], q.get("id", [""])[0]
             try:
-                return self.answer(200, sources_upload(name, self.rfile, int(self.headers.get("Content-Length") or 0)))
+                return self.answer(200, sources_upload(name, self.rfile, int(self.headers.get("Content-Length") or 0), sid))
             except (ValueError, OSError) as e:
                 self.close_connection = True  # the rest of the body may not have been read
                 return self.answer(400, {"error": str(e)[:200]})

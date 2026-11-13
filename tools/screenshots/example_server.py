@@ -7,6 +7,7 @@ folder that is thrown away. Usage:  python3 tools/screenshots/example_server.py 
 It prints READY when signed-in screenshots can start, and writes a throwaway password to DATA_DIR/password.
 """
 import datetime as dt
+import time
 import json
 import os
 import pathlib
@@ -177,7 +178,10 @@ def _example_livetv(data_dir):
         src = "a1b2c3d4e5"
         with open(os.path.join(own, livetv_own.FILE), "w", encoding="utf-8") as f:
             json.dump([{"id": src, "url": "https://example.invalid/harbour.m3u", "kind": "list", "name": "Harbour community",
-                        "on": True, "said": "2 channels", "state": "ok"}], f)
+                        "on": True, "said": "2 of 3 channels play", "state": "ok", "guide": "https://example.invalid/harbour-guide.xml.gz",
+                        "guide_said": "2 of 2 channels have programmes",
+                        "result": {"added": 1, "inactive": 1, "total": 3, "text": "1 is already in Live TV, so it came in inactive: "
+                                   "activate it in Channels when you want. 1 address answers Not found"}}], f)
         nxt = {b: n for b, n in livetv.BLOCKS}
         chans = []
         for i, (name, section, lst, region) in enumerate(_LIVETV_CHANNELS):
@@ -187,6 +191,20 @@ def _example_livetv(data_dir):
         with open(os.path.join(iptv, livetv.ALL), "w", encoding="utf-8") as f:
             json.dump(chans, f)
         livetv.save_hidden(own, {c["id"] for c in chans if c["name"] in _LIVETV_HIDDEN})
+        # The lists as the run writes them, with a made-up guide, for the On TV now card (DASH-359)
+        for lst in livetv.FILES:
+            with open(os.path.join(iptv, lst), "w", encoding="utf-8") as f:
+                f.write("#EXTM3U\n" + "".join(f'#EXTINF:-1 tvg-id="{c["id"]}" tvg-chno="{c["number"]}" group-title="{c["section"]}",{c["name"]}\n'
+                                               f'https://example.invalid/{c["id"]}.m3u8\n' for c in chans if c["list"] == lst and c["name"] not in _LIVETV_HIDDEN))
+    shows = ("Morning Briefing", "Football Extra", "Classic Film Club", "Darts: The Final", "Nature Watch", "Harbour Kitchen", "Hits Hour",
+             "Home Makeover", "The Quiz", "Evening News")
+    start = int(time.time()) // 1800 * 1800 - 1800
+    stamp = lambda t: time.strftime("%Y%m%d%H%M%S +0000", time.gmtime(t))
+    with open(os.path.join(iptv, "guide-own.xml"), "w", encoding="utf-8") as f:  # made fresh at each start, so "now" is now
+        f.write('<?xml version="1.0" encoding="utf-8"?><tv>' + "".join(
+            f'<programme channel="example-{i}" start="{stamp(start + k * 3600 + (i % 3) * 900)}" stop="{stamp(start + (k + 1) * 3600 + (i % 3) * 900)}">'
+            f'<title>{shows[(i + k) % len(shows)]}</title></programme>' for i in range(len(_LIVETV_CHANNELS)) for k in range(5)) + "</tv>")
+    livetv.write_now(iptv, own)
     if not any(p["id"] == "livetv" for p in plugins_admin.listing(data_dir)):
         plugins_admin.install(data_dir, plugins_admin.builtins()["livetv"], "/nonexistent-media", builtin=True,
                               defaults={"address": "http://192.168.1.20:8095", "jellyfin_folder": "/config/iptv"},
@@ -212,12 +230,20 @@ def _example_livetv(data_dir):
         except (OSError, KeyError) as e:
             raise ValueError(f"That address did not answer: {e}"[:200]) from None
 
-    def upload(data_dir_, pid, key, name, length, stream):
+    def upload(data_dir_, pid, key, name, length, stream, item=""):
         if pid != "livetv" or key != "sources":
-            return real_upload(data_dir_, pid, key, name, length, stream)
-        return plugin_custom.clean(livetv_plugin.sources_upload(name, stream, length))
+            return real_upload(data_dir_, pid, key, name, length, stream, item)
+        return plugin_custom.clean(livetv_plugin.sources_upload(name, stream, length, item))
 
     plugin_custom.call, plugin_custom.upload = call, upload
+    livetv_plugin.SETTINGS = os.path.join(own, "settings.json")
+    # Example data: a list just added is "tested" without fetching, half way, so its notice shows; guides are not read
+    livetv_plugin._quick = lambda sid: livetv_own._update(own, sid, said="Testing", state="unknown", progress={"done": 4, "total": 13})
+    livetv_plugin._guides_now = lambda: None
+    real_answer = plugin_cards.answer
+    plugin_cards.answer = lambda d, pid, cid, opener=None: (  # the On TV now card, from the made-up guide (DASH-359)
+        {"type": "guide", "format": "number", "data": plugin_cards.clean("guide", livetv_plugin.now_card())} if pid == "livetv" and cid == "now"
+        else real_answer(d, pid, cid, opener))
     plugin_watch._ask = lambda pid, main, path: "ok" if pid == "livetv" else real_ask(pid, main, path)
     plugin_cards.action = lambda d, pid, aid, opener=None: (
         {"said": "Live TV is running now. This is example data, so nothing is fetched."} if pid == "livetv" else real_action(d, pid, aid, opener))

@@ -1,4 +1,4 @@
-"""Plug-in cards on the dashboard (DASH-149): a plug-in declares a card (stat, list or status) and a path on its
+"""Plug-in cards on the dashboard (DASH-149): a plug-in declares a card (stat, list, status or guide) and a path on its
 main container; Starboard asks that path at most once a minute whatever the number of people looking, checks the
 answer's shape, cuts long text, and draws the card itself. A card's text is never treated as HTML.
 
@@ -6,6 +6,8 @@ The answers, by type:
   stat    {"value": 42, "label": "titles", "note": "3 added today"}
   list    {"items": [{"title": "Dune", "detail": "Added today", "link": "https://..."}]}   (10 at most)
   status  {"state": "ok" | "warning" | "problem", "text": "Up to date"}
+  guide   {"items": [{"channel": "Kestrel Sport", "number": "601", "now": "Football Extra", "start": 1794..., "stop": 1794...,
+                      "next": "Darts", "next_start": 1794...}], "note": "..."}   (12 at most; times are Unix seconds)
 """
 import json
 import re
@@ -49,7 +51,19 @@ def clean(card_type, data):
         if data.get("state") not in ("ok", "warning", "problem"):
             raise ValueError("A status card needs state: ok, warning or problem")
         return {"state": data["state"], "text": _text(data.get("text"), 160)}
-    raise ValueError("Cards are stat, list or status")
+    if card_type == "guide":  # what is on now, one row a channel (API 1.8, DASH-359)
+        items = data.get("items")
+        if not isinstance(items, list):
+            raise ValueError("A guide card needs items, a list")
+        out = []
+        for it in items[:12]:
+            if not isinstance(it, dict) or not it.get("channel"):
+                raise ValueError("Each item in a guide card needs a channel")
+            times = {k: it[k] for k in ("start", "stop", "next_start") if isinstance(it.get(k), (int, float)) and not isinstance(it.get(k), bool)}
+            out.append({"channel": _text(it["channel"], 80), "number": _text(it.get("number"), 8), "now": _text(it.get("now"), 120),
+                        "next": _text(it.get("next"), 120), **times})
+        return {"items": out, "note": _text(data.get("note"), 120)}
+    raise ValueError("Cards are stat, list, status or guide")
 
 
 def _host(pid, main, wake=True):

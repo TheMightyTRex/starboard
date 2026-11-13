@@ -26,7 +26,9 @@ import urllib.error
 import urllib.request
 
 MAX_BYTES = 512 * 1024
-ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose", "bulk")
+ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose", "bulk", "bulk_ids", "attach", "detach", "dismiss")
+TONES = ("info", "success", "warning", "danger")
+MAX_IDS = 1000
 STATES = ("ok", "warning", "problem", "off", "unknown")
 
 
@@ -87,8 +89,48 @@ def _bulk(sets, known=frozenset()):
             out.append({"id": _text(b["id"], 120), "label": _text(b["label"], 60), "kind": _text(b.get("kind"), 40),
                         "on": min(_count(b.get("on")), total), "total": total,
                         "active": b["active"] if isinstance(b.get("active"), bool) else None, "hint": _text(b.get("hint"), 160),
-                        **_in_menu(b, known)})
+                        **_in_menu(b, known), **({"fold": _text(b["fold"], 40)} if b.get("fold") else {})})
     return out
+
+
+def _columns(raw):
+    """Folding sections with a table in each (plug-in API 1.8, DASH-359, owner 13 November 2026): up to 8 columns,
+    each {key, label, type}; a number column sorts as numbers."""
+    out = []
+    for c in raw[:8] if isinstance(raw, list) else []:
+        if isinstance(c, dict) and re.fullmatch(r"[a-z][a-z0-9_]{0,30}", str(c.get("key") or "")) and c.get("label"):
+            out.append({"key": c["key"], "label": _text(c["label"], 30), "type": "number" if c.get("type") == "number" else "text"})
+    return out
+
+
+def _filters(raw, columns):
+    """Filter chips (API 1.8): up to 4, each on one column's values; chips of one filter add up, filters narrow."""
+    keys = {c["key"] for c in columns}
+    return [{"key": f["key"], "label": _text(f.get("label"), 30)} for f in (raw[:4] if isinstance(raw, list) else [])
+            if isinstance(f, dict) and f.get("key") in keys]
+
+
+def _notices(raw):
+    """Notices at the top of the screen (API 1.8): up to 5, such as a list being added and what came of it.
+    `progress` (0 to 100) makes Starboard ask again every few seconds until it is gone."""
+    out = []
+    for n in raw[:5] if isinstance(raw, list) else []:
+        if isinstance(n, dict) and n.get("title"):
+            prog = n.get("progress")
+            out.append({"id": _text(n.get("id"), 120), "tone": n.get("tone") if n.get("tone") in TONES else "info",
+                        "title": _text(n["title"], 160), "text": _text(n.get("text"), 400),
+                        "progress": max(0, min(int(prog), 100)) if isinstance(prog, (int, float)) and not isinstance(prog, bool) else None,
+                        "dismiss": bool(n.get("dismiss"))})
+    return out
+
+
+def _attach(a):
+    """Something added to one item, such as a guide for a channel list (API 1.8): an address or a file."""
+    if not isinstance(a, dict) or not a.get("label"):
+        return None
+    f = _file({"accept": a.get("accept"), "label": "x"})
+    return {"label": _text(a["label"], 40), "field": _text(a.get("field"), 80) or _text(a["label"], 40), "hint": _text(a.get("hint"), 200),
+            "placeholder": _text(a.get("placeholder"), 120), "value": _text(a.get("value"), 500), "accept": f["accept"] if f else ""}
 
 
 def _file(f):
@@ -106,6 +148,7 @@ def clean(data):
     add = data.get("add") if isinstance(data.get("add"), dict) else None
     menus = _menus(data.get("menus"))
     known = frozenset(m["id"] for m in menus)
+    columns = _columns(data.get("columns")) if data.get("layout") == "folds" else []
     items = []
     for it in data["items"][:1000]:  # Live TV's channels (DASH-313): 546 found on the owner's server
         if not isinstance(it, dict) or not it.get("id"):
@@ -114,12 +157,18 @@ def clean(data):
                       "state": it.get("state") if it.get("state") in STATES else "unknown", "group": _text(it.get("group"), 40),
                       "on": bool(it.get("on", True)), "address": _text(it.get("address"), 500),
                       "actions": [a for a in it.get("actions") or [] if a in ACTIONS], "choice": _choice(it.get("choice")),
-                      **_in_menu(it, known)})
+                      **_in_menu(it, known),
+                      **({"cells": {c["key"]: _text((it.get("cells") or {}).get(c["key"]), 80) for c in columns}} if columns else {}),
+                      **({"attach": _attach(it["attach"])} if _attach(it.get("attach")) else {})})
     out = {"type": "list", "title": _text(data.get("title"), 80), "intro": _text(data.get("intro"), 400), "items": items,
            "add": {**{k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")}, "file": _file(add.get("file"))} if add else None,
            "bulk": _bulk(data.get("bulk"), known)}
     if menus:
         out["menus"] = menus
+    if columns:
+        out.update(layout="folds", columns=columns, filters=_filters(data.get("filters"), columns))
+    if _notices(data.get("notices")):
+        out["notices"] = _notices(data.get("notices"))
     if data.get("said"):
         out["said"] = _text(data["said"], 200)
     return out
@@ -137,7 +186,7 @@ def _setting(data_dir, pid, key):
 MAX_UPLOAD = 60 * 1024 * 1024
 
 
-def upload(data_dir, pid, key, name, length, stream):
+def upload(data_dir, pid, key, name, length, stream, item=""):
     """A file chosen beside a screen's add box (DASH-359), streamed to the plug-in's `choices` path plus /file a
     piece at a time, so neither Starboard nor the browser's request is held in memory. Returns the cleaned list."""
     import http.client
@@ -154,7 +203,8 @@ def upload(data_dir, pid, key, name, length, stream):
         key_text = ""
     conn = http.client.HTTPConnection(plugin_cards._host(pid, main), int(main.get("port") or 80), timeout=120)
     try:
-        conn.putrequest("POST", f"{s['choices']}/file?name={urllib.parse.quote(_text(name, 120))}")
+        to = f"&id={urllib.parse.quote(_text(item, 120))}" if item else ""  # a file for one item, such as a list's guide (API 1.8)
+        conn.putrequest("POST", f"{s['choices']}/file?name={urllib.parse.quote(_text(name, 120))}{to}")
         for h, v in (("Content-Type", "application/octet-stream"), ("Content-Length", str(length)), ("Accept", "application/json"),
                      ("User-Agent", "Starboard"), ("X-Api-Key", key_text)):
             conn.putheader(h, v)
@@ -192,7 +242,9 @@ def call(data_dir, pid, key, body=None, opener=None):
     if body is not None:
         if body.get("action") not in ACTIONS:
             raise ValueError("Not something this screen does")
-        body = {"action": body["action"], "id": _text(body.get("id"), 600), "value": _text(body.get("value"), 500)}
+        ids = body.get("ids") if body["action"] == "bulk_ids" else None
+        body = {"action": body["action"], "id": _text(body.get("id"), 600), "value": _text(body.get("value"), 500),
+                **({"ids": [_text(i, 600) for i in ids[:MAX_IDS] if isinstance(i, str)]} if isinstance(ids, list) else {})}
     main = m["containers"][0]
     try:
         with open(f"{plugins_admin.folder(data_dir, pid)}/key", encoding="utf-8") as f:

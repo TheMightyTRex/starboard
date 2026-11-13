@@ -139,3 +139,26 @@ class Choice(unittest.TestCase):
         many = [{"id": f"s{i}", "label": "S"} for i in range(500)]
         self.assertEqual(len(plugin_custom.clean({"type": "list", "items": [], "bulk": many})["bulk"]), 60)
         self.assertEqual(len(plugin_custom.clean({"type": "list", "items": [], "bulk": many, "menus": [{"id": "m", "title": "M"}]})["bulk"]), 400)
+
+
+class FoldsAndNotices(unittest.TestCase):
+    """Plug-in API 1.8 (DASH-359): sections that fold with a table each, ticked items, a guide per item, notices."""
+
+    def test_the_new_fields_are_cleaned(self):
+        out = plugin_custom.clean({"type": "list", "layout": "folds",
+                                   "columns": [{"key": "number", "label": "No.", "type": "number"}, {"key": "Bad Key", "label": "x"}, {"key": "name", "label": "Channel"}],
+                                   "filters": [{"key": "name", "label": "Name"}, {"key": "missing", "label": "x"}],
+                                   "notices": [{"id": "a", "title": "Adding", "tone": "evil", "progress": 140}, {"text": "no title"}],
+                                   "bulk": [{"id": "sections:Sport", "label": "Sport", "fold": "Sport", "on": 1, "total": 2}],
+                                   "items": [{"id": "1", "title": "601 Kestrel", "cells": {"number": "601", "name": "Kestrel", "evil": "x"},
+                                              "attach": {"label": "Add guide", "accept": ".xml,.exe;rm"}}]})
+        self.assertEqual([c["key"] for c in out["columns"]], ["number", "name"])
+        self.assertEqual(out["filters"], [{"key": "name", "label": "Name"}])
+        self.assertEqual(out["items"][0]["cells"], {"number": "601", "name": "Kestrel"})
+        self.assertEqual(out["items"][0]["attach"]["accept"], ".xml")
+        self.assertEqual(out["notices"], [{"id": "a", "tone": "info", "title": "Adding", "text": "", "progress": 100, "dismiss": False}])
+        self.assertEqual(out["bulk"][0]["fold"], "Sport")
+        plain = plugin_custom.clean({"type": "list", "columns": [{"key": "a", "label": "A"}], "items": [{"id": "1", "cells": {"a": "x"}}]})
+        self.assertNotIn("layout", plain)  # columns only with the folds layout
+        self.assertNotIn("cells", plain["items"][0])
+        self.assertIn("bulk_ids", plugin_custom.ACTIONS)

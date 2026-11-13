@@ -501,7 +501,8 @@ function customScreen(p, s) {
       ...[...kinds].map(([k, list]) => el("div", { class: "stack-2" }, k ? el("h5", { text: k }) : null,
         el("ul", { class: "settings-rows" }, list.map(row)))));
   };
-  const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"] };
+  const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"],
+    detach: ["Remove guide", "x"] };
   // Show all, active or inactive items (owner, 12 November 2026: "a filter to the channel list for active and not
   // active channels"), on any list whose rows can be activated; kept while the list is drawn again. `pool` is every
   // item in the open level and the sub menus under it.
@@ -542,7 +543,7 @@ function customScreen(p, s) {
     for (const it of shown) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
     return [...groups].map(([g, rows]) => el("section", { class: "stack-2", "aria-label": g || data.title },
       g ? el("h4", { text: g }) : null,
-      el("ul", { class: "rows" }, rows.map((it) => el("li", { class: "row row--no-lead" },
+      el("ul", { class: "rows" }, rows.flatMap((it) => [el("li", { class: "row row--no-lead" },
         el("div", {}, el("h5", { class: "row__title", text: it.title }),
           el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") })),
         el("div", { class: "row__side" }, chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)),
@@ -554,6 +555,7 @@ function customScreen(p, s) {
           })() : null,
           // Test and Activate or Deactivate as buttons; Move up, Move down and Remove in a More menu, so a row has
           // at most two buttons after its state (DASH-309, section 10).
+          it.attach && it.actions.includes("attach") ? attachButton(it) : null,
           ...it.actions.filter((a) => a === "test" || a === "toggle").map((a) => {
             const [label, ic] = a === "toggle" ? [it.on ? "Deactivate" : "Activate", it.on ? "pause" : "play"] : ACTION_WORDS[a];
             const b = el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:${a}` }, ic ? icon(ic) : null, label,
@@ -562,7 +564,7 @@ function customScreen(p, s) {
             return b;
           }),
           (() => {
-            const more = it.actions.filter((a) => a !== "test" && a !== "toggle");
+            const more = it.actions.filter((a) => a !== "test" && a !== "toggle" && a !== "attach");
             if (!more.length) return null;
             let menu = null;
             menu = menuButton(`More for ${it.title}`, more.map((a) => ({ label: ACTION_WORDS[a][0], icon: ACTION_WORDS[a][1], danger: a === "remove",
@@ -572,7 +574,80 @@ function customScreen(p, s) {
                 run({ action: a, id: it.id }, opener);
               } })));
             return menu;
-          })()))))));
+          })())), it.attach && opened.has(it.id) ? attachForm(it) : null].filter(Boolean)))));
+  };
+  // Something added to one item (plug-in API 1.8), such as a guide for a channel list (owner, 13 November 2026): the
+  // button opens a small form under the row, an address or a file, and focus goes into it.
+  const opened = new Set();
+  const attachButton = (it) => {
+    const b = el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:attach`, "aria-expanded": String(opened.has(it.id)),
+      "aria-controls": `attach-${p.id}-${s.key}-${it.id}` }, icon("calendar-clock"), it.attach.label, el("span", { class: "visually-hidden", text: ` for ${it.title}` }));
+    b.addEventListener("click", () => {
+      if (opened.has(it.id)) opened.delete(it.id); else opened.add(it.id);
+      draw(last);
+      (opened.has(it.id) ? document.getElementById(`attach-${p.id}-${s.key}-${it.id}-url`) : [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === `${it.id}:attach`))?.focus();
+    });
+    return b;
+  };
+  const attachForm = (it) => {
+    const a = it.attach;
+    const base = `attach-${p.id}-${s.key}-${it.id}`;
+    const url = el("input", { class: "input", id: `${base}-url`, type: "url", value: a.value || "", placeholder: a.placeholder || "", autocomplete: "off",
+      ...(a.hint ? { "aria-describedby": `${base}-h` } : {}) });
+    const save = el("button", { type: "submit", class: "btn btn--primary" }, icon("plus"), a.label);
+    const form = el("form", { class: "stack-2" }, el("div", { class: "actions" }, url, save));
+    form.addEventListener("submit", (e) => { e.preventDefault(); if (url.value.trim()) { opened.delete(it.id); run({ action: "attach", id: it.id, value: url.value.trim() }, save); } });
+    const file = el("input", { class: "input", type: "file", accept: a.accept || "", "aria-label": `Or choose a file: ${a.field}` });
+    const send = el("button", { type: "submit", class: "btn" }, icon("upload"), "Upload");
+    const fileForm = el("form", { class: "actions" }, file, send);
+    fileForm.addEventListener("submit", (e) => { e.preventDefault(); upload(file, send, it.id, () => opened.delete(it.id)); });
+    return el("li", { class: "attach-form", id: base, role: "group", "aria-labelledby": `${base}-l` },
+      el("label", { class: "field__label", id: `${base}-l`, for: url.id, text: a.field }),
+      a.hint ? el("p", { class: "hint", id: `${base}-h`, text: a.hint }) : null, form, fileForm);
+  };
+  // A chosen file, streamed to the plug-in as it is (DASH-359); `item`: a file for one item, such as its guide.
+  const upload = async (file, send, item, done) => {
+    const chosen = file.files[0];
+    if (!chosen) { problem("Choose a file first", file); return; }
+    send.disabled = true;
+    loading.start();
+    try {
+      const res = await fetch(`${path}/file?name=${encodeURIComponent(chosen.name)}${item ? `&id=${encodeURIComponent(item)}` : ""}`,
+        { method: "POST", headers: { "X-Starboard": "1", Accept: "application/json" }, credentials: "same-origin", body: chosen });
+      let out = {};
+      try { out = await res.json(); } catch { /* empty */ }
+      if (!res.ok) throw new Error(out.error || `Something went wrong (error ${res.status})`);
+      if (done) done();
+      if (out.said) said.textContent = out.said;
+      draw(out);
+      (item ? [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === `${item}:attach`) : document.getElementById(file.id))?.focus();
+    } catch (err) { problem(err.message, send); }
+    finally { send.disabled = false; loading.stop(); }
+  };
+  // Notices at the top (plug-in API 1.8), such as a list being added: "4 of 13 channels tested", then what came of
+  // it, until closed. While one is in progress the screen asks again every 3 seconds.
+  let poll = null;
+  const noticesOf = (data) => {
+    clearTimeout(poll);
+    const list = data.notices || [];
+    if (list.some((n) => n.progress !== null && n.progress !== undefined)) {
+      poll = setTimeout(() => { if (box.isConnected) api(path).then(draw).catch(() => {}); }, 3000);
+    }
+    return list.map((n) => {
+      const close = n.dismiss ? el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `notice:${n.id}` }, "Close",
+        el("span", { class: "visually-hidden", text: `: ${n.title}` })) : null;
+      close?.addEventListener("click", () => run({ action: "dismiss", id: n.id }, close));
+      const bar = n.progress !== null && n.progress !== undefined
+        ? el("div", { class: "progress", "data-tone": "warning", role: "progressbar", "aria-valuenow": String(n.progress), "aria-valuemin": "0", "aria-valuemax": "100",
+          "aria-label": n.title }, el("span")) : null;
+      if (bar) bar.firstChild.style.width = `${n.progress}%`;  // set in script: the page's policy blocks style attributes
+      const node = notice(n.tone, n.title, n.text, close);
+      if (bar) {
+        node.querySelector(".notice__body")?.append(bar);  // under its words, the width of the notice
+        node.removeAttribute("role");  // asked again every 3 seconds: not read out each time
+      }
+      return node;
+    });
   };
   // The rows that open the sub menus of one level, grouped by the plug-in's group, each with its state and count.
   const menuRows = (data, kids, under) => {
@@ -597,6 +672,7 @@ function customScreen(p, s) {
   };
   const draw = (data) => {
     last = data;
+    if (data.layout === "folds") { drawFolds(data); return; }
     const menus = data.menus || [];
     const byId = new Map(menus.map((m) => [m.id, m]));
     if (!byId.has(at)) at = "";
@@ -625,23 +701,7 @@ function customScreen(p, s) {
       const send = el("button", { type: "submit", class: "btn" }, icon("upload"), "Upload");
       const fileForm = el("form", { class: "stack-2" }, el("label", { class: "field__label", for: fileId, text: f.label }),
         f.hint ? el("p", { class: "hint", id: `${fileId}-h`, text: f.hint }) : null, el("div", { class: "actions" }, file, send));
-      fileForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const chosen = file.files[0];
-        if (!chosen) { problem("Choose a file first", file); return; }
-        send.disabled = true;
-        loading.start();
-        try {
-          const res = await fetch(`${path}/file?name=${encodeURIComponent(chosen.name)}`, { method: "POST", headers: { "X-Starboard": "1", Accept: "application/json" }, credentials: "same-origin", body: chosen });
-          let out = {};
-          try { out = await res.json(); } catch { /* empty */ }
-          if (!res.ok) throw new Error(out.error || `Something went wrong (error ${res.status})`);
-          if (out.said) said.textContent = out.said;
-          draw(out);
-          document.getElementById(fileId)?.focus();
-        } catch (err) { problem(err.message, send); }
-        finally { send.disabled = false; loading.stop(); }
-      });
+      fileForm.addEventListener("submit", (e) => { e.preventDefault(); upload(file, send, ""); });
       return el("div", { class: "stack-4" }, form, fileForm);
     })() : null;
     // Test all only where it can test something: a list with rows to test, or one still empty.
@@ -661,11 +721,148 @@ function customScreen(p, s) {
     })() : [data.intro ? el("p", { class: "small muted", text: data.intro }) : null];
     const controls = [showFilter(data, pool), testAll].filter(Boolean);
     box.replaceChildren(...[
-      ...top, bulkPanel(data, sets),
+      ...(here ? [] : noticesOf(data)), ...top, bulkPanel(data, sets),
       controls.length ? el("div", { class: "actions" }, ...controls) : null, said,
       pool.length && !shown.length && !kids.length ? emptyState(show === "on" ? "None active" : "None inactive", "Choose All to see every one.")
         : here && !pool.length && !kids.length ? emptyState(`No ${(data.title || "items").toLowerCase()} here`, null) : null,
       ...menuRows(data, kids, under), ...itemRows(data, shown), add].filter(Boolean));  // replaceChildren writes null as text
+  };
+  // Sections that fold, each with a table to sort and select from (plug-in API 1.8, DASH-359, owner 13 November
+  // 2026: "Build option 1 with 2 in the accordions"). A section is one line until opened: its name, how many are
+  // active and its own switch. Search, Show and the filter chips narrow every section at once; ticked items from any
+  // section can be activated or deactivated together. Only open sections draw their rows.
+  const fold = { open: new Set(), sort: { key: "", dir: 1 }, picked: new Set(), query: "", chips: new Map() };
+  const foldBase = `fold-${p.id}-${s.key}`;
+  const drawFolds = (data) => {
+    const noun = (data.title || "items").toLowerCase();
+    const cols = data.columns || [];
+    const q = fold.query.trim().toLowerCase();
+    const match = (it) => keep(it) && (!q || [it.title, ...Object.values(it.cells || {})].some((v) => String(v).toLowerCase().includes(q)))
+      && [...fold.chips].every(([k, set]) => !set.size || set.has((it.cells || {})[k]));
+    const known = new Set(data.items.map((it) => it.id));
+    for (const id of [...fold.picked]) if (!known.has(id)) fold.picked.delete(id);
+    const groups = new Map();
+    for (const it of data.items) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
+    const sorted = (rows) => {
+      const { key, dir } = fold.sort;
+      if (!key) return rows;
+      const num = cols.find((c) => c.key === key)?.type === "number";
+      return [...rows].sort((a, b) => {
+        const x = (a.cells || {})[key] || "", y = (b.cells || {})[key] || "";
+        return dir * (num ? Number(x) - Number(y) : x.localeCompare(y, "en-GB"));
+      });
+    };
+    // Search, Show and the chips
+    const search = el("input", { class: "input", type: "search", id: `${foldBase}-q`, value: fold.query, placeholder: "Search by name or number", autocomplete: "off" });
+    let timer = null;
+    search.addEventListener("input", () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        fold.query = search.value;
+        const at = search.selectionStart;
+        drawFolds(data);
+        const again = document.getElementById(`${foldBase}-q`);
+        again?.focus();
+        again?.setSelectionRange(at, at);
+        announce(`${data.items.filter(match).length} ${noun} found`);
+      }, 250);
+    });
+    const chipRows = (data.filters || []).map((f) => {
+      const values = [...new Set(data.items.map((it) => (it.cells || {})[f.key]).filter(Boolean))];
+      const set = fold.chips.get(f.key) || new Set();
+      fold.chips.set(f.key, set);
+      return el("div", { class: "filter-chips", role: "group", "aria-label": f.label }, el("span", { class: "small muted", text: `${f.label}:` }),
+        values.map((v) => {
+          const b = el("button", { type: "button", class: "filter-chip", "aria-pressed": String(set.has(v)), id: `${foldBase}-chip-${f.key}-${v.replace(/[^A-Za-z0-9]+/g, "-")}` }, v);
+          b.addEventListener("click", () => {
+            if (set.has(v)) set.delete(v); else set.add(v);
+            drawFolds(data);
+            document.getElementById(b.id)?.focus();
+            announce(`${data.items.filter(match).length} ${noun} shown`);
+          });
+          return b;
+        }));
+    });
+    // What is ticked, from any section
+    const pickedBar = fold.picked.size ? (() => {
+      const act = (value, label, ic) => {
+        const b = el("button", { type: "button", class: "btn btn--compact", "data-key": `picked:${value}` }, icon(ic), label);
+        b.addEventListener("click", () => run({ action: "bulk_ids", ids: [...fold.picked], value }, b).then(() => {
+          fold.picked.clear();
+          drawFolds(last);
+          document.getElementById(`${foldBase}-q`)?.focus();  // the bar has gone: focus to the search, above where it was
+        }));
+        return b;
+      };
+      const clear = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Clear");
+      clear.addEventListener("click", () => { fold.picked.clear(); drawFolds(data); document.getElementById(`${foldBase}-q`)?.focus(); announce("Nothing ticked"); });
+      return el("div", { class: "picked-bar", role: "group", "aria-label": `Ticked ${noun}` },
+        el("strong", { text: `${fold.picked.size} ticked` }), act("on", "Activate", "play"), act("off", "Deactivate", "pause"), clear);
+    })() : null;
+    const switchFor = (g) => (data.bulk || []).find((b) => b.fold === g);
+    const sections = [...groups].map(([g, rows]) => {
+      const shown = rows.filter(match);
+      if (!shown.length && (q || show !== "all" || [...fold.chips.values()].some((x) => x.size))) return null;
+      const slug = String(g || "other").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const panelId = `${foldBase}-${slug}`;
+      const open = fold.open.has(g);
+      const on = rows.filter((it) => it.on).length;
+      const toggle = el("button", { type: "button", class: "fold__toggle", "aria-expanded": String(open), "aria-controls": panelId, id: `${panelId}-b` },
+        el("span", { class: "fold__name", text: g || "Other" }),
+        el("span", { class: "small muted", text: `${on} of ${rows.length} active${shown.length !== rows.length ? `, ${shown.length} shown` : ""}` }),
+        icon(open ? "chevron-down" : "chevron-right"));
+      toggle.addEventListener("click", () => { if (open) fold.open.delete(g); else fold.open.add(g); drawFolds(data); document.getElementById(`${panelId}-b`)?.focus(); });
+      const b = switchFor(g);
+      const sw = b ? (() => {
+        const id = `${panelId}-switch`;
+        const input = el("input", { type: "checkbox", role: "switch", id, checked: b.total > 0 && b.on === b.total, "aria-label": `Every channel in ${g}`, "data-key": `bulk:${b.id}` });
+        const note = el("span", { class: "saved-note", id: `${id}-saved`, hidden: true });
+        input.addEventListener("change", () => run({ action: "bulk", id: b.id, value: input.checked ? "on" : "off" }, input, (out) => {
+          const again = document.getElementById(`${id}-saved`);
+          if (again && out.said) window.SharedComponents.savedNote(again, out.said);
+        }));
+        return el("div", { class: "fold__switch" }, note, el("label", { class: "switch" }, input));
+      })() : null;
+      const head = el("div", { class: "fold__head" }, el("h4", { class: "fold__title" }, toggle), sw);
+      if (!open) return el("section", { class: "fold" }, head);
+      const all = el("input", { type: "checkbox", "aria-label": `Tick every ${noun.replace(/s$/, "")} shown in ${g}`,
+        checked: shown.length > 0 && shown.every((it) => fold.picked.has(it.id)) });
+      all.addEventListener("change", () => { for (const it of shown) { if (all.checked) fold.picked.add(it.id); else fold.picked.delete(it.id); } drawFolds(data); });
+      const th = (c) => {
+        const sortedBy = fold.sort.key === c.key;
+        const sb = el("button", { type: "button", class: "sort-btn", id: `${panelId}-sort-${c.key}` }, c.label,
+          sortedBy ? icon(fold.sort.dir > 0 ? "arrow-up" : "arrow-down") : null);
+        sb.addEventListener("click", () => {
+          fold.sort = { key: c.key, dir: sortedBy ? -fold.sort.dir : 1 };
+          drawFolds(data);
+          document.getElementById(sb.id)?.focus();
+        });
+        return el("th", { scope: "col", "aria-sort": sortedBy ? (fold.sort.dir > 0 ? "ascending" : "descending") : "none" }, sb);
+      };
+      const table = el("table", { class: "table table--middle" },
+        el("caption", { class: "visually-hidden", text: `${g}: ${noun}` }),
+        el("thead", {}, el("tr", {}, el("th", { scope: "col" }, all), ...cols.map(th), el("th", { scope: "col", text: "State" }),
+          el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Activate or deactivate" })))),
+        el("tbody", {}, sorted(shown).map((it) => {
+          const tick = el("input", { type: "checkbox", "aria-label": `Tick ${it.title}`, checked: fold.picked.has(it.id), "data-key": `${it.id}:pick` });
+          tick.addEventListener("change", () => { if (tick.checked) fold.picked.add(it.id); else fold.picked.delete(it.id); drawFolds(data);
+            [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === `${it.id}:pick`)?.focus(); });
+          const btn = it.actions.includes("toggle") ? el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:toggle` },
+            icon(it.on ? "pause" : "play"), it.on ? "Deactivate" : "Activate", el("span", { class: "visually-hidden", text: ` ${it.title}` })) : null;
+          btn?.addEventListener("click", () => run({ action: "toggle", id: it.id }, btn));
+          return el("tr", { class: it.on ? null : "is-off" }, el("td", {}, tick), ...cols.map((c) => el("td", { class: c.type === "number" ? "num" : null, text: (it.cells || {})[c.key] || "" })),
+            el("td", {}, chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown))), el("td", {}, btn));
+        })));
+      return el("section", { class: "fold" }, head, el("div", { id: panelId, class: "fold__panel" }, shown.length ? el("div", { class: "table-wrap" }, table)
+        : emptyState("None here", "Change the search or filters to see more.")));
+    }).filter(Boolean);
+    const sets = (data.bulk || []).filter((b) => !b.fold);
+    box.replaceChildren(...[
+      ...noticesOf(data),
+      data.intro ? el("p", { class: "small muted", text: data.intro }) : null, bulkPanel(data, sets),
+      el("div", { class: "fold-tools" }, el("label", { class: "visually-hidden", for: search.id, text: `Search ${noun}` }), el("div", { class: "search-field" }, search), showFilter(data, data.items)),
+      ...chipRows, pickedBar, said,
+      sections.length ? el("div", { class: "folds" }, ...sections) : emptyState(`No ${noun} found`, "Change the search or filters to see more.")].filter(Boolean));
   };
   if (p.state !== "enabled") box.replaceChildren(emptyState(`${p.name} is not active`, `Activate it on State to see ${s.label.toLowerCase()}.`));
   else api(path).then(draw).catch((err) => box.replaceChildren(notice("info", `${p.name} did not answer`, err.message)));

@@ -439,7 +439,8 @@
       "enum": [
        "stat",
        "list",
-       "status"
+       "status",
+       "guide"
       ]
      },
      "format": {

@@ -137,9 +137,30 @@ async function pluginCard(id) {
     d.label ? ` ${d.label}` : null, d.note ? el("span", { class: "small muted", text: ` ${d.note}` }) : null);
   if (r.type === "status") return el("div", {}, headChip({ ok: "OK", warning: "Warning", problem: "Problem" }[d.state], { ok: "success", warning: "warning", problem: "danger" }[d.state]),
     d.text ? el("p", { text: d.text }) : null);
+  if (r.type === "guide") return guideCard(d);
   return d.items.length ? el("ul", { class: "rows" }, d.items.map((it) => el("li", { class: "row row--no-lead" }, el("div", {},
     el("div", { class: "row__title" }, it.link ? el("a", { href: it.link, target: "_blank", rel: "noopener noreferrer", text: it.title }) : it.title),
     it.detail ? el("div", { class: "row__meta", text: it.detail }) : null)))) : empty("Nothing to show.");
+}
+
+// A guide card (plug-in API 1.8, DASH-359, owner 13 November 2026): what is on now on each channel, how far through
+// it is and what is next, such as Live TV's On TV now.
+function guideCard(d) {
+  const hm = (t) => new Date(t * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const now = Date.now() / 1000;
+  if (!d.items.length) return empty(d.note || "Nothing on now.");
+  return el("div", { class: "stack-2" }, d.note ? el("p", { class: "small muted", text: d.note }) : null,
+    el("ul", { class: "rows guide-card" }, d.items.map((it) => {
+      const pct = it.start && it.stop && it.stop > it.start ? Math.max(0, Math.min(100, Math.round(100 * (now - it.start) / (it.stop - it.start)))) : null;
+      const bar = pct === null ? null : el("div", { class: "progress", role: "progressbar", "aria-valuenow": String(pct), "aria-valuemin": "0", "aria-valuemax": "100",
+        "aria-label": `${it.now}: ${pct}% through` }, el("span"));
+      if (bar) bar.firstChild.style.width = `${pct}%`;  // set in script: the page's policy blocks style attributes
+      return el("li", { class: "row row--no-lead" }, el("div", { class: "guide-card__item" },
+        el("div", { class: "row__title" }, el("span", { class: "guide-card__num", text: it.number }), ` ${it.channel}`),
+        el("div", { text: it.now + (it.start && it.stop ? `, ${hm(it.start)} to ${hm(it.stop)}` : "") }),
+        bar,
+        it.next ? el("div", { class: "row__meta", text: `Next: ${it.next}${it.next_start ? ` at ${hm(it.next_start)}` : ""}` }) : null));
+    })));
 }
 
 function cardShell(c, i, list) {
