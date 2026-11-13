@@ -148,8 +148,8 @@ function rxEditPanel(kind, words, schema, existing, done, onRemove = null) {
       const r = await rxCall(kind, "save", { item: item() }, `save ${name.value}`);
       if (!r) { status.replaceChildren(); return; }
       panel.close();
-      toast(`${r.saved?.name || name.value} saved`);
       done(r);
+      announce(`${r.saved?.name || name.value} saved`);  // the list shows it; said to screen readers (DASH-309)
     } catch (e) { status.replaceChildren(notice("danger", "Not saved", e.message)); }
     finally { if (save.isConnected) busy(false); }
   });
@@ -194,12 +194,13 @@ function rxAddPanel(kind, words, catalogue, chosen, { have = [], suggested = [] 
       .sort((a, b) => (first.has(b.implementation) - first.has(a.implementation)));
     const shown = found.slice(0, 60);
     count.textContent = found.length > shown.length ? `Showing ${shown.length} of ${found.length}. Type to narrow it down.` : `${found.length} found`;
+    const factsOf = (c) => [c.privacy ? (c.privacy === "public" ? "No account needed" : c.privacy === "private" ? "Needs an account" : "Partly needs an account") : "",
+      c.protocol ? (c.protocol === "usenet" ? "Usenet" : "Torrent") : "", c.language && !/^en/.test(c.language) ? c.language : ""].filter(Boolean).join(" · ");
     list.replaceChildren(...shown.map((c) => el("li", {}, el("button", { type: "button", class: "option-card rx-pick", onclick: () => chosen(c) },
+      // One state chip on the name's line; the facts (account, kind, language) in the small line (DASH-309, R3).
       el("span", { class: "rx-pick__name" }, el("strong", { text: c.name }),
-        added.has(c.implementation) ? chip("Added already", "info", "check") : first.has(c.implementation) ? chip("Suggested", "info", "star") : null,
-        c.privacy ? chip(c.privacy === "public" ? "No account needed" : c.privacy === "private" ? "Needs an account" : "Partly needs an account", c.privacy === "public" ? "success" : "neutral", c.privacy === "public" ? "circle-check" : "user") : null,
-        c.protocol ? chip(c.protocol === "usenet" ? "Usenet" : "Torrent", "muted", "download") : null,
-        c.language && !/^en/.test(c.language) ? chip(c.language, "muted", "globe") : null),
+        added.has(c.implementation) ? chip("Added already", "info", "check") : first.has(c.implementation) ? chip("Suggested", "info", "star") : null),
+      factsOf(c) ? el("small", { class: "muted", text: factsOf(c) }) : null,
       el("small", { text: c.description || "" })))));
   };
   query.addEventListener("input", draw);
@@ -211,11 +212,15 @@ function rxAddPanel(kind, words, catalogue, chosen, { have = [], suggested = [] 
 }
 
 // One state chip for a configured one: off, cannot start, resting after failures, failed last time, or working.
+// The chip holds no time (DASH-309, R3): when it rests until is in the row's meta line (rxRestingUntil).
+function rxRestingUntil(i) {
+  const until = i.status?.disabled_until ? new Date(i.status.disabled_until) : null;
+  return until && until > new Date() ? `Resting until ${until.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` : "";
+}
 function rxState(i) {
   if (i.error) return chip("Cannot start", "danger");
   if (!i.enabled) return chip("Not active", "muted");
-  const until = i.status?.disabled_until ? new Date(i.status.disabled_until) : null;
-  if (until && until > new Date()) return chip(`Resting until ${until.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`, "warning");
+  if (rxRestingUntil(i)) return chip("Resting", "warning");
   if (i.status?.failure_count) return chip("Failed last time", "warning");
   return chip("Working", "success");
 }
@@ -292,7 +297,7 @@ function rxKindSection(kind, description) {
       vpn.addEventListener("change", () => reopen(async () => {
         const r = await rxCall("search", "vpn", { on: vpn.checked }, vpn.checked ? "send Reelix's searches through the VPN" : "stop sending Reelix's searches through the VPN");
         if (!r) { vpn.checked = !vpn.checked; return; }
-        search = r; toast(r.done); draw();
+        search = r; draw(); settingSaved();
       }));
       rows.push(switchRow("Search through the VPN", "Reelix's searches go out through Gluetun, as Prowlarr's did, so your internet provider sees only the VPN. If the VPN is down, searches wait rather than go out without it. Recommended.", vpn));
     } else {
@@ -302,7 +307,7 @@ function rxKindSection(kind, description) {
     priv.addEventListener("change", () => reopen(async () => {
       const r = await rxCall("search", "private", { on: priv.checked }, "change which addresses Reelix may reach");
       if (!r) { priv.checked = !priv.checked; return; }
-      search = r; toast(r.done); draw();
+      search = r; draw(); settingSaved();
     }));
     rows.push(switchRow("Addresses on your network", "Lets Reelix reach a site at home, such as your own Jackett. Searching through the VPN needs it too. Otherwise, leave it deactivated.", priv));
     return el("div", { class: "stack-2" }, el("h3", { text: "How Reelix searches" }), rows,
@@ -321,13 +326,13 @@ function rxKindSection(kind, description) {
       const why = i.error || i.status?.last_failure_reason || "";
       return el("li", { class: "row row--no-lead", "data-key": String(i.id) },
         el("div", {}, el("div", { class: "row__title", text: i.name }),
-          el("div", { class: "row__meta", text: [i.name !== i.implementation_name ? i.implementation_name : "", where, why].filter(Boolean).join(" · ") })),
+          el("div", { class: "row__meta", text: [i.name !== i.implementation_name ? i.implementation_name : "", where, i.enabled && !i.error ? rxRestingUntil(i) : "", why].filter(Boolean).join(" · ") })),
         el("div", { class: "row__side" }, rxState(i), edit));
     });
     const table = items.length ? el("ul", { class: "rows", "aria-label": words.title }, rows)
       : emptyState(`No ${words.many} yet`, kind === "indexers" ? "Reelix cannot find anything to download until it has a site to search." : `Add ${words.a} below when you need one.`);
     const buttons = el("div", { class: "actions" },
-      el("button", { type: "button", class: "btn btn--primary", onclick: () => rxAddPanel(kind, words,
+      el("button", { type: "button", class: "btn", onclick: () => rxAddPanel(kind, words,
         kind === "indexers" ? data.catalogue.filter((c) => c.source === "definition") : data.catalogue, add,
         { have: data.items || [], suggested: data.suggested || [] }) }, icon("plus"), `Add ${words.a}`),
       kind === "indexers" ? el("button", { type: "button", class: "btn btn--quiet", onclick: () => rxAddPanel(kind, { ...words, a: "your own Torznab or Newznab address", many: "kinds" },
@@ -354,12 +359,13 @@ function rxOffers(offers, done) {
   return el("ul", { class: "rx-picks", role: "list" }, offers.map((o) => {
     const action = o.connected ? null : o.has_key
       ? el("button", { type: "button", class: "btn", onclick: async (e) => {
-        e.currentTarget.disabled = true;
+        const btn = e.currentTarget;
+        btn.disabled = true;
         try {
           const r = await rxCall("mediaservers", "connect", { app: o.app }, `connect Reelix to ${o.name}`);
-          if (r) { (r.done || []).forEach((line) => toast(line)); done(r); }
-        } catch (err) { toast(err.message); }
-        finally { if (e.currentTarget?.isConnected) e.currentTarget.disabled = false; }
+          if (r) { done(r); announce((r.done || []).join(". ")); }  // the row's chip shows it (DASH-309)
+        } catch (err) { problem(err.message, btn); }
+        finally { if (btn.isConnected) btn.disabled = false; }
       } }, `Connect ${o.name}`)
       : el("a", { class: "btn btn--quiet", href: "/settings.html" }, `Add ${o.name}'s API key first`);
     return el("li", { class: "setting" },
@@ -530,7 +536,7 @@ function rxQualitySection() {
       if (!lvl) { body.replaceChildren(notice("info", "Reelix has no picture quality levels", "Add one in Reelix itself, then come back.")); return; }
       const save = async (changes, control) => {
         control.disabled = true;
-        try { const out = await rxCall("quality", "save", { id: lvl.id, changes }, `save ${lvl.title}`); if (out) { r = out; render(); toast(out.done.join(". ")); } }
+        try { const out = await rxCall("quality", "save", { id: lvl.id, changes }, `save ${lvl.title}`); if (out) { r = out; render(); settingSaved(); } }
         catch (e) { problem(e.message, control); }
         finally { control.disabled = false; }
       };
@@ -538,7 +544,7 @@ function rxQualitySection() {
         r.levels.map((l) => {
           const pick = el("input", { type: "radio", name: "rx-level", value: String(l.id), checked: l.id === r.chosen });
           pick.addEventListener("change", async () => {
-            try { const out = await rxCall("quality", "choose", { id: l.id }, "choose the level"); if (out) { r = out; shown = l.id; render(); toast(out.done.join(". ")); } }
+            try { const out = await rxCall("quality", "choose", { id: l.id }, "choose the level"); if (out) { r = out; shown = l.id; render(); settingSaved(); } }
             catch (e) { problem(e.message, pick); }
           });
           return el("label", { class: "option-card" }, pick, el("span", { class: "stack-1 rx-level" },
@@ -572,7 +578,7 @@ function rxBasicsSection() {
   }
   const save = async (changes, what, control) => {
     if (control) control.disabled = true;
-    try { const r = await rxCall("basics", "save", { changes }, what); if (r) { draw(r); toast(r.done.join(". ") || "Saved"); } }
+    try { const r = await rxCall("basics", "save", { changes }, what); if (r) { draw(r); settingSaved(); } }
     catch (e) { problem(e.message, control); }
     finally { if (control) control.disabled = false; }
   };
@@ -625,7 +631,7 @@ function rxFormSection(name, title, about) {
     const now = async (key, value, control, undo) => {
       try {
         const out = await rxCall("form", "save", { name, values: { [key]: value } }, `change ${title.toLowerCase()}`);
-        if (out) toast("Saved"); else undo();
+        if (out) settingSaved(); else undo();
       } catch (e) { undo(); problem(e.message, control); }
     };
     const rows = [], places = [], typed = [];
@@ -730,7 +736,7 @@ function rxPeopleSection() {
     body.replaceChildren(el("p", { class: "small", text: r.about }), el("ul", { class: "rows" }, r.people.map((p) => {
       const pick = el("select", { class: "select", "aria-label": `What ${p.name} may do` }, r.roles.map((o) => el("option", { value: o.value, text: o.label, selected: o.value === p.role })));
       pick.addEventListener("change", async () => {
-        try { const out = await rxCall("people", "role", { id: p.id, role: pick.value }, "change what people may do"); if (out) { draw(out, body); toast(out.done); } }
+        try { const out = await rxCall("people", "role", { id: p.id, role: pick.value }, "change what people may do"); if (out) { draw(out, body); settingSaved(); } }
         catch (e) { problem(e.message, pick); }
       });
       return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: p.name }),
@@ -752,7 +758,7 @@ function rxDirectSection() {
       const want = { on: on.checked, folder: folder.value.trim() };
       try {
         const o = await rxCall("direct", "save", want, "change YouTube and Spotify");
-        if (o) { saved = want; toast("Saved"); return; }
+        if (o) { saved = want; settingSaved(); return; }
       } catch (e) { problem(e.message, control); }
       on.checked = saved.on; folder.value = saved.folder; where.refresh();
     };
@@ -771,12 +777,12 @@ function rxDirectSection() {
       catch (e) { problem(e.message, connect); }
     });
     finish.addEventListener("click", async () => {
-      try { const o = await rxCall("direct", "spotify-finish", { address: address.value.trim() }, "connect Spotify"); if (o) { draw(o, body); toast(o.done); } }
+      try { const o = await rxCall("direct", "spotify-finish", { address: address.value.trim() }, "connect Spotify"); if (o) { draw(o, body); announce(o.done); } }
       catch (e) { setError(address, e.message); address.focus(); }
     });
     const off = sp.connected ? el("button", { type: "button", class: "btn btn--quiet" }, "Disconnect Spotify") : null;
     off?.addEventListener("click", async () => { if (!await confirmDialog({ title: "Disconnect Spotify?", confirm: "Disconnect", danger: true,
-      message: "Spotify links stop working until you connect again. Nothing you downloaded is removed." })) return; try { const o = await rxCall("direct", "spotify-off", {}, "disconnect Spotify"); if (o) { draw(o, body); toast(o.done); } } catch (e) { problem(e.message, off); } });
+      message: "Spotify links stop working until you connect again. Nothing you downloaded is removed." })) return; try { const o = await rxCall("direct", "spotify-off", {}, "disconnect Spotify"); if (o) { draw(o, body); announce(o.done); } } catch (e) { problem(e.message, off); } });
     body.replaceChildren(
       r.folder_warning ? notice("warning", "Downloads go to the wrong place", r.folder_warning) : null,
       el("ul", { class: "settings-rows" }, settingRow("YouTube and Spotify downloads", "Paste a link on Downloads, From a link.", el("label", { class: "switch" }, on), "rx-direct-on-l")),

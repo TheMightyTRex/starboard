@@ -20,7 +20,7 @@ function radioSourcesSection() {
       country: $("#radio-country", body).value, language: $("#radio-language", body).value,
       podcastindex_key: saved.podcastindex_key, podcastindex_secret: "", ...extra }, "save the radio sources");
     const now = async (control, undo) => {
-      try { const out = await send(); if (out) { saved = out.state; toast("Saved"); return; } }
+      try { const out = await send(); if (out) { saved = out.state; settingSaved(); return; } }
       catch (err) { problem(err.message, control); }
       undo();
     };
@@ -54,7 +54,7 @@ function radioSourcesSection() {
     const key = el("input", { class: "input", id: "pi-key", value: s.podcastindex_key, autocomplete: "off", spellcheck: "false" });
     const secret = el("input", { class: "input", id: "pi-secret", type: "password", autocomplete: "new-password",
       placeholder: s.podcastindex_secret_set ? "Set. Leave empty to keep it" : "" });
-    const save = el("button", { type: "submit", class: "btn btn--primary" }, "Save");
+    const save = el("button", { type: "submit", class: "btn" }, "Save");
     const form = el("form", { class: "form-stack", novalidate: true },
       el("h3", { text: "Podcast Index" }),
       el("p", { class: "hint", text: "A free key and secret from podcastindex.org (Sign up for an API key). Reelix keeps the secret." }),
@@ -81,7 +81,7 @@ function radioLogosSection() {
   const body = el("div", { class: "stack-4" }, el("p", { class: "muted", text: "Loading…" }));
   const draw = (s) => {
     const file = el("input", { type: "file", id: "radio-logo-zip", accept: ".zip,application/zip", class: "input" });
-    const add = el("button", { type: "submit", class: "btn btn--primary" }, icon("upload"), "Add logos");
+    const add = el("button", { type: "submit", class: "btn" }, icon("upload"), "Add logos");
     const form = el("form", { class: "form-stack", novalidate: true },
       field("A zip of station logos", file, { hint: "PNG, JPEG or WebP pictures named after their stations, such as BBC-Radio-4.png. A file with the same name replaces the one you have." }),
       el("div", { class: "actions" }, add, savedNote("radio-logos-saved")));

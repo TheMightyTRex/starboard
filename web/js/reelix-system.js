@@ -77,7 +77,7 @@ async function rsBackups(body, locked) {
       r.restore_waiting ? el("p", { class: "small", text: "A restore is waiting for Reelix to start again." }) : null,
       el("ul", { class: "rows" }, rows.length ? rows : [el("li", { class: "empty", text: "No backups yet." })]),
       el("div", { class: "form-grid" },
-        el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-every", text: "Days between backups" }), el("p", { class: "hint", text: "0 turns scheduled backups off." }), every),
+        el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-every", text: "Days between backups" }), el("p", { class: "hint", text: "0 deactivates scheduled backups." }), every),
         el("div", { class: "field" }, el("label", { class: "field__label", for: "rs-keep", text: "Backups to keep" }), el("p", { class: "hint", text: "Ones made by hand are always kept." }), keep)),
       el("div", { class: "actions" }, now, saveSched),
       r.folder ? el("p", { class: "small muted", text: `Inside Reelix they are in ${r.folder}, next to its settings. Starboard's Full without media copies Reelix's library and settings itself, so these are extra copies on the same disk.` }) : null);

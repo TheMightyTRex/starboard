@@ -253,7 +253,13 @@ function toast(message, options = {}) {
 function savedBeside(text, options) {
   if (options.tone && options.tone !== "success") return false;
   if (!document.querySelector(".page--settings") || !lastUsed || Date.now() - lastUsed.at > 15000) return false;
-  const { control, sectionHead } = lastUsed;
+  let { control, sectionHead } = lastUsed;
+  // The part was drawn again after the save (DASH-309): FocusKeeper has put focus on the same control drawn again,
+  // so the note goes beside that one.
+  if (!control.isConnected) {
+    const now = document.activeElement;
+    if (now?.matches?.(CONTROLS) && now.closest(".settings-section")?.getAttribute("aria-labelledby") === sectionHead) control = now;
+  }
   let spot = null;
   if (control.isConnected && control.getClientRects().length && !control.closest(".side-panel, dialog")) {
     // A choice card or a tick in a group says it under the group, not inside the card.
@@ -273,6 +279,11 @@ function savedBeside(text, options) {
   }
   window.SharedComponents.savedNote(note, text === "Saved" ? "" : text);
   return true;
+}
+// Settings pattern 2 (DASH-309): a saved setting says so beside the control that was used ("Saved at 16:31"),
+// never in a toast. When there is no such control in view, it is said to screen readers only.
+function settingSaved(text) {
+  if (!savedBeside(text || "Saved", {})) announce(text || "Saved");
 }
 // Focus is never lost to the top of the page (screen reader check, 12 November 2026; WCAG 2.4.3 Focus order).
 // Many parts are drawn again after a save, a delete or a refresh. When the control that had focus is taken away

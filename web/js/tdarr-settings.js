@@ -53,7 +53,7 @@ async function tdDraw(said) {
     try {
       await api("/api/tdarr", { method: "PUT", body: { mode: form.mode.value, at_once: Number(atOnce.value), night: form.when.value === "night",
         libraries: { films: form["lib-films"].checked, series: form["lib-series"].checked } } });
-      toast("Saved");
+      settingSaved();
     } catch (err) { problem(err.message, control); tdDraw(); }
   };
   const libs = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: "Libraries" }),
