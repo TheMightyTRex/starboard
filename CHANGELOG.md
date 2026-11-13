@@ -9,6 +9,10 @@ add features.
 
 ### Added
 
+- Settings, Radio, Performance and Security have their parts on the level 2 menu: Radio's Sources, Add a show from a
+  link, Your podcast library and Station logos; Performance's Preset and Pictures; Security's Who can open the
+  dashboard, Password, API keys and Sign out everywhere. Each page asks only for what it shows (Radio asks Reelix for
+  one part, not four). Old links to a part go to its new page (DASH-391).
 - Settings, Downloads has VPN, Usenet and Download hours on the level 2 menu. Download hours there is the same field
   as Settings, General, Download hours (one setting, so the two stay in step), in place of a link. Starboard's links to
   download hours open it there (DASH-390).

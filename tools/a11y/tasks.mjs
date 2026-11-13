@@ -148,7 +148,7 @@ if (edit) {
 }
 
 // T7 Make a key and revoke it: after Revoke, the row is gone and focus is not lost to the top.
-await page.goto(`${base}/settings-security.html`);
+await page.goto(`${base}/settings-security-keys.html`);
 await settle();
 await page.evaluate(() => [...document.querySelectorAll("#topic-tabs [role=tab]")].find((t) => /API keys/.test(t.textContent))?.click());
 await page.waitForTimeout(300);

@@ -24,7 +24,10 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   // General's level 2 pages (DASH-389)
   "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-logs.html",
   // Downloads' level 2 pages (DASH-390)
-  "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html"];
+  "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
+  // Radio's, Performance's and Security's level 2 pages (DASH-391)
+  "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-performance-pictures.html",
+  "settings-security-password.html", "settings-security-keys.html", "settings-security-sessions.html"];
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
@@ -313,7 +316,7 @@ check("SRCH-02", "focus stays on that row", await page.evaluate(() => document.a
 
 // RAD-12: Settings, Radio: a show from a link, and files matched by hand (DASH-212)
 console.log("\n== RAD-12 radio library review and a show from a link");
-await open("settings-radio.html#radio-library-h");
+await open("settings-radio-library.html");
 await page.locator("#radio-library-h").scrollIntoViewIfNeeded();
 await page.locator("button", { hasText: "Match by hand" }).first().waitFor({ timeout: 5000 }).catch(() => {});
 check("RAD-12", "files that match no episode are listed by podcast", await page.locator("section[aria-labelledby=radio-library-h] .rows .row").count() >= 2);
@@ -702,6 +705,28 @@ await api("/api/config/general", { method: "PUT", body: { download_hours: { enab
 await open("index.html");
 await open("settings-downloads.html#dl-hours-h");
 check("MENU2-04", "the old address of Download hours on Downloads opens its page", await page.evaluate(() => location.pathname) === "/settings-downloads-hours.html");
+
+// DASH-391: Radio, Performance and Security have their parts as pages on the level 2 menu; old anchors go there;
+// a page made only of parts under Advanced settings shows them anyway.
+console.log("\n== MENU2 Radio, Performance and Security on the level 2 menu");
+check("MENU2-05", "Radio has Sources, Add a show from a link, Your podcast library, Station logos",
+  (await level2("settings-radio.html")) === "Sources|Add a show from a link|Your podcast library|Station logos", await level2("settings-radio.html"));
+check("MENU2-05", "Sources shows only the sources", (await headings()) === "Sources", await headings());
+check("MENU2-05", "Performance has Preset and Pictures", (await level2("settings-performance.html")) === "Preset|Pictures");
+check("MENU2-05", "Pictures has the picture cache and its Clear", (await level2("settings-performance-pictures.html")) && (await headings()) === "Pictures|Clear", await headings());
+check("MENU2-05", "Security has Who can open the dashboard, Password, API keys, Sign out everywhere",
+  (await level2("settings-security.html")) === "Who can open the dashboard|Password|API keys|Sign out everywhere", await level2("settings-security.html"));
+for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-performance.html#pf-pictures-h", "/settings-performance-pictures.html"],
+  ["settings-security.html#sc-keys-h", "/settings-security-keys.html"], ["settings-security.html#sc-pw-h", "/settings-security-password.html"]]) {
+  await open("index.html");
+  await open(from);
+  check("MENU2-06", `the old address ${from} opens its new page`, await page.evaluate(() => location.pathname) === to);
+}
+await api("/api/config/general", { method: "PUT", body: { settings_advanced: false } });
+await open("settings-security-sessions.html");
+check("MENU2-06", "Sign out everywhere shows its parts with Advanced settings inactive",
+  await page.locator("#sc-ses-h").isVisible() && await page.locator("#sc-danger-h").isVisible());
+await api("/api/config/general", { method: "PUT", body: { settings_advanced: true } });
 
 // DASH-388: the own style's colours, from the design system's palettes, on the Styles plug-in's page; a plug-in style
 // in use, then Reset style, comes back to the own style in those colours.

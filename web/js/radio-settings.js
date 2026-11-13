@@ -257,5 +257,7 @@ function radioLinkSection() {
 function startRadioSettings() {
   const holder = $("#radio-sections");
   holder.removeAttribute("aria-busy");
-  holder.replaceChildren(radioSourcesSection(), radioLinkSection(), radioLibrarySection(), radioLogosSection());
+  // Each part is its own level 2 page (DASH-391); only the page's own part is built, so only it asks Reelix.
+  const parts = { "radio-sources": radioSourcesSection, "radio-link": radioLinkSection, "radio-library": radioLibrarySection, "radio-logos": radioLogosSection };
+  holder.replaceChildren(...Object.entries(parts).filter(([id]) => wants(holder, id)).map(([, make]) => make()));
 }

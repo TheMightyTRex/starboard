@@ -104,6 +104,10 @@ const MOVED_PARTS = {
     ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
   ]),
   "/settings-downloads.html": { "dl-usenet": "settings-downloads-usenet.html", "dl-hours": "settings-downloads-hours.html" },
+  "/settings-radio.html": { "radio-link": "settings-radio-link.html", "radio-library": "settings-radio-library.html", "radio-logos": "settings-radio-logos.html" },
+  "/settings-performance.html": { "pf-pictures": "settings-performance-pictures.html", "pf-danger": "settings-performance-pictures.html" },
+  "/settings-security.html": { "sc-pw": "settings-security-password.html", "sc-keys": "settings-security-keys.html",
+    "sc-ses": "settings-security-sessions.html", "sc-danger": "settings-security-sessions.html" },
 };
 function followMovedPart(path = location.pathname, hash = location.hash, search = location.search) {
   const moved = MOVED_PARTS[path];
@@ -2159,7 +2163,7 @@ const PRESET_WORDS = {
 
 async function startPerformance() {
   const root = $("#performance-sections");
-  const me = await api("/api/self").catch(() => null);
+  const me = wants(root, "pf-now") ? await api("/api/self").catch(() => null) : null;
   const perf = () => config.performance;
   const redraw = () => startPerformance();
   const save = async (body) => {
@@ -2245,13 +2249,13 @@ async function startPerformance() {
       sw("pf-num-l", perf().card_numbers, (on) => save({ performance: { card_numbers: on } })), "pf-num-l"));
 
   root.removeAttribute("aria-busy");
-  root.replaceChildren(...[
+  root.replaceChildren(...onlyParts(root, [
     now ? section("pf-now", "Starboard now", "Measured on this server while you look.", now) : null,
     section("pf-preset", "Preset", "Sets everything below at once. Features you chose for what they do, such as Live TV and download hours, stay as they are.", presetForm),
     section("pf-bg", "Background work", "Runs with no page open. Each part's thread exists only while it is active.", background),
     section("pf-pages", "While a page is open", "Only while the page is open and in view; a hidden tab asks for nothing.", pages),
-    ...picturesSection(),
-  ].filter(Boolean));
+    ...(wants(root, "pf-pictures") ? picturesSection() : []),
+  ]));
 }
 
 // Pictures (owner, 12 November 2026): the picture cache's size, how long pictures are kept, and Clear.
@@ -2297,7 +2301,7 @@ async function startSecurity() {
       forced.textContent = `Set by ${network.forced_by} on the server, so it cannot be changed here.`;
     }
   };
-  try { network = await api("/api/network"); }
+  try { if (!wants("#security-sections", "sc-who")) throw new Error("not on this page"); network = await api("/api/network"); }
   catch { network = { network_access: config.network_access, addresses: [], port: location.port || 80, you_are_on_this_computer: false }; }
   access.addEventListener("change", async () => {
     const want = access.checked;
@@ -2394,15 +2398,16 @@ async function startSecurity() {
     location.href = "/login.html";
   });
 
-  $("#security-sections").removeAttribute("aria-busy");
-  $("#security-sections").replaceChildren(
+  const holder = $("#security-sections");
+  holder.removeAttribute("aria-busy");
+  holder.replaceChildren(...onlyParts(holder, [
     section("sc-who", "Who can open the dashboard", "When this is off, only the computer Starboard runs on can open it.",
       el("ul", { class: "settings-rows" },
         settingRow("Phones and other computers on your home network", result, el("label", { class: "switch" }, access), "net-l")),
       addresses, forced),
     section("sc-pw", "Password", "At least 10 characters; a short sentence is easy to remember. You stay signed in here and everyone else is signed out.", pwForm),
     section("sc-ses", "Sessions", "How long Remember me lasts, and signing out.", daysForm),
-    section("sc-keys", "API keys", "For other apps, scripts and AI assistants that read Starboard. Each key only reads, and is shown once.", apiKeys()));
+    wants(holder, "sc-keys") ? section("sc-keys", "API keys", "For other apps, scripts and AI assistants that read Starboard. Each key only reads, and is shown once.", apiKeys()) : null]));
   daysForm.append(
       el("ul", { class: "settings-rows" },
         el("li", { class: "setting" },
@@ -2415,7 +2420,7 @@ async function startSecurity() {
             daysError))),
         settingRow("Only send the sign-in cookie over HTTPS", el("span", { id: "secure-h", text: "Activate when every address you use starts with https. This applies at once." }), el("label", { class: "switch" }, secure), "secure-l"),
         settingRow("Sign out", "This browser only.", el("div", { class: "actions session-actions" }, signOut), "signout-l")));
-  $("#security-sections").append(dangerSection("sc-danger", "Sign out everywhere", "Every browser and phone signed in to Starboard, this one too. It asks for your password first.",
+  if (wants(holder, "sc-ses")) holder.append(dangerSection("sc-danger", "Sign out everywhere", "Every browser and phone signed in to Starboard, this one too. It asks for your password first.",
     el("div", { class: "actions" }, everywhere)));
   showNetwork();
 }

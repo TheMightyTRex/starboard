@@ -40,11 +40,17 @@ class SettingsMenusTest(unittest.TestCase):
     WANT = {
         "General": ["Names and apps", "Appearance", "Pages and lists", "Download hours", "Logs and feedback"],
         "Downloads": ["VPN", "Usenet", "Download hours"],
+        "Radio": ["Sources", "Add a show from a link", "Your podcast library", "Station logos"],
+        "Performance": ["Preset", "Pictures"],
+        "Security": ["Who can open the dashboard", "Password", "API keys", "Sign out everywhere"],
     }
 
     BEFORE = {
         "General": ["gn-name", "gn-cat", "gn-card", "gn-up", "gn-dh", "gn-guide", "gn-logs", "gn-design", "gn-style", "gn-test", "gn-scroll"],
         "Downloads": ["dl-vpn", "dl-usenet", "dl-hours"],
+        "Radio": ["radio-sources", "radio-link", "radio-library", "radio-logos"],
+        "Performance": ["pf-now", "pf-preset", "pf-bg", "pf-pages", "pf-pictures", "pf-danger"],
+        "Security": ["sc-who", "sc-pw", "sc-ses", "sc-keys", "sc-danger"],
     }
 
     def test_each_group_has_its_pages_on_the_level_2_menu(self):
