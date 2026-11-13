@@ -309,6 +309,23 @@ await page.waitForTimeout(400);
 const r2 = await focus();
 check("T13", "Escape closes it and gives focus back to Release notes", r2.text === "Release notes" && !r2.inPanel && !(await page.locator("#side-panel").count()), r2.text);
 
+// T14 What is new on a plug-in's State (DASH-393): Tab reaches Got it inside the notice, which is a polite status;
+// Enter hides it and puts focus on the State heading, and it is not shown again.
+await page.goto(`${base}/settings-plugin.html?id=styles`);
+await settle();
+const wn14 = page.locator("#pl-styles-whats-new");
+if (await wn14.count()) {
+  check("T14", "What is new is a polite status", (await wn14.getAttribute("role")) === "status");
+  await page.evaluate(() => { const h = document.querySelector("#pl-styles-state-h"); h.tabIndex = -1; h.focus(); });
+  const got = await tabTo((f) => /^Got it/.test(f.text) && f.tag === "BUTTON", 30);
+  check("T14", "Tab reaches Got it in What is new", !!got, got ? got.text : "not reached");
+  await page.keyboard.press("Enter");
+  await settle();
+  const g2 = await focus();
+  check("T14", "after Got it, focus is on the State heading", g2.id === "pl-styles-state-h" && g2.inMain, `${g2.tag} ${g2.id} ${g2.text}`);
+  check("T14", "What is new is gone", !(await page.locator("#pl-styles-whats-new").count()));
+} else check("T14", "the example Styles plug-in shows What is new", false, "not shown");
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

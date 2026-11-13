@@ -14,6 +14,17 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.10.0, 13 November 2026
+
+- **Added:** `changes`, an optional list of the plug-in's own changes by version, in Keep a Changelog's types
+  (`added`, `changed`, `deprecated`, `removed`, `fixed`, `security`). After an update, a Roll back or an update from
+  an address, the plug-in's **State** shows **What is new** with the changes between the two versions, until someone
+  chooses **Got it**. Nothing is fetched: Starboard reads them from the manifest it already has. Read
+  [Changes](plugin-manifest-reference.md#changes).
+- A plug-in without `changes` still works. Its **State** shows the catalogue's line about the version, or says its
+  maker did not list what changed.
+- An older Starboard refuses a manifest with `changes`, so set `starboard_api` to `>=1.10` when you use it.
+
 ## Plug-in API 1.9.0, 13 November 2026
 
 - **Added:** `publish` on a container with `network: vpn` and a `port`. Starboard puts that port on Gluetun, so the

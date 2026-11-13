@@ -388,6 +388,51 @@ function updateFromAddress(p, redraw) {
   return form;
 }
 
+// What is new (DASH-393, owner, 13 November 2026: "when a plugin gets updated and you go onto its settings page - it
+// needs a whats new added to the state page"). After an update, a Roll back or an update from an address, State shows
+// the changes between the two versions from the plug-in's own changes (API 1.10): each type's first line, and All
+// changes for the rest. Got it is kept on the server, so it is not shown again on any device; focus goes to State.
+function whatsNew(p) {
+  const w = p.whats_new;
+  if (!w) return null;
+  const older = w.kind === "older";
+  const title = older ? `Back on ${w.to}` : `What is new in ${w.to}`;
+  const lead = older ? `${p.name} went back from ${w.from}. ${w.versions.length ? "These changes are not in this version." : ""}`
+    : w.from ? `Updated from ${w.from}.` : "";
+  // Each type once, with its first line from the newest version that has it, and how many more there are.
+  const types = [];
+  for (const v of w.versions) for (const s of v.sections) {
+    const t = types.find((x) => x.type === s.type);
+    if (t) t.more += s.items.length; else types.push({ type: s.type, first: s.items[0], more: s.items.length - 1 });
+  }
+  const count = w.versions.reduce((n, v) => n + v.sections.reduce((m, s) => m + s.items.length, 0), 0);
+  const all = count > types.length ? el("details", { class: "disclosure whats-new__all" },
+    el("summary", { text: `All ${count} changes` }),
+    el("div", { class: "disclosure__body" }, w.versions.map((v) => el("section", { class: "release-notes", "aria-label": `${p.name} ${v.version}` },
+      el("h3", { text: `Version ${v.version}` }), v.date ? el("p", { class: "small muted", text: `Released ${v.date}` }) : null,
+      ...v.sections.flatMap((s) => [el("h4", { text: s.type }), el("ul", {}, s.items.map((parts) => el("li", {}, ...changeParts(parts))))]))))) : null;
+  const gotIt = el("button", { type: "button", class: "btn btn--quiet" }, "Got it", el("span", { class: "visually-hidden", text: `, hide ${title}` }));
+  const box = el("div", { class: "notice whats-new", id: `pl-${p.id}-whats-new`, role: "status" }, icon(older ? "undo-2" : "circle-arrow-up"),
+    el("div", { class: "notice__body" },
+      el("span", { class: "notice__title", text: title }),
+      lead.trim() ? el("p", { text: lead.trim() }) : null,
+      types.length ? el("ul", { class: "whats-new__list" }, types.map((t) => el("li", {}, el("strong", { text: `${t.type}: ` }), ...changeParts(t.first),
+        t.more ? el("span", { class: "muted", text: ` (and ${t.more} more)` }) : null)))
+        : el("p", { text: w.note || "Its maker did not list what changed in this version." }),
+      all,
+      el("div", { class: "actions" }, gotIt)));
+  gotIt.addEventListener("click", async () => {
+    gotIt.disabled = true;
+    try {
+      await api(`/api/plugins/${p.id}/whats-new-seen`, { method: "POST" });
+      p.whats_new = null;
+      box.remove();
+      focusState(p);
+    } catch (err) { gotIt.disabled = false; problem(err.message, gotIt); }
+  });
+  return box;
+}
+
 // The words on a plug-in's State line: its version first, built into Starboard too (DASH-360, owner, 12 November 2026:
 // "plugins need to show the version number in the state page in settings").
 function stateWords(p) {
@@ -428,6 +473,8 @@ function pluginPage(p, redraw) {
   const about = $(".settings-section__head > p", stateSec);
   const stateLine = el("div", { class: "state-line" }, about || el("span"), el("div", { class: "actions" }, first));
   if (about) $(".settings-section__head", stateSec).append(stateLine); else stateSec.append(stateLine);
+  const news = whatsNew(p);
+  if (news) stateSec.append(news);
   return [
     stateSec,
     !p.builtin ? section(`pl-${p.id}-versions`, "Versions",

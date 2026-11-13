@@ -317,6 +317,9 @@ time, and a plug-in in either cannot be activated. **Deactivate all plug-ins** s
 - **Roll back** swaps the two, with no download, and asks for the password. The newer version is kept in its place.
 - Plug-ins built into Starboard update with Starboard.
 - Each update and roll back is written to the audit log.
+- After an update, a Roll back or an update from an address, the plug-in's **State** shows **What is new**: the
+  changes between the two versions from the manifest's `changes` (API 1.10), or the catalogue's line when it has
+  none. **Got it** hides it on every device. Read [Changes](plugin-manifest-reference.md#changes).
 
 ## Catalogues
 

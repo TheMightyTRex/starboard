@@ -175,9 +175,10 @@ def new_permissions(old, new):
     return sorted(set(new.get("permissions") or []) - set(old.get("permissions") or []))
 
 
-def update(data_dir, pid, manifest, media_dir, helper=None, services=None, dev=False):
+def update(data_dir, pid, manifest, media_dir, helper=None, services=None, dev=False, note=""):
     """Installs a newer (or any other) version over an added plug-in, keeping the one before in previous/ for Roll
-    back. Settings stay; new settings get their defaults. An active plug-in is started again on the new version."""
+    back. Settings stay; new settings get their defaults. An active plug-in is started again on the new version.
+    `note`: the catalogue's line about the new version, kept for What is new when the manifest has no changes."""
     where = pa.folder(data_dir, pid)
     old = pa._read(os.path.join(where, "manifest.json"))
     if not old:
@@ -206,6 +207,7 @@ def update(data_dir, pid, manifest, media_dir, helper=None, services=None, dev=F
         pa._write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, pa.host_path(data_dir, pid), media_dir), 0o644)
     was_on = st.get("state") == "enabled"
     st.update(updated_at=time.time(), previous_version=old.get("version"))
+    st["whats_new"] = _whats_new_mark(st, old.get("version"), manifest.get("version"), note)
     pa._write(os.path.join(where, "state.json"), st)
     api_v1.audit(data_dir, "plugin_updated", plugin=pid, version=manifest.get("version"), previous=old.get("version"))
     if was_on:
@@ -239,6 +241,7 @@ def rollback(data_dir, pid, media_dir, helper=None, services=None):
     st = _new_key_if_scopes_changed(data_dir, pid, now, old, st)
     was_on = st.get("state") in ("enabled", "failed")
     st.update(updated_at=0, previous_version=now.get("version"), message="")
+    st["whats_new"] = _whats_new_mark(st, now.get("version"), old.get("version"), "")
     pa._write(os.path.join(where, "state.json"), st)
     api_v1.audit(data_dir, "plugin_rolled_back", plugin=pid, version=old.get("version"), previous=now.get("version"))
     if was_on and old.get("containers"):
@@ -247,6 +250,61 @@ def rollback(data_dir, pid, media_dir, helper=None, services=None):
         except ValueError:
             pass
     return f"{old.get('name', pid)} is back on {old.get('version')}; {now.get('version')} is kept in case you want it again"
+
+
+# What is new (DASH-393) --------------------------------------------------------------------------------------------
+# After an update, a Roll back or an update from an address, the plug-in's State says what changed until someone
+# chooses Got it. The words come from the manifest's own changes (API 1.10), so nothing is fetched; a plug-in without
+# them shows the catalogue's line, or says its maker did not list them. Starboard has one account, so the mark is
+# kept on the server in the plug-in's state.json and is the same on every device.
+
+def _whats_new_mark(st, came_from, went_to, note):
+    """The mark kept until Got it. Two changes before anyone looked keep the first version, so nothing is skipped."""
+    before = st.get("whats_new") if isinstance(st.get("whats_new"), dict) else {}
+    start = before.get("from") or came_from
+    if start == went_to:  # back where they started: nothing changed for them
+        return None
+    return {"from": start, "to": went_to, "note": str(note or "")[:600], "at": time.time()}
+
+
+def _key(version):
+    try:
+        return tuple(int(x) for x in str(version).split("-")[0].split("."))
+    except ValueError:
+        return (0,)
+
+
+def whats_new(data_dir, pid, manifest=None, st=None):
+    """{kind, from, to, versions, note} while there is something not yet seen, else None. kind is "newer" after
+    going up a version and "older" after going back; versions are the changes between the two, newest first, each
+    {version, date, sections: [{type, items: [parts]}]} in the parts the page builds as text."""
+    from . import changes
+    where = pa.folder(data_dir, pid)
+    st = st if st is not None else pa._read(os.path.join(where, "state.json"), {}) or {}
+    mark = st.get("whats_new")
+    if not isinstance(mark, dict) or not mark.get("to"):
+        return None
+    m = manifest or pa._read(os.path.join(where, "manifest.json"), {}) or {}
+    newer = _newer(mark["to"], mark.get("from") or "0")
+    low, high = (mark.get("from"), mark["to"]) if newer else (mark["to"], mark.get("from"))
+    # Going back, the words are in the version left behind, kept in previous/ (or the current one, which may list it).
+    source = m if newer else (pa._read(os.path.join(where, "previous", "manifest.json"), {}) or m)
+    listed = source.get("changes") if isinstance(source.get("changes"), list) and not plugins.check_changes(source.get("changes")) else []
+    picked = [v for v in listed if (low is None or _key(v["version"]) > _key(low)) and _key(v["version"]) <= _key(high)]
+    picked.sort(key=lambda v: _key(v["version"]), reverse=True)
+    versions = [{"version": v["version"], "date": changes._date(v["date"]) if v.get("date") else "",
+                 "sections": [{"type": t.capitalize(), "items": [changes._inline(x.strip()) for x in v[t]]}
+                              for t in plugins.CHANGE_TYPES if v.get(t)]} for v in picked]
+    return {"kind": "newer" if newer else "older", "from": mark.get("from"), "to": mark["to"],
+            "versions": versions, "note": mark.get("note", "")}
+
+
+def whats_new_seen(data_dir, pid):
+    """Got it: the mark goes, so What is new is not shown again on any device."""
+    path = os.path.join(pa.folder(data_dir, pid), "state.json")
+    st = pa._read(path, {}) or {}
+    if st.pop("whats_new", None) is not None:
+        pa._write(path, st)
 
 
 # Events -------------------------------------------------------------------------------------------------------

@@ -81,6 +81,77 @@ class Life(unittest.TestCase):
         self.assertEqual(s["action"], "rollback")
 
 
+CHANGES = [  # API 1.10 (DASH-393), newest first
+    {"version": "0.4.0", "date": "2026-11-13", "added": ["**Usenet** as well as torrents", "A Test all button"], "fixed": ["Plays on a Roku"]},
+    {"version": "0.3.0", "changed": ["Searches are kept for 10 minutes"]},
+    {"version": "0.2.0", "added": ["The first version"]}]
+
+
+class WhatsNew(unittest.TestCase):
+    """What is new on a plug-in's State after an update, a Roll back or an update from an address (DASH-393)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        for name, fn in (("host_path", lambda d, pid: f"/srv/starboard/data/plugins/{pid}"), ("_compose_run", lambda *a, **k: (True, ""))):
+            p = mock.patch.object(pa, name, side_effect=fn)
+            p.start()
+            self.addCleanup(p.stop)
+        pa.install(self.tmp.name, ON_DEMAND, "/srv/media")
+
+    def version(self, v, changes=CHANGES):
+        return {**copy.deepcopy(ON_DEMAND), "version": v, "starboard_api": ">=1.10 <2.0", "changes": copy.deepcopy(changes)}
+
+    def test_nothing_is_shown_before_an_update(self):
+        self.assertIsNone(plugin_life.whats_new(self.tmp.name, "on-demand"))
+        self.assertIsNone(next(p for p in pa.listing(self.tmp.name) if p["id"] == "on-demand")["whats_new"])
+
+    def test_an_update_shows_the_changes_between_the_two_versions_newest_first(self):
+        plugin_life.update(self.tmp.name, "on-demand", self.version("0.4.0"), "/srv/media")
+        w = plugin_life.whats_new(self.tmp.name, "on-demand")
+        self.assertEqual((w["kind"], w["from"], w["to"]), ("newer", "0.2.0", "0.4.0"))
+        self.assertEqual([v["version"] for v in w["versions"]], ["0.4.0", "0.3.0"])  # not 0.2.0, which they had
+        first = w["versions"][0]
+        self.assertEqual(first["date"], "13 November 2026")
+        self.assertEqual([s["type"] for s in first["sections"]], ["Added", "Fixed"])
+        self.assertEqual(first["sections"][0]["items"][0], [["strong", "Usenet"], ["text", " as well as torrents"]])
+        # It is on the plug-in's listing, which the settings page draws.
+        self.assertEqual(next(p for p in pa.listing(self.tmp.name) if p["id"] == "on-demand")["whats_new"]["to"], "0.4.0")
+
+    def test_two_updates_before_anyone_looked_keep_the_first_version(self):
+        plugin_life.update(self.tmp.name, "on-demand", self.version("0.3.0", CHANGES[1:]), "/srv/media")
+        plugin_life.update(self.tmp.name, "on-demand", self.version("0.4.0"), "/srv/media")
+        w = plugin_life.whats_new(self.tmp.name, "on-demand")
+        self.assertEqual((w["from"], [v["version"] for v in w["versions"]]), ("0.2.0", ["0.4.0", "0.3.0"]))
+
+    def test_got_it_is_kept_on_the_server_until_the_next_update(self):
+        plugin_life.update(self.tmp.name, "on-demand", self.version("0.3.0", CHANGES[1:]), "/srv/media")
+        plugin_life.whats_new_seen(self.tmp.name, "on-demand")
+        self.assertIsNone(plugin_life.whats_new(self.tmp.name, "on-demand"))
+        plugin_life.update(self.tmp.name, "on-demand", self.version("0.4.0"), "/srv/media")
+        w = plugin_life.whats_new(self.tmp.name, "on-demand")
+        self.assertEqual((w["from"], [v["version"] for v in w["versions"]]), ("0.3.0", ["0.4.0"]))
+
+    def test_roll_back_lists_the_changes_of_the_version_left_behind(self):
+        plugin_life.update(self.tmp.name, "on-demand", self.version("0.4.0"), "/srv/media")
+        plugin_life.whats_new_seen(self.tmp.name, "on-demand")
+        plugin_life.rollback(self.tmp.name, "on-demand", "/srv/media")
+        w = plugin_life.whats_new(self.tmp.name, "on-demand")
+        self.assertEqual((w["kind"], w["from"], w["to"]), ("older", "0.4.0", "0.2.0"))
+        self.assertEqual([v["version"] for v in w["versions"]], ["0.4.0", "0.3.0"])
+
+    def test_roll_back_before_anyone_looked_shows_nothing(self):
+        plugin_life.update(self.tmp.name, "on-demand", self.version("0.4.0"), "/srv/media")
+        plugin_life.rollback(self.tmp.name, "on-demand", "/srv/media")
+        self.assertIsNone(plugin_life.whats_new(self.tmp.name, "on-demand"))  # back where they were
+
+    def test_a_plug_in_without_changes_shows_the_catalogue_line(self):
+        plugin_life.update(self.tmp.name, "on-demand", {**copy.deepcopy(ON_DEMAND), "version": "0.4.0"}, "/srv/media",
+                           note="Usenet as well as torrents.")
+        w = plugin_life.whats_new(self.tmp.name, "on-demand")
+        self.assertEqual((w["versions"], w["note"]), ([], "Usenet as well as torrents."))
+
+
 class Catalogue(unittest.TestCase):
     def test_only_versions_this_starboard_runs_are_offered(self):
         entry = {"id": "x-plug", "versions": [

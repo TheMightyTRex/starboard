@@ -99,7 +99,8 @@ async function tabOrder(name) {
 const ALL = (process.env.PAGES || "").split(",").filter(Boolean).length ? process.env.PAGES.split(",") : fs.readdirSync(process.env.WEB || "/web").filter((f) => f.endsWith(".html") &&
   !["login.html", "setup.html", "offline.html", "wanted-moved.html", "discover-trending.html", "wanted.html", "wanted-quality.html"].includes(f));
 const ITEMS = { "library-film.html": "?id=3", "library-tv-show.html": "?id=8", "library-artist.html": "?id=1", "library-radio-show.html": "?id=1",
-  "library-book.html": "?id=4", "library-audiobook.html": "?id=6" };
+  "library-book.html": "?id=4", "library-audiobook.html": "?id=6",
+  "settings-plugin.html": "?id=styles" };  // the example Styles plug-in, just updated, with What is new (DASH-393)
 for (const name of ALL) {
   try {
     await page.goto(`${base}/${name}${ITEMS[name] || ""}`);
