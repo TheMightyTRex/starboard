@@ -199,3 +199,8 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 /* Wanted (DASH-309): a row that opens keeps its tick and buttons above the row's own target. */
 .wanted-row > input[type="checkbox"] { position: relative; z-index: 1; width: 22px; height: 22px; accent-color: var(--color-accent); }
 .wanted-row:has(> input[type="checkbox"][hidden]) { grid-template-columns: minmax(0, 1fr) auto; }
+
+/* The footer's About and updates (DASH-104): "Upgrade available" after it when a newer release is out, in the text
+   colour with the update dot, so it is not only a colour. */
+.site-footer__upgrade { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-text); font-weight: var(--weight-strong); }
+.site-footer__upgrade .update-dot { vertical-align: middle; }

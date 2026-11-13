@@ -38,6 +38,8 @@ add features.
 
 ### Changed
 
+- Footer: About and updates says Upgrade available, with the update dot, when a newer release is out, as the design
+  system's footer sets out; Sign in and Set up have no footer (DASH-104).
 - **The same item for the same job everywhere (DASH-309):** app cards show their state and one more chip at most, with
   one button besides opening the card (Copy is in the app's details); Still to set up has one button; Apps, Updates
   updates the apps you tick from a selection bar instead of an Update on every row; Library's count is at the end of

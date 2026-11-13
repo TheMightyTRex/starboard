@@ -705,7 +705,9 @@ function showVersion(version, repo, latest) {
     n.hidden = !newer;
     if (newer) n.setAttribute("aria-label", `Update available: version ${String(latest).replace(/^v/, "")}. About and updates`);
   });
-  if ($(".site-header") && !$(".site-footer")) {
+  // Every page but Sign in and Set up has the footer (the design system's footer rule).
+  const setUp = document.body.classList.contains("first-setup") || /\/(login|setup)\.html$/.test(location.pathname);
+  if ($(".site-header") && !$(".site-footer") && !setUp) {
     const brand = $(".site-header__brand svg")?.cloneNode(true);
     const link = (href, text, outside) => el("li", {}, outside
       ? el("a", { href, target: "_blank", rel: "noopener noreferrer" }, text, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
@@ -721,7 +723,10 @@ function showVersion(version, repo, latest) {
           // The help centre's pages, built from docs/help and published on GitHub Pages.
           link(`${HELP_CENTRE}index.html`, "Help", true), notes,
           repo ? link(`https://github.com/${repo}`, "GitHub repository", true) : null,
-          link("/settings-updates.html", newer ? "About and updates (1)" : "About and updates")))),
+          // A newer release adds "Upgrade available" to About and updates, in words and with the update dot.
+          el("li", {}, el("a", { href: "/settings-updates.html", "data-footer-updates": true }, "About and updates",
+            newer ? el("span", { class: "site-footer__upgrade" }, el("span", { class: "update-dot", "aria-hidden": "true" }),
+              el("span", { class: "visually-hidden", text: ", " }), "Upgrade available") : null))))),
       maker));
   }
 }
