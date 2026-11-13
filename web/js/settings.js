@@ -3569,6 +3569,7 @@ startPage().then(async (session) => {
   if ($("#upgrade")) startUpgrade();
   if ($("#install") && typeof startInstall === "function") startInstall();
   if ($("#copy-sections") && typeof startCopy === "function") startCopy();
+  if ($("#dispatcharr-sections") && typeof startDispatcharr === "function") startDispatcharr();  // DASH-228
   if ($("#version-notice")) startAbout();
   if ($("#general-sections")) {  // DASH-277: long lists load more by themselves, or wait for Show more
     const input = el("input", { type: "checkbox", role: "switch", id: "infinite-scroll", checked: config.infinite_scroll !== false });

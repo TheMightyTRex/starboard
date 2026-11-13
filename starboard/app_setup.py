@@ -6,6 +6,8 @@ is missing is added.
 - Audiobookshelf: the root user (/init), the Audiobooks, Books and Radio libraries, and an API key for Starboard.
 - Jellystat: its admin (/auth/createuser), Jellyfin's address and key (/auth/configSetup) and a key for Starboard
   (DASH-227).
+- Dispatcharr: its admin and a key for Starboard (DASH-228); its IPTV source and Jellyfin's tuner are in
+  dispatcharr.py, from Settings, Apps, Dispatcharr.
 
 One admin for every app (DASH-234): the same name ("admin") and the Starboard password, as Reelix already has. The
 password is used for these calls only and never kept; Starboard keeps each app's API key, as it does today.
@@ -318,6 +320,9 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
             log("Jellystat ready")
         except AppSetupError as e:
             done.append(f"Jellystat is not set up yet: {e}")
+    # Dispatcharr, an add-on (DASH-228): its admin and a key for Starboard; the IPTV source waits for Settings.
+    if "dispatcharr" in keys:
+        done += dispatcharr_first_run(cfg, data_dir, password, log=log, opener=opener, wait=wait)
     # The download apps' sign-ins, made up by Install apps (DASH-184): saved on the dashboard so Downloads, download
     # hours and Reelix all use the same details, and shown on Apps behind the Starboard password.
     # qBittorrent answers Starboard with an API key (qBittorrent 5.2 and later), made here with its sign-in; Gluetun's
@@ -341,6 +346,22 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
             _save_key(cfg, key, name, base, value)
             done.append(f"Added {name} to your apps, with its key")
     return done
+
+
+def dispatcharr_first_run(cfg, data_dir, password, log=lambda line: None, opener=None, wait=300):
+    """Dispatcharr's admin (admin, with the Starboard password) and a key for Starboard, kept on its link (DASH-228).
+    Returns lines of what was done; a problem is a line too."""
+    from . import dispatcharr, stack
+    base = dispatcharr.address(cfg, data_dir) or stack.app_url(data_dir, "dispatcharr", 9191)
+    if not base:
+        return []
+    try:
+        api_key, lines, _ = _when_ready(lambda: dispatcharr.first_run(base, password, opener=opener), log, "Dispatcharr", wait)
+    except AppSetupError as e:
+        return [f"Dispatcharr is not set up yet: {e}"]
+    dispatcharr.save_key(cfg, base, api_key)
+    log("Dispatcharr ready")
+    return lines + ["Add your IPTV source in Settings, Apps, Dispatcharr"]
 
 
 def qbittorrent_key(base, password, opener=None):

@@ -9,6 +9,10 @@ add features.
 
 ### Added
 
+- Settings, Apps, Dispatcharr sets up the Dispatcharr add-on without opening it: its admin (your Starboard password)
+  and a key for Starboard, your IPTV playlist or Xtream Codes server and guide, channels from the playlist (up to
+  1000), and Dispatcharr in Jellyfin as an HDHomeRun tuner with its guide. Still to set up points there in place of
+  the guided step (DASH-228).
 - Settings, General, Default design and Display's Design list show a small picture of each design, drawn in the
   theme's colours with no image to download, so you can see what you choose (DASH-315).
 - Library, Music: Bring them in for artist folders already on disk, as films, series, books and audiobooks have. Each
