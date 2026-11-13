@@ -1,11 +1,13 @@
 // Updates: every app on the Apps page, in the same categories and order, with the container it runs in, the
-// version installed, the newest one, and Update buttons. Checking asks each image's registry; updating downloads
+// version installed and the newest one. Update all is the page's one action; to update some, tick them and use
+// Update chosen in the selection bar (DESIGN-SYSTEM.md section 10: no Update on every row). Checking asks each image's registry; updating downloads
 // the new image and restarts the app with Docker Compose. Needs Docker access (see About and updates).
 
 let data = null;
 let config = null;
 let poll = null;
 let busyBefore = false;
+const chosen = new Set(); // ids ticked for Update chosen
 
 const PHASE = {
   queued: "Waiting to start", downloading: "Downloading", downloaded: "Downloaded, waiting to install",
@@ -50,12 +52,25 @@ function statusCell(row) {
 function actionCell(row) {
   if (!row.update || jobItem(row)) return null;
   // What is new: the changes in the waiting update, from the app's own changelog (Reelix).
-  const news = row.changelog ? el("button", { type: "button", class: "btn btn--compact",
+  return row.changelog ? el("button", { type: "button", class: "btn btn--compact",
     onclick: (e) => openAppChanges({ app: row.id, name: row.name, from: row.container?.version || "", to: row.latest || "", opener: e.currentTarget }) },
     "What is new", el("span", { class: "visually-hidden", text: ` in ${row.name}` })) : null;
-  const update = el("button", { type: "button", class: "btn btn--compact", // in a dense table; "Update all" is the page's one primary
-    disabled: busy(), onclick: () => runUpdate([row]) }, "Update", el("span", { class: "visually-hidden", text: ` ${row.name}` }));
-  return news ? el("div", { class: "updates-actions" }, news, update) : update;
+}
+
+// A tick for each app with an update; the selection bar updates the ticked ones.
+function chooseBox(row) {
+  if (!row.update || jobItem(row)) { chosen.delete(row.id); return null; }
+  const box = el("input", { type: "checkbox", id: `choose-${row.id}`, class: "updates-choose", "aria-label": `Choose ${row.name}`,
+    checked: chosen.has(row.id), disabled: busy() });
+  box.addEventListener("change", () => { if (box.checked) chosen.add(row.id); else chosen.delete(row.id); selectionBar(); });
+  return box;
+}
+
+function selectionBar() {
+  const n = chosen.size;
+  $("#updates-chosen").hidden = !n;
+  $("#updates-chosen-text").textContent = `${n} chosen`;
+  $("#update-chosen").disabled = busy() || !n;
 }
 
 function tableFor(rows, caption) {
@@ -70,7 +85,7 @@ function tableFor(rows, caption) {
         const c = r.container;
         return el("tr", {},
           el("th", { scope: "row", "data-label": "App", id: `update-${r.id}`, tabindex: "-1" },
-            el("div", { class: "updates-app" }, appIcon(r, "app-icon updates-app__icon"),
+            el("div", { class: "updates-app" }, chooseBox(r), appIcon(r, "app-icon updates-app__icon"),
               el("div", {}, el("strong", { text: r.name }),
                 el("div", { class: "small muted", text: c ? `${c.name} · ${c.status || c.state}` : "Choose its container in Manage apps" })))),
           el("td", { "data-label": "Image" }, c ? el("code", { text: c.image }) : "None"),
@@ -93,11 +108,15 @@ function render() {
   if (loose.length) sections.push(["Other apps", loose]);
   const background = rows.filter((r) => r.background);
   if (background.length) sections.push(["Other services", background]);
-  // Keep focus on the same button across the redraw.
-  const focused = document.activeElement?.closest?.("#updates") ? document.activeElement.textContent : null;
+  // Keep focus on the same button or tick across the redraw.
+  const active = document.activeElement?.closest?.("#updates") ? document.activeElement : null;
+  const focused = active && !active.id ? active.textContent : null;
+  const focusedId = active?.id || null;
   $("#updates").replaceChildren(...sections.map(([name, list], i) => el("section", { class: "media-section", "aria-labelledby": `ug-${i}` },
     el("h2", { class: "group-heading", id: `ug-${i}`, text: name }), tableFor(list, `Updates for ${name}`))));
-  if (focused) [...$$("#updates button")].find((b) => b.textContent === focused)?.focus();
+  if (focusedId) document.getElementById(focusedId)?.focus();
+  else if (focused) [...$$("#updates button")].find((b) => b.textContent === focused)?.focus();
+  selectionBar();
 
   const available = rows.filter((r) => r.update);
   const all = rows.filter(safe);
@@ -168,6 +187,7 @@ async function runUpdate(rows) {
   if (!ok) return;
   try {
     data = await api("/api/containers/update", { method: "POST", body: { ids: rows.map((r) => r.id) } });
+    chosen.clear();
     render();
     announce(`Updating ${list}`);
   } catch (e) {
@@ -191,6 +211,13 @@ startPage().then(async () => {
   config = await api("/api/config").catch(() => ({ groups: [] }));
   $("#check-updates").addEventListener("click", check);
   $("#update-all").addEventListener("click", () => runUpdate(data.items.filter(safe)));
+  $("#update-chosen").addEventListener("click", () => runUpdate(data.items.filter((r) => chosen.has(r.id) && r.update)));
+  $("#clear-chosen").addEventListener("click", () => {
+    chosen.clear();
+    render();
+    announce("None chosen");
+    $("#updates input.updates-choose")?.focus();
+  });
   await refresh();
   const wanted = new URLSearchParams(location.search).get("app");
   if (wanted && data.available) openFor(wanted);

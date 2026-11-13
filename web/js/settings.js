@@ -786,7 +786,7 @@ function startGeneral() {
       el("ul", { class: "rows", id: "category-list" }), el("div", { id: "category-loose" }), addForm)),
     section("gn-card", "App cards", "What everyone sees on each card. These apply at once.",
       el("ul", { class: "settings-rows" },
-        settingRow("Home address", "With a copy button.", cardSwitch("show_home_address", "card-home-l"), "card-home-l"),
+        settingRow("Home address", "In Health first and Tiles, the address is the link that opens the app. Copy it from the app's details.", cardSwitch("show_home_address", "card-home-l"), "card-home-l"),
         settingRow("Outside address", "With a copy button, when the app has one.", cardSwitch("show_outside_address", "card-out-l"), "card-out-l"))),
     el("div", { id: "coming-up" }, section("gn-up", "Coming up", "What the Coming up page shows. These apply at once.",
       el("ul", { class: "settings-rows" },

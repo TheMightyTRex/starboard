@@ -14,7 +14,6 @@
 .card__desc, .card__activity { margin: 0; }
 .card__actions { align-items: center; }
 .card__address { min-width: 0; font-size: var(--text-sm); overflow-wrap: anywhere; }  /* a link to the app, in the link colour */
-.card__actions .copy-btn { flex: none; }
 
 /* Toolbar: the filter chips scroll sideways on phones instead of filling the screen. */
 @media (max-width: 639px) {
