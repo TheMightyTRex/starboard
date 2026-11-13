@@ -338,7 +338,9 @@ reelix_tokens() {
   local note=data/stack/reelix-setup.json token="" qb="" i
   [ -s "$note" ] || return 0
   for i in $(seq 1 40); do
-    token="$(docker logs reelix 2>&1 | grep -o 'setup token: [A-Za-z0-9_-]*' | tail -n 1 | awk '{print $NF}')"
+    # Either of Reelix's ways of writing it: its start-up banner (setup token: X) or a later line (setup_token=X),
+    # with any colour codes taken out first, as Starboard reads it (reelix_setup._TOKEN, DASH-96).
+    token="$(docker logs reelix 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -oE 'setup[ _]token[:=] ?[A-Za-z0-9_-]{8,200}' | tail -n 1 | sed -E 's/^setup[ _]token[:=] ?//')"
     [ -n "$token" ] && break
     sleep 3
   done
@@ -964,6 +966,11 @@ step_done() {
   card_row "Ask again" "./install.sh"
   card_row "Update" "./update.sh"
   card_end
+  # INS-07 (DASH-114): with the firewall active, other devices may need its port opened. ufw.conf can be read
+  # without sudo; Starboard never changes the firewall itself.
+  if [ "$NETWORK" = 1 ] && grep -qsx 'ENABLED=yes' /etc/ufw/ufw.conf; then
+    note "The firewall (ufw) is active. If phones and other computers cannot open Starboard, let them reach its port with: sudo ufw allow $PORT/tcp"
+  fi
   if [ "$HEALTH" = 0 ] && [ -f /etc/systemd/system/starboard-smart.timer ]; then
     note "Starboard no longer reads Disk health reports. The timer is still installed; to remove it, run: sudo deploy/install-smart.sh --remove"
   fi

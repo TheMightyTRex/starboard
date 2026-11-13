@@ -437,5 +437,10 @@ startPage().then(() => {
   $("#balance").replaceChildren(icon("arrow-up-down"), el("span", { text: "Balance the files" }));
   $("#balance").addEventListener("click", startBalance);
   $("#pool-title").setAttribute("tabindex", "-1");
+  // From the set-up guide's Your drives step (DASH-271): the way back, which carries on from the next step.
+  if (new URLSearchParams(location.search).get("from") === "guide") {
+    $("#pool-notice").before(el("div", { class: "actions" },
+      el("a", { class: "btn btn--primary", href: "/setup-guide.html" }, "Back to the set-up guide")));
+  }
   load();
 });

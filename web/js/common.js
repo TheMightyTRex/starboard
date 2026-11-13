@@ -1586,7 +1586,7 @@ async function startPage() {
     // DASH-238: until the first set-up has finished, only the set-up wizard: no menus, and other pages lead to it.
     if (session.first_setup) {
       document.body.classList.add("first-setup");
-      const allowed = ["/setup-guide.html", "/install-apps.html", "/login.html", "/setup.html"];
+      const allowed = ["/setup-guide.html", "/install-apps.html", "/login.html", "/setup.html", "/system-pool.html"];  // Your drives (DASH-271)
       if (!allowed.some((p) => location.pathname.endsWith(p))) { location.replace("/setup-guide.html"); return null; }
     }
     // Menu items that belong to a plug-in show only once it is added (owner, 12 November 2026).

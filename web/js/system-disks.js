@@ -22,6 +22,7 @@ function status(d) {
   if (d.passed === false) return ["danger", "Failing", 0, "Failed its own health check"];
   if (d.problems.length) return ["warning", "Needs attention", 1, d.problems.map((p) => `${p.value.toLocaleString("en-GB")} ${p.name.toLowerCase()}`).join(", ")];
   if (isHot(d)) return ["warning", "Hot", 1, `${d.temperature}°C${d.temperature_limit ? `, limit ${d.temperature_limit}°C` : ""}`];
+  if (d.no_data) return ["muted", "No health data", 2, "This disk gives no health data. Virtual disks, and disks in some USB cases, do not, so Starboard cannot check them."];
   if (d.passed == null) return ["muted", "Not reported", 2, "No health verdict in the report"];
   return ["success", "Healthy", 3, ""];
 }
@@ -58,7 +59,7 @@ function reportBody(d) {
     ["Device", d.device ? el("code", { text: d.device }) : "Not reported"],
     ["Size", d.capacity ? formatBytes(d.capacity) : "Not reported"],
     ["Speed", d.rpm === 0 ? "Solid state" : d.rpm ? `${d.rpm.toLocaleString("en-GB")} rpm` : "Not reported"],
-    ["Health check", d.passed === false ? "Failed" : d.passed ? "Passed" : "Not reported"],
+    ["Health check", d.passed === false ? "Failed" : d.passed ? "Passed" : d.no_data ? "No health data" : "Not reported"],
     ["Temperature", d.temperature != null ? `${d.temperature}°C${d.temperature_limit ? ` (limit ${d.temperature_limit}°C)` : ""}` : "Not reported"],
     ["Powered on", d.hours != null ? age(d.hours) : "Not reported"],
     ["Last self-test", d.last_test ? `${d.last_test.type || "Test"}: ${d.last_test.result || "no result"}${d.last_test.hours != null ? `, at ${d.last_test.hours.toLocaleString("en-GB")} hours` : ""}` : "None recorded"],

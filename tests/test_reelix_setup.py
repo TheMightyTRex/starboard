@@ -305,3 +305,25 @@ class WaitUntilUpTest(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
+
+
+class InstallerTokenTest(unittest.TestCase):
+    """DASH-96: the installer reads Reelix's one-time token in both of Reelix's ways of writing it, as Starboard does,
+    so the person never sees a second code. Reelix never counts Starboard as "the server itself" (a request from
+    Docker's network always needs the token), so it must be read."""
+
+    def test_both_lines_give_the_token(self):
+        import pathlib
+        import subprocess
+        import tempfile
+        script = (pathlib.Path(__file__).resolve().parent.parent / "install.sh").read_text()
+        line = next(x for x in script.splitlines() if x.strip().startswith('token="$(docker logs reelix'))
+        for text, want in (("x \x1b[3msetup_token\x1b[0m\x1b[2m=\x1b[0mabcDEF123_-xyz\n", "abcDEF123_-xyz"),
+                           ("  Reelix first-run setup token: Tok_123456789\n", "Tok_123456789")):
+            with tempfile.NamedTemporaryFile("w", suffix=".log", delete=False) as f:
+                f.write(text)
+            body = line.replace("docker logs reelix 2>&1", f"cat {f.name}") + '\nprintf "%s" "$token"'
+            out = subprocess.run(["bash", "-c", body], capture_output=True, text=True, timeout=10).stdout
+            pathlib.Path(f.name).unlink()
+            self.assertEqual(out, want)
+            self.assertEqual(reelix_setup._TOKEN.findall(reelix_setup._ANSI.sub("", text)), [want])

@@ -36,6 +36,21 @@ class WizardRulesTest(unittest.TestCase):
                 if marked:
                     self.assertEqual(marked, [0], f"the recommended answer is not first in {path}: {items}")
 
+    def test_the_recommended_answer_is_first_in_every_terminal_list_of_pairs(self):
+        # DASH-114 (GEN-02): the terminal's lists of (answer, about) pairs too, read from the code itself.
+        import ast
+        tree = ast.parse((ROOT / "starboard" / "terminal_setup.py").read_text(encoding="utf-8"))
+        seen = 0
+        for node in ast.walk(tree):
+            if isinstance(node, ast.List) and node.elts and all(isinstance(e, ast.Tuple) and e.elts and isinstance(e.elts[0], ast.Constant)
+                                                                 and isinstance(e.elts[0].value, str) for e in node.elts):
+                names = [e.elts[0].value for e in node.elts]
+                marked = [i for i, n in enumerate(names) if "(recommended" in n]
+                seen += bool(marked)
+                if marked:
+                    self.assertEqual(marked, [0], f"the recommended answer is not first: {names}")
+        self.assertGreaterEqual(seen, 2)  # NZBGet or SABnzbd, and Clean up
+
     def test_the_recommended_start_storage_and_preset_come_first(self):
         found = start.recommended_first([{"key": "a", "recommended": False}, {"key": "b", "recommended": True}])
         self.assertEqual([c["key"] for c in found], ["b", "a"])

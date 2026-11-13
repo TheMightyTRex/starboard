@@ -343,6 +343,9 @@ def disk_health():
             "temperature_limit": (d.get("temperature") or {}).get("op_limit_max"),
             "hours": (d.get("power_on_time") or {}).get("hours"),
             "problems": problems,
+            # DASH-114 (WIZ-72): a disk that gives no health data at all, such as a virtual disk in a virtual machine
+            # or one behind some USB cases: said plainly, not as a missing verdict.
+            "no_data": "smart_status" not in d and not attrs and not nvme,
             "last_test": {"type": last_test.get("type", {}).get("string", ""),
                           "result": last_test.get("status", {}).get("string", ""),
                           "hours": last_test.get("lifetime_hours")} if last_test else None,

@@ -153,7 +153,7 @@ HELP_PAGES = {
     "restore": "topics/restore-a-saved-copy.html", "found": "topics/search-for-new-apps.html",
     "sites": "topics/choose-sites-to-search.html", "films": "topics/choose-sites-to-search.html",
     "docker": "topics/install-apps.html", "place": "topics/run-first.html", "keyboard": "topics/run-first.html",
-    "cleanup": "topics/remove-starboard.html",
+    "cleanup": "topics/remove-starboard.html", "keys": "topics/find-an-api-key.html", "storage-page": "topics/check-storage.html",
 }
 
 HELP = {
@@ -234,6 +234,11 @@ HELP = {
              "that is not in the list: choose Other, Coordinated Universal Time, or keep the time zone the computer has.",
     "keyboard": "Choose the keyboard you type on, by the language printed on its keys. The UK keyboard has £ above 3 "
                 "and # ~ beside Enter; the US one has $ above 4 and a long Enter key.",
+    "keys": "Starboard reads each app's key from the app's own settings where it can. A key it could not read is "
+            "asked for here, typed hidden, and stays on the server. Press Enter to leave one for later: add it in "
+            "Starboard, Settings, Manage apps.",
+    "storage-page": "Working out what uses the space reads every file on your disks, so you choose when it happens. "
+                    "The Storage page can also update its sizes while it is open. Both are in Settings, Performance.",
     "cleanup": "What earlier versions, removed plug-ins and old backups left behind. Moving them to the holding folder "
                "deletes nothing: each can be put back, or deleted for good by you, in Starboard, System, Clean up. "
                "Starboard never deletes them by itself.",
@@ -549,8 +554,8 @@ def question(step_id):
     return STEP_TABLE[step_id]["question"]
 
 
-STEPS = [title(i) for i in ("password", "place", "keyboard", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "check", "extras",
-                            "hours", "alerts", "docker", "cleanup")]  # the move's own steps are counted by job_steps
+STEPS = [title(i) for i in ("password", "place", "keyboard", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "check", "keys",
+                            "extras", "hours", "alerts", "storage-page", "docker", "cleanup")]  # the move's own steps are counted by job_steps
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -1864,6 +1869,8 @@ def job_steps(state):
                 ids.append("vpn")
             ids.append("check")
         return ids + ["alerts"] + end
+    if job == "move":
+        ids.append("find")  # DASH-271: its own step, as in the browser set-up
     if job == "move" and no_docker:
         ids.append("docker")  # DASH-267: before anything is moved, Yes recommended
     if job == "move":
@@ -1894,9 +1901,18 @@ def job_steps(state):
         ids.append("check")
     if into:
         ids.append("move")
+    # DASH-271: the same steps and conditions as the browser set-up. API keys only when an app on the dashboard has
+    # none (counted on a move until it is known), Download hours only with a download app, the Storage page only when
+    # Starboard sees a disk.
+    if state.get("keys_missing", job == "move"):
+        ids.append("keys")
     if not state.get("no_extras"):
         ids.append("extras")
-    ids += ["hours", "alerts"]
+    if not state.get("no_hours"):
+        ids.append("hours")
+    ids.append("alerts")
+    if not state.get("no_disks"):
+        ids.append("storage-page")
     if job == "new" and no_docker:
         ids.append("docker")  # DASH-139: the last question of a new install
     return ids + end
@@ -2063,8 +2079,6 @@ def step_start(api, term, state):
         state["docker_access"] = False
     if state["start"] == "restore":
         return restore_backup(api, term, state)
-    if state["start"] == "move":
-        return add_found_apps(api, term, state)
     return True
 
 
@@ -2238,12 +2252,7 @@ def step_apps(api, term, state):
     groups = overview["groups"]
     head(term, state, "apps")
     last = state.get("apps", {})
-    if term.choose("Install the apps for your media server now?",
-                   ["Yes (recommended)", "No: I have my apps already, or I will add them later in the browser"],
-                   last.get("install", 1), help_key="groups") == 1:
-        last["install"], state["apps"], state["choice"] = 2, last, None
-        return True
-    last["install"] = 1
+    # DASH-271: no "Install the apps now?" first, as in the browser set-up, where at least one thing is ticked too.
     # Basics, Full install or Everything (the browser set-up asks the same), or the groups one by one.
     installs = overview.get("installs") or []
     while installs:
@@ -2269,8 +2278,10 @@ def step_apps(api, term, state):
         names = {a["key"]: a["name"] for a in overview["apps"]}
         rows = [("Apps", ", ".join(names.get(k, k) for k in c["apps"])), ("Memory", f"about {c['memory']:,} MB")]
         if c.get("note"):
-            rows.append(("Reelix", c["note"]))
+            rows.append(("Note", c["note"]))
         term.card(c["name"], rows)
+        if c.get("memory_advice"):  # DASH-114 (WIZ-31): the same advice as the browser set-up
+            term.warn(c["memory_advice"]["text"])
         if term.choose("Install these?", ["Yes (recommended)", "Let me choose app by app"], help_key="apps") == 0:
             state.setdefault("host", {}).setdefault("health", bool(c["disk_health"]))
             d = overview["defaults"]
@@ -2292,7 +2303,10 @@ def step_apps(api, term, state):
                               last.get("groups") or [i for i, g in enumerate(groups) if g["default"]], help_key="groups")
     last["groups"] = picked
     keys = {groups[i]["key"] for i in picked}
-    apps = [a for a in overview["apps"] if set(a["groups"]) & keys and not a["installed"]]
+    apps = [a for a in overview["apps"] if set(a["groups"]) & keys and not a["installed"] and not a.get("no_image")]
+    gone = [a for a in overview["apps"] if set(a["groups"]) & keys and a.get("no_image")]
+    if gone:  # DASH-114 (WIZ-33): as the browser set-up shows beside each one
+        term.note(f"Left out: {', '.join(a['name'] for a in gone)}. {gone[0]['no_image']}")
     if not apps:
         term.note("Every app for that is running already. Nothing to install.")
         state["apps"], state["choice"] = last, None
@@ -2327,6 +2341,12 @@ def step_apps(api, term, state):
             term.say("")
             return step_apps(api, term, state)
         last["no_vpn_ok"] = True
+    try:  # DASH-114 (WIZ-31): the same memory advice as the browser set-up
+        advice = api.call("POST", "/api/stack/memory", {"apps": [a["key"] for a in chosen]}).get("advice")
+    except Problem:
+        advice = None
+    if advice:
+        term.warn(advice["text"])
     edition = "lite"
     if any(a["key"] == "reelix" for a in chosen):
         edition = ask_reelix_edition(api, term, last)
@@ -2867,6 +2887,17 @@ def start_with_installer(api, term, state, choice, wait):
 def step_hours(api, term, state):
     if state.get("start") == "restore":
         return False  # the backup brought its own download hours
+    # DASH-271: only with a download app on the dashboard (with its key) or being installed, as in the browser set-up
+    downloaders = {"qbittorrent", "nzbget", "sabnzbd"}
+    try:
+        services = api.call("GET", "/api/config").get("services") or []
+    except Problem:
+        services = []
+    if not (any(s.get("type") in downloaders and s.get("has_api_key") for s in services)
+            or downloaders & set((state.get("choice") or {}).get("apps") or [])):
+        state["no_hours"] = True
+        return False
+    state.pop("no_hours", None)
     last = state.get("hours", {})
     head(term, state, "hours")
     term.note("Downloading uses most of your internet connection while it runs, so other devices can slow down. "
@@ -3027,6 +3058,110 @@ def step_drives(api, term, state):
                 break
     else:
         term.note("Balance later on System, Storage, Pool.")
+    return True
+
+
+def step_find(api, term, state):
+    """Find your apps (DASH-271): its own step after How to start, as in the browser set-up, only when moving."""
+    if state.get("start") != "move":
+        return False
+    head(term, state, "find")
+    return add_found_apps(api, term, state)
+
+
+def _service_body(s, api_key):
+    """A service as Starboard saves it, with its new key (serviceBody in web/js/settings.js)."""
+    body = {k: v for k, v in s.items() if k != "has_api_key"}
+    body["api_key"] = api_key
+    if body.get("link") == body.get("url"):
+        body["link"] = ""
+    return body
+
+
+def step_keys(api, term, state):
+    """API keys (DASH-271): the browser set-up's keys step. Starboard reads each missing key from the app's own files
+    first; only a key it could not read is asked for, typed hidden, and an empty answer leaves it for later."""
+    if state.get("start") == "restore":
+        state["keys_missing"] = False
+        return False
+    from . import setup_answers
+    places = setup_answers.WORDS["keys"]["places"]
+    missing = lambda config: [s for s in config["services"] if s.get("type") in places and not s.get("has_api_key")]  # noqa: E731
+    config = api.call("GET", "/api/config")
+    if not missing(config):
+        state["keys_missing"] = False
+        return False
+    state["keys_missing"] = True
+    head(term, state, "keys")
+    term.note(setup_answers.WORDS["keys"]["intro"])
+    found = []
+    try:
+        read = api.call("POST", "/api/services/read-keys", {})
+        found, config = read.get("found") or [], read.get("config") or api.call("GET", "/api/config")
+    except Problem:
+        pass
+    if found:
+        term.ok(f"Starboard read the {'key' if len(found) == 1 else 'keys'} for {', '.join(found)} from "
+                f"{'the app' if len(found) == 1 else 'each app'}'s own settings, so there is nothing to type for "
+                f"{'it' if len(found) == 1 else 'them'}.")
+    rows = missing(config)
+    if not rows:
+        term.ok("Starboard has every key it needs. There is nothing to type here.")
+        return True
+    term.note(f"Starboard could not read {'this key' if len(rows) == 1 else 'these keys'} itself, so "
+              f"{'it is' if len(rows) == 1 else 'they are'} asked for here. Press Enter to add one later in Manage apps.")
+    for s in rows:
+        term.note(f"In {s['name']}: {places[s['type']]}.")
+        while True:
+            key = term.hidden(f"{s['name']} API key", help_key="keys")
+            if not key:
+                break
+            try:
+                api.call("POST", "/api/services", _service_body(s, key))
+                term.ok(f"Saved the key for {s['name']}.")
+                break
+            except Problem as e:
+                refused(term, e)
+    return True
+
+
+def step_storage_page(api, term, state):
+    """Storage page (DASH-271): how the Storage page keeps up to date, as in the browser set-up, when Starboard sees
+    a disk. A restore brought its own."""
+    if state.get("start") == "restore":
+        return False
+    try:
+        disks = api.call("GET", "/api/system").get("disks") or []
+    except Problem:
+        disks = []
+    if not disks:
+        state["no_disks"] = True
+        return False
+    state.pop("no_disks", None)
+    from . import setup_answers
+    w = setup_answers.WORDS["storage_page"]
+    config = api.call("GET", "/api/config")
+    p = config.get("performance") or {}
+    head(term, state, "storage-page")
+    term.note(w["intro"])
+    last = state.get("storage_page", {})
+    usage = [c["value"] for c in w["usage"]]
+    refresh = [c["value"] for c in w["refresh"]]
+    while True:
+        u = term.choose(w["usage_question"], [c["label"] for c in w["usage"]],
+                        last.get("usage", usage.index(p.get("usage_every", "ask")) + 1 if p.get("usage_every", "ask") in usage else 1),
+                        help_key="storage-page")
+        r = term.choose(w["refresh_question"], [c["label"] for c in w["refresh"]],
+                        last.get("refresh", refresh.index(p.get("storage_refresh", 0)) + 1 if p.get("storage_refresh", 0) in refresh else 1),
+                        help_key="storage-page")
+        daily = term.yes_no(w["daily_question"], last.get("daily", p.get("space_log", True) is not False), help_key="storage-page")
+        try:
+            api.call("PUT", "/api/config/general", {"performance": {"usage_every": usage[u], "storage_refresh": refresh[r], "space_log": daily}})
+            break
+        except Problem as e:
+            refused(term, e)
+    state["storage_page"] = {"usage": u + 1, "refresh": r + 1, "daily": daily}
+    term.ok("Saved. Change it later in Settings, Performance.")
     return True
 
 
@@ -3313,15 +3448,16 @@ def step_cleanup(api, term, state):
     return True
 
 
-STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_docker_move, step_movehow, step_storage, step_apps, step_vpn, step_usenet, step_sites,
-                  step_films, step_preset, step_check, step_move, step_connect, step_hours, step_alerts, step_docker_end, step_cleanup]
+STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_find, step_docker_move, step_movehow, step_storage, step_apps, step_vpn,
+                  step_usenet, step_sites, step_films, step_preset, step_check, step_move, step_keys, step_connect, step_hours, step_alerts,
+                  step_storage_page, step_docker_end, step_cleanup]
 
 
 def add_drives_step(available=None):
     """Your drives goes after Storage when the pool helper is installed and the pool is chosen (DASH-87)."""
     available = os.path.exists(POOL_HELPER) if available is None else available
     if available and step_drives not in STEP_FUNCTIONS:
-        STEP_FUNCTIONS.insert(STEP_FUNCTIONS.index(step_docker_move) + 1, step_drives)  # job_steps puts it after Storage
+        STEP_FUNCTIONS.insert(STEP_FUNCTIONS.index(step_storage) + 1, step_drives)  # straight after Storage, as job_steps counts it
         STEPS.insert(STEPS.index(title("storage")) + 1, title("drives"))
 
 

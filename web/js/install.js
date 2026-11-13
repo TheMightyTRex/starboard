@@ -1,5 +1,5 @@
 // Install apps: a guide that sets up a media server (an *arr stack) for someone who has never done it, in groups
-// such as Movies, TV and Ebooks. It explains each part, picks sensible apps and folders, writes a Compose file and
+// such as Films, TV and Ebooks. It explains each part, picks sensible apps and folders, writes a Compose file and
 // a .env file, starts the apps only when you press Start and give your password, then talks you through connecting
 // them. "Advanced settings" shows every app, the settings folder, user and group numbers, and the files themselves.
 // Loaded by install-apps.html and setup-guide.html, after settings.js (it uses field, setError, notice, wizardFrame and appFinder).
@@ -283,10 +283,19 @@ async function installStep(id, state, data, apps, go) {
     }
     const total = el("p", { class: "small muted", "aria-live": "polite" });
     let afterCount = () => {};
+    // DASH-114 (WIZ-31): when the apps ticked need more memory than this computer has, what to leave out; the
+    // terminal set-up says the same (stack.memory_advice).
+    const memoryNote = el("div", { "aria-live": "polite" });
+    let memoryAsked = 0;
     const count = () => {
       afterCount();
       const mb = [...state.apps].reduce((n, k) => n + apps[k].memory, 0);
       total.textContent = `${state.apps.size} ${state.apps.size === 1 ? "app" : "apps"}, using about ${memoryText(mb)} of memory together when idle.`;
+      const asked = ++memoryAsked;
+      api("/api/stack/memory", { method: "POST", body: { apps: [...state.apps] } }).then((r) => {
+        if (asked !== memoryAsked) return;  // a newer tick asked since
+        memoryNote.replaceChildren(...(r.advice ? [notice("warning", "More than this computer's memory", r.advice.text)] : []));
+      }).catch(() => { /* the advice is a help, never a stop */ });
     };
     const appBoxes = {};
     const error = el("div", { role: "alert" });
@@ -327,7 +336,8 @@ async function installStep(id, state, data, apps, go) {
         includes.textContent = names.length ? `With ${names.join(", ")}` : "";
       };
       const list = el("div", { class: "switch-list install-apps", hidden: !(state.advanced && state.groups.has(g.key)) }, own.map((a) => {
-        const box = el("input", { type: "checkbox", checked: state.apps.has(a.key), disabled: a.installed });
+        // DASH-114 (WIZ-33): an app with no version for this computer's processor cannot be ticked; the reason is shown.
+        const box = el("input", { type: "checkbox", checked: state.apps.has(a.key) && !a.no_image, disabled: a.installed || !!a.no_image });
         appBoxes[a.key] = box;
         box.addEventListener("change", () => {
           chooseMyself();
@@ -335,7 +345,7 @@ async function installStep(id, state, data, apps, go) {
           addNeeds(); count(); showIncludes();
         });
         const busyPort = a.ports.find((p) => !p.free);
-        const hint = [a.installed ? "Already running here" : "", a.notes,
+        const hint = [a.installed ? "Already running here" : "", a.no_image || "", a.notes,
           a.groups.length > 1 ? `Also for ${a.groups.slice(1).map((k) => groupName(k).toLowerCase()).join(", ")}` : "",
           busyPort && !a.installed ? `Port ${busyPort.port} is in use, so it will use the next free one` : "",
           a.later ? "Starts once you add its settings file" : "", `About ${memoryText(a.memory)}`].filter(Boolean).join(" · ");
@@ -382,7 +392,7 @@ async function installStep(id, state, data, apps, go) {
         return el("label", { class: "option-card" }, radio,
           el("strong", { text: i.name + (i.recommended ? " (recommended)" : "") }), el("small", { text: i.about }));
       })),
-      ...(state.installNote ? [notice("info", "Reelix Lite for now", state.installNote)] : []),
+      ...(state.installNote ? [notice("info", /cannot be downloaded/.test(state.installNote) ? "Reelix Lite for now" : "Left out on this computer", state.installNote)] : []),
       // Full install and Everything: NZBGet (lighter) or SABnzbd for Usenet. Basics always has NZBGet.
       ...((data.installs || []).find((i) => i.key === state.install)?.usenet_choice ? [el("fieldset", { class: "stack-2" },
         el("legend", { class: "h3", text: "Usenet app" }),
@@ -399,7 +409,7 @@ async function installStep(id, state, data, apps, go) {
         })))] : []),
       el("p", { class: "small muted", text: "The groups below show what is ticked. Changing any of them makes it your own choice." }));
     nodes = [whatToInstall, ...kinds.map(([kind, name]) => el("fieldset", { class: "stack-2" }, el("legend", { class: "h3", text: name }),
-      el("div", { class: "option-cards" }, data.groups.filter((g) => g.kind === kind).map(groupRow)))), which, needsNote, total, error];
+      el("div", { class: "option-cards" }, data.groups.filter((g) => g.kind === kind).map(groupRow)))), which, needsNote, total, memoryNote, error];
     count();
     save = async () => {
       if (!state.apps.size) { error.replaceChildren(notice("danger", "Nothing ticked", "Tick at least one thing for your server to do.")); return false; }
