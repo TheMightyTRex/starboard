@@ -17,7 +17,7 @@ function helpLink(text, page) {
 }
 
 function notice(tone, title, text, extra = []) {
-  return el("div", { class: "notice", "data-tone": tone, role: tone === "warning" ? "note" : "status" },
+  return el("div", { class: "notice", "data-tone": tone, role: "status" },
     icon(tone === "warning" ? "triangle-alert" : "info"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text }), extra));
 }
@@ -62,19 +62,20 @@ async function waitFor(request) {
 
 // Overview -----------------------------------------------------------------------------------------------
 
+// A row for each drive (DASH-309, R7: a list of things with an action is rows, not a table): the state first in the
+// row's side, then Take out of the pool, as backupRow does.
 function poolRows(drives) {
   if (!drives.length) return el("p", { class: "muted", text: "No drives in the pool yet. Add a drive to make one." });
-  return el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
-    el("thead", {}, el("tr", {}, ["Drive", "Space", "State", ""].map((h, n) => el("th", { scope: "col" }, n === 3 ? el("span", { class: "visually-hidden", text: "Actions" }) : h)))),
-    el("tbody", {}, drives.map((d) => {
-      const pct = d.fs_size ? d.used / d.fs_size : 0;
-      const st = d.fs_size == null ? chip("Not mounted", "danger") : pct >= 0.9 ? chip("Full", "danger") : pct >= 0.8 ? chip("Nearly full", "warning") : chip("Mounted", "success");
-      return el("tr", {},
-        el("td", { "data-label": "Drive" }, el("strong", { text: d.label }), el("br"), el("span", { class: "small muted", text: `${nameOf(d)} · ${serialOf(d)} · ${d.mount}` })),
-        el("td", { "data-label": "Space" }, d.fs_size ? meter(d.used, d.fs_size) : "Not known"),
-        el("td", { "data-label": "State" }, st),
-        el("td", { "data-label": "Actions" }, el("button", { type: "button", class: "btn btn--compact", text: "Take out of the pool", onclick: () => startRemove(d) })));
-    }))));
+  return el("ul", { class: "rows", "aria-label": "Drives in the pool" }, drives.map((d) => {
+    const pct = d.fs_size ? d.used / d.fs_size : 0;
+    const st = d.fs_size == null ? chip("Not mounted", "danger") : pct >= 0.9 ? chip("Full", "danger") : pct >= 0.8 ? chip("Nearly full", "warning") : chip("Mounted", "success");
+    return el("li", { class: "row row--no-lead pool-drive" },
+      el("div", { class: "stack-2" }, el("p", { class: "row__title" }, `${d.label} `, el("span", { class: "small muted", text: nameOf(d) })),
+        el("p", { class: "row__meta", text: `${serialOf(d)} · ${d.mount}` }),
+        d.fs_size ? meter(d.used, d.fs_size) : el("p", { class: "row__meta", text: "Space not known" })),
+      el("div", { class: "row__side" }, st, el("button", { type: "button", class: "btn btn--compact", onclick: () => startRemove(d) }, "Take out of the pool",
+        el("span", { class: "visually-hidden", text: ` (${d.label})` }))));
+  }));
 }
 
 function backupRow(d) {

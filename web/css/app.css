@@ -66,10 +66,7 @@ code { background: var(--color-surface-sunken); padding: 0 var(--space-1); font-
 .swatch--line { width: 14px; height: 2px; }
 .swatch--limit { width: 2px; height: 12px; background: var(--color-text); }
 .chart__table summary { cursor: pointer; color: var(--color-accent); font-size: var(--text-sm); font-weight: 600; min-height: var(--control-h); display: flex; align-items: center; }
-.table-scroll { overflow-x: auto; }
-.chart__table table { border-collapse: collapse; font-size: var(--text-sm); width: 100%; }
-.chart__table th, .chart__table td { text-align: left; padding: var(--space-1) var(--space-3) var(--space-1) 0; border-bottom: 1px solid var(--color-divider); white-space: nowrap; }
-.chart__table td { text-align: right; }
+.chart__table .table td { text-align: right; }
 .bars { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .bar { display: grid; grid-template-columns: minmax(0, 12em) minmax(0, 1fr) 6.5em; gap: var(--space-3); align-items: center; font-size: var(--text-sm); }
 .bar:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
@@ -158,9 +155,8 @@ html.panel-only body:not(.show-advanced) .panel-keep[data-advanced] { display: g
 /* The Search icon button in every search box is in the shared library (components.css and .js, 12 November 2026). */
 /* A state chip on its title's line: .title-chip is in the shared library (components.css, 12 November 2026). */
 .dash-card__head .title-chip { flex: 1 1 auto; }
-.history-keep { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3, 12px); margin-bottom: var(--space-4, 16px); }
+.history-keep { margin-top: var(--space-6, 24px); }
 .history-keep .select { width: auto; }
-.history-keep .btn--danger { margin-left: auto; }
 .page-head__text:has(> .title-chip) { flex: 1 1 auto; min-width: 0; } /* the heading line, with Advanced settings at the right edge */
 
 /* The loading line under the menu (owner, 12 November 2026): the shared .loading-bar on the header's lower edge,
@@ -184,3 +180,7 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 
 /* A slide-out's state chip on its title's line (DASH-309): the title and chip take the room before the close button. */
 .panel-header > .title-chip { flex: 1; }
+
+/* Wanted (DASH-309): a row that opens keeps its tick and buttons above the row's own target. */
+.wanted-row > input[type="checkbox"] { position: relative; z-index: 1; width: 22px; height: 22px; accent-color: var(--color-accent); }
+.wanted-row:has(> input[type="checkbox"][hidden]) { grid-template-columns: minmax(0, 1fr) auto; }

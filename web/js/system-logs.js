@@ -32,8 +32,9 @@ function renderHead() {
       message: "Starboard removes every day of its log now. This cannot be undone. New entries start again straight away." });
     if (!ok) return;
     const r = await api("/api/logs/clear", { method: "POST" });
-    toast(`Deleted ${r.removed} ${r.removed === 1 ? "day" : "days"} of logs`);
-    load();
+    // Said, as the page shows it (R5): the summary says No logs yet, and focus goes to the list's heading.
+    await load();
+    announce(`Deleted ${r.removed} ${r.removed === 1 ? "day" : "days"} of logs`);
   });
   $("#logs-actions").replaceChildren(
     el("a", { class: "btn", href: "/api/logs/download", download: "" }, icon("download"), "Download"), del);
@@ -49,10 +50,17 @@ function notice(tone, title, text) {
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })));
 }
 
+// A saved setting says so beside its control (DASH-309, R5): the select is drawn again, keeps focus, and has the note.
 async function setDetail(mode) {
-  await api("/api/config/general", { method: "PUT", body: { logs: { detail: mode } } });
-  toast(mode === "off" ? "Detailed logging deactivated" : mode === "day" ? "Detailed logging activated for 24 hours" : "Detailed logging activated");
-  load();
+  try { await api("/api/config/general", { method: "PUT", body: { logs: { detail: mode } } }); }
+  catch (e) { problem(e.message, $("#detail-choice")); return; }
+  await load();
+  const select = $("#detail-choice");
+  if (!select) return;
+  select.focus();
+  const note = el("span", { class: "saved-note", hidden: true });
+  select.after(note);
+  window.SharedComponents.savedNote(note, mode === "off" ? "Deactivated" : mode === "day" ? "Activated for 24 hours" : "Activated");
 }
 
 function renderReport() {
@@ -66,7 +74,10 @@ function renderReport() {
     try {
       const text = await (await fetch("/api/logs/report", { credentials: "same-origin" })).text();
       await navigator.clipboard.writeText(text);
-      toast("Copied. Paste it into the issue");
+      // Beside the button, not a toast (R5).
+      const note = copy.parentElement.querySelector(".saved-note") || el("span", { class: "saved-note", hidden: true });
+      copy.parentElement.append(note);
+      window.SharedComponents.savedNote(note, "Copied. Paste it into the issue.");
     } catch { problem("Could not copy. Use Download instead"); }
   });
   const preview = el("pre", { class: "code-block", text: "Loading…" });

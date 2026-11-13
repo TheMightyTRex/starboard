@@ -183,17 +183,17 @@
   <div class="page-head">
     <div class="page-head__text"><h1>TV</h1><p class="page-head__summary" id="wanted-summary">Everything Reelix follows but does not have yet.</p></div>
     <div class="actions">
+      <button type="button" class="btn btn--quiet" id="wanted-select" aria-pressed="false"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-list-checks"/></svg>Select several</button>
       <button type="button" class="btn" id="wanted-all"><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-search"/></svg>Search all</button>
-    </div>
-  </div>
-  <div class="toolbar">
-    <div class="toolbar__row">
-      
-      <button type="button" class="btn" id="wanted-ticked" disabled><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-search"/></svg><span>Search for the ticked ones</span></button>
     </div>
   </div>
   <h2 class="visually-hidden" id="wanted-list-h">Wanted TV</h2>
   <ul class="rows" id="wanted-list" aria-labelledby="wanted-list-h"></ul>
+  <div class="selection-bar" id="wanted-bar" role="region" aria-label="Search for several" hidden>
+    <span class="selection-bar__text" id="wanted-bar-count" aria-live="polite">Tick the ones to search for</span>
+    <button type="button" class="btn" id="wanted-ticked" disabled><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-search"/></svg><span>Search for them</span></button>
+    <button type="button" class="btn btn--quiet" id="wanted-done">Done</button>
+  </div>
   <div class="actions"><button type="button" class="btn" id="wanted-more" hidden>Show more</button></div>
 </div>
 </main>

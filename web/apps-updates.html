@@ -195,6 +195,11 @@
   </div>
   <div id="updates-notice"></div>
   <div id="updates"></div>
+  <div class="selection-bar" id="updates-chosen" role="region" aria-label="Chosen updates" hidden>
+    <span class="selection-bar__text" id="updates-chosen-text" aria-live="polite">0 chosen</span>
+    <button type="button" class="btn" id="update-chosen" disabled><svg class="i" width="18" height="18" aria-hidden="true" focusable="false"><use href="/icons/sprite.svg#i-download"/></svg><span>Update chosen</span></button>
+    <button type="button" class="btn btn--quiet" id="clear-chosen">Clear</button>
+  </div>
   <details class="disclosure" id="updates-log" hidden>
     <summary>What the last update did</summary>
     <div class="disclosure__body"><pre class="code-block" id="updates-log-text"></pre></div>

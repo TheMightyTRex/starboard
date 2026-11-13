@@ -95,7 +95,7 @@ function renderRow(item, old) {
   p.reason.hidden = !p.reason.textContent;
   p.pct.textContent = `${percent(item)}%`;
   const next = chip(label, tone);
-  if (p.chip) p.chip.replaceWith(next); else p.side.append(next);
+  if (p.chip) p.chip.replaceWith(next); else p.side.prepend(next); // the state first in row__side, then the percentage (R1)
   p.chip = next;
   setProgress(p.bar, item, `${item.title}, ${percent(item)}% downloaded`);
   return li;
@@ -350,7 +350,10 @@ async function load({ announceIt = false } = {}) {
     byKey = new Map(items.map((i) => [i.key, i]));
     checkedAt = new Date();
     renderSummary();
-    $("#queue-errors").replaceChildren(...data.errors.map((e) => notice("warning", "", e.message)));
+    // One notice with a title (R5); two in one place become one.
+    const n = data.errors.length;
+    $("#queue-errors").replaceChildren(...(n ? [notice("warning", n === 1 ? "A download app did not answer" : `${n} download apps did not answer`,
+      `${data.errors.map((e) => e.message.replace(/\.?$/, ".")).join(" ")} What ${n === 1 ? "it is" : "they are"} downloading is missing from this list until ${n === 1 ? "it answers" : "they answer"}.`)] : []));
     renderFilters();
     renderRows();
     refreshDetails();

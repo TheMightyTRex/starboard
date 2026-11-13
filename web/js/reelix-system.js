@@ -58,15 +58,18 @@ async function rsBackups(body, locked) {
   const draw = (r) => {
     const every = el("input", { class: "input", inputmode: "numeric", value: String(r.every), id: "rs-every" });
     const keep = el("input", { class: "input", inputmode: "numeric", value: String(r.keep), id: "rs-keep" });
-    const saveSched = el("button", { type: "button", class: "btn" }, "Save the schedule");
-    saveSched.addEventListener("click", async () => { try { const o = await rsCall("backup-settings", { every: every.value, keep: keep.value }, "change Reelix's backups"); if (o) { draw(o); toast(o.done); } } catch (e) { problem(e.message, saveSched); } });
-    const now = el("button", { type: "button", class: "btn btn--primary" }, "Make a backup now");
-    now.addEventListener("click", async () => { now.disabled = true; try { const o = await rsCall("backup-now", {}, "make a Reelix backup"); if (o) { draw(o); toast(o.done); } } catch (e) { problem(e.message, now); now.disabled = false; } });
+    const saveSched = el("button", { type: "button", class: "btn", id: "rs-save-sched" }, "Save the schedule");
+    // A saved setting: the saved note beside Save the schedule drawn again, which keeps focus (DASH-309, R5).
+    saveSched.addEventListener("click", async () => { try { const o = await rsCall("backup-settings", { every: every.value, keep: keep.value }, "change Reelix's backups"); if (o) { draw(o); rsSavedNote($("#rs-save-sched"), o.done); } } catch (e) { problem(e.message, saveSched); } });
+    const now = el("button", { type: "button", class: "btn btn--primary", id: "rs-backup-now" }, "Make a backup now");
+    // The new backup is in the list: said, with focus back on the button (R5).
+    now.addEventListener("click", async () => { now.disabled = true; try { const o = await rsCall("backup-now", {}, "make a Reelix backup"); if (o) { draw(o); $("#rs-backup-now")?.focus(); announce(o.done); } } catch (e) { problem(e.message, now); now.disabled = false; } });
     const rows = r.backups.map((b) => {
       const back = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Restore", el("span", { class: "visually-hidden", text: ` ${b.name}` }));
       back.addEventListener("click", async () => {
         if (!await confirmDialog({ title: "Restore this Reelix backup?", danger: true, confirm: "Restore",
           message: `Reelix goes back to how it was on ${rsWhen(b.when)} when it starts again. What changed since then is lost.` })) return;
+        // The restore happens later, when Reelix starts again, so it stays a toast (section 10, Toasts).
         try { const o = await rsCall("restore", { name: b.name }, "restore a Reelix backup"); if (o) { draw(o); toast(o.done); } } catch (e) { problem(e.message, back); }
       });
       return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: rsWhen(b.when) }),
@@ -107,7 +110,8 @@ async function rsTasks(body, locked) {
   const draw = (r) => body.replaceChildren(el("ul", { class: "rows" }, r.tasks.map((t) => {
     const run = el("button", { type: "button", class: "btn btn--quiet btn--compact", disabled: t.running }, t.running ? "Running" : "Run now",
       el("span", { class: "visually-hidden", text: ` ${t.name}` }));
-    run.addEventListener("click", async () => { run.disabled = true; try { const o = await rsCall("run-task", { task: t.kind }, "run a Reelix task"); if (o) { draw(o); toast(o.done); } } catch (e) { problem(e.message, run); run.disabled = false; } });
+    // The row says Running: said, as the page shows it (R5).
+    run.addEventListener("click", async () => { run.disabled = true; try { const o = await rsCall("run-task", { task: t.kind }, "run a Reelix task"); if (o) { draw(o); announce(o.done); } } catch (e) { problem(e.message, run); run.disabled = false; } });
     return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: t.name }),
       el("div", { class: "row__meta", text: [t.last ? `Last ${rsWhen(t.last)}` : "Not run yet", t.next ? `next ${rsWhen(t.next)}` : "", t.on ? "" : "Off"].filter(Boolean).join(" · ") }),
       t.error ? el("div", { class: "row__meta", text: `Last time: ${t.error}` }) : null), el("div", { class: "row__side" }, run));
@@ -125,3 +129,13 @@ startPage().then(() => {
       rsSection("rs-tasks", "Reelix's scheduled tasks", "What Reelix does on its own, such as refreshing the library, with Run now.", rsTasks, "Show Reelix's tasks"));
   }
 });
+
+// The saved note beside a button (DASH-309, R5), for a page that is not a settings page.
+function rsSavedNote(button, text) {
+  if (!button) { announce(text || "Saved"); return; }
+  button.focus();
+  const box = button.parentElement;
+  const note = box.querySelector(":scope > .saved-note") || el("span", { class: "saved-note", hidden: true });
+  box.append(note);
+  window.SharedComponents.savedNote(note, text || "");
+}

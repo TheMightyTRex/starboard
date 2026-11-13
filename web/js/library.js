@@ -483,8 +483,11 @@ startPage().then(async () => {
   $("#lib-save").addEventListener("click", async () => {
     try {
       saved = (await api("/api/library/views", { method: "POST", body: { tab: TAB, view: currentView() } })).views[TAB] || {};
+      // A saved note where the button was (R5: not a toast); the button goes, so focus goes to the search.
+      const note = $("#lib-save-note") || el("span", { class: "saved-note", id: "lib-save-note", hidden: true });
+      $("#lib-actions").prepend(note);
+      window.SharedComponents.savedNote(note, `Saved as how ${NOUN[TAB][1]} open. Reset it in Settings, General.`);
       updateSaveButton();
-      toast(`Saved as how ${NOUN[TAB][1]} open. Reset it in Settings, General`);
       $("#lib-q").focus();
     } catch (err) { toast(err.message, { tone: "danger" }); }
   });
@@ -505,7 +508,7 @@ function setUpBulk() {
   if (!["films", "tv"].includes(TAB)) return;
   state.ticked = new Set();
   const start = el("button", { type: "button", class: "btn btn--quiet", id: "lib-select", "aria-pressed": "false" }, icon("list-checks"), "Select several");
-  $(".toolbar__end")?.append(start);
+  $("#lib-actions")?.append(start);  // with Save this view, in the page head: not a filter, so not in the toolbar (R8)
   const run = async (action, button) => {
     let deleteFiles = false;
     if (action === "delete") {

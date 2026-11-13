@@ -177,6 +177,7 @@
 <div class="page media lib" data-library="music">
   <div class="page-head">
     <div class="page-head__text"><h1>Music</h1><p class="page-head__summary">Every artist in your library, A to Z.</p></div>
+    <div class="actions" id="lib-actions"><button class="btn btn--quiet" type="button" id="lib-save" hidden>Save this view as default</button></div>
   </div>
   <div class="lib-group-head" id="lib-group" hidden></div>
   <div class="toolbar">
@@ -195,10 +196,9 @@
         </div>
         <div class="field lib-field" id="lib-size-field"><label class="visually-hidden" for="lib-size">Cover size</label>
           <select class="select" id="lib-size"><option value="small">Small covers</option><option value="medium">Medium covers</option><option value="large">Large covers</option></select></div>
-        <button class="btn btn--quiet" type="button" id="lib-save" hidden>Save this view as default</button>
+        <span class="toolbar__count" id="lib-count" aria-live="polite"></span>
       </div>
     </div>
-    <p class="toolbar__count" id="lib-count" aria-live="polite"></p>
   </div>
   <nav class="az-jump" id="lib-az" aria-label="Jump to letter" hidden><ol></ol></nav>
   <div id="lib-notice"></div>

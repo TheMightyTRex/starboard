@@ -105,3 +105,4 @@
 /* App logs (DASH-223): long lines wrap; the box scrolls and keeps its height. */
 .log-lines { margin: 0; max-block-size: 60vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm);
   background: var(--color-surface-sunken); border: 1px solid var(--color-divider); padding: var(--space-3); }
+.pool-drive .meter { max-width: 28rem; }

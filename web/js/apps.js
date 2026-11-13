@@ -48,13 +48,17 @@ function card(s, old) {
   const home = s.link ? reachableUrl(s.link) : "";
   const down = words.state === "down";
   const numbersOff = config.performance?.card_numbers === false;
-  // Status, update, then a box for warning and outside chips. Status board keeps them together; Health first and
-  // Tiles show the status beside the name, the update in the strip and the rest in their own row.
+  // The state, then one more chip at most (DESIGN-SYSTEM.md section 10: at most two in one place). The first of
+  // Needs attention, Update available and Not reachable from outside is a chip; the others are words in the
+  // card's facts (the update in the strip, the outside address in the notes line). Status board keeps them
+  // together; Health first and Tiles show the status beside the name, the update in the strip and the rest above it.
+  const extras = [warn.length ? "warn" : null, u ? "update" : null, o && !o.reachable ? "outside" : null].filter(Boolean);
+  const words2 = (k) => el("span", { class: "small muted card__fact", text: k === "update" ? "Update available" : "Not reachable from outside" });
+  const second = (k) => (extras[0] === k ? chip(k === "warn" ? "Needs attention" : k === "update" ? "Update available" : "Not reachable from outside", k === "update" ? "info" : "warning") : words2(k));
   const chips = el("span", { class: "card__chips" }, el("span", { class: "card__state" }, chip(words.label, words.tone)),
-    u ? el("span", { class: "card__update" }, chip("Update available", "info")) : null,
-    // One note chip at most, and never a number (DASH-309, R3): the warnings themselves are in the app's slide-out.
-    el("span", { class: "card__notes" },
-      warn.length ? chip("Needs attention", "warning") : o && !o.reachable ? chip("Not reachable from outside", "warning") : null));
+    u ? el("span", { class: "card__update" }, second("update")) : null,
+    // Never a number (DASH-309, R3): the warnings themselves are in the app's slide-out.
+    el("span", { class: "card__notes" }, warn.length ? second("warn") : null, o && !o.reachable ? second("outside") : null));
   const numbers = addUp(familyOf(s).flatMap((x) => AppDetails.state.numbers?.[x.id] || []));
   const activity = down ? (s.type === "gluetun" && /^The VPN/.test(st?.message || "") ? AppDetails.sentence(st.message) : "Cannot reach it") : numbers?.length ? numbers.join(" · ") : numbersOff || !st ? "" : "Nothing to report";
   // Every card has the same parts in the same order, so each line sits in the same place on every card.
@@ -67,10 +71,11 @@ function card(s, old) {
       versionCell(u ? u.installed : st?.version),
       el("span", { class: "card__ms num", text: st?.ms !== undefined ? `${st.ms} ms` : down ? "N/A" : "" }),
       el("span", { class: "card__group", text: s.group || "Other" })),
+    // One button besides opening the card (section 10): Open, or in Health first and Tiles with home addresses
+    // shown, the address as the link that opens the app. Copying it is in the app's slide-out.
     el("div", { class: "card__meta card__actions" },
       home ? el("a", { class: "btn", href: home, target: "_blank", rel: "noopener noreferrer" },
         icon("external-link"), "Open", el("span", { class: "visually-hidden", text: ` ${s.name} (opens in a new tab)` })) : null,
-      home && config.show_home_address ? copyButton(home, `home address for ${s.name}`) : null,
       home && config.show_home_address ? el("a", { class: "card__address", href: home, target: "_blank", rel: "noopener noreferrer" },
         el("code", { text: shortUrl(home) }), el("span", { class: "visually-hidden", text: `, opens ${s.name} in a new tab` })) : null));
 }
@@ -170,11 +175,11 @@ function vpnNotice(services) {
   const title = connecting ? "The VPN is still connecting" : "The VPN is not connected";
   const text = `Downloads that go through ${vpn.name} wait until it connects, so nothing leaves without the VPN. `
     + (connecting ? "This clears when it connects." : "Check the VPN's details in Settings, Install apps, VPN, or that your VPN account is active.");
-  return { sig: `${title}|${text}`, node: el("div", { class: "notice", "data-tone": connecting ? "muted" : "danger" }, icon(connecting ? "hourglass" : "circle-alert"),
+  // One button (section 10): what to do. While it connects there is nothing to do but look, so View it.
+  return { sig: `${title}|${text}`, node: el("div", { class: "notice", role: "status", "data-tone": connecting ? "muted" : "danger" }, icon(connecting ? "hourglass" : "circle-alert"),
     el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })),
-    el("div", { class: "actions" },
-      connecting ? null : el("a", { class: "btn", href: "/install-apps.html" }, "Check the VPN"),
-      el("button", { type: "button", class: "btn btn--quiet", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(vpn.id, e.currentTarget) }, `View ${vpn.name}`))) };
+    connecting ? el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(vpn.id, e.currentTarget) }, `View ${vpn.name}`)
+      : el("a", { class: "btn", href: "/install-apps.html" }, "Check the VPN")) };
 }
 
 function renderNotice(services) {
@@ -197,7 +202,7 @@ function renderNotice(services) {
     const action = one
       ? el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", onclick: (e) => AppDetails.open(one.id, e.currentTarget) }, `View ${one.name}`)
       : el("button", { type: "button", class: "btn", onclick: () => { pressed.clear(); pressed.add("down"); setShowInAddress(); render({ announceCount: true }); } }, "Show them");
-    other = el("div", { class: "notice", "data-tone": starting ? "muted" : "danger" }, icon(starting ? "hourglass" : "circle-alert"),
+    other = el("div", { class: "notice", role: "status", "data-tone": starting ? "muted" : "danger" }, icon(starting ? "hourglass" : "circle-alert"),
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), el("p", { text })), action);
   }
   if (box.dataset.sig === sig) return; // keep the button, and focus on it, when nothing changed
@@ -277,39 +282,33 @@ async function renderSetupLeft() {
   const ignoredItems = (r.items || []).filter((i) => !i.done && i.ignored);
   if (!todo.length && !ignoredItems.length) { box.hidden = true; box.replaceChildren(); return; }
   const done = r.items.length - todo.length - ignoredItems.length;
-  // The wizard (DASH-289): one item at a time, with Skip, Ignore and Next step; Bring back undoes Ignore.
+  // The wizard (DASH-289): one item at a time, with Done for a guided step, Skip, Ignore and Next step. The notice
+  // has that one button (section 10); the list is under Show what is left, and Bring back undoes Ignore outside it.
   const walk = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
   walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: renderSetupLeft }));
-  const back = ignoredItems.length ? el("button", { type: "button", class: "btn btn--quiet btn--compact" }, `Bring back ${ignoredItems.length} ignored`) : null;
+  const back = ignoredItems.length ? el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Bring back") : null;
   back?.addEventListener("click", async () => {
     for (const i of ignoredItems) await api("/api/setup/left/ignore", { method: "POST", body: { key: i.key, ignore: false } }).catch(() => {});
-    renderSetupLeft();
+    await renderSetupLeft();
+    announce(`${ignoredItems.length} brought back`);
   });
   if (!todo.length) {
     box.replaceChildren(el("p", { class: "small muted" }, `Everything else is set up. ${ignoredItems.length} ignored. `, back));
     box.hidden = false;
     return;
   }
+  const wasOpen = !!box.querySelector("details[open]");
   box.replaceChildren(el("div", { class: "notice", role: "status" }, icon("list-checks"),
     el("div", { class: "notice__body stack-2" },
-      el("span", { class: "notice__title", text: `Still to set up: ${todo.length} of ${r.items.length}` }),
-      el("p", { class: "small muted", text: done ? `${done} done. Each one goes from this list when it is done.` : "Each one goes from this list when it is done." }),
-      el("div", { class: "actions" }, walk, back),
-      el("ul", { class: "stack-2" }, todo.map((i) => el("li", {},
-        el("a", { href: i.href.startsWith("http") ? reachableUrl(i.href) : i.href, text: i.title, ...(i.guided && i.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {}) }),
-        el("span", { class: "small muted", text: ` ${i.why}` }), i.guided ? doneButton(i) : null))))));
+      el("span", { class: "notice__title", text: "Still to set up" }),
+      el("p", { text: `${todo.length} of ${r.items.length} left${done ? `, ${done} done` : ""}. Each one goes from this list when it is done.` }),
+      el("details", { class: "setup-left__list", open: wasOpen }, el("summary", { text: "Show what is left" }),
+        el("ul", { class: "stack-2" }, todo.map((i) => el("li", {},
+          el("a", { href: i.href.startsWith("http") ? reachableUrl(i.href) : i.href, text: i.title, ...(i.guided && i.href.startsWith("http") ? { target: "_blank", rel: "noopener" } : {}) }),
+          el("span", { class: "small muted", text: ` ${i.why}` })))))),
+    walk), ignoredItems.length ? el("p", { class: "small muted" }, `${ignoredItems.length} ignored. `, back) : "");
   box.hidden = false;
   setupWizardOnce(renderSetupLeft);
-}
-
-// A guided step (Tdarr, Wizarr, Dispatcharr) has Done, as Starboard cannot see when it is finished.
-function doneButton(item) {
-  const b = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, `Done: ${item.title}`);
-  b.addEventListener("click", async () => {
-    try { await api("/api/setup/left/done", { method: "POST", body: { key: item.key } }); toast(`${item.title}: done`); renderSetupLeft(); }
-    catch (e) { problem(e.message, b); }
-  });
-  return el("div", { class: "actions" }, b);
 }
 
 startPage().then(async () => {

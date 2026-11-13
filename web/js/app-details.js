@@ -180,18 +180,18 @@ const AppDetails = (() => {
     if (s.description) out.push(el("p", { class: "muted", text: s.description }));
 
     if (st?.state === "down") {
-      out.push(el("div", { class: "notice", "data-tone": "danger" }, icon("circle-alert"), el("div", { class: "notice__body" },
+      out.push(el("div", { class: "notice", role: "status", "data-tone": "danger" }, icon("circle-alert"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: `Starboard could not reach ${s.name}` }),
         el("p", { text: `${sentence(st.message || "It did not answer")}${st.down_since ? ` Not responding for ${since(st.down_since)}.` : ""} Check that it is running, then select Check again.` }))));
     } else if (st?.state === "unknown" || (!st && state.loaded.has("status"))) {
-      out.push(el("div", { class: "notice" }, icon("info"), el("div", { class: "notice__body" },
+      out.push(el("div", { class: "notice", role: "status", "data-tone": "warning" }, icon("triangle-alert"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: "Starboard cannot check this service" }),
         el("p", { text: "It has no address and follows no other app. Give it an address, or choose an app for it to follow, in Edit." }))));
     }
 
     const u = state.updates[s.id];
     if (u?.available) {
-      out.push(el("div", { class: "notice" }, icon("circle-arrow-up"), el("div", { class: "notice__body" },
+      out.push(el("div", { class: "notice", role: "status" }, icon("circle-arrow-up"), el("div", { class: "notice__body" },
         el("span", { class: "notice__title", text: "Update available" }),
         el("p", { text: `Version ${u.latest} is out. You have ${u.installed}. ${s.name} updates when its container image is updated.` }))));
     }

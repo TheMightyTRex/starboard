@@ -40,7 +40,7 @@
 }
 :root:is([data-design="health"], [data-design="tiles"]) .card__state { display: none; }
 :root:is([data-design="health"], [data-design="tiles"]) .card__actions > .btn { display: none; }
-:root:is([data-design="health"], [data-design="tiles"]) .card__actions:not(:has(.copy-btn)) { display: none; }
+:root:is([data-design="health"], [data-design="tiles"]) .card__actions:not(:has(.card__address)) { display: none; }
 :root:is([data-design="health"], [data-design="tiles"]) .card__notes { display: flex; align-items: center; min-height: calc(var(--text-xs) * 2 + var(--space-2) + 1px); /* one chip, even when empty */ }
 :root:is([data-design="health"], [data-design="tiles"]) .card__version,
 :root:is([data-design="health"], [data-design="tiles"]) .card__ms { display: flex; }
@@ -64,7 +64,7 @@
 :root[data-design="tiles"] .app-card .card__activity { grid-row: 3; }
 :root[data-design="tiles"] .app-card .card__notes { grid-row: 4; }
 :root[data-design="tiles"] .app-card :is(.card__update, .card__version, .card__ms) { grid-row: 5; }
-/* With home addresses shown, the address and its copy button sit above the line, after what the app is doing. */
+/* With home addresses shown, the address (the link that opens the app) sits above the line, after what the app is doing. */
 :root[data-design="health"] .app-cards:has(.card__address) .app-card .card__actions { grid-row: 3; }
 :root[data-design="health"] .app-cards:has(.card__address) .app-card .card__notes { grid-row: 4; }
 :root[data-design="health"] .app-cards:has(.card__address) .app-card :is(.card__update, .card__version, .card__ms) { grid-row: 5; }
@@ -98,7 +98,7 @@
 :root[data-design="command"] .app-card .card__top { flex-direction: column; gap: var(--space-2); }
 :root[data-design="command"] .app-card .card__title :is(a, button) { text-align: center; }
 :root[data-design="command"] .app-card .app-icon { width: 52px; height: 52px; font-size: var(--text-lg); }
-:root[data-design="command"] .app-card :is(.card__desc, .card__version, .card__ms, .card__address, .copy-btn) { display: none; }
+:root[data-design="command"] .app-card :is(.card__desc, .card__version, .card__ms, .card__address) { display: none; }
 :root[data-design="command"] .app-card :is(.card__meta, .card__chips) { justify-content: center; }
 :root[data-design="command"] .app-card .card__actions .btn { width: 100%; }
 
@@ -123,7 +123,7 @@
 :root[data-design="board"] .app-card .card__ms { grid-column: 4; grid-row: 1; display: block; text-align: right; }
 :root[data-design="board"] .app-card .card__group { grid-column: 5; grid-row: 1; display: block; }
 :root[data-design="board"] .app-card .card__actions { grid-column: 6; grid-row: 1; }
-:root[data-design="board"] .app-card :is(.card__desc, .card__activity, .card__address, .copy-btn) { display: none; }
+:root[data-design="board"] .app-card :is(.card__desc, .card__activity, .card__address) { display: none; }
 :root[data-design="board"] .app-card .app-icon { width: 28px; height: 28px; font-size: var(--text-xs); }
 :root[data-design="board"] .app-card .card__actions .btn { min-height: var(--control-h); }
 @media (max-width: 719px) {

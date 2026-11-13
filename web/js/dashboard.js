@@ -204,7 +204,13 @@ function drawEditBar() {
     const own = JSON.stringify(cards) === JSON.stringify(LAYOUTS[editing.layout].cards.map(([id, size]) => ({ id, size })));
     try {
       const cfg = await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: editing.layout, cards: own ? null : cards } } });
-      dash = cfg.dashboard; editing = null; draw(); toast("Dashboard saved");
+      dash = cfg.dashboard; editing = null; draw();
+      // A saved note beside Edit dashboard, which gets focus as Save goes (DASH-309, R5: not a toast).
+      const edit = $("#dash-actions button");
+      const note = el("span", { class: "saved-note", hidden: true });
+      $("#dash-actions").append(note);
+      window.SharedComponents.savedNote(note);
+      edit?.focus();
       $("#dash-summary").textContent = `${LAYOUTS[dash.layout].name}. Change it with Edit dashboard.`;
     } catch (e) { problem(e.message, save); }
   });

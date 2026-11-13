@@ -64,7 +64,7 @@ function lineChart(opts) {
   const headRow = el("tr");
   const tbody = el("tbody");
   const table = el("details", { class: "disclosure" }, el("summary", { text: "Show as a table" }),
-    el("div", { class: "disclosure__body" }, el("div", { class: "table-wrap" }, el("table", { class: "table" }, caption, el("thead", {}, headRow), tbody))));
+    el("div", { class: "disclosure__body" }, el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" }, caption, el("thead", {}, headRow), tbody))));
   card.append(head, detail, desc, legend, waiting, plot, note, table);
 
   const xLabel = (t) => (o.xFormat ? o.xFormat(t, o.points[o.points.length - 1]?.t ?? t) : timeLabel(t));
@@ -190,7 +190,7 @@ function lineChart(opts) {
     const step = Math.max(1, Math.floor(points.length / 12));
     const rows = points.filter((_, i) => i % step === 0 || i === points.length - 1);
     tbody.replaceChildren(...rows.map((p) => el("tr", {}, el("th", { scope: "row", text: xLabel(p.t) }),
-      ...series.map((s) => el("td", { class: "numeric", text: format(value(p, s)) })))));
+      ...series.map((s) => el("td", { class: "numeric", "data-label": s.name, text: format(value(p, s)) })))));
     if (plot.isConnected) draw();
   };
 
@@ -228,9 +228,9 @@ function barChart(opts) {
   card.append(list);
   if (rows.some((r) => r.limit)) card.append(el("p", { class: "chart__legend" }, el("span", {}, el("i", { class: "swatch swatch--limit", "aria-hidden": "true" }), "Limit")));
   card.append(el("details", { class: "chart__table" }, el("summary", { text: "Show as a table" }),
-    el("div", { class: "table-scroll" }, el("table", {},
+    el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
       el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "Item" }), el("th", { scope: "col", text: "Value" }), rows.some((r) => r.limit) ? el("th", { scope: "col", text: "Limit" }) : null)),
-      el("tbody", {}, rows.map((r) => el("tr", {}, el("th", { scope: "row", text: r.label }), el("td", { class: "num", text: format(r.value) }), rows.some((x) => x.limit) ? el("td", { class: "num", text: r.limit ? format(r.limit) : "" }) : null)))))));
+      el("tbody", {}, rows.map((r) => el("tr", {}, el("th", { scope: "row", text: r.label }), el("td", { class: "num", "data-label": "Value", text: format(r.value) }), rows.some((x) => x.limit) ? el("td", { class: "num", "data-label": "Limit", text: r.limit ? format(r.limit) : "" }) : null)))))));
   return card;
 }
 
