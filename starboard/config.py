@@ -35,6 +35,8 @@ SERVICE_TYPES = {
 SERVER_NAME_MAX = 10
 
 DESIGNS = ["health", "tiles", "shelf", "command", "board"]
+# The own style's colours (DASH-388): the design system's palettes (web/palettes.json); teal is its default, tokens.css.
+OWN_COLOURS = ("teal", "indigo", "forest", "plum", "ember", "graphite")
 
 UPCOMING_VIEWS = ("list", "calendar")
 UPCOMING_DAYS = (7, 14, 30, 60, 90)
@@ -50,6 +52,7 @@ DEFAULTS = {
     # The server's own name, up to 10 characters, at the start of the level 1 menu. Empty shows nothing.
     "server_name": "",
     "design": "health",
+    "own_colours": "teal",
     "secure_cookies": False,
     "session_days": 7,
     "update_check": True,
@@ -240,6 +243,9 @@ class Config:
         if data.get("design") not in DESIGNS:  # a design that has since been removed
             data["design"] = DEFAULTS["design"]
             self._write(data)
+        if data.get("own_colours", "teal") not in OWN_COLOURS:  # a palette the design system no longer has
+            data["own_colours"] = "teal"
+            self._write(data)
         if data["network_access"] is None:
             data["network_access"] = os.environ.get("STARBOARD_NETWORK", "1") != "0"
             self._write(data)
@@ -328,6 +334,7 @@ class Config:
             "server_name": d["server_name"],
             "server_name_max": SERVER_NAME_MAX,
             "design": d["design"],
+            "own_colours": d.get("own_colours", "teal"),
             "groups": d["groups"],
             "secure_cookies": d["secure_cookies"],
             "session_days": d["session_days"],
@@ -383,6 +390,10 @@ class Config:
                 if incoming["design"] not in DESIGNS:
                     raise ConfigError("Choose one of the designs")
                 d["design"] = incoming["design"]
+            if "own_colours" in incoming:
+                if incoming["own_colours"] not in OWN_COLOURS:
+                    raise ConfigError("Choose one of the colours")
+                d["own_colours"] = incoming["own_colours"]
             if "groups" in incoming:
                 groups = [str(g).strip()[:40] for g in incoming["groups"] if str(g).strip()]
                 d["groups"] = groups[:20] or DEFAULTS["groups"]
@@ -457,7 +468,7 @@ class Config:
 # signed-in person). A key that is not here is refused, so a new setting must be given its right before it works.
 GENERAL_RIGHTS = {
     # Everyday: names, designs, categories, pages, download hours, performance
-    "site_name": "manage", "server_name": "manage", "design": "manage", "groups": "manage", "move_apps": "manage",
+    "site_name": "manage", "server_name": "manage", "design": "manage", "own_colours": "manage", "groups": "manage", "move_apps": "manage",
     "dashboard": "manage", "upcoming_view": "manage", "upcoming_days": "manage", "show_home_address": "manage",
     "show_outside_address": "manage", "fetch_icons": "manage", "show_posters": "manage", "settings_advanced": "manage",
     "infinite_scroll": "manage", "download_hours": "manage", "preset": "manage", "performance": "manage",

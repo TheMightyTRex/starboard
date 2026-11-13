@@ -213,26 +213,29 @@ function stylePicture(look, mode) {
 }
 
 // The Styles section: a picture of every style and Use this style, the same choice as Display's Style list.
-// Starboard's own colours (web/css/tokens.css), for the default card in the Styles section.
-const STARBOARD_LOOK = {
-  value: "", name: "Starboard's own style", radius: 8, font: "\"Atkinson Hyperlegible Next\", sans-serif", shadow: "soft",
-  description: "The standard colours. Choose it to go back from any style, as Reset style does in Display.",
-  light: { bg: "#f0f5ff", header: "#fcfdff", surface_raised: "#ffffff", surface_sunken: "#e4ebf7", text: "#141416", text_muted: "#424b5b",
-    border: "#7d879a", accent: "#0b5f5a", accent_text: "#ffffff" },
-  dark: { bg: "#101827", header: "#141e2e", surface_raised: "#232f42", surface_sunken: "#0c1220", text: "#f3f4f6", text_muted: "#a4aec1",
-    border: "#6f7b91", accent: "#5ed3c6", accent_text: "#101827" },
-};
+// Starboard's own style, for the default card in the Styles section: its shape, and its colours from the design
+// system palette chosen for it (DASH-388; Teal, tokens.css, unless another is chosen).
+const STARBOARD_LOOK = { value: "", name: "Starboard's own style", radius: 8, font: "\"Atkinson Hyperlegible Next\", sans-serif", shadow: "soft" };
+function ownLook(all) {
+  const p = all[ownColours] || all.teal;
+  const pick = (c) => Object.fromEntries(["bg", "header", "surface_raised", "surface_sunken", "text", "text_muted", "border", "accent", "accent_text"]
+    .map((k) => [k, c[`color-${k.replace(/_/g, "-")}`]]));
+  return { ...STARBOARD_LOOK, light: pick(p.light), dark: pick(p.dark),
+    description: `${p.label} colours from the design system, chosen above. Use it to go back from any style, as Reset style does in Display.` };
+}
 
 // The Styles section (owner, 12 November 2026: "you need a default option which resets the style"): Starboard's own
 // style first, in use whenever no plug-in style is, then each of the plug-in's styles.
 function styleGallery(p) {
   const active = p.state === "enabled";
   const grid = el("ul", { class: "style-gallery" });
+  let all = { teal: TEAL };
   const draw = () => {
+    const OWN = ownLook(all);
     const current = readPrefs().style || "";
     const own = !current;
     const back = el("button", { type: "button", class: own ? "btn btn--primary" : "btn", "aria-pressed": String(own) },
-      own ? "In use" : "Use this style", el("span", { class: "visually-hidden", text: `: ${STARBOARD_LOOK.name}` }));
+      own ? "In use" : "Use this style", el("span", { class: "visually-hidden", text: `: ${OWN.name}` }));
     back.addEventListener("click", () => {
       if (own) return;
       resetStyle();  // the same as Reset style in Display, which says so
@@ -240,8 +243,8 @@ function styleGallery(p) {
       $(`[aria-pressed="true"]`, grid)?.focus();
     });
     const first = el("li", { class: "style-gallery__item" },
-      el("div", { class: "style-gallery__pics" }, stylePicture(STARBOARD_LOOK, "light"), stylePicture(STARBOARD_LOOK, "dark")),
-      el("h4", { text: STARBOARD_LOOK.name }), el("p", { class: "small", text: STARBOARD_LOOK.description }), back);
+      el("div", { class: "style-gallery__pics" }, stylePicture(OWN, "light"), stylePicture(OWN, "dark")),
+      el("h4", { text: OWN.name }), el("p", { class: "small", text: OWN.description }), back);
     grid.replaceChildren(first, ...p.looks.map((look) => {
       const chosen = current === look.value;
       const use = el("button", { type: "button", class: chosen ? "btn btn--primary" : "btn", "aria-pressed": String(chosen), disabled: !active },
@@ -258,12 +261,19 @@ function styleGallery(p) {
     }));
   };
   draw();
+  palettes().then((loaded) => { all = loaded; draw(); });
   // Reset style in Display changes it too; a redrawn page has a new gallery, so an old one stops listening.
   const onChange = () => (grid.isConnected ? draw() : document.removeEventListener("stylechange", onChange));
   document.addEventListener("stylechange", onChange);
   return el("div", { class: "stack-4" },
     el("p", { class: "small", text: active ? "Light on the left, dark on the right. Your choice applies to this browser, as in Display. High contrast always wins." : "Activate the plug-in to use its styles." }),
-    grid);
+    ownColoursChoice("pl-own"), grid);
+}
+
+// A plug-in that stops (deactivated or removed) takes its style with it: this browser goes back to the own style and
+// its colours (DASH-388), as Reset style does, rather than keeping a style that is no longer there.
+function dropStyleOf(p) {
+  if ((readPrefs().style || "").startsWith(`${p.id}.`)) resetStyle();
 }
 
 // Activate or Deactivate one plug-in.
@@ -285,7 +295,11 @@ function stateButton(p, redraw, primary = false) {
     el("span", { class: "visually-hidden", text: ` ${p.name}` }));
   b.addEventListener("click", async () => {
     b.disabled = true;
-    try { await api(`/api/plugins/${p.id}/${what}`, { method: "POST" }); announce(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw(); }
+    try {
+      await api(`/api/plugins/${p.id}/${what}`, { method: "POST" });
+      if (what === "disable") dropStyleOf(p);
+      announce(`${p.name} ${what === "enable" ? "activated" : "deactivated"}`); redraw();
+    }
     catch (err) { problem(err.message, b); b.disabled = false; }
   });
   return b;
@@ -300,7 +314,7 @@ function removeButton(p, after) {
       message: "Its containers stop and go, and its API key stops working. Its folder is kept in data/plugins/.removed, for you to delete when you are sure.",
       fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
     if (!ok) return;
-    try { await api(`/api/plugins/${p.id}/remove`, { method: "POST", body: { password: pw.value } }); toast(`${p.name} removed`); after(); }
+    try { await api(`/api/plugins/${p.id}/remove`, { method: "POST", body: { password: pw.value } }); dropStyleOf(p); toast(`${p.name} removed`); after(); }
     catch (err) { problem(err.message, remove); }
   });
   return remove;

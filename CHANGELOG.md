@@ -9,6 +9,10 @@ add features.
 
 ### Added
 
+- Starboard's own style has colours to choose from: Teal (the standard) and the design system's five palettes,
+  Indigo, Forest, Plum, Ember and Graphite, for everyone on the server. Choose them on the Styles plug-in's page or in
+  Settings, General. Reset style, and a plug-in that is deactivated or removed, goes back to the own style in those
+  colours. The palette file loads only when one other than Teal is chosen (DASH-388).
 - Settings, Apps, Dispatcharr sets up the Dispatcharr add-on without opening it: its admin (your Starboard password)
   and a key for Starboard, your IPTV playlist or Xtream Codes server and guide, channels from the playlist (up to
   1000), and Dispatcharr in Jellyfin as an HDHomeRun tuner with its guide. Still to set up points there in place of

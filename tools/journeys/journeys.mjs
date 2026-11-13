@@ -650,6 +650,28 @@ const made = await page.locator("#dp-channels-h").locator("xpath=ancestor::secti
 check("DISP-04", "Make channels makes a channel for each stream and says so", /making 48 channels/.test(made) && /Channels in Dispatcharr\s+48/.test(made), made);
 check("DISP-04", "focus goes to the Channels heading, not the top of the page", await page.evaluate(() => document.activeElement.id) === "dp-channels-h");
 
+// DASH-388: the own style's colours, from the design system's palettes, on the Styles plug-in's page; a plug-in style
+// in use, then Reset style, comes back to the own style in those colours.
+console.log("\n== OWN Own style colours");
+await open("settings-plugin.html?id=styles");
+const ownCards = await page.locator("input[name=pl-own-colours]").evaluateAll((rs) => rs.map((r) => r.value));
+check("OWN-01", "the own style offers Teal and the design system's five palettes", ownCards.join(",") === "teal,indigo,forest,plum,ember,graphite", ownCards.join(","));
+await page.locator("input[name=pl-own-colours][value=forest]").check();
+await page.waitForTimeout(500);
+check("OWN-01", "choosing Forest saves it for the server and uses its colours here",
+  (await api("/api/config")).own_colours === "forest" && await page.evaluate(() => document.documentElement.dataset.palette) === "forest"
+  && (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--color-accent").trim())) === "#2f6b3a");
+check("OWN-01", "the saved note says so beside the choice", /Saved/.test(await page.locator("#pl-own-colours-saved").textContent()));
+await page.locator(".style-gallery button", { hasText: "Use this style" }).first().click();
+await page.waitForTimeout(300);
+check("OWN-02", "a plug-in style in use leaves the own colours out", await page.evaluate(() => !document.documentElement.dataset.palette && !!document.documentElement.dataset.style));
+await page.evaluate(() => resetStyle());
+await page.waitForTimeout(300);
+check("OWN-02", "Reset style goes back to the own style in Forest", await page.evaluate(() => !document.documentElement.dataset.style && document.documentElement.dataset.palette === "forest"));
+check("OWN-02", "and the own style's card says Forest", /Forest colours/.test(await page.locator(".style-gallery__item").first().innerText()));
+await api("/api/config/general", { method: "PUT", body: { own_colours: "teal" } });
+await page.evaluate(() => setOwnColours("teal"));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];
