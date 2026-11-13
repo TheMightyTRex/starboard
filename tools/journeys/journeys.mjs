@@ -968,6 +968,47 @@ check("DR-06", "Books has Trending and Reelix's nine subjects, all standard rows
   books.rows.length === 10 && books.rows.every((r) => r.shown && !r.genre), books.rows.map((r) => r.id).join(","));
 check("DR-06", "Music has no genre rows (Reelix has no music genres)", (await api("/api/library/discover-layout?tab=music")).rows.every((r) => !r.genre));
 
+// DASH-380: Copies off this computer on System, Backup and restore, set by the example server to a made-up USB disk,
+// with a stand-in helper. Test answers in the live line and focus stays on Test; a wrong remote is said in an alert
+// that takes focus; Off saves with the password and the buttons go; the made-up disk is put back after.
+console.log("\n== CP Copies off this computer");
+await open("system-backup.html");
+const cp = page.locator("#copies-body");
+await cp.locator("#copies-form").waitFor({ timeout: 10000 }).catch(() => {});
+check("CP-01", "the section is there, after Full without media, with its heading",
+  await page.evaluate(() => { const h = [...document.querySelectorAll("main h2")].map((x) => x.textContent); return h.indexOf("Copies off this computer") === h.indexOf("Full without media") + 1; }));
+check("CP-01", "Another disk is chosen, and the last copy is said",
+  await cp.getByRole("radio", { name: /Another disk/ }).isChecked() && /Copied to .*usb-backup/.test(await page.locator("#copies-state").innerText()));
+check("CP-01", "fields for other places are hidden", !(await page.locator("#copies-smb").isVisible()) && !(await page.locator("#copies-remote").isVisible()));
+await page.locator("#copies-test").click();
+await page.waitForFunction(() => /other place works/.test(document.querySelector("#copies-state")?.textContent || ""), null, { timeout: 5000 }).catch(() => {});
+check("CP-02", "Test says the other place works, in the live line", /Starboard can write to .*which has 5 full backups/.test(await page.locator("#copies-state").innerText()));
+check("CP-02", "focus stays on Test", await page.evaluate(() => document.activeElement.id) === "copies-test");
+check("CP-02", "the line is polite", (await page.locator("#copies-state").getAttribute("aria-live")) === "polite");
+await cp.getByRole("radio", { name: /A cloud remote/ }).check();
+check("CP-03", "a cloud remote shows its own fields", await page.locator("#copies-remote").isVisible() && await page.locator("#copies-rclone-config").isVisible());
+await page.fill("#copies-remote", "mycloud:starboard");
+await page.fill("#copies-mine", password);
+await page.locator("#copies-save").click();
+await page.locator("#copies-error [role=alert]").waitFor({ timeout: 5000 }).catch(() => {});
+check("CP-03", "without its part of rclone.conf it is not saved, said in an alert that takes focus",
+  /starts with \[mycloud\]/.test(await page.locator("#copies-error").innerText()) && await page.evaluate(() => document.activeElement.id) === "copies-error");
+check("CP-03", "the secret box never shows a kept value", (await page.locator("#copies-rclone-config").inputValue()) === "");
+await cp.getByRole("radio", { name: /^Off/ }).check();
+await page.fill("#copies-mine", password);
+await page.locator("#copies-save").click();
+await page.waitForFunction(() => !document.querySelector("#copies-test"), null, { timeout: 5000 }).catch(() => {});
+check("CP-04", "Off is saved: Test and Copy the newest now go, focus is on Save",
+  !(await page.locator("#copies-test").count()) && await page.evaluate(() => document.activeElement.id) === "copies-save");
+const copiesNow = await api("/api/backup/copies");
+check("CP-04", "the page never gets a password or config back", !("smb_password" in copiesNow) && !("rclone_config" in copiesNow));
+await api("/api/backup/copies", { method: "PUT", body: { password, kind: "disk", folder: copiesNow.folder, keep: 5 } });
+await open("system-backup.html");
+await page.locator("#copies-now").waitFor({ timeout: 5000 }).catch(() => {});
+await page.locator("#copies-now").click();
+await page.waitForFunction(() => /Copied to|Copying now/.test(document.querySelector("#copies-state")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
+check("CP-05", "Copy the newest now copies, said in the live line", /Copied to .*keeps 5|Copying now/.test(await page.locator("#copies-state").innerText()));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

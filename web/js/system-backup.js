@@ -400,6 +400,146 @@ function openMakeFull(folder, pictures, opener) {
   pw1.focus();
 }
 
+// Copies off this computer (DASH-380) -----------------------------------------------------------------------------
+// One form with one Save (a share's password and rclone's config are secrets): where the copies go, the details for
+// that place and how many to keep there, with Starboard's password. Test and Copy the newest now answer in the live
+// status line under the form; focus stays on the button that was used.
+
+const COPY_KINDS = [
+  ["off", "Off", "Full backups stay only in their own folder."],
+  ["disk", "Another disk", "A USB disk or a second disk in this computer."],
+  ["smb", "A Windows or NAS share", "SMB, such as //192.168.1.20/backups."],
+  ["nfs", "An NFS share", "Such as 192.168.1.20:/export/backups."],
+  ["rclone", "A cloud remote", "Your own rclone remote, such as Backblaze B2, Google Drive or OneDrive."],
+];
+
+function copyField(label, input, hint) {
+  if (hint) input.setAttribute("aria-describedby", `${input.id}-hint`);
+  return el("div", { class: "field" }, el("label", { for: input.id, text: label }),
+    hint ? el("span", { class: "hint", id: `${input.id}-hint`, text: hint }) : null, input);
+}
+
+function copyState(s) {
+  if (!s || s.state === "none" || !s.state) return el("p", { class: "small muted", text: "No copy has been made yet." });
+  if (s.state === "running") return notice("info", "Copying now", `${s.file ? `${s.file.split("/").pop()} to ${s.where || "the other place"}` : "To the other place"}. You can leave this page.`);
+  if (s.state === "failed") return notice("danger", `The last copy did not work${s.finished ? `, ${formatDate(s.finished * 1000, true)}` : ""}`, s.error || "");
+  return notice("success", `Last copy ${formatDate(s.finished * 1000, true)}`, s.said || "");
+}
+
+async function loadCopies(focusId) {
+  const body = $("#copies-body");
+  let c;
+  try { c = await api("/api/backup/copies"); } catch (e) { body.replaceChildren(notice("danger", "Could not read where the copies go", e.message)); return; }
+  body.removeAttribute("aria-busy");
+  const kinds = el("fieldset", { class: "option-cards" }, el("legend", { text: "Where the copies go" }),
+    COPY_KINDS.map(([value, title, text]) => el("label", { class: "option-card" },
+      el("input", { type: "radio", name: "copies-kind", value, checked: value === c.kind }),
+      el("strong", { text: title }), el("small", { text }))));
+  const folder = locationPicker({ id: "copies-folder", label: "Folder on the other disk", app: "host", setting: "backups", value: c.folder,
+    hint: "Not the folder the full backups are made in. A USB disk must be plugged in when a backup is made." });
+  const smb = el("input", { class: "input", id: "copies-smb", value: c.smb, spellcheck: "false", autocomplete: "off", placeholder: "//192.168.1.20/backups" });
+  const smbUser = el("input", { class: "input", id: "copies-smb-user", value: c.smb_user, spellcheck: "false", autocomplete: "off" });
+  const smbPassword = el("input", { class: "input", id: "copies-smb-password", type: "password", autocomplete: "new-password" });
+  const nfs = el("input", { class: "input", id: "copies-nfs", value: c.nfs, spellcheck: "false", autocomplete: "off", placeholder: "192.168.1.20:/export/backups" });
+  const remote = el("input", { class: "input", id: "copies-remote", value: c.remote, spellcheck: "false", autocomplete: "off", placeholder: "mycloud:starboard-backups" });
+  const config = el("textarea", { class: "input", id: "copies-rclone-config", rows: "5", spellcheck: "false", autocomplete: "off" });
+  const keep = el("input", { class: "input input--narrow", id: "copies-keep", type: "number", min: "1", max: "50", value: String(c.keep), inputmode: "numeric" });
+  const mine = el("input", { class: "input", id: "copies-mine", type: "password", autocomplete: "current-password" });
+  const groups = {
+    disk: el("div", { class: "stack-2", "data-kind": "disk" }, folder.node),
+    smb: el("div", { class: "stack-2", "data-kind": "smb" },
+      copyField("Share", smb, "As //computer/share, with a folder after it if you like."),
+      copyField("User name", smbUser, "Leave empty for a share anyone on your network may write to."),
+      copyField("Password", smbPassword, c.smb_password_set ? "Kept. Leave empty to keep it." : "The share's own password, kept by Starboard only.")),
+    nfs: el("div", { class: "stack-2", "data-kind": "nfs" }, copyField("Share", nfs, "As computer:/folder. The share must let this computer write.")),
+    rclone: el("div", { class: "stack-2", "data-kind": "rclone" },
+      copyField("Remote and folder", remote, "As name:folder, the remote's name as it is in your rclone.conf."),
+      copyField("The remote's part of rclone.conf", config, c.rclone_config_set
+        ? "Kept. Leave empty to keep it, or paste it again to change it."
+        : "Paste the lines from [name] to the next [ ]. rclone config file shows where rclone.conf is. Kept by Starboard only.")),
+  };
+  const keepField = el("div", { class: "stack-2" }, copyField("Keep the newest", keep, "How many full backups stay at the other place. Older ones there are removed."));
+  const errorBox = el("div", { id: "copies-error", tabindex: "-1" });
+  const save = el("button", { type: "submit", class: "btn btn--primary", id: "copies-save" }, "Save where the copies go");
+  const form = el("form", { class: "form-stack", id: "copies-form", novalidate: true }, kinds, ...Object.values(groups), keepField,
+    copyField("Your Starboard password", mine, "Asked each time, as the share's password and rclone's config are kept."), errorBox,
+    el("div", { class: "actions" }, save));
+  const show = () => {
+    const kind = form.querySelector("input[name=copies-kind]:checked")?.value || "off";
+    for (const [k, node] of Object.entries(groups)) node.hidden = k !== kind;
+    keepField.hidden = kind === "off";
+  };
+  kinds.addEventListener("change", show);
+  const state = el("div", { id: "copies-state", "aria-live": "polite" }, copyState(c.status));
+  const test = el("button", { type: "button", class: "btn", id: "copies-test" }, icon("plug"), "Test the other place");
+  const now = el("button", { type: "button", class: "btn", id: "copies-now" }, icon("copy"), "Copy the newest now");
+  const stop = el("button", { type: "button", class: "btn btn--quiet", id: "copies-stop" }, "Stop making copies");
+  const running = c.status?.state === "running";
+  test.disabled = now.disabled = running;
+  const active = c.kind !== "off";
+  body.replaceChildren(form,
+    active ? el("h3", { text: `Copies go to ${c.where}` }) : "",
+    active ? el("div", { class: "actions" }, test, now, stop) : "",
+    state);
+  show();
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorBox.replaceChildren();
+    const kind = form.querySelector("input[name=copies-kind]:checked")?.value || "off";
+    save.disabled = true;
+    try {
+      await api("/api/backup/copies", { method: "PUT", body: { password: mine.value, kind, folder: folder.input.value.trim(), smb: smb.value.trim(),
+        smb_user: smbUser.value.trim(), smb_password: smbPassword.value, nfs: nfs.value.trim(), remote: remote.value.trim(),
+        rclone_config: config.value, keep: Number(keep.value) } });
+      await loadCopies("copies-save");
+      announce(kind === "off" ? "Saved: no copies are made" : "Saved: each new full backup is copied there");
+    } catch (err) {
+      errorBox.replaceChildren(el("div", { class: "notice", "data-tone": "danger", role: "alert" }, icon("circle-alert"),
+        el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Not saved" }), el("p", { text: err.message }))));
+      (err.status === 401 || err.status === 429 ? mine : errorBox).focus();
+      save.disabled = false;
+    }
+  });
+  test.addEventListener("click", async () => {
+    test.disabled = true;
+    state.replaceChildren(notice("info", "Testing", `Writing a small file to ${c.where} and removing it again.`));
+    try {
+      const r = await api("/api/backup/copies/test", { method: "POST" });
+      state.replaceChildren(notice("success", "The other place works", r.said));
+    } catch (err) { state.replaceChildren(notice("danger", "The test did not work", err.message)); }
+    finally { test.disabled = false; test.focus(); }
+  });
+  now.addEventListener("click", async () => {
+    now.disabled = true;
+    try {
+      await api("/api/backup/copies/now", { method: "POST" });
+      announce("Copying the newest full backup");
+      await loadCopies("copies-now");
+    } catch (err) { state.replaceChildren(notice("danger", "Not copied", err.message)); now.disabled = false; now.focus(); }
+  });
+  stop.addEventListener("click", async () => {
+    const r = await withPassword({
+      title: "Stop making copies off this computer?",
+      message: "New full backups stay only in their own folder. The share's password and rclone's config are removed from Starboard. Copies already made stay where they are.",
+      confirm: "Stop making copies", danger: true,
+      run: (password) => api("/api/backup/copies/forget", { method: "POST", body: { password } }),
+    });
+    if (!r) return;
+    await loadCopies();
+    $("input[name=copies-kind]:checked")?.focus();
+    announce("Copies off this computer stopped");
+  });
+  if (focusId) $(`#${focusId}`)?.focus();
+  if (running) {
+    setTimeout(async () => {
+      if (!document.body.contains(state)) return;
+      const was = body.contains(document.activeElement) ? document.activeElement.id : null;
+      await loadCopies(was);
+    }, 3000);
+  }
+}
+
 // When backups are made (DASH-17) ---------------------------------------------------------------------------------
 // Settings pattern 3: four choice cards that apply at once, with the saved note under them. Then one status line: when
 // the next one is, and what it makes, with at most one button.
@@ -563,6 +703,7 @@ startPage().then((session) => {
   if ($("#back-command")) return;
   $("#download").addEventListener("click", download);
   loadFull().then(() => loadSchedule());
+  loadCopies();
   loadServer();
   loadSaved();
 });

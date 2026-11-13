@@ -125,6 +125,22 @@ def _example_dispatcharr():
     dispatcharr.inside_address = lambda cfg, data_dir: dispatcharr.INSIDE
 
 
+def _example_copies(data):
+    """Copies off this computer (DASH-380): set to a made-up USB disk, with last night's copy made. The helper is a
+    stand-in that answers as the real one would, so Test and Copy the newest now work without Docker."""
+    from starboard import backup_copies
+    usb = str(data / "example-computer" / "mnt" / "usb-backup" / "starboard")
+    if not (data / backup_copies.SETTINGS).exists():
+        backup_copies.save(str(data), {**backup_copies.settings(str(data)), "kind": "disk", "folder": usb, "keep": 5},
+                           backup_copies.secrets(str(data)))
+        last = dt.datetime.now().replace(hour=3, minute=4, second=0).timestamp()
+        backup_copies._say(str(data), state="done", started=last - 40, finished=last, where=usb,
+                           file=str(data / "example-computer" / "mnt" / "disk2" / "backups" / "starboard-full-2026-11-13-030000.starboard"),
+                           said=f"Copied to {usb}, which keeps 5 full backups")
+    backup_copies._helper = lambda script, binds, image=None, network="none", volumes=(), timeout=7200: (0, "COUNT 5\n")
+    backup_copies.newest = lambda data_dir: str(data / "example-computer" / "mnt" / "disk2" / "backups" / "starboard-full-2026-11-13-030000.starboard")
+
+
 def _example_folders(data):
     """The folder picker (DASH-240) browses a made-up tree, never this computer's own folders."""
     from starboard import folders
@@ -849,6 +865,7 @@ def main():
     _example_livetv(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
+    _example_copies(DATA)
     if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":
         # DASH-218: the full Reelix's YouTube and Spotify downloads as the admin last saw them, with yt-dlp broken and
         # Spotify's sign-in run out, so Apps and System show both warnings with what to do. Off by default.

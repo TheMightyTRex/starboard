@@ -42,7 +42,9 @@ WORK = "backup-work"
 # server that leaves about 1.3 GB, mostly Jellyfin's database, which compresses to about a third.
 # Starboard's own folder: what never goes in, and the pictures only the person added (station logos from a zip).
 KEY_FILE = "backup-key.json"  # the scheduled copies' key (DASH-17): never in a backup itself
-STARBOARD_SKIP = ("sessions.json", "logs/", "backups/", WORK + "/", "plugins/.removed/", "setup-token", "posters/", "icons/", KEY_FILE,
+# Copies off this computer (DASH-380): the share's password and rclone's config, and the copy's own work folder and status.
+COPY_SKIP = ("backup-copies-secret.json", "backup-copies-status.json", "backup-copy-work/")
+STARBOARD_SKIP = ("sessions.json", "logs/", "backups/", WORK + "/", "plugins/.removed/", "setup-token", "posters/", "icons/", KEY_FILE, *COPY_SKIP,
                   "library/films.json", "library/tv.json", "library/music.json", "library/books.json", "library/audiobooks.json",
                   "library/radio.json", "library/network-logos.json", "space.json", "usage.json", "disk-temps.json", "imports/")
 STARBOARD_PICTURES = ("library/station-logos/",)
@@ -397,6 +399,8 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
                              [f"{host_data}/{WORK}:/w:ro", f"{root}:/t"])
         if code:
             raise BackupError(f"Writing to {target} did not work: {said.strip()[-200:]}")
+        from . import backup_copies  # DASH-380: a copy off this computer, when one is chosen; never fails the backup
+        backup_copies.after_full(data_dir, f"{path}/{name}")
         _say(data_dir, state="done", step="", finished=time.time(), file=f"{path}/{name}", size=size)
     except Exception as e:  # noqa: BLE001: whatever stops it, the page says what
         _say(data_dir, state="failed", step="", finished=time.time(), error=str(e) or e.__class__.__name__)

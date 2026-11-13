@@ -2460,6 +2460,34 @@ class Handler(BaseHTTPRequestHandler):
                     full_backup.forget_key(app.data_dir)
                     logs.event("info", "backup", "The key for scheduled full backups was removed")
                     return self.json(200, app.backup_schedule.status())
+            if path.startswith("/api/backup/copies"):  # Copies off this computer (DASH-380)
+                from . import backup_copies, full_backup
+                try:
+                    if path == "/api/backup/copies" and method == "GET":
+                        return self.json(200, backup_copies.public(app.data_dir))
+                    if path == "/api/backup/copies" and method == "PUT":
+                        # Where the copies go, with a share's password or rclone's config: Starboard's password first.
+                        data = self.body(limit=64 * 1024)
+                        self.check_password(data)
+                        new, sec = backup_copies.check(app.data_dir, data)
+                        backup_copies.save(app.data_dir, new, sec)
+                        logs.event("info", "backup", f"Copies off this computer: {new['kind']} {backup_copies.where(new)}".strip())
+                        return self.json(200, backup_copies.public(app.data_dir))
+                    if path == "/api/backup/copies/test" and method == "POST":
+                        return self.json(200, {**backup_copies.public(app.data_dir), "said": backup_copies.test(app.data_dir)})
+                    if path == "/api/backup/copies/now" and method == "POST":
+                        backup_copies.copy_now(app.data_dir)
+                        logs.event("info", "backup", "Copy off this computer started by hand")
+                        return self.json(202, backup_copies.public(app.data_dir))
+                    if path == "/api/backup/copies/forget" and method == "POST":
+                        self.check_password(self.body())
+                        backup_copies.forget(app.data_dir)
+                        logs.event("info", "backup", "Copies off this computer stopped; the kept share password and rclone config were removed")
+                        return self.json(200, backup_copies.public(app.data_dir))
+                except (backup_copies.CopyError, full_backup.BackupError, ValueError) as e:
+                    return self.error(400, str(e))
+                except containers.DockerError as e:
+                    return self.error(400, f"Docker did not do it: {e}")
             if path.startswith("/api/backup/full"):  # Full without media (DASH-260)
                 from . import backup_schedule, full_backup
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)

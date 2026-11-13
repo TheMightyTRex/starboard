@@ -343,6 +343,33 @@ if (await wn14.count()) {
   check("T14", "What is new is gone", !(await page.locator("#pl-styles-whats-new").count()));
 } else check("T14", "the example Styles plug-in shows What is new", false, "not shown");
 
+// T15 Copies off this computer (DASH-380): from the section's heading, Tab reaches the chosen place; arrows move
+// between the places without saving; Tab reaches Test the other place; Enter tests, focus stays on it and the result
+// is said in the polite line.
+await page.goto(`${base}/system-backup.html`);
+await settle();
+await page.evaluate(() => { const h = document.querySelector("#bk-copies-h"); h.tabIndex = -1; h.focus(); });
+const radio15 = await tabTo((f) => f.tag === "INPUT" && f.inMain, 5);
+if (radio15) {
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(200);
+  check("T15", "arrows move to the next place and show its fields", await page.evaluate(() => document.querySelector("input[name=copies-kind]:checked")?.value === "smb"
+    && !document.querySelector("[data-kind=smb]").hidden));
+  check("T15", "choosing a place saves nothing by itself", !/Saved/.test(await said()));
+  await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(200);
+} else check("T15", "Tab reaches the places", false);
+const test15 = await tabTo((f) => /^Test the other place/.test(f.text) && f.tag === "BUTTON", 60);
+check("T15", "Tab reaches Test the other place", !!test15, test15 ? test15.text : "not reached");
+if (test15) {
+  await page.keyboard.press("Enter");
+  await settle();
+  const f15 = await focus();
+  check("T15", "after Test, focus stays on it", f15.id === "copies-test", `${f15.tag} ${f15.id}`);
+  check("T15", "the result is said politely", /other place works/.test(await page.locator("#copies-state").innerText())
+    && (await page.locator("#copies-state").getAttribute("aria-live")) === "polite");
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
