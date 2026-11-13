@@ -151,6 +151,22 @@ def _example_full_backups():
          "size": 640 * 1000 ** 2 + n * 3 * 1000 ** 2, "created": d.isoformat(timespec="seconds"), "version": "0.15.0", "pictures": False,
          "apps": apps, "site_name": "Harbour", "config_dir": "/srv/media-stack/config"}
         for n, d in enumerate(day - dt.timedelta(days=7 * k) for k in range(2))]
+def _example_tdarr():
+    """Tdarr's settings (DASH-306), on Settings, Tdarr and on the Tdarr plug-in page's Settings topic: made-up answers
+    as Tdarr gives them, kept while the example server runs. Nothing is sent anywhere."""
+    from starboard import tdarr
+    have = {"libraries": {"films": True, "series": True}, "mode": "save_space", "at_once": 1, "night": True, "node": "starboard",
+            "files": 4210, "converted": 318, "checked": 4196, "saved_gb": 612.4, "other_libraries": ["TV"],
+            "quiet_hours": "01:00 to 06:00", "quiet_from_download_hours": False}
+    tdarr.state = lambda cfg: dict(have)
+
+    def save(cfg, choice):
+        have.update({"mode": choice.get("mode", have["mode"]), "at_once": int(choice.get("at_once", 1)),
+                     "night": bool(choice.get("night")), "libraries": choice.get("libraries") or have["libraries"]})
+        return {"state": dict(have), "done": ["Saved"]}
+    tdarr.save = save
+
+
 def _example_copies(data):
     """Copies off this computer (DASH-380): set to a made-up USB disk, with last night's copy made. The helper is a
     stand-in that answers as the real one would, so Test and Copy the newest now work without Docker."""
@@ -1159,6 +1175,7 @@ def main():
     _example_folders(DATA)
     _example_full_backups()
     _example_copies(DATA)
+    _example_tdarr()
     if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":
         # DASH-218: the full Reelix's YouTube and Spotify downloads as the admin last saw them, with yt-dlp broken and
         # Spotify's sign-in run out, so Apps and System show both warnings with what to do. Off by default.

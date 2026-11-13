@@ -182,10 +182,13 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .settings-rows > .setting--sub .setting__label { font-weight: var(--weight-regular); }
 
 
-/* Plug-ins, Manage (issue #10): each row's chips, Settings and state button in fixed columns, so they line up from row
-   to row whatever the words; on a phone they wrap as before. */
+/* Plug-ins, Manage (issue #10): each row's chips, Open (for a plug-in with its own page), Settings and state button
+   in fixed columns, so they line up from row to row whatever the words; on a phone they wrap as before. */
+.plugin-row__open { display: inline-flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }
+.plugin-row__open:empty { display: none; }
 @media (min-width: 720px) {
-  .plugin-row__side { display: grid; grid-template-columns: 11rem auto 8.5rem; align-items: center; justify-items: end; gap: var(--space-3); }
+  .plugin-row__side { display: grid; grid-template-columns: 11rem 5.5rem auto 8.5rem; align-items: center; justify-items: end; gap: var(--space-3); }
+  .plugin-row__open:empty { display: block; }
   .plugin-row__side > :last-child { justify-self: stretch; }
 }
 .plugin-row__chips { display: inline-flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; }

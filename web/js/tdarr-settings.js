@@ -1,5 +1,7 @@
 // Settings, Apps, Tdarr (owner, 10 November 2026, DASH-306): Tdarr's basic choices from Starboard, which gives Tdarr
 // its key, so nobody signs in to Tdarr. Libraries, what it does, how many at once and when; what it has done so far.
+// The same choices are the Settings topic of the Tdarr plug-in's page (owner, 13 November 2026: "Your plug-ins needs
+// to take into account a settings page"), drawn there by tdDraw(said, box, true) inside that page's own section.
 
 // Settings pattern 1: a heading, one line about it, then the content.
 function tdSection(id, title, desc, ...content) {
@@ -18,8 +20,8 @@ function tdChoice(name, value, label, hint, checked) {
     el("small", { text: hint }));
 }
 
-async function tdDraw(said) {
-  const box = $("#tdarr-sections");
+async function tdDraw(said, box = $("#tdarr-sections"), inPlugin = false) {
+  const again = (words) => tdDraw(words, box, inPlugin);
   let s;
   try { s = await api("/api/tdarr"); }
   catch (e) {
@@ -38,7 +40,7 @@ async function tdDraw(said) {
           try { await api("/api/tdarr"); ok = true; } catch { await new Promise((r) => setTimeout(r, 3000)); }
         }
         if (!ok) throw new Error("Tdarr did not answer after restarting. Check it is running in Apps, then try again.");
-        tdDraw("Connected. Starboard keeps Tdarr's key");
+        again("Connected. Starboard keeps Tdarr's key");
       }
       catch (err) { problem(err.message, go); go.disabled = false; go.textContent = "Connect Tdarr"; }
     });
@@ -54,7 +56,7 @@ async function tdDraw(said) {
       await api("/api/tdarr", { method: "PUT", body: { mode: form.mode.value, at_once: Number(atOnce.value), night: form.when.value === "night",
         libraries: { films: form["lib-films"].checked, series: form["lib-series"].checked } } });
       settingSaved();
-    } catch (err) { problem(err.message, control); tdDraw(); }
+    } catch (err) { problem(err.message, control); again(); }
   };
   const libs = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: "Libraries" }),
     ...[["films", "Films", "/media/movies"], ["series", "Series", "/media/tv"]].map(([k, label, folder]) => el("label", { class: "check" },
@@ -80,11 +82,17 @@ async function tdDraw(said) {
   const done = el("dl", { class: "facts" }, ...[["Files Tdarr knows", s.files], ["Converted", s.converted], ["Checked", s.checked],
     ["Space saved", `${s.saved_gb} GB`]].flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: String(v) })]));
   box.removeAttribute("aria-busy");
-  box.replaceChildren(
+  const others = s.other_libraries.length ? `Tdarr also has libraries you made yourself: ${s.other_libraries.join(", ")}. Starboard leaves them as they are.` : null;
+  if (inPlugin) {  // inside the plug-in page's Settings section: its heading and line are already there
+    box.replaceChildren(...[said ? tdNotice("success", said, "") : null, form, el("h3", { text: "So far" }),
+      others ? el("p", { class: "small muted", text: others }) : null, done].filter(Boolean));
+    return;
+  }
+  box.replaceChildren(...[
     said ? el("div", { class: "notice", "data-tone": "success", role: "status" }, icon("circle-check"),
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: said }))) : null,
     tdSection("td-choices", "What Tdarr does", "Starboard writes these into Tdarr; Tdarr's own page still shows everything.", form),
-    tdSection("td-done", "So far", s.other_libraries.length ? `Tdarr also has libraries you made yourself: ${s.other_libraries.join(", ")}. Starboard leaves them as they are.` : null, done));
+    tdSection("td-done", "So far", others, done)].filter(Boolean));  // replaceChildren would write an empty notice as "null"
 }
 
-startPage().then(() => tdDraw());
+if ($("#tdarr-sections")) startPage().then(() => tdDraw());  // the plug-in page draws it itself

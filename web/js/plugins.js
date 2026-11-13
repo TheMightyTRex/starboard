@@ -341,6 +341,27 @@ function webLinks(p, compact = false) {
   return p.web.map((w) => el("a", { class: compact ? "btn btn--quiet btn--compact" : "btn", href: webAddress(w), target: "_blank", rel: "noopener" },
     icon("external-link"), compact ? "Open" : w.label, el("span", { class: "visually-hidden", text: `${compact ? ` ${p.name}` : ""} (opens in a new tab)` })));
 }
+// App plug-ins whose app Starboard already has settings for (owner, 13 November 2026: "Your plug-ins needs to take
+// into account a settings page"): the same choices, as the plug-in page's Settings topic, so they are where the
+// plug-in is. Each entry: the script that draws them and its drawing function, given (said, box, true).
+const APP_SETTINGS = { tdarr: { script: "/js/tdarr-settings.js", draw: "tdDraw", about: "Starboard writes these into Tdarr, so you never sign in to it. Tdarr's own page still shows everything." } };
+const loadedScripts = {};
+function loadScript(src) {
+  loadedScripts[src] ||= new Promise((ok, fail) => {
+    document.head.append(el("script", { src, onload: ok, onerror: () => fail(new Error("Could not load the settings. Reload the page.")) }));
+  });
+  return loadedScripts[src];
+}
+function appSettingsSection(p) {
+  const app = APP_SETTINGS[p.id];
+  if (!app) return null;
+  if (p.state !== "enabled") return section(`pl-${p.id}-app`, "Settings", `Activate ${p.name} on State to change its settings.`);
+  const box = el("div", { class: "stack-4", "aria-busy": "true" }, el("p", { class: "muted", text: "Loading…" }));
+  loadScript(app.script).then(() => window[app.draw]("", box, true))
+    .catch((err) => { box.removeAttribute("aria-busy"); box.replaceChildren(el("p", { class: "field__error", text: err.message })); });
+  return section(`pl-${p.id}-app`, "Settings", app.about, box);
+}
+
 function webSection(p) {
   if (!p.web?.length && !(p.publishes && stateOf(p) !== "enabled")) return null;
   return section(`pl-${p.id}-web`, "Its web page", p.web?.length
@@ -567,6 +588,7 @@ function pluginPage(p, redraw) {
     p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
       el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null,
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
+    appSettingsSection(p),
     ...groups.map((g) => section(g.id, g.group || "Settings", "Saved for everyone who uses this Starboard.", g.body)),
     ...custom.map((c) => section(`pl-${p.id}-${c.key}`, c.label, c.hint || "", customScreen(p, c))),
     buttons.length ? section(`pl-${p.id}-actions`, "Actions", p.state === "enabled" ? "Things it can do now, as well as on its own schedule." : "Activate it to use these.",
@@ -1193,9 +1215,11 @@ async function startPlugins() {
         el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row row--no-lead" },
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
-          // Three fixed columns, so the chips, Settings and the state button line up from row to row (issue #10).
+          // Four fixed columns, so the chips, Open, Settings and the state button line up from row to row (issue #10;
+          // owner, 13 November 2026: a plug-in with its own page, such as Jellystat, pushed its row out of line). The
+          // Open column is there, empty, for a plug-in without a page of its own.
           el("div", { class: "row__side plugin-row__side" }, el("span", { class: "plugin-row__chips" }, chip(...chipOf(p)), p.update ? chip("Update", "info") : null),
-            ...(p.state === "enabled" ? webLinks(p, true) || [] : []),
+            el("span", { class: "plugin-row__open" }, ...(p.state === "enabled" ? webLinks(p, true) || [] : [])),
             el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}` }, icon("settings"), "Settings",
               el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
             stateButton(p, draw))))),
