@@ -266,7 +266,13 @@ def stale_sharers():
             continue
         host_at, host_name = started_at(mode.split(":", 1)[1])
         own_at, _ = started_at(c["Id"])
-        if host_at and own_at and own_at < host_at:  # RFC 3339 times in UTC sort as text
+        if not host_at:  # the container it shares no longer exists: Gluetun was made again, with a new ID (13 November 2026)
+            labels = c.get("Labels") or {}
+            out.append({"name": c["Names"][0].lstrip("/"), "shares": "", "gone": True,
+                        **_compose(labels.get("com.docker.compose.service", ""), labels.get("com.docker.compose.project", ""),
+                                   labels.get("com.docker.compose.project.working_dir", ""),
+                                   labels.get("com.docker.compose.project.config_files", ""))})
+        elif own_at and own_at < host_at:  # RFC 3339 times in UTC sort as text
             out.append({"name": c["Names"][0].lstrip("/"), "shares": host_name})
     return out
 
@@ -276,11 +282,19 @@ def rejoin():
     done = []
     for c in stale_sharers():
         try:
+            if c.get("gone"):
+                # A restart keeps the old ID, so the container is made again by its Compose project (each project once).
+                if c.get("folder") and c.get("files") and c["project"] not in {d.get("project") for d in done if isinstance(d, dict)}:
+                    _helper(c["folder"], f"docker compose -p {_quote(c['project'])} "
+                            + " ".join(f"-f {_quote(f)}" for f in c["files"]) + " up -d --force-recreate --no-deps "
+                            + " ".join(_quote(x["service"]) for x in stale_sharers() if x.get("gone") and x.get("project") == c["project"] and x.get("service")) + " 2>&1")
+                    done.append({"project": c["project"]})
+                continue
             restart(c["name"])
             done.append(c["name"])
         except DockerError:
             pass
-    return done
+    return [d for d in done if isinstance(d, str)] + [f"{d['project']} (made again)" for d in done if isinstance(d, dict)]
 
 
 def sharers(name):
