@@ -1401,7 +1401,8 @@ function pluginTabs(list) {
 
 // Logos legible in light and dark (owner, 12 November 2026): a network's logo is measured once, in the first browser
 // that shows it (mostly light, mostly dark, or on its own solid background), and the answer is kept on the server, so
-// no logo is measured again. CSS then shows light logos black in light mode and dark logos white in dark mode.
+// no logo is measured again. CSS keeps each logo's own colours and uses the tone only to choose the tile behind it
+// (13 November 2026): a dark tile for a white logo, a light tile for a dark one.
 function logoTone(img, name, tone, kind = "network") {
   if (tone) { img.dataset.tone = tone; return img; }
   img.addEventListener("load", () => {
