@@ -52,9 +52,9 @@ function card(s, old) {
   // Tiles show the status beside the name, the update in the strip and the rest in their own row.
   const chips = el("span", { class: "card__chips" }, el("span", { class: "card__state" }, chip(words.label, words.tone)),
     u ? el("span", { class: "card__update" }, chip("Update available", "info")) : null,
+    // One note chip at most, and never a number (DASH-309, R3): the warnings themselves are in the app's slide-out.
     el("span", { class: "card__notes" },
-      warn.length ? chip(warn.length === 1 ? "1 warning" : `${warn.length} warnings`, "warning") : null,
-      o && !o.reachable ? chip("Not reachable from outside", "warning") : null));
+      warn.length ? chip("Needs attention", "warning") : o && !o.reachable ? chip("Not reachable from outside", "warning") : null));
   const numbers = addUp(familyOf(s).flatMap((x) => AppDetails.state.numbers?.[x.id] || []));
   const activity = down ? (s.type === "gluetun" && /^The VPN/.test(st?.message || "") ? AppDetails.sentence(st.message) : "Cannot reach it") : numbers?.length ? numbers.join(" · ") : numbersOff || !st ? "" : "Nothing to report";
   // Every card has the same parts in the same order, so each line sits in the same place on every card.

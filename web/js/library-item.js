@@ -32,14 +32,15 @@ async function markWatched(ids, watched, button) {
 }
 
 // Choose a download (DASH-159): what Reelix finds on its sites, best first, with Get this one. One Reelix would
-// turn down says why, and can still be taken with Get it anyway.
-async function chooseDownload(extra, what) {
+// turn down says why, and can still be taken with Get it anyway. A list to choose from, so a slide-out, not a dialog
+// with Close and Cancel (DASH-309, R6); the page stays in view and Escape or the close button give focus back.
+async function chooseDownload(extra, what, opener = document.activeElement) {
   const box = el("div", { class: "stack-2", "aria-live": "polite" }, el("p", { class: "muted", text: "Asking every site. This can take a minute…" }));
-  const dialog = confirmDialog({ title: `Choose a download for ${what}`, message: "", confirm: "Close", cancel: "Cancel", fields: [box] });
+  const panel = sidePanel({ title: `Choose a download for ${what}`, wide: true, opener, body: [box] });
   const params = new URLSearchParams({ tab: ITEM_TAB, id: String(current.id), ...Object.fromEntries(Object.entries(extra).map(([k, v]) => [k, String(v)])) });
   try {
     const r = await api(`/api/library/releases?${params}`);
-    if (!r.releases.length) { box.replaceChildren(el("p", { text: "No site has it at the moment. Reelix keeps looking while it follows it." })); return dialog; }
+    if (!r.releases.length) { box.replaceChildren(el("p", { text: "No site has it at the moment. Reelix keeps looking while it follows it." })); return panel; }
     box.replaceChildren(el("ul", { class: "rows" }, r.releases.map((x) => {
       const meta = [x.quality, x.size ? formatBytes(x.size) : "", x.seeders != null ? `${x.seeders} seeders` : "", x.site,
         x.age_minutes != null ? (x.age_minutes < 1440 ? "today" : Math.round(x.age_minutes / 1440) === 1 ? "1 day old" : `${Math.round(x.age_minutes / 1440)} days old`) : "", x.languages.join(", ")].filter(Boolean).join(" · ");
@@ -48,7 +49,10 @@ async function chooseDownload(extra, what) {
       take.addEventListener("click", async () => {
         take.disabled = true;
         try { const g = await api(`/api/library/grab?tab=${ITEM_TAB}`, { method: "POST", body: { guid: x.guid, indexer_id: x.indexer_id, force: !x.accepted, title: x.title } });
-          take.replaceWith(chip("Sent", "success")); announce(g.said); toast(g.said); }
+          // The row says it (a chip where the button was, with focus on it); no toast as well (DASH-309, R5).
+          const sent = chip("Sent", "success");
+          sent.setAttribute("tabindex", "-1");
+          take.replaceWith(sent); sent.focus(); announce(g.said); }
         catch (e) { problem(e.message, take); take.disabled = false; }
       });
       return el("li", { class: "row row--no-lead" }, el("div", {},
@@ -60,7 +64,7 @@ async function chooseDownload(extra, what) {
     box.replaceChildren(el("div", { class: "notice", "data-tone": "danger", role: "alert" }, icon("circle-x"),
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Reelix could not search" }), el("p", { text: e.message }))));
   }
-  return dialog;
+  return panel;
 }
 
 function watchedButton(w, label, compact = true) {
@@ -300,20 +304,26 @@ async function changeMatch(item, button) {
   go.addEventListener("click", find);
   search.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); find(); } });
   find();
-  const ok = await confirmDialog({ title: `Change what ${item.title} is matched to`, confirm: "Use this match",
-    message: el("p", { text: "Search, then choose the right one. Its files stay where they are; Reelix reads them again under the new match." }),
-    fields: [el("div", { class: "stack-2" }, el("label", { class: "field__label", for: "match-q", text: "Search for" }),
-      el("div", { class: "actions" }, search, go)), results] });
-  if (!ok) return;
-  if (!chosen) { problem("Choose one of the matches first", button); return; }
-  button.disabled = true;
-  try {
-    const out = await api(`/api/library/match?tab=${ITEM_TAB}`, { method: "POST", body: { id: current.id, key: chosen } });
-    toast(out.said);
-    if (out.id && String(out.id) !== String(current.id)) { const u = new URL(location.href); u.searchParams.set("id", out.id); location.replace(u); }
-    else location.reload();
-  } catch (e) { problem(e.message, button); }
-  finally { button.disabled = false; }
+  // A search and a list to choose from, so a slide-out with its one primary button in the foot (DASH-309, R6).
+  const use = el("button", { type: "button", class: "btn btn--primary" }, "Use this match");
+  const cancel = el("button", { type: "button", class: "btn", "data-closes": true }, "Cancel");
+  const panel = sidePanel({ title: `Change what ${item.title} is matched to`, wide: true, opener: button,
+    body: [el("p", { text: "Search, then choose the right one. Its files stay where they are; Reelix reads them again under the new match." }),
+      el("div", { class: "stack-2" }, el("label", { class: "field__label", for: "match-q", text: "Search for" }),
+        el("div", { class: "actions" }, search, go)), results],
+    foot: [use, cancel] });
+  cancel.addEventListener("click", () => panel.close());
+  setTimeout(() => search.focus(), 50);
+  use.addEventListener("click", async () => {
+    if (!chosen) { problem("Choose one of the matches first", use); return; }
+    use.disabled = true;
+    try {
+      const out = await api(`/api/library/match?tab=${ITEM_TAB}`, { method: "POST", body: { id: current.id, key: chosen } });
+      announce(out.said);
+      if (out.id && String(out.id) !== String(current.id)) { const u = new URL(location.href); u.searchParams.set("id", out.id); location.replace(u); }
+      else location.reload();
+    } catch (e) { problem(e.message, use); use.disabled = false; }
+  });
 }
 
 function head(item) {
@@ -346,7 +356,7 @@ function head(item) {
   const actions = [
     can.get ? el("button", { type: "button", class: "btn btn--primary", onclick: (e) => act("get", {}, e.currentTarget) },
       icon("download"), ITEM_TAB === "tv" ? "Get the missing episodes" : "Get it") : null,
-    item.listen ? newTabLink(item.listen.href, item.listen.label, { className: "btn btn--primary" }) : null,
+    item.listen ? newTabLink(item.listen.href, item.listen.label, { className: can.get ? "btn" : "btn btn--primary" }) : null,  // one primary (DASH-309, R9)
     follow,
     keep,
     item.can ? el("button", { type: "button", class: "btn", "aria-pressed": String(!!can.follow),
@@ -363,10 +373,12 @@ function head(item) {
   ].filter(Boolean);
   return el("header", { class: "series-head" },
     el("div", { class: "series-head__text" },
-      el("h1", { class: "series-head__name wordmark", text: item.title }),
+      // The state chip on the title's line, not in the meta line (DASH-309, R3).
+      item.status ? titleChip(el("h1", { class: "series-head__name wordmark", text: item.title }), chip(item.status, item.tone))
+        : el("h1", { class: "series-head__name wordmark", text: item.title }),
       el("p", { class: "series-head__meta" }, ...item.meta.map((m) => item.network_logo && m === item.network_logo.name
         ? el("span", { class: "series-head__network" }, logoTone(el("img", { src: item.network_logo.src, alt: "", onerror: (e) => e.target.remove() }), item.network_logo.name, item.network_logo.tone), el("span", { text: m }))
-        : el("span", { text: m })), item.status ? chip(item.status, item.tone) : null),
+        : el("span", { text: m }))),
       item.overview ? el("p", { class: "series-head__desc clamp-3", text: item.overview }) : null,
       item.progress ? el("div", { class: "series-head__progress" }, el("span", { text: item.progress.text }),
         el("div", { class: "progress", role: "progressbar", "aria-label": item.progress.text, "aria-valuenow": String(Math.round(100 * item.progress.have / Math.max(1, item.progress.total))),

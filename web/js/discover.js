@@ -50,18 +50,27 @@ async function startDiscover() {
   catch (e) { holder.removeAttribute("aria-busy"); holder.replaceChildren(notice("danger", "Discover did not load", e.message)); return; }
   holder.removeAttribute("aria-busy");
   const picked = el("div", { id: "discover-picked" });
-  const chips = d.genres.length ? el("div", { class: "filter-chips discover-genres", role: "group", "aria-label": "Genres" },
-    ...d.genres.map((g) => {
-      const b = el("button", { type: "button", class: "filter-chip", "aria-pressed": "false" }, g.title);
-      b.addEventListener("click", () => {
-        const on = b.getAttribute("aria-pressed") !== "true";
-        $$(".discover-genres .filter-chip").forEach((x) => x.setAttribute("aria-pressed", "false"));
-        b.setAttribute("aria-pressed", String(on));
-        picked.replaceChildren(...(on ? [dRow(g, { open: true })] : []));
-        if (on) picked.querySelector("h2")?.setAttribute("tabindex", "-1");
-      });
-      return b;
-    })) : null;
+  // Genres are filter chips that can be on together (DASH-309, R4), in a toolbar: each genre pressed puts its row at
+  // the top, in the chips' order. Focus stays on the chip; the change is said.
+  const shownGenres = new Set();
+  picked.addEventListener("genres-clear", () => shownGenres.clear());
+  const showGenres = () => {
+    picked.replaceChildren(...d.genres.filter((g) => shownGenres.has(g)).map((g) => dRow(g, { open: true })));
+    picked.querySelectorAll("h2").forEach((h) => h.setAttribute("tabindex", "-1"));
+  };
+  const chips = d.genres.length ? el("div", { class: "toolbar" }, el("div", { class: "toolbar__row" },
+    el("div", { class: "filter-chips discover-genres", role: "group", "aria-label": "Genres" },
+      ...d.genres.map((g) => {
+        const b = el("button", { type: "button", class: "filter-chip", "aria-pressed": "false" }, g.title);
+        b.addEventListener("click", () => {
+          const on = b.getAttribute("aria-pressed") !== "true";
+          if (on) shownGenres.add(g); else shownGenres.delete(g);
+          b.setAttribute("aria-pressed", String(on));
+          showGenres();
+          announce(on ? `${g.title} shown at the top` : `${g.title} taken away`);
+        });
+        return b;
+      })))) : null;
   holder.replaceChildren(...[D_TAB === "radio" ? radioFinder(d, picked) : null, chips, picked, ...d.rows.map((r, n) => dRow(r, { open: n < 2 }))].filter(Boolean));
 }
 
@@ -71,6 +80,7 @@ async function startDiscover() {
 function radioFinder(d, picked) {
   const show = (r) => {
     $$(".discover-genres .filter-chip").forEach((x) => x.setAttribute("aria-pressed", "false"));
+    picked.dispatchEvent(new Event("genres-clear"));
     picked.replaceChildren(dRow(r, { open: true }));
     const h = picked.querySelector("h2");
     if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
@@ -87,8 +97,15 @@ function radioFinder(d, picked) {
     return el("div", { class: "field radio-picker" }, el("label", { for: id, text: label }), el("div", { class: "radio-picker__row" }, select, go));
   };
   const q = el("input", { class: "input", id: "radio-q", type: "search", autocomplete: "off", placeholder: "A show, a presenter or a subject" });
-  const stations = el("input", { type: "checkbox", role: "switch", id: "radio-stations", "aria-labelledby": "radio-stations-l" });
-  const feeds = el("input", { type: "checkbox", role: "switch", id: "radio-feeds", "aria-labelledby": "radio-feeds-l" });
+  // Two filters that can be on together: filter chips in the search's toolbar (DASH-309, R4), not switches.
+  const filterChip = (id, words) => {
+    const b = el("button", { type: "button", class: "filter-chip", id, "aria-pressed": "false", "aria-describedby": "radio-filters-hint" }, words);
+    b.addEventListener("click", () => { b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true")); if (q.value.trim().length >= 2) run(); });
+    return b;
+  };
+  const stations = filterChip("radio-stations", "From radio stations");
+  const feeds = filterChip("radio-feeds", "Podcast feeds only");
+  const on = (b) => b.getAttribute("aria-pressed") === "true";
   const results = el("div", { class: "radio-results" });
   const said = el("p", { class: "small muted", id: "radio-said" });
   const run = async () => {
@@ -96,11 +113,11 @@ function radioFinder(d, picked) {
     if (words.length < 2) { said.textContent = "Type at least two letters."; announce(said.textContent); return; }
     said.textContent = "Asking every source…";
     try {
-      const got = await api(`/api/library/discover-radio-search?tab=radio&q=${encodeURIComponent(words)}${stations.checked ? "&stations=1" : ""}${feeds.checked ? "&feeds=1" : ""}`);
+      const got = await api(`/api/library/discover-radio-search?tab=radio&q=${encodeURIComponent(words)}${on(stations) ? "&stations=1" : ""}${on(feeds) ? "&feeds=1" : ""}`);
       const list = el("ul", { class: "discover-shelf discover-shelf--wrap", "aria-labelledby": "radio-results-h" }, got.items.map(dCard));
       results.replaceChildren(el("h2", { id: "radio-results-h", text: `Found for “${words}”` }), got.note ? notice("info", "This filter needs a newer Reelix", got.note)
         : got.items.length ? list
-        : emptyState("Nothing found", stations.checked || feeds.checked ? "Try again with fewer filters." : "Try other words, or choose a genre or a station below."));
+        : emptyState("Nothing found", on(stations) || on(feeds) ? "Try again with fewer filters." : "Try other words, or choose a genre or a station below."));
       said.textContent = `${got.items.length} ${got.items.length === 1 ? "show" : "shows"} found`;
       announce(said.textContent);
     } catch (e) { said.textContent = e.message; announce(e.message); }
@@ -108,16 +125,11 @@ function radioFinder(d, picked) {
   const form = el("form", { class: "radio-search", role: "search", "aria-label": "Search radio" },
     el("div", { class: "field" }, el("label", { for: "radio-q", text: "Search every radio source" }),
       el("div", { class: "search-field" }, q, el("button", { type: "submit", class: "btn btn--primary" }, icon("search"), "Search"))),
-    el("ul", { class: "settings-rows radio-search__filters" },
-      el("li", { class: "setting" }, el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "radio-stations-l", text: "From radio stations" }),
-        el("span", { class: "setting__hint", text: "Only shows a broadcaster makes, such as the BBC, LBC or Times Radio." })),
-        el("div", { class: "setting__control" }, el("label", { class: "switch" }, stations))),
-      el("li", { class: "setting" }, el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "radio-feeds-l", text: "Podcast feeds only" }),
-        el("span", { class: "setting__hint", text: "Shows with a podcast feed, the simplest to follow." })),
-        el("div", { class: "setting__control" }, el("label", { class: "switch" }, feeds)))),
+    el("div", { class: "toolbar__row radio-search__filters" },
+      el("div", { class: "filter-chips", role: "group", "aria-label": "Only" }, stations, feeds)),
+    el("p", { class: "small muted", id: "radio-filters-hint", text: "From radio stations: only shows a broadcaster makes, such as the BBC, LBC or Times Radio. Podcast feeds only: shows with a podcast feed, the simplest to follow." }),
     said);
   form.addEventListener("submit", (e) => { e.preventDefault(); run(); });
-  [stations, feeds].forEach((s) => s.addEventListener("change", () => { if (q.value.trim().length >= 2) run(); }));
   const pickers = el("div", { class: "radio-pickers" },
     picker("radio-station", "A BBC station", d.stations, (s) => s.group.replace(/^BBC stations: /, "").replace(/^./, (c) => c.toUpperCase())),
     picker("radio-more", "More categories", d.more, (c) => c.group ? `${c.source}: ${c.group}` : c.source));

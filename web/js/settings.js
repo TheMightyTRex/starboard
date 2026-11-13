@@ -89,9 +89,11 @@ function showSaved(id, text) {
   if (note) window.SharedComponents.savedNote(note, text);
 }
 
-async function saveGeneral(body, message) {
+// Saves General settings. saved: say so beside the control just used (settingSaved). A part that is drawn again
+// after the save calls settingSaved itself once it is drawn, so the note lands beside the control drawn again.
+async function saveGeneral(body, saved = false) {
   config = await api("/api/config/general", { method: "PUT", body });
-  if (message) toast(message);
+  if (saved) settingSaved();
   $$("[data-site-name]").forEach((n) => { n.textContent = config.site_name; });
   return config;
 }
@@ -697,16 +699,16 @@ function startGeneral() {
   const uxInput = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "ux-notes-l", checked: config.ux_notes });
   uxInput.addEventListener("change", async () => {
     try {
-      await saveGeneral({ ux_notes: uxInput.checked }, uxInput.checked ? "Send feedback activated on every page" : "Send feedback deactivated");
+      await saveGeneral({ ux_notes: uxInput.checked }, true);
       if (uxInput.checked) await startFeedback(); else stopFeedback();
       renderFeedback();
     } catch (err) { uxInput.checked = !uxInput.checked; problem(err.message); }
   });
   const uxSwitch = el("label", { class: "switch" }, uxInput);
-  const cardSwitch = (key, labelId, on, off) => {
+  const cardSwitch = (key, labelId) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked: config[key] });
     input.addEventListener("change", async () => {
-      try { await saveGeneral({ [key]: input.checked }, input.checked ? on : off); }
+      try { await saveGeneral({ [key]: input.checked }, true); }
       catch (err) { input.checked = !input.checked; problem(err.message); }
     });
     return el("label", { class: "switch" }, input);
@@ -720,7 +722,7 @@ function startGeneral() {
         el("input", { type: "radio", name: "design", value: k, checked: config.design === k }), el("strong", { text: label }), el("small", { text: help }))))));
   designForm.addEventListener("change", async () => {
     const before = config.design;
-    try { await saveGeneral({ design: designForm.design.value }, `Default design: ${DESIGNS[designForm.design.value][0]}`); }
+    try { await saveGeneral({ design: designForm.design.value }, true); }
     catch (err) { designForm.design.value = before; problem(err.message); }
   });
 
@@ -743,12 +745,12 @@ function startGeneral() {
   const styleForm = el("div", { class: "stack-2" }, styleSaid, el("div", { class: "actions" }, styleResetBtn, styleChoose));
 
   // Coming up: selects that apply at once.
-  const upcomingSelect = (key, labelId, options, message) => {
+  const upcomingSelect = (key, labelId, options) => {
     const select = el("select", { class: "select", "aria-labelledby": labelId },
       options.map(([value, label]) => el("option", { value: String(value), text: label, selected: String(config[key]) === String(value) })));
     select.addEventListener("change", async () => {
       const before = config[key];
-      try { await saveGeneral({ [key]: key === "upcoming_days" ? Number(select.value) : select.value }, message(select.selectedOptions[0].text)); }
+      try { await saveGeneral({ [key]: key === "upcoming_days" ? Number(select.value) : select.value }, true); }
       catch (err) { select.value = String(before); problem(err.message); }
     });
     return select;
@@ -763,8 +765,7 @@ function startGeneral() {
     select.addEventListener("change", async () => {
       const before = config.download_hours[key];
       try {
-        await saveGeneral({ download_hours: { [key]: Number(select.value) } },
-          `Downloads now run from ${hoursText(config.download_hours.start)} to ${hoursText(config.download_hours.end)}`);
+        await saveGeneral({ download_hours: { [key]: Number(select.value) } }, true);
       } catch (err) { select.value = String(before); problem(err.message); }
     });
     return select;
@@ -773,9 +774,7 @@ function startGeneral() {
   const hoursOn = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "dh-on-l", checked: config.download_hours.enabled });
   hoursOn.addEventListener("change", async () => {
     try {
-      await saveGeneral({ download_hours: { enabled: hoursOn.checked } }, hoursOn.checked
-        ? `Download hours activated. Downloads run from ${hoursText(config.download_hours.start)} to ${hoursText(config.download_hours.end)}`
-        : "Download hours deactivated. Downloads run at any time");
+      await saveGeneral({ download_hours: { enabled: hoursOn.checked } }, true);
     } catch (err) { hoursOn.checked = !hoursOn.checked; problem(err.message); }
   });
   const clients = config.services.filter((s) => ["qbittorrent", "sabnzbd"].includes(s.type) && s.has_api_key);
@@ -787,14 +786,14 @@ function startGeneral() {
       el("ul", { class: "rows", id: "category-list" }), el("div", { id: "category-loose" }), addForm)),
     section("gn-card", "App cards", "What everyone sees on each card. These apply at once.",
       el("ul", { class: "settings-rows" },
-        settingRow("Home address", "With a copy button.", cardSwitch("show_home_address", "card-home-l", "Cards now show the home address", "Cards no longer show the home address"), "card-home-l"),
-        settingRow("Outside address", "With a copy button, when the app has one.", cardSwitch("show_outside_address", "card-out-l", "Cards now show the outside address", "Cards no longer show the outside address"), "card-out-l"))),
+        settingRow("Home address", "With a copy button.", cardSwitch("show_home_address", "card-home-l"), "card-home-l"),
+        settingRow("Outside address", "With a copy button, when the app has one.", cardSwitch("show_outside_address", "card-out-l"), "card-out-l"))),
     el("div", { id: "coming-up" }, section("gn-up", "Coming up", "What the Coming up page shows. These apply at once.",
       el("ul", { class: "settings-rows" },
         settingRow("View", "List shows releases by day; Calendar shows them on a month. The switch on the page changes this too.",
-          upcomingSelect("upcoming_view", "up-view-l", [["list", "List"], ["calendar", "Calendar"]], (t) => `Coming up now opens as ${t === "List" ? "a list" : "a calendar"}`), "up-view-l"),
+          upcomingSelect("upcoming_view", "up-view-l", [["list", "List"], ["calendar", "Calendar"]]), "up-view-l"),
         settingRow("How far ahead", withCost("Releases from today to this far ahead, plus yesterday's.", "upcoming"),
-          upcomingSelect("upcoming_days", "up-days-l", dayChoices, (t) => `Coming up now looks ${t} ahead`), "up-days-l")))),
+          upcomingSelect("upcoming_days", "up-days-l", dayChoices), "up-days-l")))),
     el("div", { id: "download-hours" }, section("gn-dh", "Download hours", "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
       clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent, NZBGet, SABnzbd or Soulseek (slskd) with its API key in Manage apps, so Starboard can pause and resume them."),
       el("ul", { class: "settings-rows" },
@@ -808,10 +807,10 @@ function startGeneral() {
       el("ul", { class: "settings-rows" },
         settingRow("Keep logs for", withCost("Older days are removed once a day.", "logKeep"),
           logPick("lg-keep-l", [[7, "7 days"], [14, "14 days"], [30, "30 days"], [60, "60 days"], [90, "90 days"], [180, "180 days"], [365, "A year"]], config.logs.keep_days,
-            (v, t) => saveGeneral({ logs: { keep_days: Number(v) } }, `Logs kept for ${t.toLowerCase()}`)), "lg-keep-l"),
+            (v, t) => saveGeneral({ logs: { keep_days: Number(v) } }, true)), "lg-keep-l"),
         settingRow("Detailed logging", withCost("For reporting a problem: adds every page request and every call to your apps, and the full detail of errors. Personal details are still removed.", "logDetail"),
           logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I deactivate it"]], config.logs.detail,
-            (v, t) => saveGeneral({ logs: { detail: v } }, `Detailed logging: ${t.toLowerCase()}`)), "lg-detail-l")),
+            (v, t) => saveGeneral({ logs: { detail: v } }, true)), "lg-detail-l")),
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")))),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
     section("gn-style", "Style", "Colours from a plug-in, chosen in Display for this browser only. Reset style goes back to Starboard's standard colours and keeps your other Display choices.", styleForm),
@@ -892,7 +891,7 @@ async function renderAccess() {
     if (a.change === "setting" && a.setting && a.setting !== "update_check") {
       const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": `acc-${a.key}-l`, checked: config[a.setting] });
       input.addEventListener("change", async () => {
-        try { await saveGeneral({ [a.setting]: input.checked }, `${a.title} ${input.checked ? "activated" : "deactivated"}`); }
+        try { await saveGeneral({ [a.setting]: input.checked }, true); }
         catch (err) { input.checked = !input.checked; problem(err.message); }
       });
       return row(a, el("label", { class: "switch" }, input), false);
@@ -936,7 +935,7 @@ const COSTS = {
   usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory), and nothing between runs. Starboard skips the drives inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
   spaceLog: "Costs about: one size check of each folder a day, taken when a page or the history asks anyway, and a few kilobytes a year. Nothing noticeable.",
   logKeep: "Costs about: a few kilobytes a day on disk (about 100 KB a month for a quiet server). Nothing in memory.",
-  logDetail: "Costs about: one short line per page request and per call to your apps, about 1 to 5 MB a day on a busy dashboard. For 24 hours turns itself off, so it cannot fill the disk.",
+  logDetail: "Costs about: one short line per page request and per call to your apps, about 1 to 5 MB a day on a busy dashboard. For 24 hours deactivates itself, so it cannot fill the disk.",
   storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Inactive means only when you open the page or press Check again.",
   posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
   icons: "Costs about: one download per app, once.",
@@ -1693,12 +1692,34 @@ async function startUpgrade() {
   go(0);
 }
 
+const countWords = (n, one, many) => `${n.toLocaleString("en-GB")} ${n === 1 ? one : many}`;
+
+// Accounts read from another app, each matched to a user here (DASH-309): setting rows, not a table with a select
+// per row. The account is the label, its counts the hint, the user the control; a change saves at once and says so
+// beside the select.
+function accountRows(accounts, users, { caption, app, none, userOf, counts, put }) {
+  return el("ul", { class: "settings-rows", "aria-label": caption }, accounts.map((a, i) => {
+    const labelId = `acct-${app.toLowerCase()}-${i}`;
+    const pick = el("select", { class: "select", "aria-labelledby": labelId, disabled: !users.length },
+      el("option", { value: "", text: none }), users.map((u) => el("option", { value: u, text: u, selected: (userOf(a) || "") === u })));
+    let before = pick.value;
+    pick.addEventListener("change", async () => {
+      try { await put({ [a.name]: pick.value }); before = pick.value; settingSaved(); }
+      catch (err) { pick.value = before; problem(err.message); }
+    });
+    const hint = `${counts(a)}.${a.suggested && !userOf(a) ? ` Same name in ${app}: ${a.suggested}.` : ""}`;
+    const row = settingRow(a.name, hint, pick, labelId);
+    row.dataset.key = a.name;
+    return row;
+  }));
+}
+
 // Alerts --------------------------------------------------------------------
 
 function startAlerts() {
   const w = () => config.watch;
-  const save = async (body, message) => {
-    try { await saveGeneral({ watch: body }, message); return true; } catch (err) { problem(err.message); return false; }
+  const save = async (body) => {
+    try { await saveGeneral({ watch: body }, true); return true; } catch (err) { problem(err.message); return false; }
   };
   const switchFor = (labelId, checked, onChange) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked });
@@ -1716,10 +1737,10 @@ function startAlerts() {
   // Watching
   const watching = el("ul", { class: "settings-rows" },
     settingRow("Watch in the background", withCost("Checks your apps every few minutes with no page open, keeps their uptime history and sends the alerts below. Inactive: nothing runs in the background.", "watch"),
-      switchFor("al-on-l", w().enabled, (on) => save({ enabled: on }, on ? "Watching in the background" : "No longer watching in the background")), "al-on-l"),
+      switchFor("al-on-l", w().enabled, (on) => save({ enabled: on })), "al-on-l"),
     settingRow("How often", withCost("Each check is a few small requests. Every 5 minutes is plenty for a home server.", "every"),
       selectFor("al-every-l", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w().every,
-        (v, t) => save({ every: Number(v) }, `Checks ${t.toLowerCase()}`)), "al-every-l"));
+        (v, t) => save({ every: Number(v) })), "al-every-l"));
 
   // Where alerts go
   const kind = el("select", { class: "select", name: "kind" },
@@ -1759,23 +1780,23 @@ function startAlerts() {
 
   // What to alert on
   const a = () => w().alerts;
-  const onOff = (key, labelId, words) => switchFor(labelId, a()[key], (on) => save({ alerts: { [key]: on } }, `${words} ${on ? "activated" : "deactivated"}`));
+  const onOff = (key, labelId) => switchFor(labelId, a()[key], (on) => save({ alerts: { [key]: on } }));
   const alertRows = el("ul", { class: "settings-rows" },
-    settingRow("An app stops answering", "After two checks in a row, so a restart does not alert. Another message when it answers again.", onOff("apps_down", "al-down-l", "App alerts"), "al-down-l"),
-    settingRow("A disk reports a problem", "From Disk health: a failed health check, or reallocated, pending or uncorrectable sectors.", onOff("disk_problem", "al-disk-l", "Disk alerts"), "al-disk-l"),
+    settingRow("An app stops answering", "After two checks in a row, so a restart does not alert. Another message when it answers again.", onOff("apps_down", "al-down-l"), "al-down-l"),
+    settingRow("A disk reports a problem", "From Disk health: a failed health check, or reallocated, pending or uncorrectable sectors.", onOff("disk_problem", "al-disk-l"), "al-disk-l"),
     settingRow("A folder gets full", "For the folders on System, Storage.",
-      selectFor("al-full-l", [[0, "Off"], [80, "At 80%"], [85, "At 85%"], [90, "At 90%"], [95, "At 95%"]], a().disk_full, (v, t) => save({ alerts: { disk_full: Number(v) } }, `Full folder alerts: ${t.toLowerCase()}`)), "al-full-l"),
-    settingRow("A download needs attention", "When it has needed attention for 30 minutes.", onOff("download_stuck", "al-stuck-l", "Download alerts"), "al-stuck-l"),
-    settingRow("The server backup fails", "From System, Backup.", onOff("backup_failed", "al-backup-l", "Backup alerts"), "al-backup-l"),
+      selectFor("al-full-l", [[0, "Off"], [80, "At 80%"], [85, "At 85%"], [90, "At 90%"], [95, "At 95%"]], a().disk_full, (v, t) => save({ alerts: { disk_full: Number(v) } })), "al-full-l"),
+    settingRow("A download needs attention", "When it has needed attention for 30 minutes.", onOff("download_stuck", "al-stuck-l"), "al-stuck-l"),
+    settingRow("The server backup fails", "From System, Backup.", onOff("backup_failed", "al-backup-l"), "al-backup-l"),
     settingRow("A certificate runs out soon", "For apps with an outside https:// address. Checked once a day.",
-      selectFor("al-cert-l", [[0, "Off"], [7, "7 days before"], [14, "14 days before"], [30, "30 days before"]], a().cert_days, (v, t) => save({ alerts: { cert_days: Number(v) } }, `Certificate alerts: ${t.toLowerCase()}`)), "al-cert-l"));
+      selectFor("al-cert-l", [[0, "Off"], [7, "7 days before"], [14, "14 days before"], [30, "30 days before"]], a().cert_days, (v, t) => save({ alerts: { cert_days: Number(v) } })), "al-cert-l"));
 
   const weekly = el("ul", { class: "settings-rows" },
     settingRow("Weekly summary", withCost("On Monday morning: how each app did, disk health and how full your folders are. Sent where alerts go.", "weekly"),
-      switchFor("al-week-l", w().weekly, (on) => save({ weekly: on }, on ? "Weekly summary activated" : "Weekly summary deactivated")), "al-week-l"),
+      switchFor("al-week-l", w().weekly, (on) => save({ weekly: on })), "al-week-l"),
     // DASH-105: a new Starboard release, at most one message a week, only where your alerts go.
     settingRow("New Starboard release", "One message when a newer Starboard is out, with a link to what is new. At most once a week, and once for each version.",
-      switchFor("al-rel-l", w().releases !== false, (on) => save({ releases: on }, on ? "Release messages activated" : "Release messages deactivated")), "al-rel-l"));
+      switchFor("al-rel-l", w().releases !== false, (on) => save({ releases: on })), "al-rel-l"));
 
   $("#alerts-sections").removeAttribute("aria-busy");
   $("#alerts-sections").replaceChildren(
@@ -1803,12 +1824,13 @@ async function startJellyfin() {
   try { d = await api("/api/extras"); } catch (e) { root.replaceChildren(notice("danger", "Could not load", e.message)); return; }
   const jobs = Object.fromEntries(d.jobs.map((j) => [j.key, j]));
   const x = () => config.extras;
-  const save = async (body, message) => {
-    try { await saveGeneral({ extras: body }, message); return true; } catch (err) { problem(err.message); return false; }
+  // A switch here draws the page again, then says it saved beside the switch drawn again (settingSaved).
+  const save = async (body) => {
+    try { await saveGeneral({ extras: body }); return true; } catch (err) { problem(err.message); return false; }
   };
   const sw = (labelId, checked, onChange, disabled = false) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked, disabled });
-    input.addEventListener("change", async () => { if (!(await onChange(input.checked))) input.checked = !input.checked; else startJellyfin(); });
+    input.addEventListener("change", async () => { if (!(await onChange(input.checked))) input.checked = !input.checked; else { await startJellyfin(); settingSaved(); } });
     return el("label", { class: "switch" }, input);
   };
   const runNow = (key, label, text = `Run ${label} now`) => el("button", { type: "button", class: "btn", onclick: async (e) => {
@@ -1845,12 +1867,12 @@ async function startJellyfin() {
   // Where Jellyfin sees the files (DASH-229): blank lets Starboard work it out for an Install apps stack.
   const jfFolderForm = locationPicker({ id: "livetv-folder", label: "Live TV folder, as Jellyfin sees it", app: "jellyfin", value: x().livetv_jellyfin_folder || "",
     hint: "Starboard adds the channels and guides to Jellyfin itself. Empty: Starboard works it out when it installed Jellyfin.",
-    onChange: (v) => save({ livetv_jellyfin_folder: v }, "Saved") }).node;
+    onChange: async (v) => { if (await save({ livetv_jellyfin_folder: v })) settingSaved(); } }).node;
   const liveRows = el("ul", { class: "settings-rows" },
     settingRow("Build Live TV channels and guide", withCost(lt.what + ". Free channels only: Samsung TV Plus, Pluto TV and Free-TV, with Sky-style numbers.", "livetv"),
-      sw("lt-on-l", x().livetv, (on) => save({ livetv: on }, on ? "Live TV activated" : "Live TV deactivated")), "lt-on-l"),
+      sw("lt-on-l", x().livetv, (on) => save({ livetv: on })), "lt-on-l"),
     settingRow("White channel logos", withCost(d.pillow ? "Turns each logo white on a clear background, with Pillow (open source, credited in About). Inactive: channels keep their own logos." : "Needs Pillow, which this install does not have. Channels keep their own logos.", "white"),
-      sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }, on ? "White logos activated" : "White logos deactivated"), !d.pillow), "lt-white-l"));
+      sw("lt-white-l", x().white_logos && d.pillow, (on) => save({ white_logos: on }), !d.pillow), "lt-white-l"));
   const liveNeeds = lt.needs.length ? notice("warning", "Needs set-up on the server", `Starboard needs ${lt.needs.join(" and ")}. Run ./install.sh and say yes to Live TV.`) : null;
   const liveHelp = el("p", { class: "help-links" }, helpButton("How Jellyfin uses these files", { body: el("p", { text: "With Jellyfin's API key, Starboard adds these to Jellyfin after each run, and leaves your own alone. By hand, in Jellyfin: Dashboard, Live TV. Add a tuner of type M3U for each playlist (channels.m3u, samsung.m3u, pluto.m3u) and an XMLTV guide for each guide file (guide.xml, guide-samsung.xml, guide-pluto.xml), from the folder Jellyfin sees them in." }) }));
 
@@ -1899,34 +1921,23 @@ async function startJellyfin() {
   const whoPick = el("select", { class: "select", id: "jf-you-pick" },
     el("option", { value: "", text: "Jellyfin's first admin (the one Starboard made)" }),
     users.map((u) => el("option", { value: u, text: u, selected: (config.extras.jellyfin_user || "") === u })));
-  whoPick.addEventListener("change", () => saveGeneral({ extras: { jellyfin_user: whoPick.value } }, whoPick.value ? `The Library shows what ${whoPick.value} has watched` : "The Library shows what Jellyfin's first admin has watched"));
+  whoPick.addEventListener("change", () => saveGeneral({ extras: { jellyfin_user: whoPick.value } }, true).catch((e) => problem(e.message)));
   const whose = field("Show what this user has watched", whoPick);
-  const mapping = h.accounts.length ? el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
-    el("caption", { class: "visually-hidden", text: "Accounts and the Jellyfin user each one goes to" }),
-    el("thead", {}, el("tr", {}, ["Account", "Films", "Episodes", "Goes to Jellyfin user", "Applied"].map((t) => el("th", { scope: "col", text: t })))),
-    el("tbody", {}, h.accounts.map((a) => {
-      const pick = el("select", { class: "select", "aria-label": `Jellyfin user for ${a.name}` },
-        el("option", { value: "", text: "Do not import" }), users.map((u) => el("option", { value: u, text: u, selected: (a.jellyfin_user || "") === u })));
-      pick.addEventListener("change", async () => {
-        try { await api("/api/import/mapping", { method: "PUT", body: { mapping: { [a.name]: pick.value } } }); toast(pick.value ? `${a.name} goes to ${pick.value}` : `${a.name} is not imported`); }
-        catch (err) { problem(err.message); }
-      });
-      return el("tr", {}, el("th", { scope: "row", "data-label": "Account", text: a.name }),
-        el("td", { "data-label": "Films", class: "numeric", text: String(a.films) }),
-        el("td", { "data-label": "Episodes", class: "numeric", text: String(a.episodes) }),
-        el("td", { "data-label": "Goes to" }, pick, a.suggested && !a.jellyfin_user ? el("span", { class: "small muted", text: ` Same name: ${a.suggested}` }) : null),
-        el("td", { "data-label": "Applied", class: "numeric", text: String(a.applied) }));
-    })))) : null;
+  const mapping = h.accounts.length ? accountRows(h.accounts, users, {
+    caption: "Accounts and the Jellyfin user each one goes to", app: "Jellyfin", none: "Do not import", userOf: (a) => a.jellyfin_user,
+    counts: (a) => `${countWords(a.films, "film", "films")}, ${countWords(a.episodes, "episode", "episodes")}, ${a.applied} applied`,
+    put: (mapping) => api("/api/import/mapping", { method: "PUT", body: { mapping } }) }) : null;
   const matchSame = h.accounts.some((a) => a.suggested && !a.jellyfin_user)
     ? el("button", { type: "button", class: "btn", onclick: async () => {
       const m = Object.fromEntries(h.accounts.filter((a) => a.suggested && !a.jellyfin_user).map((a) => [a.name, a.suggested]));
-      await api("/api/import/mapping", { method: "PUT", body: { mapping: m } }); toast("Matched accounts with the same name"); startJellyfin();
+      try { await api("/api/import/mapping", { method: "PUT", body: { mapping: m } }); await startJellyfin(); settingSaved(`Matched ${countWords(Object.keys(m).length, "account", "accounts")}`); }
+      catch (err) { problem(err.message); }
     } }, icon("users"), "Match accounts with the same name") : null;
   const imported = h.imported ? el("p", { class: "small muted", text: `${h.source}, read ${new Date(h.imported).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}. ${h.accounts.length} ${h.accounts.length === 1 ? "account" : "accounts"}.` }) : null;
   const result = d.import_result ? notice(d.import_result.ok ? "success" : "danger", d.import_result.ok ? "History read" : "The import did not work", d.import_result.message) : null;
   const applyRows = el("ul", { class: "settings-rows" },
     settingRow("Keep applying every hour", withCost("History for films and episodes you do not have yet is applied when they arrive. Inactive: only when you choose Apply now.", "importKeep"),
-      sw("im-keep-l", x().import_keep, (on) => save({ import_keep: on }, on ? "History is applied every hour" : "History is applied only when you ask")), "im-keep-l"));
+      sw("im-keep-l", x().import_keep, (on) => save({ import_keep: on })), "im-keep-l"));
 
   // Not found
   const last = h.last;
@@ -1943,7 +1954,7 @@ async function startJellyfin() {
   const df = jobs.defaults;
   const defaultRows = el("ul", { class: "settings-rows" },
     settingRow("Give every Jellyfin user the defaults", withCost("Every hour, users who have not chosen otherwise get: Live TV opens on the Guide. New users get it too.", "defaults"),
-      sw("df-on-l", x().defaults, (on) => save({ defaults: on }, on ? "User defaults activated" : "User defaults deactivated")), "df-on-l"));
+      sw("df-on-l", x().defaults, (on) => save({ defaults: on })), "df-on-l"));
 
   root.removeAttribute("aria-busy");
   root.replaceChildren(...[
@@ -2024,32 +2035,21 @@ async function startListening() {
 
   // Match
   const users = d.abs_users;
-  const mapping = d.accounts.length ? el("div", { class: "table-wrap", "data-stack": true }, el("table", { class: "table" },
-    el("caption", { class: "visually-hidden", text: "Accounts and the Audiobookshelf user each one goes to" }),
-    el("thead", {}, el("tr", {}, ["Account", "Books", "Finished", "Goes to Audiobookshelf user", "Applied"].map((t) => el("th", { scope: "col", text: t })))),
-    el("tbody", {}, d.accounts.map((a) => {
-      const pick = el("select", { class: "select", "aria-label": `Audiobookshelf user for ${a.name}`, disabled: !users.length },
-        el("option", { value: "", text: "Do not copy" }), users.map((u) => el("option", { value: u, text: u, selected: (a.abs_user || "") === u })));
-      pick.addEventListener("change", async () => {
-        try { await api("/api/listening/mapping", { method: "PUT", body: { mapping: { [a.name]: pick.value } } }); toast(pick.value ? `${a.name} goes to ${pick.value}` : `${a.name} is not copied`); }
-        catch (err) { problem(err.message); }
-      });
-      return el("tr", {}, el("th", { scope: "row", "data-label": "Account", text: a.name }),
-        el("td", { "data-label": "Books", class: "numeric", text: String(a.books) }),
-        el("td", { "data-label": "Finished", class: "numeric", text: String(a.finished) }),
-        el("td", { "data-label": "Goes to" }, pick, a.suggested && !a.abs_user ? el("span", { class: "small muted", text: ` Same name: ${a.suggested}` }) : null),
-        el("td", { "data-label": "Applied", class: "numeric", text: String(a.applied) }));
-    })))) : null;
+  const mapping = d.accounts.length ? accountRows(d.accounts, users, {
+    caption: "Accounts and the Audiobookshelf user each one goes to", app: "Audiobookshelf", none: "Do not copy", userOf: (a) => a.abs_user,
+    counts: (a) => `${countWords(a.books, "book", "books")}, ${a.finished} finished, ${a.applied} applied`,
+    put: (mapping) => api("/api/listening/mapping", { method: "PUT", body: { mapping } }) }) : null;
   const matchSame = d.accounts.some((a) => a.suggested && !a.abs_user)
     ? el("button", { type: "button", class: "btn", onclick: async () => {
       const m = Object.fromEntries(d.accounts.filter((a) => a.suggested && !a.abs_user).map((a) => [a.name, a.suggested]));
-      await api("/api/listening/mapping", { method: "PUT", body: { mapping: m } }); toast("Matched accounts with the same name"); redraw();
+      try { await api("/api/listening/mapping", { method: "PUT", body: { mapping: m } }); await redraw(); settingSaved(`Matched ${countWords(Object.keys(m).length, "account", "accounts")}`); }
+      catch (err) { problem(err.message); }
     } }, icon("users"), "Match accounts with the same name") : null;
 
   // Apply
   const keepInput = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "ls-keep-l", checked: config.extras.listening_keep });
   keepInput.addEventListener("change", async () => {
-    try { await saveGeneral({ extras: { listening_keep: keepInput.checked } }, keepInput.checked ? "Listening progress applied every hour" : "Listening progress applied only when you ask"); }
+    try { await saveGeneral({ extras: { listening_keep: keepInput.checked } }, true); }
     catch (err) { keepInput.checked = !keepInput.checked; problem(err.message); }
   });
   const applyRows = el("ul", { class: "settings-rows" },
@@ -2103,8 +2103,8 @@ async function startPerformance() {
   const me = await api("/api/self").catch(() => null);
   const perf = () => config.performance;
   const redraw = () => startPerformance();
-  const save = async (body, message) => {
-    try { await saveGeneral(body, message); redraw(); return true; } catch (err) { problem(err.message); return false; }
+  const save = async (body) => {
+    try { await saveGeneral(body); await redraw(); settingSaved(); return true; } catch (err) { problem(err.message); return false; }
   };
   const sw = (labelId, checked, onChange) => {
     const input = el("input", { type: "checkbox", role: "switch", "aria-labelledby": labelId, checked });
@@ -2138,7 +2138,7 @@ async function startPerformance() {
   const presetForm = el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Preset" }),
     el("div", { class: "option-cards option-cards--row" }, ["small", "balanced", "everything", "custom"].map((k) => {
       const input = el("input", { type: "radio", name: "preset", value: k, checked: perf().preset === k });
-      input.addEventListener("change", () => { if (k !== "custom") save({ preset: k }, `${config.presets[k]} preset in use`); });
+      input.addEventListener("change", () => { if (k !== "custom") save({ preset: k }); });
       return el("label", { class: "option-card" }, input, el("strong", { text: k === "custom" ? "Custom" : config.presets[k] }), el("small", { text: k === "custom" ? PRESET_WORDS.custom : config.preset_about[k] }));
     })));
 
@@ -2148,42 +2148,42 @@ async function startPerformance() {
   const background = el("ul", { class: "settings-rows" },
     settingRow("System history", withCost("Readings for the charts on System, Overview.", "history"),
       el("div", { class: "inline-save" }, pick("pf-hist-every", [[60, "Every minute"], [300, "Every 5 minutes"], [900, "Every 15 minutes"]], perf().history_every,
-        (v, t) => save({ performance: { history_every: Number(v) } }, `History: ${t.toLowerCase()}`)),
-        sw("pf-hist-l", perf().history, (on) => save({ performance: { history: on } }, on ? "History activated" : "History deactivated"))), "pf-hist-l"),
+        (v, t) => save({ performance: { history_every: Number(v) } })),
+        sw("pf-hist-l", perf().history, (on) => save({ performance: { history: on } }))), "pf-hist-l"),
     settingRow("Watching and alerts", withCost("Checks your apps with no page open and sends alerts. Where alerts go: Settings, Alerts.", "watch"),
       el("div", { class: "inline-save" }, pick("pf-watch-every", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w.every,
-        (v, t) => save({ watch: { every: Number(v) } }, `Watching: ${t.toLowerCase()}`)),
-        sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }, on ? "Watching activated" : "Watching deactivated"))), "pf-watch-l"),
+        (v, t) => save({ watch: { every: Number(v) } })),
+        sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }))), "pf-watch-l"),
     settingRow("Download hours check", withCost("How often Starboard checks qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) while download hours are active (Settings, General).", "scheduleEvery"),
       pick("pf-sched-l", [[60, "Every minute"], [300, "Every 5 minutes"]], perf().schedule_every,
-        (v, t) => save({ performance: { schedule_every: Number(v) } }, `Download hours check: ${t.toLowerCase()}`)), "pf-sched-l"),
+        (v, t) => save({ performance: { schedule_every: Number(v) } })), "pf-sched-l"),
     settingRow("Live TV white logos", withCost("Only matters while the Live TV plug-in is active (Settings, Plug-ins).", "white"),
-      sw("pf-white-l", x.white_logos, (on) => save({ extras: { white_logos: on } }, on ? "White logos activated" : "White logos deactivated")), "pf-white-l"),
+      sw("pf-white-l", x.white_logos, (on) => save({ extras: { white_logos: on } })), "pf-white-l"),
     settingRow("Keep applying imported history", withCost("Settings, Apps, Jellyfin, Import watch history.", "importKeep"),
-      sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } }, on ? "History applied every hour" : "History applied only when you ask")), "pf-imp-l"),
+      sw("pf-imp-l", x.import_keep, (on) => save({ extras: { import_keep: on } })), "pf-imp-l"),
     settingRow("Jellyfin user defaults", withCost("Settings, Apps, Jellyfin, User defaults.", "defaults"),
-      sw("pf-def-l", x.defaults, (on) => save({ extras: { defaults: on } }, on ? "User defaults activated" : "User defaults deactivated")), "pf-def-l"),
+      sw("pf-def-l", x.defaults, (on) => save({ extras: { defaults: on } })), "pf-def-l"),
     settingRow("Keep applying listening progress", withCost("Settings, Apps, Audiobookshelf, Copy listening progress.", "listeningKeep"),
-      sw("pf-listen-l", x.listening_keep, (on) => save({ extras: { listening_keep: on } }, on ? "Listening progress applied every hour" : "Listening progress applied only when you ask")), "pf-listen-l"),
+      sw("pf-listen-l", x.listening_keep, (on) => save({ extras: { listening_keep: on } })), "pf-listen-l"),
     settingRow("Work out what uses the space", withCost("Sorts your storage by type (TV, films, books and so on) for the charts on System, Storage.", "usage"),
-      pick("pf-usage-l", USAGE_CHOICES, perf().usage_every, (v, t) => save({ performance: { usage_every: v } }, `What uses the space: ${t.toLowerCase()}`)), "pf-usage-l"),
+      pick("pf-usage-l", USAGE_CHOICES, perf().usage_every, (v, t) => save({ performance: { usage_every: v } })), "pf-usage-l"),
     settingRow("Daily record of used space", withCost("For the Space used over time chart and its forecast on System, Storage.", "spaceLog"),
-      sw("pf-space-l", perf().space_log, (on) => save({ performance: { space_log: on } }, on ? "Daily record activated" : "Daily record deactivated")), "pf-space-l"),
+      sw("pf-space-l", perf().space_log, (on) => save({ performance: { space_log: on } })), "pf-space-l"),
     settingRow("Posters on Coming up and the Library", withCost("Inactive: Coming up shows each app's icon, and the Library shows titles on plain tiles.", "posters"),
-      sw("pf-post-l", config.show_posters, (on) => save({ show_posters: on }, on ? "Posters activated" : "Posters deactivated")), "pf-post-l"));
+      sw("pf-post-l", config.show_posters, (on) => save({ show_posters: on })), "pf-post-l"));
 
   // Pages
   const pages = el("ul", { class: "settings-rows" },
     settingRow("Downloads page updates", withCost("While Downloads is open and in view.", "downloadsRefresh"),
       pick("pf-dl-l", [[0, "Only when I press Check again"], [10, "Every 10 seconds"], [15, "Every 15 seconds"], [30, "Every 30 seconds"], [60, "Every minute"]], perf().downloads_refresh,
-        (v, t) => save({ performance: { downloads_refresh: Number(v) } }, `Downloads: ${t.toLowerCase()}`)), "pf-dl-l"),
+        (v, t) => save({ performance: { downloads_refresh: Number(v) } })), "pf-dl-l"),
     settingRow("Storage page updates", withCost("While Storage is open and in view.", "storageRefresh"),
-      pick("pf-st-l", STORAGE_REFRESH, perf().storage_refresh, (v, t) => save({ performance: { storage_refresh: Number(v) } }, `Storage: ${t.toLowerCase()}`)), "pf-st-l"),
+      pick("pf-st-l", STORAGE_REFRESH, perf().storage_refresh, (v, t) => save({ performance: { storage_refresh: Number(v) } })), "pf-st-l"),
     settingRow("Monitor page readings", withCost("While Monitor is open and in view.", "monitorRefresh"),
       pick("pf-mon-l", [[2, "Every 2 seconds"], [5, "Every 5 seconds"], [10, "Every 10 seconds"]], perf().monitor_refresh,
-        (v, t) => save({ performance: { monitor_refresh: Number(v) } }, `Monitor: ${t.toLowerCase()}`)), "pf-mon-l"),
+        (v, t) => save({ performance: { monitor_refresh: Number(v) } })), "pf-mon-l"),
     settingRow("Numbers on app cards", withCost("Such as 3 in the queue or 120 wanted, on Apps.", "cardNumbers"),
-      sw("pf-num-l", perf().card_numbers, (on) => save({ performance: { card_numbers: on } }, on ? "Card numbers activated" : "Card numbers deactivated")), "pf-num-l"));
+      sw("pf-num-l", perf().card_numbers, (on) => save({ performance: { card_numbers: on } })), "pf-num-l"));
 
   root.removeAttribute("aria-busy");
   root.replaceChildren(...[
@@ -2255,7 +2255,7 @@ async function startSecurity() {
       access.checked = false;
     }
     try {
-      await saveGeneral({ network_access: want }, want ? "Other devices on your home network can open Starboard now" : "Only this computer can open Starboard now");
+      await saveGeneral({ network_access: want }, true);
       network.network_access = want;
       showNetwork();
       setTimeout(async () => { try { network = await api("/api/network"); showNetwork(); } catch { /* this device lost access */ } }, 1500);
@@ -2293,7 +2293,7 @@ async function startSecurity() {
   const daysError = el("span", { class: "field-error", id: "days-e", hidden: true });
   const secure = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "secure-l", "aria-describedby": "secure-h", checked: config.secure_cookies });
   secure.addEventListener("change", async () => {
-    try { await saveGeneral({ secure_cookies: secure.checked }, secure.checked ? "The sign-in cookie is now only sent over HTTPS" : "The sign-in cookie is sent over HTTP and HTTPS"); }
+    try { await saveGeneral({ secure_cookies: secure.checked }, true); }
     catch (err) { secure.checked = !secure.checked; problem(err.message); }
   });
   const daysForm = el("form", { novalidate: true, id: "session-form" });
@@ -2311,7 +2311,7 @@ async function startSecurity() {
     };
     const n = Number(days.value);
     if (!Number.isInteger(n) || n < 1 || n > 90) { fail("Enter a whole number of days from 1 to 90"); return; }
-    try { await saveGeneral({ session_days: n }, `Remember me now lasts ${n} ${n === 1 ? "day" : "days"}`); }
+    try { await saveGeneral({ session_days: n }, true); }
     catch (err) { fail(err.message); }
   });
   const everywhere = el("button", { type: "button", class: "btn btn--danger", text: "Sign out everywhere" });
@@ -2460,7 +2460,7 @@ async function startAbout() {
   };
   check.addEventListener("change", async () => {
     try {
-      await saveGeneral({ update_check: check.checked }, check.checked ? "Starboard looks for new versions" : "Starboard no longer looks for new versions");
+      await saveGeneral({ update_check: check.checked }, true);
       v = await api("/api/version");
       showVersion();
     } catch (e) { check.checked = !check.checked; problem(e.message); }
@@ -2492,10 +2492,10 @@ async function startReleases(repo) {
     return el("details", { class: "disclosure release", open: installed || null },
       el("summary", {},
         el("h3", { text: `Version ${rel.version}` }),
-        installed ? el("span", { class: "chip", "data-tone": "success", text: "Installed" }) : null,
+        installed ? chip("Installed", "success") : null,
         el("span", { class: "release__date", text: rel.date }),
-        el("span", { class: "release__counts" }, ...types.map(([key, label, tone]) =>
-          el("span", { class: "chip", "data-tone": tone, text: `${rel[key].length} ${label.toLowerCase()}` })))),
+        // Counts are words in the meta line, not chips (DASH-309, R3: a chip never holds a number).
+        el("span", { class: "release__counts small muted", text: types.map(([key, label]) => `${rel[key].length} ${label.toLowerCase()}`).join(", ") })),
       el("div", { class: "disclosure__body" },
         ...types.map(([key, label]) => el("section", { class: "release__type", "data-type": key },
           el("h4", { text: label }),
@@ -3546,8 +3546,7 @@ startPage().then(async (session) => {
   if ($("#version-notice")) startAbout();
   if ($("#general-sections")) {  // DASH-277: long lists load more by themselves, or wait for Show more
     const input = el("input", { type: "checkbox", role: "switch", id: "infinite-scroll", checked: config.infinite_scroll !== false });
-    input.addEventListener("change", () => saveGeneral({ infinite_scroll: input.checked },
-      input.checked ? "Long lists load more as you near the end" : "Long lists wait for Show more"));
+    input.addEventListener("change", () => saveGeneral({ infinite_scroll: input.checked }, true).catch((e) => problem(e.message)));
     const box = section("gn-scroll", "Long lists", "The Library, Wanted and History.",
       el("ul", { class: "settings-rows" }, el("li", { class: "setting" }, switchRow("Load more as you scroll",
         "Off: a Show more button at the end instead. With Reduce motion on, the button is always used.", input))));
@@ -3557,8 +3556,7 @@ startPage().then(async (session) => {
   }
   if ($("#reelix-auto-row")) {  // DASH-263: automatic Reelix updates, off until switched on
     const input = el("input", { type: "checkbox", role: "switch", id: "reelix-auto", checked: !!config.reelix_auto_update });
-    input.addEventListener("change", () => saveGeneral({ reelix_auto_update: input.checked },
-      input.checked ? "Starboard installs new Reelix versions by itself" : "Reelix updates wait for you, on Apps, Updates"));
+    input.addEventListener("change", () => saveGeneral({ reelix_auto_update: input.checked }, true).catch((e) => problem(e.message)));
     $("#reelix-auto-row").replaceChildren(el("li", { class: "setting" }, switchRow("Install Reelix updates automatically",
       "Needs Docker access. Off: Apps, Updates says when there is one, and you choose.", input)));
   }

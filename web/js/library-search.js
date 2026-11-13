@@ -134,18 +134,13 @@ function filterBar() {
   const where = el("fieldset", { class: "segmented" }, el("legend", { class: "visually-hidden", text: "Show" }),
     ...[["all", "All"], ["in", "In your library"], ["out", "Not in your library"]].map(([v, t]) => el("label", {},
       el("input", { type: "radio", name: "sf-where", value: v, checked: searchFilter.where === v }), el("span", { text: t }))));
-  const kinds = el("div", { class: "filter-chips", role: "group", "aria-label": "Kind" }, ...FILTER_KINDS.map(([v, t]) => {
-    const b = el("button", { type: "button", class: "filter-chip", "aria-pressed": String(searchFilter.kind === v) }, t);
-    b.addEventListener("click", () => {
-      searchFilter.kind = v;
-      $$(".filter-chip", kinds).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-      saveFilter();
-      applyFilters();
-    });
-    return b;
-  }));
+  // One kind of seven at a time (DASH-309, R4): more than five choices, so a labelled select, not chips that undo
+  // each other. Both sit in the page's toolbar, after the search box (R8), not in a bar of their own.
+  const kinds = el("select", { class: "select", id: "sf-kind", "aria-label": "Kind" },
+    FILTER_KINDS.map(([v, t]) => el("option", { value: v, text: t, selected: searchFilter.kind === v })));
+  kinds.addEventListener("change", () => { searchFilter.kind = kinds.value; saveFilter(); applyFilters(); });
   where.addEventListener("change", (e) => { searchFilter.where = e.target.value; saveFilter(); applyFilters(); });
-  return el("div", { id: "search-filters", class: "stack-2", hidden: true }, where, kinds);
+  return el("div", { id: "search-filters", class: "toolbar__row", hidden: true }, where, el("div", { class: "field" }, kinds));
 }
 
 function remember(q) {
@@ -177,7 +172,7 @@ startPage().then(async () => {
   const typed = () => { if (!legacyMode) runBoth($("#q").value.trim()); };
   $("#search-form").addEventListener("submit", submit);
   $("#q").addEventListener("input", typed);
-  $("#lib-found").before(filterBar());
+  $("#kind-filters").before(filterBar());
   $("#q").addEventListener("input", applyFilters);
   if (q) { $("#q").value = q; runBoth(q, true); } else $("#q").focus();
   try {

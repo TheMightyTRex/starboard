@@ -189,10 +189,10 @@
   </div>
   <div class="toolbar">
     <div class="toolbar__row">
-      <div class="filter-chips" role="group" aria-label="Show">
-        <button type="button" class="filter-chip" id="show-pending" aria-pressed="true">Waiting for approval</button>
-        <button type="button" class="filter-chip" id="show-all" aria-pressed="false">All recent</button>
-      </div>
+      <fieldset class="segmented" id="requests-filters"><legend class="visually-hidden">Show</legend>
+        <label for="requests-show-all"><input type="radio" name="requests-show" id="requests-show-all" value="all"><span>All recent</span></label>
+        <label for="requests-show-pending"><input type="radio" name="requests-show" id="requests-show-pending" value="pending" checked><span>Waiting for approval</span></label>
+      </fieldset>
     </div>
   </div>
   <div id="requests-notice"></div>

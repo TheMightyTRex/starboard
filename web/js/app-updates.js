@@ -36,7 +36,8 @@ function statusCell(row) {
     return [chip(words, "info"), bar];
   }
   const done = lastResult(row);
-  if (done?.phase === "done") return chip(done.version ? `Updated to ${done.version}` : "Updated", "success");
+  // The chip holds no version (DASH-309, R3): the version is in the small line beside it.
+  if (done?.phase === "done") return [chip("Updated", "success"), done.version ? el("div", { class: "small muted", text: `Now ${done.version}` }) : null];
   if (done?.phase === "failed") return [chip("Update failed", "danger"), el("div", { class: "small", text: done.error || "" })];
   if (!row.container) return chip("No container found", "muted");
   if (row.update) return chip(row.big_change ? "Big change: check first" : "Update available", row.big_change ? "warning" : "info");

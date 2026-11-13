@@ -37,7 +37,8 @@ const CARDS = {
     const todo = r.items.filter((i) => !i.done && !i.ignored);
     if (!todo.length) return null;
     // The wizard (DASH-289): one item at a time; it opens only from Go through them (owner, 12 November 2026).
-    const walk = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
+    // One primary in view (DASH-309, R9): while the dashboard is edited, Save is the primary button.
+    const walk = el("button", { type: "button", class: editing ? "btn btn--compact" : "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
     walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: () => draw() }));
     if (!editing) setupWizardOnce(() => draw());
     return el("div", { class: "stack-2" }, el("div", { class: "actions" }, walk), el("ul", { class: "rows" }, todo.map((i) => line(i.title, i.why, i.href.startsWith("http") ? reachableUrl(i.href) : i.href))));
@@ -80,7 +81,7 @@ const CARDS = {
     const r = await ask("/api/transfer");
     if (!r.vpn?.length) return empty("No VPN on your apps.");
     const v = r.vpn[0];
-    return el("div", { class: "stack-2" }, chip(v.running ? "Connected" : "Not connected", v.running ? "success" : "danger"),
+    return el("div", { class: "stack-2" }, headChip(v.running ? "Connected" : "Not connected", v.running ? "success" : "danger"),  // on the title's line (DASH-309)
       v.country ? el("p", { class: "small", text: [v.country, v.ip].filter(Boolean).join(" · ") }) : null);
   },
   async speed() {
@@ -93,8 +94,9 @@ const CARDS = {
     const names = Object.fromEntries((cfg.services || []).map((x) => [x.id, x.name]));
     const items = (r.items || []).map((i) => ({ ...i, name: names[i.id] || i.id }));
     const down = items.filter((i) => i.state === "down");
-    return el("div", { class: "stack-2" }, headChip(down.length ? `${down.length} not responding` : "All running", down.length ? "danger" : "success"),
-      el("p", { class: "small muted", text: `${items.length} apps` }),
+    return el("div", { class: "stack-2" }, headChip(down.length ? "Not responding" : "All running", down.length ? "danger" : "success"),
+      // The chip holds no number (DASH-309, R3): how many is in the line under it.
+      el("p", { class: "small muted", text: down.length ? `${down.length} of ${items.length} apps not responding` : `${items.length} apps` }),
       down.length ? el("ul", { class: "rows" }, down.slice(0, 4).map((d) => line(d.name || d.id, d.message || "", "/index.html"))) : null);
   },
   async requests() {

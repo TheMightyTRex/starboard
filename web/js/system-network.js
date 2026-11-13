@@ -28,7 +28,7 @@ function renderStats(points) {
   else {
     const bad = checked.length - ok;
     outside = stat(`${ok} of ${checked.length}`, "Outside addresses reachable", bad ? "warning" : "success",
-      chip(bad ? `${bad} not reachable` : "All reachable", bad ? "warning" : "success"));
+      chip(bad ? "Not reachable" : "All reachable", bad ? "warning" : "success"));  // the number is the value above (DASH-309, R3)
   }
   $("#network-stats").replaceChildren(
     stat(latest ? perSecond(latest.rx) : "Collecting", "Download now"),

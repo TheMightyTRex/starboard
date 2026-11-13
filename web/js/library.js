@@ -93,16 +93,18 @@ function query(extra = {}) {
   return `/api/library/wall?${p}`;
 }
 
+// One at a time (DASH-309, R4): a segmented control with All first, not filter chips that undo each other.
 function renderChips(chips) {
   const box = $("#lib-chips");
   box.hidden = !chips.length;
-  box.replaceChildren(...chips.map((c) => el("button", {
-    type: "button", class: "filter-chip", "aria-pressed": String(state.chip === c.key), "data-chip": c.key,
-    onclick: (e) => {
-      state.chip = state.chip === c.key ? "" : c.key;
-      reload().then(() => e.currentTarget.isConnected && e.currentTarget.focus());
-    },
-  }, `${c.label}, ${c.count.toLocaleString("en-GB")}`)));
+  box.removeAttribute("role");
+  box.removeAttribute("aria-label");
+  if (!chips.length) { box.replaceChildren(); return; }
+  box.replaceChildren(segmentedFilter({
+    name: "lib-chip", label: "Show only", value: state.chip,
+    options: [["", "All", state.total], ...chips.map((c) => [c.key, c.label, c.count])],
+    onChange: (v) => { state.chip = v || ""; reload(); },
+  }));
 }
 
 function renderCount() {
@@ -321,17 +323,15 @@ async function importDialog(folder, start = 0, added = 0, button = null) {
     };
     pick.addEventListener("change", () => { const m = it.matches.find((x) => String(x.tmdb_id ?? x.id) === pick.value); keep.checked = !!m && !m.already; explain(); });
     explain();
-    return { it, pick, keep, node: el("tr", {}, el("td", {}, keep), el("th", { scope: "row", text: it.name }), el("td", {}, pick, said)) };
+    // A row per folder (DASH-309, R7): the tick, the folder and what is wrong with it, then Reelix's match.
+    return { it, pick, keep, node: el("li", { class: "row" }, keep,
+      el("div", {}, el("div", { class: "row__title", text: it.name }), said), el("div", { class: "row__side" }, pick)) };
   });
-  const table = el("div", { class: "table-wrap" }, el("table", { class: "table table--middle" },
-    el("caption", { class: "visually-hidden", text: "Folders and their matches" }),
-    el("thead", {}, el("tr", {}, el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Bring in" })),
-      el("th", { scope: "col", text: "Folder" }), el("th", { scope: "col", text: "Reelix's match" }))),
-    el("tbody", {}, rows.map((r) => r.node))));
+  const list = el("ul", { class: "rows", "aria-label": "Folders and their matches" }, rows.map((r) => r.node));
   const end = Math.min(page.start + page.items.length, page.total);
-  const ok = await confirmDialog({ title: `Bring in ${NOUN[TAB][1]} from disk`, confirm: "Bring in the ticked ones",
-    message: el("div", { class: "stack-2" }, el("p", { text: `Folders ${page.start + 1} to ${end} of ${page.total} in ${folder.path}. Check each match; untick any that are wrong. Unticked folders are left out and not asked about again.` })),
-    fields: [table] });
+  // A list to check, so a slide-out, not a dialog (DASH-309, R6).
+  const ok = await slideOutConfirm({ title: `Bring in ${NOUN[TAB][1]} from disk`, confirm: "Bring in the ticked ones", opener: button || $("#lib-import button"),
+    body: [el("p", { text: `Folders ${page.start + 1} to ${end} of ${page.total} in ${folder.path}. Check each match; untick any that are wrong. Unticked folders are left out and not asked about again.` }), list] });
   if (!ok) return;
   const books = ["audiobooks", "books"].includes(TAB);
   const items = rows.filter((r) => r.keep.checked && r.pick.value).map((r) => (books ? { path: r.it.path, id: r.pick.value } : { path: r.it.path, tmdb_id: Number(r.pick.value) }));
@@ -391,22 +391,20 @@ async function radioDialog(start = 0, added = 0, follow = "all", button = null) 
     const keep = el("input", { type: "checkbox", checked: !!it.sure, "aria-label": `Bring in ${it.title}` });
     pick.addEventListener("change", () => { keep.checked = pick.value !== ""; });
     const note = it.problem || (it.matches.length && !it.sure ? "Not the same title: check it, then tick it." : "");
-    return { it, pick, keep, node: el("tr", {}, el("td", {}, keep), el("th", { scope: "row" }, it.title, el("span", { class: "small muted", text: ` ${plural(it.files, ["file", "files"])}` })),
-      el("td", {}, pick, note ? el("p", { class: "small muted", text: note }) : null)) };
+    return { it, pick, keep, node: el("li", { class: "row" }, keep,
+      el("div", {}, el("div", { class: "row__title", text: it.title }),
+        el("div", { class: "row__meta", text: [plural(it.files, ["file", "files"]), note].filter(Boolean).join(" · ") })),
+      el("div", { class: "row__side" }, pick)) };
   });
   const name = `radio-follow-${Date.now()}`;
   const gets = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: "What Reelix gets for each show" }),
     el("div", { class: "option-cards" }, Object.entries(FOLLOW_WORDS).map(([v, [t, h]]) => el("label", { class: "option-card" },
       el("input", { type: "radio", name, value: v, checked: v === follow }), el("strong", { text: t }), el("small", { text: h })))));
-  const table = el("div", { class: "table-wrap" }, el("table", { class: "table table--middle" },
-    el("caption", { class: "visually-hidden", text: "Radio shows and their matches" }),
-    el("thead", {}, el("tr", {}, el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Bring in" })),
-      el("th", { scope: "col", text: "Show on disk" }), el("th", { scope: "col", text: "Reelix's match" }))),
-    el("tbody", {}, rows.map((r) => r.node))));
+  const list = el("ul", { class: "rows", "aria-label": "Radio shows and their matches" }, rows.map((r) => r.node));
   const end = Math.min(page.start + page.items.length, page.total);
-  const ok = await confirmDialog({ title: "Bring in radio shows from disk", confirm: "Bring in the ticked ones",
-    message: el("p", { text: `Shows ${page.start + 1} to ${end} of ${page.total}. Check each match; untick any that are wrong.` }),
-    fields: [start ? null : gets, table].filter(Boolean) });
+  // A list to check and a choice, so a slide-out, not a dialog (DASH-309, R6 and R7).
+  const ok = await slideOutConfirm({ title: "Bring in radio shows from disk", confirm: "Bring in the ticked ones", opener: button || $("#lib-import button"),
+    body: [el("p", { text: `Shows ${page.start + 1} to ${end} of ${page.total}. Check each match; untick any that are wrong.` }), start ? null : gets, list].filter(Boolean) });
   if (!ok) return;
   if (!start) follow = (gets.querySelector(`input[name="${name}"]:checked`) || {}).value || "all";
   const items = rows.filter((r) => r.keep.checked && r.pick.value !== "").map((r) => ({ ...r.it.matches[Number(r.pick.value)] }));
@@ -450,7 +448,7 @@ startPage().then(async () => {
     $$("#lib-wall .media-grid").forEach((g) => { g.dataset.size = state.size; });
     updateSaveButton();
   });
-  $("#lib-chips").addEventListener("click", () => setTimeout(updateSaveButton));
+  $("#lib-chips").addEventListener("change", () => setTimeout(updateSaveButton));
   $("#lib-more button").addEventListener("click", async () => {
     const before = $$("#lib-wall li").length;
     await load();

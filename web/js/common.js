@@ -253,7 +253,13 @@ function toast(message, options = {}) {
 function savedBeside(text, options) {
   if (options.tone && options.tone !== "success") return false;
   if (!document.querySelector(".page--settings") || !lastUsed || Date.now() - lastUsed.at > 15000) return false;
-  const { control, sectionHead } = lastUsed;
+  let { control, sectionHead } = lastUsed;
+  // The part was drawn again after the save (DASH-309): FocusKeeper has put focus on the same control drawn again,
+  // so the note goes beside that one.
+  if (!control.isConnected) {
+    const now = document.activeElement;
+    if (now?.matches?.(CONTROLS) && now.closest(".settings-section")?.getAttribute("aria-labelledby") === sectionHead) control = now;
+  }
   let spot = null;
   if (control.isConnected && control.getClientRects().length && !control.closest(".side-panel, dialog")) {
     // A choice card or a tick in a group says it under the group, not inside the card.
@@ -273,6 +279,11 @@ function savedBeside(text, options) {
   }
   window.SharedComponents.savedNote(note, text === "Saved" ? "" : text);
   return true;
+}
+// Settings pattern 2 (DASH-309): a saved setting says so beside the control that was used ("Saved at 16:31"),
+// never in a toast. When there is no such control in view, it is said to screen readers only.
+function settingSaved(text) {
+  if (!savedBeside(text || "Saved", {})) announce(text || "Saved");
 }
 // Focus is never lost to the top of the page (screen reader check, 12 November 2026; WCAG 2.4.3 Focus order).
 // Many parts are drawn again after a save, a delete or a refresh. When the control that had focus is taken away
@@ -483,13 +494,16 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
   $("#side-panel")?.remove();
   const heading = el("h2", { class: "panel-header__title", id: "side-panel-title", text: title });
   const close = el("button", { type: "button", class: "icon-btn", "data-closes": true, "aria-label": `Close ${title}` }, icon("x", 20));
-  const bodyNode = el("div", { class: "side-panel__body" }, body);
+  // A state chip made with headChip() goes on the title's line, never alone at the top of the body (DASH-309, R3).
+  const parts = [body].flat();
+  const chipNode = parts.find((n) => n?.dataset?.headChip);
+  const bodyNode = el("div", { class: "side-panel__body" }, parts.filter((n) => n !== chipNode));
   const footNode = el("div", { class: "side-panel__foot" }, foot);
   footNode.hidden = !foot.length;
   const layer = el("div", { class: "side-panel-layer", id: "side-panel" },
     el("div", { class: "side-panel-backdrop" }),
     el("aside", { class: wide ? "side-panel side-panel--wide" : "side-panel", role: "dialog", "aria-modal": "true", "aria-labelledby": "side-panel-title" },
-      el("div", { class: "panel-header" }, heading, close), bodyNode, footNode));
+      el("div", { class: "panel-header" }, chipNode ? titleChip(heading, chipNode) : heading, close), bodyNode, footNode));
   document.body.append(layer);
   const openedBy = opener instanceof HTMLElement ? FocusKeeper.describe(opener) : null;
   const shut = SharedComponents.openLayer(layer, opener instanceof HTMLElement ? opener : null, () => {
@@ -501,7 +515,28 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
     layer, body: bodyNode, foot: footNode, close: shut,
     setTitle(text) { heading.textContent = text; close.setAttribute("aria-label", `Close ${text}`); },
     setFoot(nodes) { footNode.replaceChildren(...nodes); footNode.hidden = !nodes.length; },
+    // Draws the body again (Check again); a headChip goes on the title's line, as when it opened.
+    setBody(nodes) {
+      const next = [nodes].flat().filter(Boolean);
+      const c = next.find((n) => n?.dataset?.headChip);
+      if (c) onTitle(heading, c); else heading.parentElement.querySelector(":scope.title-chip > .chip")?.remove();
+      bodyNode.replaceChildren(...next.filter((n) => n !== c));
+    },
   };
+}
+
+// A slide-out that asks (DASH-309, R6): as confirmDialog, for a list to check or more than two fields, with the
+// page still in view. Its one primary button and Cancel are in the foot; resolves true for the primary button and
+// false when Cancel, Escape or the close button shut it. Focus goes back to what opened it.
+function slideOutConfirm({ title, body, confirm = "Continue", wide = true, opener = document.activeElement }) {
+  return new Promise((resolve) => {
+    let answered = false;
+    const yes = el("button", { type: "button", class: "btn btn--primary" }, confirm);
+    const no = el("button", { type: "button", class: "btn" }, "Cancel");
+    const panel = sidePanel({ title, wide, opener, body: [body].flat(), foot: [yes, no], onClose: () => { if (!answered) resolve(false); } });
+    yes.addEventListener("click", () => { answered = true; resolve(true); panel.close(); });
+    no.addEventListener("click", () => panel.close());
+  });
 }
 
 // Confirm dialog: a decision that must be made before going on. Says what will happen; resolves true or false.
@@ -1370,6 +1405,20 @@ function logoTone(img, name, tone, kind = "network") {
     } catch { /* a picture the browser will not let us read: it keeps the standard look */ }
   }, { once: true });
   return img;
+}
+
+// One of several (DASH-309, R4: DESIGN-SYSTEM.md section 10): a segmented control of radios, All first, each
+// choice with its count ("Films 12"). Radios give the arrow keys; the ids stay the same when it is drawn again, so
+// focus comes back to the chosen one. options: [[value, words, count]], count may be left out.
+function segmentedFilter({ name, label, options, value, onChange }) {
+  const box = el("fieldset", { class: "segmented", "data-filter": name }, el("legend", { class: "visually-hidden", text: label }));
+  for (const [v, words, count] of options) {
+    const id = `${name}-${String(v || "all").replace(/[^\w-]+/g, "-").toLowerCase()}`;
+    const input = el("input", { type: "radio", name, id, value: String(v ?? ""), checked: String(v ?? "") === String(value ?? "") });
+    input.addEventListener("change", () => { if (input.checked) onChange(v); });
+    box.append(el("label", { for: id }, input, el("span", { text: count == null ? words : `${words} ${Number(count).toLocaleString("en-GB")}` })));
+  }
+  return box;
 }
 
 // A state chip on its title's line (owner, 12 November 2026, a rule: DESIGN-SYSTEM.md, Chips): the title on the left,

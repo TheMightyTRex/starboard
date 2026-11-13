@@ -49,17 +49,13 @@ function renderFilters() {
   for (const r of results) counts[r.kind] = (counts[r.kind] || 0) + 1;
   const kinds = Object.keys(KINDS).filter((k) => counts[k]);
   box.hidden = kinds.length < 2;
-  box.replaceChildren(...kinds.map((k) => el("button", {
-    type: "button", class: "filter-chip", "aria-pressed": "false", "data-kind": k,
-    onclick: (e) => {
-      // Toggled in place: the chip stays, so focus stays on it.
-      kind = kind === k ? null : k;
-      $$(".filter-chip", box).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.kind === kind)));
-      renderResults();
-      announce(`${shownResults().length} results shown`);
-      e.currentTarget.focus();
-    },
-  }, icon(KINDS[k][1]), `${KINDS[k][0]}, ${counts[k]}`)));
+  box.removeAttribute("role");
+  box.removeAttribute("aria-label");
+  // One kind at a time (DASH-309, R4): a segmented control with All first; the radios keep focus.
+  if (kind && !counts[kind]) kind = null;
+  box.replaceChildren(kinds.length < 2 ? "" : segmentedFilter({ name: "search-kind", label: "Show only", value: kind || "",
+    options: [["", "All", results.length], ...kinds.map((k) => [k, KINDS[k][0], counts[k]])],
+    onChange: (v) => { kind = v || null; renderResults(); announce(`${shownResults().length} results shown`); } }));
 }
 
 function shownResults() { return results.filter((r) => !kind || r.kind === kind); }
@@ -145,8 +141,7 @@ function fillSelect(select, items, value, label) {
 function lead(r) {
   return el("div", { class: "side-panel__lead" }, cover(r, "cover"),
     el("div", { class: "media-panel-lead__text" },
-      el("h3", { text: titleWithYear(r) }),
-      r.in_library ? chip(`In ${r.service_name}`, "success") : chip("Not in library", "muted"),
+      titleChip(el("h3", { text: titleWithYear(r) }), r.in_library ? chip(`In ${r.service_name}`, "success") : chip("Not in library", "muted")),
       el("span", { class: "small muted", text: metaLine(r) })));
 }
 

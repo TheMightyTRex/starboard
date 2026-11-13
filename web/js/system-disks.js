@@ -72,7 +72,7 @@ function reportBody(d) {
     tone === "danger" || tone === "warning"
       ? el("div", { class: "notice", "data-tone": tone, role: "status" }, icon("triangle-alert"),
         el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${word}: ${reason}` }), advice ? el("p", { text: advice }) : null))
-      : chip(word, tone),
+      : headChip(word, tone),
     el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { class: "numeric" }, v)])),
     el("section", { class: "sys-block", "aria-labelledby": "smart-counters" },
       el("h3", { id: "smart-counters", text: "Counters that should stay at zero" }),
@@ -142,7 +142,7 @@ function openReport(d, opener) {
   again.addEventListener("click", async () => {
     await load();
     const now = data?.disks.find((x) => keyOf(x) === keyOf(d));
-    if (now) panel.body.replaceChildren(...reportBody(now));
+    if (now) panel.setBody(reportBody(now));
     announce(`Checked ${nameOf(d)} again.`);
   });
 }
