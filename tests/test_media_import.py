@@ -120,7 +120,7 @@ class MediaImport(unittest.TestCase):
         self.assertEqual(media_import.folders(self.cfg, "audiobooks"), [{"id": 4, "path": "/data/media/audiobooks", "waiting": 1}])
         page = media_import.scan_books(self.cfg, 4)
         m = page["items"][0]["matches"][0]
-        self.assertEqual((m["id"], m["title"], m["detail"]), ("OL1A", "Made-up Author", "best known for A Made-up Book, 12 works"))
+        self.assertEqual((m["id"], m["title"], m["detail"]), ("OL1A", "Made-up Author", "12 works, best known for A Made-up Book"))
         self.assertTrue(page["items"][0]["sure"])  # one author of that exact name
         out = media_import.run_books(self.cfg, 4, [{"path": page["items"][0]["path"], "id": "OL1A"}])
         self.assertEqual(out, {"added": 1, "errors": []})
