@@ -341,7 +341,7 @@
      },
      "user": {
       "type": "string",
-      "pattern": "^[1-9]\\d{0,5}:\\d{1,6}$"
+      "pattern": "^([1-9]\\d{0,5}:\\d{1,6}|media)$"
      },
      "host_port": {
       "type": "integer",

@@ -46,7 +46,24 @@ the next major version.
 - **Added:** removing a plug-in asks where its folder goes: kept in `data/plugins/.removed`, or the holding folder.
 - **Added:** `rest` in a catalogue entry, the memory and processor an app uses at rest.
 - **Changed:** `env` names may have lower case letters, such as `serverIP`.
-- Nothing was taken away: a manifest that worked with 1.11 works the same.
+- Nothing was taken away: a manifest that worked with 1.12 works the same.
+
+## Plug-in API 1.12.0, 13 November 2026
+
+- **Added:** `"user": "media"` on a container that mounts a `media/<one folder>` volume: it runs as the media folder's
+  owner (the apps' user from **Install apps**), so the files it adds are the person's own. Starboard makes each
+  `media/<one folder>` that is missing, owned by the user the container runs as; a folder that is there already is
+  left as it is. People read that it runs as the media folder's owner before they add it. Read
+  [Containers](plugin-manifest-reference.md#containers).
+- **Added:** `link` on a custom setting's item, `{"url", "label"}`: a link that opens in a new tab, such as a search for
+  the title on another site. Only `http` and `https` addresses are kept. Read
+  [Custom screens](plugin-api-reference.md#custom-screens).
+- **Added:** `state_label` on a custom setting's item: the plug-in's own words for its state, such as `Added`, in
+  place of **Works** or **Not answering**, in the state's colour.
+- **Added:** `file_only` on a custom setting's `add`: only the file picker is shown, for a plug-in that takes files and
+  never an address.
+- An older Starboard refuses `"user": "media"`, so set `starboard_api` to `>=1.12` when you use it. It ignores `link`
+  and `file_only` (it shows the add box's address field too).
 
 ## Plug-in API 1.11.0, 13 November 2026
 

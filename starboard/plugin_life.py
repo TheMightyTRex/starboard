@@ -204,7 +204,8 @@ def update(data_dir, pid, manifest, media_dir, helper=None, services=None, dev=F
     pa._write(os.path.join(where, "manifest.json"), manifest)
     pa._write(os.path.join(where, "settings.json"), values)
     if manifest.get("containers"):
-        pa._write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, pa.host_path(data_dir, pid), media_dir), 0o644)
+        pa._write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, pa.host_path(data_dir, pid), media_dir,
+                                                                           media_user=pa.media_owner(data_dir), extra=None), 0o644)  # extra: written by enable()
     was_on = st.get("state") == "enabled"
     st.update(updated_at=time.time(), previous_version=old.get("version"))
     st["whats_new"] = _whats_new_mark(st, old.get("version"), manifest.get("version"), note)

@@ -82,7 +82,7 @@ class Check(unittest.TestCase):
 
 class Compose(unittest.TestCase):
     def test_ports_secrets_jellyfin_tmpfs_and_data_paths(self):
-        text = plugins.compose(app_manifest(), "/srv/data/plugins/stats-app", "/srv/media", None,
+        text = plugins.compose(app_manifest(), "/srv/data/plugins/stats-app", "/srv/media", None, extra=
                                {"ports": {"app": 3001}, "secrets": {"db_password": "s3cret"},
                                 "jellyfin": {"url": "http://host.docker.internal:8096", "api_key": "jfkey"}})
         app, db = text.split("  plugin-stats-app-db:")
@@ -99,6 +99,19 @@ class Compose(unittest.TestCase):
         for hardened in ("read_only: true", "cap_drop:", "no-new-privileges:true"):
             self.assertIn(hardened, app)
             self.assertIn(hardened, db)
+
+    def test_media_user_and_extra_together(self):
+        # API 1.12's user "media" with 1.13's tmpfs and port: the tmpfs belongs to the media folder's owner
+        m = app_manifest()
+        m["containers"][0].update(user="media", tmpfs=["/run"], volumes=["data:/app/backup", "media/movies"])
+        text = plugins.compose(m, "/p", "/m", None, media_user="1001:1002", extra={"ports": {"app": 3000}})
+        app = text.split("  plugin-stats-app-db:")[0]
+        self.assertIn('user: "1001:1002"', app)
+        self.assertIn('- "/run:size=64m,mode=0700,uid=1001,gid=1002,exec"', app)
+        self.assertIn('- "3000:3000"', app)
+        w = plugins.install_warning(m)
+        self.assertIn("Files in your media folder under movies: it can change, replace and remove them", w["change"])
+        self.assertTrue(any("owner of your media folder" in c for c in w["change"]))
 
     def test_without_details_a_hole_is_left_empty(self):
         text = plugins.compose(app_manifest(), "/p", "/m")
@@ -204,11 +217,23 @@ class Adopt(unittest.TestCase):
         self.assertIn(("POST", "/containers/tdarr/stop?t=60"), self.docker_calls)
         self.assertNotIn("rm ", scripts[0].replace("rm -", ""))
         self.assertIn("cp -a '/home/me/config/tdarr/server'/. 'data/app/server'/", scripts[0])
+        self.assertIn("chown -R 10001:10001 'data/app/server'", scripts[0])
         self.assertNotIn("/mnt/media", scripts[0])  # only the folders the manifest names
         self.assertIn("about 42 MB", said)
         self.assertIn("stopped, not removed", said)
         st = json.load(open(os.path.join(pa.folder(self.d, "stats-app"), "state.json")))
         self.assertEqual(st["adopted"]["app"], "tdarr")
+
+    def test_copies_belong_to_the_media_folders_owner(self):
+        from starboard import containers
+        m = json.loads(json.dumps(self.m))
+        m["containers"][0].update(user="media", volumes=["data:/app/backup", "media/movies"])
+        with open(os.path.join(pa.folder(self.d, "stats-app"), "manifest.json"), "w") as f:
+            json.dump(m, f)
+        scripts = []
+        with mock.patch.object(containers, "docker", self.docker), mock.patch.object(pa, "media_owner", lambda d: "1001:1002"):
+            pa.adopt(self.d, "stats-app", helper=lambda folder, script: scripts.append(script) or (0, "1"))
+        self.assertIn("chown -R 1001:1002 'data/app/server'", scripts[0])
 
     def test_refused_while_active_and_when_missing(self):
         from starboard import containers

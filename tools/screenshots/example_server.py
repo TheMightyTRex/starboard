@@ -443,6 +443,87 @@ def _example_watch_stats(data_dir):
         {"said": "Test sent by Telegram. This is example data, so nothing was sent."} if pid == "notifications" else real_action(d, pid, aid, opener))
 
 
+# Audio description sources (DASH-410, plug-in API 1.12): the Audio description plug-in's AudioVault and YouDescribe
+# links and its MovieReading and Earcatch guide, and the Audio description tracks plug-in's list, with rows in each
+# state, an upload that takes only a file, and links that open in a new tab. Answered here; nothing is fetched.
+_AD_FILMS = [("Brazil", 1985), ("Paddington 2", 2017), ("The Bear", 0), ("Bluey", 0)]
+
+
+def _ad_screen(key):
+    if key == "audiovault":
+        items = [{"id": f"film:{n}", "title": f"{n} ({y})" if y else n, "group": "Films" if y else "Series", "actions": [], "state": "off",
+                  "state_label": "No description here", "menu": "films" if y else "series",
+                  "link": {"url": ("https://audiovault.net/movies?search=" if y else "https://audiovault.net/shows?search=") + n.replace(" ", "%20"),
+                           "label": f"Search AudioVault for {n}" + (f" ({y})" if y else "")}} for n, y in _AD_FILMS]
+        return {"type": "list", "title": "Search AudioVault", "items": items,
+                "menus": [{"id": "films", "title": "Films", "group": "Your library", "detail": "2 titles"},
+                          {"id": "series", "title": "Series", "group": "Your library", "detail": "2 titles"}],
+                "intro": "Each link opens AudioVault's own search for a title without audio description. Starboard never downloads from "
+                         "AudioVault or reads its pages. This is example data."}
+    if key == "apps":
+        return {"type": "list", "title": "MovieReading and Earcatch", "intro": "Phone apps that play a description in step, by listening. This is example data.",
+                "items": [{"id": "mr-ios", "title": "MovieReading for iPhone and iPad", "group": "MovieReading", "actions": [], "state": "ok", "state_label": "Link only",
+                           "link": {"url": "https://apps.apple.com/app/id460349347", "label": "MovieReading on the App Store"}},
+                          {"id": "step-1", "title": "Get the description first", "group": "Using one with Jellyfin", "actions": [], "state": "off",
+                           "state_label": "Step 1", "detail": "Install the app and download the description for your film at home on Wi-Fi."}]}
+    rows = [{"id": "Dune (2021).mp3", "title": "Dune (2021).mp3", "group": "Added: check each plays in step", "actions": [], "state": "ok", "state_label": "Added",
+             "detail": "Added to Dune (2021) as English (Audio Description). Play it in Jellyfin, then say whether it plays in step.",
+             "choice": {"label": "Plays in step?", "value": "wait", "options": [["wait", "Not checked yet"], ["right", "Yes: put the original away"],
+                                                                                 ["undo", "No: take the track off"]]}},
+            {"id": "Brazil (1985).mp3", "title": "Brazil (1985).mp3", "group": "To check", "actions": [], "state": "warning", "state_label": "Lengths differ",
+             "detail": "Brazil (1985): the track is 3 minutes 28 seconds longer than the film, so it is probably for another cut, such as an extended one.",
+             "link": {"url": "https://audiovault.net/movies?search=Brazil", "label": "Search AudioVault for Brazil"}},
+            {"id": "Heat.mp3", "title": "Heat.mp3", "group": "To check", "actions": [], "state": "warning", "state_label": "Choose the title",
+             "detail": "More than one title could match. Choose the right one.",
+             "choice": {"label": "Film or episode", "value": "", "options": [["", "Choose one"], ["m1", "Heat (1995)"], ["m2", "Heat (1986)"]]}}]
+    return {"type": "list", "title": "Description tracks to add", "items": rows,
+            "intro": "Put a description track you already have in the audio-description folder, or upload one here. This is example data.",
+            "add": {"label": "Upload a description track", "file_only": True,
+                    "file": {"label": "Choose a description track", "accept": ".mp3,.m4a,.zip", "hint": "MP3, M4A or a zip of them, up to 60 MB."}}}
+
+
+def _example_audio_description(data_dir):
+    from starboard import plugin_custom, plugin_watch
+    base = {"author": "TheMightyTRexUK", "licence": "MIT", "starboard_api": ">=1.12 <2.0", "health": "/health"}
+    # Its id is not audio-description, so the Catalogue's offer of the real one (DASH-399) still shows here.
+    if not any(p["id"] == "audio-description-sources" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {
+            **base, "manifest_version": 1, "id": "audio-description-sources", "name": "Audio description", "version": "1.1.0",
+            "description": "Finds films and series in Jellyfin with a described sound track, and links to places with more.",
+            "homepage": "https://example.invalid/audio-description", "support_url": "https://example.invalid/audio-description/issues",
+            "permissions": ["jellyfin:key", "network:lan"],
+            "containers": [{"name": "main", "image": "ghcr.io/example/audio-description@sha256:" + "d" * 64, "port": 8080, "network": "lan",
+                            "volumes": ["data"], "start": "when_needed"}],
+            "settings": [{"key": "audiovault_links", "label": "AudioVault search links", "type": "switch", "default": True, "group": "Sources"},
+                         {"key": "audiovault", "label": "Search AudioVault", "type": "custom", "choices": "/audiovault", "group": "AudioVault"},
+                         {"key": "apps", "label": "MovieReading and Earcatch", "type": "custom", "choices": "/apps", "group": "MovieReading and Earcatch"}]},
+            "/nonexistent-media")
+        plugins_admin.set_state(data_dir, "audio-description-sources", "enabled")
+    if not any(p["id"] == "audio-description-tracks" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {
+            **base, "manifest_version": 1, "id": "audio-description-tracks", "name": "Audio description tracks", "version": "1.0.0",
+            "description": "Adds a description track you already have to its film in Jellyfin, after checking the lengths match.",
+            "homepage": "https://example.invalid/audio-description-tracks", "support_url": "https://example.invalid/audio-description-tracks/issues",
+            "permissions": ["jellyfin:key", "network:lan"],
+            "containers": [{"name": "main", "image": "ghcr.io/example/audio-description-tracks@sha256:" + "e" * 64, "port": 8080, "network": "lan",
+                            "volumes": ["data", "media/movies", "media/tv", "media/audio-description"], "user": "media", "start": "when_needed"}],
+            "settings": [{"key": "inbox", "label": "Description tracks to add", "type": "custom", "choices": "/inbox", "group": "Tracks"}]},
+            "/nonexistent-media")
+        plugins_admin.set_state(data_dir, "audio-description-tracks", "enabled")
+    real_call, real_ask = plugin_custom.call, plugin_watch._ask
+    ours = {"audio-description-sources", "audio-description-tracks"}
+
+    def call(data_dir_, pid, key, body=None, opener=None):
+        if pid not in ours:
+            return real_call(data_dir_, pid, key, body, opener)
+        out = plugin_custom.clean(_ad_screen(key))
+        if body is not None:
+            out["said"] = "This is example data, so nothing changed"
+        return out
+    plugin_custom.call = call
+    plugin_watch._ask = lambda pid, main, path: "ok" if pid in ours else real_ask(pid, main, path)
+
+
 from starboard import noip  # noqa: E402  The No-IP updater (DASH-170), with made-up addresses
 noip.status = lambda data_dir, **k: {"installed": True, "running": True, "state": "refused", "last_update": "2026-11-09T10:19:01Z",
                                      "address": "203.0.113.7", "said": "Type a new DDNS key or password below, then save. The updater starts again with it.",
@@ -1055,6 +1136,7 @@ def main():
     _example_keys(str(DATA))
     _example_watch_stats(str(DATA))
     _example_app_plugins(str(DATA))
+    _example_audio_description(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
     _example_full_backups()

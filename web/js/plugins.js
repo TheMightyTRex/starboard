@@ -678,8 +678,12 @@ function customScreen(p, s) {
       g ? el("h4", { text: g }) : null,
       el("ul", { class: "rows" }, rows.flatMap((it) => [el("li", { class: "row row--no-lead" },
         el("div", {}, el("h5", { class: "row__title", text: it.title }),
-          el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") })),
-        el("div", { class: "row__side" }, chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)),
+          el("div", { class: "row__meta", text: [it.detail, it.address].filter(Boolean).join(" · ") }),
+          // A link on the row (plug-in API 1.12), such as a search for the title on another site: its own words, in a new tab.
+          it.link ? el("div", { class: "row__meta" }, newTabLink(it.link.url, it.link.label)) : null),
+        // The plug-in's own words for the state (plug-in API 1.12), such as "Added", in the state's colour.
+        el("div", { class: "row__side" }, it.state_label ? chip(it.state_label, (CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)[1])
+          : chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)),
           it.choice ? (() => {  // a small choice on the row, such as a catalogue's weight (12 November 2026)
             const sel = el("select", { class: "select select--compact", "aria-label": `${it.choice.label}: ${it.title}`, "data-key": `${it.id}:choose` },
               it.choice.options.map(([v, words]) => el("option", { value: v, text: words, selected: v === it.choice.value })));
@@ -835,6 +839,8 @@ function customScreen(p, s) {
       const fileForm = el("form", { class: "stack-2" }, el("label", { class: "field__label", for: fileId, text: f.label }),
         f.hint ? el("p", { class: "hint", id: `${fileId}-h`, text: f.hint }) : null, el("div", { class: "actions" }, file, send));
       fileForm.addEventListener("submit", (e) => { e.preventDefault(); upload(file, send, ""); });
+      // Only the file picker (plug-in API 1.12), for a plug-in that takes files and never an address.
+      if (data.add.file_only) return fileForm;
       return el("div", { class: "stack-4" }, form, fileForm);
     })() : null;
     // Test all only where it can test something: a list with rows to test, or one still empty.
@@ -1013,7 +1019,8 @@ function customScreen(p, s) {
             icon(it.on ? "pause" : "play"), it.on ? "Deactivate" : "Activate", el("span", { class: "visually-hidden", text: ` ${it.title}` })) : null;
           btn?.addEventListener("click", () => run({ action: "toggle", id: it.id }, btn));
           return el("tr", { class: it.on ? null : "is-off" }, el("td", {}, tick), ...cols.map((c) => el("td", { class: c.type === "number" ? "num" : null, text: (it.cells || {})[c.key] || "" })),
-            el("td", {}, chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown))), el("td", {}, btn));
+            el("td", {}, it.state_label ? chip(it.state_label, (CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown)[1])
+              : chip(...(CUSTOM_STATE[it.state] || CUSTOM_STATE.unknown))), el("td", {}, btn));
         })));
       return el("section", { class: "fold" }, head, el("div", { id: panelId, class: "fold__panel" }, shown.length ? el("div", { class: "table-wrap" }, table)
         : emptyState("None here", "Change the search or filters to see more.")));

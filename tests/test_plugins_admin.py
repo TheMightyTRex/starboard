@@ -39,6 +39,30 @@ class PluginsAdminTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "already added"):
             pa.install(self.tmp.name, ON_DEMAND, "/srv/media")
 
+    def test_a_missing_media_folder_is_made_for_the_user_it_runs_as(self):  # API 1.12 (DASH-410)
+        os.makedirs(os.path.join(self.tmp.name, "stack"), exist_ok=True)
+        with open(os.path.join(self.tmp.name, "stack", ".env"), "w") as f:
+            f.write("PUID=1001\nPGID=1002\nDATA_DIR=/srv/data\n")
+        m = {**ON_DEMAND, "id": "tracks", "permissions": ["network:lan"],
+             "containers": [{"name": "main", "image": ON_DEMAND["containers"][0]["image"], "network": "lan",
+                             "volumes": ["data", "media/movies", "media/audio-description"], "user": "media"}], "resources": {}}
+        with mock.patch("starboard.stack.folder", side_effect=lambda d: os.path.join(d, "stack")):
+            self.assertEqual(pa.media_owner(self.tmp.name), "1001:1002")
+            pa.install(self.tmp.name, m, "/srv/data/media")
+            with open(os.path.join(pa.folder(self.tmp.name, "tracks"), "compose.yaml")) as f:
+                self.assertIn('user: "1001:1002"', f.read())
+            seen = []
+            pa._compose_run(self.tmp.name, "tracks", "up -d", helper=lambda folder, script, binds=(): seen.append((script, binds)) or (0, ""))
+        script, binds = seen[0]
+        self.assertIn("[ -d '/srv/data/media/audio-description' ] || { mkdir -p '/srv/data/media/audio-description' && chown 1001:1002", script)
+        self.assertEqual(binds, ["/srv/data/media:/srv/data/media"])
+        self.assertIn("chown 1001:1002 'data/main'", script)  # its own data folder belongs to the same user
+        # A plug-in with no folder in the media folder shows the helper nothing more.
+        pa.install(self.tmp.name, ON_DEMAND, "/srv/media")
+        with mock.patch.object(pa, "media_host_dir", return_value=None):
+            pa._compose_run(self.tmp.name, "on-demand", "up -d", helper=self.helper())
+        self.assertNotIn("mkdir -p '/srv", self.runs[-1][1])
+
     def test_a_bad_manifest_is_refused_with_its_problems(self):
         with self.assertRaisesRegex(ValueError, "Unknown field privileged"):
             pa.install(self.tmp.name, {**ON_DEMAND, "privileged": True}, "/srv/media")
