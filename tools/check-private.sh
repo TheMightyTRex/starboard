@@ -47,7 +47,9 @@ check "Private key" 'BEGIN [A-Z ]*PRIVATE KEY'
 # author name (in links, image addresses and the licence) and "TRex", as in TRex Design System (TheMightyTRexUK's OK,
 # 3 November 2026), with that capitalisation only. A private word is let through only where it sits wholly
 # inside one of these names, so "ExampleTRex" is still caught for the private word "exampletrex".
-PUBLIC_NAMES='[Tt][Hh][Ee][Mm][Ii][Gg][Hh][Tt][Yy][Tt][Rr][Ee][Xx]([Uu][Kk])?|TRex'
+# Also "David Wong", the author, as Open Library lists him in Library's book matching (DASH-282; owner's OK,
+# 13 November 2026: "Allow David Wong"), with that capitalisation only.
+PUBLIC_NAMES='[Tt][Hh][Ee][Mm][Ii][Gg][Hh][Tt][Yy][Tt][Rr][Ee][Xx]([Uu][Kk])?|TRex|David Wongs?'
 
 if [ -f .private-words ]; then
   while IFS= read -r word; do
