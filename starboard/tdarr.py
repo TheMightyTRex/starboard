@@ -3,7 +3,7 @@ not need to be logged into", with basic choices). Starboard gives Tdarr its API 
 
 - Libraries: films (/media/movies) and series (/media/tv), each on or off. Their cache folder, where a file is
   converted, is /media/tdarr-cache on the media pool when the Tdarr plug-in mounts it (1.0.2 and later), so the
-  big working copies never fill the system disk, otherwise /temp (owner, 13 November 2026, OPS-18).
+  big working copies never fill the system disk, otherwise /temp (owner, 13 November 2026, OPS-19).
 - What it does: save space (convert to H.265 with the widely used Migz plug-ins, keeping a file only when it got
   smaller), check files only (health checks, nothing converted), or nothing.
 - How many at once: conversions on the processor (health checks run one at a time).
