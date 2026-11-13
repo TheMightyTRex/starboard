@@ -175,6 +175,18 @@ def _lists(chans, hidden):
         out.append({"id": f"lists:{name}", "label": label, "kind": "Lists", "on": on, "total": len(ids), "active": name not in off,
                     "hint": "Inactive: not fetched, and none of its channels are in Jellyfin" if name in off
                     else f"Active: {on} of {len(ids)} channels in Jellyfin" if ids else "Active: its channels arrive at the next run"})
+    # Each of the owner's own channel lists too, beside them (owner, 13 November 2026: "I would expect it to show under
+    # free tv, samsung etc. with a toggle"): the same switch as its Activate or Deactivate in Your lists and guides.
+    from . import livetv_own
+    for x in livetv_own.sources(DATA):
+        if x.get("kind") != "list":
+            continue
+        ids = [c["id"] for c in chans if c.get("list") == livetv_own.PLAYLIST and c.get("source") == x["id"]]
+        on = sum(1 for i in ids if i not in hidden)
+        active = x.get("on", True)
+        out.append({"id": f"lists:own:{x['id']}", "label": x.get("name") or x["url"], "kind": "Lists", "on": on, "total": len(ids), "active": active,
+                    "hint": "Inactive: none of its channels are in Jellyfin" if not active
+                    else f"Your list. Active: {on} of {len(ids)} channels in Jellyfin" if ids else "Your list. Active: its channels arrive once it is tested"})
     return out
 
 
@@ -347,8 +359,30 @@ def _bulk(body):
                            else f"{what} already inactive")
 
 
+def _own_switch(sid, on):
+    """One of the owner's own lists, activated or deactivated from Channels (DASH-359)."""
+    from . import livetv, livetv_jellyfin, livetv_own
+    items = livetv_own.sources(DATA)
+    x = next((x for x in items if x["id"] == sid and x.get("kind") == "list"), None)
+    if not x:
+        raise ValueError("Not one of the lists")
+    if on == x.get("on", True):
+        return channels_screen(f"{x['name']} is already {'active' if on else 'inactive'}")
+    x["on"] = on
+    livetv_own.save(DATA, items)
+    if on:  # tested again on its own, with its notice
+        livetv_own._update(DATA, sid, progress={"done": 0, "total": 0}, seen_result=None)
+        threading.Thread(target=_quick, args=(sid,), name="livetv-add", daemon=True).start()
+        return channels_screen(f"{x['name']} activated: its channels are being tested; this page shows how far it has got")
+    gone = livetv_own.drop(livetv.folder(), sid)
+    livetv_jellyfin.refresh_guide(_services())
+    return channels_screen(f"{x['name']} deactivated: its {gone} {'channel leaves' if gone == 1 else 'channels leave'} Jellyfin now")
+
+
 def _list_switch(name, on):
     from . import livetv, livetv_jellyfin
+    if name.startswith("own:"):
+        return _own_switch(name[4:], on)
     if name not in livetv.LISTS:
         raise ValueError("Not one of the lists")
     label = livetv.LISTS[name][0]

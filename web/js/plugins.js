@@ -460,6 +460,7 @@ function customScreen(p, s) {
   // `after`: a bulk switch says what it did in a saved note beside itself (Settings pattern 2), not in the line above.
   const run = async (body, button, after) => {
     if (button) button.disabled = true;
+    if (last && body.action !== "dismiss") freeze();
     const key = button && button.dataset.key;  // a row's button: focus goes back to it, drawn again (WCAG 2.4.3)
     try {
       const out = await api(path, { method: "POST", body });
@@ -518,6 +519,7 @@ function customScreen(p, s) {
         const input = el("input", { type: "radio", name: `show-${p.id}-${s.key}`, id: `show-${p.id}-${s.key}-${value}`, value, checked: value === show });
         input.addEventListener("change", () => {
           show = value;
+          stay.clear();
           draw(last);
           document.getElementById(input.id)?.focus();
           announce(`${count[value]} ${noun} shown`);
@@ -537,7 +539,11 @@ function customScreen(p, s) {
     draw(last);  // drawn at once, so focus moves now
     (back ? [...box.querySelectorAll("[data-menu]")].find((x) => x.dataset.menu === from) : document.getElementById(levelHead))?.focus();
   };
-  const keep = (it) => show === "all" || (show === "on" ? it.on : !it.on);
+  // While a filter is on, a change does not move anything (owner, 13 November 2026: "not refresh the page unless I
+  // leave it and go back when a filter is active ... I want to do multiple changes at once quickly"): what was shown
+  // stays shown, with its new state, until Refresh, a change of filter, or leaving the page.
+  const stay = new Set();
+  const keep = (it) => stay.has(it.id) || show === "all" || (show === "on" ? it.on : !it.on);
   const itemRows = (data, shown) => {
     const groups = new Map();
     for (const it of shown) { if (!groups.has(it.group)) groups.set(it.group, []); groups.get(it.group).push(it); }
@@ -719,7 +725,7 @@ function customScreen(p, s) {
         trail.length ? el("p", { class: "small muted", text: `In ${trail.join(", ")}` }) : null,
         here.detail ? el("p", { class: "small muted", text: here.detail }) : null];
     })() : [data.intro ? el("p", { class: "small muted", text: data.intro }) : null];
-    const controls = [showFilter(data, pool), testAll].filter(Boolean);
+    const controls = [showFilter(data, pool), testAll, stay.size ? refreshButton() : null].filter(Boolean);
     box.replaceChildren(...[
       ...(here ? [] : noticesOf(data)), ...top, bulkPanel(data, sets),
       controls.length ? el("div", { class: "actions" }, ...controls) : null, said,
@@ -733,12 +739,36 @@ function customScreen(p, s) {
   // section can be activated or deactivated together. Only open sections draw their rows.
   const fold = { open: new Set(), sort: { key: "", dir: 1 }, picked: new Set(), query: "", chips: new Map() };
   const foldBase = `fold-${p.id}-${s.key}`;
+  const foldMatch = (it) => {
+    if (stay.has(it.id)) return true;
+    const q = fold.query.trim().toLowerCase();
+    return keep(it) && (!q || [it.title, ...Object.values(it.cells || {})].some((v) => String(v).toLowerCase().includes(q)))
+      && [...fold.chips].every(([k, set]) => !set.size || set.has((it.cells || {})[k]));
+  };
+  const filtering = () => show !== "all" || fold.query.trim() !== "" || [...fold.chips.values()].some((x) => x.size);
+  function freeze() {  // everything shown now stays shown after the change
+    if (!filtering()) return;
+    for (const it of last.items) if ((last.layout === "folds" ? foldMatch : keep)(it)) stay.add(it.id);
+  }
+  const refresh = (button) => {
+    stay.clear();
+    button.disabled = true;
+    api(path).then((out) => {
+      draw(out);
+      document.getElementById(button.id)?.focus();
+      announce(`Refreshed: ${out.items.filter(out.layout === "folds" ? foldMatch : keep).length} ${(out.title || "items").toLowerCase()} shown`);
+    }).catch((err) => problem(err.message, button)).finally(() => { button.disabled = false; });
+  };
+  const refreshButton = () => {
+    const b = el("button", { type: "button", class: "btn", id: `${foldBase}-refresh` }, icon("refresh-cw"), "Refresh",
+      stay.size ? el("span", { class: "visually-hidden", text: ": changed ones stay in view until you refresh" }) : null);
+    b.addEventListener("click", () => refresh(b));
+    return b;
+  };
   const drawFolds = (data) => {
     const noun = (data.title || "items").toLowerCase();
     const cols = data.columns || [];
-    const q = fold.query.trim().toLowerCase();
-    const match = (it) => keep(it) && (!q || [it.title, ...Object.values(it.cells || {})].some((v) => String(v).toLowerCase().includes(q)))
-      && [...fold.chips].every(([k, set]) => !set.size || set.has((it.cells || {})[k]));
+    const match = foldMatch;
     const known = new Set(data.items.map((it) => it.id));
     for (const id of [...fold.picked]) if (!known.has(id)) fold.picked.delete(id);
     const groups = new Map();
@@ -759,6 +789,7 @@ function customScreen(p, s) {
       clearTimeout(timer);
       timer = setTimeout(() => {
         fold.query = search.value;
+        stay.clear();
         const at = search.selectionStart;
         drawFolds(data);
         const again = document.getElementById(`${foldBase}-q`);
@@ -776,6 +807,7 @@ function customScreen(p, s) {
           const b = el("button", { type: "button", class: "filter-chip", "aria-pressed": String(set.has(v)), id: `${foldBase}-chip-${f.key}-${v.replace(/[^A-Za-z0-9]+/g, "-")}` }, v);
           b.addEventListener("click", () => {
             if (set.has(v)) set.delete(v); else set.add(v);
+            stay.clear();
             drawFolds(data);
             document.getElementById(b.id)?.focus();
             announce(`${data.items.filter(match).length} ${noun} shown`);
@@ -860,7 +892,9 @@ function customScreen(p, s) {
     box.replaceChildren(...[
       ...noticesOf(data),
       data.intro ? el("p", { class: "small muted", text: data.intro }) : null, bulkPanel(data, sets),
-      el("div", { class: "fold-tools" }, el("label", { class: "visually-hidden", for: search.id, text: `Search ${noun}` }), el("div", { class: "search-field" }, search), showFilter(data, data.items)),
+      el("div", { class: "fold-tools" }, el("label", { class: "visually-hidden", for: search.id, text: `Search ${noun}` }), el("div", { class: "search-field" }, search),
+        showFilter(data, data.items), refreshButton()),
+      stay.size ? el("p", { class: "small muted", text: `Changed ${noun} stay in view while the filter is on. Select Refresh to show only those that match it now.` }) : null,
       ...chipRows, pickedBar, said,
       sections.length ? el("div", { class: "folds" }, ...sections) : emptyState(`No ${noun} found`, "Change the search or filters to see more.")].filter(Boolean));
   };

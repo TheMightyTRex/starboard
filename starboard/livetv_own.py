@@ -478,7 +478,7 @@ def notices(data_dir):
         if p:
             pct = int(100 * p["done"] / p["total"]) if p.get("total") else 0
             out.append({"id": x["id"], "tone": "warning", "progress": pct,
-                        "title": f"Adding {x['name']}: {p['done']} of {p['total']} channels tested",
+                        "title": f"Adding {x['name']}: {p['done']} of {p['total']} channels tested" if p.get("total") else f"Adding {x['name']}: reading the list",
                         "text": "Each channel is tried before it goes into Jellyfin, which takes a few minutes. Channels that do not play are left out. You can leave this page; it carries on."})
         elif r and not x.get("seen_result"):
             added, total = r.get("added", 0), r.get("total", 0)
