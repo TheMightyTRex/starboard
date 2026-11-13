@@ -59,7 +59,7 @@ async function drawDiscoverRows(focusId = "") {
       const tick = el("input", { type: "checkbox", id: `discover-row-${r.id.replace(/[^\w-]+/g, "-")}`, checked: r.shown });
       return el("li", { class: r.shown ? "sortable__row" : "sortable__row sortable__row--off", "data-value": r.id },
         el("span", { class: "sortable__handle", "aria-hidden": "true" }, icon("grip-vertical")),
-        el("label", { class: "sortable__label check" }, tick, el("span", { class: "check__text", text: r.title })),
+        el("label", { class: "sortable__label check" }, tick, el("span", { class: "check__text", text: r.genre ? `${r.title} (genre)` : r.title })),
         el("span", { class: "sortable__moves" }, move(r.title, "up"), move(r.title, "down")));
     }));
   const save = async (control) => {
@@ -88,7 +88,7 @@ async function drawDiscoverRows(focusId = "") {
       showSaved("discover-rows-saved", "Standard rows put back");
     } catch (e) { problem(e.message, reset); }
   });
-  body.replaceChildren(el("p", { class: "small muted", text: "Tick the rows to show. Move them with the arrows, or drag them by the handle." }),
+  body.replaceChildren(el("p", { class: "small muted", text: d.rows.some((r) => r.genre) ? "Tick the rows to show. The genre rows, such as Comedy, start unticked. Move them with the arrows, or drag them by the handle." : "Tick the rows to show. Move them with the arrows, or drag them by the handle." }),
     list, el("div", { class: "actions" }, reset, note), el("p", { class: "small" }, el("a", { href: `/discover-${discoverArea}.html`, text: `Open Discover, ${name}` })));
   window.SharedComponents.setupSortables(body);
   if (focusId) document.getElementById(focusId)?.focus();
