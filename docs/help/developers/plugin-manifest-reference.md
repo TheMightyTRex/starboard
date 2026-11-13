@@ -74,6 +74,7 @@ settings, events and jobs.
 | `env` | Settings passed as environment variables | Names in `UPPER_CASE`; values text, numbers or `true` and `false` |
 | `start` | When it runs | `always` (the default) or `when_needed`, for the first container only. Read [Resting when idle](plugin-api-reference.md#resting-when-idle) |
 | `idle_stop_minutes` | For `when_needed`: minutes idle before it rests | A whole number; 15 when left out |
+| `publish` | Puts `port` on Gluetun for the home network (plug-in API 1.9) | true or false; only with `network: vpn` and a `port` |
 | `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out |
 | `command` | The command it runs | Only plug-ins built into Starboard may set it |
 

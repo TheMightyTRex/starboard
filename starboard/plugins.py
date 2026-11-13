@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.8.0"  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.9.0"  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -42,7 +42,7 @@ TOP = {"manifest_version", "id", "name", "version", "description", "author", "li
        "setup_required", "notices", "events", "jobs"}
 REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers",
                   "setup_required", "notices", "events", "jobs"}
-CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command"}
+CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command", "publish"}
 # Plug-ins that ship inside Starboard (plugins/<id>/ in its own folder): they may run Starboard's own image
 # ("image": "starboard") with a command, and Live TV may use the Live TV folder the installer gave ("iptv").
 BUILTIN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plugins")
@@ -151,6 +151,10 @@ def check(manifest, dev=False, builtin=False):
         if "port" in c and not (isinstance(c["port"], int) and 1 <= c["port"] <= 65535):
             out.append(f"{where}: port must be a number from 1 to 65535")
         net = c.get("network", "default")
+        # publish (plug-in API 1.8, 13 November 2026): a container on the VPN whose port the home network must reach,
+        # such as On demand's streams for a Roku, which Jellyfin hands the stream's address to play itself.
+        if "publish" in c and not (isinstance(c["publish"], bool) and (not c["publish"] or (net == "vpn" and c.get("port")))):
+            out.append(f"{where}: publish is true or false, and true only for a container on the vpn network with a port")
         if net not in NETWORKS:
             out.append(f"{where}: network must be default, lan or vpn")
         elif NETWORKS[net] and NETWORKS[net] not in perms:
@@ -448,7 +452,7 @@ def write_schema(path):
             "containers": {"type": "array", "minItems": 0, "maxItems": 4, "items": {
                 "type": "object", "additionalProperties": False, "required": ["name", "image"],
                 "properties": {"name": {"type": "string"}, "image": {"type": "string", "pattern": DIGEST_IMAGE},
-                               "port": {"type": "integer", "minimum": 1, "maximum": 65535}, "network": {"enum": sorted(NETWORKS)},
+                               "port": {"type": "integer", "minimum": 1, "maximum": 65535}, "network": {"enum": sorted(NETWORKS)}, "publish": {"type": "boolean"},
                                "volumes": {"type": "array", "items": {"type": "string"}}, "env": {"type": "object"},
                                "start": {"enum": ["always", "when_needed"]}, "idle_stop_minutes": {"type": "integer"},
                                "user": {"type": "string", "pattern": r"^[1-9]\d{0,5}:\d{1,6}$"}}}},
