@@ -1,10 +1,11 @@
-// Wanted (DASH-207): Missing, and Below the quality wanted, for films and episodes, from Reelix. Tick some and
-// search for them, or search for everything on the list. A page at a time, with Show more.
+// Wanted (DASH-207): Missing, and Below the quality wanted, for films and episodes, from Reelix. Select several,
+// tick some and search for them in the selection bar, or search for everything on the list. A page at a time, with
+// Show more. A film or episode row opens its details in a slide-out (DASH-309, R1: a row that opens).
 
 // 12 November 2026: one page per media type (the level 2 menu), with Missing and Below the quality wanted as tabs.
 let WHICH = new URLSearchParams(location.search).get("list") === "cutoff" ? "cutoff" : "missing";
 const W_KIND = document.querySelector("[data-wanted-kind]")?.dataset.wantedKind;
-const wantedState = { kind: W_KIND || "movie", page: 1, total: 0, items: [] };
+const wantedState = { kind: W_KIND || "movie", page: 1, total: 0, items: [], selecting: false };
 const W_NOUN = { movie: ["film", "films"], episode: ["episode", "episodes"], album: ["album", "albums"], ebook: ["book", "books"],
   audiobook: ["audiobook", "audiobooks"] };
 
@@ -17,7 +18,7 @@ function wantedTabs() {
       $$("[role=tab]", list).forEach((x) => x.setAttribute("aria-selected", String(x === b)));
       const u = new URL(location.href); if (v === "cutoff") u.searchParams.set("list", "cutoff"); else u.searchParams.delete("list");
       history.replaceState(null, "", u);
-      wantedLoad(); wantedTicked();
+      wantedLoad(); wantedSelecting(false);
     });
     return b;
   }));
@@ -31,21 +32,24 @@ function wantedTabs() {
 }
 
 function wantedRow(w) {
-  const box = el("input", { type: "checkbox", value: String(w.id), "aria-label": `Tick ${w.title}${w.detail ? `, ${w.detail}` : ""}` });
+  const name = w.detail ? `${w.title}, ${w.detail}` : w.title;
+  const box = el("input", { type: "checkbox", value: String(w.id), "aria-label": `Tick ${name}`, hidden: !wantedState.selecting });
   const when = w.date ? new Date(w.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
   const meta = [w.detail, when, WHICH === "cutoff" && w.quality ? `Has ${w.quality}, wants ${w.cutoff || "better"}` : ""].filter(Boolean).join(" · ");
   const search = el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => wantedSearch([w.id], e.currentTarget) },
-    icon("search"), "Search", el("span", { class: "visually-hidden", text: ` for ${w.title}${w.detail ? `, ${w.detail}` : ""}` }));
+    icon("search"), "Search", el("span", { class: "visually-hidden", text: ` for ${name}` }));
   // DASH-171: while download hours pause downloads, Download now gets this one straight away.
-  const name = w.detail ? `${w.title}, ${w.detail}` : w.title;
   const now = wantedState.paused && ["movie", "episode"].includes(wantedState.kind) ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => downloadNow(w, name, e.currentTarget) },
     icon("zap"), "Download now", el("span", { class: "visually-hidden", text: ` ${name}` })) : null;
-  const more = ["movie", "episode"].includes(wantedState.kind) ? el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => wantedDetail(w, name, e.currentTarget) },
-    icon("info"), "Details", el("span", { class: "visually-hidden", text: ` for ${name}` })) : null;
-  return el("li", { class: "row" }, box,
-    el("div", {}, el("h3", { class: "row__title" }, w.href ? el("a", { href: w.href, text: w.year ? `${w.title} (${w.year})` : w.title }) : w.title),
-      el("div", { class: "row__meta", text: meta })),
-    el("div", { class: "row__side" }, more, search, now));
+  // A film or episode opens its details (the title is the button; the slide-out links to its page). Others link to theirs.
+  const opens = ["movie", "episode"].includes(wantedState.kind);
+  const words = w.year ? `${w.title} (${w.year})` : w.title;
+  const title = opens ? el("button", { type: "button", "aria-haspopup": "dialog", onclick: (e) => wantedDetail(w, name, e.currentTarget) }, words,
+    w.detail ? el("span", { class: "visually-hidden", text: `, ${w.detail}` }) : null)
+    : w.href ? el("a", { href: w.href, text: words }) : words;
+  return el("li", { class: opens ? "row row--opens wanted-row" : "row wanted-row", "data-key": String(w.id) }, box,
+    el("div", {}, el("h3", { class: "row__title" }, title), el("div", { class: "row__meta", text: meta })),
+    el("div", { class: "row__side" }, search, now));
 }
 
 // DASH-305: a wanted film or episode in full, in a slide-out: picture, story, length, genres, the quality wanted, what
@@ -72,7 +76,10 @@ async function wantedDetail(w, name, opener) {
         take.addEventListener("click", async () => {
           take.disabled = true;
           try { const g = await api(`/api/library/grab?tab=${d.releases.tab}`, { method: "POST", body: { guid: x.guid, indexer_id: x.indexer_id, force: !x.accepted, title: x.title } });
-            take.replaceWith(chip("Sent", "success")); toast(g.said); }
+            // The row says Sent, with focus on it, and the result is said (R5: no toast repeating the chip).
+            const sent = chip("Sent", "success");
+            sent.setAttribute("tabindex", "-1");
+            take.replaceWith(sent); sent.focus(); announce(g.said); }
           catch (e) { problem(e.message, take); take.disabled = false; }
         });
         return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: x.title }),
@@ -128,9 +135,9 @@ async function wantedSearch(ids, button) {
   if (button) button.disabled = true;
   try {
     const r = await api("/api/wanted/search", { method: "POST", body: { which: WHICH, kind: wantedState.kind, ids } });
+    // A search started happens elsewhere and later, so it stays a toast (section 10, Toasts).
     toast(r.said);
-    $$("#wanted-list input[type=checkbox]").forEach((b) => { b.checked = false; });
-    wantedTicked();
+    if (ids.length > 1 || button?.id === "wanted-ticked") { wantedSelecting(false); $("#wanted-select").focus(); }
   } catch (e) { problem(e.message, button); }
   finally { if (button) button.disabled = false; }
 }
@@ -147,7 +154,18 @@ async function downloadNow(w, name, button) {
 function wantedTicked() {
   const n = $$("#wanted-list input[type=checkbox]:checked").length;
   $("#wanted-ticked").disabled = !n;
-  $("#wanted-ticked span").textContent = n ? `Search for the ${n} ticked` : "Search for the ticked ones";
+  $("#wanted-bar-count").textContent = n ? `${n} ticked` : "Tick the ones to search for";
+}
+
+// Select several (as Library's): ticks on the rows and the selection bar while it is on; Done or a search ends it
+// and gives focus back to Select several.
+function wantedSelecting(on) {
+  wantedState.selecting = on;
+  $("#wanted-select").setAttribute("aria-pressed", String(on));
+  $("#wanted-bar").hidden = !on;
+  $$("#wanted-list input[type=checkbox]").forEach((b) => { b.hidden = !on; if (!on) b.checked = false; });
+  wantedTicked();
+  if (on) $("#wanted-list input[type=checkbox]")?.focus();
 }
 
 startPage().then(async () => {
@@ -156,6 +174,8 @@ startPage().then(async () => {
   if (W_KIND) $(".page-head")?.after(wantedTabs());
   $("#wanted-list").addEventListener("change", wantedTicked);
   $("#wanted-ticked").addEventListener("click", (e) => wantedSearch($$("#wanted-list input[type=checkbox]:checked").map((b) => Number(b.value)), e.currentTarget));
+  $("#wanted-select").addEventListener("click", () => wantedSelecting(!wantedState.selecting));
+  $("#wanted-done").addEventListener("click", () => { wantedSelecting(false); $("#wanted-select").focus(); });
   $("#wanted-all").addEventListener("click", (e) => wantedSearch([], e.currentTarget));
   $("#wanted-more").addEventListener("click", () => { wantedState.page += 1; wantedLoad(true); });
   autoLoadMore($("#wanted-more"), async () => { const before = wantedState.items.length; wantedState.page += 1; await wantedLoad(true); return wantedState.items.length - before; }, "more");

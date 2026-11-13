@@ -67,30 +67,43 @@ startPage().then(() => {
 });
 
 // How much history to keep, and Delete history (owner, 12 November 2026). Reelix keeps its own copy until it can
-// delete history; Starboard then shows only what is newer.
+// delete history; Starboard then shows only what is newer. A setting row with its saved note, and a danger section,
+// at the end of the page, so the toolbar stays straight under the heading (DASH-309, R5 and R8; Settings patterns 2
+// and 9).
 function historyKeep() {
   const choices = [[0, "Everything"], [365, "A year"], [90, "90 days"], [30, "30 days"], [7, "A week"]];
-  const select = el("select", { class: "select", id: "history-keep" }, choices.map(([v, t]) => el("option", { value: String(v), text: t })));
+  const select = el("select", { class: "select", id: "history-keep", "aria-labelledby": "history-keep-l" }, choices.map(([v, t]) => el("option", { value: String(v), text: t })));
+  const keptNote = el("span", { class: "saved-note", hidden: true });
   const del = el("button", { type: "button", class: "btn btn--danger" }, icon("trash-2"), "Delete history");
+  const delNote = el("span", { class: "saved-note", hidden: true });
   select.addEventListener("change", async () => {
-    try { await api("/api/reelix-history/keep", { method: "PUT", body: { days: Number(select.value) } }); toast("Saved"); historyLoad(); }
+    try { await api("/api/reelix-history/keep", { method: "PUT", body: { days: Number(select.value) } }); window.SharedComponents.savedNote(keptNote); historyLoad(); }
     catch (e) { problem(e.message, select); }
   });
   del.addEventListener("click", async () => {
     if (!await confirmDialog({ title: "Delete the history?", confirm: "Delete history", danger: true,
       message: "Everything on this page before now goes. Your films, series, music and books are not touched, and Reelix still knows what it has." })) return;
     del.disabled = true;
-    try { toast((await api("/api/reelix-history/delete", { method: "POST" })).said); historyLoad(); }
+    try { window.SharedComponents.savedNote(delNote, (await api("/api/reelix-history/delete", { method: "POST" })).said); historyLoad(); }
     catch (e) { problem(e.message, del); }
-    finally { del.disabled = false; }
+    finally { del.disabled = false; del.focus(); }
   });
-  return { select, node: el("div", { class: "history-keep" },
-    el("label", { class: "field__label", for: select.id, text: "Keep history for" }), select, del) };
+  const row = (id, label, hint, ...control) => el("ul", { class: "settings-rows" }, el("li", { class: "setting" },
+    el("div", { class: "setting__text" }, el("span", { class: "setting__label", id, text: label }), el("span", { class: "setting__hint", text: hint })),
+    el("div", { class: "setting__control" }, ...control)));
+  const part = (id, title, ...content) => el("section", { class: "settings-section history-keep", "aria-labelledby": `${id}-h` },
+    el("div", { class: "settings-section__head" }, el("h2", { id: `${id}-h`, text: title })), ...content);
+  const danger = part("history-delete", "Delete history",
+    row("history-delete-l", "Delete everything on this page", "Your films, series, music and books are not touched.", del, delNote));
+  danger.classList.add("settings-section--danger");
+  return { select, nodes: [
+    part("history-keeping", "Keeping history", row("history-keep-l", "Keep history for", "Older events leave this page. This applies at once.", select, keptNote)),
+    danger] };
 }
 document.addEventListener("DOMContentLoaded", () => {
-  const head = document.querySelector(".page-head");
-  if (!head) return;
+  const end = document.querySelector("#history-more")?.closest(".actions");
+  if (!end) return;
   const k = historyKeep();
-  head.after(k.node);
+  end.after(...k.nodes);
   api("/api/reelix-history?which=all&page=1").then((c) => { k.select.value = String(c.keep_days || 0); }).catch(() => {});
 });
