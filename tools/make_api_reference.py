@@ -3,19 +3,21 @@
 developer best practice: the reference is built from the API's own description, never written by hand).
 
 For each path and method it gives what it does, the scope a key needs, its parameters, the answer's shape in brief,
-its errors, and an example with curl and with Python's standard library. The scope and how long an answer stays
-fresh are not in the description yet, so they are read from the route table in starboard/api_v1.py (the same table
-the server answers from). Standard library only. Run it after tools/make_openapi.py, and commit both files.
+its errors, and an example with curl and with Python's standard library. How long an answer stays fresh is not in
+the description, so it is read from the route table in starboard/api_v1.py (the same table the server answers from).
+Standard library only. Run it after tools/make_openapi.py, and commit both files. With --check it writes nothing and
+fails when the page is out of date (DASH-281).
 
     python3 tools/make_api_reference.py
+    python3 tools/make_api_reference.py --check
 """
 import json
 import pathlib
 import re
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SPEC = ROOT / "starboard" / "openapi.json"
-ROUTES = ROOT / "starboard" / "api_v1.py"
 OUT = ROOT / "docs" / "help" / "developers" / "api-reference.md"
 ERRORS = "../../api/errors.md"
 BASE = "http://192.168.1.20:8095"
@@ -27,11 +29,10 @@ SCOPE_WORDS = {"apps": "your apps and their status", "downloads": "what is downl
 
 
 def route_table():
-    """[(compiled pattern, scope or None, seconds fresh)] from starboard/api_v1.py, read as text (nothing imported)."""
-    out = []
-    for pattern, scope, fresh in re.findall(r'\(r"(\^/api/v1[^"]*)", (None|"[a-z]+"), (\d+), \w+\)', ROUTES.read_text()):
-        out.append((re.compile(pattern), None if scope == "None" else scope.strip('"'), int(fresh)))
-    return out
+    """[(compiled pattern, scope or None, seconds fresh)] from starboard/api_v1.py's read routes."""
+    sys.path.insert(0, str(ROOT))
+    from starboard import api_v1
+    return [(re.compile(pattern), scope, int(fresh)) for pattern, scope, fresh, *_ in api_v1.routes()]
 
 
 def route_for(path, table):
@@ -239,7 +240,13 @@ def main():
     # Keep the download rights footer that tools/help_footer.py adds, so running this tool again changes nothing else.
     old = OUT.read_text() if OUT.exists() else ""
     footer = re.search(r"<!-- footer: download rights -->.*?<!-- /footer -->\n?", old, flags=re.S)
-    OUT.write_text(text + ("\n" + footer.group(0) if footer else ""))
+    new = text + ("\n" + footer.group(0) if footer else "")
+    if "--check" in sys.argv:
+        if new != old:
+            sys.exit(f"{OUT.relative_to(ROOT)} is out of date: run python3 tools/make_api_reference.py and commit it")
+        print(f"{OUT.relative_to(ROOT)} is up to date")
+        return
+    OUT.write_text(new)
     print(f"Wrote {OUT.relative_to(ROOT)}")
 
 

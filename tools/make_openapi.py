@@ -1,6 +1,20 @@
-"""Writes starboard/openapi.json, the description of the public API (DASH-274). Run after changing a route."""
+"""Writes starboard/openapi.json, the description of the public API (DASH-274). Run after changing a route.
+
+The scope each route needs (x-scope) and the version come from starboard/api_v1.py, the table the server answers
+from, so the description cannot say something the code does not do. With --check it writes nothing and fails when
+the file in the repository is not what it would write (DASH-281: tools/check-api.sh and CI run it that way).
+
+    python3 tools/make_openapi.py           # write starboard/openapi.json
+    python3 tools/make_openapi.py --check   # fail if it is out of date
+"""
 import json
 import os
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+from starboard import api_v1  # noqa: E402
 
 page = {"limit": {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 200, "default": 50},
                   "description": "How many to give back."},
@@ -24,7 +38,7 @@ def listing(item, extra=None):
 ANY = {"type": "object", "additionalProperties": True}
 spec = {
     "openapi": "3.1.0",
-    "info": {"title": "Starboard API", "version": "1.1.0",
+    "info": {"title": "Starboard API", "version": api_v1.API_VERSION,
              "description": "Read only for now. Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... "
                             "Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
              "license": {"name": "MIT", "identifier": "MIT"}},
@@ -82,5 +96,34 @@ spec = {
         },
     },
 }
-open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "starboard", "openapi.json"), "w").write(json.dumps(spec, indent=1) + "\n")
-print(len(spec["paths"]), "paths")
+
+
+def with_scopes(spec):
+    """Puts x-scope after tags in each operation the API answers with a key, from api_v1's route table."""
+    table = [(p, scope) for p, scope, *_ in api_v1.routes()]
+    for path, ops in spec["paths"].items():
+        for method, op in ops.items():
+            if op.get("security") == []:
+                continue
+            sample = re.sub(r"\{[^}]+\}", "abc", path)
+            scope = next((sc for p, sc in table if re.match(p, sample)), None)
+            ordered = {}
+            for k, v in op.items():
+                ordered[k] = v
+                if k == "tags":
+                    ordered["x-scope"] = scope
+            ops[method] = ordered
+    return spec
+
+
+text = json.dumps(with_scopes(spec), indent=1) + "\n"
+out = os.path.join(ROOT, "starboard", "openapi.json")
+if "--check" in sys.argv:
+    with open(out, encoding="utf-8") as f:
+        if f.read() != text:
+            sys.exit("starboard/openapi.json is out of date: run python3 tools/make_openapi.py and commit it")
+    print(len(spec["paths"]), "paths, description up to date")
+else:
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(text)
+    print(len(spec["paths"]), "paths")

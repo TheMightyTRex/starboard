@@ -87,6 +87,10 @@ add features.
 
 ### Fixed
 
+- The API and plug-in checks are one command, `bash tools/check-api.sh`, run by CI on every push: the API
+  description and reference must be what their tools write, then the contract tests, the plug-in tests and each example
+  plug-in against the new build. The API description's tool wrote an older description than the one in the repository,
+  so the CI check failed; it now takes each route's scope and the version from the route table (DASH-281).
 - A full backup that fails now sends the backup alert; a copy cut off part way no longer stays in the backup folder;
   Reelix's backups section no longer says Starboard copies them (DASH-78).
 - **qBittorrent's ban:** after too many wrong passwords qBittorrent stops accepting sign-ins from Starboard; the page now says so, for how long, and how to clear it

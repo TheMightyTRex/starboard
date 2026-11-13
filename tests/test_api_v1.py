@@ -81,6 +81,14 @@ class ApiV1Test(unittest.TestCase):
         for p in patterns:
             self.assertTrue(any(re.match(p, d.replace("{id}", "abc")) for d in described), f"{p} is not in openapi.json")
 
+    def test_the_description_and_reference_are_what_the_tools_write(self):  # DASH-281: the tool had drifted
+        import subprocess
+        import sys
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for tool in ("tools/make_openapi.py", "tools/make_api_reference.py"):
+            r = subprocess.run([sys.executable, tool, "--check"], cwd=root, capture_output=True, text=True, timeout=60)
+            self.assertEqual(r.returncode, 0, r.stderr or r.stdout)
+
     def test_the_description_has_the_api_version(self):  # DASH-357: it said 1.1.0 while the API said 1.0.0
         self.assertEqual(self.spec["info"]["version"], api_v1.API_VERSION)
 
