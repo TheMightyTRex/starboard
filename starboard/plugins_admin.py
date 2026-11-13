@@ -25,9 +25,15 @@ def root(data_dir):
 
 
 def folder(data_dir, pid):
+    """data/plugins/<id>. The id pattern allows no / or .., and the folder is checked again once built: it must lie
+    directly inside data/plugins, or nothing is read, written or moved."""
     if not re.match(plugins.ID, pid or ""):
         raise ValueError("Not a plug-in id")
-    return os.path.join(root(data_dir), pid)
+    base = os.path.normpath(root(data_dir))
+    where = os.path.normpath(os.path.join(base, pid))
+    if not where.startswith(base + os.sep) or os.path.dirname(where) != base:
+        raise ValueError("Not a plug-in id")
+    return where
 
 
 SHARED = ("settings.json", "key", "jellyfin.json", "reelix.json", "usenet.json")  # what a plug-in's containers read, from run/ (DASH-357)
@@ -173,7 +179,7 @@ def added(data_dir):
         return []
     out = []
     for p in names:
-        m = _read(os.path.join(root(data_dir), p, "manifest.json")) if re.match(plugins.ID, p) else None
+        m = _read(os.path.join(folder(data_dir, p), "manifest.json")) if re.match(plugins.ID, p) else None
         if isinstance(m, dict):
             out.append({"id": p, "name": str(m.get("name") or p)[:40]})
     return sorted(out, key=lambda x: x["name"].lower())
@@ -295,8 +301,9 @@ def listing(data_dir):
     for pid in names:
         if pid.startswith(".") or not re.match(plugins.ID, pid):
             continue
-        m = _read(os.path.join(root(data_dir), pid, "manifest.json"))
-        st = _read(os.path.join(root(data_dir), pid, "state.json"), {})
+        where = folder(data_dir, pid)
+        m = _read(os.path.join(where, "manifest.json"))
+        st = _read(os.path.join(where, "state.json"), {})
         if m:
             from . import plugin_styles
             fonts = plugin_styles.FONTS

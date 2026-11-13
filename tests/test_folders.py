@@ -55,5 +55,21 @@ class FoldersTest(unittest.TestCase):
         self.assertFalse(folders.check("relative/path")["ok"])
 
 
+    def test_a_link_out_of_the_usual_places_is_refused(self):
+        outside = os.path.join(self.tmp.name, "etc")
+        os.makedirs(os.path.join(outside, "secret-folder"))
+        os.symlink(outside, os.path.join(self.root, "disk1", "sneaky"))
+        with mock.patch.object(folders, "_in_docker", return_value=False):
+            with self.assertRaises(ValueError):
+                folders.browse(self.root + "/disk1/sneaky")
+            out = folders.check(self.root + "/disk1/sneaky")
+            self.assertFalse(out["ok"])
+            self.assertNotIn("secret-folder", str(out))
+            self.assertEqual(folders.inside(self.root + "/disk1/media"), os.path.realpath(self.root + "/disk1/media"))
+            for bad in (self.tmp.name, self.root + "x", "/etc"):
+                with self.assertRaises(ValueError):
+                    folders.inside(bad)
+
+
 if __name__ == "__main__":
     unittest.main()

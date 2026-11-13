@@ -41,6 +41,18 @@ def allowed(path):
     return any(path == r or path.startswith(r + "/") for r in ROOTS)
 
 
+def inside(path):
+    """The folder as the disk really has it (links followed, no ..), or ValueError when that lies outside the usual
+    places: a link under /mnt that points at /etc is not browsed. Checked again here, where the folder is read."""
+    real = os.path.realpath(path)
+    roots = tuple(os.path.realpath(r) for r in ROOTS)
+    if not real.startswith(roots):
+        raise ValueError("Starboard only looks in " + ", ".join(ROOTS))
+    if not any(real == r or real.startswith(r + os.sep) for r in roots):  # /mntx is not inside /mnt
+        raise ValueError("Starboard only looks in " + ", ".join(ROOTS))
+    return real
+
+
 def _in_docker():
     return os.path.exists("/.dockerenv")
 
@@ -129,6 +141,7 @@ def _whole(out, root):
 
 def _read(path, run=None):
     if run is None and not _in_docker():
+        path = inside(path)
         got = _local(path)
         if not got["exists"]:
             near = path
@@ -179,7 +192,10 @@ def check(path, run=None):
             why = "Starboard never uses system folders. Choose one under " + ", ".join(ROOTS[:3]) + ", such as /srv/media."
         return {"path": path, "ok": False, "lines": [why]}
     lines = []
-    got = _read(path, run) if allowed(path) else {"exists": None}
+    try:
+        got = _read(path, run) if allowed(path) else {"exists": None}
+    except ValueError:  # a link that leads out of the usual places
+        return {"path": path, "ok": False, "lines": ["That folder leads somewhere Starboard never uses. Choose one under " + ", ".join(ROOTS[:3]) + "."]}
     if got.get("why"):
         lines.append(got["why"])
     elif got.get("exists"):

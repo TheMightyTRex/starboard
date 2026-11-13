@@ -39,6 +39,21 @@ class Answers(unittest.TestCase):
         with self.assertRaises(ValueError):
             setup_answers.clean_tmdb("not a key")
 
+    def test_a_long_look_alike_token_is_refused_quickly(self):
+        import time
+        started = time.monotonic()
+        for bad in ("eyJ" + "a" * 50000 + "!", "eyJ" + "eyJ" * 20000, "eyJa.b", "eyJa.b.c.d", "eyJa..c", "xeyJa.b.c"):
+            with self.assertRaises(ValueError):
+                setup_answers.clean_tmdb(bad)
+        self.assertLess(time.monotonic() - started, 1)
+
+    def test_ssl_news_servers_need_tls_1_2_or_newer(self):
+        import ssl
+        ctx = setup_answers._tls()
+        self.assertEqual(ctx.minimum_version, ssl.TLSVersion.TLSv1_2)
+        self.assertEqual(ctx.verify_mode, ssl.CERT_REQUIRED)
+        self.assertTrue(ctx.check_hostname)
+
     def test_the_key_goes_in_the_field_reelix_reads(self):
         self.assertEqual(setup_answers.tmdb_settings(TOKEN, {"language": "en-GB"}), {"language": "en-GB", "tmdb_read_token": TOKEN})
         self.assertEqual(setup_answers.tmdb_settings("0123456789abcdef0123456789abcdef", {})["tmdb_api_key"], "0123456789abcdef0123456789abcdef")

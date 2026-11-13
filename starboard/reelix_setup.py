@@ -173,6 +173,8 @@ def tokens_from_docker(data_dir, info, docker=None, available=None):
 
 def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=None, nzbget=None):
     """Runs every step; returns a list of what was done. Raises ReelixError when Reelix cannot be set up at all."""
+    from . import logs
+    logs.hide(password)  # never in a log line, even if an app repeats it back in an error
     info = read_setup(data_dir)
     if not info:
         raise ReelixError("There is nothing to set up: Reelix was not installed by Install apps")
