@@ -14,6 +14,26 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Starboard API 1.1.0, 13 November 2026
+
+- **Added:** reads for the rest of the pages: `/calendar` (with `?month=`), `/requests`, `/transfer`,
+  `/download-hours`, `/history`, `/library`, `/library/search`, `/library/status`, `/uptime`, `/app-updates`,
+  `/numbers`, `/containers`, `/version`, `/system/history` and `/extras`.
+- **Added:** the `manage` right (**Read and manage**, keys `sb_manage_...`) and the everyday actions, each a `POST`:
+  `/downloads/actions`, `/download-hours`, `/requests/{id}/approve` and `/decline`, `/library/refresh`,
+  `/containers/check`, `/alerts/test` and `/extras/{name}/run`. A read key gets `403`
+  [`right_needed`](../../api/errors.md#right_needed). Bodies are JSON of up to 64 KB, `Idempotency-Key` makes a retry
+  safe, and every change is in the audit log.
+- **Added:** `/events`, Server-Sent Events: apps going down and coming back, alerts, new items, finished downloads
+  and playback starting, each heard only by keys whose scopes cover it.
+- **Added:** the scopes `library` and `requests`, and scopes and the right chosen in **Make a key**.
+- **Added:** `/logs`, Starboard's log with addresses, names and keys taken out, for the `logs` scope only: a key with
+  no scopes does not read it. For AI assistants, read [Connect an AI assistant](connect-an-ai-assistant.md).
+- **Added:** each write in the description has `x-right: manage`; the errors `not_set_up`, `app_failed`,
+  `too_large` and `too_many_streams`.
+- **Changed:** a `Link` header for the next page keeps the other query parameters, such as `limit`.
+- Nothing was taken away: every 1.0.0 address answers as before, and a read key works as it did.
+
 ## Plug-in API 1.10.0, 13 November 2026
 
 - **Added:** `changes`, an optional list of the plug-in's own changes by version, in Keep a Changelog's types

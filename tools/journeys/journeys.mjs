@@ -979,6 +979,38 @@ check("BK-01", "the copies in the folder are listed, newest first", (await page.
 await page.evaluate(() => { const i = document.querySelector("#full-folder"); i.value = "/home/sam/backups"; i.dispatchEvent(new Event("change")); });
 await page.waitForFunction(() => /on the system disk/.test(document.querySelector("#full-disk")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
 check("BK-01", "a folder on the system disk is warned about", /This folder is on the system disk/.test(await page.locator("#full-disk").textContent()));
+// API keys that read and manage, with scopes (DASH-274): the form offers both, the key works on /api/v1 with only
+// its scopes, and a read key cannot change anything.
+await open("settings-security-keys.html");
+await page.getByRole("button", { name: "Make a key" }).first().click();
+await page.waitForTimeout(400);
+const rights = await page.locator("#key-right option").allTextContents();
+check("API-01", "Make a key asks what it may do: Read only or Read and manage", rights.join("|") === "Read only|Read and manage", rights.join("|"));
+const scopeNames = await page.locator("#key-scopes .check strong").allTextContents();
+check("API-01", "and what it may see, one tick for each area", scopeNames.join("|") === "Apps|Downloads|Media|Library|Requests|System|Logs", scopeNames.join("|"));
+await page.fill("#key-name", "Journey manager");
+await page.selectOption("#key-right", "manage");
+await page.check("#key-scope-downloads");
+await page.fill("#key-password", password);
+await page.locator("#key-password").press("Enter");
+await page.locator("#key-made").waitFor({ timeout: 5000 });
+const keyMade = await page.locator("#key-made").inputValue();
+check("API-02", "the key says it may manage", /^sb_manage_[0-9a-f]{6}_/.test(keyMade), keyMade.slice(0, 18));
+const keyCall = (path, method = "GET", body) => page.evaluate(async ([p, m, k, b]) => {
+  const r = await fetch(p, { method: m, headers: { Authorization: `Bearer ${k}`, "Content-Type": "application/json" }, body: b ? JSON.stringify(b) : undefined });
+  return { status: r.status, body: await r.json().catch(() => null) };
+}, [path, method, keyMade, body]);
+const keyMe = await keyCall("/api/v1/me");
+check("API-02", "/api/v1/me shows its right and scope", keyMe.body?.right === "manage" && keyMe.body?.scopes.join() === "downloads", JSON.stringify(keyMe.body));
+check("API-02", "it reads download hours", (await keyCall("/api/v1/download-hours")).status === 200);
+check("API-02", "it cannot read outside its scope", (await keyCall("/api/v1/apps")).status === 404);
+const acted = await keyCall("/api/v1/download-hours", "POST", { action: "follow" });
+check("API-02", "it can follow the download hours again", [200, 400].includes(acted.status), JSON.stringify(acted.body).slice(0, 120));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(400);
+check("API-03", "the list says the key reads and manages", /read and manage/.test(await page.locator("#security-sections .row", { hasText: "Journey manager" }).textContent()));
+const listed = await api("/api/keys");
+for (const k of listed.keys.filter((k) => k.name === "Journey manager")) await api(`/api/keys/${k.id}`, { method: "DELETE" });
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

@@ -29,4 +29,28 @@ request too, but it has no body to read, so send `If-None-Match` with the last `
 
 ## method_not_allowed
 
-**405.** Version 1 of the API only reads for now. `Allow` lists what works.
+**405.** That address does not take that method, such as a `POST` to an address that only reads. `Allow` lists
+what works.
+
+## right_needed
+
+**403.** The key only reads, and this address changes something. Make a key with **Read and manage** in
+**Settings**, **Security**, **API keys**, with only the scopes it needs.
+
+## too_large
+
+**413.** The body is larger than 64 KB. Send a JSON object of up to 64 KB.
+
+## not_set_up
+
+**409.** What the address needs is not set up yet, such as Reelix for the Library and history. `detail` says what to
+add, in **Settings**, **Manage apps**.
+
+## app_failed
+
+**502.** An app Starboard asked, such as Reelix, Seerr or a download app, did not answer or said no. `detail` has
+what it said. Try again later, or open the app.
+
+## too_many_streams
+
+**503.** 8 event streams are open already. Close one, or wait the seconds in `Retry-After`.

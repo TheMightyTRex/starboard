@@ -3,7 +3,8 @@
 # Make an API key and use Starboard's API
 
 Starboard's API lets other apps, scripts and AI assistants read what Starboard knows, such as your apps' status
-and what is downloading. It only reads: nothing can change Starboard through it. Make one key for each app that uses it.
+and what is downloading. A key reads, or reads and manages: approves requests, pauses downloads and the like. No
+key can change Starboard's settings. Make one key for each app that uses it.
 
 ## Before you begin
 
@@ -17,12 +18,14 @@ and what is downloading. It only reads: nothing can change Starboard through it.
 1. Go to **Settings**, then **Security**.
 2. Find **API keys**.
 3. In **Name it after what will use it**, enter a name, such as `Home Assistant`.
-4. In **Ends**, choose **In 90 days**, **In a year** or **Never**.
-5. In **Your Starboard password**, enter the password.
-6. Select **Make a key**.
-7. Select **Copy**, then paste the key into the app that will use it. Starboard shows the key only this once.
+4. In **What it may do**, choose **Read only**, or **Read and manage** if it must act, such as approving requests.
+5. In **What it may see**, tick only the areas it needs. Leave them all empty for everything.
+6. In **Ends**, choose **In 90 days**, **In a year** or **Never**.
+7. In **Your Starboard password**, enter the password.
+8. Select **Make a key**.
+9. Select **Copy**, then paste the key into the app that will use it. Starboard shows the key only this once.
 
-The key appears in the list with its name, what it reads, when it ends and when it was last used.
+The key appears in the list with its name, what it may do, when it ends and when it was last used.
 
 ### Use the key
 
@@ -33,7 +36,8 @@ curl -H "Authorization: Bearer sb_read_..." http://127.0.0.1:8095/api/v1/status
 ```
 
 Every address starts with `/api/v1`. A key reads your apps and their status, problems the apps report,
-downloads, recently added media, what is playing in Jellyfin, and the server's processor, memory and disks.
+downloads, Coming up, requests, the Library, recently added media, what is playing in Jellyfin, and the server's
+processor, memory and disks, within the areas you ticked.
 
 ### Revoke a key
 

@@ -320,7 +320,10 @@ def listen(data_dir):
 
 def emit(event, data=None):
     """Sends one event to every active plug-in that listed it: a POST of {event, at, data} to /events on its main
-    container, 3 seconds, one retry, in the background. Nothing is kept or queued."""
+    container, 3 seconds, one retry, in the background. Nothing is kept or queued. The API's event stream hears it
+    too (DASH-274, /api/v1/events)."""
+    from . import api_v1
+    api_v1.publish(event, data)
     if not _data_dir or event not in plugins.EVENTS:
         return 0
     from . import plugin_cards
@@ -499,7 +502,9 @@ class Clock:
         return out
 
     def _needed(self):
-        return self._active_jobs(), listened(self.data_dir) & set(POLLED)
+        """Jobs due, and the polled events wanted: by active plug-ins, or all of them while an API event stream is open."""
+        from . import api_v1
+        return self._active_jobs(), (listened(self.data_dir) | (set(POLLED) if api_v1.streams_open() else set())) & set(POLLED)
 
     def _loop(self):
         while True:

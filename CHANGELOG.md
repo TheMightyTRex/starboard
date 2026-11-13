@@ -13,6 +13,15 @@ add features.
   the system disk, where a failed disk would take the backups with it. The folder it suggests is on another disk:
   the media folder's when the media is on one, else the biggest other disk's. Making a full backup and restoring it
   onto a fresh install is tested end to end in scratch folders (DASH-260).
+- Starboard's API, version 1.1.0: the rest of the pages' reads (Coming up, requests, speeds, download hours, history,
+  the Library and its search, uptime, app updates, counts, containers, version and processor history), a second right,
+  Read and manage, for the everyday actions (approve or decline a request, remove or block a download, pause or resume
+  downloads, build a Library tab again, look for container updates, run a Jellyfin job, send a test alert), and an
+  event stream, /api/v1/events. Make a key now asks what it may do and what it may see. No key can change settings,
+  keys, plug-ins or the install. Each change made with a key is in the audit log (DASH-274).
+- AI assistants: a guide, Connect an AI assistant, for a Read only key named after the assistant with the fewest
+  scopes, and /api/v1/logs, Starboard's log with addresses, names and keys taken out, only for keys with Logs ticked
+  (DASH-76).
 - Settings, General, Discover rows is its own page on the level 2 menu, with a section for each area of Discover
   (Films, TV, Music, Radio, Books and Audiobooks), each with its own rows, ticks, Move up and Move down, and Put back
   the standard rows. Only the area shown asks Reelix for its rows. Each Discover page's Change these rows opens its own
@@ -96,6 +105,10 @@ add features.
 
 ### Fixed
 
+- The API and plug-in checks are one command, `bash tools/check-api.sh`, run by CI on every push: the API
+  description and reference must be what their tools write, then the contract tests, the plug-in tests and each example
+  plug-in against the new build. The API description's tool wrote an older description than the one in the repository,
+  so the CI check failed; it now takes each route's scope and the version from the route table (DASH-281).
 - A full backup that fails now sends the backup alert; a copy cut off part way no longer stays in the backup folder;
   Reelix's backups section no longer says Starboard copies them (DASH-78).
 - **qBittorrent's ban:** after too many wrong passwords qBittorrent stops accepting sign-ins from Starboard; the page now says so, for how long, and how to clear it

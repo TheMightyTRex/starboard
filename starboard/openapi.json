@@ -2,8 +2,8 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.0.0",
-  "description": "Read only for now. Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
+  "version": "1.1.0",
+  "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
    "identifier": "MIT"
@@ -634,6 +634,1979 @@
      }
     }
    }
+  },
+  "/api/v1/calendar": {
+   "get": {
+    "operationId": "listCalendar",
+    "summary": "Coming up: films, episodes, albums and books due, from the apps",
+    "tags": [
+     "Media"
+    ],
+    "x-scope": "media",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     },
+     {
+      "name": "month",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "pattern": "^\\d{4}-\\d{2}$"
+      },
+      "description": "A month, such as 2026-11, with a week either side. Without it, from yesterday for the days set in Settings, General."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          },
+          "errors": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/requests": {
+   "get": {
+    "operationId": "listRequests",
+    "summary": "Requests from Seerr or Reelix, newest first",
+    "tags": [
+     "Requests"
+    ],
+    "x-scope": "requests",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     },
+     {
+      "name": "pending",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "true",
+        "false"
+       ]
+      },
+      "description": "true for only those waiting for an answer."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          },
+          "configured": {
+           "type": "boolean"
+          },
+          "pending": {
+           "type": "integer"
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/requests/{id}/approve": {
+   "post": {
+    "operationId": "approveRequest",
+    "summary": "Approve a request",
+    "tags": [
+     "Requests"
+    ],
+    "x-scope": "requests",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "ok"
+         ],
+         "properties": {
+          "ok": {
+           "type": "boolean"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "502": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/requests/{id}/decline": {
+   "post": {
+    "operationId": "declineRequest",
+    "summary": "Decline a request, with an optional reason",
+    "tags": [
+     "Requests"
+    ],
+    "x-scope": "requests",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "reason": {
+          "type": "string",
+          "maxLength": 500
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "ok"
+         ],
+         "properties": {
+          "ok": {
+           "type": "boolean"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "502": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/transfer": {
+   "get": {
+    "operationId": "getTransfer",
+    "summary": "Download speeds from each download app, and whether the VPN is connected",
+    "tags": [
+     "Downloads"
+    ],
+    "x-scope": "downloads",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "clients",
+          "vpn",
+          "errors"
+         ],
+         "properties": {
+          "clients": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "vpn": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "errors": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/download-hours": {
+   "get": {
+    "operationId": "getDownloadHours",
+    "summary": "Download hours: whether they are active, and whether downloads run or wait now",
+    "tags": [
+     "Downloads"
+    ],
+    "x-scope": "downloads",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "enabled"
+         ],
+         "properties": {
+          "enabled": {
+           "type": "boolean"
+          },
+          "start": {
+           "type": "integer"
+          },
+          "end": {
+           "type": "integer"
+          },
+          "mode": {
+           "type": "string",
+           "enum": [
+            "run",
+            "pause"
+           ]
+          },
+          "reason": {
+           "type": "string"
+          },
+          "next_change": {
+           "type": "string"
+          },
+          "clients": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          },
+          "now": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "errors": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   },
+   "post": {
+    "operationId": "actOnDownloadHours",
+    "summary": "Resume or pause downloads until the next change of the hours, or follow the hours again",
+    "tags": [
+     "Downloads"
+    ],
+    "x-scope": "downloads",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "action"
+        ],
+        "properties": {
+         "action": {
+          "type": "string",
+          "enum": [
+           "resume",
+           "pause",
+           "follow"
+          ]
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "enabled"
+         ],
+         "properties": {
+          "enabled": {
+           "type": "boolean"
+          },
+          "start": {
+           "type": "integer"
+          },
+          "end": {
+           "type": "integer"
+          },
+          "mode": {
+           "type": "string",
+           "enum": [
+            "run",
+            "pause"
+           ]
+          },
+          "reason": {
+           "type": "string"
+          },
+          "next_change": {
+           "type": "string"
+          },
+          "clients": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          },
+          "now": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "errors": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/downloads/actions": {
+   "post": {
+    "operationId": "actOnDownload",
+    "summary": "Remove, block, or block and search again for one download, as the Downloads page does",
+    "tags": [
+     "Downloads"
+    ],
+    "x-scope": "downloads",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "app_id",
+         "id",
+         "action"
+        ],
+        "properties": {
+         "app_id": {
+          "type": "string",
+          "description": "service from /api/v1/downloads."
+         },
+         "id": {
+          "type": "integer",
+          "description": "id from /api/v1/downloads."
+         },
+         "action": {
+          "type": "string",
+          "enum": [
+           "remove",
+           "block",
+           "block-search",
+           "import",
+           "ignore"
+          ]
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "ok"
+         ],
+         "properties": {
+          "ok": {
+           "type": "boolean"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "502": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/history": {
+   "get": {
+    "operationId": "listHistory",
+    "summary": "Reelix's history: what was sent to download, added and failed, newest first",
+    "tags": [
+     "Downloads"
+    ],
+    "x-scope": "downloads",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/cursor"
+     },
+     {
+      "name": "which",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "all",
+        "grabbed",
+        "imported",
+        "failed"
+       ],
+       "default": "all"
+      },
+      "description": "Which events."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "502": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/library": {
+   "get": {
+    "operationId": "getLibrary",
+    "summary": "The Library: recently added, and how many there are on each tab",
+    "tags": [
+     "Library"
+    ],
+    "x-scope": "library",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "recent",
+          "tabs"
+         ],
+         "properties": {
+          "recent": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "tabs": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "502": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/library/search": {
+   "get": {
+    "operationId": "searchLibrary",
+    "summary": "Search the Library: matches on each tab, best first",
+    "tags": [
+     "Library"
+    ],
+    "x-scope": "library",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "minLength": 1,
+       "maxLength": 120
+      },
+      "description": "What to look for."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "502": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/library/status": {
+   "get": {
+    "operationId": "getLibraryStatus",
+    "summary": "How big each tab's index is, when it was built, and any error",
+    "tags": [
+     "Library"
+    ],
+    "x-scope": "library",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "tabs",
+          "errors"
+         ],
+         "properties": {
+          "tabs": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "errors": {
+           "type": "object",
+           "additionalProperties": true
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/library/refresh": {
+   "post": {
+    "operationId": "refreshLibrary",
+    "summary": "Build one tab's index again, in the background",
+    "tags": [
+     "Library"
+    ],
+    "x-scope": "library",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "tab"
+        ],
+        "properties": {
+         "tab": {
+          "type": "string",
+          "enum": [
+           "films",
+           "tv",
+           "music",
+           "radio",
+           "books",
+           "audiobooks"
+          ]
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "Started. Read /api/v1/library/status to see when it is built.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "accepted",
+          "status"
+         ],
+         "properties": {
+          "accepted": {
+           "type": "boolean"
+          },
+          "status": {
+           "type": "string"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/uptime": {
+   "get": {
+    "operationId": "listUptime",
+    "summary": "How long each app has answered, from the watch's checks",
+    "tags": [
+     "Apps"
+    ],
+    "x-scope": "apps",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          },
+          "enabled": {
+           "type": "boolean"
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/app-updates": {
+   "get": {
+    "operationId": "listAppUpdates",
+    "summary": "Updates that Sonarr, Radarr, Lidarr, Readarr and Prowlarr report",
+    "tags": [
+     "Apps"
+    ],
+    "x-scope": "apps",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          },
+          "errors": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/numbers": {
+   "get": {
+    "operationId": "listNumbers",
+    "summary": "Counts from each app, such as films, series and books",
+    "tags": [
+     "Apps"
+    ],
+    "x-scope": "apps",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/containers": {
+   "get": {
+    "operationId": "listContainers",
+    "summary": "Each app's container, its version and whether a newer image is out",
+    "tags": [
+     "Apps"
+    ],
+    "x-scope": "apps",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "available",
+          "items"
+         ],
+         "properties": {
+          "available": {
+           "type": "boolean"
+          },
+          "checked_at": {
+           "type": [
+            "number",
+            "null"
+           ]
+          },
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/containers/check": {
+   "post": {
+    "operationId": "checkContainers",
+    "summary": "Look for newer images of the apps' containers now",
+    "tags": [
+     "Apps"
+    ],
+    "x-scope": "apps",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "available",
+          "items"
+         ],
+         "properties": {
+          "available": {
+           "type": "boolean"
+          },
+          "checked_at": {
+           "type": [
+            "number",
+            "null"
+           ]
+          },
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/version": {
+   "get": {
+    "operationId": "getVersion",
+    "summary": "Starboard's version, and the newest release when looking for new versions is active",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "system",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "current"
+         ],
+         "properties": {
+          "current": {
+           "type": "string"
+          },
+          "latest": {
+           "type": [
+            "string",
+            "null"
+           ]
+          },
+          "repo": {
+           "type": [
+            "string",
+            "null"
+           ]
+          },
+          "since": {
+           "type": [
+            "number",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/system/history": {
+   "get": {
+    "operationId": "getSystemHistory",
+    "summary": "Processor, memory and network over the last hours",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "system",
+    "parameters": [
+     {
+      "name": "hours",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "1",
+        "6",
+        "24"
+       ],
+       "default": "1"
+      },
+      "description": "How many hours."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "hours",
+          "interval",
+          "points"
+         ],
+         "properties": {
+          "hours": {
+           "type": "integer"
+          },
+          "interval": {
+           "type": "integer"
+          },
+          "points": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/alerts/test": {
+   "post": {
+    "operationId": "testAlert",
+    "summary": "Send a test alert to the channel set in Settings, Alerts",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "system",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "ok"
+         ],
+         "properties": {
+          "ok": {
+           "type": "boolean"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/extras": {
+   "get": {
+    "operationId": "listExtras",
+    "summary": "Jellyfin and Audiobookshelf jobs: Live TV, watch history, user defaults and listening progress",
+    "tags": [
+     "Media"
+    ],
+    "x-scope": "media",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": true
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/extras/{name}/run": {
+   "post": {
+    "operationId": "runExtra",
+    "summary": "Run a Jellyfin or Audiobookshelf job now",
+    "tags": [
+     "Media"
+    ],
+    "x-scope": "media",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "name": "name",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "livetv",
+        "import",
+        "defaults",
+        "listening"
+       ]
+      }
+     },
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "Started. Read /api/v1/extras to see how it went.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "accepted",
+          "status"
+         ],
+         "properties": {
+          "accepted": {
+           "type": "boolean"
+          },
+          "status": {
+           "type": "string"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/logs": {
+   "get": {
+    "operationId": "listLogs",
+    "summary": "Starboard's log, newest first, with addresses, names and keys taken out",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "logs",
+    "description": "Only for keys that ticked Logs: a key with no scopes does not read them.",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     },
+     {
+      "name": "level",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "all",
+        "problems"
+       ],
+       "default": "all"
+      },
+      "description": "problems for warnings and errors only."
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "maxLength": 100
+      },
+      "description": "Only lines with these words."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "time",
+             "level",
+             "area",
+             "message"
+            ],
+            "properties": {
+             "time": {
+              "type": "string",
+              "format": "date-time"
+             },
+             "level": {
+              "type": "string"
+             },
+             "area": {
+              "type": "string"
+             },
+             "message": {
+              "type": "string"
+             }
+            }
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/events": {
+   "get": {
+    "operationId": "streamEvents",
+    "summary": "Events as they happen, as Server-Sent Events",
+    "tags": [
+     "Events"
+    ],
+    "x-scope": null,
+    "description": "A text/event-stream. Each event is CloudEvents-shaped JSON: specversion, id, type (such as starboard.app.down), source, time and data. A key hears only the events its scopes cover. Send Last-Event-ID to resume. Up to 8 streams at once; each closes after an hour.",
+    "parameters": [
+     {
+      "name": "Last-Event-ID",
+      "in": "header",
+      "required": false,
+      "schema": {
+       "type": "string"
+      },
+      "description": "The id of the last event you read."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The stream.",
+      "content": {
+       "text/event-stream": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "503": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
   }
  },
  "components": {
@@ -641,7 +2614,7 @@
    "key": {
     "type": "http",
     "scheme": "bearer",
-    "description": "A Starboard API key, sb_read_..."
+    "description": "A Starboard API key, sb_read_... or sb_manage_..."
    }
   },
   "parameters": {
@@ -663,6 +2636,16 @@
      "type": "string"
     },
     "description": "The next_cursor of the previous answer."
+   },
+   "idempotency": {
+    "name": "Idempotency-Key",
+    "in": "header",
+    "required": false,
+    "schema": {
+     "type": "string",
+     "pattern": "^[A-Za-z0-9._:-]{1,100}$"
+    },
+    "description": "Send the same value again to get the first answer back without doing it twice. Kept for 24 hours."
    }
   },
   "headers": {
@@ -731,7 +2714,8 @@
      "right": {
       "type": "string",
       "enum": [
-       "read"
+       "read",
+       "manage"
       ]
      },
      "scopes": {
@@ -742,7 +2726,10 @@
         "apps",
         "downloads",
         "media",
-        "system"
+        "system",
+        "library",
+        "requests",
+        "logs"
        ]
       }
      },

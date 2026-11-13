@@ -30,6 +30,7 @@ costs.
 | Unit and API tests | `python3 -m unittest discover -s tests` | 117 tests: the server and its API, security findings, backup and restore, moving history from other apps, storage, logs, Install apps, discovery, copying app settings | 25 seconds |
 | Browser journeys | `tools/journeys.sh` | 29 checks in a real browser against example data | 2 minutes |
 | Install tests in VMs | `tools/vm/vm.sh test <system>` | 17 checks of a fresh install on a clean system | 15 to 60 minutes each |
+| API and plug-ins | `bash tools/check-api.sh` | The API description and reference are up to date, the API contract tests, the plug-in tests, and each example plug-in run against this build (needs Docker and the starboard-plugins repository) | 2 minutes |
 | Help centre | `python3 tools/check-help.py` | Links, layout and writing rules of `docs/help` | 1 second |
 | Security scans | `tools/security-scan.sh` (`--full` adds ZAP's active scan) | Trivy, ZAP, Gitleaks, Bandit, ShellCheck, Hadolint ([Security](SECURITY-AND-TESTS.md)) | 10 minutes, or about an hour with `--full` |
 | Private details | `tools/check-private.sh` | Addresses, keys, email addresses and private words in tracked files | 1 second |

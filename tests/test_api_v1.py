@@ -12,6 +12,14 @@ from starboard import api_v1, auth
 from starboard.server import make_server
 
 
+SAMPLES = {"id": "123", "name": "livetv"}
+
+
+def sample(path, app_id="abc"):
+    """A described path with a made-up value in each {name}; {id} of an app is the app's id when given."""
+    return re.sub(r"\{(\w+)\}", lambda m: app_id if m.group(1) == "id" and app_id != "abc" else SAMPLES.get(m.group(1), "abc"), path)
+
+
 def _resolve(spec, schema):
     while "$ref" in schema:
         node = spec
@@ -56,6 +64,8 @@ class ApiV1Test(unittest.TestCase):
         cls.port = cls.server.server_address[1]
         cls.app.config.upsert_service({"name": "Made-up Sonarr", "type": "sonarr", "url": "http://127.0.0.1:9", "api_key": "made-up-secret-key"})
         cls.key, cls.item = api_v1.create_key(cls.tmp.name, "Contract tests", "read", [], 90)
+        cls.manager, _ = api_v1.create_key(cls.tmp.name, "Contract manager", "manage", [], 90)
+        cls.logs_key, _ = api_v1.create_key(cls.tmp.name, "AI assistant", "read", ["apps", "logs"], 90)
         cls.spec = api_v1.spec()
 
     @classmethod
@@ -73,36 +83,52 @@ class ApiV1Test(unittest.TestCase):
         return r, (json.loads(raw) if raw else None)
 
     def test_every_route_is_described_and_every_description_is_a_route(self):
-        described = set(self.spec["paths"])
+        described = {p for p, ops in self.spec["paths"].items() if "get" in ops}
         patterns = [p for p, *_ in api_v1.routes()]
         for path in described:
-            concrete = path.replace("{id}", "abc")
-            self.assertTrue(path == "/api/v1/openapi.json" or any(re.match(p, concrete) for p in patterns), f"{path} has no route")
+            self.assertTrue(path == "/api/v1/openapi.json" or any(re.match(p, sample(path)) for p in patterns), f"{path} has no route")
         for p in patterns:
-            self.assertTrue(any(re.match(p, d.replace("{id}", "abc")) for d in described), f"{p} is not in openapi.json")
+            self.assertTrue(any(re.match(p, sample(d)) for d in described), f"{p} is not in openapi.json")
+
+    def test_the_description_and_reference_are_what_the_tools_write(self):  # DASH-281: the tool had drifted
+        import subprocess
+        import sys
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for tool in ("tools/make_openapi.py", "tools/make_api_reference.py"):
+            r = subprocess.run([sys.executable, tool, "--check"], cwd=root, capture_output=True, text=True, timeout=60)
+            self.assertEqual(r.returncode, 0, r.stderr or r.stdout)
 
     def test_the_description_has_the_api_version(self):  # DASH-357: it said 1.1.0 while the API said 1.0.0
         self.assertEqual(self.spec["info"]["version"], api_v1.API_VERSION)
 
     def test_each_route_says_the_scope_it_needs(self):  # DASH-357: x-scope, the same as the code checks
         for path, ops in self.spec["paths"].items():
-            if path.endswith("openapi.json"):
+            if path.endswith("openapi.json") or "get" not in ops:
                 continue
-            scope = next(sc for p, sc, *_ in api_v1.routes() if re.match(p, path.replace("{id}", "abc")))
+            scope = next(sc for p, sc, *_ in api_v1.routes() if re.match(p, sample(path)))
             self.assertIn("x-scope", ops["get"], path)
             self.assertEqual(ops["get"]["x-scope"], scope, path)
 
     def test_each_answer_matches_its_description(self):
         app_id = self.app.config.data["services"][0]["id"]
         for path, ops in self.spec["paths"].items():
-            r, body = self.get(path.replace("{id}", app_id))
-            self.assertEqual(r.status, 200, f"{path}: {body}")
+            if "get" not in ops or path == "/api/v1/events":
+                continue
+            query = "?q=dune" if path.endswith("/search") else ""
+            key = self.logs_key if ops["get"].get("x-scope") in api_v1.EXPLICIT_SCOPES else None
+            r, body = self.get(sample(path, app_id) + query, key=key)
             self.assertTrue(r.getheader("X-Request-Id"))
+            if r.status == 409 and "409" in ops["get"]["responses"]:  # needs Reelix, which the tests do not have
+                self.assertEqual(body["code"], "not_set_up", path)
+                continue
+            self.assertEqual(r.status, 200, f"{path}: {body}")
             check(self.spec, ops["get"]["responses"]["200"]["content"]["application/json"]["schema"], body, path)
 
     def test_no_secret_in_any_answer(self):
-        for path in self.spec["paths"]:
-            _, body = self.get(path.replace("{id}", self.app.config.data["services"][0]["id"]))
+        for path, ops in self.spec["paths"].items():
+            if "get" not in ops or path == "/api/v1/events":
+                continue
+            _, body = self.get(sample(path, self.app.config.data["services"][0]["id"]))
             text = json.dumps(body)
             self.assertNotIn("made-up-secret-key", text, path)
             self.assertNotIn(self.key, text, path)
@@ -168,6 +194,139 @@ class ApiV1Test(unittest.TestCase):
         self.assertIn("key_revoked", lines)
         with self.assertRaises(ValueError):
             api_v1.create_key(self.tmp.name, "Writer", "admin")
+
+    # Version 1.1 (DASH-274): the manage right, writes, Idempotency-Key, events -----------------------------------
+
+    def send_json(self, method, path, body=None, key=None, headers=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        raw = json.dumps(body if body is not None else {}).encode()
+        h = {"Authorization": f"Bearer {key or self.manager}", "Content-Type": "application/json", **(headers or {})}
+        conn.request(method, path, body=raw, headers=h)
+        r = conn.getresponse()
+        data = r.read()
+        conn.close()
+        return r, (json.loads(data) if data else None)
+
+    def test_each_write_is_described_with_its_right(self):
+        for path, ops in self.spec["paths"].items():
+            for method, op in ops.items():
+                if method == "get":
+                    continue
+                self.assertEqual(op.get("x-right"), "manage", f"{method} {path}")
+                found = [a for a in api_v1.actions() if a[1] == method.upper() and re.match(a[0], sample(path))]
+                self.assertTrue(found, f"{method} {path} has no route")
+                self.assertEqual(op["x-scope"], found[0][2], path)
+        for pattern, method, *_ in api_v1.actions():
+            self.assertTrue(any(method.lower() in ops and re.match(pattern, sample(p)) for p, ops in self.spec["paths"].items()),
+                            f"{method} {pattern} is not in openapi.json")
+
+    def test_a_read_key_cannot_write(self):
+        r, body = self.send_json("POST", "/api/v1/download-hours", {"action": "pause"}, key=self.key)
+        self.assertEqual((r.status, body["code"]), (403, "right_needed"))
+
+    def test_a_manage_key_writes_and_each_write_is_in_the_audit_log(self):
+        r, body = self.send_json("POST", "/api/v1/download-hours", {"action": "sideways"})
+        self.assertEqual((r.status, body["code"]), (400, "bad_request"))
+        r, body = self.send_json("POST", "/api/v1/download-hours", {"action": "pause"})
+        self.assertEqual((r.status, body["code"]), (400, "bad_request"))  # download hours are not active here
+        self.assertIn("Activate download hours", body["title"])
+        r, body = self.send_json("POST", "/api/v1/containers/check")
+        self.assertEqual((r.status, body["available"]), (200, False))  # no Docker in the tests
+        with open(os.path.join(self.tmp.name, "logs", "audit.jsonl")) as f:
+            writes = [json.loads(line) for line in f if '"api_write"' in line]
+        self.assertTrue(any(w["path"] == "/api/v1/containers/check" and w["status"] == 200 for w in writes))
+        self.assertTrue(all(self.manager not in json.dumps(w) for w in writes))
+
+    def test_writes_check_scope_before_right_and_refuse_bad_bodies(self):
+        key, _ = api_v1.create_key(self.tmp.name, "Downloads manager", "manage", ["downloads"], None)
+        r, body = self.send_json("POST", "/api/v1/alerts/test", key=key)
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
+        conn.request("POST", "/api/v1/download-hours", body=b"[1, 2]", headers={"Authorization": f"Bearer {key}"})
+        r = conn.getresponse()
+        self.assertEqual((r.status, json.loads(r.read())["code"]), (400, "bad_request"))
+        conn.close()
+        r, body = self.send_json("POST", "/api/v1/download-hours", {"action": "x" * 70000}, key=key)
+        self.assertEqual((r.status, body["code"]), (413, "too_large"))
+
+    def test_a_download_action_needs_a_download_app(self):
+        app_id = self.app.config.data["services"][0]["id"]
+        r, body = self.send_json("POST", "/api/v1/downloads/actions", {"app_id": "nope", "id": 1, "action": "remove"})
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        r, body = self.send_json("POST", "/api/v1/downloads/actions", {"app_id": app_id, "id": "x", "action": "remove"})
+        self.assertEqual((r.status, body["code"]), (400, "bad_request"))
+        r, body = self.send_json("POST", "/api/v1/downloads/actions", {"app_id": app_id, "id": 1, "action": "delete-everything"})
+        self.assertEqual((r.status, body["code"]), (400, "bad_request"))
+
+    def test_the_library_needs_reelix(self):
+        r, body = self.get("/api/v1/library")
+        self.assertEqual((r.status, body["code"]), (409, "not_set_up"))
+        r, body = self.send_json("POST", "/api/v1/library/refresh", {"tab": "films"})
+        self.assertEqual((r.status, body["code"]), (409, "not_set_up"))
+
+    def test_idempotency_key_gives_the_first_answer_again(self):
+        first, body = self.send_json("POST", "/api/v1/containers/check", headers={"Idempotency-Key": "check-1"})
+        again, body2 = self.send_json("POST", "/api/v1/containers/check", headers={"Idempotency-Key": "check-1"})
+        self.assertEqual((first.status, again.status, body, again.getheader("Idempotent-Replayed")), (200, 200, body2, "true"))
+        r, body = self.send_json("POST", "/api/v1/containers/check", headers={"Idempotency-Key": "bad key!"})
+        self.assertEqual((r.status, body["code"]), (400, "bad_request"))
+
+    def test_bad_query_values(self):
+        for path in ("/api/v1/calendar?month=2026-13", "/api/v1/system/history?hours=5", "/api/v1/library/search?q=",
+                     "/api/v1/history?which=everything"):
+            r, body = self.get(path)
+            self.assertIn(r.status, (400, 409), path)
+
+    def test_events_stream_with_scopes_and_resume(self):
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        conn.request("GET", "/api/v1/events", headers={"Authorization": f"Bearer {self.key}"})
+        r = conn.getresponse()
+        self.assertEqual((r.status, r.getheader("Content-Type").split(";")[0]), (200, "text/event-stream"))
+        self.assertEqual(r.fp.readline(), b"retry: 10000\n")
+        r.fp.readline(), r.fp.readline()  # ": open" and the blank line
+        api_v1.publish("app.down", {"app": "Made-up Sonarr", "type": "sonarr", "api_key": "made-up-secret-key"})
+        lines = [r.fp.readline() for _ in range(3)]
+        self.assertTrue(lines[0].startswith(b"id: "))
+        self.assertEqual(lines[1], b"event: starboard.app.down\n")
+        event = json.loads(lines[2][6:])
+        self.assertEqual((event["type"], event["data"]["app"], event["specversion"]), ("starboard.app.down", "Made-up Sonarr", "1.0"))
+        self.assertNotIn("made-up-secret-key", lines[2].decode())
+        conn.close()
+        # A key scoped to downloads does not hear app events; resuming from an id gives what came after it.
+        key, _ = api_v1.create_key(self.tmp.name, "Downloads events", "read", ["downloads"], None)
+        last = int(event["id"])
+        api_v1.publish("app.up", {"app": "Made-up Sonarr"})
+        api_v1.publish("download.finished", {"title": "A made-up film", "app": "Made-up Radarr"})
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        conn.request("GET", "/api/v1/events", headers={"Authorization": f"Bearer {key}", "Last-Event-ID": str(last)})
+        r = conn.getresponse()
+        for _ in range(3):
+            r.fp.readline()
+        lines = [r.fp.readline() for _ in range(3)]
+        self.assertEqual(lines[1], b"event: starboard.download.finished\n")
+        conn.close()
+
+    def test_logs_only_when_ticked_and_with_addresses_taken_out(self):  # DASH-76
+        from starboard import logs
+        logs.event("warning", "apps", "Sonarr at http://192.168.1.21:8989 said apikey=abcdef123456 for sam@starboard-pi.local")
+        r, body = self.get("/api/v1/logs")  # a key with no scopes
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        r, body = self.get("/api/v1/logs?level=problems", key=self.logs_key)
+        self.assertEqual(r.status, 200)
+        text = json.dumps(body)
+        for secret in ("192.168.1.21", "abcdef123456", "sam@starboard-pi.local"):
+            self.assertNotIn(secret, text)
+        r, body = self.get("/api/v1/logs?level=everything", key=self.logs_key)
+        self.assertEqual((r.status, body["code"]), (400, "bad_request"))
+
+    def test_events_are_capped(self):
+        old = api_v1._event_state["streams"]
+        api_v1._event_state["streams"] = api_v1.MAX_STREAMS
+        try:
+            r, body = self.get("/api/v1/events")
+            self.assertEqual((r.status, body["code"]), (503, "too_many_streams"))
+        finally:
+            api_v1._event_state["streams"] = old
 
 
 if __name__ == "__main__":

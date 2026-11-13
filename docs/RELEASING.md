@@ -35,9 +35,12 @@ guide and the notes on GitHub, so they always say the same thing.
    Also run the tests as GitHub does, `tools/test-as-another-user.sh` (a fresh copy, as uid 1001, in a container), so
    a test that passes only as your own user is found before the image fails to build. The design system's copies are
    checked by `tests/test_design_system_copies.py`: change the library and sync, never the copies.
-   The API must not break: `python3 tools/make_openapi.py` leaves `starboard/openapi.json` unchanged, and
-   `python3 -m unittest tests.test_api_v1` passes (each `/api/v1` route against its description, with its rights and
-   errors). Once the example plug-ins exist, install and run each one against the new build. A change that breaks
+   The API and the plug-ins must not break: run `bash tools/check-api.sh` (DASH-281). In one command it checks that
+   `starboard/openapi.json` and `docs/help/developers/api-reference.md` are what their tools write, runs the contract
+   tests (each `/api/v1` route against its description, with its scope, right and errors) and the plug-in tests, and
+   runs every example plug-in against this build with the smoke test from the `starboard-plugins` repository (set
+   `STARBOARD_PLUGINS` if it is not beside this one; `SMOKE=required` fails when Docker or that repository is
+   missing). CI runs the same command on every push, where the smoke test says it was not run. A change that breaks
    either is fixed, or becomes a new API version with a deprecation note, before it is merged.
    When the installer, `update.sh` or the image changed, also run `tools/vm/vm.sh test` on at least one PC system
    and `arm64`. Record the results and any change in system use in `docs/TESTING.md`
