@@ -12,7 +12,7 @@ import sys
 HELP = pathlib.Path(__file__).resolve().parent.parent / "docs" / "help"
 SCREENSHOTS_PER_TOPIC = 3
 TIERS = {"topics": ["## Find out more"], "guides": ["## Before you begin", "## The steps at a glance", "## What next"],
-         "basics": ["## Find out more"], "developers": ["## Find out more"]}
+         "basics": ["## Find out more"], "developers": ["## Find out more"], "comparisons": ["## Find out more"]}
 RULES = [
     (r"—", "an em dash"),
     (r"\b(can't|won't|don't|doesn't|isn't|aren't|didn't|wasn't|haven't|hasn't|shouldn't|wouldn't|couldn't|you're|you'll|"
