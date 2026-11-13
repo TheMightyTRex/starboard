@@ -307,6 +307,10 @@ def _act(app, reelix, base, kind, action, body):
         out = acts[action]()
         if out.get("done"):
             logs.event("info", "reelix", out["done"])
+        # Kept for Starboard's Reelix health, which has only the manager key (DASH-218)
+        from . import reelix_direct_health
+        reelix_direct_health.record(app.data_dir, state=out if "tools" in out else None,
+                                    queue=out if action in ("queue", "start", "change") else None)
         return out
     if kind == "system":  # Reelix's backups, logs and tasks in System (DASH-201, 202, 203)
         from . import reelix_system as rs

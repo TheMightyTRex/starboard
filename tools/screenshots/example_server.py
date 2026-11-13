@@ -716,6 +716,16 @@ def main():
     _example_plugins(str(DATA))
     _example_livetv(str(DATA))
     _example_folders(DATA)
+    if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":
+        # DASH-218: the full Reelix's YouTube and Spotify downloads as the admin last saw them, with yt-dlp broken and
+        # Spotify's sign-in run out, so Apps and System show both warnings with what to do. Off by default.
+        from starboard import reelix_direct_health
+        reelix_direct_health.record(str(DATA), state={"on": True, "tools": [{"tool": "yt-dlp", "ok": False}, {"tool": "FFmpeg", "ok": True},
+                                                                            {"tool": "Spotify session", "ok": False}],
+                                                      "spotify": {"connected": False, "problem": ""}})
+        rec = reelix_direct_health.read(str(DATA))
+        rec["spotify_was_connected"] = True
+        reelix_direct_health._write(str(DATA), rec)
     server, app = make_server("127.0.0.1", PORT, str(DATA))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     if app.needs_setup:

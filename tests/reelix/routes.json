@@ -69,7 +69,7 @@
    "starboard": "Settings, Reelix, Download apps (DASH-154)"
   },
   "downloads": {
-   "not_for_lite": "YouTube and Spotify downloads exist only in the full Reelix: DASH-216, DASH-217"
+   "not_for_lite": "YouTube and Spotify downloads exist only in the full Reelix: DASH-216, DASH-217; their health in Reelix's health on Apps and System (DASH-218)"
   },
   "episodefiles": {
    "task": "DASH-209",
