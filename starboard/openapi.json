@@ -2451,6 +2451,120 @@
     }
    }
   },
+  "/api/v1/logs": {
+   "get": {
+    "operationId": "listLogs",
+    "summary": "Starboard's log, newest first, with addresses, names and keys taken out",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "logs",
+    "description": "Only for keys that ticked Logs: a key with no scopes does not read them.",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     },
+     {
+      "name": "level",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "all",
+        "problems"
+       ],
+       "default": "all"
+      },
+      "description": "problems for warnings and errors only."
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "maxLength": 100
+      },
+      "description": "Only lines with these words."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "time",
+             "level",
+             "area",
+             "message"
+            ],
+            "properties": {
+             "time": {
+              "type": "string",
+              "format": "date-time"
+             },
+             "level": {
+              "type": "string"
+             },
+             "area": {
+              "type": "string"
+             },
+             "message": {
+              "type": "string"
+             }
+            }
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
   "/api/v1/events": {
    "get": {
     "operationId": "streamEvents",
@@ -2614,7 +2728,8 @@
         "media",
         "system",
         "library",
-        "requests"
+        "requests",
+        "logs"
        ]
       }
      },

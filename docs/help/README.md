@@ -183,6 +183,7 @@ For people who make plug-ins, or write scripts and apps that read Starboard. AI 
 - [API quickstart](developers/api-quickstart.md)
 - [Authentication and keys](developers/api-authentication.md)
 - [What the API covers](developers/api-coverage.md)
+- [Connect an AI assistant](developers/connect-an-ai-assistant.md)
 - [API reference](developers/api-reference.md)
 - [API changelog](developers/api-changelog.md)
 - [AI prompts for developers](developers/ai-prompts-for-developers.md)

@@ -211,6 +211,14 @@ spec["paths"].update({
                                                 desc="Started. Read /api/v1/extras to see how it went.") | {
         "parameters": [path_param("name", {"type": "string", "enum": ["livetv", "import", "defaults", "listening"]}),
                        {"$ref": "#/components/parameters/idempotency"}]}},
+    "/api/v1/logs": {"get": {"operationId": "listLogs", "summary": "Starboard's log, newest first, with addresses, names and keys taken out", "tags": ["System"],
+                             "description": "Only for keys that ticked Logs: a key with no scopes does not read them.",
+                             "parameters": P + [query("level", {"type": "string", "enum": ["all", "problems"], "default": "all"}, "problems for warnings and errors only."),
+                                                query("q", {"type": "string", "maxLength": 100}, "Only lines with these words.")],
+                             "responses": {**ok(listing({"type": "object", "required": ["time", "level", "area", "message"],
+                                                         "properties": {"time": {"type": "string", "format": "date-time"}, "level": {"type": "string"},
+                                                                        "area": {"type": "string"}, "message": {"type": "string"}}})),
+                                           "400": {"$ref": "#/components/responses/Problem"}}}},
     "/api/v1/events": {"get": {"operationId": "streamEvents", "summary": "Events as they happen, as Server-Sent Events", "tags": ["Events"],
                                "description": "A text/event-stream. Each event is CloudEvents-shaped JSON: specversion, id, type (such as starboard.app.down), "
                                               "source, time and data. A key hears only the events its scopes cover. Send Last-Event-ID to resume. "

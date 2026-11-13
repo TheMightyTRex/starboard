@@ -2442,6 +2442,7 @@ const KEY_SCOPES = {
   library: ["Library", "The Library and its search"],
   requests: ["Requests", "Requests from Seerr or Reelix"],
   system: ["System", "Processor, memory, disks, version and test alerts"],
+  logs: ["Logs", "Starboard's log, with addresses, names and keys taken out. Only when ticked"],
 };
 
 function apiKeys() {

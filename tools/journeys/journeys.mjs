@@ -976,7 +976,7 @@ await page.waitForTimeout(400);
 const rights = await page.locator("#key-right option").allTextContents();
 check("API-01", "Make a key asks what it may do: Read only or Read and manage", rights.join("|") === "Read only|Read and manage", rights.join("|"));
 const scopeNames = await page.locator("#key-scopes .check strong").allTextContents();
-check("API-01", "and what it may see, one tick for each area", scopeNames.join("|") === "Apps|Downloads|Media|Library|Requests|System", scopeNames.join("|"));
+check("API-01", "and what it may see, one tick for each area", scopeNames.join("|") === "Apps|Downloads|Media|Library|Requests|System|Logs", scopeNames.join("|"));
 await page.fill("#key-name", "Journey manager");
 await page.selectOption("#key-right", "manage");
 await page.check("#key-scope-downloads");

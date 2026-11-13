@@ -27,6 +27,8 @@ the next major version.
 - **Added:** `/events`, Server-Sent Events: apps going down and coming back, alerts, new items, finished downloads
   and playback starting, each heard only by keys whose scopes cover it.
 - **Added:** the scopes `library` and `requests`, and scopes and the right chosen in **Make a key**.
+- **Added:** `/logs`, Starboard's log with addresses, names and keys taken out, for the `logs` scope only: a key with
+  no scopes does not read it. For AI assistants, read [Connect an AI assistant](connect-an-ai-assistant.md).
 - **Added:** each write in the description has `x-right: manage`; the errors `not_set_up`, `app_failed`,
   `too_large` and `too_many_streams`.
 - **Changed:** a `Link` header for the next page keeps the other query parameters, such as `limit`.

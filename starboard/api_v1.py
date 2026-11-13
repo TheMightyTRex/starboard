@@ -37,7 +37,7 @@ API_VERSION = "1.1.0"
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
-EXPLICIT_SCOPES = ()  # scopes a key reaches only when ticked; a key with no scopes does not have them
+EXPLICIT_SCOPES = ("logs",)  # reached only when ticked: a key with no scopes does not have them (DASH-76)
 ALL_SCOPES = SCOPES + EXPLICIT_SCOPES
 PER_MINUTE = 120
 MAX_STREAMS = 8  # A14: event streams open at once
@@ -554,6 +554,22 @@ def routes():
         return {"hours": hours, "interval": hist.INTERVAL if hist else int(h.app.config.data["performance"].get("history_every", 300)),
                 "points": hist.get(hours) if hist else []}
 
+    def log_entries(h, m, q):
+        """Starboard's own log, newest first, for an AI assistant or a script (DASH-76): with the report's redaction on
+        top of what each line had taken out when written (addresses, hosts, emails, keys, the site's and computer's
+        names). Only for keys that ticked Logs."""
+        import socket
+        from . import logs
+        level = (q.get("level") or ["all"])[0]
+        if level not in ("all", "problems"):
+            raise ValueError("Choose level from all or problems")
+        words = [h.app.config.data.get("site_name", ""), socket.gethostname()]
+        rows = [{"time": _iso(dt.datetime.fromtimestamp(e.get("t") or 0, dt.timezone.utc).replace(microsecond=0)),
+                 "level": e.get("level", ""), "area": e.get("area", ""), "message": logs.redact(e.get("message", ""), words)[:2000]}
+                for e in h.app.log.read(level, (q.get("q") or [""])[0][:100], limit=1000)]
+        items, nxt = page(rows, q)
+        return {"items": items, "next_cursor": nxt}
+
     def extras(h, m, q):
         rows = [{k: r.get(k) for k in ("key", "title", "what", "enabled", "started", "finished", "state", "summary", "needs")}
                 for r in h.app.jobs.status().get("jobs") or [] if r.get("key") in EXTRA_JOBS]
@@ -585,6 +601,7 @@ def routes():
         (r"^/api/v1/version$", "system", 3600, version),
         (r"^/api/v1/system/history$", "system", 60, system_history),
         (r"^/api/v1/extras$", "media", 30, extras),
+        (r"^/api/v1/logs$", "logs", 30, log_entries),
         (r"^/api/v1/events$", None, 0, None),  # the event stream: answered by _stream, each event by its own scope
     ]
 

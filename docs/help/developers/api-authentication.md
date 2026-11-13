@@ -54,6 +54,7 @@ the scopes of the read permissions the person approved. Read
 | `library` | **Library** | `/library`, `/library/search` and `/library/status`; building a tab again |
 | `requests` | **Requests** | `/requests`; approving and declining |
 | `system` | **System** | `/system`, `/system/history` and `/version`; sending a test alert |
+| `logs` | **Logs** | `/logs`: Starboard's log, with addresses, names and keys taken out. Only a key with `logs` ticked reads it: a key with no scopes does not |
 
 `/api/v1/` and `/me` work with any key. `/openapi.json` needs no key. `/events` works with any key, and each event
 reaches only the keys whose scopes cover it.
@@ -119,6 +120,7 @@ and removed are written there too. The log never holds a key or a password. It k
 - [API quickstart](api-quickstart.md)
 - [API reference](api-reference.md)
 - [What the API covers](api-coverage.md)
+- [Connect an AI assistant](connect-an-ai-assistant.md)
 - [List of API errors](../../api/errors.md)
 - [Make an API key and use Starboard's API](../topics/use-starboards-api.md)
 - [How Starboard keeps your server safe](../basics/how-starboard-keeps-you-safe.md)

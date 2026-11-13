@@ -1223,6 +1223,57 @@ with urllib.request.urlopen(req, timeout=10) as r:
     print(json.load(r))
 ```
 
+### GET /api/v1/logs
+
+Starboard's log, newest first, with addresses, names and keys taken out.
+
+Only for keys that ticked Logs: a key with no scopes does not read them.
+
+- **Key:** any key whose scopes are empty or include `logs` (the logs, only when ticked). A key without it gets `404 not_found`.
+- **Fresh for:** 30 seconds (`Cache-Control: private, max-age=30`).
+- **Operation id:** `listLogs`.
+
+Parameters:
+
+| Name | In | What it is |
+|---|---|---|
+| `limit` | query | How many to give back; 1 to 200, 50 if left out. |
+| `cursor` | query | The next_cursor of the previous answer. |
+| `level` | query | problems for warnings and errors only; all if left out. |
+| `q` | query | Only lines with these words. |
+
+The answer:
+
+| Field | What it is | Always there |
+|---|---|---|
+| `items` | a list of an object | yes |
+| `next_cursor` | text or null | yes |
+
+Other answers:
+
+- **304:** Not changed since the ETag sent in If-None-Match.
+
+Errors:
+
+- **400:** [`bad_request`](../../api/errors.md#bad_request).
+- **401:** [`key_needed`](../../api/errors.md#key_needed).
+- **429:** [`too_many_attempts`](../../api/errors.md#too_many_attempts), [`rate_limited`](../../api/errors.md#rate_limited).
+
+Example:
+
+```bash
+curl -s -H "Authorization: Bearer $STARBOARD_KEY" "http://192.168.1.20:8095/api/v1/logs"
+```
+
+```python
+import json, os, urllib.request
+
+req = urllib.request.Request("http://192.168.1.20:8095/api/v1/logs",
+                             headers={"Authorization": "Bearer " + os.environ["STARBOARD_KEY"]})
+with urllib.request.urlopen(req, timeout=10) as r:
+    print(json.load(r))
+```
+
 ## Requests
 
 ### GET /api/v1/requests
@@ -1613,7 +1664,7 @@ The named objects the answers use.
 | `id` | text | yes |
 | `name` | text | yes |
 | `right` | one of `read`, `manage` | yes |
-| `scopes` | a list from `apps`, `downloads`, `media`, `system`, `library`, `requests` | yes |
+| `scopes` | a list from `apps`, `downloads`, `media`, `system`, `library`, `requests`, `logs` | yes |
 | `created_at` | text (date-time) | yes |
 | `expires_at` | text (date-time) or null | no |
 | `last_used_at` | text (date-time) or null | no |

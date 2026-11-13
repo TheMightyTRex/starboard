@@ -65,6 +65,7 @@ class ApiV1Test(unittest.TestCase):
         cls.app.config.upsert_service({"name": "Made-up Sonarr", "type": "sonarr", "url": "http://127.0.0.1:9", "api_key": "made-up-secret-key"})
         cls.key, cls.item = api_v1.create_key(cls.tmp.name, "Contract tests", "read", [], 90)
         cls.manager, _ = api_v1.create_key(cls.tmp.name, "Contract manager", "manage", [], 90)
+        cls.logs_key, _ = api_v1.create_key(cls.tmp.name, "AI assistant", "read", ["apps", "logs"], 90)
         cls.spec = api_v1.spec()
 
     @classmethod
@@ -114,7 +115,8 @@ class ApiV1Test(unittest.TestCase):
             if "get" not in ops or path == "/api/v1/events":
                 continue
             query = "?q=dune" if path.endswith("/search") else ""
-            r, body = self.get(sample(path, app_id) + query)
+            key = self.logs_key if ops["get"].get("x-scope") in api_v1.EXPLICIT_SCOPES else None
+            r, body = self.get(sample(path, app_id) + query, key=key)
             self.assertTrue(r.getheader("X-Request-Id"))
             if r.status == 409 and "409" in ops["get"]["responses"]:  # needs Reelix, which the tests do not have
                 self.assertEqual(body["code"], "not_set_up", path)
@@ -303,6 +305,19 @@ class ApiV1Test(unittest.TestCase):
         lines = [r.fp.readline() for _ in range(3)]
         self.assertEqual(lines[1], b"event: starboard.download.finished\n")
         conn.close()
+
+    def test_logs_only_when_ticked_and_with_addresses_taken_out(self):  # DASH-76
+        from starboard import logs
+        logs.event("warning", "apps", "Sonarr at http://192.168.1.21:8989 said apikey=abcdef123456 for sam@starboard-pi.local")
+        r, body = self.get("/api/v1/logs")  # a key with no scopes
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        r, body = self.get("/api/v1/logs?level=problems", key=self.logs_key)
+        self.assertEqual(r.status, 200)
+        text = json.dumps(body)
+        for secret in ("192.168.1.21", "abcdef123456", "sam@starboard-pi.local"):
+            self.assertNotIn(secret, text)
+        r, body = self.get("/api/v1/logs?level=everything", key=self.logs_key)
+        self.assertEqual((r.status, body["code"]), (400, "bad_request"))
 
     def test_events_are_capped(self):
         old = api_v1._event_state["streams"]

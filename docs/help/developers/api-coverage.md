@@ -55,7 +55,8 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 | See the version and the newest release | `GET /version` | read, `system` |
 | Send a test alert | `POST /alerts/test` | manage, `system` |
 | Events as they happen: apps down and up, alerts, new items, finished downloads, playback | `GET /events` | read, by each event's scope |
-| Logs, jobs, storage, disk health and the pool | Not yet: logs can hold addresses and names | |
+| Read Starboard's log, with addresses, names and keys taken out | `GET /logs` | read, `logs`, only when ticked |
+| Jobs, storage, disk health and the pool | Not yet | |
 | Back up, restore, the pool's plan, server jobs | Signed in only: they need the password or run as root | |
 
 ## Settings and security
@@ -73,6 +74,7 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 
 - [Authentication and keys](api-authentication.md)
 - [API reference](api-reference.md)
+- [Connect an AI assistant](connect-an-ai-assistant.md)
 - [API changelog](api-changelog.md)
 
 <!-- footer: download rights -->

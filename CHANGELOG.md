@@ -15,6 +15,9 @@ add features.
   downloads, build a Library tab again, look for container updates, run a Jellyfin job, send a test alert), and an
   event stream, /api/v1/events. Make a key now asks what it may do and what it may see. No key can change settings,
   keys, plug-ins or the install. Each change made with a key is in the audit log (DASH-274).
+- AI assistants: a guide, Connect an AI assistant, for a Read only key named after the assistant with the fewest
+  scopes, and /api/v1/logs, Starboard's log with addresses, names and keys taken out, only for keys with Logs ticked
+  (DASH-76).
 - Settings, General, Discover rows is its own page on the level 2 menu, with a section for each area of Discover
   (Films, TV, Music, Radio, Books and Audiobooks), each with its own rows, ticks, Move up and Move down, and Put back
   the standard rows. Only the area shown asks Reelix for its rows. Each Discover page's Change these rows opens its own
