@@ -341,7 +341,11 @@ startPage().then(async () => {
     const end = startOfToday();
     end.setDate(end.getDate() + days + 1);
     items = data.items.filter((i) => new Date(i.when) >= yesterday && new Date(i.when) < end);
-    $("#calendar-errors").replaceChildren(...data.errors.map((e) => notice("warning", "", e.message)));
+    // One notice with a title (section 10: two notices in one place become one), naming the apps it could not read.
+    const missed = data.errors.map((e) => cfg.services.find((x) => x.id === e.service)?.name).filter(Boolean);
+    $("#calendar-errors").replaceChildren(...(data.errors.length ? [notice("warning",
+      missed.length === 1 ? `Releases from ${missed[0]} are missing` : "Some releases are missing",
+      `${data.errors.map((e) => e.message.replace(/\.?$/, ".")).join(" ")} Check ${missed.length === 1 ? "it" : "them"} on the Apps page, then reload this page.`)] : []));
     update();
   } catch (e) {
     $("#calendar-summary").textContent = e.message;
