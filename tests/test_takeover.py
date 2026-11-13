@@ -153,6 +153,29 @@ def fake_found(running=True):
             {**c("storyarr", "storyarr"), "running": False}, {**c("wizarr", "wizarr"), "project": None}]
 
 
+class SeerrTest(unittest.TestCase):
+    def test_seerr_is_known_by_name_or_image(self):
+        # Overseerr and Jellyseerr merged into Seerr (DASH-405)
+        for name in ("seerr", "jellyseerr", "overseerr"):
+            self.assertEqual(takeover.catalogue_key(name), "seerr")
+        for image in ("ghcr.io/seerr-team/seerr:latest", "fallenbagel/jellyseerr:2.7.3", "sctx/overseerr",
+                      "lscr.io/linuxserver/overseerr:latest", "registry.local:5000/seerr-team/seerr@sha256:" + "0" * 64):
+            self.assertEqual(takeover.catalogue_key("requests", image), "seerr", image)
+        self.assertIsNone(takeover.catalogue_key("requests", "example/requests:1"))
+        self.assertEqual(takeover.catalogue_key("radarr", "ghcr.io/seerr-team/seerr"), "radarr")  # the name comes first
+
+    def test_each_name_has_its_own_icon(self):
+        from starboard import icons
+        self.assertEqual([icons.default_name({"name": n}) for n in ("Seerr", "Jellyseerr", "Overseerr")],
+                         ["seerr", "jellyseerr", "overseerr"])
+
+    def test_found_lists_a_seerr_container_by_its_image(self):
+        listing = [{"Names": ["/requests"], "Image": "ghcr.io/seerr-team/seerr:latest", "State": "running", "Labels": {}}]
+        with mock.patch.object(takeover.containers, "available", return_value=True), \
+                mock.patch.object(takeover.containers, "docker", return_value=listing):
+            self.assertEqual([(c["name"], c["key"]) for c in takeover.found()], [("requests", "seerr")])
+
+
 class PlanTest(unittest.TestCase):
     def test_sorts_apps_and_keeps_ports(self):
         with tempfile.TemporaryDirectory() as d, \

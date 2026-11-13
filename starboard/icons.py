@@ -21,8 +21,9 @@ RETRY_MISSING_AFTER = 86400
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 TYPES = {".svg": "image/svg+xml", ".png": "image/png"}
 
-# Names that differ from the app's name in the collection.
-ALIASES = {"seerr": "jellyseerr", "qbittorrent": "qbittorrent", "sabnzbd": "sabnzbd", "old-launcher": ""}
+# Names that differ from the app's name in the collection. Seerr (Overseerr and Jellyseerr merged in 2026) has its own
+# icon there now, so it is no longer shown as Jellyseerr's.
+ALIASES = {"qbittorrent": "qbittorrent", "sabnzbd": "sabnzbd", "old-launcher": ""}
 
 _lock = threading.Lock()
 

@@ -11,6 +11,8 @@ approve or decline each one there. Reported problems with a film or series are i
   and [Find an app's API key](find-an-api-key.md#where-each-app-keeps-its-key).
 - When you have Seerr, Jellyseerr or Overseerr, Starboard shows its requests. Without one, it shows Reelix's own
   requests.
+- Overseerr and Jellyseerr merged into **Seerr** in 2026. Starboard recognises all three, by name or by their
+  container image, so an older Overseerr or Jellyseerr works as before.
 
 ## Steps
 

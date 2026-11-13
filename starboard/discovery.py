@@ -93,6 +93,9 @@ KEY_DATABASES = {
                        "SELECT token FROM users WHERE type = 'root' AND token IS NOT NULL AND length(token) >= 20 LIMIT 1"),
 }
 READABLE = set(KEY_FILES) | set(KEY_DATABASES) | {"nzbget", "tdarr"}
+# Container names an app may have besides its key: Seerr is still often named after Overseerr or Jellyseerr, which
+# merged into it in 2026 (the same API, settings file and port).
+OWN_NAMES = {"seerr": ("seerr", "jellyseerr", "overseerr")}
 
 TIMEOUT = 2.5
 
@@ -176,7 +179,7 @@ def search(services):
             already = port in have_ports or re.sub(r"[^a-z0-9]", "", name.lower()) in have_names or \
                 (kind != "link" and kind in have_kinds)
             # The app's own container: one named after it (an app behind a VPN publishes its port through the VPN's).
-            own = next((n for n in all_names if re.sub(r"[^a-z0-9]", "", n.lower()) == re.sub(r"[^a-z0-9]", "", key)), "") or \
+            own = next((n for n in all_names if re.sub(r"[^a-z0-9]", "", n.lower()) in OWN_NAMES.get(key, (key,))), "") or \
                 docker_names.get(port, "")
             out.append({"key": key, "name": name, "type": kind, "url": f"http://127.0.0.1:{port}", "port": port,
                         "needs_key": needs_key, "background": background, "container": own,

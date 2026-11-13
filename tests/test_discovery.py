@@ -124,6 +124,17 @@ class DiscoveryTest(unittest.TestCase):
             have = [{"name": "Sonarr", "type": "sonarr", "url": f"http://127.0.0.1:{self.port}"}]
             self.assertTrue(discovery.search(have)["items"][0]["already"])
 
+    def test_a_seerr_named_after_jellyseerr_or_overseerr_is_its_own_container(self):
+        # Overseerr and Jellyseerr merged into Seerr (DASH-405): a container still named after either is Seerr's own
+        for name in ("jellyseerr", "overseerr", "seerr"):
+            fake = {"seerr": discovery.CATALOGUE["seerr"][:2] + ([self.port],) + discovery.CATALOGUE["seerr"][3:]}
+            docker = [{"Names": [f"/{name}"], "Ports": []}, {"Names": ["/gluetun"], "Ports": [{"PublicPort": self.port, "IP": "0.0.0.0"}]}]
+            with mock.patch.object(discovery, "CATALOGUE", fake), mock.patch.object(discovery, "_probe", lambda port: ["seerr"]), \
+                    mock.patch.object(discovery.containers, "available", lambda: True), \
+                    mock.patch.object(discovery.containers, "docker", lambda *a, **k: docker):
+                found = discovery.search([])["items"]
+            self.assertEqual([(i["key"], i["name"], i["container"], i["can_read_key"]) for i in found], [("seerr", "Seerr", name, True)])
+
     def test_keys_are_read_only_from_safe_container_names(self):
         with mock.patch.object(discovery.containers, "available", lambda: True):
             self.assertIsNone(discovery.read_key("sonarr", "../etc"))
