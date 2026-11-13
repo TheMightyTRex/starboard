@@ -13,7 +13,6 @@ Its settings come from /run/starboard/settings.json (Settings, Plug-ins, Live TV
 import http.server
 import json
 import os
-import re
 import threading
 import time
 
@@ -456,7 +455,7 @@ def sources_screen(said=""):
                                     "value": "" if not has or x["guide"].startswith("file:") else x["guide"]}} if is_list else {})})
     out = {"type": "list", "title": "Lists and guides", "items": rows, "notices": livetv_own.notices(DATA),
            "add": {"label": "Add a list or guide", "placeholder": "https://example.com/channels.m3u",
-                   "hint": "The address of an M3U playlist, a JSON channel list or an XMLTV guide (.xml or .xml.gz).",
+                   "hint": "The address of an M3U playlist, a JSON channel list or an XMLTV guide (.xml or .xml.gz). Live TV is for a short, chosen list: up to 2,000 channels each.",
                    "file": {"label": "Or choose a file", "accept": ".m3u,.m3u8,.json,.xml,.gz",
                             "hint": "An M3U, JSON or XMLTV file from this computer, up to 60 MB. Starboard keeps a copy."}},
            "intro": (f"{sum(1 for r in rows if r['on'])} of {len(rows)} active. Channels from your lists are tested, then go into "
@@ -481,7 +480,7 @@ def _added(item):
     """A list just added is tested at once on its own, with its progress on the screen (DASH-359); a guide is read."""
     from . import livetv_own
     if item["kind"] == "list":
-        found = int((re.match(r"\d+", item.get("said") or "") or [0])[0] or 0)
+        found = int(item.get("found") or 0)
         livetv_own._update(DATA, item["id"], progress={"done": 0, "total": found})  # the notice shows at once
         threading.Thread(target=_quick, args=(item["id"],), name="livetv-add", daemon=True).start()
         return sources_screen(f"Channel list added: {item['said']}. Testing them now; this page shows how far it has got")
