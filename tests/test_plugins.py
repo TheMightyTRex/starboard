@@ -33,6 +33,23 @@ class PluginsTest(unittest.TestCase):
         self.assertEqual(plugins.key_scopes(ON_DEMAND), ["media"])
         self.assertEqual([p["risk"] for p in plugins.permission_words(ON_DEMAND)], ["medium", "medium", "high"])
 
+    def test_an_unknown_filled_value_is_found_quickly(self):
+        import copy
+        import time
+
+        def env(value):
+            m = copy.deepcopy(ON_DEMAND)
+            m["containers"][1]["env"] = {"X": value}
+            return [p for p in plugins.check(m) if "Starboard does not know" in p]
+
+        self.assertEqual(env("{secret:token} at {jellyfin:url} with {jellyfin:key}"), [])  # all filled in: fine
+        self.assertEqual(env("plain {secret value"), [])  # no closing }, as before
+        self.assertEqual(len(env("{secret-token}")), 1)
+        self.assertEqual(len(env("{jellyfin:address} {secret:ok}")), 1)
+        start = time.monotonic()
+        self.assertEqual(env("{secret" * 30000), [])  # backtracked for seconds before (code scanning #53)
+        self.assertLess(time.monotonic() - start, 0.5)
+
     def test_bad_manifests_say_what_is_wrong(self):
         bad = {**ON_DEMAND, "privileged": True, "id": "On Demand!", "starboard_api": ">=2.0"}
         problems = plugins.check(bad)

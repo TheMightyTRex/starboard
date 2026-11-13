@@ -55,6 +55,14 @@ INSIDE = r"^/(?!run/starboard(/|$))(?!.*(^|/)\.\.(/|$))[A-Za-z0-9._/-]{1,100}$"
 DATA_AT = r"^data(/[a-z0-9][a-z0-9._-]{0,39})?:(/[A-Za-z0-9._/-]{1,100})$"
 FILLED = re.compile(r"\{(secret:[a-z][a-z0-9_]{0,29}|jellyfin:url|jellyfin:key)\}")
 MAX_PIDS, MAX_TMPFS = 1024, 6
+
+
+def _unknown_hole(text):
+    """True when a {secret...} or {jellyfin...} is left that Starboard does not fill in: one is there when a } comes
+    after the first {secret or {jellyfin. Looked at once, from the start, so a long value of "{secret{secret..." is
+    no slower to check than a short one (code scanning, 13 November 2026: the pattern it replaces backtracked)."""
+    starts = [i for i in (text.find("{secret"), text.find("{jellyfin")) if i >= 0]
+    return bool(starts) and "}" in text[min(starts):]
 # Plug-ins that ship inside Starboard (plugins/<id>/ in its own folder): they may run Starboard's own image
 # ("image": "starboard") with a command, and Live TV may use the Live TV folder the installer gave ("iptv").
 BUILTIN_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "plugins")
@@ -223,7 +231,7 @@ def check(manifest, dev=False, builtin=False):
                 for hole in FILLED.findall(str(v)) if isinstance(v, str) else []:
                     if hole.startswith("jellyfin:") and "jellyfin:key" not in perms:
                         out.append(f"{where}: env {k} uses {{{hole}}}, which needs the permission jellyfin:key")
-                if isinstance(v, str) and re.search(r"\{(secret|jellyfin)[^}]*\}", FILLED.sub("", v)):
+                if isinstance(v, str) and _unknown_hole(FILLED.sub("", v)):
                     out.append(f"{where}: env {k} has a {{...}} Starboard does not know; use {{secret:name}}, {{jellyfin:url}} or {{jellyfin:key}}")
         user = c.get("user")
         if user == "media":  # API 1.12 (DASH-410): the media folder's owner, so files it adds belong to the person
