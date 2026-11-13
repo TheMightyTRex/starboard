@@ -14,7 +14,7 @@ function odRow(it) {
     ? (it.href ? el("a", { class: "btn btn--quiet btn--compact", href: it.href }, icon("library"), "In your library") : chip("In your library", "success"))
     : el("button", { type: "button", class: "btn btn--compact", onclick: (e) => odWant(it, e.currentTarget), disabled: !it.key },
       icon("plus"), "Add to wanted", el("span", { class: "visually-hidden", text: ` ${it.title}` }));
-  const forget = el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: (e) => odForget(it, e.currentTarget) },
+  const forget = el("button", { type: "button", class: "btn btn--quiet btn--compact btn--danger", onclick: (e) => odForget(it, e.currentTarget) },
     icon("x"), "Remove", el("span", { class: "visually-hidden", text: ` ${it.title} from the history` }));
   const cover = el("div", { class: "cover cover--result", "aria-hidden": "true" },
     it.poster ? el("img", { src: it.poster, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }) : el("span", { class: "lib-cover-title", text: it.title }));
@@ -44,7 +44,7 @@ async function odWant(it, button) {
 }
 
 async function odForget(it, button) {
-  const ok = await confirmDialog({ title: `Remove ${it.title} from the history?`, confirm: "Remove",
+  const ok = await confirmDialog({ title: `Remove ${it.title} from the history?`, confirm: "Remove", danger: true,  // R6
     message: "On demand stops keeping it in its library at the next weekly update, unless a catalogue still lists it." });
   if (!ok) return;
   button.disabled = true;

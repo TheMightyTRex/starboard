@@ -525,6 +525,20 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
   };
 }
 
+// A slide-out that asks (DASH-309, R6): as confirmDialog, for a list to check or more than two fields, with the
+// page still in view. Its one primary button and Cancel are in the foot; resolves true for the primary button and
+// false when Cancel, Escape or the close button shut it. Focus goes back to what opened it.
+function slideOutConfirm({ title, body, confirm = "Continue", wide = true, opener = document.activeElement }) {
+  return new Promise((resolve) => {
+    let answered = false;
+    const yes = el("button", { type: "button", class: "btn btn--primary" }, confirm);
+    const no = el("button", { type: "button", class: "btn" }, "Cancel");
+    const panel = sidePanel({ title, wide, opener, body: [body].flat(), foot: [yes, no], onClose: () => { if (!answered) resolve(false); } });
+    yes.addEventListener("click", () => { answered = true; resolve(true); panel.close(); });
+    no.addEventListener("click", () => panel.close());
+  });
+}
+
 // Confirm dialog: a decision that must be made before going on. Says what will happen; resolves true or false.
 // confirmDialog({ title, message: string or [nodes], confirm: "Remove", danger: true, fields: [nodes] })
 function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel", danger = false, fields = [] }) {
