@@ -46,6 +46,46 @@ class LayoutTest(unittest.TestCase):
         self.assertEqual([r["id"] for r in got["rows"]], ["trending", "popular", "soon"])
 
 
+GENRES = [{"id": "genre/movie/35", "title": "Comedy", "genre": True}, {"id": "genre/movie/878", "title": "Science fiction", "genre": True}]
+
+
+class GenreRowsTest(unittest.TestCase):
+    """DASH-395: a row for each genre, in the same list, unticked until the person ticks it."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.data = self.dir.name
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_genre_rows_start_hidden_and_listed_at_the_end(self):
+        self.assertEqual([r["id"] for r in df.arrange(LISTED + GENRES, None)], ["trending", "popular", "soon"])
+        got = df.describe(self.data, LISTED + GENRES, "films")
+        self.assertEqual([(r["id"], r["shown"], r.get("genre", False)) for r in got["rows"]],
+                         [("trending", True, False), ("popular", True, False), ("soon", True, False),
+                          ("genre/movie/35", False, True), ("genre/movie/878", False, True)])
+
+    def test_a_ticked_genre_shows_where_it_is_put(self):
+        listed = LISTED + GENRES
+        df.save_layout(self.data, listed, "films", ["genre/movie/35", "trending", "popular", "soon", "genre/movie/878"], ["genre/movie/878"])
+        saved = df.layout(self.data)["films"]
+        self.assertEqual([r["id"] for r in df.arrange(listed, saved)], ["genre/movie/35", "trending", "popular", "soon"])
+        # A genre Reelix adds later starts hidden, though it is not in the saved hidden list.
+        later = listed + [{"id": "genre/movie/37", "title": "Western", "genre": True}]
+        self.assertNotIn("genre/movie/37", [r["id"] for r in df.arrange(later, saved)])
+        self.assertFalse([r for r in df.describe(self.data, later, "films")["rows"] if r["id"] == "genre/movie/37"][0]["shown"])
+
+    def test_a_layout_saved_before_genre_rows_keeps_them_hidden(self):
+        df.save_layout(self.data, LISTED, "films", ["soon"], ["popular"])
+        saved = df.layout(self.data)["films"]
+        self.assertEqual([r["id"] for r in df.arrange(LISTED + GENRES, saved)], ["soon", "trending"])
+
+    def test_genres_alone_cannot_be_the_last_row_hidden(self):
+        with self.assertRaises(ValueError):
+            df.save_layout(self.data, LISTED + GENRES, "films", [], [r["id"] for r in LISTED + GENRES])
+
+
 class RecentlyAddedWallTest(unittest.TestCase):
     def test_the_wall_follows_what_arrived_then_when_listed(self):
         index = {"items": [{"i": 1, "t": "Brought in long ago", "s": "a", "l": "A", "a": 100, "w": "in_library", "f": []},

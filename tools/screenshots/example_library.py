@@ -280,8 +280,16 @@ def answer(path, q):
                     {"title": "Harbour at Midnight", "year": 2024, "movie_id": None, "tmdb_id": 7998, "has_file": False}],
                  "quality_profile_id": 1, "root_folder_id": 1}]
     # Discover by area (12 November 2026): made-up feeds, so the pages can be shown
-    if path in ("/discover/genres/movie", "/discover/genres/tv"):
-        return [{"id": n, "name": g} for n, g in enumerate(["Action", "Comedy", "Drama", "Family", "Mystery", "Science Fiction"], 1)]
+    if path == "/discover/genres/movie":  # TMDB's film genres, as Reelix passes them on (DASH-395 makes each a row)
+        return [{"id": n, "name": g} for n, g in ((28, "Action"), (12, "Adventure"), (16, "Animation"), (35, "Comedy"), (80, "Crime"),
+                                                   (99, "Documentary"), (18, "Drama"), (10751, "Family"), (14, "Fantasy"), (36, "History"),
+                                                   (27, "Horror"), (10402, "Music"), (9648, "Mystery"), (10749, "Romance"),
+                                                   (878, "Science Fiction"), (10770, "TV Movie"), (53, "Thriller"), (10752, "War"), (37, "Western"))]
+    if path == "/discover/genres/tv":  # TMDB's series genres
+        return [{"id": n, "name": g} for n, g in ((10759, "Action & Adventure"), (16, "Animation"), (35, "Comedy"), (80, "Crime"),
+                                                   (99, "Documentary"), (18, "Drama"), (10751, "Family"), (10762, "Kids"), (9648, "Mystery"),
+                                                   (10763, "News"), (10764, "Reality"), (10765, "Sci-Fi & Fantasy"), (10766, "Soap"),
+                                                   (10767, "Talk"), (10768, "War & Politics"), (37, "Western"))]
     if path == "/discover/genres/radio":  # as Reelix with RFX-93 and 94: shared genres, BBC stations, each source's categories
         genres = [("comedy", "Comedy"), ("drama", "Drama"), ("scifi", "Science fiction and fantasy"), ("crime", "Crime"),
                   ("documentaries", "Documentaries"), ("history", "History"), ("music", "Music")]

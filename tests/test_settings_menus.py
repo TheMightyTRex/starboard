@@ -38,7 +38,7 @@ def parts_of(page):
 
 class SettingsMenusTest(unittest.TestCase):
     WANT = {
-        "General": ["Names and apps", "Appearance", "Pages and lists", "Download hours", "Logs and feedback"],
+        "General": ["Names and apps", "Appearance", "Pages and lists", "Discover rows", "Download hours", "Logs and feedback"],
         "Downloads": ["VPN", "Usenet", "Download hours"],
         "Radio": ["Sources", "Add a show from a link", "Your podcast library", "Station logos"],
         "Performance": ["Preset", "Pictures"],
@@ -65,6 +65,9 @@ class SettingsMenusTest(unittest.TestCase):
                 self.assertTrue(parts, f"{page} has no data-parts")
                 self.assertIn(f"<h1>{label}</h1>", read(WEB, page))
                 for part in parts:
+                    if part.startswith("dr-"):  # Discover rows: a section per area in DISCOVER_AREAS (DASH-396)
+                        self.assertIn(f'["{part[3:]}", ', SCRIPTS.split("const DISCOVER_AREAS = ", 1)[1].split("\n", 1)[0], part)
+                        continue
                     self.assertTrue(re.search(rf'(section|dangerSection|downloadHoursSection)\(\s*"{re.escape(part)}"', SCRIPTS)
                                     or f'"{part}"' in SCRIPTS, f"{page}: no part {part} in the scripts")
                 seen += parts
@@ -101,6 +104,31 @@ class SettingsMenusTest(unittest.TestCase):
         self.assertIn("Appearance", labels)
         self.assertNotIn("Style", labels)
         self.assertIn('"gn-access", "Accessibility"', SCRIPTS)
+
+
+class DiscoverRowsPageTest(unittest.TestCase):
+    """DASH-396 (owner, 13 November 2026: "might need a separate section for each in the settings"): Discover rows is
+    its own level 2 page under General with one section per area, in the Discover menu's order; each Discover page's
+    Change these rows opens its own area's section; old addresses go there."""
+
+    AREAS = ["films", "tv", "music", "radio", "books", "audiobooks"]
+
+    def test_one_section_per_area_in_the_discover_menu_order(self):
+        self.assertEqual(parts_of("settings-general-discover.html"), [f"dr-{a}" for a in self.AREAS])
+        order = [p[0][0].replace("discover-", "").replace(".html", "") for label, _, p in
+                 next(s for s in SHELL.MENU if any(pg[0] == "discover-films.html" for _, _, pages in s[3] for pg in pages))[3]
+                 if p[0][0].replace("discover-", "").replace(".html", "") in self.AREAS]
+        self.assertEqual(order, self.AREAS)
+        self.assertNotIn('id="discover-rows"', read(WEB, "settings-general-lists.html"))
+
+    def test_each_discover_page_opens_its_own_section(self):
+        for area in self.AREAS:
+            self.assertIn(f'href="/settings-general-discover.html#dr-{area}">Change these rows', read(WEB, f"discover-{area}.html"))
+
+    def test_old_addresses_go_to_the_page(self):
+        block = SCRIPTS.split("const MOVED_PARTS = {", 1)[1].split("\n};", 1)[0]
+        self.assertIn('"discover-rows-s": "settings-general-discover.html"', block)
+        self.assertIn("#dr-${area}", SCRIPTS)
 
 
 if __name__ == "__main__":

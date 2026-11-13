@@ -58,6 +58,9 @@ async function startDiscover() {
     picked.replaceChildren(...d.genres.filter((g) => shownGenres.has(g)).map((g) => dRow(g, { open: true })));
     picked.querySelectorAll("h2").forEach((h) => h.setAttribute("tabindex", "-1"));
   };
+  // A genre ticked as a row in Settings (DASH-395) is on the page already, so it has no chip as well.
+  const asRows = new Set(d.rows.map((r) => r.id));
+  d.genres = d.genres.filter((g) => !asRows.has(g.id));
   const chips = d.genres.length ? el("div", { class: "toolbar" }, el("div", { class: "toolbar__row" },
     el("div", { class: "filter-chips discover-genres", role: "group", "aria-label": "Genres" },
       ...d.genres.map((g) => {

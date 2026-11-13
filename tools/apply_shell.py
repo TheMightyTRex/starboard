@@ -77,6 +77,8 @@ MENU = [
         ("General", "sliders-horizontal", [("settings-general.html", "Names and apps", "tags"),
                                            ("settings-general-appearance.html", "Appearance", "sun"),
                                            ("settings-general-lists.html", "Pages and lists", "list"),
+                                           # DASH-396: one section per Discover area, so its own page (topic tabs)
+                                           ("settings-general-discover.html", "Discover rows", "compass"),
                                            ("settings-general-hours.html", "Download hours", "clock"),
                                            ("settings-general-logs.html", "Logs and feedback", "scroll-text")]),
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
@@ -171,6 +173,7 @@ HELP = {
     "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
     "settings-general-appearance.html": ("topics/display-and-accessibility.md", "the look, colours and accessibility"),
     "settings-general-lists.html": ("topics/coming-up.md", "what Coming up and the lists show"),
+    "settings-general-discover.html": ("topics/search-and-add.md", "Discover's rows and adding films, series, music, radio and books"),
     "settings-general-hours.html": ("topics/set-download-hours.md", "setting download hours"),
     "settings-general-logs.html": ("topics/read-the-log.md", "reading the log and reporting a problem"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),

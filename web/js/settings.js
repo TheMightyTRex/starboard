@@ -98,11 +98,14 @@ function onlyParts(holder, nodes) {
 // query and anchor. Page: { part or old anchor: its page now }.
 const MOVED_PARTS = {
   "/settings-general.html": Object.fromEntries([
-    ...["gn-up", "coming-up", "gn-scroll", "library-views", "library-views-s", "discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-lists.html"]),
+    ...["gn-up", "coming-up", "gn-scroll", "library-views", "library-views-s"].map((k) => [k, "settings-general-lists.html"]),
+    ...["discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-discover.html"]),
     ...["gn-dh", "download-hours"].map((k) => [k, "settings-general-hours.html"]),
     ...["gn-logs", "logs", "gn-test", "testing", "feedback-list"].map((k) => [k, "settings-general-logs.html"]),
     ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
   ]),
+  // DASH-396: Discover rows is its own page, a section per area.
+  "/settings-general-lists.html": { "discover-rows": "settings-general-discover.html", "discover-rows-s": "settings-general-discover.html" },
   "/settings-downloads.html": { "dl-usenet": "settings-downloads-usenet.html", "dl-hours": "settings-downloads-hours.html" },
   "/settings-radio.html": { "radio-link": "settings-radio-link.html", "radio-library": "settings-radio-library.html", "radio-logos": "settings-radio-logos.html" },
   "/settings-performance.html": { "pf-pictures": "settings-performance-pictures.html", "pf-danger": "settings-performance-pictures.html" },
@@ -113,7 +116,10 @@ function followMovedPart(path = location.pathname, hash = location.hash, search 
   const moved = MOVED_PARTS[path];
   if (!moved) return null;
   let to = moved[decodeURIComponent(hash.slice(1)).replace(/-h$/, "")];
-  if (!to && path === "/settings-general.html" && new URLSearchParams(search).has("discover")) to = "settings-general-lists.html";
+  const area = new URLSearchParams(search).get("discover");
+  if (!to && area && ["/settings-general.html", "/settings-general-lists.html"].includes(path)) to = "settings-general-discover.html";
+  // ?discover=tv#discover-rows-s, Discover's old link, opens that area's section (DASH-396).
+  if (to === "settings-general-discover.html") return `/${to}${/^[a-z]{2,12}$/.test(area || "") ? `#dr-${area}` : ""}`;
   return to ? `/${to}${search}${hash}` : null;
 }
 {

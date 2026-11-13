@@ -9,6 +9,12 @@ add features.
 
 ### Added
 
+- Settings, General, Discover rows is its own page on the level 2 menu, with a section for each area of Discover
+  (Films, TV, Music, Radio, Books and Audiobooks), each with its own rows, ticks, Move up and Move down, and Put back
+  the standard rows. Only the area shown asks Reelix for its rows. Each Discover page's Change these rows opens its own
+  area, and old links still work. Discover, Radio offers a row for each genre every radio source shares (such as
+  Comedy), unticked until chosen, fetched when it comes into view and kept for an hour. Books and Audiobooks already
+  offer every subject Reelix has (nine); Music has no genres in Reelix yet (DASH-396).
 - Settings, Radio, Performance and Security have their parts on the level 2 menu: Radio's Sources, Add a show from a
   link, Your podcast library and Station logos; Performance's Preset and Pictures; Security's Who can open the
   dashboard, Password, API keys and Sign out everywhere. Each page asks only for what it shows (Radio asks Reelix for

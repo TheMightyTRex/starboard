@@ -5,6 +5,13 @@ called from Starboard. Each row is fetched when the page shows it and kept for a
 you already have it, so Add is only offered for what you do not.
 
   GET /api/library/discover?tab=films           the rows (and genres for films and TV)
+
+Films and TV also offer a row for each of TMDB's genres (DASH-395, owner, 13 November 2026: "For discover rows - I
+want to add more options - like comedy, sci fi etc."). They come from the same genre list as the chips, start
+unticked in Settings, and, like every row, are asked for only when the page shows them and kept for an hour.
+Radio does the same with the genres every radio source shares (DASH-396, owner, 13 November 2026: "Do you have the
+same options for TV, books, audio books and Radio"). Books and audiobooks have every subject Reelix offers already
+(Reelix allows only its nine Open Library subjects, BOOK_DISCOVER_ROWS); music has no genre source in Reelix.
   GET /api/library/discover-row?tab=films&row=  one row's cards
   GET /api/library/discover-radio-search?q=&stations=1&feeds=1  radio search across every source (DASH-339)
 """
@@ -37,13 +44,24 @@ def _api(reelix, path, params=None):
                            lambda: services._api(reelix, path, params, timeout=25))
 
 
+def tidy(name):
+    """TMDB's genre names in sentence case, without ampersands: "Science Fiction" is Science fiction, "Sci-Fi &
+    Fantasy" is Sci-fi and fantasy, "TV Movie" keeps TV."""
+    words = str(name or "").replace("&", "and").split()
+    keep = lambda w: w.isupper() and len(w) > 1  # noqa: E731  (TV, not a)
+    return " ".join([w if keep(w) else w[:1].upper() + w[1:].lower() for w in words[:1]] + [w if keep(w) else w.lower() for w in words[1:]])
+
+
 def rows(reelix, tab):
-    """The page's rows; films and TV also get their genres, radio its categories."""
+    """The page's rows; films and TV also get their genres (as chips, and as rows that start hidden), radio its
+    categories."""
     if tab in ("films", "tv"):
-        genres = _api(reelix, f"/discover/genres/{'movie' if tab == 'films' else 'tv'}") or []
-        return {"rows": [{"id": r, "title": t} for r, t in ROWS[tab]],
-                "genres": [{"id": f"genre/{'movie' if tab == 'films' else 'tv'}/{int(g['id'])}", "title": str(g.get("name") or "")}
-                           for g in genres if isinstance(g, dict) and str(g.get("id", "")).isdigit()]}
+        kind = "movie" if tab == "films" else "tv"
+        got = _api(reelix, f"/discover/genres/{kind}") or []
+        genres = [{"id": f"genre/{kind}/{int(g['id'])}", "title": tidy(g.get("name"))}
+                  for g in got if isinstance(g, dict) and str(g.get("id", "")).isdigit() and g.get("name")]
+        genres.sort(key=lambda g: g["title"].lower())
+        return {"rows": [{"id": r, "title": t} for r, t in ROWS[tab]] + [dict(g, genre=True) for g in genres], "genres": genres}
     if tab == "radio":
         # DASH-339: the shared genres (every source at once) as chips, the BBC's stations in a picker by group,
         # and each source's own categories under More categories (Reelix RFX-93, 94).
@@ -54,7 +72,10 @@ def rows(reelix, tab):
         shared = [c for c in cats if c["id"].startswith("all-genre-")]
         stations = [c for c in cats if c["group"].startswith("BBC stations")]
         more = [c for c in cats if c not in shared and c not in stations]
-        return {"rows": clean(got.get("rows")), "genres": shared or more, "stations": stations, "more": more if shared else []}
+        # DASH-396: each shared genre is also a row, unticked until chosen in Settings, as films' genres are. Only the
+        # shared ones (one list for every source); a source's own categories stay under More categories.
+        genre_rows = [{"id": c["id"], "title": c["title"], "genre": True} for c in sorted(shared, key=lambda c: c["title"].lower())]
+        return {"rows": clean(got.get("rows")) + genre_rows, "genres": shared or more, "stations": stations, "more": more if shared else []}
     if tab in ROWS:
         return {"rows": [{"id": r, "title": t} for r, t in ROWS[tab]], "genres": []}
     raise ValueError("Choose a Library tab")
@@ -76,22 +97,32 @@ def layout(data_dir):
         return {}
 
 
+def _hidden(listed, saved):
+    """The rows not to show: those saved as hidden, and a genre row (DASH-395) until it is ticked. A ticked row is in
+    the saved order and not hidden, so a genre Reelix adds later starts hidden too."""
+    saved = saved or {}
+    order = set(x for x in saved.get("order") or [] if isinstance(x, str))
+    return set(saved.get("hidden") or []) | {r["id"] for r in listed if r.get("genre") and r["id"] not in order}
+
+
+def _ordered(listed, saved):
+    order = [x for x in (saved or {}).get("order") or [] if isinstance(x, str)]
+    rank = {rid: n for n, rid in enumerate(order)}
+    return sorted(listed, key=lambda r: (r["id"] not in rank, rank.get(r["id"], 0)))
+
+
 def arrange(listed, saved):
     """The rows in the saved order (rows not saved keep their place at the end), without the hidden ones."""
-    saved = saved or {}
-    order = [x for x in saved.get("order") or [] if isinstance(x, str)]
-    hidden = set(saved.get("hidden") or [])
-    rank = {rid: n for n, rid in enumerate(order)}
-    rows_ = sorted(listed, key=lambda r: (r["id"] not in rank, rank.get(r["id"], 0)))
-    return [r for r in rows_ if r["id"] not in hidden]
+    hidden = _hidden(listed, saved)
+    return [r for r in _ordered(listed, saved) if r["id"] not in hidden]
 
 
 def describe(data_dir, listed, tab):
     """Settings' view of one area: every row with whether it shows, in the order the page shows them."""
     saved = layout(data_dir).get(tab) or {}
-    hidden = set(saved.get("hidden") or [])
-    shown_order = arrange(listed, {"order": saved.get("order")})
-    return {"tab": tab, "rows": [{"id": r["id"], "title": r["title"], "shown": r["id"] not in hidden} for r in shown_order],
+    hidden = _hidden(listed, saved)
+    return {"tab": tab, "rows": [dict({"id": r["id"], "title": r["title"], "shown": r["id"] not in hidden}, **({"genre": True} if r.get("genre") else {}))
+                                 for r in _ordered(listed, saved)],
             "changed": bool(saved)}
 
 

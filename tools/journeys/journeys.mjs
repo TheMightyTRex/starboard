@@ -23,6 +23,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "settings-dispatcharr.html",  // Settings, Apps, Dispatcharr (DASH-228)
   // General's level 2 pages (DASH-389)
   "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-logs.html",
+  "settings-general-discover.html", "discover-tv.html", "discover-books.html",  // Discover rows, a section per area (DASH-396)
   // Downloads' level 2 pages (DASH-390)
   "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
@@ -758,8 +759,8 @@ check("DISP-04", "focus goes to the Channels heading, not the top of the page", 
 console.log("\n== MENU2 General on the level 2 menu");
 const level2 = async (p) => { await open(p); return (await page.locator(".site-header__tabs .menu-tabs a").evaluateAll((as) => as.map((a) => a.textContent.trim()))).join("|"); };
 const headings = () => page.locator("main .settings-sections h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()).join("|"));
-check("MENU2-01", "General has Names and apps, Appearance, Pages and lists, Download hours, Logs and feedback",
-  (await level2("settings-general.html")) === "Names and apps|Appearance|Pages and lists|Download hours|Logs and feedback", await level2("settings-general.html"));
+check("MENU2-01", "General has Names and apps, Appearance, Pages and lists, Discover rows, Download hours, Logs and feedback",
+  (await level2("settings-general.html")) === "Names and apps|Appearance|Pages and lists|Discover rows|Download hours|Logs and feedback", await level2("settings-general.html"));
 check("MENU2-01", "each page shows only its own parts", (await headings()) === "Names|Categories|App cards|Set-up guide", await headings());
 await open("settings-general-appearance.html");
 check("MENU2-02", "Appearance holds style and colours, the default design and accessibility", (await headings()) === "Style and colours|Default design|Accessibility", await headings());
@@ -776,7 +777,7 @@ await page.waitForTimeout(300);
 check("MENU2-02", "and a change in Display shows on the page", !(await page.locator("#ap-pref-underline").isChecked()));
 for (const [from, to] of [["settings-general.html#download-hours", "/settings-general-hours.html#download-hours"],
   ["settings-general.html#gn-style-h", "/settings-general-appearance.html#gn-style-h"], ["settings-general.html#logs", "/settings-general-logs.html#logs"],
-  ["settings-general.html?discover=films#discover-rows-s", "/settings-general-lists.html?discover=films#discover-rows-s"]]) {
+  ["settings-general.html?discover=films#discover-rows-s", "/settings-general-discover.html#dr-films"]]) {
   await open("index.html");
   await open(from);
   const at = await page.evaluate(() => location.pathname + location.search + location.hash);
@@ -874,6 +875,98 @@ check("WN-05", "Got it hides it and puts focus on the State heading",
   !(await page.locator("#pl-styles-whats-new").count()) && await page.evaluate(() => document.activeElement.id) === "pl-styles-state-h");
 await open("settings-plugin.html?id=styles");
 check("WN-05", "Got it is kept on the server: it is not shown again", !(await page.locator("#pl-styles-whats-new").count()));
+// DASH-395: a row for each genre in Settings' Discover rows, unticked until ticked, then on the Discover page as a
+// row (fetched when shown) and no longer as a chip. DASH-396: each area is its own section on Discover rows.
+console.log("\n== GEN Genre rows");
+await api("/api/library/discover-layout?tab=films", { method: "DELETE" });
+await open("settings-general-discover.html#dr-films");
+await page.locator("#dr-films-list").waitFor({ timeout: 10000 });
+const genreTicks = await page.locator("#dr-films-list li").evaluateAll((ls) => ls.map((l) => ({
+  id: l.dataset.value, on: l.querySelector("input").checked, words: l.querySelector("label").textContent })));
+check("GEN-01", "Films lists the genres after the standard rows, unticked", genreTicks.length > 15
+  && genreTicks.slice(0, 5).every((r) => r.on && !r.id.startsWith("genre/")) && genreTicks.slice(5).every((r) => !r.on && r.id.startsWith("genre/")),
+  JSON.stringify(genreTicks.slice(0, 7)));
+check("GEN-01", "in sentence case, and said to be a genre", genreTicks.some((r) => r.words === "Science fiction (genre)"), genreTicks.map((r) => r.words).join(", "));
+await page.check("#dr-films-row-genre-movie-35");
+await page.waitForTimeout(600);
+await page.check("#dr-films-row-genre-movie-878");
+await page.waitForTimeout(600);
+check("GEN-02", "ticking a genre saves it and says Saved, with focus left on the tick",
+  /Saved/.test(await page.locator("#dr-films-saved").textContent()) && await page.evaluate(() => document.activeElement.id) === "dr-films-row-genre-movie-878");
+await open("discover-films.html");
+await page.locator(".discover-row h2", { hasText: /^Comedy$/ }).waitFor({ timeout: 10000 });
+const heads = await page.locator("#discover-rows > .discover-row h2").allTextContents();
+check("GEN-03", "Discover, Films shows the two ticked genres as rows, after the standard rows", heads.slice(-2).join(",") === "Comedy,Science fiction", heads.join(", "));
+check("GEN-03", "and they are no longer chips", (await page.locator(".discover-genres .filter-chip", { hasText: /^(Comedy|Science fiction)$/ }).count()) === 0
+  && (await page.locator(".discover-genres .filter-chip", { hasText: /^Western$/ }).count()) === 1);
+await page.locator(".discover-row", { hasText: "Science fiction" }).scrollIntoViewIfNeeded();
+await page.locator(".discover-row", { hasText: "Science fiction" }).locator(".discover-card").first().waitFor({ timeout: 10000 });
+check("GEN-03", "a genre row loads its covers when it comes into view", (await page.locator(".discover-row", { hasText: "Science fiction" }).locator(".discover-card").count()) > 0);
+check("GEN-04", "the TV list has its own genres, all unticked",
+  (await api("/api/library/discover-layout?tab=tv")).rows.filter((r) => r.genre).every((r) => !r.shown));
+await api("/api/library/discover-layout?tab=films", { method: "DELETE" });
+
+// DASH-396 (owner, 13 November 2026: "Do you have the same options for TV, books, audio books and Radio - might need a
+// separate section for each in the settings"): Discover rows has a section per area; with topic tabs, only the area
+// shown asks Reelix; each Discover page opens its own section; Radio offers its shared genres as rows.
+console.log("\n== DR Discover rows by area");
+await open("settings-general-discover.html");
+check("DR-01", "Discover rows has a section for each area, in the Discover menu's order",
+  (await headings()) === "Films|TV|Music|Radio|Books|Audiobooks", await headings());
+await page.evaluate(() => localStorage.removeItem("starboard.topic-tabs"));
+const asked = [];
+const askedFor = (r) => { const m = r.url().match(/discover-layout\?tab=(\w+)/); if (m) asked.push(m[1]); };
+page.on("request", askedFor);
+await open("discover-tv.html");
+await page.click("text=Change these rows");
+await page.locator("#dr-tv-list").waitFor({ timeout: 10000 });
+await page.waitForTimeout(500);
+check("DR-02", "Discover, TV's Change these rows opens TV's section, with its tab chosen",
+  await page.evaluate(() => location.pathname + location.hash) === "/settings-general-discover.html#dr-tv"
+  && (await page.locator("#topic-tabs [aria-selected=true]").textContent()) === "TV" && await page.locator("#dr-films").isHidden(),
+  await page.evaluate(() => location.pathname + location.hash));
+check("DR-02", "and only TV's rows were asked for", asked.join(",") === "tv", asked.join(","));
+await page.click("#topic-tabs [role=tab] >> text=Radio");
+await page.locator("#dr-radio-list").waitFor({ timeout: 10000 });
+check("DR-02", "choosing the Radio tab asks for Radio's rows then", asked.join(",") === "tv,radio", asked.join(","));
+page.off("request", askedFor);
+await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
+for (const [from, to] of [["settings-general-lists.html?discover=radio#discover-rows-s", "/settings-general-discover.html#dr-radio"],
+  ["settings-general-lists.html#discover-rows-s", "/settings-general-discover.html"], ["settings-general-discover.html?discover=books", "/settings-general-discover.html#dr-books"]]) {
+  await open("index.html");
+  await open(from);
+  const at = await page.evaluate(() => location.pathname + location.search + location.hash);
+  check("DR-03", `the old address ${from} opens its area`, at === to, at);
+}
+await api("/api/library/discover-layout?tab=radio", { method: "DELETE" });
+await open("settings-general-discover.html#dr-radio");
+await page.locator("#dr-radio-list").scrollIntoViewIfNeeded();
+await page.locator("#dr-radio-list").waitFor({ timeout: 10000 });
+const radioTicks = await page.locator("#dr-radio-list li").evaluateAll((ls) => ls.map((l) => ({ id: l.dataset.value, on: l.querySelector("input").checked })));
+check("DR-04", "Radio lists its shared genres after its rows, unticked", radioTicks.length > 4
+  && radioTicks.filter((r) => r.id.startsWith("all-genre-")).every((r) => !r.on) && radioTicks.filter((r) => !r.id.startsWith("all-genre-")).every((r) => r.on),
+  JSON.stringify(radioTicks));
+await page.check("#dr-radio-row-all-genre-comedy");
+await page.waitForTimeout(600);
+check("DR-04", "ticking Comedy saves it", /Saved/.test(await page.locator("#dr-radio-saved").textContent()));
+await open("discover-radio.html");
+const radioHeads = await page.locator("#discover-rows > .discover-row h2").allTextContents();
+check("DR-05", "Discover, Radio shows Comedy as a row, and not as a chip", radioHeads.includes("Comedy")
+  && (await page.locator(".discover-genres .filter-chip", { hasText: /^Comedy$/ }).count()) === 0
+  && (await page.locator(".discover-genres .filter-chip", { hasText: /^Drama$/ }).count()) === 1, radioHeads.join(", "));
+await page.locator(".discover-row", { hasText: "Comedy" }).scrollIntoViewIfNeeded();
+await page.locator(".discover-row", { hasText: "Comedy" }).locator(".discover-card").first().waitFor({ timeout: 10000 });
+check("DR-05", "the Comedy row loads its shows when it comes into view", (await page.locator(".discover-row", { hasText: "Comedy" }).locator(".discover-card").count()) > 0);
+await open("settings-general-discover.html#dr-radio");
+await page.locator("#dr-radio-reset").scrollIntoViewIfNeeded();
+await page.click("#dr-radio-reset");
+await page.waitForTimeout(600);
+check("DR-05", "Put back the standard rows unticks Comedy again and says so",
+  /Standard rows put back/.test(await page.locator("#dr-radio-saved").textContent()) && !(await page.locator("#dr-radio-row-all-genre-comedy").isChecked()));
+const books = await api("/api/library/discover-layout?tab=books");
+check("DR-06", "Books has Trending and Reelix's nine subjects, all standard rows that show",
+  books.rows.length === 10 && books.rows.every((r) => r.shown && !r.genre), books.rows.map((r) => r.id).join(","));
+check("DR-06", "Music has no genre rows (Reelix has no music genres)", (await api("/api/library/discover-layout?tab=music")).rows.every((r) => !r.genre));
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
