@@ -338,7 +338,9 @@ reelix_tokens() {
   local note=data/stack/reelix-setup.json token="" qb="" i
   [ -s "$note" ] || return 0
   for i in $(seq 1 40); do
-    token="$(docker logs reelix 2>&1 | grep -o 'setup token: [A-Za-z0-9_-]*' | tail -n 1 | awk '{print $NF}')"
+    # Either of Reelix's ways of writing it: its start-up banner (setup token: X) or a later line (setup_token=X),
+    # with any colour codes taken out first, as Starboard reads it (reelix_setup._TOKEN, DASH-96).
+    token="$(docker logs reelix 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -oE 'setup[ _]token[:=] ?[A-Za-z0-9_-]{8,200}' | tail -n 1 | sed -E 's/^setup[ _]token[:=] ?//')"
     [ -n "$token" ] && break
     sleep 3
   done
