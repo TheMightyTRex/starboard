@@ -596,7 +596,7 @@ def _card(tab, e):
             "poster": f"/api/library/poster?tab={tab}&id={e['i']}" if e.get("p") else ""}
 
 
-def wall(index, tab, q="", chip="", sort="az", group="", offset=0, limit=40, until="", by=""):
+def wall(index, tab, q="", chip="", sort="az", group="", offset=0, limit=40, until="", by="", arrived=None):
     """One page of a wall: the covers, the letters there are, the chips with counts and how many match."""
     items = index["items"]
     total = len(items)
@@ -612,8 +612,9 @@ def wall(index, tab, q="", chip="", sort="az", group="", offset=0, limit=40, unt
     counts = {key: sum(1 for e in items if key in e["f"]) for key, _ in CHIPS.get(tab, [])}
     if chip:
         items = [e for e in items if chip in e["f"]]
-    if sort == "added":
-        items = sorted(items, key=lambda e: -(e.get("a") or 0))
+    if sort == "added":  # what arrived last (Reelix's imports), then when Reelix listed it (DASH-303), as Search's start
+        arrived = arrived or {}
+        items = sorted(items, key=lambda e: -max(arrived.get((tab, e["i"]), 0), e.get("a") or 0))
     elif sort == "year":
         items = sorted(items, key=lambda e: -(int(e.get("y") or 0)))
     letters = sorted({e["l"] for e in items}) if sort == "az" else []
@@ -1549,7 +1550,7 @@ def handle(h, method, path):
         until = q.get("until", "") if re.match(r"^[A-Z#]$", q.get("until", "")) else ""
         out = wall(index, tab, q.get("q", "")[:120], q.get("chip", ""), sort, q.get("group", "")[:200],
                    _int(q.get("offset"), 0, 0, 10 ** 6), _int(q.get("limit"), 40, 1, WALL_MAX), until,
-                   "authors" if q.get("by") == "authors" else "")
+                   "authors" if q.get("by") == "authors" else "", arrived=_arrivals(reelix) if sort == "added" else None)
         with _state_lock:
             out["error"] = _state["errors"].get(tab, "")
             out["refreshing"] = tab in _building
@@ -1585,9 +1586,27 @@ def handle(h, method, path):
     if path == "/api/library/discover" and method == "GET":  # Discover by area (12 November 2026)
         from . import discover_feeds
         try:
-            return h.json(200, discover_feeds.rows(reelix, tab))
+            out = discover_feeds.rows(reelix, tab)
         except services.ServiceError as e:
             return h.error(502, f"Reelix did not answer: {e}")
+        out["rows"] = discover_feeds.arrange(out["rows"], discover_feeds.layout(data_dir).get(tab))  # DASH-303
+        return h.json(200, out)
+    if path == "/api/library/discover-layout":  # DASH-303: which rows Discover shows and their order, in Settings
+        from . import discover_feeds
+        try:
+            listed = discover_feeds.rows(reelix, tab)["rows"]
+        except services.ServiceError as e:
+            return h.error(502, f"Reelix did not answer: {e}")
+        try:
+            if method == "GET":
+                return h.json(200, discover_feeds.describe(data_dir, listed, tab))
+            if method == "POST":
+                b = h.body()
+                return h.json(200, discover_feeds.save_layout(data_dir, listed, tab, b.get("order"), b.get("hidden")))
+            if method == "DELETE":
+                return h.json(200, discover_feeds.reset_layout(data_dir, listed, tab))
+        except ValueError as e:
+            return h.error(400, str(e))
     if path == "/api/library/discover-row" and method == "GET":
         from . import discover_feeds
         try:
