@@ -285,6 +285,30 @@ if (await chTab.count() && await page.locator('[data-menu="in:samsung"]').count(
   check("T12", "the back link returns focus to the row that opened it", b12.text === "News" && b12.tag === "BUTTON", `${b12.tag} ${b12.text}`);
 } else console.log("note T12 the example has no Live TV channels");
 
+// T13 Release notes (UX-50): Tab reaches Release notes in the footer; Enter opens the slide-out with focus in it,
+// the newest 3 releases and Read previous releases; Escape closes it and gives focus back to Release notes.
+await page.goto(`${base}/settings-general.html`);
+await settle();
+await page.locator(".site-footer__brand").scrollIntoViewIfNeeded();
+await page.locator(".site-footer__links a").first().focus();
+const notesLink = await tabTo((f) => f.text === "Release notes" && f.tag === "A", 5);
+check("T13", "Tab reaches Release notes in the footer", !!notesLink, notesLink ? notesLink.text : "not reached");
+check("T13", "Release notes says it opens a slide-out", (await page.locator(".site-footer a", { hasText: "Release notes" }).getAttribute("aria-haspopup")) === "dialog");
+await page.keyboard.press("Enter");
+await page.waitForFunction(() => document.querySelectorAll("#side-panel .release-notes").length > 0, null, { timeout: 8000 }).catch(() => {});
+const r1 = await focus();
+check("T13", "Enter opens the release notes with focus in the slide-out", r1.inPanel, r1.text);
+const shownReleases = await page.locator("#side-panel .release-notes").count();
+check("T13", "the slide-out shows the newest 3 releases", shownReleases === 3, `${shownReleases} shown`);
+const prev = page.locator("#side-panel a", { hasText: "Read previous releases" });
+check("T13", "then Read previous releases, to Settings, Updates, Releases", (await prev.count()) === 1 && (await prev.getAttribute("href")) === "/settings-releases.html");
+const reached = await tabTo((f) => f.text === "Read previous releases", 10);
+check("T13", "Tab reaches Read previous releases inside the slide-out", !!reached && reached.inPanel, reached ? reached.text : "not reached");
+await page.keyboard.press("Escape");
+await page.waitForTimeout(400);
+const r2 = await focus();
+check("T13", "Escape closes it and gives focus back to Release notes", r2.text === "Release notes" && !r2.inPanel && !(await page.locator("#side-panel").count()), r2.text);
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

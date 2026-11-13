@@ -38,6 +38,8 @@ add features.
 
 ### Changed
 
+- Release notes: the footer's Release notes link says it opens a slide-out, and a test keeps the slide-out's newest 3
+  releases the same as this changelog's, with their dates (UX-50).
 - Footer: About and updates says Upgrade available, with the update dot, when a newer release is out, as the design
   system's footer sets out; Sign in and Set up have no footer (DASH-104).
 - **The same item for the same job everywhere (DASH-309):** app cards show their state and one more chip at most, with

@@ -712,7 +712,9 @@ function showVersion(version, repo, latest) {
     const link = (href, text, outside) => el("li", {}, outside
       ? el("a", { href, target: "_blank", rel: "noopener noreferrer" }, text, el("span", { class: "visually-hidden", text: " (opens in a new tab)" }))
       : el("a", { href, text }));
-    const notes = el("li", {}, el("a", { href: "#release-notes", onclick: (e) => { e.preventDefault(); openReleaseNotes(e.currentTarget); } }, "Release notes"));
+    // Release notes opens the release notes slide-out (UX-50): focus goes into it, and back here when it closes.
+    const notes = el("li", {}, el("a", { href: "#release-notes", "aria-haspopup": "dialog", "aria-expanded": "false",
+      onclick: (e) => { e.preventDefault(); openReleaseNotes(e.currentTarget); } }, "Release notes"));
     const maker = el("a", { class: "site-footer__maker", href: "https://github.com/TheMightyTRex", rel: "me noopener noreferrer", target: "_blank" });
     maker.innerHTML = MAKER_MARK;  // a fixed string from this file, never from data
     maker.append("TheMightyTRexUK", el("span", { class: "visually-hidden", text: ", on GitHub (opens in a new tab)" }), icon("external-link"));
