@@ -65,6 +65,11 @@ add features.
 
 ### Changed
 
+- The Library keeps a tab's list, already read, for 2 minutes after it was last used, with its titles folded for
+  searching once, instead of reading and parsing the whole file for every page, filter and search. Measured with
+  10,000 films (a 2.7 MB list): a wall page from 99 ms to 14 ms, a search from 172 ms to 13 ms. While kept it holds
+  about 14 MB for that size of library (about 1.5 MB for a library of 1,000), and it is let go 2 minutes after the
+  Library was last used, so an unused Library still costs nothing (DASH-397).
 - The Live TV plug-in's listener checks for a shutdown every 5 seconds instead of twice a second, so an idle plug-in
   wakes the processor about 12 times a minute instead of about 120 (measured on the server: 683 wake-ups in 334
   seconds at rest). Nothing else changes (DASH-397).

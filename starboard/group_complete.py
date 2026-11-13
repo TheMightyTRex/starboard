@@ -167,12 +167,12 @@ def tag_audiobooks(index, all_services):
         for b in s["books"]:
             by_book.setdefault(b["key"], []).append(s["name"])
             by_book.setdefault(b["key"].split("|")[0] + "|", []).append(s["name"])
+    items = []
     for e in index["items"]:
         author = fold((e.get("au") or e.get("m") or "").split(",")[0])
         names = by_book.get(fold(e.get("t")) + "|" + author) or by_book.get(fold(e.get("t")) + "|")
-        if names:
-            e["g"] = sorted(set((e.get("g") or []) + names))
-    return index
+        items.append({**e, "g": sorted(set((e.get("g") or []) + names))} if names else e)
+    return {**{k: v for k, v in index.items() if k != "_folded"}, "items": items}  # the Library's own index is shared
 
 
 # Both ---------------------------------------------------------------------------------------------------------
