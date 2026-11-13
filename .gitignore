@@ -21,3 +21,7 @@ compose.access.yaml
 /smart/
 /pool/
 _site/
+
+# Results the accessibility check writes each run (tools/a11y.sh)
+tools/a11y/a11y.json
+tools/a11y/order.json
