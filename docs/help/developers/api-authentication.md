@@ -39,7 +39,7 @@ A read key gets `403` [`right_needed`](../../api/errors.md#right_needed) there.
 
 No key, whatever its right, can change settings, keys or plug-ins, change the install, take over or roll back,
 restore a backup, use Reelix's admin password, or make Starboard call an address the key gives. Those stay with a
-person signed in to Starboard.
+person signed in to Starboard. Read [What the API covers](api-coverage.md) for every page action and its right.
 
 A key's scopes narrow what it reads and does. A key with no scopes reaches everything its right allows. In
 **Settings**, **Security**, **What it may see**, tick only what the app or script needs. Plug-in keys only read, with
@@ -118,6 +118,7 @@ and removed are written there too. The log never holds a key or a password. It k
 
 - [API quickstart](api-quickstart.md)
 - [API reference](api-reference.md)
+- [What the API covers](api-coverage.md)
 - [List of API errors](../../api/errors.md)
 - [Make an API key and use Starboard's API](../topics/use-starboards-api.md)
 - [How Starboard keeps your server safe](../basics/how-starboard-keeps-you-safe.md)
