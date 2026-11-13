@@ -62,6 +62,17 @@ class Feeds(unittest.TestCase):
         self.assertEqual(radio["key"], "radio:bbc:b006qpgr")
         self.assertTrue(radio["image"])
 
+    def test_books_offer_every_subject_reelix_allows(self, *_):
+        """DASH-396: Reelix allows only its own nine Open Library subjects (BOOK_DISCOVER_ROWS, checked against
+        content_discovery.rs), all standard rows, so books and audiobooks have no genre rows; music has no genre source."""
+        for tab in ("books", "audiobooks"):
+            r = df.rows({}, tab)
+            subjects = [x["id"] for x in r["rows"] if x["id"].startswith("subject-")]
+            self.assertEqual(len(subjects), 9, tab)
+            self.assertFalse(any(x.get("genre") for x in r["rows"]), tab)
+            self.assertEqual(df.arrange(r["rows"], None), r["rows"], f"{tab}: every standard row shows")
+        self.assertEqual(df.rows({}, "music")["genres"], [])
+
     def test_only_known_rows(self, *_):
         for bad in ("../../users", "trending-movies?x=1", "genre/movie/99"):
             with self.assertRaises(ValueError):
@@ -86,6 +97,15 @@ class Radio(unittest.TestCase):
         self.assertEqual([m["id"] for m in r["more"]], ["bbc-category-comedy"])
         # Every one of them can be opened as a row.
         self.assertEqual(df.row.__name__, "row")
+
+    def test_shared_genres_are_rows_too(self, *_):
+        """DASH-396: each shared genre is a row as well, marked as a genre so it starts unticked; a source's own
+        categories and the stations are not rows."""
+        r = df.rows({}, "radio")
+        self.assertEqual([(x["id"], x.get("genre", False)) for x in r["rows"]], [("bbc-popular", False), ("all-genre-comedy", True)])
+        self.assertEqual(df.arrange(r["rows"], None), [r["rows"][0]], "a genre row is hidden until ticked")
+        with mock.patch.dict(ANSWERS, {"/discover/content/radio/all-genre-comedy": {"results": [{"foreign_id": "bbc:x1", "title": "Funny Show"}]}}):
+            self.assertEqual([c["key"] for c in df.row({}, "radio", "all-genre-comedy")["items"]], ["radio:bbc:x1"])
 
     def test_search_cards_and_feeds_only(self, *_):
         items = df.radio_search({}, "time")["items"]

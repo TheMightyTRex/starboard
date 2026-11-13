@@ -9,6 +9,9 @@ you already have it, so Add is only offered for what you do not.
 Films and TV also offer a row for each of TMDB's genres (DASH-395, owner, 13 November 2026: "For discover rows - I
 want to add more options - like comedy, sci fi etc."). They come from the same genre list as the chips, start
 unticked in Settings, and, like every row, are asked for only when the page shows them and kept for an hour.
+Radio does the same with the genres every radio source shares (DASH-396, owner, 13 November 2026: "Do you have the
+same options for TV, books, audio books and Radio"). Books and audiobooks have every subject Reelix offers already
+(Reelix allows only its nine Open Library subjects, BOOK_DISCOVER_ROWS); music has no genre source in Reelix.
   GET /api/library/discover-row?tab=films&row=  one row's cards
   GET /api/library/discover-radio-search?q=&stations=1&feeds=1  radio search across every source (DASH-339)
 """
@@ -69,7 +72,10 @@ def rows(reelix, tab):
         shared = [c for c in cats if c["id"].startswith("all-genre-")]
         stations = [c for c in cats if c["group"].startswith("BBC stations")]
         more = [c for c in cats if c not in shared and c not in stations]
-        return {"rows": clean(got.get("rows")), "genres": shared or more, "stations": stations, "more": more if shared else []}
+        # DASH-396: each shared genre is also a row, unticked until chosen in Settings, as films' genres are. Only the
+        # shared ones (one list for every source); a source's own categories stay under More categories.
+        genre_rows = [{"id": c["id"], "title": c["title"], "genre": True} for c in sorted(shared, key=lambda c: c["title"].lower())]
+        return {"rows": clean(got.get("rows")) + genre_rows, "genres": shared or more, "stations": stations, "more": more if shared else []}
     if tab in ROWS:
         return {"rows": [{"id": r, "title": t} for r, t in ROWS[tab]], "genres": []}
     raise ValueError("Choose a Library tab")
