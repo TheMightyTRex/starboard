@@ -3,6 +3,21 @@
  "name": "Starboard plug-ins",
  "plugins": [
   {
+   "id": "audio-description",
+   "name": "Audio description",
+   "description": "Finds films and series in Jellyfin with a described sound track for blind and partially sighted people, and prefers releases with one in Reelix.",
+   "kind": "Accessibility",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "reelix:key",
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description/starboard-plugin.json",
+   "published": false
+  },
+  {
    "id": "disk-forecast",
    "name": "Disk forecast",
    "description": "When each disk fills at the rate it has been filling over the last month.",

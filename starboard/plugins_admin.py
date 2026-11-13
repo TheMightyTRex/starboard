@@ -311,6 +311,41 @@ def listing(data_dir):
     return out
 
 
+# Plug-ins the set-up offers (DASH-399): the extras key the tick saves, and the plug-in it asks for. Ticking saves a
+# wish only. The plug-in is installed from the catalogue, where its permissions are shown and the password asked, as
+# for any other, and stays inactive until someone activates it.
+FROM_SETUP = {"audio_description": "audio-description"}
+
+
+def _setup_words():
+    from . import setup_answers
+    return setup_answers.WORDS
+
+
+def wanted_from_setup(cfg, added_ids):
+    """The plug-ins ticked in the set-up and not added yet, with the words the Plug-ins pages show."""
+    extras = cfg.data.get("extras") or {}
+    out = []
+    for key, pid in FROM_SETUP.items():
+        if extras.get(key) and pid not in added_ids:
+            w = _setup_words().get(key) or {}
+            out.append({"id": pid, "name": w.get("label", pid), "title": w.get("notice_title", ""), "text": w.get("notice_text", ""),
+                        "coming": w.get("coming", ""), "install": w.get("install", "Install…"), "later": w.get("later", "Not now")})
+    return out
+
+
+def drop_wanted(cfg, pid):
+    """Forgets a set-up wish (Not now, or the plug-in was added). Returns what was done, in words."""
+    key = next((k for k, v in FROM_SETUP.items() if v == pid), None)
+    if not key:
+        raise ValueError("That plug-in was not offered in the set-up")
+    with cfg.lock:
+        if (cfg.data.get("extras") or {}).get(key):
+            cfg.data["extras"][key] = False
+            cfg.save()
+    return (_setup_words().get(key) or {}).get("later_done", "No longer offered")
+
+
 def builtins():
     """Plug-ins that ship inside Starboard (plugins/<id>/starboard-plugin.json), by id."""
     out = {}

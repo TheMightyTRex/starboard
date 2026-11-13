@@ -28,7 +28,8 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
   "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-performance-pictures.html",
-  "settings-security-password.html", "settings-security-keys.html", "settings-security-sessions.html"];
+  "settings-security-password.html", "settings-security-keys.html", "settings-security-sessions.html",
+  "settings-plugins.html", "settings-plugins-catalogue.html"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
@@ -1079,6 +1080,25 @@ await page.locator("#copies-now").waitFor({ timeout: 5000 }).catch(() => {});
 await page.locator("#copies-now").click();
 await page.waitForFunction(() => /Copied to|Copying now/.test(document.querySelector("#copies-state")?.textContent || ""), null, { timeout: 8000 }).catch(() => {});
 check("CP-05", "Copy the newest now copies, said in the live line", /Copied to .*keeps 5|Copying now/.test(await page.locator("#copies-state").innerText()));
+console.log("\n== Audio description, chosen in the set-up (DASH-399)");
+await open("settings-plugins-catalogue.html");
+const adOffer = page.locator('[data-offer="audio-description"]');
+check("AD-01", "the Catalogue offers Audio description, chosen in the set-up, as a notice people hear",
+  (await adOffer.count()) === 1 && /Audio description, chosen in the set-up/.test(await adOffer.textContent())
+  && (await adOffer.locator('[role="status"]').count()) === 1);
+check("AD-01", "until it is in the collection, it says so and offers no install button",
+  /not in the plug-ins collection yet/.test(await adOffer.textContent()) || (await adOffer.getByRole("button", { name: /Install Audio description/ }).count()) === 1);
+await open("settings-plugins.html");
+check("AD-02", "Your plug-ins links to the Catalogue for it",
+  (await page.locator('[data-offer="audio-description"] a[href="/settings-plugins-catalogue.html"]').count()) === 1);
+await page.locator('[data-offer="audio-description"]').getByRole("button", { name: /^Not now\s*:\s*Audio description$/ }).click();
+await page.waitForTimeout(600);
+check("AD-03", "Not now takes the offer away, says so and puts focus on the page's heading",
+  (await page.locator('[data-offer="audio-description"]').count()) === 0
+  && await page.evaluate(() => document.activeElement?.tagName === "H1")
+  && /no longer offered/.test(await page.locator("body").textContent()));
+check("AD-03", "and the set-up's wish is forgotten", (await api("/api/plugins")).wanted.length === 0);
+await api("/api/config/general", { method: "PUT", body: { extras: { audio_description: true } } });  // as it was
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

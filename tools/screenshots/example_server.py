@@ -1008,6 +1008,8 @@ def main():
         cookie = r.getheader("Set-Cookie").split(";")[0]
         # A short server name, as Settings, General sets it: it starts the top row of the menu (DASH-237).
         call("PUT", "/api/config/general", {"server_name": "Harbour", "setup_guide_done": True}, cookie)  # a set-up server (DASH-238)
+        # Audio description ticked in the set-up (DASH-399), so the Plug-ins pages show the offer to install it.
+        call("PUT", "/api/config/general", {"extras": {"audio_description": True}}, cookie)
         for name, kind, group, path in APPS:
             url = f"http://127.0.0.1:{FAKE_PORT}/{path}" if path else "http://127.0.0.1:9/"
             call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": url, "api_key": KEY if kind != "link" or path == "dispatcharr" else "",

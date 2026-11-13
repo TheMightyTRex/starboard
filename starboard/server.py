@@ -2717,7 +2717,11 @@ class Handler(BaseHTTPRequestHandler):
             listed = pa.listing(app.data_dir)
             well = plugin_watch.health(app.data_dir, listed)  # asked now, at most once a minute each (DASH-357)
             return self.json(200, {"plugins": [{**p, "update": updates.get(p["id"]), "health": well.get(p["id"]),
-                                                "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built})
+                                                "resting": plugin_watch.resting(app.data_dir, p["id"])} for p in listed], "builtin": built,
+                                   "wanted": pa.wanted_from_setup(app.config, {p["id"] for p in listed})})
+        if path == "/api/plugins/wanted" and method == "POST":  # Not now on a plug-in chosen in the set-up (DASH-399)
+            said = pa.drop_wanted(app.config, str(self.body().get("id") or ""))
+            return self.json(200, {"said": said})
         if path == "/api/plugins/jobs" and method == "GET":  # System, Jobs: every plug-in's jobs (DASH-330)
             return self.json(200, {"jobs": plugin_life.jobs(app.data_dir)})
         mj = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/jobs/([a-z][a-z0-9-]{0,30})$", path)
@@ -2825,6 +2829,8 @@ class Handler(BaseHTTPRequestHandler):
             if not plugin_tester.report(manifest)["ok"]:
                 raise ValueError("This plug-in has errors. Test it to see them")
             item = pa.install(app.data_dir, manifest, media)
+            if item["id"] in pa.FROM_SETUP.values():  # chosen in the set-up and now added: no more offer (DASH-399)
+                pa.drop_wanted(app.config, item["id"])
             logs.event("info", "plug-ins", f"Added {item['name']} {item['version']}")
             return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
         if path == "/api/plugins/cards" and method == "GET":  # plug-in cards for the dashboard

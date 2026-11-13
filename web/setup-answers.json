@@ -1,5 +1,5 @@
 {
- "about": "The words of the set-up's TMDB key, language, Usenet server and no-VPN questions (DASH-178, DASH-189, DASH-183, DASH-131). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
+ "about": "The words of the set-up's TMDB key, language, Usenet server, no-VPN and audio description questions (DASH-178, DASH-189, DASH-183, DASH-131, DASH-399). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
  "tmdb": {
   "title": "Films and series information",
   "intro": "Reelix finds each film and series, its posters and its episodes, in The Movie Database (TMDB). A free key lets it find far more, more accurately. Without one it uses open data and matches fewer titles.",
@@ -71,5 +71,18 @@
   "needs_docker": "Moving needs Docker access, which Starboard gets when this set-up finishes. Then finish the move in Starboard, Settings, Your install, or run this set-up again.",
   "waiting": "Waiting for Reelix to finish setting up",
   "hold": "Hold the sites to search: only your old apps search until Starboard runs your apps"
+ },
+ "audio_description": {
+  "plugin": "audio-description",
+  "label": "Audio description",
+  "hint": "For blind and partially sighted people: a narrator says what happens on screen. Adds a plug-in that finds films and series with a described sound track and prefers them in Reelix. You install it in Settings, Plug-ins, and it stays inactive until you activate it.",
+  "chosen": "Install Audio description in Settings, Plug-ins, Catalogue: check what it may do, then type your password.",
+  "summary": "audio description (to install in Settings, Plug-ins)",
+  "notice_title": "Audio description, chosen in the set-up",
+  "notice_text": "Install it here: check what it may do, then type your password. It stays inactive until you activate it.",
+  "coming": "It is not in the plug-ins collection yet. Starboard offers it here once it is.",
+  "install": "Install Audio description…",
+  "later": "Not now",
+  "later_done": "Audio description is no longer offered here. Find it in the catalogue at any time."
  }
 }
