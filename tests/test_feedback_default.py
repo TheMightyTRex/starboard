@@ -31,6 +31,15 @@ class FeedbackDefaultTest(unittest.TestCase):
     def test_the_copy_is_snaglists_own(self):
         self.assertIn('const VERSION = "0.4.0"', (ROOT / "web/js/snaglist.js").read_text())
 
+    def test_ux_notes_js_is_gone(self):
+        # DEV-05: Snaglist replaced the design system's ux-notes.js, which left the library and its sync.
+        self.assertFalse((ROOT / "web/js/ux-notes.js").exists())
+        for path in list((ROOT / "web").rglob("*.html")) + list((ROOT / "web").rglob("*.js")) + [ROOT / "web/css/components.css"]:
+            text = path.read_text(encoding="utf-8")
+            self.assertNotRegex(text, r"ux-notes\.js\b", str(path))  # data/ux-notes.json, the saved notes, stays
+            self.assertNotIn("UxNotes", text, str(path))
+            self.assertNotIn(".ux-dock", text, str(path))
+
 
 class StylesBeforeSignInTest(unittest.TestCase):
     def test_the_styles_file_is_css_before_sign_in(self):

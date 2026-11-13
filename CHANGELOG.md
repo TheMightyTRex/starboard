@@ -89,6 +89,11 @@ add features.
 - **Change your install:** apps running from your own Compose file are no longer offered again as new, empty apps; the page points to Apps you already run
 - **Move them into Reelix:** each message is under its own button; qBittorrent's user name is read from its settings file; the qBittorrent password says what it is for and that it is optional; a new try clears the last error at once
 
+### Removed
+
+- The old Note an issue tester, ux-notes.js, and its styles: Send feedback (Snaglist) replaced it. Notes it saved
+  are still listed in Settings, General, Logs and feedback (DEV-05).
+
 ### Fixed
 
 - A full backup that fails now sends the backup alert; a copy cut off part way no longer stays in the backup folder;

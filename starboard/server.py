@@ -37,7 +37,7 @@ PUBLIC_FILES = {"/favicon.svg", "/icon-app.svg", "/manifest.webmanifest"}
 
 
 def _snaglist_style():
-    """Snaglist (Settings, General, Testing) sets its styles with one <style> in its own shadow root. Its hash lets
+    """Snaglist (Settings, General, Logs and feedback) sets its styles with one <style> in its own shadow root. Its hash lets
     exactly that stylesheet in, so the policy still refuses every other inline style."""
     try:
         with open(os.path.join(WEB, "js", "snaglist.js"), encoding="utf-8") as f:

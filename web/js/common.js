@@ -1416,9 +1416,9 @@ function wireDialog(dialog) {
   $$("[data-dialog-close]", dialog).forEach((b) => b.addEventListener("click", () => dialog.close()));
 }
 
-// Testing (Settings, General): Snaglist's Send feedback button (web/js/snaglist.js, from
+// Send feedback (Settings, General, Logs and feedback): Snaglist's Send feedback button (web/js/snaglist.js, from
 // github.com/TheMightyTRex/snaglist; copy a new version in, never edit it here). Each report goes as a GitHub
-// issue on Starboard's repository, or is saved in Starboard (data/ux-notes.json, listed in Settings, General).
+// issue on Starboard's repository, or is saved in Starboard (data/ux-notes.json, listed in Settings, General, Logs and feedback).
 // It sends without cookies, so a key given while signed in stands in. The script loads only while it is on.
 async function startFeedback(session) {
   if (IN_PANEL) return;  // the page around the slide-out has it

@@ -127,7 +127,7 @@ gives the minimum and recommended hardware for each. Every step of the start is 
 ## Not tested by machine
 
 Left for people: real apps and a real Plex, Windows and Mac, a physical Raspberry Pi, keyboard-only and screen
-reader passes, and how pages look and read. Send feedback (Settings, General, Testing) records
+reader passes, and how pages look and read. Send feedback (Settings, General, Logs and feedback) records
 problems found while testing by hand, as GitHub issues or saved in Starboard.
 
 ## Starboard 0.16.0: the first-time set-up on fresh virtual machines (10 November 2026)

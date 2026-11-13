@@ -1,7 +1,7 @@
 """Feedback: reports sent with Snaglist's Send feedback button and saved in Starboard, and notes from the older
-Note an issue button (the shared library's ux-notes.js), which stay listed.
+Note an issue button (ux-notes.js, gone from Starboard and the design system since DEV-05), which stay listed.
 
-Only while Settings, General, Testing, Send feedback is on. Kept in data/ux-notes.json (0600), so whoever fixes
+Only while Settings, General, Logs and feedback, Send feedback is active. Kept in data/ux-notes.json (0600), so whoever fixes
 them can read the file on the server. No thread of its own; nothing runs unless a report is added or changed.
 """
 
