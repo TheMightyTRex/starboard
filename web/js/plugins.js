@@ -305,19 +305,82 @@ function stateButton(p, redraw, primary = false) {
   return b;
 }
 
-// Remove one plug-in, after the password. Its folder is kept.
+// Remove one plug-in, after the password. Its folder is kept: where it goes is a clear choice (DASH-411), so an app
+// plug-in's data, such as Jellystat's database, is never lost by removing it.
 function removeButton(p, after) {
   const remove = el("button", { type: "button", class: "btn btn--quiet btn--danger" }, `Remove ${p.name}`);
   remove.addEventListener("click", async () => {
     const pw = el("input", { class: "input", type: "password", id: `pl-rm-${p.id}`, autocomplete: "current-password" });
+    const keep = el("input", { type: "radio", name: `pl-rm-${p.id}-where`, value: "keep", checked: true });
+    const hold = el("input", { type: "radio", name: `pl-rm-${p.id}-where`, value: "holding" });
+    const app = p.web?.length || p.adopt;
+    const where = el("fieldset", { class: "stack-2" }, el("legend", { text: app ? `${p.name}'s data, such as its settings and history` : "Its folder" }),
+      el("div", { class: "option-cards" },
+        el("label", { class: "option-card" }, keep, el("strong", { text: "Keep it with Starboard's data" }),
+          el("small", { text: "In data/plugins/.removed. Add the plug-in again later and copy it back, or move it to the holding folder in System, Clean up." })),
+        el("label", { class: "option-card" }, hold, el("strong", { text: "Move it to the holding folder" }),
+          el("small", { text: "Listed in System, Clean up, Holding folder, where you can put it back or delete it for good when you are sure." }))));
     const ok = await confirmDialog({ title: `Remove ${p.name}?`, danger: true, confirm: "Remove",
-      message: "Its containers stop and go, and its API key stops working. Its folder is kept in data/plugins/.removed, for you to delete when you are sure.",
-      fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+      message: "Its containers stop and go, and its API key stops working. Nothing is deleted: choose where its folder goes.",
+      fields: [where, el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
     if (!ok) return;
-    try { await api(`/api/plugins/${p.id}/remove`, { method: "POST", body: { password: pw.value } }); dropStyleOf(p); toast(`${p.name} removed`); after(); }
+    try {
+      await api(`/api/plugins/${p.id}/remove`, { method: "POST", body: { password: pw.value, holding: hold.checked } });
+      dropStyleOf(p); toast(hold.checked ? `${p.name} removed. Its folder is in the holding folder` : `${p.name} removed. Its folder is kept`); after();
+    }
     catch (err) { problem(err.message, remove); }
   });
   return remove;
+}
+
+// An app plug-in's own web page (API 1.13, DASH-411): opened at this Starboard's address and the port Starboard
+// chose, so it works from any device on the home network that can open Starboard.
+const webAddress = (w) => `${location.protocol === "https:" ? "http:" : location.protocol}//${location.hostname}:${w.port}/`;
+function webLinks(p, compact = false) {
+  if (!p.web?.length) return null;
+  return p.web.map((w) => el("a", { class: compact ? "btn btn--quiet btn--compact" : "btn", href: webAddress(w), target: "_blank", rel: "noopener" },
+    icon("external-link"), compact ? "Open" : w.label, el("span", { class: "visually-hidden", text: `${compact ? ` ${p.name}` : ""} (opens in a new tab)` })));
+}
+function webSection(p) {
+  if (!p.web?.length && !(p.publishes && stateOf(p) !== "enabled")) return null;
+  return section(`pl-${p.id}-web`, "Its web page", p.web?.length
+    ? `${p.name} has its own page on your home network, at ${p.web.map(webAddress).join(" and ")}. Starboard chose port ${p.web.map((w) => w.port).join(" and ")} because it was free.`
+    : `Activate ${p.name} and Starboard chooses a free port for its page on your home network.`,
+    p.web?.length ? el("div", { class: "actions" }, ...webLinks(p)) : null);
+}
+
+// Adopt (API 1.13, DASH-411): copy the same app from the main install into the plug-in, so its settings and history
+// carry over. Copied, never moved: the app's own folders are only read.
+function adoptSection(p, redraw) {
+  if (!p.adopt) return null;
+  const a = p.adopt;
+  const said = el("p", { class: "small", role: "status" });
+  const go = el("button", { type: "button", class: "btn" }, `Bring in the ${a.name} you already have…`);
+  go.addEventListener("click", async () => {
+    go.disabled = true;
+    said.textContent = "";
+    try {
+      const v = await api(`/api/plugins/${p.id}/adopt`, { method: "POST", body: { preview: true } });
+      if (!v.found) { said.textContent = v.said; return; }
+      const pw = el("input", { class: "input", type: "password", id: `pl-${p.id}-adopt-pw`, autocomplete: "current-password" });
+      const list = el("ul", {}, v.folders.map((f) => el("li", { text: `${f.from} into ${f.to}` })));
+      const ok = await confirmDialog({ title: `Copy your ${a.name} into ${p.name}?`, confirm: "Copy",
+        message: el("div", { class: "stack-2" },
+          el("p", { text: `Starboard copies these folders. It never moves or deletes them, so your ${a.name} stays as it is.` }), list,
+          v.stops ? el("p", { text: `Your ${a.name} is running, so Starboard stops it first, to copy its files whole. It is not removed: start it again from Apps if you change your mind.` }) : null),
+        fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+      if (!ok) return;
+      const r = await api(`/api/plugins/${p.id}/adopt`, { method: "POST", body: { password: pw.value } });
+      offerSaid = r.said;
+      await redraw();
+    } catch (err) { problem(err.message, go); }
+    finally { go.disabled = false; }
+  });
+  const done = p.adopted ? `Copied from your ${a.name} on ${new Date(p.adopted.at).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" })}.` : "";
+  return section(`pl-${p.id}-adopt`, `Your ${a.name}`, stateOf(p) === "enabled"
+    ? `To copy the ${a.name} you already have, deactivate ${p.name} first. ${done}`.trim()
+    : `If the main install already runs ${a.name}, copy its settings and history into ${p.name} before you activate it. ${done}`.trim(),
+    stateOf(p) === "enabled" ? null : el("div", { class: "actions" }, go), said);
 }
 
 // After an update or a roll back the page is drawn again: show the State topic and put focus on its heading, so the
@@ -489,8 +552,11 @@ function pluginPage(p, redraw) {
   if (about) $(".settings-section__head", stateSec).append(stateLine); else stateSec.append(stateLine);
   const news = whatsNew(p);
   if (news) stateSec.append(news);
+  if (offerSaid) { stateSec.append(notice("success", offerSaid)); offerSaid = ""; }
   return [
     stateSec,
+    webSection(p),
+    adoptSection(p, redraw),
     !p.builtin ? section(`pl-${p.id}-versions`, "Versions",
       p.update ? `Version ${p.update.version} is available.${p.update.changelog ? ` ${p.update.changelog}` : ""}`
         : st.can_roll_back ? `Version ${st.previous_version} is kept, in case this one does not suit you.` : `Version ${p.version}. No newer version is known.`,
@@ -1122,6 +1188,7 @@ async function startPlugins() {
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
           // Three fixed columns, so the chips, Settings and the state button line up from row to row (issue #10).
           el("div", { class: "row__side plugin-row__side" }, el("span", { class: "plugin-row__chips" }, chip(...chipOf(p)), p.update ? chip("Update", "info") : null),
+            ...(p.state === "enabled" ? webLinks(p, true) || [] : []),
             el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}` }, icon("settings"), "Settings",
               el("span", { class: "visually-hidden", text: ` for ${p.name}` })),
             stateButton(p, draw))))),
@@ -1140,7 +1207,7 @@ async function startCatalogue() {
     try { [r, c] = await Promise.all([api("/api/plugins"), api("/api/plugins/catalogue")]); }
     catch (e) { holder.replaceChildren(notice("danger", "Could not load the catalogue", e.message)); return; }
     holder.removeAttribute("aria-busy");
-    const ORDER = ["Look", "Accessibility", "Jellyfin", "Downloads", "Network", "Home", "System"];
+    const ORDER = ["Look", "Accessibility", "Jellyfin", "Downloads", "Network", "Home", "System", "Apps you can add"];
     const rank = (k) => (ORDER.includes(k) ? ORDER.indexOf(k) : ORDER.length);
     const byKind = (list) => {
       const kinds = new Map();
@@ -1173,6 +1240,8 @@ async function startCatalogue() {
         el("div", {}, el("h4", { class: "row__title", text: e.name }),
           el("div", { class: "row__meta", text: e.description }),
           // Versions for this Starboard only (DASH-330): newer ones that need a newer Starboard are said, not offered.
+          // An app plug-in (DASH-411): what it uses when nobody is using it, measured, so a small server can choose.
+          e.rest ? el("div", { class: "row__meta", text: `At rest: about ${e.rest.memory_mb} MB of memory and ${e.rest.cpu_percent}% of a processor` }) : null,
           e.version || e.hidden ? el("div", { class: "row__meta", text: [e.version ? `Version ${e.version}` : "",
             e.hidden ? `${e.hidden} newer ${e.hidden === 1 ? "version needs" : "versions need"} Starboard's API ${e.hidden_needs}` : ""].filter(Boolean).join(" · ") }) : null),
         el("div", { class: "row__side" }, side));

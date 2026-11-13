@@ -108,6 +108,18 @@ _HELLO = {"manifest_version": 1, "id": "hello-card", "name": "Hello card", "vers
           "cards": [{"id": "count", "title": "Hello", "type": "stat", "path": "/card", "format": "number",
                      "example": {"value": 42, "label": "hellos", "note": "3 today"}}]}
 plugins_admin.fetch_manifest = lambda address, opener=None: dict(_HELLO)
+_real_fetch_catalogue = plugins_admin.fetch_catalogue
+
+
+def _offline_catalogue(address, opener=None):
+    """Starboard's own collection comes from the copy it ships (plugins/catalogue.json), never from GitHub, so the
+    journeys see the same catalogue with or without internet (DASH-411: the Apps you can add group)."""
+    if address == plugins_admin.CATALOGUE_URL:
+        raise ValueError("Example data: the shipped copy is used")
+    return _real_fetch_catalogue(address, opener)
+
+
+plugins_admin.fetch_catalogue = _offline_catalogue
 
 
 def _example_dispatcharr():
@@ -342,6 +354,37 @@ def _watch_stats_screen(key):
     return {"type": "list", "title": {"plays": "Plays", "titles": "Titles", "people": "People"}.get(key, "Plays"), "layout": "folds",
             "readonly": True, "intro": "From Jellyfin's Playback Reporting, over the last 30 days. This is example data.",
             "columns": [{"key": k, "label": w, "type": t} for k, w, t in cols], "items": rows}
+
+
+def _example_app_plugins(data_dir):
+    """App plug-ins (plug-in API 1.13, DASH-411): Jellystat active with its page on the home network at port 3000, and
+    Tdarr added but not active, offering to copy the Tdarr the main install runs. Nothing is started."""
+    base = {"manifest_version": 1, "author": "TheMightyTRexUK", "licence": "MIT", "starboard_api": ">=1.13 <2.0"}
+    if not any(p["id"] == "jellystat" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {**base, "id": "jellystat", "name": "Jellystat", "version": "1.0.0",
+            "description": "Jellystat, the full watch statistics app for Jellyfin, with its own database.",
+            "homepage": "https://example.invalid/jellystat", "support_url": "https://example.invalid/jellystat/issues",
+            "permissions": ["jellyfin:key", "network:lan", "network:port"],
+            "containers": [{"name": "app", "image": "ghcr.io/example/jellystat@sha256:" + "d" * 64, "port": 3000, "network": "lan",
+                            "publish": True, "host_port": 3000, "volumes": ["data:/app/backend/backup-data"],
+                            "env": {"POSTGRES_PASSWORD": "{secret:db_password}"}},
+                           {"name": "db", "image": "ghcr.io/example/postgres@sha256:" + "e" * 64, "port": 5432, "user": "70:70",
+                            "volumes": ["data"], "tmpfs": ["/var/run/postgresql"], "env": {"POSTGRES_PASSWORD": "{secret:db_password}"}}]},
+            "/nonexistent-media")
+        st_path = os.path.join(plugins_admin.folder(data_dir, "jellystat"), "state.json")
+        st = plugins_admin._read(st_path, {})
+        st.update(state="enabled", ports={"app": 3000})
+        plugins_admin._write(st_path, st)
+    if not any(p["id"] == "tdarr" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {**base, "id": "tdarr", "name": "Tdarr", "version": "1.0.0",
+            "description": "Tdarr converts your films and series to save space, in quiet hours.",
+            "homepage": "https://example.invalid/tdarr", "support_url": "https://example.invalid/tdarr/issues",
+            "permissions": ["network:lan", "network:port"],
+            "containers": [{"name": "server", "image": "ghcr.io/example/tdarr@sha256:" + "f" * 64, "port": 8265, "network": "lan",
+                            "publish": True, "host_port": 8265, "volumes": ["data/server:/app/server", "data/configs:/app/configs",
+                                                                            "media/movies", "media/tv"]}],
+            "adopt": {"app": "tdarr", "name": "Tdarr", "into": "server", "stop": True,
+                      "copy": {"/app/server": "server", "/app/configs": "configs"}}}, "/nonexistent-media")
 
 
 def _example_watch_stats(data_dir):
@@ -1011,6 +1054,7 @@ def main():
     _example_livetv(str(DATA))
     _example_keys(str(DATA))
     _example_watch_stats(str(DATA))
+    _example_app_plugins(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
     _example_full_backups()

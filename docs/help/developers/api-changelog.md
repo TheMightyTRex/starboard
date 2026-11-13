@@ -33,6 +33,21 @@ the next major version.
   `too_large` and `too_many_streams`.
 - **Changed:** a `Link` header for the next page keeps the other query parameters, such as `limit`.
 - Nothing was taken away: every 1.0.0 address answers as before, and a read key works as it did.
+## Plug-in API 1.13.0, 13 November 2026
+
+- **Added:** app plug-ins (DASH-411), a whole app kept out of the main install, such as Jellystat with its
+  database. Read [App plug-ins](plugin-manifest-reference.md#app-plug-ins).
+- **Added:** the permission `network:port`, and `publish` on the `lan` network with `host_port`: the app's own web
+  page on the home network, at a port Starboard chooses and keeps.
+- **Added:** `{secret:<name>}`, `{jellyfin:url}` and `{jellyfin:key}` in `env`; `tmpfs`; `data:<path>`,
+  `data/<folder>:<path>` and `media/<one folder>:ro` in `volumes`; `pids` in `resources`, up to 1024.
+- **Added:** `adopt`, which copies an app the main install already runs into the plug-in, never moving or changing
+  its folders.
+- **Added:** removing a plug-in asks where its folder goes: kept in `data/plugins/.removed`, or the holding folder.
+- **Added:** `rest` in a catalogue entry, the memory and processor an app uses at rest.
+- **Changed:** `env` names may have lower case letters, such as `serverIP`.
+- Nothing was taken away: a manifest that worked with 1.11 works the same.
+
 ## Plug-in API 1.11.0, 13 November 2026
 
 - **Added:** four events, each from a check Starboard already makes every 5 minutes: `request.available` (with

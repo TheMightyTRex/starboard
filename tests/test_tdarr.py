@@ -28,10 +28,19 @@ class TdarrTest(unittest.TestCase):
             out = tdarr.save(cfg, {"mode": "save_space", "at_once": 2, "night": True, "libraries": {"films": True, "series": False}})
         inserts = [b["data"]["obj"] for p, b in calls if p == "cruddb" and b["data"]["mode"] == "insert"]
         self.assertEqual([(o["name"], o["folder"], o["cache"]) for o in inserts], [("Films", "/media/movies", "/temp")])
-        self.assertEqual(sum(1 for o in inserts[0]["schedule"] if o["checked"]), 7 * 7)  # midnight to 07:00, every day
+        self.assertEqual(sum(1 for o in inserts[0]["schedule"] if o["checked"]), 5 * 7)  # quiet hours, 01:00 to 06:00 (DASH-411)
         workers = [b["data"]["workerType"] for p, b in calls if p == "alter-worker-limit"]
         self.assertEqual(workers.count("transcodecpu"), 2)
-        self.assertIn("2 at a time, overnight only", out["done"][-1])
+        self.assertIn("2 at a time, in quiet hours only", out["done"][-1])
+
+    def test_quiet_hours_follow_the_download_hours(self):
+        cfg = mock.Mock(data={"download_hours": {"enabled": True, "start": 23, "end": 7}})
+        self.assertEqual(tdarr.quiet_hours(cfg), (23, 7))
+        on = [o["_id"] for o in tdarr._schedule(True, (23, 7)) if o["checked"] and o["_id"].startswith("Mon")]
+        self.assertEqual(len(on), 8)
+        self.assertIn("Mon:23-00", on)
+        self.assertEqual(tdarr.quiet_hours(mock.Mock(data={})), (1, 6))
+        self.assertTrue(all(o["checked"] for o in tdarr._schedule(False)))
 
     def test_an_old_tdarr_link_becomes_a_tdarr_app(self):
         d = tempfile.mkdtemp()

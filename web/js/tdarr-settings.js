@@ -70,7 +70,7 @@ async function tdDraw(said) {
   const when = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: "When" }),
     el("div", { class: "option-cards" },
       tdChoice("when", "any", "Any time", "Starts on new files straight away.", !s.night),
-      tdChoice("when", "night", "Overnight", "Midnight to 07:00, so the server stays quick in the day.", s.night)));
+      tdChoice("when", "night", "In quiet hours", `${s.quiet_hours || "01:00 to 06:00"}${s.quiet_from_download_hours ? ", your download hours" : ""}, so the server stays quick in the day.`, s.night)));
   form.append(libs, mode, el("ul", { class: "settings-rows" }, el("li", { class: "setting" },
     el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "td-at-once-l", text: "Conversions at once" }),
       el("span", { class: "setting__hint", text: "Each one uses about one processor core while it runs." })),
