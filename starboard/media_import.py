@@ -139,11 +139,40 @@ def _slim_book(c, have):
     sure = bool(best) and best is sugg[0] and all((best.get("work_count") or 0) >= 3 * max(n, 1) for n in others)
     return {"sure": sure,"path": c["path"], "name": c.get("folder") or os.path.basename(c["path"]), "title": c.get("guessed_author"),
             "year": None, "files": c.get("file_count", 0), "size": c.get("size", 0), "problem": c.get("lookup_error"),
-            "matches": [{"id": m["openlibrary_id"], "title": m.get("name"), "year": None,
-                         "detail": ", ".join(x for x in (f"best known for {m['top_work']}" if m.get("top_work") else "",
-                                                         f"{m['work_count']} works" if m.get("work_count") else "") if x),
-                         "already": "your library" if m.get("author_id") else None}
-                        for m in (c.get("suggestions") or [])[:5] if m.get("openlibrary_id")]}
+            "matches": book_matches(c.get("suggestions") or [])}
+
+
+def _short(text, most):
+    """`text` with spaces tidied, cut at a word to at most `most` characters, with an ellipsis when cut."""
+    text = " ".join(str(text or "").split())
+    if len(text) <= most:
+        return text
+    cut = text[:most - 1].rsplit(" ", 1)[0].rstrip(" ,;:.(")
+    return f"{cut}…"
+
+
+def book_matches(sugg):
+    """Open Library's authors as drop-down options that read well (owner, 13 November 2026: the names displayed
+    badly): the name tidied and kept short, then how many works and the best known one, short; an author listed
+    twice with no works is left out."""
+    out, seen = [], set()
+    for m in sugg:
+        if not m.get("openlibrary_id"):
+            continue
+        name = _short(m.get("name"), 60)
+        folded = name.lower().replace(".", "")
+        works = m.get("work_count") or 0
+        if folded in seen and not works:
+            continue  # the same name again, with nothing to tell it apart
+        seen.add(folded)
+        detail = ", ".join(x for x in (
+            (f"{works} work" if works == 1 else f"{works} works") if works else "no works listed",
+            f"best known for {_short(m['top_work'], 45)}" if m.get("top_work") else "") if x)
+        out.append({"id": m["openlibrary_id"], "title": name, "year": None, "detail": detail,
+                    "already": "your library" if m.get("author_id") else None})
+        if len(out) == 5:
+            break
+    return out
 
 
 def scan_books(cfg, root_id, start=0):
