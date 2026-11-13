@@ -797,7 +797,7 @@
     {
       "topic": "browse-your-library",
       "file": "browse-your-library-4-reset.png",
-      "page": "settings-general.html",
+      "page": "settings-general-lists.html",
       "width": 1280,
       "height": 760,
       "run": "await api('/api/library/views', { method: 'POST', body: { tab: 'films', view: { sort: 'added', layout: 'covers', size: 'large' } } }); await drawLibraryViews(); document.querySelector('#library-views-s-h').scrollIntoView({ block: 'center' });",

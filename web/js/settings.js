@@ -71,6 +71,52 @@ function section(id, title, description, ...content) {
     ...content.filter((n) => n !== chipNode));
 }
 
+// Menu 2 pages (DASH-389 to 391, owner, 13 November 2026: "The general sub menu should be on menu 2"): a Settings
+// group's sections are pages of their own on the level 2 menu. A page's list of sections names the parts it shows
+// (data-parts="gn-name gn-cat"); the start functions build only those where building one costs a request, and
+// onlyParts leaves the rest out. A list with no data-parts shows every part, as before.
+function partsOf(holder) {
+  const h = typeof holder === "string" ? $(holder) : holder;
+  const p = h?.dataset.parts;
+  return p ? p.split(/\s+/).filter(Boolean) : null;
+}
+function wants(holder, id) {
+  const p = partsOf(holder);
+  return !p || p.includes(id);
+}
+function onlyParts(holder, nodes) {
+  const p = partsOf(holder);
+  return nodes.filter((n) => {
+    if (!n) return false;
+    if (!p) return true;
+    const s = n.matches?.("section.settings-section") ? n : n.querySelector?.("section.settings-section");
+    return !s || p.includes((s.getAttribute("aria-labelledby") || "").replace(/-h$/, ""));
+  });
+}
+
+// Old addresses keep working (DASH-389 to 391): a link to a part that is now on its own page goes there, with its
+// query and anchor. Page: { part or old anchor: its page now }.
+const MOVED_PARTS = {
+  "/settings-general.html": Object.fromEntries([
+    ...["gn-up", "coming-up", "gn-scroll", "library-views", "library-views-s", "discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-lists.html"]),
+    ...["gn-dh", "download-hours"].map((k) => [k, "settings-general-hours.html"]),
+    ...["gn-logs", "logs", "gn-test", "testing", "feedback-list"].map((k) => [k, "settings-general-logs.html"]),
+    ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
+  ]),
+};
+function followMovedPart(path = location.pathname, hash = location.hash, search = location.search) {
+  const moved = MOVED_PARTS[path];
+  if (!moved) return null;
+  let to = moved[decodeURIComponent(hash.slice(1)).replace(/-h$/, "")];
+  if (!to && path === "/settings-general.html" && new URLSearchParams(search).has("discover")) to = "settings-general-lists.html";
+  return to ? `/${to}${search}${hash}` : null;
+}
+{
+  const go = () => { const to = followMovedPart(); if (to) location.replace(to); };
+  go();
+  addEventListener("hashchange", go);  // a link to a moved part from the page it used to be on
+}
+
 // Settings pattern 9, the danger zone: last on the page, its own section with a red edge; each button opens a
 // danger dialog that says what happens.
 function dangerSection(id, title, description, ...content) {
@@ -651,7 +697,39 @@ async function removeCategory(name) {
   }
 }
 
+// Download hours (DASH-389, DASH-390): one field shown in two places, Settings, General, Download hours and
+// Settings, Downloads, Download hours. Both use this function and save the one setting (download_hours), so they
+// stay in step. A switch and two selects, each applying at once.
+function downloadHoursSection(id) {
+  const hoursList = Array.from({ length: 24 }, (_, h) => [h, `${String(h).padStart(2, "0")}:00`]);
+  const hoursSelect = (key, labelId) => {
+    const select = el("select", { class: "select", "aria-labelledby": labelId },
+      hoursList.map(([h, label]) => el("option", { value: String(h), text: label, selected: config.download_hours[key] === h })));
+    select.addEventListener("change", async () => {
+      const before = config.download_hours[key];
+      try {
+        await saveGeneral({ download_hours: { [key]: Number(select.value) } }, true);
+      } catch (err) { select.value = String(before); problem(err.message); }
+    });
+    return select;
+  };
+  const hoursOn = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "dh-on-l", checked: config.download_hours.enabled });
+  hoursOn.addEventListener("change", async () => {
+    try {
+      await saveGeneral({ download_hours: { enabled: hoursOn.checked } }, true);
+    } catch (err) { hoursOn.checked = !hoursOn.checked; problem(err.message); }
+  });
+  const clients = config.services.filter((s) => ["qbittorrent", "sabnzbd"].includes(s.type) && s.has_api_key);
+  return section(id, "Download hours", "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
+    clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent, NZBGet, SABnzbd or Soulseek (slskd) with its API key in Manage apps, so Starboard can pause and resume them."),
+    el("ul", { class: "settings-rows" },
+      settingRow("Only download between set hours", withCost("Inactive: downloads run at any time.", "hours"), el("label", { class: "switch" }, hoursOn), "dh-on-l"),
+      settingRow("Start", "Downloads start at this hour.", hoursSelect("start", "dh-start-l"), "dh-start-l"),
+      settingRow("End", "Downloads pause at this hour. An end before the start runs overnight.", hoursSelect("end", "dh-end-l"), "dh-end-l")));
+}
+
 function startGeneral() {
+  const holder = $("#general-sections");
   // Names (settings pattern 5): the server name and the dashboard name, one form with one Save at its foot.
   const siteName = el("input", { class: "input", name: "site_name", maxlength: "60", required: true, value: config.site_name });
   const serverName = el("input", { class: "input", name: "server_name", maxlength: String(config.server_name_max || 10),
@@ -740,10 +818,10 @@ function startGeneral() {
   styleChoose.addEventListener("click", () => $("[data-display-toggle]")?.click());
   document.addEventListener("stylechange", styleShow);
   addEventListener("storage", styleShow);  // changed in another tab
-  api("/api/styles").then((r) => { styleNames = Object.fromEntries(r.styles.map((x) => [x.value, `${x.name}, from ${x.plugin}`])); styleShow(); }).catch(styleShow);
+  if (wants(holder, "gn-style")) api("/api/styles").then((r) => { styleNames = Object.fromEntries(r.styles.map((x) => [x.value, `${x.name}, from ${x.plugin}`])); styleShow(); }).catch(styleShow);
   styleShow();
-  const styleForm = el("div", { class: "stack-4" }, el("div", { class: "stack-2" }, styleSaid, el("div", { class: "actions" }, styleResetBtn, styleChoose)),
-    ownColoursChoice("gn-own"));
+  const styleForm = wants(holder, "gn-style") ? el("div", { class: "stack-4" }, el("div", { class: "stack-2" }, styleSaid, el("div", { class: "actions" }, styleResetBtn, styleChoose)),
+    ownColoursChoice("gn-own")) : null;
 
   // Coming up: selects that apply at once.
   const upcomingSelect = (key, labelId, options) => {
@@ -758,30 +836,9 @@ function startGeneral() {
   };
   const dayChoices = (config.upcoming_days_choices || [7, 14, 30, 60, 90]).map((n) => [n, n === 7 ? "1 week" : n === 14 ? "2 weeks" : `${n} days`]);
 
-  // Download hours: a switch and two selects, each applying at once.
-  const hoursList = Array.from({ length: 24 }, (_, h) => [h, `${String(h).padStart(2, "0")}:00`]);
-  const hoursSelect = (key, labelId) => {
-    const select = el("select", { class: "select", "aria-labelledby": labelId },
-      hoursList.map(([h, label]) => el("option", { value: String(h), text: label, selected: config.download_hours[key] === h })));
-    select.addEventListener("change", async () => {
-      const before = config.download_hours[key];
-      try {
-        await saveGeneral({ download_hours: { [key]: Number(select.value) } }, true);
-      } catch (err) { select.value = String(before); problem(err.message); }
-    });
-    return select;
-  };
-  const hoursText = (h) => `${String(h).padStart(2, "0")}:00`;
-  const hoursOn = el("input", { type: "checkbox", role: "switch", "aria-labelledby": "dh-on-l", checked: config.download_hours.enabled });
-  hoursOn.addEventListener("change", async () => {
-    try {
-      await saveGeneral({ download_hours: { enabled: hoursOn.checked } }, true);
-    } catch (err) { hoursOn.checked = !hoursOn.checked; problem(err.message); }
-  });
-  const clients = config.services.filter((s) => ["qbittorrent", "sabnzbd"].includes(s.type) && s.has_api_key);
 
-  $("#general-sections").removeAttribute("aria-busy");
-  $("#general-sections").replaceChildren(
+  holder.removeAttribute("aria-busy");
+  holder.replaceChildren(...onlyParts(holder, [
     section("gn-name", "Names", "The server name shows at the start of the menu. The dashboard name shows in the browser tab and in alerts.", namesForm),
     el("div", { id: "categories" }, section("gn-cat", "Categories", "The headings apps sit under on the Apps page, in this order. Changes apply at once.",
       el("ul", { class: "rows", id: "category-list" }), el("div", { id: "category-loose" }), addForm)),
@@ -795,12 +852,7 @@ function startGeneral() {
           upcomingSelect("upcoming_view", "up-view-l", [["list", "List"], ["calendar", "Calendar"]]), "up-view-l"),
         settingRow("How far ahead", withCost("Releases from today to this far ahead, plus yesterday's.", "upcoming"),
           upcomingSelect("upcoming_days", "up-days-l", dayChoices), "up-days-l")))),
-    el("div", { id: "download-hours" }, section("gn-dh", "Download hours", "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, in the server's local time, and starts again only what it paused. Seeding is left alone. These apply at once.",
-      clients.length ? null : notice("info", "No download apps yet", "Add qBittorrent, NZBGet, SABnzbd or Soulseek (slskd) with its API key in Manage apps, so Starboard can pause and resume them."),
-      el("ul", { class: "settings-rows" },
-        settingRow("Only download between set hours", withCost("Inactive: downloads run at any time.", "hours"), el("label", { class: "switch" }, hoursOn), "dh-on-l"),
-        settingRow("Start", "Downloads start at this hour.", hoursSelect("start", "dh-start-l"), "dh-start-l"),
-        settingRow("End", "Downloads pause at this hour. An end before the start runs overnight.", hoursSelect("end", "dh-end-l"), "dh-end-l")))),
+    wants(holder, "gn-dh") ? el("div", { id: "download-hours" }, downloadHoursSection("gn-dh")) : null,
     section("gn-guide", "Set-up guide", "Finds your apps and walks through what Starboard can do. Running it again changes nothing until you press Continue.",
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/setup-guide.html" }, icon("play"), config.setup_guide_done ? "Run the set-up guide again" : "Run the set-up guide"),
         el("a", { class: "btn", href: "/install-apps.html" }, icon("download"), "Install apps"))),
@@ -813,16 +865,19 @@ function startGeneral() {
           logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I deactivate it"]], config.logs.detail,
             (v, t) => saveGeneral({ logs: { detail: v } }, true)), "lg-detail-l")),
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")))),
+    // Appearance (owner, 13 November 2026: "Change the word Style to Appearance and add the accessibility options
+    // there as well"): the own style and its colours, the default design and accessibility, together.
+    styleForm && section("gn-style", "Style and colours", "A style from a plug-in is chosen in Display, for this browser only. Reset style goes back to Starboard's own style, in its colours below, and keeps your other Display choices.", styleForm),
     section("gn-design", "Default design", "Everyone sees this unless they choose their own in Display.", designForm),
-    section("gn-style", "Style", "A style from a plug-in is chosen in Display, for this browser only. Reset style goes back to Starboard's own style, in its colours below, and keeps your other Display choices.", styleForm),
+    wants(holder, "gn-access") ? section("gn-access", "Accessibility", "Theme, text size, motion, contrast, links and spacing for this browser, the same choices as in Display. They apply at once.", accessibilityForm()) : null,
     el("div", { id: "testing" }, section("gn-test", "Send feedback", "Report a problem or suggest something from any page. On unless you deactivate it.",
       el("ul", { class: "settings-rows" },
         settingRow("Send feedback", "Feedback in the side menu, on every page, reports a problem, suggests something or checks a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Deactivate it to remove Feedback from the menu.",
           uxSwitch, "ux-notes-l")),
-      el("div", { id: "feedback-list" }))));
-  renderCategories();
+      el("div", { id: "feedback-list" })))]));
+  if ($("#category-list")) renderCategories();
   renderFeedback();
-  if (["#categories", "#coming-up", "#download-hours", "#logs", "#testing"].includes(location.hash)) $(location.hash).scrollIntoView();
+  if (["#categories", "#coming-up", "#download-hours", "#logs", "#testing"].includes(location.hash)) $(location.hash)?.scrollIntoView();
 }
 
 // Reports saved with Save in Starboard (and notes from the older Note an issue button), newest first.
@@ -1607,7 +1662,7 @@ async function startGuide() {
       const facts = [
         ["Apps", `${apps} ${apps === 1 ? "app" : "apps"}${keyless.length ? `; still without a key: ${keyless.join(", ")}` : ""}`, "/settings.html"],
         ["Jellyfin extras", ["livetv", "import_keep", "defaults"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
-        ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Off", "/settings-general.html#download-hours"],
+        ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Off", "/settings-general-hours.html"],
         ["Alerts", config.watch.enabled ? `On, to ${config.watch.channel.kind || "nowhere yet"}` : "Off", "/settings-alerts.html"],
         ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-performance.html"],
       ];
@@ -3342,6 +3397,9 @@ const ADVANCED_SECTIONS = new Set([
 
 function markAdvanced(root) {
   let hidden = 0;
+  // A level 2 page made only of advanced parts (Security, Sign out everywhere) shows them: the page is the choice.
+  const parts = $$("[data-parts]", root).flatMap((h) => partsOf(h)).filter((id) => !id.endsWith("-danger"));
+  if (parts.length && parts.every((id) => ADVANCED_SECTIONS.has(id))) return 0;
   $$("section.settings-section", root).forEach((sec) => {
     const id = (sec.getAttribute("aria-labelledby") || "").replace(/-h$/, "");
     if (ADVANCED_SECTIONS.has(id)) { sec.dataset.advanced = ""; hidden += 1; }
@@ -3572,15 +3630,16 @@ startPage().then(async (session) => {
   if ($("#copy-sections") && typeof startCopy === "function") startCopy();
   if ($("#dispatcharr-sections") && typeof startDispatcharr === "function") startDispatcharr();  // DASH-228
   if ($("#version-notice")) startAbout();
-  if ($("#general-sections")) {  // DASH-277: long lists load more by themselves, or wait for Show more
+  if ($("#general-sections") && wants("#general-sections", "gn-scroll")) {  // DASH-277: long lists load more by themselves, or wait for Show more
     const input = el("input", { type: "checkbox", role: "switch", id: "infinite-scroll", checked: config.infinite_scroll !== false });
     input.addEventListener("change", () => saveGeneral({ infinite_scroll: input.checked }, true).catch((e) => problem(e.message)));
     const box = section("gn-scroll", "Long lists", "The Library, Wanted and History.",
       el("ul", { class: "settings-rows" }, el("li", { class: "setting" }, switchRow("Load more as you scroll",
         "Off: a Show more button at the end instead. With Reduce motion on, the button is always used.", input))));
     const sections = $("#general-sections");
-    const wait = new MutationObserver(() => { if (sections.childElementCount && !$("#gn-scroll-h")) { sections.append(box); wait.disconnect(); } });
-    wait.observe(sections, { childList: true });
+    // General's parts are usually drawn by now (startGeneral runs first), so it goes in at once; else when they are.
+    const place = () => { if (sections.childElementCount && !$("#gn-scroll-h")) { sections.append(box); return true; } return false; };
+    if (!place()) { const wait = new MutationObserver(() => { if (place()) wait.disconnect(); }); wait.observe(sections, { childList: true }); }
   }
   if ($("#reelix-auto-row")) {  // DASH-263: automatic Reelix updates, off until switched on
     const input = el("input", { type: "checkbox", role: "switch", id: "reelix-auto", checked: !!config.reelix_auto_update });

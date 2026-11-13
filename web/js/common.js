@@ -1357,6 +1357,7 @@ function openDisplayPanel(template, opener) {
     };
     writePrefs(prefs);
     applyPrefs(prefs);
+    document.dispatchEvent(new CustomEvent("prefschange"));  // Settings, General, Appearance shows them too
   };
   form.addEventListener("change", (e) => {
     save();
@@ -1372,7 +1373,42 @@ function openDisplayPanel(template, opener) {
     onClose: () => opener.setAttribute("aria-expanded", "false") });
   form.addEventListener("submit", (e) => { e.preventDefault(); panel.close(); });
   done.addEventListener("click", () => panel.close());
-  reset.addEventListener("click", () => { writePrefs(DEFAULT_PREFS); applyPrefs(DEFAULT_PREFS); fill(); announce("Display settings reset"); document.dispatchEvent(new CustomEvent("stylechange")); });
+  reset.addEventListener("click", () => {
+    writePrefs(DEFAULT_PREFS); applyPrefs(DEFAULT_PREFS); fill(); announce("Display settings reset");
+    document.dispatchEvent(new CustomEvent("stylechange")); document.dispatchEvent(new CustomEvent("prefschange"));
+  });
+}
+
+// The accessibility options on Settings, General, Appearance (DASH-389): the same controls as Display (its template,
+// without Style and Design, which Appearance has as its own parts), reading and saving the same choices, so the two
+// stay in step. Ids are prefixed, as Display may be opened over the page.
+const ACCESS_PREFS = { radios: ["theme", "text", "motion"], switches: ["contrast", "underline", "spacing"] };
+function accessibilityForm() {
+  const template = $("#display-panel");
+  const form = template.content.querySelector("[data-display-form]").cloneNode(true);
+  form.removeAttribute("data-display-form");
+  $("[data-design-options]", form)?.closest("fieldset")?.remove();
+  $$("[id]", form).forEach((n) => { n.id = `ap-${n.id}`; });
+  $$("label[for]", form).forEach((l) => l.setAttribute("for", `ap-${l.getAttribute("for")}`));
+  const fill = () => {
+    const p = readPrefs();
+    for (const name of ACCESS_PREFS.radios) $$(`input[name=${name}]`, form).forEach((r) => { r.checked = r.value === p[name]; });
+    for (const name of ACCESS_PREFS.switches) $(`input[name=${name}]`, form).checked = !!p[name];
+  };
+  form.addEventListener("change", (e) => {
+    const p = { ...readPrefs() };
+    for (const name of ACCESS_PREFS.radios) p[name] = $(`input[name=${name}]:checked`, form)?.value || p[name];
+    for (const name of ACCESS_PREFS.switches) p[name] = $(`input[name=${name}]`, form).checked;
+    writePrefs(p);
+    applyPrefs(p);
+    settingSaved();
+    e.target.focus?.();
+  });
+  form.addEventListener("submit", (e) => e.preventDefault());
+  const onChange = () => (form.isConnected ? fill() : document.removeEventListener("prefschange", onChange));
+  document.addEventListener("prefschange", onChange);
+  fill();
+  return form;
 }
 
 // Every dialog closes with its X button and returns focus (the browser handles Escape and focus trapping).

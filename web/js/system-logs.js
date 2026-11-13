@@ -25,7 +25,7 @@ function renderHead() {
   const keep = state.settings.keep_days;
   $("#logs-summary").replaceChildren(
     s.days ? `${s.days} ${s.days === 1 ? "day" : "days"} of logs (${formatBytes(s.bytes)}) · kept for ${keep} days · ` : `No logs yet · kept for ${keep} days · `,
-    el("a", { href: "/settings-general.html#logs", text: "Change in Settings, General" }));
+    el("a", { href: "/settings-general-logs.html#logs", text: "Change in Settings, General, Logs and feedback" }));
   const del = el("button", { type: "button", class: "btn btn--danger", disabled: !s.days }, icon("trash-2"), "Delete logs");
   del.addEventListener("click", async () => {
     const ok = await confirmDialog({ title: "Delete all logs?", danger: true, confirm: "Delete logs",

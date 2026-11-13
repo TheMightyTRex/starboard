@@ -9,6 +9,10 @@ add features.
 
 ### Added
 
+- Settings, General has its pages on the level 2 menu: Names and apps, Appearance, Pages and lists, Download hours,
+  and Logs and feedback. Style is now Appearance, with the own style's colours, the default design and the
+  accessibility options (theme, text size, motion, contrast, underlined links and text spacing), kept in step with
+  Display. Old links to a part go to its new page. Long lists is shown again, on Pages and lists (DASH-389).
 - Starboard's own style has colours to choose from: Teal (the standard) and the design system's five palettes,
   Indigo, Forest, Plum, Ember and Graphite, for everyone on the server. Choose them on the Styles plug-in's page or in
   Settings, General. Reset style, and a plug-in that is deactivated or removed, goes back to the own style in those

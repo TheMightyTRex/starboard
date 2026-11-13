@@ -51,7 +51,7 @@ const SHOTS = [
   { file: "display.png", page: "index.html", ...desk, click: "[data-display-toggle]" },
   { file: "copy-settings.png", page: "copy-settings.html", width: 1280, height: 1000, click: "#copy-sections button[type=submit]", after: top("#copy-sections h3") },
   { file: "audiobookshelf.png", page: "settings-audiobookshelf.html", ...desk, run: top("#listening-sections .table-wrap") },
-  { file: "logs-settings.png", page: "settings-general.html", width: 1280, height: 700, run: top("#gn-logs-h") },
+  { file: "logs-settings.png", page: "settings-general-logs.html", width: 1280, height: 700, run: top("#gn-logs-h") },
   { file: "apps-phone.png", page: "index.html", ...phone },
   // The Library and Search from the made-up Reelix (DASH-163, DASH-162).
   { file: "library.png", page: "library-films.html", ...desk, run: '(async () => { for (let i = 0; i < 40 && !document.querySelector("#lib-wall .media-card img"); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 800)); })()' },

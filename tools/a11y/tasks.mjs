@@ -114,6 +114,23 @@ if (sw && sw.role === "switch") {
   await page.waitForTimeout(1200);
 } else check("T5", "a switch can be reached with Tab", false);
 
+// T5b Appearance (DASH-389): Tab reaches Underline links among the accessibility options; Space applies it at once,
+// focus stays on the switch, and the saved note says so.
+await page.goto(`${base}/settings-general-appearance.html`);
+await settle();
+const under = await tabTo((f) => f.id === "ap-pref-underline", 80);
+check("T5b", "Underline links on Appearance can be reached with Tab", !!under);
+if (under) {
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(800);
+  const f5b = await focus(), s5b = await said();
+  check("T5b", "focus stays on the switch after it applies", f5b.id === "ap-pref-underline", f5b.text);
+  check("T5b", "the change is said", /saved/i.test(s5b), s5b);
+  check("T5b", "links are underlined at once", await page.evaluate(() => document.documentElement.classList.contains("pref-underline")));
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(500);
+}
+
 // T6 Edit an app in a slide-out: Enter opens it, focus goes in, Escape closes and focus comes back to Edit.
 await page.goto(`${base}/settings.html`);
 await settle();

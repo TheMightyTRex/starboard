@@ -35,13 +35,13 @@ if (!DISCOVER_AREAS.some(([t]) => t === discoverArea)) discoverArea = "films";
 async function drawDiscoverRows(focusId = "") {
   const box = $("#discover-rows");
   if (!box) return;
-  const area = el("select", { class: "select", id: "discover-area" }, DISCOVER_AREAS.map(([v, t]) => el("option", { value: v, text: t, selected: v === discoverArea })));
+  const area = el("select", { class: "select", id: "discover-area", "aria-labelledby": "discover-area-l" }, DISCOVER_AREAS.map(([v, t]) => el("option", { value: v, text: t, selected: v === discoverArea })));
   area.addEventListener("change", () => { discoverArea = area.value; drawDiscoverRows("discover-area"); });
   const body = el("div", { class: "stack-4", id: "discover-rows-body" }, el("p", { class: "muted", text: "Asking Reelix…" }));
   const note = savedNote("discover-rows-saved");
   const sec = section("discover-rows-s", "Discover rows",
     "Which rows each area of Discover shows, and their order. Changes apply at once.",
-    el("ul", { class: "settings-rows" }, settingRow("Area", "The Discover page to change.", area)), body);
+    el("ul", { class: "settings-rows" }, settingRow("Area", "The Discover page to change.", area, "discover-area-l")), body);
   sec.id = "discover-rows-s";  // the topic tab keeps its place when the area changes; Discover's pages link here
   box.replaceChildren(sec);
   if (focusId) document.getElementById(focusId)?.focus();

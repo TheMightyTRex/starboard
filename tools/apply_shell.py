@@ -73,7 +73,12 @@ MENU = [
         ("Logs", "scroll-text", [("system-logs.html", "Logs", "scroll-text")]),
     ]),
     ("settings", "Settings", "settings", [
-        ("General", "sliders-horizontal", [("settings-general.html", "General", "sliders-horizontal")]),
+        # Level 2 (owner, 13 November 2026: "The general sub menu should be on menu 2"; DASH-389).
+        ("General", "sliders-horizontal", [("settings-general.html", "Names and apps", "tags"),
+                                           ("settings-general-appearance.html", "Appearance", "sun"),
+                                           ("settings-general-lists.html", "Pages and lists", "list"),
+                                           ("settings-general-hours.html", "Download hours", "clock"),
+                                           ("settings-general-logs.html", "Logs and feedback", "scroll-text")]),
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
                                 ("settings-reelix.html", "Reelix", "film"),
                                 ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
@@ -157,6 +162,10 @@ HELP = {
     "system-cleanup.html": ("topics/remove-starboard.md", "removing what Starboard leaves behind"),
     "system-holding.html": ("topics/remove-starboard.md", "removing what Starboard leaves behind"),
     "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
+    "settings-general-appearance.html": ("topics/display-and-accessibility.md", "the look, colours and accessibility"),
+    "settings-general-lists.html": ("topics/coming-up.md", "what Coming up and the lists show"),
+    "settings-general-hours.html": ("topics/set-download-hours.md", "setting download hours"),
+    "settings-general-logs.html": ("topics/read-the-log.md", "reading the log and reporting a problem"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),
     "settings-reelix.html": ("topics/change-reelix-settings.md", "changing Reelix's settings"),
@@ -343,7 +352,7 @@ def shell(current):
       <label class="switch" for="pref-underline"><span>Underline links</span><input type="checkbox" role="switch" id="pref-underline" name="underline"></label>
       <label class="switch" for="pref-spacing"><span>Wider text spacing</span><input type="checkbox" role="switch" id="pref-spacing" name="spacing"></label>
       <fieldset><legend>Design</legend>
-        <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General.</p>
+        <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General, Appearance.</p>
         <div class="option-cards" data-design-options></div>
       </fieldset>
   </form>
