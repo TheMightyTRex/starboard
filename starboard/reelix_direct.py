@@ -3,6 +3,7 @@ switched on at set-up with the shared media folder (/data/downloads/direct) inst
 changed in Settings, Reelix, with Connect Spotify, and a page to paste a link, see what it holds, choose the format
 and follow the queue. All of it is Reelix admin only, so Starboard asks for the password (reelix_admin.py)."""
 import re
+import urllib.parse
 
 FOLDER = "/data/downloads/direct"
 MODES = ("audio", "video")
@@ -58,11 +59,20 @@ def spotify_disconnect(reelix):
     return {**state(reelix), "done": "Spotify is disconnected"}
 
 
+HOSTS = {"youtube.com": "youtube", "www.youtube.com": "youtube", "m.youtube.com": "youtube", "music.youtube.com": "youtube",
+         "youtu.be": "youtube", "www.youtu.be": "youtube", "m.youtu.be": "youtube", "music.youtu.be": "youtube",
+         "open.spotify.com": "spotify", "www.open.spotify.com": "spotify", "m.open.spotify.com": "spotify",
+         "music.open.spotify.com": "spotify"}  # every host the address pattern below lets through
+
+
 def _request(body):
     url = str((body or {}).get("url", "")).strip()
     if not re.match(r"^https://(www\.|m\.|music\.)?(youtube\.com|youtu\.be|open\.spotify\.com)/", url):
         raise ValueError("Paste a YouTube or Spotify link")
-    source = "spotify" if "spotify.com" in url else "youtube"
+    host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    if host not in HOSTS:  # the exact host, never a look-alike such as open.spotify.com.example.net
+        raise ValueError("Paste a YouTube or Spotify link")
+    source = HOSTS[host]
     mode = body.get("mode") if body.get("mode") in MODES else "audio"
     return {"url": url, "source": source, "mode": "audio" if source == "spotify" else mode,
             "format": "mp3" if mode == "audio" else "mp4", "playlist": bool(body.get("playlist", True))}

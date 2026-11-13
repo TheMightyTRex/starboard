@@ -284,7 +284,8 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
     """Jellyfin's and Audiobookshelf's first runs, when Install apps installed them, and their keys saved on the
     dashboard so Reelix can be connected to them (DASH-156). Returns lines of what was done; a problem is a line too,
     never a stop, so the rest of the set-up carries on."""
-    from . import stack
+    from . import logs, stack
+    logs.hide(password)  # never in a log line, even if an app repeats it back in an error
     done = []
     keys = stack.chosen_keys(data_dir) or []
     apps = [("jellyfin", "Jellyfin", 8096, jellyfin_first_run), ("audiobookshelf", "Audiobookshelf", 80, audiobookshelf_first_run)]

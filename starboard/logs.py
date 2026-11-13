@@ -29,6 +29,17 @@ DETAIL_CHOICES = ("off", "day", "on")
 DEFAULTS = {"keep_days": 60, "detail": "off", "detail_until": 0}
 
 _current = None  # the running app's log, so any module can write with logs.event()
+_hidden = []  # secrets Starboard was handed while it runs (such as the password for first runs), never written
+MAX_HIDDEN = 20
+
+
+def hide(secret):
+    """Removes this exact secret from every log line from now on, wherever it turns up (an app's error message that
+    repeats it back, for example). Held in memory only, and only the newest few."""
+    secret = str(secret or "")
+    if len(secret) >= 4 and secret not in _hidden:
+        _hidden.append(secret)
+        del _hidden[:-MAX_HIDDEN]
 
 
 def event(level, area, message, **extra):
@@ -36,7 +47,7 @@ def event(level, area, message, **extra):
     if _current:
         _current.write(level, area, message, **extra)
     elif level != "detail":
-        print(f"[starboard] {area}: {message}", flush=True)
+        print(f"[starboard] {redact(area)[:30]}: {redact(message)[:2000]}", flush=True)
 
 
 def detail(area, message, **extra):
@@ -67,6 +78,8 @@ _HOME = re.compile(r"(/home/|/Users/)[^/\s\"']+")
 
 def redact(text, words=()):
     text = str(text)
+    for secret in _hidden:  # first, before any pattern can split it
+        text = text.replace(secret, "[removed]")
     text = _BEARER.sub(lambda m: f"{m.group(1)} [removed]", text)  # first, so "Authorization: Bearer x" loses x
     text = _SECRET.sub(lambda m: f"{m.group(1)}{m.group(2)}[removed]", text)
     text = _EMAIL.sub("[email]", text)

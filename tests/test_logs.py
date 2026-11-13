@@ -51,6 +51,24 @@ class LogTest(unittest.TestCase):
         raw = open(os.path.join(self.dir.name, "logs", self.log.files()[0])).read()
         self.assertNotIn("secret123456", raw)
 
+    def test_a_hidden_secret_is_never_logged_or_printed(self):
+        import contextlib
+        import io
+        from unittest import mock
+        self.addCleanup(logs._hidden.clear)
+        logs.hide("Plain Pass 7")  # spaces: no pattern would catch it
+        logs.hide("ab")  # too short to hide safely, so left alone
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.log.write("error", "install apps", "Jellyfin said: bad request (Plain Pass 7)")
+            with mock.patch.object(logs, "_current", None):
+                logs.event("info", "install apps", "Set up with Plain Pass 7")
+        raw = open(os.path.join(self.dir.name, "logs", self.log.files()[0])).read()
+        for where in (raw, out.getvalue()):
+            self.assertNotIn("Plain Pass 7", where)
+            self.assertIn("[removed]", where)
+        self.assertEqual(logs._hidden, ["Plain Pass 7"])
+
     def test_detail_only_while_on_and_24_hours_runs_out(self):
         self.log.write("detail", "request", "GET /index.html 200")
         self.assertEqual(self.log.read(), [])

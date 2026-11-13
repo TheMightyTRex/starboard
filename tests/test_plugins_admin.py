@@ -62,6 +62,18 @@ class PluginsAdminTest(unittest.TestCase):
         with mock.patch.object(pa, "media_host_dir", return_value=None):
             pa._compose_run(self.tmp.name, "on-demand", "up -d", helper=self.helper())
         self.assertNotIn("mkdir -p '/srv", self.runs[-1][1])
+    def test_a_folder_outside_the_plugins_folder_is_refused(self):
+        base = os.path.join(self.tmp.name, "plugins")
+        self.assertEqual(pa.folder(self.tmp.name, "on-demand"), os.path.join(base, "on-demand"))
+        for bad in ("../etc", "..", "on-demand/../../x", "/etc/passwd", "a/b", "", None, ".removed"):
+            with self.assertRaises(ValueError):
+                pa.folder(self.tmp.name, bad)
+        with self.assertRaises(ValueError):
+            pa.uninstall(self.tmp.name, "../../outside")
+        with mock.patch.object(pa.plugins, "ID", r"^.+$"):  # the second check holds even if the id pattern did not
+            for bad in ("../etc", "..", "a/../../b", "a/b"):
+                with self.assertRaises(ValueError):
+                    pa.folder(self.tmp.name, bad)
 
     def test_a_bad_manifest_is_refused_with_its_problems(self):
         with self.assertRaisesRegex(ValueError, "Unknown field privileged"):

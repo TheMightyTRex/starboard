@@ -444,6 +444,16 @@ class SystemTest(StandInTest):
 class DirectTest(StandInTest):
     """YouTube and Spotify in the full version (DASH-216, 217, 126)."""
 
+    def test_only_the_exact_hosts_are_taken(self):
+        from starboard import reelix_direct as rd
+        for bad in ("https://open.spotify.com.example.net/album/x", "https://youtube.com.evil.test/watch?v=1",
+                    "https://evilyoutube.com/watch", "http://youtube.com/watch?v=1", "https://example.com/open.spotify.com/x"):
+            with self.assertRaises(ValueError, msg=bad):
+                rd._request({"url": bad})
+        self.assertEqual(rd._request({"url": "https://www.youtube.com/watch?v=spotify.com"})["source"], "youtube")
+        self.assertEqual(rd._request({"url": "https://open.spotify.com/album/x"})["source"], "spotify")
+        self.assertEqual(rd._request({"url": "https://youtu.be/abc", "mode": "video"})["mode"], "video")
+
     def test_set_up_spotify_and_a_link(self):
         from starboard import reelix_direct as rd
         with reelix_admin.Visit(self.base, PASSWORD) as reelix:

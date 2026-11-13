@@ -30,7 +30,10 @@ def clean_tmdb(value):
     v = str(value or "").strip()
     if not v:
         return ""
-    if re.fullmatch(r"[0-9a-f]{32}", v) or re.fullmatch(r"eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+", v):
+    if re.fullmatch(r"[0-9a-f]{32}", v):
+        return v
+    parts = v.split(".") if len(v) <= 4096 and v.startswith("eyJ") else []  # three parts, each checked on its own
+    if len(parts) == 3 and all(re.fullmatch(r"[A-Za-z0-9_-]+", p) for p in parts):
         return v
     raise ValueError("That does not look like a TMDB key. Paste the API Read Access Token or the API key from themoviedb.org, Settings, API")
 
@@ -119,6 +122,13 @@ def clean_usenet(server):
     return {"host": host, "port": port, "ssl": use_ssl, "username": user, "password": password, "connections": connections}
 
 
+def _tls():
+    """Certificates checked, and TLS 1.2 or newer only: news servers that take SSL all offer it."""
+    ctx = ssl.create_default_context()
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    return ctx
+
+
 def test_usenet(server, timeout=10):
     """Signs in to the news server the way a Usenet app would (NNTP AUTHINFO). Returns True, or raises ValueError."""
     s = clean_usenet(server)
@@ -129,7 +139,7 @@ def test_usenet(server, timeout=10):
     except OSError:
         raise ValueError(f"Starboard could not reach {s['host']} on port {s['port']}. Check the address and port") from None
     try:
-        conn = ssl.create_default_context().wrap_socket(raw, server_hostname=s["host"]) if s["ssl"] else raw
+        conn = _tls().wrap_socket(raw, server_hostname=s["host"]) if s["ssl"] else raw
         f = conn.makefile("rwb")
 
         def say(line):
