@@ -1205,6 +1205,10 @@ class Handler(BaseHTTPRequestHandler):
 
             if not self.signed_in():
                 return self.error(401, "Sign in first")
+            if path.startswith("/api/radio/review") or path in ("/api/radio/preview", "/api/radio/add-link"):
+                # Settings, Radio: the library review and a show from a link, with the manager key (DASH-212)
+                from . import radio_review
+                return radio_review.route(self, method, path)
             if path.startswith("/api/library/radio-import"):
                 # Radio shows already on disk (owner, 10 November 2026), through Reelix's radio review and search.
                 from . import radio_import

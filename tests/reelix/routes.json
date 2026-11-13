@@ -51,7 +51,7 @@
   },
   "command": {
    "task": "DASH-209",
-   "what": "refresh and rescan"
+   "what": "refresh and rescan; RescanRadioLibrary is used by Settings, Radio, Read the library again (DASH-212)"
   },
   "customformats": {
    "task": "DASH-196",
@@ -162,7 +162,7 @@
    "starboard": "Downloads (stuck imports: DASH-205)"
   },
   "radio": {
-   "starboard": "Coming up and Library, Radio; following shows DASH-158, settings DASH-181, review DASH-212"
+   "starboard": "Coming up and Library, Radio; following shows DASH-158, settings DASH-181; Settings, Radio: the library review with matching by hand and a show from a link (DASH-212)"
   },
   "releaseprofiles": {
    "task": "DASH-196",

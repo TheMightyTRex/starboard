@@ -264,6 +264,10 @@ class FakeArr(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         body = json.loads(self.rfile.read(length) or b"{}")
         path, _, query = self.path[len("/reelix/api/v1"):].partition("?")
+        parts = path.strip("/").split("/")
+        if method == "PUT" and len(parts) == 4 and parts[:2] == ["radio", "episodes"] and parts[3] == "file":  # Match by hand (DASH-212)
+            RADIO_MATCHED.add(int(body.get("file_id", 0)))
+            return self.send_json({"id": int(parts[2]), "title": "the chosen episode", "file_id": body.get("file_id")})
         found = example_library.change(method, path, body, dict(urllib.parse.parse_qsl(query)))
         return self.send_json(found if found is not None else {"message": "no such route"}, 200 if found is not None else 404)
 
@@ -301,7 +305,10 @@ class FakeArr(BaseHTTPRequestHandler):
             # The radio import's own shows answer first; any other radio search is the made-up library's, as before.
             mine = path == "/radio/library/review" or (path == "/radio/search" and any(x["title"].lower() == q.get("q", "").lower() for x in RADIO_ON_DISK))
             found = None if mine else example_library.answer(path, q)
-            return self.send_json(found if found is not None else example_reelix(path, q))
+            answer = found if found is not None else example_reelix(path, q)
+            if path == "/radio/preview" and answer is None:
+                return self.send_json({"error": "validation", "message": "no radio source recognises that link"}, 400)
+            return self.send_json(answer)
         film = "/films" in p
         if "/system/status" in p:
             return self.send_json({"version": "6.0.4" if film else "4.0.16"})
@@ -354,9 +361,14 @@ def _post(self):
     if self.path.split("?")[0] == "/reelix/api/v1/releases/grab":  # Get this one, on Search the sites (DASH-213)
         return self.send_json({"queue_id": 77, "download_client": "NZBGet" if body.get("indexer_id") == 2 else "qBittorrent",
                                "download_id": f"ex-{body.get('guid')}"})
-    if self.path.split("?")[0] == "/reelix/api/v1/radio/shows":  # a radio show added (the radio import)
-        RADIO_ADDED.append({"id": 10 + len(RADIO_ADDED), "title": body.get("external_id", ""), "external_id": body.get("external_id", "")})
+    if self.path.split("?")[0] == "/reelix/api/v1/radio/shows":  # a radio show added (the radio import, or from a link)
+        if body.get("link"):
+            RADIO_ADDED.append({"id": 10 + len(RADIO_ADDED), "title": "The Lighthouse Keepers", "external_id": body["link"]})
+        else:
+            RADIO_ADDED.append({"id": 10 + len(RADIO_ADDED), "title": body.get("external_id", ""), "external_id": body.get("external_id", "")})
         return self.send_json(RADIO_ADDED[-1], 201)
+    if self.path.split("?")[0] == "/reelix/api/v1/command":  # Read the library again (DASH-212)
+        return self.send_json({"job_id": 5}, 202)
     found = example_library.add(self.path[len("/reelix/api/v1"):].split("?")[0], body) if self.path.startswith("/reelix/api/v1/") else None
     return self.send_json(found or {}, 201 if found else 404)
 
@@ -369,6 +381,14 @@ RADIO_ON_DISK = [  # made-up radio shows in Audiobookshelf's Radio library that 
     {"abs_item_id": "li_light", "title": "Lighthouse Stories", "file_count": 12},
     {"abs_item_id": "li_night", "title": "Night Train", "file_count": 6}]
 RADIO_ADDED = []
+# Files in The Example Hour's podcast folder that match no episode, and one from a podcast nobody follows (DASH-212).
+RADIO_UNMATCHED = [{"id": 900 + n, "abs_item_id": item, "abs_episode_id": f"ep{n}", "item_title": podcast, "title": title, "season": season,
+                    "episode": number, "published_at": f"2025-0{n + 1}-0{n + 2}T19:00:00Z", "duration_secs": 1740, "size": 27_000_000 + n,
+                    "path": f"/radio/{podcast}/{title}.mp3", "seen_at": "2026-11-13T06:00:00Z"}
+                   for n, (item, podcast, title, season, number) in enumerate((
+                       ("li_example", "The Example Hour", "Tides (repeat)", None, None), ("li_example", "The Example Hour", "Storms, extended", 4, None),
+                       ("li_example", "The Example Hour", "Christmas special", None, None), ("li_quiz", "Pub Quiz Classics", "Round one", 1, 1)))]
+RADIO_MATCHED = set()
 
 
 def example_sites_search(query):
@@ -401,8 +421,19 @@ def example_reelix(path, query=None):
     shows = [{"id": 1, "title": "The Example Hour"}, {"id": 2, "title": "Sample Science Weekly"}] + RADIO_ADDED
     if path == "/radio/library/review":
         added = {a["external_id"] for a in RADIO_ADDED}
-        return {"unmatched_shows": [x for x in RADIO_ON_DISK if f"ex-{x['abs_item_id']}" not in added], "unmatched_files": [],
+        return {"unmatched_shows": [x for x in RADIO_ON_DISK if f"ex-{x['abs_item_id']}" not in added],
+                "unmatched_files": [f for f in RADIO_UNMATCHED if f["id"] not in RADIO_MATCHED],
                 "synced_at": today.isoformat() + "T06:00:00Z"}
+    if path == "/radio/preview":  # Add a show from a link (DASH-212): any link is a made-up show; one with "nothing" in it is not
+        link = (query or {}).get("link", "")
+        if "nothing" in link:
+            return None
+        return {"show": {"provider": "rss", "external_id": link, "title": "The Lighthouse Keepers", "broadcaster": "Example Radio 4",
+                         "synopsis": "A made-up show about the people who kept the lights on, for the preview.", "web_url": link,
+                         "show_id": next((a["id"] for a in RADIO_ADDED if a["external_id"] == link), None)},
+                "series_count": 2, "episode_count": 14, "first_broadcast": "2019-03-04T09:00:00Z",
+                "latest_episodes": [{"title": t, "first_broadcast": (today - dt.timedelta(days=7 * n)).isoformat() + "T09:00:00Z", "duration_secs": 1680}
+                                    for n, t in enumerate(["Bishop Rock", "Eddystone", "Longships"])]}
     if path == "/radio/rootfolders":
         return [{"id": 1, "path": "/data/media/radio", "kind": "radio", "accessible": True, "unmapped_folders": []}]
     if path == "/radio/search":

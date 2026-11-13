@@ -295,6 +295,28 @@ await page.locator("#sites-table .chip", { hasText: "Sent to" }).waitFor({ timeo
 check("SRCH-02", "Get this one sends it and says where", await page.locator("#sites-table .chip", { hasText: "Sent to NZBGet" }).count() === 1);
 check("SRCH-02", "focus stays on that row", await page.evaluate(() => document.activeElement?.closest("tr")?.querySelector(".chip") !== null));
 
+// RAD-12: Settings, Radio: a show from a link, and files matched by hand (DASH-212)
+console.log("\n== RAD-12 radio library review and a show from a link");
+await open("settings-radio.html#radio-library-h");
+await page.locator("#radio-library-h").scrollIntoViewIfNeeded();
+await page.locator("button", { hasText: "Match by hand" }).first().waitFor({ timeout: 5000 }).catch(() => {});
+check("RAD-12", "files that match no episode are listed by podcast", await page.locator("section[aria-labelledby=radio-library-h] .rows .row").count() >= 2);
+await page.locator("button", { hasText: "Match by hand" }).first().click();
+await page.locator("#side-panel select").first().waitFor({ timeout: 5000 }).catch(() => {});
+await page.locator("#side-panel select").first().selectOption({ index: 1 });
+await page.locator("#side-panel button", { hasText: "Match" }).first().click();
+await page.locator("#side-panel .chip", { hasText: "Matched" }).waitFor({ timeout: 5000 }).catch(() => {});
+check("RAD-12", "Match by hand matches a file to the chosen episode", await page.locator("#side-panel .chip", { hasText: "Matched" }).count() === 1);
+await page.keyboard.press("Escape");
+await open("settings-radio.html#radio-link-h");
+await page.locator("#radio-link").fill("https://www.bbc.co.uk/programmes/example");
+await page.locator("#radio-link").press("Enter");
+await page.locator("button", { hasText: "Follow this show" }).waitFor({ timeout: 5000 }).catch(() => {});
+check("RAD-12", "Look it up shows the show behind the link", await page.locator("#radio-link-title").textContent().catch(() => "") === "The Lighthouse Keepers");
+await page.locator("button", { hasText: "Follow this show" }).click();
+await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).waitFor({ timeout: 5000 }).catch(() => {});
+check("RAD-12", "Follow this show adds it and says so", await page.locator("section[aria-labelledby=radio-link-h] .notice", { hasText: "added" }).count() === 1);
+
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");
 const keyed = await api("/api/services", { method: "POST", body: { type: "sonarr", name: "Journey Keyed", url: "http://journey-keyed:8989", api_key: SECRET } });
