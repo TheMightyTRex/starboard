@@ -141,10 +141,29 @@ def _artist_candidate(name, lookup):
             "suggestions": MUSIC_ON_DISK[name] if lookup else [], "lookup_error": None}
 
 
+# Releases a delay profile is holding back (DASH-210), for Activity, Downloads, Held downloads: one waiting for the
+# delay, one for the preferred kind of download, one an episode.
+def _held(hours, **kw):
+    import datetime as dt
+    now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+    return {"added": (now - dt.timedelta(hours=1)).isoformat(), "release_at": (now + dt.timedelta(hours=hours)).isoformat(), **kw}
+
+
+HELD = [_held(2, id=31, title="Iron.Valley.1982.1080p.BluRay.x264-SAMPLE", media={"kind": "movie", "id": 3, "title": "Iron Valley", "year": 1982},
+              episodes=[], quality={"quality": "Bluray-1080p"}, indexer="Example Torrents", protocol="torrent", reason="delay"),
+        _held(5, id=32, title="43.Planets.S02E04.720p.WEB.H264-MADEUP", media={"kind": "series", "id": 8, "title": "43 Planets", "year": 2019},
+              episodes=[{"id": 204, "season_number": 2, "episode_number": 4}], quality={"quality": "WEBDL-720p"},
+              indexer="Harbour Usenet", protocol="usenet", reason="delay"),
+        _held(26, id=33, title="The.Farewell.2019.2160p.WEB-DL-EXAMPLE", media={"kind": "movie", "id": 4, "title": "The Farewell", "year": 2019},
+              episodes=[], quality={"quality": "WEBDL-2160p"}, indexer="Example Torrents", protocol="torrent", reason="preferred_protocol")]
+
+
 def answer(path, q):
     """The made-up Reelix's answer for one GET, or None when this module does not know the path."""
     if path.startswith("/posters/"):
         return None
+    if path == "/pending":
+        return HELD
     if path == "/openapi.json":  # Reelix's own API description: Starboard looks for RFX-90's route in it (DASH-322)
         import os
         own = not os.environ.get("EXAMPLE_NO_OWN_DETAILS")
@@ -368,6 +387,11 @@ def change(method, path, body, q):
             if "keep_episodes" in body:
                 show["keep_episodes"] = body["keep_episodes"]
         return show
+    if len(parts) == 2 and parts[0] == "pending" and parts[1].isdigit() and method == "DELETE":  # Remove a held download (DASH-210)
+        found = next((h for h in HELD if h["id"] == int(parts[1])), None)
+        if found:
+            HELD.remove(found)
+        return {} if found else None
     if len(parts) == 2 and parts[0] == "blocklist" and parts[1].isdigit() and method == "DELETE":
         CHANGED.setdefault("unblocked", set()).add(int(parts[1]))
         return {}
@@ -398,6 +422,12 @@ def add(path, body):
         return [_candidate(*f, lookup=True) for f in ON_DISK if f"/data/media/movies/{f[0]}" in body.get("paths", [])]
     if path == "/libraryimport":
         return {"added": list(range(len(body.get("items") or []))), "errors": []}
+    if len(parts) == 3 and parts[0] == "pending" and parts[1].isdigit() and parts[2] == "grab":  # Get it now (DASH-210)
+        found = next((h for h in HELD if h["id"] == int(parts[1])), None)
+        if not found:
+            return None
+        HELD.remove(found)
+        return {"queue_id": 60 + found["id"], "download_client": "NZBGet" if found["protocol"] == "usenet" else "qBittorrent", "download_id": f"ex-held-{found['id']}"}
     if path == "/customitems":  # a folder with the person's own details (DASH-322, Reelix RFX-90)
         OWN_ADDED.append(body.get("path") or body.get("abs_item_id") or "")
         return {"id": 900 + len(OWN_ADDED), "kind": body.get("kind"), "title": body.get("title"), "path": body.get("path")}

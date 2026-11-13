@@ -348,6 +348,22 @@ await page.locator("#side-panel button", { hasText: "Bring in the ticked ones" }
 await page.locator("#lib-import .notice", { hasText: "Brought in" }).waitFor({ timeout: 10000 }).catch(() => {});
 check("LIB-03", "the folder with its own details is brought in with the matched ones", /Brought in 3 films\b/.test(await page.locator("#lib-import").textContent().catch(() => "")));
 
+// DL-02: held downloads on Activity, Downloads (DASH-210): Get it now and Remove, with focus kept in the list
+console.log("\n== DL-02 held downloads");
+await open("downloads.html");
+await page.locator("#held > li").first().waitFor({ timeout: 10000 }).catch(() => {});
+check("DL-02", "each held release is a row with its state, Get it now and Remove", await page.locator("#held > li").count() === 3
+  && await page.locator("#held > li").first().locator(".row__side .chip", { hasText: "Held" }).count() === 1);
+check("DL-02", "the soonest is first, in words", (await page.locator("#held > li .row__title").first().textContent()) === "Iron Valley (1982)");
+await page.locator("#held > li").first().locator("button", { hasText: "Get it now" }).click();
+await page.waitForFunction(() => document.querySelectorAll("#held > li").length === 2, null, { timeout: 5000 }).catch(() => {});
+check("DL-02", "Get it now sends it and says where", await page.locator("#held > li").count() === 2 && /Sent to qBittorrent/.test(await page.locator("#toast-stack").textContent().catch(() => "")));
+check("DL-02", "focus moves to the next row's first button", await page.evaluate(() => document.activeElement?.closest("#held > li") !== null && /Get it now/.test(document.activeElement.textContent)));
+await page.locator("#held > li").first().locator("button", { hasText: "Remove" }).click();
+await page.locator("dialog[open]").getByRole("button", { name: "Remove", exact: true }).click();
+await page.waitForFunction(() => document.querySelectorAll("#held > li").length === 1, null, { timeout: 5000 }).catch(() => {});
+check("DL-02", "Remove asks first, then takes it off the list", await page.locator("#held > li").count() === 1);
+
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");
 const keyed = await api("/api/services", { method: "POST", body: { type: "sonarr", name: "Journey Keyed", url: "http://journey-keyed:8989", api_key: SECRET } });

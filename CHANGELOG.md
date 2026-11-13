@@ -16,6 +16,9 @@ add features.
   your own details: title, year, description, station for radio, and a picture as an address or a file. It shows only
   when Reelix can take it (Reelix task RFX-90, not in Reelix yet); Starboard checks Reelix's API description at most
   once in ten minutes, only while a Bring them in note is shown (DASH-322).
+- Activity, Downloads: Held downloads, the releases a delay profile is holding back, with what each is for, its
+  quality and site, why it waits and when it goes. Get it now sends one to the download app at once; Remove asks
+  first. Asked only while the page is open, not on the queue's timer (DASH-210).
 - System, Backup and restore: When backups are made, with Off, Manual, Weekly (Sunday at 03:00, keeping 4) and Nightly
   (at 03:00, keeping 7). It makes a full backup without media when you let Starboard keep the backup password's key,
   then asks the server's own backup job, and shows the next run (DASH-17).

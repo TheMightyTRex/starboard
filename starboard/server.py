@@ -1283,6 +1283,9 @@ class Handler(BaseHTTPRequestHandler):
                 return library.handle(self, method, path)
 
             cfg = app.config
+            if path == "/api/held" or path.startswith("/api/held/"):  # Held downloads, with the manager key (DASH-210)
+                from . import held
+                return held.route(self, method, path)
             if path.startswith("/api/reelix/sites/"):  # Search the sites directly, with the manager key (DASH-213)
                 from . import reelix_search
                 return reelix_search.route(self, method, path)

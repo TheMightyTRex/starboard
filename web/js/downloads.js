@@ -364,6 +364,75 @@ async function load({ announceIt = false } = {}) {
   }
 }
 
+// Held downloads (DASH-210): releases Reelix found but a delay profile is holding back, in case a better one comes.
+// Asked when the page opens, with Check again and when the tab is shown again; not on the queue's timer, as the
+// list changes only when a delay ends (lightweight rule). Get it now sends one to the download app; Remove drops it.
+
+function heldWhen(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const days = Math.round((new Date(d.toDateString()) - new Date(new Date().toDateString())) / 86400000);
+  if (d <= new Date()) return "Goes at the next check";
+  return days === 0 ? `Goes at ${time}` : days === 1 ? `Goes at ${time} tomorrow` : `Goes on ${d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} at ${time}`;
+}
+
+function heldRow(h, old) {
+  if (old) return old;
+  const get = el("button", { type: "button", class: "btn" }, icon("download"), "Get it now",
+    el("span", { class: "visually-hidden", text: `: ${h.what || h.release}` }));
+  get.addEventListener("click", () => heldAct(h, "grab", get));
+  const remove = el("button", { type: "button", class: "btn" }, icon("trash-2"), "Remove",
+    el("span", { class: "visually-hidden", text: `: ${h.what || h.release}` }));
+  remove.addEventListener("click", () => heldAct(h, "remove", remove));
+  // The state first in row__side, then the row's two buttons (DESIGN-SYSTEM section 10).
+  return el("li", { class: "row row--no-lead" },
+    el("div", {}, el("div", { class: "row__title", text: h.what || h.release }),
+      el("div", { class: "row__meta", text: [h.what ? h.release : "", h.quality, h.site].filter(Boolean).join(" · ") }),
+      el("div", { class: "row__meta", text: [h.reason, heldWhen(h.release_at)].filter(Boolean).join(" · ") })),
+    el("div", { class: "row__side" }, chip("Held", "neutral"), get, remove));
+}
+
+let heldShown = false;
+async function loadHeld() {
+  let d;
+  try { d = await api("/api/held"); } catch { return; }
+  const box = $("#held-section");
+  // Shown once there is something held; it stays (saying nothing is held) after the last one goes, so focus has
+  // somewhere to land.
+  heldShown = heldShown || (d.available && d.items.length > 0);
+  box.hidden = !heldShown;
+  if (!heldShown) return;
+  const n = d.items.length;
+  $("#held-summary").textContent = n
+    ? `${n} ${n === 1 ? "release is" : "releases are"} held back by a delay profile, in case a better one comes. Each goes to the download app by itself at the time shown.`
+    : "Nothing is held back now.";
+  renderKeyed($("#held"), d.items, (h) => h.id, heldRow);
+}
+
+async function heldAct(h, action, button) {
+  if (action === "remove" && !(await confirmDialog({ title: "Remove this held download?",
+    message: `Reelix forgets ${h.release}. Nothing is downloaded, and Reelix may find it again at its next search.`, confirm: "Remove", danger: true }))) return;
+  const rows = $$("#held > li");
+  const at = rows.findIndex((r) => r.dataset.key === String(h.id));
+  button.disabled = true;
+  try {
+    const out = await api(action === "grab" ? `/api/held/${h.id}/grab` : `/api/held/${h.id}`, { method: action === "grab" ? "POST" : "DELETE" });
+    await loadHeld();
+    // Focus goes to the same place in the list (the next row's first button), or to the heading when it is empty.
+    const left = $$("#held > li");
+    const to = left.length ? $("button", left[Math.min(at, left.length - 1)]) : $("#held-h");
+    to?.focus();
+    if (action === "grab") {
+      toast(`${out.said}. It shows in the queue once the download app has it`);
+      load();
+    } else announce(`Removed. ${left.length ? `${left.length} still held` : "Nothing is held back now"}.`);
+  } catch (e) {
+    button.disabled = false;
+    problem(e.message, button);
+  }
+}
+
 // Speeds and the VPN: one tile per download client and per Gluetun, refreshed with the queue.
 
 function stat(value, label, tone, words) {
@@ -493,7 +562,7 @@ function setPaused(on) {
 }
 
 startPage().then(async () => {
-  $("#refresh").addEventListener("click", () => { load({ announceIt: true }); loadTransfer(true); });
+  $("#refresh").addEventListener("click", () => { load({ announceIt: true }); loadTransfer(true); loadHeld(); });
   $("#auto-refresh").addEventListener("click", () => {
     setPaused(!paused);
     announce(paused ? "Updates paused" : every ? `Updates resumed, every ${every} seconds` : "Updates only when you press Check again");
@@ -517,7 +586,8 @@ startPage().then(async () => {
     every = cfg.performance?.downloads_refresh ?? 15;
   } catch { /* links to the apps are an extra; the queue works without them */ }
   await Promise.all([load(), loadSchedule(), loadTransfer()]);
+  loadHeld();
   loadRecent();
   setPaused(false);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && !paused) { load(); loadSchedule(); loadTransfer(); } });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !paused) { load(); loadSchedule(); loadTransfer(); loadHeld(); } });
 });

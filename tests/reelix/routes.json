@@ -146,8 +146,7 @@
    "not_for_lite": "a test tool for release names"
   },
   "pending": {
-   "task": "DASH-210",
-   "what": "held downloads"
+   "starboard": "Activity, Downloads, Held downloads: Get it now and Remove (DASH-210)"
   },
   "profile": {
    "not_for_lite": "each Reelix user's own notification choices; Starboard has its own alerts"
