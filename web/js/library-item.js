@@ -356,7 +356,7 @@ function head(item) {
   const actions = [
     can.get ? el("button", { type: "button", class: "btn btn--primary", onclick: (e) => act("get", {}, e.currentTarget) },
       icon("download"), ITEM_TAB === "tv" ? "Get the missing episodes" : "Get it") : null,
-    item.listen ? newTabLink(item.listen.href, item.listen.label, { className: "btn btn--primary" }) : null,
+    item.listen ? newTabLink(item.listen.href, item.listen.label, { className: can.get ? "btn" : "btn btn--primary" }) : null,  // one primary (DASH-309, R9)
     follow,
     keep,
     item.can ? el("button", { type: "button", class: "btn", "aria-pressed": String(!!can.follow),

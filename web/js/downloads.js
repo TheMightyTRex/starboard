@@ -257,7 +257,10 @@ function detailsFoot(item) {
   // series' (broadcast or TVDB numbering against TMDB's).
   const numbering = item.reelix && item.download_id && item.messages.some((m) => /not part of the series/i.test(m));
   const choose = numbering ? [el("button", { type: "button", class: "btn btn--primary", onclick: () => chooseEpisode(item) }, icon("list-checks"), "Choose the episode")] : [];
-  return [...choose, ...fix, ...out, another, remove];
+  // One primary button in view (DASH-309, R9): the first, the thing to do now; the others are plain.
+  const all = [...choose, ...fix, ...out, another, remove];
+  all.filter((b) => b.classList.contains("btn--primary")).slice(1).forEach((b) => b.classList.remove("btn--primary"));
+  return all;
 }
 
 async function chooseEpisode(item) {

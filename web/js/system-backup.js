@@ -150,7 +150,7 @@ async function loadServer() {
   const focusKey = box.contains(document.activeElement) ? document.activeElement.closest("[data-key]")?.dataset.key : null;
   const prompt = el("input", { type: "checkbox", role: "switch", id: "with-prompt", checked: localPrompt() });
   prompt.addEventListener("change", () => { try { localStorage.setItem("starboard.backup.prompt", prompt.checked ? "1" : "0"); } catch { /* fine */ } });
-  const run = el("button", { type: "button", class: "btn btn--primary", id: "server-run", disabled: busy }, icon("play"), busy ? "Backing up now" : "Back up the server now");
+  const run = el("button", { type: "button", class: "btn", id: "server-run", disabled: busy }, icon("play"), busy ? "Backing up now" : "Back up the server now");
   run.addEventListener("click", async () => {
     try {
       await api("/api/backup/server", { method: "POST", body: { with_prompt: prompt.checked } });

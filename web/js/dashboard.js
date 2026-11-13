@@ -37,7 +37,8 @@ const CARDS = {
     const todo = r.items.filter((i) => !i.done && !i.ignored);
     if (!todo.length) return null;
     // The wizard (DASH-289): one item at a time; it opens only from Go through them (owner, 12 November 2026).
-    const walk = el("button", { type: "button", class: "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
+    // One primary in view (DASH-309, R9): while the dashboard is edited, Save is the primary button.
+    const walk = el("button", { type: "button", class: editing ? "btn btn--compact" : "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
     walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: () => draw() }));
     if (!editing) setupWizardOnce(() => draw());
     return el("div", { class: "stack-2" }, el("div", { class: "actions" }, walk), el("ul", { class: "rows" }, todo.map((i) => line(i.title, i.why, i.href.startsWith("http") ? reachableUrl(i.href) : i.href))));
