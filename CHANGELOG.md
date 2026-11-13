@@ -65,6 +65,11 @@ add features.
 
 ### Changed
 
+- Plug-in files that are only read to show them (each plug-in's manifest, state and settings) are parsed once and kept
+  while the file is unchanged, instead of on every request. Every page's /api/session reads each plug-in's manifest
+  for the menus. Measured on the example server: /api/session 1.28 ms to 0.85 ms, the plug-ins list 7.4 ms to 4.4 ms,
+  the dashboard's plug-in cards 3.1 ms to 1.7 ms, System, Jobs 3.0 ms to 1.3 ms and Display's styles 3.1 ms to 1.5 ms
+  (DASH-397).
 - The Library keeps a tab's list, already read, for 2 minutes after it was last used, with its titles folded for
   searching once, instead of reading and parsing the whole file for every page, filter and search. Measured with
   10,000 films (a 2.7 MB list): a wall page from 99 ms to 14 ms, a search from 172 ms to 13 ms. While kept it holds

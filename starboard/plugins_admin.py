@@ -12,6 +12,7 @@ import json
 import os
 import re
 import shutil
+import threading
 import urllib.request
 
 from . import api_v1, plugins
@@ -94,13 +95,41 @@ def _read(path, default=None):
         return default
 
 
+# Plug-in files read on every page (the menus, through /api/session) and by the cards, jobs and lists are parsed once
+# and kept while the file is unchanged (optimisation review, 13 November 2026: a page parsed each plug-in's manifest
+# again, 13 KB for On demand, and the plug-ins list read about 13 files for each plug-in shown). Plug-in files are
+# written whole and moved into place, so a change always shows in the file's size, time or inode.
+_kept = {}  # path -> (stamp, parsed)
+_kept_lock = threading.Lock()
+
+
+def _read_kept(path, default=None):
+    """As _read, for reading only: the parsed file is shared between requests, so never change what it returns."""
+    try:
+        st = os.stat(path)
+    except OSError:
+        with _kept_lock:
+            _kept.pop(path, None)
+        return default
+    stamp = (st.st_mtime_ns, st.st_size, st.st_ino)
+    hit = _kept.get(path)
+    if hit and hit[0] == stamp:
+        return hit[1]
+    value = _read(path)
+    if value is None:
+        return default
+    with _kept_lock:
+        _kept[path] = (stamp, value)
+    return value
+
+
 def styles(data_dir):
     """Every style from plug-ins that are turned on: [{value, name, description, plugin}] for Display (DASH-284)."""
     out = []
     for p in listing(data_dir):
         if p["state"] != "enabled":
             continue
-        m = _read(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {})
+        m = _read_kept(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {})
         for st in m.get("styles") or []:
             out.append({"value": f"{p['id']}.{st['id']}", "name": st["name"], "description": st.get("description", ""),
                         "plugin": p["name"], "light": st["light"]["accent"], "dark": st["dark"]["accent"],
@@ -113,7 +142,7 @@ def styles_css(data_dir):
     rules = []
     for p in listing(data_dir):
         if p["state"] == "enabled":
-            m = _read(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {})
+            m = _read_kept(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {})
             rules.append(plugin_styles.css(p["id"], m.get("styles") or []))
     return "".join(rules)
 
@@ -173,7 +202,7 @@ def added(data_dir):
         return []
     out = []
     for p in names:
-        m = _read(os.path.join(root(data_dir), p, "manifest.json")) if re.match(plugins.ID, p) else None
+        m = _read_kept(os.path.join(root(data_dir), p, "manifest.json")) if re.match(plugins.ID, p) else None
         if isinstance(m, dict):
             out.append({"id": p, "name": str(m.get("name") or p)[:40]})
     return sorted(out, key=lambda x: x["name"].lower())
@@ -295,8 +324,8 @@ def listing(data_dir):
     for pid in names:
         if pid.startswith(".") or not re.match(plugins.ID, pid):
             continue
-        m = _read(os.path.join(root(data_dir), pid, "manifest.json"))
-        st = _read(os.path.join(root(data_dir), pid, "state.json"), {})
+        m = _read_kept(os.path.join(root(data_dir), pid, "manifest.json"))
+        st = _read_kept(os.path.join(root(data_dir), pid, "state.json"), {})
         if m:
             from . import plugin_styles
             fonts = plugin_styles.FONTS
@@ -629,8 +658,8 @@ def stop_all(data_dir, helper=None):
 
 def public_settings(data_dir, pid, manifest=None):
     """Its settings for the page: secrets as set or not set, never their values (P7)."""
-    m = manifest or _read(os.path.join(folder(data_dir, pid), "manifest.json"), {})
-    values = _read(os.path.join(folder(data_dir, pid), "settings.json"), {})
+    m = manifest or _read_kept(os.path.join(folder(data_dir, pid), "manifest.json"), {})
+    values = _read_kept(os.path.join(folder(data_dir, pid), "settings.json"), {})
     out = []
     for s in m.get("settings") or []:
         v = values.get(s["key"])

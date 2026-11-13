@@ -96,7 +96,7 @@ def available(data_dir):
     for p in plugins_admin.listing(data_dir):
         if p["state"] != "enabled":
             continue
-        m = plugins_admin._read(f"{plugins_admin.folder(data_dir, p['id'])}/manifest.json", {}) or {}
+        m = plugins_admin._read_kept(f"{plugins_admin.folder(data_dir, p['id'])}/manifest.json", {}) or {}
         for i, c in enumerate(m.get("cards") or []):
             cid = c.get("id") or str(i)
             out.append({"id": f"plugin:{p['id']}:{cid}", "title": c.get("title") or p["name"], "type": c["type"],
@@ -108,7 +108,7 @@ def answer(data_dir, pid, cid, opener=None):
     """One card's checked answer, kept for a minute: {type, format, data} or {type, problem}."""
     from . import plugins_admin
     key = (pid, cid)
-    m = plugins_admin._read(f"{plugins_admin.folder(data_dir, pid)}/manifest.json", {}) or {}
+    m = plugins_admin._read_kept(f"{plugins_admin.folder(data_dir, pid)}/manifest.json", {}) or {}
     cards = {(c.get("id") or str(i)): c for i, c in enumerate(m.get("cards") or [])}
     card = cards.get(cid)
     keep = max(KEEP, 60 * int((card or {}).get("refresh_minutes") or 1))  # a card may ask to be read less often (DASH-330)
