@@ -413,6 +413,30 @@ if (await trakt.count()) {
   check("T15", "after Apply, focus stays in Trakt's choice", !f15.lost && await page.evaluate(() => !!document.activeElement.closest("form[data-key=trakt]")), `${f15.tag} ${f15.text}`);
   check("T15", "the install is said", /Installed Trakt/.test(s15), s15);
 } else check("T15", "the example Jellyfin shows its recommended plug-ins", false, "not shown");
+// T18 Audio description tracks (DASH-410, plug-in API 1.12): from the page's heading, Tab reaches the Plays in step
+// choice for a file; an arrow chooses, focus stays on that choice and what happened is said; Tab goes on to the row's
+// link, which says it opens in a new tab, and to the file picker for an upload.
+await page.goto(`${base}/settings-plugin.html?id=audio-description-tracks`);
+await settle();
+const tracksTab = page.getByRole("tab", { name: "Tracks" });
+if (await tracksTab.count()) {
+  await tracksTab.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+}
+const step = await tabTo((f) => f.tag === "SELECT" && /^Plays in step\?: Dune/.test(f.text), 80);
+check("T18", "Tab reaches the Plays in step choice for a file", !!step, step ? step.text : "not reached");
+if (step) {
+  await page.keyboard.press("ArrowDown");
+  await settle();
+  const f18 = await focus(), s18 = await said();
+  check("T18", "after choosing, focus stays on that choice", f18.tag === "SELECT" && /^Plays in step\?: Dune/.test(f18.text), `${f18.tag} ${f18.text}`);
+  check("T18", "what happened is said", /example data/.test(s18), s18);
+}
+const link18 = await tabTo((f) => f.tag === "A" && /^Search AudioVault for Brazil/.test(f.text), 20);
+check("T18", "Tab reaches the row's link, which says it opens in a new tab", !!link18 && /opens in a new tab/.test(link18.text), link18 ? link18.text : "not reached");
+const file18 = await tabTo((f) => f.tag === "INPUT" && f.inMain && f.id === "add-audio-description-tracks-inbox-file", 20);
+check("T18", "Tab reaches the file picker for an upload", !!file18, file18 ? file18.id : "not reached");
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);

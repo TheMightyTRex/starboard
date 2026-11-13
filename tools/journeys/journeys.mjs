@@ -897,6 +897,34 @@ check("WS-05", "Top titles shows the most played series first, with plays, peopl
 await page.setViewportSize({ width: 375, height: 812 });
 check("WS-06", "the tables fit at phone width", await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
 await page.setViewportSize({ width: 1280, height: 860 });
+// DASH-410: plug-in API 1.12 on the example Audio description plug-ins: a row's link opens in a new tab and says so,
+// the plug-in's own words for each state, and an upload that takes only a file.
+console.log("\n== AD Audio description sources");
+await open("settings-plugin.html?id=audio-description-sources");
+const adTab = page.getByRole("tab", { name: "AudioVault" });
+if (await adTab.count()) await adTab.click();
+await page.locator("[data-menu=films]").first().waitFor({ timeout: 10000 }).catch(() => {});
+await page.locator("[data-menu=films]").first().click();
+await page.waitForTimeout(300);
+const adLink = page.getByRole("link", { name: /^Search AudioVault for Brazil \(1985\) \(opens in a new tab\)$/ });
+check("ADS-01", "a row's link is named by where it goes and says it opens in a new tab", (await adLink.count()) === 1);
+check("ADS-02", "it goes to AudioVault's own search in a new tab, with nothing passed back",
+  (await adLink.getAttribute("href")) === "https://audiovault.net/movies?search=Brazil" && (await adLink.getAttribute("target")) === "_blank"
+  && /noopener/.test(await adLink.getAttribute("rel") || ""));
+check("ADS-03", "a link-only row says so in the plug-in's own words, not Works", (await page.getByText("No description here").count()) > 0
+  && !(await page.locator(".row__side").getByText(/^Works$/).count()));
+await open("settings-plugin.html?id=audio-description-tracks");
+const adtTab = page.getByRole("tab", { name: "Tracks" });
+if (await adtTab.count()) await adtTab.click();
+await page.getByLabel("Choose a description track").waitFor({ timeout: 10000 }).catch(() => {});
+check("ADS-04", "the upload takes only a file: a labelled file picker and no address box",
+  (await page.getByLabel("Choose a description track").count()) === 1 && !(await page.locator("#add-audio-description-tracks-inbox").count()));
+check("ADS-05", "each file shows what happened in plain words", (await page.getByText("Lengths differ", { exact: true }).count()) === 1
+  && (await page.getByText("Added", { exact: true }).count()) === 1 && !(await page.getByText("Not answering", { exact: true }).count()));
+check("ADS-06", "the plays in step choice is named for its file", (await page.getByLabel("Plays in step?: Dune (2021).mp3").count()) === 1);
+await page.setViewportSize({ width: 375, height: 812 });
+check("ADS-07", "the list fits at phone width", await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
+await page.setViewportSize({ width: 1280, height: 860 });
 // DASH-401: the Notifications plug-in's settings, a section for each channel; a saved token never comes back to the page.
 console.log("\n== NT Notifications plug-in settings");
 await open("settings-plugin.html?id=notifications");

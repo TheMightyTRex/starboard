@@ -3,7 +3,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.11.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.12.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -76,7 +76,7 @@ settings, events and jobs.
 | `start` | When it runs | `always` (the default) or `when_needed`, for the first container only. Read [Resting when idle](plugin-api-reference.md#resting-when-idle) |
 | `idle_stop_minutes` | For `when_needed`: minutes idle before it rests | A whole number; 15 when left out |
 | `publish` | Puts `port` on Gluetun for the home network (plug-in API 1.9) | true or false; only with `network: vpn` and a `port` |
-| `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out |
+| `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out. From API 1.12, `media`: the media folder's owner, only for a container that mounts `media/<one folder>`. Read [Adding files to the media folder](#adding-files-to-the-media-folder) |
 | `command` | The command it runs | Only plug-ins built into Starboard may set it |
 
 The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hello-card-main`.
@@ -99,6 +99,20 @@ The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hell
 
 Nothing else can be mounted. The folder name after `media/` is 1 to 60 letters, numbers, dots, underscores and
 hyphens, so it cannot climb out with `..`.
+
+### Adding files to the media folder
+
+A container that adds files to `media/<one folder>`, such as a sound track next to a film in `media/movies`, needs to
+write as the folder's owner. From API 1.12, give it `"user": "media"`:
+
+- It runs as the media folder's owner, the apps' user and group from **Install apps** (1000:1000 when Starboard does
+  not know them), never root.
+- Before it starts, Starboard makes each `media/<one folder>` it mounts that is missing, owned by the user it runs as.
+  A folder that is there already is left as it is.
+- People read, before they add it, the folders it can change and that it runs as the media folder's owner.
+
+Ask for the fewest folders you need. Never delete the person's files: move them to a folder of your own and let them
+delete it.
 
 ### Security rules
 
@@ -313,6 +327,7 @@ Start each line with what people notice, in a few words.
 | 1.8 | 13 November 2026 | Sections with tables in a custom setting's list, selecting several, guides, and notices with progress |
 | 1.9 | 13 November 2026 | `publish` on a container with `network: vpn` |
 | 1.10 | 13 November 2026 | `changes`: what changed in each version, shown as **What is new** after an update |
+| 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.11 | 13 November 2026 | Four more events (`request.available`, `download.failed`, `disk.nearly_full`, `update.available`), and `readonly` on a custom setting's list with folds |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.

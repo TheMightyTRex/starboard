@@ -426,7 +426,8 @@ def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=No
         key, item = api_v1.create_key(data_dir, f"Plug-in: {manifest['name']}"[:60], "read", plugins.key_scopes(manifest), None)
         _write(os.path.join(where, "key"), key)
         hosted = (host or host_for_builtin()) if builtin else None
-        _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir, hosted), 0o644)
+        _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir, hosted,
+                                                                     media_owner(data_dir)), 0o644)
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _write(os.path.join(where, "state.json"), {"state": "installed", "installed_at": now, "key_id": item["id"], "builtin": builtin})
     api_v1.audit(data_dir, "plugin_installed", plugin=pid, version=manifest["version"], permissions=manifest.get("permissions") or [])
@@ -441,6 +442,42 @@ def host_path(data_dir, pid):
     return f"{base}/plugins/{pid}"
 
 
+def media_owner(data_dir):
+    """The media folder's owner as "uid:gid": the apps' PUID and PGID from Install apps, 1000:1000 when unknown, as
+    everywhere else in Starboard. A container with user "media" runs as it (API 1.12, DASH-410)."""
+    from . import stack
+    env = stack.env_values(data_dir)
+    uid, gid = str(env.get("PUID") or "1000"), str(env.get("PGID") or "1000")
+    return f"{uid}:{gid}" if re.fullmatch(r"[1-9]\d{0,5}", uid) and re.fullmatch(r"\d{1,6}", gid) else "1000:1000"
+
+
+def media_host_dir(data_dir):
+    """The media folder on the computer itself, as the Compose files name it; None when Install apps has not set it."""
+    from . import stack
+    media = (stack.env_values(data_dir).get("DATA_DIR") or "").rstrip("/")
+    return f"{media}/media" if media.startswith("/") and ".." not in media else None
+
+
+def _prepare_media(data_dir, pid):
+    """Shell lines that make each media/<one folder> a container mounts and is missing, owned by the user it runs as,
+    and the folder to show the helper (API 1.12, DASH-410). Docker would make a missing one as root, and the plug-in
+    could not write there. A folder that is there already is left as it is: it may be the person's own."""
+    from . import containers
+    m = _read(os.path.join(folder(data_dir, pid), "manifest.json"), {}) or {}
+    media = media_host_dir(data_dir)
+    lines = []
+    for c in m.get("containers") or []:
+        user = c.get("user") or "10001:10001"
+        user = media_owner(data_dir) if user == "media" else user
+        if not re.match(r"^\d{1,6}:\d{1,6}$", user):
+            continue
+        for v in c.get("volumes") or []:
+            if media and isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v) and v.split("/", 1)[1] not in (".", ".."):
+                d = containers._quote(f"{media}/{v.split('/', 1)[1]}")
+                lines.append(f"{{ [ -d {d} ] || {{ mkdir -p {d} && chown {user} {d}; }}; }}")
+    return " && ".join(lines), (media if lines else None)
+
+
 def _prepare_folders(data_dir, pid):
     """Shell lines that make each container's data folder and give it to the user the container runs as, run as root
     in the helper before starting: a folder Docker makes by itself belongs to root, and the plug-in could not write."""
@@ -452,6 +489,7 @@ def _prepare_folders(data_dir, pid):
         if "data" not in (c.get("volumes") or []):
             continue
         user = c.get("user") or (f"{os.getuid()}:{os.getgid()}" if st.get("builtin") and c.get("image") == "starboard" else "10001:10001")
+        user = media_owner(data_dir) if user == "media" else user  # API 1.12
         if not re.match(r"^\d{1,6}:\d{1,6}$", user) or not re.match(r"^[a-z0-9-]{1,21}$", c.get("name", "")):
             continue
         d = containers._quote(f"data/{c['name']}")
@@ -468,7 +506,9 @@ def _compose_run(data_dir, pid, command, helper=None):
     q = containers._quote
     # The exit code is kept (a pipe into tail would hide a failure), and only the last lines are shown.
     prep = _prepare_folders(data_dir, pid) if command.startswith("up") else ""
+    media_prep, media = _prepare_media(data_dir, pid) if command.startswith("up") else ("", None)
     script = ((f"{prep} || {{ echo 'Could not make its data folder'; exit 1; }}; " if prep else "") +
+              (f"{media_prep} || {{ echo 'Could not make its folder in the media folder'; exit 1; }}; " if media_prep else "") +
               f"out=$(docker compose -p {q('plugin-' + pid)} -f compose.yaml {command} 2>&1); code=$?; "
               "printf '%s\n' \"$out\" | tail -n 40")
     if command.startswith("up"):
@@ -476,7 +516,8 @@ def _compose_run(data_dir, pid, command, helper=None):
         script += f"; [ $code -eq 0 ] && docker network connect {q('plugin-' + pid)} starboard 2>/dev/null"
     script += "; exit $code"
     try:
-        code, text = (helper or containers._helper)(host, script)
+        # The media folder is shown to the helper only when a folder in it must be made (API 1.12).
+        code, text = (helper or containers._helper)(host, script, *([[f"{media}:{media}"]] if media else []))
     except containers.DockerError as e:
         return False, f"Starboard cannot reach Docker ({e})"
     return code == 0, text

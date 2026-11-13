@@ -9,6 +9,11 @@ add features.
 
 ### Added
 
+- Plug-in API 1.12 (DASH-410): a plug-in container may run as the media folder's owner (`"user": "media"`) to add
+  files in the media folders it mounts, such as a described sound track next to a film; Starboard makes a missing
+  folder for it, owned by that user, and says so before the plug-in is added. A custom screen's row may have a link
+  that opens in a new tab, and its add box may take only a file.
+
 - System, Backup and restore, Full without media says which disk the copies go on, and warns when the folder is on
   the system disk, where a failed disk would take the backups with it. The folder it suggests is on another disk:
   the media folder's when the media is on one, else the biggest other disk's. Making a full backup and restoring it

@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.11.0"  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.12.0"  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -180,8 +180,11 @@ def check(manifest, dev=False, builtin=False):
         if not isinstance(env, dict) or any(not re.match(r"^[A-Z][A-Z0-9_]{0,60}$", str(k)) or not isinstance(v, (str, int, bool)) for k, v in env.items()):
             out.append(f"{where}: env must map UPPER_CASE names to plain values")
         user = c.get("user")
-        if user is not None and (not isinstance(user, str) or not re.match(r"^\d{1,6}:\d{1,6}$", user) or user.split(":")[0] == "0"):
-            out.append(f"{where}: user must be a non-root uid:gid such as 1000:1000")
+        if user == "media":  # API 1.12 (DASH-410): the media folder's owner, so files it adds belong to the person
+            if not any(isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v) for v in c.get("volumes") or []):
+                out.append(f"{where}: user media is only for a container that mounts media/<one folder>")
+        elif user is not None and (not isinstance(user, str) or not re.match(r"^\d{1,6}:\d{1,6}$", user) or user.split(":")[0] == "0"):
+            out.append(f"{where}: user must be a non-root uid:gid such as 1000:1000, or media")
         if c.get("start", "always") not in ("always", "when_needed"):
             out.append(f"{where}: start must be always or when_needed")
     for i, s in enumerate(m.get("settings") or []):
@@ -322,6 +325,8 @@ def install_warning(manifest):
     if containers:
         change.append("Its own folder in Starboard's data (data/plugins/" + str(manifest.get("id")) + ")")
     change += [f"Files in your media folder under {v.split('/', 1)[1]}" for v in sorted(vols) if v.startswith("media/")]
+    if any(c.get("user") == "media" for c in containers):  # API 1.12
+        change.append("It runs as the owner of your media folder, so the files it adds there are yours to move or delete")
     if "iptv" in vols:
         change.append("The Live TV folder Jellyfin reads")
     change += [CHANGES[p] for p in perms if p in CHANGES]
@@ -353,10 +358,11 @@ def key_scopes(manifest):
     return sorted({PERMISSIONS[p][2] for p in manifest.get("permissions") or [] if PERMISSIONS[p][2]})
 
 
-def compose(manifest, plugin_dir, media_dir, host=None):
+def compose(manifest, plugin_dir, media_dir, host=None, media_user=None):
     """The Compose file Starboard writes for a plug-in, with the hardened defaults the plug-in cannot change (PS2 to
     PS5). `plugin_dir` is data/plugins/<id> on the host; `media_dir` the media folder. `host`, for a plug-in built
-    into Starboard: {"image": Starboard's own image, "user": "uid:gid", "iptv": the Live TV folder}."""
+    into Starboard: {"image": Starboard's own image, "user": "uid:gid", "iptv": the Live TV folder}. `media_user`:
+    the media folder's owner as "uid:gid", for a container with user "media" (API 1.12); 1000:1000 when unknown."""
     host = host or {}
     problems = check(manifest, dev=True, builtin=bool(host))
     if problems:
@@ -375,6 +381,8 @@ def compose(manifest, plugin_dir, media_dir, host=None):
         if not image:
             raise ValueError("Starboard could not find its own image for this plug-in")
         user = c.get("user") or (host.get("user") if c["image"] == "starboard" else None) or "10001:10001"
+        if user == "media":
+            user = media_user if media_user and re.match(r"^[1-9]\d{0,5}:\d{1,6}$", media_user) else "1000:1000"
         lines += [f"  {name}:", f"    image: {json.dumps(image)}", f"    container_name: {name}", "    restart: unless-stopped",
                   "    read_only: true", "    tmpfs:", "      - /tmp:size=64m", "    cap_drop:", "      - ALL",
                   "    security_opt:", "      - no-new-privileges:true", f"    user: {json.dumps(user)}",
@@ -493,7 +501,7 @@ def write_schema(path):
                                "port": {"type": "integer", "minimum": 1, "maximum": 65535}, "network": {"enum": sorted(NETWORKS)}, "publish": {"type": "boolean"},
                                "volumes": {"type": "array", "items": {"type": "string"}}, "env": {"type": "object"},
                                "start": {"enum": ["always", "when_needed"]}, "idle_stop_minutes": {"type": "integer"},
-                               "user": {"type": "string", "pattern": r"^[1-9]\d{0,5}:\d{1,6}$"}}}},
+                               "user": {"type": "string", "pattern": r"^([1-9]\d{0,5}:\d{1,6}|media)$"}}}},
             "resources": {"type": "object", "additionalProperties": {"type": "object", "additionalProperties": False,
                                                                       "properties": {"memory": {"type": "integer", "maximum": CEILING_MEMORY},
                                                                                      "cpus": {"type": "number", "maximum": CEILING_CPUS}}}},
