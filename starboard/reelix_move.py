@@ -7,11 +7,15 @@ what a person would otherwise have to type:
 
 - each app's address and API key: the key from the app's own settings file (discovery.read_key), the address by
   the app's container name on its Docker network, which Reelix joins for the move and leaves afterwards;
-- the keys the apps hide, so Reelix cannot read them over the API (DASH-128): Prowlarr's indexer keys, read from
-  Prowlarr's own database. Anything still missing is listed for the person to type;
+- the keys the apps hide, so Reelix cannot read them over the API (DASH-128): indexer keys, read from Prowlarr's own
+  database, or Radarr's, Sonarr's, Lidarr's or Readarr's for sites added straight into them. Anything still missing
+  is listed in the preview, by name, for the person to type; SABnzbd's key, for a SABnzbd that stays, comes from
+  sabnzbd.ini once Starboard runs it (server.after_takeover);
 - path differences: where an app sees the media under another path than Reelix does, a path rewrite;
 - qBittorrent (DASH-129): Reelix gets it by the name it has on Starboard's stack (gluetun when it runs through the
-  VPN), with the password the person gives, checked against qBittorrent first.
+  VPN, as Docker says), with the password the person gives, checked against qBittorrent first. Without a password,
+  a fixed address Reelix has for it (an IP address) still becomes that name. The page says when the old apps needed no
+  password because qBittorrent lets their addresses in (its allow list), as Reelix then needs it.
 
 The order is Reelix's own advice: Prowlarr first, Seerr last. Search for missing stays off. Download apps are not
 moved: Starboard connects Reelix to its own qBittorrent and NZBGet. The moved indexers can be held (switched off) so
@@ -172,32 +176,86 @@ def hidden_from_db(db_path, wanted):
     return found
 
 
+# Each app's own database, in its /config folder (Bookshelf, the Readarr fork, may name its own).
+DATABASES = {"prowlarr": ("prowlarr.db",), "radarr": ("radarr.db",), "sonarr": ("sonarr.db",), "lidarr": ("lidarr.db",),
+             "readarr": ("readarr.db", "bookshelf.db")}
+
+
+def app_secrets(container, source, wanted):
+    """An app's hidden keys from its own database (with its write-ahead log), read through Docker into a private
+    temporary folder that is emptied straight after; {} when there is none or it cannot be read. Indexers added
+    straight into Radarr, Sonarr, Lidarr or Readarr hide their keys as Prowlarr's do (DASH-128)."""
+    if not wanted or source not in DATABASES:
+        return {}
+    for name in DATABASES[source]:
+        files, folder = _read_files(container, [f"/config/{name}", f"/config/{name}-wal"])
+        try:
+            db = files.get(f"/config/{name}")
+            if db:
+                return hidden_from_db(db, wanted)
+        except sqlite3.Error:
+            return {}
+        finally:
+            for f in os.listdir(folder):
+                os.remove(os.path.join(folder, f))
+            os.rmdir(folder)
+    return {}
+
+
 def prowlarr_secrets(container, wanted):
     """Prowlarr's hidden indexer keys from its database (prowlarr.db with its write-ahead log); {} when unreadable."""
-    if not wanted:
-        return {}
-    files, folder = _read_files(container, ["/config/prowlarr.db", "/config/prowlarr.db-wal"])
-    try:
-        db = files.get("/config/prowlarr.db")
-        return hidden_from_db(db, wanted) if db else {}
-    except sqlite3.Error:
-        return {}
-    finally:
-        for f in os.listdir(folder):
-            os.remove(os.path.join(folder, f))
-        os.rmdir(folder)
+    return app_secrets(container, "prowlarr", wanted)
+
+
+def hidden_secrets(src, wanted):
+    """The hidden keys Starboard can read for this app."""
+    if src["source"] == "prowlarr":
+        return prowlarr_secrets(src["container"], wanted)
+    return app_secrets(src["container"], src["source"], wanted)
+
+
+def _moves(item):
+    """Whether the move takes this item: download apps are left out (Starboard connects its own), so a key they hide
+    is never asked for or counted (DASH-251)."""
+    category = item.get("category") or str(item.get("key") or "").split(":", 1)[0]
+    return category in CATEGORIES
 
 
 def missing(plan):
-    """The "<item key>:<field>" secrets a preview says are still needed."""
-    return [f"{i['key']}:{field}" for i in plan.get("items") or [] for field in i.get("missing_secrets") or []]
+    """The "<item key>:<field>" secrets a preview says are still needed, for what moves."""
+    return [f"{i['key']}:{field}" for i in plan.get("items") or [] if _moves(i) for field in i.get("missing_secrets") or []]
+
+
+def needs(plan, still):
+    """The keys still to type, each with what it belongs to, for the page: [{id, name, category, field}]."""
+    names = {i.get("key"): i for i in plan.get("items") or []}
+    out = []
+    for want in still:
+        key, _, field = want.rpartition(":")
+        item = names.get(key) or {}
+        out.append({"id": want, "name": item.get("name") or key, "category": item.get("category") or key.split(":", 1)[0],
+                    "field": field})
+    return out
 
 
 # The move itself -----------------------------------------------------------------------------------------------
 
+# The hidden keys the last preview read from each app's database, so the move does not read them again. Held in
+# memory only, never written or logged.
+_found = {}
+
+def typed_for(src, typed):
+    """What the person typed for this app: `typed` is {source: {"indexer:3:apiKey": value}}, one set per app, as the
+    same item key can be in two apps; a flat {"indexer:3:apiKey": value} (the terminal set-up) goes to every app."""
+    typed = typed or {}
+    mine = typed.get(src["source"])
+    flat = {k: v for k, v in typed.items() if isinstance(v, str)}
+    return flat | (dict(mine) if isinstance(mine, dict) else {})
+
+
 def _connection(src, typed=None):
     return {"source": src["source"], "url": src["url"], "api_key": src["api_key"] or "",
-            "path_rewrites": src["path_rewrites"], "secrets": dict(src.get("secrets") or {}) | dict(typed or {})}
+            "path_rewrites": src["path_rewrites"], "secrets": dict(src.get("secrets") or {}) | typed_for(src, typed)}
 
 
 def counts(plan):
@@ -220,8 +278,9 @@ def preview(base, password, srcs, typed=None, opener=None, docker=None):
                 continue
             _, plan = admin.call("POST", "/system/migrate/preview", _connection(src, typed), timeout=180)
             need = missing(plan or {})
-            if need and src["source"] == "prowlarr":
-                src["secrets"] = prowlarr_secrets(src["container"], need)
+            if need:
+                src["secrets"] = hidden_secrets(src, need)
+                _found[src["source"]] = dict(src["secrets"])
                 if src["secrets"]:
                     _, plan = admin.call("POST", "/system/migrate/preview", _connection(src, typed), timeout=180)
                     need = missing(plan or {})
@@ -229,7 +288,7 @@ def preview(base, password, srcs, typed=None, opener=None, docker=None):
                         "counts": counts(plan or {}), "notes": (plan or {}).get("notes") or [],
                         "skipped": [{"name": i.get("name"), "category": i.get("category"), "why": i.get("detail")}
                                     for i in (plan or {}).get("items") or [] if i.get("action") == "skip"],
-                        "still_missing": need, "filled": len(src.get("secrets") or {})})
+                        "still_missing": need, "needs": needs(plan or {}, need), "filled": len(src.get("secrets") or {})})
     finally:
         leave_networks(joined, docker)
     return out
@@ -291,7 +350,11 @@ def run_all(base, password, srcs, typed=None, hold=True, opener=None, docker=Non
                 continue
             if tasks:
                 tasks.start(tid, "Reading it", now=f"Moving {src['app']}")
+            if not src.get("secrets") and _found.get(src["source"]):
+                src["secrets"] = dict(_found[src["source"]])  # what the last preview read from its database
             if src["source"] == "prowlarr" and not src.get("secrets"):
+                # Prowlarr's preview is only its sites, so it is quick to ask again; Radarr's or Sonarr's reads the
+                # whole library, so theirs are read only when "Show what moves" asks (lightweight first).
                 _, plan = admin.call("POST", "/system/migrate/preview", _connection(src, typed), timeout=180)
                 src["secrets"] = prowlarr_secrets(src["container"], missing(plan or {}))
             log(f"Moving {src['app']}")
@@ -376,10 +439,40 @@ def conf_ban_minutes(text):
     return 60
 
 
+def conf_allow_list(text):
+    """The address ranges qBittorrent lets in without a password ("Bypass authentication for clients in whitelisted IP
+    subnets"): AuthSubnetWhitelist in [WebUI] (qBittorrent 5) or WebUI\\AuthSubnetWhitelist in [Preferences], when
+    it is enabled. [] when it is off or empty. The old apps often reached qBittorrent this way, with no password
+    (DASH-129), so Reelix, which reaches it by name from another address, needs the password."""
+    section, on, ranges = "", False, []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1]
+            continue
+        key, _, value = line.partition("=")
+        key = key[6:] if key.startswith("WebUI\\") else key if section == "WebUI" else ""
+        if key == "AuthSubnetWhitelistEnabled":
+            on = value.strip().lower() == "true"
+        elif key == "AuthSubnetWhitelist":
+            ranges = [r.strip() for r in value.split(",") if r.strip()][:20]
+    return ranges if on else []
+
+
+def qbit_through_vpn(container="qbittorrent"):
+    """Whether qBittorrent runs on another container's network (the VPN's), from Docker; None when Docker cannot say.
+    On Starboard's stack that container is gluetun, so Reelix reaches qBittorrent there (DASH-129)."""
+    try:
+        mode = ((_inspect(container) or {}).get("HostConfig") or {}).get("NetworkMode") or ""
+    except containers.DockerError:
+        return None
+    return mode.startswith(("container:", "service:"))
+
+
 def qbit_conf(container="qbittorrent"):
     """What qBittorrent's own settings file says (DASH-251): its web user name (None when Starboard could not read
     the file, or it sets none) and how many minutes a sign-in ban lasts."""
-    out = {"user": None, "read": False, "ban_minutes": 60}
+    out = {"user": None, "read": False, "ban_minutes": 60, "allow_list": []}
     files, folder = {}, None
     try:
         files, folder = _read_files(container, ["/config/qBittorrent/qBittorrent.conf"], limit=2_000_000)
@@ -387,7 +480,7 @@ def qbit_conf(container="qbittorrent"):
         if path:
             with open(path, encoding="utf-8", errors="replace") as f:
                 text = f.read()
-            out.update(user=conf_user(text), read=True, ban_minutes=conf_ban_minutes(text))
+            out.update(user=conf_user(text), read=True, ban_minutes=conf_ban_minutes(text), allow_list=conf_allow_list(text))
     except (containers.DockerError, tarfile.TarError, OSError):
         pass
     finally:
@@ -460,6 +553,26 @@ def connect_qbittorrent(admin, host, password, user="admin"):
     return "Connected Reelix to qBittorrent at " + host
 
 
+_FIXED = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
+
+
+def fix_qbit_address(admin, host):
+    """Reelix's qBittorrent at a fixed address (the old apps used Gluetun's own IP address, which changes when the
+    containers start again) is changed to `host`, the name it has on Starboard's stack; its password stays as Reelix
+    keeps it. Returns the names of those changed (DASH-129)."""
+    _, clients = admin.call("GET", "/downloadclients")
+    changed = []
+    for c in clients or []:
+        settings = c.get("settings") or {}
+        if c.get("implementation") != "qbittorrent" or not _FIXED.match(str(settings.get("host") or "")):
+            continue
+        body = {f: c.get(f) for f in ("implementation", "name", "enabled", "priority", "tags")}
+        body["settings"] = {**settings, "host": host}
+        admin.call("PUT", f"/downloadclients/{c['id']}", body)
+        changed.append(c.get("name") or "qBittorrent")
+    return changed
+
+
 # Running it in the background, and the last result --------------------------------------------------------------
 
 _lock = threading.Lock()
@@ -524,8 +637,7 @@ def move_tasks(srcs, hold=True, qbit=False):
     items = [(f"app-{s['source']}", s["app"]) for s in srcs]
     if hold:
         items.append(("hold", "Hold the sites to search"))
-    if qbit:
-        items.append(("qbittorrent", "Connect Reelix to qBittorrent"))
+    items.append(("qbittorrent", "Connect Reelix to qBittorrent" if qbit else "Check qBittorrent's address in Reelix"))
     items.append(("waiting", "Keep the titles that did not match"))
     return items
 
@@ -563,6 +675,17 @@ def start(data_dir, password, typed=None, hold=True, qbit_password=None, qbit_ho
                 result["qbittorrent"] = connect_qbittorrent(_admin(base, password), qbit_host or "gluetun", qbit_password,
                                                             user=qbit_user_name)
                 tasks.done("qbittorrent", result["qbittorrent"])
+            else:
+                # No password given: a fixed address Reelix has for qBittorrent still becomes its name (DASH-129).
+                tasks.start("qbittorrent", now="Checking qBittorrent's address in Reelix")
+                try:
+                    fixed = fix_qbit_address(_admin(base, password), qbit_host or "gluetun")
+                    result["qbittorrent"] = (f"Reelix now reaches qBittorrent at {qbit_host or 'gluetun'}" if fixed
+                                             else "Nothing to change")
+                    tasks.done("qbittorrent", result["qbittorrent"])
+                except reelix_setup.ReelixError as e:  # the move itself is done; this is said, not a stop
+                    result["qbittorrent"] = f"qBittorrent's address in Reelix is not changed ({e})"
+                    tasks.fail("qbittorrent", result["qbittorrent"])
             tasks.start("waiting", now="Keeping the titles that did not match")
             held = []
             for s in srcs:

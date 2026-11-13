@@ -3037,7 +3037,27 @@ function takeoverSection() {
       const shown = el("div", { class: "stack-2", "aria-live": "polite" });
       const said = el("div", { class: "stack-2", "aria-live": "polite" });
       if (running) { run.disabled = preview.disabled = true; said.replaceChildren(running); }
-      const body = () => ({ password: p2.value, qbittorrent_password: qbit.value, hold: hold.checked });
+      // DASH-128: keys the apps hide that Starboard could not read from their own settings, typed here once the
+      // preview has named them; kept in these fields (never stored by the page) and sent with the move.
+      const keyInputs = new Map();
+      const typed = () => {
+        const out = {};
+        keyInputs.forEach(({ source, id, input }) => { if (input.value.trim()) (out[source] ||= {})[id] = input.value.trim(); });
+        return out;
+      };
+      const fieldWords = { apiKey: "API key", apikey: "API key", password: "password", username: "user name" };
+      const keyFields = (a) => {
+        if (!a.needs?.length) return null;
+        const rows = a.needs.map((n) => {
+          const k = `${a.source}|${n.id}`;
+          if (!keyInputs.has(k)) keyInputs.set(k, { source: a.source, id: n.id, input: el("input", { class: "input", type: "password", autocomplete: "off", spellcheck: "false" }) });
+          return field(`${n.name}: ${fieldWords[n.field] || n.field}`, keyInputs.get(k).input,
+            { hint: `${a.app} hides it and Starboard could not read it from ${a.app}'s own settings. Copy it from the site's own pages, usually under your account or API.` });
+        });
+        return el("fieldset", { class: "form-stack" }, el("legend", { text: `Keys to type for ${a.app}` }), ...rows,
+          el("p", { class: "small muted", text: "Choose Show what moves again to check them, or leave one empty: that site moves without its key and stays deactivated until you add it in Settings, Reelix, Sites to search." }));
+      };
+      const body = () => ({ password: p2.value, qbittorrent_password: qbit.value, hold: hold.checked, secrets: typed() });
       preview.addEventListener("click", async () => {
         fresh(p2, qbit, shown, said);
         if (!needPassword(p2)) return;
@@ -3047,8 +3067,9 @@ function takeoverSection() {
           shown.replaceChildren(...r.apps.map((a) => {
             if (a.error) return notice("warning", a.app, a.error);
             const made = Object.entries(a.counts).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v.create || 0} new, ${v.existing || 0} there already${v.skip ? `, ${v.skip} not moved` : ""}`);
-            return el("details", {}, el("summary", { text: `${a.app}${a.still_missing.length ? ` (${plural(a.still_missing.length, "hidden key", "hidden keys")} still needed)` : ""}` }),
-              list(made), a.skipped.length ? el("p", { class: "small muted", text: "Not moved: " + a.skipped.map((s) => `${s.name} (${s.why})`).join("; ") }) : null);
+            return el("details", { open: a.needs?.length ? true : null }, el("summary", { text: `${a.app}${a.still_missing.length ? ` (${plural(a.still_missing.length, "key", "keys")} still needed)` : ""}${a.filled ? `, ${plural(a.filled, "key", "keys")} read from its settings` : ""}` }),
+              list(made), a.skipped.length ? el("p", { class: "small muted", text: "Not moved: " + a.skipped.map((s) => `${s.name} (${s.why})`).join("; ") }) : null,
+              keyFields(a));
           }));
         } catch (err) { shown.replaceChildren(); failed(p2, err, "Reelix could not show what moves", shown); }
         preview.disabled = false;
@@ -3064,7 +3085,7 @@ function takeoverSection() {
           if (err.data?.field === "qbittorrent") { setError(qbit, err.message); qbit.focus(); return; }
           failed(p2, err, "Nothing was moved", said); return;
         }
-        p2.value = ""; qbit.value = "";
+        p2.value = ""; qbit.value = ""; keyInputs.forEach(({ input }) => { input.value = ""; });
         const job = moveJob();
         said.replaceChildren(job.pageLine);
         job.open();
@@ -3081,7 +3102,10 @@ function takeoverSection() {
         list(m.sources.map((s) => `${s.app}${s.has_key ? "" : " (Starboard cannot read its key, so it is not moved)"}`)),
         lines.length ? notice(unmoved.length || (last && last.error) ? "warning" : "success", "Last move", lines.join(". ")) : null,
         el("div", { class: "form-stack" }, p2f,
-          field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps.` }),
+          // DASH-129: the old apps may have needed no password, because qBittorrent lets their addresses in.
+          q.allow_list?.length ? notice("info", "Your old apps did not need qBittorrent's password",
+            `qBittorrent lets in addresses from ${q.allow_list.join(", ")} without one (its allow list in Options, Web UI). Reelix reaches qBittorrent by its name, from an address that may not be on that list, so give the password below.`) : null,
+          field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps; a fixed address Reelix has for it, such as Gluetun's IP address, still becomes its name.` }),
           el("label", { class: "check" }, hold, el("span", { class: "check__text" }, el("strong", { text: "Hold the sites to search" }),
             el("span", { class: "check__hint", text: "Deactivated in Reelix after the move, so only your old apps search until Starboard runs your apps. Activate them in the review step." })))),
         el("div", { class: "actions" }, preview), shown,
