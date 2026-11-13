@@ -65,6 +65,13 @@ add features.
 
 ### Changed
 
+- The hourly watch history import asks Jellyfin for its newest film or episode first (one small request) and reads
+  every film and episode only when something has changed since the last full read (a new item, the history, the
+  accounts or the Jellyfin users), and at least once a day. A full read now works through 1,000 items at a time
+  instead of holding the whole library. On the owner's server it read 51,000 items every hour (about 8 minutes of
+  Jellyfin's time, Starboard from 18 MB to 164 MB, still 61 MB eight minutes later) to find nothing new; with a made-
+  up Jellyfin of the same size the server's peak went from 119 MB to 38 MB and a run with nothing new from 1.7 s to
+  0.01 s. What the page shows is the same (DASH-397).
 - Plug-in files that are only read to show them (each plug-in's manifest, state and settings) are parsed once and kept
   while the file is unchanged, instead of on every request. Every page's /api/session reads each plug-in's manifest
   for the menus. Measured on the example server: /api/session 1.28 ms to 0.85 ms, the plug-ins list 7.4 ms to 4.4 ms,

@@ -21,6 +21,7 @@ Jellyfin is reached with the API key of the Jellyfin app in Manage apps.
 import json
 import os
 import re
+import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -71,17 +72,23 @@ def _mb(service, path, method="GET", body=None, timeout=120):
     return _fetch(service, req, timeout)
 
 
-def _all_items(service, path, params):
-    """Every item from an /Items query, a page of 1,000 at a time, so a big library never arrives in one reply."""
-    out, start = [], 0
+def _item_pages(service, path, params):
+    """An /Items query a page of 1,000 at a time, so a big library never arrives in one reply."""
+    start = 0
     while True:
         q = urllib.parse.urlencode({**params, "StartIndex": start, "Limit": 1000})
         page = _mb(service, f"{path}?{q}") or {}
         items = page.get("Items") or []
-        out.extend(items)
+        if items:
+            yield items
         start += len(items)
         if not items or start >= (page.get("TotalRecordCount") or 0):
-            return out
+            return
+
+
+def _all_items(service, path, params):
+    """Every item from an /Items query, read a page of 1,000 at a time."""
+    return [it for page in _item_pages(service, path, params) for it in page]
 
 
 def jellyfin_app(services):
@@ -286,16 +293,57 @@ def set_mapping(data_dir, mapping):
     _save(os.path.join(d, "mapping.json"), current)
 
 
+FULL_EVERY = 24 * 3600  # with nothing new in Jellyfin, every film and episode is still read once a day
+
+
+def _stamp(path):
+    try:
+        st = os.stat(path)
+        return [st.st_mtime_ns, st.st_size]
+    except OSError:
+        return None
+
+
+def _signature(jf, d, users, mapping):
+    """What a full run depends on: Jellyfin's newest film or episode and how many there are (one small request), the
+    Jellyfin users the accounts go to, and the history and mapping files. None when Jellyfin's answer cannot be read,
+    so the full run goes ahead."""
+    q = urllib.parse.urlencode({"recursive": "true", "includeItemTypes": "Movie,Episode", "sortBy": "DateCreated",
+                                "sortOrder": "Descending", "limit": 1, "enableImages": "false", "enableUserData": "false"})
+    try:
+        page = _mb(jf, f"/Items?{q}") or {}
+        newest = ((page.get("Items") or [{}])[0] or {}).get("Id")
+    except (ServiceError, AttributeError, TypeError):
+        return None
+    return {"newest": newest, "count": page.get("TotalRecordCount"),
+            "users": {k: users.get(str(v or "").lower()) for k, v in sorted(mapping.items())},
+            "history": _stamp(os.path.join(d, "history.json")), "mapping": _stamp(os.path.join(d, "mapping.json"))}
+
+
 def apply(data_dir, services):
-    """Applies the history to Jellyfin. Returns a sentence."""
+    """Applies the history to Jellyfin. Returns a sentence.
+
+    Every film and episode is read only when something a full run depends on has changed since the last one, and
+    at least once a day; otherwise one small request asks Jellyfin for its newest item and the last result stands
+    (optimisation review, 13 November 2026: on the owner's server Jellyfin took about 8 minutes every hour to list
+    51,000 items with their watched state, and Starboard rose from 18 MB to 164 MB holding them, to find nothing new).
+    A full run reads a page of 1,000 at a time and works through it before reading the next."""
     jf = jellyfin_app(services)
     if not jf:
         raise ValueError("Add Jellyfin with its API key in Manage apps first")
     d = folder(data_dir)
-    history = (_load(os.path.join(d, "history.json"), {}).get("accounts")) or {}
+    started = time.time()
     mapping = _load(os.path.join(d, "mapping.json"), {})
-    applied = _load(os.path.join(d, "applied.json"), {})
     users = {u["Name"].lower(): u["Id"] for u in _mb(jf, "/Users") or []}
+    signature = _signature(jf, d, users, mapping)
+    last = _load(os.path.join(d, "result.json"), {})
+    if (signature is not None and isinstance(last, dict) and last.get("signature") == signature
+            and 0 <= started - (last.get("full_at") or 0) < FULL_EVERY):
+        last["finished"] = datetime.now(timezone.utc).isoformat()
+        _save(os.path.join(d, "result.json"), last)
+        return f"Marked 0 as watched and set 0 resume points; {last.get('unmatched_count', 0)} not in Jellyfin yet"
+    history = (_load(os.path.join(d, "history.json"), {}).get("accounts")) or {}
+    applied = _load(os.path.join(d, "applied.json"), {})
     marked = resumed = 0
     unmatched = []
     for account, jf_name in mapping.items():
@@ -314,46 +362,52 @@ def apply(data_dir, services):
                     movies[(k, str(v))] = e
                 else:
                     episodes[(k, str(v), e.get("season"), e.get("episode"))] = e
-        items = _all_items(jf, "/Items", {"userId": uid, "recursive": "true", "includeItemTypes": "Movie,Episode",
-                                          "fields": "ProviderIds,UserData,SeriesId", "enableImages": "false"})
-        series = {}  # every show's IDs, 100 shows a request, so episodes applied before are still known as found
-        wanted = sorted({i["SeriesId"] for i in items if i.get("SeriesId")})
-        for start in range(0, len(wanted), 100):
-            q = urllib.parse.urlencode({"userId": uid, "ids": ",".join(wanted[start:start + 100]), "fields": "ProviderIds", "enableImages": "false"})
-            for s in (_mb(jf, f"/Items?{q}") or {}).get("Items") or []:
-                series[s["Id"]] = _norm(s.get("ProviderIds"))
-        for it in items:
-            if it["Type"] == "Movie":
-                match = next((movies[(k, v)] for k, v in _norm(it.get("ProviderIds")).items() if (k, v) in movies), None)
-            elif it.get("SeriesId"):
-                s, ep = it.get("ParentIndexNumber"), it.get("IndexNumber")
-                match = next((episodes[(k, v, s, ep)] for k, v in series.get(it["SeriesId"], {}).items() if (k, v, s, ep) in episodes), None)
-            else:
-                match = None
-            if not match:
-                continue
-            found.add(id(match))
-            if it["Id"] in done:
-                continue
-            ud = it.get("UserData") or {}
-            if match["watched"] and not ud.get("Played"):
-                qs = urllib.parse.urlencode({"userId": uid, **({"datePlayed": match["last_watched"]} if match.get("last_watched") else {})})
-                _mb(jf, f"/UserPlayedItems/{it['Id']}?{qs}", "POST")
-                marked += 1
-            elif not match["watched"] and match.get("position_ms") and not ud.get("Played") and not ud.get("PlaybackPositionTicks"):
-                _mb(jf, f"/UserItems/{it['Id']}/UserData?userId={uid}", "POST",
-                    {"PlaybackPositionTicks": int(match["position_ms"]) * 10000,
-                     **({"LastPlayedDate": match["last_watched"]} if match.get("last_watched") else {})})
-                resumed += 1
-            done.add(it["Id"])
+        series, asked = {}, set()  # every show's IDs, 100 shows a request, so episodes applied before are still known as found
+        for items in _item_pages(jf, "/Items", {"userId": uid, "recursive": "true", "includeItemTypes": "Movie,Episode",
+                                                "fields": "ProviderIds,UserData,SeriesId", "enableImages": "false"}):
+            wanted = sorted({i["SeriesId"] for i in items if i.get("SeriesId")} - asked)
+            asked.update(wanted)
+            for start in range(0, len(wanted), 100):
+                q = urllib.parse.urlencode({"userId": uid, "ids": ",".join(wanted[start:start + 100]), "fields": "ProviderIds", "enableImages": "false"})
+                for s in (_mb(jf, f"/Items?{q}") or {}).get("Items") or []:
+                    series[s["Id"]] = _norm(s.get("ProviderIds"))
+            for it in items:
+                match = _match(it, movies, episodes, series)
+                if not match:
+                    continue
+                found.add(id(match))
+                if it["Id"] in done:
+                    continue
+                ud = it.get("UserData") or {}
+                if match["watched"] and not ud.get("Played"):
+                    qs = urllib.parse.urlencode({"userId": uid, **({"datePlayed": match["last_watched"]} if match.get("last_watched") else {})})
+                    _mb(jf, f"/UserPlayedItems/{it['Id']}?{qs}", "POST")
+                    marked += 1
+                elif not match["watched"] and match.get("position_ms") and not ud.get("Played") and not ud.get("PlaybackPositionTicks"):
+                    _mb(jf, f"/UserItems/{it['Id']}/UserData?userId={uid}", "POST",
+                        {"PlaybackPositionTicks": int(match["position_ms"]) * 10000,
+                         **({"LastPlayedDate": match["last_watched"]} if match.get("last_watched") else {})})
+                    resumed += 1
+                done.add(it["Id"])
         applied[jf_name] = sorted(done)
         for e in history[account]:
             if id(e) not in found:
                 unmatched.append({"account": account, "title": _title(e)})
     _save(os.path.join(d, "applied.json"), applied)
     _save(os.path.join(d, "result.json"), {"finished": datetime.now(timezone.utc).isoformat(), "marked": marked, "resumed": resumed,
-                                           "unmatched": unmatched[:300], "unmatched_count": len(unmatched)})
+                                           "unmatched": unmatched[:300], "unmatched_count": len(unmatched),
+                                           "signature": signature, "full_at": started})
     return f"Marked {marked} as watched and set {resumed} resume points; {len(unmatched)} not in Jellyfin yet"
+
+
+def _match(it, movies, episodes, series):
+    """The history entry a Jellyfin film or episode stands for, or None."""
+    if it["Type"] == "Movie":
+        return next((movies[(k, v)] for k, v in _norm(it.get("ProviderIds")).items() if (k, v) in movies), None)
+    if it.get("SeriesId"):
+        s, ep = it.get("ParentIndexNumber"), it.get("IndexNumber")
+        return next((episodes[(k, v, s, ep)] for k, v in series.get(it["SeriesId"], {}).items() if (k, v, s, ep) in episodes), None)
+    return None
 
 
 def _title(e):
