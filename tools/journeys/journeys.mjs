@@ -650,6 +650,37 @@ const made = await page.locator("#dp-channels-h").locator("xpath=ancestor::secti
 check("DISP-04", "Make channels makes a channel for each stream and says so", /making 48 channels/.test(made) && /Channels in Dispatcharr\s+48/.test(made), made);
 check("DISP-04", "focus goes to the Channels heading, not the top of the page", await page.evaluate(() => document.activeElement.id) === "dp-channels-h");
 
+// DASH-395: a row for each genre in Settings' Discover rows, unticked until ticked, then on the Discover page as a
+// row (fetched when shown) and no longer as a chip.
+console.log("\n== GEN Genre rows");
+await api("/api/library/discover-layout?tab=films", { method: "DELETE" });
+await open("settings-general.html?discover=films");
+await page.locator("#discover-rows-list").waitFor({ timeout: 10000 });
+const genreTicks = await page.locator("#discover-rows-list li").evaluateAll((ls) => ls.map((l) => ({
+  id: l.dataset.value, on: l.querySelector("input").checked, words: l.querySelector("label").textContent })));
+check("GEN-01", "Films lists the genres after the standard rows, unticked", genreTicks.length > 15
+  && genreTicks.slice(0, 5).every((r) => r.on && !r.id.startsWith("genre/")) && genreTicks.slice(5).every((r) => !r.on && r.id.startsWith("genre/")),
+  JSON.stringify(genreTicks.slice(0, 7)));
+check("GEN-01", "in sentence case, and said to be a genre", genreTicks.some((r) => r.words === "Science fiction (genre)"), genreTicks.map((r) => r.words).join(", "));
+await page.check("#discover-row-genre-movie-35");
+await page.waitForTimeout(600);
+await page.check("#discover-row-genre-movie-878");
+await page.waitForTimeout(600);
+check("GEN-02", "ticking a genre saves it and says Saved, with focus left on the tick",
+  /Saved/.test(await page.locator("#discover-rows-saved").textContent()) && await page.evaluate(() => document.activeElement.id) === "discover-row-genre-movie-878");
+await open("discover-films.html");
+await page.locator(".discover-row h2", { hasText: /^Comedy$/ }).waitFor({ timeout: 10000 });
+const heads = await page.locator("#discover-rows > .discover-row h2").allTextContents();
+check("GEN-03", "Discover, Films shows the two ticked genres as rows, after the standard rows", heads.slice(-2).join(",") === "Comedy,Science fiction", heads.join(", "));
+check("GEN-03", "and they are no longer chips", (await page.locator(".discover-genres .filter-chip", { hasText: /^(Comedy|Science fiction)$/ }).count()) === 0
+  && (await page.locator(".discover-genres .filter-chip", { hasText: /^Western$/ }).count()) === 1);
+await page.locator(".discover-row", { hasText: "Science fiction" }).scrollIntoViewIfNeeded();
+await page.locator(".discover-row", { hasText: "Science fiction" }).locator(".discover-card").first().waitFor({ timeout: 10000 });
+check("GEN-03", "a genre row loads its covers when it comes into view", (await page.locator(".discover-row", { hasText: "Science fiction" }).locator(".discover-card").count()) > 0);
+check("GEN-04", "the TV list has its own genres, all unticked",
+  (await api("/api/library/discover-layout?tab=tv")).rows.filter((r) => r.genre).every((r) => !r.shown));
+await api("/api/library/discover-layout?tab=films", { method: "DELETE" });
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

@@ -6,6 +6,9 @@ from starboard import discover_feeds as df, services
 
 ANSWERS = {
     "/discover/genres/movie": [{"id": 28, "name": "Action"}],
+    "/discover/genres/tv": [{"id": 10765, "name": "Sci-Fi & Fantasy"}, {"id": 35, "name": "Comedy"}, {"id": "x", "name": "Bad"},
+                            {"id": 10770, "name": "TV Movie"}, {"id": 99}],
+    "/discover/genre/tv/35": {"results": [{"tmdb_id": 9, "title": "A Comedy", "year": 2020}]},
     "/discover/trending-movies": {"results": [
         {"tmdb_id": 1, "title": "Dune", "year": 2021, "poster": "https://image.tmdb.org/t/p/w500/a.jpg", "availability": "available"},
         {"tmdb_id": 2, "title": "Heat", "year": 1995, "poster": "https://evil.example/x.jpg", "availability": "monitored"},
@@ -39,6 +42,17 @@ class Feeds(unittest.TestCase):
         self.assertEqual([(i["key"], i["state"]) for i in items], [("tmdb:1", "have"), ("tmdb:2", "wanted"), ("tmdb:3", "")])
         self.assertTrue(items[0]["image"].startswith("/api/library/lookup-poster?src="))
         self.assertEqual(items[1]["image"], "")  # a picture from anywhere else is not shown
+
+    def test_genre_rows(self, *_):
+        """DASH-395: every TMDB genre is also a row, marked so it starts hidden, in sentence case and A to Z."""
+        r = df.rows({}, "tv")
+        self.assertEqual([(g["id"], g["title"]) for g in r["genres"]],
+                         [("genre/tv/35", "Comedy"), ("genre/tv/10765", "Sci-fi and fantasy"), ("genre/tv/10770", "TV movie")])
+        self.assertEqual([x["id"] for x in r["rows"] if x.get("genre")], [g["id"] for g in r["genres"]])
+        self.assertFalse(any(x.get("genre") for x in r["rows"][:5]))
+        self.assertEqual(df.row({}, "tv", "genre/tv/35")["items"][0]["key"], "tmdb:9")
+        self.assertEqual(df.tidy("Science Fiction"), "Science fiction")
+        self.assertEqual(df.tidy("War & Politics"), "War and politics")
 
     def test_other_areas(self, *_):
         self.assertEqual(df.row({}, "music", "new-releases")["items"][0]["key"], "mb:1c26f82c-b35d-4c8e-a1f4-9c20747495c9")
