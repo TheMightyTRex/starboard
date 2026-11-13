@@ -14,7 +14,7 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
 
 **Send feedback** is active on every page unless you deactivate it. To hide it:
 
-1. Go to **Settings**, then **General**.
+1. Go to **Settings**, then **General**, then **Logs and feedback**.
 2. Under **Send feedback**, deactivate **Send feedback**. Activate it again the same way.
 
 ## Send a report
@@ -35,7 +35,7 @@ it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyT
 
 ## Find the reports saved in Starboard
 
-1. Go to **Settings**, then **General**.
+1. Go to **Settings**, then **General**, then **Logs and feedback**.
 2. Under **Send feedback**, the saved reports are listed, newest first. Open **The full report** to read one.
 3. Select **Mark fixed** when it is dealt with. To delete one, select **More actions**, then **Remove**, then
    **Remove report**.
