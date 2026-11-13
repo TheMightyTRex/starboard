@@ -50,8 +50,8 @@ documentation has the final word.
 |---|---|---|
 | Starboard only, watching apps on other computers | 512 MB or more | Raspberry Pi Zero 2 W, Raspberry Pi 3, any old PC |
 | Starboard and Reelix Lite with a download app | 1 GB or more | Raspberry Pi 4 or 5 with 2 GB, a small PC |
-| **Basics:** Reelix Lite, Jellyfin, Audiobookshelf, Bazarr, qBittorrent and NZBGet through a VPN (about 1 GB idle; read [what each install has](install-types.md)) | 2 GB or more | Raspberry Pi 4 or 5 with 4 GB, a small PC |
-| **Full install** (about 2.5 GB idle) or **Everything** (about 2.9 GB idle) | 4 GB or more; 6 GB for Everything | Raspberry Pi 5 with 8 GB, a small PC |
+| **Basics:** Reelix Lite, Jellyfin, Audiobookshelf, Bazarr, qBittorrent and NZBGet through a VPN (about 0.6 to 1.6 GB idle, depending mostly on the size of your library; read [what each install has](install-types.md)) | 2 GB or more | Raspberry Pi 4 or 5 with 4 GB, a small PC |
+| **Full install** (about 1.1 to 2.6 GB idle) or **Everything** (about 1.9 to 3.4 GB idle) | 4 GB or more; 6 GB for Everything | Raspberry Pi 5 with 8 GB, a small PC |
 | All of that, plus Jellyfin playing to one or two people without converting video | 4 GB or more | Raspberry Pi 5 with 4 GB, a small PC |
 | A full media server for a household, converting video for phones and browsers | 8 GB or more, and a processor with video hardware | A small PC with an Intel processor from 2018 or later (Quick Sync), or a home server |
 

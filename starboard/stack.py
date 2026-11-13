@@ -81,7 +81,7 @@ REPLACED_BY_REELIX = {"radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "se
 APPS = {
     "reelix": {"name": "Reelix", "groups": ["movies", "tv", "music", "ebooks", "audiobooks", "radio"],
                "image": os.environ.get("STARBOARD_REELIX_IMAGE") or REELIX_IMAGE, "ports": ["7700:7700"],
-               "volumes": [f"{CFG}/reelix:/config", f"{DATA}:/data"], "env": {**LSIO, "UMASK": "002"}, "memory": 60,
+               "volumes": [f"{CFG}/reelix:/config", f"{DATA}:/data"], "env": {**LSIO, "UMASK": "002"}, "memory": 100,
                "notes": "One app for films, series, books, audiobooks, music and radio, with requests and its own sites to search."},
     "radarr": {"name": "Radarr", "groups": ["movies"], "image": "lscr.io/linuxserver/radarr:latest",
                "ports": ["7878:7878"], "volumes": [f"{CFG}/radarr:/config", f"{DATA}:/data"], "env": LSIO, "memory": 200},
@@ -111,7 +111,7 @@ APPS = {
     "kapowarr": {"name": "Kapowarr", "groups": ["comics"], "image": "mrcas/kapowarr:latest", "ports": ["5656:5656"], "memory": 100,
                  "volumes": [f"{CFG}/kapowarr:/app/db", f"{DATA}/downloads/comics:/app/temp_downloads", f"{DATA}/media/comics:/comics-1"]},
     "jellyfin": {"name": "Jellyfin", "groups": ["watching"], "image": "lscr.io/linuxserver/jellyfin:latest",
-                 "ports": ["8096:8096"], "volumes": [f"{CFG}/jellyfin:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 400},
+                 "ports": ["8096:8096"], "volumes": [f"{CFG}/jellyfin:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 600},
     "seerr": {"name": "Seerr", "groups": ["watching"], "image": "ghcr.io/seerr-team/seerr:latest", "ports": ["5055:5055"],
               "volumes": [f"{CFG}/seerr:/app/config"], "env": {"TZ": "${TZ}"}, "memory": 200,
               "notes": "People ask for films and series; it sends them to Radarr and Sonarr."},
