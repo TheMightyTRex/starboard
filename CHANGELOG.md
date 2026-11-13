@@ -9,6 +9,9 @@ add features.
 
 ### Added
 
+- Settings, Downloads has VPN, Usenet and Download hours on the level 2 menu. Download hours there is the same field
+  as Settings, General, Download hours (one setting, so the two stay in step), in place of a link. Starboard's links to
+  download hours open it there (DASH-390).
 - Settings, General has its pages on the level 2 menu: Names and apps, Appearance, Pages and lists, Download hours,
   and Logs and feedback. Style is now Appearance, with the own style's colours, the default design and the
   accessibility options (theme, text size, motion, contrast, underlined links and text spacing), kept in step with

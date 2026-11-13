@@ -510,7 +510,7 @@ function renderSchedule(s) {
   box.hidden = !s.enabled && !s.clients.length;
   if (box.hidden) return;
   const hours = `${hourText(s.start)} to ${hourText(s.end)}`;
-  const settings = el("a", { href: "/settings-general.html#download-hours", text: "Settings, General" });
+  const settings = el("a", { href: "/settings-downloads-hours.html", text: "Settings, Downloads, Download hours" });
   box.dataset.tone = !s.enabled ? "neutral" : s.mode === "run" ? "success" : "warning";
   if (!s.enabled) {
     $("#schedule-chip").replaceChildren(chip("Off", "muted"));

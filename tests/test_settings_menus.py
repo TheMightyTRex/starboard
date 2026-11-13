@@ -39,10 +39,12 @@ def parts_of(page):
 class SettingsMenusTest(unittest.TestCase):
     WANT = {
         "General": ["Names and apps", "Appearance", "Pages and lists", "Download hours", "Logs and feedback"],
+        "Downloads": ["VPN", "Usenet", "Download hours"],
     }
 
     BEFORE = {
         "General": ["gn-name", "gn-cat", "gn-card", "gn-up", "gn-dh", "gn-guide", "gn-logs", "gn-design", "gn-style", "gn-test", "gn-scroll"],
+        "Downloads": ["dl-vpn", "dl-usenet", "dl-hours"],
     }
 
     def test_each_group_has_its_pages_on_the_level_2_menu(self):
@@ -84,6 +86,8 @@ class SettingsMenusTest(unittest.TestCase):
     def test_download_hours_is_one_shared_field(self):
         self.assertEqual(len(re.findall(r"^function downloadHoursSection\(", SCRIPTS, re.M)), 1)
         self.assertIn('downloadHoursSection("gn-dh")', SCRIPTS)
+        self.assertIn('downloadHoursSection("dl-hours")', SCRIPTS)
+        self.assertNotIn("Change download hours", SCRIPTS, "Downloads shows the field itself, not a link to General")
         self.assertEqual(SCRIPTS.count('"dh-on-l"'), 2, "one switch, defined once, labelled once")
 
     def test_appearance_replaces_style(self):

@@ -22,7 +22,9 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "search-sites.html", "settings-radio.html",  // Search the sites (DASH-213), Settings, Radio (DASH-212)
   "settings-dispatcharr.html",  // Settings, Apps, Dispatcharr (DASH-228)
   // General's level 2 pages (DASH-389)
-  "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-logs.html"];
+  "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-logs.html",
+  // Downloads' level 2 pages (DASH-390)
+  "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html"];
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
@@ -683,6 +685,23 @@ for (const [from, to] of [["settings-general.html#download-hours", "/settings-ge
 }
 await open("settings-general-lists.html");
 check("MENU2-03", "Pages and lists has Long lists", await page.locator("#gn-scroll-h").count() === 1);
+
+// DASH-390: Downloads has VPN, Usenet and Download hours on the level 2 menu; Download hours is the same field as
+// General's, so a change in one shows in the other.
+console.log("\n== MENU2 Downloads on the level 2 menu");
+check("MENU2-04", "Downloads has VPN, Usenet and Download hours", (await level2("settings-downloads.html")) === "VPN|Usenet|Download hours");
+check("MENU2-04", "VPN shows only the VPN", (await headings()) === "VPN", await headings());
+await open("settings-downloads-hours.html");
+const hoursWas = await page.locator("[aria-labelledby=dh-on-l]").isChecked();
+await page.locator("[aria-labelledby=dh-on-l]").click();
+await page.waitForTimeout(500);
+check("MENU2-04", "Download hours on Downloads is the switch itself and saves", (await api("/api/config")).download_hours.enabled === !hoursWas);
+await open("settings-general-hours.html");
+check("MENU2-04", "and General, Download hours shows the same", (await page.locator("[aria-labelledby=dh-on-l]").isChecked()) === !hoursWas);
+await api("/api/config/general", { method: "PUT", body: { download_hours: { enabled: hoursWas } } });
+await open("index.html");
+await open("settings-downloads.html#dl-hours-h");
+check("MENU2-04", "the old address of Download hours on Downloads opens its page", await page.evaluate(() => location.pathname) === "/settings-downloads-hours.html");
 
 // DASH-388: the own style's colours, from the design system's palettes, on the Styles plug-in's page; a plug-in style
 // in use, then Reset style, comes back to the own style in those colours.

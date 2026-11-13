@@ -103,6 +103,7 @@ const MOVED_PARTS = {
     ...["gn-logs", "logs", "gn-test", "testing", "feedback-list"].map((k) => [k, "settings-general-logs.html"]),
     ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
   ]),
+  "/settings-downloads.html": { "dl-usenet": "settings-downloads-usenet.html", "dl-hours": "settings-downloads-hours.html" },
 };
 function followMovedPart(path = location.pathname, hash = location.hash, search = location.search) {
   const moved = MOVED_PARTS[path];
@@ -1662,7 +1663,7 @@ async function startGuide() {
       const facts = [
         ["Apps", `${apps} ${apps === 1 ? "app" : "apps"}${keyless.length ? `; still without a key: ${keyless.join(", ")}` : ""}`, "/settings.html"],
         ["Jellyfin extras", ["livetv", "import_keep", "defaults"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
-        ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Off", "/settings-general-hours.html"],
+        ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Off", "/settings-downloads-hours.html"],
         ["Alerts", config.watch.enabled ? `On, to ${config.watch.channel.kind || "nowhere yet"}` : "Off", "/settings-alerts.html"],
         ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-performance.html"],
       ];
@@ -2212,7 +2213,7 @@ async function startPerformance() {
       el("div", { class: "inline-save" }, pick("pf-watch-every", [[1, "Every minute"], [5, "Every 5 minutes"], [10, "Every 10 minutes"], [15, "Every 15 minutes"], [30, "Every 30 minutes"], [60, "Every hour"]], w.every,
         (v, t) => save({ watch: { every: Number(v) } })),
         sw("pf-watch-l", w.enabled, (on) => save({ watch: { enabled: on } }))), "pf-watch-l"),
-    settingRow("Download hours check", withCost("How often Starboard checks qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) while download hours are active (Settings, General).", "scheduleEvery"),
+    settingRow("Download hours check", withCost("How often Starboard checks qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) while download hours are active (Settings, Downloads, Download hours).", "scheduleEvery"),
       pick("pf-sched-l", [[60, "Every minute"], [300, "Every 5 minutes"]], perf().schedule_every,
         (v, t) => save({ performance: { schedule_every: Number(v) } })), "pf-sched-l"),
     settingRow("Live TV white logos", withCost("Only matters while the Live TV plug-in is active (Settings, Plug-ins).", "white"),
@@ -3525,9 +3526,16 @@ function watchTopics() {
 }
 
 // Settings, Downloads (DASH-226): the VPN (provider, connection, countries, key), the Usenet provider's server with
-// Test, and where download hours are. The same words as the set-ups (web/setup-answers.json).
+// Test, and download hours. The same words as the set-ups (web/setup-answers.json). Each is its own level 2 page
+// (DASH-390); Download hours is the same field as Settings, General, Download hours (downloadHoursSection), so it
+// asks the server for nothing more.
 async function startDownloadsSettings() {
   const root = $("#downloads-sections");
+  if (!wants(root, "dl-vpn") && !wants(root, "dl-usenet")) {
+    root.replaceChildren(...onlyParts(root, [downloadHoursSection("dl-hours")]));
+    root.removeAttribute("aria-busy");
+    return;
+  }
   let d;
   try { d = await api("/api/downloads/settings"); } catch (e) { root.replaceChildren(notice("danger", "Could not look", e.message)); root.removeAttribute("aria-busy"); return; }
   const words = await (await fetch("/setup-answers.json", { cache: "no-cache" })).json();
@@ -3599,11 +3607,12 @@ async function startDownloadsSettings() {
         field(w.connections, inputs.connections, { hint: w.connections_hint })),
       el("div", { class: "actions" }, add, test), said));
   }
-  parts.push(section("dl-hours", "Download hours", "When downloads run, so the internet stays free for everything else.",
-    el("p", {}, config.download_hours.enabled ? `On: ${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00. ` : "Off. ",
-      el("a", { href: "/settings-general.html#download-hours", text: "Change download hours" }))));
-  if (!d.vpn.on && !d.usenet.app) parts.unshift(notice("info", "Nothing to set here yet", "Your install has no VPN and no Usenet app. Add them in Settings, Your install."));
-  root.replaceChildren(...parts);
+  if (wants(root, "dl-hours")) parts.push(downloadHoursSection("dl-hours"));
+  const yourInstall = el("a", { href: "/settings-install.html", text: "Settings, Your install" });
+  if (!d.vpn.on && wants(root, "dl-vpn") && partsOf(root)) parts.unshift(notice("info", "No VPN yet", el("span", {}, "Your install has no VPN. Add one in ", yourInstall, ".")));
+  else if (!d.usenet.app && wants(root, "dl-usenet") && partsOf(root)) parts.unshift(notice("info", "No Usenet app yet", el("span", {}, "Your install has no Usenet app. Add one in ", yourInstall, ".")));
+  else if (!d.vpn.on && !d.usenet.app) parts.unshift(notice("info", "Nothing to set here yet", "Your install has no VPN and no Usenet app. Add them in Settings, Your install."));
+  root.replaceChildren(...onlyParts(root, parts));
   root.removeAttribute("aria-busy");
 }
 
