@@ -154,6 +154,29 @@ for (const name of ALL) {
   } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
 }
 
+// Search with its results and More filters open (DASH-301): the filters only show once something is searched for.
+if (!pages.length || pages.includes("search.html")) {
+  const name = "search.html?q=harbour, More filters";
+  try {
+    await page.goto(`${base}/search.html?q=harbour`);
+    await settle();
+    await page.waitForSelector("#sf-more", { timeout: 10000 });
+    if ((await page.getAttribute("#sf-more", "aria-expanded")) !== "true") await page.click("#sf-more");
+    await page.waitForTimeout(1500);  // Reelix's lookups arrive
+    await axe(name, "light");
+    await keyboard(name);
+    await reflow(name);
+    await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); document.documentElement.setAttribute("data-theme", "dark"); });
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+    console.log(`checked ${name}`);
+  } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
+}
+
 // Slide-out and dialog behaviour (once; every page uses the same code): Display, then a confirm dialog.
 await page.goto(`${base}/settings-general.html`);
 await settle();

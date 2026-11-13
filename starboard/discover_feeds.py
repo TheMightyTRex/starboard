@@ -8,6 +8,8 @@ you already have it, so Add is only offered for what you do not.
   GET /api/library/discover-row?tab=films&row=  one row's cards
   GET /api/library/discover-radio-search?q=&stations=1&feeds=1  radio search across every source (DASH-339)
 """
+import json
+import os
 import re
 import urllib.parse
 
@@ -56,6 +58,70 @@ def rows(reelix, tab):
     if tab in ROWS:
         return {"rows": [{"id": r, "title": t} for r, t in ROWS[tab]], "genres": []}
     raise ValueError("Choose a Library tab")
+
+
+# Which rows each area shows and in what order (DASH-303, owner, 10 November 2026: "Add settings for which rows
+# Discover shows and their order"). Kept for the account on the server, beside the Library views; a row Reelix no
+# longer has is dropped, a new one comes at the end.
+def _layout_path(data_dir):
+    return os.path.join(data_dir, "library", "discover-layout.json")
+
+
+def layout(data_dir):
+    try:
+        with open(_layout_path(data_dir), encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def arrange(listed, saved):
+    """The rows in the saved order (rows not saved keep their place at the end), without the hidden ones."""
+    saved = saved or {}
+    order = [x for x in saved.get("order") or [] if isinstance(x, str)]
+    hidden = set(saved.get("hidden") or [])
+    rank = {rid: n for n, rid in enumerate(order)}
+    rows_ = sorted(listed, key=lambda r: (r["id"] not in rank, rank.get(r["id"], 0)))
+    return [r for r in rows_ if r["id"] not in hidden]
+
+
+def describe(data_dir, listed, tab):
+    """Settings' view of one area: every row with whether it shows, in the order the page shows them."""
+    saved = layout(data_dir).get(tab) or {}
+    hidden = set(saved.get("hidden") or [])
+    shown_order = arrange(listed, {"order": saved.get("order")})
+    return {"tab": tab, "rows": [{"id": r["id"], "title": r["title"], "shown": r["id"] not in hidden} for r in shown_order],
+            "changed": bool(saved)}
+
+
+def _write_layout(data_dir, data):
+    folder = os.path.join(data_dir, "library")
+    os.makedirs(folder, mode=0o700, exist_ok=True)
+    path = _layout_path(data_dir)
+    with open(os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    os.replace(path + ".tmp", path)
+
+
+def save_layout(data_dir, listed, tab, order, hidden):
+    known = [r["id"] for r in listed]
+    order = [x for x in order or [] if x in known]
+    order += [x for x in known if x not in order]
+    hidden = [x for x in hidden or [] if x in known]
+    if len(hidden) >= len(known):
+        raise ValueError("Keep at least one row")
+    data = layout(data_dir)
+    data[tab] = {"order": order, "hidden": hidden}
+    _write_layout(data_dir, data)
+    return describe(data_dir, listed, tab)
+
+
+def reset_layout(data_dir, listed, tab):
+    data = layout(data_dir)
+    data.pop(tab, None)
+    _write_layout(data_dir, data)
+    return describe(data_dir, listed, tab)
 
 
 def _state(x):

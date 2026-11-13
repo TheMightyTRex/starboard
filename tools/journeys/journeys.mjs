@@ -15,6 +15,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html", "library-music.html",
   "library-radio.html", "library-radio-stations.html", "library-books.html", "library-books-series.html",
   "library-books-authors.html", "library-audiobooks.html", "library-audiobooks-series.html", "library-audiobooks-authors.html",
+  "library-audiobooks-narrators.html",
   "library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=1", "library-radio-show.html?id=1",
   "library-book.html?id=4", "library-audiobook.html?id=6",
   "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "settings-reelix.html",
@@ -245,6 +246,16 @@ await open("library-books-series.html");
 await page.locator("#groups .row__title a, #groups .collection-card__link").first().click();
 await page.waitForLoadState("networkidle");
 check("LIB-01", "a series opens the wall with only its books", /group=/.test(page.url()) && await page.locator("#lib-wall .media-card").count() > 0);
+// DASH-261: narrator pages, and Narrated by on an audiobook's summary links to them.
+await open("library-audiobooks-narrators.html");
+check("LIB-02", "Narrators lists each narrator", await page.locator("#groups .collection-card__link").count() >= 3);
+await open("library-audiobook.html?id=18");
+const narratorLink = page.locator('.facts a[href*="by=narrators"]').first();
+check("LIB-02", "an audiobook's narrator links to their page", await narratorLink.count() === 1);
+await narratorLink.click();
+await page.waitForLoadState("networkidle");
+check("LIB-02", "a narrator's page shows their recordings", /by=narrators/.test(page.url()) && await page.locator("#lib-wall .media-card").count() > 0
+  && /read by this narrator/.test(await page.locator(".page-head__summary").textContent()));
 
 console.log("\n== SRCH-01 Search");
 await open("index.html");

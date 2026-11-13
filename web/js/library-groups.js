@@ -1,4 +1,4 @@
-// Library groups (DASH-163): collections, networks, stations, book series and authors, A to Z, each with how many
+// Library groups (DASH-163): collections, networks, stations, book series, authors and narrators (DASH-261), A to Z, each with how many
 // items it holds; selecting one opens the wall filtered to it.
 
 const G = document.querySelector("[data-library-groups]");

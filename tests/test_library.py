@@ -133,7 +133,7 @@ class IndexTest(unittest.TestCase):
         with open(path) as f:
             index = json.load(f)
         self.assertEqual(index["items"][0]["t"], "24 Frames")  # # first, as the letter row
-        self.assertEqual(set(index["items"][0]), {"i", "t", "s", "l", "y", "p", "w", "c", "a", "f", "m", "g"})
+        self.assertEqual(set(index["items"][0]), {"i", "t", "s", "l", "y", "p", "w", "c", "a", "f", "m", "g", "fo", "rl"})  # with Search's facts (DASH-301)
         expanse = next(e for e in index["items"] if e["i"] == 601)
         self.assertEqual((expanse["l"], expanse["s"]), ("E", "expanse film"))
         self.assertLess(os.path.getsize(path) / 602, 300)  # bytes per film: the index stays small

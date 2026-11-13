@@ -53,6 +53,7 @@ function addPanel(r, button) {
     try {
       const done = await api("/api/library/add", { method: "POST", body: { kind: r.kind, key: r.key, options } });
       panel.close();
+      r.added = true;  // Search's filters draw the row again: it stays Added (DASH-301)
       const added = chip(radio ? "Following" : "Added", "success");
       button.replaceWith(added);
       toast(radio ? `Following ${done.title}. Its episodes appear in Radio within a few minutes`
