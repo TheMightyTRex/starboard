@@ -19,6 +19,8 @@ draws one switch per set, grouped by its kind in the order given. A switch is ac
 and each opened menu shows its own sub menus, the bulk switches and items whose "menu" names it, with a back link.
 A parent comes before its sub menus, at most four levels deep; anything else is left out. Items and switches without a
 known "menu" stay on the first level, so a screen without menus is drawn as before.
+"readonly": true (plug-in API 1.11, DASH-402) with "layout": "folds" draws each section's table to be read only: no tick
+boxes, no State column, no Activate buttons and no Active or Inactive filter, for figures such as watch statistics.
 Starboard keeps only these fields, cuts every text, and calls the plug-in with its own key."""
 import json
 import re
@@ -168,6 +170,8 @@ def clean(data):
         out["menus"] = menus
     if columns:
         out.update(layout="folds", columns=columns, filters=_filters(data.get("filters"), columns))
+        if data.get("readonly") is True:  # API 1.11 (DASH-402): figures to read, with no ticks, states or buttons
+            out["readonly"] = True
     if _notices(data.get("notices")):
         out["notices"] = _notices(data.get("notices"))
     if data.get("said"):

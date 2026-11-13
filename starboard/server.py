@@ -171,6 +171,7 @@ class App:
         plugin_life.listen(self.data_dir)
         services.ON_CHANGE = plugin_life.emit
         self.plugin_clock = plugin_life.Clock(self.data_dir, self.config)
+        self.plugin_clock.app = self  # disks and updates for the API 1.11 events (DASH-401)
         from . import plugin_watch  # idle stop and health for every plug-in (DASH-357)
         plugin_watch.DATA_DIR = self.data_dir
         self.plugin_idle = plugin_watch.Watcher(self.data_dir)

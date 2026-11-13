@@ -206,7 +206,7 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 .fold-tools { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
 .fold-tools .search-field { flex: 1 1 260px; }
 .fold-tools .search-field .input { width: 100%; }
-.folds { display: grid; gap: var(--space-2); }
+.folds { display: grid; gap: var(--space-2); grid-template-columns: minmax(0, 1fr); min-width: 0; }  /* a wide table scrolls inside its section at phone width (DASH-402) */
 .fold { border: 1px solid var(--color-divider); background: var(--color-surface); }
 .fold__head { display: flex; align-items: center; gap: var(--space-3); padding-right: var(--space-4); }
 .fold__title { margin: 0; flex: 1; font-size: var(--text-md); }

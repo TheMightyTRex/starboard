@@ -348,7 +348,10 @@ def emit(event, data=None):
     return sent
 
 
-POLLED = ("item.added", "download.finished", "playback.started")  # Starboard learns of these by checking
+# Starboard learns of these by checking. The last four came in API 1.11 (DASH-401), for a notifications plug-in.
+POLLED = ("item.added", "download.finished", "playback.started", "request.available", "download.failed", "disk.nearly_full",
+          "update.available")
+REQUEST_READY = ("Available", "Completed")  # Reelix's and Seerr's words for a request that can be watched now
 
 
 def listened(data_dir):
@@ -367,7 +370,9 @@ class EventWatch:
     def __init__(self):
         self.seen = {}
 
-    def check(self, wanted, app_services, send=None):
+    def check(self, wanted, app_services, send=None, disks=None, limit=90, updates=None):
+        """`disks` gives [{label, used, total, free}] and `updates` gives [{app, current, latest}] (API 1.11): both read
+        what Starboard already knows, so nothing extra is fetched for them."""
         from . import services
         send = send or emit
         sent = 0
@@ -391,6 +396,57 @@ class EventWatch:
                 for key in done.keys() - before:
                     sent += send("download.finished", {"title": done[key].get("title"), "app": done[key].get("service_name")}) or 0
             self.seen["download.finished"] = set(done)
+        sent += self._more(wanted, app_services, send, disks, limit, updates)
+        return sent
+
+    def _new(self, name, now):
+        """The keys in `now` that were not there at the last check; none on the first check, which sets the start."""
+        before = self.seen.get(name)
+        self.seen[name] = set(now)
+        return [] if before is None else [k for k in now if k not in before]
+
+    def _more(self, wanted, app_services, send, disks, limit, updates):
+        """The API 1.11 events (DASH-401): a request that became ready, a download that stopped with a problem, a disk
+        that went past the limit (said again only after it drops 2 points below), and an update that appeared."""
+        from . import services
+        sent = 0
+        if "request.available" in wanted:
+            try:  # the page's own cached check; Reelix or Seerr not answering skips this one check only
+                req = services.cached("requests-False", 20, lambda: services.requests(app_services))
+            except Exception:  # noqa: BLE001
+                req = {"items": None}
+            ready = {f"{r.get('id')}|{r.get('title')}": r for r in req.get("items") or []
+                     if r.get("status") in REQUEST_READY or r.get("media") == "Available"}
+            for key in (self._new("request.available", ready) if req.get("configured") and req.get("items") is not None else []):
+                r = ready[key]
+                sent += send("request.available", {"title": r.get("title"), "year": r.get("year") or "", "kind": r.get("kind"),
+                                                   "by": r.get("by") or ""}) or 0
+        if "download.failed" in wanted:
+            q = services.cached("queue", 10, lambda: services.queue(app_services))
+            bad = {f"{i.get('service_name')}|{i.get('title')}": i for i in q.get("items") or [] if i.get("problem")}
+            for key in self._new("download.failed", bad):
+                i = bad[key]
+                sent += send("download.failed", {"title": i.get("title"), "app": i.get("service_name"),
+                                                 "reason": " ".join(str(m) for m in i.get("messages") or [])[:300]}) or 0
+        if "disk.nearly_full" in wanted and disks:
+            full = self.seen.setdefault("disk.full", set())
+            first = "disk.nearly_full" not in self.seen
+            self.seen["disk.nearly_full"] = True
+            for d in disks() or []:
+                if d.get("missing") or not d.get("total"):
+                    continue
+                pct = round(d["used"] / d["total"] * 100)
+                if pct >= limit and d["label"] not in full:
+                    full.add(d["label"])
+                    if not first:
+                        sent += send("disk.nearly_full", {"disk": d["label"], "percent": pct, "free": d.get("free")}) or 0
+                elif pct < limit - 2:
+                    full.discard(d["label"])
+        if "update.available" in wanted and updates:
+            found = {f"{u.get('app')}|{u.get('latest')}": u for u in updates() or [] if u.get("latest")}
+            for key in self._new("update.available", found):
+                u = found[key]
+                sent += send("update.available", {"app": u.get("app"), "current": u.get("current") or "", "latest": u.get("latest")}) or 0
         return sent
 
 
@@ -489,6 +545,7 @@ class Clock:
         self.thread = None
         self.wake = threading.Event()
         self.events = EventWatch()
+        self.app = None  # set by the server: its disks and what it knows of updates, for the API 1.11 events
 
     def _active_jobs(self):
         out = []
@@ -497,6 +554,34 @@ class Clock:
                 m = pa._read(os.path.join(pa.folder(self.data_dir, p["id"]), "manifest.json"), {}) or {}
                 out += [(p["id"], j) for j in m.get("jobs") or []]
         return out
+
+    def _hooks(self):
+        """What the disk and update events read (API 1.11): the disks Starboard shows, and updates it already knows of
+        from its own release check (at most every 6 hours), the last app check and the catalogues it has read."""
+        app = self.app
+        if app is None:
+            return {}
+        from . import sysinfo
+
+        def updates():
+            from . import containers
+            from .server import newer
+            out = []
+            latest = app.latest_release() if hasattr(app, "latest_release") else None
+            if latest and newer(latest, getattr(app, "version", "")):
+                out.append({"app": "Starboard", "current": app.version, "latest": latest.lstrip("v")})
+            for name, c in (containers._state.get("check") or {}).items():
+                if c.get("update") and c.get("latest"):
+                    out.append({"app": name, "current": "", "latest": c["latest"]})
+            names = {p["id"]: p for p in pa.listing(self.data_dir)}
+            for pid, u in updates_known(self.data_dir).items():
+                p = names.get(pid) or {}
+                out.append({"app": p.get("name") or pid, "current": p.get("version") or "", "latest": u["version"]})
+            return out
+
+        alerts = ((self.cfg.data.get("watch") or {}).get("alerts") or {}) if self.cfg is not None else {}
+        return {"disks": lambda: sysinfo.snapshot(app.disks).get("disks") or [] if getattr(app, "disks", None) else [],
+                "limit": int(alerts.get("disk_full") or 90), "updates": updates}
 
     def _needed(self):
         return self._active_jobs(), listened(self.data_dir) & set(POLLED)
@@ -509,7 +594,7 @@ class Clock:
                 return
             if polled and self.cfg is not None:
                 try:
-                    self.events.check(polled, self.cfg.data.get("services") or [])
+                    self.events.check(polled, self.cfg.data.get("services") or [], **self._hooks())
                 except Exception as e:  # noqa: BLE001 - an app that does not answer never stops the clock
                     logs.event("warning", "plug-ins", f"Events not checked: {e}")
             last = pa._read(_jobs_file(self.data_dir), {}) or {}

@@ -343,6 +343,25 @@ if (await wn14.count()) {
   check("T14", "What is new is gone", !(await page.locator("#pl-styles-whats-new").count()));
 } else check("T14", "the example Styles plug-in shows What is new", false, "not shown");
 
+// T15 Read-only plug-in tables (DASH-402, plug-in API 1.11): Tab reaches a section's line in Watch statistics; Enter
+// opens it with focus kept on the line, which says it is expanded; the table has no tick boxes or buttons to Tab past.
+await page.goto(`${base}/settings-plugin.html?id=watch-stats`);
+await settle();
+const wsTab = page.getByRole("tab", { name: "Recent plays" });
+if (await wsTab.count()) {
+  await wsTab.focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  const line = await tabTo((f) => /^Today/.test(f.text) && f.tag === "BUTTON", 30);
+  check("T15", "Tab reaches a section's line", !!line, line ? line.text : "not reached");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const f15 = await focus();
+  check("T15", "Enter opens it with focus kept on the line", /^Today/.test(f15.text) && f15.tag === "BUTTON", f15.text);
+  check("T15", "the line says it is expanded", (await page.locator(".fold__toggle").first().getAttribute("aria-expanded")) === "true");
+  check("T15", "the table has nothing to tick or press but its column sort buttons", !(await page.locator(".fold__panel input, .fold__panel tbody button").count()));
+} else check("T15", "the example Watch statistics plug-in has its tables", false, "no Recent plays tab");
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

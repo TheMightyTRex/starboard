@@ -14,6 +14,16 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.11.0, 13 November 2026
+
+- **Added:** four events, each from a check Starboard already makes every 5 minutes: `request.available` (with
+  `media:read`), `download.failed` (with `downloads:read`), `disk.nearly_full` (with `system:read`) and
+  `update.available` (with `apps:read`). Read [Events](plugin-api-reference.md#events).
+- **Added:** `readonly` on a custom setting's list with `"layout": "folds"`: tables to read, with no tick boxes, states or
+  buttons. Read [Tables to read only](plugin-api-reference.md#tables-to-read-only-api-111).
+- An older Starboard refuses a manifest that lists the new events, so set `starboard_api` to `>=1.11` when you use
+  them. It ignores `readonly`.
+
 ## Plug-in API 1.10.0, 13 November 2026
 
 - **Added:** `changes`, an optional list of the plug-in's own changes by version, in Keep a Changelog's types

@@ -235,6 +235,56 @@ class Events(unittest.TestCase):
             w.check({"item.added", "download.finished", "playback.started"}, [], lambda e, d: sent.append((e, d)) or 1)
         self.assertEqual(sorted(e for e, _ in sent), ["download.finished", "item.added", "playback.started"])
 
+    def test_the_api_1_11_events_are_sent_once_each_after_the_first_check(self):
+        """DASH-401: a request that became ready, a download with a problem, a disk past the limit and a new update."""
+        from starboard import services
+        sent = []
+        w = plugin_life.EventWatch()
+        req = {"configured": True, "items": [{"id": 1, "title": "Old", "status": "Available", "by": "Sam"},
+                                             {"id": 2, "title": "Dune", "status": "Approved", "kind": "Film", "year": "2021", "by": "Alex"}]}
+        q = {"items": [{"service_name": "qBittorrent", "title": "A", "problem": True}]}
+        disks = [{"label": "Media", "used": 85, "total": 100, "free": 15}]
+        ups = []
+        wanted = {"request.available", "download.failed", "disk.nearly_full", "update.available"}
+        go = lambda: w.check(wanted, [], lambda e, d: sent.append((e, d)) or 1, disks=lambda: disks, limit=90, updates=lambda: ups)  # noqa: E731
+        with mock.patch.object(services, "cached", side_effect=lambda key, ttl, fn: req if key.startswith("requests") else q):
+            go()
+            self.assertEqual(sent, [])
+            req["items"][1]["status"] = "Available"
+            q["items"].append({"service_name": "NZBGet", "title": "B", "problem": True, "messages": ["Not enough space"]})
+            disks[0]["used"] = 93
+            ups.append({"app": "Starboard", "current": "0.17.0", "latest": "0.18.0"})
+            go()
+            go()  # nothing new: nothing sent twice
+            disks[0]["used"] = 89  # within 2 points of the limit: still nearly full, said once
+            go()
+            disks[0]["used"] = 80
+            go()
+            disks[0]["used"] = 95
+            go()
+        events = [e for e, _ in sent]
+        self.assertEqual(sorted(events), ["disk.nearly_full", "disk.nearly_full", "download.failed", "request.available", "update.available"])
+        data = dict((e, d) for e, d in sent)
+        self.assertEqual(data["request.available"], {"title": "Dune", "year": "2021", "kind": "Film", "by": "Alex"})
+        self.assertEqual(data["download.failed"], {"title": "B", "app": "NZBGet", "reason": "Not enough space"})
+        self.assertEqual(data["update.available"], {"app": "Starboard", "current": "0.17.0", "latest": "0.18.0"})
+        self.assertEqual(sent[-1][1], {"disk": "Media", "percent": 95, "free": 15})
+
+    def test_requests_not_set_up_send_nothing_later(self):
+        from starboard import services
+        sent, req = [], {"configured": False, "items": []}
+        w = plugin_life.EventWatch()
+        with mock.patch.object(services, "cached", side_effect=lambda key, ttl, fn: req):
+            w.check({"request.available"}, [], lambda e, d: sent.append(e) or 1)
+            req.update(configured=True, items=[{"id": 1, "title": "Old", "status": "Available"}])
+            w.check({"request.available"}, [], lambda e, d: sent.append(e) or 1)
+        self.assertEqual(sent, [])  # the first check of a set-up list is a starting point too
+
+    def test_the_new_events_need_their_read_permission(self):
+        m = {**copy.deepcopy(ON_DEMAND), "events": ["disk.nearly_full", "request.available"], "permissions": ["system:read"]}
+        self.assertTrue(any("request.available needs the permission media:read" in p for p in plugins.check(m)))
+        self.assertTrue(set(plugin_life.POLLED) >= {"request.available", "download.failed", "disk.nearly_full", "update.available"})
+
     def test_app_down_after_two_checks_and_up_once(self):
         from starboard import services
         said = []
