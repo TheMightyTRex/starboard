@@ -575,27 +575,34 @@ def warm(data_dir, reelix, tab, urls, pause=0.3):
     threading.Thread(target=run, name=f"posters-{tab}", daemon=True).start()
 
 
+def build_and_write(data_dir, reelix, tab):
+    """Reads one tab from Reelix and writes its index file: {"count", "posters"}. The running server does this in a
+    short-lived process (child.py, DASH-79), so the memory used reading Reelix's lists is given back when it ends."""
+    entries = build(reelix, tab)
+    _write(data_dir, tab, entries)
+    return {"count": len(entries), "posters": [e["p"] for e in entries if isinstance(e, dict) and e.get("p")]}
+
+
 def refresh(data_dir, reelix, tab):
     """Builds one tab's index now. Only one build per tab runs at a time; a second caller waits for it."""
+    from . import child
     with _locks[tab], _one_build:
         started = time.time()
         try:
-            entries = build(reelix, tab)
+            got = child.run("library", {"data_dir": data_dir, "reelix": reelix, "tab": tab}, timeout=1800)
         except services.ServiceError as e:
             with _state_lock:
                 _state["errors"][tab] = str(e)
             raise
-        _write(data_dir, tab, entries)
         _drop_kept(_path(data_dir, tab))
         _limit.pop(data_dir, None)
-        warm(data_dir, reelix, tab, [e["p"] for e in entries if isinstance(e, dict) and e.get("p")])
-        count = len(entries)
-        del entries
-        _give_back()
+        warm(data_dir, reelix, tab, got["posters"])
+        if not child.ENABLED:
+            _give_back()
         with _state_lock:
             _state["errors"].pop(tab, None)
-        logs.detail("library", f"{LABELS[tab]} index: {count} items in {round((time.time() - started) * 1000)} ms")
-        return count
+        logs.detail("library", f"{LABELS[tab]} index: {got['count']} items in {round((time.time() - started) * 1000)} ms")
+        return got["count"]
 
 
 def _refresh_quietly(data_dir, reelix, tab):

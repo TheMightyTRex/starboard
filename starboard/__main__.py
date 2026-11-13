@@ -4,7 +4,7 @@ import os
 import signal
 import threading
 
-from . import logs, recovery
+from . import child, logs, recovery
 from .server import App, make_server
 
 
@@ -42,6 +42,9 @@ class Runner:
 
 def main():
     data_dir = os.environ.get("STARBOARD_DATA", os.path.join(os.path.expanduser("~"), ".local", "share", "starboard"))
+    # Heavy jobs (the watch history import, listening progress, the built-in Live TV job and Library indexes) run in
+    # a short-lived process, so this one's memory stays low (DASH-79). STARBOARD_CHILD_JOBS=0 runs them here instead.
+    child.ENABLED = os.environ.get("STARBOARD_CHILD_JOBS", "1") != "0"
     runner = Runner(App(data_dir))
     runner.start()
     stop = threading.Event()

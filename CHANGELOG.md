@@ -65,6 +65,11 @@ add features.
 
 ### Changed
 
+- Heavy jobs run in a short-lived process of their own, so the memory they use goes back to the system when they end
+  and the long-running server stays small: the watch history import, listening progress, the built-in Live TV job, the
+  Live TV plug-in's hourly run and building a Library list. Measured: building a 10,000-film Library list left the
+  server 9 MB larger before; now it stays at 35 MB while the job's own process peaks at 38 MB and ends; each start
+  costs about 0.2 seconds. STARBOARD_CHILD_JOBS=0 runs them in the server as before (DASH-79).
 - The hourly watch history import asks Jellyfin for its newest film or episode first (one small request) and reads
   every film and episode only when something has changed since the last full read (a new item, the history, the
   accounts or the Jellyfin users), and at least once a day. A full read now works through 1,000 items at a time

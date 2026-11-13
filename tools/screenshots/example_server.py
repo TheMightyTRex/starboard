@@ -26,7 +26,8 @@ os.environ["STARBOARD_HISTORY"] = "0"
 os.environ["STARBOARD_REPO"] = "TheMightyTRex/starboard"  # the public repository: release notes and Report a problem
 os.environ["STARBOARD_DISKS"] = ("Media pool=/disks/pool,System disk=/data,Drive 1=/disks/each/1,Drive 2=/disks/each/2,"
                                  "Drive 3=/disks/each/3,Drive 4=/disks/each/4")
-from starboard import changes, containers, discovery, stack, sysinfo  # noqa: E402
+from starboard import changes, child, containers, discovery, stack, sysinfo  # noqa: E402
+child.ENABLED = os.environ.get("STARBOARD_CHILD_JOBS") == "1"  # heavy jobs in a short-lived process, as the server (DASH-79)
 os.environ["EXAMPLE_REELIX_BASE"] = f"http://127.0.0.1:{FAKE_PORT}/reelix"
 import example_library  # noqa: E402  (a made-up Reelix library: tools/screenshots/example_library.py)
 from starboard.server import make_server  # noqa: E402

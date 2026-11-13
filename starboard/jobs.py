@@ -11,7 +11,7 @@ import os
 import threading
 import time
 
-from . import listening, livetv, logs, migrate, vpn_ports
+from . import child, listening, livetv, logs, migrate, vpn_ports
 
 JOBS = {
     "livetv": {"title": "Live TV channels and guide", "every": 3600, "what": "Refreshes Jellyfin's free TV guides daily, and its channels when a channel list changes"},
@@ -80,15 +80,14 @@ class Jobs:
         self._record(key, started=time.time(), state="running")
         services = self.app.config.data["services"]
         try:
+            # The heavy ones run in a short-lived process, so the memory they use goes back to the system when they
+            # end (child.py, DASH-79). Live TV also puts the channels and guides into Jellyfin itself (DASH-229).
             if key == "livetv":
-                summary = livetv.run(self.self_url(), bool(self.settings().get("white_logos", True)), force=force)
-                from . import livetv_jellyfin  # the channels and guides into Jellyfin itself (DASH-229)
-                added = livetv_jellyfin.connect(services, self.settings(), self.app.config.data_dir)
-                summary = f"{summary} · {added}" if added else summary
-            elif key == "import":
-                summary = migrate.apply(self.app.config.data_dir, services)
-            elif key == "listening":
-                summary = listening.apply(self.app.config.data_dir, services)
+                summary = child.run("livetv", {"self_url": self.self_url(), "white_logos": bool(self.settings().get("white_logos", True)),
+                                               "force": force, "services": services, "settings": self.settings(),
+                                               "data_dir": self.app.config.data_dir}, timeout=3 * 3600)
+            elif key in ("import", "listening"):
+                summary = child.run(key, {"data_dir": self.app.config.data_dir, "services": services}, timeout=3 * 3600)
             elif key == "vpnport":
                 summary = vpn_ports.sync(self.app.config)
             elif key == "reelixupdate":
