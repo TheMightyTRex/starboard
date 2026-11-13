@@ -3102,7 +3102,10 @@ function takeoverSection() {
         list(m.sources.map((s) => `${s.app}${s.has_key ? "" : " (Starboard cannot read its key, so it is not moved)"}`)),
         lines.length ? notice(unmoved.length || (last && last.error) ? "warning" : "success", "Last move", lines.join(". ")) : null,
         el("div", { class: "form-stack" }, p2f,
-          field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps.` }),
+          // DASH-129: the old apps may have needed no password, because qBittorrent lets their addresses in.
+          q.allow_list?.length ? notice("info", "Your old apps did not need qBittorrent's password",
+            `qBittorrent lets in addresses from ${q.allow_list.join(", ")} without one (its allow list in Options, Web UI). Reelix reaches qBittorrent by its name, from an address that may not be on that list, so give the password below.`) : null,
+          field("qBittorrent's password (optional)", qbit, { hint: `What it is for: Reelix sends each download to qBittorrent, so it needs qBittorrent's password. ${userLine} Starboard checks it with qBittorrent first and keeps it only in Reelix. Leave it empty to connect qBittorrent later in Settings, Reelix, Download apps; a fixed address Reelix has for it, such as Gluetun's IP address, still becomes its name.` }),
           el("label", { class: "check" }, hold, el("span", { class: "check__text" }, el("strong", { text: "Hold the sites to search" }),
             el("span", { class: "check__hint", text: "Deactivated in Reelix after the move, so only your old apps search until Starboard runs your apps. Activate them in the review step." })))),
         el("div", { class: "actions" }, preview), shown,

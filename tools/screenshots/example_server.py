@@ -682,7 +682,9 @@ def example_takeover():
                 "networks": ["media_default"], "path_rewrites": []}
                for k, c in (("prowlarr", "prowlarr"), ("radarr", "radarr"), ("sonarr", "sonarr"), ("jellyseerr", "jellyseerr"))]
     reelix_move.sources = lambda: [dict(x) for x in sources] if not EX["taken"] else []
-    reelix_move.qbit_conf = lambda container="qbittorrent": {"user": "harbour", "read": True, "ban_minutes": 60}
+    reelix_move.qbit_conf = lambda container="qbittorrent": {"user": "harbour", "read": True, "ban_minutes": 60,
+                                                             "allow_list": ["198.51.100.0/24"]}
+    reelix_move.qbit_through_vpn = lambda container="qbittorrent": True  # made up: qBittorrent runs on Gluetun's network
     reelix_move.qbit_sign_in = lambda password, base="", user="admin", opener=None: \
         {"banned": "banned", "wrong": "wrong"}.get(password, "ok")
     # DASH-128: Prowlarr's made-up NZB Harbour hides its key and Starboard "could not read" it, so the preview asks

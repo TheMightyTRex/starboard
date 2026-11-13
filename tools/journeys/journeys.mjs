@@ -477,6 +477,10 @@ check("MOVE-01", "the qBittorrent user name comes from its settings file", (awai
 check("MOVE-01", "the qBittorrent password says what it is for and that it is optional",
   (await reelixStep.textContent()).includes("qBittorrent's password (optional)") && (await reelixStep.textContent()).includes("What it is for"));
 const [mpw, qpw] = [reelixStep.locator("input[type=password]").nth(0), reelixStep.locator("input[type=password]").nth(1)];
+// DASH-129: the old apps needed no password (qBittorrent's allow list), so the step says why Reelix needs it.
+check("MOVE-01", "it says the old apps needed no qBittorrent password, and why Reelix does",
+  /did not need qBittorrent's password[\s\S]*198\.51\.100\.0\/24[\s\S]*Reelix reaches qBittorrent by its name/.test(await reelixStep.textContent()));
+check("MOVE-01", "and that a fixed address still becomes its name without one", (await reelixStep.textContent()).includes("such as Gluetun's IP address, still becomes its name"));
 // DASH-128: a key Prowlarr hides and Starboard could not read is asked for by name in the preview, then checked.
 await mpw.fill(password);
 await reelixStep.getByRole("button", { name: "Show what moves" }).click();

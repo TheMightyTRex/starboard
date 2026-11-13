@@ -2136,8 +2136,11 @@ class Handler(BaseHTTPRequestHandler):
                     if state != "ok":  # DASH-251: said under the qBittorrent field, including a ban after wrong tries
                         return self.json(400, {"error": reelix_move.qbit_problem(state, quser, conf["ban_minutes"]),
                                                "field": "qbittorrent", "state": state})
-                vpn = "gluetun" in (stack.chosen_keys(app.data_dir) or []) or any(
-                    c["name"] == "gluetun" for c in takeover.found() if c["running"])
+                # DASH-129: through the VPN when qBittorrent runs on another container's network (Docker says), or,
+                # when Docker cannot say, when Gluetun is chosen or runs here.
+                through = reelix_move.qbit_through_vpn()
+                vpn = "gluetun" in (stack.chosen_keys(app.data_dir) or []) or bool(through) or (through is None and any(
+                    c["key"] == "gluetun" for c in takeover.found() if c["running"]))
                 logs.event("info", "reelix", "Moving the old apps into Reelix")
                 return self.json(200, reelix_move.start(app.data_dir, body["password"], typed, hold=bool(body.get("hold", True)),
                                                         qbit_password=qpw or None, qbit_host="gluetun" if vpn else "qbittorrent",
