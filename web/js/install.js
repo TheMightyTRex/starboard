@@ -155,6 +155,8 @@ async function startInstall() {
     step.nodes = [el("p", { class: "muted", text: "Loading…" })];
     const frame = () => wizardFrame({ root, steps, index, busy: loading,
       continueText: { welcome: "Begin", review: "Write the files", start: fromGuide ? "Back to the set-up guide" : "Go to Apps" }[step.id] || "Continue",
+      // On the last step, Start the apps (then Add the ticked apps, or Try again) is the one primary; leaving is plain.
+      continuePlain: step.id === "start",
       onBack: () => go(steps[index - 1].id), onSkip: () => go(steps[index + 1].id),
       onContinue: async (e) => {
         const button = e.currentTarget;
@@ -715,20 +717,17 @@ async function installStep(id, state, data, apps, go) {
     catch (e) { return { nodes: [notice("danger", "Something needs changing", e.message)], save: async () => false }; }
     const change = (step, what) => el("button", { type: "button", class: "btn btn--quiet", onclick: () => go(step) }, "Change",
       el("span", { class: "visually-hidden", text: ` ${what}` }));
-    // One table: what, your answer, and Change to go back to that step (stacks into cards on phones).
-    const row = (label, value, step) => [el("tr", {}, el("th", { scope: "row", "data-label": "What", text: label }),
-      el("td", { "data-label": "Your answer" }, value), el("td", { "data-label": "" }, change(step, label.toLowerCase())))];
+    // A row for each answer, with Change to go back to that step (DASH-309, R7: things with an action are rows,
+    // not a table): what in the title, your answer under it, Change at the side.
+    const row = (label, value, step) => [el("li", { class: "row row--no-lead review-row" },
+      el("div", {}, el("h3", { class: "row__title", text: label }), el("div", { class: "row__meta review-row__answer" }, value)),
+      el("div", { class: "row__side" }, change(step, label.toLowerCase())))];
     const vpnName = (await loadVpnProviders()).find((v) => v.id === state.vpn.provider)?.name || state.vpn.provider;
     const picked = data.groups.filter((g) => state.groups.has(g.key)).map((g) => g.name).join(", ") || "None";
     const moving = [...state.moving].map((m) => ({ history: "Watch history", listening: "Listening progress", settings: "App settings", reelix: "Into Reelix", takeover: "Starboard runs your apps" })[m]).filter(Boolean).join(", ");
     nodes = [
       el("p", { text: "Nothing is written or started until you choose Write the files. You can change anything first." }),
-      el("div", { class: "table-wrap", "data-stack": "" }, el("table", { class: "table table--fixed table--middle" },
-        el("caption", { class: "visually-hidden", text: "What will be set up" }),
-        el("colgroup", {}, el("col", { class: "col-quarter" }), el("col"), el("col", { class: "col-state" })),
-        el("thead", {}, el("tr", {}, el("th", { scope: "col", text: "What" }), el("th", { scope: "col", text: "Your answer" }),
-          el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Change" })))),
-        el("tbody", {},
+      el("ul", { class: "rows", "aria-label": "What will be set up" },
         ...row("Install", state.install === "custom" ? "Your own choice" : (state.installName || "Basics"), "groups"),
         ...row("What it does", picked, "groups"),
         ...row("Apps", [...state.apps].map((k) => apps[k].name).join(", "), "groups"),
@@ -742,7 +741,7 @@ async function installStep(id, state, data, apps, go) {
         ...(state.apps.has("reelix") ? row("Language of releases", (await loadSetupAnswers()).language.choices.find((c) => c.value === state.language)?.label || "English", "films") : []),
         ...(state.usenetServer ? row("Usenet server", state.usenetServer.host, "usenet") : []),
         ...(state.apps.has("gluetun") ? row("VPN", `${vpnName}, ${state.vpn.type === "openvpn" ? "OpenVPN" : "WireGuard"}${state.vpn.countries ? `, ${state.vpn.countries}` : ""}`, "vpn") : []),
-        ...(movingOffers(state, data, apps).length ? row("Moving over", moving || "Nothing", "moving") : [])))),
+        ...(movingOffers(state, data, apps).length ? row("Moving over", moving || "Nothing", "moving") : [])),
       p.moved.length ? notice("warning", "Some ports moved", p.moved.join(". ") + ".") : null,
       p.later.length ? notice("info", "Started later", `${p.later.join(", ")} ${p.later.length === 1 ? "needs its" : "need their"} own settings file first, so ${p.later.length === 1 ? "it is" : "they are"} written but not started.`) : null,
       p.hooks?.length ? el("p", { class: "small muted", text: `Before System, Apps, Updates changes ${p.hooks.map((k) => apps[k].name).join(" or ")}, it backs up ${p.hooks.length === 1 ? "its" : "their"} database first. If the backup fails, the update stops.` }) : null,

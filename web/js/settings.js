@@ -1405,13 +1405,15 @@ const KEY_PLACE = {
   jellyfin: "Dashboard, API keys", seerr: "Settings, General, API key", audiobookshelf: "Settings, API Keys (an admin's key)",
 };
 
-function wizardFrame({ root, steps, index, onBack, onSkip, onContinue, continueText = "Continue", busy = false }) {
+// continuePlain: the step's own main action in its body is the one primary in view (DASH-309, R9), so the foot's
+// button is plain, as on Install apps' last step.
+function wizardFrame({ root, steps, index, onBack, onSkip, onContinue, continueText = "Continue", busy = false, continuePlain = false }) {
   const step = steps[index];
   const list = el("ol", { class: "steps steps--collapse", "aria-label": "Steps" }, steps.map((st, i) => el("li", {
     "data-done": i < index ? "" : null, "aria-current": i === index ? "step" : null }, st.title,
     i < index ? el("span", { class: "visually-hidden", text: ", done" }) : i === index ? el("span", { class: "visually-hidden", text: ", current step" }) : null)));
   const short = el("p", { class: "steps__short", text: `Step ${index + 1} of ${steps.length}: ${step.title}` });
-  const cont = el("button", { type: "button", class: "btn btn--primary", disabled: busy, onclick: onContinue }, continueText);
+  const cont = el("button", { type: "button", class: continuePlain ? "btn" : "btn btn--primary", disabled: busy, onclick: onContinue }, continueText);
   const foot = el("div", { class: "wizard__foot" }, cont,
     index > 0 ? el("button", { type: "button", class: "btn", onclick: onBack }, "Back") : null,
     step.skippable === false ? null : el("button", { type: "button", class: "btn btn--quiet", onclick: onSkip }, "Skip this step"));

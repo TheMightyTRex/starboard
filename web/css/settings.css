@@ -179,7 +179,7 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
 
 /* A setting that belongs to the one above it (catch-up downloads under their radio source). */
 .settings-rows > .setting--sub { padding-inline-start: var(--space-6); }
-.settings-rows > .setting--sub .setting__label { font-weight: var(--weight-normal, 400); }
+.settings-rows > .setting--sub .setting__label { font-weight: var(--weight-regular); }
 
 
 /* Plug-ins, Manage (issue #10): each row's chips, Settings and state button in fixed columns, so they line up from row
@@ -196,3 +196,7 @@ body:not(.show-advanced) :is([data-advanced]:has(:target), [data-advanced]:targe
    shared back link. */
 .back-link--button { justify-self: start; width: fit-content; padding: 0; border: 0; background: none; color: var(--color-accent); font-family: inherit; text-decoration: none; cursor: pointer; }
 .back-link--button:hover { text-decoration: underline; }
+
+/* Install apps, Check step (DASH-309): each answer a row; the answer in the body's colour, under what it is. */
+.review-row .row__title { font-size: var(--text-sm); color: var(--color-text-muted); font-weight: var(--weight-regular); }
+.review-row__answer { color: var(--color-text); font-size: var(--text-md); overflow-wrap: anywhere; }
