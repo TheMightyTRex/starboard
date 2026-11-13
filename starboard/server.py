@@ -622,6 +622,9 @@ def after_install_change(app, password, plan, sab_ini, by_installer=None, sab_fr
                     notes.append("Add your Usenet servers in SABnzbd, Config, Servers: they are not moved from NZBGet")
             except (reelix_setup.ReelixError, OSError, ValueError) as e:
                 notes.append(f"Switching the Usenet app is not finished: {e}")
+        if "dispatcharr" in plan["add"] and password:  # an add-on (DASH-228): its admin and a key for Starboard
+            from . import app_setup
+            notes += app_setup.dispatcharr_first_run(cfg, app.data_dir, password)
         services.forget()
         adopt_started_apps(app, plan["add"], after_job=False)
         logs.event("info", "your install", "; ".join(notes) or "Your install changed")
@@ -1510,6 +1513,36 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(400, str(e))
                 except services.ServiceError as e:
                     return self.error(502, f"Reelix said no: {e}")
+            if path.startswith("/api/dispatcharr"):  # Settings, Apps, Dispatcharr (DASH-228)
+                from . import dispatcharr
+                try:
+                    if path == "/api/dispatcharr" and method == "GET":
+                        return self.json(200, dispatcharr.state(cfg, app.data_dir))
+                    if path == "/api/dispatcharr/connect" and method == "POST":
+                        body = self.body()
+                        self.check_password(body)  # the Starboard password is Dispatcharr's admin password (DASH-234)
+                        done = dispatcharr.connect(cfg, app.data_dir, str(body.get("password", "")))
+                    elif path == "/api/dispatcharr" and method == "PUT":
+                        out = dispatcharr.save(cfg, app.data_dir, self.body())
+                        done = out["done"]
+                    elif path == "/api/dispatcharr/channels" and method == "POST":
+                        out = dispatcharr.make_channels(cfg, app.data_dir)
+                        done = out["done"]
+                    elif path == "/api/dispatcharr/jellyfin" and method == "POST":
+                        dispatcharr._app(cfg)  # a key first: no Dispatcharr to add without one
+                        done = [dispatcharr.connect_jellyfin(cfg, app.data_dir) or "Jellyfin has Dispatcharr's tuner and guide already"]
+                    else:
+                        return self.error(405, "Method not allowed")
+                    for line in done:
+                        logs.event("info", "dispatcharr", line)
+                    services.forget()
+                    return self.json(200, {"done": done, "state": dispatcharr.state(cfg, app.data_dir)})
+                except PasswordProblem as e:
+                    return self.error(e.status, e.message, reason="password")
+                except ValueError as e:
+                    return self.error(400, str(e))
+                except dispatcharr.DispatcharrError as e:
+                    return self.error(502, str(e))
             if path == "/api/tdarr" and method in ("GET", "PUT"):  # Settings, Apps, Tdarr (DASH-306)
                 from . import tdarr
                 try:

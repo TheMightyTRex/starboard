@@ -19,7 +19,8 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "library-film.html?id=3", "library-tv-show.html?id=8", "library-artist.html?id=1", "library-radio-show.html?id=1",
   "library-book.html?id=4", "library-audiobook.html?id=6",
   "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "settings-reelix.html",
-  "search-sites.html", "settings-radio.html"];  // Search the sites (DASH-213), Settings, Radio (DASH-212)
+  "search-sites.html", "settings-radio.html",  // Search the sites (DASH-213), Settings, Radio (DASH-212)
+  "settings-dispatcharr.html"];  // Settings, Apps, Dispatcharr (DASH-228)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
@@ -621,6 +622,33 @@ const serverDefault = await page.evaluate(() => document.documentElement.dataset
 check("DES-02", "Display's Design list has a picture for each choice", panelPics.length === 6, panelPics.join(","));
 check("DES-02", "Use the dashboard's default shows the default design's picture", panelPics[0] === serverDefault, `${panelPics[0]} and ${serverDefault}`);
 await page.keyboard.press("Escape");
+
+// DASH-228: Dispatcharr set up from Starboard, against the made-up Dispatcharr and Jellyfin of the example server: the
+// IPTV source with its own checks, then Jellyfin's tuner and guide, then channels made from the playlist.
+console.log("\n== DISP Dispatcharr");
+await open("settings-dispatcharr.html");
+await page.locator("#dp-source-h").waitFor({ timeout: 10000 });
+check("DISP-01", "Settings, Apps, Dispatcharr shows the source, channels and Jellyfin",
+  (await page.locator("#dp-source-h, #dp-channels-h, #dp-jellyfin-h").count()) === 3);
+check("DISP-01", "a playlist address asks for no user name", await page.locator("#dp-user").isHidden());
+await page.check("#dp-kind-xc");
+check("DISP-01", "Xtream Codes asks for a user name and password", await page.locator("#dp-user").isVisible() && await page.locator("#dp-pass").isVisible());
+await page.click("#dp-save");
+check("DISP-02", "saving Xtream Codes without a user name says so at the field, and puts focus there",
+  (await page.locator("#dp-user").getAttribute("aria-invalid")) === "true" && await page.evaluate(() => document.activeElement.id) === "dp-user");
+await page.check("#dp-kind-m3u");
+await page.fill("#dp-guide", "https://iptv.example/xmltv.php");
+await page.click("#dp-save");
+await page.locator("#dp-jellyfin-h").locator("xpath=ancestor::section").getByText("Jellyfin has Dispatcharr").waitFor({ timeout: 10000 });
+check("DISP-03", "saving adds Dispatcharr to Jellyfin as a tuner with its guide", true);
+check("DISP-03", "what was done is said beside Save, and focus stays on Save",
+  /Jellyfin: added Dispatcharr/.test(await page.locator("#dp-source-h").locator("xpath=ancestor::section").innerText())
+  && await page.evaluate(() => document.activeElement.id) === "dp-save");
+await page.click("#dp-make");
+await page.locator("#dp-make").waitFor({ state: "detached", timeout: 10000 });
+const made = await page.locator("#dp-channels-h").locator("xpath=ancestor::section").innerText();
+check("DISP-04", "Make channels makes a channel for each stream and says so", /making 48 channels/.test(made) && /Channels in Dispatcharr\s+48/.test(made), made);
+check("DISP-04", "focus goes to the Channels heading, not the top of the page", await page.evaluate(() => document.activeElement.id) === "dp-channels-h");
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

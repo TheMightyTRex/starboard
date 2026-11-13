@@ -141,6 +141,10 @@ def items(cfg, data_dir):
     if "tdarr" in keys:  # DASH-306: Tdarr's choices are in Starboard now, not a guided step in Tdarr's own page
         out.append({"key": "tdarr", "title": "Choose what Tdarr converts", "why": "Starboard sets up Tdarr's libraries and when it works.",
                     "href": "/settings-tdarr.html#td-choices-h", "done": bool(state.get("tdarr"))})
+    if "dispatcharr" in keys:  # DASH-228: Dispatcharr is set up from Starboard now, not a guided step in its own page
+        out.append({"key": "dispatcharr", "title": "Add your IPTV source to Dispatcharr",
+                    "why": "Starboard adds your playlist and guide, and adds Dispatcharr to Jellyfin as a tuner.",
+                    "href": "/settings-dispatcharr.html#dp-source-h", "done": bool(state.get("dispatcharr")) or "dispatcharr" in (state.get("guided_done") or [])})  # Done on the old guided step counts
     if keys & {"nzbget", "sabnzbd"}:
         server = _usenet_server(svcs)
         out.append({"key": "usenet", "title": "Add your Usenet provider's server", "why": "The Usenet app downloads nothing without one.",
@@ -155,8 +159,8 @@ def items(cfg, data_dir):
         out.append({"key": "mediaservers", "title": "Connect Reelix to your media servers", "why": "New files then show in them at once.",
                     "href": "/settings-reelix.html#rx-mediaservers-h", "done": bool(state.get("media_servers"))})
     # Apps Starboard does not set up by itself, on purpose (DASH-230, DASH-231): one short step in the app, then
-    # Done on the checklist. Tdarr's choice of what to convert to is the person's; Wizarr's and Dispatcharr's own
-    # pages change with their updates, so Starboard does not script them.
+    # Done on the checklist. Wizarr's own pages change with its updates, so Starboard does not script them;
+    # Dispatcharr has an API, so Settings, Apps, Dispatcharr sets it up (DASH-228).
     finished = set(state.get("guided_done") or [])
     for key, title, why in GUIDED:
         if key in keys:
@@ -175,7 +179,8 @@ def items(cfg, data_dir):
 # pages frame them; tests/test_setup_left.py checks every step's page is here.
 PANEL_PAGES = frozenset({"/settings-reelix.html", "/settings-jellyfin.html", "/settings-audiobookshelf.html",
                          "/install-apps.html", "/library-films.html", "/library-tv.html", "/library-radio.html",
-                         "/library-audiobooks.html", "/library-books.html", "/settings-tdarr.html"})
+                         "/library-audiobooks.html", "/library-books.html", "/settings-tdarr.html",
+                         "/settings-dispatcharr.html"})
 
 
 GUIDED = [
@@ -188,9 +193,6 @@ GUIDED = [
     ("kavita", "Finish Kavita's set-up",
      "In Kavita, make its admin, then add a library: Books, at /media/books (and Comics at /media/comics if you have "
      "them). Kavita reads them where they are. Then select Done."),
-    ("dispatcharr", "Finish Dispatcharr's set-up",
-     "In Dispatcharr, make its admin and add your IPTV playlist and guide. In Jellyfin, Live TV, add an HDHomeRun tuner "
-     "at http://dispatcharr:9191/hdhr. Then select Done."),
 ]
 
 

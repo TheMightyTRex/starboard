@@ -108,6 +108,22 @@ _HELLO = {"manifest_version": 1, "id": "hello-card", "name": "Hello card", "vers
 plugins_admin.fetch_manifest = lambda address, opener=None: dict(_HELLO)
 
 
+def _example_dispatcharr():
+    """Dispatcharr (DASH-228), an add-on: set up by Starboard, with a made-up playlist of 48 streams read but no channels
+    and no guide yet, and a made-up Jellyfin without its tuner, so Settings, Apps, Dispatcharr shows every part. Both
+    answer here, in this process (tests/dispatcharr_stand_in.py): nothing is fetched."""
+    from starboard import dispatcharr
+    from tests.dispatcharr_stand_in import StandIn
+    fake = StandIn(admin_password="made-up", streams=48, prefix="/dispatcharr")
+    fake.key = KEY
+    fake.playlists.append({"id": 1, "name": dispatcharr.PLAYLIST, "server_url": "https://iptv.example/get.php?type=m3u_plus",
+                           "account_type": "STD", "max_streams": 2, "status": "success",
+                           "last_message": "Read 48 streams in 6 groups."})
+    dispatcharr.OPENER = fake
+    dispatcharr.jellyfin = lambda cfg: {"name": "Jellyfin", "type": "jellyfin", "url": "http://jellyfin.example:8096", "api_key": "made-up"}
+    dispatcharr.inside_address = lambda cfg, data_dir: dispatcharr.INSIDE
+
+
 def _example_folders(data):
     """The folder picker (DASH-240) browses a made-up tree, never this computer's own folders."""
     from starboard import folders
@@ -491,6 +507,7 @@ APPS = [
     ("Example TV 4K", "sonarr", "Downloads", "tv4k"),
     ("Media player", "link", "Watch and listen", "player"),
     ("Audiobookshelf", "audiobookshelf", "Watch and listen", "abs"),
+    ("Dispatcharr", "link", "Watch and listen", "dispatcharr"),  # set up by Starboard, with its key (DASH-228)
     ("Not running", "link", "Watch and listen", None),
 ]
 
@@ -790,6 +807,7 @@ def main():
                                                     "wireguard_private_key": "made-up", "wireguard_addresses": "192.168.1.20/32"}}))
     _example_plugins(str(DATA))
     _example_livetv(str(DATA))
+    _example_dispatcharr()
     _example_folders(DATA)
     if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":
         # DASH-218: the full Reelix's YouTube and Spotify downloads as the admin last saw them, with yt-dlp broken and
@@ -812,7 +830,8 @@ def main():
         call("PUT", "/api/config/general", {"server_name": "Harbour", "setup_guide_done": True}, cookie)  # a set-up server (DASH-238)
         for name, kind, group, path in APPS:
             url = f"http://127.0.0.1:{FAKE_PORT}/{path}" if path else "http://127.0.0.1:9/"
-            call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": url, "api_key": KEY if kind != "link" else ""}, cookie)
+            call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": url, "api_key": KEY if kind != "link" or path == "dispatcharr" else "",
+                                           "icon": "dispatcharr" if path == "dispatcharr" else ""}, cookie)
         # Reelix, as Install apps adds it: a link with the manager key, so radio shows in Coming up and Downloads.
         call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": "Downloads", "icon": "reelix",
                                        "url": f"http://127.0.0.1:{FAKE_PORT}/reelix", "api_key": KEY}, cookie)
