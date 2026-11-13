@@ -14,6 +14,14 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Plug-in API 1.9.0, 13 November 2026
+
+- **Added:** `publish` on a container with `network: vpn` and a `port`. Starboard puts that port on Gluetun, so the
+  home network can reach the container, and restarts Gluetun once when the plug-in starts. Use it only when
+  something outside the server must open the container's address, such as a TV app that plays a stream address
+  Jellyfin hands it. Read [Containers](plugin-manifest-reference.md).
+- An older Starboard refuses a manifest with `publish`, so set `starboard_api` to `1.9` when you use it.
+
 ## Plug-in API 1.7.0, 13 November 2026
 
 - **Added:** a custom setting's list may have sub menus: `menus`, each with a `parent` for the level it opens from, and

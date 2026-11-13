@@ -11,7 +11,9 @@
 .lib-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); }
 .lib-group-head h2 { margin: 0; font-size: var(--text-lg); }
 .lib-group-head:has(.lib-group-logo) { align-items: center; }
-.lib-group-logo { height: 2.5rem; width: auto; max-width: 10rem; object-fit: contain; filter: var(--network-logo-filter); }
+.lib-group-logo { height: 2.5rem; width: auto; max-width: 10rem; object-fit: contain; }
+.lib-group-logo:is([data-tone="light"], [data-tone="invert"]) { background: #1b1b1f; padding: 4px 8px; border-radius: var(--radius-1, 4px); }
+.lib-group-logo[data-tone="dark"] { background: #fff; padding: 4px 8px; border-radius: var(--radius-1, 4px); }
 
 /* A cover with no picture shows its title on a plain tile. */
 .lib-cover-title { padding: var(--space-2); color: var(--color-text); font-weight: var(--weight-strong); font-size: var(--text-sm);
@@ -63,13 +65,9 @@
 /* Small row covers show no title: the row says it beside them. */
 .cover--result .lib-cover-title { display: none; }
 
-/* Network logos (DASH-264): every logo in greys so they sit quietly beside the covers. The logo is decorative: the network's name is always written beside
-   or under it. A network with no logo gets a plain name tile. */
-/* Shades of grey, not one flat black (owner, 10 November 2026): a logo with white words inside a shape, such as
-   Cinemax's or ABC's, keeps its words; dark designs flip the greys so the logo stays light on the dark tile. */
-:root { --network-logo-filter: grayscale(1) contrast(1.2); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --network-logo-filter: grayscale(1) contrast(1.2) invert(1); } }
-:root[data-theme="dark"], :root.is-dark { --network-logo-filter: grayscale(1) contrast(1.2) invert(1); }
+/* Network logos (DASH-264): each logo in its own colours (owner, 13 November 2026: "remove the requirement to make
+   them black and white"). The logo is decorative: the network's name is always written beside or under it. A network
+   with no logo gets a plain name tile. */
 .network-logo {
   display: grid;
   place-items: center;
@@ -83,10 +81,10 @@
 /* The card's one grid cell is the card's own size (minmax(0, 1fr)), not the logo's: a 500 px wide logo used to set the
    column's width and was clipped (issue #4). The logo then fits inside, whole, with room around it. */
 .network-logo { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); padding: var(--space-3, 12px); }
-.network-logo img { width: 100%; height: 100%; max-width: 100%; max-height: 50%; min-width: 0; object-fit: contain; filter: var(--network-logo-filter); }
+.network-logo img { width: 100%; height: 100%; max-width: 100%; max-height: 50%; min-width: 0; object-fit: contain; }
 .network-logo__name { font-size: var(--text-xs, 0.75rem); font-weight: 600; text-align: center; color: var(--color-text-muted); overflow-wrap: anywhere; }
 .series-head__network { display: inline-flex; align-items: center; gap: var(--space-1, 4px); }
-.series-head__network img { height: 1.25em; width: auto; filter: var(--network-logo-filter); }
+.series-head__network img { height: 1.25em; width: auto; }
 
 /* TV, Networks as a grid of square cards (owner, 10 November 2026): the logo in a square tile, the name and counts
    under it; the whole card opens the network, and keyboard focus shows on the card. */
@@ -104,19 +102,14 @@
 .network-card__link:focus-visible { outline: none; }
 .network-card__meta { margin: 0; font-size: var(--text-xs, 0.75rem); color: var(--color-text-muted); }
 
-/* Logos by tone (12 November 2026): light ink shows black in light mode, dark ink shows white in dark mode, and a
-   logo with its own background keeps it. Untested logos keep the standard look until they are measured. */
-:root { --logo-light: grayscale(1) brightness(0); --logo-dark: grayscale(1) brightness(0); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --logo-light: grayscale(1) brightness(0) invert(1); --logo-dark: grayscale(1) brightness(0) invert(1); } }
-:root[data-theme="dark"], :root.is-dark { --logo-light: grayscale(1) brightness(0) invert(1); --logo-dark: grayscale(1) brightness(0) invert(1); }
-:is(.network-logo, .series-head__network, .lib-group) img[data-tone="light"] { filter: var(--logo-light); }
-:is(.network-logo, .series-head__network, .lib-group) img[data-tone="dark"] { filter: var(--logo-dark); }
-:is(.network-logo, .series-head__network, .lib-group) img[data-tone="solid"] { filter: none; border-radius: var(--radius-1, 4px); }
-/* Light and dark ink together (issues #12 and #13): on a black tile in every theme, white letters either way. */
-:is(.network-logo, .series-head__network, .lib-group) img[data-tone="invert"] { filter: grayscale(1) invert(1) contrast(1.15); }
-:is(.network-logo, .series-head__network, .lib-group) img[data-tone="boxed"] { filter: none; }
-.network-logo:has(img[data-tone="invert"], img[data-tone="boxed"]) { background: #000; }
-:is(.series-head__network, .lib-group) img:is([data-tone="invert"], [data-tone="boxed"]) { background: #000; padding: 4px 6px; border-radius: var(--radius-1, 4px); }
+/* Logos by tone, in their own colours (13 November 2026): the measured tone only chooses the tile behind the logo,
+   so a white logo sits on a dark tile and a black one on a light tile in every design; nothing is turned grey,
+   black or white. Untested logos sit on the standard tile until they are measured. */
+.network-logo:has(img:is([data-tone="light"], [data-tone="invert"])) { background: #1b1b1f; }
+.network-logo:has(img[data-tone="dark"]) { background: #fff; }
+:is(.network-logo, .series-head__network, .lib-group) img[data-tone="solid"] { border-radius: var(--radius-1, 4px); }
+:is(.series-head__network, .lib-group) img:is([data-tone="light"], [data-tone="invert"]) { background: #1b1b1f; padding: 4px 6px; border-radius: var(--radius-1, 4px); }
+:is(.series-head__network, .lib-group) img[data-tone="dark"] { background: #fff; padding: 4px 6px; border-radius: var(--radius-1, 4px); }
 /* Films, Collections as banners with a completion ring (owner chose idea C, 12 November 2026). */
 .collection-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4, 16px);
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }

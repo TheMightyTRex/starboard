@@ -1021,6 +1021,7 @@ def write(data_dir, built):
     if re.search(r"(?m)^  noip-duc:", built["compose"]):
         from . import noip
         noip.ensure_file(data_dir)  # Compose needs the file to exist; the updater waits for a DDNS key
+    built = {**built, "compose": with_plugin_ports(built["compose"], plugin_vpn_ports(data_dir))[0]}  # plug-ins' ports stay
     for name, text, mode in (("compose.yaml", built["compose"], 0o644), (".env", built["env"], 0o600)):
         target = os.path.join(path, name)
         if os.path.exists(target):
@@ -1374,3 +1375,84 @@ def _start(host_stack, env):
     finally:
         with _lock:
             _job.update(finished=True, ended=time.time())
+
+def plugin_vpn_ports(data_dir):
+    """Ports of plug-in containers on the VPN that ask to be reached from the home network (publish, plug-in API 1.8):
+    they go on Gluetun, as the VPN apps' own ports do. Only active plug-ins count."""
+    import json as _json
+    out, root = [], os.path.join(data_dir, "plugins")
+    try:
+        names = sorted(os.listdir(root))
+    except OSError:
+        return out
+    for pid in names:
+        try:
+            with open(os.path.join(root, pid, "manifest.json"), encoding="utf-8") as f:
+                m = _json.load(f)
+            with open(os.path.join(root, pid, "state.json"), encoding="utf-8") as f:
+                state = (_json.load(f) or {}).get("state")
+        except (OSError, ValueError):
+            continue
+        if state != "enabled":
+            continue
+        for c in m.get("containers") or []:
+            if isinstance(c, dict) and c.get("publish") is True and c.get("network") == "vpn" and isinstance(c.get("port"), int):
+                out.append(f"{c['port']}:{c['port']}")
+    return sorted(set(out))
+
+
+def with_plugin_ports(compose, ports):
+    """The Compose text with each of `ports` on Gluetun (added once; nothing else changes). Returns (text, changed)."""
+    lines = compose.split("\n")
+    try:
+        i = lines.index("  gluetun:") + 1
+    except ValueError:
+        return compose, False
+    end = i
+    while end < len(lines) and (lines[end].startswith("    ") or not lines[end].strip()):
+        end += 1
+    block = lines[i:end]
+    have = set(re.findall(r'- "?(\d+:\d+)"?', "\n".join(block)))
+    missing = [p for p in ports if p not in have]
+    if not missing:
+        return compose, False
+    at = next((j for j, l in enumerate(block) if l.startswith("    ports:")), None)
+    new = [f"      - {_yaml_value(p)}  # a plug-in's port on the home network" for p in missing]
+    if at is None:
+        block = block + ["    ports:  # apps that go through the VPN are reached on Gluetun's ports"] + new
+    else:
+        k = at + 1
+        while k < len(block) and block[k].startswith("      - "):
+            k += 1
+        block = block[:k] + new + block[k:]
+    return "\n".join(lines[:i] + block + lines[end:]), True
+
+
+def publish_plugin_ports(data_dir, helper=None):
+    """Puts the active plug-ins' published ports on Gluetun in the apps' Compose file and restarts Gluetun when that
+    changed. Returns True when it changed anything."""
+    path = os.path.join(folder(data_dir), "compose.yaml")
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return False
+    text, changed = with_plugin_ports(text, plugin_vpn_ports(data_dir))
+    if not changed:
+        return False
+    os.replace(path, path + f".before-{time.strftime('%Y%m%d-%H%M%S')}")
+    keep_recent_copies(path)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+    from . import containers
+    try:
+        g = next((c for c in containers.containers() if c["name"] == "gluetun"), None)
+        if g and g["folder"] and g["files"]:  # Gluetun again with the new ports; the apps on it are started again too
+            run = helper or containers._helper
+            run(g["folder"], f"docker compose -p {containers._quote(g['project'])} "
+                + " ".join(f"-f {containers._quote(f)}" for f in g["files"]) + " up -d gluetun 2>&1")
+            time.sleep(5)
+            containers.rejoin()
+    except containers.DockerError:
+        pass  # the file is right; Gluetun takes the port when it next starts
+    return True

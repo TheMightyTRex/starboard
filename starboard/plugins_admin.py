@@ -522,6 +522,10 @@ def enable(data_dir, pid, helper=None, services=None):
     upgrade_mounts(where)
     share(where)  # also after Roll back, which moves files rather than writing them
     ok, text = _compose_run(data_dir, pid, "up -d --remove-orphans", helper)
+    if ok and any(isinstance(c, dict) and c.get("publish") for c in (_read(os.path.join(where, "manifest.json"), {}) or {}).get("containers") or []):
+        set_state(data_dir, pid, "enabled")  # counted as active before its port goes on Gluetun
+        from . import stack
+        stack.publish_plugin_ports(data_dir)
     st = _read(os.path.join(where, "state.json"), {}) or {}
     if st.pop("resting", None) is not None:  # up -d started every container, resting ones too (DASH-357)
         _write(os.path.join(where, "state.json"), st)

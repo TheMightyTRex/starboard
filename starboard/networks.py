@@ -1,6 +1,6 @@
 """TV network logos (DASH-264): each network's logo (BBC One, Channel 4, Netflix and the rest) for TV, Networks and
-the series pages, shown in one colour so they look alike beside the covers (the page's CSS draws them black on light
-designs and white on dark ones). Found once per network through Reelix's TMDB lookup of one of its series, kept in
+the series pages, in their own colours (owner, 13 November 2026: no longer made black and white); the measured tone
+only chooses a dark or light tile behind a logo. Found once per network through Reelix's TMDB lookup of one of its series, kept in
 data/library/network-logos.json for 30 days, and looked up in the background, a few at a time, so nothing waits.
 A network with no logo gets a plain name tile."""
 import json

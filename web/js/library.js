@@ -230,11 +230,11 @@ function showGroup() {
       : GROUP_PAGE[TAB] || ["", ""];
   const head = $(".page-head");
   if (page) head.before(el("a", { class: "back-link", href: `/${page}` }, icon("arrow-left"), `All ${label.toLowerCase()}`));
-  // A TV network's own page shows its logo beside its name (owner, 10 November 2026), in the same one colour as the
+  // A TV network's own page shows its logo beside its name (owner, 10 November 2026), in its own colours, as on the
   // Networks grid; decorative, as the name is written beside it, and left out when the network has none.
   const logo = TAB === "tv" && !state.by
-    ? el("img", { class: "lib-group-logo", src: `/api/library/network-logo?tab=tv&name=${encodeURIComponent(state.group)}`, alt: "",
-      onerror: (e) => e.target.remove() }) : null;
+    ? logoTone(el("img", { class: "lib-group-logo", src: `/api/library/network-logo?tab=tv&name=${encodeURIComponent(state.group)}`, alt: "",
+      onerror: (e) => e.target.remove() }), state.group, "") : null;
   const h1 = $("h1", head);
   h1.replaceChildren(...[logo, document.createTextNode(state.group)].filter(Boolean));
   h1.classList.toggle("lib-group-title", !!logo);
