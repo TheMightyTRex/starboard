@@ -20,7 +20,14 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   "library-book.html?id=4", "library-audiobook.html?id=6",
   "discover-films.html", "discover-radio.html", "downloads-finished.html", "wanted-films.html", "wanted-music.html", "wanted-audiobooks.html", "history.html", "settings-reelix.html",
   "search-sites.html", "settings-radio.html",  // Search the sites (DASH-213), Settings, Radio (DASH-212)
-  "settings-dispatcharr.html"];  // Settings, Apps, Dispatcharr (DASH-228)
+  "settings-dispatcharr.html",  // Settings, Apps, Dispatcharr (DASH-228)
+  // General's level 2 pages (DASH-389)
+  "settings-general-appearance.html", "settings-general-lists.html", "settings-general-hours.html", "settings-general-logs.html",
+  // Downloads' level 2 pages (DASH-390)
+  "settings-downloads.html", "settings-downloads-usenet.html", "settings-downloads-hours.html",
+  // Radio's, Performance's and Security's level 2 pages (DASH-391)
+  "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-performance-pictures.html",
+  "settings-security-password.html", "settings-security-keys.html", "settings-security-sessions.html"];
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
@@ -153,8 +160,8 @@ await page.locator("snag-list button", { hasText: /^Save in Starboard$/ }).click
 await page.locator("snag-list", { hasText: "Saved in Starboard" }).first().waitFor({ timeout: 5000 }).catch(() => {});
 const saved = ((await api("/api/ux-notes")).notes || []).filter((n) => n.source === "snaglist" && n.markdown.includes("A made-up journey report"));
 check("FB-01", "the report is saved in Starboard", saved.length === 1);
-await open("settings-general.html");
-check("FB-01", "Settings, General lists it", await page.locator("#feedback-list .row").count() >= 1);
+await open("settings-general-logs.html");
+check("FB-01", "Settings, General, Logs and feedback lists it", await page.locator("#feedback-list .row").count() >= 1);
 for (const n of saved) await api("/api/ux-notes/remove", { method: "POST", body: { id: n.id } });
 await api("/api/config/general", { method: "PUT", body: { ux_notes: false } });
 await open("index.html");
@@ -187,9 +194,9 @@ await api("/api/config/general", { method: "PUT", body: { groups: [...before.gro
 const added = await api("/api/services", { method: "POST", body: { type: "link", name: XSS, url: "http://journey-xss:8080",
   description: `<script>window.__xss='description'</script>`, group: `"><svg onload="window.__xss='group'">` } });
 await api("/api/ux-notes", { method: "POST", body: { what: `<img src=x onerror="window.__xss='note'">`, page: "/index.html", part: XSS } });
-for (const p of ["index.html", "apps-services.html", "settings.html", "settings-general.html"]) {
+for (const p of ["index.html", "apps-services.html", "settings.html", "settings-general-logs.html"]) {
   await open(p);
-  if (p === "settings-general.html") {
+  if (p === "settings-general-logs.html") {
     await page.locator("#feedback-list .row").first().waitFor({ timeout: 5000 }).catch(() => {});
     check("SEC-07", "a saved report is shown as text", await page.locator("#feedback-list").getByText(`<img src=x onerror="window.__xss='note'">`).count() > 0);
   }
@@ -309,7 +316,7 @@ check("SRCH-02", "focus stays on that row", await page.evaluate(() => document.a
 
 // RAD-12: Settings, Radio: a show from a link, and files matched by hand (DASH-212)
 console.log("\n== RAD-12 radio library review and a show from a link");
-await open("settings-radio.html#radio-library-h");
+await open("settings-radio-library.html");
 await page.locator("#radio-library-h").scrollIntoViewIfNeeded();
 await page.locator("button", { hasText: "Match by hand" }).first().waitFor({ timeout: 5000 }).catch(() => {});
 check("RAD-12", "files that match no episode are listed by podcast", await page.locator("section[aria-labelledby=radio-library-h] .rows .row").count() >= 2);
@@ -610,7 +617,7 @@ await signedOut.context().close();
 
 // DASH-315: a small picture of each design in Settings, General, Default design and in Display's Design list.
 console.log("\n== DES Design pictures");
-await open("settings-general.html");
+await open("settings-general-appearance.html");
 const defaultPics = await page.locator(".option-card:has(input[name=design]) .design-picture").evaluateAll((ps) => ps.map((p) => ({
   key: p.dataset.design, hidden: p.getAttribute("aria-hidden") === "true", drawn: p.querySelectorAll("svg rect, svg circle").length })));
 check("DES-01", "Default design has a picture for each of the 5 designs", defaultPics.map((p) => p.key).join(",") === "health,tiles,shelf,command,board", JSON.stringify(defaultPics));
@@ -649,6 +656,99 @@ await page.locator("#dp-make").waitFor({ state: "detached", timeout: 10000 });
 const made = await page.locator("#dp-channels-h").locator("xpath=ancestor::section").innerText();
 check("DISP-04", "Make channels makes a channel for each stream and says so", /making 48 channels/.test(made) && /Channels in Dispatcharr\s+48/.test(made), made);
 check("DISP-04", "focus goes to the Channels heading, not the top of the page", await page.evaluate(() => document.activeElement.id) === "dp-channels-h");
+
+// DASH-389: General's sections are pages on the level 2 menu; Style is Appearance, with the accessibility options;
+// old addresses go to the part's new page.
+console.log("\n== MENU2 General on the level 2 menu");
+const level2 = async (p) => { await open(p); return (await page.locator(".site-header__tabs .menu-tabs a").evaluateAll((as) => as.map((a) => a.textContent.trim()))).join("|"); };
+const headings = () => page.locator("main .settings-sections h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()).join("|"));
+check("MENU2-01", "General has Names and apps, Appearance, Pages and lists, Download hours, Logs and feedback",
+  (await level2("settings-general.html")) === "Names and apps|Appearance|Pages and lists|Download hours|Logs and feedback", await level2("settings-general.html"));
+check("MENU2-01", "each page shows only its own parts", (await headings()) === "Names|Categories|App cards|Set-up guide", await headings());
+await open("settings-general-appearance.html");
+check("MENU2-02", "Appearance holds style and colours, the default design and accessibility", (await headings()) === "Style and colours|Default design|Accessibility", await headings());
+check("MENU2-02", "and Style is called Appearance on the menu", (await page.locator(".site-header__tabs [aria-current=page]").textContent()).trim() === "Appearance");
+await page.locator("#ap-pref-underline").check();
+await page.waitForTimeout(300);
+check("MENU2-02", "an accessibility option applies at once", await page.evaluate(() => document.documentElement.classList.contains("pref-underline")));
+await page.click("[data-display-toggle]");
+await page.waitForTimeout(400);
+check("MENU2-02", "Display shows the same choice", await page.locator("#side-panel #pref-underline").isChecked());
+await page.locator("#side-panel #pref-underline").uncheck();
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+check("MENU2-02", "and a change in Display shows on the page", !(await page.locator("#ap-pref-underline").isChecked()));
+for (const [from, to] of [["settings-general.html#download-hours", "/settings-general-hours.html#download-hours"],
+  ["settings-general.html#gn-style-h", "/settings-general-appearance.html#gn-style-h"], ["settings-general.html#logs", "/settings-general-logs.html#logs"],
+  ["settings-general.html?discover=films#discover-rows-s", "/settings-general-lists.html?discover=films#discover-rows-s"]]) {
+  await open("index.html");
+  await open(from);
+  const at = await page.evaluate(() => location.pathname + location.search + location.hash);
+  check("MENU2-03", `the old address ${from} opens its new page`, at === to, at);
+}
+await open("settings-general-lists.html");
+check("MENU2-03", "Pages and lists has Long lists", await page.locator("#gn-scroll-h").count() === 1);
+
+// DASH-390: Downloads has VPN, Usenet and Download hours on the level 2 menu; Download hours is the same field as
+// General's, so a change in one shows in the other.
+console.log("\n== MENU2 Downloads on the level 2 menu");
+check("MENU2-04", "Downloads has VPN, Usenet and Download hours", (await level2("settings-downloads.html")) === "VPN|Usenet|Download hours");
+check("MENU2-04", "VPN shows only the VPN", (await headings()) === "VPN", await headings());
+await open("settings-downloads-hours.html");
+const hoursWas = await page.locator("[aria-labelledby=dh-on-l]").isChecked();
+await page.locator("[aria-labelledby=dh-on-l]").click();
+await page.waitForTimeout(500);
+check("MENU2-04", "Download hours on Downloads is the switch itself and saves", (await api("/api/config")).download_hours.enabled === !hoursWas);
+await open("settings-general-hours.html");
+check("MENU2-04", "and General, Download hours shows the same", (await page.locator("[aria-labelledby=dh-on-l]").isChecked()) === !hoursWas);
+await api("/api/config/general", { method: "PUT", body: { download_hours: { enabled: hoursWas } } });
+await open("index.html");
+await open("settings-downloads.html#dl-hours-h");
+check("MENU2-04", "the old address of Download hours on Downloads opens its page", await page.evaluate(() => location.pathname) === "/settings-downloads-hours.html");
+
+// DASH-391: Radio, Performance and Security have their parts as pages on the level 2 menu; old anchors go there;
+// a page made only of parts under Advanced settings shows them anyway.
+console.log("\n== MENU2 Radio, Performance and Security on the level 2 menu");
+check("MENU2-05", "Radio has Sources, Add a show from a link, Your podcast library, Station logos",
+  (await level2("settings-radio.html")) === "Sources|Add a show from a link|Your podcast library|Station logos", await level2("settings-radio.html"));
+check("MENU2-05", "Sources shows only the sources", (await headings()) === "Sources", await headings());
+check("MENU2-05", "Performance has Preset and Pictures", (await level2("settings-performance.html")) === "Preset|Pictures");
+check("MENU2-05", "Pictures has the picture cache and its Clear", (await level2("settings-performance-pictures.html")) && (await headings()) === "Pictures|Clear", await headings());
+check("MENU2-05", "Security has Who can open the dashboard, Password, API keys, Sign out everywhere",
+  (await level2("settings-security.html")) === "Who can open the dashboard|Password|API keys|Sign out everywhere", await level2("settings-security.html"));
+for (const [from, to] of [["settings-radio.html#radio-logos-h", "/settings-radio-logos.html"], ["settings-performance.html#pf-pictures-h", "/settings-performance-pictures.html"],
+  ["settings-security.html#sc-keys-h", "/settings-security-keys.html"], ["settings-security.html#sc-pw-h", "/settings-security-password.html"]]) {
+  await open("index.html");
+  await open(from);
+  check("MENU2-06", `the old address ${from} opens its new page`, await page.evaluate(() => location.pathname) === to);
+}
+await api("/api/config/general", { method: "PUT", body: { settings_advanced: false } });
+await open("settings-security-sessions.html");
+check("MENU2-06", "Sign out everywhere shows its parts with Advanced settings inactive",
+  await page.locator("#sc-ses-h").isVisible() && await page.locator("#sc-danger-h").isVisible());
+await api("/api/config/general", { method: "PUT", body: { settings_advanced: true } });
+
+// DASH-388: the own style's colours, from the design system's palettes, on the Styles plug-in's page; a plug-in style
+// in use, then Reset style, comes back to the own style in those colours.
+console.log("\n== OWN Own style colours");
+await open("settings-plugin.html?id=styles");
+const ownCards = await page.locator("input[name=pl-own-colours]").evaluateAll((rs) => rs.map((r) => r.value));
+check("OWN-01", "the own style offers Teal and the design system's five palettes", ownCards.join(",") === "teal,indigo,forest,plum,ember,graphite", ownCards.join(","));
+await page.locator("input[name=pl-own-colours][value=forest]").check();
+await page.waitForTimeout(500);
+check("OWN-01", "choosing Forest saves it for the server and uses its colours here",
+  (await api("/api/config")).own_colours === "forest" && await page.evaluate(() => document.documentElement.dataset.palette) === "forest"
+  && (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--color-accent").trim())) === "#2f6b3a");
+check("OWN-01", "the saved note says so beside the choice", /Saved/.test(await page.locator("#pl-own-colours-saved").textContent()));
+await page.locator(".style-gallery button", { hasText: "Use this style" }).first().click();
+await page.waitForTimeout(300);
+check("OWN-02", "a plug-in style in use leaves the own colours out", await page.evaluate(() => !document.documentElement.dataset.palette && !!document.documentElement.dataset.style));
+await page.evaluate(() => resetStyle());
+await page.waitForTimeout(300);
+check("OWN-02", "Reset style goes back to the own style in Forest", await page.evaluate(() => !document.documentElement.dataset.style && document.documentElement.dataset.palette === "forest"));
+check("OWN-02", "and the own style's card says Forest", /Forest colours/.test(await page.locator(".style-gallery__item").first().innerText()));
+await api("/api/config/general", { method: "PUT", body: { own_colours: "teal" } });
+await page.evaluate(() => setOwnColours("teal"));
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

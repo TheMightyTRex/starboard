@@ -9,6 +9,21 @@ add features.
 
 ### Added
 
+- Settings, Radio, Performance and Security have their parts on the level 2 menu: Radio's Sources, Add a show from a
+  link, Your podcast library and Station logos; Performance's Preset and Pictures; Security's Who can open the
+  dashboard, Password, API keys and Sign out everywhere. Each page asks only for what it shows (Radio asks Reelix for
+  one part, not four). Old links to a part go to its new page (DASH-391).
+- Settings, Downloads has VPN, Usenet and Download hours on the level 2 menu. Download hours there is the same field
+  as Settings, General, Download hours (one setting, so the two stay in step), in place of a link. Starboard's links to
+  download hours open it there (DASH-390).
+- Settings, General has its pages on the level 2 menu: Names and apps, Appearance, Pages and lists, Download hours,
+  and Logs and feedback. Style is now Appearance, with the own style's colours, the default design and the
+  accessibility options (theme, text size, motion, contrast, underlined links and text spacing), kept in step with
+  Display. Old links to a part go to its new page. Long lists is shown again, on Pages and lists (DASH-389).
+- Starboard's own style has colours to choose from: Teal (the standard) and the design system's five palettes,
+  Indigo, Forest, Plum, Ember and Graphite, for everyone on the server. Choose them on the Styles plug-in's page or in
+  Settings, General. Reset style, and a plug-in that is deactivated or removed, goes back to the own style in those
+  colours. The palette file loads only when one other than Teal is chosen (DASH-388).
 - Settings, Apps, Dispatcharr sets up the Dispatcharr add-on without opening it: its admin (your Starboard password)
   and a key for Starboard, your IPTV playlist or Xtream Codes server and guide, channels from the playlist (up to
   1000), and Dispatcharr in Jellyfin as an HDHomeRun tuner with its guide. Still to set up points there in place of

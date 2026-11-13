@@ -73,16 +73,28 @@ MENU = [
         ("Logs", "scroll-text", [("system-logs.html", "Logs", "scroll-text")]),
     ]),
     ("settings", "Settings", "settings", [
-        ("General", "sliders-horizontal", [("settings-general.html", "General", "sliders-horizontal")]),
+        # Level 2 (owner, 13 November 2026: "The general sub menu should be on menu 2"; DASH-389).
+        ("General", "sliders-horizontal", [("settings-general.html", "Names and apps", "tags"),
+                                           ("settings-general-appearance.html", "Appearance", "sun"),
+                                           ("settings-general-lists.html", "Pages and lists", "list"),
+                                           ("settings-general-hours.html", "Download hours", "clock"),
+                                           ("settings-general-logs.html", "Logs and feedback", "scroll-text")]),
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
                                 ("settings-reelix.html", "Reelix", "film"),
                                 ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
                                 ("settings-tdarr.html", "Tdarr", "film"), ("settings-dispatcharr.html", "Dispatcharr", "radio")]),
-        ("Downloads", "download", [("settings-downloads.html", "Downloads", "download")]),
-        ("Radio", "radio", [("settings-radio.html", "Radio", "radio")]),
+        # Level 2 (owner, 13 November 2026: "VPN, Usenet and Download hours should be on menu 2"; DASH-390).
+        ("Downloads", "download", [("settings-downloads.html", "VPN", "lock"), ("settings-downloads-usenet.html", "Usenet", "server"),
+                                   ("settings-downloads-hours.html", "Download hours", "clock")]),
+        # Level 2 (owner, 13 November 2026: "All should have those on Menu 2"; DASH-391), as General and Downloads.
+        ("Radio", "radio", [("settings-radio.html", "Sources", "radio"), ("settings-radio-link.html", "Add a show from a link", "link"),
+                            ("settings-radio-library.html", "Your podcast library", "library"), ("settings-radio-logos.html", "Station logos", "layout-grid")]),
         ("Alerts", "bell", [("settings-alerts.html", "Alerts", "bell")]),
-        ("Performance", "gauge", [("settings-performance.html", "Performance", "gauge")]),
-        ("Security", "shield-check", [("settings-security.html", "Security", "shield-check")]),
+        ("Performance", "gauge", [("settings-performance.html", "Preset", "gauge"), ("settings-performance-pictures.html", "Pictures", "eye")]),
+        ("Security", "shield-check", [("settings-security.html", "Who can open the dashboard", "network"),
+                                      ("settings-security-password.html", "Password", "key-round"),
+                                      ("settings-security-keys.html", "API keys", "lock"),
+                                      ("settings-security-sessions.html", "Sign out everywhere", "log-out")]),
         # Level 2: Manage, Catalogue, then one tab per added plug-in, which common.js adds from /api/session (DASH-318).
         ("Plug-ins", "puzzle", [("settings-plugins.html", "Manage", "list-checks"),
                                 ("settings-plugins-catalogue.html", "Catalogue", "layout-grid")]),
@@ -157,6 +169,10 @@ HELP = {
     "system-cleanup.html": ("topics/remove-starboard.md", "removing what Starboard leaves behind"),
     "system-holding.html": ("topics/remove-starboard.md", "removing what Starboard leaves behind"),
     "settings-general.html": ("topics/organise-categories.md", "organising apps into categories"),
+    "settings-general-appearance.html": ("topics/display-and-accessibility.md", "the look, colours and accessibility"),
+    "settings-general-lists.html": ("topics/coming-up.md", "what Coming up and the lists show"),
+    "settings-general-hours.html": ("topics/set-download-hours.md", "setting download hours"),
+    "settings-general-logs.html": ("topics/read-the-log.md", "reading the log and reporting a problem"),
     "settings.html": ("topics/change-or-remove-an-app.md", "changing or removing an app"),
     "settings-install.html": ("topics/change-your-install.md", "changing your install"),
     "settings-reelix.html": ("topics/change-reelix-settings.md", "changing Reelix's settings"),
@@ -166,10 +182,19 @@ HELP = {
     "settings-dispatcharr.html": ("topics/set-up-live-tv.md", "setting up Live TV"),
     "settings-alerts.html": ("topics/activate-alerts.md", "activating alerts"),
     "settings-performance.html": ("topics/make-starboard-lighter.md", "making Starboard use less of your server"),
-    "settings-security.html": ("README.md#security", "security"),
-    "settings-downloads.html": ("topics/set-download-hours.md", "your VPN, Usenet server and download hours"),
+    "settings-performance-pictures.html": ("topics/make-starboard-lighter.md#what-each-item-costs", "pictures and what they cost"),
+    "settings-security.html": ("topics/choose-who-can-open-starboard.md", "choosing who can open Starboard"),
+    "settings-security-password.html": ("topics/change-your-password.md", "changing your password"),
+    "settings-security-keys.html": ("topics/use-starboards-api.md", "API keys for Starboard's API"),
+    "settings-security-sessions.html": ("topics/sign-out-everywhere.md", "signing out everywhere"),
+    "settings-downloads.html": ("topics/change-your-install.md", "your install and its VPN"),
+    "settings-downloads-usenet.html": ("topics/choose-a-usenet-provider.md", "your Usenet provider"),
+    "settings-downloads-hours.html": ("topics/set-download-hours.md", "setting download hours"),
     "settings-plugins.html": ("topics/add-a-plugin.md", "plug-ins"),
-    "settings-radio.html": ("topics/add-a-plugin.md", "radio sources and station logos"),
+    "settings-radio.html": ("topics/follow-radio-shows.md", "following radio shows and where they come from"),
+    "settings-radio-link.html": ("topics/follow-radio-shows.md#find-and-follow-a-show", "following a show"),
+    "settings-radio-library.html": ("topics/follow-radio-shows.md#bring-in-shows-you-already-have", "shows you already have"),
+    "settings-radio-logos.html": ("topics/add-a-plugin.md", "station logos"),
     "settings-plugins-catalogue.html": ("topics/add-a-plugin.md", "adding a plug-in"),
     "settings-plugin.html": ("topics/add-a-plugin.md", "a plug-in's settings"),
     "dashboard.html": ("topics/use-the-dashboard.md", "your dashboard"),
@@ -343,7 +368,7 @@ def shell(current):
       <label class="switch" for="pref-underline"><span>Underline links</span><input type="checkbox" role="switch" id="pref-underline" name="underline"></label>
       <label class="switch" for="pref-spacing"><span>Wider text spacing</span><input type="checkbox" role="switch" id="pref-spacing" name="spacing"></label>
       <fieldset><legend>Design</legend>
-        <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General.</p>
+        <p class="hint">Applies to this browser only. Set the default for everyone in Settings, General, Appearance.</p>
         <div class="option-cards" data-design-options></div>
       </fieldset>
   </form>

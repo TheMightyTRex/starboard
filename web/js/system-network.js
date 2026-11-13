@@ -42,7 +42,7 @@ function renderAccess(net) {
     el("span", { text: net.network_access
       ? `Phones and computers on your home network can open Starboard at ${where}.`
       : "Only this computer can open Starboard." }),
-    el("a", { href: "/settings-security.html", text: "Change who can open it in Security" }));
+    el("a", { href: "/settings-security.html", text: "Change who can open it in Settings, Security" }));
 }
 
 function renderInterfaces(items) {

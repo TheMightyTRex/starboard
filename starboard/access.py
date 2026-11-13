@@ -29,7 +29,7 @@ def summary(app):
         _item("download_hours", "Pausing and resuming downloads",
               "Outside your download hours, Starboard pauses qBittorrent, NZBGet and SABnzbd"
               + (f" ({' and '.join(clients)})" if clients else "") + ".",
-              d["download_hours"]["enabled"] and clients, "setting", link="/settings-general.html#download-hours", cost="One small check a minute, under 0.01% of the processor."),
+              d["download_hours"]["enabled"] and clients, "setting", link="/settings-downloads-hours.html", cost="One small check a minute, under 0.01% of the processor."),
         _item("watch", "Watching in the background, and alerts",
               "Checks your apps every few minutes with no page open, keeps their uptime history, and sends alerts"
               + (f" to {d['watch']['channel']['kind']}" if d["watch"]["channel"].get("kind") else "") + ".",

@@ -137,6 +137,18 @@ function writePrefs(prefs) {
 }
 
 let serverDesign = "health";
+// The own style's colours (DASH-388, owner, 13 November 2026): one of the design system's palettes, for everyone on
+// this server (Settings, General, Appearance). Teal, the default, is tokens.css; another sets data-palette and loads
+// css/palettes.css (synced from the design system) only then. The last one seen is kept here so the first paint is
+// right before /api/session answers.
+const OWN_COLOURS_KEY = "starboard.own-colours";
+let ownColours = (() => { try { return localStorage.getItem(OWN_COLOURS_KEY) || "teal"; } catch { return "teal"; } })();
+function setOwnColours(value) {
+  ownColours = /^[a-z]+$/.test(value || "") ? value : "teal";
+  try { localStorage.setItem(OWN_COLOURS_KEY, ownColours); } catch { /* private window */ }
+  applyPrefs();
+  document.dispatchEvent(new CustomEvent("stylechange"));
+}
 
 function applyPrefs(prefs = readPrefs()) {
   const root = document.documentElement;
@@ -158,6 +170,16 @@ function applyPrefs(prefs = readPrefs()) {
     }
   } else {
     delete root.dataset.style;
+  }
+  // The own style's colours, only while no plug-in style is in use, so a plug-in style is never mixed with them.
+  const palette = !root.dataset.style && ownColours !== "teal" ? ownColours : "";
+  if (palette) {
+    root.dataset.palette = palette;
+    if (!document.getElementById("palette-styles")) {
+      document.head.append(Object.assign(document.createElement("link"), { id: "palette-styles", rel: "stylesheet", href: "/css/palettes.css" }));
+    }
+  } else {
+    delete root.dataset.palette;
   }
   const design = DESIGNS[prefs.design] ? prefs.design : serverDesign;
   if (root.dataset.design !== design) {
@@ -1225,14 +1247,62 @@ function styleSwatch(x) {
   return sw;
 }
 
-// Reset style (owner, 10 November 2026): back to Starboard's standard colours in this browser, leaving every other
-// Display choice as it is. In the Display panel and in Settings, General.
+// Reset style (owner, 10 November 2026): back to Starboard's own style in this browser, in the own style's colours
+// (DASH-388: "should go back to that settings if the plugin is reset"), leaving every other Display choice as it
+// is. In the Display panel, on the Styles plug-in's page and in Settings, General.
 function resetStyle() {
   const prefs = { ...readPrefs(), style: "" };
   writePrefs(prefs);
   applyPrefs(prefs);
-  announce("Style reset to Starboard's standard colours");
+  announce(`Style reset to Starboard's own style, ${ownColoursLabel()} colours`);
   document.dispatchEvent(new CustomEvent("stylechange"));
+}
+
+// The design system's palettes for the own style (DASH-388), read from palettes.json (synced from the design system)
+// only on the pages that show them. Teal is tokens.css, so its colours are here.
+const TEAL = { label: "Teal", suits: "Starboard's standard colours",
+  light: { "color-bg": "#f0f5ff", "color-header": "#fcfdff", "color-surface-raised": "#ffffff", "color-surface-sunken": "#e4ebf7", "color-text": "#141416",
+    "color-text-muted": "#424b5b", "color-border": "#7d879a", "color-accent": "#0b5f5a", "color-accent-text": "#ffffff" },
+  dark: { "color-bg": "#101827", "color-header": "#141e2e", "color-surface-raised": "#232f42", "color-surface-sunken": "#0c1220", "color-text": "#f3f4f6",
+    "color-text-muted": "#a4aec1", "color-border": "#6f7b91", "color-accent": "#5ed3c6", "color-accent-text": "#101827" } };
+const PALETTE_LABELS = { teal: "Teal", indigo: "Indigo", forest: "Forest", plum: "Plum", ember: "Ember", graphite: "Graphite" };
+function ownColoursLabel() { return PALETTE_LABELS[ownColours] || "Teal"; }
+let paletteList = null;
+function palettes() {
+  if (!paletteList) {
+    paletteList = fetch("/palettes.json", { cache: "no-cache" }).then((r) => r.json()).then((d) => ({ teal: TEAL, ...d }))
+      .catch(() => ({ teal: TEAL }));
+  }
+  return paletteList;
+}
+
+// Own style colours (DASH-388): a choice card for each palette, with its accent and dark page as a swatch. Saves at
+// once for everyone on this server, with the saved note under the choice (settings pattern 3).
+function ownColoursChoice(idPrefix = "own") {
+  const name = `${idPrefix}-colours`;
+  const list = el("div", { class: "option-cards option-cards--row" });
+  const box = el("fieldset", { class: "stack-2", "data-own-colours": "" }, el("legend", { text: "Own style colours" }),
+    el("p", { class: "hint", id: `${name}-hint`, text: "From the design system, for everyone on this server. Reset style comes back to these." }),
+    list, savedNote(`${name}-saved`));
+  const tick = () => $$(`input[name="${name}"]`, list).forEach((r) => { r.checked = r.value === ownColours; });
+  palettes().then((all) => {
+    list.replaceChildren(...Object.entries(all).map(([key, p]) => {
+      const input = el("input", { type: "radio", name, value: key, checked: key === ownColours, "aria-describedby": `${name}-hint` });
+      input.addEventListener("change", async () => {
+        try {
+          await api("/api/config/general", { method: "PUT", body: { own_colours: key } });
+          setOwnColours(key);
+          showSaved(`${name}-saved`);
+        } catch (err) { tick(); problem(err.message, input); }
+      });
+      return el("label", { class: "option-card" }, input,
+        el("strong", {}, styleSwatch({ light: p.light["color-accent"], bg_dark: p.dark["color-bg"] }), p.label),
+        el("small", { text: `${p.suits}.` }));
+    }));
+  });
+  const onChange = () => (box.isConnected ? tick() : document.removeEventListener("stylechange", onChange));
+  document.addEventListener("stylechange", onChange);
+  return box;
 }
 
 function setUpDisplayPanel() {
@@ -1254,7 +1324,7 @@ function openDisplayPanel(template, opener) {
   designList.closest("fieldset").before(styleSet);
   api("/api/styles").then((r) => {
     if (!r.styles.length) return;
-    for (const [value, label, help, swatch] of [["", "Starboard", "The standard colours.", null], ...r.styles.map((x) => [x.value, x.name, `${x.description} From ${x.plugin}.`, x])]) {
+    for (const [value, label, help, swatch] of [["", "Starboard's own style", `${ownColoursLabel()} colours, chosen in Settings.`, null], ...r.styles.map((x) => [x.value, x.name, `${x.description} From ${x.plugin}.`, x])]) {
       styleList.append(el("label", { class: "option-card" },
         el("input", { type: "radio", name: "style", value, checked: value === readPrefs().style }),
         el("strong", {}, swatch ? styleSwatch(swatch) : null, label),
@@ -1287,6 +1357,7 @@ function openDisplayPanel(template, opener) {
     };
     writePrefs(prefs);
     applyPrefs(prefs);
+    document.dispatchEvent(new CustomEvent("prefschange"));  // Settings, General, Appearance shows them too
   };
   form.addEventListener("change", (e) => {
     save();
@@ -1302,7 +1373,42 @@ function openDisplayPanel(template, opener) {
     onClose: () => opener.setAttribute("aria-expanded", "false") });
   form.addEventListener("submit", (e) => { e.preventDefault(); panel.close(); });
   done.addEventListener("click", () => panel.close());
-  reset.addEventListener("click", () => { writePrefs(DEFAULT_PREFS); applyPrefs(DEFAULT_PREFS); fill(); announce("Display settings reset"); document.dispatchEvent(new CustomEvent("stylechange")); });
+  reset.addEventListener("click", () => {
+    writePrefs(DEFAULT_PREFS); applyPrefs(DEFAULT_PREFS); fill(); announce("Display settings reset");
+    document.dispatchEvent(new CustomEvent("stylechange")); document.dispatchEvent(new CustomEvent("prefschange"));
+  });
+}
+
+// The accessibility options on Settings, General, Appearance (DASH-389): the same controls as Display (its template,
+// without Style and Design, which Appearance has as its own parts), reading and saving the same choices, so the two
+// stay in step. Ids are prefixed, as Display may be opened over the page.
+const ACCESS_PREFS = { radios: ["theme", "text", "motion"], switches: ["contrast", "underline", "spacing"] };
+function accessibilityForm() {
+  const template = $("#display-panel");
+  const form = template.content.querySelector("[data-display-form]").cloneNode(true);
+  form.removeAttribute("data-display-form");
+  $("[data-design-options]", form)?.closest("fieldset")?.remove();
+  $$("[id]", form).forEach((n) => { n.id = `ap-${n.id}`; });
+  $$("label[for]", form).forEach((l) => l.setAttribute("for", `ap-${l.getAttribute("for")}`));
+  const fill = () => {
+    const p = readPrefs();
+    for (const name of ACCESS_PREFS.radios) $$(`input[name=${name}]`, form).forEach((r) => { r.checked = r.value === p[name]; });
+    for (const name of ACCESS_PREFS.switches) $(`input[name=${name}]`, form).checked = !!p[name];
+  };
+  form.addEventListener("change", (e) => {
+    const p = { ...readPrefs() };
+    for (const name of ACCESS_PREFS.radios) p[name] = $(`input[name=${name}]:checked`, form)?.value || p[name];
+    for (const name of ACCESS_PREFS.switches) p[name] = $(`input[name=${name}]`, form).checked;
+    writePrefs(p);
+    applyPrefs(p);
+    settingSaved();
+    e.target.focus?.();
+  });
+  form.addEventListener("submit", (e) => e.preventDefault());
+  const onChange = () => (form.isConnected ? fill() : document.removeEventListener("prefschange", onChange));
+  document.addEventListener("prefschange", onChange);
+  fill();
+  return form;
 }
 
 // Every dialog closes with its X button and returns focus (the browser handles Escape and focus trapping).
@@ -1480,7 +1586,7 @@ async function startPage() {
   try {
     const session = await api("/api/session");
     serverDesign = session.design || "health";
-    applyPrefs();
+    if ((session.own_colours || "teal") !== ownColours) setOwnColours(session.own_colours); else applyPrefs();
     $$("[data-site-name]").forEach((n) => { n.textContent = session.site_name; });
     showServerName(session.server_name);
     listLoading = session.infinite_scroll === false ? "button" : "auto";

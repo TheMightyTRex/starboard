@@ -20,7 +20,7 @@ import time
 from .config import DEFAULTS, DESIGNS, SCHEMA, SERVICE_TYPES, UPCOMING_DAYS, UPCOMING_VIEWS, ConfigError, migrate, validate_service
 
 FORMAT = "starboard-settings"
-GENERAL_KEYS = ("site_name", "server_name", "design", "groups", "show_home_address", "show_outside_address",
+GENERAL_KEYS = ("site_name", "server_name", "design", "own_colours", "groups", "show_home_address", "show_outside_address",
                 "session_days", "secure_cookies", "update_check", "network_access", "upcoming_view", "upcoming_days", "download_hours",
                 "fetch_icons", "show_posters", "watch", "extras", "performance", "dashboard", "logs", "ux_notes", "settings_advanced",
                 "reelix_auto_update", "infinite_scroll", "backup_schedule", "backup_keep_versions")
