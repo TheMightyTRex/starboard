@@ -12,10 +12,13 @@ from starboard import containers, stack, sysinfo
 
 class MemoryAdviceTest(unittest.TestCase):
     def test_basics_fits_two_gb_and_full_does_not(self):
-        self.assertIsNone(stack.memory_advice(stack.INSTALLS["basics"]["apps"], 1900))
-        advice = stack.memory_advice(stack.INSTALLS["full"]["apps"], 1900)
-        self.assertIn("Leave out Tdarr and FlareSolverr", advice["text"])
-        self.assertEqual(advice["leave_out"], ["tdarr", "flaresolverr"])
+        # With the measured figures (DASH-405: Jellyfin 600 MB, Reelix 100 MB), Basics fits 2 GB with 700 MB kept, and
+        # a computer reporting a little under 2 GB is told to leave out Bazarr, never Reelix, a download app or the VPN.
+        self.assertIsNone(stack.memory_advice(stack.INSTALLS["basics"]["apps"], 2048))
+        self.assertEqual(stack.memory_advice(stack.INSTALLS["basics"]["apps"], 1900)["leave_out"], ["bazarr"])
+        advice = stack.memory_advice(stack.INSTALLS["full"]["apps"], 2048)
+        self.assertIn("Leave out Tdarr, FlareSolverr and Jellystat", advice["text"])
+        self.assertEqual(advice["leave_out"], ["tdarr", "flaresolverr", "jellystat"])
 
     def test_never_suggests_reelix_a_download_app_or_the_vpn_and_the_players_last(self):
         advice = stack.memory_advice(["reelix", "qbittorrent", "gluetun", "jellyfin", "jellystat"], 900)
