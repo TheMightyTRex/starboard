@@ -65,6 +65,9 @@ add features.
 
 ### Changed
 
+- The Live TV plug-in's listener checks for a shutdown every 5 seconds instead of twice a second, so an idle plug-in
+  wakes the processor about 12 times a minute instead of about 120 (measured on the server: 683 wake-ups in 334
+  seconds at rest). Nothing else changes (DASH-397).
 - Library walls, Wanted and History load their next page with the design system's load more as you scroll (UX-52):
   "Loading the next 40 films" shows while it loads, a screen reader hears "24 more films shown", focus stays where it
   was, and after three lots in a row it pauses so the footer stays in reach; Show 40 more always works and carries on

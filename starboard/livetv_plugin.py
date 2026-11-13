@@ -642,7 +642,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 def main():
     threading.Thread(target=loop, name="livetv", daemon=True).start()
-    http.server.ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()  # inside its own container  # nosec B104
+    # Inside its own container. It checks for a shutdown every 5 seconds, not twice a second (nothing stops it but
+    # the container ending), so an idle plug-in lets a small server's processor rest.
+    http.server.ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever(poll_interval=5)  # nosec B104
 
 
 if __name__ == "__main__":
