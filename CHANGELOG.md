@@ -22,6 +22,13 @@ add features.
 - AI assistants: a guide, Connect an AI assistant, for a Read only key named after the assistant with the fewest
   scopes, and /api/v1/logs, Starboard's log with addresses, names and keys taken out, only for keys with Logs ticked
   (DASH-76).
+- Plug-in API 1.11: four more events a plug-in can hear, each from a check Starboard already makes every 5 minutes, so
+  nothing extra is fetched: something someone asked for is ready to watch (`request.available`), a download stops with
+  a problem (`download.failed`), a disk reaches the alerts' Disk nearly full limit or 90% (`disk.nearly_full`), and an
+  update is ready for Starboard, an app or a plug-in (`update.available`). For the Notifications plug-in (DASH-401).
+- Plug-in API 1.11: a plug-in's table can be read only (`readonly`), with no tick boxes, states or Activate buttons, and
+  each row named by its first cell, for figures such as the Watch statistics plug-in's plays, titles and people. The
+  example server has a Watch statistics plug-in with made-up plays (DASH-402).
 - Settings, General, Discover rows is its own page on the level 2 menu, with a section for each area of Discover
   (Films, TV, Music, Radio, Books and Audiobooks), each with its own rows, ticks, Move up and Move down, and Put back
   the standard rows. Only the area shown asks Reelix for its rows. Each Discover page's Change these rows opens its own

@@ -3,7 +3,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.4.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.11.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -246,6 +246,10 @@ sends.
 | `app.down` | When one of your apps stops answering | `apps:read` |
 | `app.up` | When one of your apps answers again | `apps:read` |
 | `playback.started` | When someone starts playing something | `media:read` |
+| `request.available` | When something someone asked for is ready to watch. API 1.11 | `media:read` |
+| `download.failed` | When a download stops with a problem. API 1.11 | `downloads:read` |
+| `disk.nearly_full` | When a disk is nearly full. API 1.11 | `system:read` |
+| `update.available` | When an update is ready for Starboard, an app or a plug-in. API 1.11 | `apps:read` |
 
 ## Jobs
 
@@ -309,6 +313,7 @@ Start each line with what people notice, in a few words.
 | 1.8 | 13 November 2026 | Sections with tables in a custom setting's list, selecting several, guides, and notices with progress |
 | 1.9 | 13 November 2026 | `publish` on a container with `network: vpn` |
 | 1.10 | 13 November 2026 | `changes`: what changed in each version, shown as **What is new** after an update |
+| 1.11 | 13 November 2026 | Four more events (`request.available`, `download.failed`, `disk.nearly_full`, `update.available`), and `readonly` on a custom setting's list with folds |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

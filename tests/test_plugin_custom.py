@@ -164,6 +164,16 @@ class FoldsAndNotices(unittest.TestCase):
         self.assertIn("bulk_ids", plugin_custom.ACTIONS)
 
 
+class ReadOnly(unittest.TestCase):
+    """Plug-in API 1.11 (DASH-402): a table of figures, such as watch statistics, is read only."""
+
+    def test_readonly_is_kept_only_with_folds_and_only_when_true(self):
+        base = {"type": "list", "layout": "folds", "columns": [{"key": "title", "label": "Title"}], "items": [{"id": "1", "cells": {"title": "Dune"}}]}
+        self.assertIs(plugin_custom.clean({**base, "readonly": True})["readonly"], True)
+        self.assertNotIn("readonly", plugin_custom.clean({**base, "readonly": "yes"}))
+        self.assertNotIn("readonly", plugin_custom.clean({**base, "layout": "rows", "readonly": True}))
+
+
 class BigLists(unittest.TestCase):
     def test_a_list_of_thousands_is_kept_whole(self):
         # The owner's server had 1,616 Live TV channels on 13 November 2026; the old cap of 1000 hid 616 of them.

@@ -829,6 +829,7 @@ function customScreen(p, s) {
   const drawFolds = (data) => {
     const noun = (data.title || "items").toLowerCase();
     const cols = data.columns || [];
+    const ro = data.readonly === true;  // API 1.11 (DASH-402): figures to read, so no ticks, states or buttons
     const match = foldMatch;
     const known = new Set(data.items.map((it) => it.id));
     for (const id of [...fold.picked]) if (!known.has(id)) fold.picked.delete(id);
@@ -902,7 +903,8 @@ function customScreen(p, s) {
       const on = rows.filter((it) => it.on).length;
       const toggle = el("button", { type: "button", class: "fold__toggle", "aria-expanded": String(open), "aria-controls": panelId, id: `${panelId}-b` },
         el("span", { class: "fold__name", text: g || "Other" }),
-        el("span", { class: "small muted", text: `${on} of ${rows.length} active${shown.length !== rows.length ? `, ${shown.length} shown` : ""}` }),
+        el("span", { class: "small muted", text: ro ? `${rows.length} ${rows.length === 1 ? "row" : "rows"}${shown.length !== rows.length ? `, ${shown.length} shown` : ""}`
+          : `${on} of ${rows.length} active${shown.length !== rows.length ? `, ${shown.length} shown` : ""}` }),
         icon(open ? "chevron-down" : "chevron-right"));
       toggle.addEventListener("click", () => { if (open) fold.open.delete(g); else fold.open.add(g); drawFolds(data); document.getElementById(`${panelId}-b`)?.focus(); });
       const b = switchFor(g);
@@ -934,9 +936,10 @@ function customScreen(p, s) {
       };
       const table = el("table", { class: "table table--middle" },
         el("caption", { class: "visually-hidden", text: `${g}: ${noun}` }),
-        el("thead", {}, el("tr", {}, el("th", { scope: "col" }, all), ...cols.map(th), el("th", { scope: "col", text: "State" }),
-          el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Activate or deactivate" })))),
+        el("thead", {}, el("tr", {}, ro ? null : el("th", { scope: "col" }, all), ...cols.map(th), ro ? null : el("th", { scope: "col", text: "State" }),
+          ro ? null : el("th", { scope: "col" }, el("span", { class: "visually-hidden", text: "Activate or deactivate" })))),
         el("tbody", {}, sorted(shown).map((it) => {
+          if (ro) return el("tr", {}, ...cols.map((c, i) => el(i === 0 ? "th" : "td", { ...(i === 0 ? { scope: "row" } : {}), class: c.type === "number" ? "num" : null, text: (it.cells || {})[c.key] || "" })));
           const tick = el("input", { type: "checkbox", "aria-label": `Tick ${it.title}`, checked: fold.picked.has(it.id), "data-key": `${it.id}:pick` });
           tick.addEventListener("change", () => { if (tick.checked) fold.picked.add(it.id); else fold.picked.delete(it.id); drawFolds(data);
             [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === `${it.id}:pick`)?.focus(); });

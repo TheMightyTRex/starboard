@@ -3,7 +3,7 @@
 # Plug-in API reference
 
 What Starboard calls on a plug-in, what it sends and what it expects back, and what a plug-in finds and may call in
-return. This page matches plug-in API 1.4.0. The fields that ask for each of these are in the
+return. This page matches plug-in API 1.11.0. The fields that ask for each of these are in the
 [Plug-in manifest reference](plugin-manifest-reference.md).
 
 ## How Starboard reaches a plug-in
@@ -143,6 +143,15 @@ activated or deactivated at once. Only open sections draw their rows.
 
 Ticked items are sent as `{"action": "bulk_ids", "ids": ["news-1", "news-2"], "value": "on"}`, up to 1000 ids.
 
+### Tables to read only (API 1.11)
+
+Send `"readonly": true` with `"layout": "folds"` for figures people read but do not change, such as watch statistics.
+Each section opens to a table with only your `columns`: no tick boxes, no **State** column, no **Activate** buttons
+and no All, Active and Inactive filter. Its line says how many rows it has. The first column is each row's header, so
+a screen reader names the row by it. Search, sorting by any column and the filter chips still work. Use a custom
+setting for each table, so each has its own columns and its own tab. An older Starboard ignores `readonly` and draws
+the table as before.
+
 ### Something for one item, and notices (API 1.8)
 
 | Field | Rules |
@@ -197,8 +206,12 @@ on its first container. Your plug-in must answer that path.
 | `download.finished` | `title`, `app` | The download queue, checked every 5 minutes: an item that reaches 100% |
 | `app.down` | `app` (its name), `type` | After two of Starboard's checks in a row with no answer |
 | `app.up` | `app` (its name), `type` | When an app that was down answers again |
+| `request.available` | `title`, `year`, `kind` (`Film` or `Series`), `by` (who asked) | Reelix's or Seerr's newest 30 requests, checked every 5 minutes: one that becomes Available or Completed. API 1.11 |
+| `download.failed` | `title`, `app`, `reason` | The download queue, checked every 5 minutes: an item that shows a problem. API 1.11 |
+| `disk.nearly_full` | `disk` (its name), `percent`, `free` (bytes) | The disks on **System**, checked every 5 minutes: one that reaches the alerts' **Disk nearly full** limit, or 90% when it is not set. Sent again only after it drops 2 points below. API 1.11 |
+| `update.available` | `app`, `current`, `latest` | What Starboard already knows, checked every 5 minutes: a new Starboard release (its own check, at most every 6 hours), an app image from the last check on **Apps**, **Updates**, and a plug-in version from a catalogue. Nothing extra is fetched. API 1.11 |
 
-For the three events checked every 5 minutes, the first check after Starboard starts only sets a starting point,
+For the events checked every 5 minutes, the first check after Starboard starts only sets a starting point,
 so nothing old is sent, and something that comes and goes between two checks is not seen.
 
 ## Jobs

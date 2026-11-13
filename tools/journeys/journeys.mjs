@@ -875,6 +875,34 @@ check("WN-05", "Got it hides it and puts focus on the State heading",
   !(await page.locator("#pl-styles-whats-new").count()) && await page.evaluate(() => document.activeElement.id) === "pl-styles-state-h");
 await open("settings-plugin.html?id=styles");
 check("WN-05", "Got it is kept on the server: it is not shown again", !(await page.locator("#pl-styles-whats-new").count()));
+// DASH-402: a plug-in's tables to read only (plug-in API 1.11), on the example Watch statistics plug-in: each table is
+// its own tab, a section opens to its table with only the plug-in's columns, and nothing can be ticked or activated.
+console.log("\n== WS Read-only plug-in tables");
+await open("settings-plugin.html?id=watch-stats");  // topic tabs are off here, so the three tables are on one page
+await page.locator(".fold__toggle").first().waitFor({ timeout: 10000 }).catch(() => {});
+const wsLine = (await page.locator(".fold__toggle").first().innerText()).replace(/\s+/g, " ");
+check("WS-01", "each section's line says how many rows it has, not how many are active", /^Today 2 rows/.test(wsLine) && !/active/.test(wsLine), wsLine);
+await page.locator(".fold__toggle").first().click();
+await page.waitForTimeout(300);
+const wsHeads = await page.locator(".fold__panel").first().locator("table th[scope=col]").allInnerTexts();
+check("WS-02", "the open section's table has only the plug-in's columns", wsHeads.join(",") === "Time,Person,Title,Device,Minutes", wsHeads.join(","));
+check("WS-03", "nothing can be ticked, activated or deactivated",
+  !(await page.locator(".fold__panel input[type=checkbox]").count()) && !(await page.locator(".fold__panel").getByRole("button", { name: /^(Activate|Deactivate)/ }).count()));
+check("WS-04", "each row is named by its first cell", (await page.locator(".fold__panel tbody th[scope=row]").count()) === 2);
+await page.locator(".fold__toggle", { hasText: "Series" }).click();
+await page.waitForTimeout(300);
+const wsTop = await page.locator(".fold__toggle", { hasText: "Series" }).locator("xpath=ancestor::section[1]").locator("tbody tr").first().innerText();
+check("WS-05", "Top titles shows the most played series first, with plays, people and hours", /^Slow Horses\s+3\s+2\s+2\.5/.test(wsTop), wsTop);
+await page.setViewportSize({ width: 375, height: 812 });
+check("WS-06", "the tables fit at phone width", await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
+await page.setViewportSize({ width: 1280, height: 860 });
+// DASH-401: the Notifications plug-in's settings, a section for each channel; a saved token never comes back to the page.
+console.log("\n== NT Notifications plug-in settings");
+await open("settings-plugin.html?id=notifications");
+const ntHtml = await page.content();
+const ntApi = JSON.stringify(await api("/api/plugins"));
+check("NT-01", "a saved bot token is never sent back to the page", !ntHtml.includes("tg-example-token-401") && !ntApi.includes("tg-example-token-401"));
+check("NT-02", "each channel has its own section", (await page.getByRole("tab", { name: "Telegram" }).count()) + (await page.getByRole("heading", { name: "Telegram" }).count()) > 0);
 // DASH-395: a row for each genre in Settings' Discover rows, unticked until ticked, then on the Discover page as a
 // row (fetched when shown) and no longer as a chip. DASH-396: each area is its own section on Discover rows.
 console.log("\n== GEN Genre rows");

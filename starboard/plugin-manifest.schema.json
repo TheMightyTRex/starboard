@@ -482,9 +482,13 @@
     "enum": [
      "app.down",
      "app.up",
+     "disk.nearly_full",
+     "download.failed",
      "download.finished",
      "item.added",
-     "playback.started"
+     "playback.started",
+     "request.available",
+     "update.available"
     ]
    },
    "uniqueItems": true

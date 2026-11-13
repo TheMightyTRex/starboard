@@ -286,6 +286,105 @@ def _example_livetv(data_dir):
         {"said": "Live TV is running now. This is example data, so nothing is fetched."} if pid == "livetv" else real_action(d, pid, aid, opener))
 
 
+# Watch statistics (DASH-402): the example plug-in added and active, with made-up plays, so its read-only tables
+# (plug-in API 1.11) can be tried. Its screen answers here, in this process: nothing is fetched and no container starts.
+_PLAYS = [  # (days ago, hour, who, title, device, minutes)
+    (0, 20, "Sam", "Slow Horses: Failure's Contagious", "Lounge TV", 52), (0, 18, "Alex", "Dune: Part Two", "Bedroom TV", 166),
+    (1, 21, "Sam", "Slow Horses: Last Stop", "Lounge TV", 49), (1, 19, "Robin", "Bluey: Keepy Uppy", "Tablet", 7),
+    (2, 20, "Alex", "The Bear: Tomorrow", "Phone", 31), (2, 9, "Robin", "Bluey: Camping", "Tablet", 8),
+    (3, 22, "Sam", "Brazil", "Lounge TV", 142), (4, 20, "Alex", "Slow Horses: Last Stop", "Bedroom TV", 50),
+    (5, 17, "Robin", "Paddington 2", "Lounge TV", 103), (6, 21, "Sam", "The Bear: Tomorrow", "Lounge TV", 33)]
+
+
+def _watch_stats_screen(key):
+    """The three read-only tables, as the plug-in answers them: plays by day, top titles, and people."""
+    today = dt.datetime.now().replace(minute=0, second=0, microsecond=0)
+    top, people, rows = {}, {}, []
+    for i, (ago, hour, who, title, device, mins) in enumerate(_PLAYS):
+        when = (today - dt.timedelta(days=ago)).replace(hour=hour)
+        day = "Today" if ago == 0 else "Yesterday" if ago == 1 else f"{when:%A} {when.day} {when:%B}"
+        if key == "plays":
+            rows.append({"id": f"play-{i}", "title": title, "group": day, "actions": [],
+                         "cells": {"time": when.strftime("%H:%M"), "person": who, "title": title, "device": device, "minutes": str(mins)}})
+        name = title.split(":")[0]
+        t = top.setdefault(name, {"plays": 0, "people": set(), "mins": 0})
+        t["plays"], t["mins"] = t["plays"] + 1, t["mins"] + mins
+        t["people"].add(who)
+        p = people.setdefault(who, {"plays": 0, "mins": 0, "last": title})
+        p["plays"], p["mins"] = p["plays"] + 1, p["mins"] + mins
+    if key == "titles":
+        rows = [{"id": f"top-{n}", "title": n, "group": "Series" if n in ("Slow Horses", "Bluey", "The Bear") else "Films", "actions": [],
+                 "cells": {"title": n, "plays": str(t["plays"]), "people": str(len(t["people"])), "hours": f"{t['mins'] / 60:.1f}"}}
+                for n, t in sorted(top.items(), key=lambda kv: -kv[1]["plays"])]
+        cols = [("title", "Title", ""), ("plays", "Plays", "number"), ("people", "People", "number"), ("hours", "Hours", "number")]
+    elif key == "people":
+        rows = [{"id": f"person-{w}", "title": w, "group": "Everyone", "actions": [],
+                 "cells": {"person": w, "plays": str(p["plays"]), "hours": f"{p['mins'] / 60:.1f}", "last": p["last"]}}
+                for w, p in sorted(people.items())]
+        cols = [("person", "Person", ""), ("plays", "Plays", "number"), ("hours", "Hours", "number"), ("last", "Last watched", "")]
+    else:
+        cols = [("time", "Time", ""), ("person", "Person", ""), ("title", "Title", ""), ("device", "Device", ""), ("minutes", "Minutes", "number")]
+    return {"type": "list", "title": {"plays": "Plays", "titles": "Titles", "people": "People"}.get(key, "Plays"), "layout": "folds",
+            "readonly": True, "intro": "From Jellyfin's Playback Reporting, over the last 30 days. This is example data.",
+            "columns": [{"key": k, "label": w, "type": t} for k, w, t in cols], "items": rows}
+
+
+def _example_watch_stats(data_dir):
+    from starboard import plugin_cards, plugin_custom, plugin_watch
+    if not any(p["id"] == "watch-stats" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {
+            "manifest_version": 1, "id": "watch-stats", "name": "Watch statistics", "version": "1.0.0",
+            "description": "What was watched, by whom and when, from Jellyfin's Playback Reporting.", "author": "TheMightyTRexUK",
+            "licence": "MIT", "homepage": "https://example.invalid/watch-stats", "support_url": "https://example.invalid/watch-stats/issues",
+            "starboard_api": ">=1.11 <2.0", "permissions": ["jellyfin:key", "network:lan"], "health": "/health",
+            "containers": [{"name": "main", "image": "ghcr.io/example/watch-stats@sha256:" + "b" * 64, "port": 8080, "network": "lan",
+                            "volumes": ["data"], "start": "when_needed"}],
+            "settings": [{"key": "plays", "label": "Recent plays", "type": "custom", "choices": "/screen/plays"},
+                         {"key": "titles", "label": "Top titles", "type": "custom", "choices": "/screen/titles"},
+                         {"key": "people", "label": "People", "type": "custom", "choices": "/screen/people"},
+                         {"key": "days", "label": "Over the last", "type": "number", "unit": "days", "default": 30, "min": 1, "max": 365}]},
+            "/nonexistent-media")
+        plugins_admin.set_state(data_dir, "watch-stats", "enabled")
+    if not any(p["id"] == "notifications" for p in plugins_admin.listing(data_dir)):
+        # Notifications (DASH-401): its settings in sections, secrets shown only as set or not set; nothing is sent.
+        sw = lambda key, label, group, on=True: {"key": key, "label": label, "type": "switch", "default": on, "group": group}  # noqa: E731
+        plugins_admin.install(data_dir, {
+            "manifest_version": 1, "id": "notifications", "name": "Notifications", "version": "1.0.0",
+            "description": "Sends Starboard's events to email, Telegram, Discord, Signal, Pushover, ntfy or a webhook, in plain words.",
+            "author": "TheMightyTRexUK", "licence": "MIT", "homepage": "https://example.invalid/notifications",
+            "support_url": "https://example.invalid/notifications/issues", "starboard_api": ">=1.11 <2.0",
+            "permissions": ["apps:read", "downloads:read", "media:read", "system:read", "network:lan"], "health": "/health",
+            "containers": [{"name": "main", "image": "ghcr.io/example/notifications@sha256:" + "c" * 64, "port": 8080, "network": "lan",
+                            "volumes": ["data"], "start": "when_needed"}],
+            "settings": [sw("send_requests", "Something someone asked for is ready", "What to send"),
+                         sw("send_failed", "A download failed", "What to send"), sw("send_disk", "A disk is nearly full", "What to send"),
+                         sw("email_active", "Send by email", "Email", False),
+                         {"key": "smtp_host", "label": "Email server", "type": "text", "group": "Email"},
+                         {"key": "smtp_password", "label": "Password", "type": "secret", "group": "Email"},
+                         sw("telegram_active", "Send by Telegram", "Telegram"),
+                         {"key": "telegram_token", "label": "Bot token", "type": "secret", "group": "Telegram"},
+                         {"key": "telegram_chat", "label": "Telegram chat", "type": "list", "group": "Telegram"}],
+            "actions": [{"id": "test-telegram", "label": "Send a test to Telegram", "path": "/test/telegram"}],
+            "events": ["request.available", "download.failed", "disk.nearly_full", "app.down", "app.up", "update.available"],
+            "jobs": [{"id": "weekly", "label": "Send New this week on the chosen day", "path": "/jobs/weekly", "daily": "09:00"}]},
+            "/nonexistent-media")
+        plugins_admin.save_settings(data_dir, "notifications", {"telegram_token": "tg-example-token-401", "telegram_chat": ["42"], "smtp_host": "smtp.example.com"})
+        # Deactivated, so the plug-in clock never sends it events or runs its job here: no container is asked for.
+        plugins_admin.set_state(data_dir, "notifications", "disabled")
+    real_call, real_ask, real_action = plugin_custom.call, plugin_watch._ask, plugin_cards.action
+
+    def call(data_dir_, pid, key, body=None, opener=None):
+        if pid != "watch-stats":
+            return real_call(data_dir_, pid, key, body, opener)
+        if body is not None:
+            raise ValueError("These figures are read only")
+        return plugin_custom.clean(_watch_stats_screen(key))
+    plugin_custom.call = call
+    plugin_watch._ask = lambda pid, main, path: "ok" if pid in ("watch-stats", "notifications") else real_ask(pid, main, path)
+    plugin_cards.action = lambda d, pid, aid, opener=None: (
+        {"said": "Test sent by Telegram. This is example data, so nothing was sent."} if pid == "notifications" else real_action(d, pid, aid, opener))
+
+
 from starboard import noip  # noqa: E402  The No-IP updater (DASH-170), with made-up addresses
 noip.status = lambda data_dir, **k: {"installed": True, "running": True, "state": "refused", "last_update": "2026-11-09T10:19:01Z",
                                      "address": "203.0.113.7", "said": "Type a new DDNS key or password below, then save. The updater starts again with it.",
@@ -871,6 +970,7 @@ def main():
     _example_plugins(str(DATA))
     _example_livetv(str(DATA))
     _example_keys(str(DATA))
+    _example_watch_stats(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
     _example_full_backups()

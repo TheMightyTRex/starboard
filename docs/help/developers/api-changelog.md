@@ -33,6 +33,15 @@ the next major version.
   `too_large` and `too_many_streams`.
 - **Changed:** a `Link` header for the next page keeps the other query parameters, such as `limit`.
 - Nothing was taken away: every 1.0.0 address answers as before, and a read key works as it did.
+## Plug-in API 1.11.0, 13 November 2026
+
+- **Added:** four events, each from a check Starboard already makes every 5 minutes: `request.available` (with
+  `media:read`), `download.failed` (with `downloads:read`), `disk.nearly_full` (with `system:read`) and
+  `update.available` (with `apps:read`). Read [Events](plugin-api-reference.md#events).
+- **Added:** `readonly` on a custom setting's list with `"layout": "folds"`: tables to read, with no tick boxes, states or
+  buttons. Read [Tables to read only](plugin-api-reference.md#tables-to-read-only-api-111).
+- An older Starboard refuses a manifest that lists the new events, so set `starboard_api` to `>=1.11` when you use
+  them. It ignores `readonly`.
 
 ## Plug-in API 1.10.0, 13 November 2026
 
