@@ -62,7 +62,7 @@ function openWarning(item, opener) {
     title: item.kind === "error" ? `${item.name} is not responding` : `Warning from ${item.name}`,
     opener,
     body: [
-      chip(item.word, item.tone),
+      headChip(item.word, item.tone),
       el("p", { class: "sys-message", text: item.message }),
       el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])),
       item.kind === "error" ? el("p", { class: "small muted", text: "Check that the app is running and that its address in Settings, Apps, Manage apps is right." }) : null,

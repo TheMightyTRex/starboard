@@ -494,13 +494,16 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
   $("#side-panel")?.remove();
   const heading = el("h2", { class: "panel-header__title", id: "side-panel-title", text: title });
   const close = el("button", { type: "button", class: "icon-btn", "data-closes": true, "aria-label": `Close ${title}` }, icon("x", 20));
-  const bodyNode = el("div", { class: "side-panel__body" }, body);
+  // A state chip made with headChip() goes on the title's line, never alone at the top of the body (DASH-309, R3).
+  const parts = [body].flat();
+  const chipNode = parts.find((n) => n?.dataset?.headChip);
+  const bodyNode = el("div", { class: "side-panel__body" }, parts.filter((n) => n !== chipNode));
   const footNode = el("div", { class: "side-panel__foot" }, foot);
   footNode.hidden = !foot.length;
   const layer = el("div", { class: "side-panel-layer", id: "side-panel" },
     el("div", { class: "side-panel-backdrop" }),
     el("aside", { class: wide ? "side-panel side-panel--wide" : "side-panel", role: "dialog", "aria-modal": "true", "aria-labelledby": "side-panel-title" },
-      el("div", { class: "panel-header" }, heading, close), bodyNode, footNode));
+      el("div", { class: "panel-header" }, chipNode ? titleChip(heading, chipNode) : heading, close), bodyNode, footNode));
   document.body.append(layer);
   const openedBy = opener instanceof HTMLElement ? FocusKeeper.describe(opener) : null;
   const shut = SharedComponents.openLayer(layer, opener instanceof HTMLElement ? opener : null, () => {
@@ -512,6 +515,13 @@ function sidePanel({ title, body = [], foot = [], wide = false, opener = documen
     layer, body: bodyNode, foot: footNode, close: shut,
     setTitle(text) { heading.textContent = text; close.setAttribute("aria-label", `Close ${text}`); },
     setFoot(nodes) { footNode.replaceChildren(...nodes); footNode.hidden = !nodes.length; },
+    // Draws the body again (Check again); a headChip goes on the title's line, as when it opened.
+    setBody(nodes) {
+      const next = [nodes].flat().filter(Boolean);
+      const c = next.find((n) => n?.dataset?.headChip);
+      if (c) onTitle(heading, c); else heading.parentElement.querySelector(":scope.title-chip > .chip")?.remove();
+      bodyNode.replaceChildren(...next.filter((n) => n !== c));
+    },
   };
 }
 

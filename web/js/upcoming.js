@@ -231,10 +231,11 @@ function openDay(d, dayItems, opener) {
         return el("li", { class: "row" },
           cover(i, "cover--row"),
           el("div", {}, el("div", { class: "row__title", text: title }),
-            el("div", { class: "row__meta", text: [sub, hasTime(i) ? timeOf(i) : "", i.service_name].filter(Boolean).join(" · ") }),
-            el("div", { class: "actions" }, chip(statusWord(i), i.have ? "success" : "neutral"),
-              svc?.link ? el("a", { class: "btn", href: `${reachableUrl(svc.link)}/calendar`, target: "_blank", rel: "noopener noreferrer" },
-                icon("external-link"), `Open in ${i.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null)));
+            el("div", { class: "row__meta", text: [sub, hasTime(i) ? timeOf(i) : "", i.service_name].filter(Boolean).join(" · ") })),
+          // The state first in row__side, then the row's action (DASH-309, R1).
+          el("div", { class: "row__side" }, chip(statusWord(i), i.have ? "success" : "neutral"),
+            svc?.link ? el("a", { class: "btn", href: `${reachableUrl(svc.link)}/calendar`, target: "_blank", rel: "noopener noreferrer" },
+              icon("external-link"), `Open in ${i.service_name}`, el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null));
       })),
     ],
   });
@@ -315,8 +316,7 @@ function openItem(i, opener) {
       el("div", { class: "side-panel__lead" },
         cover(i),
         el("div", { class: "media-panel-lead__text" },
-          el("h3", { text: title }),
-          chip(statusWord(i), i.have ? "success" : "neutral"),
+          titleChip(el("h3", { text: title }), chip(statusWord(i), i.have ? "success" : "neutral")),
           sub ? el("span", { class: "small muted", text: sub }) : null)),
       el("dl", { class: "facts" }, facts.flatMap(([k, v]) => [el("dt", { text: k }), el("dd", { text: v })])),
       i.overview ? el("p", { text: i.overview }) : null,

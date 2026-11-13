@@ -181,3 +181,6 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 .task-now { margin: 0; min-height: 1.5em; color: var(--color-text-muted); overflow-wrap: anywhere; }
 .message-to-send { margin: 0; padding: var(--space-3) var(--space-4); border-left: 3px solid var(--color-accent); background: var(--color-surface-sunken); }
 .message-to-send p { margin: 0; }
+
+/* A slide-out's state chip on its title's line (DASH-309): the title and chip take the room before the close button. */
+.panel-header > .title-chip { flex: 1; }

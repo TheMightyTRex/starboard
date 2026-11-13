@@ -363,10 +363,12 @@ function head(item) {
   ].filter(Boolean);
   return el("header", { class: "series-head" },
     el("div", { class: "series-head__text" },
-      el("h1", { class: "series-head__name wordmark", text: item.title }),
+      // The state chip on the title's line, not in the meta line (DASH-309, R3).
+      item.status ? titleChip(el("h1", { class: "series-head__name wordmark", text: item.title }), chip(item.status, item.tone))
+        : el("h1", { class: "series-head__name wordmark", text: item.title }),
       el("p", { class: "series-head__meta" }, ...item.meta.map((m) => item.network_logo && m === item.network_logo.name
         ? el("span", { class: "series-head__network" }, logoTone(el("img", { src: item.network_logo.src, alt: "", onerror: (e) => e.target.remove() }), item.network_logo.name, item.network_logo.tone), el("span", { text: m }))
-        : el("span", { text: m })), item.status ? chip(item.status, item.tone) : null),
+        : el("span", { text: m }))),
       item.overview ? el("p", { class: "series-head__desc clamp-3", text: item.overview }) : null,
       item.progress ? el("div", { class: "series-head__progress" }, el("span", { text: item.progress.text }),
         el("div", { class: "progress", role: "progressbar", "aria-label": item.progress.text, "aria-valuenow": String(Math.round(100 * item.progress.have / Math.max(1, item.progress.total))),

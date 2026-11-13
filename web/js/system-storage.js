@@ -40,7 +40,7 @@ const guideLink = (text, anchor) => el("a", { class: "btn", href: `https://githu
 function folderBody(d) {
   const [tone, word] = status(d);
   if (d.missing) {
-    return [chip(word, tone),
+    return [headChip(word, tone),
       el("div", { class: "notice", "data-tone": "warning", role: "status" }, icon("triangle-alert"),
         el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "Starboard cannot find this folder" }),
           el("p", { text: `Check the path for ${d.label} in STARBOARD_DISKS and that the folder is mounted into Starboard, then restart Starboard.` }))),
@@ -48,8 +48,9 @@ function folderBody(d) {
   }
   const pct = pctUsed(d);
   return [
+    headChip(word, tone),
     el("div", { class: "meter" },
-      el("div", { class: "meter__label" }, chip(word, tone), el("span", { class: "numeric", text: `${sizePair(d.used, d.total)} used (${pct}%)` })),
+      el("div", { class: "meter__label" }, el("span", { class: "numeric", text: `${sizePair(d.used, d.total)} used (${pct}%)` })),
       bar(pct, tone)),
     pct >= 90 ? el("div", { class: "notice", "data-tone": tone, role: "status" }, icon("triangle-alert"),
       el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: `${formatBytes(d.free)} left` }),
@@ -71,7 +72,7 @@ function openFolder(d, opener) {
   again.addEventListener("click", async () => {
     await load();
     const now = disks.find((x) => x.label === d.label);
-    if (now) panel.body.replaceChildren(...folderBody(now).filter(Boolean));
+    if (now) panel.setBody(folderBody(now));
     announce(`Checked ${d.label} again.`);
   });
 }
@@ -87,7 +88,7 @@ function row(d) {
   const pct = pctUsed(d);
   return el("li", { class: "row row--opens row--no-lead" },
     el("div", {}, el("p", { class: "row__title" }, title), d.filesystem ? el("p", { class: "row__meta", text: `${d.filesystem} filesystem` }) : null),
-    el("div", { class: "row__side" }, el("span", { class: "numeric", text: `${sizePair(d.used, d.total)} used (${pct}%) · ${formatBytes(d.free)} free` }), chip(word, tone)),
+    el("div", { class: "row__side" }, chip(word, tone), el("span", { class: "numeric", text: `${sizePair(d.used, d.total)} used (${pct}%) · ${formatBytes(d.free)} free` })),
     bar(pct, tone));
 }
 

@@ -141,8 +141,7 @@ function fillSelect(select, items, value, label) {
 function lead(r) {
   return el("div", { class: "side-panel__lead" }, cover(r, "cover"),
     el("div", { class: "media-panel-lead__text" },
-      el("h3", { text: titleWithYear(r) }),
-      r.in_library ? chip(`In ${r.service_name}`, "success") : chip("Not in library", "muted"),
+      titleChip(el("h3", { text: titleWithYear(r) }), r.in_library ? chip(`In ${r.service_name}`, "success") : chip("Not in library", "muted")),
       el("span", { class: "small muted", text: metaLine(r) })));
 }
 
