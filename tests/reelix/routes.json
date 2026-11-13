@@ -1,6 +1,6 @@
 {
  "about": "Every group of Reelix's API routes (/api/v1/<group>/...) and where Starboard covers it: 'starboard' says where it is shown or used, 'task' names the task that will, 'not_for_lite' says why it is not needed. tests/test_reelix_routes.py fails when Reelix adds a group with no decision (DASH-177). Check against a running Reelix with REELIX_OPENAPI=http://host:7700/api/v1/openapi.json.",
- "tested_with": "0.8.6",
+ "tested_with": "0.8.7",
  "routes": {
   "albums": {
    "task": "DASH-206",
@@ -88,7 +88,7 @@
    "what": "import lists, sync and exclusions"
   },
   "indexers": {
-   "starboard": "Settings, Reelix, Sites to search, with each site's results (DASH-155); free search in DASH-213"
+   "starboard": "Settings, Reelix, Sites to search, with each site's results (DASH-155), and Site list updates (DASH-204); free search in DASH-213"
   },
   "issues": {
    "task": "DASH-208",
@@ -173,8 +173,7 @@
    "what": "choose a download"
   },
   "remotepathmappings": {
-   "task": "DASH-204",
-   "what": "smaller settings"
+   "starboard": "Settings, Reelix, Path mappings (DASH-204)"
   },
   "rename": {
    "task": "DASH-209",
@@ -203,7 +202,7 @@
    "what": "Library series (read in DASH-163), follow and change"
   },
   "settings": {
-   "starboard": "Settings, Reelix, Sites to search (indexer settings); the rest in DASH-188, 193, 195, 197, 200"
+   "starboard": "Settings, Reelix, Sites to search (indexer settings) and Site list updates (definitions, DASH-204); the rest in DASH-188, 193, 195, 197, 200"
   },
   "setup": {
    "starboard": "The set-up (reelix_setup.py)"
@@ -212,8 +211,7 @@
    "starboard": "Health on Apps and System (DASH-176), updates through Starboard (DASH-187), moving in (reelix_move.py); backups DASH-201, logs DASH-202, jobs DASH-203, pace DASH-200"
   },
   "tags": {
-   "task": "DASH-204",
-   "what": "smaller settings"
+   "starboard": "Settings, Reelix, Tags (DASH-204)"
   },
   "trackfiles": {
    "task": "DASH-209",

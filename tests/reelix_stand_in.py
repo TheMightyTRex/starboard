@@ -127,6 +127,13 @@ class StandIn:
                         {"id": 3, "name": "English audio", "specifications": []}, {"id": 4, "name": "3D", "specifications": []}]
         self.radio = {"enabled_providers": [], "catchup_providers": [], "country": "GB", "language": "en",
                       "podcastindex_api_key": None, "podcastindex_api_secret": None, "default_follow": "all"}
+        # DASH-204: tags, path mappings and the site list's updates.
+        self.tags = [{"id": 1, "label": "flaresolverr"}, {"id": 2, "label": "4k"}]
+        self.mappings = []
+        self.definitions = {"enabled": True, "auto_update_hours": 24, "source_url": "https://example.invalid/indexers.tar.gz",
+                            "schema_version": "v11", "last_sync": "2026-11-08T06:00:00Z", "last_check": "2026-11-12T06:00:00Z",
+                            "last_error": None, "commit": None, "etag": None, "upstream_count": 580}
+        self.definitions_syncing = 0
         self.calls = []
 
     def preview(self, naming):
@@ -197,7 +204,57 @@ class StandIn:
                           "rss_queries": 40, "grabs": i["id"] % 4, "failures": 1 if i["status"]["failure_count"] else 0,
                           "avg_response_ms": 900 + 100 * i["id"], "status": i["status"]} for i in self.items["indexers"]], None
         if path == "/indexers/definitions/status":
-            return 200, {"loaded": len(SCHEMAS["indexers"]) - 2, "last_sync": "2026-11-08T06:00:00Z", "last_error": None, "syncing": False}, None
+            d = self.definitions
+            syncing = bool(self.definitions_syncing)
+            if syncing:  # the made-up sync finishes on the second look after it started
+                self.definitions_syncing -= 1
+                if not self.definitions_syncing:
+                    d["last_sync"] = d["last_check"] = "2026-11-13T06:00:00Z"
+            return 200, {"loaded": len(SCHEMAS["indexers"]) - 2, "last_sync": d["last_sync"], "last_check": d["last_check"],
+                         "last_error": d["last_error"], "syncing": syncing, "enabled": d["enabled"],
+                         "auto_update_hours": d["auto_update_hours"], "source_url": d["source_url"], "schema_version": "v11",
+                         "upstream_count": 580, "custom_count": 0, "overridden": 0, "custom_dir": "/config/definitions/custom",
+                         "failed": [{"id": "examplebroken", "file": "examplebroken.yml", "source": "upstream", "error": "unknown field `serach`"}]}, None
+        if path == "/indexers/definitions/sync" and method == "POST":
+            self.definitions_syncing = 2
+            return 202, {"job_id": 7}, None
+        if path == "/settings/definitions":
+            if method == "PUT":
+                hours = body.get("auto_update_hours", 24)
+                if not isinstance(hours, int) or not 1 <= hours <= 720:
+                    return 400, {"error": "validation", "message": "auto_update_hours must be 1 to 720"}, None
+                self.definitions.update({k: body[k] for k in ("enabled", "auto_update_hours", "source_url", "schema_version") if k in body})
+            return 200, dict(self.definitions), None
+        if path == "/tags":
+            if method == "POST":
+                if any(t["label"].lower() == str(body.get("label", "")).lower() for t in self.tags):
+                    return 409, {"error": "conflict", "message": "a tag with that label exists"}, None
+                tag = {"id": max([t["id"] for t in self.tags] + [0]) + 1, "label": body["label"]}
+                self.tags.append(tag)
+                return 201, tag, None
+            return 200, self.tags, None
+        if path.startswith("/tags/") and method == "DELETE":
+            tid = int(path.rsplit("/", 1)[1])
+            if not any(t["id"] == tid for t in self.tags):
+                return 404, {"error": "not_found", "message": "no such tag"}, None
+            self.tags = [t for t in self.tags if t["id"] != tid]
+            return 204, None, None
+        if path == "/remotepathmappings":
+            if method == "POST":
+                m = {"id": max([x["id"] for x in self.mappings] + [0]) + 1, **{k: body[k] for k in ("host", "remote_path", "local_path")}}
+                self.mappings.append(m)
+                return 201, m, None
+            return 200, self.mappings, None
+        if path.startswith("/remotepathmappings/"):
+            mid = int(path.rsplit("/", 1)[1])
+            m = next((x for x in self.mappings if x["id"] == mid), None)
+            if not m:
+                return 404, {"error": "not_found", "message": "no such mapping"}, None
+            if method == "DELETE":
+                self.mappings.remove(m)
+                return 204, None, None
+            m.update({k: body[k] for k in ("host", "remote_path", "local_path")})
+            return 200, m, None
         if path == "/downloads/settings":
             if method == "PUT":
                 self.direct = body
