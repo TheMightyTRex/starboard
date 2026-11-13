@@ -128,6 +128,21 @@ body.first-setup .rail, body.first-setup .site-header__tabs, body.first-setup .m
 body.first-setup .site-header__search, body.first-setup .site-header__search-btn { display: none !important; }
 body.first-setup.with-rail { padding-left: 0; }
 .is-filtered { display: none !important; } /* Search filters (DASH-301) */
+.search-filters { display: grid; gap: var(--space-3); }
+.search-filters[hidden] { display: none; }
+.search-filters .lib-field { margin: 0; }
+.search-filters .lib-field .select { min-width: 9rem; }
+.search-more-filters { padding: var(--space-3); border: 1px solid var(--color-divider); border-radius: var(--radius); }
+.search-more-filters[hidden] { display: none; }
+.search-filter-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; max-width: 100%; }
+@media (max-width: 720px) { /* on phones the chips scroll sideways, as every chip row does */
+  .search-filter-group .filter-chips { flex: 1 1 100%; min-width: 0; max-width: 100%; }
+}
+.search-filter-group__label { font-size: var(--text-sm); color: var(--color-text-muted); }
+@media (max-width: 600px) {
+  .search-filters .lib-field { flex: 1 1 8rem; }
+  .search-filters .lib-field .select { min-width: 0; width: 100%; }
+}
 [data-plugin][hidden] { display: none !important; } /* plug-in menu items, until the plug-in is added */
 /* Install warning (owner, 12 November 2026) */
 .install-warning__list { margin: 0; padding-inline-start: 1.25rem; display: grid; gap: var(--space-1, 0.25rem); overflow-wrap: anywhere; min-width: 0; }

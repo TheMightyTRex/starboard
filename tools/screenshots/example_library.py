@@ -60,34 +60,44 @@ def _added(n):
     return (dt.datetime(2026, 1, 1) + dt.timedelta(days=(n * 37) % 300)).isoformat() + "Z"
 
 
+# Search's filters (DASH-301): a mix of genres, languages, ratings, followed or not and below the quality wanted.
+GENRES = ["Drama", "Comedy", "Thriller", "Family", "Science Fiction", "Documentary"]
 FILMS = []
 for i, t in enumerate(_titles(64, 1), 1):
-    year = 1975 + (i * 7) % 52
+    year = 2027 if i in (13, 41) else 1975 + (i * 7) % 52  # two coming soon
     status = "announced" if year > 2026 else "released"
     FILMS.append({"id": i, "title": t, "sort_title": "", "year": year, "status": status, "has_file": status == "released" and i % 5 != 0,
-                  "monitored": True, "runtime_minutes": 85 + i % 70, "certification": ["U", "PG", "12A", "15"][i % 4],
+                  "monitored": i % 11 != 0, "runtime_minutes": 85 + i % 70, "certification": ["U", "PG", "12A", "15"][i % 4],
                   "images": {"poster": _poster(i)}, "added": _added(i), "overview": "A made-up film for the preview.",
-                  "studio": "Example Pictures", "genres": ["Drama"], "collection": {"id": 1, "title": "The Harbour Films"} if i in (3, 9, 27) else None})
+                  "studio": "Example Pictures", "genres": [GENRES[i % 6]] + ([GENRES[(i + 2) % 6]] if i % 3 == 0 else []),
+                  "original_language": ["en", "en", "en", "fr", "ja", "es"][i % 6],
+                  "movie_file": {"id": 5000 + i, "cutoff_met": i % 4 != 1} if status == "released" and i % 5 != 0 else None,
+                  "collection": {"id": 1, "title": "The Harbour Films"} if i in (3, 9, 27) else None})
 SERIES = []
 for i, t in enumerate(_titles(30, 2), 1):
     total = 6 + i % 20
-    SERIES.append({"id": i, "title": t, "sort_title": "", "year": 2000 + i % 25, "status": "continuing" if i % 3 else "ended",
+    SERIES.append({"id": i, "title": t, "sort_title": "", "year": 2000 + i % 25, "status": "upcoming" if i == 7 else "continuing" if i % 3 else "ended",
                    "network": ["BBC One", "Channel 4", "ITV1", "Sky Atlantic"][i % 4], "last_aired": f"{2001 + i % 25}-03-01",
                    "images": {"poster": _poster(i + 100)}, "added": _added(i + 3), "overview": "A made-up series for the preview.",
                    "statistics": {"episode_file_count": total if i % 4 else total // 2, "episode_count": total, "season_count": 2},
-                   "first_aired": f"{2000 + i % 25}-01-10", "genres": ["Drama"]})
+                   "first_aired": f"{2000 + i % 25}-01-10", "genres": [GENRES[(i + 1) % 6]], "monitored": i % 9 != 0,
+                   "original_language": ["en", "en", "da", "ko"][i % 4], "certification": ["12", "15", "PG", "18"][i % 4]})
 AUTHORS = ["Mara Ellison", "Owen Brightwater", "Lise Moreau", "Tomas Ferrand", "J. Okafor"]
+NARRATORS = ["Sam Oduya", "Priya Lane", "Hugh Calder", "Sam Oduya, Priya Lane"]  # narrator pages (DASH-261)
 BOOKS = []
 for i, t in enumerate(_titles(40, 3), 1):
     BOOKS.append({"id": i, "title": t, "sort_title": "", "year": 1990 + i % 36, "release_date": f"{1990 + i % 36}-05-01",
                   "author_name": AUTHORS[i % 5], "images": {"poster": _poster(i + 200)}, "added": _added(i + 5),
                   "monitored_ebook": i % 3 != 0, "monitored_audiobook": i % 2 == 0, "ebook_file": {"id": i, "quality_name": "EPUB"} if i % 4 else None,
-                  "audiobook_file": {"id": i, "narrator": "Sam Oduya"} if i % 6 == 0 else None, "overview": "A made-up book for the preview.",
+                  "audiobook_file": {"id": i, "narrator": NARRATORS[(i // 6) % 4], "cutoff_met": i != 18} if i % 6 == 0 else None,
+                  "overview": "A made-up book for the preview.", "genres": [["Fantasy", "Mystery", "History", "Science fiction"][i % 4]],
+                  "language": ["eng", "eng", "fre", "ger"][i % 4],
                   "series": [{"id": 1, "title": "The Glass Harbour", "position": str(i // 4 + 1)}] if i % 4 == 0 else []})
 ARTISTS = [{"id": i, "name": t, "sort_name": "", "images": {"poster": _poster(i + 300)}, "added": _added(i + 7), "country": "GB",
+            "genres": [["Folk", "Jazz", "Electronic"][i % 3]], "monitored": i % 7 != 0,
             "statistics": {"album_count": 1 + i % 4, "track_count": 10 + i, "track_file_count": 10 + i if i % 3 else 6}}
            for i, t in enumerate(_titles(20, 4), 1)]
-SHOWS = [{"id": i, "title": t, "sort_title": "", "station_name": ["BBC Radio 4", "BBC Radio 4 Extra", "BBC 6 Music"][i % 3],
+SHOWS = [{"id": i, "title": t, "sort_title": "", "station_name": ["BBC Radio 4", "BBC Radio 4 Extra", "BBC 6 Music"][i % 3], "provider": "bbc",
           "has_artwork": False, "added_at": _added(i + 9), "synopsis": "A made-up radio show for the preview.", "follow": "all",
           "statistics": {"in_library_count": 4 + i % 9, "wanted_count": i % 3, "episode_count": 6 + i % 9, "series_count": 2}}
          for i, t in enumerate(["The Example Hour", "Sample Science Weekly"] + _titles(10, 5), 1)]
@@ -257,7 +267,7 @@ def answer(path, q):
                             for n, t in enumerate(names)]}
     if path in ("/movies/lookup", "/series/lookup"):
         term = q.get("term", "")
-        return [{"tmdb_id": 9000 + n, "title": f"{term.title()} {['Rising', 'at Dawn', 'Returns'][n]}", "year": 2019 + n,
+        return [{"tmdb_id": 9000 + n, "title": f"{term.title()} {['Rising', 'at Dawn', 'Returns'][n]}", "year": [2019, 2008, 2027][n],
                  "overview": "A made-up result for the preview.", "poster": None, "in_library": False} for n in range(3)]
     if path == "/books/lookup":
         return [{"openlibrary_work_id": f"OL{900 + n}W", "title": f"The {q.get('term', '').title()} Book {n + 1}", "author_name": AUTHORS[n],

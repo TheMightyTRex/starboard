@@ -461,8 +461,13 @@ def example_reelix(path, query=None):
         return {"items": [{"id": 31, "title": "The.Example.Hour.S04E02.mp3", "download_client": "NZBGet", "download_id": "ex31",
                            "state": "downloading", "client_state": "downloading", "progress": 0.35, "size": 60_000_000,
                            "remaining": 39_000_000, "eta_secs": 240, "messages": [], "added": today.isoformat() + "T09:00:00Z",
-                           "media": {"kind": "radio_episode", "id": 101, "title": "Lighthouses", "subtitle": "The Example Hour"}}],
-                "total": 1, "page": 1, "page_size": 0}
+                           "media": {"kind": "radio_episode", "id": 101, "title": "Lighthouses", "subtitle": "The Example Hour"}},
+                          # a film downloading, for Search's Downloading filter (DASH-301)
+                          {"id": 32, "title": "Made.Up.Film.1080p.WEB-DL", "download_client": "qBittorrent", "download_id": "ex32",
+                           "state": "downloading", "client_state": "downloading", "progress": 0.6, "size": 4_000_000_000,
+                           "remaining": 1_600_000_000, "eta_secs": 900, "messages": [], "added": today.isoformat() + "T08:00:00Z",
+                           "media": {"kind": "movie", "id": 10, "title": example_library.FILMS[9]["title"], "year": example_library.FILMS[9]["year"]}}],
+                "total": 2, "page": 1, "page_size": 0}
     return []
 
 

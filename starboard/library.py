@@ -35,6 +35,8 @@ REFRESH = 1800  # while in use, every 30 minutes
 IN_USE = 3600  # the Library counts as in use for an hour after it was last opened
 ITEM_SECONDS = 60
 WALL_MAX = 200  # at most this many covers in one answer
+INDEX_VERSION = 2  # 2: the facts Search filters by (DASH-301)
+SEARCH_MAX = 500  # Search sends at most this many of each kind, with their facts, so the browser can filter them
 LABELS = {"films": "Films", "tv": "TV", "music": "Music", "radio": "Radio", "books": "Books", "audiobooks": "Audiobooks"}
 NOUNS = {"films": ("film", "films"), "tv": ("series", "series"), "music": ("artist", "artists"),
          "radio": ("show", "shows"), "books": ("book", "books"), "audiobooks": ("audiobook", "audiobooks")}
@@ -253,6 +255,41 @@ def _entry(item_id, title, sort_title, year, image, status, count, added, filter
             "w": status, "c": count, "a": added, "f": filters, "m": meta, "g": [g for g in groups if g]}
 
 
+# Search filters (DASH-301): a few short facts kept with each entry, so Search can filter by them without asking
+# Reelix again: genres (at most four), the language, the rating (certification), followed or not, below the quality
+# wanted, released or coming soon, and for radio where it comes from. Only what is known is kept.
+LANGS3 = {"eng": "en", "fre": "fr", "fra": "fr", "ger": "de", "deu": "de", "spa": "es", "ita": "it", "por": "pt", "pol": "pl",
+          "heb": "he", "jpn": "ja", "kor": "ko", "chi": "zh", "zho": "zh", "rus": "ru", "dut": "nl", "nld": "nl", "swe": "sv",
+          "nor": "no", "dan": "da", "fin": "fi", "ara": "ar", "hin": "hi", "tur": "tr", "gre": "el", "ell": "el", "cze": "cs",
+          "ces": "cs", "hun": "hu", "ice": "is", "isl": "is", "gle": "ga", "wel": "cy", "cym": "cy", "gla": "gd", "ukr": "uk"}
+RADIO_SOURCES = {"bbc": "BBC Sounds", "apple": "Podcasts", "podcastindex": "Podcasts", "archive": "Internet Archive"}
+
+
+def lang(code):
+    """A two-letter language code where there is one ("eng" and "en" are both "en"), or ""."""
+    code = str(code or "").strip().lower()[:12]
+    if not re.match(r"^[a-z]{2,3}(-[a-z0-9]{2,8})?$", code):
+        return ""
+    base = code.split("-")[0]
+    return LANGS3.get(base, base)
+
+
+def radio_source(provider, podcast=False, station=""):
+    return RADIO_SOURCES.get(str(provider or "").lower()) or ("Podcasts" if podcast else station or "")
+
+
+def _facts(e, genres=(), language="", rating="", followed=None, below=False, release="", source=""):
+    g = [str(x)[:40] for x in genres or [] if x][:4]
+    for key, value in (("ge", g), ("la", lang(language)), ("ce", str(rating or "")[:12]), ("rl", release), ("so", str(source or "")[:60])):
+        if value:
+            e[key] = value
+    if followed is not None:
+        e["fo"] = 1 if followed else 0
+    if below:
+        e["cu"] = 1
+    return e
+
+
 def _plural(n, one, many):
     return f"{n:,} {one if n == 1 else many}"
 
@@ -266,8 +303,10 @@ def _film(m):
     if released and not has:
         filters.append("missing")
     coll = (m.get("collection") or {}).get("title") or ""
-    return _entry(m["id"], m.get("title"), m.get("sort_title"), m.get("year"), (m.get("images") or {}).get("poster"),
-                  status, "", _added(m.get("added")), filters, str(m.get("year") or ""), [coll])
+    e = _entry(m["id"], m.get("title"), m.get("sort_title"), m.get("year"), (m.get("images") or {}).get("poster"),
+               status, "", _added(m.get("added")), filters, str(m.get("year") or ""), [coll])
+    return _facts(e, m.get("genres"), m.get("original_language"), m.get("certification"), m.get("monitored", True),
+                  has and (m.get("movie_file") or {}).get("cutoff_met") is False, "released" if released else "coming")
 
 
 def _series(s):
@@ -283,9 +322,12 @@ def _series(s):
     elif s.get("status") in ("continuing", "upcoming") and years:
         years += " to now"
     meta = " · ".join(x for x in (s.get("network") or "", years) if x)
-    return _entry(s["id"], s.get("title"), s.get("sort_title"), s.get("year"), (s.get("images") or {}).get("poster"),
-                  status, f"{have:,} of {total:,} episodes" if total else "", _added(s.get("added")), filters, meta,
-                  [s.get("network") or ""])
+    e = _entry(s["id"], s.get("title"), s.get("sort_title"), s.get("year"), (s.get("images") or {}).get("poster"),
+               status, f"{have:,} of {total:,} episodes" if total else "", _added(s.get("added")), filters, meta,
+               [s.get("network") or ""])
+    coming = s.get("status") == "upcoming" or (not total and s.get("status") != "ended")
+    return _facts(e, s.get("genres"), s.get("original_language"), s.get("certification"), s.get("monitored", True),
+                  release="coming" if coming else "released")
 
 
 def _book(b, fmt, today):
@@ -298,16 +340,18 @@ def _book(b, fmt, today):
     entry = _entry(b["id"], b.get("title"), b.get("sort_title"), b.get("year"), (b.get("images") or {}).get("poster"),
                    status, "", _added(b.get("added")), [status], b.get("author_name") or "", groups)
     entry["au"] = b.get("author_name") or ""
-    return entry
+    return _facts(entry, b.get("genres"), b.get("language"), "", bool(b.get(f"monitored_{fmt}")),
+                  has and (b.get(f"{fmt}_file") or {}).get("cutoff_met") is False, "released" if released else "coming")
 
 
 def _artist(a):
     st = a.get("statistics") or {}
     have, total = int(st.get("track_file_count") or 0), int(st.get("track_count") or 0)
     status = "in_library" if total and have >= total else "partly" if have else "wanted"
-    return _entry(a["id"], a.get("name"), a.get("sort_name"), None, (a.get("images") or {}).get("poster"), status,
-                  _plural(int(st.get("album_count") or 0), "album", "albums"), _added(a.get("added")),
-                  ["complete" if total and have >= total else "missing"], a.get("disambiguation") or a.get("country") or "")
+    e = _entry(a["id"], a.get("name"), a.get("sort_name"), None, (a.get("images") or {}).get("poster"), status,
+               _plural(int(st.get("album_count") or 0), "album", "albums"), _added(a.get("added")),
+               ["complete" if total and have >= total else "missing"], a.get("disambiguation") or a.get("country") or "")
+    return _facts(e, a.get("genres"), followed=a.get("monitored", True), release="released")
 
 
 PODCAST_SOURCES = ("podcastindex", "apple")  # Podcasts (DASH-319): shows from a podcast directory, or a feed with no station
@@ -324,9 +368,32 @@ def _show(r, base):
     podcast = is_podcast(r)
     filters = (["in_library"] if have else []) + (["wanted"] if wanted else []) + (["podcast"] if podcast else ["radio_show"])
     art = f"{base}/api/v1/radio/shows/{int(r['id'])}/artwork" if r.get("has_artwork") else ""
-    return _entry(r["id"], r.get("title"), r.get("sort_title"), (r.get("first_broadcast") or "")[:4] or None, art, status,
-                  _plural(have, "episode", "episodes") if have else "", _added(r.get("added_at")), filters,
-                  r.get("station_name") or "", [r.get("station_name") or ("Podcasts" if podcast else "")])
+    e = _entry(r["id"], r.get("title"), r.get("sort_title"), (r.get("first_broadcast") or "")[:4] or None, art, status,
+               _plural(have, "episode", "episodes") if have else "", _added(r.get("added_at")), filters,
+               r.get("station_name") or "", [r.get("station_name") or ("Podcasts" if podcast else "")])
+    return _facts(e, followed=r.get("follow", "all") != "none", release="released",
+                  source=radio_source(r.get("provider"), podcast, r.get("station_name") or ""))
+
+
+BELOW_PAGES = 20  # at most 20 pages of 250 episodes below the quality wanted
+BELOW_KEEP = 6 * 3600  # measured 13 November 2026 on the owner's Reelix: 4,906 episodes, 20 pages, 21.7 s in all, so
+# the answer is kept for six hours and the TV index's 30-minute rebuilds do not ask again
+
+
+def _series_below(reelix):
+    """The series with an episode below the quality wanted (Search's Below the quality wanted, DASH-301), read while
+    the TV index is built in the background, never while someone searches. Nothing when Reelix cannot say."""
+    def ask():
+        found = set()
+        for n, page in enumerate(_pages(reelix, "/wanted/cutoff", {"kind": "episode"})):
+            found.update(x.get("series_id") for x in page if isinstance(x, dict) and x.get("series_id"))
+            if n + 1 >= BELOW_PAGES:
+                break
+        return found
+    try:
+        return services.cached("library-series-below", BELOW_KEEP, ask)
+    except Exception:  # noqa: BLE001 - an older Reelix, or one that does not answer: the filter has nothing to show
+        return set()
 
 
 def build(reelix, tab):
@@ -340,6 +407,10 @@ def build(reelix, tab):
     elif tab == "tv":
         for page in _pages(reelix, "/series", {"sort": "title"}):
             out.extend(_series(s) for s in page)
+        below = _series_below(reelix)
+        for e in out:
+            if e["i"] in below:
+                e["cu"] = 1
     elif tab in ("books", "audiobooks"):
         fmt = "ebook" if tab == "books" else "audiobook"
         for page in _pages(reelix, "/books"):
@@ -379,7 +450,7 @@ def _write(data_dir, tab, entries):
     path = _path(data_dir, tab)
     tmp = path + ".tmp"
     with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
-        json.dump({"built": int(time.time()), "items": entries}, f, separators=(",", ":"), ensure_ascii=False)
+        json.dump({"built": int(time.time()), "v": INDEX_VERSION, "items": entries}, f, separators=(",", ":"), ensure_ascii=False)
     os.replace(tmp, path)
 
 
@@ -501,7 +572,10 @@ def load(data_dir, reelix, tab):
     elif age > STALE:
         _background(data_dir, reelix, tab)
     with open(path, encoding="utf-8") as f:
-        return json.load(f)
+        index = json.load(f)
+    if age is not None and age <= STALE and index.get("v") != INDEX_VERSION:
+        _background(data_dir, reelix, tab)  # built by an older Starboard: served now, rebuilt with the new facts
+    return index
 
 
 def forget(data_dir):
@@ -1010,11 +1084,59 @@ def grab(reelix, guid, indexer_id, force=False):
 
 # Search ----------------------------------------------------------------------------------------------------
 
-def search_library(data_dir, q, limit=8):
-    """The Library first: up to limit matches per tab from the indexes already built, best first."""
+def _search_queue(reelix):
+    """{(tab, id)} that Reelix is downloading now, for Search's Downloading filter. Kept for a minute; a short wait
+    at most, and nothing when Reelix does not answer."""
+    def ask():
+        answer = services._api(reelix, "/queue", timeout=5) or []
+        items = answer.get("items") if isinstance(answer, dict) else answer
+        out = set()
+        for x in items or []:
+            media = (x or {}).get("media") or {}
+            tab = {"movie": "films", "series": "tv", "artist": "music", "author": None}.get(media.get("kind"))
+            if tab and media.get("id"):
+                out.add((tab, media["id"]))
+            book = (x or {}).get("book") or {}
+            if book.get("id"):
+                out.update({("books", book["id"]), ("audiobooks", book["id"])})
+        return out
+    try:
+        return services.cached("library-search-queue", 60, ask)
+    except Exception:  # noqa: BLE001 - Search must never fail because the queue did not answer
+        return set()
+
+
+def _found(tab, e, downloading):
+    """A Search card with the facts its filters use (DASH-301), in short keys."""
+    card = _card(tab, e)
+    status = []
+    if e["w"] in ("in_library", "partly"):
+        status.append("have")
+    if e["w"] in ("wanted", "partly") or "missing" in e.get("f", []):
+        status.append("missing")
+    if (tab, e["i"]) in downloading:
+        status.append("downloading")
+    if e.get("cu"):
+        status.append("below")
+    fx = {"s": status}
+    for short, key in (("y", "y"), ("g", "ge"), ("la", "la"), ("ce", "ce"), ("r", "rl"), ("so", "so"), ("fo", "fo")):
+        if e.get(key) not in (None, "", []):
+            fx[short] = e[key]
+    if "r" not in fx and e["w"] == "not_released":
+        fx["r"] = "coming"
+    card["fx"] = fx
+    return card
+
+
+def search_library(data_dir, q, limit=8, reelix=None):
+    """The Library first: matches per tab from the indexes already built, best first. With reelix, Search's own
+    call: up to SEARCH_MAX of each kind with their filter facts, and what is downloading now (DASH-301)."""
     words = fold(q).split()
     if not words:
         return []
+    downloading = _search_queue(reelix) if reelix else set()
+    if reelix:
+        limit = SEARCH_MAX
     out = []
     for tab in TABS:
         try:
@@ -1026,7 +1148,8 @@ def search_library(data_dir, q, limit=8):
         whole = " ".join(words)
         hits.sort(key=lambda e: (fold(e["t"]) != whole, not e["s"].startswith(whole), e["s"]))
         if hits:
-            out.append({"tab": tab, "label": LABELS[tab], "count": len(hits), "items": [_card(tab, e) for e in hits[:limit]]})
+            cards = [_found(tab, e, downloading) if reelix else _card(tab, e) for e in hits[:limit]]
+            out.append({"tab": tab, "label": LABELS[tab], "count": len(hits), "items": cards})
     return out
 
 
@@ -1108,9 +1231,18 @@ def _lookup_one(reelix, kind, q):
             rows.append({"key": f"radio:{x.get('provider')}:{x.get('external_id')}", "title": x.get("title"), "year": None,
                          "detail": " · ".join(y for y in (x.get("station_name") or "", x.get("author") or "") if y),
                          "image": "", "overview": (x.get("synopsis") or "")[:300], "library_id": x.get("show_id")})
+    this_year = dt.date.today().year
     for r in rows:  # pictures come through Starboard, like the Library's own
         r["image"] = f"/api/library/lookup-poster?src={urllib.parse.quote(small(r['image']), safe='')}" if poster_allowed(small(r["image"])) else ""
         r["kind"] = kind
+        # Search's filters (DASH-301): Reelix's lookups give the year only, so that and released or coming soon.
+        fx = {"s": [], "fo": 0}
+        if str(r.get("year") or "").isdigit():
+            fx["y"] = int(r["year"])
+            fx["r"] = "coming" if fx["y"] > this_year else "released"
+        if kind == "radio":
+            fx["so"] = radio_source(r["key"].split(":")[1] if r["key"].count(":") >= 2 else "")
+        r["fx"] = fx
     return [r for r in rows if r["key"] and not r["key"].endswith(":None")]
 
 
@@ -1261,6 +1393,52 @@ def reset_views(data_dir):
     return {}
 
 
+# Search's filters, remembered for the account (DASH-301): Starboard has one account, so on the server, beside the
+# saved Library views, and the same on every device.
+SEARCH_FILTERS = {"where": ("all", "in", "out"), "kind": ("all", "films", "tv", "music", "radio", "books", "audiobooks"),
+                  "release": ("", "released", "coming"), "followed": ("", "yes", "no")}
+SEARCH_TEXT = ("decade", "genre", "language", "rating", "source")
+SEARCH_STATUS = ("have", "missing", "downloading", "below")
+
+
+def _search_filters_path(data_dir):
+    return os.path.join(data_dir, "library", "search-filters.json")
+
+
+def search_filters(data_dir):
+    try:
+        with open(_search_filters_path(data_dir), encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_search_filters(data_dir, given):
+    if not isinstance(given, dict):
+        raise ValueError("Send the filters")
+    clean = {}
+    for key, allowed in SEARCH_FILTERS.items():
+        if given.get(key) in allowed and given.get(key) != allowed[0]:
+            clean[key] = given[key]
+    for key in SEARCH_TEXT:
+        value = str(given.get(key) or "").strip()[:60]
+        if value and all(c.isprintable() for c in value):
+            clean[key] = value
+    status_on = [x for x in SEARCH_STATUS if x in (given.get("status") or [])]
+    if status_on:
+        clean["status"] = status_on
+    if given.get("more") is True:
+        clean["more"] = True
+    folder = os.path.join(data_dir, "library")
+    os.makedirs(folder, mode=0o700, exist_ok=True)
+    path = _search_filters_path(data_dir)
+    with open(os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+        json.dump(clean, f)
+    os.replace(path + ".tmp", path)
+    return clean
+
+
 def status(data_dir):
     """For Settings: how big each index is and when it was built."""
     out = []
@@ -1301,6 +1479,13 @@ def handle(h, method, path):
         return h.json(200, {"views": save_view(data_dir, str(b.get("tab", "")), b.get("view") or {})})
     if path == "/api/library/views" and method == "DELETE":
         return h.json(200, {"views": reset_views(data_dir)})
+    if path == "/api/library/search-filters" and method == "GET":  # DASH-301: remembered for the account
+        return h.json(200, {"filters": search_filters(data_dir)})
+    if path == "/api/library/search-filters" and method == "POST":
+        try:
+            return h.json(200, {"filters": save_search_filters(data_dir, h.body().get("filters") or {})})
+        except ValueError as e:
+            return h.error(400, str(e))
     if path == "/api/library/lookup-poster" and method == "GET":
         found = poster(data_dir, q.get("src", "")) if cfg.data["show_posters"] else None
         if not found:
@@ -1318,7 +1503,7 @@ def handle(h, method, path):
         return h.json(200, overview(data_dir, reelix))
     if path == "/api/library/search" and method == "GET":
         used(data_dir, "", get_reelix)
-        return h.json(200, {"library": search_library(data_dir, q.get("q", "")[:120])})
+        return h.json(200, {"library": search_library(data_dir, q.get("q", "")[:120], reelix=reelix)})
     if path == "/api/library/lookup" and method == "GET":
         return h.json(200, lookup(reelix, q.get("q", ""), q.get("kind", "")))
     if path == "/api/library/add-options" and method == "GET":
