@@ -552,6 +552,23 @@ APPS = [
 ]
 
 
+def example_disk_health(data):
+    """System, Disk health with made-up reports: a healthy disk, and a virtual disk that gives no health data, as in a
+    virtual machine (DASH-114, WIZ-72)."""
+    folder = data / "smart" / "current"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "sda.json").write_text(json.dumps({
+        "model_name": "Harbour HDD 8TB", "serial_number": "HB0001", "device": {"name": "/dev/sda"},
+        "user_capacity": {"bytes": 8 * TB}, "smart_status": {"passed": True}, "temperature": {"current": 34},
+        "power_on_time": {"hours": 12000}, "ata_smart_attributes": {"table": [
+            {"id": 5, "name": "Reallocated_Sector_Ct", "value": 100, "worst": 100, "thresh": 10, "raw": {"value": 0, "string": "0"}},
+            {"id": 9, "name": "Power_On_Hours", "value": 87, "worst": 87, "thresh": 0, "raw": {"value": 12000, "string": "12000"}}]}}))
+    (folder / "sdb.json").write_text(json.dumps({
+        "model_name": "QEMU HARDDISK", "serial_number": "QM00001", "device": {"name": "/dev/sdb"},
+        "user_capacity": {"bytes": 64 * GB}, "smart_support": {"available": False}}))
+    os.environ["STARBOARD_SMART_DIR"] = str(data / "smart")
+
+
 def example_pool(data):
     """System, Storage, Pool with made-up drives: a pretend pool helper on a pretend computer under DATA/pool-root,
     answering Starboard's requests every half second. Nothing touches a real drive."""
@@ -837,6 +854,7 @@ def main():
     (DATA / "jobs.json").write_text(json.dumps({"listening": {"started": now - 320, "finished": now - 300, "state": "done",
                                                                "summary": "Wrote 14 books; kept 1 that already had progress; 2 not found in Audiobookshelf"}}))
     example_pool(DATA)
+    example_disk_health(DATA)
     # A Basics install, as Install apps writes it, for Settings, Apps, Your install. Nothing is started.
     stack.can_download = lambda ref, check=None: True
     if not (DATA / "stack" / "compose.yaml").exists():

@@ -1754,6 +1754,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, self.add_found(self.body().get("items")))
             if path == "/api/stack" and method == "GET":
                 return self.json(200, self.stack_overview())
+            if path == "/api/stack/memory" and method == "POST":
+                # DASH-114 (WIZ-31): whether the apps ticked fit this computer's memory, and what to leave out if not.
+                keys = [str(k) for k in (self.body().get("apps") or [])][:100]
+                return self.json(200, {"advice": stack.memory_advice(keys)})
             if path == "/api/stack/install" and method == "POST":
                 # Basics, Full install or Everything: the apps (with what they need), groups and answers, for both set-ups.
                 overview = self.stack_overview()

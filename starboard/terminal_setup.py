@@ -2277,8 +2277,10 @@ def step_apps(api, term, state):
         names = {a["key"]: a["name"] for a in overview["apps"]}
         rows = [("Apps", ", ".join(names.get(k, k) for k in c["apps"])), ("Memory", f"about {c['memory']:,} MB")]
         if c.get("note"):
-            rows.append(("Reelix", c["note"]))
+            rows.append(("Note", c["note"]))
         term.card(c["name"], rows)
+        if c.get("memory_advice"):  # DASH-114 (WIZ-31): the same advice as the browser set-up
+            term.warn(c["memory_advice"]["text"])
         if term.choose("Install these?", ["Yes (recommended)", "Let me choose app by app"], help_key="apps") == 0:
             state.setdefault("host", {}).setdefault("health", bool(c["disk_health"]))
             d = overview["defaults"]
@@ -2300,7 +2302,10 @@ def step_apps(api, term, state):
                               last.get("groups") or [i for i, g in enumerate(groups) if g["default"]], help_key="groups")
     last["groups"] = picked
     keys = {groups[i]["key"] for i in picked}
-    apps = [a for a in overview["apps"] if set(a["groups"]) & keys and not a["installed"]]
+    apps = [a for a in overview["apps"] if set(a["groups"]) & keys and not a["installed"] and not a.get("no_image")]
+    gone = [a for a in overview["apps"] if set(a["groups"]) & keys and a.get("no_image")]
+    if gone:  # DASH-114 (WIZ-33): as the browser set-up shows beside each one
+        term.note(f"Left out: {', '.join(a['name'] for a in gone)}. {gone[0]['no_image']}")
     if not apps:
         term.note("Every app for that is running already. Nothing to install.")
         state["apps"], state["choice"] = last, None
@@ -2335,6 +2340,12 @@ def step_apps(api, term, state):
             term.say("")
             return step_apps(api, term, state)
         last["no_vpn_ok"] = True
+    try:  # DASH-114 (WIZ-31): the same memory advice as the browser set-up
+        advice = api.call("POST", "/api/stack/memory", {"apps": [a["key"] for a in chosen]}).get("advice")
+    except Problem:
+        advice = None
+    if advice:
+        term.warn(advice["text"])
     edition = "lite"
     if any(a["key"] == "reelix" for a in chosen):
         edition = ask_reelix_edition(api, term, last)

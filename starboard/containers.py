@@ -642,3 +642,19 @@ def update(services, ids, keep_old=False):
         pass  # the helper may already be here
     threading.Thread(target=_run, args=(names, keep_old), name="updates", daemon=True).start()
     return apps(services)
+
+
+def platforms(ref):
+    """The processors an image has a version for, such as {"amd64", "arm64"} (DASH-114: apps with no version for a
+    Raspberry Pi are left out there). One registry call for a multi-platform image, two for a single one."""
+    reg, repo, tag = parse_ref(ref)
+    _, body = _registry(reg, repo, f"manifests/{tag}")
+    manifest = json.loads(body)
+    if "manifests" in manifest:
+        return {(m.get("platform") or {}).get("architecture", "") for m in manifest["manifests"]
+                if (m.get("platform") or {}).get("os", "linux") == "linux"} - {"", "unknown"}
+    config_digest = (manifest.get("config") or {}).get("digest")
+    if not config_digest:
+        return set()
+    _, blob = _registry(reg, repo, f"blobs/{config_digest}", accept="*/*")
+    return {json.loads(blob).get("architecture", "")} - {""}

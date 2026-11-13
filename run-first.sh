@@ -786,13 +786,15 @@ redraw_step_1() { welcome; }
 
 # This computer --------------------------------------------------------------------------------------------------
 
-OS_ID=""; OS_NAME="Linux"
+OS_ID=""; OS_NAME="Linux"; OS_VERSION=""
 if [ -r /etc/os-release ]; then
   # Read in a shell of its own: the file sets names such as LOGO, NAME and VERSION that would replace this script's.
   # shellcheck disable=SC1091
   OS_ID="$(. /etc/os-release; printf '%s' "${ID:-}")"
   # shellcheck disable=SC1091
   OS_NAME="$(. /etc/os-release; printf '%s' "${PRETTY_NAME:-Linux}")"
+  # shellcheck disable=SC1091
+  OS_VERSION="$(. /etc/os-release; printf '%s' "${VERSION_ID:-}")"
 fi
 PKG=""
 if command -v apt-get >/dev/null; then PKG=apt; elif command -v dnf >/dev/null; then PKG=dnf; fi
@@ -886,6 +888,45 @@ words() {
   printf '%s' "$out"
 }
 is_missing() { local n; for n in "${NEED[@]}"; do [ "$n" = "$1" ] && return 0; done; return 1; }
+# What this computer is, judged against the systems Starboard is tested on (DASH-114, docs/test-plans/systems.md and
+# setup.md SET-22 to SET-26, SET-35). Each prints its words, or nothing when all is well; the tests run them with
+# made-up values.
+MIN_FREE_GB=10
+# SET-24: a 32-bit system stops before anything is installed: Starboard's image and most apps are 64-bit only.
+arch_stop() {
+  case "$1" in
+    x86_64|amd64|aarch64|arm64) ;;
+    *) printf '%s' "This computer runs a 32-bit system ($1). Starboard and most of its apps need a 64-bit one. On a Raspberry Pi, install Raspberry Pi OS (64-bit) with Raspberry Pi Imager, then run this again. Nothing was installed." ;;
+  esac
+}
+# SET-22, SET-23: an older version than the ones tested gets a note and the script carries on; a newer one, or one
+# with no version number (Debian testing), gets none.
+version_older() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" = "$1" ]; }
+version_note() {
+  local id="$1" version="$2" name="$3" min=""
+  case "$id" in debian|raspbian) min=13 ;; ubuntu) min=26.04 ;; linuxmint) min=22.3 ;; esac
+  [ -n "$min" ] && [ -n "$version" ] || return 0
+  version_older "$version" "$min" || return 0
+  printf '%s' "$name is older than the versions Starboard is tested on (Linux Mint 22.3, Debian 13, Ubuntu Server 26.04 and Raspberry Pi OS based on Debian 13, or later). It should still work, but it is not tested. The script carries on."
+}
+# SET-25: under 10 GB free stops before anything is installed (Docker, Starboard and the apps' images need it).
+space_stop() {
+  [ -n "$1" ] && [ "$1" -lt "$MIN_FREE_GB" ] 2>/dev/null || return 0
+  printf '%s' "Only $1 GB is free in your home folder. Docker, Starboard and the apps need at least $MIN_FREE_GB GB. Free some space, or use a bigger disk, then run this again. Nothing was installed."
+}
+# SET-26: the memory advice, for under 1 GB and under 2 GB (a 2 GB Raspberry Pi).
+memory_note() {
+  [ -n "$1" ] || return 0
+  if [ "$1" -lt 900 ]; then
+    printf '%s' "Less than 1 GB of memory: enough for Starboard, not for the media apps. The set-up recommends the Small server preset and says which apps to leave out."
+  elif [ "$1" -lt 1900 ]; then
+    printf '%s' "Under 2 GB of memory: enough for Starboard, Reelix and the download apps, but tight for Jellyfin. The set-up recommends the Small server preset and says which apps to leave out."
+  fi
+}
+# SET-35: no sudo for this user, as on Debian installed with a root password. The exact steps, then stop.
+sudo_steps() {
+  printf '%s' "Your user cannot use sudo yet. On Debian this happens when a root password was set while installing. To fix it: type su - and the root password, then apt install sudo (if it is missing) and usermod -aG sudo $1, then type exit. Sign out and back in, and run this script again."
+}
 memory_mb() { awk '/MemTotal/ {printf "%d", $2 / 1024}' /proc/meminfo 2>/dev/null; }
 free_gb() { df -Pk "$HOME" 2>/dev/null | awk 'NR == 2 {printf "%.0f", $4 / 1048576}'; }
 
@@ -893,7 +934,8 @@ show_checks() {
   local mem free item
   mem="$(memory_mb)"; free="$(free_gb)"
   para "$OS_NAME, $(( ${mem:-0} / 1024 )).$(( ${mem:-0} % 1024 * 10 / 1024 )) GB of memory, ${free:-?} GB free in your home folder."
-  [ "${mem:-0}" -ge 900 ] || note "Less than 1 GB of memory: choose the Small server preset later, in Starboard's settings."
+  item="$(version_note "$OS_ID" "$OS_VERSION" "$OS_NAME")"; [ -z "$item" ] || note "$item"
+  item="$(memory_note "$mem")"; [ -z "$item" ] || note "$item"
   say ""
   for item in curl git python3 "Docker" "Docker Compose" "Docker running" "Your user allowed to use Docker"; do
     if is_missing "$item"; then bad "$item"; else ok "$item"; fi
@@ -945,7 +987,7 @@ explain() {
     *"a password is required"*|*"incorrect password"*|*"not in the sudoers"*|*"may not run sudo"*)
       CODE=RF-16
       WHY="Your user is not allowed to install software on this computer."
-      TIP="Run this as the user you made when installing Linux, or ask whoever looks after this computer." ;;
+      TIP="$(sudo_steps "$USER") Or ask whoever looks after this computer." ;;
     *)
       CODE=RF-19
       WHY="Something went wrong while ${1,}."
@@ -977,6 +1019,13 @@ with_docker_group() {
     for v in $(compgen -e); do case "$v" in STARBOARD_*|TERM|COLORTERM|NO_COLOR|LANG|LC_*|PATH|HOME) keep+=("$v=${!v}") ;; esac; done
     sudo -u "$(id -un)" -g docker -- env "${keep[@]}" "$@" < "${IN:-/dev/null}"
   fi
+}
+
+# Whether this user may use sudo, found without asking for a password: in the sudo, wheel or admin group, or sudo
+# itself does not say no. When unsure, it says yes, and a refusal later is explained the same way (RF-16).
+sudo_allowed() {
+  id -nG | tr ' ' '\n' | grep -qxE 'sudo|wheel|admin' && return 0
+  ! sudo -n -l 2>&1 | grep -q "may not run sudo"
 }
 
 # sudo asks for the password once, before the quiet part, so the question is never hidden.
@@ -1309,6 +1358,15 @@ step_4() {
   check
   show_checks
   say ""
+  # DASH-114: a 32-bit system, or too little room for a first install, stops here, before anything is installed.
+  local stop
+  stop="$(arch_stop "$(uname -m)")"
+  if [ -n "$stop" ]; then note "$stop"; finish; err RF-06; exit 1; fi
+  stop="$(space_stop "$(free_gb)")"
+  if [ -n "$stop" ] && [ ! -d "$DIR/.git" ]; then
+    note "$stop"
+    [ "$CHECK" = 1 ] || { finish; err RF-07; exit 1; }
+  fi
   if [ ${#NEED[@]} -eq 0 ]; then para "Everything Starboard needs is here."
   elif [ "$CHECK" = 1 ]; then para "Not everything is here yet. Run this again without --check to install it: it asks before it installs anything."
   else para "Not everything is here yet. The next step asks before it installs anything."; fi
@@ -1380,6 +1438,9 @@ $(symbols_help "${CHOSEN_KB:-gb}")" \
   esac
   page 5
   : > "$LOG"
+  if [[ " ${FIX[*]} " == *"sudo "* ]] && { ! has sudo || ! sudo_allowed; }; then
+    note "$(sudo_steps "$USER")"; finish; err RF-18; exit 1
+  fi
   [[ " ${FIX[*]} " != *"sudo "* ]] || sudo_once
   para "Please wait, this can take some time..."
   say ""
@@ -1418,9 +1479,28 @@ step_6() {
   page 6
   local where="${DIR/#$HOME/~}"
   if [ -d "$DIR/.git" ]; then
-    para "Starboard is already in $where. Updating it to the newest version."
-    say ""
-    if work "Updating Starboard" "git -C $(printf '%q' "$DIR") pull --ff-only -q" 1 1; then :; else note "It could not be updated, so it carries on with the version you have."; fi
+    # SET-41 (DASH-114): Starboard is here already, so the person chooses, as in How do you want to start?
+    para "Starboard is already in $where."
+    choose "What do you want to do?" 1 \
+"Update gets the newest version, then the installer asks its questions again with your answers as the defaults. Your settings and password stay.
+
+Change the settings keeps the version you have and goes to the installer's questions.
+
+Keep it as it is changes nothing and shows where to open Starboard." \
+      "Update it to the newest version (recommended)|Your settings and password stay." \
+      "Change the settings|Keep this version; the installer asks its questions again." \
+      "Keep it as it is|Nothing changes." || return $?
+    case "$CHOICE" in
+      1)
+        say ""
+        if work "Updating Starboard" "git -C $(printf '%q' "$DIR") pull --ff-only -q" 1 1; then :; else note "It could not be updated, so it carries on with the version you have."; fi ;;
+      3)
+        local port
+        port="$(sed -n 's/^STARBOARD_PORT=//p' "$DIR/.env" 2>/dev/null | tail -n 1)"
+        finish
+        echo "Nothing was changed. Starboard stays as it is: open it at http://localhost:${port:-8095}"
+        exit 0 ;;
+    esac
   elif [ -e "$DIR" ]; then
     note "$where exists but is not a Starboard download. Move it or choose another folder with --dir, then run this again."
     finish; err RF-30; exit 1
@@ -1653,7 +1733,7 @@ card_row "Update later" "cd ${DIR/#$HOME/~} && ./update.sh"
 card_end
 say ""
 if [ "$DESKTOP" = 1 ]; then
-  para "Opening the set-up in your browser, with the setup code filled in. If it does not open, go to http://localhost:$port"
+  para "The set-up continues in your browser: it opens now, with the setup code filled in. If it does not open, or you close it, go to http://localhost:$port"
   xdg-open "$url" >/dev/null 2>&1 &
 else
   para "Finish setting up in a browser on a phone or another computer at home: open the address for other devices and enter the setup code."

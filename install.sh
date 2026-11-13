@@ -966,6 +966,11 @@ step_done() {
   card_row "Ask again" "./install.sh"
   card_row "Update" "./update.sh"
   card_end
+  # INS-07 (DASH-114): with the firewall active, other devices may need its port opened. ufw.conf can be read
+  # without sudo; Starboard never changes the firewall itself.
+  if [ "$NETWORK" = 1 ] && grep -qsx 'ENABLED=yes' /etc/ufw/ufw.conf; then
+    note "The firewall (ufw) is active. If phones and other computers cannot open Starboard, let them reach its port with: sudo ufw allow $PORT/tcp"
+  fi
   if [ "$HEALTH" = 0 ] && [ -f /etc/systemd/system/starboard-smart.timer ]; then
     note "Starboard no longer reads Disk health reports. The timer is still installed; to remove it, run: sudo deploy/install-smart.sh --remove"
   fi

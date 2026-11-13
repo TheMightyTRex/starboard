@@ -13,6 +13,7 @@ optional extras: "later" (needs its own settings file first, so it is left out o
 import base64
 import json
 import os
+import platform
 import re
 import secrets
 import socket
@@ -355,26 +356,109 @@ def install_choice(key, installed_keys=(), check=None, usenet="nzbget"):
         except ValueError:
             edition, note = "lite", "Reelix with YouTube and Spotify downloads cannot be downloaded at the moment, so this installs Reelix Lite. Switch later in Settings, Reelix."
     keys = [k for k in apps if k not in installed_keys]
+    missing = no_image_here(keys, check)  # DASH-114: an app with no version for a Raspberry Pi is left out, and said
+    keys = [k for k in keys if k not in missing]
+    if missing:
+        note = (note + " " if note else "") + ("Left out, with no version for this computer's processor (64-bit ARM): "
+                                               + ", ".join(APPS[k]["name"] for k in missing) + ".")
     groups = sorted({g for k in keys for g in APPS[k]["groups"]})
     return {"key": key, "name": spec["name"], "about": spec["about"], "apps": keys, "groups": groups,
             "usenet": usenet, "usenet_choice": spec["usenet_choice"],
-            "reelix_edition": edition, "disk_health": spec["disk_health"], "note": note,
-            "memory": sum(APPS[k].get("memory", 100) for k in keys)}
+            "reelix_edition": edition, "disk_health": spec["disk_health"], "note": note, "left_out": missing,
+            "memory": sum(APPS[k].get("memory", 100) for k in keys), "memory_advice": memory_advice(keys)}
+
+
+# This computer, for the advice in both set-ups (DASH-114, test plans WIZ-31 to WIZ-33) ------------------------------
+
+# What Linux and Starboard itself use besides the apps, kept free when the apps' memory is added up.
+MEMORY_KEPT_MB = 700
+# Never suggested for leaving out: without them the server does nothing.
+MEMORY_CORE = {"reelix", "qbittorrent", "nzbget", "sabnzbd", "gluetun"}
+# Suggested last: the players, which most people want.
+MEMORY_LAST = {"jellyfin", "audiobookshelf"}
+_arm64_images = {}
+
+
+def machine(meminfo="/proc/meminfo"):
+    """This computer's processor and memory. Inside Starboard's container, /proc/meminfo is the computer's."""
+    mem = 0
+    try:
+        with open(meminfo, encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("MemTotal:"):
+                    mem = int(line.split()[1]) // 1024
+                    break
+    except (OSError, ValueError, IndexError):
+        pass
+    arch = platform.machine().lower()
+    return {"arm64": arch in ("aarch64", "arm64"), "memory_mb": mem}
+
+
+def memory_advice(keys, total_mb=None):
+    """When the apps chosen need more memory than this computer has to spare: what to leave out, heaviest first,
+    never Reelix, a download app or the VPN. None when they fit, or when the memory is not known."""
+    total_mb = machine()["memory_mb"] if total_mb is None else total_mb
+    apps = [k for k in keys if k in APPS]
+    need = sum(APPS[k].get("memory", 100) for k in apps)
+    room = total_mb - MEMORY_KEPT_MB
+    if not total_mb or need <= room:
+        return None
+    leave, left = [], need
+    for k in sorted((k for k in apps if k not in MEMORY_CORE), key=lambda k: (k in MEMORY_LAST, -APPS[k].get("memory", 100))):
+        if left <= room:
+            break
+        leave.append(k)
+        left -= APPS[k].get("memory", 100)
+    names = [APPS[k]["name"] for k in leave]
+    text = (f"These apps need about {need:,} MB of memory, and this computer has {total_mb:,} MB, with about "
+            f"{MEMORY_KEPT_MB} MB kept for Linux and Starboard.")
+    if names:
+        text += " Leave out " + (", ".join(names[:-1]) + " and " + names[-1] if len(names) > 1 else names[0]) + " to fit."
+    else:
+        text += " Choose Basics, or fewer kinds of media."
+    return {"text": text, "leave_out": leave, "need_mb": need, "total_mb": total_mb}
+
+
+def has_arm64_image(ref, check=None):
+    """Whether an image has a version for 64-bit ARM (asked of its registry, remembered for a day). When the registry
+    cannot be asked, it is taken as yes, so a lost connection never hides an app."""
+    seen = _arm64_images.get(ref)
+    if seen and time.time() - seen[1] < 86400:
+        return seen[0]
+    try:
+        ok = "arm64" in (check or containers.platforms)(ref)
+    except Exception:  # noqa: BLE001  any registry, network or parsing failure: do not hide the app
+        ok = True
+    _arm64_images[ref] = (ok, time.time())
+    return ok
+
+
+def no_image_here(keys, check=None, arm64=None):
+    """The apps with no version for this computer's processor: only a 64-bit ARM computer (a Raspberry Pi) asks."""
+    arm64 = machine()["arm64"] if arm64 is None else arm64
+    if not arm64:
+        return []
+    return [k for k in keys if k in APPS and APPS[k].get("image") and not has_arm64_image(APPS[k]["image"], check)]
+
+
+NO_IMAGE_WORDS = "No version for this computer's processor (64-bit ARM), so it cannot be installed here."
 
 
 def catalogue(installed_keys):
     """Groups and apps for the guide; apps found running are marked and left unticked."""
     apps = []
+    missing = set(no_image_here(list(offered())))  # only asked on a 64-bit ARM computer (DASH-114, WIZ-33)
     for key, a in offered().items():
         ports = []
         for p in a.get("ports", []):
             host = int(p.split(":")[0])
             ports.append({"port": host, "free": key in installed_keys or _port_free(host)})
         apps.append({"key": key, "name": a["name"], "groups": a["groups"], "image": a["image"], "notes": a.get("notes", ""),
-                     "default": defaults_for(a), "later": bool(a.get("later")), "memory": a.get("memory", 100),
-                     "installed": key in installed_keys, "ports": ports})
+                     "default": defaults_for(a) and key not in missing, "later": bool(a.get("later")), "memory": a.get("memory", 100),
+                     "installed": key in installed_keys, "ports": ports, "no_image": NO_IMAGE_WORDS if key in missing else ""})
     used = {g for a in apps for g in a["groups"]}  # a group with no app left (Tidy-up, now in Reelix) is not shown
-    return {"groups": [{"key": k, "name": n, "about": t, "kind": kind, "default": d} for k, n, t, kind, d in GROUPS if k in used],
+    return {"machine": machine(),
+            "groups": [{"key": k, "name": n, "about": t, "kind": kind, "default": d} for k, n, t, kind, d in GROUPS if k in used],
             "apps": apps, "needs": {k: [list(n) if isinstance(n, tuple) else [n] for n in v] for k, v in NEEDS.items()},
             "installs": [{"key": k, "name": v["name"], "about": v["about"], "recommended": k == "basics",
                           "usenet_choice": v["usenet_choice"]} for k, v in INSTALLS.items()]}

@@ -58,6 +58,16 @@ space, then run it again.
 **A version of Linux the script does not know.** It knows Debian, Ubuntu, Linux Mint, Fedora and Raspberry Pi OS.
 Install Docker by hand with [Install Docker](install-docker.md), then run the script again.
 
+### RF-06
+
+**A 32-bit system.** Starboard and most of its apps need a 64-bit system. On a Raspberry Pi, install Raspberry Pi
+OS (64-bit) with Raspberry Pi Imager, then run the script again. Nothing was installed.
+
+### RF-07
+
+**Not enough free space.** A first install needs at least 10 GB free in your home folder, for Docker, Starboard
+and the apps. Free some space, or use a bigger disk, then run the script again. Nothing was installed.
+
 ## Installing what is missing
 
 These happen while the script installs Docker and the other things Starboard needs. Each time, the script offers
@@ -106,12 +116,19 @@ install Docker by hand with [Install Docker](install-docker.md).
 ### RF-16
 
 **Your user is not allowed to install software.** Run the script as the user you made when installing Linux, or
-ask whoever looks after this computer to add you to the `sudo` group.
+ask whoever looks after this computer to add you to the `sudo` group. On Debian, this happens when a root
+password was set while installing: see [RF-18](#rf-18).
 
 ### RF-17
 
 **sudo did not accept the password.** Enter the password you use to sign in to this computer. On most systems,
 nothing shows as you enter it. Then choose **Try again**.
+
+### RF-18
+
+**Your user cannot use sudo yet.** On Debian this happens when a root password was set while installing. Type
+`su -` and the root password, then `apt install sudo` (if it is missing) and `usermod -aG sudo` followed by your
+user name, then `exit`. Sign out and back in, and run the script again. Nothing was installed.
 
 ### RF-19
 
