@@ -3,7 +3,7 @@
 # Plug-in API reference
 
 What Starboard calls on a plug-in, what it sends and what it expects back, and what a plug-in finds and may call in
-return. This page matches plug-in API 1.11.0. The fields that ask for each of these are in the
+return. This page matches plug-in API 1.12.0. The fields that ask for each of these are in the
 [Plug-in manifest reference](plugin-manifest-reference.md).
 
 ## How Starboard reaches a plug-in
@@ -80,14 +80,16 @@ plug-in's own API key in the `X-Api-Key` header, so the plug-in can tell the cal
 |---|---|
 | `type` | Must be `list` |
 | `title`, `intro` | Cut to 80 and 400 characters |
-| `add` | Optional. Shows an add box; `label`, `hint` and `placeholder` are cut to 120 characters. Optional `file`: `{"label", "hint", "accept"}` also shows a file picker, where `accept` lists file endings such as `.m3u,.json,.gz` |
+| `add` | Optional. Shows an add box; `label`, `hint` and `placeholder` are cut to 120 characters. Optional `file`: `{"label", "hint", "accept"}` also shows a file picker, where `accept` lists file endings such as `.m3u,.json,.gz`. From API 1.12, `"file_only": true` with a `file` shows only the file picker |
 | `items` | Up to 4000. An item without an `id` is left out. The whole answer can be up to 2 MB |
 | `id`, `title`, `detail` | Cut to 600, 120 and 200 characters |
 | `state` | `ok`, `warning`, `problem`, `off` or `unknown`; anything else is `unknown` |
+| `state_label` | Optional, from API 1.12. Your own words for the state, up to 30 characters, such as `Added` or `Lengths differ`, shown in the state's colour in place of Starboard's words (**Works**, **Slow**, **Not answering**, **Inactive**, **Not tested**), which suit a list of sources but not every list |
 | `group` | A heading the item sits under, cut to 40 characters |
 | `on` | `true` or `false`; `true` when left out |
 | `address` | Shown under the title, cut to 500 characters |
 | `actions` | The buttons on the row, from `test`, `toggle`, `remove`, `up` and `down` |
+| `link` | Optional, from API 1.12. `{"url", "label"}`: a link on the row that opens in a new tab, such as a search for the title on another site. `url` must start with `http://` or `https://`; `label`, up to 80 characters, should say where it goes, such as "Search AudioVault for Dune". Starboard adds "opens in a new tab" for screen readers |
 | `choice` | Optional. A small list on the row: up to 12 `options`, each `[value, words]`, cut to 40 characters |
 | `bulk` | Optional. Up to 60 switches (400 with `menus`) for whole sets of items, each `{"id", "label", "kind", "on", "total"}`: `on` is how many of its `total` items are active. Starboard groups them by `kind`, in the order given. Optional: `active` (`true` or `false`) when the set is more than its items, such as a whole source that can be stopped, and `hint`, up to 160 characters, in place of the words "3 of 5 active" |
 

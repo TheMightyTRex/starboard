@@ -66,6 +66,21 @@ class PluginsTest(unittest.TestCase):
         self.assertIn('user: "10001:10001"', text)
         self.assertIn("mem_limit: 128m", text)
 
+    def test_a_container_may_run_as_the_media_folders_owner(self):  # API 1.12 (DASH-410)
+        tracks = {**ON_DEMAND, "permissions": ["jellyfin:key", "network:lan"],
+                  "containers": [{"name": "main", "image": f"ghcr.io/example/tracks@{DIGEST}", "port": 8080, "network": "lan",
+                                  "volumes": ["data", "media/movies", "media/tv"], "user": "media"}], "resources": {}}
+        self.assertEqual(plugins.check(tracks), [])
+        self.assertIn('user: "1001:1002"', plugins.compose(tracks, "/srv/p", "/srv/media", media_user="1001:1002"))
+        self.assertIn('user: "1000:1000"', plugins.compose(tracks, "/srv/p", "/srv/media"))
+        self.assertIn('user: "1000:1000"', plugins.compose(tracks, "/srv/p", "/srv/media", media_user="0:0"))  # never root
+        warning = plugins.install_warning(tracks)
+        self.assertIn("Files in your media folder under movies", warning["change"])
+        self.assertTrue(any("owner of your media folder" in c for c in warning["change"]))
+        only_data = {**tracks, "containers": [{**tracks["containers"][0], "volumes": ["data", "media:ro"]}]}
+        self.assertIn("containers[0]: user media is only for a container that mounts media/<one folder>", plugins.check(only_data))
+        self.assertTrue(any("non-root uid:gid" in p for p in plugins.check({**tracks, "containers": [{**tracks["containers"][0], "user": "root"}]})))
+
     def test_api_ranges(self):
         self.assertTrue(plugins._range_ok(">=1.0 <2.0", "1.4.2"))
         self.assertFalse(plugins._range_ok(">=1.0 <2.0", "2.0.0"))

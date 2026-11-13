@@ -136,6 +136,14 @@ def _attach(a):
             "placeholder": _text(a.get("placeholder"), 120), "value": _text(a.get("value"), 500), "accept": f["accept"] if f else ""}
 
 
+def _link(k):
+    """A link on one item (API 1.12, DASH-410), such as a search for the title on another site. Starboard draws it as
+    a link that opens in a new tab; only http and https addresses, so a script address can never be one."""
+    if not isinstance(k, dict) or not isinstance(k.get("url"), str) or not re.match(r"^https?://[^\s<>\"]{1,490}$", k["url"]):
+        return None
+    return {"url": k["url"][:500], "label": _text(k.get("label"), 80) or "Open"}
+
+
 def _file(f):
     """A file picker beside the add box (DASH-359): its label, hint and the file types it offers."""
     if not isinstance(f, dict):
@@ -159,12 +167,17 @@ def clean(data):
         items.append({"id": _text(it["id"], 600), "title": _text(it.get("title"), 120), "detail": _text(it.get("detail"), 200),
                       "state": it.get("state") if it.get("state") in STATES else "unknown", "group": _text(it.get("group"), 40),
                       "on": bool(it.get("on", True)), "address": _text(it.get("address"), 500),
+                      # API 1.12 (DASH-410): the plug-in's own words for the state, such as "Added", shown in its colour
+                      **({"state_label": _text(it["state_label"], 30)} if _text(it.get("state_label"), 30) else {}),
                       "actions": [a for a in it.get("actions") or [] if a in ACTIONS], "choice": _choice(it.get("choice")),
                       **_in_menu(it, known),
                       **({"cells": {c["key"]: _text((it.get("cells") or {}).get(c["key"]), 80) for c in columns}} if columns else {}),
-                      **({"attach": _attach(it["attach"])} if _attach(it.get("attach")) else {})})
+                      **({"attach": _attach(it["attach"])} if _attach(it.get("attach")) else {}),
+                      **({"link": _link(it["link"])} if _link(it.get("link")) else {})})
     out = {"type": "list", "title": _text(data.get("title"), 80), "intro": _text(data.get("intro"), 400), "items": items,
-           "add": {**{k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")}, "file": _file(add.get("file"))} if add else None,
+           "add": {**{k: _text(add.get(k), 120) for k in ("label", "hint", "placeholder")}, "file": _file(add.get("file")),
+                   # API 1.12 (DASH-410): only the file picker, for a plug-in that takes files and never addresses
+                   **({"file_only": True} if add.get("file_only") is True and _file(add.get("file")) else {})} if add else None,
            "bulk": _bulk(data.get("bulk"), known)}
     if menus:
         out["menus"] = menus

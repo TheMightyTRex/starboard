@@ -180,3 +180,31 @@ class BigLists(unittest.TestCase):
         out = plugin_custom.clean({"type": "list", "items": [{"id": str(i), "title": f"{i} Channel"} for i in range(1616)]})
         self.assertEqual(len(out["items"]), 1616)
         self.assertGreaterEqual(plugin_custom.MAX_BYTES, 1024 * 1024)
+
+
+class LinksAndFiles(unittest.TestCase):
+    """Plug-in API 1.12 (DASH-410): a link on an item, and an add box that takes only a file."""
+
+    def test_only_web_links_are_kept(self):
+        out = plugin_custom.clean({"type": "list", "items": [
+            {"id": "1", "title": "Dune", "link": {"url": "https://audiovault.example/movies?search=Dune", "label": "Search AudioVault for Dune"}},
+            {"id": "2", "title": "Bad", "link": {"url": "javascript:alert(1)", "label": "x"}},
+            {"id": "3", "title": "No label", "link": {"url": "http://example.invalid/x"}},
+            {"id": "4", "title": "Not a link", "link": "https://example.invalid"}]})
+        links = [it.get("link") for it in out["items"]]
+        self.assertEqual(links[0], {"url": "https://audiovault.example/movies?search=Dune", "label": "Search AudioVault for Dune"})
+        self.assertIsNone(links[1])
+        self.assertEqual(links[2]["label"], "Open")
+        self.assertIsNone(links[3])
+
+    def test_file_only_needs_a_file_picker_and_true(self):
+        f = {"label": "Choose a description track", "accept": ".mp3,.m4a"}
+        self.assertIs(plugin_custom.clean({"type": "list", "items": [], "add": {"label": "Add", "file": f, "file_only": True}})["add"]["file_only"], True)
+        self.assertNotIn("file_only", plugin_custom.clean({"type": "list", "items": [], "add": {"label": "Add", "file_only": True}})["add"])
+        self.assertNotIn("file_only", plugin_custom.clean({"type": "list", "items": [], "add": {"label": "Add", "file": f, "file_only": "yes"}})["add"])
+
+    def test_a_state_may_have_the_plugins_own_words(self):
+        out = plugin_custom.clean({"type": "list", "items": [{"id": "1", "state": "warning", "state_label": "Lengths differ by more than they may"},
+                                                             {"id": "2", "state": "ok"}]})
+        self.assertEqual(out["items"][0]["state_label"], "Lengths differ by more than th")  # cut to 30
+        self.assertNotIn("state_label", out["items"][1])
