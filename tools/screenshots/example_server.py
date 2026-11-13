@@ -125,6 +125,21 @@ def _example_dispatcharr():
     dispatcharr.inside_address = lambda cfg, data_dir: dispatcharr.INSIDE
 
 
+def _example_full_backups():
+    """System, Backup and restore, Full without media (DASH-260): the media folder on its own disk, so the page says
+    which disk the copies go on, and two made-up copies in the folder. Nothing is read from this computer."""
+    from starboard import full_backup
+    full_backup._drives = lambda data_dir: [{"mount": "/srv/media", "device": "sdb1", "size": 4000 * 1000 ** 3, "fs": "ext4",
+                                             "model": "WDC WD40EFRX", "label": ""}]
+    apps = ["audiobookshelf", "bazarr", "gluetun", "jellyfin", "qbittorrent", "reelix"]
+    day = dt.datetime.now().replace(hour=3, minute=0, second=0, microsecond=0)
+    full_backup.found = lambda folder: [
+        {"name": f"starboard-full-{d:%Y-%m-%d-%H%M%S}.starboard", "path": f"{folder}/starboard-full-{d:%Y-%m-%d-%H%M%S}.starboard",
+         "size": 640 * 1000 ** 2 + n * 3 * 1000 ** 2, "created": d.isoformat(timespec="seconds"), "version": "0.15.0", "pictures": False,
+         "apps": apps, "site_name": "Harbour", "config_dir": "/srv/media-stack/config"}
+        for n, d in enumerate(day - dt.timedelta(days=7 * k) for k in range(2))]
+
+
 def _example_folders(data):
     """The folder picker (DASH-240) browses a made-up tree, never this computer's own folders."""
     from starboard import folders
@@ -849,6 +864,7 @@ def main():
     _example_livetv(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
+    _example_full_backups()
     if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":
         # DASH-218: the full Reelix's YouTube and Spotify downloads as the admin last saw them, with yt-dlp broken and
         # Spotify's sign-in run out, so Apps and System show both warnings with what to do. Off by default.

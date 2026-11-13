@@ -968,6 +968,18 @@ check("DR-06", "Books has Trending and Reelix's nine subjects, all standard rows
   books.rows.length === 10 && books.rows.every((r) => r.shown && !r.genre), books.rows.map((r) => r.id).join(","));
 check("DR-06", "Music has no genre rows (Reelix has no music genres)", (await api("/api/library/discover-layout?tab=music")).rows.every((r) => !r.genre));
 
+console.log("\n== Full without media: which disk (DASH-260)");
+await open("system-backup.html");
+await page.locator("#full-disk p").first().waitFor({ timeout: 10000 }).catch(() => {});
+const fullFolder = await page.locator("#full-folder").inputValue().catch(() => "");
+check("BK-01", "the copies go to the media folder's disk, not the system disk", fullFolder === "/srv/media/backups/starboard", fullFolder);
+check("BK-01", "the page says which disk the folder is on", /On WDC WD40EFRX \(\/srv\/media\), not the system disk/.test(await page.locator("#full-disk").textContent()));
+check("BK-01", "the copies in the folder are listed, newest first", (await page.locator("#full-body ul.rows li").count()) === 2);
+// The section may sit behind a topic tab, so the folder is set as the picker would set it.
+await page.evaluate(() => { const i = document.querySelector("#full-folder"); i.value = "/home/sam/backups"; i.dispatchEvent(new Event("change")); });
+await page.waitForFunction(() => /on the system disk/.test(document.querySelector("#full-disk")?.textContent || ""), null, { timeout: 10000 }).catch(() => {});
+check("BK-01", "a folder on the system disk is warned about", /This folder is on the system disk/.test(await page.locator("#full-disk").textContent()));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

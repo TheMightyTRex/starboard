@@ -2477,7 +2477,8 @@ class Handler(BaseHTTPRequestHandler):
                     if path == "/api/backup/full/sizes" and method == "GET":
                         return self.json(200, {"apps": full_backup.app_sizes(app.data_dir), "starboard": full_backup.sizes(app.data_dir)})
                     if path == "/api/backup/full/found" and method == "GET":
-                        return self.json(200, {"found": full_backup.found(q.get("folder", [""])[0])})
+                        folder = q.get("folder", [""])[0]
+                        return self.json(200, {"found": full_backup.found(folder), "disk": full_backup.disk_of(app.data_dir, folder)})
                     if path == "/api/backup/full" and method == "POST":
                         data = self.body()
                         self.check_password(data)

@@ -306,6 +306,7 @@ async function loadFull() {
   }
   const folder = locationPicker({ id: "full-folder", label: "Where the copies go", app: "host", setting: "backups", value: f.status.target || f.folder,
     hint: `On another disk than the system disk, so a copy outlives it. Starboard keeps the newest ${f.keep || 5} here.` });
+  const disk = el("div", { id: "full-disk", "aria-live": "polite" });
   const pictures = el("input", { type: "checkbox", role: "switch", id: "full-pictures", "aria-labelledby": "full-pictures-l", "aria-describedby": "full-pictures-h", checked: !!f.status.pictures });
   const hint = el("span", { class: "setting__hint", id: "full-pictures-h", text: "Station logos you uploaded and Audiobookshelf's covers. Artwork the apps fetched comes back by itself and is never in it." });
   const measure = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, "Work out the size");
@@ -326,7 +327,7 @@ async function loadFull() {
   const state = el("div", { "aria-live": "polite" });
   const list = el("ul", { class: "rows", "aria-label": "Full backups in the folder, newest first" });
   body.replaceChildren(
-    folder.node,
+    folder.node, disk,
     el("ul", { class: "settings-rows" }, el("li", { class: "setting" },
       el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "full-pictures-l", text: "Pictures you added" }), hint),
       el("div", { class: "setting__control" }, el("label", { class: "switch" }, pictures)))),
@@ -341,9 +342,18 @@ async function loadFull() {
     else state.replaceChildren();
     make.disabled = s.state === "running";
   };
+  // Which disk the folder is on (DASH-260): said plainly, and a warning when it is the system disk.
+  const showDisk = (d) => {
+    if (!d) { disk.replaceChildren(); return; }
+    if (!d.system) { disk.replaceChildren(el("p", { class: "small", text: `On ${d.name} (${d.mount}), not the system disk.` })); return; }
+    disk.replaceChildren(d.others
+      ? notice("warning", "This folder is on the system disk", `If that disk fails, the backups go with it. Choose a folder on ${d.others === 1 ? "the other disk" : `one of the other ${d.others} disks`}, such as one under /mnt.`)
+      : notice("warning", "This computer has only the system disk", "If it fails, the backups go with it. Copy each new backup to a USB disk or another computer."));
+  };
   const showList = async () => {
     try {
       const r = await api(`/api/backup/full/found?folder=${encodeURIComponent(folder.input.value.trim())}`);
+      showDisk(r.disk);
       list.replaceChildren(...(r.found.length ? r.found.map((b) => el("li", { class: "row row--no-lead" },
         el("div", {}, el("div", { class: "row__title", text: formatDate(b.created, true) }),
           el("div", { class: "row__meta", text: [formatBytes(b.size), `${b.apps.length} apps`, b.version ? `Starboard ${b.version}` : ""].filter(Boolean).join(" · ") })),

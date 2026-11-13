@@ -9,6 +9,10 @@ add features.
 
 ### Added
 
+- System, Backup and restore, Full without media says which disk the copies go on, and warns when the folder is on
+  the system disk, where a failed disk would take the backups with it. The folder it suggests is on another disk:
+  the media folder's when the media is on one, else the biggest other disk's. Making a full backup and restoring it
+  onto a fresh install is tested end to end in scratch folders (DASH-260).
 - Settings, General, Discover rows is its own page on the level 2 menu, with a section for each area of Discover
   (Films, TV, Music, Radio, Books and Audiobooks), each with its own rows, ticks, Move up and Move down, and Put back
   the standard rows. Only the area shown asks Reelix for its rows. Each Discover page's Change these rows opens its own
