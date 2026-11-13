@@ -361,6 +361,32 @@ if (await wsTab.count()) {
   check("T15", "the line says it is expanded", (await page.locator(".fold__toggle").first().getAttribute("aria-expanded")) === "true");
   check("T15", "the table has nothing to tick or press but its column sort buttons", !(await page.locator(".fold__panel input, .fold__panel tbody button").count()));
 } else check("T15", "the example Watch statistics plug-in has its tables", false, "no Recent plays tab");
+// T16 Copies off this computer (DASH-380): from the section's heading, Tab reaches the chosen place; arrows move
+// between the places without saving; Tab reaches Test the other place; Enter tests, focus stays on it and the result
+// is said in the polite line.
+await page.goto(`${base}/system-backup.html`);
+await settle();
+await page.evaluate(() => { const h = document.querySelector("#bk-copies-h"); h.tabIndex = -1; h.focus(); });
+const radio15 = await tabTo((f) => f.tag === "INPUT" && f.inMain, 5);
+if (radio15) {
+  await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(200);
+  check("T16", "arrows move to the next place and show its fields", await page.evaluate(() => document.querySelector("input[name=copies-kind]:checked")?.value === "smb"
+    && !document.querySelector("[data-kind=smb]").hidden));
+  check("T16", "choosing a place saves nothing by itself", !/Saved/.test(await said()));
+  await page.keyboard.press("ArrowUp");
+  await page.waitForTimeout(200);
+} else check("T16", "Tab reaches the places", false);
+const test15 = await tabTo((f) => /^Test the other place/.test(f.text) && f.tag === "BUTTON", 60);
+check("T16", "Tab reaches Test the other place", !!test15, test15 ? test15.text : "not reached");
+if (test15) {
+  await page.keyboard.press("Enter");
+  await settle();
+  const f15 = await focus();
+  check("T16", "after Test, focus stays on it", f15.id === "copies-test", `${f15.tag} ${f15.id}`);
+  check("T16", "the result is said politely", /other place works/.test(await page.locator("#copies-state").innerText())
+    && (await page.locator("#copies-state").getAttribute("aria-live")) === "polite");
+}
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
