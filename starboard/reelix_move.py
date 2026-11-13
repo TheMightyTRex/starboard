@@ -7,8 +7,10 @@ what a person would otherwise have to type:
 
 - each app's address and API key: the key from the app's own settings file (discovery.read_key), the address by
   the app's container name on its Docker network, which Reelix joins for the move and leaves afterwards;
-- the keys the apps hide, so Reelix cannot read them over the API (DASH-128): Prowlarr's indexer keys, read from
-  Prowlarr's own database. Anything still missing is listed for the person to type;
+- the keys the apps hide, so Reelix cannot read them over the API (DASH-128): indexer keys, read from Prowlarr's own
+  database, or Radarr's, Sonarr's, Lidarr's or Readarr's for sites added straight into them. Anything still missing
+  is listed in the preview, by name, for the person to type; SABnzbd's key, for a SABnzbd that stays, comes from
+  sabnzbd.ini once Starboard runs it (server.after_takeover);
 - path differences: where an app sees the media under another path than Reelix does, a path rewrite;
 - qBittorrent (DASH-129): Reelix gets it by the name it has on Starboard's stack (gluetun when it runs through the
   VPN), with the password the person gives, checked against qBittorrent first.
@@ -172,32 +174,86 @@ def hidden_from_db(db_path, wanted):
     return found
 
 
+# Each app's own database, in its /config folder (Bookshelf, the Readarr fork, may name its own).
+DATABASES = {"prowlarr": ("prowlarr.db",), "radarr": ("radarr.db",), "sonarr": ("sonarr.db",), "lidarr": ("lidarr.db",),
+             "readarr": ("readarr.db", "bookshelf.db")}
+
+
+def app_secrets(container, source, wanted):
+    """An app's hidden keys from its own database (with its write-ahead log), read through Docker into a private
+    temporary folder that is emptied straight after; {} when there is none or it cannot be read. Indexers added
+    straight into Radarr, Sonarr, Lidarr or Readarr hide their keys as Prowlarr's do (DASH-128)."""
+    if not wanted or source not in DATABASES:
+        return {}
+    for name in DATABASES[source]:
+        files, folder = _read_files(container, [f"/config/{name}", f"/config/{name}-wal"])
+        try:
+            db = files.get(f"/config/{name}")
+            if db:
+                return hidden_from_db(db, wanted)
+        except sqlite3.Error:
+            return {}
+        finally:
+            for f in os.listdir(folder):
+                os.remove(os.path.join(folder, f))
+            os.rmdir(folder)
+    return {}
+
+
 def prowlarr_secrets(container, wanted):
     """Prowlarr's hidden indexer keys from its database (prowlarr.db with its write-ahead log); {} when unreadable."""
-    if not wanted:
-        return {}
-    files, folder = _read_files(container, ["/config/prowlarr.db", "/config/prowlarr.db-wal"])
-    try:
-        db = files.get("/config/prowlarr.db")
-        return hidden_from_db(db, wanted) if db else {}
-    except sqlite3.Error:
-        return {}
-    finally:
-        for f in os.listdir(folder):
-            os.remove(os.path.join(folder, f))
-        os.rmdir(folder)
+    return app_secrets(container, "prowlarr", wanted)
+
+
+def hidden_secrets(src, wanted):
+    """The hidden keys Starboard can read for this app."""
+    if src["source"] == "prowlarr":
+        return prowlarr_secrets(src["container"], wanted)
+    return app_secrets(src["container"], src["source"], wanted)
+
+
+def _moves(item):
+    """Whether the move takes this item: download apps are left out (Starboard connects its own), so a key they hide
+    is never asked for or counted (DASH-251)."""
+    category = item.get("category") or str(item.get("key") or "").split(":", 1)[0]
+    return category in CATEGORIES
 
 
 def missing(plan):
-    """The "<item key>:<field>" secrets a preview says are still needed."""
-    return [f"{i['key']}:{field}" for i in plan.get("items") or [] for field in i.get("missing_secrets") or []]
+    """The "<item key>:<field>" secrets a preview says are still needed, for what moves."""
+    return [f"{i['key']}:{field}" for i in plan.get("items") or [] if _moves(i) for field in i.get("missing_secrets") or []]
+
+
+def needs(plan, still):
+    """The keys still to type, each with what it belongs to, for the page: [{id, name, category, field}]."""
+    names = {i.get("key"): i for i in plan.get("items") or []}
+    out = []
+    for want in still:
+        key, _, field = want.rpartition(":")
+        item = names.get(key) or {}
+        out.append({"id": want, "name": item.get("name") or key, "category": item.get("category") or key.split(":", 1)[0],
+                    "field": field})
+    return out
 
 
 # The move itself -----------------------------------------------------------------------------------------------
 
+# The hidden keys the last preview read from each app's database, so the move does not read them again. Held in
+# memory only, never written or logged.
+_found = {}
+
+def typed_for(src, typed):
+    """What the person typed for this app: `typed` is {source: {"indexer:3:apiKey": value}}, one set per app, as the
+    same item key can be in two apps; a flat {"indexer:3:apiKey": value} (the terminal set-up) goes to every app."""
+    typed = typed or {}
+    mine = typed.get(src["source"])
+    flat = {k: v for k, v in typed.items() if isinstance(v, str)}
+    return flat | (dict(mine) if isinstance(mine, dict) else {})
+
+
 def _connection(src, typed=None):
     return {"source": src["source"], "url": src["url"], "api_key": src["api_key"] or "",
-            "path_rewrites": src["path_rewrites"], "secrets": dict(src.get("secrets") or {}) | dict(typed or {})}
+            "path_rewrites": src["path_rewrites"], "secrets": dict(src.get("secrets") or {}) | typed_for(src, typed)}
 
 
 def counts(plan):
@@ -220,8 +276,9 @@ def preview(base, password, srcs, typed=None, opener=None, docker=None):
                 continue
             _, plan = admin.call("POST", "/system/migrate/preview", _connection(src, typed), timeout=180)
             need = missing(plan or {})
-            if need and src["source"] == "prowlarr":
-                src["secrets"] = prowlarr_secrets(src["container"], need)
+            if need:
+                src["secrets"] = hidden_secrets(src, need)
+                _found[src["source"]] = dict(src["secrets"])
                 if src["secrets"]:
                     _, plan = admin.call("POST", "/system/migrate/preview", _connection(src, typed), timeout=180)
                     need = missing(plan or {})
@@ -229,7 +286,7 @@ def preview(base, password, srcs, typed=None, opener=None, docker=None):
                         "counts": counts(plan or {}), "notes": (plan or {}).get("notes") or [],
                         "skipped": [{"name": i.get("name"), "category": i.get("category"), "why": i.get("detail")}
                                     for i in (plan or {}).get("items") or [] if i.get("action") == "skip"],
-                        "still_missing": need, "filled": len(src.get("secrets") or {})})
+                        "still_missing": need, "needs": needs(plan or {}, need), "filled": len(src.get("secrets") or {})})
     finally:
         leave_networks(joined, docker)
     return out
@@ -291,7 +348,11 @@ def run_all(base, password, srcs, typed=None, hold=True, opener=None, docker=Non
                 continue
             if tasks:
                 tasks.start(tid, "Reading it", now=f"Moving {src['app']}")
+            if not src.get("secrets") and _found.get(src["source"]):
+                src["secrets"] = dict(_found[src["source"]])  # what the last preview read from its database
             if src["source"] == "prowlarr" and not src.get("secrets"):
+                # Prowlarr's preview is only its sites, so it is quick to ask again; Radarr's or Sonarr's reads the
+                # whole library, so theirs are read only when "Show what moves" asks (lightweight first).
                 _, plan = admin.call("POST", "/system/migrate/preview", _connection(src, typed), timeout=180)
                 src["secrets"] = prowlarr_secrets(src["container"], missing(plan or {}))
             log(f"Moving {src['app']}")

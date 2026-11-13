@@ -446,7 +446,7 @@ def set_up(cfg, data_dir, password, log=lambda line: None, opener=None, qbit=Non
     return done
 
 
-def switch_usenet(base, password, to, host, creds=None, sab_key=None, opener=None):
+def switch_usenet(base, password, to, host, creds=None, sab_key=None, opener=None, sab_port=8085):
     """After Settings, Your install swapped the Usenet app: Reelix's download apps get the new one and lose the other.
     `base` is Reelix's address from data/stack (stack.reelix_url), never a dashboard entry: the admin password goes
     there. `creds` (user, password) for NZBGet, `sab_key` for SABnzbd. Returns what was done."""
@@ -465,7 +465,7 @@ def switch_usenet(base, password, to, host, creds=None, sab_key=None, opener=Non
         if to == "nzbget" and creds:
             settings = {"host": host, "port": 6789, "use_ssl": False, "username": creds[0], "password": creds[1]}
         elif to == "sabnzbd" and sab_key:
-            settings = {"host": host, "port": 8085, "use_ssl": False, "api_key": sab_key}
+            settings = {"host": host, "port": sab_port, "use_ssl": False, "api_key": sab_key}
         else:
             return done + [f"Add {'NZBGet' if to == 'nzbget' else 'SABnzbd'} in Starboard: Settings, Reelix, Download apps"]
         admin.call("POST", "/downloadclients", {"implementation": to, "name": "NZBGet" if to == "nzbget" else "SABnzbd",

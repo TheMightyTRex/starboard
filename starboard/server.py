@@ -450,6 +450,20 @@ def _installer_started_since(app, since):
 MOVED_BY_REELIX = ("radarr", "sonarr", "lidarr", "bookshelf", "prowlarr", "seerr")  # what Reelix's migrator reads
 
 
+def typed_secrets(given):
+    """The hidden keys typed in the move's preview (DASH-128): {source: {"indexer:3:apiKey": value}}, or flat
+    {"indexer:3:apiKey": value} for every app. Empty values are dropped; never logged."""
+    out = {}
+    for k, v in list((given if isinstance(given, dict) else {}).items())[:200]:
+        if isinstance(v, dict):
+            mine = {str(a)[:100]: str(b)[:500] for a, b in list(v.items())[:200] if b}
+            if mine:
+                out[str(k)[:40]] = mine
+        elif v:
+            out[str(k)[:100]] = str(v)[:500]
+    return out
+
+
 def after_takeover(app, password, p, sab_ini):
     """Once Starboard's stack runs with the apps it took over: SABnzbd's servers into NZBGet, Reelix's download apps
     by their names on Starboard's stack (gluetun when they run through the VPN), and the apps on the dashboard. The
@@ -481,9 +495,15 @@ def after_takeover(app, password, p, sab_ini):
                 if "nzbget" in apps:
                     creds = reelix_setup.nzbget_ready()(app.data_dir)
                     notes += reelix_setup.switch_usenet(base, password, "nzbget", "gluetun" if vpn else "nzbget", creds=creds)
+                elif "sabnzbd" in apps and sab_ini:
+                    # DASH-128: a SABnzbd that stays hides its key from the old apps, so Reelix gets it from
+                    # sabnzbd.ini, read before SABnzbd stopped, with the port SABnzbd listens on.
+                    notes += reelix_setup.switch_usenet(base, password, "sabnzbd", "gluetun" if vpn else "sabnzbd",
+                                                        sab_key=usenet_move.sab_api_key(sab_ini),
+                                                        sab_port=usenet_move.sab_port(sab_ini))
                 admin = reelix_move._admin(base, password)
                 for c in admin.call("GET", "/downloadclients")[1] or []:
-                    want = "gluetun" if vpn and c.get("implementation") in ("qbittorrent", "nzbget") else None
+                    want = "gluetun" if vpn and c.get("implementation") in ("qbittorrent", "nzbget", "sabnzbd") else None
                     if want and (c.get("settings") or {}).get("host") != want:
                         body = {f: c.get(f) for f in ("implementation", "name", "enabled", "priority", "tags")}
                         body["settings"] = {**(c.get("settings") or {}), "host": want}
@@ -2011,7 +2031,9 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("Move " + ", ".join(unmoved) + " into Reelix first (Settings, Reelix, Move your apps "
                                      "into Reelix), or tick that you do not need them moved")
                 app.config.update_general({"setup_guide_done": True})  # a takeover counts as set up (DASH-238)
-                sab_ini = usenet_move.read_sab_ini() if p["sab"] else None
+                # SABnzbd's settings: its servers for NZBGet, or its key for Reelix when SABnzbd stays (DASH-128).
+                kept_sab = next((c["name"] for c in p["take"] if c["key"] == "sabnzbd"), None)
+                sab_ini = usenet_move.read_sab_ini() if p["sab"] else usenet_move.read_sab_ini(kept_sab) if kept_sab else None
                 logs.event("info", "take over", "Taking over " + ", ".join(t["name"] for t in p["take"]) +
                            "; stopping " + (", ".join(r["name"] for r in p["replace"]) or "nothing"))
                 return self.json(200, takeover.start(app.data_dir, host, p, after_takeover(app, body.get("password", ""), p, sab_ini)))
@@ -2099,13 +2121,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/reelix/move/preview" and method == "POST":
                 body = self.body()
                 self.check_password(body)
-                typed = {str(k): str(v) for k, v in (body.get("secrets") or {}).items() if v}
+                typed = typed_secrets(body.get("secrets"))
                 return self.json(200, {"apps": reelix_move.preview(stack.reelix_url(app.data_dir), body["password"],
                                                                     reelix_move.sources(), typed)})
             if path == "/api/reelix/move/run" and method == "POST":
                 body = self.body()
                 self.check_password(body)
-                typed = {str(k): str(v) for k, v in (body.get("secrets") or {}).items() if v}
+                typed = typed_secrets(body.get("secrets"))
                 qpw = str(body.get("qbittorrent_password") or "")
                 conf = reelix_move.qbit_conf() if qpw else {"user": None, "ban_minutes": 60}
                 quser = conf["user"] or "admin"

@@ -477,6 +477,20 @@ check("MOVE-01", "the qBittorrent user name comes from its settings file", (awai
 check("MOVE-01", "the qBittorrent password says what it is for and that it is optional",
   (await reelixStep.textContent()).includes("qBittorrent's password (optional)") && (await reelixStep.textContent()).includes("What it is for"));
 const [mpw, qpw] = [reelixStep.locator("input[type=password]").nth(0), reelixStep.locator("input[type=password]").nth(1)];
+// DASH-128: a key Prowlarr hides and Starboard could not read is asked for by name in the preview, then checked.
+await mpw.fill(password);
+await reelixStep.getByRole("button", { name: "Show what moves" }).click();
+const keyField = reelixStep.getByLabel("NZB Harbour: API key");
+await keyField.waitFor({ timeout: 10000 });
+check("MOVE-01", "the preview names the hidden key still needed and asks for it", (await reelixStep.textContent()).includes("Prowlarr (1 key still needed), 1 key read from its settings"));
+check("MOVE-01", "the key field is a password field, never filled in by the browser",
+  await keyField.getAttribute("type") === "password" && await keyField.getAttribute("autocomplete") === "off");
+await keyField.fill("made-up-site-key");
+await reelixStep.getByRole("button", { name: "Show what moves" }).click();
+await reelixStep.getByText("Prowlarr, 1 key read from its settings").waitFor({ timeout: 10000 });
+check("MOVE-01", "with the key typed, nothing is still needed", (await reelixStep.textContent()).includes("still needed") === false);
+check("MOVE-01", "the typed key is never in browser storage",
+  !(await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }).includes("made-up-site-key"))));
 await mpw.fill(password);
 await qpw.fill("banned");
 await reelixStep.getByRole("button", { name: "Move them into Reelix" }).click();

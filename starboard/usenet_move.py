@@ -69,6 +69,33 @@ def merged_config(current, server_options):
     return kept + [{"Name": k, "Value": v} for k, v in server_options]
 
 
+def _misc(text):
+    """The keys in sabnzbd.ini's [misc] section."""
+    out, here = {}, False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if re.match(r"^\[[^\[\]]+\]$", line):
+            here = line == "[misc]"
+            continue
+        if here and "=" in line and not line.startswith("#"):
+            k, v = line.split("=", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
+def sab_api_key(text):
+    """SABnzbd's API key from sabnzbd.ini ([misc] api_key), or None. The old apps hide it, so Reelix gets it from here
+    when SABnzbd stays (DASH-128). Never logged or shown."""
+    key = _misc(text).get("api_key", "")
+    return key if re.fullmatch(r"[0-9A-Za-z]{16,64}", key) else None
+
+
+def sab_port(text):
+    """The port SABnzbd listens on inside its container ([misc] port; 8080 by default)."""
+    port = _misc(text).get("port", "")
+    return int(port) if port.isdigit() and 0 < int(port) < 65536 else 8080
+
+
 def read_sab_ini(container="sabnzbd"):
     """sabnzbd.ini from the running SABnzbd container, through Docker; None when it cannot be read."""
     if not containers.available():
