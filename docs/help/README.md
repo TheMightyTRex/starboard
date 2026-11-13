@@ -155,6 +155,15 @@ Each guide is a journey through several topics, in order.
 - [Read the log and report a problem](topics/read-the-log.md)
 - [Send feedback about a page](topics/send-feedback.md)
 
+## Comparison tests: Starboard against other stacks
+
+How Starboard and its apps compare with other media server stacks, measured on 13 November 2026.
+
+- [How Starboard compares with other media server stacks](comparisons/how-starboard-compares.md)
+- [Memory and processor: Starboard against other stacks](comparisons/memory-and-processor.md)
+- [How the tests were run, and how to repeat them](comparisons/how-the-tests-were-run.md)
+- [What Starboard does not do yet, and what is planned](comparisons/what-starboard-does-not-do-yet.md)
+
 ## The basics: ideas explained from the start
 
 - [What Starboard is](basics/what-is-starboard.md)
