@@ -127,7 +127,12 @@ async function startInstall() {
     const more = flow.data.apps.filter((a) => !chosen.has(a.key) && !a.installed);
     const again = el("a", { class: "btn", href: "/install-apps.html?wizard=1" }, icon("play"), "Run the set-up again");
     $(".page-head .page-head__summary")?.replaceChildren("What is installed, and what you can add.");
+    // DASH-127: apps someone already runs that Reelix replaces are moved into Reelix from here too, with the same
+    // steps as Settings, Your install, until Starboard runs them.
+    let moving = null;
+    try { if ((await api("/api/reelix/move")).sources?.length) moving = takeoverSection(); } catch { /* left out */ }
     root.replaceChildren(
+      moving,
       section("ia-have", "Installed", `${have.length} ${have.length === 1 ? "app" : "apps"} that Starboard installed and runs.`,
         el("ul", { class: "rows" }, have.map((a) => el("li", { class: "row row--no-lead" },
           el("div", {}, el("div", { class: "row__title", text: a.name }), el("div", { class: "row__meta", text: a.notes || "" })))))),
@@ -201,7 +206,7 @@ function movingOffers(state, data, apps) {
   const offers = [];
   const has = (keys) => data.servers.filter((s) => keys.includes(s.key));
   const names = (list) => list.map((s) => s.name).join(", ").replace(/, ([^,]*)$/, " and $1");
-  const where = "Where: Settings, Your install, Apps you already run, once the new apps run.";
+  const where = "Where: on the last step, once the new apps run, or later in Settings, Your install, Apps you already run.";
   const found = data.takeover || [];
   if (state.apps.has("reelix")) {
     const into = found.filter((f) => f.into_reelix);
@@ -792,7 +797,31 @@ async function installStep(id, state, data, apps, go) {
       add.addEventListener("click", async () => { add.disabled = true; try { if (await finder.add()) add.hidden = true; } catch (e) { problem(e.message); } finally { add.disabled = false; } });
       after.replaceChildren(el("h3", { text: "Add them to Starboard" }), finder.box, add, ...connectGuide(state, apps),
         el("h3", { text: "Still to set up" }),
-        el("p", { text: "Starboard sets up the rest by itself in the next few minutes. Anything it cannot do is listed on the Apps page, with a link to where to do it, until it is done." }));
+        el("p", { text: "Starboard sets up the rest by itself in the next few minutes. Anything it cannot do is listed on the Apps page, with a link to where to do it, until it is done." }),
+        state.moving.has("reelix") || state.moving.has("takeover") ? moveHere() : null);
+    };
+    // DASH-127: the move chosen on the Moving over step happens here, once Reelix has set itself up: the same steps as
+    // Settings, Your install (takeoverSection in settings.js). Until then one bar says what it is waiting for.
+    const moveHere = () => {
+      const box = el("div", { class: "stack-4" });
+      const words = el("span", { text: "Waiting for Reelix to finish setting up, so it can read your apps…" });
+      box.replaceChildren(el("h3", { text: "Move your apps into Reelix" }), el("div", { class: "meter" }, el("div", { class: "meter__label", "aria-live": "polite" }, words),
+        el("div", { class: "progress progress--busy", role: "progressbar", "aria-label": "Waiting for Reelix", "aria-valuetext": "Working" }, el("span"))));
+      const began = Date.now();
+      const look = async () => {
+        if (!box.isConnected && Date.now() - began > 5000) return;  // the person left the step
+        let m = null;
+        try { m = await api("/api/reelix/move"); } catch { /* look again */ }
+        if (m && m.sources?.length && !m.needs_setup) { box.replaceChildren(takeoverSection()); return; }
+        if (Date.now() - began > 15 * 60 * 1000) {
+          box.replaceChildren(el("h3", { text: "Move your apps into Reelix" }), notice("info", "Reelix is not ready yet",
+            "Reelix has not finished setting up, so it cannot read your apps yet. Move them later: Settings, Your install, Apps you already run."));
+          return;
+        }
+        setTimeout(look, 5000);
+      };
+      look();
+      return box;
     };
     const poolFirst = state.pool ? notice("warning", "Make the pool first", `Run the pool commands from the Folders step on the server before you start, so ${state.pool.path} exists.`) : null;
     if (w.can_start || w.starter) {
@@ -1009,7 +1038,7 @@ function connectGuide(state, apps) {
     steps.push(el("li", {}, el("strong", { text: "Bazarr. " }), open("bazarr"), ". In Settings, connect Sonarr (", code("sonarr"), ", port 8989) and Radarr (", code("radarr"), ", port 7878) with their API keys, and choose your languages."));
   }
   steps.push(el("li", {}, el("strong", { text: "Starboard. " }), "In ", el("a", { href: "/settings.html", text: "Manage apps" }), ", give each app its API key, so Search, Downloads and Coming up work."));
-  if (state.moving.has("reelix") || state.moving.has("takeover")) steps.push(el("li", {}, state.moving.has("reelix") ? "Move your apps into Reelix, then let Starboard run them: " : "Let Starboard run the apps you already have: ",
+  if (state.moving.has("reelix") || state.moving.has("takeover")) steps.push(el("li", {}, state.moving.has("reelix") ? "Move your apps into Reelix, then let Starboard run them: below, once Reelix has set itself up, or later in " : "Let Starboard run the apps you already have: below, or later in ",
     el("a", { href: "/settings-install.html#in-takeover-h", text: "Settings, Your install, Apps you already run" }), "."));
   if (state.moving.has("history")) steps.push(el("li", {}, "Import watch history: ", el("a", { href: "/settings-jellyfin.html", text: "Settings, Apps, Jellyfin" }), "."));
   if (state.moving.has("settings")) steps.push(el("li", {}, "Copy settings from your old apps: ", el("a", { href: "/copy-settings.html", text: "Copy app settings" }), "."));

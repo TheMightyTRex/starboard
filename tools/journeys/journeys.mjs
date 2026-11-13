@@ -454,6 +454,20 @@ check("RX-01", "the page keeps no copy in browser storage",
 // starts; the move opens a dialog with a task list and a result, focus goes to the dialog and back; the review lists
 // held sites with Activate, a site Reelix cannot search and the waiting titles; the requests choice; the takeover's
 // dialog; Keep it; Clear away; Change your install leaves out the apps from the person's own Compose file.
+// MOVE-02: Install apps offers the move itself (DASH-127): once the server is set up, it opens on Apps you already run
+// while Starboard finds apps Reelix replaces, with the same steps as Settings, Your install.
+console.log("\n== MOVE-02 Moving over from Install apps");
+await open("install-apps.html");
+const ia = page.locator("section[aria-labelledby=in-takeover-h]");
+await ia.locator("[aria-labelledby=tk-reelix-h]").waitFor({ timeout: 15000 });
+check("MOVE-02", "Install apps offers to move the apps into Reelix", await ia.getByRole("button", { name: "Move them into Reelix" }).count() === 1);
+const iaText = await ia.locator("[aria-labelledby=tk-reelix-h]").textContent();
+check("MOVE-02", "it lists the apps it found", ["Prowlarr", "Radarr", "Sonarr", "Seerr"].every((x) => iaText.includes(x)));
+check("MOVE-02", "it comes before what is installed", await page.evaluate(() => {
+  const a = document.querySelector("section[aria-labelledby=in-takeover-h]"), b = document.getElementById("ia-have-h");
+  return !!(a && b && (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING));
+}));
+
 console.log("\n== MOVE-01 Apps you already run");
 await open("settings-install.html#in-takeover-h");
 const tk = page.locator("section[aria-labelledby=in-takeover-h]");
@@ -526,6 +540,8 @@ await page.waitForTimeout(3500);
 check("MOVE-01", "and lists the holding folder", (await tk.textContent()).includes("starboard-holding"));
 await open("install-apps.html");
 check("MOVE-01", "Install apps opens", await page.locator("h1").count() === 1);
+await page.locator("#ia-have-h").waitFor({ timeout: 10000 });
+check("MOVE-02", "once Starboard runs them, Install apps no longer offers a move", await page.locator("section[aria-labelledby=in-takeover-h]").count() === 0);
 
 // Phone width: no page scrolls sideways
 // TAB-01: topic tabs on a long Settings page (12 November 2026): one tab per section, one section shown at a time,
