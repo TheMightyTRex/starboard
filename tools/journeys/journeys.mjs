@@ -332,6 +332,22 @@ await page.locator("#side-panel button", { hasText: "Bring in the ticked ones" }
 await page.locator("#lib-import .notice", { hasText: "Brought in" }).waitFor({ timeout: 10000 }).catch(() => {});
 check("LIB-02", "it says what was brought in where the note was", /Brought in 1 artist\b/.test(await page.locator("#lib-import").textContent().catch(() => "")));
 
+// LIB-03: a folder with no match comes in with your own details (DASH-322), as the made-up Reelix has RFX-90's route
+console.log("\n== LIB-03 bring in a folder with your own details");
+await open("library-films.html");
+await page.locator("#lib-import button", { hasText: "Bring them in" }).click();
+await page.locator("#side-panel .rows .row").first().waitFor({ timeout: 10000 }).catch(() => {});
+const homeRow = page.locator("#side-panel .rows .row", { hasText: "home movies" });
+await homeRow.locator("select").selectOption("own");
+const ownTitle = homeRow.locator("input[id^=own-title]");
+check("LIB-03", "Use my own details opens the fields, ticks the folder and moves focus to the title",
+  await ownTitle.isVisible() && await homeRow.locator("input[type=checkbox]").isChecked() && await ownTitle.evaluate((x) => x === document.activeElement));
+await ownTitle.fill("Our home movies");
+await homeRow.locator("input[id^=own-year]").fill("2004");
+await page.locator("#side-panel button", { hasText: "Bring in the ticked ones" }).click();
+await page.locator("#lib-import .notice", { hasText: "Brought in" }).waitFor({ timeout: 10000 }).catch(() => {});
+check("LIB-03", "the folder with its own details is brought in with the matched ones", /Brought in 3 films\b/.test(await page.locator("#lib-import").textContent().catch(() => "")));
+
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");
 const keyed = await api("/api/services", { method: "POST", body: { type: "sonarr", name: "Journey Keyed", url: "http://journey-keyed:8989", api_key: SECRET } });

@@ -421,7 +421,8 @@ def example_reelix(path, query=None):
     shows = [{"id": 1, "title": "The Example Hour"}, {"id": 2, "title": "Sample Science Weekly"}] + RADIO_ADDED
     if path == "/radio/library/review":
         added = {a["external_id"] for a in RADIO_ADDED}
-        return {"unmatched_shows": [x for x in RADIO_ON_DISK if f"ex-{x['abs_item_id']}" not in added],
+        return {"unmatched_shows": [x for x in RADIO_ON_DISK if f"ex-{x['abs_item_id']}" not in added
+                                    and x["abs_item_id"] not in example_library.OWN_ADDED],  # own details (DASH-322)
                 "unmatched_files": [f for f in RADIO_UNMATCHED if f["id"] not in RADIO_MATCHED],
                 "synced_at": today.isoformat() + "T06:00:00Z"}
     if path == "/radio/preview":  # Add a show from a link (DASH-212): any link is a made-up show; one with "nothing" in it is not

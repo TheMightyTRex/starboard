@@ -57,6 +57,9 @@
    "task": "DASH-196",
    "what": "quality in full; language rules in DASH-189"
   },
+  "customitems": {
+   "starboard": "Library, Bring them in, Use my own details: a folder with no match (DASH-322); Reelix does not have it yet (RFX-90), so Starboard offers it only when Reelix's openapi.json lists POST /api/v1/customitems"
+  },
   "delayprofiles": {
    "task": "DASH-196",
    "what": "set at set-up today (reelix_setup.py)"

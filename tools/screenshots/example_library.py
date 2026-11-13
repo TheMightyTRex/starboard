@@ -131,6 +131,9 @@ MUSIC_ON_DISK = {
     "field recordings": [],
 }
 MUSIC_ADDED = []
+# Folders brought in with the person's own details (DASH-322). The made-up Reelix has Reelix RFX-90's route, so the
+# choice shows; EXAMPLE_NO_OWN_DETAILS=1 shows the screens as with today's Reelix, which has not.
+OWN_ADDED = []
 
 
 def _artist_candidate(name, lookup):
@@ -142,11 +145,16 @@ def answer(path, q):
     """The made-up Reelix's answer for one GET, or None when this module does not know the path."""
     if path.startswith("/posters/"):
         return None
+    if path == "/openapi.json":  # Reelix's own API description: Starboard looks for RFX-90's route in it (DASH-322)
+        import os
+        own = not os.environ.get("EXAMPLE_NO_OWN_DETAILS")
+        return {"openapi": "3.1.0", "paths": {"/api/v1/customitems": {"post": {}}} if own else {}}
     if path == "/rootfolders":
         return [{"id": 1, "path": "/data/media/movies", "media_kind": "movie", "accessible": True,
-                 "unmapped_folders": [{"name": n, "path": f"/data/media/movies/{n}"} for n, *_ in ON_DISK]}]
+                 "unmapped_folders": [{"name": n, "path": f"/data/media/movies/{n}"} for n, *_ in ON_DISK
+                                      if f"/data/media/movies/{n}" not in OWN_ADDED]}]
     if path == "/libraryimport/scan":
-        return [_candidate(*f, lookup=False) for f in ON_DISK]
+        return [_candidate(*f, lookup=False) for f in ON_DISK if f"/data/media/movies/{f[0]}" not in OWN_ADDED]
     if path == "/issues/count":  # Issues (DASH-208)
         return {"total": 2, "open": sum(1 for i in ISSUES if i["status"] == "open"), "resolved": sum(1 for i in ISSUES if i["status"] == "resolved")}
     if path == "/issues":
@@ -300,9 +308,10 @@ def answer(path, q):
                 {"id": 2, "path": "/data/media/series", "media_kind": "series", "free_space": 4 * 10 ** 12}]
     if path == "/musicrootfolders":
         return [{"id": 5, "path": "/data/media/music", "kind": "music", "accessible": True, "free_space": 4 * 10 ** 12,
-                 "unmapped_folders": [{"name": n, "path": f"/data/media/music/{n}"} for n in MUSIC_ON_DISK if n not in MUSIC_ADDED]}]
+                 "unmapped_folders": [{"name": n, "path": f"/data/media/music/{n}"} for n in MUSIC_ON_DISK
+                                      if n not in MUSIC_ADDED and f"/data/media/music/{n}" not in OWN_ADDED]}]
     if path == "/musicimport/scan":
-        return [_artist_candidate(n, False) for n in MUSIC_ON_DISK if n not in MUSIC_ADDED]
+        return [_artist_candidate(n, False) for n in MUSIC_ON_DISK if n not in MUSIC_ADDED and f"/data/media/music/{n}" not in OWN_ADDED]
     if path == "/metadataprofiles":
         return [{"id": 1, "name": "Standard"}]
     if path in ("/bookrootfolders",):
@@ -389,6 +398,9 @@ def add(path, body):
         return [_candidate(*f, lookup=True) for f in ON_DISK if f"/data/media/movies/{f[0]}" in body.get("paths", [])]
     if path == "/libraryimport":
         return {"added": list(range(len(body.get("items") or []))), "errors": []}
+    if path == "/customitems":  # a folder with the person's own details (DASH-322, Reelix RFX-90)
+        OWN_ADDED.append(body.get("path") or body.get("abs_item_id") or "")
+        return {"id": 900 + len(OWN_ADDED), "kind": body.get("kind"), "title": body.get("title"), "path": body.get("path")}
     if path == "/musicimport/match":
         return [_artist_candidate(n, True) for n in MUSIC_ON_DISK if f"/data/media/music/{n}" in body.get("paths", [])]
     if path == "/musicimport":
