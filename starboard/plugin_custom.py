@@ -25,10 +25,11 @@ import re
 import urllib.error
 import urllib.request
 
-MAX_BYTES = 512 * 1024
+MAX_BYTES = 2 * 1024 * 1024  # Live TV on the owner's server: 1,616 channels, about 420 KB (13 November 2026)
 ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose", "bulk", "bulk_ids", "attach", "detach", "dismiss")
 TONES = ("info", "success", "warning", "danger")
 MAX_IDS = 1000
+MAX_ITEMS = 4000
 STATES = ("ok", "warning", "problem", "off", "unknown")
 
 
@@ -150,7 +151,7 @@ def clean(data):
     known = frozenset(m["id"] for m in menus)
     columns = _columns(data.get("columns")) if data.get("layout") == "folds" else []
     items = []
-    for it in data["items"][:1000]:  # Live TV's channels (DASH-313): 546 found on the owner's server
+    for it in data["items"][:MAX_ITEMS]:  # Live TV's channels: 546 on the owner's server (DASH-313), 1,616 by 13 November 2026
         if not isinstance(it, dict) or not it.get("id"):
             continue
         items.append({"id": _text(it["id"], 600), "title": _text(it.get("title"), 120), "detail": _text(it.get("detail"), 200),

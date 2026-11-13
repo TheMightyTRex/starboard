@@ -19,7 +19,7 @@ return. This page matches plug-in API 1.4.0. The fields that ask for each of the
 |---|---|---|---|
 | A card | GET the card's `path` | 3 seconds | 64 KB |
 | A button | POST the action's `path` | 10 seconds | 64 KB |
-| A custom setting | GET or POST the setting's `choices` path | 60 seconds | 512 KB |
+| A custom setting | GET or POST the setting's `choices` path | 60 seconds | 2 MB |
 | An event | POST `/events` | 3 seconds, tried twice | not read |
 | A job | POST the job's `path` | its `time_limit_minutes` | 64 KB |
 
@@ -81,7 +81,7 @@ plug-in's own API key in the `X-Api-Key` header, so the plug-in can tell the cal
 | `type` | Must be `list` |
 | `title`, `intro` | Cut to 80 and 400 characters |
 | `add` | Optional. Shows an add box; `label`, `hint` and `placeholder` are cut to 120 characters. Optional `file`: `{"label", "hint", "accept"}` also shows a file picker, where `accept` lists file endings such as `.m3u,.json,.gz` |
-| `items` | Up to 1000. An item without an `id` is left out |
+| `items` | Up to 4000. An item without an `id` is left out. The whole answer can be up to 2 MB |
 | `id`, `title`, `detail` | Cut to 600, 120 and 200 characters |
 | `state` | `ok`, `warning`, `problem`, `off` or `unknown`; anything else is `unknown` |
 | `group` | A heading the item sits under, cut to 40 characters |

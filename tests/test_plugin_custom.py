@@ -162,3 +162,11 @@ class FoldsAndNotices(unittest.TestCase):
         self.assertNotIn("layout", plain)  # columns only with the folds layout
         self.assertNotIn("cells", plain["items"][0])
         self.assertIn("bulk_ids", plugin_custom.ACTIONS)
+
+
+class BigLists(unittest.TestCase):
+    def test_a_list_of_thousands_is_kept_whole(self):
+        # The owner's server had 1,616 Live TV channels on 13 November 2026; the old cap of 1000 hid 616 of them.
+        out = plugin_custom.clean({"type": "list", "items": [{"id": str(i), "title": f"{i} Channel"} for i in range(1616)]})
+        self.assertEqual(len(out["items"]), 1616)
+        self.assertGreaterEqual(plugin_custom.MAX_BYTES, 1024 * 1024)
