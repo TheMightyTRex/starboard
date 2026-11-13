@@ -222,15 +222,17 @@ function updateSaveButton() {
 // An opened group (a collection, network, station, series or author) takes over the page's heading: its name, and its
 // logo for a network; the back link goes at the top of the page, above the heading, as on every item page (issue #15).
 const IN_GROUP = { Collections: "in this collection", Networks: "on this network", Stations: "from this station",
-  Series: "in this series", Authors: "by this author" };
+  Series: "in this series", Authors: "by this author", Narrators: "read by this narrator" };
 function showGroup() {
   if (!state.group) return;
-  const [page, label] = state.by === "authors" ? [`library-${TAB}-authors.html`, "Authors"] : GROUP_PAGE[TAB] || ["", ""];
+  const [page, label] = state.by === "authors" ? [`library-${TAB}-authors.html`, "Authors"]
+    : state.by === "narrators" && TAB === "audiobooks" ? ["library-audiobooks-narrators.html", "Narrators"]  // DASH-261
+      : GROUP_PAGE[TAB] || ["", ""];
   const head = $(".page-head");
   if (page) head.before(el("a", { class: "back-link", href: `/${page}` }, icon("arrow-left"), `All ${label.toLowerCase()}`));
   // A TV network's own page shows its logo beside its name (owner, 10 November 2026), in the same one colour as the
   // Networks grid; decorative, as the name is written beside it, and left out when the network has none.
-  const logo = TAB === "tv" && state.by !== "authors"
+  const logo = TAB === "tv" && !state.by
     ? el("img", { class: "lib-group-logo", src: `/api/library/network-logo?tab=tv&name=${encodeURIComponent(state.group)}`, alt: "",
       onerror: (e) => e.target.remove() }) : null;
   const h1 = $("h1", head);
@@ -239,7 +241,7 @@ function showGroup() {
   const words = NOUN[TAB][1];
   $(".page-head__summary", head).textContent = `${words[0].toUpperCase()}${words.slice(1)} ${IN_GROUP[label] || "in this group"}, A to Z.`;
   document.title = `${state.group} · ${document.title}`;
-  if (["films", "audiobooks", "books"].includes(TAB) && state.by !== "authors") groupComplete();
+  if (["films", "audiobooks", "books"].includes(TAB) && !state.by) groupComplete();
 }
 
 // An opened collection or series, complete (owner, 12 November 2026): how many you have of how many, every one in

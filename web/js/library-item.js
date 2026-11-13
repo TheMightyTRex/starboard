@@ -105,7 +105,13 @@ function groupList(list) {
 function about(item) {
   return el("div", { class: "stack-4" },
     item.overview ? el("p", { class: "prose", text: item.overview }) : null,
-    item.facts.length ? el("dl", { class: "facts" }, ...item.facts.flatMap((f) => [el("dt", { text: f.label }), el("dd", { text: f.value })])) : null);
+    item.facts.length ? el("dl", { class: "facts" }, ...item.facts.flatMap((f) => [el("dt", { text: f.label }), factValue(f)])) : null);
+}
+
+// A fact's words, or links when it has them: Narrated by opens each narrator's page (DASH-261).
+function factValue(f) {
+  if (!f.links?.length) return el("dd", { text: f.value });
+  return el("dd", {}, ...f.links.flatMap((l, n) => [n ? ", " : null, el("a", { href: l.href, text: l.text })]).filter(Boolean));
 }
 
 // In-page tabs: the item's list first, then About. Arrow keys move between them (the tabs pattern).

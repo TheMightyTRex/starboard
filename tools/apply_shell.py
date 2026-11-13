@@ -35,7 +35,8 @@ MENU = [
                                 ("library-books-authors.html", "Authors", "users")]),
         ("Audiobooks", "headphones", [("library-audiobooks.html", "My library", "library"),
                                       ("library-audiobooks-series.html", "Series", "layers"),
-                                      ("library-audiobooks-authors.html", "Authors", "users")]),
+                                      ("library-audiobooks-authors.html", "Authors", "users"),
+                                      ("library-audiobooks-narrators.html", "Narrators", "mic")]),  # DASH-261
     ]),
     ("discover", "Discover", "compass", [
         # Search the sites directly (DASH-213): a page people come back to, so its own page under Search.
@@ -118,7 +119,8 @@ HELP = {
         "library-tv.html", "library-tv-networks.html", "library-films.html", "library-films-collections.html",
         "library-music.html", "library-radio.html", "library-radio-stations.html", "library-books.html",
         "library-books-series.html", "library-books-authors.html", "library-audiobooks.html",
-        "library-audiobooks-series.html", "library-audiobooks-authors.html", "library-film.html", "library-tv-show.html",
+        "library-audiobooks-series.html", "library-audiobooks-authors.html", "library-audiobooks-narrators.html",
+        "library-film.html", "library-tv-show.html",
         "library-artist.html", "library-radio-show.html", "library-book.html", "library-audiobook.html")},
     "search.html": ("topics/search-and-add.md", "searching for and adding films, series, music and books"),
     "search-sites.html": ("topics/search-and-add.md", "searching the sites directly"),

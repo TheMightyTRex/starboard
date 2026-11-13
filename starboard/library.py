@@ -35,7 +35,7 @@ REFRESH = 1800  # while in use, every 30 minutes
 IN_USE = 3600  # the Library counts as in use for an hour after it was last opened
 ITEM_SECONDS = 60
 WALL_MAX = 200  # at most this many covers in one answer
-INDEX_VERSION = 2  # 2: the facts Search filters by (DASH-301)
+INDEX_VERSION = 3  # 2: the facts Search filters by (DASH-301); 3: audiobook narrators (DASH-261)
 SEARCH_MAX = 500  # Search sends at most this many of each kind, with their facts, so the browser can filter them
 LABELS = {"films": "Films", "tv": "TV", "music": "Music", "radio": "Radio", "books": "Books", "audiobooks": "Audiobooks"}
 NOUNS = {"films": ("film", "films"), "tv": ("series", "series"), "music": ("artist", "artists"),
@@ -58,7 +58,7 @@ CHIPS = {  # filter chips for each tab: key, label
     "audiobooks": [("in_library", "In library"), ("wanted", "Wanted"), ("not_released", "Not released")],
 }
 GROUPS = {"films": "Collection", "tv": "Network", "radio": "Station", "books": "Series", "audiobooks": "Series",
-          "books-authors": "Author", "audiobooks-authors": "Author"}
+          "books-authors": "Author", "audiobooks-authors": "Author", "audiobooks-narrators": "Narrator"}
 IMAGE_HOSTS = ("image.tmdb.org", "covers.openlibrary.org", "coverartarchive.org",
                # Discover, Radio (12 November 2026): BBC Sounds' and Apple Podcasts' covers
                "ichef.bbci.co.uk", *(f"is{n}-ssl.mzstatic.com" for n in range(1, 6)))
@@ -330,6 +330,16 @@ def _series(s):
                   release="coming" if coming else "released")
 
 
+def narrators(text):
+    """The narrators of an audiobook from Reelix's one line ("A, B and C"), each once, at most six (DASH-261)."""
+    out = []
+    for part in re.split(r"\s*(?:,|;|&|\band\b)\s*", str(text or "")):
+        name = part.strip()[:80]
+        if name and name.lower() not in (x.lower() for x in out):
+            out.append(name)
+    return out[:6]
+
+
 def _book(b, fmt, today):
     has = bool(b.get(f"{fmt}_file"))
     if not has and not b.get(f"monitored_{fmt}"):
@@ -340,6 +350,10 @@ def _book(b, fmt, today):
     entry = _entry(b["id"], b.get("title"), b.get("sort_title"), b.get("year"), (b.get("images") or {}).get("poster"),
                    status, "", _added(b.get("added")), [status], b.get("author_name") or "", groups)
     entry["au"] = b.get("author_name") or ""
+    if fmt == "audiobook":
+        read_by = narrators((b.get("audiobook_file") or {}).get("narrator"))
+        if read_by:
+            entry["na"] = read_by
     return _facts(entry, b.get("genres"), b.get("language"), "", bool(b.get(f"monitored_{fmt}")),
                   has and (b.get(f"{fmt}_file") or {}).get("cutoff_met") is False, "released" if released else "coming")
 
@@ -604,6 +618,8 @@ def wall(index, tab, q="", chip="", sort="az", group="", offset=0, limit=40, unt
         g = group.lower()
         if by == "authors":
             items = [e for e in items if e.get("au", "").lower() == g]
+        elif by == "narrators":  # a narrator's page: everything they read (DASH-261)
+            items = [e for e in items if any(x.lower() == g for x in e.get("na") or [])]
         else:
             items = [e for e in items if any(x.lower() == g for x in e.get("g") or [])]
     if q:
@@ -637,7 +653,7 @@ def groups(index, tab, kind=""):
     """The groups of a tab (collections, networks, stations, book series, authors) with how many items each."""
     found = {}
     for e in index["items"]:
-        names = [e.get("au", "")] if kind == "authors" else e.get("g") or []
+        names = [e.get("au", "")] if kind == "authors" else e.get("na") or [] if kind == "narrators" else e.get("g") or []
         for name in names:
             if name:
                 g = found.setdefault(name.lower(), {"name": name, "count": 0, "have": 0, "poster": ""})
@@ -678,6 +694,15 @@ def _date(text):
         return f"{d.day} {d:%B} {d.year}"
     except ValueError:
         return ""
+
+
+def _fact(label, value):
+    """One fact on an item's summary; Narrated by links each narrator to their page (DASH-261)."""
+    fact = {"label": label, "value": str(value)}
+    if label == "Narrated by":
+        fact["links"] = [{"text": n, "href": f"/library-audiobooks.html?group={urllib.parse.quote(n)}&by=narrators"}
+                         for n in narrators(value)]
+    return fact
 
 
 def _row(number, title, when, status, poster="", href="", note="", **extra):
@@ -811,7 +836,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
                "can": {"get": not b.get(f"{fmt}_file"), "follow": bool(b.get(f"monitored_{fmt}")), "delete": True}}
         f = b.get(f"{fmt}_file") or {}
         facts = [("Author", b.get("author_name")), ("Published", _date(b.get("release_date"))), ("Pages", b.get("page_count")),
-                 ("In your library as", " and ".join(both) or "Neither yet"), ("Narrated by", (b.get("audiobook_file") or {}).get("narrator")),
+                 ("In your library as", " and ".join(both) or "Neither yet"), ("Narrated by", ", ".join(narrators((b.get("audiobook_file") or {}).get("narrator")))),
                  ("Quality", f.get("quality_name")), ("ISBN", b.get("isbn13"))]
         lists = []
         try:
@@ -887,7 +912,7 @@ def item(data_dir, reelix, tab, item_id, cfg=None):
         raise ValueError("No such Library tab")
     word = STATUS.get(out.pop("status"), ("", "muted"))
     out.update({"id": item_id, "tab": tab, "status": word[0], "tone": word[1], "poster": poster if e.get("p") else "",
-                "facts": [{"label": k, "value": str(v)} for k, v in facts if v not in (None, "", 0)], "lists": lists})
+                "facts": [_fact(k, v) for k, v in facts if v not in (None, "", 0)], "lists": lists})
     out.setdefault("listen", None)
     return out
 
@@ -1460,6 +1485,12 @@ def _q(h):
     return {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlparse(h.path).query).items()}
 
 
+def _by(q, tab):
+    """How a tab's groups are made: by author, by narrator (audiobooks only, DASH-261), or its own groups."""
+    by = q.get("by", "")
+    return by if by == "authors" or (by == "narrators" and tab == "audiobooks") else ""
+
+
 def _int(value, default, low, high):
     try:
         return max(low, min(high, int(value)))
@@ -1550,7 +1581,7 @@ def handle(h, method, path):
         until = q.get("until", "") if re.match(r"^[A-Z#]$", q.get("until", "")) else ""
         out = wall(index, tab, q.get("q", "")[:120], q.get("chip", ""), sort, q.get("group", "")[:200],
                    _int(q.get("offset"), 0, 0, 10 ** 6), _int(q.get("limit"), 40, 1, WALL_MAX), until,
-                   "authors" if q.get("by") == "authors" else "", arrived=_arrivals(reelix) if sort == "added" else None)
+                   _by(q, tab), arrived=_arrivals(reelix) if sort == "added" else None)
         with _state_lock:
             out["error"] = _state["errors"].get(tab, "")
             out["refreshing"] = tab in _building
@@ -1657,8 +1688,8 @@ def handle(h, method, path):
         from . import group_complete
         if tab in ("audiobooks", "books"):  # series from Audiobookshelf (12 November 2026)
             index = group_complete.tag_audiobooks(index, cfg.data["services"])
-        found = groups(index, tab, "authors" if q.get("by") == "authors" else "")
-        if tab in ("films", "audiobooks", "books") and q.get("by") != "authors":
+        found = groups(index, tab, _by(q, tab))
+        if tab in ("films", "audiobooks", "books") and not _by(q, tab):
             try:  # whole collections and series, with what is missing (12 November 2026)
                 found = group_complete.banners(tab, found, reelix, cfg.data["services"])
             except Exception:  # noqa: BLE001 - the groups still show what you have
@@ -1678,7 +1709,7 @@ def handle(h, method, path):
                 g["logo"] = f"/api/library/network-logo?tab=tv&name={urllib.parse.quote(g['name'])}" if (have.get(g["name"].lower()) or {}).get("url") else ""
                 g["logo_tone"] = (have.get(g["name"].lower()) or {}).get("tone", "") if g["logo"] else ""
         return h.json(200, {"groups": found,
-                            "label": GROUPS.get(f"{tab}-authors" if q.get("by") == "authors" else tab, "Group")})
+                            "label": GROUPS.get(f"{tab}-{_by(q, tab)}" if _by(q, tab) else tab, "Group")})
     if path == "/api/library/watched" and method == "POST":
         from . import watched as _watched
         b = h.body()

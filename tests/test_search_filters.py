@@ -115,3 +115,34 @@ class RememberedTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NarratorsTest(unittest.TestCase):
+    """Narrator pages (DASH-261): narrators from Reelix's audiobook file, their groups, their page and the summary's links."""
+
+    def test_names_are_split_once_each(self):
+        self.assertEqual(library.narrators("Sam Oduya, Priya Lane and sam oduya & Hugh Calder"), ["Sam Oduya", "Priya Lane", "Hugh Calder"])
+        self.assertEqual(library.narrators("Andrew Anderson"), ["Andrew Anderson"])
+        self.assertEqual(library.narrators(None), [])
+
+    def test_groups_and_a_narrators_page(self):
+        books = [{"id": 1, "title": "One", "monitored_audiobook": True, "audiobook_file": {"id": 1, "narrator": "Sam Oduya, Priya Lane"}},
+                 {"id": 2, "title": "Two", "monitored_audiobook": True, "audiobook_file": {"id": 2, "narrator": "Sam Oduya"}},
+                 {"id": 3, "title": "Three", "monitored_ebook": True, "ebook_file": {"id": 3}}]
+        with tempfile.TemporaryDirectory() as d:
+            services.forget()
+            with mock.patch.object(services, "_api", FakeReelix(books=books)):
+                library.refresh(d, REELIX, "audiobooks")
+                library.refresh(d, REELIX, "books")
+                audio = library.load(d, REELIX, "audiobooks")
+                ebooks = library.load(d, REELIX, "books")
+        self.assertEqual([(g["name"], g["count"]) for g in library.groups(audio, "audiobooks", "narrators")], [("Priya Lane", 1), ("Sam Oduya", 2)])
+        self.assertEqual([c["title"] for c in library.wall(audio, "audiobooks", group="sam oduya", by="narrators")["items"]], ["One", "Two"])
+        self.assertNotIn("na", ebooks["items"][0])
+        self.assertEqual(library._by({"by": "narrators"}, "audiobooks"), "narrators")
+        self.assertEqual(library._by({"by": "narrators"}, "films"), "")
+
+    def test_the_summary_links_each_narrator(self):
+        fact = library._fact("Narrated by", "Sam Oduya, Priya Lane")
+        self.assertEqual(fact["links"][1], {"text": "Priya Lane", "href": "/library-audiobooks.html?group=Priya%20Lane&by=narrators"})
+        self.assertNotIn("links", library._fact("Author", "Someone"))
