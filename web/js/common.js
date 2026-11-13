@@ -1470,21 +1470,13 @@ function showServerName(name) {
   });
 }
 
-// Infinite scroll (DASH-277): a Show more button loads the next lot by itself as it nears the screen. The button
-// stays, so keyboard and screen reader users can still use it; focus never moves on its own, and a screen reader
-// hears how many were added. Off when the setting asks for the button, or when Reduce motion is on.
+// Infinite scroll (DASH-277, from the design system's UX-52): a list's Show more box loads the next lot by itself as it
+// comes into view (SharedComponents.loadMore). The button stays for keyboard and screen reader users; focus never moves
+// on its own, a screen reader hears how many were added, and it pauses after three lots so the footer stays in reach.
+// The button alone when the setting asks for it (Settings, General, saved per account) or with Reduce motion.
 let listLoading = "auto";
-function autoLoadMore(button, load, noun = "more") {
-  if (!button || !("IntersectionObserver" in window)) return;
-  const root = document.documentElement;  // Display, Reduce motion: On, Off, or the device's own setting
-  const reduced = root.classList.contains("pref-motion") || (!root.classList.contains("pref-motion-off") && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
-  if (listLoading !== "auto" || reduced) return;
-  let busy = false;
-  new IntersectionObserver(async (seen) => {
-    if (!seen.some((x) => x.isIntersecting) || busy || button.hidden || button.closest("[hidden]") || button.disabled) return;
-    busy = true;
-    try { const n = await load(); if (n) announce(`${n} ${noun} loaded`); } finally { busy = false; }
-  }, { rootMargin: "600px 0px" }).observe(button);
+function loadMore(box, options) {
+  return window.SharedComponents?.loadMore(box, { auto: () => listLoading === "auto", ...options }) || null;
 }
 
 // Settings, Plug-ins (DASH-318): the level 2 menu is Manage, Catalogue, then one tab for each plug-in added.

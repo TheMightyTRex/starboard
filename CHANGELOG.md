@@ -59,6 +59,10 @@ add features.
 
 ### Changed
 
+- Library walls, Wanted and History load their next page with the design system's load more as you scroll (UX-52):
+  "Loading the next 40 films" shows while it loads, a screen reader hears "24 more films shown", focus stays where it
+  was, and after three lots in a row it pauses so the footer stays in reach; Show 40 more always works and carries on
+  (DASH-277).
 - Release notes: the footer's Release notes link says it opens a slide-out, and a test keeps the slide-out's newest 3
   releases the same as this changelog's, with their dates (UX-50).
 - Footer: About and updates says Upgrade available, with the update dot, when a newer release is out, as the design

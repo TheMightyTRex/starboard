@@ -43,12 +43,11 @@ async function historyLoad(more = false) {
     if (!more) list.replaceChildren();
     const added = r.items.map(refused ? refusedRow : historyRow);
     list.append(...added);
-    if (more) focusFirstNew(added[0]);
     historyState.items += r.items.length;
     historyState.total = r.total;
     if (!historyState.items) list.replaceChildren(el("li", { class: "empty", text: refused ? "Nothing is on the refused list." : "Nothing has happened yet." }));
     $("#history-more").hidden = historyState.items >= r.total;
-    setTimeout(() => announce(more ? `${r.items.length} more shown` : $("#history-summary").textContent), 0);
+    if (!more) setTimeout(() => announce($("#history-summary").textContent), 0);  // Show more says its own (UX-52)
     $("#history-summary").textContent = refused
       ? `${r.total.toLocaleString("en-GB")} ${r.total === 1 ? "release" : "releases"} Reelix will not download again`
       : "What Reelix found, downloaded, renamed and removed, newest first.";
@@ -60,9 +59,12 @@ async function historyLoad(more = false) {
 
 startPage().then(() => {
   // One of several (DASH-309, R4): a segmented control; the radios keep focus and the arrow keys.
-  $("#history-filters").addEventListener("change", (e) => { historyState.which = e.target.value; historyLoad(); });
-  $("#history-more").addEventListener("click", () => { historyState.page += 1; historyLoad(true); });
-  autoLoadMore($("#history-more"), async () => { const before = historyState.items; historyState.page += 1; await historyLoad(true); return historyState.items - before; }, "more");
+  $("#history-filters").addEventListener("change", (e) => { historyState.which = e.target.value; historyLoad(); $("#history-more")._loadMore?.reset(); });
+  // Show more, and more by itself near the end (DASH-277, UX-52): the button moves focus to the first new row.
+  loadMore($("#history-more"), {
+    items: () => $$("#history-list > li"),
+    load: async () => { const before = historyState.items; historyState.page += 1; await historyLoad(true); return historyState.items - before; },
+  });
   historyLoad();
 });
 

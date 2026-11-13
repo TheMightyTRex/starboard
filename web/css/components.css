@@ -2030,7 +2030,10 @@
     border-color: var(--color-accent);
     color: var(--color-accent-text);
   }
-  /* Load more: infinite lists end with a button and a count, never only scrolling. */
+  /* Load more: infinite lists end with a count and a button, never only scrolling (UX-52). The button stays
+     as the way for keyboard and screen reader users, and whenever loading by itself is off. .load-more__status
+     is the visible line while the next page loads ("Loading the next 40"), and after three pages in a row
+     ("Paused here so you can reach the end of the page"). components.js (loadMore) adds and fills it. */
   .load-more {
     display: grid;
     justify-items: center;
@@ -2038,6 +2041,18 @@
     padding: var(--space-6) 0;
     color: var(--color-text-muted);
     font-size: var(--text-sm);
+    text-align: center;
+  }
+  .load-more__status {
+    margin: 0;
+    color: var(--color-text);
+    font-weight: var(--weight-strong);
+  }
+  .load-more__status[hidden] {
+    display: none;
+  }
+  .load-more .btn[aria-disabled="true"] {
+    cursor: progress;
   }
 
   /* A to Z jump list (8 November 2026): a row of letters over a long wall, # then A to Z. Letters with
