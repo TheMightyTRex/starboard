@@ -101,10 +101,14 @@ class StackTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "OpenVPN password"):
             stack.build(dict(CHOICE, vpn={"provider": "mullvad", "type": "openvpn", "openvpn_user": "me"}))
 
-    def test_storyarr_is_offered_unless_turned_off(self):
-        self.assertIn("storyarr", [a["key"] for a in stack.catalogue(set())["apps"]])
-        with mock.patch.dict(stack.APPS["storyarr"], {"image": "none"}):
-            self.assertNotIn("storyarr", [a["key"] for a in stack.catalogue(set())["apps"]])
+    def test_storyarr_is_retired_but_an_install_with_it_still_builds(self):
+        # Retired on 11 November 2026: never offered or installed again, but kept where it already runs (DASH-405)
+        self.assertNotIn("storyarr", [a["key"] for a in stack.catalogue(set())["apps"]])
+        for key in ("basics", "full", "all"):
+            self.assertNotIn("storyarr", stack.install_choice(key, check=lambda *a, **k: True)["apps"])
+        self.assertIn("  storyarr:", stack.build(dict(CHOICE))["compose"])
+        everything = stack.install_choice("all", check=lambda *a, **k: True)
+        self.assertEqual(stack.which_install(everything["apps"] + ["storyarr"]), "all")
 
 
 if __name__ == "__main__":

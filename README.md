@@ -127,7 +127,7 @@ install sends downloads through a VPN, and apps that need another app bring it w
 |---|---|---|---|
 | For | Most homes: complete and light | Statistics, logs and smaller files | Every app Starboard offers |
 | Reelix | Reelix Lite | With YouTube and Spotify downloads | With YouTube and Spotify downloads |
-| Apps | Reelix, Jellyfin, Audiobookshelf, Bazarr, qBittorrent, NZBGet, Gluetun | Basics, plus Jellystat, Dozzle, FlareSolverr, Tdarr and disk health (Wizarr and Dispatcharr are add-ons); SABnzbd in place of NZBGet if you choose | Full install, plus Storyarr and Kapowarr |
+| Apps | Reelix, Jellyfin, Audiobookshelf, Bazarr, qBittorrent, NZBGet, Gluetun | Basics, plus Jellystat, Dozzle, FlareSolverr, Tdarr and disk health (Wizarr and Dispatcharr are add-ons); SABnzbd in place of NZBGet if you choose | Full install, plus Kapowarr |
 | Memory when idle | about 0.6 to 1.6 GB | about 1.1 to 2.6 GB | about 1.9 to 3.4 GB |
 | Recommended computer | 4 cores, 4 GB, or a Raspberry Pi 5 | 4 cores, 8 GB | 4 or more cores, 8 GB or more |
 

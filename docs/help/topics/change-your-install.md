@@ -14,7 +14,7 @@ Reelix. Every change works both ways.
 | Watching and listening | Jellyfin, Audiobookshelf | Jellyfin, Audiobookshelf, Jellystat | All of those, plus Wizarr and Dispatcharr |
 | Subtitles | Bazarr | Bazarr | Bazarr |
 | Downloads | qBittorrent and NZBGet through a VPN (Gluetun) | The same, plus FlareSolverr; SABnzbd in place of NZBGet if you choose it | The same, plus Soulseek (slskd) |
-| Extras | | Disk health, Tdarr (smaller files) | Disk health, Dozzle, Tdarr, Storyarr, Kapowarr |
+| Extras | | Disk health, Tdarr (smaller files) | Disk health, Dozzle, Tdarr, Kapowarr |
 | Memory when idle | about 0.6 to 1.6 GB | about 1.1 to 2.6 GB | about 1.9 to 3.4 GB |
 
 Everything also has the No-IP updater. Apps that need another app bring it with them. Read
