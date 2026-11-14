@@ -5060,6 +5060,8 @@
 :root.in-panel :is(.rail, .site-header, .site-footer, .skip-link, .menu-tabs, [data-sign-out]) { display: none !important; }
 :root.in-panel body.with-rail { padding-inline-start: 0; }
 :root.in-panel .page-head h1 { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+/* A wizard inside a slide-out (the upgrade guide's What is new) fills the panel's width: the 720px limit is for a page. */
+:root.in-panel .wizard { max-width: none; }
 
 /* Send feedback (Snaglist) sits in the bottom-right corner of every page (DASH-288). It must never cover a control:
    it steps aside while a slide-out or dialog is open, whose own buttons sit in that corner, and pages keep room at the
