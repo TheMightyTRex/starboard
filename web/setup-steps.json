@@ -134,6 +134,12 @@
    "help": "topics/set-download-hours.md"
   },
   {
+   "id": "updates",
+   "title": "Updates",
+   "question": "Install updates automatically?",
+   "help": "topics/update-starboard.md"
+  },
+  {
    "id": "alerts",
    "title": "Alerts and disk health",
    "question": "Get an alert when something stops?",

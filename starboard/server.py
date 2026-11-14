@@ -198,6 +198,8 @@ class App:
         if os.environ.get("STARBOARD_SCHEDULE", "1") != "0":
             self.backup_schedule.ensure()
         self.repo = os.environ.get("STARBOARD_REPO", "")  # "owner/name" for the update check; optional
+        from . import self_update  # an update from the page that was running when Starboard restarted (DASH-417)
+        self_update.resume(self)
         self.trust_proxy = os.environ.get("STARBOARD_TRUST_PROXY", "") == "1"
         self.machine_name = socket.gethostname().split(".", 1)[0].lower()
         self.allowed_hosts = {h.strip().lower() for h in os.environ.get("STARBOARD_ALLOWED_HOSTS", "").split(",") if h.strip()}
@@ -2464,6 +2466,23 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"freed": freed, **cleanup.summary(app.data_dir)})
             if path == "/api/space-history" and method == "GET":
                 return self.json(200, {"on": cfg.data["performance"].get("space_log", True), "days": app.space.get()})
+            if path.startswith("/api/self-update"):  # Update now and its progress (DASH-417)
+                from . import self_update
+                if path == "/api/self-update" and method == "GET":
+                    return self.json(200, self_update.status(app))
+                if path == "/api/self-update/job" and method == "GET":
+                    return self.json(200, self_update.job(app))
+                if path == "/api/self-update/start" and method == "POST":
+                    data = self.body()
+                    self.check_password(data)  # the Starboard password, as a plug-in install asks
+                    latest = app.latest_release()
+                    if not latest or str(data.get("to", "")) != latest:
+                        return self.error(409, "Only the newest release GitHub has can be installed from here. Reload the page")
+                    try:
+                        return self.json(200, self_update.start(app, latest, by="you"))
+                    except self_update.Refused as e:
+                        return self.error(409, str(e))
+                return self.error(404, "Not found")
             if path == "/api/version" and method == "GET":
                 return self.json(200, {"current": app.version, "latest": app.latest_release(), "repo": app.repo,
                                        "since": (cfg.data.get("version_since") or {}).get("since")})

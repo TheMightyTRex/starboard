@@ -154,6 +154,7 @@ HELP_PAGES = {
     "sites": "topics/choose-sites-to-search.html", "films": "topics/choose-sites-to-search.html",
     "docker": "topics/install-apps.html", "place": "topics/run-first.html", "keyboard": "topics/run-first.html",
     "cleanup": "topics/remove-starboard.html", "keys": "topics/find-an-api-key.html", "storage-page": "topics/check-storage.html",
+    "auto-updates": "topics/update-starboard.html",
 }
 
 HELP = {
@@ -204,6 +205,10 @@ HELP = {
     "hours": "Downloading uses most of your internet connection while it runs, so streaming, video calls and games on "
              "other devices can slow down. With download hours, Starboard pauses the download apps outside them and "
              "starts them again when they begin. Nothing is lost.",
+    "auto-updates": "Starboard can install its own new releases, and new Reelix images, by itself in the quiet hours: "
+                    "your download hours when they are set, otherwise 01:00 to 06:00. Before each one it saves the "
+                    "settings, and if the new version does not start it goes back to the one before. Both are "
+                    "deactivated unless you choose them; change them later in Settings, Updates.",
     "check": "This is everything that will change. Nothing has changed yet: type b to go back and change an answer, or "
              "q to stop. The apps' files are written to Starboard's data folder, then the apps are downloaded and started.",
     "keep": "Your password is already saved. Change it later in Starboard, Settings, Security.",
@@ -555,7 +560,7 @@ def question(step_id):
 
 
 STEPS = [title(i) for i in ("password", "place", "keyboard", "start", "storage", "apps", "vpn", "usenet", "sites", "films", "preset", "check", "keys",
-                            "extras", "hours", "alerts", "storage-page", "docker", "cleanup")]  # the move's own steps are counted by job_steps
+                            "extras", "hours", "updates", "alerts", "storage-page", "docker", "cleanup")]  # the move's own steps are counted by job_steps
 POOL_HELPER = "/usr/local/bin/starboard-pool"
 
 
@@ -1910,6 +1915,7 @@ def job_steps(state):
         ids.append("extras")
     if not state.get("no_hours"):
         ids.append("hours")
+    ids.append("updates")  # DASH-417: after Download hours, so it can name the quiet hours
     ids.append("alerts")
     if not state.get("no_disks"):
         ids.append("storage-page")
@@ -2927,6 +2933,42 @@ def step_hours(api, term, state):
             term.failed(f"That did not work: {e}. Type whole hours, such as 1 and 7.", str(e))
 
 
+def updates_summary(starboard, reelix):
+    """The Updates answer in the set-up's summary, in the browser set-up's words (web/setup-answers.json)."""
+    from . import setup_answers
+    w = setup_answers.WORDS["updates"]
+    return w["summary_both"] if starboard and reelix else w["summary_starboard"] if starboard else w["summary_reelix"] if reelix else w["summary_none"]
+
+
+def step_updates(api, term, state):
+    """Updates (DASH-417, DASH-422): automatic Starboard updates, and Reelix's when Reelix is being installed. Both
+    deactivated unless chosen; the same question, words and order as the browser set-up (web/setup-answers.json)."""
+    if state.get("start") == "restore":
+        return False  # the backup brought its own choices
+    from . import setup_answers
+    w = setup_answers.WORDS["updates"]
+    reelix = "reelix" in ((state.get("choice") or {}).get("apps") or [])
+    head(term, state, "updates")
+    term.note(w["intro"])
+    term.note(w["later"])
+    items = [(w["starboard"], w["starboard_hint"])] + ([(w["reelix"], w["reelix_hint"])] if reelix else [])
+    while True:
+        picked = term.choose_many(question("updates"), items, [i for i in state.get("updates", []) if i < len(items)],
+                                  help_key="auto-updates", allow_none=True)
+        body = {"starboard_auto_update": 0 in picked}
+        if reelix:
+            body["reelix_auto_update"] = 1 in picked
+        try:
+            api.call("PUT", "/api/config/general", body)
+            break
+        except Problem as e:
+            refused(term, e)
+    state["updates"] = picked
+    state["updates_chosen"] = (0 in picked, reelix and 1 in picked)
+    term.ok(w["saved"])
+    return True
+
+
 def pool_command(args):
     """The pool helper, through sudo: sudo asks for the computer's password itself, so Starboard never sees it."""
     p = subprocess.run(["sudo", POOL_HELPER, "--json", *args], stdout=subprocess.PIPE, text=True)
@@ -3449,7 +3491,7 @@ def step_cleanup(api, term, state):
 
 
 STEP_FUNCTIONS = [step_password, step_place, step_keyboard, step_start, step_find, step_docker_move, step_movehow, step_storage, step_apps, step_vpn,
-                  step_usenet, step_sites, step_films, step_preset, step_check, step_move, step_keys, step_connect, step_hours, step_alerts,
+                  step_usenet, step_sites, step_films, step_preset, step_check, step_move, step_keys, step_connect, step_hours, step_updates, step_alerts,
                   step_storage_page, step_docker_end, step_cleanup]
 
 
@@ -3500,6 +3542,9 @@ def run(api, term, data_dir, port, address=""):
             pass
         term.heading("Done")
         rows = [("On this computer", f"http://localhost:{port}")]
+        if "updates_chosen" in state:  # DASH-417: the Updates answer, as the browser set-up's summary shows it
+            from . import setup_answers
+            rows.append((setup_answers.WORDS["updates"]["summary"], updates_summary(*state["updates_chosen"])))
         if address:
             rows.append(("On your other devices", f"http://{address}:{port}"))
         args = host_changes(state, data_dir)

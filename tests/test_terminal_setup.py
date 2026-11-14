@@ -128,7 +128,7 @@ class TerminalSetupTest(unittest.TestCase):
         self.assertIn(terminal_setup.USENET_AD.removeprefix("Ad: "), js)
 
     def test_help_mismatch_and_short_passwords_ask_again(self):
-        term, out = self.term(["", "", "", "", "", "2", "", ""], ["?", "short", SIGN_IN_WORDS, "different words", SIGN_IN_WORDS, SIGN_IN_WORDS])
+        term, out = self.term(["", "", "", "", "", "2", "", "", ""], ["?", "short", SIGN_IN_WORDS, "different words", SIGN_IN_WORDS, SIGN_IN_WORDS])
         with self.no_apps():
             self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -157,7 +157,7 @@ class TerminalSetupTest(unittest.TestCase):
     def test_vpn_details_are_asked_and_kept_out_of_the_screen(self):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # Downloads and VPN only, every default app; Proton VPN over WireGuard.
-        typed = ["", "", "", media, "4", "9,10", "", "5", "1", "", "192.168.1.20/32", "", "", "", "y", "2", "", "", ""]
+        typed = ["", "", "", media, "4", "9,10", "", "5", "1", "", "192.168.1.20/32", "", "", "", "y", "2", "", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -195,7 +195,7 @@ class TerminalSetupTest(unittest.TestCase):
         term.card("What will change", [("Install", "Radarr, Sonarr, Jellyfin, " * 4), ("Media folder", "/srv/media")])
         term._options([("Movies", "Find films " * 8), "Yes (recommended)"], {0})
         lines = term.header + out.getvalue().splitlines()  # the heading is drawn in place, not printed
-        self.assertTrue(any("step 2 of 19" in l for l in lines))
+        self.assertTrue(any("step 2 of 20" in l for l in lines))
         self.assertTrue(any("█" in l and " 5%" in l for l in lines))
         boxed = [l for l in lines if l and l[0] in "┌│└╭╰"]
         self.assertTrue(boxed)
@@ -223,7 +223,7 @@ class TerminalSetupTest(unittest.TestCase):
                  "", "", "", "",                              # step 3 again: every answer kept with Enter
                  "", "",                                      # Usenet again
                  "",                                          # How much it does again
-                 "y", "2", "", "", ""]                        # write, any time, no alerts, health, no Docker access
+                 "y", "2", "", "", "", ""]                    # write, any time, no automatic updates, no alerts, health, no Docker access
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key", ""])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -356,7 +356,7 @@ class TerminalSetupTest(unittest.TestCase):
         # Downloads and VPN (Proton over WireGuard), then f at the check: Something is broken, the words, skip the
         # second question, save to a file; then write and downloads at any time.
         typed = ["", "", "", media, "4", "9,10", "", "5", "1", "Netherlands", "192.168.1.20/32", "", "", "",
-                 "f", "1", words, "", "1", "y", "2", "", "", ""]
+                 "f", "1", words, "", "1", "y", "2", "", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         term.save_dir = self.tmp.name
         token = self.app.setup_token

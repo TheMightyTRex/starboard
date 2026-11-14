@@ -73,7 +73,7 @@ class TerminalSettingsTest(unittest.TestCase):
         self.assertEqual(terminal_settings.run(self.api, term, "0.0.0"), 0)
         self.assertFalse(self.app.config.data["update_check"])
         text = out.getvalue()
-        self.assertIn("Look for new versions is now inactive.", text)
+        self.assertIn("Look for new versions is now deactivated.", text)
         self.assertIn("Done: back to the settings (recommended)", text)
         self.assertNotIn("correct horse battery", text)
 

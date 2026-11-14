@@ -1,5 +1,6 @@
 """Automatic Reelix updates (DASH-263, DASH-95): when switched on in Settings, Update settings, Starboard installs a
-new Reelix image by itself, once a day at most, for the Lite or full version it runs (the fork's public images now;
+new Reelix image by itself, once a day at most and in the quiet hours (DASH-417: download hours when set, otherwise
+01:00 to 06:00), for the Lite or full version it runs (the fork's public images now;
 upstream's once it is public, RFX-59). Reelix's own self-update is never used: Starboard does it, so it can save
 Reelix's settings first and go back if the new version is not healthy.
 

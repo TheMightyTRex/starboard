@@ -19,7 +19,9 @@ JOBS = {
     "defaults": {"title": "Jellyfin user defaults", "every": 3600, "what": "Gives every Jellyfin user your defaults, unless they chose otherwise"},
     "listening": {"title": "Listening progress", "every": 3600, "what": "Applies listening progress to Audiobookshelf as the books are scanned in"},
     "vpnport": {"title": "VPN port forwarding", "every": 600, "what": "Keeps qBittorrent listening on the port the VPN forwards"},
-    "reelixupdate": {"title": "Reelix updates", "every": 86400, "what": "Installs a new Reelix by itself, with a way back if it is not healthy"},
+    "reelixupdate": {"title": "Reelix updates", "every": 86400, "what": "Installs a new Reelix by itself in quiet hours, with a way back if it is not healthy"},
+    # DASH-417: hourly, so it finds the quiet hours; each look is one cached question (GitHub at most every 6 hours).
+    "starboardupdate": {"title": "Starboard updates", "every": 3600, "what": "Installs a new Starboard release by itself in quiet hours, with a way back if it does not start"},
 }
 SETTING = {"livetv": "livetv", "import": "import_keep", "defaults": "defaults", "listening": "listening_keep"}
 PAGE = {"listening": "/settings-audiobookshelf.html"}
@@ -43,7 +45,15 @@ class Jobs:
             return vpn_ports.wanted(self.app.config, self.app.data_dir)
         if key == "reelixupdate":  # Settings, Update settings (DASH-263)
             return bool(self.app.config.data.get("reelix_auto_update"))
+        if key == "starboardupdate":  # Settings, Update settings (DASH-417)
+            return bool(self.app.config.data.get("starboard_auto_update"))
         return bool(self.settings().get(SETTING[key]))
+
+    def quiet_now(self):
+        """Inside the quiet hours: Starboard's download hours when set, otherwise 01:00 to 06:00 (self_update.py)."""
+        import datetime
+        from . import self_update
+        return self_update.in_quiet_hours(self.app.config.data, datetime.datetime.now())
 
     def self_url(self):
         """The address Jellyfin uses to reach Starboard, for logos and Pluto streams."""
@@ -93,6 +103,9 @@ class Jobs:
             elif key == "reelixupdate":
                 from . import reelix_updates
                 summary = reelix_updates.run(self.app.config, self.app.data_dir)
+            elif key == "starboardupdate":
+                from . import self_update
+                summary = self_update.automatic(self.app)
             else:
                 summary = migrate.ensure_defaults(services)
             self._record(key, finished=time.time(), state="done", summary=summary)
@@ -110,6 +123,8 @@ class Jobs:
         while True:
             last = self._load()
             for key, job in JOBS.items():
+                if key == "reelixupdate" and not self.quiet_now():
+                    continue  # DASH-417: Reelix's automatic update waits for the quiet hours, as Starboard's does
                 if self.enabled(key) and time.time() - (last.get(key, {}).get("started") or 0) >= job["every"]:
                     self.run(key)
             if not any(self.enabled(k) for k in JOBS):
@@ -148,7 +163,7 @@ class Jobs:
                 needs.append("Jellyfin with its API key in Manage apps")
             if key == "listening":
                 needs = [] if abs_ else ["Audiobookshelf with an admin API key in Manage apps"]
-            if key == "reelixupdate":
+            if key in ("reelixupdate", "starboardupdate"):
                 needs = []
                 row["page"] = "/settings-updates.html"
             if key == "vpnport":

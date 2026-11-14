@@ -1,5 +1,5 @@
 {
- "about": "The words of the set-up's TMDB key, language, Usenet server, no-VPN and audio description questions, and the API keys and Storage page steps (DASH-178, DASH-189, DASH-183, DASH-131, DASH-399). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
+ "about": "The words of the set-up's TMDB key, language, Usenet server, no-VPN and audio description questions, the API keys and Storage page steps, and the Updates step (DASH-178, DASH-189, DASH-183, DASH-131, DASH-399, DASH-417). The browser set-up (web/js/install.js) and the terminal set-up (starboard/setup_answers.py) both read this file, so they ask the same questions in the same order and words.",
  "tmdb": {
   "title": "Films and series information",
   "intro": "Reelix finds each film and series, its posters and its episodes, in The Movie Database (TMDB). A free key lets it find far more, more accurately. Without one it uses open data and matches fewer titles.",
@@ -144,5 +144,19 @@
   ],
   "daily_question": "Keep a daily record of used space",
   "daily_hint": "For the Space used over time chart and when the pool will be full. Nothing noticeable."
+ },
+ "updates": {
+  "intro": "Starboard can install new versions of itself and of Reelix by itself, in the quiet hours: your download hours when they are set, otherwise 01:00 to 06:00. Each saves the settings first, and goes back to the version before if the new one does not start.",
+  "starboard": "Install Starboard updates automatically",
+  "starboard_hint": "Starboard restarts for about a minute. A version that did not install is not tried again until you choose Update now.",
+  "reelix": "Install Reelix updates automatically",
+  "reelix_hint": "Once a day at most, with Reelix's settings saved first. Needs Docker access.",
+  "later": "Both are deactivated unless you choose them. Change them later in Settings, Updates.",
+  "saved": "Saved. Change them later in Settings, Updates.",
+  "summary": "Automatic updates",
+  "summary_none": "Deactivated",
+  "summary_starboard": "Starboard",
+  "summary_reelix": "Reelix",
+  "summary_both": "Starboard and Reelix"
  }
 }
