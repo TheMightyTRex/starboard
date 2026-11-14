@@ -46,3 +46,7 @@
 .guide-card__item { display: grid; gap: var(--space-1); width: 100%; }
 .guide-card__num { font-variant-numeric: tabular-nums; color: var(--color-text-muted); }
 .guide-card .progress { height: 4px; }
+
+/* Plug-in cards with the band (plug-in API 1.14, DASH-428, design 2): the design system's .card-band across the top,
+   edge to edge; the card's own padding stays for the body. */
+.dash-card.has-band { padding-top: 0; }

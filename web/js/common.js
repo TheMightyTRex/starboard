@@ -214,6 +214,30 @@ function chip(text, tone, iconName) {
   return el("span", { class: "chip", "data-tone": tone }, icon(name, 14), el("span", { text }));
 }
 
+// A plug-in's logo (plug-in API 1.14, DASH-428): the design system's .app-icon, with the cleaned logo Starboard
+// serves, or the plug-in's initials on the tile when it has none, so every row and card looks the same. Beside the
+// plug-in's name it is decorative (alt ""); pass { alt: true } where the logo stands for the plug-in on its own.
+function pluginLogo(p, { compact = false, alt = false } = {}) {
+  const cls = `app-icon${compact ? " app-icon--compact" : ""}`;
+  const words = String(p.name || p.plugin || "").split(/[^A-Za-z0-9]+/).filter(Boolean);
+  const initials = words.length ? (words[0][0] + (words[1]?.[0] || words[0][1] || "")).toUpperCase() : "?";
+  if (!p.logo?.url) return el("span", { class: cls, "aria-hidden": "true", "data-initials": "", text: initials });
+  const img = el("img", { src: p.logo.url, alt: alt ? p.logo.alt || "" : "", width: compact ? "32" : "40", height: compact ? "32" : "40", loading: "lazy" });
+  img.addEventListener("error", () => img.parentNode?.replaceWith(pluginLogo({ name: p.name || p.plugin }, { compact })));  // the initials instead
+  return el("span", { class: `${cls} has-image`, ...(alt ? {} : { "aria-hidden": "true" }) }, img);
+}
+
+// How long ago, in words a screen reader reads as they are ("30 seconds ago", "2 minutes ago", "yesterday at 21:04").
+function timeAgo(when) {
+  const secs = Math.max(0, Math.round((Date.now() - when) / 1000));
+  if (secs < 60) return secs < 5 ? "just now" : `${secs} seconds ago`;
+  const mins = Math.round(secs / 60);
+  if (mins < 60) return `${mins} ${mins === 1 ? "minute" : "minutes"} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  return new Date(when).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
 // The loading line under the menu (owner, 12 November 2026): the shared .loading-bar on the header's lower edge.
 // It shows once any request has taken longer than WAIT_MS, so quick answers never flicker it, and while the next
 // page loads after a link is followed. Decorative: what is loading is said by the page itself.

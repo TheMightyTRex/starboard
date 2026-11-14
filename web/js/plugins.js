@@ -53,7 +53,7 @@ function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
               : "Starboard checks plug-ins and keeps them in a locked-down container, but it cannot vouch for what one does with the access below. ")
               + "Install it only if you trust who made it." }))),
         // The name with the risk on the same line, at the right (owner, 12 November 2026); who made it below.
-        el("div", { class: "install-warning__head" }, el("strong", { text: `${s.name} ${s.version || ""}` }),
+        el("div", { class: "install-warning__head" }, pluginLogo(s, { compact: true }), el("strong", { text: `${s.name} ${s.version || ""}` }),
           w.risk ? chip(`${RISK[w.risk][0]} risk`, RISK[w.risk][1]) : null),
         el("p", { class: "small install-warning__by", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
         s.description ? el("p", { text: s.description }) : null,
@@ -152,6 +152,8 @@ function pluginSettingsGroups(p, redraw) {
           catch (err) { select.value = was; problem(err.message, select); }
         });
         rows.push(row(select));
+      } else if (s.type === "schedule") {  // API 1.14 (DASH-432): every day, week or month at a time, applied at once
+        rows.push(scheduleRow(s, id, noteId, put));
       } else if (s.type === "number" && !s.required) {  // pattern 2: a number applies when you leave it, unit beside it
         const input = el("input", { class: "input", id, type: "number", value: s.value ?? "", min: s.min, max: s.max, "aria-labelledby": `${id}-l` });
         let was = input.value;
@@ -190,6 +192,40 @@ function pluginSettingsGroups(p, redraw) {
     return { group: g, id: n === 0 && g === "" ? `pl-${p.id}-settings` : tag,
       body: el("div", { class: "stack-4" }, ...[rows.length ? el("ul", { class: "settings-rows" }, rows) : null, form].filter(Boolean)) };
   });
+}
+
+// A schedule setting (plug-in API 1.14, DASH-432): how often (every day, week or month), the day or the date, and the
+// time, each a labelled control of the one shared height, side by side. Each change is saved at once, as a choice is;
+// Starboard checks the schedule and System, Jobs shows when the job runs next.
+const WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+const ordinal = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : { 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th"}`;
+function scheduleRow(s, id, noteId, put) {
+  const v = { every: "week", day: "sunday", date: 1, time: "03:30", ...(s.value || {}) };
+  const every = el("select", { class: "select", id: `${id}-every` }, [["day", "Every day"], ["week", "Every week"], ["month", "Every month"]]
+    .map(([k, t]) => el("option", { value: k, text: t, selected: v.every === k })));
+  const day = el("select", { class: "select", id: `${id}-day` }, WEEKDAYS.map((d) => el("option", { value: d, text: d[0].toUpperCase() + d.slice(1), selected: v.day === d })));
+  const date = el("select", { class: "select", id: `${id}-date` }, Array.from({ length: 31 }, (_, i) => el("option", { value: String(i + 1), text: ordinal(i + 1), selected: Number(v.date) === i + 1 })));
+  const time = el("input", { class: "input", type: "time", id: `${id}-time`, value: v.time });
+  const dayField = field("Day", day, { short: true });
+  const dateField = field("Date", date, { short: true });
+  const show = () => { dayField.hidden = every.value !== "week"; dateField.hidden = every.value !== "month"; };
+  show();
+  let was = { ...v };
+  const save = async (control) => {
+    show();
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time.value)) { problem(`${s.label}: give a time such as 03:30`, time); time.value = was.time; return; }
+    const next = { every: every.value, time: time.value, ...(every.value === "week" ? { day: day.value } : {}), ...(every.value === "month" ? { date: Number(date.value) } : {}) };
+    try { await put({ [s.key]: next }); was = { ...was, ...next }; showSaved(noteId); }
+    catch (err) { every.value = was.every; day.value = was.day; date.value = String(was.date); time.value = was.time; show(); problem(err.message, control); }
+  };
+  for (const c of [every, day, date]) c.addEventListener("change", () => save(c));
+  time.addEventListener("change", () => save(time));
+  const group = el("div", { class: "schedule-fields", role: "group", "aria-labelledby": `${id}-l` },
+    field("How often", every, { short: true }), dayField, dateField, field("Time", time, { short: true }));
+  const li = settingRow(s.label, [s.hint, "A month without the date runs on its last day."].filter(Boolean).join(" "), group, `${id}-l`);
+  li.classList.add("setting--schedule");
+  li.querySelector(".setting__control").append(savedNote(noteId));
+  return li;
 }
 
 // A picture of a style (DASH-284): a small page drawn by Starboard in the style's own colours, light and dark side
@@ -1094,7 +1130,7 @@ function builtinSection(list, redraw) {
         try { await api("/api/plugins/add-builtin", { method: "POST", body: { id: b.id, password } }); announce(`${b.name} installed and active`); redraw(); }
         catch (err) { problem(err.message, add); }
       });
-      return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: b.name }),
+      return el("li", { class: "row" }, pluginLogo(b), el("div", {}, el("div", { class: "row__title", text: b.name }),
         el("div", { class: "row__meta", text: b.why_not ? `${b.description} Not here: ${b.why_not}.` : b.description })),
         el("div", { class: "row__side" }, add));
     })));
@@ -1212,7 +1248,7 @@ async function startPlugins() {
     const active = r.plugins.filter((p) => p.state === "enabled").length;
     holder.replaceChildren(...setupOffers(r, null, draw),
       section("pl-yours", "Your plug-ins", `${r.plugins.length} added, ${active} active. Each one's settings are in its own tab above.`,
-        el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row row--no-lead" },
+        el("ul", { class: "rows" }, r.plugins.map((p) => el("li", { class: "row" }, pluginLogo(p),  // its logo or initials (API 1.14)
           el("div", {}, el("h3", { class: "row__title" }, el("a", { href: `/settings-plugin.html?id=${encodeURIComponent(p.id)}`, text: p.name })),
             el("div", { class: "row__meta", text: [`Version ${p.version}`, p.builtin ? "Built into Starboard" : p.author && `By ${p.author}`, p.message].filter(Boolean).join(" · ") })),
           // Four fixed columns, so the chips, Open, Settings and the state button line up from row to row (issue #10;
@@ -1279,7 +1315,7 @@ async function startCatalogue() {
           }
         });
       }
-      return el("li", { class: "row row--no-lead" },
+      return el("li", { class: "row" }, pluginLogo(e),  // the catalogue's logo, cleaned by Starboard, or its initials (API 1.14)
         el("div", {}, el("h4", { class: "row__title" }, e.name, e.recommended ? " " : null, e.recommended ? chip("Recommended", "info") : null),
           el("div", { class: "row__meta", text: e.description }),
           // Versions for this Starboard only (DASH-330): newer ones that need a newer Starboard are said, not offered.
@@ -1361,6 +1397,14 @@ async function startPluginPage() {
       return;
     }
     $("#plugin-title").textContent = p.name;
+    // Its logo beside the name (API 1.14, DASH-428), with its text alternative: here it stands for the plug-in.
+    const title = $("#plugin-title");
+    if (!title.parentElement.classList.contains("plugin-head")) {
+      const head = el("div", { class: "plugin-head" }, pluginLogo(p, { alt: true }));
+      title.before(head);
+      head.append(title);
+    }
+    else title.parentElement.firstElementChild.replaceWith(pluginLogo(p, { alt: true }));
     $("#plugin-summary").textContent = p.description || "";
     document.title = document.title.replace(/^[^·]*·/, `${p.name} ·`);
     holder.replaceChildren(...pluginPage(p, draw));

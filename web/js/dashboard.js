@@ -137,16 +137,50 @@ async function pluginCard(id, given) {
   const r = given || await api(`/api/plugins/${pid}/cards/${cid}`);
   if (r.refresh_seconds) ownTimes.set(id, { every: Math.max(OWN_FLOOR, Number(r.refresh_seconds) || 0), at: Date.now() });
   else ownTimes.delete(id);
+  drawBandSide(id, r);
   if (r.problem) return empty(r.problem);
   const d = r.data;
   if (r.type === "stat") return el("p", { class: "dash-stat" }, el("strong", { text: (FORMATS[r.format] || FORMATS.number)(d.value) }),
     d.label ? ` ${d.label}` : null, d.note ? el("span", { class: "small muted", text: ` ${d.note}` }) : null);
-  if (r.type === "status") return el("div", {}, headChip({ ok: "OK", warning: "Warning", problem: "Problem" }[d.state], { ok: "success", warning: "warning", problem: "danger" }[d.state]),
+  // A status card's state is the band's chip (API 1.14), unless the answer gave its own status as well.
+  if (r.type === "status") return el("div", {}, d.status ? el("p", { class: "small", text: { ok: "OK", warning: "Warning", problem: "Problem" }[d.state] }) : null,
     d.text ? el("p", { text: d.text }) : null);
   if (r.type === "guide") return guideCard(d);
   return d.items.length ? el("ul", { class: "rows" }, d.items.map((it) => el("li", { class: "row row--no-lead" }, el("div", {},
     el("div", { class: "row__title" }, it.link ? el("a", { href: it.link, target: "_blank", rel: "noopener noreferrer", text: it.title }) : it.title),
     it.detail ? el("div", { class: "row__meta", text: it.detail }) : null)))) : empty("Nothing to show.");
+}
+
+// The card band (plug-in API 1.14, DASH-428, design 2 "band with status"): every plug-in card has a grey band with
+// its logo, the plug-in's name as the heading, and at the right a status chip and when it last updated. The chip and
+// the time each start with hidden words ("Status: ", "Updated "), so each makes sense to a screen reader on its own.
+const STATE_BAND = { ok: ["OK", "success"], warning: ["Warning", "warning"], problem: ["Problem", "danger"] };
+function pluginBand(c) {
+  const info = pluginCards[c.id] || {};
+  const name = info.plugin || "Plug-in";
+  const sub = info.title && info.title !== name ? info.title : "";
+  return el("div", { class: "card-band" }, pluginLogo({ name, logo: info.logo }, { compact: true }),
+    el("h2", { class: "card-band__title dash-card__title", id: `dash-${c.id}-h` }, name,
+      sub ? el("span", { class: "card-band__sub" }, el("span", { class: "visually-hidden", text: ", " }), sub) : null),
+    el("span", { class: "card-band__side" }));
+}
+
+function drawBandSide(id, r) {
+  const side = $(`[data-card="${id}"] .card-band__side`);
+  if (!side) return;
+  const d = r.data || {};
+  const [words, tone] = d.status_label ? [d.status_label, d.tone || "neutral"] : r.type === "status" && STATE_BAND[d.state] ? STATE_BAND[d.state] : [];
+  const when = (d.updated || r.asked || 0) * 1000;
+  side.replaceChildren(...[
+    words ? el("span", { class: "chip", "data-tone": tone }, icon(CHIP_ICONS[tone] || "circle", 14),
+      el("span", { class: "visually-hidden", text: "Status: " }), el("span", { text: words })) : null,
+    when ? el("time", { class: "card-band__time", datetime: new Date(when).toISOString(), "data-at": String(when) },
+      el("span", { class: "visually-hidden", text: "Updated " }), el("span", { text: timeAgo(when) })) : null].filter(Boolean));
+}
+
+// The band's time is kept in words as it ages, without asking the plug-in again; it is not a live region.
+function ageBandTimes() {
+  for (const t of document.querySelectorAll(".card-band__time[data-at]")) t.lastElementChild.textContent = timeAgo(Number(t.dataset.at));
 }
 
 // A guide card (plug-in API 1.8, DASH-359, owner 13 November 2026): what is on now on each channel, how far through
@@ -170,9 +204,11 @@ function guideCard(d) {
 }
 
 function cardShell(c, i, list) {
-  const head = el("div", { class: "dash-card__head" }, el("h2", { class: "dash-card__title", id: `dash-${c.id}-h`, text: CARD_TITLES[c.id] || "Plug-in card" }));
+  const banded = c.id.startsWith("plugin:");  // every plug-in card is drawn with the band (API 1.14)
+  const head = banded ? el("div", { class: "dash-card__head" }) : el("div", { class: "dash-card__head" }, el("h2", { class: "dash-card__title", id: `dash-${c.id}-h`, text: CARD_TITLES[c.id] || "Plug-in card" }));
   const body = el("div", { class: "dash-card__body" }, el("p", { class: "small muted", text: "Asking…" }));
-  const card = el("section", { class: `dash-card dash-card--${c.size}`, "aria-labelledby": `dash-${c.id}-h`, "data-card": c.id }, head, body);
+  const card = el("section", { class: `dash-card dash-card--${c.size}${banded ? " has-band" : ""}`, "aria-labelledby": `dash-${c.id}-h`, "data-card": c.id },
+    banded ? pluginBand(c) : null, banded && !editing ? null : head, body);
   if (editing) {
     const size = el("select", { class: "select select--compact", "aria-label": `Size of ${CARD_TITLES[c.id]}` },
       Object.entries(SIZES).map(([v, t]) => el("option", { value: v, text: t, selected: v === c.size })));
@@ -288,6 +324,6 @@ startPage().then(async (session) => {
   // Once a minute while the page is in view; nothing while the tab is hidden.
   const tick = () => { if (!document.hidden && !editing) draw(); };
   timer = setInterval(tick, 60000);
-  setInterval(ownTick, OWN_FLOOR * 1000);
+  setInterval(() => { ownTick(); if (!document.hidden) ageBandTimes(); }, OWN_FLOOR * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
 });

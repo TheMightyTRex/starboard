@@ -224,3 +224,11 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 .side-panel .design-picture { max-width: 160px; }
 /* A catalogue's address is one long word: it wraps at phone width rather than push the page sideways. */
 .row__meta--wrap { overflow-wrap: anywhere; }
+
+/* Plug-in logos (plug-in API 1.14, DASH-428): beside the name on its page, and in the install warning's head. */
+.plugin-head { display: flex; align-items: center; gap: var(--space-3, 12px); }
+.install-warning__head > strong { flex: 1 1 auto; }
+/* A schedule setting (API 1.14, DASH-432): how often, the day or date, and the time side by side, one height. */
+.schedule-fields { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3, 12px); margin: 0; }
+.schedule-fields .field { margin: 0; }
+.schedule-fields .input[type="time"] { min-height: var(--control-h); }
