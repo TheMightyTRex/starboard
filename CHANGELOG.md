@@ -7,6 +7,19 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Update now and automatic updates:** Settings, Updates has Update now, which asks for your Starboard password and installs the newest release, with its progress step by step, and Install Starboard updates automatically (deactivated by default), which installs a new release by itself in quiet hours and does not try a version again after it did not install. Reelix's automatic updates wait for quiet hours too, and both set-ups ask about updates after Download hours. (DASH-417)
+- **Recommended plug-ins:** The Catalogue starts with Recommended: Direct play and Disk forecast, each with a Recommended chip. Nothing is added until you choose it, with what it may do and your password as before. (DASH-425)
+- **Plug-in logos:** A plug-in can have a small logo, which Starboard checks and cleans before it shows it in Manage, the Catalogue, the plug-in's page and its dashboard cards. A plug-in without one shows its initials. (DASH-428)
+- **Plug-in jobs on your schedule:** A plug-in's job can run when you choose in its settings: every day, every week on a day, or every month on a date (the last day in a shorter month), at a time. System, Jobs shows when it runs next, with Run now. (DASH-432)
+- **Plug-ins for Jellyfin's pictures:** A new permission lets a plug-in read and change Jellyfin's metadata folder (its posters, photos and details), said plainly before you add it, with a medium risk. Nothing else gets the folder. (DASH-432)
+- **Plug-in API 1.14:** A card's own refresh time (10 seconds at the quickest, cards due together asked in one request, nothing while the tab is hidden), recommended entries in the catalogue, logos, the card band with a status and when it updated, job schedules from settings and the jellyfin:metadata permission, with the developer help, the manifest schema, the plug-in tester and the AI prompts brought up to date. Plug-ins made for earlier versions work as before. (DASH-425, DASH-428, DASH-432)
+
+### Changed
+- **Plug-in cards:** Every plug-in card on the dashboard has a grey band across the top with the plug-in's logo, its name as the heading, and at the right a status chip and when it last updated, so they all look the same. (DASH-428)
+- **Updates:** update.sh hands over to the new version's own update.sh when it updates to a newer version, so a fix to it helps in the very update that brings it. Going back keeps the running copy. (DASH-429)
+- **Upgrade guide:** What is new fills the slide-out's width on wide screens. (Design system 10584ca)
+
 ## [0.17.0] (14 November 2026)
 
 ### Added
