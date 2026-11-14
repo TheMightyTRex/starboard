@@ -139,6 +139,26 @@ class Running(unittest.TestCase):
         self.assertIn("/srv/starboard/data/backup-copy-work:/c", call["binds"])
         self.assertFalse(os.path.exists(os.path.join(self.d, bc.WORK, "rclone.conf")))  # the short-lived copy is gone
 
+    def test_rclone_config_is_never_readable_by_others(self):
+        # Bandit B103 (14 November 2026): the config holds the cloud sign-in. It is written 0600, never opened up, and
+        # the script hands a written-back config to Starboard's own user, 0600 again.
+        conf = "[mycloud]\ntype = b2\n"
+        bc.save(self.d, {**bc.settings(self.d), "kind": "rclone", "remote": "mycloud:starboard"}, {"smb_password": "", "rclone_config": conf})
+        seen = {}
+
+        def helper(script, binds, **k):
+            path = os.path.join(self.d, bc.WORK, "rclone.conf")
+            seen["mode"] = os.stat(path).st_mode & 0o777
+            seen["folder"] = os.stat(os.path.dirname(path)).st_mode & 0o777
+            seen["script"] = script
+            return 0, "COUNT 1\n"
+        with mock.patch.object(bc, "_helper", helper):
+            bc._run(self.d, self.SOURCE)
+        self.assertEqual((seen["mode"], seen["folder"]), (0o600, 0o700))
+        self.assertNotIn("666", seen["script"])
+        self.assertIn(f"chown {os.getuid()}:{os.getgid()} /c/rclone.conf", seen["script"])
+        self.assertIn("chmod 600 /c/rclone.conf", seen["script"])
+
     def test_refuses_anything_but_a_full_backup(self):
         bc.save(self.d, {**bc.settings(self.d), "kind": "disk", "folder": "/media/usb"}, bc.secrets(self.d))
         with self.assertRaisesRegex(bc.CopyError, "not a Starboard full backup"):

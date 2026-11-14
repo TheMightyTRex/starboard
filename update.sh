@@ -5,8 +5,9 @@
 #   --to v0.2.0      Install a particular release (also how you go back to an older one)
 #   --main           Follow the main branch instead of releases (for testing)
 #
-# Before updating it backs up ./data to ./backups. If the new version does not start, it goes back to the
-# version you had and restores the backup.
+# Before updating it backs up ./data to ./backups, except each plug-in's own data folder, which belongs to the
+# plug-in's user and stays where it is. If the new version does not start, it goes back to the version you had and
+# restores the backup.
 set -euo pipefail
 
 umask 022  # files checked out below must be readable inside the container
@@ -27,7 +28,7 @@ while [ $# -gt 0 ]; do
     --check) CHECK=1 ;;
     --to) TARGET="${2:?--to needs a version, for example v0.2.0}"; shift ;;
     --main) CHANNEL=main ;;
-    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -102,12 +103,44 @@ healthy() {
   return 1
 }
 
+# update-data-functions-begin (tests/test_update_backup.py runs these two on their own)
+# Each plug-in's own data folder (data/plugins/<id>/data) belongs to the plug-in's own user, so Starboard's user cannot
+# read it and tar would stop the update. Those folders are left out of this backup; the plug-ins' settings and
+# manifests are in it. An update does not touch them, and going back leaves them with their plug-in.
+backup_data() {  # backup_data <file>
+  (umask 077 && tar -czf "$1" --exclude='data/plugins/*/data' data)  # private backup; the code files must stay readable
+}
+
+restore_data() {  # restore_data <file>: data goes to data.failed-update, the backup comes back, plug-ins keep their data
+  rm -rf data.failed-update
+  mv data data.failed-update
+  tar -xzf "$1"
+  local old id
+  for old in data.failed-update/plugins/*/data; do
+    [ -d "$old" ] || continue
+    id="$(basename "$(dirname "$old")")"
+    mkdir -p data/plugins
+    # The data folder cannot be moved on its own (its owner is the plug-in's user), so its plug-in's folder, which is
+    # Starboard's, moves back whole, and the backup's copies of the plug-in's own files go over it.
+    if [ -d "data/plugins/$id" ]; then
+      rm -rf "data/.restore-$id"
+      mv "data/plugins/$id" "data/.restore-$id"
+      mv "data.failed-update/plugins/$id" "data/plugins/$id"
+      cp -a "data/.restore-$id/." "data/plugins/$id/"
+      rm -rf "data/.restore-$id"
+    else
+      mv "data.failed-update/plugins/$id" "data/plugins/$id"
+    fi
+  done
+}
+# update-data-functions-end
+
 say "Backing up your settings"
 mkdir -p backups
 chmod 700 backups
 BACKUP="backups/starboard-data-$(date +%Y-%m-%d-%H%M%S)-$(git rev-parse --short HEAD).tar.gz"
-(umask 077 && tar -czf "$BACKUP" data)  # private backup; the code files below must stay readable
-echo "Saved $BACKUP"
+backup_data "$BACKUP"
+echo "Saved $BACKUP (the plug-ins' own data folders are not in it: they stay where they are)"
 # DASH-109: keep the copies of the last versions only (Settings, Updates, Restore: 5, 10 or 20; 5 if unset). These are
 # update.sh's own rolling copies, one per update, so the older ones are removed rather than kept elsewhere.
 KEEP_COPIES="$(python3 -I -c 'import json, sys
@@ -133,9 +166,7 @@ fi
 
 say "The new version did not start. Going back to $CURRENT_NAME"
 git -c advice.detachedHead=false checkout --quiet "$CURRENT"
-rm -rf data.failed-update
-mv data data.failed-update
-tar -xzf "$BACKUP"
+restore_data "$BACKUP"
 restart
 if healthy; then
   echo "Back on $CURRENT_NAME with your settings restored. The failed version's data is in data.failed-update."

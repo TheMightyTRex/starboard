@@ -315,11 +315,15 @@ def _rclone(data_dir, s, sec, binds, src, name, test):
         raise CopyError("Starboard cannot find its own folder on this computer")
     work = os.path.join(data_dir, WORK)
     os.makedirs(work, mode=0o700, exist_ok=True)
+    os.chmod(work, 0o700)
     conf = os.path.join(work, "rclone.conf")
     fd = os.open(conf, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(sec["rclone_config"])
-    os.chmod(conf, 0o666)  # rclone runs as root in its container and may write it back; the folder stays Starboard's only
+    # The config holds the person's cloud sign-in, so it stays 0600 and Starboard's own. rclone runs as root in its
+    # container, which can read it as it is; if rclone writes it back (a refreshed token), the script gives it back to
+    # Starboard's user, 0600 again, so Starboard can read the new one and nobody else can (Bandit B103, 14 November 2026).
+    owner = f"{os.getuid()}:{os.getgid()}"
     remote = s["remote"]
     base = remote if remote.endswith((":", "/")) else remote + "/"
     rc = "rclone --config /c/rclone.conf --contimeout 30s --timeout 5m --retries 3"
@@ -330,7 +334,7 @@ def _rclone(data_dir, s, sec, binds, src, name, test):
         script = f"{rc} mkdir {_q(remote)} && {rc} lsf --max-depth 1 {_q(remote)} >/dev/null && {count}"
     else:
         script = f"{rc} copyto {_q(src)} {_q(base + name)} && {prune} && {count}"
-    script = f"{script}; code=$?; chmod 666 /c/rclone.conf 2>/dev/null; exit $code"
+    script = f"{script}; code=$?; chown {owner} /c/rclone.conf 2>/dev/null; chmod 600 /c/rclone.conf 2>/dev/null; exit $code"
     try:
         code, said = _helper(script, binds + [f"{os.path.dirname(host)}/{WORK}:/c"], image=RCLONE_IMAGE, network="bridge")
         try:

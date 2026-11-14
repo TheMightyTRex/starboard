@@ -57,6 +57,7 @@ add features.
 - **Storyarr:** Storyarr, retired on 11 November 2026, is no longer offered by Install apps or the set-ups. A server that already runs it keeps it and still updates. (DASH-405)
 
 ### Fixed
+- **An update could stop at its backup:** On a server with plug-ins, ./update.sh stopped before updating anything, because each plug-in's own data folder belongs to the plug-in's user and could not be read for the backup. The backup now leaves those folders out (the plug-ins' settings are still in it), and going back after a failed start keeps them with their plug-in. Updates from this version on use the fixed script.
 - **Bringing in books, audiobooks and radio:** Bringing in audiobooks and books sends the quality profile Reelix needs, and their matches read well in the list; radio shows match only when the titles agree, with English stations first. (DASH-392)
 - **Issues reported on GitHub:** Download states such as post_processing show as words (#7); a plug-in's Activate sits under its state (#8); Sign out is in the side menu (#9); Manage's rows and the Advanced settings switch line up (#10, #11, DASH-413); two-tone logos are legible (#12, #13); an opened collection takes the page heading with Add missing on its line (#14, #15); and Discover's buttons line up, its rows with arrows and fades (#16, #17).
 - **Apps on the VPN after Gluetun restarts:** Apps on Gluetun's network rejoin it after Gluetun restarts or is made again, and the VPN apps check runs every 5 minutes whether or not Alerts is active. (DASH-394)
@@ -73,7 +74,7 @@ add features.
 - **TLS 1.2 for news servers:** Connections to a news server over SSL need TLS 1.2 or newer. (code scanning)
 - **Plug-ins see only what you approve:** A plug-in's key reads only what you approved when you added it, catalogue versions are checked against their checksums, and a plug-in that adds files to your media runs as the media folder's owner, never as root. (DASH-330, DASH-410)
 - **API keys that cannot change your server:** No API key can change settings, keys, plug-ins or the install; each change made with a key is in the audit log; and the log a key can read has addresses, names and keys taken out. (DASH-274, DASH-76)
-- **Backups and keys stay private:** Full backups are encrypted (AES-256-GCM) with a password Starboard never stores; a share's password and an rclone set-up stay in Starboard's own folder, never in a backup or sent to the page; and site keys typed for a move are never stored or logged. (DASH-260, DASH-380, DASH-128)
+- **Backups and keys stay private:** Full backups are encrypted (AES-256-GCM) with a password Starboard never stores; a share's password and an rclone set-up stay in Starboard's own folder, never in a backup or sent to the page; site keys typed for a move are never stored or logged; and the rclone set-up handed to a copy is readable by Starboard alone (found by this release's scan). (DASH-260, DASH-380, DASH-128)
 - **Checks:** The unit tests (also as another user), the browser journeys, the accessibility checks, the API contract tests and example plug-ins, the help check, the private details check and the full security scans, with CodeQL, ran on this release.
 
 ## [0.16.5] (11 November 2026)

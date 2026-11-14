@@ -1355,6 +1355,10 @@ RELEASES = [
         ],
         "fixed": [
             [
+                "An update could stop at its backup",
+                "On a server with plug-ins, ./update.sh stopped before updating anything, because each plug-in's own data folder belongs to the plug-in's user and could not be read for the backup. The backup now leaves those folders out (the plug-ins' settings are still in it), and going back after a failed start keeps them with their plug-in. Updates from this version on use the fixed script."
+            ],
+            [
                 "Bringing in books, audiobooks and radio",
                 "Bringing in audiobooks and books sends the quality profile Reelix needs, and their matches read well in the list; radio shows match only when the titles agree, with English stations first."
             ],
@@ -1414,7 +1418,7 @@ RELEASES = [
             ],
             [
                 "Backups and keys stay private",
-                "Full backups are encrypted (AES-256-GCM) with a password Starboard never stores; a share's password and an rclone set-up stay in Starboard's own folder, never in a backup or sent to the page; and site keys typed for a move are never stored or logged."
+                "Full backups are encrypted (AES-256-GCM) with a password Starboard never stores; a share's password and an rclone set-up stay in Starboard's own folder, never in a backup or sent to the page; site keys typed for a move are never stored or logged; and the rclone set-up handed to a copy is readable by Starboard alone (found by this release's scan)."
             ],
             [
                 "Checks",

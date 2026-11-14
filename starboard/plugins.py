@@ -203,7 +203,7 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"{where}: host_port is a port from 1024 to 65535, only with publish on the lan network")
         tmp = c.get("tmpfs")
         if tmp is not None and not (isinstance(tmp, list) and len(tmp) <= MAX_TMPFS
-                                    and all(isinstance(t, str) and re.match(INSIDE, t) and t != "/tmp" for t in tmp)):
+                                    and all(isinstance(t, str) and re.match(INSIDE, t) and t != "/tmp" for t in tmp)):  # nosec B108: refuses /tmp, uses none
             out.append(f"{where}: tmpfs lists up to {MAX_TMPFS} folders inside the container, such as /var/run/postgresql")
         if net not in NETWORKS:
             out.append(f"{where}: network must be default, lan or vpn")
@@ -217,7 +217,7 @@ def check(manifest, dev=False, builtin=False):
                 pass
             elif isinstance(v, str) and re.match(DATA_AT, v):  # API 1.13: its own data folder at the path the app expects
                 at = v.split(":", 1)[1]
-                if not re.match(INSIDE, at) or at in ("/", "/tmp", "/media"):
+                if not re.match(INSIDE, at) or at in ("/", "/tmp", "/media"):  # nosec B108: a list of refused paths
                     out.append(f"{where}: {v} must mount its data at a folder of its own, such as /config")
             elif isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}:ro$", v):
                 pass  # API 1.13: one media folder, read only: less than media/<one folder>, so no permission

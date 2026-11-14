@@ -56,7 +56,7 @@ def share(where):
     run = os.path.join(where, "run")
     os.makedirs(run, exist_ok=True)
     os.chmod(where, 0o700)
-    os.chmod(run, 0o755)
+    os.chmod(run, 0o755)  # nosec B103: inside the 0700 folder above, so only the plug-in's container users reach it
     for name in SHARED:
         src, dst = os.path.join(where, name), os.path.join(run, name)
         if not os.path.exists(src):
