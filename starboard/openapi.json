@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -2607,6 +2607,385 @@
      }
     }
    }
+  },
+  "/api/v1/updates": {
+   "get": {
+    "operationId": "listUpdates",
+    "summary": "What can be updated: Starboard, Reelix, the other apps and the plug-ins",
+    "tags": [
+     "Updates"
+    ],
+    "x-scope": "updates",
+    "description": "Only for keys that ticked Updates: a key with no scopes does not have them. From what Starboard already knows (its release check, the last look for app updates and the catalogues it has read): nothing is fetched to answer. running is the update running now, if any.",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "$ref": "#/components/schemas/UpdateTarget"
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          },
+          "running": {
+           "oneOf": [
+            {
+             "$ref": "#/components/schemas/UpdateRun"
+            },
+            {
+             "type": "null"
+            }
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   },
+   "post": {
+    "operationId": "startUpdate",
+    "summary": "Start an update to the newest version Starboard knows",
+    "tags": [
+     "Updates"
+    ],
+    "x-scope": "updates",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "target"
+        ],
+        "properties": {
+         "target": {
+          "type": "string",
+          "pattern": "^(starboard|reelix|app:[A-Za-z0-9_-]{1,64}|plugin:[a-z0-9-]{3,40})$",
+          "description": "starboard, reelix, app:<app id> or plugin:<plug-in id>, as /api/v1/updates lists them."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "Started. Read status, the run's address, every few seconds until its state is not running.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "accepted",
+          "run",
+          "status"
+         ],
+         "properties": {
+          "accepted": {
+           "type": "boolean"
+          },
+          "run": {
+           "$ref": "#/components/schemas/UpdateRun"
+          },
+          "status": {
+           "type": "string"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "502": {
+      "$ref": "#/components/responses/Problem"
+     }
+    },
+    "description": "Only for keys that ticked Updates: a key with no scopes does not have them. One update runs at a time. Each has the same backup, health check and way back as on the pages: Starboard runs update.sh; Reelix and the other apps keep their old image until the new one is healthy; a plug-in runs its before step, moves its settings, waits for its health check and goes back by itself if it fails. Never from an address: only the version Starboard already found."
+   }
+  },
+  "/api/v1/updates/rollback": {
+   "post": {
+    "operationId": "rollBackUpdate",
+    "summary": "Roll a plug-in back to the version kept before its last update",
+    "tags": [
+     "Updates"
+    ],
+    "x-scope": "updates",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "target"
+        ],
+        "properties": {
+         "target": {
+          "type": "string",
+          "pattern": "^(starboard|reelix|app:[A-Za-z0-9_-]{1,64}|plugin:[a-z0-9-]{3,40})$",
+          "description": "starboard, reelix, app:<app id> or plugin:<plug-in id>, as /api/v1/updates lists them."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "Started. Read status until its state is rolled-back.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "accepted",
+          "run",
+          "status"
+         ],
+         "properties": {
+          "accepted": {
+           "type": "boolean"
+          },
+          "run": {
+           "$ref": "#/components/schemas/UpdateRun"
+          },
+          "status": {
+           "type": "string"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
+      "$ref": "#/components/responses/Problem"
+     }
+    },
+    "description": "Only for keys that ticked Updates: a key with no scopes does not have them. Only plug-ins keep the version before. Starboard and the apps go back by themselves when a new version does not answer, so for them this answers 409 cannot_update."
+   }
+  },
+  "/api/v1/updates/runs": {
+   "get": {
+    "operationId": "listUpdateRuns",
+    "summary": "The last 20 updates and roll backs, newest first",
+    "tags": [
+     "Updates"
+    ],
+    "x-scope": "updates",
+    "description": "Only for keys that ticked Updates: a key with no scopes does not have them.",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/limit"
+     },
+     {
+      "$ref": "#/components/parameters/cursor"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "next_cursor"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "$ref": "#/components/schemas/UpdateRun"
+           }
+          },
+          "next_cursor": {
+           "type": [
+            "string",
+            "null"
+           ]
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/updates/runs/{id}": {
+   "get": {
+    "operationId": "getUpdateRun",
+    "summary": "One update's progress, step by step, and how it ended",
+    "tags": [
+     "Updates"
+    ],
+    "x-scope": "updates",
+    "description": "Only for keys that ticked Updates: a key with no scopes does not have them. While Starboard itself updates it restarts: the answer may not come for about a minute.",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "pattern": "^[0-9a-f]{12}$"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UpdateRun"
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
   }
  },
  "components": {
@@ -2729,7 +3108,8 @@
         "system",
         "library",
         "requests",
-        "logs"
+        "logs",
+        "updates"
        ]
       }
      },
@@ -2816,6 +3196,172 @@
       "type": "string"
      },
      "code": {
+      "type": "string"
+     }
+    }
+   },
+   "UpdateRun": {
+    "type": "object",
+    "required": [
+     "id",
+     "target",
+     "kind",
+     "name",
+     "action",
+     "from",
+     "to",
+     "by",
+     "state",
+     "said",
+     "started_at",
+     "steps"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "target": {
+      "type": "string"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "starboard",
+       "reelix",
+       "app",
+       "plugin"
+      ]
+     },
+     "name": {
+      "type": "string"
+     },
+     "action": {
+      "type": "string",
+      "enum": [
+       "update",
+       "rollback"
+      ]
+     },
+     "from": {
+      "type": "string"
+     },
+     "to": {
+      "type": "string"
+     },
+     "by": {
+      "type": "string"
+     },
+     "state": {
+      "type": "string",
+      "enum": [
+       "running",
+       "updated",
+       "up-to-date",
+       "went-back",
+       "rolled-back",
+       "refused",
+       "failed"
+      ]
+     },
+     "said": {
+      "type": "string"
+     },
+     "started_at": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "finished_at": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "format": "date-time"
+     },
+     "steps": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "id",
+        "label",
+        "state"
+       ],
+       "properties": {
+        "id": {
+         "type": "string"
+        },
+        "label": {
+         "type": "string"
+        },
+        "state": {
+         "type": "string",
+         "enum": [
+          "waiting",
+          "working",
+          "done",
+          "failed",
+          "skipped",
+          "not-needed"
+         ]
+        },
+        "detail": {
+         "type": "string"
+        }
+       }
+      }
+     }
+    }
+   },
+   "UpdateTarget": {
+    "type": "object",
+    "required": [
+     "id",
+     "kind",
+     "name",
+     "current",
+     "latest",
+     "update_available",
+     "can_update",
+     "can_roll_back"
+    ],
+    "properties": {
+     "id": {
+      "type": "string"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "starboard",
+       "reelix",
+       "app",
+       "plugin"
+      ]
+     },
+     "name": {
+      "type": "string"
+     },
+     "current": {
+      "type": "string"
+     },
+     "latest": {
+      "type": "string"
+     },
+     "update_available": {
+      "type": "boolean"
+     },
+     "can_update": {
+      "type": "boolean"
+     },
+     "why": {
+      "type": "string"
+     },
+     "can_roll_back": {
+      "type": "boolean"
+     },
+     "roll_back_to": {
+      "type": "string"
+     },
+     "note": {
       "type": "string"
      }
     }

@@ -46,6 +46,17 @@ what works.
 **409.** What the address needs is not set up yet, such as Reelix for the Library and history. `detail` says what to
 add, in **Settings**, **Manage apps**.
 
+## update_running
+
+**409.** Another update is running (API 1.2.0). Starboard runs one update at a time. Read `/api/v1/updates` to see
+which, and try again once its run has finished.
+
+## cannot_update
+
+**409.** Starboard cannot do that update or roll back now (API 1.2.0). `detail` says why, for example that no newer
+version is known yet (look for app updates first with `POST /api/v1/containers/check`), that the app was not started
+by Docker Compose, or that Starboard and the apps go back by themselves and only a plug-in can be rolled back later.
+
 ## app_failed
 
 **502.** An app Starboard asked, such as Reelix, Seerr or a download app, did not answer or said no. `detail` has

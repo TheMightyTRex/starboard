@@ -15,8 +15,13 @@ from starboard.server import make_server
 SAMPLES = {"id": "123", "name": "livetv"}
 
 
+RUN_ID = "0123456789ab"  # the update run made in setUpClass (API 1.2.0)
+
+
 def sample(path, app_id="abc"):
     """A described path with a made-up value in each {name}; {id} of an app is the app's id when given."""
+    if path.startswith("/api/v1/updates/runs/"):
+        return path.replace("{id}", RUN_ID)
     return re.sub(r"\{(\w+)\}", lambda m: app_id if m.group(1) == "id" and app_id != "abc" else SAMPLES.get(m.group(1), "abc"), path)
 
 
@@ -65,8 +70,16 @@ class ApiV1Test(unittest.TestCase):
         cls.app.config.upsert_service({"name": "Made-up Sonarr", "type": "sonarr", "url": "http://127.0.0.1:9", "api_key": "made-up-secret-key"})
         cls.key, cls.item = api_v1.create_key(cls.tmp.name, "Contract tests", "read", [], 90)
         cls.manager, _ = api_v1.create_key(cls.tmp.name, "Contract manager", "manage", [], 90)
-        cls.logs_key, _ = api_v1.create_key(cls.tmp.name, "AI assistant", "read", ["apps", "logs"], 90)
+        cls.logs_key, _ = api_v1.create_key(cls.tmp.name, "AI assistant", "read", ["apps", "logs", "updates"], 90)
         cls.spec = api_v1.spec()
+        from starboard import update_runs  # one finished run, so /api/v1/updates/runs/{id} has something to give
+        run = update_runs._new(cls.tmp.name, "plugin:made-up", "plugin", "Made-up", "update", "1.0.0", "1.1.0", "you",
+                               [("install", "Installing the new version")])
+        with update_runs._lock:
+            update_runs._runs.pop(run["id"])
+            run["id"] = RUN_ID
+            update_runs._runs[RUN_ID] = run
+        update_runs._end(cls.tmp.name, run, "updated", "Made-up is now 1.1.0")
 
     @classmethod
     def tearDownClass(cls):
@@ -318,6 +331,48 @@ class ApiV1Test(unittest.TestCase):
             self.assertNotIn(secret, text)
         r, body = self.get("/api/v1/logs?level=everything", key=self.logs_key)
         self.assertEqual((r.status, body["code"]), (400, "bad_request"))
+
+    # Version 1.2.0 (DASH-424): updates, only with the updates scope -------------------------------------------------
+
+    def test_updates_only_when_ticked(self):
+        r, body = self.get("/api/v1/updates")  # a key with no scopes
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        r, body = self.send_json("POST", "/api/v1/updates", {"target": "starboard"})  # a manage key with no scopes
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        r, body = self.get("/api/v1/updates", key=self.logs_key)
+        self.assertEqual(r.status, 200)
+        self.assertEqual(body["items"][0]["id"], "starboard")
+        r, body = self.send_json("POST", "/api/v1/updates", {"target": "starboard"}, key=self.logs_key)  # read only
+        self.assertEqual((r.status, body["code"]), (403, "right_needed"))
+
+    def test_update_actions_say_why_not(self):
+        key, _ = api_v1.create_key(self.tmp.name, "Updater", "manage", ["updates"], None)
+        for body, status, code in (({"target": "everything"}, 400, "bad_request"), ({}, 400, "bad_request"),
+                                   ({"target": "starboard"}, 409, "cannot_update"),  # no newer release is known here
+                                   ({"target": "plugin:not-added"}, 404, "not_found"),
+                                   ({"target": "reelix"}, 409, "cannot_update")):  # no Docker in the tests
+            r, out = self.send_json("POST", "/api/v1/updates", body, key=key)
+            self.assertEqual((r.status, out["code"]), (status, code), body)
+        for target in ("starboard", "app:abc"):
+            r, out = self.send_json("POST", "/api/v1/updates/rollback", {"target": target}, key=key)
+            self.assertEqual((r.status, out["code"]), (409, "cannot_update"), target)
+            self.assertIn("by itself", out["detail"])
+        r, out = self.send_json("POST", "/api/v1/updates/rollback", {"target": "plugin:not-added"}, key=key,
+                                headers={"Idempotency-Key": "rb-1"})
+        again, out2 = self.send_json("POST", "/api/v1/updates/rollback", {"target": "plugin:not-added"}, key=key,
+                                     headers={"Idempotency-Key": "rb-1"})
+        self.assertEqual((r.status, again.status), (404, 404))
+        with open(os.path.join(self.tmp.name, "logs", "audit.jsonl")) as f:
+            writes = [json.loads(line) for line in f if '"api_write"' in line]
+        self.assertTrue(any(w["path"] == "/api/v1/updates" and w["status"] == 409 for w in writes))
+
+    def test_a_run_reads_back_with_its_steps(self):
+        r, body = self.get(f"/api/v1/updates/runs/{RUN_ID}", key=self.logs_key)
+        self.assertEqual((r.status, body["state"], body["steps"][0]["state"]), (200, "updated", "done"))
+        r, body = self.get("/api/v1/updates/runs/ffffffffffff", key=self.logs_key)
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        r, body = self.get("/api/v1/updates/runs", key=self.logs_key)
+        self.assertEqual(body["items"][0]["id"], RUN_ID)
 
     def test_events_are_capped(self):
         old = api_v1._event_state["streams"]

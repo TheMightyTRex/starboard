@@ -229,16 +229,72 @@ spec["paths"].update({
                                              "401": {"$ref": "#/components/responses/Problem"}, "429": {"$ref": "#/components/responses/Problem"},
                                              "503": {"$ref": "#/components/responses/Problem"}}}},
 })
+
+# Added in 1.2.0 (DASH-424): updates. Only for keys that ticked Updates; starting one and rolling back need manage.
+TARGET = {"type": "string", "pattern": "^(starboard|reelix|app:[A-Za-z0-9_-]{1,64}|plugin:[a-z0-9-]{3,40})$",
+          "description": "starboard, reelix, app:<app id> or plugin:<plug-in id>, as /api/v1/updates lists them."}
+UPDATE_STEP = {"type": "object", "required": ["id", "label", "state"],
+               "properties": {"id": {"type": "string"}, "label": {"type": "string"},
+                              "state": {"type": "string", "enum": ["waiting", "working", "done", "failed", "skipped", "not-needed"]},
+                              "detail": {"type": "string"}}}
+spec["components"]["schemas"]["UpdateRun"] = {
+    "type": "object", "required": ["id", "target", "kind", "name", "action", "from", "to", "by", "state", "said", "started_at", "steps"],
+    "properties": {"id": {"type": "string"}, "target": {"type": "string"}, "kind": {"type": "string", "enum": ["starboard", "reelix", "app", "plugin"]},
+                   "name": {"type": "string"}, "action": {"type": "string", "enum": ["update", "rollback"]},
+                   "from": {"type": "string"}, "to": {"type": "string"}, "by": {"type": "string"},
+                   "state": {"type": "string", "enum": ["running", "updated", "up-to-date", "went-back", "rolled-back", "refused", "failed"]},
+                   "said": {"type": "string"}, "started_at": {"type": "string", "format": "date-time"},
+                   "finished_at": {"type": ["string", "null"], "format": "date-time"}, "steps": {"type": "array", "items": UPDATE_STEP}}}
+spec["components"]["schemas"]["UpdateTarget"] = {
+    "type": "object", "required": ["id", "kind", "name", "current", "latest", "update_available", "can_update", "can_roll_back"],
+    "properties": {"id": {"type": "string"}, "kind": {"type": "string", "enum": ["starboard", "reelix", "app", "plugin"]},
+                   "name": {"type": "string"}, "current": {"type": "string"}, "latest": {"type": "string"},
+                   "update_available": {"type": "boolean"}, "can_update": {"type": "boolean"}, "why": {"type": "string"},
+                   "can_roll_back": {"type": "boolean"}, "roll_back_to": {"type": "string"}, "note": {"type": "string"}}}
+RUN = {"$ref": "#/components/schemas/UpdateRun"}
+STARTED = {"type": "object", "required": ["accepted", "run", "status"],
+           "properties": {"accepted": {"type": "boolean"}, "run": RUN, "status": {"type": "string"}}}
+UPDATES_NOTE = "Only for keys that ticked Updates: a key with no scopes does not have them."
+spec["paths"].update({
+    "/api/v1/updates": {
+        "get": {"operationId": "listUpdates", "summary": "What can be updated: Starboard, Reelix, the other apps and the plug-ins", "tags": ["Updates"],
+                "description": UPDATES_NOTE + " From what Starboard already knows (its release check, the last look for app updates and the "
+                               "catalogues it has read): nothing is fetched to answer. running is the update running now, if any.",
+                "parameters": P, "responses": ok(listing({"$ref": "#/components/schemas/UpdateTarget"}, {"running": {"oneOf": [RUN, {"type": "null"}]}}))},
+        "post": write(STARTED, "Start an update to the newest version Starboard knows", "startUpdate", "Updates", status="202",
+                      desc="Started. Read status, the run's address, every few seconds until its state is not running.",
+                      body={"type": "object", "required": ["target"], "properties": {"target": TARGET}},
+                      extra={"409": {"$ref": "#/components/responses/Problem"}, "502": {"$ref": "#/components/responses/Problem"}}) | {
+            "description": UPDATES_NOTE + " One update runs at a time. Each has the same backup, health check and way back as on the pages: "
+                           "Starboard runs update.sh; Reelix and the other apps keep their old image until the new one is healthy; "
+                           "a plug-in runs its before step, moves its settings, waits for its health check and goes back by itself if it fails. "
+                           "Never from an address: only the version Starboard already found."}},
+    "/api/v1/updates/rollback": {"post": write(STARTED, "Roll a plug-in back to the version kept before its last update", "rollBackUpdate", "Updates",
+                                               status="202", desc="Started. Read status until its state is rolled-back.",
+                                               body={"type": "object", "required": ["target"], "properties": {"target": TARGET}},
+                                               extra={"409": {"$ref": "#/components/responses/Problem"}}) | {
+        "description": UPDATES_NOTE + " Only plug-ins keep the version before. Starboard and the apps go back by themselves when a new "
+                       "version does not answer, so for them this answers 409 cannot_update."}},
+    "/api/v1/updates/runs": {"get": {"operationId": "listUpdateRuns", "summary": "The last 20 updates and roll backs, newest first", "tags": ["Updates"],
+                                     "description": UPDATES_NOTE, "parameters": P, "responses": ok(listing(RUN))}},
+    "/api/v1/updates/runs/{id}": {"get": {"operationId": "getUpdateRun", "summary": "One update's progress, step by step, and how it ended", "tags": ["Updates"],
+                                          "description": UPDATES_NOTE + " While Starboard itself updates it restarts: the answer may not come for about a minute.",
+                                          "parameters": [path_param("id", {"type": "string", "pattern": "^[0-9a-f]{12}$"})],
+                                          "responses": {**ok(RUN), "404": {"$ref": "#/components/responses/Problem"}}}},
+})
 spec["components"]["parameters"]["idempotency"] = {
     "name": "Idempotency-Key", "in": "header", "required": False, "schema": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,100}$"},
     "description": "Send the same value again to get the first answer back without doing it twice. Kept for 24 hours."}
 
 
 SAMPLES = {"id": "123", "name": "livetv"}
+RUN_ID = "0123456789ab"  # an update run's id, for /api/v1/updates/runs/{id}
 
 
 def sample(path):
     """A described path with a made-up value in each {name}, to match it against the route table."""
+    if path.startswith("/api/v1/updates/runs/"):
+        return path.replace("{id}", RUN_ID)
     return re.sub(r"\{(\w+)\}", lambda m: SAMPLES.get(m.group(1), "abc"), path)
 
 

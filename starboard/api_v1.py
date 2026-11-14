@@ -4,8 +4,11 @@ Rules from starboard/DEVELOPER-BEST-PRACTICE-2026-11-09.md (A1 to A19, AS1 to AS
 - Its own keys, separate from the browser's session (AS1): sb_<right>_<id>_<secret>, shown once, stored as SHA-256
   (AS2, AS3), sent only as "Authorization: Bearer" (AS4); a right and optional scopes (AS5). "read" reads; "manage"
   also does the everyday actions the pages do (approve a request, pause downloads, refresh the library). Nothing a
-  key can do changes settings, keys, plug-ins or the install, calls an address the key gives, or needs the password:
-  those stay with a signed-in person (STARBOARD-CAPABILITIES-2026-11-09.md lists them as never by key);
+  key can do changes settings, keys or plug-in choices, calls an address the key gives, or needs the password:
+  those stay with a signed-in person (STARBOARD-CAPABILITIES-2026-11-09.md lists them as never by key). The one
+  exception, since API 1.2.0 (DASH-424): a manage key with the updates scope, which is never given unless ticked,
+  may update Starboard, Reelix, an app or a plug-in to the version Starboard already knows of (never from an
+  address), and roll a plug-in back, each with the same backup, health check and way back as the pages;
   optional expiry, last used at most once a minute, revoke (AS8); an audit line for each change and each refused
   key (AS9); refused keys count towards the sign-in lockout per address (AS10). No cookies, so no CSRF and no CORS.
 - Answers: JSON, snake_case, RFC 3339 times; errors as RFC 9457 problem details (A6); lists with limit and an
@@ -33,11 +36,11 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.1.0"
+API_VERSION = "1.2.0"  # 1.2.0 (14 November 2026, DASH-424): updates, with the updates scope
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
-EXPLICIT_SCOPES = ("logs",)  # reached only when ticked: a key with no scopes does not have them (DASH-76)
+EXPLICIT_SCOPES = ("logs", "updates")  # reached only when ticked: a key with no scopes does not have them (DASH-76, DASH-424)
 ALL_SCOPES = SCOPES + EXPLICIT_SCOPES
 PER_MINUTE = 120
 MAX_STREAMS = 8  # A14: event streams open at once
@@ -55,6 +58,14 @@ _done = collections.OrderedDict()  # (key id, method, path, Idempotency-Key) -> 
 
 class NotReady(Exception):
     """What a route needs is not set up yet, such as Reelix for the Library: 409 not_set_up."""
+
+
+class Conflict(Exception):
+    """It cannot be done now (DASH-424): 409 with its own code, update_running or cannot_update."""
+
+    def __init__(self, message, code):
+        super().__init__(message)
+        self.code = code
 
 
 def _now():
@@ -570,6 +581,22 @@ def routes():
         items, nxt = page(rows, q)
         return {"items": items, "next_cursor": nxt}
 
+    def update_list(h, m, q):
+        """What can be updated (DASH-424), from what Starboard already knows: nothing is fetched to answer."""
+        from . import update_runs
+        items, nxt = page(scrub(update_runs.targets(h.app)), q)
+        running = next((r for r in update_runs.recent(h.app) if r["state"] == "running"), None)
+        return {"items": items, "running": update_runs.public(running) if running else None, "next_cursor": nxt}
+
+    def update_runs_list(h, m, q):
+        from . import update_runs
+        items, nxt = page([update_runs.public(r) for r in update_runs.recent(h.app)], q)
+        return {"items": items, "next_cursor": nxt}
+
+    def update_run(h, m, q):
+        from . import update_runs
+        return update_runs.public(update_runs.get(h.app, m.group(1)))
+
     def extras(h, m, q):
         rows = [{k: r.get(k) for k in ("key", "title", "what", "enabled", "started", "finished", "state", "summary", "needs")}
                 for r in h.app.jobs.status().get("jobs") or [] if r.get("key") in EXTRA_JOBS]
@@ -602,6 +629,9 @@ def routes():
         (r"^/api/v1/system/history$", "system", 60, system_history),
         (r"^/api/v1/extras$", "media", 30, extras),
         (r"^/api/v1/logs$", "logs", 30, log_entries),
+        (r"^/api/v1/updates$", "updates", 30, update_list),
+        (r"^/api/v1/updates/runs$", "updates", 5, update_runs_list),
+        (r"^/api/v1/updates/runs/([0-9a-f]{12})$", "updates", 2, update_run),
         (r"^/api/v1/events$", None, 0, None),  # the event stream: answered by _stream, each event by its own scope
     ]
 
@@ -665,6 +695,32 @@ def actions():
         watch.send(cfg.data["watch"]["channel"], f"Test from {cfg.data['site_name']}", "Alerts from Starboard reach you here.", "info")
         return 200, {"ok": True}
 
+    def update_start(h, m, q, b):
+        """Starts an update (DASH-424): only to the version Starboard already knows, never from an address."""
+        from . import update_runs
+        from . import services
+        try:
+            run = update_runs.start(h.app, str(b.get("target") or ""), by=f"api:{h.api_key['name']}")
+        except update_runs.Busy as e:
+            raise Conflict(str(e), "update_running") from None
+        except update_runs.Refused as e:
+            raise Conflict(str(e), "cannot_update") from None
+        except OSError as e:  # the plug-in's new manifest could not be read from its catalogue
+            raise services.ServiceError(f"The new version could not be read: {e}") from None
+        logs.event("info", "updates", f"Update of {run['name']} to {run['to']} started by the API key {h.api_key['name']}")
+        return 202, {"accepted": True, "run": update_runs.public(run), "status": f"/api/v1/updates/runs/{run['id']}"}
+
+    def update_rollback(h, m, q, b):
+        from . import update_runs
+        try:
+            run = update_runs.rollback(h.app, str(b.get("target") or ""), by=f"api:{h.api_key['name']}")
+        except update_runs.Busy as e:
+            raise Conflict(str(e), "update_running") from None
+        except update_runs.Refused as e:
+            raise Conflict(str(e), "cannot_update") from None
+        logs.event("info", "updates", f"Roll back of {run['name']} to {run['to']} started by the API key {h.api_key['name']}")
+        return 202, {"accepted": True, "run": update_runs.public(run), "status": f"/api/v1/updates/runs/{run['id']}"}
+
     def extra_run(h, m, q, b):
         h.app.jobs.run_soon(m.group(1), force=True)
         return 202, {"accepted": True, "status": "/api/v1/extras"}
@@ -677,6 +733,8 @@ def actions():
         (r"^/api/v1/containers/check$", "POST", "apps", containers_check),
         (r"^/api/v1/alerts/test$", "POST", "system", alerts_test),
         (r"^/api/v1/extras/(livetv|import|defaults|listening)/run$", "POST", "media", extra_run),
+        (r"^/api/v1/updates$", "POST", "updates", update_start),
+        (r"^/api/v1/updates/rollback$", "POST", "updates", update_rollback),
     ]
 
 
@@ -778,6 +836,8 @@ def _write(h, k, method, path, query, writes, base, rate, problem):
         status, code, title = 400, "bad_request", str(e)
     except NotReady as e:
         status, code, title = 409, "not_set_up", str(e)
+    except Conflict as e:
+        status, code, title = 409, e.code, str(e)
     except services.ServiceError as e:
         status, code, title = 502, "app_failed", "An app did not answer: " + str(e)[:300]
     audit(h.app.data_dir, "api_write", key_id=k["id"], method=method, path=path[:100], status=status)

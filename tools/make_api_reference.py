@@ -26,7 +26,11 @@ CODES = {400: ["bad_request"], 401: ["key_needed"], 404: ["not_found"], 405: ["m
          429: ["too_many_attempts", "rate_limited"]}
 SCOPE_WORDS = {"apps": "your apps and their status", "downloads": "downloads, download hours and history",
                "media": "Coming up, recently added, what is playing and the Jellyfin jobs", "system": "processor, memory, disks and alerts",
-               "library": "the Library", "requests": "requests", "logs": "the logs, only when ticked"}
+               "library": "the Library", "requests": "requests", "logs": "the logs, only when ticked",
+               "updates": "updates, only when ticked"}
+EXPLICIT = ("logs", "updates")  # api_v1.EXPLICIT_SCOPES: a key with no scopes does not have them
+# Codes that differ for some addresses: the updates' 409 is about the update, not about something to set up.
+CODES_FOR = {"/api/v1/updates": {409: ["update_running", "cannot_update"]}}
 CODES.update({403: ["right_needed"], 409: ["not_set_up"], 413: ["too_large"], 502: ["app_failed"], 503: ["too_many_streams"]})
 
 
@@ -42,6 +46,8 @@ SAMPLES = {"id": "123", "name": "livetv"}
 
 def route_for(path, table):
     """The route that answers a described path, trying it with a made-up value in each {name}."""
+    if path.startswith("/api/v1/updates/runs/"):
+        path = path.replace("{id}", "0123456789ab")  # an update run's id
     sample = re.sub(r"\{(\w+)\}", lambda m: SAMPLES.get(m.group(1), "example"), path)
     for pattern, scope, fresh in table:
         if pattern.match(sample):
@@ -64,6 +70,8 @@ def kind(spec, schema, used):
     """A schema in a few words, such as 'a list of App' or 'text or null'. Named objects are added to `used`."""
     if not schema:
         return "anything"
+    if "oneOf" in schema:
+        return " or ".join(kind(spec, x, used) for x in schema["oneOf"])
     if "$ref" in schema:
         name = ref_name(schema["$ref"])
         used.add(name)
@@ -116,6 +124,8 @@ def parameter_rows(spec, params):
 
 
 def example_path(path):
+    if path.startswith("/api/v1/updates/runs/"):
+        return path.replace("{id}", "0123456789ab")  # an update run's id
     if path.startswith("/api/v1/apps/"):
         return re.sub(r"\{[^}]+\}", "sonarr", path)  # an app's id
     return re.sub(r"\{(\w+)\}", lambda m: SAMPLES.get(m.group(1), "example"), path)
@@ -135,7 +145,8 @@ def operation(spec, path, method, op, table, used):
         scope = op.get("x-scope") or (found[0] if found else None)
         who = "a key made with Read and manage" if right == "manage" else "any key"
         if scope:
-            lines.append(f"- **Key:** {who} whose scopes are empty or include `{scope}` ({SCOPE_WORDS.get(scope, scope)}). "
+            which = f"whose scopes include `{scope}`" if scope in EXPLICIT else f"whose scopes are empty or include `{scope}`"
+            lines.append(f"- **Key:** {who} {which} ({SCOPE_WORDS.get(scope, scope)}). "
                          f"A key without it gets `404 not_found`.")
         else:
             lines.append(f"- **Key:** {who}.")
@@ -166,7 +177,8 @@ def operation(spec, path, method, op, table, used):
         if code.isdigit() and int(code) < 400:
             also.append(f"- **{code}:** {(r.get('description') or '').rstrip('.')}.")
         elif "$ref" in r and int(code) in CODES:
-            errs.append(f"- **{code}:** " + ", ".join(f"[`{c}`]({ERRORS}#{c})" for c in CODES[int(code)]) + ".")
+            codes = next((v[int(code)] for k, v in CODES_FOR.items() if path.startswith(k) and int(code) in v), CODES[int(code)])
+            errs.append(f"- **{code}:** " + ", ".join(f"[`{c}`]({ERRORS}#{c})" for c in codes) + ".")
         else:
             errs.append(f"- **{code}:** {(r.get('description') or '').rstrip('.')}.")
     if any(p.get("$ref", "").endswith(("/limit", "/cursor")) for p in params) and "400" not in responses:
