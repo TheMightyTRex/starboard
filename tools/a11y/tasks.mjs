@@ -460,6 +460,40 @@ if (rec) {
   }
 }
 
+// T20 A schedule setting (plug-in API 1.14, DASH-432): Tab reaches How often; the arrow keys choose Every week, which
+// saves at once with the saved note said, focus stays on the list, and Day comes next in the Tab order.
+await page.goto(`${base}/settings-plugin.html?id=picture-shrinker`);
+await settle();
+const tab20 = page.getByRole("tab", { name: "Settings", exact: true });
+if (await tab20.count()) { await tab20.focus(); await page.keyboard.press("Enter"); await page.waitForTimeout(300); }
+const often20 = await tabTo((f) => f.id === "pl-picture-shrinker-when-every", 160);
+check("T20", "Tab reaches How often in the schedule setting", !!often20, "not reached");
+if (often20) {
+  await page.keyboard.press("ArrowUp");  // Every month to Every week
+  await page.waitForTimeout(900);
+  const f20 = await focus();
+  check("T20", "choosing Every week keeps focus on How often", f20.id === "pl-picture-shrinker-when-every", f20.id);
+  check("T20", "the saved note is said beside it", /Saved/.test(await said()), await said());
+  await page.keyboard.press("Tab");
+  const day20 = await focus();
+  check("T20", "Day is next in the Tab order once it shows", day20.id === "pl-picture-shrinker-when-day", day20.id);
+  await page.evaluate(async () => { await api("/api/plugins/picture-shrinker/settings", { method: "PUT", body: { settings: { when: { every: "month", date: 31, time: "03:30" } } } }); });
+}
+// T21 The card band (plug-in API 1.14, DASH-428): the dashboard's plug-in cards are reached by heading, and each
+// band's chip and time read on their own.
+await page.goto(`${base}/dashboard.html`);
+await settle();
+await page.locator('[data-card="plugin:direct-play:now"] .card-band .chip').waitFor({ timeout: 8000 }).catch(() => {});
+const band21 = await page.evaluate(() => {
+  const card = document.querySelector('[data-card="plugin:direct-play:now"]');
+  const h = card?.querySelector(".card-band h2");
+  return { labelled: card?.getAttribute("aria-labelledby") === h?.id, chip: card?.querySelector(".card-band .chip")?.textContent,
+    time: card?.querySelector(".card-band time")?.textContent, focusable: card?.querySelectorAll(".card-band a, .card-band button, .card-band [tabindex]").length };
+});
+check("T21", "the card is named by its band's heading", band21.labelled, JSON.stringify(band21));
+check("T21", "the chip and the time read on their own", band21.chip === "Status: Converting" && /^Updated /.test(band21.time || ""), JSON.stringify(band21));
+check("T21", "the band adds no Tab stops", band21.focusable === 0, JSON.stringify(band21));
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

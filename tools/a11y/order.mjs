@@ -103,7 +103,7 @@ const ITEMS = { "library-film.html": "?id=3", "library-tv-show.html": "?id=8", "
   "settings-plugin.html": "?id=styles" };  // the example Styles plug-in, just updated, with What is new (DASH-393)
 for (const name of ALL) {
   try {
-    await page.goto(`${base}/${name}${ITEMS[name] || ""}`);
+    await page.goto(`${base}/${name}${name.includes("?") ? "" : ITEMS[name] || ""}`);  // PAGES may name a plug-in, such as settings-plugin.html?id=picture-shrinker
     await settle();
     await check(name);
     await tabOrder(name);
@@ -113,6 +113,13 @@ for (const name of ALL) {
     await page.setViewportSize({ width: 1280, height: 860 });
     console.log(`checked ${name}`);
   } catch (e) { add(name, "error", e.message.split("\n")[0]); }
+}
+// The picture shrinker's page (plug-in API 1.14): its logo beside the heading and its schedule setting, in order.
+if (!(process.env.PAGES || "")) {
+  for (const name of ["settings-plugin.html?id=picture-shrinker"]) {
+    try { await page.goto(`${base}/${name}`); await settle(); await check(name); await tabOrder(name); console.log(`checked ${name}`); }
+    catch (e) { add(name, "error", e.message.split("\n")[0]); }
+  }
 }
 // Apps in each card design (Display, Design): the parts of a card are placed in rows by design.
 for (const design of ["health", "tiles", "board", "shelf"]) {

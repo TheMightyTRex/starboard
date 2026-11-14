@@ -6,6 +6,7 @@ replaced with examples, and a fake Sonarr and Radarr answer on a second port. Da
 folder that is thrown away. Usage:  python3 tools/screenshots/example_server.py DATA_DIR [PORT]
 It prints READY when signed-in screenshots can start, and writes a throwaway password to DATA_DIR/password.
 """
+import base64
 import datetime as dt
 import time
 import json
@@ -439,7 +440,9 @@ def _example_watch_stats(data_dir):
             "settings": [{"key": "plays", "label": "Recent plays", "type": "custom", "choices": "/screen/plays"},
                          {"key": "titles", "label": "Top titles", "type": "custom", "choices": "/screen/titles"},
                          {"key": "people", "label": "People", "type": "custom", "choices": "/screen/people"},
-                         {"key": "days", "label": "Over the last", "type": "number", "unit": "days", "default": 30, "min": 1, "max": 365}]},
+                         {"key": "days", "label": "Over the last", "type": "number", "unit": "days", "default": 30, "min": 1, "max": 365}],
+            # No logo, so its card band shows its initials (plug-in API 1.14, DASH-428)
+            "cards": [{"id": "week", "title": "Watched this week", "type": "stat", "path": "/card/week", "format": "number"}]},
             "/nonexistent-media")
         plugins_admin.set_state(data_dir, "watch-stats", "enabled")
     if not any(p["id"] == "notifications" for p in plugins_admin.listing(data_dir)):
@@ -477,6 +480,15 @@ def _example_watch_stats(data_dir):
             raise ValueError("These figures are read only")
         return plugin_custom.clean(_watch_stats_screen(key))
     plugin_custom.call = call
+    real_answer = plugin_cards.answer
+
+    def answer(d, pid, cid, opener=None):  # its card, with a time and no status: the band shows only when it updated
+        if pid != "watch-stats":
+            return real_answer(d, pid, cid, opener)
+        return {"type": "stat", "format": "number", "asked": int(time.time()),
+                "data": plugin_cards.clean("stat", {"value": 42, "label": "hours watched", "note": "Up 6 hours on last week",
+                                                     "updated": int(time.time()) - 600})}
+    plugin_cards.answer = answer
     plugin_watch._ask = lambda pid, main, path: "ok" if pid in ("watch-stats", "notifications") else real_ask(pid, main, path)
     plugin_cards.action = lambda d, pid, aid, opener=None: (
         {"said": "Test sent by Telegram. This is example data, so nothing was sent."} if pid == "notifications" else real_action(d, pid, aid, opener))
@@ -572,12 +584,21 @@ _DP_NEXT = [("Slow Horses, series 1 episode 3", "Add a playable sound track"), (
 _DP_ASKED = {"now": 0, "saved": 0}
 
 
+# Direct play's logo (plug-in API 1.14, DASH-428): a play symbol on a screen, as its starboard-plugin.json names it.
+_DP_LOGO = (b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>Direct play</title>'
+            b'<rect x="0" y="0" width="24" height="24" rx="4" fill="#0b5f5a"/>'
+            b'<rect x="4" y="5" width="16" height="11" rx="1.5" fill="none" stroke="#ffffff" stroke-width="1.8"/>'
+            b'<path d="M10.5 8v5l4-2.5z" fill="#ffffff"/><path d="M8.5 19h7" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/></svg>')
+
+
 def _dp_card(cid, every):
     _DP_ASKED[cid] += 1
     if cid == "saved":
-        return {"value": 1030000000000, "label": "saved", "note": "1,173 files fixed, 40 files to do", "refresh_seconds": 2}
+        return {"value": 1030000000000, "label": "saved", "note": "1,173 files fixed, 40 files to do", "refresh_seconds": 2,
+                "status": "done", "status_label": "All checked"}
     pct = (34 + _DP_ASKED["now"]) % 100
-    return {"refresh_seconds": every, "items": [
+    # The card band (API 1.14): converting, and when the conversion last moved on
+    return {"refresh_seconds": every, "status": "converting", "updated": int(time.time()) - 30, "items": [
         {"title": "Converting now: Dune (2021)", "detail": f"Shrink, {pct}% done, about 1 hour 5 minutes left"},
         *[{"title": f"Next: {t}", "detail": d} for t, d in _DP_NEXT],
         {"title": "Totals", "detail": "1,173 files fixed, 1.03 TB saved, 40 files still to do"}]}
@@ -620,8 +641,11 @@ def _example_direct_play(data_dir):
                                       {"value": "60", "label": "1 minute"}, {"value": "300", "label": "5 minutes"}]}],
             "actions": [{"id": "pause", "label": "Pause fixing", "path": "/pause"}, {"id": "resume", "label": "Resume fixing", "path": "/resume"}],
             "cards": [{"id": "now", "title": "Direct play", "type": "list", "path": "/card", "refresh_seconds": 30},
-                      {"id": "saved", "title": "Space saved by Direct play", "type": "stat", "path": "/summary", "format": "bytes"}]},
+                      {"id": "saved", "title": "Space saved by Direct play", "type": "stat", "path": "/summary", "format": "bytes"}],
+            "logo": {"file": "logo.svg", "alt": "A play symbol on a screen"}},  # plug-in API 1.14 (DASH-428)
             "/nonexistent-media")
+        from starboard import plugin_logo
+        plugins_admin.keep_logo(data_dir, "direct-play", (plugin_logo.clean_svg(_DP_LOGO), "image/svg+xml"))
         plugins_admin.save_settings(data_dir, "direct-play", {"card_seconds": "10"})
         plugins_admin.set_state(data_dir, "direct-play", "enabled")
     real_answer, real_call, real_ask, real_action = plugin_cards.answer, plugin_custom.call, plugin_watch._ask, plugin_cards.action
@@ -665,6 +689,68 @@ def _example_direct_play(data_dir):
     plugin_cards.action = lambda d, pid, aid, opener=None: (
         {"said": "Paused. This is example data, so nothing was converted" if aid == "pause" else "Resumed. This is example data"}
         if pid == "direct-play" else real_action(d, pid, aid, opener))
+
+
+# A picture shrinker (DASH-432, plug-in API 1.14): a PNG logo, the jellyfin:metadata permission, a schedule setting
+# that its job runs on, and a card whose band says it is waiting for its next run. Nothing is read or shrunk.
+def _png_logo(side=64):
+    import struct
+    import zlib
+    rows = b"".join(b"\x00" + b"".join(b"\x4b\x3f\xa6" if 16 <= x < 48 and 16 <= y < 48 else b"\xe8\xea\xee" for x in range(side))
+                    for y in range(side))
+
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", side, side, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(rows, 9)) + chunk(b"IEND", b""))
+
+
+def _example_picture_shrinker(data_dir):
+    from starboard import plugin_cards, plugin_life, plugin_logo, plugin_watch
+    plugins_admin.jellyfin_metadata_dir = lambda d: "/srv/media-stack/config/jellyfin-metadata"  # as Install apps sets it (DASH-431)
+    if not any(p["id"] == "picture-shrinker" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {
+            "manifest_version": 1, "id": "picture-shrinker", "name": "Picture shrinker", "version": "1.0.0",
+            "description": "Shrinks the posters and photos Jellyfin keeps, so they take less space. Each is checked before it replaces the original.",
+            "author": "TheMightyTRexUK", "licence": "MIT", "homepage": "https://example.invalid/picture-shrinker",
+            "support_url": "https://example.invalid/picture-shrinker/issues", "starboard_api": ">=1.14 <2.0",
+            "permissions": ["jellyfin:metadata"], "needs": ["jellyfin"], "health": "/health",
+            "containers": [{"name": "main", "image": "ghcr.io/example/picture-shrinker@sha256:" + "e" * 64, "port": 8080,
+                            "volumes": ["data", "jellyfin-metadata"], "user": "media", "start": "when_needed"}],
+            "settings": [{"key": "when", "label": "When to shrink", "type": "schedule", "hint": "It runs at this time, in quiet hours or not.",
+                          "default": {"every": "month", "date": 31, "time": "03:30"}},
+                         {"key": "poster_height", "label": "Posters no taller than", "type": "number", "unit": "pixels", "default": 900, "min": 300, "max": 3000}],
+            "jobs": [{"id": "shrink", "label": "Shrink pictures", "path": "/jobs/shrink", "schedule": "when", "time_limit_minutes": 120}],
+            "cards": [{"id": "saved", "title": "Space saved", "type": "stat", "path": "/card", "format": "bytes"}],
+            "logo": {"file": "logo.png", "alt": "A small square inside a larger one"}},
+            "/nonexistent-media")
+        plugins_admin.keep_logo(data_dir, "picture-shrinker", (plugin_logo.check_png(_png_logo()), "image/png"))
+        plugins_admin.set_state(data_dir, "picture-shrinker", "enabled")
+    real_answer, real_ask, real_run = plugin_cards.answer, plugin_watch._ask, plugin_life.run_job
+
+    def answer(d, pid, cid, opener=None):
+        if pid != "picture-shrinker":
+            return real_answer(d, pid, cid, opener)
+        return {"type": "stat", "format": "bytes", "asked": int(time.time()),
+                "data": plugin_cards.clean("stat", {"value": 41200000000, "label": "saved", "note": "18,402 pictures shrunk",
+                                                     "status": "scheduled", "status_label": "Waiting for 03:30", "updated": int(time.time()) - 86400})}
+
+    def run_job(d, pid, jid, helper=None):  # Run now: said as done, nothing shrunk
+        if pid != "picture-shrinker":
+            return real_run(d, pid, jid, helper)
+        plugin_life._record(d, f"{pid}/{jid}", started=time.time(), finished=time.time(), status="done",
+                            summary="Shrank 0 pictures. This is example data")
+        return "Shrank 0 pictures. This is example data"
+    plugin_cards.answer, plugin_life.run_job = answer, run_job
+    plugin_watch._ask = lambda pid, main, path: "ok" if pid == "picture-shrinker" else real_ask(pid, main, path)
+    # A catalogue entry with its logo as catalogue.json carries it (API 1.14): Disk forecast's, as a data address that
+    # Starboard cleans like a logo file; Direct play's entry shows it once added, others their initials.
+    real_entry = plugins_admin._clean_entry
+    disk = base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#1f5f99"/>'
+                            b'<rect x="4" y="6" width="16" height="12" rx="1.5" fill="none" stroke="#ffffff" stroke-width="1.8"/>'
+                            b'<path d="M4 14h16" stroke="#ffffff" stroke-width="1.8"/><circle cx="16.5" cy="16" r="1" fill="#ffffff"/></svg>').decode()
+    plugins_admin._clean_entry = lambda e: real_entry({**e, "logo": "data:image/svg+xml;base64," + disk, "logo_alt": "A disk drive"}
+                                                      if isinstance(e, dict) and e.get("id") == "disk-forecast" else e)
 
 
 class _LazyStand:
@@ -1309,6 +1395,7 @@ def main():
     _example_app_plugins(str(DATA))
     _example_audio_description(str(DATA))
     _example_direct_play(str(DATA))
+    _example_picture_shrinker(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
     _example_full_backups()
@@ -1336,6 +1423,14 @@ def main():
         call("PUT", "/api/config/general", {"server_name": "Harbour", "setup_guide_done": True}, cookie)  # a set-up server (DASH-238)
         # Audio description ticked in the set-up (DASH-399), so the Plug-ins pages show the offer to install it.
         call("PUT", "/api/config/general", {"extras": {"audio_description": True}}, cookie)
+        # The dashboard with plug-in cards in the card band (plug-in API 1.14, DASH-428): Direct play with its logo and
+        # a Converting chip, Picture shrinker with a PNG logo and its own words on the chip, Watch statistics without
+        # a logo (its initials) and without a status.
+        call("PUT", "/api/config/general", {"dashboard": {"layout": "glance", "cards": [
+            {"id": "plugin:direct-play:now", "size": "half"}, {"id": "plugin:picture-shrinker:saved", "size": "half"},
+            {"id": "plugin:watch-stats:week", "size": "half"}, {"id": "playing", "size": "half"}, {"id": "health", "size": "half"},
+            {"id": "downloads", "size": "half"}, {"id": "coming", "size": "half"}, {"id": "recent", "size": "full"},
+            {"id": "disk", "size": "small"}, {"id": "load", "size": "small"}, {"id": "vpn", "size": "small"}, {"id": "alerts", "size": "small"}]}}, cookie)
         for name, kind, group, path in APPS:
             url = f"http://127.0.0.1:{FAKE_PORT}/{path}" if path else "http://127.0.0.1:9/"
             call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": url, "api_key": KEY if kind != "link" or path == "dispatcharr" else "",

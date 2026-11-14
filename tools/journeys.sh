@@ -16,7 +16,7 @@ server=$!
 for _ in $(seq 1 30); do grep -q READY "$work/server.log" 2>/dev/null && break; sleep 1; done
 grep -q READY "$work/server.log" || { cat "$work/server.log"; echo "The example server did not start" >&2; exit 1; }
 
-docker run --rm --network host -u "$(id -u):$(id -g)" -e HOME=/tmp \
+docker run --rm --memory 3g --memory-swap 3g --cpus 4 --network host -u "$(id -u):$(id -g)" -e HOME=/tmp \
   -e BASE="http://127.0.0.1:$PORT" -e PASSWORD_FILE=/work/data/password \
   -v "$work:/work" -v "$PWD/tools/journeys/journeys.mjs:/j/journeys.mjs:ro" -v "$PWD/web/js:/web-js:ro" \
   "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \

@@ -1269,6 +1269,82 @@ if (await every.count()) {
   await every.selectOption("10");
   await page.waitForTimeout(500);
 }
+// Plug-in API 1.14 (DASH-428, DASH-432): logos in Manage, the Catalogue and the plug-in's page; every plug-in card drawn
+// with the band (logo, name as the heading, a status chip and when it last updated); a job on a schedule from settings.
+console.log("\n== API 1.14 Logos, the card band and job schedules");
+await open("settings-plugins.html");
+const dpRow = page.locator("section[aria-labelledby=pl-yours-h] li", { hasText: "Direct play" });
+check("LOGO-01", "Manage shows Direct play's logo, served by Starboard, beside its name and hidden from screen readers",
+  (await dpRow.locator(".app-icon.has-image img[src^='/api/plugins/direct-play/logo']").count()) === 1
+  && (await dpRow.locator(".app-icon").getAttribute("aria-hidden")) === "true");
+check("LOGO-01", "a plug-in without a logo shows its initials on the tile",
+  (await page.locator("section[aria-labelledby=pl-yours-h] li", { hasText: "Watch statistics" }).locator(".app-icon[data-initials]").innerText()) === "WS");
+const logoAnswer = await page.evaluate(async () => { const r = await fetch("/api/plugins/direct-play/logo"); return { type: r.headers.get("content-type"), csp: r.headers.get("content-security-policy"), text: await r.text() }; });
+check("LOGO-02", "the logo is the cleaned SVG, sent with a policy that runs nothing",
+  logoAnswer.type === "image/svg+xml" && /sandbox/.test(logoAnswer.csp) && /default-src 'none'/.test(logoAnswer.csp) && !/script/i.test(logoAnswer.text), JSON.stringify(logoAnswer).slice(0, 200));
+check("LOGO-02", "a plug-in without a logo has nothing to serve", (await page.evaluate(async () => (await fetch("/api/plugins/watch-stats/logo")).status)) === 404);
+await open("settings-plugins-catalogue.html");
+check("LOGO-03", "a catalogue entry shows the logo catalogue.json carries, cleaned, as a data address",
+  (await page.locator(".row", { hasText: "Disk forecast" }).first().locator(".app-icon img[src^='data:image/svg+xml;base64,']").count()) === 1);
+await open("settings-plugin.html?id=direct-play");
+check("LOGO-04", "the plug-in's page shows its logo beside the name, with its text alternative",
+  (await page.locator(".plugin-head img").getAttribute("alt")) === "A play symbol on a screen" && (await page.locator(".plugin-head h1").innerText()) === "Direct play");
+
+await open("dashboard.html");
+const dpBand = page.locator('[data-card="plugin:direct-play:now"] .card-band');
+await dpBand.locator(".chip").waitFor({ timeout: 8000 }).catch(() => {});
+check("BAND-01", "Direct play's card has the grey band with its logo and its name as the card's heading",
+  (await dpBand.locator(".app-icon img").count()) === 1 && (await dpBand.locator("h2").innerText()) === "Direct play"
+  && await dpBand.evaluate((b) => getComputedStyle(b).backgroundColor !== getComputedStyle(b.parentElement).backgroundColor));
+check("BAND-02", "the chip and the time make sense alone to a screen reader",
+  (await dpBand.locator(".chip").textContent()) === "Status: Converting" && /^Updated (\d+ seconds|just now)/.test(await dpBand.locator("time").textContent()),
+  `${await dpBand.locator(".chip").textContent()} / ${await dpBand.locator("time").textContent()}`);
+check("BAND-02", "the chip and the time sit at the right of the band", await dpBand.evaluate((b) => {
+  const side = b.querySelector(".card-band__side").getBoundingClientRect(), h = b.querySelector("h2").getBoundingClientRect();
+  return side.left > h.left && Math.abs(side.top + side.height / 2 - (h.top + h.height / 2)) < 12; }));
+const bandHeadings = await page.evaluate(() => [...document.querySelectorAll("main h1, main h2, main h3, main h4")].map((h) => Number(h.tagName[1])));
+check("BAND-03", "the page's headings stay in order: the cards' headings are h2 under the page's h1",
+  bandHeadings[0] === 1 && bandHeadings.every((n, i) => i === 0 || n <= bandHeadings[i - 1] + 1), bandHeadings.join(","));
+const wsBand = page.locator('[data-card="plugin:watch-stats:week"] .card-band');
+check("BAND-04", "a plug-in without a logo has its initials, and without a status only the time",
+  (await wsBand.locator(".app-icon[data-initials]").innerText()) === "WS" && (await wsBand.locator(".chip").count()) === 0
+  && /^Updated 10 minutes ago$/.test(await wsBand.locator("time").textContent()) && /Watched this week/.test(await wsBand.locator("h2").innerText()));
+check("BAND-05", "a status with its own words keeps the chip's colour from the status",
+  (await page.locator('[data-card="plugin:picture-shrinker:saved"] .card-band .chip').textContent()) === "Status: Waiting for 03:30"
+  && (await page.locator('[data-card="plugin:picture-shrinker:saved"] .card-band .chip').getAttribute("data-tone")) === "neutral");
+check("BAND-06", "nothing in the band is a live region, so a refresh does not interrupt", (await page.locator(".card-band [aria-live], .card-band [role=status]").count()) === 0);
+
+await open("settings-plugin.html?id=picture-shrinker");
+const schedOften = page.getByLabel("How often", { exact: true });
+check("SCH-01", "the schedule setting shows how often, the date and the time, from its default",
+  (await schedOften.inputValue()) === "month" && (await page.getByLabel("Date", { exact: true }).inputValue()) === "31" && (await page.getByLabel("Time", { exact: true }).inputValue()) === "03:30"
+  && !(await page.getByLabel("Day", { exact: true }).isVisible()));
+const schedHeights = await page.evaluate(() => [...document.querySelectorAll(".schedule-fields select, .schedule-fields input")].filter((c) => c.offsetParent).map((c) => Math.round(c.getBoundingClientRect().height)));
+check("SCH-01", "the side-by-side controls share one height", schedHeights.length === 3 && new Set(schedHeights).size === 1, schedHeights.join(","));
+await schedOften.selectOption("week");
+await page.waitForTimeout(700);
+check("SCH-02", "Every week shows the day, saves at once and says so", await page.getByLabel("Day", { exact: true }).isVisible() && /Saved/.test(await page.locator(".setting--schedule").innerText()));
+await page.getByLabel("Day", { exact: true }).selectOption("tuesday");
+await page.waitForTimeout(500);
+await page.getByLabel("Time", { exact: true }).fill("04:15");
+await page.getByLabel("Time", { exact: true }).dispatchEvent("change");
+await page.waitForTimeout(700);
+const schedSaved = (await api("/api/plugins")).plugins.find((p) => p.id === "picture-shrinker").settings.find((x) => x.key === "when").value;
+check("SCH-02", "the schedule is kept as the person set it, with nothing stray", JSON.stringify(schedSaved) === '{"every":"week","time":"04:15","day":"tuesday"}', JSON.stringify(schedSaved));
+check("SCH-02", "focus stays on the control just used", await page.evaluate(() => document.activeElement?.id === "pl-picture-shrinker-when-time"));
+const schedBad = await page.evaluate(async () => (await fetch("/api/plugins/picture-shrinker/settings", { method: "PUT", headers: { "Content-Type": "application/json", "X-Starboard": "1" },
+  body: JSON.stringify({ settings: { when: { every: "week", time: "04:15" } } }) })).json());
+check("SCH-03", "Starboard checks a schedule and says what is wrong in plain words", schedBad.error === "When to shrink: needs a day of the week", JSON.stringify(schedBad));
+await open("system.html");
+const schedJob = page.locator("#jobs li", { hasText: "Picture shrinker: Shrink pictures" });
+await schedJob.waitFor({ timeout: 8000 }).catch(() => {});
+check("SCH-04", "System, Jobs shows the schedule in words and when it runs next",
+  /Every week on Tuesday at 04:15, next Tuesday \d{1,2} \w+ at 04:15/.test(await schedJob.innerText()), await schedJob.innerText().catch(() => ""));
+await schedJob.getByRole("button", { name: /Run now/ }).click();
+await page.waitForTimeout(2500);
+check("SCH-05", "Run now works as for any other job", /Shrank 0 pictures/.test(await page.locator("#jobs li", { hasText: "Picture shrinker" }).innerText()));
+await api("/api/plugins/picture-shrinker/settings", { method: "PUT", body: { settings: { when: { every: "month", date: 31, time: "03:30" } } } });
+
 // UPD: Update now and automatic Starboard updates (DASH-417). The example server has a newer made-up release and an
 // update that only writes update.sh's lines, so nothing is fetched or restarted.
 console.log("\n== UPD Update now");

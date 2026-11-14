@@ -25,7 +25,7 @@ step "API contract tests"
 python3 -m unittest tests.test_api_v1
 step "Plug-in tests"
 python3 -m unittest tests.test_plugins tests.test_plugins_admin tests.test_plugin_cards tests.test_plugin_life \
-  tests.test_plugin_custom tests.test_plugin_files tests.test_plugin_groups tests.test_plugin_catalogues
+  tests.test_plugin_custom tests.test_plugin_files tests.test_plugin_groups tests.test_plugin_catalogues tests.test_plugin_api_114
 
 step "Example plug-ins smoke test"
 plugins="${STARBOARD_PLUGINS:-}"

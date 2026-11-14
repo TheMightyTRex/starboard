@@ -14,7 +14,7 @@ EXAMPLE_CONTAINERS=1 python3 tools/screenshots/example_server.py "$work/data" "$
 server=$!
 for _ in $(seq 1 30); do grep -q READY "$work/server.log" 2>/dev/null && break; sleep 1; done
 grep -q READY "$work/server.log" || { cat "$work/server.log"; echo "The example server did not start" >&2; exit 1; }
-docker run --rm --network host -u "$(id -u):$(id -g)" -e HOME=/tmp -e BASE="http://127.0.0.1:$PORT" -e PASSWORD_FILE=/work/data/password \
+docker run --rm --memory 3g --memory-swap 3g --cpus 4 --network host -u "$(id -u):$(id -g)" -e HOME=/tmp -e BASE="http://127.0.0.1:$PORT" -e PASSWORD_FILE=/work/data/password \
   -e PAGES="${PAGES:-}" -e OUT=/work/a11y.json -v "$work:/work" -v "$PWD/tools/a11y/a11y.mjs:/j/a11y.mjs:ro" -v "$PWD/tools/a11y/order.mjs:/j/order.mjs:ro" -v "$PWD/tools/a11y/tasks.mjs:/j/tasks.mjs:ro" -e ORDER="${ORDER:-}" -e TASKS="${TASKS:-}" -v "$PWD/web:/web:ro" \
   "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
   sh -c "mkdir -p /tmp/a && cp /j/a11y.mjs /j/order.mjs /j/tasks.mjs /tmp/a/ && cd /tmp/a && npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT axe-core@$AXE_VERSION >/dev/null && if [ -n \"\$TASKS\" ]; then node tasks.mjs; elif [ -n \"\$ORDER\" ]; then OUT=/work/order.json node order.mjs; else node a11y.mjs; fi"
