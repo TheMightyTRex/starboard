@@ -7,7 +7,8 @@
 #
 # Before updating it backs up ./data to ./backups, except each plug-in's own data folder, which belongs to the
 # plug-in's user and stays where it is. If the new version does not start, it goes back to the version you had and
-# restores the backup.
+# restores the backup. When going forward it hands over to the new version's own update.sh first (DASH-429), so a fix
+# to this file takes effect in the update that brings it.
 set -euo pipefail
 
 umask 022  # files checked out below must be readable inside the container
@@ -28,7 +29,7 @@ while [ $# -gt 0 ]; do
     --check) CHECK=1 ;;
     --to) TARGET="${2:?--to needs a version, for example v0.2.0}"; shift ;;
     --main) CHANNEL=main ;;
-    -h|--help) sed -n '2,11p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -75,6 +76,22 @@ fi
 if [ "$CHECK" = 1 ]; then
   echo "Run ./update.sh to install it."
   exit 0
+fi
+
+# DASH-429: the update runs with the new version's own update.sh, so a fix to this file takes effect in the update that
+# brings it, not one update later. Only going forward: going back keeps this copy, as an older update.sh may lack a
+# fix this one has (such as leaving the plug-ins' own data out of the backup). STARBOARD_UPDATE_HANDED stops a loop:
+# the new copy never hands over again, even when it finds yet another version.
+if [ -z "${STARBOARD_UPDATE_HANDED:-}" ] && git merge-base --is-ancestor "$CURRENT" "$WANT" 2>/dev/null; then
+  newer_copy="$(mktemp)"
+  if git show "$WANT:update.sh" > "$newer_copy" 2>/dev/null && [ -s "$newer_copy" ] && ! cmp -s "$newer_copy" "$0"; then
+    say "Using the update steps from $WANT_NAME"
+    # The same version, pinned: a release by its tag; the main branch is followed again, as asked.
+    if [ "$CHANNEL" = main ] && [ -z "$TARGET" ]; then set -- --main; else set -- --to "$WANT_NAME"; fi
+    rm -f "$0"  # this temporary copy: bash keeps it open while it runs, and exec leaves no trap to remove it
+    STARBOARD_UPDATE_HANDED=1 STARBOARD_UPDATE_DIR="$STARBOARD_UPDATE_DIR" exec bash "$newer_copy" "$@"
+  fi
+  rm -f "$newer_copy"
 fi
 
 if git merge-base --is-ancestor "$CURRENT" "$WANT" 2>/dev/null; then
