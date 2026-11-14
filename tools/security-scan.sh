@@ -20,6 +20,9 @@ FULL=0
 [ "${1:-}" = "--full" ] && FULL=1
 TRIVY=aquasec/trivy:0.69.1
 ZAP=ghcr.io/zaproxy/zaproxy:stable
+# ZAP (Java) is capped, so a scan cannot run the server out of memory (14 November 2026: an uncapped active scan grew
+# to 4 GB beside other work and the computer ran out of memory). ZAP_MEMORY=4g gives it more on a bigger computer.
+ZAP_LIMITS="--memory ${ZAP_MEMORY:-3g} --memory-swap ${ZAP_MEMORY:-3g} --cpus ${ZAP_CPUS:-4}"
 work="$(mktemp -d)"
 # SCAN_REPORTS=folder keeps ZAP's reports (each warning with its address) after the scan; otherwise they go with it.
 trap '[ -n "${SCAN_REPORTS:-}" ] && mkdir -p "$SCAN_REPORTS" && cp -r "$work/zap/." "$SCAN_REPORTS/"; docker rm -f starboard-scan >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; rm -rf "$work"' EXIT
@@ -64,7 +67,7 @@ docker run -d --name starboard-scan --network "$NET" -u "$(id -u):$(id -g)" -e S
 for _ in $(seq 1 30); do [ -s "$work/data/setup-token" ] && break; sleep 1; done
 # The warnings explained in docs/SECURITY-AND-TESTS.md are marked IGNORE in tools/zap-rules.tsv.
 cp tools/zap-rules.tsv "$work/zap/rules.tsv"
-docker run --rm --network "$NET" -v "$work/zap:/zap/wrk:rw" "$ZAP" \
+docker run --rm --network "$NET" $ZAP_LIMITS -v "$work/zap:/zap/wrk:rw" "$ZAP" \
   zap-baseline.py -t "$TARGET" -m 3 -c rules.tsv > "$work/zap/baseline.txt" 2>&1
 grep -E "^(FAIL|WARN)-NEW" "$work/zap/baseline.txt"
 grep -q "FAIL-NEW: 0.*WARN-NEW: 0" "$work/zap/baseline.txt"
@@ -90,7 +93,7 @@ print(r.getheader("Set-Cookie").split(";")[0])'
     rules="$rules -config replacer.full_list($i).regex=false -config replacer.full_list($i).replacement=${pair#*=}"
     i=$((i + 1))
   done
-  docker run --rm --network "$NET" -v "$work/zap:/zap/wrk:rw" "$ZAP" \
+  docker run --rm --network "$NET" $ZAP_LIMITS -v "$work/zap:/zap/wrk:rw" "$ZAP" \
     zap-full-scan.py -t "$TARGET/index.html" -j -m 5 -T 45 -c rules.tsv -J full.json -z "$rules" > "$work/zap/full.txt" 2>&1
   grep -E "^(FAIL|WARN)-NEW" "$work/zap/full.txt"
   grep -q "FAIL-NEW: 0.*WARN-NEW: 0" "$work/zap/full.txt"
