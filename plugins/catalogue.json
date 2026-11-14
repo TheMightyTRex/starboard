@@ -37,6 +37,23 @@
    "starboard_api": ">=1.13 <2.0"
   },
   {
+   "id": "direct-play",
+   "name": "Direct play",
+   "description": "Makes your films and series play directly on the devices you choose, so Jellyfin does not convert them as they play: one file at a time, in the hours you choose.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "reelix:key",
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/direct-play/starboard-plugin.json",
+   "published": false,
+   "recommended": true
+  },
+  {
    "id": "disk-forecast",
    "name": "Disk forecast",
    "description": "When each disk fills at the rate it has been filling over the last month.",
@@ -47,7 +64,8 @@
    ],
    "version": "1.0.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/disk-forecast/starboard-plugin.json",
-   "published": true
+   "published": true,
+   "recommended": true
   },
   {
    "id": "dns-blocking",

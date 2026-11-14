@@ -3,7 +3,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.13.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.14.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -266,7 +266,18 @@ Each item in `cards` is a card people can add with **Edit dashboard**. Read
 | `format` | For `stat`: `number`, `bytes`, `percent`, `duration` (seconds) or `date` (seconds since 1970) | `number` when left out |
 | `label` | Another name for the card | Optional |
 | `example` | What the path answers | The tester checks its shape, and warns when it is missing |
-| `refresh_minutes` | How often Starboard asks | Minutes between asks, 1 to 1440; 1 when left out. Starboard never asks more often than once a minute. API 1.4 |
+| `refresh_minutes` | How often Starboard asks | Minutes between asks, 1 to 1440; 1 when left out. Starboard never asks more often than once a minute, unless the card has `refresh_seconds`. API 1.4 |
+| `refresh_seconds` | How often the dashboard asks, in seconds, such as `30` for a card that shows progress | A whole number from 10 to 3600. 10 seconds is the quickest any card is asked. The card's answer may give its own `refresh_seconds`, which wins, so a setting can change it. Left out, the card is asked as before, once a minute or every `refresh_minutes`. API 1.14 |
+
+```json
+"cards": [
+  {"id": "now", "title": "Direct play", "type": "list", "path": "/card", "refresh_seconds": 30}
+]
+```
+
+A card with `refresh_seconds` is asked again at that time while its dashboard is open and in view, never while the
+browser tab is hidden. Cards due at the same time are asked in one request. Read
+[How often a card is asked](plugin-api-reference.md#how-often-a-card-is-asked-api-114).
 
 ## Actions
 
@@ -386,6 +397,7 @@ Start each line with what people notice, in a few words.
 | 1.11 | 13 November 2026 | Four more events (`request.available`, `download.failed`, `disk.nearly_full`, `update.available`), and `readonly` on a custom setting's list with folds |
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
+| 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

@@ -128,9 +128,15 @@ const FORMATS = {
   duration: (v) => { const m = Math.round(Number(v) / 60); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; },
   date: (v) => new Date(Number(v) * 1000).toLocaleDateString("en-GB"),
 };
-async function pluginCard(id) {
+// A card's own refresh time (plug-in API 1.14, owner 14 November 2026): the answer's refresh_seconds, never under
+// 10 seconds. Cards due together are asked in one request, and nothing is asked while the tab is hidden.
+const OWN_FLOOR = 10;
+const ownTimes = new Map();  // card id -> {every (seconds), at (when it was last drawn)}
+async function pluginCard(id, given) {
   const [, pid, cid] = id.split(":");
-  const r = await api(`/api/plugins/${pid}/cards/${cid}`);
+  const r = given || await api(`/api/plugins/${pid}/cards/${cid}`);
+  if (r.refresh_seconds) ownTimes.set(id, { every: Math.max(OWN_FLOOR, Number(r.refresh_seconds) || 0), at: Date.now() });
+  else ownTimes.delete(id);
   if (r.problem) return empty(r.problem);
   const d = r.data;
   if (r.type === "stat") return el("p", { class: "dash-stat" }, el("strong", { text: (FORMATS[r.format] || FORMATS.number)(d.value) }),
@@ -191,6 +197,24 @@ async function fill(c, body, card) {
   } catch (e) {
     body.replaceChildren(empty(e.status === 409 || e.status === 400 ? e.message : "Could not ask."));
   }
+}
+
+// Cards with their own time that are due, asked together and drawn in place; the rest of the page is left alone.
+let ownBusy = false;
+async function ownTick() {
+  if (document.hidden || editing || ownBusy) return;
+  const now = Date.now();
+  const due = [...ownTimes].filter(([id, t]) => now - t.at >= t.every * 1000 - 500 && $(`[data-card="${id}"]`)).map(([id]) => id);
+  if (!due.length) return;
+  ownBusy = true;
+  try {
+    const { answers } = await api(`/api/plugins/cards/answers?ids=${encodeURIComponent(due.join(","))}`);
+    for (const id of due) {
+      const body = $(`[data-card="${id}"] .dash-card__body`);
+      if (body && answers[id]) body.replaceChildren(await pluginCard(id, answers[id]));
+    }
+  } catch { /* asked again at the next tick */ }
+  finally { ownBusy = false; }
 }
 
 function draw() {
@@ -264,5 +288,6 @@ startPage().then(async (session) => {
   // Once a minute while the page is in view; nothing while the tab is hidden.
   const tick = () => { if (!document.hidden && !editing) draw(); };
   timer = setInterval(tick, 60000);
+  setInterval(ownTick, OWN_FLOOR * 1000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
 });

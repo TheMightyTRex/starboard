@@ -63,6 +63,24 @@ class Catalogues(unittest.TestCase):
         with self.assertRaises(LookupError):
             pa.remove_source(cfg, OTHER)
 
+    def test_only_the_own_collection_may_recommend(self):
+        # DASH-425 (owner, 14 November 2026): "its recommended in the catalogue", never added by itself.
+        cfg = Cfg()
+        cfg.data["plugin_catalogues"] = [{"url": OTHER, "name": "x"}]
+        own = {**ENTRY, "id": "direct-play", "recommended": True}
+        op = Opener({pa.CATALOGUE_URL: {"name": "Starboard plug-ins", "plugins": [own, {**ENTRY, "id": "plain"}, {**ENTRY, "id": "odd", "recommended": "yes"}]},
+                     OTHER: {"name": "Friend", "plugins": [{**ENTRY, "recommended": True}]}})
+        _, items = pa.catalogue(cfg, op, now=1000)
+        got = {(e["id"], e["own"]): e["recommended"] for e in items}
+        self.assertEqual(got, {("direct-play", True): True, ("plain", True): False, ("odd", True): False, ("hello", False): False})
+
+    def test_the_shipped_copy_recommends_direct_play(self):
+        import os
+        with open(os.path.join(os.path.dirname(__file__), "..", "plugins", "catalogue.json"), encoding="utf-8") as f:
+            rows = {e["id"]: e for e in json.load(f)["plugins"]}
+        self.assertIs(rows["direct-play"]["recommended"], True)
+        self.assertLessEqual(sum(1 for e in rows.values() if e.get("recommended")), 4)  # a few, not every one
+
     def test_refuses_what_is_not_a_catalogue(self):
         for bad in ("http://example.org/c.json", "not an address"):
             with self.assertRaises(ValueError):

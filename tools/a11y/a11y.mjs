@@ -132,7 +132,7 @@ const ALL = pages.length ? pages : fs.readdirSync(process.env.WEB || "/web").fil
   // A plug-in's own page with a plug-in: the example Styles plug-in, just updated, shows What is new (DASH-393).
   .concat(["settings-plugin.html?id=styles", "settings-plugin.html?id=watch-stats", "settings-plugin.html?id=notifications",
     "settings-plugin.html?id=audio-description-sources", "settings-plugin.html?id=audio-description-tracks",
-    "settings-plugin.html?id=jellystat", "settings-plugin.html?id=tdarr"]);  // app plug-ins (DASH-411)  // links on rows and a file-only upload (DASH-410)  // read-only tables (DASH-402), settings in sections with secrets (DASH-401)
+    "settings-plugin.html?id=jellystat", "settings-plugin.html?id=tdarr", "settings-plugin.html?id=direct-play"]);  // Direct play (DASH-425)  // app plug-ins (DASH-411)  // links on rows and a file-only upload (DASH-410)  // read-only tables (DASH-402), settings in sections with secrets (DASH-401)
 for (const name of ALL) {
   try {
     await page.goto(`${base}/${name}`);

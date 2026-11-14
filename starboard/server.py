@@ -2862,6 +2862,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/plugins/cards" and method == "GET":  # plug-in cards for the dashboard
             from . import plugin_cards
             return self.json(200, {"cards": plugin_cards.available(app.data_dir)})
+        if path == "/api/plugins/cards/answers" and method == "GET":  # cards due together, in one request (API 1.14)
+            from . import plugin_cards
+            ids = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("ids", [""])[0].split(",")
+            return self.json(200, {"answers": plugin_cards.answers(app.data_dir, [i for i in ids if i])})
         mc = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/cards/([A-Za-z0-9_-]{1,40})$", path)
         if mc and method == "GET":
             from . import plugin_cards

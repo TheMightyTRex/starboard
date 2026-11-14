@@ -438,6 +438,28 @@ check("T18", "Tab reaches the row's link, which says it opens in a new tab", !!l
 const file18 = await tabTo((f) => f.tag === "INPUT" && f.inMain && f.id === "add-audio-description-tracks-inbox-file", 20);
 check("T18", "Tab reaches the file picker for an upload", !!file18, file18 ? file18.id : "not reached");
 
+// T19 Recommended plug-ins (DASH-425): from the Catalogue's heading, Tab reaches Install for a recommended plug-in,
+// whose name is said; Enter opens What it may do with focus in it; Escape closes it and focus goes back to Install.
+await page.goto(`${base}/settings-plugins-catalogue.html`);
+await settle();
+await page.locator("h1").first().focus().catch(() => {});
+const rec = await tabTo((f) => f.tag === "BUTTON" && /^Install… Disk forecast$/.test(f.text), 80);
+check("T19", "Tab reaches Install for a recommended plug-in, named for a screen reader", !!rec, rec ? rec.text : "not reached");
+if (rec) {
+  await page.keyboard.press("Enter");
+  await settle();
+  const in19 = await focus();
+  if (in19.inPanel) {  // the warning opened: focus is in it, and Escape gives it back to Install
+    check("T19", "Install opens the warning with focus in it", !in19.lost, `${in19.tag} ${in19.text}`);
+    await page.keyboard.press("Escape");
+    await settle();
+    const back19 = await focus();
+    check("T19", "Escape closes it and focus goes back to Install", /^Install… Disk forecast$/.test(back19.text), back19.text);
+  } else {  // the example server has no copy of its manifest: the problem is said and focus is not lost
+    check("T19", "when the warning cannot open, focus is not lost and the problem is said", !in19.lost && !!(await said()), `${in19.text} / ${await said()}`);
+  }
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

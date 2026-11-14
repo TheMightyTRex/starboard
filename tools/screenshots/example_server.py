@@ -540,6 +540,120 @@ def _example_audio_description(data_dir):
     plugin_watch._ask = lambda pid, main, path: "ok" if pid in ours else real_ask(pid, main, path)
 
 
+# Direct play (DASH-425, plug-in API 1.14): the example plug-in added and active, with made-up progress, so its card
+# (converting now, next up and the totals, every 10 seconds here) and its Files table show. Its card answers go
+# through Starboard's own card code with a stand-in for the container, so the 10-second floor is the real one: the
+# Space saved card asks for 2 seconds and is held to 10. Nothing is converted and no container starts.
+_DP_NEXT = [("Slow Horses, series 1 episode 3", "Add a playable sound track"), ("Brazil (1985)", "Repackage as MKV"),
+            ("Paddington 2 (2017)", "Shrink"), ("Bluey, series 2 episode 7", "Convert to H.264")]
+_DP_ASKED = {"now": 0, "saved": 0}
+
+
+def _dp_card(cid, every):
+    _DP_ASKED[cid] += 1
+    if cid == "saved":
+        return {"value": 1030000000000, "label": "saved", "note": "1,173 files fixed, 40 files to do", "refresh_seconds": 2}
+    pct = (34 + _DP_ASKED["now"]) % 100
+    return {"refresh_seconds": every, "items": [
+        {"title": "Converting now: Dune (2021)", "detail": f"Shrink, {pct}% done, about 1 hour 5 minutes left"},
+        *[{"title": f"Next: {t}", "detail": d} for t, d in _DP_NEXT],
+        {"title": "Totals", "detail": "1,173 files fixed, 1.03 TB saved, 40 files still to do"}]}
+
+
+def _dp_screen():
+    rows = [("Dune (2021)", "Converting now", "Shrink", "31.4 Mbps", "38.2 GB")] + [(t, "Still to do", d, "sound is DTS" if "sound" in d else "example", "4.1 GB") for t, d in _DP_NEXT]
+    rows += [("The Bear, series 1 episode 1", "Left alone", "Left alone", "HEVC: left alone, Jellyfin converts it as it plays", "1.2 GB")]
+    return {"type": "list", "title": "Files", "layout": "folds", "readonly": True,
+            "intro": "1,173 files fixed, 1.03 TB saved, 40 files still to do. This is example data.",
+            "columns": [{"key": "title", "label": "Title"}, {"key": "needs", "label": "What it needs"}, {"key": "why", "label": "Why"},
+                        {"key": "size", "label": "Size"}],
+            "filters": [{"key": "needs", "label": "What it needs"}],
+            "notices": [{"id": "now", "tone": "info", "title": "Converting Dune (2021)", "text": "Shrink, about 1 hour 5 minutes left", "progress": 34}],
+            "items": [{"id": f"r{i}", "title": t, "group": g, "actions": [], "cells": {"title": t, "needs": n, "why": w, "size": z}}
+                      for i, (t, g, n, w, z) in enumerate(rows)]}
+
+
+def _example_direct_play(data_dir):
+    from starboard import plugin_cards, plugin_custom, plugin_watch
+    if not any(p["id"] == "direct-play" for p in plugins_admin.listing(data_dir)):
+        sw = lambda key, label, on=False: {"key": key, "label": label, "type": "switch", "default": on, "group": "Devices"}  # noqa: E731
+        plugins_admin.install(data_dir, {
+            "manifest_version": 1, "id": "direct-play", "name": "Direct play", "version": "1.0.0",
+            "description": "Makes your films and series play directly on the devices you choose, so Jellyfin does not convert them as they play.",
+            "author": "TheMightyTRexUK", "licence": "MIT", "homepage": "https://example.invalid/direct-play",
+            "support_url": "https://example.invalid/direct-play/issues", "starboard_api": ">=1.14 <2.0",
+            "permissions": ["jellyfin:key", "reelix:key", "network:lan"], "needs": ["jellyfin"], "health": "/health",
+            "containers": [{"name": "main", "image": "ghcr.io/example/direct-play@sha256:" + "f" * 64, "port": 8080, "network": "lan",
+                            "volumes": ["data", "media/movies", "media/tv"], "user": "media"}],
+            "resources": {"main": {"memory": 512, "cpus": 1.0}},
+            "settings": [{"key": "files", "label": "Files", "type": "custom", "choices": "/files", "group": "Files"},
+                         sw("device_roku_express", "Roku Express and older Rokus", True), sw("device_roku_4k", "Roku 4K"),
+                         sw("device_fire_tv", "Fire TV Sticks"), sw("device_shield", "Nvidia Shield"),
+                         {"key": "when", "label": "When it works", "type": "choice", "default": "weekends", "group": "When it works",
+                          "choices": [{"value": "weekends", "label": "At weekends"}, {"value": "quiet", "label": "In Starboard's quiet hours"},
+                                      {"value": "any", "label": "Any time"}]},
+                         {"key": "card_seconds", "label": "Card updates every", "type": "choice", "default": "30", "group": "More",
+                          "choices": [{"value": "10", "label": "10 seconds"}, {"value": "30", "label": "30 seconds"},
+                                      {"value": "60", "label": "1 minute"}, {"value": "300", "label": "5 minutes"}]}],
+            "actions": [{"id": "pause", "label": "Pause fixing", "path": "/pause"}, {"id": "resume", "label": "Resume fixing", "path": "/resume"}],
+            "cards": [{"id": "now", "title": "Direct play", "type": "list", "path": "/card", "refresh_seconds": 30},
+                      {"id": "saved", "title": "Space saved by Direct play", "type": "stat", "path": "/summary", "format": "bytes"}]},
+            "/nonexistent-media")
+        plugins_admin.save_settings(data_dir, "direct-play", {"card_seconds": "10"})
+        plugins_admin.set_state(data_dir, "direct-play", "enabled")
+    real_answer, real_call, real_ask, real_action = plugin_cards.answer, plugin_custom.call, plugin_watch._ask, plugin_cards.action
+
+    class Stand:  # the plug-in's container, answering from the made-up progress
+        def __init__(self, body):
+            self.body = json.dumps(body).encode()
+
+        def open(self, req, timeout=None):
+            body = self.body
+
+            class R:
+                def read(self, n):
+                    return body
+
+                def __enter__(self):
+                    return self
+
+                def __exit__(self, *a):
+                    return False
+            return R()
+
+    def answer(d, pid, cid, opener=None):
+        if pid != "direct-play":
+            return real_answer(d, pid, cid, opener)
+        saved = plugins_admin._read_kept(os.path.join(plugins_admin.folder(d, "direct-play"), "settings.json"), {}) or {}
+        every = int(saved.get("card_seconds") or 30)
+        return real_answer(d, pid, cid, _LazyStand(lambda: _dp_card(cid, every), Stand))
+
+    def call(data_dir_, pid, key, body=None, opener=None):
+        if pid != "direct-play":
+            return real_call(data_dir_, pid, key, body, opener)
+        out = plugin_custom.clean(_dp_screen())
+        if body is not None:
+            out["said"] = "This is example data, so nothing changed"
+        return out
+    plugin_cards.answer, plugin_custom.call = answer, call
+    real_host = plugin_cards._host
+    plugin_cards._host = lambda pid, main, wake=True: "direct-play.invalid" if pid == "direct-play" else real_host(pid, main, wake)
+    plugin_watch._ask = lambda pid, main, path: "ok" if pid == "direct-play" else real_ask(pid, main, path)
+    plugin_cards.action = lambda d, pid, aid, opener=None: (
+        {"said": "Paused. This is example data, so nothing was converted" if aid == "pause" else "Resumed. This is example data"}
+        if pid == "direct-play" else real_action(d, pid, aid, opener))
+
+
+class _LazyStand:
+    """Makes the made-up answer only when Starboard really asks the container, so a kept answer is not counted."""
+    def __init__(self, make, stand):
+        self.make, self.stand = make, stand
+
+    def open(self, req, timeout=None):
+        return self.stand(self.make()).open(req, timeout)
+
+
+
 from starboard import noip  # noqa: E402  The No-IP updater (DASH-170), with made-up addresses
 noip.status = lambda data_dir, **k: {"installed": True, "running": True, "state": "refused", "last_update": "2026-11-09T10:19:01Z",
                                      "address": "203.0.113.7", "said": "Type a new DDNS key or password below, then save. The updater starts again with it.",
@@ -1171,6 +1285,7 @@ def main():
     _example_watch_stats(str(DATA))
     _example_app_plugins(str(DATA))
     _example_audio_description(str(DATA))
+    _example_direct_play(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
     _example_full_backups()
