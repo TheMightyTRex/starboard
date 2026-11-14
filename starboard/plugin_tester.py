@@ -101,6 +101,22 @@ def run(manifest, dev=False, builtin=False, logo_problem=""):
             issues.append({"severity": "info", "area": "quality", "where": f"cards[{i}]",
                            "what": "No status in the example, so the card's band shows only when it last updated",
                            "fix": "Answer status (such as working, done or problem) when the plug-in works in the background"})
+    # Updating safely (API 1.14, DASH-424): What is new before and after, and work that an update could cut short.
+    listed = [c.get("version") for c in manifest.get("changes") or [] if isinstance(c, dict)]
+    if listed and manifest.get("version") not in listed:
+        issues.append({"severity": "warning", "area": "quality", "where": "changes",
+                       "what": f"changes has nothing for this version, {manifest.get('version')}, so What is new cannot say what changed",
+                       "fix": "Add this version to changes, newest first, before you publish it"})
+    elif not listed and manifest.get("containers"):
+        issues.append({"severity": "info", "area": "quality", "where": "changes", "what": "No changes, so What is new says its maker did not list them",
+                       "fix": "Add changes: each version with what was added, changed or fixed, shown before and after an update"})
+    upd = manifest.get("update") if isinstance(manifest.get("update"), dict) else {}
+    if manifest.get("jobs") and manifest.get("containers") and not upd.get("before"):
+        issues.append({"severity": "info", "area": "quality", "where": "update", "what": "It has jobs, but no before step, so an update can stop one part way",
+                       "fix": "Add update.before: a path that finishes or pauses its work, answering {\"ok\": true} when it is ready"})
+    if upd.get("migrations") and not manifest.get("changes"):
+        issues.append({"severity": "info", "area": "quality", "where": "update.migrations", "what": "Settings move in this version, but changes does not say so",
+                       "fix": "Say in changes what moved, so people know before they update"})
     if manifest.get("containers") and not manifest.get("health"):
         issues.append({"severity": "warning", "area": "quality", "where": "health", "what": "No health path, so Starboard cannot tell when it breaks",
                        "fix": "Add a cheap GET path that answers 200, such as /health"})

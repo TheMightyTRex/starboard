@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.14.0"  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432)  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.14.0"  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432); update tools (DASH-424): an update object with a before and an after step Starboard calls with time limits, a health wait after which a version that does not answer is rolled back by itself, and settings migrations (rename, remove, new defaults) kept for Roll back, and What is new shown before an update from the new version's changes  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -46,9 +46,9 @@ APP_CEILING_MEMORY, APP_CEILING_CPUS = 2048, 4.0
 
 TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
        "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles",
-       "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo"}
+       "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo", "update"}
 REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers",
-                  "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo"}
+                  "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo", "update"}
 CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command", "publish",
              "host_port", "tmpfs", "entrypoint", "files"}
 # API 1.13 (DASH-411): what an app plug-in needs. A path inside the container (for tmpfs and data:<path>), never
@@ -370,6 +370,9 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"resources.{name}: pids is a whole number from 16 to {MAX_PIDS} (API 1.13)")
     out += check_adopt(m.get("adopt"), containers)
     out += check_changes(m.get("changes"))
+    if "update" in m:  # API 1.14 (DASH-424): before and after steps, the health wait and settings migrations
+        from . import plugin_update
+        out += plugin_update.check(m)
     if "logo" in m:  # API 1.14 (DASH-428)
         from . import plugin_logo
         out += plugin_logo.check_entry(m["logo"])
@@ -697,7 +700,11 @@ def write_schema(path):
                               "properties": {"every": {"enum": list(SCHEDULE_EVERY)}, "time": {"type": "string", "pattern": TIME},
                                              "day": {"enum": list(WEEKDAYS)}, "date": {"type": "integer", "minimum": 1, "maximum": 31}},
                               "allOf": [{"if": {"properties": {"every": {"const": "week"}}}, "then": {"required": ["day"]}},
-                                        {"if": {"properties": {"every": {"const": "month"}}}, "then": {"required": ["date"]}}]}},
+                                        {"if": {"properties": {"every": {"const": "month"}}}, "then": {"required": ["date"]}}]},
+                 # API 1.14 (DASH-424): a step Starboard calls before or after an update
+                 "update_step": {"type": "object", "additionalProperties": False, "required": ["path"],
+                                 "properties": {"path": {"type": "string", "pattern": "^/[A-Za-z0-9/_-]{1,80}$"},
+                                                "time_limit_seconds": {"type": "integer", "minimum": 5, "maximum": 300}}}},
         "required": sorted(REQUIRED),
         "properties": {
             "manifest_version": {"const": 1}, "id": {"type": "string", "pattern": ID}, "name": {"type": "string", "maxLength": 40},
@@ -778,6 +785,17 @@ def write_schema(path):
             "logo": {"type": "object", "additionalProperties": False, "required": ["file", "alt"],
                      "properties": {"file": {"type": "string", "pattern": "^(?:[a-z0-9][a-z0-9_-]{0,29}/)?[A-Za-z0-9][A-Za-z0-9._-]{0,60}\\.(svg|png)$"},
                                     "alt": {"type": "string", "minLength": 3, "maxLength": 80}}},
+            # API 1.14 (DASH-424): update tools
+            "update": {"type": "object", "additionalProperties": False, "properties": {
+                "before": {"$ref": "#/$defs/update_step"}, "after": {"$ref": "#/$defs/update_step"},
+                "health_wait_seconds": {"type": "integer", "minimum": 10, "maximum": 600},
+                "migrations": {"type": "array", "minItems": 1, "maxItems": 20, "items": {
+                    "type": "object", "additionalProperties": False, "required": ["version"],
+                    "properties": {"version": {"type": "string", "pattern": SEMVER},
+                                   "rename": {"type": "object", "maxProperties": 20, "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,40}$"},
+                                              "additionalProperties": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$"}},
+                                   "remove": {"type": "array", "maxItems": 20, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$"}},
+                                   "defaults": {"type": "object", "maxProperties": 20, "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,40}$"}}}}}}},
             # API 1.10 (DASH-393)
             "changes": {"type": "array", "minItems": 1, "maxItems": 20, "items": {
                 "type": "object", "additionalProperties": False, "required": ["version"],

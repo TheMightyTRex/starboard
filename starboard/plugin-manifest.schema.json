@@ -96,6 +96,24 @@
      }
     }
    ]
+  },
+  "update_step": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "path"
+   ],
+   "properties": {
+    "path": {
+     "type": "string",
+     "pattern": "^/[A-Za-z0-9/_-]{1,80}$"
+    },
+    "time_limit_seconds": {
+     "type": "integer",
+     "minimum": 5,
+     "maximum": 300
+    }
+   }
   }
  },
  "required": [
@@ -735,6 +753,67 @@
      "type": "string",
      "minLength": 3,
      "maxLength": 80
+    }
+   }
+  },
+  "update": {
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+    "before": {
+     "$ref": "#/$defs/update_step"
+    },
+    "after": {
+     "$ref": "#/$defs/update_step"
+    },
+    "health_wait_seconds": {
+     "type": "integer",
+     "minimum": 10,
+     "maximum": 600
+    },
+    "migrations": {
+     "type": "array",
+     "minItems": 1,
+     "maxItems": 20,
+     "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+       "version"
+      ],
+      "properties": {
+       "version": {
+        "type": "string",
+        "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$"
+       },
+       "rename": {
+        "type": "object",
+        "maxProperties": 20,
+        "propertyNames": {
+         "pattern": "^[a-z][a-z0-9_]{0,40}$"
+        },
+        "additionalProperties": {
+         "type": "string",
+         "pattern": "^[a-z][a-z0-9_]{0,40}$"
+        }
+       },
+       "remove": {
+        "type": "array",
+        "maxItems": 20,
+        "items": {
+         "type": "string",
+         "pattern": "^[a-z][a-z0-9_]{0,40}$"
+        }
+       },
+       "defaults": {
+        "type": "object",
+        "maxProperties": 20,
+        "propertyNames": {
+         "pattern": "^[a-z][a-z0-9_]{0,40}$"
+        }
+       }
+      }
+     }
     }
    }
   },

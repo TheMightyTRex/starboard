@@ -197,6 +197,10 @@ def update(data_dir, pid, manifest, media_dir, helper=None, services=None, dev=F
         if os.path.exists(os.path.join(where, name)):
             shutil.copy2(os.path.join(where, name), os.path.join(prev, name))
     values = pa._read(os.path.join(where, "settings.json"), {}) or {}
+    # API 1.14 (DASH-424): the new version's migrations move the saved settings first (renamed or removed keys, new
+    # defaults). The settings from before are in previous/ with the old version, so Roll back puts them back.
+    from . import plugin_update
+    values, migrated = plugin_update.migrate(old, manifest, values)
     for s in manifest.get("settings") or []:
         if s.get("key") not in values and "default" in s:
             values[s["key"]] = s["default"]
@@ -207,10 +211,11 @@ def update(data_dir, pid, manifest, media_dir, helper=None, services=None, dev=F
         pa._write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, pa.host_path(data_dir, pid), media_dir,
                                                                            media_user=pa.media_owner(data_dir), extra=pa.base_extra(data_dir, manifest)), 0o644)  # the rest: written by enable()
     was_on = st.get("state") == "enabled"
-    st.update(updated_at=time.time(), previous_version=old.get("version"))
+    st.update(updated_at=time.time(), previous_version=old.get("version"), migrated=migrated)
     st["whats_new"] = _whats_new_mark(st, old.get("version"), manifest.get("version"), note)
     pa._write(os.path.join(where, "state.json"), st)
-    api_v1.audit(data_dir, "plugin_updated", plugin=pid, version=manifest.get("version"), previous=old.get("version"))
+    api_v1.audit(data_dir, "plugin_updated", plugin=pid, version=manifest.get("version"), previous=old.get("version"),
+                 **({"settings_moved": "; ".join(migrated)[:300]} if migrated else {}))
     if was_on:
         try:
             pa.enable(data_dir, pid, helper=helper, services=services)
@@ -241,7 +246,7 @@ def rollback(data_dir, pid, media_dir, helper=None, services=None):
     os.rmdir(swap)
     st = _new_key_if_scopes_changed(data_dir, pid, now, old, st)
     was_on = st.get("state") in ("enabled", "failed")
-    st.update(updated_at=0, previous_version=now.get("version"), message="")
+    st.update(updated_at=0, previous_version=now.get("version"), message="", migrated=[])
     st["whats_new"] = _whats_new_mark(st, now.get("version"), old.get("version"), "")
     pa._write(os.path.join(where, "state.json"), st)
     api_v1.audit(data_dir, "plugin_rolled_back", plugin=pid, version=old.get("version"), previous=now.get("version"))
@@ -279,7 +284,7 @@ def whats_new(data_dir, pid, manifest=None, st=None):
     """{kind, from, to, versions, note} while there is something not yet seen, else None. kind is "newer" after
     going up a version and "older" after going back; versions are the changes between the two, newest first, each
     {version, date, sections: [{type, items: [parts]}]} in the parts the page builds as text."""
-    from . import changes
+    from . import plugin_update
     where = pa.folder(data_dir, pid)
     st = st if st is not None else pa._read_kept(os.path.join(where, "state.json"), {}) or {}
     mark = st.get("whats_new")
@@ -290,12 +295,7 @@ def whats_new(data_dir, pid, manifest=None, st=None):
     low, high = (mark.get("from"), mark["to"]) if newer else (mark["to"], mark.get("from"))
     # Going back, the words are in the version left behind, kept in previous/ (or the current one, which may list it).
     source = m if newer else (pa._read_kept(os.path.join(where, "previous", "manifest.json"), {}) or m)
-    listed = source.get("changes") if isinstance(source.get("changes"), list) and not plugins.check_changes(source.get("changes")) else []
-    picked = [v for v in listed if (low is None or _key(v["version"]) > _key(low)) and _key(v["version"]) <= _key(high)]
-    picked.sort(key=lambda v: _key(v["version"]), reverse=True)
-    versions = [{"version": v["version"], "date": changes._date(v["date"]) if v.get("date") else "",
-                 "sections": [{"type": t.capitalize(), "items": [changes._inline(x.strip()) for x in v[t]]}
-                              for t in plugins.CHANGE_TYPES if v.get(t)]} for v in picked]
+    versions = plugin_update.changes_between(source, low, high)  # the same words the update warning showed before
     return {"kind": "newer" if newer else "older", "from": mark.get("from"), "to": mark["to"],
             "versions": versions, "note": mark.get("note", "")}
 
