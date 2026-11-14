@@ -44,9 +44,10 @@ def _text_checks(m):
     return out
 
 
-def run(manifest, dev=False, builtin=False):
+def run(manifest, dev=False, builtin=False, logo_problem=""):
     """All issues for a manifest: [{severity, area, where, what, fix}], errors first. Never empty of accessibility
-    checks: when a plug-in has nothing to check, it says what was checked."""
+    checks: when a plug-in has nothing to check, it says what was checked. `logo_problem`: what was wrong with its
+    logo file when Starboard read it (API 1.14), from beside its address or its folder."""
     issues = []
     if not isinstance(manifest, dict):
         return [{"severity": "error", "area": "manifest", "where": "manifest", "what": "Not a JSON object", "fix": "Check the file is starboard-plugin.json"}]
@@ -81,10 +82,25 @@ def run(manifest, dev=False, builtin=False):
                            "fix": "Add example: what the card's path answers, such as {\"value\": 42}"})
         else:
             try:
-                plugin_cards.clean(c.get("type"), c["example"])
+                plugin_cards.clean(c.get("type"), c["example"], strict=True)
             except ValueError as e:
                 issues.append({"severity": "error", "area": "manifest", "where": f"cards[{i}].example", "what": str(e),
                                "fix": "Make the path answer the shape for its type (help: What a plug-in can change, Dashboard cards)"})
+    # The logo (API 1.14, DASH-428): the file's own checks, and a nudge towards one, so every card looks the same.
+    if logo_problem:
+        # A warning, not an error: a refused logo never stops a plug-in being added; Starboard shows its initials.
+        severe = "warning" if manifest.get("logo") and "only when it is added from an address" not in logo_problem else "info"
+        issues.append({"severity": severe, "area": "security" if severe == "warning" else "quality", "where": "logo", "what": logo_problem,
+                       "fix": "A plain SVG (16 KB at most, with a viewBox, no scripts, styles, pictures or outside links) or a square "
+                              "PNG of 32 to 256 pixels (32 KB at most), beside starboard-plugin.json"})
+    elif "logo" not in manifest and (manifest.get("cards") or manifest.get("containers")):
+        issues.append({"severity": "info", "area": "quality", "where": "logo", "what": "No logo, so Starboard shows its initials",
+                       "fix": "Add logo: {\"file\": \"logo.svg\", \"alt\": \"What it shows\"}, a small SVG or PNG beside the manifest"})
+    for i, c in enumerate(manifest.get("cards") or []):
+        if isinstance(c, dict) and isinstance(c.get("example"), dict) and c["example"].get("status") is None and c.get("type") != "status":
+            issues.append({"severity": "info", "area": "quality", "where": f"cards[{i}]",
+                           "what": "No status in the example, so the card's band shows only when it last updated",
+                           "fix": "Answer status (such as working, done or problem) when the plug-in works in the background"})
     if manifest.get("containers") and not manifest.get("health"):
         issues.append({"severity": "warning", "area": "quality", "where": "health", "what": "No health path, so Starboard cannot tell when it breaks",
                        "fix": "Add a cheap GET path that answers 200, such as /health"})
@@ -97,9 +113,9 @@ def run(manifest, dev=False, builtin=False):
     return issues
 
 
-def report(manifest, dev=False, builtin=False):
+def report(manifest, dev=False, builtin=False, logo_problem=""):
     """{ok, errors, warnings, infos, issues, accessibility}: what pages and the command show."""
-    issues = run(manifest, dev, builtin)
+    issues = run(manifest, dev, builtin, logo_problem)
     styles = len(manifest.get("styles") or []) if isinstance(manifest, dict) else 0
     acc = [i for i in issues if i["area"] == "accessibility"]
     return {"ok": not any(i["severity"] == "error" for i in issues),
@@ -125,7 +141,17 @@ def main(argv=None):
     except (OSError, ValueError) as e:
         print(f"Cannot read {path}: {e}")
         return 2
-    r = report(manifest, dev)
+    problem = ""
+    logo = manifest.get("logo") if isinstance(manifest, dict) else None
+    if isinstance(logo, dict) and isinstance(logo.get("file"), str):  # API 1.14: the file beside the manifest
+        from . import plugin_logo
+        try:
+            if not plugin_logo.check_entry(logo):
+                with open(os.path.join(os.path.dirname(path), logo["file"]), "rb") as f:
+                    plugin_logo.clean(f.read(plugin_logo.PNG_MAX + 1), logo["file"])
+        except (OSError, ValueError) as e:
+            problem = str(e)
+    r = report(manifest, dev, logo_problem=problem)
     for i in r["issues"]:
         print(f"{i['severity'].upper():8} {i['area']:13} {i['where']}: {i['what']}\n{'':23}Fix: {i['fix']}")
     print(f"\nAccessibility: {'passed' if r['accessibility']['passed'] else 'FAILED'} ({r['accessibility']['checked']})")

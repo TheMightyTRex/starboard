@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.14.0"  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.14.0"  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432)  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -32,9 +32,11 @@ PERMISSIONS = {
     # API 1.13 (DASH-411): an app plug-in's own web page, opened on the home network at a port Starboard chooses
     "network:port": ("Open its own web page on your home network, at a port Starboard chooses", "medium", None),
     "appearance:styles": ("Add styles to Display: colours, corners, a font and shadows, checked for accessibility", "low", None),
+    # API 1.14 (DASH-432): Jellyfin's metadata folder (/metadata on new installs, DASH-431), mounted only with this
+    "jellyfin:metadata": ("Read and change Jellyfin's metadata folder: the posters, photos and details Jellyfin saved", "medium", None),
 }
 NETWORKS = {"default": None, "lan": "network:lan", "vpn": "network:vpn"}
-SETTING_TYPES = ("text", "number", "switch", "choice", "address", "secret", "folder", "list", "custom")
+SETTING_TYPES = ("text", "number", "switch", "choice", "address", "secret", "folder", "list", "custom", "schedule")  # schedule: API 1.14
 CARD_TYPES = ("stat", "list", "status", "guide")  # guide: what is on now (API 1.8, DASH-359)
 CARD_FORMATS = ("number", "bytes", "percent", "duration", "date")
 DEFAULT_MEMORY, DEFAULT_CPUS, CEILING_MEMORY, CEILING_CPUS = 128, 0.25, 512, 1.0
@@ -44,9 +46,9 @@ APP_CEILING_MEMORY, APP_CEILING_CPUS = 2048, 4.0
 
 TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
        "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles",
-       "setup_required", "notices", "events", "jobs", "changes", "adopt"}
+       "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo"}
 REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers",
-                  "setup_required", "notices", "events", "jobs", "changes", "adopt"}
+                  "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo"}
 CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command", "publish",
              "host_port", "tmpfs", "entrypoint", "files"}
 # API 1.13 (DASH-411): what an app plug-in needs. A path inside the container (for tmpfs and data:<path>), never
@@ -85,7 +87,14 @@ EVENTS = {"item.added": ("media:read", "When something new arrives in your libra
           "download.failed": ("downloads:read", "When a download stops with a problem"),
           "disk.nearly_full": ("system:read", "When a disk is nearly full"),
           "update.available": ("apps:read", "When an update is ready for Starboard, an app or a plug-in")}
-JOB = {"id", "label", "path", "daily", "every_hours", "at_start", "time_limit_minutes", "quiet_hours"}
+JOB = {"id", "label", "path", "daily", "every_hours", "at_start", "schedule", "time_limit_minutes", "quiet_hours"}
+# A schedule from the plug-in's settings (API 1.14, DASH-432): a setting of type schedule, which the person sets to
+# every day, every week on a day, or every month on a date, at a time. A month without that date runs on its last day.
+SCHEDULE_EVERY = ("day", "week", "month")
+WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+TIME = r"^([01]\d|2[0-3]):[0-5]\d$"
+# Jellyfin's metadata folder (API 1.14, DASH-432): read and write, or read only, at /metadata in the container.
+JELLYFIN_METADATA = ("jellyfin-metadata", "jellyfin-metadata:ro")
 ACTION = {"id", "label", "path", "confirm"}
 # API 1.10 (DASH-393): the plug-in's changelog in the manifest, in Keep a Changelog's types, so Starboard can say what
 # is new after an update without fetching anything. Kept short: 20 versions, 20 lines a type, 300 characters a line.
@@ -221,6 +230,9 @@ def check(manifest, dev=False, builtin=False):
                 at = v.split(":", 1)[1]
                 if not re.match(INSIDE, at) or at in ("/", "/tmp", "/media"):  # nosec B108: a list of refused paths
                     out.append(f"{where}: {v} must mount its data at a folder of its own, such as /config")
+            elif v in JELLYFIN_METADATA:  # API 1.14 (DASH-432)
+                if "jellyfin:metadata" not in perms:
+                    out.append(f"{where}: {v} needs the permission jellyfin:metadata")
             elif isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}:ro$", v):
                 pass  # API 1.13: one media folder, read only: less than media/<one folder>, so no permission
             elif v != "data" and not re.match(r"^media/[A-Za-z0-9._-]{1,60}$", str(v)):
@@ -237,8 +249,9 @@ def check(manifest, dev=False, builtin=False):
                     out.append(f"{where}: env {k} has a {{...}} Starboard does not know; use {{secret:name}}, {{jellyfin:url}} or {{jellyfin:key}}")
         user = c.get("user")
         if user == "media":  # API 1.12 (DASH-410): the media folder's owner, so files it adds belong to the person
-            if not any(isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v) for v in c.get("volumes") or []):
-                out.append(f"{where}: user media is only for a container that mounts media/<one folder>")
+            if not any(isinstance(v, str) and (re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v) or v == "jellyfin-metadata")
+                       for v in c.get("volumes") or []):
+                out.append(f"{where}: user media is only for a container that mounts media/<one folder> or jellyfin-metadata")
         elif user is not None and (not isinstance(user, str) or not re.match(r"^\d{1,6}:\d{1,6}$", user) or user.split(":")[0] == "0"):
             out.append(f"{where}: user must be a non-root uid:gid such as 1000:1000, or media")
         if c.get("start", "always") not in ("always", "when_needed"):
@@ -262,6 +275,8 @@ def check(manifest, dev=False, builtin=False):
                     isinstance(c, str) or (isinstance(c, dict) and set(c) <= {"value", "label"} and isinstance(c.get("value"), str)
                                            and isinstance(c.get("label"), str) and 0 < len(c["label"]) <= 60) for c in raw):
                 out.append(f"{where}: choices must be a list of values, or of {{value, label}} with a label of up to 60 characters")
+        if s.get("type") == "schedule" and "default" in s and schedule_problem(s["default"]):  # API 1.14
+            out.append(f"settings[{i}]: default {schedule_problem(s['default'])}")
         if s.get("type") == "folder" and not media_mounts(m):  # API 1.3, owner's choice A (12 November 2026)
             out.append(f"{where}: a folder setting needs a container that mounts media:ro or media/<one folder>; "
                        "the folder is chosen inside it")
@@ -303,9 +318,12 @@ def check(manifest, dev=False, builtin=False):
             ids.add(j.get("id"))
             if not re.match(r"^/[A-Za-z0-9/_-]{1,80}$", str(j.get("path", ""))):
                 out.append(f"{where}: needs a path on the plug-in")
-            when = [k for k in ("daily", "every_hours", "at_start") if k in j]
+            when = [k for k in ("daily", "every_hours", "at_start", "schedule") if k in j]
             if len(when) != 1:
-                out.append(f"{where}: give one of daily (a time such as 03:30), every_hours or at_start")
+                out.append(f"{where}: give one of daily (a time such as 03:30), every_hours, at_start or schedule (a schedule setting's key)")
+            elif "schedule" in j and not any(isinstance(s, dict) and s.get("key") == j["schedule"] and s.get("type") == "schedule"
+                                             for s in m.get("settings") or []):
+                out.append(f"{where}: schedule must name one of its settings of type schedule")
             elif "daily" in j and not re.match(r"^([01]\d|2[0-3]):[0-5]\d$", str(j["daily"])):
                 out.append(f"{where}: daily must be a time such as 03:30")
             elif "every_hours" in j and not (isinstance(j["every_hours"], int) and 1 <= j["every_hours"] <= 168):
@@ -352,9 +370,52 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"resources.{name}: pids is a whole number from 16 to {MAX_PIDS} (API 1.13)")
     out += check_adopt(m.get("adopt"), containers)
     out += check_changes(m.get("changes"))
+    if "logo" in m:  # API 1.14 (DASH-428)
+        from . import plugin_logo
+        out += plugin_logo.check_entry(m["logo"])
     if m.get("needs") is not None and not (isinstance(m["needs"], list) and all(re.match(r"^[a-z0-9-]{2,30}$", str(n)) for n in m["needs"])):
         out.append("needs must list app names such as jellyfin")
     return out
+
+
+def schedule_problem(value):
+    """What is wrong with a schedule setting's value (API 1.14), in words that follow its label; None when it is
+    usable. {"every": "day" | "week" | "month", "time": "03:30", "day": "sunday" (week), "date": 1 to 31 (month)}."""
+    if not isinstance(value, dict) or set(value) - {"every", "time", "day", "date"}:
+        return "must be a schedule: every day, week or month, and a time"
+    if value.get("every") not in SCHEDULE_EVERY:
+        return "must say every day, every week or every month"
+    if not re.match(TIME, str(value.get("time", ""))):
+        return "needs a time such as 03:30"
+    if value["every"] == "week" and value.get("day") not in WEEKDAYS:
+        return "needs a day of the week"
+    if value["every"] == "month" and not (isinstance(value.get("date"), int) and not isinstance(value.get("date"), bool)
+                                          and 1 <= value["date"] <= 31):
+        return "needs a date from 1 to 31"
+    return None
+
+
+def schedule_clean(value):
+    """Only the parts the schedule uses, so a saved weekly schedule keeps no stray date."""
+    keep = {"every": value["every"], "time": value["time"]}
+    if value["every"] == "week":
+        keep["day"] = value["day"]
+    if value["every"] == "month":
+        keep["date"] = value["date"]
+    return keep
+
+
+def schedule_words(value):
+    """A schedule in words, for System, Jobs and the install warning: "Every week on Sunday at 03:30"."""
+    if schedule_problem(value):
+        return "Not set yet"
+    if value["every"] == "day":
+        return f"Every day at {value['time']}"
+    if value["every"] == "week":
+        return f"Every week on {value['day'].capitalize()} at {value['time']}"
+    d = value["date"]
+    nth = f"{d}{'th' if 11 <= d % 100 <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(d % 10, 'th')}"
+    return f"Every month on the {nth} at {value['time']}" + (" (the last day in shorter months)" if d > 28 else "")
 
 
 def permission_words(manifest):
@@ -372,7 +433,10 @@ SEES = {"apps:read": "Your apps and whether they answer", "downloads:read": "Wha
 CHANGES = {"jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, which can change users, libraries and settings",
            "reelix:key": "Anything in Reelix: it gets Reelix's API key, which can add, search for and remove what you follow",
            "usenet:servers": "It can download from your news server with your account, using some of its connections",
-           "appearance:styles": "How Starboard looks, through styles in Display (checked for accessibility first)"}
+           "appearance:styles": "How Starboard looks, through styles in Display (checked for accessibility first)",
+           # API 1.14 (DASH-432)
+           "jellyfin:metadata": "Jellyfin's metadata folder: the posters, photos and details Jellyfin saved. It can change, "
+                                "replace and remove them, and Jellyfin shows what it leaves there"}
 REACHES = {"network:lan": "Other computers on your home network, and the internet",
            "network:port": "Its own web page is opened on your home network: anyone on your home network can open it, "
                            "at this computer's address and a port Starboard chooses",
@@ -399,7 +463,9 @@ def install_warning(manifest):
         change.append("It runs as the owner of your media folder, so the files it adds there are yours to move or delete")
     if "iptv" in vols:
         change.append("The Live TV folder Jellyfin reads")
-    change += [CHANGES[p] for p in perms if p in CHANGES]
+    change += [CHANGES[p] for p in perms if p in CHANGES and (p != "jellyfin:metadata" or "jellyfin-metadata" in vols)]
+    if "jellyfin-metadata:ro" in vols and "jellyfin-metadata" not in vols:  # API 1.14: read only, so it is seen, not changed
+        see.append("Jellyfin's metadata folder: the posters, photos and details Jellyfin saved (read only)")
     if manifest.get("adopt"):
         a = manifest["adopt"]
         change.append(f"Only if you choose it: a copy of the {a.get('name', 'app')} you already have, put in its own folder "
@@ -416,6 +482,13 @@ def install_warning(manifest):
                     + (", started only when needed" if c.get("start") == "when_needed" else ", always running"))
     for j in manifest.get("jobs") or []:
         if isinstance(j, dict):
+            if "schedule" in j:  # API 1.14: the person chooses; until then, the setting's default
+                s = next((s for s in manifest.get("settings") or [] if isinstance(s, dict) and s.get("key") == j["schedule"]), {})
+                start = s.get("default")
+                when = "on the schedule you choose in its settings" + (f" ({schedule_words(start).lower()} to start with)"
+                                                                      if start and not schedule_problem(start) else "")
+                runs.append(f"A job, {j.get('label', '')}, {when}" + (", only in quiet hours" if j.get("quiet_hours") else ""))
+                continue
             when = (f"daily at {j['daily']}" if "daily" in j else f"every {j['every_hours']} hours" if "every_hours" in j
                     else "each time it starts")
             runs.append(f"A job, {j.get('label', '')}, {when}" + (", only in quiet hours" if j.get("quiet_hours") else ""))
@@ -491,7 +564,8 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=N
     PS5). `plugin_dir` is data/plugins/<id> on the host; `media_dir` the media folder. `host`, for a plug-in built
     into Starboard: {"image": Starboard's own image, "user": "uid:gid", "iptv": the Live TV folder}. `media_user`:
     the media folder's owner as "uid:gid", for a container with user "media" (API 1.12); 1000:1000 when unknown. `extra` (API 1.13):
-    {"ports": {container: port on the home network}, "secrets": {name: value}, "jellyfin": {"url", "api_key"}}."""
+    {"ports": {container: port on the home network}, "secrets": {name: value}, "jellyfin": {"url", "api_key"}}; and
+    (API 1.14) "jellyfin_metadata": Jellyfin's metadata folder on the computer, for a container that mounts it."""
     host = host or {}
     extra = extra or {}
     problems = check(manifest, dev=True, builtin=bool(host))
@@ -557,6 +631,11 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=N
                 if not host.get("iptv"):
                     raise ValueError("The installer gave Starboard no Live TV folder (./install.sh asks)")
                 vols.append(f"{host['iptv']}:/iptv")
+            elif v in JELLYFIN_METADATA:  # API 1.14 (DASH-432): only with jellyfin:metadata, which check() made sure of
+                where_md = extra.get("jellyfin_metadata")
+                if not where_md:
+                    raise ValueError("Starboard could not find Jellyfin's metadata folder. Install Jellyfin with Install apps first")
+                vols.append(f"{where_md}:/metadata" + (":ro" if v.endswith(":ro") else ""))
             elif v.endswith(":ro"):  # API 1.13: one media folder, read only
                 vols.append(f"{media_dir}/{v[6:-3]}:/media/{v[6:-3]}:ro")
             else:
@@ -612,7 +691,13 @@ def write_schema(path):
         "$defs": {"colours": {"type": "object", "additionalProperties": False,
                               "required": ["bg", "header", "surface", "surface_raised", "surface_sunken", "text", "text_muted", "border",
                                            "divider", "accent", "accent_text", "accent_soft", "focus"],
-                              "patternProperties": {"^[a-z_]+$": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}}}},
+                              "patternProperties": {"^[a-z_]+$": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}}},
+                 # API 1.14 (DASH-432): every day, every week on a day, or every month on a date, at a time
+                 "schedule": {"type": "object", "additionalProperties": False, "required": ["every", "time"],
+                              "properties": {"every": {"enum": list(SCHEDULE_EVERY)}, "time": {"type": "string", "pattern": TIME},
+                                             "day": {"enum": list(WEEKDAYS)}, "date": {"type": "integer", "minimum": 1, "maximum": 31}},
+                              "allOf": [{"if": {"properties": {"every": {"const": "week"}}}, "then": {"required": ["day"]}},
+                                        {"if": {"properties": {"every": {"const": "month"}}}, "then": {"required": ["date"]}}]}},
         "required": sorted(REQUIRED),
         "properties": {
             "manifest_version": {"const": 1}, "id": {"type": "string", "pattern": ID}, "name": {"type": "string", "maxLength": 40},
@@ -664,8 +749,12 @@ def write_schema(path):
                                      "copy": {"type": "object", "minProperties": 1, "maxProperties": 8,
                                               "additionalProperties": {"type": "string"}}, "stop": {"type": "boolean"}}},
             "settings": {"type": "array", "items": {"type": "object", "required": ["key", "label", "type"],
+                                                    # API 1.14: a schedule setting's default is a schedule
+                                                    "if": {"properties": {"type": {"const": "schedule"}}},
+                                                    "then": {"properties": {"default": {"$ref": "#/$defs/schedule"}}},
                                                     "properties": {"type": {"enum": list(SETTING_TYPES)}, "required": {"type": "boolean"},
                                                                    "group": {"type": "string", "maxLength": 40},
+
                                                                    "choices": {"anyOf": [{"type": "string"}, {"type": "array", "items": {"anyOf": [
                                                                        {"type": "string"}, {"type": "object", "required": ["value", "label"], "additionalProperties": False,
                                                                         "properties": {"value": {"type": "string"}, "label": {"type": "string", "maxLength": 60}}}]}}]}}}},
@@ -682,8 +771,13 @@ def write_schema(path):
                 "properties": {"id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,30}$"}, "label": {"type": "string", "maxLength": 60},
                                "path": {"type": "string", "pattern": "^/"}, "daily": {"type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"},
                                "every_hours": {"type": "integer", "minimum": 1, "maximum": 168}, "at_start": {"const": True},
+                               "schedule": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$"},  # API 1.14: a schedule setting's key
                                "time_limit_minutes": {"type": "integer", "minimum": 1, "maximum": 120}, "quiet_hours": {"type": "boolean"}}}},
             "actions": {"type": "array", "items": {"type": "object", "required": ["label", "path"]}},
+            # API 1.14 (DASH-428): a small logo beside the manifest, checked and cleaned by Starboard
+            "logo": {"type": "object", "additionalProperties": False, "required": ["file", "alt"],
+                     "properties": {"file": {"type": "string", "pattern": "^(?:[a-z0-9][a-z0-9_-]{0,29}/)?[A-Za-z0-9][A-Za-z0-9._-]{0,60}\\.(svg|png)$"},
+                                    "alt": {"type": "string", "minLength": 3, "maxLength": 80}}},
             # API 1.10 (DASH-393)
             "changes": {"type": "array", "minItems": 1, "maxItems": 20, "items": {
                 "type": "object", "additionalProperties": False, "required": ["version"],

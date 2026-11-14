@@ -29,6 +29,73 @@
      "pattern": "^#[0-9a-fA-F]{6}$"
     }
    }
+  },
+  "schedule": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "every",
+    "time"
+   ],
+   "properties": {
+    "every": {
+     "enum": [
+      "day",
+      "week",
+      "month"
+     ]
+    },
+    "time": {
+     "type": "string",
+     "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+    },
+    "day": {
+     "enum": [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday"
+     ]
+    },
+    "date": {
+     "type": "integer",
+     "minimum": 1,
+     "maximum": 31
+    }
+   },
+   "allOf": [
+    {
+     "if": {
+      "properties": {
+       "every": {
+        "const": "week"
+       }
+      }
+     },
+     "then": {
+      "required": [
+       "day"
+      ]
+     }
+    },
+    {
+     "if": {
+      "properties": {
+       "every": {
+        "const": "month"
+       }
+      }
+     },
+     "then": {
+      "required": [
+       "date"
+      ]
+     }
+    }
+   ]
   }
  },
  "required": [
@@ -95,6 +162,7 @@
      "apps:read",
      "downloads:read",
      "jellyfin:key",
+     "jellyfin:metadata",
      "media:read",
      "network:lan",
      "network:port",
@@ -448,6 +516,20 @@
      "label",
      "type"
     ],
+    "if": {
+     "properties": {
+      "type": {
+       "const": "schedule"
+      }
+     }
+    },
+    "then": {
+     "properties": {
+      "default": {
+       "$ref": "#/$defs/schedule"
+      }
+     }
+    },
     "properties": {
      "type": {
       "enum": [
@@ -459,7 +541,8 @@
        "secret",
        "folder",
        "list",
-       "custom"
+       "custom",
+       "schedule"
       ]
      },
      "required": {
@@ -611,6 +694,10 @@
      "at_start": {
       "const": true
      },
+     "schedule": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,40}$"
+     },
      "time_limit_minutes": {
       "type": "integer",
       "minimum": 1,
@@ -630,6 +717,25 @@
      "label",
      "path"
     ]
+   }
+  },
+  "logo": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": [
+    "file",
+    "alt"
+   ],
+   "properties": {
+    "file": {
+     "type": "string",
+     "pattern": "^(?:[a-z0-9][a-z0-9_-]{0,29}/)?[A-Za-z0-9][A-Za-z0-9._-]{0,60}\\.(svg|png)$"
+    },
+    "alt": {
+     "type": "string",
+     "minLength": 3,
+     "maxLength": 80
+    }
    }
   },
   "changes": {

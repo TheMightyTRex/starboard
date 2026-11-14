@@ -8,6 +8,12 @@ The answers, by type:
   status  {"state": "ok" | "warning" | "problem", "text": "Up to date"}
   guide   {"items": [{"channel": "Kestrel Sport", "number": "601", "now": "Football Extra", "start": 1794..., "stop": 1794...,
                       "next": "Darts", "next_start": 1794...}], "note": "..."}   (12 at most; times are Unix seconds)
+
+Any answer may also carry (plug-in API 1.14):
+  refresh_seconds  how soon the dashboard asks again, 10 to 3600
+  status           a word from STATUSES, shown as a chip in the card's grey band (DASH-428, design 2)
+  status_label     its own words for that chip, up to 24 characters; the chip's colour still comes from status
+  updated          when what it shows last changed, in Unix seconds; without it, the band says when Starboard asked
 """
 import json
 import re
@@ -35,15 +41,56 @@ def refresh_seconds(value):
     return int(max(REFRESH_MIN, min(value, REFRESH_MAX)))
 
 
-def clean(card_type, data):
-    """The answer reduced to what Starboard draws, or ValueError saying what is wrong (the tester uses this too).
-    Any card may add refresh_seconds (API 1.14), kept held to 10 to 3600."""
+# The card band's status chip (API 1.14, DASH-428): each status, its words and its chip's tone in the design system
+# (success, info, neutral, muted, warning, danger). Words and a shape, never colour alone.
+STATUSES = {
+    "ok": ("OK", "success"), "done": ("Done", "success"), "ready": ("Ready", "success"), "protected": ("Protected", "success"),
+    "working": ("Working", "info"), "converting": ("Converting", "info"), "scanning": ("Scanning", "info"),
+    "updating": ("Updating", "info"), "running": ("Running", "info"),
+    "waiting": ("Waiting", "neutral"), "idle": ("Idle", "neutral"), "scheduled": ("Scheduled", "neutral"),
+    "paused": ("Paused", "muted"), "inactive": ("Inactive", "muted"),
+    "warning": ("Warning", "warning"), "needs_setup": ("Needs setting up", "warning"),
+    "problem": ("Problem", "danger"), "failed": ("Failed", "danger"), "stopped": ("Stopped", "danger"),
+}
+STATUS_LABEL_MAX = 24
+
+
+def band(data, problems=None):
+    """The band's status and time from an answer (API 1.14): {status, status_label, tone, updated}, only what it gave.
+    An unknown status is left out (and said in `problems`, for the tester), never guessed."""
+    out = {}
+    status = data.get("status")
+    if status is not None:
+        if status in STATUSES:
+            words, tone = STATUSES[status]
+            label = _text(data.get("status_label"), STATUS_LABEL_MAX) if data.get("status_label") else ""
+            out.update(status=status, status_label=label or words, tone=tone)
+        elif problems is not None:
+            problems.append(f"status must be one of {', '.join(STATUSES)}")
+    elif data.get("status_label") and problems is not None:
+        problems.append("status_label needs a status, which sets the chip's colour")
+    upd = data.get("updated")
+    if isinstance(upd, (int, float)) and not isinstance(upd, bool) and 946684800 <= upd <= time.time() + 300:
+        out["updated"] = int(upd)
+    elif upd is not None and problems is not None:
+        problems.append("updated must be a time in Unix seconds, not in the future")
+    return out
+
+
+def clean(card_type, data, strict=False):
+    """The answer reduced to what Starboard draws, or ValueError saying what is wrong (the tester uses this too, with
+    `strict`, so a status Starboard does not know is reported rather than left out). Any card may add
+    refresh_seconds, status, status_label and updated (API 1.14)."""
     if not isinstance(data, dict):
         raise ValueError("The answer must be a JSON object")
     out = _clean(card_type, data)
     every = refresh_seconds(data.get("refresh_seconds"))
     if every:
         out["refresh_seconds"] = every
+    problems = [] if strict else None
+    out.update(band(data, problems))
+    if problems:
+        raise ValueError("; ".join(problems))
     return out
 
 
@@ -108,7 +155,8 @@ def _host(pid, main, wake=True):
 
 
 def available(data_dir):
-    """Cards from active plug-ins, for Edit dashboard: [{id, title, type, format, plugin}]."""
+    """Cards from active plug-ins, for Edit dashboard and the card band (API 1.14): [{id, title, type, format, plugin,
+    plugin_id, logo}], logo being {url, alt} or None for the initials."""
     from . import plugins_admin
     out = []
     for p in plugins_admin.listing(data_dir):
@@ -118,7 +166,7 @@ def available(data_dir):
         for i, c in enumerate(m.get("cards") or []):
             cid = c.get("id") or str(i)
             out.append({"id": f"plugin:{p['id']}:{cid}", "title": c.get("title") or p["name"], "type": c["type"],
-                        "format": c.get("format", "number"), "plugin": p["name"]})
+                        "format": c.get("format", "number"), "plugin": p["name"], "plugin_id": p["id"], "logo": p.get("logo")})
     return out
 
 
@@ -142,7 +190,7 @@ def answer(data_dir, pid, cid, opener=None):
         raise LookupError("No such card")
     main = m["containers"][0]
     url = f"http://{_host(pid, main)}:{int(main.get('port') or 80)}{card['path']}"
-    out = {"type": card["type"], "format": card.get("format", "number")}
+    out = {"type": card["type"], "format": card.get("format", "number"), "asked": int(time.time())}
     try:
         req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "Starboard"})
         with (opener or urllib.request.build_opener()).open(req, timeout=TIMEOUT) as r:  # the plug-in's own container  # nosec B310

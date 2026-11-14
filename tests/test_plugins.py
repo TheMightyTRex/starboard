@@ -95,7 +95,7 @@ class PluginsTest(unittest.TestCase):
         self.assertTrue(any(c.startswith("Files in your media folder under movies") for c in warning["change"]))  # API 1.13 says what it can do there
         self.assertTrue(any("owner of your media folder" in c for c in warning["change"]))
         only_data = {**tracks, "containers": [{**tracks["containers"][0], "volumes": ["data", "media:ro"]}]}
-        self.assertIn("containers[0]: user media is only for a container that mounts media/<one folder>", plugins.check(only_data))
+        self.assertIn("containers[0]: user media is only for a container that mounts media/<one folder> or jellyfin-metadata", plugins.check(only_data))
         self.assertTrue(any("non-root uid:gid" in p for p in plugins.check({**tracks, "containers": [{**tracks["containers"][0], "user": "root"}]})))
 
     def test_api_ranges(self):

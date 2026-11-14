@@ -169,6 +169,56 @@ def summary(manifest, problems=None):
             "problems": problems if problems is not None else plugins.check(manifest)}
 
 
+# Logos (API 1.14, DASH-428) -------------------------------------------------------------------------------------
+
+def logo_info(data_dir, pid, manifest):
+    """{url, alt} for the logo kept in its folder, or None: the page then shows its initials (plugin_logo.initials)."""
+    from . import plugin_logo
+    got = plugin_logo.kept(folder(data_dir, pid))
+    if not got or not isinstance(manifest.get("logo"), dict):
+        return None
+    return {"url": f"/api/plugins/{pid}/logo?v={got[2]}", "alt": str(manifest["logo"].get("alt") or "")[:80]}
+
+
+def fetch_logo(manifest, address, opener=None):
+    """(bytes, content type) for a manifest's logo, from beside its address or, for a plug-in built into Starboard,
+    its own folder; (None, why) when it has none or it was refused. Never stops the plug-in being added."""
+    from . import plugin_logo
+    logo = manifest.get("logo")
+    if not isinstance(logo, dict) or plugin_logo.check_entry(logo):
+        return None, ""
+    try:
+        if address == "builtin":
+            path = os.path.join(plugins.BUILTIN_DIR, str(manifest.get("id")), logo["file"])
+            with open(path, "rb") as f:
+                return plugin_logo.clean(f.read(plugin_logo.PNG_MAX + 1), logo["file"]), ""
+        if not address:
+            return None, "Its logo is read from beside its manifest, so it shows only when it is added from an address"
+        return plugin_logo.fetch(address, logo["file"], opener), ""
+    except (OSError, ValueError) as e:
+        return None, str(e)[:200]
+
+
+def builtin_logo(manifest):
+    """{url (a data address), alt} for a plug-in built into Starboard that is not added yet, or None."""
+    from . import plugin_logo
+    got, _why = fetch_logo(manifest, "builtin")
+    return {"url": plugin_logo.as_data(*got), "alt": manifest["logo"]["alt"][:80]} if got else None
+
+
+def keep_logo(data_dir, pid, got):
+    """Keeps a fetched logo in the plug-in's folder, or puts the last one aside when this version has none."""
+    from . import plugin_logo
+    where = folder(data_dir, pid)
+    if got:
+        plugin_logo.save(where, *got)
+        return
+    for ext in ("svg", "png"):
+        p = os.path.join(where, f"logo.{ext}")
+        if os.path.exists(p):
+            os.replace(p, p + ".old")
+
+
 def fetch_manifest(address, opener=None, sha256=""):
     """A manifest from an https address (a repository's raw starboard-plugin.json), checked like any address
     Starboard is told to call (DASH-279), 5 seconds and 256 KB at most."""
@@ -236,8 +286,17 @@ def _clean_entry(e):
             "sha256": (best or {}).get("sha256", ""), "changelog": (best or {}).get("changelog", ""),
             "versions": [best] if best else [], "hidden": hidden, "hidden_needs": needs,
             "published": bool(e.get("published", True)), "rest": _rest(e.get("rest")),
+            # Its logo (API 1.14, DASH-428): a small data address, checked and cleaned as a logo file is; else None.
+            "logo": _catalogue_logo(e),
             # Recommended by the collection (DASH-425, owner 14 November 2026): shown first, never added by itself.
             "recommended": e.get("recommended") is True}
+
+
+def _catalogue_logo(e):
+    from . import plugin_logo
+    data = plugin_logo.from_data(e.get("logo"))
+    alt = str(e.get("logo_alt") or "").strip()[:plugin_logo.ALT_MAX]
+    return {"url": data, "alt": alt} if data and len(alt) >= plugin_logo.ALT_MIN else None
 
 
 def _rest(r):
@@ -356,7 +415,7 @@ def listing(data_dir):
                       "font": fonts.get(x.get("font", "hyperlegible"), fonts["hyperlegible"])}
                      for x in m.get("styles") or [] if isinstance(x, dict)]
             from . import plugin_life
-            out.append({**summary(m, []), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
+            out.append({**summary(m, []), "logo": logo_info(data_dir, pid, m), "looks": looks, "builtin": bool(st.get("builtin")), "state": st.get("state", "installed"), "installed_at": st.get("installed_at"),
                         "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": [j.get("label") for j in m.get("jobs") or []],
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
                         "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
@@ -451,7 +510,7 @@ def install(data_dir, manifest, media_dir, dev=False, builtin=False, defaults=No
         _write(os.path.join(where, "key"), key)
         hosted = (host or host_for_builtin()) if builtin else None
         _write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, host_path(data_dir, pid), media_dir, hosted,
-                                                                     media_owner(data_dir), None), 0o644)  # extra: written by enable()
+                                                                     media_owner(data_dir), base_extra(data_dir, manifest)), 0o644)  # the rest: written by enable()
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     _write(os.path.join(where, "state.json"), {"state": "installed", "installed_at": now, "key_id": item["id"], "builtin": builtin})
     api_v1.audit(data_dir, "plugin_installed", plugin=pid, version=manifest["version"], permissions=manifest.get("permissions") or [])
@@ -724,13 +783,49 @@ def write_compose(data_dir, pid, media_dir=None, refused=()):
     if not m.get("containers") or st.get("builtin"):
         return False
     extra = {"ports": choose_ports(data_dir, pid, m, refused), "secrets": secrets_for(data_dir, pid, m),
-             "jellyfin": _read(os.path.join(where, "jellyfin.json"), {}) or {}}
-    if not (extra["ports"] or extra["secrets"] or any(plugins.FILLED.search(str(v)) for c in m["containers"] for v in (c.get("env") or {}).values())):
-        return False  # nothing of API 1.13: the Compose file written at install stays as it is
+             "jellyfin": _read(os.path.join(where, "jellyfin.json"), {}) or {}, **base_extra(data_dir, m)}
+    if not (extra["ports"] or extra["secrets"] or extra.get("jellyfin_metadata")
+            or any(plugins.FILLED.search(str(v)) for c in m["containers"] for v in (c.get("env") or {}).values())):
+        return False  # nothing of API 1.13 or 1.14: the Compose file written at install stays as it is
     media = media_dir or _media_dir_from(where)
     _write(os.path.join(where, "compose.yaml"), plugins.compose(m, host_path(data_dir, pid), media, None,
                                                                  media_owner(data_dir), extra), 0o644)
     return True
+
+
+def mounts_metadata(manifest):
+    """True when one of its containers mounts Jellyfin's metadata folder (API 1.14, DASH-432)."""
+    return any(v in plugins.JELLYFIN_METADATA for c in manifest.get("containers") or [] if isinstance(c, dict)
+               for v in c.get("volumes") or [])
+
+
+def jellyfin_metadata_dir(data_dir):
+    """Jellyfin's metadata folder on the computer (API 1.14, DASH-432), or None. In order: what Jellyfin's own
+    container mounts at /metadata (new installs and moved ones, DASH-431); its config folder's data/metadata (an
+    install not moved yet); the install's CONFIG_DIR/jellyfin-metadata."""
+    from . import containers, stack
+    try:
+        mounts = (containers.docker("GET", "/containers/jellyfin/json") or {}).get("Mounts") or []
+    except containers.DockerError:
+        mounts = []
+    for want, add in (("/metadata", ""), ("/config", "/data/metadata")):
+        for mnt in mounts:
+            src = str(mnt.get("Source") or "")
+            if mnt.get("Destination") == want and src.startswith("/") and ".." not in src:
+                return src.rstrip("/") + add
+    cfg = str(stack.env_values(data_dir).get("CONFIG_DIR") or "").strip("'\"").rstrip("/")
+    return f"{cfg}/jellyfin-metadata" if cfg.startswith("/") and ".." not in cfg else None
+
+
+def base_extra(data_dir, manifest):
+    """What every Compose file of this plug-in needs from the install, even before enable() (API 1.14): Jellyfin's
+    metadata folder for a plug-in that mounts it. ValueError in plain words when that folder is not found."""
+    if not mounts_metadata(manifest):
+        return {}
+    where = jellyfin_metadata_dir(data_dir)
+    if not where:
+        raise ValueError("Starboard could not find Jellyfin's metadata folder. Install Jellyfin with Install apps first")
+    return {"jellyfin_metadata": where}
 
 
 def _media_dir_from(where):
@@ -844,6 +939,7 @@ def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
             continue
         _write(os.path.join(where, "manifest.json"), manifest)
         _write(os.path.join(where, "compose.yaml"), text, 0o644)
+        keep_logo(data_dir, pid, fetch_logo(manifest, "builtin")[0])  # API 1.14: its logo follows Starboard's copy
         if p["state"] == "enabled":
             try:
                 enable(data_dir, pid, helper=helper, services=services)
@@ -938,6 +1034,11 @@ def save_settings(data_dir, pid, incoming):
                 v = v.rstrip("/") or "/"
                 if ".." in v.split("/") or not any(v == top or v.startswith(top + "/") for top in inside):
                     raise ValueError(f"{s['label']}: choose a folder inside {', '.join(inside) or 'the media folder'}")
+        elif t == "schedule":  # API 1.14 (DASH-432): every day, week or month at a time, checked before it is kept
+            problem = plugins.schedule_problem(v)
+            if problem:
+                raise ValueError(f"{s['label']}: {problem}")
+            v = plugins.schedule_clean(v)
         elif t == "list":
             if not isinstance(v, list):
                 raise ValueError(f"{s['label']}: give a list")

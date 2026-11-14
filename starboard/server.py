@@ -2754,7 +2754,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/plugins" and method == "GET":
             from . import livetv_move
             added = {p["id"] for p in pa.listing(app.data_dir)}
-            built = [{**pa.summary(m, []), "added": m["id"] in added,
+            built = [{**pa.summary(m, []), "added": m["id"] in added, "logo": pa.builtin_logo(m),
                       "why_not": livetv_move.can_run(app.data_dir) if m["id"] == livetv_move.PID else ""}
                      for m in pa.builtins().values()]
             updates = plugin_life.updates_known(app.data_dir)  # from catalogues already read; nothing fetched here
@@ -2805,6 +2805,8 @@ class Handler(BaseHTTPRequestHandler):
                     self.check_password(body)
                     said = plugin_life.update(app.data_dir, pid, manifest, media, services=app.config.data["services"],
                                               note="" if body.get("address") else (known or {}).get("changelog", ""))
+                    # Its logo goes with the version (API 1.14); Roll back brings the one before back with it.
+                    pa.keep_logo(app.data_dir, pid, pa.fetch_logo(manifest, body.get("address") or known["manifest"])[0])
             except LookupError as e:
                 return self.error(404, str(e))
             logs.event("info", "plug-ins", said)
@@ -2854,6 +2856,7 @@ class Handler(BaseHTTPRequestHandler):
                     app.config.save()
             else:
                 item = pa.install(app.data_dir, pa.builtins()[pid], media, builtin=True)
+            pa.keep_logo(app.data_dir, pid, pa.fetch_logo(pa.builtins()[pid], "builtin")[0])  # API 1.14
             logs.event("info", "plug-ins", f"Added {item['name']}, built into Starboard")
             return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
         if path in ("/api/plugins/preview", "/api/plugins/add", "/api/plugins/test") and method == "POST":
@@ -2866,18 +2869,37 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(404, "That plug-in has no version for this Starboard in the catalogue")
             manifest = (pa.parse(body["manifest"]) if body.get("manifest") else
                         pa.fetch_manifest(listed["manifest"], sha256=listed.get("sha256", "")) if listed else pa.fetch_manifest(body.get("address")))
+            # Its logo (API 1.14, DASH-428), from beside the manifest's address; a pasted manifest has none to read.
+            where_from = "" if body.get("manifest") else (listed["manifest"] if listed else str(body.get("address") or ""))
+            logo, logo_why = pa.fetch_logo(manifest, where_from)
             if path.endswith("test"):  # the plug-in tester: every issue, accessibility always (DASH-284)
-                return self.json(200, plugin_tester.report(manifest, dev=bool(body.get("dev"))))
+                return self.json(200, plugin_tester.report(manifest, dev=bool(body.get("dev")), logo_problem=logo_why))
             if path.endswith("preview"):
-                return self.json(200, {**pa.summary(manifest), "test": plugin_tester.report(manifest)})
+                from . import plugin_logo
+                return self.json(200, {**pa.summary(manifest), "test": plugin_tester.report(manifest, logo_problem=logo_why),
+                                       "logo": {"url": plugin_logo.as_data(*logo), "alt": manifest["logo"]["alt"]} if logo else None})
             self.check_password(body)
             if not plugin_tester.report(manifest)["ok"]:
                 raise ValueError("This plug-in has errors. Test it to see them")
             item = pa.install(app.data_dir, manifest, media)
+            if logo:
+                pa.keep_logo(app.data_dir, item["id"], logo)
+                item = next((p for p in pa.listing(app.data_dir) if p["id"] == item["id"]), item)
             if item["id"] in pa.FROM_SETUP.values():  # chosen in the set-up and now added: no more offer (DASH-399)
                 pa.drop_wanted(app.config, item["id"])
             logs.event("info", "plug-ins", f"Added {item['name']} {item['version']}")
             return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
+        ml = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/logo$", path)
+        if ml and method == "GET":  # a plug-in's logo (API 1.14, DASH-428): the cleaned copy in its folder, nothing else
+            from . import plugin_logo
+            got = plugin_logo.kept(pa.folder(app.data_dir, ml.group(1)))
+            if not got:
+                return self.send(404, b"", "text/plain; charset=utf-8", {"Cache-Control": "max-age=300"})
+            with open(got[0], "rb") as f:
+                data = f.read(plugin_logo.PNG_MAX + 1)
+            # An SVG opened on its own must not run anything: no scripts, no outside loads (as for app icons).
+            return self.send(200, data, got[1], {"Cache-Control": "private, max-age=86400",
+                                                 "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox"})
         if path == "/api/plugins/cards" and method == "GET":  # plug-in cards for the dashboard
             from . import plugin_cards
             return self.json(200, {"cards": plugin_cards.available(app.data_dir)})

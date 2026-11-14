@@ -157,7 +157,7 @@ def _newer(a, b):
 
 # Update and Roll back --------------------------------------------------------------------------------------------
 
-FILES = ("manifest.json", "settings.json", "compose.yaml")
+FILES = ("manifest.json", "settings.json", "compose.yaml", "logo.svg", "logo.png")  # the logo: API 1.14
 
 
 def _new_key_if_scopes_changed(data_dir, pid, old, new, st):
@@ -205,7 +205,7 @@ def update(data_dir, pid, manifest, media_dir, helper=None, services=None, dev=F
     pa._write(os.path.join(where, "settings.json"), values)
     if manifest.get("containers"):
         pa._write(os.path.join(where, "compose.yaml"), plugins.compose(manifest, pa.host_path(data_dir, pid), media_dir,
-                                                                           media_user=pa.media_owner(data_dir), extra=None), 0o644)  # extra: written by enable()
+                                                                           media_user=pa.media_owner(data_dir), extra=pa.base_extra(data_dir, manifest)), 0o644)  # the rest: written by enable()
     was_on = st.get("state") == "enabled"
     st.update(updated_at=time.time(), previous_version=old.get("version"))
     st["whats_new"] = _whats_new_mark(st, old.get("version"), manifest.get("version"), note)
@@ -469,7 +469,11 @@ def jobs(data_dir):
         for j in m.get("jobs") or []:
             key = f"{p['id']}/{j['id']}"
             when = (f"Daily at {j['daily']}" if "daily" in j else f"Every {j['every_hours']} hours" if "every_hours" in j
-                    else "Each time it starts")
+                    else plugins.schedule_words(schedule_of(data_dir, p["id"], m, j)) if "schedule" in j else "Each time it starts")
+            if "schedule" in j:  # API 1.14: when it runs next, and where to change it
+                sched = schedule_of(data_dir, p["id"], m, j)
+                when = (f"{when}, next {next_slot(sched, dt.datetime.now()).strftime('%A %-d %B at %H:%M')}" if sched
+                        else "Not scheduled yet: choose when in its settings")
             if j.get("quiet_hours"):
                 when += ", in quiet hours"
             out.append({"key": key, "plugin": p["id"], "job": j["id"], "title": f"{p['name']}: {j['label']}", "when": when,
@@ -528,8 +532,68 @@ def _in_quiet_hours(cfg, now):
     return start <= h < end if start < end else (h >= start or h < end)
 
 
-def due(job, last, now, started_at):
-    """True when a job should run now. `last` is its last start (epoch), `started_at` when Starboard started."""
+def schedule_of(data_dir, pid, manifest, job):
+    """A schedule job's schedule (API 1.14): the setting it names, as saved, else that setting's default; None when
+    neither is usable, and then the job does not run on its own (Run now still works)."""
+    key = job.get("schedule")
+    spec = next((s for s in manifest.get("settings") or [] if isinstance(s, dict) and s.get("key") == key and s.get("type") == "schedule"), None)
+    if not spec:
+        return None
+    values = pa._read_kept(os.path.join(pa.folder(data_dir, pid), "settings.json"), {}) or {}
+    for value in (values.get(key), spec.get("default")):
+        if value is not None and not plugins.schedule_problem(value):
+            return value
+    return None
+
+
+def last_slot(schedule, now):
+    """The latest time at or before `now` the schedule names (API 1.14), as a datetime. A monthly date the month does
+    not have (the 31st in April, the 30th in February) is that month's last day."""
+    import calendar
+    hh, mm = (int(x) for x in schedule["time"].split(":"))
+    at = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    if schedule["every"] == "day":
+        return at if at <= now else at - dt.timedelta(days=1)
+    if schedule["every"] == "week":
+        back = (now.weekday() - plugins.WEEKDAYS.index(schedule["day"])) % 7
+        at -= dt.timedelta(days=back)
+        return at if at <= now else at - dt.timedelta(days=7)
+    year, month = now.year, now.month
+    for _ in range(2):
+        day = min(int(schedule["date"]), calendar.monthrange(year, month)[1])
+        at = now.replace(year=year, month=month, day=day, hour=hh, minute=mm, second=0, microsecond=0)
+        if at <= now:
+            return at
+        year, month = (year, month - 1) if month > 1 else (year - 1, 12)
+    return at
+
+
+def next_slot(schedule, now):
+    """The next time after `now` the schedule names (API 1.14), for System, Jobs."""
+    import calendar
+    hh, mm = (int(x) for x in schedule["time"].split(":"))
+    if schedule["every"] in ("day", "week"):
+        step = dt.timedelta(days=1 if schedule["every"] == "day" else 7)
+        return last_slot(schedule, now) + step
+    year, month = now.year, now.month
+    for _ in range(2):
+        day = min(int(schedule["date"]), calendar.monthrange(year, month)[1])
+        at = now.replace(year=year, month=month, day=day, hour=hh, minute=mm, second=0, microsecond=0)
+        if at > now:
+            return at
+        year, month = (year, month + 1) if month < 12 else (year + 1, 1)
+    return at
+
+
+def due(job, last, now, started_at, schedule=None):
+    """True when a job should run now. `last` is its last start (epoch), `started_at` when Starboard started.
+    `schedule`: a schedule job's schedule from its settings (API 1.14)."""
+    if "schedule" in job:
+        if not schedule:
+            return False
+        slot = last_slot(schedule, now)
+        # Within six hours of its time, so a computer that was off at 03:30 does not run it in the afternoon.
+        return (last or 0) < slot.timestamp() and (now - slot) <= dt.timedelta(hours=6)
     if "at_start" in job:
         return (last or 0) < started_at
     if "every_hours" in job:
@@ -549,13 +613,16 @@ class Clock:
         self.thread = None
         self.wake = threading.Event()
         self.events = EventWatch()
+        self._manifests = {}
         self.app = None  # set by the server: its disks and what it knows of updates, for the API 1.11 events
 
     def _active_jobs(self):
         out = []
+        self._manifests = {}
         for p in pa.listing(self.data_dir):
             if p["state"] == "enabled":
                 m = pa._read(os.path.join(pa.folder(self.data_dir, p["id"]), "manifest.json"), {}) or {}
+                self._manifests[p["id"]] = m
                 out += [(p["id"], j) for j in m.get("jobs") or []]
         return out
 
@@ -608,7 +675,8 @@ class Clock:
             for pid, job in todo:
                 if job.get("quiet_hours") and not _in_quiet_hours(self.cfg, now):
                     continue
-                if due(job, (last.get(f"{pid}/{job['id']}") or {}).get("started"), now, self.started_at):
+                sched = schedule_of(self.data_dir, pid, self._manifests.get(pid) or {}, job) if "schedule" in job else None
+                if due(job, (last.get(f"{pid}/{job['id']}") or {}).get("started"), now, self.started_at, sched):
                     run_job(self.data_dir, pid, job["id"])
             self.wake.wait(300)
             self.wake.clear()
