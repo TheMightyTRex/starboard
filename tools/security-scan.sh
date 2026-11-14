@@ -90,7 +90,8 @@ r = c.getresponse()
 r.read()
 print(r.getheader("Set-Cookie").split(";")[0])'
   cookie="$(docker exec starboard-scan python -c "$setup")"
-  rules=""
+  # One browser for the AJAX spider: each headless Firefox takes 600 to 800 MB, and several did not fit under the cap.
+  rules="-config ajaxSpider.numberOfBrowsers=${ZAP_BROWSERS:-1}"
   i=0
   for pair in "Cookie=$cookie" "X-Starboard=1"; do
     rules="$rules -config replacer.full_list($i).description=h$i -config replacer.full_list($i).enabled=true"
