@@ -1091,7 +1091,7 @@ async function openFinder(opener) {
 }
 
 // One wizard step's content: { nodes, save }. Shared by the set-up guide and the upgrade guide.
-async function stepContent(id, root) {
+async function stepContent(id, root, step = {}) {
   const types = (t) => config.services.filter((s) => s.enabled !== false && t.includes(s.type));
   let nodes = [];
   let save = async () => true;
@@ -1388,6 +1388,19 @@ async function stepContent(id, root) {
     nodes = [el("label", { class: "check" }, on, el("span", { class: "check__text" }, el("strong", { text: "Yes, only download between" }))),
       el("div", { class: "form-grid" }, field("From", start), field("Until", end))];
     save = async () => { await saveGeneral({ download_hours: { enabled: on.checked, start: Number(start.value), end: Number(end.value) } }); return true; };
+  } else if (id === "updates") {
+    // DASH-417, DASH-422: automatic Starboard updates, and Reelix's when Reelix is being installed. Both deactivated
+    // unless chosen; the same words and order as the terminal set-up (web/setup-answers.json).
+    const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).updates;
+    const box = (key, label, hint) => {
+      const input = el("input", { type: "checkbox", checked: !!config[key] });
+      return { key, input, node: el("label", { class: "check" }, input, el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: hint }))) };
+    };
+    const picks = [box("starboard_auto_update", w.starboard, w.starboard_hint)];
+    if (step.reelix) picks.push(box("reelix_auto_update", w.reelix, w.reelix_hint));
+    nodes = [el("p", { text: w.intro }), el("p", { class: "small muted", text: w.later }),
+      el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Install updates automatically" }), el("div", { class: "switch-list" }, picks.map((x) => x.node)))];
+    save = async () => { await saveGeneral(Object.fromEntries(picks.map((x) => [x.key, x.input.checked]))); return true; };
   } else if (id === "alerts") {
     const kinds = [["", "Not now", "No alerts. Starboard does not watch in the background."], ["ntfy", "ntfy", "A free push service with a phone app; you choose a private topic."],
       ["gotify", "Gotify", "Your own push server."], ["webhook", "A webhook", "Starboard posts JSON to an address you choose."]];
@@ -1650,6 +1663,8 @@ async function startGuide() {
     const coming = (keys) => !!flow && keys.some((k) => flow.state.apps.has(k));  // installed by this set-up
     if (types(["jellyfin"]).length || coming(["jellyfin"])) list.push({ id: "jellyfin", ...stepNamed(T, "extras"), intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
     if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key) || coming(["qbittorrent", "nzbget", "sabnzbd"])) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, for example to keep the internet free in the day." });
+    // DASH-417: after Download hours, so it can name the quiet hours; Reelix's choice only when Reelix is being installed.
+    list.push({ id: "updates", ...stepNamed(T, "updates"), reelix: coming(["reelix"]) });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
     if (start === "new" && !flow) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
@@ -1706,16 +1721,19 @@ async function startGuide() {
         };
       }
     } else {
-      content = await stepContent(step.id, root);
+      content = await stepContent(step.id, root, step);
     }
     if (step.id !== "finish") { step.nodes = content.nodes; save = content.save; }
     if (step.id === "finish") {
       await saveGeneral({ setup_guide_done: true });
       const apps = config.services.filter((s) => !s.background).length;
       const keyless = types(Object.keys(KEY_PLACE)).filter((s) => !s.has_api_key).map((s) => s.name);
+      const uw = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).updates;  // DASH-417, as the terminal says it
       const facts = [
         ["Apps", `${apps} ${apps === 1 ? "app" : "apps"}${keyless.length ? `; still without a key: ${keyless.join(", ")}` : ""}`, "/settings.html"],
         ["Jellyfin extras", ["livetv", "import_keep", "defaults", "audio_description"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults", audio_description: "audio description (to install in Settings, Plug-ins)" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
+        [uw.summary, config.starboard_auto_update && config.reelix_auto_update ? uw.summary_both : config.starboard_auto_update ? uw.summary_starboard
+          : config.reelix_auto_update ? uw.summary_reelix : uw.summary_none, "/settings-updates.html"],
         ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Off", "/settings-downloads-hours.html"],
         ["Alerts", config.watch.enabled ? `On, to ${config.watch.channel.kind || "nowhere yet"}` : "Off", "/settings-alerts.html"],
         ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-performance.html"],
@@ -2654,10 +2672,10 @@ async function startAbout() {
     const notes = repo && v.latest ? el("a", { class: "btn", href: `https://github.com/${repo}/releases/tag/${encodeURIComponent(v.latest)}`, target: "_blank", rel: "noopener noreferrer" },
       "Release notes", el("span", { class: "visually-hidden", text: " (opens in a new tab)" })) : null;
     let box;
-    if (latest && isNewer(latest, v.current)) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then run the update command on the server.`, notes);
+    if (latest && isNewer(latest, v.current)) box = notice("info", `Version ${latest} is out`, `You have ${v.current}. Read what changed, then choose Update now below, or run the update command on the server.`, notes);
     else if (latest) box = notice("success", "You have the newest version", `Version ${v.current}.`);
     else if (!repo) box = notice("info", `You have version ${v.current}`, "Starboard cannot look for new versions, because STARBOARD_REPO is not set on the server.");
-    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Looking for new versions is inactive. Activate it below to see when one is out.");
+    else if (!config.update_check) box = notice("info", `You have version ${v.current}`, "Looking for new versions is deactivated. Activate it below to see when one is out.");
     else box = notice("info", `You have version ${v.current}`, "GitHub did not answer, so Starboard does not know yet whether a newer version is out.");
     box.classList.add("notice--page");
     top.replaceChildren(box);
@@ -2673,11 +2691,91 @@ async function startAbout() {
       showVersion();
     } catch (e) { check.checked = !check.checked; problem(e.message); }
   });
-  $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "Active: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
+  $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "Activated: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
   $("#update-command").append(copyButton("./update.sh", "the update command"));
+  startSelfUpdate();
   renderAccess();
   try { v = await api("/api/version"); } catch { /* no notice */ }
   showVersion();
+}
+
+// Update now (DASH-417): admin only, with the Starboard password, as a plug-in install asks. update.sh runs in a
+// helper that outlives Starboard's restart; the task dialog follows its steps from data/self-update.log, loses touch
+// while Starboard restarts and reconnects by itself, and ends with the new version or with where it went back to.
+async function startSelfUpdate() {
+  const box = $("#self-update");
+  if (!box) return;
+  let s;
+  try { s = await api("/api/self-update"); } catch { return; }
+  const result = el("div", { class: "stack-2", id: "self-update-result" });
+  const ended = (u, focus) => {
+    if (!u || !u.title) return;
+    const tone = u.outcome === "updated" || u.outcome === "up-to-date" ? "success" : u.outcome === "went-back" ? "warning" : "danger";
+    const guide = u.outcome === "updated" ? el("a", { class: "btn", href: "/upgrade.html" }, "See what is new") : null;
+    const box2 = notice(tone, u.title, u.text, guide);
+    box2.setAttribute("tabindex", "-1");
+    result.replaceChildren(box2);
+    if (focus) box2.focus();
+  };
+  // Opened at once after Update now; an update already running when the page opens shows its line, with Show progress.
+  const follow = (openNow = true) => {
+    const job = taskJob({ title: "Updating Starboard", url: "/api/self-update/job", failedWord: "Stopped here", returnTo: "ab-up-h",
+      intro: "Starboard restarts during the update, so this loses touch with it for about a minute and reconnects by itself. Closing this does not stop the update." });
+    if (openNow) job.open();  // first, while Update now is still there to note as the opener; focus comes back to the heading
+    box.replaceChildren(job.pageLine, result);
+    job.follow((j) => ({ title: j.title, text: j.text })).then((j) => ended(j, !job.dialog.open));
+  };
+  const ask = async () => {
+    const latest = s.latest.replace(/^v/, "");
+    const input = el("input", { class: "input", id: "su-password", type: "password", autocomplete: "current-password", required: true, "aria-describedby": "su-password-error" });
+    const err = el("span", { class: "field-error", id: "su-password-error", hidden: true });
+    const what = el("div", { class: "stack-2" },
+      el("p", { text: `Starboard installs version ${latest}. You have ${s.current}.` }),
+      el("ul", {}, el("li", { text: "Your settings are backed up first." }),
+        el("li", { text: "Starboard restarts, and is away for about a minute." }),
+        el("li", { text: `If the new version does not start, Starboard goes back to ${s.current} by itself, with your settings as they were.` })),
+      el("p", { text: "Type your Starboard password to go ahead." }));
+    for (;;) {
+      const asked = confirmDialog({ title: `Update Starboard to ${latest}`, message: what, confirm: "Update now",
+        fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
+      if (!(await asked)) return;
+      try { await api("/api/self-update/start", { method: "POST", body: { password: input.value, to: s.latest } }); break; }
+      catch (e) {
+        if (e.status === 401 || e.status === 429) {
+          err.textContent = e.status === 401 ? "That password is not right. Check Caps Lock and try again." : e.message;
+          err.hidden = false; input.setAttribute("aria-invalid", "true"); input.value = "";
+          continue;
+        }
+        result.replaceChildren(notice("danger", "Starboard was not updated", e.message));
+        result.firstChild.setAttribute("tabindex", "-1");
+        result.firstChild.focus();
+        return;
+      }
+    }
+    follow();
+  };
+  const draw = () => {
+    const nodes = [];
+    const u = s.update;
+    if (u && u.state === "running") { follow(false); return; }
+    if (s.newer) {
+      const latest = s.latest.replace(/^v/, "");
+      nodes.push(el("h3", { id: "su-h", text: "Update now" }));
+      if (!s.can) {
+        nodes.push(notice("info", `Version ${latest} can be installed on the server`, s.why));
+      } else {
+        const go = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog" }, icon("circle-arrow-up"), `Update now to ${latest}`);
+        go.addEventListener("click", () => ask());
+        nodes.push(el("p", { text: "Starboard backs up your settings, installs the new version and restarts for about a minute. If the new version does not start, it goes back by itself." }));
+        if (s.skip === s.latest) nodes.push(notice("warning", `${latest} did not install last time`, "The automatic update does not try it again by itself. Update now tries again."));
+        nodes.push(el("div", { class: "actions" }, go));
+      }
+    }
+    // The last update's result, for a day after it ended (an update in the night is still there in the morning).
+    if (u && u.finished && Date.now() / 1000 - u.finished < 86400) ended(u, false);
+    box.replaceChildren(...nodes, result);
+  };
+  draw();
 }
 
 // Settings, Updates, Releases: each release in its own accordion, newest first, the installed one open, with a count
@@ -3793,17 +3891,22 @@ startPage().then(async (session) => {
     input.addEventListener("change", () => saveGeneral({ infinite_scroll: input.checked }, true).catch((e) => problem(e.message)));
     const box = section("gn-scroll", "Long lists", "The Library, Wanted and History.",
       el("ul", { class: "settings-rows" }, el("li", { class: "setting" }, switchRow("Load more as you scroll",
-        "Off: a Show more button at the end instead. With Reduce motion on, the button is always used.", input))));
+        "Deactivated: a Show more button at the end instead. With Reduce motion on, the button is always used.", input))));
     const sections = $("#general-sections");
     // General's parts are usually drawn by now (startGeneral runs first), so it goes in at once; else when they are.
     const place = () => { if (sections.childElementCount && !$("#gn-scroll-h")) { sections.append(box); return true; } return false; };
     if (!place()) { const wait = new MutationObserver(() => { if (place()) wait.disconnect(); }); wait.observe(sections, { childList: true }); }
   }
-  if ($("#reelix-auto-row")) {  // DASH-263: automatic Reelix updates, off until switched on
+  if ($("#reelix-auto-row")) {  // DASH-263, DASH-417: automatic Starboard and Reelix updates, deactivated until activated
+    const mine = el("input", { type: "checkbox", role: "switch", id: "starboard-auto", checked: !!config.starboard_auto_update });
+    mine.addEventListener("change", () => saveGeneral({ starboard_auto_update: mine.checked }, true).catch((e) => problem(e.message)));
     const input = el("input", { type: "checkbox", role: "switch", id: "reelix-auto", checked: !!config.reelix_auto_update });
     input.addEventListener("change", () => saveGeneral({ reelix_auto_update: input.checked }, true).catch((e) => problem(e.message)));
-    $("#reelix-auto-row").replaceChildren(el("li", { class: "setting" }, switchRow("Install Reelix updates automatically",
-      "Needs Docker access. Off: Apps, Updates says when there is one, and you choose.", input)));
+    $("#reelix-auto-row").replaceChildren(
+      el("li", { class: "setting" }, switchRow("Install Starboard updates automatically",
+        "In the quiet hours: your download hours when they are set, otherwise 01:00 to 06:00. Starboard restarts for about a minute. Deactivated: the notice above says when there is one, and you choose Update now.", mine)),
+      el("li", { class: "setting" }, switchRow("Install Reelix updates automatically",
+        "In the quiet hours, once a day at most. Needs Docker access. Deactivated: Apps, Updates says when there is one, and you choose.", input)));
   }
   $("#usenet-rights")?.append(usenetRights());
 });

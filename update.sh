@@ -85,17 +85,31 @@ if git merge-base --is-ancestor "$CURRENT" "$WANT" 2>/dev/null; then
   [ "$more" -le 0 ] || echo "... and $more more. The release notes list them in plain words."
 fi
 
-restart() {
+# Each step starts with a "== " line: Settings, Updates reads them to show the update's progress (DASH-417).
+restart() {  # restart <version>
   if [ "$MODE" = docker ]; then
-    docker compose up -d --build
+    say "Building $1"
+    docker compose build
+    say "Restarting Starboard"
+    docker compose up -d
   else
+    say "Restarting Starboard"
     systemctl --user restart starboard.service
   fi
 }
 
+answers() {  # one look at Starboard's health page; wget where there is no python3 (the page's updater, DASH-417)
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:$PORT/healthz', timeout=2)" 2>/dev/null
+  else
+    wget -q -T 2 -O /dev/null "http://127.0.0.1:$PORT/healthz" 2>/dev/null
+  fi
+}
+
 healthy() {
+  say "Checking that Starboard answers"
   for _ in $(seq 1 30); do
-    if python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:$PORT/healthz', timeout=2)" 2>/dev/null; then
+    if answers; then
       return 0
     fi
     sleep 2
@@ -143,19 +157,25 @@ backup_data "$BACKUP"
 echo "Saved $BACKUP (the plug-ins' own data folders are not in it: they stay where they are)"
 # DASH-109: keep the copies of the last versions only (Settings, Updates, Restore: 5, 10 or 20; 5 if unset). These are
 # update.sh's own rolling copies, one per update, so the older ones are removed rather than kept elsewhere.
-KEEP_COPIES="$(python3 -I -c 'import json, sys
+if command -v python3 >/dev/null 2>&1; then
+  KEEP_COPIES="$(python3 -I -c 'import json, sys
 try:
     n = int(json.load(open(sys.argv[1])).get("backup_keep_versions", 5))
 except Exception:
     n = 5
 print(n if n in (5, 10, 20) else 5)' data/config.json 2>/dev/null || echo 5)"
+else  # the page's updater has no python3 (DASH-417): the same number, read with sed
+  KEEP_COPIES="$(sed -n 's/.*"backup_keep_versions": *\([0-9]*\).*/\1/p' data/config.json 2>/dev/null || true)"
+  KEEP_COPIES="${KEEP_COPIES%%$'\n'*}"
+  case "$KEEP_COPIES" in 5|10|20) ;; *) KEEP_COPIES=5 ;; esac
+fi
 { ls -1t backups/starboard-data-*.tar.gz 2>/dev/null || true; } | tail -n +$((KEEP_COPIES + 1)) | while read -r old; do
   if [ "$old" != "$BACKUP" ]; then rm -f -- "$old"; echo "Removed the older copy $old"; fi
 done
 
 say "Installing $WANT_NAME"
 git -c advice.detachedHead=false checkout --quiet "$WANT"
-restart
+restart "$WANT_NAME"
 
 if healthy; then
   # The set-up helper (DASH-299), from the version just installed: this copy of update.sh may be older.
@@ -167,7 +187,7 @@ fi
 say "The new version did not start. Going back to $CURRENT_NAME"
 git -c advice.detachedHead=false checkout --quiet "$CURRENT"
 restore_data "$BACKUP"
-restart
+restart "$CURRENT_NAME"
 if healthy; then
   echo "Back on $CURRENT_NAME with your settings restored. The failed version's data is in data.failed-update."
 else

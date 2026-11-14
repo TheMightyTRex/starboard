@@ -138,6 +138,29 @@ def _example_dispatcharr():
     dispatcharr.inside_address = lambda cfg, data_dir: dispatcharr.INSIDE
 
 
+def _example_self_update():
+    """Update now (DASH-417): a newer made-up release, and an update that only writes update.sh's lines over a few
+    seconds, so Settings, Updates shows Update now and its progress. Nothing is fetched, built or restarted."""
+    from starboard import server as server_mod, self_update
+    major, minor, _ = (int(x) for x in (REPO / "VERSION").read_text().strip().split("."))
+    newer = f"v{major}.{minor + 1}.0"
+    server_mod.App.latest_release = lambda self: newer
+    self_update.plan = lambda data_dir, root: {"how": "native", "folder": str(REPO)}
+
+    def launch(p, to):
+        lines = ["== Fetching releases", f"Available: {to}", "== Backing up your settings", f"== Installing {to}",
+                 f"== Building {to}", "== Restarting Starboard", "== Checking that Starboard answers", f"== Updated to {to}",
+                 "@@ finished 0"]
+
+        def write():
+            for line in lines:
+                time.sleep(0.6)
+                with open(DATA / self_update.LOG, "a", encoding="utf-8") as f:
+                    f.write(line + "\n")
+        threading.Thread(target=write, daemon=True).start()
+    self_update.launch = launch
+
+
 def _example_full_backups():
     """System, Backup and restore, Full without media (DASH-260): the media folder on its own disk, so the page says
     which disk the copies go on, and two made-up copies in the folder. Nothing is read from this computer."""
@@ -1176,6 +1199,7 @@ def main():
     _example_full_backups()
     _example_copies(DATA)
     _example_tdarr()
+    _example_self_update()
     if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":
         # DASH-218: the full Reelix's YouTube and Spotify downloads as the admin last saw them, with yt-dlp broken and
         # Spotify's sign-in run out, so Apps and System show both warnings with what to do. Off by default.

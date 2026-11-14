@@ -8,8 +8,8 @@ step, and plain lines for screen readers (--plain or STARBOARD_PLAIN=1). It sign
 changes every setting through Starboard's own API on this computer, never its files, so Starboard checks each change
 as it does from a page.
 
-It starts with the automatic update settings: whether Starboard looks for new versions, whether Reelix installs its
-own updates, and how to update Starboard or go back to an earlier version (./update.sh, which this does not run for
+It starts with the automatic update settings: whether Starboard looks for new versions, whether Starboard and Reelix
+install their own updates (DASH-417), and how to update Starboard or go back to an earlier version (./update.sh, which this does not run for
 you: it restarts Starboard). Other sections follow the same pattern. 13 November 2026.
 """
 
@@ -25,8 +25,12 @@ HELP.update({
                 "Starboard's Settings pages from a browser. Type q to close the settings at any time; nothing changes "
                 "until you choose it.",
     "updates": "Look for new versions: Starboard checks GitHub once a day and says on Settings, Updates and in the "
-               "side menu when a new version is out. It never installs one by itself. Reelix installs its own updates: "
-               "once a day at most, Starboard installs a new Reelix, saving its settings first, and goes back to the "
+               "side menu when a new version is out. Install Starboard updates automatically: in the quiet hours "
+               "(your download hours when they are set, otherwise 01:00 to 06:00), Starboard installs its newest "
+               "release with ./update.sh, which backs up its settings first and goes back by itself if the new version "
+               "does not start. A version that did not install is not tried again until someone chooses Update now in "
+               "Settings, Updates. Install Reelix updates automatically: "
+               "in the quiet hours, once a day at most, Starboard installs a new Reelix, saving its settings first, and goes back to the "
                "version before if the new one is not healthy. Update Starboard with ./update.sh in the Starboard "
                "folder; ./update.sh --to and a version goes back to that version, restoring the settings it saved.",
     "settings-password": "The password you chose for Starboard, the one you sign in with from a browser. Forgotten "
@@ -35,7 +39,7 @@ HELP.update({
 HELP_PAGES.update({"updates": "topics/update-starboard.html", "settings": "topics/find-a-setting.html",
                    "settings-password": "topics/reset-a-forgotten-password.html"})
 
-ON, OFF = "Active", "Inactive"
+ON, OFF = "Activated", "Deactivated"
 
 
 def releases(folder=".", run=None):
@@ -68,20 +72,25 @@ def automatic_updates(api, term, version, folder="."):
     while True:
         cfg = api.call("GET", "/api/config")
         check, reelix = cfg.get("update_check", True) is not False, bool(cfg.get("reelix_auto_update"))
+        mine = bool(cfg.get("starboard_auto_update"))
         has_reelix = any(s.get("icon") == "reelix" or s.get("type") == "reelix" for s in cfg.get("services", []))
         term.heading("Automatic updates")
         term.card("Now", [("Starboard", version or "unknown version"),
                           ("Look for new versions", ON if check else OFF),
-                          ("Reelix installs its own updates", (ON if reelix else OFF) if has_reelix else "No Reelix yet"),
+                          # DASH-417: the same words and order as Settings, Updates in the browser
+                          ("Install Starboard updates automatically", ON if mine else OFF),
+                          ("Install Reelix updates automatically", (ON if reelix else OFF) if has_reelix else "No Reelix yet"),
                           ("Your apps", "Updated from Apps, Updates, when you choose")])
         # Nothing to change is the recommended answer, first, so Enter never changes a setting by mistake.
         options = [("Done: back to the settings (recommended)", "Nothing changes."),
                    ("Look for new Starboard versions: " + ("deactivate" if check else "activate"),
-                    "Starboard says when a new version is out. It never installs one by itself."),
+                    "Starboard says when a new version is out."),
+                   ("Install Starboard updates automatically: " + ("deactivate" if mine else "activate"),
+                    "In the quiet hours, with its settings backed up first and a way back if it does not start."),
                    ("Update Starboard or go back to an earlier version", "The command to run, with the versions on this computer.")]
         if has_reelix:
-            options.insert(2, ("Reelix installs its own updates: " + ("deactivate" if reelix else "activate"),
-                               "Once a day at most, with its settings saved first and a way back."))
+            options.insert(3, ("Install Reelix updates automatically: " + ("deactivate" if reelix else "activate"),
+                               "In the quiet hours, once a day at most, with its settings saved first and a way back."))
         term.can_back = True
         picked = term.choose("What do you want to change?", options, 1, help_key="updates")
         name = options[picked][0]
@@ -90,9 +99,12 @@ def automatic_updates(api, term, version, folder="."):
         if name.startswith("Look for new"):
             api.call("PUT", "/api/config/general", {"update_check": not check})
             term.ok(f"Look for new versions is now {(OFF if check else ON).lower()}.")
-        elif name.startswith("Reelix"):
+        elif name.startswith("Install Starboard"):
+            api.call("PUT", "/api/config/general", {"starboard_auto_update": not mine})
+            term.ok(f"Install Starboard updates automatically is now {(OFF if mine else ON).lower()}.")
+        elif name.startswith("Install Reelix"):
             api.call("PUT", "/api/config/general", {"reelix_auto_update": not reelix})
-            term.ok(f"Reelix installing its own updates is now {(OFF if reelix else ON).lower()}.")
+            term.ok(f"Install Reelix updates automatically is now {(OFF if reelix else ON).lower()}.")
         else:
             tags = releases(folder)
             rows = [("Update to the newest", "./update.sh"), ("Only check", "./update.sh --check")]

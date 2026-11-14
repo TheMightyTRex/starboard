@@ -1196,6 +1196,44 @@ const moved = await api("/api/jellyfin/plugins", { method: "POST", body: { group
 check("JF-04", "Do not install deactivates and never uninstalls", moved.done[0] === "Deactivated Playback Reporting (still installed)", moved.done.join("; "));
 await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "on" } });
 
+// UPD: Update now and automatic Starboard updates (DASH-417). The example server has a newer made-up release and an
+// update that only writes update.sh's lines, so nothing is fetched or restarted.
+console.log("\n== UPD Update now");
+await open("settings-updates.html");
+const auto = page.getByRole("switch", { name: "Install Starboard updates automatically" });
+check("UPD-01", "Install Starboard updates automatically is on Settings, Updates and deactivated by default",
+  (await auto.count()) === 1 && !(await auto.isChecked()));
+check("UPD-01", "beside Install Reelix updates automatically, in one Automatic updates section",
+  (await page.locator("section[aria-labelledby=ab-rx-h]").getByRole("switch").count()) === 2);
+const goNow = page.getByRole("button", { name: /^Update now to / });
+check("UPD-02", "a newer release offers Update now", (await goNow.count()) === 1);
+await goNow.click();
+const ask = page.getByRole("dialog");
+check("UPD-02", "Update now asks for the password first, with focus in the field",
+  await page.evaluate(() => document.activeElement?.id === "su-password"));
+await page.locator("#su-password").fill("not-the-password");
+await ask.getByRole("button", { name: "Update now" }).click();
+await page.locator("#su-password-error:not([hidden])").waitFor({ timeout: 5000 }).catch(() => {});
+check("UPD-02", "a wrong password is said under the field, and nothing starts",
+  /not right/.test(await page.locator("#su-password-error").textContent()) && !(await api("/api/self-update")).running);
+{ const expected = problems.filter((x) => !(/settings-updates\.html: .*\b401\b/.test(x)));  // the wrong password just tried
+  problems.splice(0, problems.length, ...expected); }
+await page.locator("#su-password").fill(password);
+await page.getByRole("dialog").getByRole("button", { name: "Update now" }).click();
+const progress = page.getByRole("dialog", { name: "Updating Starboard" });
+await progress.waitFor({ timeout: 5000 });
+check("UPD-03", "the progress dialog opens with focus on its heading",
+  await page.evaluate(() => document.activeElement?.textContent === "Updating Starboard"));
+await progress.locator(".notice__title", { hasText: "Starboard is updated" }).waitFor({ timeout: 20000 }).catch(() => {});
+check("UPD-03", "it follows each step and ends with the result, focused",
+  (await progress.locator(".task-list__item[data-state=done]").count()) === 6
+  && await page.evaluate(() => document.activeElement?.closest(".notice")?.textContent.includes("Starboard is updated")));
+await progress.getByRole("button", { name: "Done" }).click();
+check("UPD-03", "closing it takes focus to the Updates heading, as Update now is gone", await page.evaluate(() => document.activeElement?.id === "ab-up-h"));
+check("UPD-03", "the page says how it ended", (await page.locator("#self-update-result").textContent()).includes("Starboard is updated"));
+const back = await api("/api/self-update");
+check("UPD-04", "the record says who started it and how it ended", back.update?.by === "you" && back.update?.outcome === "updated", JSON.stringify(back.update));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];
