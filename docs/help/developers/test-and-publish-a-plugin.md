@@ -33,6 +33,9 @@ python3 -m starboard.plugin_tester --dev path/to/your-plugin
 ```
 
 Give it the plug-in's folder or its `starboard-plugin.json`. `--dev` allows images without a digest, as the box does.
+From API 1.14 it also checks the [logo](plugin-manifest-reference.md#logo) file next to the manifest, as Starboard
+will when it is added, and each card's `example` for a `status` Starboard knows. In **Test a plug-in**, the logo is
+checked when you give the manifest's address; a pasted manifest has no address to read it from.
 It ends with how many errors, warnings and tips it found, and exits with 1 when there are errors, so you can run it
 in your own checks before each release.
 
@@ -123,7 +126,10 @@ Starboard, and offer updates. The full shape is in
    ```
 
 3. Publish it at an `https` address that gives the file itself, such as a repository's raw `catalogue.json`.
-4. To release a new version, add it to `versions` with its own address and SHA-256. Leave the older ones, so
+4. Optional, from API 1.14: add `logo`, the plug-in's logo as a data address
+   (`data:image/svg+xml;base64,...`, up to 24 KB), and `logo_alt`, what it shows, so the Catalogue shows the logo
+   before anyone adds the plug-in. Read [Catalogues](plugin-api-reference.md#catalogues).
+5. To release a new version, add it to `versions` with its own address and SHA-256. Leave the older ones, so
    people on an older Starboard still get the newest version that works for them.
 
 Never change a manifest after it is listed: Starboard refuses a file whose SHA-256 does not match, and says it
@@ -145,6 +151,8 @@ reads it again at most once a day. The steps for everyone are in
 
 - The tester shows 0 errors without development mode, and you have read every warning.
 - Every image is pinned by digest.
+- It has a small `logo` that passes the tester, and its cards send `status` and `updated` if it works in the
+  background (API 1.14).
 - `permissions` lists only what the plug-in uses. People read each one before they add it.
 - `homepage` and `support_url` work, and the readme says what the plug-in does and what it sends anywhere.
 - `version` follows semantic versioning: raise the first number when something stops working the old way.

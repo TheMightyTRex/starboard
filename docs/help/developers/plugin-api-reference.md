@@ -54,6 +54,43 @@ view. It overrides the `refresh_seconds` in the manifest, so a plug-in can let p
 - With no `refresh_seconds` anywhere, the card is asked as before: once a minute, or every `refresh_minutes`.
 - Keep the answer cheap. Read a small file your plug-in keeps up to date rather than doing the work when asked.
 
+### The card band (API 1.14)
+
+From API 1.14 Starboard draws every plug-in card the same way (design 2, "band with status"): a grey band across
+the top that starts with the plug-in's logo (its [logo](plugin-manifest-reference.md#logo), or its initials on a
+plain tile), then the plug-in's name as the card's heading (the card's `title` under it, smaller, when it differs),
+and ends with a status chip and when the card last updated. The body below shows the answer as before.
+
+Any card's answer may add these, all optional:
+
+| Field | What it is | Rules |
+|---|---|---|
+| `status` | The card's state, shown as a chip in the band | One of the values below. An unknown value is left out, and the tester reports it |
+| `status_label` | Your own words on the chip, such as `Waiting for 03:30` | Up to 24 characters, cut beyond. Needs a `status`, which sets the chip's colour and shape |
+| `updated` | When what the card shows last changed, in seconds since 1970 | Not in the future. Left out, the band says when Starboard last asked the plug-in |
+
+```json
+{"items": [{"title": "Converting now: Dune (2021)", "detail": "Shrink, 34% done"}],
+ "refresh_seconds": 30, "status": "converting", "updated": 1794694110}
+```
+
+| `status` | Words on the chip | Chip |
+|---|---|---|
+| `ok`, `done`, `ready`, `protected` | OK, Done, Ready, Protected | success: a tick |
+| `working`, `converting`, `scanning`, `updating`, `running` | Working, Converting, Scanning, Updating, Running | info |
+| `waiting`, `idle`, `scheduled` | Waiting, Idle, Scheduled | neutral: a clock |
+| `paused`, `inactive` | Paused, Inactive | muted |
+| `warning`, `needs_setup` | Warning, Needs setting up | warning: a diamond |
+| `problem`, `failed`, `stopped` | Problem, Failed, Stopped | danger: a cross |
+
+- The chips are the design system's status chips: words, an icon and a colour together, never colour alone.
+- A screen reader reads the heading, then "Status: Converting" and "Updated 30 seconds ago", so each makes sense on
+  its own. The cards' headings are level 2, under the dashboard's own heading.
+- The time is kept in words as it ages ("2 minutes ago") without asking the plug-in again. Nothing in the band is a
+  live region, so a refresh does not interrupt a screen reader.
+- A `status` card's own `state` shows as the chip when the answer has no `status`.
+- An older Starboard ignores these fields, so a plug-in can send them whatever `starboard_api` it names.
+
 A `stat` card's `format` in the manifest says how `value` is shown: `number`, `bytes`, `percent`, `duration`
 (seconds) or `date` (seconds since 1970).
 
@@ -243,6 +280,10 @@ is a POST with an empty body to the job's `path`.
 - `daily` runs within 5 minutes after its time, in the server's own time zone.
 - `every_hours` runs when that many hours have passed since it last started.
 - `at_start` runs once after each start of Starboard.
+- `schedule` (API 1.14) runs on the schedule the person chose in one of the plug-in's settings: every day, every week
+  on a day, or every month on a date (the last day in a shorter month), at a time. It runs within 5 minutes after
+  that time, or up to 6 hours late if the server was off, otherwise at the next time. Read
+  [A job on a schedule from its settings](plugin-manifest-reference.md#a-job-on-a-schedule-from-its-settings).
 - `quiet_hours` runs it only in quiet hours: the download hours, when they are set, or from 01:00 to 06:00.
 - Answer within `time_limit_minutes` (10 when left out) with `{"said": "Tidied 12 files"}`. Starboard keeps `said`,
   cut to 160 characters, as the job's summary in **System**, then **Jobs**. With no `said`, the summary is "Done".
@@ -259,7 +300,7 @@ only, so any user a container runs as can read these files:
 
 | In the container | What it is |
 |---|---|
-| `/run/starboard/settings.json` | The settings, as one JSON object of `key` and value, secrets included |
+| `/run/starboard/settings.json` | The settings, as one JSON object of `key` and value, secrets included. A `schedule` setting is an object, such as `{"every": "month", "date": 31, "time": "03:30"}` (API 1.14) |
 | `/run/starboard/key` | The plug-in's own API key, as one line of text |
 | `/run/starboard/jellyfin.json` | Only with `jellyfin:key`: `{"url": ..., "api_key": ...}`. An address on the server itself is given as `host.docker.internal` |
 | `/run/starboard/reelix.json` | Only with `reelix:key` (API 1.6): `{"url": ..., "api_key": ...}`, Reelix's address and key |
@@ -403,6 +444,7 @@ catalogues besides its own.
 | `manifest_sha256` | The SHA-256 of that file, 64 hex characters |
 | `changelog`, `released` | Shown with an update. Up to 600 and 10 characters |
 | `recommended` | `true` puts the entry in **Recommended** at the top of the collection, with a Recommended chip. Only Starboard's own collection may recommend; other catalogues' entries are listed as usual. Nothing is added until the person chooses it (API 1.14) |
+| `logo`, `logo_alt` | The plug-in's logo for the Catalogue, before it is added: a data address, `data:image/svg+xml;base64,...` or `data:image/png;base64,...`, of up to 24 KB, and what it shows in words (3 to 80 characters). Checked and cleaned as a logo file is; left out when it fails or has no `logo_alt`. The plug-ins repository's `tools/make_examples.py` can fill both from each plug-in's `logo` (API 1.14) |
 | `rest` | For an app plug-in: `{"memory_mb": 117, "cpu_percent": 0.22}`, what it uses at rest, measured. Shown under it in the catalogue (API 1.13) |
 
 How Starboard uses it:

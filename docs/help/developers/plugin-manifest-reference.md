@@ -39,6 +39,7 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `jobs` | no | Jobs Starboard runs for it | Read [Jobs](#jobs). API 1.4 |
 | `changes` | no | What changed in each version, shown as **What is new** after an update | Read [Changes](#changes). API 1.10 |
 | `adopt` | no | An app the main install may already run, which Starboard can copy into the plug-in | Read [App plug-ins](#app-plug-ins). API 1.13 |
+| `logo` | no | A small logo, shown in **Settings**, **Plug-ins** and on its dashboard cards | Read [Logo](#logo). API 1.14 |
 
 ## Permissions
 
@@ -58,6 +59,7 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `usenet:servers` | Use your news server's address and sign-in, from NZBGet or SABnzbd (API 1.6) | high | none |
 | `network:port` | Open its own web page on your home network, at a port Starboard chooses (API 1.13) | medium | none |
 | `appearance:styles` | Add styles to Display: colours, corners, a font and shadows, checked for accessibility | low | none |
+| `jellyfin:metadata` | Read and change Jellyfin's metadata folder: the posters, photos and details Jellyfin saved (API 1.14) | medium | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
 for how people see this.
@@ -80,7 +82,7 @@ settings, events and jobs.
 | `publish` | Puts `port` on the home network: on Gluetun for `network: vpn` (plug-in API 1.9), or as the app's own web page for `network: lan` (API 1.13) | true or false; only with `network: vpn` or `lan` and a `port`; on `lan` it needs `network:port` |
 | `host_port` | For `publish` on `lan`: the port Starboard tries first, usually the app's own, such as `3000` | 1024 to 65535. Starboard takes the next free port when it is in use. API 1.13 |
 | `tmpfs` | Folders in memory the app writes to, such as `/var/run/postgresql`, owned by its user | Up to 6 paths inside the container, never `/tmp` (it always has one) or `/run/starboard`. Only `/run` may run programs, for images with s6. API 1.13 |
-| `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out. From API 1.12, `media`: the media folder's owner, only for a container that mounts `media/<one folder>`. Read [Adding files to the media folder](#adding-files-to-the-media-folder) |
+| `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out. From API 1.12, `media`: the media folder's owner, only for a container that mounts `media/<one folder>` or, from API 1.14, `jellyfin-metadata`. Read [Adding files to the media folder](#adding-files-to-the-media-folder) |
 | `command` | The command it runs | Only plug-ins built into Starboard may set it |
 
 The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hello-card-main`.
@@ -103,9 +105,33 @@ The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hell
 | `media/<one folder>:ro` | `/media/<one folder>`, read only (API 1.13) | none; people see it as something it can see |
 | `data:<path>` | Its own folder, at the path the app expects, such as `data:/config` (API 1.13) | none |
 | `data/<folder>:<path>` | A folder inside its own folder, at a path, for an app with several, such as `data/server:/app/server` (API 1.13) | none |
+| `jellyfin-metadata` | `/metadata`, read and write: Jellyfin's metadata folder, its posters, photos and details (API 1.14). Read [Jellyfin's metadata folder](#jellyfins-metadata-folder) | `jellyfin:metadata` |
+| `jellyfin-metadata:ro` | `/metadata`, read only (API 1.14) | `jellyfin:metadata` |
 
 Nothing else can be mounted. The folder name after `media/` is 1 to 60 letters, numbers, dots, underscores and
 hyphens, so it cannot climb out with `..`.
+
+### Jellyfin's metadata folder
+
+From API 1.14, a plug-in that works on the pictures and details Jellyfin keeps, such as one that shrinks posters,
+mounts Jellyfin's metadata folder with `jellyfin-metadata` (read and write) or `jellyfin-metadata:ro` (read only),
+and asks for the permission `jellyfin:metadata`. Nothing else gets the folder: without the permission the manifest is
+refused, and the folder is mounted only for a plug-in that was granted it.
+
+- In the container it is always `/metadata`. On the server, Starboard finds it where Jellyfin mounts it: `/metadata`
+  on new installs (`${CONFIG_DIR}/jellyfin-metadata`), or Jellyfin's own `config/data/metadata` on an install that
+  has not been moved yet. When Jellyfin is not installed, the plug-in cannot be added, and Starboard says so.
+- To change files there, run the container as `"user": "media"`, the apps' own user, which owns Jellyfin's files.
+- People read before they add it: "Jellyfin's metadata folder: the posters, photos and details Jellyfin saved. It can
+  change, replace and remove them, and Jellyfin shows what it leaves there". Its risk is medium.
+- Check each file before it replaces the one Jellyfin saved, and keep the work slow and quiet: Jellyfin reads these
+  files while people watch.
+
+```json
+"permissions": ["jellyfin:metadata"],
+"containers": [{"name": "main", "image": "ghcr.io/you/picture-shrinker@sha256:...", "port": 8080,
+                "volumes": ["data", "jellyfin-metadata"], "user": "media"}]
+```
 
 ### Adding files to the media folder
 
@@ -232,6 +258,7 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 | `folder` | Browse, inside what the plug-in mounts | A folder inside `/media` or `/media/<one folder>`. Needs a container that mounts `media:ro` or `media/<one folder>`. API 1.3 |
 | `list` | Several values | Up to 200, each up to 500 characters |
 | `custom` | A list the plug-in describes, drawn by Starboard | `choices` is a path on the plug-in. Read [Custom screens](plugin-api-reference.md#custom-screens) |
+| `schedule` | How often (every day, every week or every month), the day or the date, and a time, side by side | Every day, week or month; a day of the week for a week; a date from 1 to 31 for a month; a time such as `03:30`. A month without the date runs on its last day. API 1.14. Read [A job on a schedule from its settings](#a-job-on-a-schedule-from-its-settings) |
 
 ### Setting up before it starts
 
@@ -278,6 +305,11 @@ Each item in `cards` is a card people can add with **Edit dashboard**. Read
 A card with `refresh_seconds` is asked again at that time while its dashboard is open and in view, never while the
 browser tab is hidden. Cards due at the same time are asked in one request. Read
 [How often a card is asked](plugin-api-reference.md#how-often-a-card-is-asked-api-114).
+
+From API 1.14 Starboard draws every plug-in card with a grey band across the top: the plug-in's [logo](#logo) (or
+its initials), the plug-in's name as the card's heading, the card's `title` under it when it differs, and at the
+right a status chip and when it last updated, from the card's answer. You do not lay any of it out. Read
+[The card band](plugin-api-reference.md#the-card-band-api-114).
 
 ## Actions
 
@@ -342,9 +374,10 @@ in. API 1.4. Read [Jobs](plugin-api-reference.md#jobs) for what Starboard sends.
 | `id` | Its id | Lower case letters, numbers and hyphens, starting with a letter, up to 31; different from the others |
 | `label` | What people read in **System**, then **Jobs** | Required, up to 60 characters |
 | `path` | The path on the first container | Required |
-| `daily` | A time each day, such as `03:30` | Give exactly one of `daily`, `every_hours` and `at_start` |
+| `daily` | A time each day, such as `03:30` | Give exactly one of `daily`, `every_hours`, `at_start` and `schedule` |
 | `every_hours` | Every so many hours | A whole number from 1 to 168 |
 | `at_start` | Once each time Starboard starts | Must be `true` |
+| `schedule` | When the person chooses, in one of its settings | The `key` of one of its settings of type `schedule`. API 1.14 |
 | `time_limit_minutes` | How long it may take | 1 to 120; 10 when left out |
 | `quiet_hours` | Run only in quiet hours | `true` or `false` |
 
@@ -353,6 +386,73 @@ in. API 1.4. Read [Jobs](plugin-api-reference.md#jobs) for what Starboard sends.
   {"id": "tidy", "label": "Tidy old files", "path": "/jobs/tidy", "daily": "03:30", "time_limit_minutes": 20, "quiet_hours": true}
 ]
 ```
+
+### A job on a schedule from its settings
+
+From API 1.14 a job can run when the person chooses rather than at a time you fixed: every day, every week on a
+chosen day, or every month on a chosen date, at a chosen time. Add a setting of type `schedule`, with a `default`, and
+name its `key` in the job's `schedule`:
+
+```json
+"settings": [
+  {"key": "when", "label": "When to shrink", "type": "schedule", "hint": "It runs at this time.",
+   "default": {"every": "week", "day": "sunday", "time": "03:30"}}
+],
+"jobs": [
+  {"id": "shrink", "label": "Shrink pictures", "path": "/jobs/shrink", "schedule": "when", "time_limit_minutes": 120}
+]
+```
+
+| Value | What it is |
+|---|---|
+| `every` | `day`, `week` or `month`. Required |
+| `time` | The time, such as `03:30`, in the server's own time zone. Required |
+| `day` | For `week`: `monday`, `tuesday`, `wednesday`, `thursday`, `friday`, `saturday` or `sunday` |
+| `date` | For `month`: 1 to 31. In a month without that date, such as the 31st in April, it runs on the month's last day |
+
+- Starboard draws the setting as **How often**, then **Day** or **Date**, then **Time**, and saves each change at
+  once. It checks the value, says what is wrong in plain words ("When to shrink: needs a day of the week"), and keeps
+  only the parts the schedule uses.
+- The job runs within 5 minutes after its time. If the server was off then, it still runs up to 6 hours late, and
+  otherwise waits for the next time, so it never starts in the middle of the day by surprise.
+- **System**, then **Jobs**, says the schedule in words and when it runs next, such as "Every week on Sunday at 03:30,
+  next Sunday 16 November at 03:30", with **Run now** as for any job.
+- The install warning says the job runs on the schedule people choose, and what it starts with.
+- Without a usable value or default, the job does not run by itself; **Run now** still works.
+- With `quiet_hours`, it runs only when its time falls in quiet hours.
+
+## Logo
+
+From API 1.14 a plug-in may have a small logo: an SVG or PNG file next to `starboard-plugin.json`. Starboard shows it
+in **Settings**, **Plug-ins** (**Manage** and the **Catalogue**), on the plug-in's own page, and in the grey band of
+each of its dashboard cards. A plug-in without one gets its initials on a plain tile, so every card looks the same.
+
+```json
+"logo": {"file": "logo.svg", "alt": "A play symbol on a screen"}
+```
+
+| Field | What it is | Check |
+|---|---|---|
+| `file` | The file's name, next to the manifest or in one folder under it, such as `logo.svg` or `images/logo.png` | Ends in `.svg` or `.png`; no `..` |
+| `alt` | What the logo shows, in words, for people who cannot see it | 3 to 80 characters, such as "A play symbol on a screen". Not the plug-in's name: that is always beside it |
+
+How Starboard reads it:
+
+- When the plug-in is added or updated from an address (or the catalogue), Starboard fetches the file from beside the
+  manifest, checks it, and keeps a cleaned copy in the plug-in's folder. It serves that copy itself; the browser never
+  loads anything from your site. A manifest pasted into **Test a plug-in** has no address, so its logo cannot be read.
+- **SVG**: up to 16 KB, with a `viewBox`; only shapes, paths, groups, gradients, `use` of its own parts, `title` and
+  text. No scripts, `foreignObject`, pictures, `style` elements or attributes, animation, event handlers (`on...`),
+  links outside the file or `url()` other than `url(#id)`, and no DOCTYPE or entities. Starboard draws the SVG again
+  from what it allows.
+- **PNG**: up to 32 KB, square, from 32 to 256 pixels a side.
+- It is shown at 32 and 40 pixels: keep it simple, with a solid shape that reads at that size in light and dark.
+- A logo that fails a check is not used: the plug-in is still added, with its initials, and the plug-in tester
+  reports it as a warning with what to change.
+- Roll back brings back the logo of the version before.
+
+A catalogue entry can carry the same logo for the Catalogue, before anything is added. Read
+[Catalogues](plugin-api-reference.md#catalogues).
 
 ## Changes
 
@@ -397,7 +497,7 @@ Start each line with what people notice, in a few words.
 | 1.11 | 13 November 2026 | Four more events (`request.available`, `download.failed`, `disk.nearly_full`, `update.available`), and `readonly` on a custom setting's list with folds |
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
-| 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry |
+| 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

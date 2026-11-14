@@ -42,7 +42,29 @@ the next major version.
 - **Added:** the dashboard asks cards due at the same time in one request, and nothing while the tab is hidden.
 - **Added:** `recommended` on an entry in Starboard's own catalogue, shown in **Recommended** at the top of the
   Catalogue with a chip. Adding stays a choice, with what it may do and the password.
+- **Added:** `logo` (DASH-428): a small SVG or PNG beside the manifest, with `alt`, checked and cleaned by Starboard
+  (SVG up to 16 KB with no scripts, styles, pictures, event handlers or outside links; PNG square, 32 to 256 pixels,
+  up to 32 KB) and shown in **Manage**, the **Catalogue**, the plug-in's page and its cards. Without one, its initials.
+  A catalogue entry may carry it as `logo` (a data address) and `logo_alt`. Read
+  [Logo](plugin-manifest-reference.md#logo).
+- **Added:** the card band (DASH-428, design 2): every plug-in card has a grey band with the logo, the plug-in's name
+  as the heading, and a status chip and when it last updated, from `status`, `status_label` and `updated` in the
+  card's answer. Read [The card band](plugin-api-reference.md#the-card-band-api-114).
+- **Added:** a job on a schedule from the plug-in's settings (DASH-432): a setting of type `schedule` (every day,
+  every week on a day, or every month on a date, at a time) and `schedule` on a job naming it. Shown in
+  **System**, then **Jobs**, with when it runs next and **Run now**. Read
+  [A job on a schedule from its settings](plugin-manifest-reference.md#a-job-on-a-schedule-from-its-settings).
+- **Added:** the permission `jellyfin:metadata` (medium risk) and the volumes `jellyfin-metadata` and
+  `jellyfin-metadata:ro`: Jellyfin's metadata folder at `/metadata`, mounted only when granted, and `"user": "media"`
+  with it. Read [Jellyfin's metadata folder](plugin-manifest-reference.md#jellyfins-metadata-folder).
+- **Changed:** the plug-in tester reports a logo that fails its checks, a `status` Starboard does not know in a card's
+  `example`, and suggests a logo and a status where there is none.
+- **Changed:** `GET /api/plugins` and `GET /api/plugins/cards` (Starboard's own pages) give each plug-in's `logo`,
+  `{url, alt}` or `null`; `GET /api/plugins/{id}/logo` serves the cleaned copy; a card's answer has `asked`. The
+  public `/api/v1` did not change.
 - Nothing changed for a card without `refresh_seconds`: it is asked once a minute, or every `refresh_minutes`.
+- Nothing was taken away: a manifest that worked with 1.13 works the same, and its cards gain the band with its
+  initials and when Starboard last asked it.
 
 ## Plug-in API 1.13.0, 13 November 2026
 
