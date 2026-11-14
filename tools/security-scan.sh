@@ -20,9 +20,9 @@ FULL=0
 [ "${1:-}" = "--full" ] && FULL=1
 TRIVY=aquasec/trivy:0.69.1
 ZAP=ghcr.io/zaproxy/zaproxy:stable
-# ZAP (Java) is capped, so a scan cannot run the server out of memory (14 November 2026: an uncapped active scan grew
-# to 4 GB beside other work and the computer ran out of memory). ZAP_MEMORY=4g gives it more on a bigger computer.
-ZAP_LIMITS="--memory ${ZAP_MEMORY:-3g} --memory-swap ${ZAP_MEMORY:-3g} --cpus ${ZAP_CPUS:-4}"
+# ZAP (Java and its headless Firefox, about 5 GB in all) is capped at 6 GB, so a scan cannot run the server out of memory (14 November 2026: an uncapped active scan grew
+# to 4 GB beside other work and the computer ran out of memory; 3 GB was too little for its browser). Run nothing else heavy beside it.
+ZAP_LIMITS="--memory ${ZAP_MEMORY:-6g} --memory-swap ${ZAP_MEMORY:-6g} --cpus ${ZAP_CPUS:-4}"
 # ZAP sizes its Java heap from the whole computer's memory (it reads only cgroup v1 limits), which does not fit
 # under the cap above, so it is given its heap in its own JVM properties file (the first line of .ZAP_JVM.properties).
 ZAP_HEAP="${ZAP_HEAP:-2g}"
