@@ -7,149 +7,74 @@ add features.
 
 ## [Unreleased]
 
+## [0.17.0] (14 November 2026)
+
 ### Added
-
-- Plug-in API 1.12 (DASH-410): a plug-in container may run as the media folder's owner (`"user": "media"`) to add
-  files in the media folders it mounts, such as a described sound track next to a film; Starboard makes a missing
-  folder for it, owned by that user, and says so before the plug-in is added. A custom screen's row may have a link
-  that opens in a new tab, and its add box may take only a file.
-
-- System, Backup and restore, Full without media says which disk the copies go on, and warns when the folder is on
-  the system disk, where a failed disk would take the backups with it. The folder it suggests is on another disk:
-  the media folder's when the media is on one, else the biggest other disk's. Making a full backup and restoring it
-  onto a fresh install is tested end to end in scratch folders (DASH-260).
-- Starboard's API, version 1.1.0: the rest of the pages' reads (Coming up, requests, speeds, download hours, history,
-  the Library and its search, uptime, app updates, counts, containers, version and processor history), a second right,
-  Read and manage, for the everyday actions (approve or decline a request, remove or block a download, pause or resume
-  downloads, build a Library tab again, look for container updates, run a Jellyfin job, send a test alert), and an
-  event stream, /api/v1/events. Make a key now asks what it may do and what it may see. No key can change settings,
-  keys, plug-ins or the install. Each change made with a key is in the audit log (DASH-274).
-- AI assistants: a guide, Connect an AI assistant, for a Read only key named after the assistant with the fewest
-  scopes, and /api/v1/logs, Starboard's log with addresses, names and keys taken out, only for keys with Logs ticked
-  (DASH-76).
-- Plug-in API 1.11: four more events a plug-in can hear, each from a check Starboard already makes every 5 minutes, so
-  nothing extra is fetched: something someone asked for is ready to watch (`request.available`), a download stops with
-  a problem (`download.failed`), a disk reaches the alerts' Disk nearly full limit or 90% (`disk.nearly_full`), and an
-  update is ready for Starboard, an app or a plug-in (`update.available`). For the Notifications plug-in (DASH-401).
-- Plug-in API 1.11: a plug-in's table can be read only (`readonly`), with no tick boxes, states or Activate buttons, and
-  each row named by its first cell, for figures such as the Watch statistics plug-in's plays, titles and people. The
-  example server has a Watch statistics plug-in with made-up plays (DASH-402).
-- Settings, General, Discover rows is its own page on the level 2 menu, with a section for each area of Discover
-  (Films, TV, Music, Radio, Books and Audiobooks), each with its own rows, ticks, Move up and Move down, and Put back
-  the standard rows. Only the area shown asks Reelix for its rows. Each Discover page's Change these rows opens its own
-  area, and old links still work. Discover, Radio offers a row for each genre every radio source shares (such as
-  Comedy), unticked until chosen, fetched when it comes into view and kept for an hour. Books and Audiobooks already
-  offer every subject Reelix has (nine); Music has no genres in Reelix yet (DASH-396).
-- Settings, Radio, Performance and Security have their parts on the level 2 menu: Radio's Sources, Add a show from a
-  link, Your podcast library and Station logos; Performance's Preset and Pictures; Security's Who can open the
-  dashboard, Password, API keys and Sign out everywhere. Each page asks only for what it shows (Radio asks Reelix for
-  one part, not four). Old links to a part go to its new page (DASH-391).
-- Settings, Downloads has VPN, Usenet and Download hours on the level 2 menu. Download hours there is the same field
-  as Settings, General, Download hours (one setting, so the two stay in step), in place of a link. Starboard's links to
-  download hours open it there (DASH-390).
-- Settings, General has its pages on the level 2 menu: Names and apps, Appearance, Pages and lists, Download hours,
-  and Logs and feedback. Style is now Appearance, with the own style's colours, the default design and the
-  accessibility options (theme, text size, motion, contrast, underlined links and text spacing), kept in step with
-  Display. Old links to a part go to its new page. Long lists is shown again, on Pages and lists (DASH-389).
-- Starboard's own style has colours to choose from: Teal (the standard) and the design system's five palettes,
-  Indigo, Forest, Plum, Ember and Graphite, for everyone on the server. Choose them on the Styles plug-in's page or in
-  Settings, General. Reset style, and a plug-in that is deactivated or removed, goes back to the own style in those
-  colours. The palette file loads only when one other than Teal is chosen (DASH-388).
-- Settings, Apps, Dispatcharr sets up the Dispatcharr add-on without opening it: its admin (your Starboard password)
-  and a key for Starboard, your IPTV playlist or Xtream Codes server and guide, channels from the playlist (up to
-  1000), and Dispatcharr in Jellyfin as an HDHomeRun tuner with its guide. Still to set up points there in place of
-  the guided step (DASH-228).
-- Settings, General, Default design and Display's Design list show a small picture of each design, drawn in the
-  theme's colours with no image to download, so you can see what you choose (DASH-315).
-- Library, Music: Bring them in for artist folders already on disk, as films, series, books and audiobooks have. Each
-  folder gets MusicBrainz's best artists (with what tells two of the same name apart); a sure match is ticked, and each
-  artist follows only the albums already there. Still to set up counts them too (DASH-282).
-- Library, Bring them in: a folder with no match (a home video, a radio programme listed nowhere) can come in with
-  your own details: title, year, description, station for radio, and a picture as an address or a file. It shows only
-  when Reelix can take it (Reelix task RFX-90, not in Reelix yet); Starboard checks Reelix's API description at most
-  once in ten minutes, only while a Bring them in note is shown (DASH-322).
-- Activity, Downloads: Held downloads, the releases a delay profile is holding back, with what each is for, its
-  quality and site, why it waits and when it goes. Get it now sends one to the download app at once; Remove asks
-  first. Asked only while the page is open, not on the queue's timer (DASH-210).
-- System, Backup and restore: When backups are made, with Off, Manual, Weekly (Sunday at 03:00, keeping 4) and Nightly
-  (at 03:00, keeping 7). It makes a full backup without media when you let Starboard keep the backup password's key,
-  then asks the server's own backup job, and shows the next run (DASH-17).
-- Settings, Updates, Restore: Keep the copies of the last 5, 10 or 20 versions. Older saved settings copies, and
-  update.sh's older data copies, are removed by themselves (DASH-109).
-- **Where you are and your keyboard first (DASH-259):** The Run first script now asks where the computer is (country and time zone) and then the keyboard, each as a list you move through with the Up and Down arrows and choose with Enter; typing letters jumps through the list, and accessible mode keeps numbered answers. The suggested keyboard comes from the location, or from a layout someone already set. It sets the time zone, the keyboard layout (the console follows it) and the system language when that is already on the computer, with the other changes it asks about, then offers a line to try the keys. Both set-ups, in the browser and the terminal, ask the same two questions after the password, unless the Run first script has just asked them; a different answer there becomes part of the set-up's change to the computer (`./install.sh --timezone` and `--keyboard`). The apps Starboard installs take the chosen time zone.
-- **Help when a symbol is not where it is marked (DASH-112):** The keyboard step's help says where |, \, #, ~, @ and " really are on UK, Irish, German, French, Spanish and Italian keyboards while the US layout is set, and how to set the right layout. The browser set-up shows it under the keyboard list.
-- **Clean up (DASH-77):** System, Clean up lists what is left over (removed plug-ins, old saved copies of the settings, an unfinished full backup's work folder, update.sh's older backups) with sizes, and moves what you choose to the holding folder. The Holding folder page puts each thing back, or deletes it for good after a dialog that says it cannot be undone and asks for your password. Starboard never deletes them by itself. Both set-ups end with a Clean up step in all three jobs when something is left over.
-- **After an unexpected shutdown (DASH-88):** Starboard notes when it was stopped properly. At the next start after a power cut or a crash it checks, once, the folders it watches, the pool and any pool job that stopped part-way, a full backup that was cut off, and the apps, then says what it found on System, Overview and through Alerts.
-- **Settings from the terminal (DASH-90):** `./settings.sh` signs in with your Starboard password and changes settings through Starboard's own API, starting with the automatic updates: looking for new versions, Reelix installing its own updates, and the commands to update or go back to an earlier version. The same look as the terminal set-up, with plain lines for screen readers.
-- **Running with no screen (DASH-89):** `sudo deploy/headless.sh` shows what it would change and asks first: never sleep, the lid ignored and the power button shutting down cleanly, no waiting at the boot menu, disk repairs at start without asking, starting again after a crash, and the watchdog where there is one. It saves a copy of each file it edits, and `--undo` puts every change back. `--firmware` lists the firmware settings to make by hand (power back on after a cut, no keyboard needed, Wake on LAN).
-- **A dialog for long changes:** Move them into Reelix, Take over my apps, Roll back and Clear away open a dialog with a working bar and a list of each app or step (Waiting, Working, Done, Not moved, Not started), what it is doing now and the result. Close it and the work carries on; the page says it is still running, with Show progress
-- **Review the move:** after moving into Reelix, the sites held off with Activate and Activate all, the sites Reelix cannot search yet, and the titles that did not move with Add by hand
-- **Titles waiting for a match:** films and series a move could not match wait on Settings, Your install with the TMDB, TVDB and IMDb ids Radarr and Sonarr had for them, and are added to Reelix once they match: when a TMDB key is added, every six hours while any wait, or with Try again now
-- **Requests after the move:** when Seerr runs beside Reelix, choose Reelix's own requests (recommended) or Keep Seerr, which points Seerr at Reelix; with a message for the people who use Seerr
-- **Clear away the apps Reelix replaced:** after Keep it, Prowlarr, Radarr, Sonarr, Readarr, Lidarr, Kapowarr, Profilarr, Decluttarr and Unpackerr can be stopped and removed, their settings folders moved into a holding folder beside them (nothing is deleted) and their dashboard entries taken off
+- **Starboard's API 1.1.0:** The API now reads everything the pages show (Coming up, requests, speeds, download hours, history, the Library and its search, uptime, app updates, containers and more), and a second right, Read and manage, covers the everyday actions: approve or decline a request, pause or resume downloads, remove or block a download, build a Library tab again, look for container updates, run a Jellyfin job and send a test alert. /api/v1/events streams app changes and alerts as they happen. Make a key asks what each key may do and what it may see. (DASH-274)
+- **Developer help and AI assistants:** The help has a Developers section with the plug-in and API references (the API reference built from the API description), a quick start, a page listing what the API covers for every action on the pages, and Connect an AI assistant, which gives an assistant its own Read only key with the fewest scopes. /api/v1/logs gives Starboard's log with addresses, names and keys taken out, only to keys with Logs ticked. (DASH-150, DASH-275, DASH-246, DASH-76)
+- **App plug-ins:** A whole app can now come as a plug-in, kept apart from the main install, such as Jellystat with its database: it gets its own page on your home network at a port Starboard chooses, its own passwords made once for your server, and Remove asks where its folder goes. A plug-in can also copy an app you already run, such as Tdarr, into itself, without removing the old one. The Catalogue has a group, Apps you can add. (DASH-411)
+- **Plug-ins you can trust and update:** Adding a plug-in first shows what it can see, change and reach, with Install and Cancel; its menu items appear only once it is added. Settings, Plug-ins has Manage, the Catalogue (sources can be added from a link) and a page for each plug-in. Catalogue versions are checked against their checksums, State shows each plug-in's version and What is new after an update, and Update, Roll back and Update from an address are on Versions. A plug-in that stops answering says Not answering, and one that is idle rests until it is needed. (DASH-318, DASH-330, DASH-357, DASH-360, DASH-393)
+- **Plug-ins can do more (plug-in API 1.2 to 1.13):** Plug-ins may now restyle the whole of Starboard (up to 32 styles), use a folder inside the media folders they mount, set up before they are activated, hear events and run jobs, lay out their settings in sections, use Reelix's key and your news server when you approve it, draw their own screens with menus, folding tables, filters, links and file uploads, put a VPN app's port on Gluetun for your home network, add files to your media folders as the media folder's owner (never as root) and run whole apps. Plug-ins made for API 1.0 and 1.1 work as before.
+- **Discover by area:** Discover has a page each for Films, TV, Music, Radio, Books and Audiobooks, from Reelix's own lists. Settings, General, Discover rows chooses each area's rows and their order, including a row for each genre (such as Comedy or Science fiction) for films, series and radio. Recently added follows what arrived, so new episodes come first, On demand history shows what you started watching, with Add to wanted and Remove, and pictures are kept for four weeks, with Clear the picture cache in Settings, Performance. (DASH-303, DASH-324, DASH-395, DASH-396)
+- **Discover, Radio:** One search across every radio source, with From radio stations and Podcast feeds only; the genres the sources share as chips; every BBC station in a picker by group; and each source's own categories under More categories. (DASH-339)
+- **Search filters and Search the sites:** Search filters results by whether they are in your library, kind, year or decade, genre, status (Have it, Missing, Downloading, Below the quality wanted), released or coming soon, followed or not, language, rating and radio source, and remembers them for your account. Search the sites is its own page: one search across the sites Reelix searches, to compare size, seeders and age, with Get this one. (DASH-301, DASH-213)
+- **Complete collections and series:** An opened film collection shows every film in it, and audiobook and book series come from Audiobookshelf with the missing books from Audible, each with Add missing. Books, Series and Authors are banners like audiobooks, covers of anything not in your library yet are faded behind a dashed outline, and Library, Audiobooks, Narrators lists everyone who reads your audiobooks, with a page each. (DASH-261)
+- **More in the Library:** Books, music and podcasts have their actions: Quality and folder, Select several, Files and history, and Podcasts and Keep. Change match searches for the right title and moves the item in Reelix with its files kept, or puts the old match back. Library, Radio, Stations is a square grid like TV networks. (DASH-206, DASH-209, DASH-319, DASH-321)
+- **Bring in music, and folders nobody lists:** Library, Music brings in the artist folders already on disk, as films, series, books and audiobooks do, each artist following only the albums you have. A folder with no match, such as a home video, can come in with your own title, year, description and picture once Reelix can take it (Reelix task RFX-90). (DASH-282, DASH-322)
+- **Downloads and Wanted:** Activity, Downloads lists Held downloads, the releases a delay profile is holding back, with Get it now and Remove; Choose the episode handles files Reelix refused for their episode number; and paused unpacking in NZBGet is said, with Resume unpacking. Wanted has an item for each media type with Missing and Below the quality wanted, and each film or episode has Details with what Reelix last did and See what Reelix can find. History has Keep history for and Delete history. (DASH-210, DASH-304, DASH-305)
+- **More of Reelix in Settings:** Settings, Reelix has Tags, Path mappings and Site list updates; Reelix's health shows a broken yt-dlp or FFmpeg, an expired Spotify sign-in and YouTube downloads that keep failing. Settings, Radio has Your podcast library (files Reelix has not matched, with Match by hand), Add a show from a link, and a Catch-up downloads switch for each source that has catch-up. (DASH-204, DASH-212, DASH-218)
+- **Live TV, your own channel lists:** Live TV takes your own M3U or JSON channel lists and XMLTV guides, by address or as a file up to 60 MB, each with Activate, Deactivate, Test and Remove, and adds them to Jellyfin as one more tuner. Channels fold into sections by list, region and section, each with its own switch and a table to sort, filter and tick several; a list longer than 2,000 channels says only the first 2,000 are read. The dashboard can show On TV now, and logos stay legible. (DASH-359, DASH-312, DASH-313)
+- **Dispatcharr from Starboard:** Settings, Apps, Dispatcharr sets up the Dispatcharr add-on without opening it: its admin and a key, your IPTV playlist or Xtream Codes server and guide, the channels, and Dispatcharr in Jellyfin as a tuner with its guide. (DASH-228)
+- **Tdarr from Starboard:** Starboard gives Tdarr its key, and its settings have the basic choices: which libraries, save space or check only, how many at once, and any time or in quiet hours. With the Tdarr plug-in, films and series are converted in a folder on the media disks, so working copies never fill the system disk. (DASH-306, OPS-19)
+- **Recommended Jellyfin plug-ins:** Settings, Apps, Jellyfin offers skipping intros and credits (from downloaded times, or analysed here in quiet hours only), Playback Reporting, Merge Versions and Trakt, each installed and set up through Jellyfin and shown with its version. Choosing another deactivates the old one; nothing is uninstalled. (DASH-404)
+- **Kavita in Install apps:** Kavita, the ebook reader, is in the Ebooks group. It reads the media folder only and has a Still to set up step.
+- **Full backups without media:** System, Backup and restore makes a full backup of Starboard, its plug-ins, the set-up files and every app's settings and database, encrypted with a password you choose, on another disk, keeping the newest 5; it says which disk and warns when the folder is on the system disk. When backups are made can be Manual, Weekly or Nightly, and Copies off this computer sends each backup to another disk, a network share or your own rclone remote. A backup restores onto a fresh install in both set-ups. (DASH-260, DASH-17, DASH-380)
+- **Clean up:** System, Clean up lists what is left over (removed plug-ins, an unfinished backup's work folder, older update copies) with sizes and moves what you choose to the holding folder, where each thing can be put back, or deleted for good after you confirm with your password. Settings, Updates, Restore keeps the copies of the last 5, 10 or 20 versions. (DASH-77, DASH-109)
+- **After an unexpected shutdown:** After a power cut or a crash, Starboard checks once the folders it watches, the pool, any pool job or full backup that stopped part way, and the apps, then says what it found on System, Overview and through Alerts. (DASH-88)
+- **Server care from the terminal:** ./settings.sh changes settings through Starboard with your password, starting with automatic updates, and sudo deploy/headless.sh readies a computer to run with no screen (never sleeping, the lid ignored, starting again after a crash), showing each change first and with --undo to put them back. (DASH-89, DASH-90)
+- **Where you are and your keyboard first:** The Run first script and both set-ups ask where the computer is and which keyboard it has, as lists you move through with the arrow keys, then set the time zone, keyboard layout and language; the apps take the time zone. The keyboard step says where symbols such as |, \ and # really are on UK, Irish, German, French, Spanish and Italian keyboards. (DASH-259, DASH-112)
+- **Audio description in the first set-up:** Both set-ups' Jellyfin extras step offers Audio description, unticked. Ticking it makes Settings, Plug-ins offer the Audio description plug-ins from the Catalogue; Not now forgets it. (DASH-399)
+- **Own style colours and design pictures:** Starboard's own style has six colours to choose from: Teal (the standard), Indigo, Forest, Plum, Ember and Graphite; Reset style comes back to them, and the own style comes first in the Styles gallery. Default design and Display's Design list show a small picture of each design. (DASH-388, DASH-315)
+- **Moving in from other apps, step by step:** Move them into Reelix, Take over my apps, Roll back and Clear away open a dialog with each step and its result, and carry on if it is closed. Install apps can do the move too, more site keys are read for you, and after the move you can review the held sites, add titles that did not match (they wait with their IDs and are added once they match), choose Reelix's own requests or keep Seerr, and clear away the apps Reelix replaced into a holding folder. (DASH-127, DASH-128, DASH-129, DASH-190 to DASH-192, DASH-249 to DASH-254)
+- **Restart in Manage apps:** Each app's menu has Restart. Restarting Gluetun also restarts the apps that use its network.
+- **Comparisons in the help:** A new help section compares Starboard's stack with other media server stacks, with the memory and processor measured at rest, how the tests were run and how to repeat them. (DASH-398)
 
 ### Changed
-
-- Heavy jobs run in a short-lived process of their own, so the memory they use goes back to the system when they end
-  and the long-running server stays small: the watch history import, listening progress, the built-in Live TV job, the
-  Live TV plug-in's hourly run and building a Library list. Measured: building a 10,000-film Library list left the
-  server 9 MB larger before; now it stays at 35 MB while the job's own process peaks at 38 MB and ends; each start
-  costs about 0.2 seconds. STARBOARD_CHILD_JOBS=0 runs them in the server as before (DASH-79).
-- The hourly watch history import asks Jellyfin for its newest film or episode first (one small request) and reads
-  every film and episode only when something has changed since the last full read (a new item, the history, the
-  accounts or the Jellyfin users), and at least once a day. A full read now works through 1,000 items at a time
-  instead of holding the whole library. On the owner's server it read 51,000 items every hour (about 8 minutes of
-  Jellyfin's time, Starboard from 18 MB to 164 MB, still 61 MB eight minutes later) to find nothing new; with a made-
-  up Jellyfin of the same size the server's peak went from 119 MB to 38 MB and a run with nothing new from 1.7 s to
-  0.01 s. What the page shows is the same (DASH-397).
-- Plug-in files that are only read to show them (each plug-in's manifest, state and settings) are parsed once and kept
-  while the file is unchanged, instead of on every request. Every page's /api/session reads each plug-in's manifest
-  for the menus. Measured on the example server: /api/session 1.28 ms to 0.85 ms, the plug-ins list 7.4 ms to 4.4 ms,
-  the dashboard's plug-in cards 3.1 ms to 1.7 ms, System, Jobs 3.0 ms to 1.3 ms and Display's styles 3.1 ms to 1.5 ms
-  (DASH-397).
-- The Library keeps a tab's list, already read, for 2 minutes after it was last used, with its titles folded for
-  searching once, instead of reading and parsing the whole file for every page, filter and search. Measured with
-  10,000 films (a 2.7 MB list): a wall page from 99 ms to 14 ms, a search from 172 ms to 13 ms. While kept it holds
-  about 14 MB for that size of library (about 1.5 MB for a library of 1,000), and it is let go 2 minutes after the
-  Library was last used, so an unused Library still costs nothing (DASH-397).
-- The Live TV plug-in's listener checks for a shutdown every 5 seconds instead of twice a second, so an idle plug-in
-  wakes the processor about 12 times a minute instead of about 120 (measured on the server: 683 wake-ups in 334
-  seconds at rest). Nothing else changes (DASH-397).
-- Library walls, Wanted and History load their next page with the design system's load more as you scroll (UX-52):
-  "Loading the next 40 films" shows while it loads, a screen reader hears "24 more films shown", focus stays where it
-  was, and after three lots in a row it pauses so the footer stays in reach; Show 40 more always works and carries on
-  (DASH-277).
-- Release notes: the footer's Release notes link says it opens a slide-out, and a test keeps the slide-out's newest 3
-  releases the same as this changelog's, with their dates (UX-50).
-- Footer: About and updates says Upgrade available, with the update dot, when a newer release is out, as the design
-  system's footer sets out; Sign in and Set up have no footer (DASH-104).
-- **The same item for the same job everywhere (DASH-309):** app cards show their state and one more chip at most, with
-  one button besides opening the card (Copy is in the app's details); Still to set up has one button; Apps, Updates
-  updates the apps you tick from a selection bar instead of an Update on every row; Library's count is at the end of
-  its toolbar, with Save this view and Select several in the page head; History's keep setting and Delete history are
-  at the end of the page; Wanted's rows open their details and Select several works as in Library; the pool's drives
-  are rows; chart tables stack on phones; Install apps' Check step is a list with Change on each answer; saved
-  settings on the Dashboard, Library, History, Logs and Reelix, System show a saved note instead of a toast; notices
-  have a title, an icon and a tone.
-- **Moving over on the Reelix route:** Install apps says which of your apps move into Reelix and which Starboard runs for you, and where (Settings, Your install, Apps you already run); the step is left out when there is nothing to bring over
-- **Change your install:** apps running from your own Compose file are no longer offered again as new, empty apps; the page points to Apps you already run
-- **Move them into Reelix:** each message is under its own button; qBittorrent's user name is read from its settings file; the qBittorrent password says what it is for and that it is optional; a new try clears the last error at once
+- **Settings pages on the second menu:** The parts of Settings, General (now Names and apps, Appearance, Pages and lists, Download hours, and Logs and feedback), Downloads (VPN, Usenet, Download hours), Radio, Performance and Security are each a page of their own on the second menu, and each page asks only for what it shows. Style is now Appearance, with the accessibility options. Old links still work. (DASH-389, DASH-390, DASH-391)
+- **Settings that work the same everywhere:** Every folder is chosen with the location picker; switches and choices apply at once with a saved note beside them instead of a pop-up message; typed text has one Save per section; lists such as Reelix's sites and API keys are rows that open; and danger zones come last. (DASH-308, DASH-310, DASH-353)
+- **The same item for the same job everywhere:** Across Apps, the Dashboard, the Library, Discover, Coming up, Activity, System and Install apps: app cards show at most two chips and one button, filters that pick one of several are segmented controls, a state sits on its title's line, lists open in slide-outs instead of dialogs, and one primary button is in view. Apps, Updates updates the apps you tick, and Still to set up has one button and shows only the part each step needs. (DASH-309)
+- **Both set-ups ask the same questions:** The browser and terminal set-ups ask the same things in the same order, with the same words. Let me choose starts from the recommended apps (Basics), films are Films, not movies, and Reelix's set-up code is read for you so you never see a second code. The set-ups now warn when the apps ticked need more memory than the computer has, leave out apps that do not run on a Raspberry Pi, and stop on a 32-bit system or with under 10 GB free. (DASH-83, DASH-96, DASH-114, DASH-271)
+- **Lighter on memory and processor:** Heavy jobs (the watch history import, listening progress, Live TV and building Library lists) run in a short-lived process of their own, so the server stays small: building a 10,000-film list now leaves it at 35 MB. The hourly watch history import reads the whole library only when something changed (a run with nothing new from 1.7 seconds to 0.01), the Library keeps a list it has just read for 2 minutes (a search of 10,000 films from 172 ms to 13 ms), plug-in files are read once while unchanged, and an idle Live TV plug-in wakes 12 times a minute instead of 120. (DASH-79, DASH-397)
+- **Load more as you scroll:** Library walls, Wanted and History load the next page as you scroll, say how many more are shown, leave focus where it was, and pause after three pages so the footer stays in reach; Show 40 more always works. (UX-52, DASH-277)
+- **Footer, release notes and loading:** The footer says Upgrade available when a newer release is out, and its Release notes link says it opens a slide-out; Sign in and Set up have no footer. A thin line under the menu shows a page is loading, and Settings pages use the full width. (DASH-104, UX-50)
+- **Network logos in their own colours:** Network logos keep their own colours, on a dark or light tile chosen by their tone.
+- **Seerr, Overseerr and Jellyseerr:** Seerr is recognised wherever Overseerr or Jellyseerr are, including by its image when taking over your apps, and has its own icon. (DASH-405)
+- **Memory figures in the help:** The help and Install apps give Reelix's and Jellyfin's memory at rest and while working, measured on a large library, so each install's range is wider and more honest. (DASH-405)
+- **The plug-ins collection needs this release:** Most plug-ins in TheMightyTRex/starboard-plugins now ask for plug-in API 1.8 to 1.13, which this release brings; Starboard 0.16.5 and earlier had plug-in API 1.1.
 
 ### Removed
-
-- The old Note an issue tester, ux-notes.js, and its styles: Send feedback (Snaglist) replaced it. Notes it saved
-  are still listed in Settings, General, Logs and feedback (DEV-05).
+- **Note an issue:** The old Note an issue tester has gone; Send feedback replaced it. Notes it saved are still listed in Settings, General, Logs and feedback. (DEV-05)
+- **Storyarr:** Storyarr, retired on 11 November 2026, is no longer offered by Install apps or the set-ups. A server that already runs it keeps it and still updates. (DASH-405)
 
 ### Fixed
+- **Bringing in books, audiobooks and radio:** Bringing in audiobooks and books sends the quality profile Reelix needs, and their matches read well in the list; radio shows match only when the titles agree, with English stations first. (DASH-392)
+- **Issues reported on GitHub:** Download states such as post_processing show as words (#7); a plug-in's Activate sits under its state (#8); Sign out is in the side menu (#9); Manage's rows and the Advanced settings switch line up (#10, #11, DASH-413); two-tone logos are legible (#12, #13); an opened collection takes the page heading with Add missing on its line (#14, #15); and Discover's buttons line up, its rows with arrows and fades (#16, #17).
+- **Apps on the VPN after Gluetun restarts:** Apps on Gluetun's network rejoin it after Gluetun restarts or is made again, and the VPN apps check runs every 5 minutes whether or not Alerts is active. (DASH-394)
+- **Accessibility:** 48 findings from the accessibility check are fixed, and a screen reader keeps its place: a page drawn again never sends focus to the top, whole lists are no longer read out, form slide-outs start in their first field and Show more moves to the first new row.
+- **Backups and moves that fail:** A full backup that fails sends the backup alert and leaves no part copy behind. When qBittorrent stops accepting sign-ins after wrong passwords, the move says so, for how long and how to clear it, and the steps after a stopped move say they did not start. (DASH-78)
+- **Plug-in pages:** A saved setting reaches a running plug-in at once, a button without an ID works, no stray null shows on pages with no introduction, and the Catalogue no longer scrolls sideways on a phone. (DASH-357)
+- **API checks:** The API description, its reference, the contract tests and every example plug-in are checked in one command on every push; the description had fallen behind the routes. (DASH-281)
 
-- The API and plug-in checks are one command, `bash tools/check-api.sh`, run by CI on every push: the API
-  description and reference must be what their tools write, then the contract tests, the plug-in tests and each example
-  plug-in against the new build. The API description's tool wrote an older description than the one in the repository,
-  so the CI check failed; it now takes each route's scope and the version from the route table (DASH-281).
-- A full backup that fails now sends the backup alert; a copy cut off part way no longer stays in the backup folder;
-  Reelix's backups section no longer says Starboard copies them (DASH-78).
-- **qBittorrent's ban:** after too many wrong passwords qBittorrent stops accepting sign-ins from Starboard; the page now says so, for how long, and how to clear it
-- **A move that stopped:** the steps after it say they did not start, and why
+### Security
+- **Folders checked where they are used:** The folder picker follows links and refuses a folder outside the usual places (a link under /mnt to /etc is refused), and a plug-in's folder must sit directly in Starboard's plug-ins folder. (code scanning)
+- **Passwords kept out of logs:** The set-up password is hidden from every log line, even when an app repeats it in an error message. (code scanning)
+- **Exact addresses for YouTube and Spotify:** A link counts as YouTube or Spotify only when its host is exactly theirs, so a link that mentions spotify.com in its path is not taken as Spotify. (code scanning)
+- **No slow checks on crafted input:** The TMDB key check and the check of a plug-in's settings values (code scanning #53) no longer slow down on long crafted input: a 210 KB value is checked at once. (code scanning)
+- **TLS 1.2 for news servers:** Connections to a news server over SSL need TLS 1.2 or newer. (code scanning)
+- **Plug-ins see only what you approve:** A plug-in's key reads only what you approved when you added it, catalogue versions are checked against their checksums, and a plug-in that adds files to your media runs as the media folder's owner, never as root. (DASH-330, DASH-410)
+- **API keys that cannot change your server:** No API key can change settings, keys, plug-ins or the install; each change made with a key is in the audit log; and the log a key can read has addresses, names and keys taken out. (DASH-274, DASH-76)
+- **Backups and keys stay private:** Full backups are encrypted (AES-256-GCM) with a password Starboard never stores; a share's password and an rclone set-up stay in Starboard's own folder, never in a backup or sent to the page; and site keys typed for a move are never stored or logged. (DASH-260, DASH-380, DASH-128)
+- **Checks:** The unit tests (also as another user), the browser journeys, the accessibility checks, the API contract tests and example plug-ins, the help check, the private details check and the full security scans, with CodeQL, ran on this release.
 
 ## [0.16.5] (11 November 2026)
 
@@ -1351,7 +1276,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.16.5...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/TheMightyTRex/starboard/compare/v0.16.5...v0.17.0
 [0.16.5]: https://github.com/TheMightyTRex/starboard/compare/v0.16.4...v0.16.5
 [0.16.4]: https://github.com/TheMightyTRex/starboard/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/TheMightyTRex/starboard/compare/v0.16.2...v0.16.3
