@@ -8,7 +8,9 @@
 # 2. docs/help/developers/api-reference.md is what tools/make_api_reference.py writes from that description.
 # 3. The contract tests: every /api/v1 route against its description, with its scope, right and errors.
 # 4. The plug-in tests: manifests, permissions and key scopes, cards, the life cycle and the tester.
-# 5. The example plug-ins' smoke test, from the starboard-plugins repository, against this copy of Starboard.
+# 5. The update smoke test (DASH-424): an example plug-in updated with a settings migration, rolled back, and
+#    updated to a version whose health check fails, which goes back by itself. No Docker needed.
+# 6. The example plug-ins' smoke test, from the starboard-plugins repository, against this copy of Starboard.
 #    It needs Docker and that repository (STARBOARD_PLUGINS, by default ../starboard-plugins or
 #    ~/src/starboard-plugins). Without them it says it was not run; SMOKE=required makes that a failure.
 set -euo pipefail
@@ -25,7 +27,11 @@ step "API contract tests"
 python3 -m unittest tests.test_api_v1
 step "Plug-in tests"
 python3 -m unittest tests.test_plugins tests.test_plugins_admin tests.test_plugin_cards tests.test_plugin_life \
-  tests.test_plugin_custom tests.test_plugin_files tests.test_plugin_groups tests.test_plugin_catalogues tests.test_plugin_api_114
+  tests.test_plugin_custom tests.test_plugin_files tests.test_plugin_groups tests.test_plugin_catalogues tests.test_plugin_api_114 \
+  tests.test_plugin_update tests.test_reelix_updates
+
+step "Update smoke test: a plug-in from one version to the next and back, with a settings migration and a failing health check"
+python3 tools/update_smoke.py
 
 step "Example plug-ins smoke test"
 plugins="${STARBOARD_PLUGINS:-}"
