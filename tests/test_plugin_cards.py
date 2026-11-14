@@ -98,5 +98,53 @@ class PluginCardsTest(unittest.TestCase):
         bad["focus_width"] = 2
         self.assertIn("focus_width", " ".join(p["what"] for p in ps.check_style(bad)))
 
+
+class CardRefreshTest(unittest.TestCase):
+    """A card's own refresh time (plug-in API 1.14, owner 14 November 2026): 10 seconds at the quickest."""
+
+    def test_the_answer_is_held_to_10_to_3600_seconds(self):
+        self.assertEqual(plugin_cards.clean("stat", {"value": 1, "refresh_seconds": 2})["refresh_seconds"], 10)
+        self.assertEqual(plugin_cards.clean("list", {"items": [], "refresh_seconds": 30})["refresh_seconds"], 30)
+        self.assertEqual(plugin_cards.clean("status", {"state": "ok", "refresh_seconds": 99999})["refresh_seconds"], 3600)
+        for nothing in (None, True, "30", [30]):
+            self.assertNotIn("refresh_seconds", plugin_cards.clean("stat", {"value": 1, "refresh_seconds": nothing}))
+        self.assertNotIn("refresh_seconds", plugin_cards.clean("stat", {"value": 1}))  # says nothing: as before
+
+    def test_the_manifest_is_checked(self):
+        from starboard import plugins
+        card = {"id": "a", "title": "A", "type": "stat", "path": "/a"}
+        for ok in (10, 30, 3600):
+            m = {**ON_DEMAND, "cards": [{**card, "refresh_seconds": ok}]}
+            self.assertFalse([p for p in plugins.check(m) if "refresh_seconds" in p], ok)
+        for bad in (2, 9, 3601, "30", 30.5, True):
+            m = {**ON_DEMAND, "cards": [{**card, "refresh_seconds": bad}]}
+            self.assertTrue([p for p in plugins.check(m) if "refresh_seconds" in p], bad)
+        self.assertTrue(any(i["where"].startswith("cards") or "refresh_seconds" in i["what"]
+                            for i in plugin_tester.run({**ON_DEMAND, "cards": [{**card, "refresh_seconds": 5}]})))
+
+    def test_answers_are_kept_for_the_cards_own_time_and_asked_together(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(pa, "host_path", return_value="/srv/p"):
+            m = {**ON_DEMAND, "cards": [{"id": "titles", "title": "Titles", "type": "stat", "path": "/api/card", "refresh_seconds": 30}]}
+            pa.install(d, m, "/srv/media")
+            pa.set_state(d, "on-demand", "enabled")
+            plugin_cards._cache.clear()
+            op = FakeOpener(json.dumps({"value": 5, "refresh_seconds": 2}).encode())
+            out = plugin_cards.answer(d, "on-demand", "titles", op)
+            self.assertEqual(out["refresh_seconds"], 10)  # asked for 2, held to 10
+            self.assertNotIn("refresh_seconds", out["data"])
+            with mock.patch("time.time", return_value=plugin_cards._cache[("on-demand", "titles")][0] + 9):
+                plugin_cards.answer(d, "on-demand", "titles", op)
+            self.assertEqual(len(op.urls), 1)  # kept for 10 seconds
+            with mock.patch("time.time", return_value=plugin_cards._cache[("on-demand", "titles")][0] + 11):
+                plugin_cards.answer(d, "on-demand", "titles", op)
+            self.assertEqual(len(op.urls), 2)
+            plugin_cards._cache.clear()
+            op = FakeOpener(json.dumps({"value": 5}).encode())
+            self.assertEqual(plugin_cards.answer(d, "on-demand", "titles", op)["refresh_seconds"], 30)  # the manifest's
+            got = plugin_cards.answers(d, ["plugin:on-demand:titles", "plugin:on-demand:nothing", "rubbish"], op)
+            self.assertEqual(sorted(got), ["plugin:on-demand:nothing", "plugin:on-demand:titles"])
+            self.assertIn("problem", got["plugin:on-demand:nothing"])
+
+
 if __name__ == "__main__":
     unittest.main()

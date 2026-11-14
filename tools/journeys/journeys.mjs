@@ -29,7 +29,7 @@ const PAGES = ["index.html", "apps-services.html", "apps-updates.html", "search.
   // Radio's, Performance's and Security's level 2 pages (DASH-391)
   "settings-radio-link.html", "settings-radio-library.html", "settings-radio-logos.html", "settings-performance-pictures.html",
   "settings-security-password.html", "settings-security-keys.html", "settings-security-sessions.html",
-  "settings-plugins.html", "settings-plugins-catalogue.html"];  // with the set-up's Audio description offer (DASH-399)
+  "settings-plugins.html", "settings-plugins-catalogue.html", "settings-plugin.html?id=direct-play"];  // with the set-up's Audio description offer (DASH-399)
 const SECRET = "made-up-journey-key-7f3a9c1e5b";
 const XSS = `<img src=x onerror="window.__xss='name'">`;
 
@@ -1195,6 +1195,80 @@ check("JF-03", "after the restart Merge Versions is active and set to quiet hour
 const moved = await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "none" } });
 check("JF-04", "Do not install deactivates and never uninstalls", moved.done[0] === "Deactivated Playback Reporting (still installed)", moved.done.join("; "));
 await api("/api/jellyfin/plugins", { method: "POST", body: { group: "playback", choice: "on" } });
+
+// DASH-425 (owner, 14 November 2026): recommended plug-ins in the catalogue, and Direct play's card on the dashboard
+// with its own refresh time (plug-in API 1.14: 10 seconds at the quickest, asked together, nothing while hidden).
+console.log("\n== DASH-425 Recommended plug-ins and the Direct play card");
+await open("settings-plugins-catalogue.html");
+const recGroup = page.locator("[data-recommended]");
+check("REC-01", "the collection starts with a Recommended group, with Direct play and Disk forecast",
+  (await recGroup.count()) === 1 && /Direct play/.test(await recGroup.innerText()) && /Disk forecast/.test(await recGroup.innerText())
+  && await page.evaluate(() => { const g = document.querySelector("[data-recommended]"); return !!g && !g.previousElementSibling?.matches("section[aria-label]"); }));
+check("REC-02", "each recommended entry has a Recommended chip, and is listed once",
+  (await recGroup.locator(".chip", { hasText: "Recommended" }).count()) === 2
+  && (await page.locator(".row__title", { hasText: "Disk forecast" }).count()) === 1);
+const recInstall = recGroup.getByRole("button", { name: /Install… Disk forecast/ });
+check("REC-03", "a recommended plug-in is not added by itself: it still has Install", (await recInstall.count()) === 1
+  && !(await api("/api/plugins")).plugins.some((p) => p.id === "disk-forecast"));
+if (await recInstall.count()) {
+  // The example server has no copy of Disk forecast's manifest, so its warning may not open here; what matters is
+  // that Install takes the same path as any plug-in: a preview first, then the warning with the password.
+  const previews = [];
+  const onPreview = (r) => { if (r.url().endsWith("/api/plugins/preview") && r.method() === "POST") previews.push(r.postData() || ""); };
+  page.on("request", onPreview);
+  await recInstall.click();
+  const recDialog = page.getByRole("dialog");
+  await recDialog.waitFor({ timeout: 5000 }).catch(() => {});
+  page.off("request", onPreview);
+  check("REC-04", "Install asks for the plug-in's warning first, as for any plug-in", previews.some((b) => /"catalogue_id":\s*"disk-forecast"/.test(b)), previews.join(" | "));
+  if (await recDialog.count()) {
+    check("REC-04", "the warning asks for the password", (await recDialog.locator("input[type=password]").count()) === 1);
+    await page.keyboard.press("Escape");
+  }
+  await page.waitForTimeout(400);
+  check("REC-04", "nothing is added",
+    !(await api("/api/plugins")).plugins.some((p) => p.id === "disk-forecast"));
+}
+const dashBefore = (await api("/api/config")).dashboard;
+await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: dashBefore.layout,
+  cards: [{ id: "plugin:direct-play:now", size: "half" }, { id: "plugin:direct-play:saved", size: "half" }] } } });
+const dpAsked = [];
+const onAsk = (r) => { if (r.url().includes("/api/plugins/cards/answers")) dpAsked.push({ at: Date.now(), url: decodeURIComponent(r.url()) }); };
+page.on("request", onAsk);
+await open("dashboard.html");
+const dpCard = page.locator('[data-card="plugin:direct-play:now"]');
+await dpCard.getByText(/Converting now: Dune \(2021\)/).waitFor({ timeout: 8000 }).catch(() => {});
+const firstText = await dpCard.innerText().catch(() => "");
+check("DPC-01", "the card says what is being converted, how far in words, the next files and the totals",
+  /Converting now: Dune \(2021\)/.test(firstText) && /\d+% done/.test(firstText) && /Next: Slow Horses, series 1 episode 3/.test(firstText)
+  && /1,173 files fixed, 1\.03 TB saved, 40 files still to do/.test(firstText), firstText);
+await page.waitForTimeout(23000);
+const both = dpAsked.filter((a) => a.url.includes("plugin:direct-play:now") && a.url.includes("plugin:direct-play:saved"));
+const gaps = dpAsked.slice(1).map((a, i) => a.at - dpAsked[i].at);
+check("DPC-02", "a card at 10 seconds is asked again about every 10 seconds, both due cards in one request",
+  both.length >= 2 && gaps.every((g) => g >= 9000), `${dpAsked.length} asks, gaps ${gaps.join(", ")}`);
+check("DPC-03", "the card asking for 2 seconds is held to 10", gaps.every((g) => g >= 9000)
+  && (await api("/api/plugins/direct-play/cards/saved")).refresh_seconds === 10);
+check("DPC-04", "the card's words change as it is asked again, in place", firstText !== await dpCard.innerText());
+await page.evaluate(() => { Object.defineProperty(document, "hidden", { value: true, configurable: true }); document.dispatchEvent(new Event("visibilitychange")); });
+const hiddenFrom = dpAsked.length;
+await page.waitForTimeout(12000);
+check("DPC-05", "nothing is asked while the tab is hidden", dpAsked.length === hiddenFrom, `${dpAsked.length - hiddenFrom} asks`);
+page.off("request", onAsk);
+await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: dashBefore.layout, cards: dashBefore.cards || null } } });
+await open("settings-plugin.html?id=direct-play");
+check("DPC-06", "Pause and Resume stay on the plug-in's page",
+  (await page.getByRole("button", { name: "Pause fixing" }).count()) === 1 && (await page.getByRole("button", { name: "Resume fixing" }).count()) === 1);
+const every = page.getByLabel("Card updates every");
+check("DPC-07", "Card updates every offers 10 seconds to 5 minutes",
+  (await every.count()) === 1 && (await every.locator("option").allInnerTexts()).join("|") === "10 seconds|30 seconds|1 minute|5 minutes");
+if (await every.count()) {
+  await every.selectOption("30");
+  await page.waitForTimeout(800);
+  check("DPC-07", "choosing a time saves at once, with a saved note", /Saved/.test(await page.locator("body").innerText()));
+  await every.selectOption("10");
+  await page.waitForTimeout(500);
+}
 
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });

@@ -3,7 +3,7 @@
 # Plug-in API reference
 
 What Starboard calls on a plug-in, what it sends and what it expects back, and what a plug-in finds and may call in
-return. This page matches plug-in API 1.13.0. The fields that ask for each of these are in the
+return. This page matches plug-in API 1.14.0. The fields that ask for each of these are in the
 [Plug-in manifest reference](plugin-manifest-reference.md).
 
 ## How Starboard reaches a plug-in
@@ -29,7 +29,7 @@ return. This page matches plug-in API 1.13.0. The fields that ask for each of th
 ## Card answers
 
 Starboard asks a card's path only while someone has a dashboard with the card open, and at most once a minute, or
-once every `refresh_minutes`. Answer with one JSON object in the shape for the card's type.
+once every `refresh_minutes`, or at the card's own `refresh_seconds` (API 1.14, read below). Answer with one JSON object in the shape for the card's type.
 
 | Type | Answer | Rules |
 |---|---|---|
@@ -37,6 +37,22 @@ once every `refresh_minutes`. Answer with one JSON object in the shape for the c
 | `list` | `{"items": [{"title": "Dune", "detail": "Added today", "link": "https://example.invalid/dune"}]}` | Up to 10 items are shown. Each needs a `title` (80 characters); `detail` is cut to 120. A `link` must start with `http://` or `https://`, or it is left out |
 | `status` | `{"state": "ok", "text": "Up to date"}` | `state` is `ok`, `warning` or `problem`. `text` is cut to 160 characters |
 | `guide` | `{"items": [{"channel": "Kestrel Sport", "number": "601", "now": "Football Extra", "start": 1794600000, "stop": 1794603600, "next": "Darts", "next_start": 1794603600}], "note": ""}` | From API 1.8. Up to 12 items, each with a `channel` (80 characters); `now` and `next` are cut to 120. `start`, `stop` and `next_start` are seconds since 1970: Starboard shows the times and how far through the programme it is |
+
+### How often a card is asked (API 1.14)
+
+Any card's answer may add `refresh_seconds`, how often the dashboard asks it again while the page is open and in
+view. It overrides the `refresh_seconds` in the manifest, so a plug-in can let people choose it in a setting.
+
+```json
+{"items": [{"title": "Converting now: Dune (2021)", "detail": "Shrink, 34% done, about 1 hour 5 minutes left"}],
+ "refresh_seconds": 30}
+```
+
+- It is held to 10 to 3600 seconds: a value under 10 is asked every 10 seconds, so no card can be asked more often.
+- Starboard keeps the answer for that long, so many people looking at once still ask the plug-in once.
+- Nothing is asked while the browser tab is hidden. Cards due at the same time are asked in one request.
+- With no `refresh_seconds` anywhere, the card is asked as before: once a minute, or every `refresh_minutes`.
+- Keep the answer cheap. Read a small file your plug-in keeps up to date rather than doing the work when asked.
 
 A `stat` card's `format` in the manifest says how `value` is shown: `number`, `bytes`, `percent`, `duration`
 (seconds) or `date` (seconds since 1970).
@@ -386,6 +402,7 @@ catalogues besides its own.
 | `manifest` | Required: the `https` address of that version's `starboard-plugin.json` |
 | `manifest_sha256` | The SHA-256 of that file, 64 hex characters |
 | `changelog`, `released` | Shown with an update. Up to 600 and 10 characters |
+| `recommended` | `true` puts the entry in **Recommended** at the top of the collection, with a Recommended chip. Only Starboard's own collection may recommend; other catalogues' entries are listed as usual. Nothing is added until the person chooses it (API 1.14) |
 | `rest` | For an app plug-in: `{"memory_mb": 117, "cpu_percent": 0.22}`, what it uses at rest, measured. Shown under it in the catalogue (API 1.13) |
 
 How Starboard uses it:

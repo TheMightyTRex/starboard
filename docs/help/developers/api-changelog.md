@@ -33,6 +33,17 @@ the next major version.
   `too_large` and `too_many_streams`.
 - **Changed:** a `Link` header for the next page keeps the other query parameters, such as `limit`.
 - Nothing was taken away: every 1.0.0 address answers as before, and a read key works as it did.
+## Plug-in API 1.14.0 (unreleased), 14 November 2026
+
+- **Added:** a card's own refresh time, `refresh_seconds`, from 10 to 3600 seconds, in the manifest and in the card's
+  answer, which wins, so a plug-in setting can change it. 10 seconds is the quickest: a smaller value in an answer is
+  raised to 10, and one in a manifest is an error. Read
+  [How often a card is asked](plugin-api-reference.md#how-often-a-card-is-asked-api-114).
+- **Added:** the dashboard asks cards due at the same time in one request, and nothing while the tab is hidden.
+- **Added:** `recommended` on an entry in Starboard's own catalogue, shown in **Recommended** at the top of the
+  Catalogue with a chip. Adding stays a choice, with what it may do and the password.
+- Nothing changed for a card without `refresh_seconds`: it is asked once a minute, or every `refresh_minutes`.
+
 ## Plug-in API 1.13.0, 13 November 2026
 
 - **Added:** app plug-ins (DASH-411), a whole app kept out of the main install, such as Jellystat with its

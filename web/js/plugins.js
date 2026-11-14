@@ -1248,6 +1248,15 @@ async function startCatalogue() {
       }
       return [...kinds].map(([k, rows]) => el("section", { class: "stack-2", "aria-label": k }, el("h3", { text: k }), el("ul", { class: "rows" }, rows.map(entry))));
     };
+    // Recommended (DASH-425, owner 14 November 2026: "its recommended in the catalogue"): the collection's own
+    // recommendations first, each with a chip. Adding one is still a choice, with What it may do and the password.
+    const recommended = (rows) => {
+      const picks = rows.filter((e) => e.recommended).sort((a, b) => a.name.localeCompare(b.name));
+      return picks.length ? [el("section", { class: "stack-2", "aria-labelledby": "pl-recommended-h", "data-recommended": "" },
+        el("h3", { id: "pl-recommended-h", text: "Recommended" }),
+        el("p", { class: "small muted", text: "Plug-ins the collection suggests for most servers. None is added until you choose it." }),
+        el("ul", { class: "rows" }, picks.map(entry)))] : [];
+    };
     const entry = (e) => {
       let side;
       if (e.added) side = el("a", { class: "btn btn--quiet btn--compact", href: `/settings-plugin.html?id=${encodeURIComponent(e.id)}` }, icon("circle-check"), "Added");
@@ -1264,11 +1273,14 @@ async function startCatalogue() {
             await api("/api/plugins/add", { method: "POST", body: { catalogue_id: e.id, password } });
             location.href = `/settings-plugin.html?id=${encodeURIComponent(e.id)}`;
           } catch (err) { problem(err.message, side); }
-          finally { side.disabled = false; }
+          finally {  // disabling the button let focus fall to the page: it goes back to Install, beside what was said
+            side.disabled = false;
+            if (!document.activeElement || document.activeElement === document.body) side.focus();
+          }
         });
       }
       return el("li", { class: "row row--no-lead" },
-        el("div", {}, el("h4", { class: "row__title", text: e.name }),
+        el("div", {}, el("h4", { class: "row__title" }, e.name, e.recommended ? " " : null, e.recommended ? chip("Recommended", "info") : null),
           el("div", { class: "row__meta", text: e.description }),
           // Versions for this Starboard only (DASH-330): newer ones that need a newer Starboard are said, not offered.
           // An app plug-in (DASH-411): what it uses when nobody is using it, measured, so a small server can choose.
@@ -1286,7 +1298,8 @@ async function startCatalogue() {
           cat.own ? "Made by TheMightyTRexUK and tested with each Starboard release."
             : `From ${cat.url.split("/")[2]}, added by you. Starboard did not make these: check each one's warning before you install it.`,
           cat.error ? notice("warning", "This catalogue did not answer", `${cat.error}. Showing the list from the last time it did.`) : null,
-          rows.length ? byKind(rows) : el("p", { class: "small muted", text: "It lists no plug-ins." }));
+          ...recommended(rows),
+          rows.length ? byKind(rows.filter((e) => !e.recommended)) : el("p", { class: "small muted", text: "It lists no plug-ins." }));
       }),
       sourcesSection(c.catalogues, draw),
       addPluginSection(draw), testerSection()].filter(Boolean));

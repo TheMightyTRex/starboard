@@ -26,10 +26,28 @@ def _text(value, limit):
     return re.sub(r"[\x00-\x1f\x7f]", " ", str(value))[:limit].strip() if value is not None else ""
 
 
+def refresh_seconds(value):
+    """A card's own refresh time (plug-in API 1.14): a whole number of seconds held to 10 to 3600, so no plug-in can
+    make the dashboard ask more often than every 10 seconds; None when it says nothing or nothing usable."""
+    from .plugins import REFRESH_MAX, REFRESH_MIN
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return int(max(REFRESH_MIN, min(value, REFRESH_MAX)))
+
+
 def clean(card_type, data):
-    """The answer reduced to what Starboard draws, or ValueError saying what is wrong (the tester uses this too)."""
+    """The answer reduced to what Starboard draws, or ValueError saying what is wrong (the tester uses this too).
+    Any card may add refresh_seconds (API 1.14), kept held to 10 to 3600."""
     if not isinstance(data, dict):
         raise ValueError("The answer must be a JSON object")
+    out = _clean(card_type, data)
+    every = refresh_seconds(data.get("refresh_seconds"))
+    if every:
+        out["refresh_seconds"] = every
+    return out
+
+
+def _clean(card_type, data):
     if card_type == "stat":
         v = data.get("value")
         if not isinstance(v, (int, float)) or isinstance(v, bool):
@@ -114,8 +132,12 @@ def answer(data_dir, pid, cid, opener=None):
     keep = max(KEEP, 60 * int((card or {}).get("refresh_minutes") or 1))  # a card may ask to be read less often (DASH-330)
     with _lock:
         hit = _cache.get(key)
-        if hit and time.time() - hit[0] < keep:
-            return hit[1]
+    # Its own time (API 1.14): the last answer's refresh_seconds, else the manifest's, never under 10 seconds.
+    own = ((hit[1].get("refresh_seconds") if hit else None) or refresh_seconds((card or {}).get("refresh_seconds")))
+    if own:
+        keep = own
+    if hit and time.time() - hit[0] < keep:
+        return hit[1]
     if not card or not m.get("containers"):
         raise LookupError("No such card")
     main = m["containers"][0]
@@ -130,8 +152,26 @@ def answer(data_dir, pid, cid, opener=None):
         out["data"] = clean(card["type"], json.loads(raw))
     except (OSError, ValueError) as e:
         out["problem"] = f"No answer from {m.get('name', pid)}" + (f": {e}" if isinstance(e, ValueError) else "")
+    every = (out.get("data") or {}).pop("refresh_seconds", None) or refresh_seconds(card.get("refresh_seconds"))
+    if every:
+        out["refresh_seconds"] = every  # the dashboard asks again at this time, while the page is in view
     with _lock:
         _cache[key] = (time.time(), out)
+    return out
+
+
+def answers(data_dir, ids, opener=None):
+    """Several cards' answers in one request (API 1.14): the dashboard asks for every card due at the same time
+    together. {id: answer}, each id plugin:<plug-in>:<card>; a card that is not there answers its problem."""
+    out = {}
+    for full in list(dict.fromkeys(ids))[:24]:
+        m = re.match(r"^plugin:([a-z0-9-]{3,40}):([A-Za-z0-9_-]{1,40})$", str(full))
+        if not m:
+            continue
+        try:
+            out[full] = answer(data_dir, m.group(1), m.group(2), opener)
+        except LookupError as e:
+            out[full] = {"type": "", "problem": str(e)}
     return out
 
 

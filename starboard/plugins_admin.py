@@ -235,7 +235,9 @@ def _clean_entry(e):
             "manifest": (best or {}).get("manifest", ""), "version": (best or {}).get("version", ""),
             "sha256": (best or {}).get("sha256", ""), "changelog": (best or {}).get("changelog", ""),
             "versions": [best] if best else [], "hidden": hidden, "hidden_needs": needs,
-            "published": bool(e.get("published", True)), "rest": _rest(e.get("rest"))}
+            "published": bool(e.get("published", True)), "rest": _rest(e.get("rest")),
+            # Recommended by the collection (DASH-425, owner 14 November 2026): shown first, never added by itself.
+            "recommended": e.get("recommended") is True}
 
 
 def _rest(r):
@@ -328,7 +330,9 @@ def catalogue(cfg=None, opener=None, now=None):
                     hit = {**(hit or {"name": url.split("/")[2], "items": []}), "at": now, "error": str(e)[:200]}
             _catalogues[url] = hit
         out_sources.append({"url": url, "name": hit["name"], "own": src["own"], "count": len(hit["items"]), "error": hit["error"]})
-        out_items += [{**x, "catalogue": hit["name"], "own": src["own"]} for x in hit["items"]]
+        # Only Starboard's own collection may recommend: a catalogue added from a link cannot put itself first.
+        out_items += [{**x, "catalogue": hit["name"], "own": src["own"], "recommended": bool(x.get("recommended")) and src["own"]}
+                      for x in hit["items"]]
     return out_sources, out_items
 
 

@@ -536,6 +536,11 @@
       "type": "integer",
       "minimum": 1,
       "maximum": 1440
+     },
+     "refresh_seconds": {
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 3600
      }
     }
    }
