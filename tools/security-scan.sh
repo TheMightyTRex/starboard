@@ -23,6 +23,9 @@ ZAP=ghcr.io/zaproxy/zaproxy:stable
 # ZAP (Java) is capped, so a scan cannot run the server out of memory (14 November 2026: an uncapped active scan grew
 # to 4 GB beside other work and the computer ran out of memory). ZAP_MEMORY=4g gives it more on a bigger computer.
 ZAP_LIMITS="--memory ${ZAP_MEMORY:-3g} --memory-swap ${ZAP_MEMORY:-3g} --cpus ${ZAP_CPUS:-4}"
+# ZAP sizes its Java heap from the whole computer's memory (it reads only cgroup v1 limits), which does not fit
+# under the cap above, so it is given its heap in its own JVM properties file (the first line of .ZAP_JVM.properties).
+ZAP_HEAP="${ZAP_HEAP:-2g}"
 work="$(mktemp -d)"
 # SCAN_REPORTS=folder keeps ZAP's reports (each warning with its address) after the scan; otherwise they go with it.
 trap '[ -n "${SCAN_REPORTS:-}" ] && mkdir -p "$SCAN_REPORTS" && cp -r "$work/zap/." "$SCAN_REPORTS/"; docker rm -f starboard-scan >/dev/null 2>&1; docker network rm "$NET" >/dev/null 2>&1; rm -rf "$work"' EXIT
@@ -67,6 +70,8 @@ docker run -d --name starboard-scan --network "$NET" -u "$(id -u):$(id -g)" -e S
 for _ in $(seq 1 30); do [ -s "$work/data/setup-token" ] && break; sleep 1; done
 # The warnings explained in docs/SECURITY-AND-TESTS.md are marked IGNORE in tools/zap-rules.tsv.
 cp tools/zap-rules.tsv "$work/zap/rules.tsv"
+printf -- "-Xmx%s\n" "$ZAP_HEAP" > "$work/zap-jvm.properties"
+ZAP_LIMITS="$ZAP_LIMITS -v $work/zap-jvm.properties:/home/zap/.ZAP/.ZAP_JVM.properties:ro"
 docker run --rm --network "$NET" $ZAP_LIMITS -v "$work/zap:/zap/wrk:rw" "$ZAP" \
   zap-baseline.py -t "$TARGET" -m 3 -c rules.tsv > "$work/zap/baseline.txt" 2>&1
 grep -E "^(FAIL|WARN)-NEW" "$work/zap/baseline.txt"
