@@ -2466,6 +2466,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(200, {"freed": freed, **cleanup.summary(app.data_dir)})
             if path == "/api/space-history" and method == "GET":
                 return self.json(200, {"on": cfg.data["performance"].get("space_log", True), "days": app.space.get()})
+            mr = re.match(r"^/api/updates/runs/([0-9a-f]{12})(/job)?$", path)
+            if mr and method == "GET":  # an update run's progress, for the task dialog (DASH-424)
+                from . import update_runs
+                try:
+                    return self.json(200, update_runs.job(app, mr.group(1)) if mr.group(2) else update_runs.public(update_runs.get(app, mr.group(1))))
+                except LookupError as e:
+                    return self.error(404, str(e))
             if path.startswith("/api/self-update"):  # Update now and its progress (DASH-417)
                 from . import self_update
                 if path == "/api/self-update" and method == "GET":
@@ -2781,7 +2788,10 @@ class Handler(BaseHTTPRequestHandler):
         mu = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/(update|rollback)$", path)
         if mu and method == "POST":
             # Update to a newer version (from a catalogue, checked by SHA-256, or from an address), keeping the one
-            # before for Roll back; or Roll back. Both need the password, as adding does. preview: what is new.
+            # before for Roll back; or Roll back. Both need the password, as adding does. preview: what is new, the
+            # settings that move and the steps it has (API 1.14, DASH-424). Both run as an update run with steps
+            # (before, settings, install, health, after), followed with GET /api/updates/runs/<id>/job.
+            from . import plugin_update, update_runs
             pid, what = mu.groups()
             if not any(p["id"] == pid for p in pa.listing(app.data_dir)):
                 return self.error(404, "No plug-in with that id")
@@ -2789,30 +2799,27 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 if what == "rollback":
                     self.check_password(body)
-                    said = plugin_life.rollback(app.data_dir, pid, media, services=app.config.data["services"])
+                    run = update_runs.rollback(app, f"plugin:{pid}", by="you")
                 else:
                     known = plugin_life.updates_known(app.data_dir).get(pid)
-                    if body.get("address"):
-                        manifest = pa.fetch_manifest(body["address"])
-                    elif known:
-                        manifest = pa.fetch_manifest(known["manifest"], sha256=known.get("sha256", ""))
-                    else:
-                        return self.error(404, "No newer version is known. Open the Catalogue to look again, or give an address")
                     if body.get("preview"):
+                        if body.get("address"):
+                            manifest = pa.fetch_manifest(body["address"])
+                        elif known:
+                            manifest = pa.fetch_manifest(known["manifest"], sha256=known.get("sha256", ""))
+                        else:
+                            return self.error(404, "No newer version is known. Open the Catalogue to look again, or give an address")
                         old = pa._read(os.path.join(pa.folder(app.data_dir, pid), "manifest.json"), {}) or {}
                         return self.json(200, {**pa.summary(manifest), "new_permissions": plugin_life.new_permissions(old, manifest),
-                                               "changelog": (known or {}).get("changelog", ""), "from": old.get("version")})
+                                               "changelog": (known or {}).get("changelog", "") if not body.get("address") else "",
+                                               "from": old.get("version"), **plugin_update.preview(old, manifest)})
                     self.check_password(body)
-                    said = plugin_life.update(app.data_dir, pid, manifest, media, services=app.config.data["services"],
-                                              note="" if body.get("address") else (known or {}).get("changelog", ""))
-                    # Its logo goes with the version (API 1.14); Roll back brings the one before back with it.
-                    pa.keep_logo(app.data_dir, pid, pa.fetch_logo(manifest, body.get("address") or known["manifest"])[0])
+                    run = update_runs.start(app, f"plugin:{pid}", by="you", address=str(body.get("address") or ""))
             except LookupError as e:
                 return self.error(404, str(e))
-            logs.event("info", "plug-ins", said)
-            app.plugin_clock.ensure()
-            app.plugin_idle.ensure()
-            return self.json(200, {"said": said, "plugins": pa.listing(app.data_dir)})
+            except (update_runs.Refused, update_runs.Busy) as e:
+                return self.error(409, str(e))
+            return self.json(200, {"said": "Started", "run": update_runs.public(run), "job": f"/api/updates/runs/{run['id']}/job"})
         mw = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/whats-new-seen$", path)
         if mw and method == "POST":
             # Got it on What is new (DASH-393): kept on the server, so it is not shown again on any device.

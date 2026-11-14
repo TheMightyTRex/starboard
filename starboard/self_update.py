@@ -312,7 +312,8 @@ def launch(p, to):
 # Starting, finishing, and the page ---------------------------------------------------------------------------------
 
 def start(app, to, by="you"):
-    """Starts an update to the release `to` (vX.Y.Z, newer than this version). by is "you" or "automatic"."""
+    """Starts an update to the release `to` (vX.Y.Z, newer than this version). by is "you", "automatic" or "api"
+    (an API key with the updates scope, DASH-424)."""
     if not RELEASE.match(str(to or "")):
         raise Refused("Only a release, such as v0.18.0, can be installed from here")
     if not newer(to, app.version):
@@ -323,14 +324,14 @@ def start(app, to, by="you"):
             raise Refused("An update is already running. Wait for it to finish")
         p = plan(app.data_dir, getattr(app, "root", None) or os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         now = time.time()
-        if by == "you":
-            record.pop("skip", None)  # Update now tries again a version the automatic update stopped trying
+        if by in ("you", "api"):
+            record.pop("skip", None)  # Update now (or the API, DASH-424) tries again a version the automatic update stopped trying
         record.update({"state": "running", "by": by, "from": app.version, "to": to, "started": now, "touched": now,
                        "finished": None, "outcome": None, "reason": "", "how": p["how"]})
         save(app.data_dir, record)
         with open(os.open(_path(app.data_dir, LOG), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
             f.write("== Preparing the update\n")
-    logs.event("info", "updates", f"Starboard update to {to} started ({'automatic' if by == 'automatic' else 'Update now'})")
+    logs.event("info", "updates", f"Starboard update to {to} started ({ {'automatic': 'automatic', 'api': 'from the API'}.get(by, 'Update now')})")
     try:
         launch(p, to)
     except (Refused, containers.DockerError, OSError, subprocess.SubprocessError) as e:

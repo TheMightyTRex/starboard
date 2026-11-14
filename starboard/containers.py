@@ -537,6 +537,18 @@ def forget_old(image_id):
         pass
 
 
+def go_back(before, old_image):
+    """After an update kept the old image (keep_old) and the new version was not healthy: the tag points at the old
+    image again and the app starts on it (reelix_updates.py, and the update API for any app, DASH-424). `before` is
+    the container as containers() listed it before the update."""
+    ref = before["image"]
+    repo, _, tag = ref.rpartition(":") if ":" in ref.split("/")[-1] else (ref, "", "latest")
+    docker("POST", f"/images/{old_image}/tag?" + "&".join([f"repo={urllib.parse.quote(repo, safe='/:.')}", f"tag={urllib.parse.quote(tag)}"]))
+    svc = before.get("service") or before["name"]
+    return _helper(before["folder"], f"docker compose -p {_quote(before['project'])} " +
+                   " ".join(f"-f {_quote(f)}" for f in before["files"]) + f" up -d {svc if re.match(r'^[A-Za-z0-9_.-]+$', svc) else _quote(svc)} 2>&1")
+
+
 def _run(names, keep_old=False):
     job = _state["job"]
     try:

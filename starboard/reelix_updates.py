@@ -44,8 +44,10 @@ def _save_settings(folder):
         raise containers.DockerError(f"Reelix's settings could not be saved first: {text[-200:]}")
 
 
-def run(cfg, data_dir):
-    """One check, and an update when there is one. Returns what happened, in words."""
+def run(cfg, data_dir, progress=None):
+    """One check, and an update when there is one. Returns what happened, in words. `progress(step, state, detail)`
+    hears each step (DASH-424: the update API and the Apps page follow it); the automatic job passes none."""
+    say = progress or (lambda *a: None)
     if not containers.available():
         return "Starboard has no Docker access, so it cannot update Reelix by itself"
     c = _reelix_container()
@@ -55,24 +57,33 @@ def run(cfg, data_dir):
     reelix = next((s for s in services if s.get("icon") == "reelix" and s["type"] == "link"), None)
     if not reelix:
         return "Reelix is not on your apps"
+    say("check", "now", "")
     found = containers.check(services)["items"]
     mine = next((a for a in found if a.get("id") == reelix["id"]), None)
     if not (mine and mine.get("update")):
+        say("check", "done", "Reelix is up to date")
         return "Reelix is up to date"
-    old_image, ref = c["image_id"], c["image"]
+    say("check", "done", f"Version {mine.get('latest') or 'newer'} is out")
+    old_image = c["image_id"]
+    say("backup", "now", "")
     _save_settings(c["folder"] or stack.host_folder(data_dir))
+    say("backup", "done", "reelix-before-update.tgz, beside the set-up files")
+    say("install", "now", "")
     containers.update(services, [reelix["id"]], keep_old=True)
     while not (containers.job() or {}).get("finished"):
         time.sleep(5)
+    say("install", "done", "")
+    say("health", "now", "")
     base = stack.reelix_url(data_dir) or reelix["url"].rstrip("/")
     if _healthy(base):
         containers.forget_old(old_image)
-        logs.event("info", "updates", "Reelix updated by itself and is healthy")
+        say("health", "done", "It answered healthy")
+        logs.event("info", "updates", "Reelix updated and is healthy")
         return "Reelix updated and is healthy"
-    # Back to the image that worked: the tag points at it again, and Reelix starts on it.
-    containers.docker("POST", f"/images/{old_image}/tag?" + "&".join([f"repo={ref.rsplit(':', 1)[0]}", f"tag={ref.rsplit(':', 1)[1] if ':' in ref.split('/')[-1] else 'latest'}"]))
-    containers._helper(c["folder"], f"docker compose -p {containers._quote(c['project'])} " +
-                       " ".join(f"-f {containers._quote(f)}" for f in c["files"]) + " up -d reelix 2>&1")
+    say("health", "failed", f"It did not answer healthy within {HEALTHY_WITHIN // 60} minutes")
+    say("going-back", "now", "")
+    containers.go_back(c, old_image)  # the tag points at the image that worked again, and Reelix starts on it
+    say("going-back", "done", "Back on the version before")
     logs.event("error", "updates", "Reelix's new version was not healthy, so Starboard went back to the previous one. "
                                    "Its settings from before are in reelix-before-update.tgz beside the set-up files")
     return "Reelix's new version was not healthy; Starboard went back to the previous one"
