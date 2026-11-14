@@ -2,8 +2,9 @@
 
 # Update Starboard
 
-Update Starboard by running one command on the server. If you used the installer, `./update.sh` backs up your
-settings, installs the newest release and goes back to the version you had if the new one does not start.
+Update Starboard from its own page, with **Update now**, or let it update itself in the quiet hours. Either way it
+backs up your settings, installs the newest release and goes back to the version you had if the new one does not
+start. You can also run one command on the server.
 
 ## Before you begin
 
@@ -21,7 +22,39 @@ settings, installs the newest release and goes back to the version you had if th
 For this to work, **Check GitHub for new releases** must be active, in the **Updates** section of **Update
 settings**. What changed in every version is on **Settings**, **Updates**, **Releases**.
 
+## Update from Starboard's page
+
+This works if you used the installer and Starboard has Docker access, or if you installed it without Docker.
+
+1. Go to **Settings**, then **Updates**, then **Update settings**.
+2. In **Updates**, select **Update now to** and the new version, such as **Update now to 0.18.0**.
+3. A dialog says what happens: your settings are backed up first, Starboard restarts for about a minute, and it goes
+   back to your version by itself if the new one does not start. Enter your Starboard password and select
+   **Update now**.
+4. A dialog shows each step with its state: checking, backing up, getting the new version, building it, restarting
+   and checking that it answers. While Starboard restarts, the dialog loses touch for about a minute and reconnects
+   by itself.
+5. When it ends, it says **Starboard is updated**. Select **Done**, then **See what is new** to choose any new
+   settings.
+
+Closing the dialog does not stop the update. If **Update now** is not there, the page says why, such as a Starboard
+from the ready-made image, which you update on the server.
+
+## Let Starboard update itself
+
+1. Go to **Settings**, then **Updates**, then **Update settings**.
+2. In **Automatic updates**, activate **Install Starboard updates automatically**. It is deactivated until you
+   activate it.
+
+Starboard then installs a new release by itself in the quiet hours: your download hours when they are set,
+otherwise 01:00 to 06:00. It backs up and checks in the same way, and you get an alert either way if alerts are
+active. A version that did not install is not tried again by itself: **Update now** tries it again.
+**Install Reelix updates automatically**, beside it, does the same for Reelix. Read
+[Updates for Reelix](update-your-apps.md#updates-for-reelix).
+
 ## Steps if you used the installer
+
+You can update on the server instead, for example when Starboard does not open.
 
 1. Go to the Starboard folder:
 
@@ -88,7 +121,11 @@ If you only want to know whether an update is out, without installing it, run `.
   change it. Change the version in the file first. Read
   [Steps if you used the ready-made image](go-back-to-an-earlier-version.md#steps-if-you-used-the-ready-made-image)
   for how to edit it.
-- Starboard only updates itself. To update your other apps, read [Update your apps](update-your-apps.md).
+- To update your other apps, read [Update your apps](update-your-apps.md). To update a plug-in, read
+  [Update a plug-in and roll it back](update-a-plugin.md).
+- One update runs at a time, for Starboard, its apps and its plug-ins.
+- A script or an AI assistant can start an update through Starboard's API, with a key that has **Updates** ticked.
+  Read [Use Starboard's API](use-starboards-api.md).
 
 ## If it does not work
 
@@ -128,6 +165,7 @@ If you only want to know whether an update is out, without installing it, run `.
 - [Go back to an earlier version](go-back-to-an-earlier-version.md)
 - [Back up and restore Starboard's settings](back-up-settings.md)
 - [Update your apps](update-your-apps.md)
+- [Update a plug-in and roll it back](update-a-plugin.md)
 - [Read the log and report a problem](read-the-log.md)
 
 <!-- footer: download rights -->

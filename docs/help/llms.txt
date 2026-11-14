@@ -8,12 +8,13 @@
 - [Plug-in manifest reference](developers/plugin-manifest-reference.md): every field of starboard-plugin.json, its check and the security rules.
 - [Plug-in API reference](developers/plugin-api-reference.md): what Starboard calls on a plug-in (cards, actions, custom settings, events, jobs) and what a plug-in may call.
 - [Test and publish a plug-in](developers/test-and-publish-a-plugin.md): the plug-in tester, pinning images by digest, and writing a catalogue.json.
+- [Write a plug-in that updates safely](developers/update-a-plugin-safely.md): settings migrations, a step before and after an update, the health wait with an automatic Roll back, and What is new before and after (plug-in API 1.14).
 - [Write a plug-in](basics/write-a-plugin.md): the overview, with styles and dashboard cards.
 
 ## Starboard's API
 
 - [API quickstart](developers/api-quickstart.md): make a key and make a first call with curl or Python, with paging and ETags.
-- [Authentication and keys](developers/api-authentication.md): keys, scopes, expiry, revoking, rate limits and the audit log.
+- [Authentication and keys](developers/api-authentication.md): keys, scopes (Logs and Updates only when ticked), expiry, revoking, rate limits and the audit log.
 - [API reference](developers/api-reference.md): every address in version 1, generated from openapi.json.
 - [List of API errors](../api/errors.md): each problem code, its cause and its fix.
 - [API changelog](developers/api-changelog.md): what each version of the API and the plug-in API added.

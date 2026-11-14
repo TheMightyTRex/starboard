@@ -109,6 +109,13 @@ it as it sees it, such as `/media/music`. Nothing outside the media folder can b
   [The card band](../developers/plugin-api-reference.md#the-card-band-api-114) and
   [Logo](../developers/plugin-manifest-reference.md#logo).
 
+## When you make a new version
+
+People update your plug-in from its page, after reading what is new. From plug-in API 1.14, the manifest can make
+that safe: `changes` says what is new, `update.migrations` moves settings you renamed or removed, `update.before`
+lets the plug-in finish its work first, and Starboard waits for its `health` path and goes back by itself if the new
+version does not answer. Read [Write a plug-in that updates safely](../developers/update-a-plugin-safely.md).
+
 ## Test your plug-in
 
 In **Settings**, then **Plug-ins**, under **Test a plug-in**, choose your `starboard-plugin.json` and select **Test it**.

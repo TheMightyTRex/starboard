@@ -21,7 +21,7 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 | See each app, whether it answers, and its problems | `GET /apps`, `/apps/{id}`, `/status`, `/health` | read, `apps` |
 | See uptime, counts from each app and app updates | `GET /uptime`, `/numbers`, `/app-updates` | read, `apps` |
 | See containers and versions; look for newer images | `GET /containers`; `POST /containers/check` | read and manage, `apps` |
-| Update chosen apps | Signed in only: it pulls images and restarts containers | |
+| Update an app, one at a time, with a way back when it does not run | `POST /updates` with `app:<id>` or `reelix` | manage, `updates`, only when ticked |
 | Add, edit, test, find or remove an app; copy settings | Signed in only: it stores app keys and calls the address typed | |
 | Reorder apps and categories | Not yet | |
 
@@ -64,11 +64,22 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 | What a person can do | In the API | Right and scope |
 |---|---|---|
 | Change General, Alerts, Performance or Jellyfin settings | Signed in only | |
-| Make or revoke API keys; add, update or remove plug-ins | Signed in only | |
+| Make or revoke API keys; add or remove plug-ins; update a plug-in from an address | Signed in only | |
 | Password, Sign out everywhere, who can open the dashboard | Signed in only | |
 | Reelix's settings, editions and moving apps into Reelix | Signed in only: they use Reelix's admin password | |
 | Your install, Install apps, taking over and rolling back | Signed in only: they change what runs on the server | |
-| Upgrade Starboard or reset the password | On the server only, with `./update.sh` or `./reset-password.sh` | |
+| Reset the password; go back to an older Starboard | On the server only, with `./reset-password.sh` or `./update.sh --to` | |
+
+## Updates
+
+| What a person can do | In the API | Right and scope |
+|---|---|---|
+| See what can be updated: Starboard, Reelix, the other apps and the plug-ins | `GET /updates` | read, `updates`, only when ticked |
+| Update Starboard to the newest release (Update now) | `POST /updates` with `starboard` | manage, `updates` |
+| Update a plug-in to the version a catalogue lists | `POST /updates` with `plugin:<id>` | manage, `updates` |
+| Follow an update step by step, and see how it ended | `GET /updates/runs`, `/updates/runs/{id}` | read, `updates` |
+| Roll a plug-in back to the version before | `POST /updates/rollback` with `plugin:<id>` | manage, `updates` |
+| Install updates automatically, and when | Signed in only: it is a setting | |
 
 ## Find out more
 

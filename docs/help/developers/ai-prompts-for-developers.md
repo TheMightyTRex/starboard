@@ -123,6 +123,57 @@ The pages:
 [paste the pages here]
 ```
 
+### Make a plug-in's next version update safely
+
+Paste in [Write a plug-in that updates safely](update-a-plugin-safely.md), the [Updates](plugin-manifest-reference.md#updates)
+and [Changes](plugin-manifest-reference.md#changes) parts of the manifest reference, then both versions of your
+`starboard-plugin.json`.
+
+```text
+I am making version [new version] of my Starboard plug-in, [its name]. I have pasted Starboard's help on
+updating a plug-in safely, then the manifest of the version people have now, then the new one. Use only
+what the help describes.
+
+Give me, for the new manifest:
+- A "changes" entry for the new version, newest first, in Added, Changed, Removed and Fixed, saying in
+  plain words any setting that moves or goes.
+- "update.migrations": a step named after the version that made each change, with "rename" for every
+  setting key that changed, "remove" for every key that went, and "defaults" only where a default changed
+  and people who never chose a value should get the new one. Keep the older steps.
+- "update.before" and "update.after" if it does work in the background, and the code for both paths in its
+  program: before finishes or pauses the work and answers {"ok": false, "said": "..."} when it is not safe
+  to update; after starts the work again for outcome "updated" and "rolled_back".
+- A "health" path that answers 200 only when it can really work, and a "health_wait_seconds" long enough
+  for it to start.
+- "starboard_api" of at least ">=1.14 <2.0".
+Then list how I test the update from the old version, the Roll back, and a failing health check.
+
+The pages and both manifests:
+[paste them here]
+```
+
+### Update Starboard and its plug-ins from a script
+
+Paste in [the API reference](api-reference.md) (its Updates part) and [Authentication and keys](api-authentication.md).
+
+```text
+Write a [Python or shell] script that keeps my Starboard up to date through its API. It reads the key from
+the STARBOARD_KEY environment variable: a "Read and manage" key with only the "updates" scope ticked.
+I have pasted the parts of Starboard's help that describe the updates addresses and keys. Use only what
+they describe.
+
+It should:
+- Read GET /api/v1/updates and list each item with update_available, and why when it cannot update.
+- For [the items I want, such as every plug-in], POST /api/v1/updates with {"target": ...} and a new
+  Idempotency-Key, one at a time, because Starboard runs one update at a time.
+- Follow GET /api/v1/updates/runs/{id} every 5 seconds until its state is not "running", printing each
+  step, and stop on "went-back", "refused" or "failed" with the run's "said".
+- Wait and try again later on 409 update_running; never retry a 409 cannot_update.
+
+The pages:
+[paste the pages here]
+```
+
 ### Ask questions about the API or the plug-in system
 
 ```text
@@ -142,6 +193,8 @@ The pages:
 |---|---|
 | Build or change a plug-in | [Plug-in manifest reference](plugin-manifest-reference.md), [Plug-in API reference](plugin-api-reference.md), [Make your first plug-in](make-a-plugin.md) |
 | Design a card or a logo | [Plug-in API reference](plugin-api-reference.md#the-card-band-api-114), [Logo](plugin-manifest-reference.md#logo) |
+| Make a new version that updates safely | [Write a plug-in that updates safely](update-a-plugin-safely.md), [Updates](plugin-manifest-reference.md#updates), [Changes](plugin-manifest-reference.md#changes) |
+| Update Starboard, apps and plug-ins from a script | [API reference: Updates](api-reference.md#updates), [Authentication and keys](api-authentication.md#rights-and-scopes) |
 | Run a job when people choose | [A job on a schedule from its settings](plugin-manifest-reference.md#a-job-on-a-schedule-from-its-settings) |
 | Add styles to a plug-in | [Write a plug-in](../basics/write-a-plugin.md), which also has a prompt for styles |
 | Publish a plug-in or a catalogue | [Test and publish a plug-in](test-and-publish-a-plugin.md), [Plug-in API reference](plugin-api-reference.md#catalogues) |

@@ -33,7 +33,9 @@ Letting an assistant act, asking you first each time, is not built yet. It needs
    in the audit log.
 3. In **What it may do**, keep **Read only**.
 4. In **What it may see**, tick only what it needs, such as **Apps**, **Downloads** and **System**. Tick **Logs** only
-   if it should read them: logs are never included when nothing is ticked.
+   if it should read them: logs are never included when nothing is ticked. Leave **Updates** unticked unless the
+   assistant should update Starboard, apps and plug-ins for you: it is never included either, and it also needs
+   **Read and manage**.
 5. In **Ends**, choose **In 90 days**.
 6. Enter your Starboard password, select **Make a key**, then select **Copy**.
 

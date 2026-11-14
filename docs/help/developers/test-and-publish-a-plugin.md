@@ -36,8 +36,23 @@ Give it the plug-in's folder or its `starboard-plugin.json`. `--dev` allows imag
 From API 1.14 it also checks the [logo](plugin-manifest-reference.md#logo) file next to the manifest, as Starboard
 will when it is added, and each card's `example` for a `status` Starboard knows. In **Test a plug-in**, the logo is
 checked when you give the manifest's address; a pasted manifest has no address to read it from.
+It also checks the `update` object, warns when `changes` has nothing for the manifest's own `version`, and gives a tip
+when a plug-in with jobs has no `before` step (API 1.14).
 It ends with how many errors, warnings and tips it found, and exits with 1 when there are errors, so you can run it
 in your own checks before each release.
+
+## Test an update
+
+Test each new version as people will get it: as an update from the one before, not only as a new install.
+
+1. In a test Starboard, add the version before and choose some settings.
+2. On the plug-in's page, use **Update from an address** with the new version's address. Check each step in the
+   dialog, the settings after the update, and **What is new**.
+3. Select **Roll back**, and check the settings are as they were.
+4. Make the health path fail on purpose, update again, and check that Starboard goes back by itself.
+
+Read [Write a plug-in that updates safely](update-a-plugin-safely.md). Starboard's `tools/check-api.sh` runs the same
+test on an example plug-in, `tools/update_smoke.py`, on every change to Starboard.
 
 ## Development mode
 
@@ -156,12 +171,15 @@ reads it again at most once a day. The steps for everyone are in
 - `permissions` lists only what the plug-in uses. People read each one before they add it.
 - `homepage` and `support_url` work, and the readme says what the plug-in does and what it sends anywhere.
 - `version` follows semantic versioning: raise the first number when something stops working the old way.
+- `changes` lists this version, and says when settings move; `update.migrations` moves any setting you renamed or
+  removed; and an update from the version before works (API 1.14).
 - `starboard_api` names the lowest API version with everything you use. Read
   [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
 ## Find out more
 
 - [Make your first plug-in](make-a-plugin.md)
+- [Write a plug-in that updates safely](update-a-plugin-safely.md)
 - [Plug-in manifest reference](plugin-manifest-reference.md)
 - [Plug-in API reference](plugin-api-reference.md)
 - [Add a plug-in](../topics/add-a-plugin.md)

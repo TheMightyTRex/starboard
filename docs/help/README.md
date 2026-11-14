@@ -87,6 +87,7 @@ Each guide is a journey through several topics, in order.
 ### Plug-ins
 
 - [Add a plug-in](topics/add-a-plugin.md)
+- [Update a plug-in and roll it back](topics/update-a-plugin.md)
 - [The plug-in collection](basics/plugin-collection.md)
 - [What a plug-in can change](basics/what-plugins-can-change.md)
 - [Write a plug-in](basics/write-a-plugin.md)
@@ -189,6 +190,7 @@ For people who make plug-ins, or write scripts and apps that read Starboard. AI 
 - [Plug-in manifest reference](developers/plugin-manifest-reference.md)
 - [Plug-in API reference](developers/plugin-api-reference.md)
 - [Test and publish a plug-in](developers/test-and-publish-a-plugin.md)
+- [Write a plug-in that updates safely](developers/update-a-plugin-safely.md)
 - [API quickstart](developers/api-quickstart.md)
 - [Authentication and keys](developers/api-authentication.md)
 - [What the API covers](developers/api-coverage.md)

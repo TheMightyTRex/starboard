@@ -61,6 +61,15 @@ Starboard reads Reelix's own changelog, so you can read what an update brings.
   reads each container's version.
 - Starboard downloads the changelog from GitHub only when you open **What is new**, and keeps it for 6 hours.
 
+### Update from a script or an AI assistant
+
+A script or an AI assistant can update one app at a time through Starboard's API, with a key made with
+**Read and manage** and **Updates** ticked. Read [Use Starboard's API](use-starboards-api.md). Starboard then keeps
+the old version until the new one runs, and goes back to it by itself if the new one does not start, or is not
+healthy, within two minutes. Reelix is given five minutes, after a copy of its settings, as for its automatic
+updates. An app pinned to a version is not put back by itself: its Compose file names the new version, and the copy
+from before is beside it, with `.bak-` in its name.
+
 ### Run a backup before an update
 
 Starboard can run a script before it updates an app, such as a database backup. Put a script called
@@ -78,6 +87,7 @@ Replace `<service>` with the app's name in the Compose file. If the script fails
 ## Find out more
 
 - [Update Starboard](update-starboard.md)
+- [Update a plug-in and roll it back](update-a-plugin.md)
 - [Install apps with Starboard](install-apps.md)
 - [Switch between the two versions of Reelix](switch-reelix-version.md)
 - [Back up the whole server](back-up-the-server.md)

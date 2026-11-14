@@ -19,7 +19,9 @@ key can change Starboard's settings. Make one key for each app that uses it.
 2. Find **API keys**.
 3. In **Name it after what will use it**, enter a name, such as `Home Assistant`.
 4. In **What it may do**, choose **Read only**, or **Read and manage** if it must act, such as approving requests.
-5. In **What it may see**, tick only the areas it needs. Leave them all empty for everything.
+5. In **What it may see**, tick only the areas it needs. Leave them all empty for everything except **Logs** and
+   **Updates**, which a key has only when they are ticked. **Updates** with **Read and manage** lets it update
+   Starboard, Reelix, your apps and plug-ins, and roll a plug-in back, as the pages do.
 6. In **Ends**, choose **In 90 days**, **In a year** or **Never**.
 7. In **Your Starboard password**, enter the password.
 8. Select **Make a key**.

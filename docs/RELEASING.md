@@ -37,8 +37,10 @@ guide and the notes on GitHub, so they always say the same thing.
    checked by `tests/test_design_system_copies.py`: change the library and sync, never the copies.
    The API and the plug-ins must not break: run `bash tools/check-api.sh` (DASH-281). In one command it checks that
    `starboard/openapi.json` and `docs/help/developers/api-reference.md` are what their tools write, runs the contract
-   tests (each `/api/v1` route against its description, with its scope, right and errors) and the plug-in tests, and
-   runs every example plug-in against this build with the smoke test from the `starboard-plugins` repository (set
+   tests (each `/api/v1` route against its description, with its scope, right and errors) and the plug-in tests, runs
+   the update smoke test (`tools/update_smoke.py`: an example plug-in updated with a settings migration, rolled back,
+   and updated to a version whose health check fails, which must go back by itself; DASH-424), and runs every example
+   plug-in against this build with the smoke test from the `starboard-plugins` repository (set
    `STARBOARD_PLUGINS` if it is not beside this one; `SMOKE=required` fails when Docker or that repository is
    missing). CI runs the same command on every push, where the smoke test says it was not run. A change that breaks
    either is fixed, or becomes a new API version with a deprecation note, before it is merged.

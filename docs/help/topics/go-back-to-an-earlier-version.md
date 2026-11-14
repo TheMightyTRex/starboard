@@ -75,6 +75,19 @@ backed up first, and you can update again when you are ready.
 - **With the ready-made image:** change the version in the `image:` line back to `latest`, then run the commands in
   Steps 5 and 6 again.
 
+## Going back for Reelix, apps and plug-ins
+
+- **Starboard:** when a new version does not start, Starboard goes back by itself, whether you used **Update now**,
+  the automatic update or `./update.sh`. Going back later is done on the server, with the steps above.
+- **Reelix:** when its automatic update, or an update through Starboard's API, is not healthy within five minutes,
+  Starboard puts the version before back by itself. Its settings from before are in `reelix-before-update.tgz`
+  beside the set-up files. Read [Updates for Reelix](update-your-apps.md#updates-for-reelix).
+- **Your other apps:** an update through Starboard's API goes back by itself when the new version does not run
+  within two minutes. Read [Update your apps](update-your-apps.md#update-from-a-script-or-an-ai-assistant).
+- **Plug-ins:** select **Roll back to** on the plug-in's page at any time, with no download, and its settings go back
+  to how they were. A plug-in also goes back by itself when its new version does not start or answer. Read
+  [Roll back to the version you had](update-a-plugin.md#roll-back-to-the-version-you-had).
+
 ## Things to note
 
 - Staying on an older version means you miss fixes, including security fixes. Go forward again once the problem is
@@ -131,6 +144,7 @@ backed up first, and you can update again when you are ready.
 
 ## Find out more
 
+- [Update a plug-in and roll it back](update-a-plugin.md)
 - [Update Starboard](update-starboard.md)
 - [Back up and restore Starboard's settings](back-up-settings.md)
 - [Restore a saved copy of your settings](restore-a-saved-copy.md)

@@ -32,13 +32,15 @@ A key anywhere else, such as in the address (`?key=...`), is not read, and the c
 | Right | Shown as | What it allows |
 |---|---|---|
 | `read` | **Read only** | Read what the API offers |
-| `manage` | **Read and manage** | Read, and the everyday actions of the pages: approve or decline a request, remove or block a download, pause or resume downloads, build a Library tab again, look for container updates, run a Jellyfin job and send a test alert |
+| `manage` | **Read and manage** | Read, and the everyday actions of the pages: approve or decline a request, remove or block a download, pause or resume downloads, build a Library tab again, look for container updates, run a Jellyfin job and send a test alert. With **Updates** ticked, also update Starboard, Reelix, an app or a plug-in, and roll a plug-in back (API 1.2.0) |
 
 Every address that changes something is a `POST`, marked **Needs:** `manage` in the [API reference](api-reference.md).
 A read key gets `403` [`right_needed`](../../api/errors.md#right_needed) there.
 
-No key, whatever its right, can change settings, keys or plug-ins, change the install, take over or roll back,
-restore a backup, use Reelix's admin password, or make Starboard call an address the key gives. Those stay with a
+No key, whatever its right, can change settings, keys or plug-in choices, add or remove plug-ins, change the
+install, take over your apps, restore a backup, use Reelix's admin password, or make Starboard call an address the
+key gives. The one change to the install a key can make is an update, and only with **Updates** ticked: to the
+version Starboard already found, with the same backup, health check and way back as the pages. Those stay with a
 person signed in to Starboard. Read [What the API covers](api-coverage.md) for every page action and its right.
 
 A key's scopes narrow what it reads and does. A key with no scopes reaches everything its right allows. In
@@ -55,6 +57,7 @@ the scopes of the read permissions the person approved. Read
 | `requests` | **Requests** | `/requests`; approving and declining |
 | `system` | **System** | `/system`, `/system/history` and `/version`; sending a test alert |
 | `logs` | **Logs** | `/logs`: Starboard's log, with addresses, names and keys taken out. Only a key with `logs` ticked reads it: a key with no scopes does not |
+| `updates` | **Updates** | `/updates`, `/updates/runs` and `/updates/runs/{id}`; with **Read and manage**, starting an update and rolling a plug-in back. Only a key with `updates` ticked has it: a key with no scopes does not. API 1.2.0 |
 
 `/api/v1/` and `/me` work with any key. `/openapi.json` needs no key. `/events` works with any key, and each event
 reaches only the keys whose scopes cover it.

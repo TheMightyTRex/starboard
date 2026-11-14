@@ -14,6 +14,22 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Starboard API 1.2.0 (unreleased), 14 November 2026
+
+- **Added:** updates, for keys that ticked the new `updates` scope (a key with no scopes does not have it, as with
+  `logs`): `GET /updates` lists what can be updated (Starboard, Reelix, the other apps and the plug-ins) from what
+  Starboard already knows, with the update running now; `POST /updates` with `{"target": "plugin:direct-play"}`
+  starts an update to the newest version Starboard knows, and answers `202` with the run; `GET /updates/runs` and
+  `GET /updates/runs/{id}` give each update's steps and how it ended; `POST /updates/rollback` rolls a plug-in back
+  to the version kept before. Read [the API reference](api-reference.md#updates).
+- **Added:** each update has the same backup, health check and way back as on the pages, and `update_started` and
+  `update_finished` lines in the audit log as well as the `api_write` line. One update runs at a time. Never from an
+  address the key gives.
+- **Added:** the errors [`update_running`](../../api/errors.md#update_running) and
+  [`cannot_update`](../../api/errors.md#cannot_update), both `409`.
+- **Changed:** the API reference says that `logs` and `updates` are only for keys that ticked them.
+- Nothing was taken away: every 1.1.0 address answers as before, and a key made before keeps what it had.
+
 ## Starboard API 1.1.0, 13 November 2026
 
 - **Added:** reads for the rest of the pages: `/calendar` (with `?month=`), `/requests`, `/transfer`,
@@ -57,12 +73,26 @@ the next major version.
 - **Added:** the permission `jellyfin:metadata` (medium risk) and the volumes `jellyfin-metadata` and
   `jellyfin-metadata:ro`: Jellyfin's metadata folder at `/metadata`, mounted only when granted, and `"user": "media"`
   with it. Read [Jellyfin's metadata folder](plugin-manifest-reference.md#jellyfins-metadata-folder).
+- **Added:** `update` (DASH-424): a `before` step on the installed version and an `after` step on the version
+  running at the end, each a `POST` with a time limit of 5 to 300 seconds; a failing `before` stops the update with
+  nothing changed. `health_wait_seconds` (10 to 600, 60 by default): after every update Starboard waits for the new
+  version's `health` path, and goes back to the version before by itself when it does not answer. `migrations`:
+  `rename`, `remove` and new `defaults` for saved settings, by version, kept for Roll back. Read
+  [Updates](plugin-manifest-reference.md#updates) and [Write a plug-in that updates safely](update-a-plugin-safely.md).
+- **Added:** **What is new since** the installed version, from the new version's `changes`, in the warning before an
+  update, with the settings that move and how the update is kept safe.
+- **Changed:** an update and a Roll back run as steps in a dialog, followed with `GET /api/updates/runs/{id}/job` on
+  Starboard's own pages; `POST /api/plugins/{id}/update` and `/rollback` answer with the run.
+- **Changed:** the plug-in tester warns when `changes` has nothing for the manifest's own version, and gives a tip when
+  a plug-in with jobs has no `before` step.
 - **Changed:** the plug-in tester reports a logo that fails its checks, a `status` Starboard does not know in a card's
   `example`, and suggests a logo and a status where there is none.
 - **Changed:** `GET /api/plugins` and `GET /api/plugins/cards` (Starboard's own pages) give each plug-in's `logo`,
   `{url, alt}` or `null`; `GET /api/plugins/{id}/logo` serves the cleaned copy; a card's answer has `asked`. The
   public `/api/v1` did not change.
 - Nothing changed for a card without `refresh_seconds`: it is asked once a minute, or every `refresh_minutes`.
+- A plug-in without `update` is updated as before, with one addition: when it has a `health` path, Starboard waits up
+  to 60 seconds for it after the update, and goes back by itself if it does not answer.
 - Nothing was taken away: a manifest that worked with 1.13 works the same, and its cards gain the band with its
   initials and when Starboard last asked it.
 

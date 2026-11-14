@@ -37,9 +37,10 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `notices` | no | Things people must know before install | Read [Notices](#notices). API 1.4 |
 | `events` | no | Events Starboard sends it | Read [Events](#events). API 1.4 |
 | `jobs` | no | Jobs Starboard runs for it | Read [Jobs](#jobs). API 1.4 |
-| `changes` | no | What changed in each version, shown as **What is new** after an update | Read [Changes](#changes). API 1.10 |
+| `changes` | no | What changed in each version, shown as **What is new** before and after an update | Read [Changes](#changes). API 1.10; before the update since API 1.14 |
 | `adopt` | no | An app the main install may already run, which Starboard can copy into the plug-in | Read [App plug-ins](#app-plug-ins). API 1.13 |
 | `logo` | no | A small logo, shown in **Settings**, **Plug-ins** and on its dashboard cards | Read [Logo](#logo). API 1.14 |
+| `update` | no | How it updates safely: a step before and after, the health wait and settings migrations | Read [Updates](#updates). API 1.14 |
 
 ## Permissions
 
@@ -328,7 +329,8 @@ Each item in `actions` is a button in the plug-in's section of **Settings**, the
 `health` is a path, such as `/health`, that answers 200 while the plug-in works. Keep it cheap: no calls to other
 apps. The tester warns when a plug-in with containers has none. Starboard asks it when **Settings**, then
 **Plug-ins**, is opened, and shows **Not answering** when it does not answer 200. For plug-ins built into
-Starboard, it is also the container's health check.
+Starboard, it is also the container's health check. After an update, Starboard waits for it to answer before it
+keeps the new version (API 1.14): read [Updates](#updates).
 
 ## Styles
 
@@ -454,11 +456,71 @@ How Starboard reads it:
 A catalogue entry can carry the same logo for the Catalogue, before anything is added. Read
 [Catalogues](plugin-api-reference.md#catalogues).
 
+## Updates
+
+`update` tells Starboard how to update the plug-in safely. Every part is optional. API 1.14. Read
+[Write a plug-in that updates safely](update-a-plugin-safely.md) for a walk through.
+
+| Field | What it is | Check |
+|---|---|---|
+| `before` | A step Starboard calls on the version that is installed, before anything changes: finish or pause work | `{"path": "/update/before", "time_limit_seconds": 60}`. The path starts with `/`; the time limit is 5 to 300 seconds, 60 when left out. Needs a container |
+| `after` | A step Starboard calls on the version running at the end: tidy up or start work again | The same as `before` |
+| `health_wait_seconds` | How long Starboard waits for the new version's `health` path to answer 200 | 10 to 600, 60 when left out. Needs `health` |
+| `migrations` | How saved settings move from older versions | 1 to 20 steps, each below |
+
+Each step of `migrations`:
+
+| Field | What it is | Check |
+|---|---|---|
+| `version` | The version that made the change | Required. A version such as `2.0.0`, different from the others, no newer than the manifest's `version` |
+| `rename` | Old setting keys and their new keys | Up to 20. The new key must be one of this version's `settings` |
+| `remove` | Setting keys this version no longer has | Up to 20. A key still in `settings` is refused, unless a later step renames something to it |
+| `defaults` | New default values | Up to 20. The key must be one of this version's `settings` |
+
+Give at least one of `rename`, `remove` or `defaults` in each step.
+
+What Starboard does, in order:
+
+1. **Before.** If the plug-in is active and the installed version has `before`, Starboard sends it `POST` with
+   `{"from": "1.0.0", "to": "2.0.0"}`. An answer other than 2xx, `{"ok": false, "said": "..."}`, or no answer within
+   the time limit stops the update, and nothing is changed. The words in `said` are shown.
+2. **Settings.** Each migration step whose `version` is above the installed version and at or below the new one is
+   applied, oldest first. `rename` moves a value to its new key (a value already under the new key wins). `remove`
+   drops a key. `defaults` sets a new value only where the saved value is still the installed version's default, or
+   there is none, so a value someone chose is kept. A new setting then gets its `default`.
+3. **Install.** The new manifest, settings and Compose file are written, the version before is kept in
+   `previous/` with its settings as they were, and an active plug-in starts on the new version.
+4. **Health.** Starboard asks `health` every 3 seconds, for up to `health_wait_seconds`. If the new version does not
+   start or does not answer 200 in time, Starboard rolls back by itself: the version before, with its settings as they
+   were, and its `after` step hears `{"outcome": "rolled_back"}`.
+5. **After.** The new version's `after` step hears `{"from": "1.0.0", "to": "2.0.0", "outcome": "updated"}`. A failing
+   `after` does not undo the update; it is said in the result and the log.
+
+A plug-in that is not active is updated without its steps or the health wait. **Roll back** calls `before` on the
+version running and `after` on the one brought back, with `{"outcome": "rolled_back"}`, and puts back the settings
+kept from before the update. Settings changed since the update are not kept by a Roll back.
+
+```json
+"update": {
+  "before": {"path": "/update/before", "time_limit_seconds": 60},
+  "after": {"path": "/update/after"},
+  "health_wait_seconds": 90,
+  "migrations": [
+    {"version": "1.5.0", "rename": {"minutes": "every_minutes"}},
+    {"version": "2.0.0", "remove": ["old_mode"], "defaults": {"every_minutes": 30}}
+  ]
+}
+```
+
+A plug-in made for an earlier API has no `update`: it is updated as before, and Starboard still waits up to 60 seconds
+for its `health` path when it has one, and goes back by itself if it does not answer.
+
 ## Changes
 
 `changes` lists what changed in each version, newest first, in the types of
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Copy the lines from your `CHANGELOG.md`. After an update, a
-Roll back or an update from an address, the plug-in's **State** shows **What is new** with the versions between the
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Copy the lines from your `CHANGELOG.md`. Before an update,
+the warning shows **What is new since** the installed version, from the new version's `changes` (API 1.14). After an
+update, a Roll back or an update from an address, the plug-in's **State** shows **What is new** with the versions between the
 one people had and the one they have now: each type's first line, and **All changes** for the rest. It stays until
 someone chooses **Got it**, which Starboard keeps, so it is not shown again on any device. API 1.10.
 
@@ -469,7 +531,8 @@ someone chooses **Got it**, which Starboard keeps, so it is not shown again on a
 | `added`, `changed`, `deprecated`, `removed`, `fixed`, `security` | The changes of that type | Give at least one. Each lists 1 to 20 lines of up to 300 characters |
 
 Up to 20 versions. A line may use `**bold**` and `` `code` ``; Starboard shows them as text, never as HTML.
-Start each line with what people notice, in a few words.
+Start each line with what people notice, in a few words. Include the manifest's own `version`: the tester warns when
+it is missing, because What is new then cannot say what changed. Say when settings move.
 
 ```json
 "changes": [
@@ -497,7 +560,7 @@ Start each line with what people notice, in a few words.
 | 1.11 | 13 November 2026 | Four more events (`request.available`, `download.failed`, `disk.nearly_full`, `update.available`), and `readonly` on a custom setting's list with folds |
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
-| 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume |
+| 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).
@@ -507,6 +570,7 @@ Read [API changelog](api-changelog.md).
 - [Make your first plug-in](make-a-plugin.md)
 - [Plug-in API reference](plugin-api-reference.md)
 - [Test and publish a plug-in](test-and-publish-a-plugin.md)
+- [Write a plug-in that updates safely](update-a-plugin-safely.md)
 - [Write a plug-in](../basics/write-a-plugin.md)
 - [What a plug-in can change](../basics/what-plugins-can-change.md)
 

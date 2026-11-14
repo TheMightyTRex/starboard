@@ -241,7 +241,9 @@ A plug-in without this path answers 404, and Starboard says the plug-in does not
 Answer GET on the `health` path with status 200 while the plug-in works. Keep it cheap. Starboard asks it when
 someone opens **Settings**, then **Plug-ins**, at most once a minute, and waits 2 seconds. Any other answer shows
 the plug-in as **Not answering**, with the reason. For plug-ins built into Starboard, it is also the container's
-Docker health check, every 60 seconds.
+Docker health check, every 60 seconds. After an update, Starboard asks it every 3 seconds until it answers 200, for up
+to `update.health_wait_seconds` (60 when left out), and goes back to the version before if it does not (API 1.14).
+Answer 200 only once the plug-in can do its work, not as soon as the program starts.
 
 ## Events
 
@@ -382,19 +384,50 @@ time, and a plug-in in either cannot be activated. **Deactivate all plug-ins** s
 
 ## Updates and Roll back
 
-- When a catalogue lists a newer version, the plug-in's tab offers **Update to** and that version. Starboard
-  shows the same warning as when adding it, with any new permissions marked, and the changelog. It asks for the
-  password.
-- Settings stay. A new setting gets its `default`.
-- An active plug-in is started again on the new version.
-- Starboard keeps the version before in `data/plugins/<id>/previous/`: its manifest, settings and Compose file. Only
-  one earlier version is kept.
-- **Roll back** swaps the two, with no download, and asks for the password. The newer version is kept in its place.
+- When a catalogue lists a newer version, the plug-in's page offers **Update to** and that version. Starboard
+  shows the same warning as when adding it, with any new permissions marked, **What is new since** the installed
+  version from the new version's `changes`, the settings that move, and how the update is kept safe. It asks for the
+  password. **Update from an address** does the same for a plug-in that is not in a catalogue.
+- The update runs as steps, in a dialog: **Asking it to get ready** (`update.before`), **Moving its settings**
+  (`update.migrations`), **Installing the new version**, **Waiting for it to answer** (`health`, for up to
+  `update.health_wait_seconds`) and **Asking it to tidy up** (`update.after`). A step that does not apply is left out.
+  Read [Updates](plugin-manifest-reference.md#updates) for each one. API 1.14.
+- Settings stay, moved by the new version's migrations. A new setting gets its `default`.
+- An active plug-in is started again on the new version. If it does not start, or does not answer its health path in
+  time, Starboard goes back to the version before by itself, with its settings as they were, and says why on the
+  plug-in's **State**, in the log and in an alert.
+- Starboard keeps the version before in `data/plugins/<id>/previous/`: its manifest, settings, Compose file and logo.
+  Only one earlier version is kept.
+- **Roll back** swaps the two, with no download, and asks for the password. It calls `update.before` on the version
+  running and `update.after` on the one brought back. The newer version is kept in its place.
 - Plug-ins built into Starboard update with Starboard.
-- Each update and roll back is written to the audit log.
+- One update runs at a time. Each update and roll back is written to the audit log (`update_started`,
+  `plugin_updated`, `plugin_update_rolled_back`, `plugin_rolled_back`, `update_finished`).
 - After an update, a Roll back or an update from an address, the plug-in's **State** shows **What is new**: the
   changes between the two versions from the manifest's `changes` (API 1.10), or the catalogue's line when it has
   none. **Got it** hides it on every device. Read [Changes](plugin-manifest-reference.md#changes).
+- Starboard's API can do the same with a key that has the `updates` scope: read
+  [Updates through the API](#updates-through-the-api).
+
+### The update steps a plug-in answers (API 1.14)
+
+Starboard sends each step to the main (first) container, on the plug-in's own network, as `POST` with JSON:
+
+| Step | Sent to | Body | Answer |
+|---|---|---|---|
+| Before | The installed version's `update.before.path` | `{"from": "1.0.0", "to": "2.0.0"}` | 2xx and `{"ok": true, "said": "No job was running"}` when it is ready; `{"ok": false, "said": "A scan is half way"}` or any other status stops the update |
+| After | The running version's `update.after.path` | `{"from": "1.0.0", "to": "2.0.0", "outcome": "updated"}`, or `"rolled_back"` | 2xx and `{"ok": true, "said": "..."}`; anything else is said, and the update stays |
+
+`said` is shown in the update's steps, up to 200 characters. Answer within `time_limit_seconds`. A resting container
+is started first, as for any call. Keep both steps short and safe to run twice: a person may update, roll back and
+update again.
+
+### Updates through the API
+
+A key made with **Read and manage** and the `updates` scope ticked can list what can be updated, start an update to
+the version Starboard already knows of, follow its steps and roll a plug-in back: `GET /api/v1/updates`,
+`POST /api/v1/updates`, `GET /api/v1/updates/runs/{id}` and `POST /api/v1/updates/rollback`. Read
+[the API reference](api-reference.md#updates). A plug-in's own key never has this scope.
 
 ## Catalogues
 
@@ -463,6 +496,7 @@ How to write one is in [Test and publish a plug-in](test-and-publish-a-plugin.md
 - [Plug-in manifest reference](plugin-manifest-reference.md)
 - [Make your first plug-in](make-a-plugin.md)
 - [Test and publish a plug-in](test-and-publish-a-plugin.md)
+- [Write a plug-in that updates safely](update-a-plugin-safely.md)
 - [API reference](api-reference.md)
 - [What a plug-in can change](../basics/what-plugins-can-change.md)
 
