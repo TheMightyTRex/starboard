@@ -53,6 +53,10 @@ TEMPLATE = {  # Tdarr 2.x library fields, as its own page writes them
 
 
 def _svc(cfg):
+    if not any(x.get("type") == "tdarr" for x in cfg.data["services"]):
+        # Not installed (DASH-427): no Tdarr on Apps, for instance after its plug-in was removed. The page says so
+        # and offers the plug-in, instead of Connect, which could never work.
+        raise LookupError("Tdarr is not installed")
     s = next((x for x in cfg.data["services"] if x.get("type") == "tdarr" and x.get("api_key")), None)
     if not s:
         raise ValueError("Starboard has no key for Tdarr yet")

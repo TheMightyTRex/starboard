@@ -13,6 +13,7 @@ import os
 import re
 import shutil
 import threading
+import urllib.parse
 import urllib.request
 
 from . import api_v1, plugins
@@ -421,7 +422,10 @@ def listing(data_dir):
                         "status": plugin_life.status(data_dir, pid, m, st), "whats_new": plugin_life.whats_new(data_dir, pid, m, st), "jobs": [j.get("label") for j in m.get("jobs") or []],
                         "message": st.get("message", ""), "settings": public_settings(data_dir, pid, m),
                         "web": web_pages(data_dir, pid, m, st), "publishes": bool(plugins.published_lan(m)),
-                        "adopt": adopt_info(m), "adopted": st.get("adopted")})
+                        "adopt": adopt_info(m), "adopted": st.get("adopted"),
+                        # API 1.15: added from a zip (DASH-414), so it updates from one; its Jellyfin libraries (DASH-430)
+                        "from_zip": bool(plugins.builds(m)) or os.path.isdir(os.path.join(where, "zips")),
+                        "libraries": st.get("libraries")})
     return out
 
 
@@ -560,6 +564,13 @@ def _prepare_media(data_dir, pid):
             if media and isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v) and v.split("/", 1)[1] not in (".", ".."):
                 d = containers._quote(f"{media}/{v.split('/', 1)[1]}")
                 lines.append(f"{{ [ -d {d} ] || {{ mkdir -p {d} && chown {user} {d}; }}; }}")
+                # API 1.15 (DASH-430): the folders of its Jellyfin libraries, which Jellyfin needs before it adds them
+                for lib in m.get("jellyfin_libraries") or []:
+                    parts = str((lib or {}).get("folder", "")).split("/") if isinstance(lib, dict) else []
+                    if len(parts) > 2 and f"media/{parts[1]}" == v and not plugins.check_libraries([lib], [c], ["jellyfin:libraries"]):
+                        sub = containers._quote(f"{media}/{'/'.join(parts[1:])}")
+                        made = " ".join(containers._quote(f"{media}/{'/'.join(parts[1:i])}") for i in range(3, len(parts) + 1))
+                        lines.append(f"{{ [ -d {sub} ] || {{ mkdir -p {sub} && chown {user} {made}; }}; }}")
     return " && ".join(lines), (media if lines else None)
 
 
@@ -861,6 +872,13 @@ def enable(data_dir, pid, helper=None, services=None):
     write_reelix(data_dir, pid, services)
     write_usenet(data_dir, pid, services)
     where = folder(data_dir, pid)
+    if helper is None:  # API 1.15 (DASH-414): a zip plug-in whose image has gone is built again from its kept zip
+        from . import plugin_zip
+        try:
+            plugin_zip.ensure_images(data_dir, pid)
+        except (ValueError, OSError) as e:
+            set_state(data_dir, pid, "failed", str(e))
+            raise ValueError(f"It did not start: {e}") from None
     upgrade_mounts(where)
     share(where)  # also after Roll back, which moves files rather than writing them
     write_compose(data_dir, pid)  # API 1.13: its port, secrets and Jellyfin's details, as they are now
@@ -884,6 +902,9 @@ def enable(data_dir, pid, helper=None, services=None):
     api_v1.audit(data_dir, "plugin_enabled" if ok else "plugin_failed", plugin=pid)
     if not ok:
         raise ValueError(f"It did not start: {text.strip()[-200:]}")
+    if services is not None:  # API 1.15 (DASH-430): its Jellyfin libraries, real-time monitoring as it wants
+        from . import plugin_libraries
+        plugin_libraries.ensure(data_dir, pid, services)
 
 
 def disable(data_dir, pid, helper=None):
@@ -896,12 +917,46 @@ def disable(data_dir, pid, helper=None):
     api_v1.audit(data_dir, "plugin_disabled", plugin=pid)
 
 
-def uninstall(data_dir, pid, helper=None, to_holding=False):
+def apps_links(data_dir, pid, services, manifest=None, st=None):
+    """The Apps page entries that belong to an app plug-in (DASH-427): one for its own containers (plugin-<id>-...,
+    as Search for new apps adds it), one at the port Starboard gave its web page on this computer, and the app it
+    adopted (API 1.13), whose entry the plug-in took over. Never an entry for anything else."""
+    where = folder(data_dir, pid)
+    m = manifest if manifest is not None else _read_kept(os.path.join(where, "manifest.json"), {}) or {}
+    st = st if st is not None else _read_kept(os.path.join(where, "state.json"), {}) or {}
+    if not m.get("containers"):
+        return []
+    ports = {int(p) for p in (st.get("ports") or {}).values() if isinstance(p, int)}
+    adopted = (m.get("adopt") or {}).get("app") if isinstance(m.get("adopt"), dict) else None
+    out = []
+    for s in services or []:
+        container = str(s.get("container") or "")
+        u = urllib.parse.urlsplit(str(s.get("url") or ""))
+        try:
+            port = u.port
+        except ValueError:
+            port = None
+        local = u.hostname in ("127.0.0.1", "localhost", "::1", "host.docker.internal")
+        if (container.startswith(f"plugin-{pid}-") or (local and port in ports)
+                or (adopted and (container == adopted or (st.get("adopted") and not container and s.get("icon") == adopted and local)))):
+            out.append(s)
+    return out
+
+
+def uninstall(data_dir, pid, helper=None, to_holding=False, config=None):
     """Stops and removes its containers, revokes its key, and moves its folder aside (never deleted). With
     `to_holding` (API 1.13, DASH-411), the folder goes on to the holding folder in System, Clean up, from where it
-    can be put back or deleted for good by the person."""
+    can be put back or deleted for good by the person. With `config`, an app plug-in's entry on the Apps page goes
+    too (DASH-427: Tdarr stayed on Apps after it was uninstalled, 14 November 2026); its names are in the audit."""
     where = folder(data_dir, pid)
     st = _read(os.path.join(where, "state.json"), {})
+    if config is not None:
+        gone = []
+        for s in apps_links(data_dir, pid, config.data.get("services") or []):
+            if config.remove_service(s["id"]):
+                gone.append(s.get("name") or s["id"])
+        if gone:
+            api_v1.audit(data_dir, "plugin_apps_link_removed", plugin=pid, apps=", ".join(gone)[:200])
     try:
         if not _runs_nothing(data_dir, pid):
             _compose_run(data_dir, pid, "down", helper)

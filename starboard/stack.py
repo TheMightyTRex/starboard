@@ -55,6 +55,12 @@ DATA = "${DATA_DIR}"
 FFMPEG_WRAP = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ffmpeg-wrap.sh")
 FFMPEG_PATH = "/config/ffmpeg-wrap/ffmpeg"
 JELLYFIN_CONFIG = f"{CFG}/jellyfin:/config"
+# Jellyfin's metadata outside its settings folder (DASH-431, owner, 14 November 2026: "Move the metadata and make sure
+# its set properly for new installs"). Jellyfin watches its own settings folder, so a large metadata store there used up
+# the computer's folder-watch limit before Films and TV. New installs mount CONFIG_DIR/jellyfin-metadata at /metadata
+# and the set-up sets MetadataPath to it (app_setup.jellyfin_first_run); an install made before keeps its Compose file
+# as it was until Starboard moves its metadata (jellyfin_metadata.py), which adds the volume.
+JELLYFIN_METADATA = f"{CFG}/jellyfin-metadata:/metadata"
 
 # Storyarr was retired on 11 November 2026 (its work goes on in Reelix): it is no longer offered or installed
 # (RETIRED, below), but an install that has it keeps it, pinned to a version, so System, Apps, Updates still offers
@@ -118,7 +124,8 @@ APPS = {
     "kapowarr": {"name": "Kapowarr", "groups": ["comics"], "image": "mrcas/kapowarr:latest", "ports": ["5656:5656"], "memory": 100,
                  "volumes": [f"{CFG}/kapowarr:/app/db", f"{DATA}/downloads/comics:/app/temp_downloads", f"{DATA}/media/comics:/comics-1"]},
     "jellyfin": {"name": "Jellyfin", "groups": ["watching"], "image": "lscr.io/linuxserver/jellyfin:latest",
-                 "ports": ["8096:8096"], "volumes": [f"{CFG}/jellyfin:/config", f"{DATA}/media:/data/media"], "env": LSIO, "memory": 600},
+                 "ports": ["8096:8096"], "volumes": [f"{CFG}/jellyfin:/config", f"{CFG}/jellyfin-metadata:/metadata", f"{DATA}/media:/data/media"],
+                 "env": LSIO, "memory": 600},
     "seerr": {"name": "Seerr", "groups": ["watching"], "image": "ghcr.io/seerr-team/seerr:latest", "ports": ["5055:5055"],
               "volumes": [f"{CFG}/seerr:/app/config"], "env": {"TZ": "${TZ}"}, "memory": 200,
               "notes": "People ask for films and series; it sends them to Radarr and Sonarr."},
@@ -753,6 +760,8 @@ def build(choice):
         app_env = {k: _yaml_value(v) for k, v in (a.get("env") or {}).items()}
         app_env.update(_kept_env(keep, kept_vars))
         volumes = _with_kept_volumes(a.get("volumes") or [], keep.get("volumes") or [])
+        if key == "jellyfin" and choice.get("jellyfin_metadata") is False:  # not moved yet (DASH-431)
+            volumes = [v for v in volumes if v != JELLYFIN_METADATA]
         if key == "jellyfin" and "linuxserver/jellyfin" in image and JELLYFIN_CONFIG in volumes:
             # Only where Starboard knows /config is Jellyfin's own settings folder, so the wrapper is put there.
             app_env.setdefault("FFMPEG_PATH", _yaml_value(FFMPEG_PATH))
@@ -1103,6 +1112,60 @@ def sabnzbd_key(data_dir):
     return env_values(data_dir).get("SABNZBD_API_KEY") or None
 
 
+def _service_block(text, name):
+    """(start, end) of a service's lines in a Compose file Starboard wrote, or None."""
+    lines = text.split("\n")
+    start = next((i for i, l in enumerate(lines) if l == f"  {name}:"), None)
+    if start is None:
+        return None
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].strip() and not lines[i].startswith("    ")), len(lines))
+    return start, end
+
+
+def has_jellyfin_metadata(text):
+    """True when the Compose file gives Jellyfin a /metadata volume (DASH-431)."""
+    block = _service_block(text or "", "jellyfin")
+    if not block:
+        return False
+    return any(re.search(r':/metadata"?\s*$', l) for l in text.split("\n")[block[0]:block[1]])
+
+
+def compose_has_jellyfin_metadata(data_dir):
+    try:
+        with open(os.path.join(folder(data_dir), "compose.yaml"), encoding="utf-8") as f:
+            return has_jellyfin_metadata(f.read())
+    except OSError:
+        return False
+
+
+def metadata_as_before(old, new):
+    """An install whose Jellyfin had no /metadata keeps it that way when its Compose file is written again: its
+    metadata is still in the settings folder until Starboard moves it (DASH-431)."""
+    if not _service_block(old or "", "jellyfin") or has_jellyfin_metadata(old):
+        return new
+    line = f"      - {_yaml_value(JELLYFIN_METADATA)}"
+    return "\n".join(l for l in new.split("\n") if l != line)
+
+
+def add_jellyfin_metadata(text):
+    """The Compose file with Jellyfin's /metadata volume added (DASH-431); ValueError when its layout is not one
+    Starboard wrote."""
+    if has_jellyfin_metadata(text):
+        return text
+    block = _service_block(text, "jellyfin")
+    if not block:
+        raise ValueError("Jellyfin is not in Starboard's Compose file")
+    lines = text.split("\n")
+    at = next((i for i in range(block[0], block[1]) if lines[i] == "    volumes:"), None)
+    if at is None:
+        raise ValueError("Jellyfin's part of the Compose file has no volumes list Starboard can add to")
+    end = at + 1
+    while end < block[1] and lines[end].startswith("      - "):
+        end += 1
+    lines.insert(end, f"      - {_yaml_value(JELLYFIN_METADATA)}")
+    return "\n".join(lines)
+
+
 def write(data_dir, built):
     path = folder(data_dir)
     os.makedirs(path, mode=0o700, exist_ok=True)
@@ -1115,6 +1178,11 @@ def write(data_dir, built):
         from . import noip
         noip.ensure_file(data_dir)  # Compose needs the file to exist; the updater waits for a DDNS key
     built = {**built, "compose": with_plugin_ports(built["compose"], plugin_vpn_ports(data_dir))[0]}  # plug-ins' ports stay
+    try:  # Jellyfin's /metadata stays as it was until its metadata is moved (DASH-431)
+        with open(os.path.join(path, "compose.yaml"), encoding="utf-8") as f:
+            built = {**built, "compose": metadata_as_before(f.read(), built["compose"])}
+    except OSError:
+        pass
     for name, text, mode in (("compose.yaml", built["compose"], 0o644), (".env", built["env"], 0o600)):
         target = os.path.join(path, name)
         if os.path.exists(target):
@@ -1443,6 +1511,9 @@ def _start(host_stack, env):
         f"mkdir -p {q(cfg)} {q(data)}",
         f"chown {int(env['PUID'])}:{int(env['PGID'])} {q(cfg)} {q(data)}",
         ffmpeg_wrap_script(cfg, int(env["PUID"]), int(env["PGID"])),
+        # DASH-431: Jellyfin's metadata folder, made and owned by PUID before Docker would make it as root
+        f"{{ grep -q {q('jellyfin-metadata:/metadata')} compose.yaml && mkdir -p {q(cfg + '/jellyfin-metadata')} "
+        f"&& chown {int(env['PUID'])}:{int(env['PGID'])} {q(cfg + '/jellyfin-metadata')} || true; }}",
         seed_script(cfg, data, int(env["PUID"]), int(env["PGID"])),
         f"docker compose -p {PROJECT} --env-file .env -f compose.yaml pull 2>&1 | tail -n 20",
         # --remove-orphans: an app taken out of compose.yaml (a smaller install, NZBGet in place of SABnzbd) stops and

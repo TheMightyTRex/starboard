@@ -713,6 +713,53 @@ def _png_logo(side=64):
             + chunk(b"IDAT", zlib.compress(rows, 9)) + chunk(b"IEND", b""))
 
 
+def _example_on_demand_zip(data_dir):
+    """Batch 0.19 (plug-in API 1.15): On demand added from a zip file (DASH-414), its container built from the zip, with
+    two Jellyfin libraries (DASH-430), so its page shows Update from a zip file and its libraries; Jellyfin's
+    metadata still in its settings folder (DASH-431), so Settings, Jellyfin offers to move it, and the move runs as
+    made-up steps; nothing is built, moved or started."""
+    from starboard import jellyfin_metadata, plugin_zip, plugins
+    if not any(p["id"] == "on-demand" for p in plugins_admin.listing(data_dir)):
+        m = {"manifest_version": 1, "author": "TheMightyTRexUK", "licence": "LicenseRef-Private", "starboard_api": ">=1.15 <2.0",
+             "id": "on-demand", "name": "On demand", "version": "0.9.2",
+             "description": "Films and series from your Stremio add-ons, in two Jellyfin libraries, played through your VPN.",
+             "homepage": "https://example.invalid/on-demand", "support_url": "https://example.invalid/on-demand/issues",
+             "permissions": ["network:vpn", "jellyfin:key", "jellyfin:libraries"], "needs": ["jellyfin", "gluetun"],
+             "containers": [{"name": "on-demand", "image": "local/on-demand:0.9.2", "build": True, "network": "vpn", "port": 7790,
+                             "user": "1000:1000", "volumes": ["data", "media/on-demand"]}],
+             "jellyfin_libraries": [{"name": "On demand Films", "type": "movies", "folder": "media/on-demand/films"},
+                                    {"name": "On demand TV", "type": "tvshows", "folder": "media/on-demand/tv"}]}
+        plugins_admin.install(data_dir, m, "/nonexistent-media")
+        where = plugins_admin.folder(data_dir, "on-demand")
+        os.makedirs(os.path.join(where, "zips"), mode=0o700, exist_ok=True)
+        st = plugins_admin._read(os.path.join(where, "state.json"), {})
+        st["libraries"] = {"items": [{"name": "On demand Films", "path": "/data/media/on-demand/films", "realtime_monitor": False},
+                                     {"name": "On demand TV", "path": "/data/media/on-demand/tv", "realtime_monitor": False}],
+                           "said": "Jellyfin has them as the plug-in wants"}
+        plugins_admin._write(os.path.join(where, "state.json"), st)
+    # The build never reaches Docker here: a made-up build with its steps, then the install as it really runs.
+    def fake_build(data_dir_, pid, manifest, path, say=None, deadline_seconds=None):
+        for line in ("Step 1/7 : FROM python:3.12-alpine", "Step 3/7 : RUN apk upgrade --no-cache", "Successfully tagged " + plugins.built_image(manifest)):
+            (say or (lambda x: None))(line)
+            time.sleep(0.4)
+        return ["Successfully tagged " + plugins.built_image(manifest)]
+    plugin_zip.build = fake_build
+    plugin_zip.ensure_images = lambda *a, **k: False
+    state = {"moved": False}
+    jellyfin_metadata.status = lambda data_dir_, name="jellyfin": {"moved": state["moved"], "can_move": not state["moved"], "why": "",
+                                                                   "where": "/metadata" if state["moved"] else "/config/data/metadata"}
+
+    def fake_move(data_dir_, services=None, name="jellyfin", project=None, helper=None, wait=None):
+        for k, _label in jellyfin_metadata.STEPS:
+            jellyfin_metadata._step(k, "working")
+            time.sleep(0.3)
+            jellyfin_metadata._step(k, "done", {"move": "About 14,312 MB in 150,525 folders, now in /srv/config/jellyfin-metadata"}.get(k, ""))
+        state["moved"] = True
+        return ["Jellyfin's pictures and details are in /srv/config/jellyfin-metadata, outside its settings folder",
+                "Jellyfin watches 2,074 folders; the computer allows 127,879, with no watcher errors in its log", "8 of 8 sampled posters load"]
+    jellyfin_metadata.move = fake_move
+
+
 def _example_picture_shrinker(data_dir):
     from starboard import plugin_cards, plugin_life, plugin_logo, plugin_watch
     plugins_admin.jellyfin_metadata_dir = lambda d: "/srv/media-stack/config/jellyfin-metadata"  # as Install apps sets it (DASH-431)
@@ -1539,6 +1586,7 @@ def main():
     _example_audio_description(str(DATA))
     _example_direct_play(str(DATA))
     _example_picture_shrinker(str(DATA))
+    _example_on_demand_zip(str(DATA))
     _example_plugin_update(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)

@@ -551,6 +551,15 @@ def after_takeover(app, password, p, sab_ini):
             requests_route.save(app.data_dir, route["choice"], applied, said)
             notes += said
         mark.done("dashboard")
+        if p["choice"].get("jellyfin_metadata") is False and any(t["key"] == "jellyfin" for t in p["take"]):
+            # DASH-431: the Jellyfin taken over keeps its metadata in its settings folder; it moves now, in the background
+            from . import jellyfin_metadata
+            try:
+                jellyfin_metadata.start(app.data_dir, app.config.data["services"])
+                notes.append("Starboard is moving Jellyfin's pictures and details out of its settings folder, so Jellyfin "
+                             "watches fewer folders. Jellyfin stops for a few minutes; see Settings, Jellyfin")
+            except ValueError as e:
+                notes.append(f"Jellyfin's pictures and details were not moved ({e}). Move them in Settings, Jellyfin")
         logs.event("info", "take over", "; ".join(notes) or "Took over your apps")
         return notes
     return finish
@@ -1556,6 +1565,8 @@ class Handler(BaseHTTPRequestHandler):
                     for line in out["done"]:
                         logs.event("info", "tdarr", line)
                     return self.json(200, out)
+                except LookupError as e:  # not installed (DASH-427)
+                    return self.error(404, str(e), reason="not_installed")
                 except ValueError as e:
                     return self.error(400, str(e))
                 except services.ServiceError as e:
@@ -1645,6 +1656,18 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/extras" and method == "GET":
                 return self.json(200, dict(app.jobs.status(), importing=app.importing, import_result=app.import_result,
                                            history=migrate.status(cfg.data_dir, cfg.data["services"])))
+            if path == "/api/jellyfin/metadata" and method == "GET":  # DASH-431: where its metadata is
+                from . import jellyfin_metadata
+                return self.json(200, {**jellyfin_metadata.status(cfg.data_dir), "job": jellyfin_metadata.job() or None})
+            if path == "/api/jellyfin/metadata/move" and method == "POST":  # DASH-431: out of its settings folder
+                from . import jellyfin_metadata
+                self.check_password(self.body())
+                logs.event("info", "jellyfin", "Moving Jellyfin's metadata out of its settings folder")
+                jellyfin_metadata.start(cfg.data_dir, cfg.data["services"])
+                return self.json(200, {"said": "Started", "job": "/api/jellyfin/metadata/job"})
+            if path == "/api/jellyfin/metadata/job" and method == "GET":
+                from . import jellyfin_metadata
+                return self.json(200, jellyfin_metadata.job())
             if path == "/api/jellyfin/plugins" and method == "GET":  # recommended Jellyfin plug-ins (DASH-404)
                 from . import jellyfin_plugins
                 return self.json(200, jellyfin_plugins.status(cfg.data["services"], cfg.data_dir, cfg.data))
@@ -2884,6 +2907,67 @@ class Handler(BaseHTTPRequestHandler):
             pa.keep_logo(app.data_dir, pid, pa.fetch_logo(pa.builtins()[pid], "builtin")[0])  # API 1.14
             logs.event("info", "plug-ins", f"Added {item['name']}, built into Starboard")
             return self.json(200, {"plugin": item, "plugins": pa.listing(app.data_dir)})
+        # A zip file (DASH-414, plug-in API 1.15): uploaded as it is, checked, shown with What it may do, then
+        # installed (with its container built from the zip's Dockerfile) after the password, in the background.
+        if path == "/api/plugins/zip" and method == "POST":
+            from . import plugin_zip
+            length = self.content_length()
+            if not 0 < length <= plugin_zip.MAX_ZIP:
+                self.close_connection = True
+                return self.error(400, "Choose a zip file up to 50 MB")
+            try:
+                token, _manifest, _report = plugin_zip.receive(app.data_dir, length, self.rfile)
+                self._body_read = True
+                return self.json(200, plugin_zip.preview(app.data_dir, token))
+            except plugin_zip.ZipProblem as e:
+                self._body_read = True
+                return self.error(400, str(e))
+        if path == "/api/plugins/zip/install" and method == "POST":
+            from . import plugin_zip
+            body = self.body()
+            self.check_password(body)
+
+            def after(item):
+                if item["id"] in pa.FROM_SETUP.values():  # chosen in the set-up and now added: no more offer (DASH-399)
+                    pa.drop_wanted(app.config, item["id"])
+            try:
+                j = plugin_zip.start_install(app.data_dir, str(body.get("zip") or ""), media, after)
+            except LookupError as e:
+                return self.error(404, str(e))
+            except plugin_zip.ZipProblem as e:
+                return self.error(400, str(e))
+            return self.json(200, {"said": "Started", "install": j, "job": f"/api/plugins/zip/jobs/{j['id']}"})
+        mz = re.match(r"^/api/plugins/zip/jobs/([0-9a-f]{12})$", path)
+        if mz and method == "GET":  # followed by the page's task dialog
+            from . import plugin_zip
+            j = plugin_zip.job(mz.group(1))
+            return self.json(200, j) if j else self.error(404, "No such install")
+        mzu = re.match(r"^/api/plugins/([a-z0-9-]{3,40})/update-zip$", path)
+        if mzu and method == "POST":  # Update from a zip file: the same update run, with a build step first
+            from . import plugin_zip, update_runs
+            body = self.body()
+            pid = mzu.group(1)
+            try:
+                if body.get("preview"):
+                    out = plugin_zip.preview(app.data_dir, str(body.get("zip") or ""))
+                    if out.get("id") != pid:
+                        return self.error(400, f"That zip is for another plug-in ({str(out.get('id'))[:40]})")
+                    from . import plugin_update
+                    old = pa._read(os.path.join(pa.folder(app.data_dir, pid), "manifest.json"), {}) or {}
+                    if not old:
+                        return self.error(404, "No plug-in with that id")
+                    new = plugin_zip.manifest_of(app.data_dir, str(body.get("zip") or ""))[0]
+                    return self.json(200, {**out, "new_permissions": plugin_life.new_permissions(old, new), "changelog": "",
+                                           "from": old.get("version"), **plugin_update.preview(old, new)})
+                self.check_password(body)
+                run = plugin_zip.start_update(app, pid, str(body.get("zip") or ""))
+            except LookupError as e:
+                return self.error(404, str(e))
+            except plugin_zip.ZipProblem as e:
+                return self.error(400, str(e))
+            except (update_runs.Refused, update_runs.Busy) as e:
+                return self.error(409, str(e))
+            return self.json(200, {"said": "Started", "run": update_runs.public(run), "job": f"/api/updates/runs/{run['id']}/job"})
         if path in ("/api/plugins/preview", "/api/plugins/add", "/api/plugins/test") and method == "POST":
             from . import plugin_tester
             body = self.body()
@@ -2894,6 +2978,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(404, "That plug-in has no version for this Starboard in the catalogue")
             manifest = (pa.parse(body["manifest"]) if body.get("manifest") else
                         pa.fetch_manifest(listed["manifest"], sha256=listed.get("sha256", "")) if listed else pa.fetch_manifest(body.get("address")))
+            from . import plugins as plugin_rules
+            if plugin_rules.builds(manifest) and not path.endswith("test"):  # API 1.15 (DASH-414): only from its zip
+                return self.error(400, f"{manifest.get('name', 'This plug-in')} builds its own container, so it comes as a zip file. "
+                                       "Use Upload a zip file instead")
             # Its logo (API 1.14, DASH-428), from beside the manifest's address; a pasted manifest has none to read.
             where_from = "" if body.get("manifest") else (listed["manifest"] if listed else str(body.get("address") or ""))
             logo, logo_why = pa.fetch_logo(manifest, where_from)
@@ -3009,7 +3097,8 @@ class Handler(BaseHTTPRequestHandler):
             body = self.body()
             self.check_password(body)
             hold = bool(body.get("holding"))  # API 1.13 (DASH-411): its folder straight on to the holding folder
-            pa.uninstall(app.data_dir, pid, to_holding=hold)
+            pa.uninstall(app.data_dir, pid, to_holding=hold, config=app.config)  # its Apps entry goes too (DASH-427)
+            services.forget()
             logs.event("info", "plug-ins", f"Removed {pid}; its folder is kept in " + ("the holding folder" if hold else "data/plugins/.removed"))
         elif what == "enable":
             pa.enable(app.data_dir, pid, services=app.config.data["services"])

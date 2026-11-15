@@ -334,6 +334,9 @@ def _start_plugin(app, pid, by, address):
     problems = plugins.check(manifest)
     if problems:
         raise ValueError("This version cannot be used: " + "; ".join(problems[:6]))
+    if plugins.builds(manifest):  # API 1.15 (DASH-414): its image is built from its zip, so the zip is the way
+        raise Refused(f"{p['name']} {manifest.get('version')} builds its own container, so it comes as a zip file. "
+                      "Use Update from a zip file on its page")
     logo = pa.fetch_logo(manifest, source)[0]  # its logo goes with the version (API 1.14); Roll back brings the old one back
     run = _new(app.data_dir, f"plugin:{pid}", "plugin", p["name"], "update", p.get("version"), manifest.get("version"), by,
                plugin_update.STEPS)

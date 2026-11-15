@@ -72,6 +72,12 @@ On the **Catalogue** page, under **Add one from elsewhere**, paste the address o
 `starboard-plugin.json` into **The plug-in's manifest address**, or choose the file in **Or its manifest file**.
 Select **See what it does**, read the test results, then select **Install** and its name. Carry on from step 3.
 
+### From a zip file
+
+A private plug-in, such as On demand, comes as a zip file instead of an address. On the **Catalogue** page, under
+**Upload a zip file**, choose the zip and select **Check the zip**. Read
+[Add a plug-in from a zip file](add-a-plugin-from-a-zip-file.md).
+
 ### With the plug-in's own installer
 
 Some plug-ins come with an installer. Run it on any computer with Python, such as `python3 install.py`, and enter
@@ -109,6 +115,7 @@ how to fix it. Accessibility is always tested: every style in light and dark, an
 
 ## Find out more
 
+- [Add a plug-in from a zip file](add-a-plugin-from-a-zip-file.md)
 - [Write a plug-in](../basics/write-a-plugin.md)
 - [What a plug-in can change](../basics/what-plugins-can-change.md)
 - [The plug-in collection](../basics/plugin-collection.md)

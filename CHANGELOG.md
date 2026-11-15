@@ -22,6 +22,13 @@ add features.
 - **The Docker helper image:** Starboard downloads its pinned Docker helper image when it is missing, such as after unused images were removed, before it starts or updates apps or plug-ins, makes backups or looks in folders. If it cannot, it says so plainly: check that this computer can reach Docker Hub, then try again. Before, activating a plug-in could fail with "No such image". (DASH-438)
 - **Plug-in buttons that ask first:** A plug-in button with a confirm, such as Line speed's Test now, asks first in the standard confirm box, which starts on Cancel; Escape cancels. Before, the question was never asked. (DASH-441)
 - **Plug-in list settings:** A list setting, such as Outside services' Addresses to check or Home Assistant's What to show, is a box with one value a line, saved as a list. Before, it was a one-line box and saving said "give a list". (DASH-441)
+- **Plug-ins from a zip file:** Settings, Plug-ins, Catalogue has Upload a zip file, for a private plug-in with no address such as On demand. Starboard checks the zip (up to 50 MB, starboard-plugin.json at the top, no links or names outside it), shows what the plug-in may do and asks for your password, then builds its container from the zip's Dockerfile with limits (2 GB of memory, 2 processor cores, 20 minutes) and installs it, step by step. Its page has Update from a zip file; Roll back works as for any plug-in. (DASH-414)
+- **Plug-in API 1.15:** `build` on a container, for an image Starboard builds from the plug-in's zip file (`local/<id>:<version>`), and `jellyfin_libraries` with the `jellyfin:libraries` permission, for Jellyfin libraries a plug-in fills, added with real-time monitoring deactivated unless the plug-in needs it and kept that way on every start and update. (DASH-414, DASH-430)
+- **Jellyfin's pictures and details outside its settings folder:** New installs give Jellyfin a /metadata folder (jellyfin-metadata beside its settings) and set it at set-up, so Jellyfin watches far fewer folders. Settings, Jellyfin has Pictures and details, which moves an older install's the same way, with a link at the old address so every picture still shows and a count of Jellyfin's folder watches afterwards; it also runs after Starboard takes Jellyfin over. (DASH-431)
+- **Help:** a new topic, Add a plug-in from a zip file; and for developers, Built from a zip file and Jellyfin libraries in the manifest reference, with the AI prompts. (DASH-414, DASH-430)
+
+### Fixed
+- **Removing an app plug-in:** its entry on Apps goes with it (the one it added, or the app it took over), and Settings, Tdarr says Tdarr is not installed, with a link to add its plug-in, instead of offering to connect it. (DASH-427)
 
 ## [0.18.0] (15 November 2026)
 

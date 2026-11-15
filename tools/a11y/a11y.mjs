@@ -133,7 +133,7 @@ const ALL = pages.length ? pages : fs.readdirSync(process.env.WEB || "/web").fil
   .concat(["settings-plugin.html?id=styles", "settings-plugin.html?id=watch-stats", "settings-plugin.html?id=notifications",
     "settings-plugin.html?id=audio-description-sources", "settings-plugin.html?id=audio-description-tracks",
     "settings-plugin.html?id=jellystat", "settings-plugin.html?id=tdarr", "settings-plugin.html?id=direct-play",
-    "settings-plugin.html?id=picture-shrinker"]);  // a PNG logo and a schedule setting (plug-in API 1.14)  // Direct play (DASH-425)  // app plug-ins (DASH-411)  // links on rows and a file-only upload (DASH-410)  // read-only tables (DASH-402), settings in sections with secrets (DASH-401)
+    "settings-plugin.html?id=picture-shrinker", "settings-plugin.html?id=on-demand"]);  // built from a zip, with Jellyfin libraries (plug-in API 1.15)  // a PNG logo and a schedule setting (plug-in API 1.14)  // Direct play (DASH-425)  // app plug-ins (DASH-411)  // links on rows and a file-only upload (DASH-410)  // read-only tables (DASH-402), settings in sections with secrets (DASH-401)
 for (const name of ALL) {
   try {
     await page.goto(`${base}/${name}`);

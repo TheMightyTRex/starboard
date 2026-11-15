@@ -25,6 +25,13 @@ async function tdDraw(said, box = $("#tdarr-sections"), inPlugin = false) {
   let s;
   try { s = await api("/api/tdarr"); }
   catch (e) {
+    // Not installed (DASH-427): no Tdarr on Apps, for instance after its plug-in was removed. Offer the plug-in.
+    if (e.data?.reason === "not_installed") {
+      box.removeAttribute("aria-busy");
+      const add = el("a", { class: "btn btn--primary", href: "/settings-plugins-catalogue.html" }, icon("plus"), "Add the Tdarr plug-in");
+      box.replaceChildren(tdNotice("info", "Tdarr is not installed", "Starboard has no Tdarr on Apps, so there is nothing to set here. Add the Tdarr plug-in from the Catalogue to install it again.", add));
+      return;
+    }
     // No key yet: Starboard gives Tdarr one (Tdarr restarts once), so nobody signs in to Tdarr.
     const go = el("button", { type: "button", class: "btn btn--primary" }, icon("link"), "Connect Tdarr");
     go.addEventListener("click", async () => {

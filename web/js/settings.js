@@ -2093,6 +2093,8 @@ async function startJellyfin() {
 
   const plugins = el("div", { class: "stack-4", "aria-busy": "true", id: "jf-plugins-list" }, el("p", { class: "muted", text: "Asking Jellyfin…" }));
   drawJellyfinPlugins(plugins);
+  const metadataBox = el("div", { class: "stack-4", "aria-busy": "true" }, el("p", { class: "muted", text: "Loading…" }));
+  drawJellyfinMetadata(metadataBox);
 
   root.removeAttribute("aria-busy");
   root.replaceChildren(...[
@@ -2107,10 +2109,45 @@ async function startJellyfin() {
       el("div", { class: "actions" }, jobRun(jobs.import), h.accounts.length ? runNow("import", "Apply", "Apply now") : null)),
     missing,
     section("jf-plugins", "Recommended plug-ins", "Skip intros and credits, play statistics, one item for each film with several versions, and Trakt. Installed and set up through Jellyfin, one choice each.", plugins),
+    section("jf-metadata", "Pictures and details", "Where Jellyfin keeps the posters, photos and details it saves.", metadataBox),
     section("jf-defaults", "User defaults", null, defaultRows, el("div", { class: "actions" }, jobRun(df), runNow("defaults", "Defaults"))),
     users.length ? section("jf-you", "Your Jellyfin user",
       "The Library shows what this Jellyfin user has watched, and Mark as watched changes it for them.", whose) : null,
   ].filter(Boolean));
+}
+
+// Jellyfin's metadata outside its settings folder (DASH-431): new installs have it there already; an install made
+// before moves on request, with the password, in a task dialog (Jellyfin stops for a few minutes; nothing is deleted).
+async function drawJellyfinMetadata(holder) {
+  let d;
+  try { d = await api("/api/jellyfin/metadata"); } catch (e) { holder.replaceChildren(notice("danger", "Could not read where Jellyfin keeps them", e.message)); return; }
+  holder.removeAttribute("aria-busy");
+  if (d.moved) {
+    holder.replaceChildren(el("p", { text: "Outside its settings folder, in /metadata (the jellyfin-metadata folder beside its settings), so Jellyfin watches fewer folders and new files in Films and TV show without a scan." }));
+    return;
+  }
+  if (!d.can_move) {
+    holder.replaceChildren(el("p", { class: "small muted", text: `In its settings folder. ${d.why}, so Starboard cannot move them.` }));
+    return;
+  }
+  const go = el("button", { type: "button", class: "btn" }, icon("folder-input"), "Move them out of the settings folder…");
+  go.addEventListener("click", async () => {
+    const pw = el("input", { class: "input", type: "password", id: "jf-metadata-pw", autocomplete: "current-password" });
+    const ok = await confirmDialog({ title: "Move Jellyfin's pictures and details?", confirm: "Move them",
+      message: "Jellyfin stops for a few minutes while they move to the jellyfin-metadata folder beside its settings, then starts again. A link stays at the old address, so every picture still shows. Nothing is deleted.",
+      fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+    if (!ok) return;
+    try {
+      const r = await api("/api/jellyfin/metadata/move", { method: "POST", body: { password: pw.value } });
+      const job = taskJob({ title: "Moving Jellyfin's pictures and details", url: r.job, failedWord: "Stopped here", returnTo: "jf-metadata-h" });
+      job.open();
+      await job.follow((x) => ({ title: x.title, text: x.text }));
+      drawJellyfinMetadata(holder);
+    } catch (err) { problem(err.message, go); }
+  });
+  holder.replaceChildren(
+    el("p", { text: "In its settings folder, which Jellyfin watches. On a large library that uses up the computer's folder watches, and new files in Films and TV may not show until a scan." }),
+    el("div", { class: "actions" }, go));
 }
 
 // Recommended Jellyfin plug-ins (DASH-404): one choice each, installed and set up through Jellyfin's own API. The

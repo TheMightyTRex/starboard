@@ -80,6 +80,19 @@ Rules:
 - If it runs a job when people choose, use a setting of type "schedule" and name it in the job's
   "schedule".
 
+- If it changes Jellyfin's posters, photos or details, ask for "jellyfin:metadata", mount
+  "jellyfin-metadata" (or "jellyfin-metadata:ro" to only read) at /metadata, run as "user": "media", and
+  check each file before it replaces the one Jellyfin saved.
+- If it fills folders that Jellyfin shows as libraries, ask for "jellyfin:libraries" and name each library
+  in "jellyfin_libraries" (name, type and a folder inside a media folder it mounts). Leave out
+  "realtime_monitor" unless Jellyfin must notice files the plug-in does not tell it about: Starboard keeps
+  real-time monitoring deactivated, so the plug-in must ask Jellyfin to refresh the library after it adds
+  files.
+- If I will share it only as a zip file (a private plug-in), mark the container "build": true with the
+  image "local/<id>:<version>", and keep the Dockerfile to the rules in "Built from a zip file" in the
+  manifest reference: no "# syntax=" line, no RUN --mount, ADD only from the zip, FROM with a full image
+  name.
+- Set starboard_api to the lowest plug-in API version that has every field it uses.
 Then follow this checklist and say, for each line, what you did:
 1. Permissions: the fewest that work, each explained in one sentence.
 2. Memory limits: the smallest "resources" that work, within 512 MB and 1.0 core; "when_needed" if only
@@ -91,7 +104,8 @@ Then follow this checklist and say, for each line, what you did:
 5. Card refresh times: the card reads a file; refresh_seconds only for progress.
 6. Content rules: British English, sentence case, no em dashes, no contractions, no exclamation marks;
    settings are activated or deactivated.
-Use an image tag for now, and tell me how to pin it by digest before I share it.
+Use an image tag for now (unless it is a zip file), and tell me how to pin it by digest before I share it.
+After the files, list each permission, network and folder it asks for, in plain words.
 
 The pages:
 [paste the three pages here]
