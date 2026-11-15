@@ -180,7 +180,9 @@ def _helper(script, binds, image=None, network="none", volumes=(), timeout=7200)
     """A short-lived helper container (the backup helper, or rclone's image for a cloud remote): (exit code, output)."""
     from . import containers
     image = image or containers.HELPER_IMAGE
-    if image == RCLONE_IMAGE:
+    if image == containers.HELPER_IMAGE:
+        containers.ensure_image()  # DASH-438: downloaded first if it is missing
+    elif image == RCLONE_IMAGE:
         try:
             containers.docker("POST", f"/images/create?fromImage={RCLONE_IMAGE.split('@')[0].split(':')[0]}&tag={RCLONE_IMAGE.split('@')[1]}", raw=True, timeout=600)
         except containers.DockerError:

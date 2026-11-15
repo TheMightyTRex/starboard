@@ -112,6 +112,10 @@ def _via_helper(path, run=None):
             "HostConfig": {"Mounts": [{"Type": "bind", "Source": root, "Target": "/r", "ReadOnly": True}],
                            "NetworkMode": "none"}}
     try:
+        containers.ensure_image()  # DASH-438: downloaded first if a tidy removed it
+    except containers.DockerError as e:
+        return {"exists": None, "folders": [], "why": str(e)}
+    try:
         cid = containers.docker("POST", f"/containers/create?name=starboard-updater-look-{os.getpid()}-{abs(hash(path)) % 10 ** 8}", body)["Id"]
     except containers.DockerError:
         return {"exists": None, "folders": [], "why": f"Starboard cannot look in {root} on this computer."}

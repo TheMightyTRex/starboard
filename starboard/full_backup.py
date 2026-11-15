@@ -204,6 +204,7 @@ class Opened(io.RawIOBase):
 def _helper(script, binds, timeout=7200):
     """Runs a script in the helper image with only the given folders and no network; (exit code, output)."""
     from . import containers
+    containers.ensure_image()  # DASH-438: downloaded first if it is missing
     body = {"Image": containers.HELPER_IMAGE, "Cmd": ["sh", "-c", script], "Labels": {"starboard.updater": "1"},
             "HostConfig": {"Binds": list(binds), "NetworkMode": "none"}}
     cid = containers.docker("POST", f"/containers/create?name=starboard-backup-{int(time.time() * 1000)}", body)["Id"]

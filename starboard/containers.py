@@ -43,6 +43,11 @@ class DockerError(Exception):
     pass
 
 
+class ImageMissing(DockerError):
+    """An image Starboard runs itself is not on this computer and could not be downloaded (DASH-438). Its words are
+    for the owner as they are."""
+
+
 def socket_path():
     return os.environ.get("STARBOARD_DOCKER", "/var/run/docker.sock")
 
@@ -498,9 +503,41 @@ def _quote(text):
     return "'" + text.replace("'", "'\\''") + "'"
 
 
+HELPER_MISSING = ("Starboard could not download its Docker helper image (docker:27-cli, about 70 MB), which it needs to "
+                  "start apps and plug-ins and to install updates. Check that this computer can reach Docker Hub, then try again")
+
+
+def ensure_image(ref=None, timeout=600):
+    """Makes sure an image Starboard runs itself is on this computer: the pinned helper by default (DASH-438: a tidy
+    of unused images can remove it while nothing runs on it). One local check when it is there; a download when it is
+    not. Returns True when it was downloaded. Raises DockerError in words for the owner when it cannot be."""
+    ref = ref or HELPER_IMAGE
+    where = f"/images/{urllib.parse.quote(ref, safe='')}/json"
+    try:
+        docker("GET", where)
+        return False
+    except DockerError as e:
+        if "404" not in str(e):
+            raise
+    said = ""
+    try:
+        # Docker answers 200 and puts a failure in the stream, so the stream is read for "error".
+        out = docker("POST", f"/images/create?fromImage={urllib.parse.quote(ref, safe='')}", raw=True, timeout=timeout)
+        found = re.findall(rb'"error"\s*:\s*"([^"]*)"', out or b"")
+        said = found[-1].decode("utf-8", "replace") if found else ""
+        docker("GET", where)
+        return True
+    except DockerError as e:
+        said = said or str(e)
+    message = (HELPER_MISSING if ref == HELPER_IMAGE else
+               f"Starboard could not download the image {ref.split('@')[0]}. Check that this computer can reach its registry, then try again")
+    raise ImageMissing(f"{message}. Docker said: {said[:200]}" if said else message)
+
+
 def _helper(folder, script, extra_binds=()):
     """Runs a shell script in a short-lived docker:cli container that can see the project folder (and, for
-    Install apps, the settings and media folders it makes)."""
+    Install apps, the settings and media folders it makes). The helper image is downloaded first if it is missing."""
+    ensure_image()
     body = {"Image": HELPER_IMAGE, "Cmd": ["sh", "-c", script], "WorkingDir": folder, "Labels": {"starboard.updater": "1"},
             "HostConfig": {"Binds": ["/var/run/docker.sock:/var/run/docker.sock", f"{folder}:{folder}", *extra_binds]}}
     cid = docker("POST", f"/containers/create?name=starboard-updater-{int(time.time() * 1000)}", body)["Id"]
@@ -648,10 +685,7 @@ def update(services, ids, keep_old=False):
             raise ValueError("An update is already running. Wait for it to finish")
         _state["job"] = {"started": time.time(), "finished": False, "log": "",
                          "items": {n: {"phase": "queued", "pct": 0} for n in names}}
-    try:
-        docker("POST", f"/images/create?fromImage={urllib.parse.quote(HELPER_IMAGE, safe='')}", raw=True, timeout=300)
-    except DockerError:
-        pass  # the helper may already be here
+    # The helper image is downloaded by _helper if it is missing (DASH-438); a failure shows in the job's log.
     threading.Thread(target=_run, args=(names, keep_old), name="updates", daemon=True).start()
     return apps(services)
 
