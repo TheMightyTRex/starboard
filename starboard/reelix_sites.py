@@ -215,6 +215,20 @@ def set_vpn(reelix, data_dir, on):
     return "Reelix searches through the VPN" if on else "Reelix searches from this computer's own address"
 
 
+def follow_vpn(reelix, data_dir, on):
+    """After Settings, Downloads added or removed the VPN (DASH-440): searches go through it when there is one, as
+    after the set-up, and FlareSolverr's address follows where it now runs. Returns lines."""
+    done = [set_vpn(reelix, data_dir, on)]
+    if not on:
+        _, s = reelix.call("GET", "/settings/indexers")
+        s = dict(s or {})
+        if str(s.get("flaresolverr_url") or "").startswith("http://gluetun"):
+            s["flaresolverr_url"] = flaresolverr_url(data_dir)
+            reelix.call("PUT", "/settings/indexers", s)
+            done.append("Reelix reaches FlareSolverr by its own name")
+    return done
+
+
 # Jellyfin and Audiobookshelf ------------------------------------------------------------------------------------
 
 def _key_of(services, kind):

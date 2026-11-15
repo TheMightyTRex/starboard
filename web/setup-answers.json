@@ -50,10 +50,31 @@
  },
  "novpn": {
   "title": "Torrents without a VPN",
-  "text": "Without a VPN, your internet provider can see what qBittorrent downloads, and everyone sharing the same torrent can see your home's internet address. A VPN hides both. Usenet apps use encrypted connections, so this matters less for them.",
+  "text": "Without a VPN, other people sharing the same torrents can see your home internet address, and your internet provider can see what you download. Usenet over SSL hides what you download from your internet provider, but your Usenet provider still sees it.",
   "back": "Go back and add a VPN (recommended)",
   "carry_on": "Carry on without one",
-  "browser": "Tick VPN to add one, or choose Continue again to carry on without one."
+  "browser": "Tick VPN to add one, or choose Continue again to carry on without one.",
+  "question": "How should your downloads connect?",
+  "use": "Use my VPN account (recommended)",
+  "use_about": "Downloads go through your VPN, so your internet provider and other people sharing torrents see only the VPN.",
+  "without": "Continue without a VPN",
+  "without_about": "Downloads use your home internet address. You can add a VPN later in Settings, Downloads, VPN.",
+  "warning_title": "Download without a VPN?",
+  "warning": [
+   "Without a VPN, other people sharing the same torrents can see your home internet address, and your internet provider can see what you download.",
+   "Where downloading something is not allowed, this can lead to warning letters from your internet provider or to legal action.",
+   "Usenet over SSL hides what you download from your internet provider, but your Usenet provider still sees it.",
+   "You can add a VPN later in Settings, Downloads, VPN."
+  ],
+  "confirm": "I understand, continue without a VPN",
+  "cancel": "Cancel",
+  "remove_title": "Remove the VPN?",
+  "remove_confirm": "I understand, remove the VPN",
+  "chosen": "You chose to download without a VPN.",
+  "reminder_title": "Downloading without a VPN",
+  "reminder": "Your internet provider and other people sharing torrents can see your home internet address and what you download.",
+  "add": "Add a VPN",
+  "hide": "Hide for 90 days"
  },
  "docker": {
   "intro": "Starboard can start, update and change your apps itself, and move the apps you already run, if it can use Docker. Docker access is full control of Docker, and so of this computer, so anyone who can sign in to Starboard could use it. Keep your Starboard password safe.",

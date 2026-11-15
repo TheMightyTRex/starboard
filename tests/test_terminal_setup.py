@@ -88,7 +88,7 @@ class TerminalSetupTest(unittest.TestCase):
         # provider, WireGuard, any country, the address; Usenet: no provider yet, Enter; Sites to search: none, no address
         # of your own; Films and series: no TMDB key (hidden), English; then write, extras, hours, Docker access (No),
         # alerts, health, preset
-        typed = ["", "", "", media, "", "", "5", "", "", "192.168.1.20/32", "", "", "", "", "", "", "y", "", "", "", "", "", "", "", ""]
+        typed = ["", "", "", media, "", "", "", "5", "", "", "192.168.1.20/32", "", "", "", "", "", "", "y", "", "", "", "", "", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key", ""])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -157,7 +157,7 @@ class TerminalSetupTest(unittest.TestCase):
     def test_vpn_details_are_asked_and_kept_out_of_the_screen(self):
         media, settings = os.path.join(self.tmp.name, "media"), os.path.join(self.tmp.name, "config")
         # Downloads and VPN only, every default app; Proton VPN over WireGuard.
-        typed = ["", "", "", media, "4", "9,10", "", "5", "1", "", "192.168.1.20/32", "", "", "", "y", "2", "", "", "", ""]
+        typed = ["", "", "", media, "4", "9,10", "", "", "5", "1", "", "192.168.1.20/32", "", "", "", "y", "2", "", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         self.assertEqual(terminal_setup.run(self.api, term, self.tmp.name, self.port), 0)
         text = out.getvalue()
@@ -216,11 +216,11 @@ class TerminalSetupTest(unittest.TestCase):
         # Step 2 with Downloads and VPN; step 3 with Surfshark over WireGuard; then back from the check to step 3,
         # where Enter keeps every answer, including the hidden key; then on.
         typed = ["", "", "", media, "4", "9,10", "",     # name, start, storage and folder, Let me choose, the apps
-                 "6", "", "", "192.168.1.20/32",            # step 3: Surfshark, WireGuard, any country, the address
+                 "", "6", "", "", "192.168.1.20/32",        # step 3: use my VPN (DASH-440), Surfshark, WireGuard, any country, the address
                  "", "",                                      # Usenet (NZBGet comes with Downloads): no provider, Enter
                  "",                                          # How much it does, before the check (DASH-265)
                  "b", "b", "b",                               # the check: back to it, to Usenet, then to the VPN
-                 "", "", "", "",                              # step 3 again: every answer kept with Enter
+                 "", "", "", "", "",                          # step 3 again: every answer kept with Enter
                  "", "",                                      # Usenet again
                  "",                                          # How much it does again
                  "y", "2", "", "", "", ""]                    # write, any time, no automatic updates, no alerts, health, no Docker access
@@ -355,7 +355,7 @@ class TerminalSetupTest(unittest.TestCase):
                  "Mail me at sam@example.org, token=abc123def456")
         # Downloads and VPN (Proton over WireGuard), then f at the check: Something is broken, the words, skip the
         # second question, save to a file; then write and downloads at any time.
-        typed = ["", "", "", media, "4", "9,10", "", "5", "1", "Netherlands", "192.168.1.20/32", "", "", "",
+        typed = ["", "", "", media, "4", "9,10", "", "", "5", "1", "Netherlands", "192.168.1.20/32", "", "", "",
                  "f", "1", words, "", "1", "y", "2", "", "", "", ""]
         term, out = self.term(typed, [SIGN_IN_WORDS, SIGN_IN_WORDS, "secret-wireguard-key"])
         term.save_dir = self.tmp.name

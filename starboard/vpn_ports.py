@@ -34,3 +34,20 @@ def sync(cfg):
     services.qbit(qbit, "app/setPreferences", {"json": json.dumps({"listen_port": port, "random_port": False})})
     logs.event("info", "vpn", f"qBittorrent now listens on the VPN's forwarded port, {port}")
     return f"qBittorrent now listens on the forwarded port, {port} (was {now})"
+
+
+HOME_PORT = 6881  # qBittorrent's own listening port, published on its container when there is no VPN
+
+
+def listen_at_home(cfg):
+    """After the VPN was removed (DASH-440): qBittorrent listens on its own published port again, not on the port the
+    VPN forwarded, so other people in a torrent can still reach it. Returns what it did, in words."""
+    _, qbit = apps(cfg)
+    if not qbit:
+        return "qBittorrent is not set up with its key, so its listening port is as it was"
+    now = (services.qbit(qbit, "app/preferences") or {}).get("listen_port")
+    if now == HOME_PORT:
+        return f"qBittorrent listens on port {HOME_PORT}"
+    services.qbit(qbit, "app/setPreferences", {"json": json.dumps({"listen_port": HOME_PORT, "random_port": False})})
+    logs.event("info", "vpn", f"qBittorrent listens on port {HOME_PORT} again, without the VPN")
+    return f"qBittorrent listens on port {HOME_PORT} again (was {now})"

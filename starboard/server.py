@@ -634,6 +634,8 @@ def after_install_change(app, password, plan, sab_ini, by_installer=None, sab_fr
                     notes.append("Add your Usenet servers in SABnzbd, Config, Servers: they are not moved from NZBGet")
             except (reelix_setup.ReelixError, OSError, ValueError) as e:
                 notes.append(f"Switching the Usenet app is not finished: {e}")
+        if "gluetun" in plan["add"] or "gluetun" in plan["remove"]:
+            notes += follow_vpn(app, password, "gluetun" in plan["choice"]["apps"], plan)
         if "dispatcharr" in plan["add"] and password:  # an add-on (DASH-228): its admin and a key for Starboard
             from . import app_setup
             notes += app_setup.dispatcharr_first_run(cfg, app.data_dir, password)
@@ -643,6 +645,29 @@ def after_install_change(app, password, plan, sab_ini, by_installer=None, sab_fr
         with open(os.path.join(stack.folder(app.data_dir), "change-result.json"), "w", encoding="utf-8") as f:
             json.dump({"notes": notes, "finished": time.time()}, f)
     threading.Thread(target=run, name="install-change", daemon=True).start()
+
+
+def follow_vpn(app, password, on, plan):
+    """Once a VPN was added or removed in Settings, Downloads, VPN (DASH-440): Reelix reaches the download apps at
+    gluetun or by their own names, its searches go through the VPN or not, and without one qBittorrent listens on
+    its own published port again. Returns notes; nothing here stops the change."""
+    from . import download_repair, reelix_sites, vpn_ports
+    notes = []
+    if "reelix" in plan["choice"]["apps"]:
+        try:
+            base = reelix_admin.base_url(app.data_dir, app.config.data["services"])
+            with reelix_admin.Visit(base, password) as reelix:
+                notes += download_repair.repair(reelix, app.data_dir)
+                notes += reelix_sites.follow_vpn(reelix, app.data_dir, on)
+        except (reelix_admin.WrongPassword, reelix_setup.ReelixError, OSError, ValueError) as e:
+            notes.append(f"Reelix's download apps are not changed yet ({e}). Use Repair in Settings, Reelix, Download apps")
+    if not on:
+        try:
+            notes.append(vpn_ports.listen_at_home(app.config))
+        except (OSError, ValueError) as e:
+            notes.append(f"qBittorrent's listening port is as it was ({e})")
+    app.jobs.ensure()  # VPN port forwarding runs only while there is a VPN that forwards a port
+    return notes
 
 
 def resume_adopting(app):
@@ -1178,7 +1203,7 @@ class Handler(BaseHTTPRequestHandler):
             Handler._upgrade = {"key": key, "value": {"from": p["from"], "to": p["to"], "wizard": p["wizard"], "count": len(p["review"])}}
         return Handler._upgrade["value"]
 
-    CHANGES_STACK = {"/api/install/change", "/api/downloads/vpn", "/api/noip", "/api/stack/write", "/api/stack/start", "/api/reelix/edition",
+    CHANGES_STACK = {"/api/install/change", "/api/downloads/vpn", "/api/downloads/vpn/remove", "/api/noip", "/api/stack/write", "/api/stack/start", "/api/reelix/edition",
                      "/api/takeover/start", "/api/takeover/rollback", "/api/takeover/clear", "/api/takeover/clear-away"}
 
     def api(self, method, path):
@@ -1868,7 +1893,8 @@ class Handler(BaseHTTPRequestHandler):
                 except (reelix_setup.ReelixError, OSError, ValueError):
                     servers = []
                 return self.json(200, {"vpn": {"on": "gluetun" in keys, "provider": vpn.get("provider", ""), "type": vpn.get("type", "wireguard"),
-                                               "countries": vpn.get("countries", ""), "has_secret": bool(vpn.get("wireguard_private_key") or vpn.get("openvpn_password"))},
+                                               "countries": vpn.get("countries", ""), "has_secret": bool(vpn.get("wireguard_private_key") or vpn.get("openvpn_password")),
+                                               "state": stack.vpn_state(app.data_dir)},
                                        "usenet": {"app": {"nzbget": "NZBGet", "sabnzbd": "SABnzbd"}.get(usenet, ""), "servers": servers},
                                        "docker": containers.available()})
             if path == "/api/downloads/usenet" and method == "POST":
@@ -1893,12 +1919,34 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError:
                     return self.json(200, {"started": None, "command": "cd ~/starboard && ./install.sh --start-apps",
                                            "said": "Saved. Run the command on the server to start the updater with it"})
+            if path == "/api/downloads/vpn-state" and method == "GET":
+                # DASH-440: whether downloads go through a VPN, for Downloads and the dashboard's VPN card. No secrets.
+                return self.json(200, stack.vpn_state(app.data_dir))
+            if path == "/api/downloads/vpn-reminder" and method == "POST":
+                # "Downloading without a VPN", hidden for 90 days (DASH-440). Starboard has one account.
+                until = stack.hide_vpn_reminder(app.data_dir)
+                logs.event("info", "downloads", "Hid the reminder about downloading without a VPN for 90 days")
+                return self.json(200, {**stack.vpn_state(app.data_dir), "hidden_until": until})
+            if path == "/api/downloads/vpn/remove" and method == "POST":
+                # DASH-440: take the VPN away after the same warning as the set-ups. qBittorrent then runs on its own
+                # network with its own ports, and Reelix reaches the download apps by their names.
+                body = self.body()
+                self.check_password(body)
+                if body.get("understood") is not True:
+                    raise ValueError("Confirm that you understand what downloading without a VPN means")
+                plan = stack.plan_vpn(app.data_dir, False)
+                return self.change_vpn(plan, body.get("password", ""), "Removed the VPN: downloads use your home internet address")
             if path == "/api/downloads/vpn" and method == "POST":
                 # New VPN details: written into the set-up files, then Gluetun is started again with them. A key or
-                # password left empty keeps the one there is.
+                # password left empty keeps the one there is. With no VPN yet (DASH-440), Gluetun is added with the
+                # details, checked as the set-ups check them, and the download apps move behind it.
                 body = self.body()
                 self.check_password(body)
                 choice = stack.current_choice(app.data_dir)
+                if choice and "gluetun" not in (choice.get("apps") or []):
+                    typed = {k: str(v).strip() for k, v in (body.get("vpn") or {}).items() if k in stack.VPN_ENV.values()}
+                    plan = stack.plan_vpn(app.data_dir, True, typed)
+                    return self.change_vpn(plan, body.get("password", ""), f"Added a VPN ({typed.get('provider', '')})")
                 if not choice or "gluetun" not in (choice.get("apps") or []):
                     raise ValueError("Your install has no VPN. Add one in Settings, Your install")
                 old = choice.get("vpn") or {}
@@ -2023,6 +2071,11 @@ class Handler(BaseHTTPRequestHandler):
                 if own:
                     built = {**built, "compose": built["compose"].rstrip() + "\n" + "".join(own)}
                 stack.write(app.data_dir, built)
+                keys = set(stack.chosen_keys(app.data_dir) or [])
+                if keys & set(stack.DOWNLOAD_APPS):  # DASH-440: with a VPN, or without one after the warning
+                    stack.record_vpn_choice(app.data_dir, "gluetun" in keys, str(choice.get("from") or "browser"))
+                    if "gluetun" not in keys:
+                        logs.event("info", "install apps", "Chose to download without a VPN, after the warning")
                 stack.note_reelix(app.data_dir, choice, built)  # what the Reelix set-up needs once the apps run
                 setup_answers.save_usenet(app.data_dir, choice.get("usenet_server"))  # written into the Usenet app once it runs
                 host = stack.host_folder(app.data_dir)
@@ -3149,6 +3202,31 @@ class Handler(BaseHTTPRequestHandler):
         app.plugin_clock.ensure()  # jobs start or stop with their plug-in
         app.plugin_idle.ensure()  # and idle stop with a when_needed one (DASH-357)
         return self.json(200, {"plugins": pa.listing(app.data_dir)})
+
+    def change_vpn(self, plan, password, said):
+        """Writes the set-up file with the VPN added or taken away (DASH-440), records the choice, and starts the apps;
+        Reelix and qBittorrent follow once they run (follow_vpn). Answers the request."""
+        app = self.app
+        job = stack.job()
+        if job and not job.get("finished"):
+            raise ValueError("The apps are already starting. Wait until they finish, then change the VPN")
+        built = stack.build(plan["choice"])  # the same checks as the set-ups: provider, connection, key or password
+        if plan["own"]:
+            built = {**built, "compose": built["compose"].rstrip() + "\n" + "".join(plan["own"])}
+        stack.write(app.data_dir, built)
+        on = "gluetun" in plan["choice"]["apps"]
+        stack.record_vpn_choice(app.data_dir, on, "settings")
+        logs.event("info", "downloads", said)
+        try:
+            started = self.start_stack()
+        except ValueError:
+            after_install_change(app, password, plan, None, by_installer=time.time())
+            return self.json(200, {"started": None, "command": "cd ~/starboard && ./install.sh --start-apps", "vpn": on,
+                                   "add": plan["add"], "remove": plan["remove"],
+                                   "said": "Saved. Run the command on the server to start the apps with the change"})
+        after_install_change(app, password, plan, None)
+        return self.json(200, {"started": started, "vpn": on, "add": plan["add"], "remove": plan["remove"],
+                               "said": "Saved. The apps are starting again " + ("behind the VPN" if on else "without the VPN")})
 
     def start_stack(self):
         """Starts the apps in data/stack: through Docker when Starboard has access, else through the Run first window

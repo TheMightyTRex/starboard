@@ -1665,10 +1665,17 @@ def main():
     stack.can_download = lambda ref, check=None: True
     if not (DATA / "stack" / "compose.yaml").exists():
         basics = stack.install_choice("basics")
-        stack.write(str(DATA), stack.build({"apps": basics["apps"], "config_dir": "/srv/media-stack/config",
-                                            "data_dir": "/srv/media", "reelix_edition": "lite",
-                                            "vpn": {"provider": "mullvad", "type": "wireguard",
-                                                    "wireguard_private_key": "made-up", "wireguard_addresses": "192.168.1.20/32"}}))
+        if os.environ.get("EXAMPLE_NO_VPN") == "1":
+            # DASH-440: Basics after Continue without a VPN, for the No VPN states on Downloads, the dashboard and
+            # Settings, Downloads, VPN. Off by default.
+            stack.write(str(DATA), stack.build({"apps": [k for k in basics["apps"] if k != "gluetun"], "config_dir": "/srv/media-stack/config",
+                                                "data_dir": "/srv/media", "reelix_edition": "lite"}))
+            stack.record_vpn_choice(str(DATA), False, "browser")
+        else:
+            stack.write(str(DATA), stack.build({"apps": basics["apps"], "config_dir": "/srv/media-stack/config",
+                                                "data_dir": "/srv/media", "reelix_edition": "lite",
+                                                "vpn": {"provider": "mullvad", "type": "wireguard",
+                                                        "wireguard_private_key": "made-up", "wireguard_addresses": "192.168.1.20/32"}}))
     _example_plugins(str(DATA))
     _example_livetv(str(DATA))
     _example_keys(str(DATA))

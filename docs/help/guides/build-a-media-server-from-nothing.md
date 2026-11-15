@@ -15,8 +15,9 @@ sets them up. You finish the few things it cannot do for you.
 - Starboard is installed with Docker access. If you said no to Docker access, read
   [Change what Starboard can access](../topics/change-what-starboard-can-access.md).
 - A disk with enough room for your media. Films and series take a lot of space: plan for 1 TB or more.
-- An account with a VPN provider: the default install sends downloads through it. Optional: a free TMDB key from
-  themoviedb.org.
+- An account with a VPN provider is recommended: the default install sends downloads through it. You can continue
+  without one and add it later: read [Download without a VPN](../topics/download-without-a-vpn.md). Optional: a free
+  TMDB key from themoviedb.org.
 - To know what each app does, read [The apps Starboard works with](../basics/the-apps.md).
 
 ## The steps at a glance

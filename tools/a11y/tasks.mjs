@@ -648,6 +648,25 @@ if (back24) {
   check("T24", "focus goes to the next row's Put back, not the top of the page", /^Put back Harbour lights/.test(f24.text), `${f24.tag} ${f24.text}`);
 }
 
+// T28 Remove the VPN by keyboard (DASH-440): the warning is an alert dialog with focus on Cancel; Escape cancels and
+// gives focus back to Remove the VPN; Hide for 90 days on Downloads is reached by Tab.
+await page.goto(`${base}/settings-downloads.html`);
+await settle();
+const rmPw = await tabTo((f) => f.id === "dl-vpn-remove-pw", 80);
+check("T28", "Tab reaches the password for Remove the VPN", !!rmPw);
+await page.keyboard.type(password);
+const rmBtn = await tabTo((f) => f.tag === "BUTTON" && f.text === "Remove the VPN", 5);
+check("T28", "and then Remove the VPN", !!rmBtn);
+await page.keyboard.press("Enter");
+await page.waitForTimeout(800);
+const inWarn = await focus();
+const role = await page.evaluate(() => document.activeElement?.closest("dialog")?.getAttribute("role"));
+check("T28", "the warning opens as an alert dialog with focus on Cancel", inWarn.inPanel && inWarn.text === "Cancel" && role === "alertdialog", `${role} ${inWarn.text}`);
+await page.keyboard.press("Escape");
+await page.waitForTimeout(500);
+const afterWarn = await focus();
+check("T28", "Escape cancels and gives focus back to Remove the VPN", afterWarn.text === "Remove the VPN" && !(await page.locator("dialog[open]").count()), afterWarn.text);
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

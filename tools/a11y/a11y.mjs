@@ -218,6 +218,46 @@ if (!pages.length || pages.some((p) => p.includes("picture-shrinker"))) {
   } catch (e) { add("settings-plugin.html?id=picture-shrinker, Update", "page", "error", e.message.split("\n")[0]); }
 }
 
+// Downloading without a VPN (DASH-440): the set-up's VPN step with Continue without a VPN chosen, and its warning,
+// an alert dialog, in Light, Dark and High contrast; then Settings, Downloads, VPN with Remove the VPN's warning.
+if (!pages.length || pages.some((p) => p.includes("install-apps") || p.includes("settings-downloads"))) {
+  const themes = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  try {
+    await page.goto(`${base}/install-apps.html?wizard=1`);
+    await settle();
+    const go = async (name) => { await page.getByRole("button", { name, exact: true }).last().click(); await page.waitForTimeout(900); };
+    await go("Begin");
+    const without = page.getByRole("radio", { name: /Continue without a VPN/ });
+    for (let i = 0; i < 4 && !(await without.count()); i++) await go("Continue");
+    await without.check();
+    await themes("install-apps.html, VPN step without a VPN");
+    await go("Continue");
+    await page.locator("dialog[open][role=alertdialog]").waitFor({ timeout: 5000 });
+    await page.waitForTimeout(300);
+    await themes("install-apps.html, Continue without a VPN warning");
+    await page.keyboard.press("Escape");
+    await page.goto(`${base}/settings-downloads.html`);
+    await settle();
+    await page.locator("#dl-vpn-remove-pw").fill(password);
+    await page.getByRole("button", { name: "Remove the VPN" }).click();
+    await page.locator("dialog[open][role=alertdialog]").waitFor({ timeout: 5000 });
+    await page.waitForTimeout(300);
+    await themes("settings-downloads.html, Remove the VPN warning");
+    await page.keyboard.press("Escape");
+    console.log("checked the no-VPN warning");
+  } catch (e) { add("install-apps.html / settings-downloads.html, no-VPN warning", "page", "error", e.message.split("\n")[0]); }
+}
+
 // Slide-out and dialog behaviour (once; every page uses the same code): Display, then a confirm dialog.
 await page.goto(`${base}/settings-general.html`);
 await settle();

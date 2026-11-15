@@ -74,9 +74,15 @@ class YourInstallTest(unittest.TestCase):
         self.write()
         self.fails("POST", "/api/install/change", {"password": WORDS, "install": "basics"}, "what runs already")
 
-    def test_an_install_with_a_vpn_needs_the_vpn_details(self):
-        self.write(vpn=False)  # a server set up before the VPN was in every install
-        self.fails("POST", "/api/install/change", {"password": WORDS, "install": "full"}, "VPN")
+    def test_an_install_without_a_vpn_keeps_going_without_one(self):
+        # DASH-440: downloading without a VPN is a choice, so another install keeps it (before, this asked for the
+        # VPN's details); the VPN is added in Settings, Downloads, VPN.
+        self.write(vpn=False)
+        r = self.api.call("POST", "/api/install/change", {"password": WORDS, "install": "full"})
+        self.assertNotIn("gluetun", r["add"])
+        apps = stack.current_choice(self.tmp.name)["apps"]
+        self.assertNotIn("gluetun", apps)
+        self.assertEqual(stack.which_install(apps), "full")
 
     def test_no_change_is_written_while_apps_are_starting(self):
         self.write()

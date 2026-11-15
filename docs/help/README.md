@@ -102,6 +102,7 @@ Each guide is a journey through several topics, in order.
 - [Pause, resume and remove downloads](topics/manage-downloads.md)
 - [Copy download issues for an AI helper](topics/copy-download-issues.md)
 - [Download only at certain hours](topics/set-download-hours.md)
+- [Download without a VPN](topics/download-without-a-vpn.md)
 - [Approve or decline requests](topics/approve-requests.md)
 - [Find out what is coming up](topics/coming-up.md)
 - [Follow radio shows and podcasts](topics/follow-radio-shows.md)

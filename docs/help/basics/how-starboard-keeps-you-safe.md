@@ -56,7 +56,8 @@ is what protects you, what Starboard can and cannot do on your computer, and the
 - **Away from home.** Never forward Starboard's port straight to the internet. Use a VPN or a reverse proxy with
   HTTPS. Read [Use Starboard away from home safely](../guides/use-starboard-away-from-home.md).
 - **Downloads through a VPN.** Every install sends torrents and Usenet through a VPN, Gluetun, so your internet
-  provider sees only the VPN.
+  provider sees only the VPN. You can choose to go without one, after a warning: read
+  [Download without a VPN](../topics/download-without-a-vpn.md).
 
 ## How it is tested
 

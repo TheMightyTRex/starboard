@@ -185,7 +185,8 @@ HELP = {
                "instant. The settings folder holds each app's own settings. Both are made for you if they are missing.",
     "vpn": "A VPN sends the torrent app's traffic through your VPN provider, so sites see its address, not yours. "
            "Gluetun connects it. WireGuard is faster; OpenVPN works with every provider. Your provider's website shows "
-           "the details to type here.",
+           "the details to type here. You can continue without a VPN, but other people sharing the same torrents then "
+           "see your home internet address; add one later in Starboard, Settings, Downloads, VPN.",
     "reelix-edition": "Reelix looks after films, series, books, audiobooks, music and radio. The other version adds "
                       "downloads straight from YouTube and Spotify, and takes about 600 MB more disk. Both keep the same "
                       "settings, so you can switch either way later in Starboard, Settings, Reelix.",
@@ -1885,7 +1886,7 @@ def job_steps(state):
     if into and not state.get("reelix_there"):
         # Reelix beside the old apps: the media folder is the one found (shown, not asked); sites come with the move.
         ids.append("apps")
-        if apps is None or "gluetun" in apps:
+        if apps is None or "gluetun" in apps or state.get("no_vpn"):
             ids.append("vpn")
         if apps is None or apps & {"sabnzbd", "nzbget"}:
             ids.append("usenet")
@@ -1896,7 +1897,7 @@ def job_steps(state):
         if step_drives in STEP_FUNCTIONS and state.get("storage", {}).get("key", "pool") == "pool":
             ids.append("drives")
         ids.append("apps")
-        if apps is None or "gluetun" in apps:
+        if apps is None or "gluetun" in apps or state.get("no_vpn"):
             ids.append("vpn")
         if apps is None or apps & {"sabnzbd", "nzbget"}:
             ids.append("usenet")
@@ -2388,12 +2389,61 @@ def ask_reelix_edition(api, term, last):
     return keys[pick]
 
 
+def ask_vpn_or_not(term, state):
+    """The VPN step's first question (DASH-440): use a VPN account (recommended), or continue without one. Without
+    one, the warning is shown and Cancel, the default, asks again; confirming takes Gluetun out of the choice and is
+    recorded when the files are written. Returns True when the VPN's details are to be asked next."""
+    from . import setup_answers
+    w = setup_answers.WORDS["novpn"]
+    choice = state["choice"]
+    while True:
+        term.say("")
+        pick = term.choose(w["question"], [(w["use"], w["use_about"]), (w["without"], w["without_about"])],
+                           2 if state.get("no_vpn") else 1, help_key="vpn")
+        if pick == 0:
+            if state.get("no_vpn"):
+                state["no_vpn"] = False
+                choice["apps"] = sorted(set(choice["apps"]) | {"gluetun"}, key=list(_app_order()).index)
+                choice["groups"] = sorted(set(choice.get("groups") or []) | {"vpn"})
+                state["names"] = _names(choice["apps"])
+            return True
+        if state.get("no_vpn") and "gluetun" not in choice["apps"]:
+            return False  # chosen before, after the warning: Back to this step keeps it without asking again
+        term.say("")
+        term.warn(w["warning_title"])
+        for line in w["warning"]:
+            term.note(line)
+        term.say("")
+        if term.choose(w["without"] + "?", [w["cancel"], w["confirm"]], 1, help_key="vpn") == 1:
+            state["no_vpn"] = True
+            state.pop("vpn", None)
+            choice["apps"] = [k for k in choice["apps"] if k != "gluetun"]
+            choice["groups"] = [g for g in (choice.get("groups") or []) if g != "vpn"]
+            choice.pop("vpn", None)
+            state["names"] = _names(choice["apps"])
+            term.note(w["chosen"])
+            return False
+
+
+def _app_order():
+    from . import stack
+    return stack.APPS
+
+
+def _names(keys):
+    from . import stack
+    return [stack.APPS[k]["name"] if k in stack.APPS else k for k in keys]
+
+
 def step_vpn(api, term, state):
     choice = state.get("choice")
-    if not choice or "gluetun" not in choice["apps"]:
+    if not choice or ("gluetun" not in choice["apps"] and not state.get("no_vpn")):
         return False
     last = state.get("vpn_answers", {})
     head(term, state, "vpn")
+    # DASH-440: the VPN account, or going on without one after a warning (the browser set-up asks the same, first).
+    if not ask_vpn_or_not(term, state):
+        return True
     # DASH-132: a Gluetun already running outside Starboard's apps; its key is read by Starboard when the files are
     # written and never shown here (the browser set-up offers the same).
     try:
@@ -2699,6 +2749,8 @@ def step_check(api, term, state, wait=2.0):
     if choice.get("vpn"):
         rows.append(("VPN", f"{ {v[0]: v[1] for v in VPNS}.get(choice['vpn']['provider'], choice['vpn']['provider'])}, "
                             f"{'WireGuard' if choice['vpn']['type'] == 'wireguard' else 'OpenVPN'}"))
+    elif state.get("no_vpn"):
+        rows.append(("VPN", "None: downloads use your home internet address"))
     if state.get("written"):
         term.stop_back()
         term.card("Written already", rows)
@@ -2720,7 +2772,7 @@ def step_check(api, term, state, wait=2.0):
             term.note("Nothing written.")
             return True
         try:
-            written = api.call("POST", "/api/stack/write", {**choice, "password": state.get("password", "")})
+            written = api.call("POST", "/api/stack/write", {**choice, "password": state.get("password", ""), "from": "terminal"})
             break
         except Problem as e:
             refused(term, e)

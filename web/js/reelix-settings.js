@@ -301,7 +301,7 @@ function rxKindSection(kind, description) {
       }));
       rows.push(switchRow("Search through the VPN", "Reelix's searches go out through Gluetun, as Prowlarr's did, so your internet provider sees only the VPN. If the VPN is down, searches wait rather than go out without it. Recommended.", vpn));
     } else {
-      rows.push(el("p", { class: "small muted", text: "Reelix searches from this computer's own address. Add the VPN (Gluetun) on Settings, Your install to search through it." }));
+      rows.push(el("p", { class: "small muted", text: "Reelix searches from this computer's own address. Add a VPN in Settings, Downloads, VPN to search through it." }));
     }
     const priv = el("input", { type: "checkbox", checked: search.allow_private });
     priv.addEventListener("change", () => reopen(async () => {

@@ -39,6 +39,9 @@ add features.
 ### Changed
 - **Clearer words on the way to updating:** the set-up's summary says Activated or Deactivated, not On or Off, and so does Reelix's task list. (DASH-420)
 - **A new install gets the newest release:** Run first and the installer now install the newest release, as ./update.sh does, instead of the main branch, which can have changes not released yet. For testing, Run first and ./install.sh take --main, which ./update.sh then follows too; ./install.sh --releases goes back to releases. Update in Run first, for a Starboard already installed, now uses ./update.sh, with its backup and way back. (DASH-416)
+- **Download without a VPN:** Both set-ups' VPN step asks first how downloads connect: Use my VPN account (recommended) or Continue without a VPN. Going without one shows a warning in plain words first (other people sharing torrents see your home internet address, your internet provider sees what you download, and what that can lead to), with Cancel as the default; the choice is recorded. The apps are then installed without Gluetun, with qBittorrent on its own network and ports and Reelix reaching it by its name. (DASH-440)
+- **Add or remove a VPN later:** Settings, Downloads, VPN adds a VPN to an install without one (Gluetun is installed, the download apps move behind it and Reelix follows), or removes it after the same warning. Without one, Downloads says Downloading without a VPN with Add a VPN, hidden for 90 days with Hide for 90 days, and the dashboard's VPN card says No VPN. No alerts are sent about it. (DASH-440)
+- **Help:** a new topic, Download without a VPN; the set-up guide, Install apps and the terminal set-up say a VPN is recommended rather than needed. (DASH-440)
 
 ## [0.18.0] (15 November 2026)
 

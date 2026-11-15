@@ -14,8 +14,9 @@ and other choices are in [Other installs and choices](#other-installs-and-choice
 - Docker is installed on the server. Read [Install Docker](install-docker.md), and
   [What Docker is](../basics/what-is-docker.md) if it is new to you.
 - You have a folder or drive with room for your media, such as `/srv/media`.
-- An account with a VPN (virtual private network) provider. The default install sends downloads through it, to
-  keep them private.
+- An account with a VPN (virtual private network) provider is recommended. The default install sends downloads
+  through it, to keep them private. You can continue without one: read
+  [Download without a VPN](download-without-a-vpn.md).
 - Optional: Docker access lets Starboard start the apps itself. Without it, you run one command. Read
   [Change what Starboard can access](change-what-starboard-can-access.md).
 - If you are not sure what each app does, read [The apps Starboard works with](../basics/the-apps.md).
@@ -34,7 +35,8 @@ and other choices are in [Other installs and choices](#other-installs-and-choice
 4. Under **Which Reelix?**, keep the one the install chose. Select **Continue**.
 5. On **Folders**, enter your **Media folder**, such as `/srv/media`. If your other apps already use a media
    folder, Starboard offers it. Select **Continue**.
-6. If your install has a VPN, the **VPN** step asks for your **VPN provider**. Each provider's link opens its site
+6. If your install has a VPN, the **VPN** step asks how your downloads should connect. Keep
+   **Use my VPN account (recommended)**. It then asks for your **VPN provider**. Each provider's link opens its site
    in a new tab. If yours is not listed, choose **Another one that Gluetun supports** and enter its name as Gluetun's
    list writes it. Choose **WireGuard** or **OpenVPN**, enter the details from the provider's site, then select
    **Continue**.
@@ -43,6 +45,10 @@ and other choices are in [Other installs and choices](#other-installs-and-choice
    commission towards Starboard's development, and you pay the same price.
 
    ![The VPN step with example data, with the VPN provider list (step 6) outlined and Proton VPN chosen](../images/install-apps-2-vpn.png)
+
+   Without a VPN account, choose **Continue without a VPN**, then **Continue**. A warning says what that means.
+   Select **I understand, continue without a VPN** to go on without Gluetun, or **Cancel** to go back. Read
+   [Download without a VPN](download-without-a-vpn.md).
 
 7. If your install downloads from Usenet, the **Usenet** step asks 'Do you have a Usenet provider?'. Choose
    **Yes, I have one** to enter its server and select **Test the server**. Choose **No, show me some providers** for
@@ -130,6 +136,8 @@ Read [Basics, Full install and Everything](install-types.md#at-a-glance) to comp
 - **Nothing to download with:** tick **Downloads** too, or select **Continue** again to go on without it.
 - **Enter the full path of a folder, starting with /:** enter the whole path, such as `/srv/media`.
 - **Something did not start:** select **Show the details**, change what they say, then select **Try again**.
+- **You do not have a VPN account yet:** choose **Continue without a VPN** on the **VPN** step, and add one later.
+  Read [Download without a VPN](download-without-a-vpn.md).
 - **Gluetun shows as unhealthy, and the download apps do not open:** the VPN details are not right, and the download
   apps wait for the VPN. Go to **Settings**, then **Downloads**, and check the provider, the key and the address
   (ending in /32) under 'VPN'.

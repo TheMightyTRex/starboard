@@ -503,6 +503,32 @@ async function heldAct(h, action, button) {
   }
 }
 
+// Downloading without a VPN (DASH-440): a quiet reminder, with the way to add one, that can be hidden for 90 days.
+// Never a notification. The words are the set-ups' (web/setup-answers.json, novpn).
+async function loadVpnReminder() {
+  let st;
+  try { st = await api("/api/downloads/vpn-state"); } catch { return; }
+  $("#vpn-reminder")?.remove();
+  if (!st.reminder) return;
+  const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).novpn;
+  const hide = el("button", { type: "button", class: "btn btn--quiet btn--compact" }, w.hide);
+  const box = el("div", { id: "vpn-reminder", class: "notice", "data-tone": "muted" }, icon("info"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: w.reminder_title }), el("p", { text: w.reminder }),
+      el("p", {}, el("a", { href: "/settings-downloads.html", text: w.add }))),
+    hide);
+  hide.addEventListener("click", async () => {
+    hide.disabled = true;
+    try {
+      await api("/api/downloads/vpn-reminder", { method: "POST", body: {} });
+      box.remove();
+      const h1 = $("main h1");
+      if (h1) { h1.tabIndex = -1; h1.focus(); }
+      announce("Hidden for 90 days");
+    } catch (e) { problem(e.message, hide); hide.disabled = false; }
+  });
+  $("#transfer").before(box);
+}
+
 // Speeds and the VPN: one tile per download client and per Gluetun, refreshed with the queue.
 
 function stat(value, label, tone, words) {
@@ -659,6 +685,7 @@ startPage().then(async () => {
   } catch { /* links to the apps are an extra; the queue works without them */ }
   await Promise.all([load(), loadSchedule(), loadTransfer()]);
   loadHeld();
+  loadVpnReminder();
   loadRecent();
   setPaused(false);
   document.addEventListener("visibilitychange", () => { if (!document.hidden && !paused) { load(); loadSchedule(); loadTransfer(); loadHeld(); } });

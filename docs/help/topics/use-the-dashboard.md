@@ -47,7 +47,7 @@ Some plug-ins add a card, such as Live TV. The plug-in must be added and active.
 - **Coming up:** what is due in the next days. Read [Find out what is coming up](coming-up.md).
 - **Recently added:** what came into your library this week.
 - **Disk space**, **System load** and **Transfer speed:** free space, processor and memory, and download speeds.
-- **VPN:** whether your VPN is connected, and its country.
+- **VPN:** whether your VPN is connected, and its country. Without one, it says **No VPN**, with **Add a VPN**.
 - **Service health:** how many apps are running, and which are not responding.
 - **Requests:** what is waiting for approval. Read [Approve or decline requests](approve-requests.md).
 - **Alerts:** the last few problems in the logs.

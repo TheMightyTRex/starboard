@@ -14,8 +14,9 @@ can change later is in [Advanced options](#advanced-options).
 
 - Starboard is installed and you have chosen your password. If not, start with
   [Quick start: one command sets up everything](quick-start.md).
-- You have an account with a VPN (virtual private network) provider. Downloads go through it, so your internet
-  provider cannot tell what you download.
+- An account with a VPN (virtual private network) provider is recommended. Downloads go through it, so your
+  internet provider and other people sharing torrents cannot see what you download or your home internet address.
+  You can continue without one and add it later: read [Download without a VPN](../topics/download-without-a-vpn.md).
 - Optional: a free TMDB key from themoviedb.org, for film and series posters. You can add it later.
 
 ## What the default install has
@@ -31,7 +32,7 @@ can change later is in [Advanced options](#advanced-options).
 | Gluetun | Sends the downloads through your VPN |
 | Bazarr | Finds subtitles for your films and series |
 
-Reelix needs at least one download app, and the download apps go through the VPN. Starboard installs these apps
+Reelix needs at least one download app, and the download apps go through the VPN when you have one. Starboard installs these apps
 and connects them to each other for you. Read [The apps Starboard works with](../basics/the-apps.md) for more about
 each one.
 
@@ -59,7 +60,8 @@ step, with these few to fill in:
 - **How to start:** **New install (recommended)**.
 - **Storage:** the media folder it suggests.
 - **What to set up:** **Basics (recommended)**.
-- **VPN:** your VPN provider, and the details from its website.
+- **VPN:** **Use my VPN account (recommended)**, then your VPN provider and the details from its website. Without a
+  VPN account, choose **Continue without a VPN** and read the warning first.
 - **Usenet:** **Not now: torrents are enough for now**, unless you have a Usenet provider.
 - **Sites to search:** tick at least one of Reelix's built-in sites. None needs an account.
 - **Films and series:** paste your TMDB key, or leave it empty to add it later.

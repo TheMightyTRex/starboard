@@ -86,8 +86,8 @@ was done. If the Run first window is still open, Starboard asks it to start the 
 
 - **"Install apps did not set up the apps here":** run Install apps first, or read
   [Take over the apps you already run](take-over-your-apps.md).
-- **"Choose your VPN provider":** the new install has a VPN, but none was set up before. Run Install apps and fill in
-  the VPN step.
+- **"Choose your VPN provider":** the new install has a VPN, but none was set up before. Add one in **Settings**, then
+  **Downloads**, then **VPN**. Read [Download without a VPN](download-without-a-vpn.md#add-a-vpn-later).
 - **"That is what runs already":** choose a different install, Usenet app or Reelix version.
 - **The apps did not all start:** read the details Starboard shows. The old set-up file is kept in `data/stack`.
 
