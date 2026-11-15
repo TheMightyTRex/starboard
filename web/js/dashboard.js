@@ -13,7 +13,9 @@ const CARD_TITLES = {
 // app's own logo, the same file as on the Apps page (/api/icons/<app>); a card that combines several apps, or is
 // Starboard's own, shows a design system icon on the standard tile. "apps" lists the apps the card's answer comes
 // from (an app is its type, and every part of Reelix counts as "reelix"); the logo is theirs when exactly one of them
-// is set up. "first": the first app set up wins, as the server asks Seerr before Reelix for requests. "time": the
+// is set up. "byType": the server asks by type only (Recently added asks Sonarr, Radarr, Lidarr and Readarr, and
+// Reelix's entries at those addresses, not the Reelix link). "first": the first app set up wins, as the server asks
+// Seerr before Reelix for requests. "time": the
 // band says when it was updated, only for answers the server keeps for 20 seconds or less, so the time is true.
 const ARR_APPS = ["reelix", "sonarr", "radarr", "lidarr", "readarr"];
 const CARD_BAND = {
@@ -21,7 +23,7 @@ const CARD_BAND = {
   playing: { apps: ["jellyfin"], own: "play", time: true },
   downloads: { apps: ARR_APPS, own: "download", time: true },
   coming: { apps: ARR_APPS, own: "calendar-days" },
-  recent: { apps: ARR_APPS, own: "sparkles" },
+  recent: { apps: ARR_APPS, byType: true, own: "sparkles" },
   disk: { own: "hard-drive", time: true },
   load: { own: "cpu", time: true },
   vpn: { apps: ["gluetun"], own: "shield-check", time: true },
@@ -217,7 +219,7 @@ const band = (chipOf, node) => ({ node, chip: chipOf });
 const appOf = (s) => (s.icon === "reelix" ? "reelix" : s.type);
 function cardLogo(id) {
   const b = CARD_BAND[id] || {};
-  const on = services.filter((s) => s.enabled !== false && (b.apps || []).includes(appOf(s)));
+  const on = services.filter((s) => s.enabled !== false && (b.apps || []).includes(b.byType ? s.type : appOf(s)));
   const kinds = [...new Set(on.map(appOf))];
   const app = b.first ? b.apps.find((k) => kinds.includes(k)) : kinds.length === 1 ? kinds[0] : null;
   const s = app && on.find((x) => appOf(x) === app);

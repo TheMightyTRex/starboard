@@ -1352,9 +1352,9 @@ check("BAND-06", "nothing in the band is a live region, so a refresh does not in
 // DASH-442 (owner, 15 November 2026): every built-in card has the same band as plug-in cards. A card about one app shows
 // that app's own logo from the Apps page's icons (Jellyfin's for Now playing); Starboard's own cards and cards that
 // combine several apps show a design system icon on the tile. A chip only where the card has something to say.
-const jfPort = Number(new URL(base).port) + 1;
-const jf = await api("/api/services", { method: "POST", body: { name: "Jellyfin", type: "jellyfin", group: "Watch and listen",
-  url: `http://127.0.0.1:${jfPort}/jellyfin`, api_key: "made-up" } });
+// The example server is the default install: Jellyfin, Reelix, qBittorrent and NZBGet, and Gluetun.
+const exampleApps = (await api("/api/config")).services;
+const appId = (test) => exampleApps.find(test)?.id;
 await open("dashboard.html");
 await page.locator('[data-card="health"] .card-band .chip').waitFor({ timeout: 8000 }).catch(() => {});
 const builtIn = await page.evaluate(() => [...document.querySelectorAll(".dash-card:not([data-card^='plugin:'])")].map((c) => {
@@ -1371,10 +1371,13 @@ check("BAND-07", "every built-in card has the band, its name as the heading the 
 check("BAND-07", "a built-in card's band is as tall as a plug-in card's band with one line of title", builtIn.every((c) => Math.abs(c.height - bandHeight) <= 1),
   `${bandHeight}: ${builtIn.map((c) => `${c.id} ${c.height}`).join(", ")}`);
 const byId = Object.fromEntries(builtIn.map((c) => [c.id, c]));
-check("BAND-08", "Now playing shows Jellyfin's own logo, the same file as the Apps page, and who is watching",
-  byId.playing?.img === `/api/icons/${jf.id}?v=` && /Example film/.test(await page.locator('[data-card="playing"] .dash-card__body').innerText()), byId.playing?.img);
-check("BAND-08", "Starboard's own cards and cards that combine several apps show a design system icon on the tile",
-  ["disk", "load", "alerts", "health", "downloads", "recent"].every((k) => byId[k]?.own && !byId[k]?.img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.img])));
+check("BAND-08", "Now playing shows Jellyfin's own logo, the same file as the Apps page",
+  byId.playing?.img === `/api/icons/${appId((s) => s.type === "jellyfin")}?v=jellyfin`, byId.playing?.img);
+check("BAND-08", "Downloads and Coming up, from Reelix alone, show Reelix's logo; VPN shows Gluetun's",
+  ["downloads", "coming"].every((k) => byId[k]?.img === `/api/icons/${appId((s) => s.icon === "reelix")}?v=reelix`)
+  && byId.vpn?.img === `/api/icons/${appId((s) => s.type === "gluetun")}?v=gluetun`, JSON.stringify(builtIn.map((c) => [c.id, c.img])));
+check("BAND-08", "Starboard's own cards show a design system icon on the tile, and so does Recently added with no Sonarr, Radarr or Reelix entry of theirs",
+  ["disk", "load", "alerts", "health", "recent"].every((k) => byId[k]?.own && !byId[k]?.img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.img])));
 const healthChip = (await page.locator('[data-card="health"] .card-band .chip').textContent()) || "";
 check("BAND-09", "Service health's state is a chip in the band, in words with no number, and the band says when it was updated",
   /^Status: (All running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] .card-band time').textContent()), healthChip);
@@ -1391,7 +1394,6 @@ const healthAfter = (await page.evaluate(() => [...document.querySelectorAll(".d
 check("BAND-10", "Move later moves a banded card and keeps focus in it",
   healthAfter === healthBefore + 1 && await page.evaluate(() => !!document.activeElement?.closest("[data-card='health']")), `${healthBefore} to ${healthAfter}`);
 await page.getByRole("button", { name: "Cancel" }).click();
-await api(`/api/services/${jf.id}`, { method: "DELETE" });
 
 await open("settings-plugin.html?id=picture-shrinker");
 const schedOften = page.getByLabel("How often", { exact: true });
