@@ -22,7 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from . import start as how_to_start
 from . import places  # location and keyboard, both set-ups' first questions (DASH-259)
 from . import library  # the Library and Search from Reelix (DASH-163, DASH-162)
-from . import access, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
+from . import access, auth, backup, helpdocs, setup_left, reelix_admin, reelix_move, reelix_setup, reelix_version, reelix_waiting, requests_route, tasklist, takeover, usenet_move, changes, containers, copyset, discovery, icons, jobs, listening, livetv, logs, migrate, pool, posters, releases, schedule, services, stack, sysinfo, uxnotes, watch
 from .config import GENERAL_RIGHTS, Config, ConfigError, general_right, new_setup_token, same_server, validate_service
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -2008,11 +2008,20 @@ class Handler(BaseHTTPRequestHandler):
                 started = self.start_stack()
                 adopt_started_apps(app, stack.chosen_keys(app.data_dir))
                 reelix_after_start(app, start_body.get("password", ""))
+                if "reelix" in (stack.chosen_keys(app.data_dir) or []):
+                    reelix_version.note_when_started(app.data_dir, "install")  # its exact build (DASH-419)
                 return self.json(200, started)
             if path == "/api/reelix/editions" and method == "GET":
                 # Reelix or Reelix with YouTube and Spotify downloads: for both set-ups and Settings, Reelix.
                 image = stack.reelix_in_stack(app.data_dir)
+                # The exact build noted (DASH-419). A Reelix started some other way (install.sh --start-apps, by hand) is
+                # noted here, when this page opens: one container and one image read, only when Reelix is in the stack.
+                if image and containers.available():
+                    reelix_version.note(app.data_dir, "seen")
+                installed = reelix_version.read(app.data_dir)["current"]
                 return self.json(200, {"editions": stack.reelix_editions(), "image": image,
+                                       "installed": installed, "installed_label": reelix_version.label(installed) if installed else None,
+                                       "installed_exact": reelix_version.exact_image(installed),
                                        "needs_setup": bool(reelix_setup.read_setup(app.data_dir)),
                                        "current": stack.edition_of(image), "can_switch": bool(image),
                                        "can_start": bool(stack.host_folder(app.data_dir) and containers.available()),
@@ -2028,6 +2037,7 @@ class Handler(BaseHTTPRequestHandler):
                     started = self.start_stack()
                 except ValueError:
                     return self.json(200, {"image": new, "started": None, "command": "cd ~/starboard && ./install.sh --start-apps"})
+                reelix_version.note_when_started(app.data_dir, "switch")  # its exact build (DASH-419)
                 return self.json(200, {"image": new, "started": started})
             if path == "/api/reelix/setup" and method == "POST":
                 # The terminal set-up, after the installer started the apps: Reelix's admin account with Starboard's
