@@ -1361,23 +1361,26 @@ const builtIn = await page.evaluate(() => [...document.querySelectorAll(".dash-c
   const b = c.querySelector(":scope > .card-band"), h = b?.querySelector("h2");
   return { id: c.dataset.card, band: !!b, labelled: !!h && c.getAttribute("aria-labelledby") === h.id, heading: h?.textContent || "",
     logoHidden: b?.querySelector(".app-icon")?.getAttribute("aria-hidden") === "true", img: b?.querySelector(".app-icon img")?.getAttribute("src") || "",
-    own: !!b?.querySelector(".app-icon > svg"), height: Math.round(b?.getBoundingClientRect().height || 0) };
+    own: !!b?.querySelector(".app-icon > svg"), app: b?.querySelector(".app-icon")?.dataset.app || "", height: Math.round(b?.getBoundingClientRect().height || 0),
+    // On a narrow card the band wraps by design, the chip and time moving under the name (the design system's .card-band).
+    wrapped: !!h && b.querySelector(".card-band__side").getBoundingClientRect().top >= h.getBoundingClientRect().bottom - 1 };
 }));
 // Direct play's band: a plug-in card with one line of title, as every built-in card has (Watch statistics' second line,
 // "Watched this week", makes its band taller).
 const bandHeight = await page.locator('[data-card="plugin:direct-play:now"] .card-band').evaluate((b) => Math.round(b.getBoundingClientRect().height));
 check("BAND-07", "every built-in card has the band, its name as the heading the card is labelled by, and a logo hidden from screen readers",
   builtIn.length >= 8 && builtIn.every((c) => c.band && c.labelled && c.heading && c.logoHidden), JSON.stringify(builtIn.filter((c) => !(c.band && c.labelled && c.logoHidden))));
-check("BAND-07", "a built-in card's band is as tall as a plug-in card's band with one line of title", builtIn.every((c) => Math.abs(c.height - bandHeight) <= 1),
+check("BAND-07", "a built-in card's band is as tall as a plug-in card's band with one line of title", builtIn.filter((c) => !c.wrapped).length >= 6 && builtIn.filter((c) => !c.wrapped).every((c) => Math.abs(c.height - bandHeight) <= 1),
   `${bandHeight}: ${builtIn.map((c) => `${c.id} ${c.height}`).join(", ")}`);
 const byId = Object.fromEntries(builtIn.map((c) => [c.id, c]));
 check("BAND-08", "Now playing shows Jellyfin's own logo, the same file as the Apps page",
-  byId.playing?.img === `/api/icons/${appId((s) => s.type === "jellyfin")}?v=jellyfin`, byId.playing?.img);
+  byId.playing?.app === "jellyfin" && byId.playing?.img === `/api/icons/${appId((s) => s.type === "jellyfin")}?v=jellyfin`, byId.playing?.img);
+// The made-up Reelix serves no logo.png, so its tile falls back to its initials, as on the Apps page.
 check("BAND-08", "Downloads and Coming up, from Reelix alone, show Reelix's logo; VPN shows Gluetun's",
-  ["downloads", "coming"].every((k) => byId[k]?.img === `/api/icons/${appId((s) => s.icon === "reelix")}?v=reelix`)
-  && byId.vpn?.img === `/api/icons/${appId((s) => s.type === "gluetun")}?v=gluetun`, JSON.stringify(builtIn.map((c) => [c.id, c.img])));
-check("BAND-08", "Starboard's own cards show a design system icon on the tile, and so does Recently added with no Sonarr, Radarr or Reelix entry of theirs",
-  ["disk", "load", "alerts", "health", "recent"].every((k) => byId[k]?.own && !byId[k]?.img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.img])));
+  byId.downloads?.app === "reelix" && byId.coming?.app === "reelix"
+  && byId.vpn?.app === "gluetun" && byId.vpn?.img === `/api/icons/${appId((s) => s.type === "gluetun")}?v=gluetun`, JSON.stringify(builtIn.map((c) => [c.id, c.app, c.img])));
+check("BAND-08", "Starboard's own cards show a design system icon on the tile",
+  ["disk", "load", "alerts", "health", "setup"].filter((k) => byId[k]).every((k) => byId[k].own && byId[k].app === "starboard" && !byId[k].img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.app])));
 const healthChip = (await page.locator('[data-card="health"] .card-band .chip').textContent()) || "";
 check("BAND-09", "Service health's state is a chip in the band, in words with no number, and the band says when it was updated",
   /^Status: (All running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] .card-band time').textContent()), healthChip);

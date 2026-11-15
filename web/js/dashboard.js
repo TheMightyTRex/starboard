@@ -223,8 +223,10 @@ function cardLogo(id) {
   const kinds = [...new Set(on.map(appOf))];
   const app = b.first ? b.apps.find((k) => kinds.includes(k)) : kinds.length === 1 ? kinds[0] : null;
   const s = app && on.find((x) => appOf(x) === app);
-  if (s) return appIcon(s, "app-icon app-icon--compact");  // decorative: the card's name is beside it
-  return el("span", { class: "app-icon app-icon--compact", "aria-hidden": "true" }, icon(b.own || "layout-dashboard"));
+  // Decorative either way: the card's name is beside it. data-app says whose logo it is (or "starboard").
+  const logo = s ? appIcon(s, "app-icon app-icon--compact") : el("span", { class: "app-icon app-icon--compact", "aria-hidden": "true" }, icon(b.own || "layout-dashboard"));
+  logo.dataset.app = s ? app : "starboard";
+  return logo;
 }
 function builtinBand(c) {
   return el("div", { class: "card-band" }, cardLogo(c.id),
