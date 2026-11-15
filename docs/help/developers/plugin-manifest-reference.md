@@ -4,7 +4,7 @@
 # Plug-in manifest reference
 
 Every field of `starboard-plugin.json`, version 1, with the check Starboard runs on it and why. Starboard refuses
-any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.14.0
+any field it does not know, so a mistake cannot slip through. This page matches plug-in API 1.15.0
 (`API_VERSION` in `starboard/plugins.py`).
 
 The same rules are in a JSON Schema, `starboard/plugin-manifest.schema.json`, for editors and other tools. The
@@ -42,6 +42,7 @@ runs it too. For a first plug-in, read [Make your first plug-in](make-a-plugin.m
 | `adopt` | no | An app the main install may already run, which Starboard can copy into the plug-in | Read [App plug-ins](#app-plug-ins). API 1.13 |
 | `logo` | no | A small logo, shown in **Settings**, **Plug-ins** and on its dashboard cards | Read [Logo](#logo). API 1.14 |
 | `update` | no | How it updates safely: a step before and after, the health wait and settings migrations | Read [Updates](#updates). API 1.14 |
+| `jellyfin_libraries` | no | Jellyfin libraries for folders it fills, which Starboard adds with real-time monitoring deactivated | Read [Jellyfin libraries](#jellyfin-libraries). API 1.15 |
 
 ## Permissions
 
@@ -62,6 +63,7 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `network:port` | Open its own web page on your home network, at a port Starboard chooses (API 1.13) | medium | none |
 | `appearance:styles` | Add styles to Display: colours, corners, a font and shadows, checked for accessibility | low | none |
 | `jellyfin:metadata` | Read and change Jellyfin's metadata folder: the posters, photos and details Jellyfin saved (API 1.14) | medium | none |
+| `jellyfin:libraries` | Have Starboard add its own libraries to Jellyfin, for folders it fills in your media folder (API 1.15) | medium | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
 for how people see this.
@@ -86,6 +88,7 @@ settings, events and jobs.
 | `tmpfs` | Folders in memory the app writes to, such as `/var/run/postgresql`, owned by its user | Up to 6 paths inside the container, never `/tmp` (it always has one) or `/run/starboard`. Only `/run` may run programs, for images with s6. API 1.13 |
 | `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out. From API 1.12, `media`: the media folder's owner, only for a container that mounts `media/<one folder>` or, from API 1.14, `jellyfin-metadata`. Read [Adding files to the media folder](#adding-files-to-the-media-folder) |
 | `command` | The command it runs | Only plug-ins built into Starboard may set it |
+| `build` | Its image is built by Starboard from the `Dockerfile` in the plug-in's zip file (API 1.15) | `true` or left out. With it, `image` must be `local/<id>:<version>`, such as `local/on-demand:0.9.2`, and the plug-in installs only from a zip file. Read [Built from a zip file](#built-from-a-zip-file) |
 
 The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hello-card-main`.
 
@@ -134,6 +137,40 @@ refused, and the folder is mounted only for a plug-in that was granted it.
 "containers": [{"name": "main", "image": "ghcr.io/you/picture-shrinker@sha256:...", "port": 8080,
                 "volumes": ["data", "jellyfin-metadata"], "user": "media"}]
 ```
+
+### Built from a zip file
+
+From API 1.15, a private plug-in with no registry, such as On demand, can ship its own image as a `Dockerfile` in a
+zip file. People add it in **Settings**, **Plug-ins**, **Add a plug-in**, **Upload a zip file**; a newer zip updates
+it from its page, with **Update from a zip file**. A plug-in with `build` cannot be added from an address or a
+catalogue, because there is nothing to build from.
+
+```json
+"containers": [{"name": "on-demand", "image": "local/on-demand:0.9.2", "build": true, "port": 7790,
+                "volumes": ["data", "media/on-demand"], "user": "1000:1000"}]
+```
+
+**The zip.** `starboard-plugin.json` and `Dockerfile` at the top of the zip, not in a folder inside it. Up to 50 MB,
+unpacking to at most 200 MB in at most 2,000 files. Only files and folders: no links, devices or pipes, no names that
+climb out with `..` or start with `/`, no backslashes, no two files with the same name, and nothing encrypted.
+
+**The Dockerfile.** It may build from public images and the zip's own files, and nothing more:
+
+- no parser directives such as `# syntax=` (they would run someone else's builder);
+- no `RUN --mount`, `--network` or `--security`;
+- no `ADD` from the internet or git, and `COPY --from` only from an earlier stage of the same Dockerfile;
+- no `VOLUME` or `ONBUILD`;
+- `FROM` names its image in full (no variables), never an image built on the computer (`local/...`), at most 6 times.
+
+**The build.** Docker's own builder, with up to 2 GB of memory (and no swap beyond it), 2 processor cores and 20
+minutes. The build can reach the internet to fetch what the Dockerfile names, never the server's own network, folders,
+Docker or other apps. No build arguments or secrets are passed. An image over 3 GB is refused. The image is tagged
+`local/<id>:<version>`, so **Roll back** finds the version before without a download, and Starboard keeps the zips of
+the current and the previous version beside the plug-in, so an image that has gone is built again on **Activate**.
+
+People read before they add it: "Starboard builds its image, local/on-demand:0.9.2, from the Dockerfile in the zip",
+with the limits and the image it starts from. Make the zip from your committed files, as On demand's
+`tools/make-zip.sh` does with `git archive`.
 
 ### Adding files to the media folder
 
@@ -230,6 +267,44 @@ removes the app from the main install themselves, in **Settings**, **Install app
 
 In a catalogue entry, `rest` says what the app uses at rest, measured: `{"memory_mb": 117, "cpu_percent": 0.22}`.
 Starboard shows it under the plug-in in the catalogue, so people with a small server can choose.
+
+## Jellyfin libraries
+
+From API 1.15, a plug-in that fills folders for Jellyfin, such as On demand's films and series, names its libraries
+in `jellyfin_libraries` and asks for `jellyfin:libraries`. Starboard adds each one Jellyfin does not have when the
+plug-in is activated, and checks them again on every activation, so after each install, update and **Roll back**.
+
+```json
+"permissions": ["jellyfin:libraries"],
+"jellyfin_libraries": [
+  {"name": "On demand Films", "type": "movies", "folder": "media/on-demand/films"},
+  {"name": "On demand TV", "type": "tvshows", "folder": "media/on-demand/tv"}
+]
+```
+
+| Field | Required | What it is | Check |
+|---|---|---|---|
+| `name` | yes | The library's name in Jellyfin | Text, up to 40 characters, different from its other libraries |
+| `type` | yes | What it holds | `movies`, `tvshows`, `music`, `books`, `homevideos`, `musicvideos` or `mixed` |
+| `folder` | yes | Its folder | Inside a media folder one of its containers mounts, such as `media/on-demand/films`, up to 3 folders deep |
+| `realtime_monitor` | no | Whether Jellyfin watches the folder for new files | `true` or `false`; `false` when left out |
+
+- **Real-time monitoring is deactivated unless you set it.** Jellyfin watching a folder costs one of the computer's
+  folder watches for every folder in it, and a large library can use them all up before the person's own Films and
+  TV. A plug-in that adds files itself tells Jellyfin to look (a library refresh) instead.
+- **Starboard keeps it as you set it.** Someone who activates monitoring in Jellyfin finds it deactivated again on the
+  next activation of the plug-in. Nothing else about the library is changed.
+- **Found by its folder, then by its name.** A library Jellyfin already has, from an older version or made by hand,
+  is used, not added twice.
+- **The folders are made first,** owned by the container's user, because Jellyfin will not add a folder that is not
+  there.
+- **They stay when the plug-in is removed.** They are the person's to keep or remove in Jellyfin.
+- **Never a stop.** When Jellyfin is not connected or does not answer, the plug-in still starts, and its state says
+  what went wrong.
+
+People read before they add it: "Jellyfin: Starboard adds 2 libraries On demand Films and On demand TV, for folders it
+fills in your media folder. Real-time monitoring is deactivated for On demand Films and On demand TV, as the plug-in
+refreshes them itself."
 
 ## Settings
 
@@ -562,6 +637,7 @@ it is missing, because What is new then cannot say what changed. Say when settin
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
+| 1.15 | 15 November 2026 | `build` on a container, for an image Starboard builds from the `Dockerfile` in the plug-in's zip file, installed with **Upload a zip file** and updated with **Update from a zip file**; `jellyfin_libraries` with the `jellyfin:libraries` permission |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

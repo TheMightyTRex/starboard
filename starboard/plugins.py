@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.14.0"  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432); update tools (DASH-424): an update object with a before and an after step Starboard calls with time limits, a health wait after which a version that does not answer is rolled back by itself, and settings migrations (rename, remove, new defaults) kept for Roll back, and What is new shown before an update from the new version's changes  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.15.0"  # 1.15 (15 November 2026): containers built from a zip (build, DASH-414) and Jellyfin libraries (jellyfin_libraries, DASH-430), see below; the list of what it added is in docs/help/developers/api-changelog.md  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432); update tools (DASH-424): an update object with a before and an after step Starboard calls with time limits, a health wait after which a version that does not answer is rolled back by itself, and settings migrations (rename, remove, new defaults) kept for Roll back, and What is new shown before an update from the new version's changes  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -34,6 +34,8 @@ PERMISSIONS = {
     "appearance:styles": ("Add styles to Display: colours, corners, a font and shadows, checked for accessibility", "low", None),
     # API 1.14 (DASH-432): Jellyfin's metadata folder (/metadata on new installs, DASH-431), mounted only with this
     "jellyfin:metadata": ("Read and change Jellyfin's metadata folder: the posters, photos and details Jellyfin saved", "medium", None),
+    # API 1.15 (DASH-430): libraries Starboard adds to Jellyfin for the plug-in, named in jellyfin_libraries
+    "jellyfin:libraries": ("Have Starboard add its own libraries to Jellyfin, for folders it fills in your media folder", "medium", None),
 }
 NETWORKS = {"default": None, "lan": "network:lan", "vpn": "network:vpn"}
 SETTING_TYPES = ("text", "number", "switch", "choice", "address", "secret", "folder", "list", "custom", "schedule")  # schedule: API 1.14
@@ -46,11 +48,30 @@ APP_CEILING_MEMORY, APP_CEILING_CPUS = 2048, 4.0
 
 TOP = {"manifest_version", "id", "name", "version", "description", "author", "licence", "homepage", "support_url",
        "starboard_api", "containers", "permissions", "resources", "settings", "cards", "health", "actions", "needs", "styles",
-       "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo", "update"}
+       "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo", "update", "jellyfin_libraries"}
 REQUIRED = TOP - {"resources", "settings", "cards", "health", "actions", "needs", "styles", "containers",
-                  "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo", "update"}
+                  "setup_required", "notices", "events", "jobs", "changes", "adopt", "logo", "update", "jellyfin_libraries"}
 CONTAINER = {"name", "image", "port", "network", "volumes", "env", "start", "idle_stop_minutes", "user", "command", "publish",
-             "host_port", "tmpfs", "entrypoint", "files"}
+             "host_port", "tmpfs", "entrypoint", "files", "build"}
+# API 1.15 (DASH-414): a container whose image Starboard builds from the Dockerfile in the plug-in's zip file, for a
+# private plug-in with no registry. Its image is always local/<id>:<version>, so one plug-in can never name another's.
+# Only a plug-in installed or updated from a zip may have one (plugin_zip.py); from an address it is refused.
+def built_image(manifest):
+    return f"local/{manifest.get('id')}:{manifest.get('version')}"
+
+
+def builds(manifest):
+    """The containers Starboard builds from the zip's Dockerfile (API 1.15)."""
+    return [c for c in (manifest.get("containers") or []) if isinstance(c, dict) and c.get("build") is True] if isinstance(manifest, dict) else []
+
+
+# API 1.15 (DASH-430): Jellyfin libraries a plug-in fills, such as On demand's films and series. Starboard adds them
+# to Jellyfin with real-time monitoring deactivated unless the plug-in needs it (Jellyfin watching a folder costs one
+# of the computer's folder watches for every folder in it), and keeps that choice on every start and update.
+JELLYFIN_LIBRARY = {"name", "type", "folder", "realtime_monitor"}
+LIBRARY_TYPES = {"movies": "movies", "tvshows": "tvshows", "music": "music", "books": "books", "homevideos": "homevideos",
+                 "musicvideos": "musicvideos", "mixed": ""}  # mixed: Jellyfin's films and series together (no type)
+MAX_LIBRARIES = 4
 # API 1.13 (DASH-411): what an app plug-in needs. A path inside the container (for tmpfs and data:<path>), never
 # Starboard's own /run/starboard, and values in env that Starboard fills in when it writes the Compose file.
 INSIDE = r"^/(?!run/starboard(/|$))(?!.*(^|/)\.\.(/|$))[A-Za-z0-9._/-]{1,100}$"
@@ -195,7 +216,12 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"{where}: files maps up to four file names to their text (16 KB each), written once into its data folder")
         elif files and not any(isinstance(v, str) and (v == "data" or re.match(DATA_AT, v) and v.startswith("data:")) for v in c.get("volumes") or []):
             out.append(f"{where}: files need a data folder (data or data:<path>) to be written into")
-        if image == "starboard" and not builtin:
+        if "build" in c and c["build"] is not True:
+            out.append(f"{where}: build is true or left out")
+        if c.get("build") is True:  # API 1.15 (DASH-414)
+            if image != built_image(m):
+                out.append(f"{where}: a container built from the zip's Dockerfile has the image {built_image(m)} (local/<id>:<version>)")
+        elif image == "starboard" and not builtin:
             out.append(f"{where}: only plug-ins built into Starboard may run Starboard's own image")
         elif image != "starboard" and (not isinstance(image, str) or not (re.match(DIGEST_IMAGE, image) or (dev and re.match(TAG_IMAGE, image)))):
             out.append(f"{where}: image must be pinned by digest (name@sha256:...)" + ("" if dev else "; development mode allows a tag"))
@@ -369,6 +395,7 @@ def check(manifest, dev=False, builtin=False):
         elif "pids" in r and not (isinstance(r["pids"], int) and not isinstance(r["pids"], bool) and 16 <= r["pids"] <= MAX_PIDS):
             out.append(f"resources.{name}: pids is a whole number from 16 to {MAX_PIDS} (API 1.13)")
     out += check_adopt(m.get("adopt"), containers)
+    out += check_libraries(m.get("jellyfin_libraries"), containers, perms)
     out += check_changes(m.get("changes"))
     if "update" in m:  # API 1.14 (DASH-424): before and after steps, the health wait and settings migrations
         from . import plugin_update
@@ -469,6 +496,8 @@ def install_warning(manifest):
     change += [CHANGES[p] for p in perms if p in CHANGES and (p != "jellyfin:metadata" or "jellyfin-metadata" in vols)]
     if "jellyfin-metadata:ro" in vols and "jellyfin-metadata" not in vols:  # API 1.14: read only, so it is seen, not changed
         see.append("Jellyfin's metadata folder: the posters, photos and details Jellyfin saved (read only)")
+    if library_words(manifest) and "jellyfin:libraries" in perms:  # API 1.15 (DASH-430)
+        change.append(library_words(manifest))
     if manifest.get("adopt"):
         a = manifest["adopt"]
         change.append(f"Only if you choose it: a copy of the {a.get('name', 'app')} you already have, put in its own folder "
@@ -478,9 +507,12 @@ def install_warning(manifest):
         reach.append("Only Starboard: it has no way out to your network or the internet")
     res = manifest.get("resources") or {}
     runs = []
+    if builds(manifest):  # API 1.15 (DASH-414): built here, from the zip's Dockerfile
+        from . import plugin_zip
+        runs.append(plugin_zip.build_words(manifest))
     for c in containers:
         r = res.get(c.get("name")) or {}
-        runs.append(f"{c.get('image')}, up to {int(r.get('memory', DEFAULT_MEMORY))} MB of memory and "
+        runs.append(f"{c.get('image')}" + (" (built here from the zip)" if c.get("build") is True else "") + f", up to {int(r.get('memory', DEFAULT_MEMORY))} MB of memory and "
                     f"{float(r.get('cpus', DEFAULT_CPUS)):g} of a processor core"
                     + (", started only when needed" if c.get("start") == "when_needed" else ", always running"))
     for j in manifest.get("jobs") or []:
@@ -506,6 +538,60 @@ def install_warning(manifest):
 def key_scopes(manifest):
     """The API key's scopes: exactly the read permissions approved (P8)."""
     return sorted({PERMISSIONS[p][2] for p in manifest.get("permissions") or [] if PERMISSIONS[p][2]})
+
+
+def check_libraries(libs, containers, perms):
+    """Problems with jellyfin_libraries (API 1.15, DASH-430): [{"name": "On demand Films", "type": "movies",
+    "folder": "media/on-demand/films", "realtime_monitor": false}]. The folder is in a media folder one of its
+    containers mounts (media/<one folder>, read and write or read only); real-time monitoring is off unless set."""
+    if libs is None:
+        return []
+    if not (isinstance(libs, list) and 1 <= len(libs) <= MAX_LIBRARIES):
+        return [f"jellyfin_libraries must list one to {MAX_LIBRARIES} libraries"]
+    out = [] if "jellyfin:libraries" in perms else ["jellyfin_libraries needs the permission jellyfin:libraries"]
+    mounted = {v.split(":")[0][6:] for c in containers if isinstance(c, dict) for v in c.get("volumes") or []
+               if isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}(:ro)?$", v)}
+    names = set()
+    for i, lib in enumerate(libs):
+        where = f"jellyfin_libraries[{i}]"
+        if not isinstance(lib, dict):
+            out.append(f"{where} must be an object")
+            continue
+        for k in sorted(set(lib) - JELLYFIN_LIBRARY):
+            out.append(f"{where}: unknown field {k}")
+        name = lib.get("name")
+        if not (isinstance(name, str) and 0 < len(name.strip()) <= 40 and name == name.strip()) or str(name).lower() in names:
+            out.append(f"{where}: name must be text of up to 40 characters, different from its other libraries")
+        names.add(str(name).lower())
+        if lib.get("type") not in LIBRARY_TYPES:
+            out.append(f"{where}: type must be one of {', '.join(LIBRARY_TYPES)}")
+        folder = lib.get("folder")
+        parts = folder.split("/") if isinstance(folder, str) else []
+        if not (len(parts) >= 2 and parts[0] == "media" and len(parts) <= 4
+                and all(re.match(r"^[A-Za-z0-9][A-Za-z0-9._ -]{0,59}$", p) and p not in (".", "..") for p in parts[1:])):
+            out.append(f"{where}: folder must be inside one of its media folders, such as media/on-demand/films")
+        elif parts[1] not in mounted:
+            out.append(f"{where}: folder must be inside a media folder one of its containers mounts (media/{parts[1]})")
+        if "realtime_monitor" in lib and not isinstance(lib["realtime_monitor"], bool):
+            out.append(f"{where}: realtime_monitor must be true or false")
+    return out
+
+
+def library_words(manifest):
+    """The libraries in the words of the warning before install (API 1.15)."""
+    libs = [x for x in manifest.get("jellyfin_libraries") or [] if isinstance(x, dict) and x.get("name")]
+    if not libs:
+        return None
+    off = [x["name"] for x in libs if not x.get("realtime_monitor")]
+    on = [x["name"] for x in libs if x.get("realtime_monitor")]
+    words = (f"Jellyfin: Starboard adds {'the library' if len(libs) == 1 else f'{len(libs)} libraries'} "
+             + " and ".join(x["name"] for x in libs) + ", for folders it fills in your media folder. ")
+    if off:
+        words += ("Real-time monitoring is deactivated for " + " and ".join(off) + ", as the plug-in refreshes "
+                  + ("it" if len(off) == 1 else "them") + " itself. ")
+    if on:
+        words += "Real-time monitoring is activated for " + " and ".join(on) + ". "
+    return words + "They stay in Jellyfin if you remove the plug-in"
 
 
 def check_adopt(adopt, containers):
@@ -734,7 +820,8 @@ def write_schema(path):
                                "light": {"$ref": "#/$defs/colours"}, "dark": {"$ref": "#/$defs/colours"}}}},
             "containers": {"type": "array", "minItems": 0, "maxItems": 4, "items": {
                 "type": "object", "additionalProperties": False, "required": ["name", "image"],
-                "properties": {"name": {"type": "string"}, "image": {"type": "string", "pattern": DIGEST_IMAGE},
+                "properties": {"name": {"type": "string"}, "image": {"type": "string", "pattern": DIGEST_IMAGE + "|^local/[a-z0-9-]{3,40}:[0-9A-Za-z.+-]{1,64}$"},
+                               "build": {"const": True},  # API 1.15 (DASH-414): built from the zip's Dockerfile
                                "port": {"type": "integer", "minimum": 1, "maximum": 65535}, "network": {"enum": sorted(NETWORKS)}, "publish": {"type": "boolean"},
                                "volumes": {"type": "array", "items": {"type": "string"}}, "env": {"type": "object"},
                                "start": {"enum": ["always", "when_needed"]}, "idle_stop_minutes": {"type": "integer"},
@@ -750,6 +837,12 @@ def write_schema(path):
                                                                       "properties": {"memory": {"type": "integer", "maximum": APP_CEILING_MEMORY},
                                                                                      "cpus": {"type": "number", "maximum": APP_CEILING_CPUS},
                                                                                      "pids": {"type": "integer", "minimum": 16, "maximum": MAX_PIDS}}}},
+            # API 1.15 (DASH-430): Jellyfin libraries the plug-in fills
+            "jellyfin_libraries": {"type": "array", "minItems": 1, "maxItems": MAX_LIBRARIES, "items": {
+                "type": "object", "additionalProperties": False, "required": ["name", "type", "folder"],
+                "properties": {"name": {"type": "string", "minLength": 1, "maxLength": 40}, "type": {"enum": sorted(LIBRARY_TYPES)},
+                               "folder": {"type": "string", "pattern": "^media/[A-Za-z0-9][A-Za-z0-9._ -]{0,59}(/[A-Za-z0-9][A-Za-z0-9._ -]{0,59}){0,2}$"},
+                               "realtime_monitor": {"type": "boolean"}}}},
             # API 1.13 (DASH-411)
             "adopt": {"type": "object", "additionalProperties": False, "required": ["app", "name", "into", "copy"],
                       "properties": {"app": {"type": "string"}, "name": {"type": "string", "maxLength": 40}, "into": {"type": "string"},

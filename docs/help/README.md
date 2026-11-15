@@ -87,6 +87,7 @@ Each guide is a journey through several topics, in order.
 ### Plug-ins
 
 - [Add a plug-in](topics/add-a-plugin.md)
+- [Add a plug-in from a zip file](topics/add-a-plugin-from-a-zip-file.md)
 - [Update a plug-in and roll it back](topics/update-a-plugin.md)
 - [The plug-in collection](basics/plugin-collection.md)
 - [What a plug-in can change](basics/what-plugins-can-change.md)

@@ -1440,6 +1440,110 @@ check("UPD-03", "the page says how it ended", (await page.locator("#self-update-
 const back = await api("/api/self-update");
 check("UPD-04", "the record says who started it and how it ended", back.update?.by === "you" && back.update?.outcome === "updated", JSON.stringify(back.update));
 
+// Batch 0.19, plug-in API 1.15: a plug-in from a zip file (DASH-414), updated from one, and Jellyfin's metadata moved
+// out of its settings folder (DASH-431). The example server never reaches Docker: its build is made up.
+console.log("\n== ZIP Plug-ins from a zip file");
+function crc32(buf) {
+  let c, crc = 0xffffffff;
+  for (const b of buf) { c = (crc ^ b) & 0xff; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crc = (crc >>> 8) ^ c; }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+function storedZip(files) {  // a plain zip with no packing, enough for Starboard's checks
+  const parts = [], central = [];
+  let offset = 0;
+  for (const [name, text] of Object.entries(files)) {
+    const n = Buffer.from(name), d = Buffer.from(text), crc = crc32(d);
+    const head = Buffer.alloc(30); head.writeUInt32LE(0x04034b50, 0); head.writeUInt16LE(20, 4); head.writeUInt32LE(crc, 14);
+    head.writeUInt32LE(d.length, 18); head.writeUInt32LE(d.length, 22); head.writeUInt16LE(n.length, 26);
+    const cen = Buffer.alloc(46); cen.writeUInt32LE(0x02014b50, 0); cen.writeUInt16LE(0x031e, 4); cen.writeUInt16LE(20, 6);
+    cen.writeUInt32LE(crc, 16); cen.writeUInt32LE(d.length, 20); cen.writeUInt32LE(d.length, 24); cen.writeUInt16LE(n.length, 28);
+    cen.writeUInt32LE((0o100644 << 16) >>> 0, 38); cen.writeUInt32LE(offset, 42);
+    parts.push(head, n, d); central.push(cen, n); offset += 30 + n.length + d.length;
+  }
+  const cd = Buffer.concat(central), end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(central.length / 2, 8); end.writeUInt16LE(central.length / 2, 10);
+  end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...parts, cd, end]);
+}
+const zipManifest = (version) => JSON.stringify({ manifest_version: 1, id: "zip-hello", name: "Zip hello", version, author: "TheMightyTRexUK",
+  description: "A made-up plug-in from a zip file, built from its own Dockerfile.", licence: "MIT", homepage: "https://example.invalid/zip-hello",
+  support_url: "https://example.invalid/zip-hello/issues", starboard_api: ">=1.15 <2.0", permissions: [],
+  containers: [{ name: "main", image: `local/zip-hello:${version}`, build: true, port: 8080 }] });
+const zipFile = (version, extra = {}) => ({ name: `zip-hello-${version}.zip`, mimeType: "application/zip",
+  buffer: storedZip({ "starboard-plugin.json": zipManifest(version), Dockerfile: "FROM python:3.12-alpine\nCOPY app.py /app.py\nUSER 1000:1000\nCMD [\"python3\", \"/app.py\"]\n", "app.py": "print('hello')\n", ...extra }) });
+await open("settings-plugins-catalogue.html");
+const zipSec = page.locator('section[aria-labelledby="pl-zip-h"]');
+check("ZIP-01", "the Catalogue has Upload a zip file, with a labelled file field", (await zipSec.count()) === 1
+  && (await zipSec.getByLabel("The plug-in's zip file").count()) === 1);
+await zipSec.getByRole("button", { name: "Check the zip" }).click();
+check("ZIP-02", "Check the zip with no file says so on the field and keeps focus there",
+  /Choose the plug-in's zip file/.test(await zipSec.innerText()) && await page.evaluate(() => document.activeElement?.id === "pl-zip"));
+await zipSec.getByLabel("The plug-in's zip file").setInputFiles(zipFile("1.0.0", { "../evil.sh": "x" }));
+await zipSec.getByRole("button", { name: "Check the zip" }).click();
+await page.waitForTimeout(800);
+check("ZIP-03", "a zip with a name outside it is refused before anything is shown", /points outside the zip/.test(await zipSec.innerText()));
+await zipSec.getByLabel("The plug-in's zip file").setInputFiles(zipFile("1.0.0"));
+await zipSec.getByRole("button", { name: "Check the zip" }).click();
+await zipSec.getByRole("heading", { name: "Zip hello 1.0.0" }).waitFor({ timeout: 8000 }).catch(() => {});
+const zipSaid = await zipSec.innerText();
+check("ZIP-04", "a good zip shows what was checked, the image the build starts from, and focus goes to its name",
+  /Checked: 3 files/.test(zipSaid) && /starting from python:3\.12-alpine/.test(zipSaid)
+  && await page.evaluate(() => document.activeElement?.textContent === "Zip hello 1.0.0"), zipSaid.slice(0, 300));
+await zipSec.getByRole("button", { name: "Install Zip hello…" }).click();
+const zipWarn = page.getByRole("dialog", { name: "Install Zip hello?" });
+await zipWarn.waitFor({ timeout: 8000 }).catch(() => {});
+check("ZIP-05", "the warning says Starboard builds its image from the zip, with its limits",
+  /builds its image, local\/zip-hello:1\.0\.0/.test(await zipWarn.innerText()) && /2 GB of memory/.test(await zipWarn.innerText()));
+await page.locator("#pl-install-password").fill(password);
+await zipWarn.getByRole("button", { name: "Install Zip hello", exact: true }).click();
+const zipRun = page.getByRole("dialog", { name: "Installing Zip hello 1.0.0" });
+await zipRun.waitFor({ timeout: 8000 }).catch(() => {});
+await zipRun.locator(".notice__title", { hasText: "Zip hello installed" }).waitFor({ timeout: 20000 }).catch(() => {});
+check("ZIP-06", "the install runs as steps (check, build, install), each done",
+  (await zipRun.locator(".task-list__item[data-state=done]").count()) === 3, (await zipRun.locator(".task-list").innerText().catch(() => "")));
+await zipRun.getByRole("button", { name: "Done" }).click().catch(() => {});
+await page.waitForURL(/settings-plugin\.html\?id=zip-hello/, { timeout: 8000 }).catch(() => {});
+await page.waitForTimeout(800);
+check("ZIP-07", "then its own page opens, offering Update from a zip file", /id=zip-hello/.test(page.url())
+  && (await page.getByRole("heading", { name: "Update from a zip file" }).count()) === 1);
+await page.getByLabel("The new version's zip file").setInputFiles(zipFile("1.0.1"));
+await page.getByRole("button", { name: "See what is new" }).click();
+const zipUp = page.getByRole("dialog", { name: "Update Zip hello to 1.0.1?" });
+await zipUp.waitFor({ timeout: 8000 }).catch(() => {});
+check("ZIP-08", "a newer zip opens the update warning", (await zipUp.count()) === 1);
+await page.locator("#pl-install-password").fill(password);
+await zipUp.getByRole("button", { name: "Update Zip hello", exact: true }).click();
+const zipUpRun = page.getByRole("dialog", { name: "Updating Zip hello to 1.0.1" });
+await zipUpRun.locator(".notice__title", { hasText: "Zip hello is now 1.0.1" }).waitFor({ timeout: 20000 }).catch(() => {});
+const zipUpSteps = await zipUpRun.locator(".task-list").innerText().catch(() => "");
+check("ZIP-09", "the update builds first, then runs the usual update steps", /Building its container from the zip/.test(zipUpSteps)
+  && (await api("/api/plugins")).plugins.find((p) => p.id === "zip-hello")?.version === "1.0.1", zipUpSteps);
+await zipUpRun.getByRole("button", { name: "Done" }).click().catch(() => {});
+await api("/api/plugins/zip-hello/remove", { method: "POST", body: { password } });
+check("ZIP-10", "the example plug-in is removed again", !(await api("/api/plugins")).plugins.some((p) => p.id === "zip-hello"));
+await open("settings-plugin.html?id=on-demand");
+check("ZIP-11", "a plug-in added from a zip updates from a zip, not an address",
+  (await page.getByRole("heading", { name: "Update from a zip file" }).count()) === 1 && (await page.getByRole("heading", { name: "Update from an address" }).count()) === 0);
+
+console.log("\n== JFM Jellyfin's metadata");
+await open("settings-jellyfin.html");
+const jfm = page.locator('section[aria-labelledby="jf-metadata-h"]');
+await jfm.getByRole("button", { name: /Move them out of the settings folder/ }).waitFor({ timeout: 8000 }).catch(() => {});
+check("JFM-01", "Settings, Jellyfin says where its pictures and details are, and offers to move them", /In its settings folder/.test(await jfm.innerText()));
+await jfm.getByRole("button", { name: /Move them out of the settings folder/ }).click();
+const jfmAsk = page.getByRole("dialog", { name: "Move Jellyfin's pictures and details?" });
+await jfmAsk.waitFor({ timeout: 5000 }).catch(() => {});
+check("JFM-02", "the move asks for the password and says nothing is deleted", /Nothing is deleted/.test(await jfmAsk.innerText()));
+await page.locator("#jf-metadata-pw").fill(password);
+await jfmAsk.getByRole("button", { name: "Move them" }).click();
+const jfmRun = page.getByRole("dialog", { name: "Moving Jellyfin's pictures and details" });
+await jfmRun.locator(".notice__title", { hasText: "Jellyfin's metadata is moved" }).waitFor({ timeout: 20000 }).catch(() => {});
+check("JFM-03", "each step is done and the result names the watch count",
+  (await jfmRun.locator(".task-list__item[data-state=done]").count()) === 7 && /watches 2,074 folders/.test(await jfmRun.innerText()));
+await jfmRun.getByRole("button", { name: "Done" }).click().catch(() => {});
+await page.waitForTimeout(600);
+check("JFM-04", "the section then says they are outside the settings folder", /Outside its settings folder/.test(await jfm.innerText()));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

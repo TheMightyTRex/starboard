@@ -50,6 +50,21 @@ the next major version.
   `too_large` and `too_many_streams`.
 - **Changed:** a `Link` header for the next page keeps the other query parameters, such as `limit`.
 - Nothing was taken away: every 1.0.0 address answers as before, and a read key works as it did.
+## Plug-in API 1.15.0 (unreleased), 15 November 2026
+
+- **Added:** `build` on a container (DASH-414): its image is built by Starboard from the `Dockerfile` in the plug-in's
+  zip file and tagged `local/<id>:<version>`, for a private plug-in with no registry, such as On demand. Installed
+  with **Settings**, **Plug-ins**, **Add a plug-in**, **Upload a zip file**, and updated with **Update from a zip
+  file** on its page; **Roll back** works as for any plug-in. The zip and the Dockerfile are checked first, and the
+  build runs with limits (2 GB of memory, 2 processor cores, 20 minutes, an image of up to 3 GB). Read
+  [Built from a zip file](plugin-manifest-reference.md#built-from-a-zip-file).
+- **Added:** `jellyfin_libraries` and the permission `jellyfin:libraries` (medium risk, DASH-430): Jellyfin libraries
+  for folders the plug-in fills, which Starboard adds on each activation with real-time monitoring deactivated unless
+  the plug-in sets `realtime_monitor`, and keeps that way. Read
+  [Jellyfin libraries](plugin-manifest-reference.md#jellyfin-libraries).
+- **Changed:** a manifest with `build` from an address or a catalogue is refused, with words that point to the zip.
+- Nothing was taken away: a 1.14 plug-in works as before.
+
 ## Plug-in API 1.14.0 (unreleased), 14 November 2026
 
 - **Added:** a card's own refresh time, `refresh_seconds`, from 10 to 3600 seconds, in the manifest and in the card's

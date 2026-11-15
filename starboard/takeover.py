@@ -369,6 +369,10 @@ def plan(data_dir, install="full", usenet="nzbget", config_dir=None, media_dir=N
         for binds in ((infos[c["name"]].get("HostConfig") or {}).get("PortBindings") or {}).values():
             own.update(int(b["HostPort"]) for b in binds or [] if str(b.get("HostPort", "")).isdigit())
     choice["own_ports"] = sorted(own)
+    # DASH-431: a Jellyfin taken over keeps its metadata where it is until Starboard moves it, after the takeover
+    jk = choice["keep"].get("jellyfin") if isinstance(choice["keep"].get("jellyfin"), dict) else None
+    if jk is not None and not any(isinstance(v, str) and v.rstrip("/").endswith(":/metadata") for v in jk.get("volumes") or []):
+        choice["jellyfin_metadata"] = False
     sab = next((c for c in replace if c["key"] == "sabnzbd"), None) if usenet == "nzbget" else None
     if shared:
         warnings.append("These folders are used in place, not copied, so going back does not restore them: " + "; ".join(shared))

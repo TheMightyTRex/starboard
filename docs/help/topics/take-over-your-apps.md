@@ -89,6 +89,10 @@ nothing is deleted. Your old settings folders and the `starboard-rollback` image
 
 - **Your own Compose file still lists the old apps.** Do not start it with `docker compose up` while Starboard runs
   them: the container names are taken, so it fails for those apps.
+- **Jellyfin's pictures and details move after the takeover,** out of its settings folder into the jellyfin-metadata
+  folder beside it, so Jellyfin watches far fewer folders. Jellyfin stops for a few minutes while they move, and a
+  link stays at the old address so every picture still shows. Nothing is deleted. To follow it, go to **Settings**,
+  then **Jellyfin**, then **Pictures and details**.
 - **Apps the install does not have,** such as Kapowarr, and apps that are stopped, are left as they are in your own
   Compose file.
 - **What does not move into Reelix** is listed in

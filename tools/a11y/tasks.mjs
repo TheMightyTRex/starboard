@@ -549,6 +549,44 @@ check("T21", "the card is named by its band's heading", band21.labelled, JSON.st
 check("T21", "the chip and the time read on their own", band21.chip === "Status: Converting" && /^Updated /.test(band21.time || ""), JSON.stringify(band21));
 check("T21", "the band adds no Tab stops", band21.focusable === 0, JSON.stringify(band21));
 
+// T24 Upload a zip file by keyboard (DASH-414): Tab reaches the zip field, then Check the zip; Enter with no file says
+// what to do, in a live place, and focus goes back to the field.
+await page.goto(`${base}/settings-plugins-catalogue.html#pl-zip-h`);  // its topic tab
+await settle();
+await page.locator('#pl-zip-h').scrollIntoViewIfNeeded().catch(() => {});
+await page.locator('#pl-zip').focus().catch(() => {});
+const zf = await focus();
+check("T24", "the zip field takes focus and is named", zf.id === "pl-zip" && !zf.lost, JSON.stringify(zf));
+const zb = await tabTo((f) => f.tag === "BUTTON" && f.text === "Check the zip", 4);
+check("T24", "Tab goes from the zip field to Check the zip", !!zb, zb ? zb.text : "not reached");
+if (zb) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(500);
+  const back = await focus();
+  const err = await page.evaluate(() => { const i = document.getElementById("pl-zip"); const id = (i.getAttribute("aria-describedby") || "").split(" ").find((x) => x.endsWith("-error"));
+    return { invalid: i.getAttribute("aria-invalid"), text: id ? document.getElementById(id)?.textContent : "" }; });
+  check("T24", "with no file, the field says what to do and keeps focus", back.id === "pl-zip" && /Choose the plug-in's zip file/.test(err.text || "") , JSON.stringify({ back, err }));
+}
+
+// T25 Pictures and details by keyboard (DASH-431): on Settings, Jellyfin, Tab reaches Move them out of the settings
+// folder; Enter opens the confirmation with focus in it, and Escape gives focus back to the button.
+await page.goto(`${base}/settings-jellyfin.html#jf-metadata-h`);  // its topic tab
+await settle();
+await page.locator('#jf-metadata-h').scrollIntoViewIfNeeded().catch(() => {});
+await page.locator('#jf-metadata-h').evaluate((h) => { h.tabIndex = -1; h.focus(); }).catch(() => {});
+const mv = await tabTo((f) => f.tag === "BUTTON" && /^Move them out of the settings folder/.test(f.text), 10);
+check("T25", "Tab reaches Move them out of the settings folder, named for a screen reader", !!mv, mv ? mv.text : "not reached");
+if (mv) {
+  await page.keyboard.press("Enter");
+  await settle();
+  const in25 = await focus();
+  check("T25", "Enter opens the confirmation with focus in it", in25.inPanel && !in25.lost, JSON.stringify(in25));
+  await page.keyboard.press("Escape");
+  await settle();
+  const back25 = await focus();
+  check("T25", "Escape closes it and focus goes back to the button", /^Move them out of the settings folder/.test(back25.text), back25.text);
+}
+
 // T23 Reduce motion (DASH-437): Off means full movement even when the device asks for less; Match device follows the
 // device; On stills movement on a device that does not ask. Checked in the styles and scripts a slide-out, a message
 // and the loading line use, as Display leaves them after a reload.

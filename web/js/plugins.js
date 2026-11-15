@@ -655,7 +655,7 @@ function pluginPage(p, redraw) {
       (p.update && st.action !== "update") || (st.can_roll_back && st.action !== "rollback")
         ? el("div", { class: "actions" }, p.update && st.action !== "update" ? updateButton(p, redraw) : null,
           st.can_roll_back && st.action !== "rollback" ? rollbackButton(p, redraw) : null) : null,
-      updateFromAddress(p, redraw)) : null,
+      p.from_zip ? updateFromZip(p, redraw) : updateFromAddress(p, redraw)) : null,
     p.jobs?.length ? section(`pl-${p.id}-jobs`, "Jobs", "Starboard runs these for it, and lists them in System with when each last ran.",
       el("ul", {}, p.jobs.map((j) => el("li", { text: j }))), el("a", { class: "btn btn--quiet", href: "/system.html#jobs-panel" }, "Open System, Jobs")) : null,
     p.looks?.length ? section(`pl-${p.id}-styles`, "Styles", "Colours for Starboard from this plug-in. Choose one for this browser, as in Display.", styleGallery(p)) : null,
@@ -1215,6 +1215,96 @@ function addPluginSection(redraw) {
   return section("pl-add", "Add one from elsewhere", "By its address or its manifest file. Starboard tests it and shows what it may do before anything is installed.", form, seen);
 }
 
+// A zip file (DASH-414, plug-in API 1.15): for a private plug-in with no address, such as On demand. The file goes to
+// Starboard as it is (never read into the page), which checks it and answers with what the plug-in may do.
+async function uploadZip(file) {
+  const res = await fetch("/api/plugins/zip", { method: "POST", credentials: "same-origin",
+    headers: { "X-Starboard": "1", Accept: "application/json", "Content-Type": "application/zip" }, body: file });
+  let out = {};
+  try { out = await res.json(); } catch { /* empty */ }
+  if (!res.ok) throw new Error(out.error || `Something went wrong (error ${res.status})`);
+  return out;
+}
+
+const zipChecks = (s) => el("p", { class: "small", text: `Checked: ${s.zip.files} ${s.zip.files === 1 ? "file" : "files"}, `
+  + `${s.zip.size < 1048576 ? `${Math.max(1, Math.round(s.zip.size / 1024))} KB` : `${(s.zip.size / 1048576).toFixed(1)} MB`} unpacked, nothing outside the zip and no links`
+  + (s.zip.dockerfile ? `. Its container is built here from the Dockerfile${s.zip.dockerfile.from.length ? `, starting from ${s.zip.dockerfile.from.join(", ")}` : ""}.` : ".") });
+
+function zipSection() {
+  const file = el("input", { type: "file", id: "pl-zip", accept: ".zip,application/zip", class: "input" });
+  const look = el("button", { type: "submit", class: "btn btn--primary", text: "Check the zip" });
+  const seen = el("div", { class: "stack-4", "aria-live": "polite" });
+  const form = el("form", { class: "form-stack", novalidate: true },
+    field("The plug-in's zip file", file, { hint: "From the plug-in's own page, such as its Releases page. Up to 50 MB, with starboard-plugin.json at the top." }),
+    el("div", { class: "actions" }, look));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setError(file, "");
+    seen.replaceChildren();
+    if (!file.files[0]) { setError(file, "Choose the plug-in's zip file"); file.focus(); return; }
+    let s;
+    look.disabled = true;
+    loading.start();
+    try { s = await uploadZip(file.files[0]); }
+    catch (err) { setError(file, err.message); file.focus(); return; }
+    finally { look.disabled = false; loading.stop(); }
+    const add = el("button", { type: "button", class: "btn btn--primary", text: `Install ${s.name || "it"}…` });
+    add.addEventListener("click", async () => {
+      const password = await installWarning(s, { opener: add });
+      if (password === null) return;
+      try {
+        const r = await api("/api/plugins/zip/install", { method: "POST", body: { zip: s.zip.token, password } });
+        const job = taskJob({ title: `Installing ${s.name} ${s.version}`, url: r.job, failedWord: "Stopped here", returnTo: "pl-zip-h" });
+        job.open();
+        const j = await job.follow((x) => ({ title: x.title, text: x.text }));
+        // Its page opens once the steps are read and closed, so the result is not taken away before it is heard.
+        const open = () => { location.href = `/settings-plugin.html?id=${encodeURIComponent(s.id)}`; };
+        if (j.ok) { if (job.dialog.open) job.dialog.addEventListener("close", open, { once: true }); else open(); }
+      } catch (err) { problem(err.message, add); }
+    });
+    seen.replaceChildren(...[
+      el("h3", { tabindex: "-1", text: `${s.name || "This plug-in"} ${s.version || ""}` }), el("p", { text: s.description || "" }),
+      el("p", { class: "small", text: [s.author && `By ${s.author}`, s.licence, s.needs.length && `Needs ${s.needs.join(" and ")}`].filter(Boolean).join(" · ") }),
+      zipChecks(s),
+      el("h3", { text: "What it may do" }), pluginPermissions(s.permissions),
+      el("h3", { text: "Test results" }), testReport(s.test),
+      s.test.ok ? el("div", { class: "actions" }, add) : null].filter(Boolean));
+    seen.querySelector("h3")?.focus();
+  });
+  return section("pl-zip", "Upload a zip file", "For a private plug-in that has no address, such as On demand. Starboard checks the zip and shows what it may do before anything is installed.", form, seen);
+}
+
+// Update from a zip file (DASH-414): a newer zip of a plug-in added from one. The same warning and update steps as
+// any update, with a build step first; Roll back needs nothing more.
+function updateFromZip(p, redraw) {
+  const file = el("input", { type: "file", id: `pl-${p.id}-update-zip`, accept: ".zip,application/zip", class: "input" });
+  const go = el("button", { type: "submit", class: "btn" }, "See what is new");
+  const form = el("form", { class: "form-stack", novalidate: true, "aria-labelledby": `pl-${p.id}-update-zip-h` },
+    el("h3", { id: `pl-${p.id}-update-zip-h`, text: "Update from a zip file" }),
+    field("The new version's zip file", file, { hint: "From the plug-in's own page. Starboard checks it before anything changes." }),
+    el("div", { class: "actions" }, go));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setError(file, "");
+    if (!file.files[0]) { setError(file, "Choose the new version's zip file"); file.focus(); return; }
+    let s;
+    go.disabled = true;
+    try {
+      const up = await uploadZip(file.files[0]);
+      s = await api(`/api/plugins/${p.id}/update-zip`, { method: "POST", body: { zip: up.zip.token, preview: true } });
+    } catch (err) { setError(file, err.message); file.focus(); return; }
+    finally { go.disabled = false; }
+    if (!s.test.ok) { setError(file, `This version has ${count(s.test.errors, "error")}: ${s.test.issues.filter((i) => i.severity === "error").map((i) => i.what).slice(0, 2).join("; ")}`); file.focus(); return; }
+    const password = await installWarning(s, { opener: go, verb: "Update" });
+    if (password === null) return;
+    try {
+      const r = await api(`/api/plugins/${p.id}/update-zip`, { method: "POST", body: { zip: s.zip.token, password } });
+      await followRun(p, r, `Updating ${p.name} to ${s.version}`, redraw);
+    } catch (err) { problem(err.message, go); }
+  });
+  return form;
+}
+
 // Settings, Plug-ins, Manage (DASH-318): the plug-ins added, each with its state, Settings, Activate or Deactivate
 // and Remove; Deactivate all. Adding is on the Catalogue page.
 // Plug-ins ticked in the first set-up (DASH-399), such as Audio description: an offer, never an install. On the
@@ -1373,7 +1463,7 @@ async function startCatalogue() {
           rows.length ? byKind(rows.filter((e) => !e.recommended)) : el("p", { class: "small muted", text: "It lists no plug-ins." }));
       }),
       sourcesSection(c.catalogues, draw),
-      addPluginSection(draw), testerSection()].filter(Boolean));
+      addPluginSection(draw), zipSection(), testerSection()].filter(Boolean));
   };
   draw();
 }

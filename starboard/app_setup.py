@@ -64,9 +64,10 @@ def _jf_auth(token=None):
     return {"Authorization": words + (f', Token="{token}"' if token else "")}
 
 
-def jellyfin_first_run(base, password, groups, country="GB", user=ADMIN, opener=None, graphics=None):
+def jellyfin_first_run(base, password, groups, country="GB", user=ADMIN, opener=None, graphics=None, metadata=None):
     """Finishes Jellyfin's start-up wizard when it has not run, signs in, adds the libraries for what was chosen and
-    returns (API key, lines of what was done)."""
+    returns (API key, lines of what was done). `metadata`: the folder inside Jellyfin for its metadata (/metadata when
+    Install apps gave it the volume, DASH-431), set as MetadataPath while Jellyfin still uses its own folder."""
     done = []
     info = _call(base, "GET", "/System/Info/Public", opener=opener) or {}
     if not info.get("StartupWizardCompleted"):
@@ -86,6 +87,11 @@ def jellyfin_first_run(base, password, groups, country="GB", user=ADMIN, opener=
     if not token:
         raise AppSetupError("Jellyfin did not give Starboard a sign-in")
     auth = _jf_auth(token)
+    if metadata:  # DASH-431: before any library is added, so nothing is saved in the settings folder first
+        conf = _call(base, "GET", "/System/Configuration", headers=auth, opener=opener) or {}
+        if isinstance(conf, dict) and not conf.get("MetadataPath"):
+            _call(base, "POST", "/System/Configuration", {**conf, "MetadataPath": metadata}, headers=auth, opener=opener)
+            done.append(f"Jellyfin keeps its pictures and details in {metadata}, outside its settings folder")
     have = _call(base, "GET", "/Library/VirtualFolders", headers=auth, opener=opener) or []
     paths = {p for f in have for p in (f.get("Locations") or [])}
     names = {f.get("Name") for f in have}
@@ -298,7 +304,8 @@ def first_runs(cfg, data_dir, password, groups, log=lambda line: None, opener=No
             continue
         try:
             extra = {"country": country_from_tz(os.environ.get("TZ")) or "GB",
-                     "graphics": stack.env_values(data_dir).get("GRAPHICS_VENDOR")} if key == "jellyfin" else {}
+                     "graphics": stack.env_values(data_dir).get("GRAPHICS_VENDOR"),
+                     "metadata": "/metadata" if stack.compose_has_jellyfin_metadata(data_dir) else None} if key == "jellyfin" else {}
             api_key, lines, more = _when_ready(lambda: run(base, password, groups, opener=opener, **extra), log, name, wait)
         except AppSetupError as e:
             done.append(f"{name} is not set up yet: {e}")

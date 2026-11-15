@@ -66,6 +66,10 @@ def run(manifest, dev=False, builtin=False, logo_problem=""):
             if dev and "@sha256:" not in str(c.get("image", "")):
                 issues.append({"severity": "warning", "area": "security", "where": f"containers[{i}]", "what": "The image is not pinned by digest",
                                "fix": "Pin it as name@sha256:... before anyone else installs it"})
+            if c.get("build") is True:  # API 1.15 (DASH-414)
+                issues.append({"severity": "info", "area": "security", "where": f"containers[{i}]",
+                               "what": "Its image is built from the Dockerfile in the plug-in's zip, so it installs only from a zip file",
+                               "fix": "Share the zip (Settings, Plug-ins, Add a plug-in, Upload a zip file); an address or catalogue cannot install it"})
             if i and c.get("start") == "when_needed":  # DASH-357: only the container Starboard calls can be started again
                 issues.append({"severity": "warning", "area": "quality", "where": f"containers[{i}]",
                                "what": "Only the first container can rest when idle, because Starboard only calls that one; this one runs always",
