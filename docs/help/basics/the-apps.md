@@ -56,14 +56,13 @@ Here is the journey of one film, from a request to your television:
 4. When the download finishes, Reelix moves the film into your films folder.
 5. Jellyfin sees the new film and shows it on your television.
 
-```mermaid
-flowchart LR
-    A["Reelix: a request"] --> B["Reelix: finds it"]
-    B --> C["qBittorrent: downloads it"]
-    G["Gluetun: VPN"] -.-> C
-    C --> B
-    B --> D["Your films folder"]
-    D --> E["Jellyfin: plays it"]
+```flow
+title: How a film reaches you
+start: You ask for a film in Reelix
+step: Reelix finds it
+step2: qBittorrent downloads it | Behind the Gluetun VPN
+step3: Reelix puts it in your films folder
+end: Jellyfin plays it
 ```
 
 The diagram shows the same journey: Reelix takes the request and finds the film, qBittorrent downloads it behind
