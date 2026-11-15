@@ -28,7 +28,8 @@ Starboard shows what they are downloading, and can make them download only at ce
 ### The protector: Gluetun
 
 Gluetun sends the download apps' traffic through your VPN (virtual private network), so your downloads are private.
-Starboard shows whether the VPN is connected.
+Starboard shows whether the VPN is connected. It is recommended, and you can go without it: read
+[Download without a VPN](../topics/download-without-a-vpn.md).
 
 ### The players: Jellyfin and Audiobookshelf
 

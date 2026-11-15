@@ -100,6 +100,7 @@ Each guide is a journey through several topics, in order.
 - [Find and get what is missing](topics/get-what-is-missing.md)
 - [Pause, resume and remove downloads](topics/manage-downloads.md)
 - [Download only at certain hours](topics/set-download-hours.md)
+- [Download without a VPN](topics/download-without-a-vpn.md)
 - [Approve or decline requests](topics/approve-requests.md)
 - [Find out what is coming up](topics/coming-up.md)
 - [Follow radio shows and podcasts](topics/follow-radio-shows.md)

@@ -12,7 +12,7 @@ hours. It takes about 10 minutes, plus the time to download the apps.
 - Starboard downloaded, as in [Install Starboard with the installer](install-with-the-installer.md#steps), up to
   the step that starts the installer. The [Run first script](run-first.md) does this for you: choose
   **Here in the terminal** on its **Welcome** step, and go to step 2.
-- If you want a VPN: your VPN provider's details for WireGuard or OpenVPN, from the provider's website.
+- A VPN is recommended: your VPN provider's details for WireGuard or OpenVPN, from the provider's website.
 
 ## Steps
 
@@ -36,7 +36,10 @@ hours. It takes about 10 minutes, plus the time to download the apps.
    [Other answers](#other-answers).
    ![The What to set up step in the terminal, with Basics, Full install, Everything and Let me choose (step 6) outlined](../images/set-up-in-the-terminal-1-what-to-set-up.png)
 
-7. **VPN:** enter the number of your provider. No answer is recommended here. If yours is not listed, choose
+7. **VPN:** press Enter for **Use my VPN account (recommended)**. Without a VPN account, choose **Continue without a
+   VPN**: a warning says what that means, and Enter keeps **Cancel**. Read
+   [Download without a VPN](download-without-a-vpn.md). Then enter the number of your provider. No answer is
+   recommended here. If yours is not listed, choose
    **Another one that Gluetun supports** and enter its name as Gluetun's list writes it. Then enter its details. The
    password or key does not show as you enter it. A link marked **(Ad)** is an affiliate link, as the note before the
    list says.

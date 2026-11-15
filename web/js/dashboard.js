@@ -79,7 +79,15 @@ const CARDS = {
   },
   async vpn() {
     const r = await ask("/api/transfer");
-    if (!r.vpn?.length) return empty("No VPN on your apps.");
+    if (!r.vpn?.length) {
+      // DASH-440: downloading without a VPN is a choice, so a quiet state with the way to add one, never an error.
+      let st = null;
+      try { st = await ask("/api/downloads/vpn-state"); } catch { /* the plain words below */ }
+      if (!st?.downloads) return empty("No VPN on your apps.");
+      return el("div", { class: "stack-2" }, headChip("No VPN", "muted"),
+        el("p", { class: "small muted", text: "Downloads use your home internet address." }),
+        el("p", { class: "small" }, el("a", { href: "/settings-downloads.html", text: "Add a VPN" })));
+    }
     const v = r.vpn[0];
     return el("div", { class: "stack-2" }, headChip(v.running ? "Connected" : "Not connected", v.running ? "success" : "danger"),  // on the title's line (DASH-309)
       v.country ? el("p", { class: "small", text: [v.country, v.ip].filter(Boolean).join(" · ") }) : null);

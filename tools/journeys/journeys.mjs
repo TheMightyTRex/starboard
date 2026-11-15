@@ -1440,6 +1440,95 @@ check("UPD-03", "the page says how it ended", (await page.locator("#self-update-
 const back = await api("/api/self-update");
 check("UPD-04", "the record says who started it and how it ended", back.update?.by === "you" && back.update?.outcome === "updated", JSON.stringify(back.update));
 
+// VPN-01 to VPN-04 (DASH-440): Continue without a VPN in the browser set-up, with its warning as an alert dialog
+// (focus on Cancel, Escape cancels); then Remove the VPN and Add a VPN in Settings, Downloads, VPN, the quiet
+// reminder on Downloads (hidden for 90 days) and the dashboard's No VPN card. The VPN is added back at the end.
+console.log("\n== VPN-01 Continue without a VPN in the set-up");
+await open("install-apps.html?wizard=1");
+const wiz = async (name) => { await page.locator(".wizard-frame, main").getByRole("button", { name, exact: true }).last().click(); await page.waitForTimeout(900); };
+await wiz("Begin");
+await page.getByRole("radio", { name: /Basics/ }).first().waitFor({ timeout: 15000 });
+const without = page.getByRole("radio", { name: /Continue without a VPN/ });
+for (let i = 0; i < 4 && !(await without.count()); i++) await wiz("Continue");  // What to set up (Basics), then Folders
+await without.waitFor({ timeout: 15000 });
+check("VPN-01", "the VPN step offers the VPN account first, as the suggested choice",
+  await page.getByRole("radio", { name: /Use my VPN account \(recommended\)/ }).isChecked() && !(await without.isChecked()));
+await without.check();
+check("VPN-01", "choosing it hides the VPN account's fields", await page.getByText("VPN provider", { exact: true }).isHidden());
+await wiz("Continue");
+const warn = page.locator("dialog[open][role=alertdialog]");
+await warn.waitFor({ timeout: 5000 });
+check("VPN-01", "a warning opens as an alert dialog with its words", (await warn.textContent()).includes("can see your home internet address")
+  && (await warn.getAttribute("aria-describedby")) !== null);
+check("VPN-01", "focus starts on Cancel", await page.evaluate(() => document.activeElement?.closest("dialog[open]") && document.activeElement.textContent.trim() === "Cancel"));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(400);
+check("VPN-01", "Escape cancels: still on the VPN step, with focus on the choice", await without.isVisible()
+  && await page.evaluate(() => document.activeElement?.type === "radio"));
+await wiz("Continue");
+await warn.waitFor({ timeout: 5000 });
+await warn.getByRole("button", { name: "I understand, continue without a VPN" }).click();
+await page.waitForTimeout(1200);
+check("VPN-01", "confirming goes on to the next step", await without.count() === 0);
+await page.getByRole("button", { name: "Back", exact: true }).first().click();
+await page.waitForTimeout(1200);
+check("VPN-01", "Back shows the VPN step with the choice kept", await page.getByRole("radio", { name: /Continue without a VPN/ }).isChecked());
+
+console.log("\n== VPN-02 Remove the VPN in Settings");
+if (!(await api("/api/downloads/vpn-state")).on) {
+  await api("/api/downloads/vpn", { method: "POST", body: { password, vpn: { provider: "mullvad", type: "wireguard", wireguard_private_key: "made-up", wireguard_addresses: "192.168.1.20/32" } } });
+}
+await open("settings-downloads.html");
+const rmPw = page.locator("#dl-vpn-remove-pw");
+await rmPw.waitFor({ timeout: 10000 });
+await rmPw.fill(password);
+await page.getByRole("button", { name: "Remove the VPN" }).click();
+await warn.waitFor({ timeout: 5000 });
+check("VPN-02", "Remove the VPN shows the same warning, Cancel focused",
+  (await warn.textContent()).includes("Remove the VPN?") && await page.evaluate(() => document.activeElement?.textContent.trim() === "Cancel"));
+await warn.getByRole("button", { name: "Cancel" }).click();
+check("VPN-02", "Cancel removes nothing", (await api("/api/downloads/vpn-state")).on === true);
+await page.getByRole("button", { name: "Remove the VPN" }).click();
+await warn.getByRole("button", { name: "I understand, remove the VPN" }).click();
+await page.getByText("VPN removed").waitFor({ timeout: 10000 });
+check("VPN-02", "confirmed, the VPN is removed", (await api("/api/downloads/vpn-state")).on === false);
+
+console.log("\n== VPN-03 The quiet No VPN states");
+await open("settings-downloads.html");
+check("VPN-03", "Settings, Downloads, VPN says No VPN with Add a VPN, not an error",
+  await page.locator("#dl-vpn-h").count() === 1 && await page.getByRole("button", { name: "Add a VPN" }).count() === 1
+  && await page.locator(".notice[data-tone=danger]").count() === 0);
+await open("downloads.html");
+const reminder = page.locator("#vpn-reminder");
+await reminder.waitFor({ timeout: 10000 });
+check("VPN-03", "Downloads says Downloading without a VPN, with the link to add one",
+  (await reminder.textContent()).includes("Downloading without a VPN") && (await reminder.getByRole("link", { name: "Add a VPN" }).getAttribute("href")) === "/settings-downloads.html");
+await reminder.getByRole("button", { name: "Hide for 90 days" }).click();
+await page.waitForTimeout(800);
+check("VPN-03", "Hide for 90 days hides it, with focus on the page heading", await reminder.count() === 0
+  && await page.evaluate(() => document.activeElement?.tagName === "H1"));
+await open("downloads.html");
+check("VPN-03", "and it stays hidden", await page.locator("#vpn-reminder").count() === 0);
+await open("dashboard.html");
+await page.waitForTimeout(1500);
+const vpnCard = page.locator("section, article, .card").filter({ has: page.getByRole("heading", { name: "VPN", exact: true }) }).last();
+check("VPN-03", "the dashboard's VPN card says No VPN, with Add a VPN", (await vpnCard.textContent()).includes("No VPN")
+  && await vpnCard.getByRole("link", { name: "Add a VPN" }).count() === 1);
+
+console.log("\n== VPN-04 Add a VPN later");
+await open("settings-downloads.html");
+await page.getByRole("button", { name: "Add a VPN" }).click();
+check("VPN-04", "Add a VPN opens the form with focus on the provider", await page.evaluate(() => document.activeElement?.id === "dl-vpn-add-provider"));
+await page.getByRole("button", { name: "Add the VPN" }).click();
+check("VPN-04", "a missing detail is said by its field", (await page.locator(".field-error:not([hidden])").first().textContent()).includes("Choose your VPN provider"));
+await page.locator("#dl-vpn-add-provider").selectOption("mullvad");
+await page.locator("#dl-vpn-add-key").fill("made-up");
+await page.locator("#dl-vpn-add-address").fill("192.168.1.20/32");
+await page.locator("#dl-vpn-add-pw").fill(password);
+await page.getByRole("button", { name: "Add the VPN" }).click();
+await page.getByText("VPN added").waitFor({ timeout: 10000 });
+check("VPN-04", "the VPN is added back, with Gluetun", (await api("/api/downloads/vpn-state")).on === true);
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

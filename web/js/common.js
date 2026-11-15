@@ -610,18 +610,20 @@ function slideOutConfirm({ title, body, confirm = "Continue", wide = true, opene
 
 // Confirm dialog: a decision that must be made before going on. Says what will happen; resolves true or false.
 // confirmDialog({ title, message: string or [nodes], confirm: "Remove", danger: true, fields: [nodes] })
-function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel", danger = false, fields = [] }) {
+// alert: true makes it an alert dialog (a warning that needs an answer, DASH-440): announced as one with its words,
+// and focus starts on Cancel, so Enter never agrees by mistake. Escape cancels, as in every dialog.
+function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel", danger = false, fields = [], alert = false }) {
   return new Promise((resolve) => {
     const id = `confirm-${Date.now()}`;
     const form = el("form", { method: "dialog" },
       el("div", { class: "panel-header" },
         el("h2", { class: "panel-header__title", id, text: title }),
         el("button", { type: "button", class: "icon-btn", value: "cancel", "data-dialog-close": true, "aria-label": `Close ${title}` }, icon("x", 20))),
-      el("div", { class: "dialog__body" }, typeof message === "string" ? el("p", { text: message }) : message, fields),
+      el("div", { class: "dialog__body", id: `${id}-body` }, typeof message === "string" ? el("p", { text: message }) : message, fields),
       el("div", { class: "dialog__foot" },
         el("button", { type: "submit", value: "ok", class: danger ? "btn btn--primary btn--danger" : "btn btn--primary", text: confirm }),
         el("button", { type: "submit", value: "cancel", formnovalidate: true, class: "btn", text: cancel })));
-    const dialog = el("dialog", { class: "dialog", "aria-labelledby": id }, form);
+    const dialog = el("dialog", { class: "dialog", "aria-labelledby": id, ...(alert ? { role: "alertdialog", "aria-describedby": `${id}-body` } : {}) }, form);
     const opener = document.activeElement;
     let result = false;
     form.addEventListener("submit", (e) => { result = e.submitter?.value === "ok"; });
@@ -637,9 +639,18 @@ function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel"
     dialog.showModal();
     // Focus starts on the first field it asks for; otherwise on Cancel for a danger choice, so Enter never does
     // the harm by mistake; otherwise on the main button (screen reader check, 12 November 2026).
-    const start = $("input, select, textarea", form) || (danger ? $('.dialog__foot button[value="cancel"]', form) : $('.dialog__foot button[value="ok"]', form));
+    const start = $("input, select, textarea", form) || (danger || alert ? $('.dialog__foot button[value="cancel"]', form) : $('.dialog__foot button[value="ok"]', form));
     start?.focus();
   });
+}
+
+// Downloading without a VPN (DASH-440): the warning both set-ups and Settings, Downloads, VPN show before going on
+// without one, in the words the terminal set-up reads too (web/setup-answers.json, novpn). Resolves true only when
+// the person chose the clearly labelled button; Cancel, the default, and Escape resolve false.
+async function noVpnWarning({ title, confirm } = {}) {
+  const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).novpn;
+  return confirmDialog({ title: title || w.warning_title, alert: true, confirm: confirm || w.confirm, cancel: w.cancel,
+    message: w.warning.map((t) => el("p", { text: t })) });
 }
 
 // Menu button: a button that opens a short list of actions (More actions). items: [{ label, icon, onSelect, danger }]

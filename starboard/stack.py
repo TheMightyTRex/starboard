@@ -964,8 +964,10 @@ def read_keep(data_dir, env=None):
 
 def which_install(apps, edition=None):
     """"basics", "full" or "all" when the apps are one of INSTALLS (with either Usenet app where allowed), else "custom".
-    The Reelix version is not part of it."""
+    The Reelix version is not part of it, and nor is the VPN: Basics without a VPN is still Basics (DASH-440)."""
     have = set(apps) - RETIRED  # Storyarr kept from before does not make an install "custom"
+    if "gluetun" not in have:
+        have.add("gluetun")  # every install has the VPN unless the person chose to go without one
     for key in ("all", "full", "basics"):
         for usenet in USENET_APPS:
             spec = INSTALLS[key]
@@ -1016,9 +1018,15 @@ def plan_change(data_dir, install=None, usenet=None, edition=None, check=None, o
         c = install_choice(install, check=check, usenet=usenet or usenet_now or "nzbget")
         apps = c["apps"]
         edition = edition or c["reelix_edition"]
+        if "gluetun" not in now["apps"]:
+            # Downloading without a VPN was a choice (DASH-440): another install keeps it. The VPN is added in
+            # Settings, Downloads, VPN, with its details.
+            apps = [k for k in apps if k != "gluetun"]
     if usenet and usenet in USENET_APPS and usenet != next((k for k in USENET_APPS if k in apps), usenet):
         apps = [usenet if k in USENET_APPS else k for k in apps]
     apps, _ = with_needs(apps)
+    if "gluetun" not in now["apps"]:
+        apps = [k for k in apps if k != "gluetun"]
     left_out = [k for k in apps if k in set(outside) and k not in now["apps"]]
     apps = [k for k in apps if k not in left_out]
     choice = {**now, "apps": apps, "reelix_edition": edition or now["reelix_edition"], "own_ports": compose_ports(data_dir)}
@@ -1028,6 +1036,91 @@ def plan_change(data_dir, install=None, usenet=None, edition=None, check=None, o
             "remove": [k for k in now["apps"] if k not in apps],
             "reelix": (now["reelix_edition"], choice["reelix_edition"]) if "reelix" in apps else None,
             "usenet": (usenet_now, next((k for k in USENET_APPS if k in apps), None)), "outside": left_out}
+
+
+# Downloading without a VPN (DASH-440) ---------------------------------------------------------------------------------
+# Both set-ups ask first whether downloads go through a VPN; going without one is a choice made after a warning. The
+# choice is recorded in data/stack/vpn-choice.json ({vpn, chosen, from, hidden_until}); Settings, Downloads, VPN adds a
+# VPN later or removes it, with the same warning. While there is none, Downloads and the dashboard's VPN card say so
+# quietly, and the reminder can be hidden for 90 days. There are no notifications about it.
+VPN_CHOICE_FILE = "vpn-choice.json"
+REMINDER_DAYS = 90
+PEER_APPS = ("qbittorrent", "slskd")  # apps whose downloads show your address to other people
+DOWNLOAD_APPS = ("qbittorrent", "nzbget", "sabnzbd", "slskd", "prowlarr", "flaresolverr")
+
+
+def vpn_choice(data_dir):
+    """What was chosen about the VPN, and when: {} when nothing was recorded (installs before DASH-440)."""
+    try:
+        with open(os.path.join(folder(data_dir), VPN_CHOICE_FILE), encoding="utf-8") as f:
+            out = json.load(f)
+        return out if isinstance(out, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_vpn_choice(data_dir, record):
+    path = os.path.join(folder(data_dir), VPN_CHOICE_FILE)
+    os.makedirs(folder(data_dir), mode=0o700, exist_ok=True)
+    with os.fdopen(os.open(path + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+        json.dump(record, f)
+    os.replace(path + ".new", path)
+
+
+def record_vpn_choice(data_dir, vpn, where, now=None):
+    """Records a VPN choice: True when downloads go through one, False when the person chose to go without one after
+    the warning. `where` is "browser", "terminal" or "settings". A new choice shows the reminder again."""
+    if where not in ("browser", "terminal", "settings"):
+        where = "browser"
+    record = {"vpn": bool(vpn), "chosen": int(now or time.time()), "from": where}
+    _write_vpn_choice(data_dir, record)
+    return record
+
+
+def hide_vpn_reminder(data_dir, days=REMINDER_DAYS, now=None):
+    """Hides "Downloading without a VPN" for `days` days. Starboard has one account, so this is that account's."""
+    record = vpn_choice(data_dir)
+    record["hidden_until"] = int((now or time.time()) + days * 86400)
+    _write_vpn_choice(data_dir, record)
+    return record["hidden_until"]
+
+
+def vpn_state(data_dir, now=None):
+    """{on, downloads, peers, chosen, reminder, hidden_until} for Downloads, the dashboard and Settings. `reminder` is
+    True when apps that share with other people download without a VPN and the reminder is not hidden."""
+    keys = set(chosen_keys(data_dir) or [])
+    on = "gluetun" in keys
+    record = vpn_choice(data_dir)
+    hidden = int(record.get("hidden_until") or 0)
+    peers = any(k in keys for k in PEER_APPS)
+    return {"on": on, "downloads": any(k in keys for k in DOWNLOAD_APPS), "peers": peers,
+            "installed": bool(keys), "chosen": record.get("chosen"), "chosen_from": record.get("from"),
+            "reminder": bool(keys) and not on and peers and hidden <= (now or time.time()),
+            "hidden_until": hidden if hidden > (now or time.time()) else None}
+
+
+def plan_vpn(data_dir, on, vpn=None):
+    """Adding a VPN to an install without one, or taking it away: the new choice and the apps added and removed, in
+    the shape plan_change gives. Adding needs the VPN's details (checked by build, as in the set-ups)."""
+    now = current_choice(data_dir)
+    if not now:
+        raise ValueError("Install apps did not set up the apps here, so Starboard cannot change the VPN. Use Install apps first")
+    apps = [k for k in now["apps"] if k != "gluetun"]
+    if on:
+        if not any(k in apps for k in DOWNLOAD_APPS):
+            raise ValueError("Your install has no download app to send through a VPN")
+        apps, _ = with_needs(apps + ["gluetun"])
+    elif "gluetun" not in now["apps"]:
+        raise ValueError("Your install has no VPN")
+    choice = {**now, "apps": apps, "own_ports": compose_ports(data_dir)}
+    if on:
+        choice["vpn"] = dict(vpn or {})
+    else:
+        choice.pop("vpn", None)
+    usenet = next((k for k in USENET_APPS if k in apps), None)
+    return {"choice": choice, "own": own_services(data_dir), "add": [k for k in apps if k not in now["apps"]],
+            "remove": [k for k in now["apps"] if k not in apps], "reelix": None, "usenet": (usenet, usenet), "outside": [],
+            "vpn": (("gluetun" in now["apps"]), on)}
 
 
 def keep_made_up(env_text, old_text, shown):

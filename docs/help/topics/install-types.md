@@ -141,14 +141,15 @@ read [Move your apps to Reelix](move-your-apps-to-reelix.md) for what to do with
 |---|---|---|---|
 | A computer running Linux Mint 22.3, Debian 13, Ubuntu Server 26.04 or Raspberry Pi OS (read [What you need](what-you-need.md)) | ✓ | ✓ | ✓ |
 | A folder or drive for your media | ✓ | ✓ | ✓ |
-| An account with a VPN provider, for the VPN | ✓ | ✓ | ✓ |
+| An account with a VPN provider, for the VPN | Recommended | Recommended | Recommended |
 | An account with a Usenet provider, to download from Usenet | Only for Usenet | Only for Usenet | Only for Usenet |
 | A TMDB API key, free from themoviedb.org | Recommended | Recommended | Recommended |
 | A Spotify account, for Spotify downloads | | Only for Spotify | Only for Spotify |
 | Disk for the apps, before any media | about 3.5 GB | about 9 GB | about 16 GB |
 
 - **The VPN** is in every install, because it keeps your address private when downloading torrents. Your provider's
-  website gives the details the set-up asks for.
+  website gives the details the set-up asks for. You can continue without one and add it later: read
+  [Download without a VPN](download-without-a-vpn.md).
 - **Usenet** needs a paid provider. Without one, NZBGet is installed but has nothing to download from; torrents still
   work. Read [Choose a Usenet provider and add it](choose-a-usenet-provider.md).
 - **TMDB:** without a key, Reelix uses open data for films and series (Wikidata and TVmaze), with no film posters. A

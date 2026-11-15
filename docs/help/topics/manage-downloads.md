@@ -77,7 +77,9 @@ This needs the full version of Reelix. Read [Switch between the two versions of 
   **Settings**, then **Performance**, activate **Advanced settings**, and change **Downloads page updates**.
 - **Open the queue in** and the app's name opens the app's own queue in a new tab, for anything Starboard
   cannot do.
-- The tiles show each download app's speed. With a VPN (Gluetun), a tile shows whether it is connected.
+- The tiles show each download app's speed. With a VPN (Gluetun), a tile shows whether it is connected. Without
+  one, **Downloading without a VPN** shows above the tiles, with **Add a VPN**. Select **Hide for 90 days** to hide
+  it. Read [Download without a VPN](download-without-a-vpn.md).
 - **Finished this week** on the Queue page lists what your apps imported in the last 7 days.
   **Recently finished** in the menu does not list anything yet.
 - Pausing all downloads pauses qBittorrent, NZBGet, SABnzbd and Soulseek. Seeding is left alone.

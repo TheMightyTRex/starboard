@@ -339,6 +339,10 @@
               {
                 "label": "Keep downloads private through a VPN",
                 "to": "topics/install-apps.md"
+              },
+              {
+                "label": "Download without a VPN, or add one later",
+                "to": "topics/download-without-a-vpn.md"
               }
             ]
           }

@@ -87,17 +87,18 @@ async function installFlow({ chosenMedia = "" } = {}) {
     vpn: { provider: "", type: "wireguard" }, moving: new Set(), written: null, pool: null, reelix_edition: "lite",
     install: "basics", installApplied: false, usenet: "nzbget", sites: { builtin: [], own: [] },
     tmdb: "", language: "English", usenetServer: null,
+    noVpn: false,  // DASH-440: chosen on the VPN step, after the warning; Gluetun is then left out
   };
-  // The steps follow the choices: VPN only when Gluetun is ticked, Usenet only when SABnzbd or NZBGet is, Moving over
-  // only when there is something to move. Check and Start are listed apart, so the guide can put How much it does
+  // The steps follow the choices: VPN only when Gluetun is ticked (or was, until Continue without a VPN on its own
+  // step, DASH-440), Usenet only when SABnzbd or NZBGet is, Moving over only when there is something to move. Check and Start are listed apart, so the guide can put How much it does
   // between them and the rest (DASH-265).
   const before = () => [
     { id: "groups", ...stepNamed(T, "apps"), skippable: false,
       intro: "Tick what you want. Starboard picks the apps for each one; you can see and change them with Advanced settings." },
     ...(state.chosenMedia ? [] : [{ id: "folders", ...stepNamed(T, "folders"), skippable: false,
       intro: "One media folder holds your downloads and your library together, so a finished download moves into the library instantly." }]),
-    ...(state.apps.has("gluetun") ? [{ id: "vpn", ...stepNamed(T, "vpn"), skippable: false,
-      intro: "Downloads go through your VPN, so your internet provider sees only the VPN. You need an account with a VPN provider." }] : []),
+    ...(state.apps.has("gluetun") || state.noVpn ? [{ id: "vpn", ...stepNamed(T, "vpn"), skippable: false,
+      intro: "Downloads go through your VPN, so your internet provider sees only the VPN. A VPN is recommended; you can also continue without one." }] : []),
     ...(state.apps.has("sabnzbd") || state.apps.has("nzbget") ? [{ id: "usenet", ...stepNamed(T, "usenet"), skippable: false }] : []),
     ...(state.apps.has("reelix") ? [{ id: "sites", ...stepNamed(T, "sites"), skippable: false },
       { id: "films", ...stepNamed(T, "films"), skippable: false }] : []),
@@ -274,6 +275,7 @@ async function installStep(id, state, data, apps, go) {
       state.groups = new Set(c.groups.filter((g) => data.groups.some((x) => x.key === g)));
       state.reelix_edition = c.reelix_edition;
       state.installNote = c.note || "";
+      state.noVpn = false;  // an install has a VPN; its step asks again
       remember({ health: !!c.disk_health });  // the set-up guide's disk health answer starts from this
       state.installApplied = true;
     };
@@ -420,8 +422,10 @@ async function installStep(id, state, data, apps, go) {
         error.replaceChildren(notice("warning", "Nothing to download with", "Tick Downloads too, so the apps have something to download with. Or choose Continue again to go on without it."));
         return false;
       }
+      if (state.apps.has("gluetun")) state.noVpn = false;  // VPN ticked again: its step asks for the account
       // DASH-131: torrents without a VPN are asked about once, in plain words (the terminal set-up asks the same).
-      if (state.apps.has("qbittorrent") && !state.apps.has("gluetun") && !apps.gluetun?.installed && !state.warnedVpn) {
+      // Continue without a VPN on the VPN step (DASH-440) has said it already, with its warning.
+      if (state.apps.has("qbittorrent") && !state.apps.has("gluetun") && !apps.gluetun?.installed && !state.warnedVpn && !state.noVpn) {
         state.warnedVpn = true;
         const w = (await loadSetupAnswers()).novpn;
         error.replaceChildren(notice("warning", w.title, `${w.text} ${w.browser}`));
@@ -570,9 +574,34 @@ async function installStep(id, state, data, apps, go) {
       wg, ovpn,
       field("Countries", countries, { hint: "Optional. Where the VPN connects; a nearby country is fastest." }),
       el("p", { class: "small muted", text: "These go in the .env file on this computer only, never in Starboard's settings or its logs." })));
-    nodes = nodes.filter(Boolean);
+    // DASH-440: the VPN account, or continue without a VPN (the terminal set-up asks the same, first). The VPN is the
+    // suggested choice; going without one shows the warning in a dialog before going on.
+    const nw = (await loadSetupAnswers()).novpn;
+    const howName = `vpn-how-${Date.now()}`;
+    const how = el("fieldset", { class: "stack-2" }, el("legend", { class: "field__label", text: nw.question }),
+      el("div", { class: "option-cards option-cards--row" }, [["use", nw.use, nw.use_about], ["without", nw.without, nw.without_about]].map(([v, t, a]) =>
+        el("label", { class: "option-card" }, el("input", { type: "radio", name: howName, value: v, id: `vpn-how-${v}`, checked: (v === "without") === state.noVpn }),
+          el("strong", { text: t }), el("small", { text: a })))));
+    const without = () => $("input:checked", how)?.value === "without";
+    const account = el("div", { class: "stack-4" }, ...nodes.filter(Boolean));
+    const showAccount = () => { account.hidden = without(); };
+    how.addEventListener("change", showAccount);
+    nodes = [how, account];
+    showAccount();
     showTyped();
     save = async () => {
+      if (without()) {
+        if (!state.noVpn && !(await noVpnWarning())) { $("input:checked", how)?.focus(); return false; }
+        state.noVpn = true;
+        state.apps.delete("gluetun");
+        state.groups.delete("vpn");
+        return true;
+      }
+      if (state.noVpn) {  // the VPN after all: Gluetun comes back, and its details are asked as usual
+        state.noVpn = false;
+        state.apps.add("gluetun");
+        state.groups.add("vpn");
+      }
       if (reuse?.checked) {
         state.vpn = { use_existing: existing.name, provider: existing.provider, type: existing.type, countries: existing.countries };
         try { await api("/api/stack/preview", { method: "POST", body: body(state) }); return true; }
@@ -755,7 +784,8 @@ async function installStep(id, state, data, apps, go) {
         ...(state.apps.has("reelix") ? row("TMDB key", state.tmdb ? "Added" : "None for now: Reelix uses open data", "films") : []),
         ...(state.apps.has("reelix") ? row("Language of releases", (await loadSetupAnswers()).language.choices.find((c) => c.value === state.language)?.label || "English", "films") : []),
         ...(state.usenetServer ? row("Usenet server", state.usenetServer.host, "usenet") : []),
-        ...(state.apps.has("gluetun") ? row("VPN", `${vpnName}, ${state.vpn.type === "openvpn" ? "OpenVPN" : "WireGuard"}${state.vpn.countries ? `, ${state.vpn.countries}` : ""}`, "vpn") : []),
+        ...(state.apps.has("gluetun") ? row("VPN", `${vpnName}, ${state.vpn.type === "openvpn" ? "OpenVPN" : "WireGuard"}${state.vpn.countries ? `, ${state.vpn.countries}` : ""}`, "vpn")
+          : state.noVpn ? row("VPN", "None: downloads use your home internet address", "vpn") : []),
         ...(movingOffers(state, data, apps).length ? row("Moving over", moving || "Nothing", "moving") : [])),
       p.moved.length ? notice("warning", "Some ports moved", p.moved.join(". ") + ".") : null,
       p.later.length ? notice("info", "Started later", `${p.later.join(", ")} ${p.later.length === 1 ? "needs its" : "need their"} own settings file first, so ${p.later.length === 1 ? "it is" : "they are"} written but not started.`) : null,
@@ -1059,6 +1089,6 @@ function connectGuide(state, apps) {
 }
 
 function body(state) {
-  return { apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn, reelix_edition: state.apps.has("reelix") ? state.reelix_edition : "lite", ...(state.apps.has("reelix") ? { sites: state.sites, tmdb: state.tmdb, language: state.language } : {}),
+  return { from: "browser", apps: [...state.apps], groups: [...state.groups], config_dir: state.config_dir, data_dir: state.data_dir, puid: state.puid, pgid: state.pgid, tz: state.tz, vpn: state.vpn, reelix_edition: state.apps.has("reelix") ? state.reelix_edition : "lite", ...(state.apps.has("reelix") ? { sites: state.sites, tmdb: state.tmdb, language: state.language } : {}),
     ...(state.usenetServer && (state.apps.has("nzbget") || state.apps.has("sabnzbd")) ? { usenet_server: state.usenetServer } : {}) };
 }
