@@ -1603,6 +1603,10 @@ RELEASES = [
             [
                 "Removing an app plug-in",
                 "Its entry on Apps goes with it, and Settings, Tdarr says Tdarr is not installed."
+            ],
+            [
+                "An app update that keeps restarting goes back",
+                "After an app update, Starboard waits until the new version has stayed running for 15 seconds without starting again, so a version that keeps stopping goes back to the one before."
             ]
         ],
         "security": [
