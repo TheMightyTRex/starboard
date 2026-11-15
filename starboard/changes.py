@@ -17,7 +17,7 @@ import urllib.request
 # fork/lite branch and the full one from its master, so each changelog comes from that branch (9 November 2026).
 # Upstream's image is used only if someone chooses it.
 SOURCES = [
-    (re.compile(r"(^|/)themightytrex/reelix:lite$", re.I), "Reelix", "https://raw.githubusercontent.com/TheMightyTRex/Reelix/fork/lite/CHANGELOG.md"),
+    (re.compile(r"(^|/)themightytrex/reelix:(lite|lite-[0-9.]+-trex\.[0-9]+|[0-9.]+-lite)$", re.I), "Reelix", "https://raw.githubusercontent.com/TheMightyTRex/Reelix/fork/lite/CHANGELOG.md"),
     (re.compile(r"(^|/)themightytrex/reelix(:.*)?$", re.I), "Reelix", "https://raw.githubusercontent.com/TheMightyTRex/Reelix/master/CHANGELOG.md"),
     (re.compile(r"(^|/)reelix(:.*)?$", re.I), "Reelix", "https://raw.githubusercontent.com/demonzoned/Reelix/master/CHANGELOG.md"),
 ]

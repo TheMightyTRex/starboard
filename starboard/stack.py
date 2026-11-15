@@ -567,7 +567,9 @@ def edition_of(image):
     """"lite" or "full" for a Reelix image, or None for an image Starboard does not know."""
     if not image:
         return None
-    if image == APPS["reelix"]["image"] or image.endswith(":lite") or "-lite" in image.rsplit(":", 1)[-1]:
+    tag = image.rsplit(":", 1)[-1] if ":" in image.split("/")[-1] else ""
+    # lite, 0.8.6-lite (older version tags) and lite-0.8.7-trex.1 (the fork's version tags since DASH-419)
+    if image == APPS["reelix"]["image"] or tag == "lite" or tag.endswith("-lite") or tag.startswith("lite-"):
         return "lite"
     if image in REELIX_FULL_IMAGES or image == os.environ.get("STARBOARD_REELIX_FULL_IMAGE") or "/reelix:" in image:
         return "full"

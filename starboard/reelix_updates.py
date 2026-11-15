@@ -8,12 +8,13 @@ Reelix's settings first and go back if the new version is not healthy.
 2. Save a copy of Reelix's settings folder (/config) next to the set-up files, as reelix-before-update.tgz.
 3. Update it as Apps, Updates does, keeping the old image.
 4. Wait up to 5 minutes for Reelix's health check. If it does not answer healthy, put the old image back and start
-   it again, and say so in the log and the alerts."""
+   it again, and say so in the log and the alerts.
+5. Note the exact build now running, its version tag such as full-0.8.7-trex.1, in reelix-installed.json (DASH-419)."""
 import time
 import urllib.error
 import urllib.request
 
-from . import containers, logs, stack
+from . import containers, logs, reelix_version, stack
 
 HEALTHY_WITHIN = 300
 
@@ -77,12 +78,14 @@ def run(cfg, data_dir, progress=None):
     base = stack.reelix_url(data_dir) or reelix["url"].rstrip("/")
     if _healthy(base):
         containers.forget_old(old_image)
+        reelix_version.note(data_dir, "update")  # the exact build now running (DASH-419)
         say("health", "done", "It answered healthy")
         logs.event("info", "updates", "Reelix updated and is healthy")
         return "Reelix updated and is healthy"
     say("health", "failed", f"It did not answer healthy within {HEALTHY_WITHIN // 60} minutes")
     say("going-back", "now", "")
     containers.go_back(c, old_image)  # the tag points at the image that worked again, and Reelix starts on it
+    reelix_version.note(data_dir, "back")
     say("going-back", "done", "Back on the version before")
     logs.event("error", "updates", "Reelix's new version was not healthy, so Starboard went back to the previous one. "
                                    "Its settings from before are in reelix-before-update.tgz beside the set-up files")

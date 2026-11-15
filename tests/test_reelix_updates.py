@@ -17,7 +17,8 @@ class AutoUpdate(unittest.TestCase):
              mock.patch("starboard.containers.update"), mock.patch("starboard.containers.job", return_value={"finished": True}),
              mock.patch("starboard.containers._helper", return_value=(0, "")), mock.patch("starboard.containers.docker"),
              mock.patch("starboard.containers.forget_old"), mock.patch("starboard.stack.reelix_url", return_value="http://127.0.0.1:7700"),
-             mock.patch.object(reelix_updates, "_healthy", return_value=healthy)]
+             mock.patch.object(reelix_updates, "_healthy", return_value=healthy),
+             mock.patch("starboard.reelix_version.note")]
         return [x.start() for x in p], p
 
     def tearDown(self):
@@ -34,6 +35,7 @@ class AutoUpdate(unittest.TestCase):
         m[3].assert_called_once_with(CFG.data["services"], ["rx"], keep_old=True)
         self.assertIn("reelix-before-update.tgz", m[5].call_args_list[0][0][1])  # settings saved first
         m[7].assert_called_once_with("sha256:old")
+        m[10].assert_called_once_with("/data", "update")  # the exact build is noted (DASH-419)
 
     def test_not_healthy_goes_back(self):
         m, _ = self.patches(True, False)
@@ -41,6 +43,7 @@ class AutoUpdate(unittest.TestCase):
         tag = m[6].call_args[0][1]
         self.assertTrue(tag.startswith("/images/sha256:old/tag?repo=ghcr.io/themightytrex/reelix&tag=lite"))
         self.assertIn("up -d reelix", m[5].call_args_list[-1][0][1])
+        m[10].assert_called_once_with("/data", "back")
 
 
 if __name__ == "__main__":
