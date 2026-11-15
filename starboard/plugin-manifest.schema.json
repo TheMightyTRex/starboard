@@ -686,6 +686,38 @@
       "type": "integer",
       "minimum": 10,
       "maximum": 3600
+     },
+     "titles": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+       "small": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 17
+       },
+       "medium": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 28
+       },
+       "half": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 22
+       },
+       "wide": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 43
+       },
+       "full": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 45
+       }
+      }
      }
     }
    }

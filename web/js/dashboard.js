@@ -9,6 +9,9 @@ const CARD_TITLES = {
   disk: "Disk space", load: "System load", vpn: "VPN", speed: "Transfer speed", health: "Service health",
   requests: "Requests", alerts: "Alerts", links: "Quick links",
 };
+// A built-in card's shorter name for a size where its own does not fit on one line in the band (DASH-443, measured
+// at the default text size and the narrowest desktop width of each size). Every name fits today, so none is needed.
+const CARD_SHORT = {};
 // Every built-in card's band (DASH-442, owner 15 November 2026): the logo on its left. A card about one app shows that
 // app's own logo, the same file as on the Apps page (/api/icons/<app>); a card that combines several apps, or is
 // Starboard's own, shows a design system icon on the standard tile. "apps" lists the apps the card's answer comes
@@ -64,9 +67,10 @@ const CARDS = {
     // The wizard (DASH-289): one item at a time; it opens only from Go through them (owner, 12 November 2026).
     // One primary in view (DASH-309, R9): while the dashboard is edited, Save is the primary button.
     const walk = el("button", { type: "button", class: editing ? "btn btn--compact" : "btn btn--primary btn--compact", "aria-haspopup": "dialog" }, "Go through them");
-    walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: () => draw() }));
+    walk.addEventListener("click", () => setupWizard({ opener: walk, onChange: () => { walkBack = true; draw(); } }));
     if (!editing) setupWizardOnce(() => draw());
-    return el("div", { class: "stack-2" }, el("div", { class: "actions" }, walk), el("ul", { class: "rows" }, todo.map((i) => line(i.title, i.why, i.href.startsWith("http") ? reachableUrl(i.href) : i.href))));
+    // Its button sits at the right of the card's band (owner, 15 November 2026).
+    return { node: el("ul", { class: "rows" }, todo.map((i) => line(i.title, i.why, i.href.startsWith("http") ? reachableUrl(i.href) : i.href))), action: walk };
   },
   async playing() {
     const r = await ask("/api/jellyfin");
@@ -193,13 +197,19 @@ async function pluginCard(id, given) {
 // its logo, the plug-in's name as the heading, and at the right a status chip and when it last updated. The chip and
 // the time each start with hidden words ("Status: ", "Updated "), so each makes sense to a screen reader on its own.
 const STATE_BAND = { ok: ["OK", "success"], warning: ["Warning", "warning"], problem: ["Problem", "danger"] };
+// A title for each size (plug-in API 1.15, DASH-443, owner 15 November 2026): a card that gives one for its size has
+// that title alone as its heading, on one line (the manifest check keeps it short enough); the plug-in's name follows
+// for screen readers when the title does not say it. A size it left out shows the plug-in's name and the card's title.
 function pluginBand(c) {
   const info = pluginCards[c.id] || {};
   const name = info.plugin || "Plug-in";
-  const sub = info.title && info.title !== name ? info.title : "";
+  const own = info.titles?.[c.size];
+  const sub = !own && info.title && info.title !== name ? info.title : "";
+  const heading = own
+    ? [own, own.toLowerCase().includes(name.toLowerCase()) ? null : el("span", { class: "visually-hidden", text: `, ${name}` })]
+    : [name, sub ? el("span", { class: "card-band__sub" }, el("span", { class: "visually-hidden", text: ", " }), sub) : null];
   return el("div", { class: "card-band" }, pluginLogo({ name, logo: info.logo }, { compact: true }),
-    el("h2", { class: "card-band__title dash-card__title", id: `dash-${c.id}-h` }, name,
-      sub ? el("span", { class: "card-band__sub" }, el("span", { class: "visually-hidden", text: ", " }), sub) : null),
+    el("h2", { class: "card-band__title dash-card__title", id: `dash-${c.id}-h` }, ...heading),
     el("span", { class: "card-band__side" }));
 }
 
@@ -210,13 +220,14 @@ function drawBandSide(id, r) {
 }
 
 // The band's right-hand side, the same for plug-in and built-in cards: a status chip, then when it was updated.
-function bandSide(side, words, tone, when) {
+function bandSide(side, words, tone, when, action) {
   if (!side) return;
   side.replaceChildren(...[
     words ? el("span", { class: "chip", "data-tone": tone }, icon(CHIP_ICONS[tone] || "circle", 14),
-      el("span", { class: "visually-hidden", text: "Status: " }), el("span", { text: words })) : null,
+      el("span", { class: "visually-hidden", text: "Status: " }), el("span", { class: "chip__words", text: words })) : null,
     when ? el("time", { class: "card-band__time", datetime: new Date(when).toISOString(), "data-at": String(when) },
-      el("span", { class: "visually-hidden", text: "Updated " }), el("span", { text: timeAgo(when) })) : null].filter(Boolean));
+      el("span", { class: "visually-hidden", text: "Updated " }), el("span", { text: timeAgo(when) })) : null,
+    action || null].filter(Boolean));
 }
 
 // A built-in card's answer with something to say in its band (DASH-442): a state chip, from the shared vocabulary,
@@ -238,7 +249,7 @@ function cardLogo(id) {
 }
 function builtinBand(c) {
   return el("div", { class: "card-band" }, cardLogo(c.id),
-    el("h2", { class: "card-band__title dash-card__title", id: `dash-${c.id}-h`, text: CARD_TITLES[c.id] || "Card" }),
+    el("h2", { class: "card-band__title dash-card__title", id: `dash-${c.id}-h`, text: CARD_SHORT[c.id]?.[c.size] || CARD_TITLES[c.id] || "Card" }),
     el("span", { class: "card-band__side" }));
 }
 
@@ -267,6 +278,14 @@ function guideCard(d) {
     })));
 }
 
+// A card's name for its size, in Edit dashboard's tools: a plug-in card's own title for that size (API 1.15) or a
+// built-in card's shorter name for it (CARD_SHORT), else its usual name.
+function nameFor(c) {
+  const p = pluginCards[c.id];
+  if (p?.titles?.[c.size]) return `${p.titles[c.size]} (${p.plugin})`;
+  return CARD_SHORT[c.id]?.[c.size] || CARD_TITLES[c.id];
+}
+
 function cardShell(c, i, list) {
   // Every card is drawn with the band: plug-in cards since API 1.14, built-in cards since DASH-442. The head under it
   // holds only the tools while the dashboard is edited.
@@ -275,17 +294,28 @@ function cardShell(c, i, list) {
   const card = el("section", { class: `dash-card dash-card--${c.size} has-band`, "aria-labelledby": `dash-${c.id}-h`, "data-card": c.id },
     c.id.startsWith("plugin:") ? pluginBand(c) : builtinBand(c), editing ? head : null, body);
   if (editing) {
-    const size = el("select", { class: "select select--compact", "aria-label": `Size of ${CARD_TITLES[c.id]}` },
+    const size = el("select", { class: "select select--compact", "aria-label": `Size of ${nameFor(c)}` },
       Object.entries(SIZES).map(([v, t]) => el("option", { value: v, text: t, selected: v === c.size })));
-    size.addEventListener("change", () => { list[i].size = size.value; draw(); });
+    // The card is drawn again at its new size, with its title for that size; focus stays on its size list.
+    size.addEventListener("change", () => { list[i].size = size.value; draw(); $(`[data-card="${c.id}"] .dash-card__tools select`)?.focus(); });
     const move = (by) => { const j = i + by; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; draw(); $(`[data-card="${c.id}"] button`)?.focus(); };
     head.append(el("div", { class: "dash-card__tools" }, size,
-      el("button", { type: "button", class: "icon-btn", "aria-label": `Move ${CARD_TITLES[c.id]} earlier`, disabled: i === 0, onclick: () => move(-1) }, icon("arrow-up")),
-      el("button", { type: "button", class: "icon-btn", "aria-label": `Move ${CARD_TITLES[c.id]} later`, disabled: i === list.length - 1, onclick: () => move(1) }, icon("arrow-down")),
-      c.id === "setup" ? null : el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: () => { list.splice(i, 1); draw(); announce(`${CARD_TITLES[c.id]} removed`); } }, "Remove",
-        el("span", { class: "visually-hidden", text: ` ${CARD_TITLES[c.id]}` }))));
+      el("button", { type: "button", class: "icon-btn", "aria-label": `Move ${nameFor(c)} earlier`, disabled: i === 0, onclick: () => move(-1) }, icon("arrow-up")),
+      el("button", { type: "button", class: "icon-btn", "aria-label": `Move ${nameFor(c)} later`, disabled: i === list.length - 1, onclick: () => move(1) }, icon("arrow-down")),
+      c.id === "setup" ? null : el("button", { type: "button", class: "btn btn--quiet btn--compact", onclick: () => { list.splice(i, 1); draw(); announce(`${nameFor(c)} removed`); } }, "Remove",
+        el("span", { class: "visually-hidden", text: ` ${nameFor(c)}` }))));
   }
   return { card, body };
+}
+
+// The wizard draws the dashboard again as it closes, so Go through them is a new button by the time the slide-out
+// would give focus back; it gets focus here once drawn, unless the person has moved on (DASH-443).
+let walkBack = false;
+function focusWalk(button) {
+  if (!walkBack || $("#side-panel")) return;
+  walkBack = false;
+  const at = document.activeElement;
+  if (!at || at === document.body || at.closest('[data-card="setup"]')) button.focus();
 }
 
 async function fill(c, body, card) {
@@ -295,7 +325,8 @@ async function fill(c, body, card) {
     if (out === null && c.id === "setup" && !editing) { card.remove(); return; }  // everything is set up
     const node = out && !(out instanceof Node) ? out.node : out;
     body.replaceChildren(node || empty("Nothing to show."));
-    if (!plugin) bandSide(card.querySelector(".card-band__side"), out?.chip?.[0], out?.chip?.[1], CARD_BAND[c.id]?.time ? Date.now() : 0);
+    if (!plugin) bandSide(card.querySelector(".card-band__side"), out?.chip?.[0], out?.chip?.[1], CARD_BAND[c.id]?.time ? Date.now() : 0, out?.action);
+    if (out?.action && c.id === "setup") focusWalk(out.action);
   } catch (e) {
     body.replaceChildren(empty(e.status === 409 || e.status === 400 ? e.message : "Could not ask."));
   }

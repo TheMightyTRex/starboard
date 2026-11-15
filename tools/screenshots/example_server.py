@@ -794,7 +794,7 @@ def _example_picture_shrinker(data_dir):
             "manifest_version": 1, "id": "picture-shrinker", "name": "Picture shrinker", "version": "1.0.0",
             "description": "Shrinks the posters and photos Jellyfin keeps, so they take less space. Each is checked before it replaces the original.",
             "author": "TheMightyTRexUK", "licence": "MIT", "homepage": "https://example.invalid/picture-shrinker",
-            "support_url": "https://example.invalid/picture-shrinker/issues", "starboard_api": ">=1.14 <2.0",
+            "support_url": "https://example.invalid/picture-shrinker/issues", "starboard_api": ">=1.15 <2.0",
             "permissions": ["jellyfin:metadata"], "needs": ["jellyfin"], "health": "/health",
             "containers": [{"name": "main", "image": "ghcr.io/example/picture-shrinker@sha256:" + "e" * 64, "port": 8080,
                             "volumes": ["data", "jellyfin-metadata"], "user": "media", "start": "when_needed"}],
@@ -802,7 +802,10 @@ def _example_picture_shrinker(data_dir):
                           "default": {"every": "month", "date": 31, "time": "03:30"}},
                          {"key": "poster_height", "label": "Posters no taller than", "type": "number", "unit": "pixels", "default": 900, "min": 300, "max": 3000}],
             "jobs": [{"id": "shrink", "label": "Shrink pictures", "path": "/jobs/shrink", "schedule": "when", "time_limit_minutes": 120}],
-            "cards": [{"id": "saved", "title": "Space saved", "type": "stat", "path": "/card", "format": "bytes"}],
+            # A title for each card size (plug-in API 1.15, DASH-443), each within its size's limit
+            "cards": [{"id": "saved", "title": "Space saved", "type": "stat", "path": "/card", "format": "bytes",
+                       "titles": {"small": "Space saved", "medium": "Picture space saved", "half": "Pictures: space saved",
+                                  "wide": "Space saved by shrinking pictures", "full": "Space saved by shrinking posters and photos"}}],
             "logo": {"file": "logo.png", "alt": "A small square inside a larger one"}},
             "/nonexistent-media")
         plugins_admin.keep_logo(data_dir, "picture-shrinker", (plugin_logo.check_png(_png_logo()), "image/png"))

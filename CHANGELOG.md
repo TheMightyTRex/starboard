@@ -7,6 +7,12 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **A title for each card size (plug-in API 1.15):** a plug-in card can have its own title for each size in Edit dashboard (small, medium, half, wide and full), each short enough to fit on one line in that size: up to 17, 28, 22, 43 and 45 characters. The manifest check refuses a longer one and the plug-in tester names it with its limit. Picture shrinker's card in the example pictures has one for each size. (DASH-443)
+
+### Changed
+- **Still to set up and small cards:** Go through them sits at the right of the Still to set up card's grey band, and focus comes back to it when the slide-out closes. On a small card (a quarter of the width) the band's status chip shows only its icon; screen readers still hear its words. (DASH-443)
+
 ## [0.19.0] (15 November 2026)
 
 ### Added

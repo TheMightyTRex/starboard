@@ -155,8 +155,10 @@ def _host(pid, main, wake=True):
 
 
 def available(data_dir):
-    """Cards from active plug-ins, for Edit dashboard and the card band (API 1.14): [{id, title, type, format, plugin,
-    plugin_id, logo}], logo being {url, alt} or None for the initials."""
+    """Cards from active plug-ins, for Edit dashboard and the card band (API 1.14): [{id, title, titles, type, format,
+    plugin, plugin_id, logo}], logo being {url, alt} or None for the initials, and titles the card's title for each
+    size it gave (API 1.15, DASH-443), only those that pass the manifest check."""
+    from .plugins import card_title_problems
     from . import plugins_admin
     out = []
     for p in plugins_admin.listing(data_dir):
@@ -165,7 +167,8 @@ def available(data_dir):
         m = plugins_admin._read_kept(f"{plugins_admin.folder(data_dir, p['id'])}/manifest.json", {}) or {}
         for i, c in enumerate(m.get("cards") or []):
             cid = c.get("id") or str(i)
-            out.append({"id": f"plugin:{p['id']}:{cid}", "title": c.get("title") or p["name"], "type": c["type"],
+            titles = c.get("titles") if isinstance(c.get("titles"), dict) and not card_title_problems(c) else {}
+            out.append({"id": f"plugin:{p['id']}:{cid}", "title": c.get("title") or p["name"], "titles": titles, "type": c["type"],
                         "format": c.get("format", "number"), "plugin": p["name"], "plugin_id": p["id"], "logo": p.get("logo")})
     return out
 

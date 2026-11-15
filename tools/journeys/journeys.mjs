@@ -1437,6 +1437,64 @@ check("BAND-10", "Move later moves a banded card and keeps focus in it",
   healthAfter === healthBefore + 1 && await page.evaluate(() => !!document.activeElement?.closest("[data-card='health']")), `${healthBefore} to ${healthAfter}`);
 await page.getByRole("button", { name: "Cancel" }).click();
 
+// DASH-443 (owner, 15 November 2026): Still to set up's Go through them sits at the right of its band, and focus comes
+// back to it when the slide-out closes; a plug-in card shows its own title for its size (plug-in API 1.15), on one
+// line, also after its size is changed in Edit dashboard; a small card shows only its chip's icon, the words kept for
+// screen readers. Picture shrinker's card in the example server has a title for each size.
+console.log("\n== TTL Titles for each card size, and the set-up button in the band");
+await open("dashboard.html");
+const setupCard = page.locator('[data-card="setup"]');
+const walkButton = setupCard.locator(".card-band .card-band__side button");
+await walkButton.waitFor({ timeout: 8000 }).catch(() => {});
+check("TTL-01", "Go through them is in Still to set up's band, at its right", (await walkButton.innerText().catch(() => "")) === "Go through them"
+  && await setupCard.evaluate((c) => { const b = c.querySelector(".card-band").getBoundingClientRect(), x = c.querySelector(".card-band__side button").getBoundingClientRect();
+    return x.right > b.right - 40 && x.top >= b.top && x.bottom <= b.bottom; }));
+check("TTL-01", "the card's heading comes before the button, and the button before the list", await setupCard.evaluate((c) => {
+  const h = c.querySelector("h2"), x = c.querySelector(".card-band__side button"), list = c.querySelector(".dash-card__body ul");
+  return !!(h && x && list) && !!(h.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(x.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING); }));
+await walkButton.focus();
+await page.keyboard.press("Enter");
+await page.locator("#side-panel h3").waitFor({ timeout: 5000 }).catch(() => {});
+const walkOpened = await page.locator("#side-panel").count() === 1;
+await page.keyboard.press("Escape");
+await page.waitForFunction(() => document.activeElement?.closest?.('[data-card="setup"] .card-band__side'), null, { timeout: 5000 }).catch(() => {});
+check("TTL-02", "closing the slide-out gives focus back to Go through them", walkOpened && await page.evaluate(() =>
+  document.activeElement?.textContent?.trim() === "Go through them" && !!document.activeElement.closest('[data-card="setup"] .card-band__side')),
+  await page.evaluate(() => document.activeElement?.outerHTML?.slice(0, 120)));
+const psTitles = (await api("/api/plugins/cards")).cards.find((c) => c.id === "plugin:picture-shrinker:saved")?.titles || {};
+check("TTL-03", "Picture shrinker's card hands the dashboard a title for each size", ["small", "medium", "half", "wide", "full"].every((k) => psTitles[k]), JSON.stringify(psTitles));
+const dashKept = (await api("/api/config")).dashboard;
+for (const size of ["small", "medium", "half", "wide", "full"]) {
+  await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: dashKept.layout,
+    cards: [{ id: "plugin:picture-shrinker:saved", size }, { id: "disk", size: "small" }, { id: "load", size: "small" }] } } });
+  await open("dashboard.html");
+  const ps = page.locator('[data-card="plugin:picture-shrinker:saved"]');
+  await ps.locator(".card-band .chip").waitFor({ timeout: 8000 }).catch(() => {});
+  const got = await ps.evaluate((c) => {
+    const h = c.querySelector(".card-band h2"), lh = parseFloat(getComputedStyle(h).lineHeight) || 20;
+    const words = c.querySelector(".chip__words");
+    return { shown: h.firstChild?.textContent.trim(), heard: h.textContent.trim(), lines: Math.round(h.getBoundingClientRect().height / lh),
+      labelled: c.getAttribute("aria-labelledby") === h.id, wordsWidth: words ? words.getBoundingClientRect().width : -1,
+      chip: c.querySelector(".card-band .chip")?.textContent || "", time: !!c.querySelector(".card-band time") };
+  });
+  check("TTL-04", `a ${size} card shows its ${size} title on one line, its name for screen readers after it`,
+    got.shown === psTitles[size] && got.lines === 1 && got.labelled && got.heard.includes("Picture shrinker"), JSON.stringify(got));
+  check("TTL-05", `a ${size} card's chip shows ${size === "small" ? "only its icon, its words kept for screen readers" : "its words"}, with the time`,
+    got.chip === "Status: Waiting for 03:30" && got.time && (size === "small" ? got.wordsWidth <= 1 : got.wordsWidth > 20), JSON.stringify(got));
+}
+// Edit dashboard: changing the size draws the card's title for its new size, and focus stays on its size list.
+await page.getByRole("button", { name: "Edit dashboard" }).click();
+const psSize = page.locator('[data-card="plugin:picture-shrinker:saved"] .dash-card__tools select');
+await psSize.waitFor({ timeout: 5000 }).catch(() => {});
+await psSize.selectOption("small");
+await page.waitForTimeout(300);
+check("TTL-06", "in Edit dashboard a new size shows that size's title, and its size list keeps focus",
+  (await page.locator('[data-card="plugin:picture-shrinker:saved"] .card-band h2').evaluate((h) => h.firstChild?.textContent)) === psTitles.small
+  && await page.evaluate(() => document.activeElement?.tagName === "SELECT" && !!document.activeElement.closest('[data-card="plugin:picture-shrinker:saved"]'))
+  && (await page.locator('[data-card="plugin:picture-shrinker:saved"] .dash-card__tools select').getAttribute("aria-label")) === `Size of ${psTitles.small} (Picture shrinker)`);
+await page.getByRole("button", { name: "Cancel" }).click();
+await api("/api/config/general", { method: "PUT", body: { dashboard: { layout: dashKept.layout, cards: dashKept.cards || null } } });
+
 await open("settings-plugin.html?id=picture-shrinker");
 const schedOften = page.getByLabel("How often", { exact: true });
 check("SCH-01", "the schedule setting shows how often, the date and the time, from its default",

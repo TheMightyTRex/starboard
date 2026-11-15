@@ -33,7 +33,8 @@ The three plug-in prompts end with the same checklist. The assistant must follow
 - **Memory limits:** the smallest that work, within 512 MB and 1.0 processor core (an app plug-in with `network:port`
   up to 2048 MB and 4 cores); `"start": "when_needed"` when Starboard is the only way it is reached.
 - **Accessibility:** labels under 60 characters in sentence case, with no colon; a hint on every switch and choice; a
-  title on every card; a logo with an `alt` that says what it shows.
+  title on every card, and `titles` for each size within its limit, so each stays on one line; a logo with an `alt`
+  that says what it shows.
 - **Updates:** `changes` for each version; `update.before` and `update.after` when it works in the background; a
   `health` path that answers 200 only when it can really work.
 - **Card refresh times:** cards answer from a small file the plug-in keeps, never by doing the work when asked;
@@ -70,6 +71,9 @@ The card:
 - Starboard draws the grey band (logo, name, status chip, when it last updated). Add "status" (one of the
   values in "The card band"), "updated" (seconds since 1970, when what it shows last changed, never in the
   future) and "status_label" (up to 24 characters) only where Starboard's word does not fit.
+- Give the card "titles", a title for each size that fits on one line: small up to 17 characters,
+  medium 28, half 22, wide 43 and full 45. Put the words that matter first. Titles need
+  "starboard_api": ">=1.15 <2.0".
 - Keep a small JSON file in /data up to date in the background, and have the card only read it.
 - Leave out refresh_seconds unless the card shows progress.
 
@@ -101,7 +105,7 @@ Then follow this checklist and say, for each line, what you did:
 2. Memory limits: the smallest "resources" that work, within 512 MB and 1.0 core; "when_needed" if only
    Starboard reaches it.
 3. Accessibility: labels under 60 characters, sentence case, no colon; a hint on every switch and choice;
-   a title on every card; the logo's alt says what it shows.
+   a title on every card, and titles for each size within their limits; the logo's alt says what it shows.
 4. Updates: "changes" for the version; update.before and update.after if it works in the background; a
    health path that answers 200 only when it can work.
 5. Card refresh times: the card reads a file; refresh_seconds only for progress.

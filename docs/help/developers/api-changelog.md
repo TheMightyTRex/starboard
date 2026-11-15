@@ -82,6 +82,13 @@ the next major version.
   (DASH-406, for Library clean-up)
 - **Added:** `restore` in a custom setting item's `actions`, drawn as a **Put back** button on the row and sent as
   `{"action": "restore", "id"}`. (DASH-406)
+- **Added:** `titles` on a card (DASH-443): a title for each card size (`small`, `medium`, `half`, `wide`, `full`),
+  each the card's heading on its own, on one line, at that size; the plug-in's name follows it for screen readers.
+  Each is limited to what fits on one line in that size: small 17, medium 28, half 22, wide 43 and full 45
+  characters. A longer title is refused by the manifest check and named by the plug-in tester. A size left out shows
+  the plug-in's name with the card's `title`, as before. Read
+  [A title for each size](plugin-manifest-reference.md#a-title-for-each-size-api-115).
+- **Changed:** on a small card the band's status chip shows only its icon; its words are still read to screen readers.
 - Nothing was taken away: a plug-in made for 1.14 works as before.
 
 ## Plug-in API 1.14.0 (Starboard 0.18.0), 14 November 2026
