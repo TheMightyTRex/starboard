@@ -33,7 +33,7 @@ page is laid out again to fit, so you do not need to scroll sideways. 100% is th
 
 ![The Apps page with Text size at 100%](../images/a11y-text-100.png)
 
-![The same Apps page with Text size at 175%: every word is larger and the page is laid out again, though the name Starboard in the side menu breaks in two and the header's menu is cut off after Network](../images/a11y-text-175.png)
+![The same Apps page with Text size at 175%: every word is larger, the side menu is wider so its names stay whole, and the header's menu shows its icons only, so nothing is cut off](../images/a11y-text-175.png)
 
 ## What wider text spacing changes
 
@@ -51,10 +51,10 @@ The graphic shows the line "Harbour Lights, film, 2023, in your library" at each
 than the last, then a sentence with normal spacing beside the same sentence with wider spacing, which takes three
 lines instead of two.
 
-> [!NOTE]
-> **Limitation:** at 150% and 175%, the name Starboard in the side menu breaks in the middle, and on some pages the
-> header's menu runs out of room on a computer. Read
-> [Limits and known gaps](limits-and-known-gaps.md#display-settings).
+The side menu grows wider with the text, so its names stay whole. When the header has too little room, it gives way
+in steps: its menu shows icons only, the search box becomes the **Search** button, **Help** and **Display** show
+their icons, and last, the menu moves under **Menu**. Nothing is cut off, and every name is still read out by a
+screen reader and shown as a tooltip.
 
 ## Things to note
 

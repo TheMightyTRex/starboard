@@ -36,16 +36,6 @@ stops you, or you find something that is not listed, [report a problem](tell-us-
 - **Kept per browser, not per account:** the Display and accessibility choices are kept in the browser you use. They
   do not follow you to another phone, computer or browser, and a private window or clearing your browser's data
   forgets them.
-- **Reduce motion Off:** when your device asks for reduced motion, choosing **Off** in Starboard does not yet bring
-  back all movement: slide-outs, messages and the loading line still follow the device. **On** and **Match device**
-  work as described.
-- **Large text in the side menu and header:** at 150% and 175% text, and with wider text spacing, the name
-  Starboard in the side menu breaks in the middle of the word, and **Feedback** runs past the side menu's edge. At
-  175% on a computer, the header's menu on some pages runs out of room: on System, **Backup** shows only its icon
-  and the items after it are cut off, and the search field is very narrow. Everything is still there in the phone
-  menu, under **Menu**, when the window is narrower. These were found while making this help, and are to be fixed.
-- **Short windows:** in a window about 600 pixels tall, the items in the side menu overlap: the name Starboard sits
-  under the **Home** icon. Making the window taller, or zooming out, avoids it.
 - **The device's own text size:** Starboard follows the browser's text size, but not every phone passes its own
   text size setting to web pages. Use **Text size** in **Display** instead.
 

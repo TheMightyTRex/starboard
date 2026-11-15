@@ -26,7 +26,7 @@ server with made-up data, so nothing real is read.
 
 | Part | What it checks | How it runs |
 |---|---|---|
-| The scan | Every page against WCAG 2.2 AA with axe-core, in Light, Dark and High contrast; page structure; target size; reflow at 320 pixels wide and at 175% text; Windows' contrast themes; reduced motion | `tools/a11y.sh` |
+| The scan | Every page against WCAG 2.2 AA with axe-core, in Light, Dark and High contrast; page structure; target size; reflow at 320 pixels wide and at 175% text; Windows' contrast themes; reduced motion; the side menu and header at every text size | `tools/a11y.sh` and `LAYOUT=1 tools/a11y.sh` |
 | Reading order | What a screen reader reads against what is seen, on every page, at computer and phone widths, and in each design of the Apps page | `ORDER=1 tools/a11y.sh` |
 | Keyboard walk | The main tasks with keys only, checking where focus is and what is said after every step | `TASKS=1 tools/a11y.sh` |
 | Colour contrast | Every text and control colour pair in every theme and colour palette | The design system's `tools/contrast.py` |
@@ -46,6 +46,11 @@ server with made-up data, so nothing real is read.
   **Display** after Escape.
 - **Windows' contrast themes:** the focus outline stays visible in forced colours.
 - **Reduced motion:** with reduced motion asked for, nothing on the Apps page moves for longer than 50 milliseconds.
+- **Menus at large text:** the side menu and the header on eight pages, at 100%, 125%, 150% and 175% text, with and
+  without wider spacing, in Light, Dark and High contrast, at 1280 and 1366 pixels wide and at phone width, and in
+  windows 600 and 700 pixels tall. It fails if a word breaks in the middle, a name runs past an edge, items overlap,
+  a menu item or the search box is cut off, or the page scrolls sideways. The scan's own reflow rule cannot see a
+  menu that cuts off its own items, so this part looks for exactly that.
 
 ### Reading order
 
@@ -59,8 +64,9 @@ level 1 heading is the first thing in the main content.
 The main tasks are done with keys alone, as a screen reader user would. After each step, the check records where
 focus is, and what was said. The tasks include: sign in, skip to the main content, search, open a film, change a
 setting, change an accessibility option in Settings, edit an app in a slide-out, make and revoke a key, show more of
-a list, delete a file, select several items, the Live TV channel lists, release notes, copies of backups, and a
-plug-in's notices, tables, cards, recommendations and settings.
+a list, delete a file, select several items, the Live TV channel lists, release notes, copies of backups, a
+plug-in's notices, tables, cards, recommendations and settings, and each **Reduce motion** choice against the
+device's own setting.
 
 ![The Delete the history? box over the History page, with focus on Cancel, the safe choice, so pressing Enter does not delete anything](../images/a11y-dialog-focus.png)
 
@@ -124,6 +130,12 @@ This runs the keyboard walk:
 
 ```bash
 TASKS=1 bash tools/a11y.sh
+```
+
+This checks the side menu and header at every text size:
+
+```bash
+LAYOUT=1 bash tools/a11y.sh
 ```
 
 Each one starts its own example server with made-up data, and prints one line for each finding and a summary.

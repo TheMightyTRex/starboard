@@ -33,7 +33,7 @@ As you zoom in, the page needs less width:
 **Text size** in **Display** makes only the text bigger, up to 175%, and keeps the layout. Every page is also
 checked at 175% for anything that needs sideways scrolling. Read [Change text size and spacing](text-size-and-spacing.md).
 
-![The same Apps page with Text size at 175%: every word is larger and the page is laid out again, though the name Starboard in the side menu breaks in two and the header's menu is cut off after Network](../images/a11y-text-175.png)
+![The same Apps page with Text size at 175%: every word is larger, the side menu is wider so its names stay whole, and the header's menu shows its icons only, so nothing is cut off](../images/a11y-text-175.png)
 
 ## Large screens and televisions
 

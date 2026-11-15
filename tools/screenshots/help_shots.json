@@ -1161,7 +1161,7 @@
       "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"text\": \"175\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
       "marks": [],
       "steps": [],
-      "alt": "The same Apps page with Text size at 175%: every word is larger and the page is laid out again, though the name Starboard in the side menu breaks in two and the header's menu is cut off after Network"
+      "alt": "The same Apps page with Text size at 175%: every word is larger, the side menu is wider so its names stay whole, and the header's menu shows its icons only, so nothing is cut off"
     },
     {
       "topic": "accessibility",

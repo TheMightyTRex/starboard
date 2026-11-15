@@ -18,7 +18,7 @@ at once, and is kept in the browser you use. By default it follows your device's
 2. Under **Reduce motion**, choose one:
    - **Match device** (the default) follows the reduced motion setting of your phone or computer.
    - **On** always reduces motion in Starboard, whatever the device says.
-   - **Off** asks for the standard movement.
+   - **Off** always shows the standard movement in Starboard, whatever the device says.
 3. Select **Done**, or press Escape.
 
 ![The Display and accessibility slide-out with Reduce motion (step 2) outlined and set to On](../images/a11y-reduce-motion.png)
@@ -54,11 +54,7 @@ setting, deactivate **Load more as you scroll** in **Settings**, then **General*
 ## Things to note
 
 - Reduce motion is kept in this browser only. Each phone, computer and browser has its own.
-
-> [!NOTE]
-> **Limitation:** **Off** does not yet bring all movement back when your device asks for reduced motion: slide-outs,
-> messages and the loading line still follow the device. Read
-> [Limits and known gaps](limits-and-known-gaps.md#display-settings).
+- **Off** brings back all movement in Starboard, even when your device asks for reduced motion.
 
 ## Find out more
 
