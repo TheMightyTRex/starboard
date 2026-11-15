@@ -30,12 +30,19 @@ download app. Nothing is added unless you add it. Add, test and remove sites in 
 
    ![The Add a site to search panel, with the search and No account needed (step 4) and a site (step 5) outlined](../images/choose-sites-to-search-2-add.png)
 
-6. To use your own Jackett or Prowlarr, or a Usenet search site you have an account with, select **Add your own
-   Torznab or Newznab address**. Choose **Torznab** or **Newznab**, then enter its address and API key.
+6. Optional: to add a search site of your own, read [Add your own search site](#add-your-own-search-site). Most
+   people do not need one.
 7. Under **How Reelix searches**, keep **Search through the VPN** active if you have the VPN. It is
    recommended.
 
    ![How Reelix searches, with Search through the VPN (step 7) outlined](../images/choose-sites-to-search-3-vpn.png)
+
+## Add your own search site
+
+For your own Jackett or Prowlarr, or a Usenet search site you have an account with:
+
+1. On **Sites to search**, select **Add your own Torznab or Newznab address**.
+2. Choose **Torznab** or **Newznab**, then enter its address and API key.
 
 ## Things to note
 

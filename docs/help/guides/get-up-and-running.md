@@ -108,7 +108,8 @@ shows what is left: read [Finish what is still to set up](../topics/finish-setti
 
 ## What next
 
-- [Set up your dashboard after installing](set-up-your-dashboard.md): categories, design and alerts.
+- [Set up your dashboard after installing](set-up-your-dashboard.md): the default install, then more apps and
+  advanced options.
 - [Use Starboard away from home safely](use-starboard-away-from-home.md).
 - Keep it current with [Update Starboard](../topics/update-starboard.md).
 - Something not right? [Send feedback about a page](../topics/send-feedback.md).

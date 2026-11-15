@@ -7,6 +7,9 @@
 Radarr or Lidarr into another. Use it to set up a new app beside an old one, or a second copy such as a 4K
 Radarr. You find out what will change before anything is copied.
 
+This is for an existing set-up with these apps. A new install has Reelix in their place and does not need it: to
+move them into Reelix, read [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md).
+
 ## Before you begin
 
 - Both apps are in **Manage apps**, each with its API key. Read [Add an app](add-an-app.md).

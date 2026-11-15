@@ -11,7 +11,7 @@ it needs. You can change from one to another later, either way: read [Change you
 | | Basics | Full install | Everything |
 |---|---|---|---|
 | Who it is for | Most homes: a complete media server that stays light | A household that wants watch statistics, logs and smaller files | Someone who wants every app Starboard offers |
-| Apps | 7 | 11 | 16 |
+| Apps | 7 | 10 | 17 |
 | Memory when idle | about 0.6 to 1.6 GB | about 1.1 to 2.6 GB | about 1.9 to 3.4 GB |
 | Memory at load | about 1.2 to 2.3 GB | about 2.6 to 4.1 GB | about 3.7 to 4.9 GB |
 | Processor when idle | under 5% of one core | under 10% of one core | under 10% of one core |
@@ -89,13 +89,14 @@ Converting video comes on top of the figures in [At a glance](#at-a-glance):
 | Free live TV channels and guides (the Live TV plug-in) | ✓ | ✓ | ✓ |
 | Who watched what, and when | | ✓ | ✓ |
 | Convert the library to smaller files | | ✓ | ✓ |
-| Read every app's log in the browser | | ✓ | ✓ |
+| Read every app's log in the browser with Dozzle (System, Logs shows app logs in every install) | | | ✓ |
 | A warning before a disk fails (disk health) | | ✓ | ✓ |
 | Invite friends and family with a link (Wizarr) | | | ✓ |
 | Paid IPTV or full control of channels (Dispatcharr) | | | ✓ |
 | Music and books from the Soulseek network | | | ✓ |
 | Keep a No-IP address pointing at your server | | | ✓ |
 | Comics and graphic novels | | | ✓ |
+| Read ebooks, comics and PDFs in the browser (Kavita) | | | ✓ |
 | Starboard's dashboard, alerts, download hours, backups and updates | ✓ | ✓ | ✓ |
 
 Live TV is a plug-in that comes with Starboard, not an app in the install: read
@@ -116,8 +117,6 @@ Live TV is a plug-in that comes with Starboard, not an app in the install: read
 | Gluetun | Sends downloads through your VPN | ✓ | ✓ | ✓ | A VPN account; a download app |
 | FlareSolverr | Gets past browser checks on some search sites | | ✓ | ✓ | Reelix |
 | Jellystat | Watch statistics for Jellyfin, with its own database | | ✓ | ✓ | Jellyfin |
-| Wizarr | Invites people to Jellyfin | | | ✓ | Jellyfin |
-| Dispatcharr | Paid IPTV channels in Jellyfin (Starboard's own Live TV plug-in covers free channels) | | | ✓ | Jellyfin |
 | Dozzle | Reads every app's log in the browser, with no sign-in (System, Logs shows app logs too) | | | ✓ | |
 | Tdarr | Converts the library to smaller files | | ✓ | ✓ | Processor time |
 | Disk health | Checks each disk every 30 minutes (on the server, not an app) | | ✓ | ✓ | The server's password once |
@@ -125,7 +124,9 @@ Live TV is a plug-in that comes with Starboard, not an app in the install: read
 | Dispatcharr | Paid IPTV, backup streams or full control of channels in Jellyfin | | | ✓ | Jellyfin |
 | Soulseek (slskd) | Music and books from the Soulseek network | | | ✓ | A Soulseek name and password |
 | No-IP updater | Keeps your No-IP address pointing at the server | | | ✓ | A No-IP account |
-| Kapowarr | Comics and graphic novels | | | ✓ | A download app |
+| Kapowarr | Comics and graphic novels | | | ✓ |
+| Read ebooks, comics and PDFs in the browser (Kavita) | | | ✓ | A download app |
+| Kavita | Reads ebooks, comics and PDFs in the browser or a reading app | | | ✓ | |
 
 An app always brings what it needs: choosing Jellystat also installs Jellyfin, and Reelix installs qBittorrent if
 there is no download app.

@@ -27,7 +27,7 @@ q2: Does the app open in your browser?
 ## Find what went wrong
 
 On **Apps**, select the app's name on its card to open its details. They say what went wrong, such as "Cannot reach
-Sonarr" or "Sonarr refused the API key".
+Jellyfin" or "Jellyfin refused the API key".
 
 ## Start the app again
 
@@ -39,11 +39,11 @@ Open the app itself in your browser. If it does not open, the app has stopped. S
 1. If the app opens in your browser, select **Edit app** in its details. The app's **Edit** panel opens in
    **Manage apps**.
 2. Check **Address Starboard uses**. Starboard uses your server's own network, so an app on the same server
-   is at `http://127.0.0.1` and the app's port, such as `http://127.0.0.1:8989` for Sonarr.
+   is at `http://127.0.0.1` and the app's port, such as `http://127.0.0.1:8096` for Jellyfin.
 3. Select **Test connection**. Starboard shows **Connected** and how quickly the app answered, or
    **Cannot connect** and the reason.
-4. When the test says **Connected**, select **Save app**. For Sonarr, Radarr, Lidarr and Readarr, select
-   **Save and continue**, then **Save adding options**.
+4. When the test says **Connected**, select **Save app**. For Sonarr, Radarr, Lidarr and Readarr, from an existing
+   set-up, select **Save and continue**, then **Save adding options**.
 
 ## Copy the API key again
 

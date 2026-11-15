@@ -15,7 +15,7 @@ Starboard. Nothing you do here changes the app itself.
 ### Change an app's details
 
 1. Go to **Settings**, then **Apps**, then **Manage apps**.
-2. Select **Edit** for the app, or select its name. A side panel opens, such as **Edit Sonarr**.
+2. Select **Edit** for the app, or select its name. A side panel opens, such as **Edit Jellyfin**.
 3. Change what you need, such as **Address Starboard uses** or **API key**. Leave **API key** empty to keep the
    saved key.
 4. Select **Test connection** to check that the app still answers.
@@ -37,7 +37,7 @@ Starboard. Nothing you do here changes the app itself.
 
 1. In **Manage apps**, select **More actions** for the app, then **Remove**. The app's **Edit** panel also
    has **Remove**.
-2. Starboard asks you to confirm. Select **Remove** and the app's name, such as **Remove Sonarr**.
+2. Starboard asks you to confirm. Select **Remove** and the app's name, such as **Remove Jellyfin**.
 
 ## Things to note
 

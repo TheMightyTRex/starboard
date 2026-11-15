@@ -8,12 +8,10 @@ approve or decline each one there. Reported problems with a film or series are i
 
 ## Before you begin
 
-- Reelix, or Seerr, Jellyseerr or Overseerr, is in Starboard with its API key. Read [Add an app](add-an-app.md)
-  and [Find an app's API key](find-an-api-key.md#where-each-app-keeps-its-key).
-- When you have Seerr, Jellyseerr or Overseerr, Starboard shows its requests. Without one, it shows Reelix's own
-  requests.
-- Overseerr and Jellyseerr merged into **Seerr** in 2026. Starboard recognises all three, by name or by their
-  container image, so an older Overseerr or Jellyseerr works as before.
+- Reelix is in Starboard. The default install has it, and Starboard shows Reelix's own requests.
+- On an existing set-up with Seerr, Jellyseerr or Overseerr in Starboard with its API key, Starboard shows that
+  app's requests instead. Overseerr and Jellyseerr merged into **Seerr** in 2026; Starboard recognises all three.
+  Read [Add an app](add-an-app.md).
 
 ## Steps
 

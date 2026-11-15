@@ -64,7 +64,8 @@ or carries on in the terminal. It takes about 15 minutes.
    what it found on this computer, such as drives and apps already running, so it can recommend the right answers.
 9. Finish setting up:
    - **In a browser, on a computer with a desktop:** the set-up page opens by itself with the setup code filled in.
-     Read [Create your password and sign in](create-your-password.md).
+     Read [Create your password and sign in](create-your-password.md), then
+     [Set up your dashboard after installing](../guides/set-up-your-dashboard.md).
    - **In a browser, with no desktop:** open the address it shows on a phone or another computer at home, and
      enter the setup code it shows.
    - **Here in the terminal:** answer the set-up questions. Read

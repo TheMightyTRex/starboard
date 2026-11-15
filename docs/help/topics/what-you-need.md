@@ -5,7 +5,7 @@
 
 Starboard runs on four Linux systems, each in the version named here or any later one. Starboard itself is very
 small, so what your computer needs depends on the media apps you run beside it. The figures here are for a whole
-media server: Starboard, Reelix, Jellyfin, Audiobookshelf and a download app.
+media server with the default install: Starboard, Reelix Lite, Jellyfin, Audiobookshelf and the download apps.
 
 ## The four systems
 

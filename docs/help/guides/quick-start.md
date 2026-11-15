@@ -64,8 +64,9 @@ and [If it does not work](../topics/run-first.md#if-it-does-not-work) if somethi
 
 ## Step 3: Answer its questions
 
-- **With a desktop:** the set-up opens in your browser by itself. Choose your password, then **Basics**, **Full
-  install** or **Everything**: [Basics, Full install and Everything](../topics/install-types.md) explains each.
+- **With a desktop:** the set-up opens in your browser by itself. Choose your password, then keep **Basics
+  (recommended)**. Follow [Set up your dashboard after installing](set-up-your-dashboard.md). Bigger installs are in
+  [Basics, Full install and Everything](../topics/install-types.md).
 - **No desktop:** the same questions are asked in the terminal. Read
   [Set up Starboard in the terminal, with no browser](../topics/set-up-in-the-terminal.md).
 

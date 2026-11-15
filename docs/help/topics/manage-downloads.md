@@ -8,7 +8,7 @@ all downloads, remove one download, or ask an app to find a different copy.
 
 ## Before you begin
 
-- Reelix, or apps such as Sonarr, Radarr and qBittorrent, are in Starboard with their API keys. Read
+- Reelix and qBittorrent, or on an existing set-up apps such as Sonarr and Radarr, are in Starboard with their API keys. Read
   [Add an app](add-an-app.md).
 - To pause and resume all downloads, download hours must be active. Read
   [Download only at certain hours](set-download-hours.md).

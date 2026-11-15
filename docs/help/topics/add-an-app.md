@@ -4,12 +4,13 @@
 # Add an app
 
 Add an app by giving Starboard its name, its address and, for most apps, its API key. The app then has a card on
-the Apps page with its status. Sonarr, Radarr, Lidarr and Readarr are also searched from the Search page.
+the Apps page with its status. Apps that Starboard installed are added for you; this is for an app you run
+yourself, such as Jellyfin on another computer.
 
 ## Before you begin
 
 - The app is installed and running. If you have no apps yet, read [Install apps with Starboard](install-apps.md).
-- You know the app's port, such as 8989 for Sonarr. Read [Addresses and ports](../basics/addresses-and-ports.md)
+- You know the app's port, such as 8096 for Jellyfin. Read [Addresses and ports](../basics/addresses-and-ports.md)
   if ports are new to you.
 - You have the app's API key to hand. Read [Find an app's API key](find-an-api-key.md).
 
@@ -23,12 +24,12 @@ Tip: if the app is on the same computer as Starboard,
 
    ![Settings, Apps, Manage apps, with Manage apps (step 1) and Add an app (step 2) outlined](../images/add-an-app-1-manage-apps.png)
 
-3. In **Kind of app**, choose the app, such as **Sonarr**. For an app that is not in the list, choose
+3. In **Kind of app**, choose the app, such as **Jellyfin**. For an app that is not in the list, choose
    **Other app**.
-4. In **Name**, enter the name for its card, such as `Sonarr`.
+4. In **Name**, enter the name for its card, such as `Jellyfin`.
 5. In **Address Starboard uses**, enter the address with `http://` and the port. For an app on the same
-   computer as Starboard, use `127.0.0.1`, such as `http://127.0.0.1:8989`. For an app on another computer,
-   use that computer's address, such as `http://192.168.1.20:8989`.
+   computer as Starboard, use `127.0.0.1`, such as `http://127.0.0.1:8096`. For an app on another computer,
+   use that computer's address, such as `http://192.168.1.20:8096`.
 
    ![The Add an app panel, with Kind of app set to Sonarr (step 3), Name (step 4) and Address Starboard uses (step 5) outlined](../images/add-an-app-2-connection.png)
 
@@ -41,11 +42,12 @@ Tip: if the app is on the same computer as Starboard,
 
 8. Optional: under **On the dashboard**, choose a **Category** and an **Icon**. Read
    [Organise apps into categories](organise-categories.md) and [Change an app's icon](change-an-icon.md).
-9. Select **Add app**. For Sonarr, Radarr, Lidarr and Readarr, the button is **Save and continue**, and the
-   panel moves on to **Adding options**.
+9. Select **Add app**.
 
-### Adding options for Sonarr, Radarr, Lidarr and Readarr
+## Apps from an existing set-up: Sonarr, Radarr, Lidarr and Readarr
 
+A new install has Reelix in place of these apps. If you run them already, Starboard searches them from the Search
+page too. For these four, the last button is **Save and continue**, and the panel moves on to **Adding options**.
 Starboard uses these choices when you add a film, series, album or book from the Search page.
 
 1. In **Quality profile**, choose the profile to use. The list comes from the app itself.
@@ -57,7 +59,7 @@ Starboard uses these choices when you add a film, series, album or book from the
 
 ## Things to note
 
-- Docker container names, such as `http://sonarr:8989`, usually do not work, because Starboard uses the
+- Docker container names, such as `http://jellyfin:8096`, usually do not work, because Starboard uses the
   computer's own network. Use `127.0.0.1` and the port instead.
 - Starboard keeps API keys on the server and never sends them to your browser. When you edit an app later,
   **API key** is empty: leave it empty to keep the saved key.
