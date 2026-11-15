@@ -167,6 +167,32 @@ def _example_self_update():
     self_update.launch = launch
 
 
+def _example_updates(data):
+    """Settings, Updates (DASH-420, DASH-422): recent updates (one by itself, one went back, one Roll back by hand),
+    the apps' last automatic look, and a newer Playback Reporting for Jellyfin's Update plugins task. Nothing real
+    is updated: the runs are only written down."""
+    import time as _t
+    now = _t.time()
+    runs = [
+        {"id": "a1b2c3d4e5f6", "target": "app:sonarr", "kind": "app", "name": "Sonarr", "action": "update", "from": "4.0.10", "to": "4.0.11",
+         "by": "automatic", "started": now - 26 * 3600, "finished": now - 26 * 3600 + 95, "state": "updated", "said": "Sonarr is updated and running",
+         "steps": [{"id": "backup", "label": "Saving a copy of its settings", "state": "done", "detail": "sonarr-before-update.tgz, beside its Compose file"},
+                   {"id": "install", "label": "Getting and installing the new version", "state": "done", "detail": "4.0.11"},
+                   {"id": "health", "label": "Waiting for it to run", "state": "done", "detail": "It is running"}]},
+        {"id": "b2c3d4e5f6a1", "target": "reelix", "kind": "reelix", "name": "Reelix", "action": "update", "from": "0.7.0", "to": "0.7.1",
+         "by": "you", "started": now - 5 * 3600, "finished": now - 5 * 3600 + 340, "state": "went-back",
+         "said": "Reelix's new version was not healthy; Starboard went back to the previous one",
+         "steps": [{"id": "health", "label": "Waiting for it to answer healthy", "state": "failed", "detail": "It did not answer healthy within 5 minutes"}]},
+        {"id": "c3d4e5f6a1b2", "target": "plugin:watch-stats", "kind": "plugin", "name": "Watch statistics", "action": "rollback", "from": "1.2.0", "to": "1.1.0",
+         "by": "you", "started": now - 2 * 3600, "finished": now - 2 * 3600 + 20, "state": "rolled-back", "said": "Watch statistics is back on 1.1.0, with your settings as they were",
+         "steps": []},
+    ]
+    (data / "update-runs.json").write_text(json.dumps(runs))
+    (data / "auto-updates.json").write_text(json.dumps({"last": {"apps": {"day": dt.date.today().isoformat(), "at": now - 26 * 3600,
+                                                                          "runs": [{"name": "Sonarr", "from": "4.0.10", "to": "4.0.11", "state": "updated", "said": ""}]}}}))
+    JELLYFIN.updates[jellyfin_plugins.PACKAGES["playback"]["guid"].replace("-", "")] = "20.0.0.0"
+
+
 def _example_full_backups():
     """System, Backup and restore, Full without media (DASH-260): the media folder on its own disk, so the page says
     which disk the copies go on, and two made-up copies in the folder. Nothing is read from this computer."""
@@ -1660,6 +1686,7 @@ def main():
     _example_copies(DATA)
     _example_tdarr()
     _example_self_update()
+    _example_updates(DATA)
     if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":
         # DASH-218: the full Reelix's YouTube and Spotify downloads as the admin last saw them, with yt-dlp broken and
         # Spotify's sign-in run out, so Apps and System show both warnings with what to do. Off by default.
@@ -1681,6 +1708,8 @@ def main():
         call("PUT", "/api/config/general", {"server_name": "Harbour", "setup_guide_done": True}, cookie)  # a set-up server (DASH-238)
         # Audio description ticked in the set-up (DASH-399), so the Plug-ins pages show the offer to install it.
         call("PUT", "/api/config/general", {"extras": {"audio_description": True}}, cookie)
+        # Settings, Updates (DASH-422): the plug-ins update by themselves; the rest wait for you (the default).
+        call("PUT", "/api/config/general", {"plugins_auto_update": True}, cookie)
         # The dashboard with plug-in cards in the card band (plug-in API 1.14, DASH-428): Direct play with its logo and
         # a Converting chip, Picture shrinker with a PNG logo and its own words on the chip, Watch statistics without
         # a logo (its initials) and without a status.

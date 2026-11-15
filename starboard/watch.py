@@ -300,6 +300,8 @@ class Watch:
             # and never twice for the same version; the side menu's Update already shows it in the app.
             if w.get("releases", True) and now - self.state.get("release_sent", 0) > 7 * 86400:
                 self._release(name)
+            if w.get("releases", True):
+                self._waiting(name)
             # Weekly summary: Monday, after 09:00, once.
             today = datetime.now()
             week = today.strftime("%G-%V")
@@ -329,6 +331,19 @@ class Watch:
             return
         self.state["release_told"] = latest
         self.state["release_sent"] = time.time()
+
+    def _waiting(self, name):
+        """DASH-420, DASH-422: an update that waits for the owner (a plug-in or an app that does not update by itself),
+        once for each version, from what Starboard already knows: nothing is fetched for it."""
+        from . import auto_updates
+        try:
+            found = auto_updates.waiting(self.app)
+        except Exception as e:  # noqa: BLE001  the alert is a help, never a stop
+            logs.event("warning", "alert", f"Waiting updates not read: {e}")
+            return
+        for key, what, version in found[:10]:
+            self.alert(f"waiting:{key}:{version}", f"{what} {version} is ready to install",
+                       f"{name}: it waits for you in Settings, Updates, or set it to update by itself there.", "info")
 
     def _weekly(self, name, cfg):
         channel = self.settings().get("channel") or {}

@@ -1389,15 +1389,15 @@ async function stepContent(id, root, step = {}) {
       el("div", { class: "form-grid" }, field("From", start), field("Until", end))];
     save = async () => { await saveGeneral({ download_hours: { enabled: on.checked, start: Number(start.value), end: Number(end.value) } }); return true; };
   } else if (id === "updates") {
-    // DASH-417, DASH-422: automatic Starboard updates, and Reelix's when Reelix is being installed. Both deactivated
-    // unless chosen; the same words and order as the terminal set-up (web/setup-answers.json).
+    // DASH-417, DASH-422: which parts may update by themselves: Reelix only when it is being installed, Jellyfin's
+    // plug-ins only with Jellyfin. Each deactivated unless chosen; the same words and order as the terminal set-up
+    // (web/setup-answers.json, terminal_setup.update_parts).
     const w = (await (await fetch("/setup-answers.json", { cache: "no-cache" })).json()).updates;
     const box = (key, label, hint) => {
       const input = el("input", { type: "checkbox", checked: !!config[key] });
       return { key, input, node: el("label", { class: "check" }, input, el("span", { class: "check__text" }, el("strong", { text: label }), el("span", { class: "check__hint", text: hint }))) };
     };
-    const picks = [box("starboard_auto_update", w.starboard, w.starboard_hint)];
-    if (step.reelix) picks.push(box("reelix_auto_update", w.reelix, w.reelix_hint));
+    const picks = w.parts.filter((p) => p.when === "always" || (step.has || {})[p.when]).map((p) => box(p.key, p.label, p.hint));
     nodes = [el("p", { text: w.intro }), el("p", { class: "small muted", text: w.later }),
       el("fieldset", {}, el("legend", { class: "visually-hidden", text: "Install updates automatically" }), el("div", { class: "switch-list" }, picks.map((x) => x.node)))];
     save = async () => { await saveGeneral(Object.fromEntries(picks.map((x) => [x.key, x.input.checked]))); return true; };
@@ -1664,7 +1664,7 @@ async function startGuide() {
     if (types(["jellyfin"]).length || coming(["jellyfin"])) list.push({ id: "jellyfin", ...stepNamed(T, "extras"), intro: "Each one is inactive until you tick it. All are in Settings, Apps, Jellyfin later." });
     if (types(["qbittorrent", "nzbget", "sabnzbd"]).some((s) => s.has_api_key) || coming(["qbittorrent", "nzbget", "sabnzbd"])) list.push({ id: "hours", ...stepNamed(T, "hours"), intro: "Starboard pauses qBittorrent, NZBGet, SABnzbd and Soulseek (slskd) outside these hours, for example to keep the internet free in the day." });
     // DASH-417: after Download hours, so it can name the quiet hours; Reelix's choice only when Reelix is being installed.
-    list.push({ id: "updates", ...stepNamed(T, "updates"), reelix: coming(["reelix"]) });
+    list.push({ id: "updates", ...stepNamed(T, "updates"), has: { reelix: coming(["reelix"]), jellyfin: coming(["jellyfin"]) } });
     list.push({ id: "alerts", ...stepNamed(T, "alerts"), intro: "Starboard checks your apps every few minutes and tells you when one stops answering or a disk has a problem." });
     if (hasDisks) list.push({ id: "storage", ...stepNamed(T, "storage-page"), intro: "Sorting the space by type reads every file, so you choose when it happens. Everything here is also in Settings, Performance." });
     if (start === "new" && !flow) list.push({ id: "preset", ...stepNamed(T, "preset"), intro: "You can change each part in Settings, Performance." });
@@ -1732,10 +1732,9 @@ async function startGuide() {
       const facts = [
         ["Apps", `${apps} ${apps === 1 ? "app" : "apps"}${keyless.length ? `; still without a key: ${keyless.join(", ")}` : ""}`, "/settings.html"],
         ["Jellyfin extras", ["livetv", "import_keep", "defaults", "audio_description"].filter((k) => config.extras[k]).map((k) => ({ livetv: "Live TV", import_keep: "history import", defaults: "user defaults", audio_description: "audio description (to install in Settings, Plug-ins)" })[k]).join(", ") || "None", "/settings-jellyfin.html"],
-        [uw.summary, config.starboard_auto_update && config.reelix_auto_update ? uw.summary_both : config.starboard_auto_update ? uw.summary_starboard
-          : config.reelix_auto_update ? uw.summary_reelix : uw.summary_none, "/settings-updates.html"],
-        ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Off", "/settings-downloads-hours.html"],
-        ["Alerts", config.watch.enabled ? `On, to ${config.watch.channel.kind || "nowhere yet"}` : "Off", "/settings-alerts.html"],
+        [uw.summary, updatesSummary(uw, config), "/settings-updates.html"],
+        ["Download hours", config.download_hours.enabled ? `${String(config.download_hours.start).padStart(2, "0")}:00 to ${String(config.download_hours.end).padStart(2, "0")}:00` : "Deactivated", "/settings-downloads-hours.html"],
+        ["Alerts", config.watch.enabled ? `Activated, to ${config.watch.channel.kind || "nowhere yet"}` : "Deactivated", "/settings-alerts.html"],
         ["How much it does", config.presets[config.performance.preset] || "Custom", "/settings-performance.html"],
       ];
       step.nodes = [el("dl", { class: "facts" }, facts.flatMap(([k, v, href]) => [el("dt", { text: k }),
@@ -1930,7 +1929,7 @@ function startAlerts() {
     settingRow("Weekly summary", withCost("On Monday morning: how each app did, disk health and how full your folders are. Sent where alerts go.", "weekly"),
       switchFor("al-week-l", w().weekly, (on) => save({ weekly: on })), "al-week-l"),
     // DASH-105: a new Starboard release, at most one message a week, only where your alerts go.
-    settingRow("New Starboard release", "One message when a newer Starboard is out, with a link to what is new. At most once a week, and once for each version.",
+    settingRow("An update is ready", "One message when a newer Starboard is out, with a link to what is new (at most once a week), and one for each plug-in or app version that waits for you. Nothing is checked for it. What updates by itself is told afterwards instead.",
       switchFor("al-rel-l", w().releases !== false, (on) => save({ releases: on })), "al-rel-l"));
 
   $("#alerts-sections").removeAttribute("aria-busy");
@@ -2731,10 +2730,208 @@ async function startAbout() {
   });
   $("#update-check-row").replaceChildren(settingRow("Check GitHub for new releases", el("span", { id: "check-h", text: "Activated: Starboard checks every 6 hours at most and shows a notice at the top." }), el("label", { class: "switch" }, check), "check-l"));
   $("#update-command").append(copyButton("./update.sh", "the update command"));
-  startSelfUpdate();
+  await startSelfUpdate();
+  startUpdatesPlace();
   renderAccess();
   try { v = await api("/api/version"); } catch { /* no notice */ }
   showVersion();
+}
+
+// The Updates answer in the set-up's summary (DASH-422), as terminal_setup.updates_summary says it: the parts
+// chosen, such as "Starboard, Reelix and plug-ins", or Deactivated.
+function updatesSummary(w, cfg) {
+  const names = w.parts.filter((p) => cfg[p.key]).map((p) => p.short);
+  if (!names.length) return w.summary_none;
+  const text = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} ${w.summary_and} ${names[names.length - 1]}`;
+  return text[0].toUpperCase() + text.slice(1);
+}
+
+let selfUpdateAsk = null;  // Update now's dialog, for Starboard's row in Ready to update (DASH-420)
+let updatesRefresh = null;  // draws Ready to update and Recent updates again, after Starboard's own update
+
+// Settings, Updates (DASH-420, DASH-422): the one place for updates. Ready to update lists everything Starboard can
+// update (Starboard, Reelix, the other apps, plug-ins and Jellyfin's plug-ins) from what it already knows, with the
+// same Update words and dialog everywhere; Update by themselves sets each part and the hours; Recent updates says
+// what each update did and what is new. Nothing here asks the internet: GitHub, the registries and the catalogues
+// are read by their own checks (DASH-421).
+const RUN_WORDS = { updated: ["Updated", "success"], "up-to-date": ["Up to date", "success"], "rolled-back": ["Rolled back", "info"],
+  "went-back": ["Went back by itself", "warning"], refused: ["Not updated", "warning"], failed: ["Stopped", "danger"], running: ["Updating", "info"] };
+const byWords = (by) => (by === "automatic" ? "by itself" : String(by || "").startsWith("api") ? "from the API" : "by you");
+
+// The password dialog every update and Roll back uses: what happens, then the Starboard password. send(password)
+// does the request; a wrong password asks again in the same dialog. Returns send's answer, or null when cancelled.
+async function updateWithPassword({ title, steps, confirm, send }) {
+  const input = el("input", { class: "input", id: `up-pw-${Date.now()}`, type: "password", autocomplete: "current-password", required: true });
+  const err = el("span", { class: "field-error", id: `${input.id}-error`, hidden: true });
+  input.setAttribute("aria-describedby", err.id);
+  const what = el("div", { class: "stack-2" }, el("ul", {}, steps.map((t) => el("li", { text: t }))), el("p", { text: "Type your Starboard password to go ahead." }));
+  for (;;) {
+    const asked = confirmDialog({ title, message: what, confirm, fields: [el("div", { class: "field" }, el("label", { for: input.id, text: "Your Starboard password" }), input, err)] });
+    if (!(await asked)) return null;
+    try { return await send(input.value); } catch (e) {
+      if (e.status === 401 || e.status === 429) {
+        err.textContent = e.status === 401 ? "That password is not right. Check Caps Lock and try again." : e.message;
+        err.hidden = false; input.setAttribute("aria-invalid", "true"); input.value = "";
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
+async function startUpdatesPlace() {
+  const list = $("#updates-list");
+  if (!list) return;
+  const summary = $("#up-list-summary"), result = $("#updates-result"), recent = $("#updates-recent"), auto = $("#updates-auto");
+  let data = null, jelly = null;
+  const load = async () => { data = await api("/api/updates"); };
+  try { await load(); } catch (e) { list.removeAttribute("aria-busy"); summary.textContent = `Starboard could not list the updates: ${e.message}`; return; }
+
+  const ended = (j, title) => {
+    const tone = j.ok ? "success" : j.ok === null ? "warning" : "danger";
+    const box = notice(tone, j.title || title, j.text || "");
+    box.setAttribute("tabindex", "-1");
+    result.replaceChildren(box);
+    return box;
+  };
+  const follow = (title, url) => {
+    const job = taskJob({ title, url, failedWord: "Stopped here", returnTo: "up-list-h" });
+    job.open();
+    result.replaceChildren(job.pageLine);
+    job.follow((j) => ({ title: j.title, text: j.text })).then(async (j) => {
+      const box = ended(j, title);
+      await refresh();
+      if (!job.dialog.open) box.focus();
+    });
+  };
+  const startApp = async (t, opener) => {
+    const steps = t.kind === "reelix"
+      ? ["A copy of Reelix's settings is made first.", `Reelix ${t.latest || "newest"} is installed.`, "If it does not answer healthy within 5 minutes, it goes back to the version before by itself."]
+      : t.kind === "jellyfin-plugins"
+        ? ["A copy of Jellyfin's plug-ins folder is made first.", "Jellyfin installs the new versions of its plug-ins.", "Jellyfin restarts when nobody is watching, and each plug-in must start.", "Jellyfin keeps no older version, so a plug-in that does not start is deactivated by Jellyfin and you are told."]
+        : [`A copy of ${t.name}'s settings is made first.`, `${t.name} ${t.latest || "newest"} is installed.`, "If it does not run within 2 minutes, it goes back to the version before by itself."];
+    try {
+      const r = await updateWithPassword({ title: `Update ${t.name}`, steps, confirm: "Update now",
+        send: (password) => api("/api/updates/start", { method: "POST", body: { target: t.id, password } }) });
+      if (r) follow(`Updating ${t.name}`, r.job);
+      else opener?.focus();
+    } catch (e) {
+      const box = notice("danger", `${t.name} was not updated`, e.message);
+      box.setAttribute("tabindex", "-1");
+      result.replaceChildren(box);
+      box.focus();
+    }
+  };
+
+  const action = (t) => {
+    if (t.kind === "starboard") {
+      if (!t.update_available || !t.can_update || !selfUpdateAsk) return null;
+      const b = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog", "aria-describedby": `up-${t.id}-l` }, icon("circle-arrow-up"), "Update now");
+      b.addEventListener("click", () => selfUpdateAsk());
+      return b;
+    }
+    if (t.kind === "plugin") {
+      const pid = t.id.split(":")[1];
+      if (t.update_available) return el("a", { class: "btn btn--primary", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "See what is new and update");
+      if (t.can_roll_back) return el("a", { class: "btn", href: `/settings-plugin.html?id=${encodeURIComponent(pid)}`, "aria-describedby": `up-${t.id}-l` }, "Roll back");
+      return null;
+    }
+    if (!t.update_available || !t.can_update) return null;
+    const b = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog", "aria-describedby": `up-${t.id}-l` }, icon("circle-arrow-up"), "Update now");
+    b.addEventListener("click", () => startApp(t, b));
+    return b;
+  };
+  const row = (t) => {
+    const ready = t.update_available;
+    const facts = [t.current ? `You have ${t.current}` : "Version not known", ready && t.latest ? `New: ${t.latest}` : ""].filter(Boolean).join(". ");
+    const unknown = !ready && /look for updates first/i.test(t.why || "");  // no look at its image yet
+    const why = ready && !t.can_update && t.kind !== "plugin" ? t.why : !ready && t.why && !/up to date|no newer version/i.test(t.why) ? t.why : "";
+    const note = t.kind === "plugin" && ready && t.note ? `What is new: ${t.note}` : "";
+    return el("li", { class: "setting", "data-key": t.id },
+      el("div", { class: "setting__text" },
+        el("span", { class: "setting__label", id: `up-${t.id}-l`, text: t.name }),
+        el("span", { class: "setting__hint" }, `${facts}.`, why ? ` ${why}.`.replace(/\.\.$/, ".") : "", note ? ` ${note}` : ""),
+        el("span", { class: "chips" }, ready ? chip("Update available", "info", "circle-arrow-up") : unknown ? chip("Not looked at yet", "muted") : chip("Up to date", "success"),
+          ready ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null)),
+      el("div", { class: "setting__control" }, action(t)));
+  };
+  const jellyRow = () => {
+    if (!jelly?.connected) return null;
+    const t = { id: "jellyfin-plugins", kind: "jellyfin-plugins", name: "Jellyfin's plug-ins" };
+    const b = el("button", { type: "button", class: "btn", "aria-haspopup": "dialog", "aria-describedby": "up-jellyfin-plugins-l" }, icon("circle-arrow-up"), "Look for updates and install them");
+    b.addEventListener("click", () => startApp(t, b));
+    const own = jelly.own_schedule ? " Jellyfin also updates them by itself on its own schedule." : "";
+    return el("li", { class: "setting", "data-key": t.id },
+      el("div", { class: "setting__text" }, el("span", { class: "setting__label", id: "up-jellyfin-plugins-l", text: t.name }),
+        el("span", { class: "setting__hint", text: `${jelly.count} installed. Jellyfin knows which have new versions, so Starboard asks it when you choose.${own}` })),
+      el("div", { class: "setting__control" }, b));
+  };
+  const drawList = () => {
+    const items = [...data.items].sort((a, b) => Number(b.update_available) - Number(a.update_available));
+    const ready = items.filter((t) => t.update_available);
+    summary.textContent = ready.length
+      ? `${ready.length} ${ready.length === 1 ? "update is" : "updates are"} ready: ${ready.map((t) => `${t.name} ${t.latest}`.trim()).join(", ")}.`
+      : "Everything Starboard knows about is up to date.";
+    list.removeAttribute("aria-busy");
+    redraw(list, [...items.map(row), jellyRow(),
+      el("li", { class: "setting", "data-key": "look" }, el("div", { class: "setting__text" },
+        el("span", { class: "setting__hint" }, "Starboard knows about app updates from the last look at their images. ",
+          el("a", { href: "/apps-updates.html", text: "Look again on Apps, Updates" }), "."))) ].filter(Boolean));
+  };
+  const drawRecent = () => {
+    const runs = data.recent || [];
+    recent.replaceChildren(...(runs.length ? runs : [null]).map((r) => {
+      if (!r) return el("li", { class: "setting" }, el("div", { class: "setting__text" }, el("span", { class: "setting__hint", text: "No updates have run yet." })));
+      const [word, tone] = RUN_WORDS[r.state] || RUN_WORDS.failed;
+      const change = r.action === "rollback" ? `Back to ${r.to}` : r.from && r.to ? `${r.from} to ${r.to}` : r.to || "";
+      const when = r.started_at ? timeAgo(Date.parse(r.started_at)) : "";
+      return el("li", { class: "setting" }, el("div", { class: "setting__text" },
+        el("span", { class: "setting__label" }, r.name, " ", chip(word, tone)),
+        el("span", { class: "setting__hint", text: [change, `${r.action === "rollback" ? "rolled back" : "updated"} ${byWords(r.by)}`, when].filter(Boolean).join(" · ") }),
+        r.said ? el("span", { class: "setting__hint", text: r.said }) : null));
+    }));
+  };
+  const drawAuto = () => {
+    const a = data.auto;
+    const name = `up-hours-${Date.now()}`;
+    const hours = config.download_hours;
+    const pad = (h) => `${String(h).padStart(2, "0")}:00`;
+    const radio = (value, label, hint) => {
+      const input = el("input", { type: "radio", name, value, checked: a.hours === value });
+      input.addEventListener("change", async () => {
+        try { await saveGeneral({ auto_update_hours: value }, true); data.auto = (await api("/api/updates")).auto; $("#up-hours-now").textContent = `Now: ${data.auto.hours_words}.`; }
+        catch (e) { problem(e.message); }
+      });
+      return el("label", { class: "option-card" }, input, el("strong", { text: label }), el("small", { text: hint }));
+    };
+    const when = el("fieldset", { class: "stack-2" }, el("legend", { class: "setting__label", text: "When they update" }),
+      el("div", { class: "option-cards option-cards--row" },
+        radio("download", "In your download hours", hours.enabled ? `${pad(hours.start)} to ${pad(hours.end)}, while the downloads run. Set in Settings, Downloads.` : "Not set, so 01:00 to 06:00. Set them in Settings, Downloads."),
+        radio("quiet", "In the quiet hours", "Always 01:00 to 06:00, whatever your download hours.")),
+      el("p", { class: "small muted", id: "up-hours-now", text: `Now: ${a.hours_words}.` }));
+    const rows = a.parts.map((p) => {
+      const input = el("input", { type: "checkbox", id: `auto-${p.id}`, checked: p.active });
+      input.addEventListener("change", async () => {
+        try { await saveGeneral({ [p.key]: input.checked }, true); } catch (e) { input.checked = !input.checked; problem(e.message); }
+      });
+      const last = p.last ? `Last looked ${timeAgo(p.last.at * 1000)}: ${p.last.runs.length ? p.last.runs.map((r) => `${r.name} ${(RUN_WORDS[r.state] || RUN_WORDS.failed)[0].toLowerCase()}`).join(", ") : "nothing to update"}.` : "";
+      const hint = `Deactivated: it waits for you, and you are told when an update is ready.${p.id === "jellyfin_plugins" && jelly && !jelly.connected ? " Needs Jellyfin with its API key in Manage apps." : ""}${last ? ` ${last}` : ""}`;
+      return el("li", { class: "setting" }, switchRow(`${p.name}: update by itself`, hint, input),
+        el("dl", { class: "facts small" }, el("dt", { text: "Copy first" }), el("dd", { text: p.safety.copy }),
+          el("dt", { text: "Checked by" }), el("dd", { text: p.safety.check }), el("dt", { text: "Way back" }), el("dd", { text: p.safety.back })));
+    });
+    auto.removeAttribute("aria-busy");
+    auto.replaceChildren(when, el("ul", { class: "settings-rows", "aria-label": "What may update by itself" }, rows));
+  };
+  const refresh = async () => { try { await load(); } catch { return; } drawList(); drawRecent(); };
+  updatesRefresh = refresh;
+  drawList();
+  drawRecent();
+  drawAuto();
+  // Jellyfin is asked only now, after the page is drawn, and only once (it is another app's API).
+  try { jelly = await api("/api/updates/jellyfin"); } catch { jelly = null; }
+  drawList();
+  drawAuto();
 }
 
 // Update now (DASH-417): admin only, with the Starboard password, as a plug-in install asks. update.sh runs in a
@@ -2757,11 +2954,11 @@ async function startSelfUpdate() {
   };
   // Opened at once after Update now; an update already running when the page opens shows its line, with Show progress.
   const follow = (openNow = true) => {
-    const job = taskJob({ title: "Updating Starboard", url: "/api/self-update/job", failedWord: "Stopped here", returnTo: "ab-up-h",
+    const job = taskJob({ title: "Updating Starboard", url: "/api/self-update/job", failedWord: "Stopped here", returnTo: "up-list-h",
       intro: "Starboard restarts during the update, so this loses touch with it for about a minute and reconnects by itself. Closing this does not stop the update." });
     if (openNow) job.open();  // first, while Update now is still there to note as the opener; focus comes back to the heading
     box.replaceChildren(job.pageLine, result);
-    job.follow((j) => ({ title: j.title, text: j.text })).then((j) => ended(j, !job.dialog.open));
+    job.follow((j) => ({ title: j.title, text: j.text })).then(async (j) => { await updatesRefresh?.(); ended(j, !job.dialog.open); });
   };
   const ask = async () => {
     const latest = s.latest.replace(/^v/, "");
@@ -2792,22 +2989,17 @@ async function startSelfUpdate() {
     }
     follow();
   };
+  selfUpdateAsk = ask;
   const draw = () => {
     const nodes = [];
     const u = s.update;
     if (u && u.state === "running") { follow(false); return; }
+    // DASH-420: Update now is Starboard's row in Ready to update (startUpdatesPlace); this box keeps its progress,
+    // why it cannot be updated here, and its result.
     if (s.newer) {
       const latest = s.latest.replace(/^v/, "");
-      nodes.push(el("h3", { id: "su-h", text: "Update now" }));
-      if (!s.can) {
-        nodes.push(notice("info", `Version ${latest} can be installed on the server`, s.why));
-      } else {
-        const go = el("button", { type: "button", class: "btn btn--primary", "aria-haspopup": "dialog" }, icon("circle-arrow-up"), `Update now to ${latest}`);
-        go.addEventListener("click", () => ask());
-        nodes.push(el("p", { text: "Starboard backs up your settings, installs the new version and restarts for about a minute. If the new version does not start, it goes back by itself." }));
-        if (s.skip === s.latest) nodes.push(notice("warning", `${latest} did not install last time`, "The automatic update does not try it again by itself. Update now tries again."));
-        nodes.push(el("div", { class: "actions" }, go));
-      }
+      if (!s.can) nodes.push(notice("info", `Version ${latest} can be installed on the server`, s.why));
+      else if (s.skip === s.latest) nodes.push(notice("warning", `${latest} did not install last time`, "It does not update by itself to this version again. Update now tries again."));
     }
     // The last update's result, for a day after it ended (an update in the night is still there in the morning).
     if (u && u.finished && Date.now() / 1000 - u.finished < 86400) ended(u, false);
@@ -3937,17 +4129,6 @@ startPage().then(async (session) => {
     // General's parts are usually drawn by now (startGeneral runs first), so it goes in at once; else when they are.
     const place = () => { if (sections.childElementCount && !$("#gn-scroll-h")) { sections.append(box); return true; } return false; };
     if (!place()) { const wait = new MutationObserver(() => { if (place()) wait.disconnect(); }); wait.observe(sections, { childList: true }); }
-  }
-  if ($("#reelix-auto-row")) {  // DASH-263, DASH-417: automatic Starboard and Reelix updates, deactivated until activated
-    const mine = el("input", { type: "checkbox", role: "switch", id: "starboard-auto", checked: !!config.starboard_auto_update });
-    mine.addEventListener("change", () => saveGeneral({ starboard_auto_update: mine.checked }, true).catch((e) => problem(e.message)));
-    const input = el("input", { type: "checkbox", role: "switch", id: "reelix-auto", checked: !!config.reelix_auto_update });
-    input.addEventListener("change", () => saveGeneral({ reelix_auto_update: input.checked }, true).catch((e) => problem(e.message)));
-    $("#reelix-auto-row").replaceChildren(
-      el("li", { class: "setting" }, switchRow("Install Starboard updates automatically",
-        "In the quiet hours: your download hours when they are set, otherwise 01:00 to 06:00. Starboard restarts for about a minute. Deactivated: the notice above says when there is one, and you choose Update now.", mine)),
-      el("li", { class: "setting" }, switchRow("Install Reelix updates automatically",
-        "In the quiet hours, once a day at most. Needs Docker access. Deactivated: Apps, Updates says when there is one, and you choose.", input)));
   }
   $("#usenet-rights")?.append(usenetRights());
 });

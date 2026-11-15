@@ -3,7 +3,8 @@
 #
 #   --check          Only say whether an update is available
 #   --to v0.2.0      Install a particular release (also how you go back to an older one)
-#   --main           Follow the main branch instead of releases (for testing)
+#   --main           Follow the main branch instead of releases (for testing). An install made with
+#                    ./install.sh --main follows it without this (STARBOARD_CHANNEL in .env, DASH-416)
 #
 # Before updating it backs up ./data to ./backups, except each plug-in's own data folder, which belongs to the
 # plug-in's user and stays where it is. If the new version does not start, it goes back to the version you had and
@@ -43,6 +44,8 @@ fail() { printf 'Stopped: %s\n' "$*" >&2; exit 1; }
 MODE="$(sed -n 's/^STARBOARD_MODE=//p' .env)"
 PORT="$(sed -n 's/^STARBOARD_PORT=//p' .env)"
 MODE="${MODE:-docker}"
+# DASH-416: an install made with ./install.sh --main follows main unless --to names a release.
+if [ "$CHANNEL" = release ] && [ -z "$TARGET" ] && [ "$(sed -n 's/^STARBOARD_CHANNEL=//p' .env | tail -n 1)" = main ]; then CHANNEL=main; fi
 PORT="${PORT:-8095}"
 
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
@@ -62,7 +65,7 @@ elif [ "$CHANNEL" = main ]; then
   WANT="$(git rev-parse origin/main)"
   WANT_NAME="main ($(git rev-parse --short origin/main))"
 else
-  WANT_NAME="$(git tag -l 'v[0-9]*' --sort=-v:refname | head -n 1)"
+  WANT_NAME="$(git tag -l 'v[0-9]*' --sort=-v:refname | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } | head -n 1)"  # never a test build
   [ -n "$WANT_NAME" ] || fail "no releases yet. Use --main to follow the main branch"
   WANT="$(git rev-parse "refs/tags/$WANT_NAME^{commit}")"
 fi

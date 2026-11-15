@@ -1525,17 +1525,33 @@ const pupBox = page.getByRole("checkbox", { name: /^Updates/ });
 check("PUP-06", "Make a key offers Updates, only given when ticked", (await pupBox.count()) === 1 && !(await pupBox.isChecked()));
 await page.keyboard.press("Escape");
 
-// UPD: Update now and automatic Starboard updates (DASH-417). The example server has a newer made-up release and an
-// update that only writes update.sh's lines, so nothing is fetched or restarted.
-console.log("\n== UPD Update now");
+// UPD: Settings, Updates as the one place (DASH-417, DASH-420, DASH-422). The example server has a newer made-up
+// release whose update only writes update.sh's lines, a newer Reelix, a newer plug-in, three recent updates and a
+// stand-in Jellyfin with a newer Playback Reporting, so nothing is fetched or restarted.
+console.log("\n== UPD Settings, Updates");
 await open("settings-updates.html");
-const auto = page.getByRole("switch", { name: "Install Starboard updates automatically" });
-check("UPD-01", "Install Starboard updates automatically is on Settings, Updates and deactivated by default",
-  (await auto.count()) === 1 && !(await auto.isChecked()));
-check("UPD-01", "beside Install Reelix updates automatically, in one Automatic updates section",
-  (await page.locator("section[aria-labelledby=ab-rx-h]").getByRole("switch").count()) === 2);
-const goNow = page.getByRole("button", { name: /^Update now to / });
-check("UPD-02", "a newer release offers Update now", (await goNow.count()) === 1);
+await page.locator("#updates-list:not([aria-busy])").waitFor({ timeout: 5000 }).catch(() => {});
+const ready = await page.locator("#up-list-summary").textContent();
+check("UPD-05", "Ready to update says in a live region what is ready", /updates are ready: .*Starboard/.test(ready)
+  && (await page.locator("#up-list-summary[role=status]").count()) === 1, ready);
+check("UPD-05", "Starboard waits for you; the plug-in updates by itself", (await page.locator('[data-key="starboard"]').textContent()).includes("Waits for you")
+  && (await page.locator('[data-key="plugin:picture-shrinker"]').textContent()).includes("Updates by itself"));
+const autoSwitches = page.locator("#updates-auto").getByRole("switch");
+check("UPD-01", "Update by themselves has a switch for each of the five parts", (await autoSwitches.count()) === 5);
+const auto = page.getByRole("switch", { name: "Starboard: update by itself" });
+check("UPD-01", "Starboard's is deactivated by default", (await auto.count()) === 1 && !(await auto.isChecked()));
+check("UPD-01", "the hours are a choice, the download hours first", (await page.locator("#updates-auto input[type=radio]").count()) === 2
+  && await page.locator('#updates-auto input[value="download"]').isChecked());
+check("UPD-05", "Recent updates lists what each did, by whom", (await page.locator("#updates-recent li").count()) >= 3
+  && (await page.locator("#updates-recent").textContent()).includes("updated by itself"));
+const appsAuto = page.getByRole("switch", { name: "Your other apps: update by itself" });
+await appsAuto.check();
+await page.waitForTimeout(500);
+check("UPD-07", "a part's switch saves at once", (await api("/api/config")).apps_auto_update === true);
+await appsAuto.uncheck();
+await page.waitForTimeout(500);
+const goNow = page.locator('[data-key="starboard"]').getByRole("button", { name: "Update now" });
+check("UPD-02", "a newer release offers Update now on Starboard's row", (await goNow.count()) === 1);
 await goNow.click();
 const ask = page.getByRole("dialog");
 check("UPD-02", "Update now asks for the password first, with focus in the field",
@@ -1558,10 +1574,24 @@ check("UPD-03", "it follows each step and ends with the result, focused",
   (await progress.locator(".task-list__item[data-state=done]").count()) === 6
   && await page.evaluate(() => document.activeElement?.closest(".notice")?.textContent.includes("Starboard is updated")));
 await progress.getByRole("button", { name: "Done" }).click();
-check("UPD-03", "closing it takes focus to the Updates heading, as Update now is gone", await page.evaluate(() => document.activeElement?.id === "ab-up-h"));
+check("UPD-03", "closing it takes focus to Ready to update, as Update now is gone", await page.evaluate(() => document.activeElement?.id === "up-list-h"));
 check("UPD-03", "the page says how it ended", (await page.locator("#self-update-result").textContent()).includes("Starboard is updated"));
 const back = await api("/api/self-update");
 check("UPD-04", "the record says who started it and how it ended", back.update?.by === "you" && back.update?.outcome === "updated", JSON.stringify(back.update));
+// Jellyfin's plug-ins from the same place, with the same password dialog and progress (DASH-422).
+const jfGo = page.locator('[data-key="jellyfin-plugins"]').getByRole("button");
+await jfGo.waitFor({ timeout: 5000 }).catch(() => {});
+await jfGo.click();
+await page.getByRole("dialog").locator("input[type=password]").fill(password);
+await page.getByRole("dialog").getByRole("button", { name: "Update now" }).click();
+const jfProgress = page.getByRole("dialog", { name: "Updating Jellyfin's plug-ins" });
+await jfProgress.waitFor({ timeout: 5000 }).catch(() => {});
+await jfProgress.locator(".notice__title").waitFor({ timeout: 45000 }).catch(() => {});
+check("UPD-06", "Jellyfin's plug-ins update with each step and end with what is new, focused",
+  (await jfProgress.locator(".notice").textContent()).includes("Playback Reporting 19.0.0.0 to 20.0.0.0")
+  && await page.evaluate(() => !!document.activeElement?.closest(".notice")));
+await jfProgress.getByRole("button", { name: "Done" }).click();
+check("UPD-06", "and it is in Recent updates", (await page.locator("#updates-recent").textContent()).includes("Jellyfin's plug-ins"));
 
 // Batch 0.19, plug-in API 1.15: a plug-in from a zip file (DASH-414), updated from one, and Jellyfin's metadata moved
 // out of its settings folder (DASH-431). The example server never reaches Docker: its build is made up.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<title>Update settings · Settings · Starboard</title>
+<title>Updates · Settings · Starboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#323a77">
@@ -57,7 +57,7 @@
   </div>
   <div class="site-header__tabs">
     <nav class="menu-tabs" aria-label="Updates">
-      <a href="/settings-updates.html" aria-current="page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 5H3"/><path d="M12 19H3"/><path d="M14 3v4"/><path d="M16 17v4"/><path d="M21 12h-9"/><path d="M21 19h-5"/><path d="M21 5h-7"/><path d="M8 10v4"/><path d="M8 12H3"/></svg><span class="menu-tabs__label">Update settings</span></a>
+      <a href="/settings-updates.html" aria-current="page"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 5H3"/><path d="M12 19H3"/><path d="M14 3v4"/><path d="M16 17v4"/><path d="M21 12h-9"/><path d="M21 19h-5"/><path d="M21 5h-7"/><path d="M8 10v4"/><path d="M8 12H3"/></svg><span class="menu-tabs__label">Updates</span></a>
       <a href="/settings-releases.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><span class="menu-tabs__label">Releases</span></a>
       <a href="/settings-restore.html"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h2"/><path d="M20 8v11a2 2 0 0 1-2 2h-2"/><path d="m9 15 3-3 3 3"/><path d="M12 12v9"/></svg><span class="menu-tabs__label">Restore</span></a>
     </nav>
@@ -186,17 +186,29 @@
 <div class="page page--settings">
   <div class="page-head">
     <div class="page-head__text">
-      <h1>Update settings</h1>
-      <p class="page-head__summary">Your version, how to update, and what Starboard can access.</p>
+      <h1>Updates</h1>
+      <p class="page-head__summary">Everything Starboard can update, what updates by itself, and what is new.</p>
     </div>
   </div>
   <div id="version-notice"></div>
   <div class="settings-sections">
-    <section class="settings-section" aria-labelledby="ab-up-h">
-      <div class="settings-section__head"><h2 id="ab-up-h">Updates</h2><p class="small muted">Update Starboard here with Update now, or on the server with ./update.sh. Your apps update on Apps, Updates.</p></div>
-      <ul class="settings-rows" id="update-check-row"></ul>
+    <section class="settings-section" aria-labelledby="up-list-h">
+      <div class="settings-section__head"><h2 id="up-list-h">Ready to update</h2><p class="small muted" id="up-list-summary" role="status" aria-live="polite">Looking at what can be updated…</p></div>
       <div id="self-update" class="stack-2"></div>
-      <h3>Update on the server instead</h3>
+      <ul class="settings-rows update-list" id="updates-list" aria-labelledby="up-list-h" aria-busy="true"></ul>
+      <div id="updates-result" class="stack-2"></div>
+    </section>
+    <section class="settings-section" aria-labelledby="up-auto-h">
+      <div class="settings-section__head"><h2 id="up-auto-h">Update by themselves</h2><p class="small muted">Each part is deactivated until you activate it. Before an update it makes a copy, afterwards it checks the new version, and if that does not work it goes back by itself. You are told what is new, and when something failed or waits for you.</p></div>
+      <div id="updates-auto" class="stack-4" aria-busy="true"></div>
+    </section>
+    <section class="settings-section" aria-labelledby="up-recent-h">
+      <div class="settings-section__head"><h2 id="up-recent-h">Recent updates</h2><p class="small muted">The last 20, by you, by themselves or from the API, with what each said.</p></div>
+      <ul class="settings-rows" id="updates-recent" aria-labelledby="up-recent-h"></ul>
+    </section>
+    <section class="settings-section" aria-labelledby="ab-up-h">
+      <div class="settings-section__head"><h2 id="ab-up-h">Update Starboard on the server instead</h2><p class="small muted">The same update as Update now, run by you on the server.</p></div>
+      <ul class="settings-rows" id="update-check-row"></ul>
       <p>Run this on the server, in the folder you installed Starboard into:</p>
       <div class="command" id="update-command"><code class="code-block">./update.sh</code></div>
       <ol class="update-steps small">
@@ -204,10 +216,6 @@
         <li>It installs the newest release.</li>
         <li>If the new version does not start, it goes back to the previous one.</li>
       </ol>
-    </section>
-    <section class="settings-section" aria-labelledby="ab-rx-h">
-      <div class="settings-section__head"><h2 id="ab-rx-h">Automatic updates</h2><p class="small muted">Starboard can install new versions of itself and of Reelix by itself. Each saves the settings first, and goes back to the version before if the new one does not start or is not healthy.</p></div>
-      <ul class="settings-rows" id="reelix-auto-row"></ul>
     </section>
     <section class="settings-section" id="access" aria-labelledby="ab-ac-h">
       <div class="settings-section__head"><h2 id="ab-ac-h">What Starboard can access</h2><p class="small muted">Everything Starboard can reach or control, whether it is active now, and how to change it. Switches apply at once; the rest you choose when you run the installer.</p></div>

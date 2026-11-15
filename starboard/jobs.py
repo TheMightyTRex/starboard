@@ -22,7 +22,13 @@ JOBS = {
     "reelixupdate": {"title": "Reelix updates", "every": 86400, "what": "Installs a new Reelix by itself in quiet hours, with a way back if it is not healthy"},
     # DASH-417: hourly, so it finds the quiet hours; each look is one cached question (GitHub at most every 6 hours).
     "starboardupdate": {"title": "Starboard updates", "every": 3600, "what": "Installs a new Starboard release by itself in quiet hours, with a way back if it does not start"},
+    # DASH-422: hourly, so each finds the update hours; outside them a look asks nothing, inside them once a day.
+    "appsupdate": {"title": "App updates", "every": 3600, "what": "Updates your other apps by themselves in the update hours, with a copy of their settings and a way back"},
+    "pluginsupdate": {"title": "Plug-in updates", "every": 3600, "what": "Updates Starboard's plug-ins by themselves in the update hours, with Roll back if one does not answer"},
+    "jellyfinpluginsupdate": {"title": "Jellyfin plug-in updates", "every": 3600, "what": "Lets Jellyfin update its own plug-ins in the update hours, with a copy first and a check that each starts"},
 }
+AUTO = {"reelixupdate": "reelix_auto_update", "starboardupdate": "starboard_auto_update", "appsupdate": "apps_auto_update",
+        "pluginsupdate": "plugins_auto_update", "jellyfinpluginsupdate": "jellyfin_plugins_auto_update"}
 SETTING = {"livetv": "livetv", "import": "import_keep", "defaults": "defaults", "listening": "listening_keep"}
 PAGE = {"listening": "/settings-audiobookshelf.html"}
 
@@ -43,10 +49,8 @@ class Jobs:
     def enabled(self, key):
         if key == "vpnport":  # on by itself while the VPN forwards a port and both apps have their keys (DASH-233)
             return vpn_ports.wanted(self.app.config, self.app.data_dir)
-        if key == "reelixupdate":  # Settings, Update settings (DASH-263)
-            return bool(self.app.config.data.get("reelix_auto_update"))
-        if key == "starboardupdate":  # Settings, Update settings (DASH-417)
-            return bool(self.app.config.data.get("starboard_auto_update"))
+        if key in AUTO:  # Settings, Updates (DASH-263, DASH-417, DASH-422)
+            return bool(self.app.config.data.get(AUTO[key]))
         return bool(self.settings().get(SETTING[key]))
 
     def quiet_now(self):
@@ -106,6 +110,10 @@ class Jobs:
             elif key == "starboardupdate":
                 from . import self_update
                 summary = self_update.automatic(self.app)
+            elif key in ("appsupdate", "pluginsupdate", "jellyfinpluginsupdate"):
+                from . import auto_updates
+                summary = {"appsupdate": auto_updates.apps, "pluginsupdate": auto_updates.plugins,
+                           "jellyfinpluginsupdate": auto_updates.jellyfin_plugins}[key](self.app)
             else:
                 summary = migrate.ensure_defaults(services)
             self._record(key, finished=time.time(), state="done", summary=summary)
@@ -163,7 +171,7 @@ class Jobs:
                 needs.append("Jellyfin with its API key in Manage apps")
             if key == "listening":
                 needs = [] if abs_ else ["Audiobookshelf with an admin API key in Manage apps"]
-            if key in ("reelixupdate", "starboardupdate"):
+            if key in AUTO:
                 needs = []
                 row["page"] = "/settings-updates.html"
             if key == "vpnport":

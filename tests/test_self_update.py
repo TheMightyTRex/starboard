@@ -224,7 +224,9 @@ class Words(unittest.TestCase):
         steps = [s["id"] for s in json.loads((ROOT / "web" / "setup-steps.json").read_text(encoding="utf-8"))["steps"]]
         self.assertLess(steps.index("hours"), steps.index("updates"))
         self.assertLess(steps.index("updates"), steps.index("alerts"))
-        self.assertIn("deactivated unless you choose them", answers["later"])
+        self.assertIn("deactivated unless you choose it", answers["later"])
+        self.assertEqual([p["key"] for p in answers["parts"]], ["starboard_auto_update", "reelix_auto_update", "apps_auto_update",
+                                                               "plugins_auto_update", "jellyfin_plugins_auto_update"])
         js = (ROOT / "web" / "js" / "settings.js").read_text(encoding="utf-8")
         self.assertIn('list.push({ id: "updates"', js)
         self.assertLess(js.index('list.push({ id: "hours"'), js.index('list.push({ id: "updates"'))
@@ -235,22 +237,33 @@ class Words(unittest.TestCase):
 
 
 class TerminalStep(unittest.TestCase):
-    def test_enter_keeps_both_deactivated_and_reelix_is_asked_only_when_installed(self):
+    def test_enter_keeps_every_part_deactivated_and_reelix_and_jellyfin_are_asked_only_when_installed(self):
         from tests.test_terminal_setup_rules import FakeApi, plain
         from starboard import setup_answers, terminal_setup as ts
         w = setup_answers.WORDS["updates"]
+        reelix = next(p for p in w["parts"] if p["key"] == "reelix_auto_update")
         api = FakeApi()
         term, out = plain([""])
-        self.assertTrue(ts.step_updates(api, term, {"choice": {"apps": ["jellyfin"]}}))
-        self.assertEqual(api.calls[-1], ("PUT", "/api/config/general", {"starboard_auto_update": False}))
+        self.assertTrue(ts.step_updates(api, term, {"choice": {"apps": ["sonarr"]}}))
+        self.assertEqual(api.calls[-1], ("PUT", "/api/config/general", {"starboard_auto_update": False, "apps_auto_update": False,
+                                                                        "plugins_auto_update": False}))
         self.assertIn(w["intro"].split(":")[0], " ".join(out.getvalue().split()))
-        self.assertNotIn(w["reelix"], out.getvalue())
-        api, (term, out) = FakeApi(), plain(["1,2"])
-        self.assertTrue(ts.step_updates(api, term, {"choice": {"apps": ["reelix"]}}))
-        self.assertEqual(api.calls[-1][2], {"starboard_auto_update": True, "reelix_auto_update": True})
-        self.assertEqual(ts.updates_summary(True, True), w["summary_both"])
+        self.assertNotIn(reelix["hint"], out.getvalue())
+        api, (term, out) = FakeApi(), plain(["1,2,5"])
+        state = {"choice": {"apps": ["reelix", "jellyfin"]}}
+        self.assertTrue(ts.step_updates(api, term, state))
+        self.assertEqual(api.calls[-1][2], {"starboard_auto_update": True, "reelix_auto_update": True, "apps_auto_update": False,
+                                            "plugins_auto_update": False, "jellyfin_plugins_auto_update": True})
+        self.assertEqual(ts.updates_summary(state["updates_chosen"]), "Starboard, Reelix and Jellyfin's plug-ins")
+        self.assertEqual(ts.updates_summary([]), w["summary_none"])
+        self.assertEqual(ts.updates_summary(["plugins_auto_update"]), "Plug-ins")
         self.assertFalse(ts.step_updates(FakeApi(), plain()[0], {"start": "restore"}))
 
+    def test_the_browser_set_up_uses_the_same_parts_and_rule(self):
+        js = (ROOT / "web" / "js" / "settings.js").read_text(encoding="utf-8")
+        self.assertIn('w.parts.filter((p) => p.when === "always" || (step.has || {})[p.when])', js)
+        self.assertIn('has: { reelix: coming(["reelix"]), jellyfin: coming(["jellyfin"]) }', js)
+        self.assertIn("function updatesSummary(w, cfg)", js)
 
 if __name__ == "__main__":
     unittest.main()

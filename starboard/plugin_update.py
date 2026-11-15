@@ -169,6 +169,40 @@ def migrate(old, new, values):
     return values, said
 
 
+def rehearse(old, new):
+    """The update from the version before to this one, and Roll back, tried on the settings alone (DASH-423, the
+    plug-in tester's --previous): nothing is installed. Returns issues [(severity, what, fix)].
+
+    It checks that this version is newer, that the old version's settings (its defaults, and every setting given a
+    value) move to keys this version has, that a setting this version gives a new type of value takes a default, and
+    that Roll back gets the old settings back exactly (Starboard keeps the old settings file; here, nothing of the new
+    version is left in it). A version that asks for new permissions is said too: it never updates by itself."""
+    out = []
+    if _key(new.get("version") or "0") <= _key(old.get("version") or "0"):
+        return [("error", f"Version {new.get('version')} is not newer than {old.get('version')}",
+                 "Give this version a higher number, such as 1.2.0 after 1.1.0")]
+    spec = {s["key"]: s for s in new.get("settings") or [] if isinstance(s, dict) and "key" in s}
+    before = {s["key"]: s.get("default", f"value-of-{s['key']}") for s in old.get("settings") or [] if isinstance(s, dict) and "key" in s}
+    moved, said = migrate(old, new, before)
+    for k in moved:
+        if k not in spec:
+            out.append(("error", f"The setting {k} from version {old.get('version')} is still there after the update, but this version has no such setting",
+                        f"Add a migration for {new.get('version')}: rename {k} to its new key, or remove it"))
+    for k, s in spec.items():
+        if k in moved and "default" in s and type(moved[k]) is not type(s["default"]) and not (
+                isinstance(moved[k], (int, float)) and isinstance(s["default"], (int, float)) and not isinstance(moved[k], bool)):
+            out.append(("warning", f"The setting {k} keeps a {type(moved[k]).__name__} from version {old.get('version')}, but this version's default is a {type(s['default']).__name__}",
+                        f"Give {k} a new default in a migration, so the old value is not used as it is"))
+    from . import plugin_life
+    added = plugin_life.new_permissions(old, new)
+    if added:
+        out.append(("info", f"This version asks for new permissions ({', '.join(added)}), so it never updates by itself: each owner chooses it",
+                    "Nothing to fix; say why in its changes"))
+    if said:
+        out.append(("info", "The settings move: " + "; ".join(said), "Nothing to fix"))
+    return out
+
+
 # The steps, and the health check ----------------------------------------------------------------------------------
 
 def _post(pid, main, path, body, timeout):

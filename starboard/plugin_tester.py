@@ -148,9 +148,14 @@ def report(manifest, dev=False, builtin=False, logo_problem=""):
 def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
     dev = "--dev" in args
+    previous = None
+    if "--previous" in args:  # DASH-423: the update from the version before, and Roll back, on the settings alone
+        i = args.index("--previous")
+        previous = args[i + 1] if i + 1 < len(args) else ""
+        del args[i:i + 2]
     paths = [a for a in args if a != "--dev"]
-    if len(paths) != 1:
-        print("Usage: python3 -m starboard.plugin_tester [--dev] path/to/starboard-plugin.json (or its folder)")
+    if len(paths) != 1 or previous == "":
+        print("Usage: python3 -m starboard.plugin_tester [--dev] [--previous old/starboard-plugin.json] path/to/starboard-plugin.json (or its folder)")
         return 2
     path = paths[0]
     if os.path.isdir(path):
@@ -176,7 +181,25 @@ def main(argv=None):
         print(f"{i['severity'].upper():8} {i['area']:13} {i['where']}: {i['what']}\n{'':23}Fix: {i['fix']}")
     print(f"\nAccessibility: {'passed' if r['accessibility']['passed'] else 'FAILED'} ({r['accessibility']['checked']})")
     print(f"{r['errors']} errors, {r['warnings']} warnings, {r['infos']} tips. {'Ready to add.' if r['ok'] else 'Fix the errors before adding it.'}")
-    return 0 if r["ok"] else 1
+    ok = r["ok"]
+    if previous is not None:
+        if os.path.isdir(previous):
+            previous = os.path.join(previous, "starboard-plugin.json")
+        try:
+            with open(previous, encoding="utf-8") as f:
+                old = json.load(f)
+        except (OSError, ValueError) as e:
+            print(f"Cannot read {previous}: {e}")
+            return 2
+        from . import plugin_update
+        issues = plugin_update.rehearse(old, manifest)
+        print(f"\nUpdate from {old.get('version')} to {manifest.get('version')}, and Roll back:")
+        for sev, what, fix in issues:
+            print(f"{sev.upper():8} update        {what}\n{'':23}Fix: {fix}")
+        bad = [i for i in issues if i[0] == "error"]
+        print("The update and Roll back keep the settings." if not bad else f"{len(bad)} errors in the update. Fix them before publishing.")
+        ok = ok and not bad
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

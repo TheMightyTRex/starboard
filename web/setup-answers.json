@@ -146,17 +146,48 @@
   "daily_hint": "For the Space used over time chart and when the pool will be full. Nothing noticeable."
  },
  "updates": {
-  "intro": "Starboard can install new versions of itself and of Reelix by itself, in the quiet hours: your download hours when they are set, otherwise 01:00 to 06:00. Each saves the settings first, and goes back to the version before if the new one does not start.",
-  "starboard": "Install Starboard updates automatically",
-  "starboard_hint": "Starboard restarts for about a minute. A version that did not install is not tried again until you choose Update now.",
-  "reelix": "Install Reelix updates automatically",
-  "reelix_hint": "Once a day at most, with Reelix's settings saved first. Needs Docker access.",
-  "later": "Both are deactivated unless you choose them. Change them later in Settings, Updates.",
+  "intro": "Starboard can install new versions by itself, in the update hours: your download hours when they are set, otherwise 01:00 to 06:00. Each part has a copy of its settings made first, is checked once it has updated, and goes back to the version before by itself if the new one does not start (Jellyfin's plug-ins cannot go back by themselves). You are told afterwards what is new, and when something failed.",
+  "parts": [
+   {
+    "key": "starboard_auto_update",
+    "label": "Starboard",
+    "short": "Starboard",
+    "hint": "Starboard restarts for about a minute. A version that did not install is not tried again until you update it yourself.",
+    "when": "always"
+   },
+   {
+    "key": "reelix_auto_update",
+    "label": "Reelix",
+    "short": "Reelix",
+    "hint": "Once a day at most, with Reelix's settings saved first. Needs Docker access.",
+    "when": "reelix"
+   },
+   {
+    "key": "apps_auto_update",
+    "label": "Your other apps",
+    "short": "your apps",
+    "hint": "Each app with a newer image, one at a time, with a copy of its settings first. Needs Docker access.",
+    "when": "always"
+   },
+   {
+    "key": "plugins_auto_update",
+    "label": "Starboard plug-ins",
+    "short": "plug-ins",
+    "hint": "From a catalogue or the plug-in's own address. A version that asks for new permissions always waits for you.",
+    "when": "always"
+   },
+   {
+    "key": "jellyfin_plugins_auto_update",
+    "label": "Jellyfin's plug-ins",
+    "short": "Jellyfin's plug-ins",
+    "hint": "Jellyfin updates them in the update hours instead of on its own schedule, and restarts only when nobody is watching.",
+    "when": "jellyfin"
+   }
+  ],
+  "later": "Each is deactivated unless you choose it. Change them later in Settings, Updates, where you can also choose the hours.",
   "saved": "Saved. Change them later in Settings, Updates.",
   "summary": "Automatic updates",
   "summary_none": "Deactivated",
-  "summary_starboard": "Starboard",
-  "summary_reelix": "Reelix",
-  "summary_both": "Starboard and Reelix"
+  "summary_and": "and"
  }
 }

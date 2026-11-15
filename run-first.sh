@@ -15,6 +15,7 @@
 #   --plain        Accessible mode: plain lines with no boxes, colour or redrawing (the same as STARBOARD_PLAIN=1)
 #   --yes          Do not ask: install what is missing and carry on (sudo still asks for your password)
 #   --dir FOLDER   Where to put Starboard (default: ~/starboard)
+#   --main         Get the main branch, with changes not released yet, instead of the newest release (for testing)
 #   -- ...         Anything after -- goes to ./install.sh, for example: -- --port 8096
 #
 # Run it as your normal user, not with sudo. It never types or keeps your password: sudo asks for it.
@@ -47,6 +48,7 @@ ASK=1
 FINISH=""
 PLAIN="${STARBOARD_PLAIN:+1}"
 PASS=()
+CHANNEL=release  # DASH-416: the newest release, as ./update.sh installs; --main for testing
 while [ $# -gt 0 ]; do
   case "$1" in
     --check) CHECK=1 ;;
@@ -55,8 +57,9 @@ while [ $# -gt 0 ]; do
     --plain) PLAIN=1 ;;
     --yes) ASK=0 ;;
     --dir) DIR="${2:?--dir needs a folder}"; shift ;;
+    --main) CHANNEL=main ;;
     --) shift; PASS=("$@"); break ;;
-    -h|--help) sed -n '2,21p' "$0" 2>/dev/null || echo "See https://github.com/TheMightyTRex/starboard"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "$0" 2>/dev/null || echo "See https://github.com/TheMightyTRex/starboard"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; err RF-01 >&2; exit 2 ;;
   esac
   shift
@@ -674,6 +677,28 @@ card_row() {
 }
 card_end() { [ "$FANCY" = 0 ] || say "  $(c 36 "╰$(rep ─ $(( CARD_W - 1 )))╯")"; }
 # terminal-frame: end
+
+# release-functions-begin (tests/test_release_checkout.py runs these on their own)
+# DASH-416: a new install gets the newest release, as ./update.sh does (vX.Y.Z tags only, so a test build such as
+# v0.5.0-dev.1 is never picked); --main keeps the main branch. Returns 1 when there is no release to check out.
+get_release() {
+  local tag
+  git -C "$DIR" fetch -q --tags origin 2>/dev/null || true
+  tag="$(git -C "$DIR" tag -l 'v[0-9]*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"
+  [ -n "$tag" ] || return 1
+  git -C "$DIR" -c advice.detachedHead=false checkout -q "$tag" && echo "Release $tag"
+}
+
+update_here() {
+  if [ -f "$DIR/.env" ] && [ -f "$DIR/update.sh" ]; then
+    if [ "$CHANNEL" = main ]; then (cd "$DIR" && bash ./update.sh --main); else (cd "$DIR" && bash ./update.sh); fi
+  elif [ "$CHANNEL" = main ]; then
+    git -C "$DIR" fetch -q origin && git -C "$DIR" checkout -q main && git -C "$DIR" merge -q --ff-only origin/main
+  else
+    get_release
+  fi
+}
+# release-functions-end
 
 # Linux installing its own updates (often just after it is installed) holds the package lock, and any install would
 # stop with RF-12. These find it, and wait for it with a moving bar and a timer instead (owner, 10 November 2026).
@@ -1493,7 +1518,9 @@ Keep it as it is changes nothing and shows where to open Starboard." \
     case "$CHOICE" in
       1)
         say ""
-        if work "Updating Starboard" "git -C $(printf '%q' "$DIR") pull --ff-only -q" 1 1; then :; else note "It could not be updated, so it carries on with the version you have."; fi ;;
+        # DASH-416: ./update.sh when Starboard is installed (its backup, health check and way back), otherwise the
+        # newest release (or main with --main). git pull cannot move a release, which is not on a branch.
+        if work "Updating Starboard" update_here 1 1; then :; else note "It could not be updated, so it carries on with the version you have."; fi ;;
       3)
         local port
         port="$(sed -n 's/^STARBOARD_PORT=//p' "$DIR/.env" 2>/dev/null | tail -n 1)"
@@ -1513,6 +1540,10 @@ Keep it as it is changes nothing and shows where to open Starboard." \
       problem "Downloading Starboard"
       jobs_page 6 "Downloading Starboard into ${DIR/#$HOME/~}. Please wait, this can take a minute or two..."
     done
+    # DASH-416: the clone is on the main branch, which can have changes not released yet; the newest release, as
+    # ./update.sh installs it, unless --main asked for main.
+    if [ "$CHANNEL" = main ]; then note "You asked for the main branch, with changes not released yet: for testing."
+    elif ! work "Getting the newest release" get_release 1 1; then note "No release could be found, so it carries on with the main branch."; fi
   fi
   ask "Press Enter to carry on" "" "Starboard's own files go in this folder, with your settings in its data folder. Updates come with ./update.sh, from the same folder." || return $?
 }
@@ -1635,6 +1666,7 @@ apply_host() {
 }
 cmd=(./install.sh)
 [ "$FINISH" = terminal ] && cmd+=(--terminal)
+[ "$CHANNEL" = main ] && cmd+=(--main)  # DASH-416: the installer keeps it, so ./update.sh follows main too
 [ -n "$PLAIN" ] && cmd+=(--plain)
 cmd+=("${PASS[@]}")
 cd "$DIR" || { err RF-31 >&2; exit 1; }
