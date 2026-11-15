@@ -1588,6 +1588,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(502, f"Reelix said no: {e}")
             if path == "/api/queue" and method == "GET":
                 return self.json(200, services.cached("queue", 10, lambda: services.queue(cfg.data["services"]), fresh))
+            if path == "/api/queue/issues" and method == "GET":  # Copy issues for an AI helper (DASH-434): only when asked
+                from . import queue_issues
+                return self.json(200, queue_issues.export(app, fresh))
             if path == "/api/queue/action" and method == "POST":
                 data = self.body()
                 service = cfg.service(str(data.get("service", "")))
@@ -1600,6 +1603,8 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     services.queue_action(service, int(data["id"]), str(data.get("action", "")), cfg.data["services"])
                 logs.event("info", "downloads", f"{data.get('action')} for a download in {service['name']}")
+                from . import queue_issues
+                queue_issues.note_action(app.data_dir, service["id"], data["id"], str(data.get("action", "")))
                 return self.json(200, {"ok": True})
             if path in ("/api/containers", "/api/containers/check", "/api/containers/update"):
                 if not containers.available():
@@ -2338,6 +2343,9 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(200, episode_fix.options(reelix, download_id))
                     out = episode_fix.apply(reelix, download_id, self.body().get("choices"))
                     logs.event("info", "reelix", f"Chose the episode for {out['sent']} file(s) of download {download_id}")
+                    from . import queue_issues
+                    queue_issues.note_tried(app.data_dir, f"Chose the episode by hand for {out['sent']} file(s) and asked Reelix to import them",
+                                            reelix.get("id", ""), None, download_id)
                     return self.json(200, out)
                 except LookupError as e:
                     return self.error(404, str(e))

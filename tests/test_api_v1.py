@@ -182,6 +182,20 @@ class ApiV1Test(unittest.TestCase):
         r, body = self.get("/api/v1/apps", key=key)
         self.assertEqual((r.status, body["code"]), (404, "not_found"))
 
+    def test_download_issues_with_the_downloads_scope(self):  # DASH-434, API 1.3.0
+        key, _ = api_v1.create_key(self.tmp.name, "Issues reader", "read", ["downloads"], None)
+        r, body = self.get("/api/v1/downloads/issues", key=key)
+        self.assertEqual(r.status, 200, body)
+        self.assertEqual((body["count"], body["items"]), (0, []))
+        self.assertTrue(body["markdown"].startswith("# Download issues from Starboard"))
+        self.assertEqual(len(body["errors"]), 1)  # the made-up Sonarr does not answer, and the export says so
+        self.assertNotIn("made-up-secret-key", json.dumps(body))
+        self.assertNotIn("127.0.0.1", json.dumps(body))
+        other, _ = api_v1.create_key(self.tmp.name, "Apps only", "read", ["apps"], None)
+        r, body = self.get("/api/v1/downloads/issues", key=other)
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        self.assertEqual(self.get("/api/v1/downloads/issues", method="POST")[0].status, 405)
+
     def test_a_plugin_key_without_scopes_reads_nothing(self):
         # No scopes means everything only for people's own keys; a plug-in reads exactly what was approved (P8).
         key, _ = api_v1.create_key(self.tmp.name, "Plug-in: Network only", "read", [], None)

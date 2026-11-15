@@ -947,7 +947,20 @@ class FakeArr(BaseHTTPRequestHandler):
                 {"id": 1, "title": "Example.Show.S02E03.1080p", "size": 2e9, "sizeleft": 6e8, "status": "downloading", "trackedDownloadState": "downloading", "timeleft": "00:12:00"},
                 {"id": 2, "title": "Another.Show.S01E07.720p", "size": 1e9, "sizeleft": 1e9, "status": "queued", "trackedDownloadState": "downloading"},
                 {"id": 3, "title": "Old.Show.S05E01", "size": 3e9, "sizeleft": 0, "status": "completed", "trackedDownloadState": "importPending", "trackedDownloadStatus": "warning",
-                 "statusMessages": [{"title": "Old.Show.S05E01", "messages": ["No files found are eligible for import"]}]},
+                 "statusMessages": [{"title": "Old.Show.S05E01", "messages": ["No files found are eligible for import"]}],
+                 # Copy issues for an AI helper (DASH-434): the fuller details, with made-up secrets the export takes out
+                 "added": (today - dt.timedelta(days=1)).isoformat() + "T09:00:00Z", "indexer": "Harbour Usenet", "protocol": "usenet",
+                 "downloadClient": "NZBGet", "downloadId": "nzb-ex-0003", "outputPath": "/data/downloads/complete/Old.Show.S05E01",
+                 "seriesId": 1, "episodeId": 501, "seasonNumber": 5, "quality": {"quality": {"name": "HDTV-1080p"}},
+                 "series": {"title": "Old Show"}, "episode": {"seasonNumber": 5, "episodeNumber": 1, "title": "The Return"}},
+                {"id": 4, "title": "Example.Show.S02E04.1080p.WEB", "size": 2.2e9, "sizeleft": 1.1e9, "status": "failed", "trackedDownloadState": "failedPending",
+                 "trackedDownloadStatus": "error", "errorMessage": "Download failed: http://192.168.1.20:9696/1/api?t=get&id=abc&apikey=made-up-indexer-key-9c1e",
+                 "statusMessages": [{"title": "Example.Show.S02E04.1080p.WEB", "messages": ["qBittorrent at gluetun:8080 reports the torrent is stalled with no seeds",
+                                                                                            "Tracker said: passkey=made-up-passkey-77 is not registered"]}],
+                 "added": (today - dt.timedelta(days=3)).isoformat() + "T21:15:00Z", "indexer": "Lighthouse Torrents", "protocol": "torrent",
+                 "downloadClient": "qBittorrent", "downloadId": "8F0C2A4E9B1D7C3A5E6F8091A2B3C4D5E6F70812", "outputPath": "/home/someone/private/incomplete",
+                 "seriesId": 1, "episodeId": 204, "seasonNumber": 2, "quality": {"quality": {"name": "WEBDL-1080p"}},
+                 "series": {"title": "Example Show"}, "episode": {"seasonNumber": 2, "episodeNumber": 4, "title": "Harbour Lights"}},
             ]
             if film:
                 recs = [{"id": 11, "title": "A.Film.2025.2160p", "size": 8e9, "sizeleft": 2e9, "status": "downloading", "trackedDownloadState": "downloading", "timeleft": "00:40:00"}]
@@ -1099,8 +1112,16 @@ def example_reelix(path, query=None):
                           {"id": 32, "title": "Made.Up.Film.1080p.WEB-DL", "download_client": "qBittorrent", "download_id": "ex32",
                            "state": "downloading", "client_state": "downloading", "progress": 0.6, "size": 4_000_000_000,
                            "remaining": 1_600_000_000, "eta_secs": 900, "messages": [], "added": today.isoformat() + "T08:00:00Z",
-                           "media": {"kind": "movie", "id": 10, "title": example_library.FILMS[9]["title"], "year": example_library.FILMS[9]["year"]}}],
-                "total": 2, "page": 1, "page_size": 0}
+                           "media": {"kind": "movie", "id": 10, "title": example_library.FILMS[9]["title"], "year": example_library.FILMS[9]["year"]}},
+                          # a radio episode Reelix cannot import (DASH-434: Copy issues for an AI helper)
+                          {"id": 33, "title": "Sample.Science.Weekly.Ask.a.scientist.3.mp3", "download_client": "NZBGet", "download_client_id": 2,
+                           "download_id": "nzb-ex-0033", "protocol": "usenet", "state": "import_pending", "client_state": "completed",
+                           "progress": 1.0, "size": 48_000_000, "remaining": 0, "eta_secs": None, "indexer": "Harbour Usenet",
+                           "messages": ["No audio files were found in /data/downloads/complete/Sample.Science.Weekly.3", "The folder holds only a .par2 file"],
+                           "output_path": "/data/downloads/complete/Sample.Science.Weekly.3", "can_manual_import": False,
+                           "added": today.isoformat() + "T07:30:00Z",
+                           "media": {"kind": "radio_episode", "id": 203, "title": "Ask a scientist 3", "subtitle": "Sample Science Weekly", "show_id": 2}}],
+                "total": 3, "page": 1, "page_size": 0}
     return []
 
 

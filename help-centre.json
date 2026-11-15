@@ -340,6 +340,10 @@
                 "to": "topics/manage-downloads.md"
               },
               {
+                "label": "Have an AI helper look at downloads that failed",
+                "to": "topics/copy-download-issues.md"
+              },
+              {
                 "label": "Download only at certain hours",
                 "to": "topics/set-download-hours.md"
               },
