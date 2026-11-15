@@ -9,6 +9,29 @@ const CARD_TITLES = {
   disk: "Disk space", load: "System load", vpn: "VPN", speed: "Transfer speed", health: "Service health",
   requests: "Requests", alerts: "Alerts", links: "Quick links",
 };
+// Every built-in card's band (DASH-442, owner 15 November 2026): the logo on its left. A card about one app shows that
+// app's own logo, the same file as on the Apps page (/api/icons/<app>); a card that combines several apps, or is
+// Starboard's own, shows a design system icon on the standard tile. "apps" lists the apps the card's answer comes
+// from (an app is its type, and every part of Reelix counts as "reelix"); the logo is theirs when exactly one of them
+// is set up. "first": the first app set up wins, as the server asks Seerr before Reelix for requests. "time": the
+// band says when it was updated, only for answers the server keeps for 20 seconds or less, so the time is true.
+const ARR_APPS = ["reelix", "sonarr", "radarr", "lidarr", "readarr"];
+const CARD_BAND = {
+  setup: { own: "list-checks" },
+  playing: { apps: ["jellyfin"], own: "play", time: true },
+  downloads: { apps: ARR_APPS, own: "download", time: true },
+  coming: { apps: ARR_APPS, own: "calendar-days" },
+  recent: { apps: ARR_APPS, own: "sparkles" },
+  disk: { own: "hard-drive", time: true },
+  load: { own: "cpu", time: true },
+  vpn: { apps: ["gluetun"], own: "shield-check", time: true },
+  speed: { apps: ["qbittorrent", "nzbget", "sabnzbd"], own: "gauge", time: true },
+  health: { own: "heart-pulse", time: true },
+  requests: { apps: ["seerr", "reelix"], first: true, own: "inbox", time: true },
+  alerts: { own: "bell" },
+  links: { own: "link" },
+};
+let services = [];  // the apps set up, from /api/config, for the logos
 const LAYOUTS = {
   glance: { name: "At a glance", cards: [["playing", "half"], ["health", "half"], ["downloads", "half"], ["coming", "half"], ["recent", "full"],
     ["disk", "small"], ["load", "small"], ["vpn", "small"], ["alerts", "small"]] },
@@ -53,7 +76,7 @@ const CARDS = {
     const r = await ask("/api/queue");
     const items = r.items || [];
     if (!items.length) return empty("Nothing is downloading.", "/wanted-films.html", "See what is wanted");
-    return el("ul", { class: "rows" }, items.slice(0, 5).map((q) => line(q.title, [`${Math.round(q.progress || 0)}%`, q.time_left].filter(Boolean).join(" · "), "/downloads.html")));
+    return band(["Downloading", "info"], el("ul", { class: "rows" }, items.slice(0, 5).map((q) => line(q.title, [`${Math.round(q.progress || 0)}%`, q.time_left].filter(Boolean).join(" · "), "/downloads.html"))));
   },
   async coming() {
     const r = await ask("/api/calendar");
@@ -68,8 +91,13 @@ const CARDS = {
   },
   async disk() {
     const r = await ask("/api/system");
-    return el("ul", { class: "rows" }, (r.disks || []).slice(0, 4).map((d) => line(d.label || d.path || "Disk",
-      d.total ? `${formatBytes(d.free)} free of ${formatBytes(d.total)}` : "", "/system-storage.html")));
+    const disks = r.disks || [];
+    // The same words and limits as System, Storage: Full at 98% used, Nearly full at 90%; nothing to say otherwise.
+    const used = (d) => (d.total ? 100 * (d.total - d.free) / d.total : 0);
+    const most = Math.max(0, ...disks.map(used));
+    return band(most >= 98 ? ["Full", "danger"] : most >= 90 ? ["Nearly full", "warning"] : null,
+      el("ul", { class: "rows" }, disks.slice(0, 4).map((d) => line(d.label || d.path || "Disk",
+        d.total ? `${formatBytes(d.free)} free of ${formatBytes(d.total)}` : "", "/system-storage.html"))));
   },
   async load() {
     const r = await ask("/api/system");
@@ -81,8 +109,8 @@ const CARDS = {
     const r = await ask("/api/transfer");
     if (!r.vpn?.length) return empty("No VPN on your apps.");
     const v = r.vpn[0];
-    return el("div", { class: "stack-2" }, headChip(v.running ? "Connected" : "Not connected", v.running ? "success" : "danger"),  // on the title's line (DASH-309)
-      v.country ? el("p", { class: "small", text: [v.country, v.ip].filter(Boolean).join(" · ") }) : null);
+    return band(v.running ? ["Connected", "success"] : ["Not connected", "danger"],  // in the band (DASH-442; DASH-309's title line)
+      el("div", { class: "stack-2" }, v.country ? el("p", { class: "small", text: [v.country, v.ip].filter(Boolean).join(" · ") }) : null));
   },
   async speed() {
     const r = await ask("/api/transfer");
@@ -94,15 +122,15 @@ const CARDS = {
     const names = Object.fromEntries((cfg.services || []).map((x) => [x.id, x.name]));
     const items = (r.items || []).map((i) => ({ ...i, name: names[i.id] || i.id }));
     const down = items.filter((i) => i.state === "down");
-    return el("div", { class: "stack-2" }, headChip(down.length ? "Not responding" : "All running", down.length ? "danger" : "success"),
+    return band(down.length ? ["Not responding", "danger"] : ["All running", "success"], el("div", { class: "stack-2" },
       // The chip holds no number (DASH-309, R3): how many is in the line under it.
       el("p", { class: "small muted", text: down.length ? `${down.length} of ${items.length} apps not responding` : `${items.length} apps` }),
-      down.length ? el("ul", { class: "rows" }, down.slice(0, 4).map((d) => line(d.name || d.id, d.message || "", "/index.html"))) : null);
+      down.length ? el("ul", { class: "rows" }, down.slice(0, 4).map((d) => line(d.name || d.id, d.message || "", "/index.html"))) : null));
   },
   async requests() {
     const r = await ask("/api/requests?pending=1");
     if (!r.configured) return empty("Add Reelix or Seerr to see requests.");
-    return r.items.length ? el("ul", { class: "rows" }, r.items.slice(0, 5).map((q) => line(q.title, q.by ? `asked for by ${q.by}` : "", "/downloads-requests.html")))
+    return r.items.length ? band(["Pending", "neutral"], el("ul", { class: "rows" }, r.items.slice(0, 5).map((q) => line(q.title, q.by ? `asked for by ${q.by}` : "", "/downloads-requests.html"))))
       : empty("Nothing waiting for approval.");
   },
   async alerts() {
@@ -166,16 +194,40 @@ function pluginBand(c) {
 }
 
 function drawBandSide(id, r) {
-  const side = $(`[data-card="${id}"] .card-band__side`);
-  if (!side) return;
   const d = r.data || {};
   const [words, tone] = d.status_label ? [d.status_label, d.tone || "neutral"] : r.type === "status" && STATE_BAND[d.state] ? STATE_BAND[d.state] : [];
-  const when = (d.updated || r.asked || 0) * 1000;
+  bandSide($(`[data-card="${id}"] .card-band__side`), words, tone, (d.updated || r.asked || 0) * 1000);
+}
+
+// The band's right-hand side, the same for plug-in and built-in cards: a status chip, then when it was updated.
+function bandSide(side, words, tone, when) {
+  if (!side) return;
   side.replaceChildren(...[
     words ? el("span", { class: "chip", "data-tone": tone }, icon(CHIP_ICONS[tone] || "circle", 14),
       el("span", { class: "visually-hidden", text: "Status: " }), el("span", { text: words })) : null,
     when ? el("time", { class: "card-band__time", datetime: new Date(when).toISOString(), "data-at": String(when) },
       el("span", { class: "visually-hidden", text: "Updated " }), el("span", { text: timeAgo(when) })) : null].filter(Boolean));
+}
+
+// A built-in card's answer with something to say in its band (DASH-442): a state chip, from the shared vocabulary,
+// never a number (DESIGN-SYSTEM.md, Chips). Cards with nothing to say return their node alone.
+const band = (chipOf, node) => ({ node, chip: chipOf });
+
+// The logo for a built-in card (CARD_BAND): the one app's own icon, or the card's design system icon on the tile.
+const appOf = (s) => (s.icon === "reelix" ? "reelix" : s.type);
+function cardLogo(id) {
+  const b = CARD_BAND[id] || {};
+  const on = services.filter((s) => s.enabled !== false && (b.apps || []).includes(appOf(s)));
+  const kinds = [...new Set(on.map(appOf))];
+  const app = b.first ? b.apps.find((k) => kinds.includes(k)) : kinds.length === 1 ? kinds[0] : null;
+  const s = app && on.find((x) => appOf(x) === app);
+  if (s) return appIcon(s, "app-icon app-icon--compact");  // decorative: the card's name is beside it
+  return el("span", { class: "app-icon app-icon--compact", "aria-hidden": "true" }, icon(b.own || "layout-dashboard"));
+}
+function builtinBand(c) {
+  return el("div", { class: "card-band" }, cardLogo(c.id),
+    el("h2", { class: "card-band__title dash-card__title", id: `dash-${c.id}-h`, text: CARD_TITLES[c.id] || "Card" }),
+    el("span", { class: "card-band__side" }));
 }
 
 // The band's time is kept in words as it ages, without asking the plug-in again; it is not a live region.
@@ -204,11 +256,12 @@ function guideCard(d) {
 }
 
 function cardShell(c, i, list) {
-  const banded = c.id.startsWith("plugin:");  // every plug-in card is drawn with the band (API 1.14)
-  const head = banded ? el("div", { class: "dash-card__head" }) : el("div", { class: "dash-card__head" }, el("h2", { class: "dash-card__title", id: `dash-${c.id}-h`, text: CARD_TITLES[c.id] || "Plug-in card" }));
+  // Every card is drawn with the band: plug-in cards since API 1.14, built-in cards since DASH-442. The head under it
+  // holds only the tools while the dashboard is edited.
+  const head = el("div", { class: "dash-card__head" });
   const body = el("div", { class: "dash-card__body" }, el("p", { class: "small muted", text: "Asking…" }));
-  const card = el("section", { class: `dash-card dash-card--${c.size}${banded ? " has-band" : ""}`, "aria-labelledby": `dash-${c.id}-h`, "data-card": c.id },
-    banded ? pluginBand(c) : null, banded && !editing ? null : head, body);
+  const card = el("section", { class: `dash-card dash-card--${c.size} has-band`, "aria-labelledby": `dash-${c.id}-h`, "data-card": c.id },
+    c.id.startsWith("plugin:") ? pluginBand(c) : builtinBand(c), editing ? head : null, body);
   if (editing) {
     const size = el("select", { class: "select select--compact", "aria-label": `Size of ${CARD_TITLES[c.id]}` },
       Object.entries(SIZES).map(([v, t]) => el("option", { value: v, text: t, selected: v === c.size })));
@@ -225,11 +278,12 @@ function cardShell(c, i, list) {
 
 async function fill(c, body, card) {
   try {
-    const node = c.id.startsWith("plugin:") ? (pluginCards[c.id] ? await pluginCard(c.id) : empty("Its plug-in is not active.")) : await CARDS[c.id]();
-    if (node === null && c.id === "setup" && !editing) { card.remove(); return; }  // everything is set up
+    const plugin = c.id.startsWith("plugin:");
+    const out = plugin ? (pluginCards[c.id] ? await pluginCard(c.id) : empty("Its plug-in is not active.")) : await CARDS[c.id]();
+    if (out === null && c.id === "setup" && !editing) { card.remove(); return; }  // everything is set up
+    const node = out && !(out instanceof Node) ? out.node : out;
     body.replaceChildren(node || empty("Nothing to show."));
-    const headed = body.querySelector("[data-head-chip]");  // the rule: a state chip on the card title's line
-    if (headed) onTitle(card.querySelector(".dash-card__title"), headed);
+    if (!plugin) bandSide(card.querySelector(".card-band__side"), out?.chip?.[0], out?.chip?.[1], CARD_BAND[c.id]?.time ? Date.now() : 0);
   } catch (e) {
     body.replaceChildren(empty(e.status === 409 || e.status === 400 ? e.message : "Could not ask."));
   }
@@ -315,7 +369,7 @@ function startEdit() {
 
 startPage().then(async (session) => {
   if (!session) return;
-  try { dash = (await api("/api/config")).dashboard || dash; } catch { /* the default layout */ }
+  try { const cfg = await api("/api/config"); dash = cfg.dashboard || dash; services = cfg.services || []; } catch { /* the default layout */ }
   try {
     for (const c of (await api("/api/plugins/cards")).cards) { pluginCards[c.id] = c; CARD_TITLES[c.id] = `${c.title} (${c.plugin})`; }
   } catch { /* no plug-in cards */ }

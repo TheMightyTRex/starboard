@@ -1314,6 +1314,48 @@ check("BAND-05", "a status with its own words keeps the chip's colour from the s
   && (await page.locator('[data-card="plugin:picture-shrinker:saved"] .card-band .chip').getAttribute("data-tone")) === "neutral");
 check("BAND-06", "nothing in the band is a live region, so a refresh does not interrupt", (await page.locator(".card-band [aria-live], .card-band [role=status]").count()) === 0);
 
+// DASH-442 (owner, 15 November 2026): every built-in card has the same band as plug-in cards. A card about one app shows
+// that app's own logo from the Apps page's icons (Jellyfin's for Now playing); Starboard's own cards and cards that
+// combine several apps show a design system icon on the tile. A chip only where the card has something to say.
+const jfPort = Number(new URL(base).port) + 1;
+const jf = await api("/api/services", { method: "POST", body: { name: "Jellyfin", type: "jellyfin", group: "Watch and listen",
+  url: `http://127.0.0.1:${jfPort}/jellyfin`, api_key: "made-up" } });
+await open("dashboard.html");
+await page.locator('[data-card="health"] .card-band .chip').waitFor({ timeout: 8000 }).catch(() => {});
+const builtIn = await page.evaluate(() => [...document.querySelectorAll(".dash-card:not([data-card^='plugin:'])")].map((c) => {
+  const b = c.querySelector(":scope > .card-band"), h = b?.querySelector("h2");
+  return { id: c.dataset.card, band: !!b, labelled: !!h && c.getAttribute("aria-labelledby") === h.id, heading: h?.textContent || "",
+    logoHidden: b?.querySelector(".app-icon")?.getAttribute("aria-hidden") === "true", img: b?.querySelector(".app-icon img")?.getAttribute("src") || "",
+    own: !!b?.querySelector(".app-icon > svg"), height: Math.round(b?.getBoundingClientRect().height || 0) };
+}));
+const bandHeight = await page.locator('[data-card="plugin:watch-stats:week"] .card-band').evaluate((b) => Math.round(b.getBoundingClientRect().height));
+check("BAND-07", "every built-in card has the band, its name as the heading the card is labelled by, and a logo hidden from screen readers",
+  builtIn.length >= 8 && builtIn.every((c) => c.band && c.labelled && c.heading && c.logoHidden), JSON.stringify(builtIn.filter((c) => !(c.band && c.labelled && c.logoHidden))));
+check("BAND-07", "a built-in card's band is as tall as a plug-in card's band", builtIn.every((c) => Math.abs(c.height - bandHeight) <= 1),
+  `${bandHeight}: ${builtIn.map((c) => `${c.id} ${c.height}`).join(", ")}`);
+const byId = Object.fromEntries(builtIn.map((c) => [c.id, c]));
+check("BAND-08", "Now playing shows Jellyfin's own logo, the same file as the Apps page",
+  byId.playing?.img === `/api/icons/${jf.id}?v=`, byId.playing?.img);
+check("BAND-08", "Starboard's own cards and cards that combine several apps show a design system icon on the tile",
+  ["disk", "load", "alerts", "health", "downloads", "recent"].every((k) => byId[k]?.own && !byId[k]?.img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.img])));
+const healthChip = (await page.locator('[data-card="health"] .card-band .chip').textContent()) || "";
+check("BAND-09", "Service health's state is a chip in the band, in words with no number, and the band says when it was updated",
+  /^Status: (All running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] .card-band time').textContent()), healthChip);
+check("BAND-09", "a card with nothing to say has no chip and no time (Recently added, kept by the server for 5 minutes)",
+  (await page.locator('[data-card="recent"] .card-band__side > *').count()) === 0);
+const healthBefore = (await page.evaluate(() => [...document.querySelectorAll(".dash-card")].map((c) => c.dataset.card))).indexOf("health");
+await page.getByRole("button", { name: "Edit dashboard" }).click();
+await page.locator('[data-card="health"] .dash-card__tools').waitFor({ timeout: 5000 }).catch(() => {});
+check("BAND-10", "Edit dashboard keeps each built-in card's band and heading, with the card's tools under the band",
+  await page.locator('[data-card="health"]').evaluate((c) => c.querySelector(":scope > .card-band + .dash-card__head .dash-card__tools") !== null
+    && c.getAttribute("aria-labelledby") === c.querySelector(".card-band h2")?.id));
+await page.getByRole("button", { name: "Move Service health later" }).click();
+const healthAfter = (await page.evaluate(() => [...document.querySelectorAll(".dash-card")].map((c) => c.dataset.card))).indexOf("health");
+check("BAND-10", "Move later moves a banded card and keeps focus in it",
+  healthAfter === healthBefore + 1 && await page.evaluate(() => !!document.activeElement?.closest("[data-card='health']")), `${healthBefore} to ${healthAfter}`);
+await page.getByRole("button", { name: "Cancel" }).click();
+await api(`/api/services/${jf.id}`, { method: "DELETE" });
+
 await open("settings-plugin.html?id=picture-shrinker");
 const schedOften = page.getByLabel("How often", { exact: true });
 check("SCH-01", "the schedule setting shows how often, the date and the time, from its default",

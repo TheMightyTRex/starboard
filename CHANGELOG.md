@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **Dashboard cards:** Every card on the dashboard now has the grey band that plug-in cards have: a logo, the card's name as the heading, and at the right a status chip and when it was updated where the card has something to say, such as Nearly full on Disk space or Not responding on Service health. A card about one app shows that app's own logo, the same as on the Apps page: Jellyfin's on Now playing, Reelix's on Downloads, Coming up and Recently added when Reelix is the only source, and so on. Starboard's own cards, and cards that combine several apps, show a Starboard icon. (DASH-442)
+
 ## [0.18.0] (15 November 2026)
 
 ### Added
