@@ -33,6 +33,7 @@ class StandIn:
         "https://intro-skipper.org/manifest.json": {"Intro Skipper": ("c83d86bb-a1e0-4c35-a113-e2101cf4ee6b", "1.10.11.24"),
                                                     "SkipMe.db": ("b2a63e62-0ac5-4575-9ad2-2c7534ccb83d", "0.1.16.0")},
         "https://raw.githubusercontent.com/danieladov/JellyfinPluginManifest/master/manifest.json": {"Merge Versions": ("f21bbed8-3a97-4d8b-88b2-48aaa65427cb", "12.0.1.0")},
+        "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json": {"Picture shrinker": ("80bf9325-d299-4e24-ac74-c087aeec3011", "1.1.0.0")},
     }
     TASKS = {"Intro Skipper": [("IntroSkipperDetectSegmentsTask", "Detect and Analyze Media Segments")],
              "Merge Versions": [("MergeMoviesTask", "Merge All Movies"), ("MergeEpisodesTask", "Merge All Episodes")]}

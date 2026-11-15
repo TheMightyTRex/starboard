@@ -21,6 +21,10 @@ The choices (research, 13 November 2026, from each project's manifest and source
   Its two merge tasks move from every 24 hours to the start of quiet hours.
 - Trakt (Jellyfin's own repository): records what is watched on trakt.tv. Each person links their own account in
   Jellyfin, so Starboard only installs it.
+- Picture shrinker (DASH-433, TheMightyTRex's repository, Jellyfin 10.11 only): shrinks posters and photos of people
+  inside Jellyfin, with a backup of each original, on a task in Jellyfin's Scheduled Tasks. It follows the same rules as
+  Starboard's own Picture shrinker plug-in, which stays idle while this one is installed. Starboard leaves its schedule
+  as it comes (every Sunday at 03:30).
 """
 import json
 import os
@@ -42,6 +46,8 @@ PACKAGES = {
     "merge": {"name": "Merge Versions", "guid": "f21bbed8-3a97-4d8b-88b2-48aaa65427cb", "min": (10, 11),
               "repo": ("Merge Versions", "https://raw.githubusercontent.com/danieladov/JellyfinPluginManifest/master/manifest.json")},
     "trakt": {"name": "Trakt", "guid": "4fe3201e-d6ae-4f2e-8917-e12bda571281", "min": (10, 11), "repo": OFFICIAL},
+    "pictures": {"name": "Picture shrinker", "guid": "80bf9325-d299-4e24-ac74-c087aeec3011", "min": (10, 11), "below": (10, 12),
+                 "repo": ("Picture shrinker", "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json")},
 }
 
 SKIP = ("theintrodb", "skipmedb", "introskipper")
@@ -65,13 +71,18 @@ GROUPS = [
     {"id": "trakt", "title": "Trakt",
      "what": "Records what each person watches on trakt.tv, and can bring their Trakt history in. Each person links their own Trakt account in Jellyfin afterwards.",
      "choices": [{"id": "on", "label": "Install and activate"}, {"id": "none", "label": "Do not install"}]},
+    {"id": "pictures", "title": "Picture shrinker",
+     "what": "Shrinks the posters and photos of cast and crew Jellyfin keeps, so they take less space, with a backup of each original. It runs inside Jellyfin, in its Scheduled Tasks; Starboard's own Picture shrinker plug-in stays idle while it is installed.",
+     "choices": [{"id": "on", "label": "Install and activate", "hint": "It runs every Sunday at 03:30 until you change it in Jellyfin's Scheduled Tasks. Its settings are in Jellyfin's Dashboard, Plugins."},
+                 {"id": "none", "label": "Do not install"}]},
 ]
 COST = {"skip": {"downloaded": "A few MB inside Jellyfin; a short download for each episode when Jellyfin scans.",
                  "analysed": "A few MB inside Jellyfin; while analysing, about 1 processor core for each episode, in quiet hours only.",
                  "none": "Nothing."},
         "playback": "A few MB inside Jellyfin and a small database that grows with each play.",
         "merge": "A few MB inside Jellyfin; a short library scan once a day in quiet hours.",
-        "trakt": "A few MB inside Jellyfin; a small message to Trakt when someone finishes watching."}
+        "trakt": "A few MB inside Jellyfin; a small message to Trakt when someone finishes watching.",
+        "pictures": "A few MB inside Jellyfin; during a run, one processor core at the lowest priority. The backup takes about as much space as the pictures did."}
 
 _lock = threading.Lock()
 TICKS_PER_HOUR = 36_000_000_000
@@ -133,6 +144,18 @@ def downloaded_choice(version):
     return None
 
 
+def suits(key, version):
+    """True when this Jellyfin's version is one the package is made for (from min, and below `below` when given)."""
+    pkg, v = PACKAGES[key], _version(version)
+    return v >= pkg["min"] and (not pkg.get("below") or v < pkg["below"])
+
+
+def needs_words(key):
+    pkg = PACKAGES[key]
+    lo = ".".join(map(str, pkg["min"]))
+    return f"Needs Jellyfin {lo}. A version for newer Jellyfin is not ready yet." if pkg.get("below") else f"Needs Jellyfin {lo} or later."
+
+
 def _installed(jf, opener=None):
     plugins = _call(jf["url"], jf["api_key"], "GET", "/Plugins", opener=opener) or []
     by_guid = {_norm(p.get("Id")): p for p in plugins}
@@ -192,6 +215,10 @@ def status(services, data_dir, cfg_data=None, opener=None):
                     c["hint"] = "Needs Jellyfin 10.11.11 or later."
                 else:
                     c["hint"] += f" Quiet hours now: {start:02d}:00 for {length} hours."
+            elif c["id"] == "on" and PACKAGES.get(g["id"], {}).get("below"):
+                c["available"] = suits(g["id"], version)
+                if not c["available"]:
+                    c["hint"] = needs_words(g["id"])
             else:
                 c["available"] = True
             if isinstance(COST[g["id"]], dict):
@@ -267,6 +294,8 @@ def choose(services, data_dir, group, choice, cfg_data=None, opener=None):
         else:
             want = group if choice == "on" else None
             others = [] if want else [group]
+            if want and not suits(want, info.get("Version")):
+                raise ValueError(f"{PACKAGES[want]['name']}: {needs_words(want)}")
         done = [d for d in (_deactivate(jf, k, installed, opener) for k in others) if d]
         if want:
             d = _install(jf, want, installed, opener)

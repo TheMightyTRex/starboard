@@ -61,10 +61,26 @@ class JellyfinPluginsTest(unittest.TestCase):
         self.start()
         st = self.status()
         self.assertTrue(st["connected"])
-        self.assertEqual([g["id"] for g in st["groups"]], ["skip", "playback", "merge", "trakt"])
+        self.assertEqual([g["id"] for g in st["groups"]], ["skip", "playback", "merge", "trakt", "pictures"])
         self.assertTrue(all(g["chosen"] == "none" and g["installed"] == [] for g in st["groups"]))
         downloaded = self.group(st, "skip")["choices"][0]
         self.assertEqual((downloaded["id"], downloaded["package"], downloaded["available"]), ("downloaded", "TheIntroDB", True))
+
+    def test_picture_shrinker_on_jellyfin_10_11(self):
+        self.start(version="10.11.11")
+        on = self.group(self.status(), "pictures")["choices"][0]
+        self.assertTrue(on["available"])
+        out = jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
+        self.assertIn("Installed Picture shrinker, from the Picture shrinker repository Starboard added", out["done"][0])
+        self.assertIn("https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json", [r["Url"] for r in self.jf.repos])
+
+    def test_picture_shrinker_not_offered_on_newer_jellyfin(self):
+        self.start()  # Jellyfin 12.4
+        on = self.group(self.status(), "pictures")["choices"][0]
+        self.assertFalse(on["available"])
+        self.assertIn("Needs Jellyfin 10.11", on["hint"])
+        with self.assertRaises(ValueError):
+            jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
 
     def test_downloaded_times_by_version(self):
         self.assertEqual(jp.downloaded_choice("12.4.0"), "theintrodb")
