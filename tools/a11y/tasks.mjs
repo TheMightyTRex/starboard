@@ -628,7 +628,7 @@ for (const [device, choice, still] of [["reduce", "off", false], ["reduce", "dev
   await mctx.close();
 }
 
-// T24 Put back (plug-in API 1.15, DASH-406): in Library clean-up's Holding folder, Tab reaches Put back for a film,
+// T27 Put back (plug-in API 1.15, DASH-406): in Library clean-up's Holding folder, Tab reaches Put back for a film,
 // named with its title; Enter puts it back, what happened is said, and focus goes to the next row's Put back.
 await page.goto(`${base}/settings-plugin.html?id=library-cleanup`);
 await settle();
@@ -639,13 +639,13 @@ if (await heldTab.count()) {
   await page.waitForTimeout(300);
 }
 const back24 = await tabTo((f) => f.tag === "BUTTON" && /^Put back A made-up film \(2001\)$/.test(f.text), 120);
-check("T24", "Tab reaches Put back for a film, named with its title", !!back24, back24 ? back24.text : "not reached");
+check("T27", "Tab reaches Put back for a film, named with its title", !!back24, back24 ? back24.text : "not reached");
 if (back24) {
   await page.keyboard.press("Enter");
   await settle();
   const f24 = await focus(), s24 = await said();
-  check("T24", "what happened is said", /Put back A made-up film/.test(s24), s24);
-  check("T24", "focus goes to the next row's Put back, not the top of the page", /^Put back Harbour lights/.test(f24.text), `${f24.tag} ${f24.text}`);
+  check("T27", "what happened is said", /Put back A made-up film/.test(s24), s24);
+  check("T27", "focus goes to the next row's Put back, not the top of the page", /^Put back Harbour lights/.test(f24.text), `${f24.tag} ${f24.text}`);
 }
 
 // T28 Remove the VPN by keyboard (DASH-440): the warning is an alert dialog with focus on Cancel; Escape cancels and
