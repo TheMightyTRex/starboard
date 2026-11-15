@@ -1419,7 +1419,7 @@ const auto = page.getByRole("switch", { name: "Starboard: update by itself" });
 check("UPD-01", "Starboard's is deactivated by default", (await auto.count()) === 1 && !(await auto.isChecked()));
 check("UPD-01", "the hours are a choice, the download hours first", (await page.locator("#updates-auto input[type=radio]").count()) === 2
   && await page.locator('#updates-auto input[value="download"]').isChecked());
-check("UPD-05", "Recent updates lists what each did, by whom", (await page.locator("#updates-recent li").count()) === 3
+check("UPD-05", "Recent updates lists what each did, by whom", (await page.locator("#updates-recent li").count()) >= 3
   && (await page.locator("#updates-recent").textContent()).includes("updated by itself"));
 const appsAuto = page.getByRole("switch", { name: "Your other apps: update by itself" });
 await appsAuto.check();

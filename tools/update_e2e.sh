@@ -51,7 +51,7 @@ printf 'raise SystemExit("E2E: this made-up release cannot start")\n' > starboar
 "${G[@]}" commit -qam "E2E: a broken release"; git tag v0.18.91
 git -c advice.detachedHead=false checkout -q v0.18.90
 echo "0.18.92" > VERSION; "${G[@]}" commit -qam "E2E: the next release, for Update now"; git tag v0.18.92
-git clone -q --bare . "$run_dir/origin.git"
+git clone -q --no-local --bare . "$run_dir/origin.git"
 cd "$here"
 
 docker run --name "$name" --privileged --memory 3g --memory-swap 3g --cpus 4 \
