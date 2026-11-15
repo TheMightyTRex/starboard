@@ -28,7 +28,7 @@ Tip: if the app is on the same computer as Starboard,
    **Other app**.
 4. In **Name**, enter the name for its card, such as `Jellyfin`.
 5. In **Address Starboard uses**, enter the address with `http://` and the port. For an app on the same
-   computer as Starboard, use `127.0.0.1`, such as `http://127.0.0.1:8096`. For an app on another computer,
+   computer as Starboard, use `127.0.0.1`, such as `http://127.0.0.1:8096` for Jellyfin. For an app on another computer,
    use that computer's address, such as `http://192.168.1.20:8096`.
 
    ![The Add an app panel, with Kind of app set to Sonarr (step 3), Name (step 4) and Address Starboard uses (step 5) outlined](../images/add-an-app-2-connection.png)

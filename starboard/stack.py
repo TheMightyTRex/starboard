@@ -1454,11 +1454,6 @@ def _start(host_stack, env):
         f"[ -d \"$d\" ] && chown {int(env['PUID'])}:{int(env['PGID'])} \"$d\"; done; true",
     ])
     try:
-        try:
-            containers.docker("POST", f"/images/create?fromImage={containers.urllib.parse.quote(containers.HELPER_IMAGE, safe='')}",
-                              raw=True, timeout=300)
-        except containers.DockerError:
-            pass
         code, text = containers._helper(host_stack, script, extra_binds=[f"{cfg}:{cfg}", f"{data}:{data}"])
         with _lock:
             _job.update(ok=code == 0, log=text[-6000:])

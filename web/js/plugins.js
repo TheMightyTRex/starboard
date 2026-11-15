@@ -207,6 +207,13 @@ function pluginSettingsGroups(p, redraw) {
           catch (err) { input.value = was; problem(err.message, input); }
         });
         rows.push(row(s.unit ? unitInput(input, s.unit) : input));
+      } else if (s.type === "list") {  // DASH-441: one item a line, saved as a list (a one-line box sent text, refused)
+        const input = el("textarea", { class: "textarea", id, rows: "4", spellcheck: "false", autocomplete: "off" });
+        input.value = Array.isArray(s.value) ? s.value.join("\n") : (s.value ?? "");
+        inputs[s.key] = [s, input];
+        if (s.required) { input.required = true; input.setAttribute("aria-required", "true"); }
+        const hint = [s.hint, /a line/i.test(s.hint || "") ? "" : "One a line.", s.required ? "Needed before it can start." : ""].filter(Boolean).join(" ");
+        typed.push(field(s.label, input, { hint }));
       } else {
         const input = el("input", { class: "input", id, type: s.type === "number" ? "number" : s.type === "secret" ? "password" : "text",
           value: s.value ?? "", min: s.min, max: s.max, autocomplete: s.type === "secret" ? "new-password" : "off",
@@ -224,7 +231,10 @@ function pluginSettingsGroups(p, redraw) {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const settings = {};
-        for (const [key, [s, input]] of Object.entries(inputs)) settings[key] = s.type === "number" ? Number(input.value) : input.value;
+        for (const [key, [s, input]] of Object.entries(inputs)) {
+          settings[key] = s.type === "number" ? Number(input.value)
+            : s.type === "list" ? input.value.split("\n").map((x) => x.trim()).filter(Boolean) : input.value;
+        }
         try {
           await put(settings);
           showSaved(`${tag}-saved`);
@@ -618,6 +628,8 @@ function pluginPage(p, redraw) {
   const buttons = (p.actions || []).map((a) => {
     const b = el("button", { type: "button", class: "btn", disabled: p.state !== "enabled" }, a.label);
     b.addEventListener("click", async () => {
+      // An action with a confirm asks first (DASH-441): the standard confirm box, starting on Cancel.
+      if (a.confirm && !await confirmDialog({ title: `${a.label}?`, message: a.confirm, confirm: a.label, careful: true })) return;
       b.disabled = true;
       said.textContent = "";
       try { said.textContent = (await api(`/api/plugins/${p.id}/actions/${a.id}`, { method: "POST" })).said; }

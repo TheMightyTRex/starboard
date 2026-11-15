@@ -26,6 +26,14 @@ const poolSteps = (start, presses, extra = "") => `(async () => { document.query
 const poolConfirm = `document.querySelectorAll("[data-drive]").forEach((i) => { i.value = i.previousElementSibling.previousElementSibling.querySelector("strong").textContent; });
   document.querySelector("#pool-password").value = ${lit(password)}; document.querySelector("#wizard-foot .btn").click(); ${wait(4000)}`;
 
+// Copy app settings is for an older set-up (Sonarr and Radarr), not the default install every other picture shows:
+// its picture adds those apps first, as EXAMPLE_SETUP=existing does, and takes them away after.
+const EXISTING = [["Example TV", "sonarr", "tv"], ["Example TV 4K", "sonarr", "tv4k"], ["Example films", "radarr", "films"]];
+const addExisting = `(async () => { for (const [name, type, path] of ${lit(EXISTING)}) await api("/api/services", { method: "POST",
+  body: { name, type, group: "Search and download", url: "http://127.0.0.1:" + (Number(location.port) + 1) + "/" + path, api_key: "example-key" } }); })()`;
+const removeExisting = `(async () => { const names = ${lit(EXISTING.map((x) => x[0]))}; for (const s of (await api("/api/config")).services)
+  if (names.includes(s.name)) await api("/api/services/" + s.id, { method: "DELETE" }); })()`;
+
 const desk = { width: 1280, height: 860 };
 const phone = { width: 390, height: 844 };
 // The upgrade shots come last: they set the example server back to 0.4.0, which adds the upgrade notice.
@@ -49,7 +57,8 @@ const SHOTS = [
   { file: "logs.png", page: "system-logs.html", ...desk, before: 'api("/api/config/general", { method: "PUT", body: { logs: { detail: "day" } } })' },
   { file: "logs-entries.png", page: "system-logs.html", ...desk, run: top("#entries-h") },
   { file: "display.png", page: "index.html", ...desk, click: "[data-display-toggle]" },
-  { file: "copy-settings.png", page: "copy-settings.html", width: 1280, height: 1000, click: "#copy-sections button[type=submit]", after: top("#copy-sections h3") },
+  { file: "copy-settings.png", page: "copy-settings.html", width: 1280, height: 1000, before: addExisting, click: "#copy-sections button[type=submit]",
+    after: top("#copy-sections h3"), cleanup: removeExisting },
   { file: "audiobookshelf.png", page: "settings-audiobookshelf.html", ...desk, run: top("#listening-sections .table-wrap") },
   { file: "logs-settings.png", page: "settings-general-logs.html", width: 1280, height: 700, run: top("#gn-logs-h") },
   { file: "apps-phone.png", page: "index.html", ...phone },
@@ -112,6 +121,7 @@ for (const shot of SHOTS) {
   const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   if (wide > 0) failed = true;
   console.log(shot.file, wide > 0 ? `SCROLLS SIDEWAYS by ${wide}px` : "ok");
+  if (shot.cleanup) await page.evaluate(shot.cleanup);
 }
 console.log(errors.length ? `Console errors:\n${errors.join("\n")}` : "No console errors");
 await browser.close();

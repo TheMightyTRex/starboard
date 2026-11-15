@@ -53,6 +53,11 @@ Some plug-ins add a card, such as Live TV. The plug-in must be added and active.
 - **Alerts:** the last few problems in the logs.
 - **Quick links:** a button for each of your apps.
 
+Each card has a grey band across the top with a logo and the card's name. A card about one app shows that app's
+logo, such as Jellyfin's on **Now playing**. Starboard's own cards, and cards that combine several apps, show a
+Starboard icon. At the right of the band, a status and when the card was updated show when the card has something
+to say, such as **Nearly full** on **Disk space**.
+
 ## Things to note
 
 - Your choice is saved to your account, so the dashboard looks the same on each device you sign in from.

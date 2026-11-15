@@ -61,7 +61,7 @@ app and read its own messages.
 
 - **Address Starboard uses** can differ from the address you open in your browser. The one for your browser
   is **Address to open in your browser**.
-- A Docker container name, such as `http://sonarr:8989`, only works between containers that share a Docker
+- A Docker container name, such as `http://jellyfin:8096`, only works between containers that share a Docker
   network. Starboard does not join one, so use `127.0.0.1` and the port the app publishes.
 - The port is the one the app publishes on the server, which is not always the app's usual port. This
   command, run on the server, lists each container and its ports. The port is the number before `->`:
@@ -70,7 +70,7 @@ app and read its own messages.
   docker ps
   ```
 
-- An app on another computer uses that computer's address, such as `http://192.168.1.21:8989`.
+- An app on another computer uses that computer's address, such as `http://192.168.1.21:8096`.
 - A background service with no address can follow another app's status instead. Read
   [Add a background service](add-a-background-service.md).
 

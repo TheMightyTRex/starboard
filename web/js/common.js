@@ -485,7 +485,7 @@ function monogram(name) {
 
 // Addresses and copying ----------------------------------------------------
 
-// An app saved as http://127.0.0.1:8989 is only reachable from the server itself. Swap in the name this browser
+// An app saved as http://127.0.0.1:8096 is only reachable from the server itself. Swap in the name this browser
 // used to reach Starboard, so links and copied addresses work from a phone too.
 function reachableUrl(url) {
   try {
@@ -610,7 +610,9 @@ function slideOutConfirm({ title, body, confirm = "Continue", wide = true, opene
 
 // Confirm dialog: a decision that must be made before going on. Says what will happen; resolves true or false.
 // confirmDialog({ title, message: string or [nodes], confirm: "Remove", danger: true, fields: [nodes] })
-function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel", danger = false, fields = [] }) {
+// careful: true starts on Cancel without the danger colour, for a choice that costs something but harms nothing
+// (a plug-in action with a confirm, DASH-441). Escape always cancels.
+function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel", danger = false, careful = false, fields = [] }) {
   return new Promise((resolve) => {
     const id = `confirm-${Date.now()}`;
     const form = el("form", { method: "dialog" },
@@ -637,7 +639,7 @@ function confirmDialog({ title, message, confirm = "Continue", cancel = "Cancel"
     dialog.showModal();
     // Focus starts on the first field it asks for; otherwise on Cancel for a danger choice, so Enter never does
     // the harm by mistake; otherwise on the main button (screen reader check, 12 November 2026).
-    const start = $("input, select, textarea", form) || (danger ? $('.dialog__foot button[value="cancel"]', form) : $('.dialog__foot button[value="ok"]', form));
+    const start = $("input, select, textarea", form) || (danger || careful ? $('.dialog__foot button[value="cancel"]', form) : $('.dialog__foot button[value="ok"]', form));
     start?.focus();
   });
 }

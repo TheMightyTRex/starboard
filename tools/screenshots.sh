@@ -17,7 +17,7 @@ for _ in $(seq 1 30); do grep -q READY "$work/server.log" 2>/dev/null && break; 
 grep -q READY "$work/server.log" || { cat "$work/server.log"; echo "The example server did not start" >&2; exit 1; }
 
 mkdir -p "$work/out"
-docker run --rm --network host -u "$(id -u):$(id -g)" -e HOME=/tmp \
+docker run --rm --memory 3g --memory-swap 3g --cpus 4 --network host -u "$(id -u):$(id -g)" -e HOME=/tmp \
   -e BASE="http://127.0.0.1:$PORT" -e PASSWORD_FILE=/work/data/password -e OUT=/work/out \
   -v "$work:/work" -v "$PWD/tools/screenshots/shoot.mjs:/shots/shoot.mjs:ro" \
   "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \

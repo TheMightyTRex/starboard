@@ -161,8 +161,10 @@ def summary(manifest, problems=None):
             "permissions": plugins.permission_words(manifest) if isinstance(manifest.get("permissions"), list) else [],
             "containers": [{"name": c.get("name"), "network": c.get("network", "default"), "volumes": c.get("volumes") or []}
                            for c in manifest.get("containers") or [] if isinstance(c, dict)],
-            "actions": [{"id": a.get("id") or str(i), "label": a.get("label", "")} for i, a in enumerate(manifest.get("actions") or [])
-                        if isinstance(a, dict)],
+            # confirm: the plug-in page asks first with these words (DASH-441); it was left out before.
+            "actions": [{"id": a.get("id") or str(i), "label": a.get("label", ""),
+                         **({"confirm": str(a["confirm"])[:300]} if isinstance(a.get("confirm"), str) and a["confirm"].strip() else {})}
+                        for i, a in enumerate(manifest.get("actions") or []) if isinstance(a, dict)],
             "styles": [{"id": st.get("id"), "name": st.get("name"), "description": st.get("description", "")}
                        for st in manifest.get("styles") or [] if isinstance(st, dict)],
             "warning": plugins.install_warning(manifest),
@@ -617,6 +619,8 @@ def _compose_run(data_dir, pid, command, helper=None):
     try:
         # The media folder is shown to the helper only when a folder in it must be made (API 1.12).
         code, text = (helper or containers._helper)(host, script, *([[f"{media}:{media}"]] if media else []))
+    except containers.ImageMissing as e:
+        return False, str(e)
     except containers.DockerError as e:
         return False, f"Starboard cannot reach Docker ({e})"
     return code == 0, text

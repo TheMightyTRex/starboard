@@ -777,6 +777,10 @@ await page.keyboard.press("Escape");
 // DASH-228: Dispatcharr set up from Starboard, against the made-up Dispatcharr and Jellyfin of the example server: the
 // IPTV source with its own checks, then Jellyfin's tuner and guide, then channels made from the playlist.
 console.log("\n== DISP Dispatcharr");
+// Dispatcharr is an add-on, not in the default install the example server shows, so it is added for these checks
+// and taken away after (the made-up Dispatcharr answers in the example server whatever the address).
+const dispatcharr = await api("/api/services", { method: "POST", body: { type: "link", name: "Dispatcharr", icon: "dispatcharr",
+  url: `http://127.0.0.1:${Number(new URL(base).port) + 1}/dispatcharr`, api_key: "example-key" } });
 await open("settings-dispatcharr.html");
 await page.locator("#dp-source-h").waitFor({ timeout: 10000 });
 check("DISP-01", "Settings, Apps, Dispatcharr shows the source, channels and Jellyfin",
@@ -800,6 +804,7 @@ await page.locator("#dp-make").waitFor({ state: "detached", timeout: 10000 });
 const made = await page.locator("#dp-channels-h").locator("xpath=ancestor::section").innerText();
 check("DISP-04", "Make channels makes a channel for each stream and says so", /making 48 channels/.test(made) && /Channels in Dispatcharr\s+48/.test(made), made);
 check("DISP-04", "focus goes to the Channels heading, not the top of the page", await page.evaluate(() => document.activeElement.id) === "dp-channels-h");
+await api(`/api/services/${dispatcharr.id}`, { method: "DELETE" }).catch(() => {});
 
 // DASH-389: General's sections are pages on the level 2 menu; Style is Appearance, with the accessibility options;
 // old addresses go to the part's new page.
@@ -943,6 +948,36 @@ check("WS-05", "Top titles shows the most played series first, with plays, peopl
 await page.setViewportSize({ width: 375, height: 812 });
 check("WS-06", "the tables fit at phone width", await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
 await page.setViewportSize({ width: 1280, height: 860 });
+// DASH-441: a plug-in button with a confirm asks first (focus on Cancel, Escape cancels); a list setting is a box
+// with one value a line, saved as a list.
+console.log("\n== PLA Plug-in actions and list settings");
+await open("settings-plugin.html?id=direct-play");
+const plaSaid = page.locator('section[aria-labelledby="pl-direct-play-actions-h"] [role=status]');
+await page.getByRole("button", { name: "Pause fixing" }).click();
+const plaDialog = page.locator("dialog[open]");
+await plaDialog.waitFor({ timeout: 5000 });
+check("PLA-01", "a button with a confirm asks first, in words from the plug-in", /Stops converting files/.test(await plaDialog.innerText()));
+check("PLA-01", "the box starts on Cancel", await page.evaluate(() => document.activeElement?.textContent?.trim() === "Cancel"));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+check("PLA-02", "Escape closes it, runs nothing, and focus goes back to the button",
+  await plaDialog.count() === 0 && !(await plaSaid.textContent()).trim()
+  && await page.evaluate(() => document.activeElement?.textContent?.trim() === "Pause fixing"));
+await page.getByRole("button", { name: "Pause fixing" }).click();
+await plaDialog.waitFor({ timeout: 5000 });
+await plaDialog.getByRole("button", { name: "Pause fixing", exact: true }).click();
+await page.waitForTimeout(800);
+check("PLA-03", "choosing the action in the box runs it", /Paused/.test(await plaSaid.textContent()));
+await open("settings-plugin.html?id=notifications");
+const plaList = page.locator("#pl-notifications-telegram_chat");
+check("PLA-04", "a list setting is a box with one value a line", (await plaList.evaluate((n) => n.tagName)) === "TEXTAREA"
+  && /One chat id a line|One a line/.test(await page.locator(`#${await plaList.getAttribute("aria-describedby")}`).textContent()));
+await plaList.fill("12345\n\n  67890  \n");
+await plaList.locator("xpath=ancestor::form").getByRole("button", { name: "Save" }).click();
+await page.waitForTimeout(800);
+check("PLA-05", "saving a list says nothing is wrong", await page.locator('#toast-stack .toast[data-tone="danger"]').count() === 0);
+await open("settings-plugin.html?id=notifications");
+check("PLA-05", "it is kept as a list: one value a line, blank lines and spaces left out", (await plaList.inputValue()) === "12345\n67890");
 // DASH-411: app plug-ins (plug-in API 1.13). Jellystat's page on the home network, the clear choice on removal, and
 // Tdarr's offer to copy the Tdarr the main install runs.
 console.log("\n== AP App plug-ins");
@@ -1347,6 +1382,60 @@ check("BAND-05", "a status with its own words keeps the chip's colour from the s
   (await page.locator('[data-card="plugin:picture-shrinker:saved"] .card-band .chip').textContent()) === "Status: Waiting for 03:30"
   && (await page.locator('[data-card="plugin:picture-shrinker:saved"] .card-band .chip').getAttribute("data-tone")) === "neutral");
 check("BAND-06", "nothing in the band is a live region, so a refresh does not interrupt", (await page.locator(".card-band [aria-live], .card-band [role=status]").count()) === 0);
+
+// DASH-442 (owner, 15 November 2026): every built-in card has the same band as plug-in cards. A card about one app shows
+// that app's own logo from the Apps page's icons (Jellyfin's for Now playing); Starboard's own cards and cards that
+// combine several apps show a design system icon on the tile. A chip only where the card has something to say.
+// The example server is the default install: Jellyfin, Reelix, qBittorrent and NZBGet, and Gluetun.
+const exampleApps = (await api("/api/config")).services;
+const appId = (test) => exampleApps.find(test)?.id;
+await open("dashboard.html");
+await page.locator('[data-card="health"] .card-band .chip').waitFor({ timeout: 8000 }).catch(() => {});
+const builtIn = await page.evaluate(() => [...document.querySelectorAll(".dash-card:not([data-card^='plugin:'])")].map((c) => {
+  const b = c.querySelector(":scope > .card-band"), h = b?.querySelector("h2");
+  return { id: c.dataset.card, band: !!b, labelled: !!h && c.getAttribute("aria-labelledby") === h.id, heading: h?.textContent || "",
+    logoHidden: b?.querySelector(".app-icon")?.getAttribute("aria-hidden") === "true", img: b?.querySelector(".app-icon img")?.getAttribute("src") || "",
+    own: !!b?.querySelector(".app-icon > svg"), app: b?.querySelector(".app-icon")?.dataset.app || "", height: Math.round(b?.getBoundingClientRect().height || 0),
+    // On a narrow card the band wraps by design, the chip and time moving under the name (the design system's .card-band).
+    wrapped: !!h && b.querySelector(".card-band__side").getBoundingClientRect().top >= h.getBoundingClientRect().bottom - 1 };
+}));
+// Direct play's band: a plug-in card with one line of title, as every built-in card has (Watch statistics' second line,
+// "Watched this week", makes its band taller).
+const bandHeight = await page.locator('[data-card="plugin:direct-play:now"] .card-band').evaluate((b) => Math.round(b.getBoundingClientRect().height));
+check("BAND-07", "every built-in card has the band, its name as the heading the card is labelled by, and a logo hidden from screen readers",
+  builtIn.length >= 8 && builtIn.every((c) => c.band && c.labelled && c.heading && c.logoHidden), JSON.stringify(builtIn.filter((c) => !(c.band && c.labelled && c.logoHidden))));
+check("BAND-07", "a built-in card's band is as tall as a plug-in card's band with one line of title", builtIn.filter((c) => !c.wrapped).length >= 6 && builtIn.filter((c) => !c.wrapped).every((c) => Math.abs(c.height - bandHeight) <= 1),
+  `${bandHeight}: ${builtIn.map((c) => `${c.id} ${c.height}`).join(", ")}`);
+const byId = Object.fromEntries(builtIn.map((c) => [c.id, c]));
+check("BAND-08", "Now playing shows Jellyfin's own logo, the same file as the Apps page",
+  byId.playing?.app === "jellyfin" && byId.playing?.img === `/api/icons/${appId((s) => s.type === "jellyfin")}?v=jellyfin`, byId.playing?.img);
+// The made-up Reelix serves no logo.png, so its tile falls back to its initials, as on the Apps page.
+// Earlier journeys may leave a Sonarr or Radarr beside Reelix: then Downloads and Coming up combine apps and show
+// Starboard's icon. Either way the logo follows the rule.
+const arrKinds = new Set(exampleApps.filter((s) => s.enabled !== false && (s.icon === "reelix" || ["sonarr", "radarr", "lidarr", "readarr"].includes(s.type)))
+  .map((s) => (s.icon === "reelix" ? "reelix" : s.type)));
+const arrLogo = arrKinds.size === 1 ? [...arrKinds][0] : "starboard";
+check("BAND-08", `Downloads and Coming up show ${arrLogo === "reelix" ? "Reelix's logo (Reelix alone)" : "Starboard's icon (several apps)"}; VPN shows Gluetun's`,
+  byId.downloads?.app === arrLogo && byId.coming?.app === arrLogo
+  && byId.vpn?.app === "gluetun" && byId.vpn?.img === `/api/icons/${appId((s) => s.type === "gluetun")}?v=gluetun`, JSON.stringify(builtIn.map((c) => [c.id, c.app, c.img])));
+check("BAND-08", "Starboard's own cards show a design system icon on the tile",
+  ["disk", "load", "alerts", "health", "setup"].filter((k) => byId[k]).every((k) => byId[k].own && byId[k].app === "starboard" && !byId[k].img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.app])));
+const healthChip = (await page.locator('[data-card="health"] .card-band .chip').textContent()) || "";
+check("BAND-09", "Service health's state is a chip in the band, in words with no number, and the band says when it was updated",
+  /^Status: (All running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] .card-band time').textContent()), healthChip);
+check("BAND-09", "a card with nothing to say has no chip and no time (Recently added, kept by the server for 5 minutes)",
+  (await page.locator('[data-card="recent"] .card-band__side > *').count()) === 0);
+const healthBefore = (await page.evaluate(() => [...document.querySelectorAll(".dash-card")].map((c) => c.dataset.card))).indexOf("health");
+await page.getByRole("button", { name: "Edit dashboard" }).click();
+await page.locator('[data-card="health"] .dash-card__tools').waitFor({ timeout: 5000 }).catch(() => {});
+check("BAND-10", "Edit dashboard keeps each built-in card's band and heading, with the card's tools under the band",
+  await page.locator('[data-card="health"]').evaluate((c) => c.querySelector(":scope > .card-band + .dash-card__head .dash-card__tools") !== null
+    && c.getAttribute("aria-labelledby") === c.querySelector(".card-band h2")?.id));
+await page.getByRole("button", { name: "Move Service health later" }).click();
+const healthAfter = (await page.evaluate(() => [...document.querySelectorAll(".dash-card")].map((c) => c.dataset.card))).indexOf("health");
+check("BAND-10", "Move later moves a banded card and keeps focus in it",
+  healthAfter === healthBefore + 1 && await page.evaluate(() => !!document.activeElement?.closest("[data-card='health']")), `${healthBefore} to ${healthAfter}`);
+await page.getByRole("button", { name: "Cancel" }).click();
 
 await open("settings-plugin.html?id=picture-shrinker");
 const schedOften = page.getByLabel("How often", { exact: true });
