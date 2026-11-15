@@ -15,7 +15,7 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
-## Starboard API 1.3.0 (unreleased), 15 November 2026
+## Starboard API 1.3.0 (Starboard 0.19.0), 15 November 2026
 
 - **Added:** `GET /downloads/issues`, with the `downloads` scope and a read key: every download in the queue that
   needs attention or failed, with its app, download client, the app's own state, every message, size, progress,
@@ -61,7 +61,7 @@ the next major version.
 - **Changed:** a `Link` header for the next page keeps the other query parameters, such as `limit`.
 - Nothing was taken away: every 1.0.0 address answers as before, and a read key works as it did.
 
-## Plug-in API 1.15.0 (unreleased), 15 November 2026
+## Plug-in API 1.15.0 (Starboard 0.19.0), 15 November 2026
 
 - **Added:** `build` on a container (DASH-414): its image is built by Starboard from the `Dockerfile` in the plug-in's
   zip file and tagged `local/<id>:<version>`, for a private plug-in with no registry, such as On demand. Installed
@@ -84,7 +84,7 @@ the next major version.
   `{"action": "restore", "id"}`. (DASH-406)
 - Nothing was taken away: a plug-in made for 1.14 works as before.
 
-## Plug-in API 1.14.0 (unreleased), 14 November 2026
+## Plug-in API 1.14.0 (Starboard 0.18.0), 14 November 2026
 
 - **Added:** a card's own refresh time, `refresh_seconds`, from 10 to 3600 seconds, in the manifest and in the card's
   answer, which wins, so a plug-in setting can change it. 10 seconds is the quickest: a smaller value in an answer is
