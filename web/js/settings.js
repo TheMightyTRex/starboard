@@ -2807,13 +2807,14 @@ async function startUpdatesPlace() {
   const row = (t) => {
     const ready = t.update_available;
     const facts = [t.current ? `You have ${t.current}` : "Version not known", ready && t.latest ? `New: ${t.latest}` : ""].filter(Boolean).join(". ");
-    const why = ready && !t.can_update && t.kind !== "plugin" ? t.why : !ready && t.why && !/up to date/i.test(t.why) ? t.why : "";
+    const unknown = !ready && /look for updates first/i.test(t.why || "");  // no look at its image yet
+    const why = ready && !t.can_update && t.kind !== "plugin" ? t.why : !ready && t.why && !/up to date|no newer version/i.test(t.why) ? t.why : "";
     const note = t.kind === "plugin" && ready && t.note ? `What is new: ${t.note}` : "";
     return el("li", { class: "setting", "data-key": t.id },
       el("div", { class: "setting__text" },
         el("span", { class: "setting__label", id: `up-${t.id}-l`, text: t.name }),
         el("span", { class: "setting__hint" }, `${facts}.`, why ? ` ${why}.`.replace(/\.\.$/, ".") : "", note ? ` ${note}` : ""),
-        el("span", { class: "chips" }, ready ? chip("Update available", "info", "circle-arrow-up") : chip("Up to date", "success"),
+        el("span", { class: "chips" }, ready ? chip("Update available", "info", "circle-arrow-up") : unknown ? chip("Not looked at yet", "muted") : chip("Up to date", "success"),
           ready ? (t.automatic ? chip("Updates by itself", "muted", "clock") : chip("Waits for you", "warning", "user")) : null)),
       el("div", { class: "setting__control" }, action(t)));
   };
