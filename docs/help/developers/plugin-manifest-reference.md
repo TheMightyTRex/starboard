@@ -62,6 +62,7 @@ people read every one, and the plug-in's API key gets only the read permissions 
 | `network:port` | Open its own web page on your home network, at a port Starboard chooses (API 1.13) | medium | none |
 | `appearance:styles` | Add styles to Display: colours, corners, a font and shadows, checked for accessibility | low | none |
 | `jellyfin:metadata` | Read and change Jellyfin's metadata folder: the posters, photos and details Jellyfin saved (API 1.14) | medium | none |
+| `library:holding` | Move films and series from your library into the holding folder in your media folder, and put them back (API 1.15) | high | none |
 
 The plug-in's risk is its highest permission's risk. Read [What a plug-in can change](../basics/what-plugins-can-change.md)
 for how people see this.
@@ -77,14 +78,14 @@ settings, events and jobs.
 | `image` | Its image | Pinned by digest: `registry/name@sha256:` and 64 hex characters. Read [Security rules](#security-rules) |
 | `port` | The port it answers on | 1 to 65535. Starboard uses 80 when it is left out |
 | `network` | Which network it joins | `default`, `lan` or `vpn`. Read [Networks](#networks) |
-| `volumes` | Folders it gets | `data`, `data:<path>`, `data/<folder>:<path>`, `media:ro`, `media/<one folder>` or `media/<one folder>:ro`. Read [Volumes](#volumes) |
+| `volumes` | Folders it gets | `data`, `data:<path>`, `data/<folder>:<path>`, `media:ro`, `media:holding` (API 1.15), `media/<one folder>` or `media/<one folder>:ro`. Read [Volumes](#volumes) |
 | `env` | Settings passed as environment variables | Names of letters, numbers and `_` (`UPPER_CASE` before API 1.13; an app such as Tdarr reads `serverIP`); values text, numbers or `true` and `false`. From API 1.13 a value may hold `{secret:<name>}`, `{jellyfin:url}` or `{jellyfin:key}`. Read [App plug-ins](#app-plug-ins) |
 | `start` | When it runs | `always` (the default) or `when_needed`, for the first container only. Read [Resting when idle](plugin-api-reference.md#resting-when-idle) |
 | `idle_stop_minutes` | For `when_needed`: minutes idle before it rests | A whole number; 15 when left out |
 | `publish` | Puts `port` on the home network: on Gluetun for `network: vpn` (plug-in API 1.9), or as the app's own web page for `network: lan` (API 1.13) | true or false; only with `network: vpn` or `lan` and a `port`; on `lan` it needs `network:port` |
 | `host_port` | For `publish` on `lan`: the port Starboard tries first, usually the app's own, such as `3000` | 1024 to 65535. Starboard takes the next free port when it is in use. API 1.13 |
 | `tmpfs` | Folders in memory the app writes to, such as `/var/run/postgresql`, owned by its user | Up to 6 paths inside the container, never `/tmp` (it always has one) or `/run/starboard`. Only `/run` may run programs, for images with s6. API 1.13 |
-| `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out. From API 1.12, `media`: the media folder's owner, only for a container that mounts `media/<one folder>` or, from API 1.14, `jellyfin-metadata`. Read [Adding files to the media folder](#adding-files-to-the-media-folder) |
+| `user` | The user it runs as | `uid:gid` such as `1000:1000`, never root (uid 0); `10001:10001` when left out. From API 1.12, `media`: the media folder's owner, only for a container that mounts `media/<one folder>`, from API 1.14 `jellyfin-metadata`, or from API 1.15 `media:holding`. Read [Adding files to the media folder](#adding-files-to-the-media-folder) |
 | `command` | The command it runs | Only plug-ins built into Starboard may set it |
 
 The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hello-card-main`.
@@ -109,6 +110,7 @@ The container's name on the server is `plugin-<id>-<name>`, such as `plugin-hell
 | `data/<folder>:<path>` | A folder inside its own folder, at a path, for an app with several, such as `data/server:/app/server` (API 1.13) | none |
 | `jellyfin-metadata` | `/metadata`, read and write: Jellyfin's metadata folder, its posters, photos and details (API 1.14). Read [Jellyfin's metadata folder](#jellyfins-metadata-folder) | `jellyfin:metadata` |
 | `jellyfin-metadata:ro` | `/metadata`, read only (API 1.14) | `jellyfin:metadata` |
+| `media:holding` | `/media`, read and write: the whole media folder, to move items into its holding folder, `/media/.holding/<id>`, and back (API 1.15). Read [The holding folder in the media folder](#the-holding-folder-in-the-media-folder) | `library:holding` |
 
 Nothing else can be mounted. The folder name after `media/` is 1 to 60 letters, numbers, dots, underscores and
 hyphens, so it cannot climb out with `..`.
@@ -133,6 +135,35 @@ refused, and the folder is mounted only for a plug-in that was granted it.
 "permissions": ["jellyfin:metadata"],
 "containers": [{"name": "main", "image": "ghcr.io/you/picture-shrinker@sha256:...", "port": 8080,
                 "volumes": ["data", "jellyfin-metadata"], "user": "media"}]
+```
+
+### The holding folder in the media folder
+
+From API 1.15, a plug-in that tidies the library, such as Library clean-up, can move films and series out of it and
+put them back. It asks for the permission `library:holding` and mounts `media:holding`: the whole media folder, read
+and write, at `/media`. Without the permission the manifest is refused.
+
+- What it moves goes in `/media/.holding/<plug-in id>/`, keeping the folders it was in, so
+  `/media/movies/A Film (2001)` becomes `/media/.holding/library-cleanup/movies/A Film (2001)` and can go back to the
+  same place. The holding folder is inside the media folder because a move between two folders Docker mounts
+  separately is a copy and then a delete, even on one disk; inside one mount it is a rename, which is instant and
+  needs no free space. Its name starts with a dot and it is outside every library folder, so Jellyfin and Reelix do
+  not list what is in it.
+- Never delete. The folder is mounted read and write, so Starboard cannot stop a plug-in that deletes; people read
+  that before they add it, and the collection's tests check that its code has no way to delete a media file.
+- Offer **Put back** for each item: a row with the `restore` action on a custom setting's list (API 1.15), and say
+  first, with a preview, what would move and how much space it frees.
+- Tell Reelix (with `reelix:key`) to stop following what moves, so it is not downloaded again, and to follow it again
+  when it is put back; tell Jellyfin (with `jellyfin:key`) the folder has gone, and that it is back.
+- Run the container as `"user": "media"`, the owner of the media folder, so moved folders keep their owner.
+- People read before they add it: "Your media folder: it can move films and series into the holding folder there
+  (media/.holding) and put them back. It is given the whole folder to read and change, so add only a plug-in you
+  trust; what it moves leaves Jellyfin until it is put back". Its risk is high.
+
+```json
+"permissions": ["jellyfin:key", "reelix:key", "library:holding", "network:lan"],
+"containers": [{"name": "main", "image": "ghcr.io/you/library-cleanup@sha256:...", "port": 8080, "network": "lan",
+                "volumes": ["data", "media:holding"], "user": "media"}]
 ```
 
 ### Adding files to the media folder
@@ -562,6 +593,7 @@ it is missing, because What is new then cannot say what changed. Say when settin
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
+| 1.15 | 15 November 2026 | The `library:holding` permission with the `media:holding` volume (the media folder, read and write, for its holding folder `media/.holding/<id>`), and `restore` on a custom setting's item, drawn as **Put back** |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

@@ -1440,6 +1440,22 @@ check("UPD-03", "the page says how it ended", (await page.locator("#self-update-
 const back = await api("/api/self-update");
 check("UPD-04", "the record says who started it and how it ended", back.update?.by === "you" && back.update?.outcome === "updated", JSON.stringify(back.update));
 
+console.log("\n== Library clean-up: Put back (plug-in API 1.15, DASH-406)");
+await open("settings-plugin.html?id=library-cleanup");
+const heldTabJ = page.getByRole("tab", { name: "Holding folder" });
+if (await heldTabJ.count()) { await heldTabJ.click(); await page.waitForTimeout(400); }
+const putBack = page.getByRole("button", { name: "Put back A made-up film (2001)" });
+check("HLD-01", "each row in the holding folder has Put back, named with its title", await putBack.count() === 1
+  && await page.getByRole("button", { name: /^Put back / }).count() === 3);
+await putBack.click();
+await page.waitForTimeout(800);
+check("HLD-02", "Put back says what it did and the row leaves the list",
+  /Put back A made-up film/.test(await page.locator("[role=status]").allInnerTexts().then((t) => t.join(" ")))
+  && await page.getByRole("button", { name: /^Put back / }).count() === 2);
+check("HLD-02", "focus goes to the next row's Put back", await page.evaluate(() => /^Put back Harbour lights/.test(document.activeElement?.textContent || "")));
+const mayText = await page.locator('section[aria-labelledby="pl-library-cleanup-may-h"]').innerText().catch(() => "");
+check("HLD-03", "What it may do names the holding folder permission", /holding folder/i.test(mayText), mayText.slice(0, 200));
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

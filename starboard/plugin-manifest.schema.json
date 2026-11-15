@@ -181,6 +181,7 @@
      "downloads:read",
      "jellyfin:key",
      "jellyfin:metadata",
+     "library:holding",
      "media:read",
      "network:lan",
      "network:port",

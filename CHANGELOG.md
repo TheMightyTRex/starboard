@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Plug-ins that tidy the library (plug-in API 1.15):** A new permission lets a plug-in such as Library clean-up move films and series into a holding folder inside your media folder, media/.holding, keeping their folders, and put them back. It is said plainly before you add it, with a high risk, as the plug-in is given your whole media folder. A plug-in's list can now have a Put back button on each row. (DASH-406)
+
 ## [0.18.0] (15 November 2026)
 
 ### Added

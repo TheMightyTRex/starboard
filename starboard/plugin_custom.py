@@ -21,6 +21,8 @@ A parent comes before its sub menus, at most four levels deep; anything else is 
 known "menu" stay on the first level, so a screen without menus is drawn as before.
 "readonly": true (plug-in API 1.11, DASH-402) with "layout": "folds" draws each section's table to be read only: no tick
 boxes, no State column, no Activate buttons and no Active or Inactive filter, for figures such as watch statistics.
+An item's "restore" action (plug-in API 1.15, DASH-406) is drawn as a Put back button on its row, for something the
+plug-in moved aside, such as a film Library clean-up moved to the holding folder; it POSTs {"action": "restore", "id"}.
 Starboard keeps only these fields, cuts every text, and calls the plug-in with its own key."""
 import json
 import re
@@ -28,7 +30,8 @@ import urllib.error
 import urllib.request
 
 MAX_BYTES = 2 * 1024 * 1024  # Live TV on the owner's server: 1,616 channels, about 420 KB (13 November 2026)
-ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose", "bulk", "bulk_ids", "attach", "detach", "dismiss")
+ACTIONS = ("add", "test", "test_all", "toggle", "remove", "up", "down", "choose", "bulk", "bulk_ids", "attach", "detach", "dismiss",
+           "restore")  # restore: API 1.15 (DASH-406), drawn as Put back
 TONES = ("info", "success", "warning", "danger")
 MAX_IDS = 1000
 MAX_ITEMS = 4000

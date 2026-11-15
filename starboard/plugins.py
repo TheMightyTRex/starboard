@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.14.0"  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432); update tools (DASH-424): an update object with a before and an after step Starboard calls with time limits, a health wait after which a version that does not answer is rolled back by itself, and settings migrations (rename, remove, new defaults) kept for Roll back, and What is new shown before an update from the new version's changes  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.15.0"  # 1.15 (15 November 2026, DASH-406): the permission library:holding with the media:holding volume, so a plug-in such as Library clean-up can move films and series into the holding folder inside the media folder (media/.holding/<plug-in id>) and put them back, never deleting; a custom screen item may offer restore, drawn as Put back  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432); update tools (DASH-424): an update object with a before and an after step Starboard calls with time limits, a health wait after which a version that does not answer is rolled back by itself, and settings migrations (rename, remove, new defaults) kept for Roll back, and What is new shown before an update from the new version's changes  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -34,6 +34,8 @@ PERMISSIONS = {
     "appearance:styles": ("Add styles to Display: colours, corners, a font and shadows, checked for accessibility", "low", None),
     # API 1.14 (DASH-432): Jellyfin's metadata folder (/metadata on new installs, DASH-431), mounted only with this
     "jellyfin:metadata": ("Read and change Jellyfin's metadata folder: the posters, photos and details Jellyfin saved", "medium", None),
+    # API 1.15 (DASH-406): the media folder, read and write, to move films and series into its holding folder and back
+    "library:holding": ("Move films and series from your library into the holding folder in your media folder, and put them back", "high", None),
 }
 NETWORKS = {"default": None, "lan": "network:lan", "vpn": "network:vpn"}
 SETTING_TYPES = ("text", "number", "switch", "choice", "address", "secret", "folder", "list", "custom", "schedule")  # schedule: API 1.14
@@ -95,6 +97,11 @@ WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", 
 TIME = r"^([01]\d|2[0-3]):[0-5]\d$"
 # Jellyfin's metadata folder (API 1.14, DASH-432): read and write, or read only, at /metadata in the container.
 JELLYFIN_METADATA = ("jellyfin-metadata", "jellyfin-metadata:ro")
+# The media folder, read and write, at /media (API 1.15, DASH-406): only with library:holding. A move into the holding
+# folder must stay inside one mount to be a rename (a move between two mounts is a copy, then a delete), so the
+# holding folder is inside the media folder: media/.holding/<plug-in id>/, keeping the folders each item was in.
+MEDIA_HOLDING = "media:holding"
+HOLDING_FOLDER = ".holding"
 ACTION = {"id", "label", "path", "confirm"}
 # API 1.10 (DASH-393): the plug-in's changelog in the manifest, in Keep a Changelog's types, so Starboard can say what
 # is new after an update without fetching anything. Kept short: 20 versions, 20 lines a type, 300 characters a line.
@@ -233,10 +240,13 @@ def check(manifest, dev=False, builtin=False):
             elif v in JELLYFIN_METADATA:  # API 1.14 (DASH-432)
                 if "jellyfin:metadata" not in perms:
                     out.append(f"{where}: {v} needs the permission jellyfin:metadata")
+            elif v == MEDIA_HOLDING:  # API 1.15 (DASH-406)
+                if "library:holding" not in perms:
+                    out.append(f"{where}: {v} needs the permission library:holding")
             elif isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}:ro$", v):
                 pass  # API 1.13: one media folder, read only: less than media/<one folder>, so no permission
             elif v != "data" and not re.match(r"^media/[A-Za-z0-9._-]{1,60}$", str(v)):
-                out.append(f"{where}: volumes may be data, data:/path, data/<folder>:/path, media:ro or media/<one folder>, not {v}")
+                out.append(f"{where}: volumes may be data, data:/path, data/<folder>:/path, media:ro, media:holding or media/<one folder>, not {v}")
         env = c.get("env") or {}
         if not isinstance(env, dict) or any(not re.match(r"^[A-Za-z][A-Za-z0-9_]{0,60}$", str(k)) or not isinstance(v, (str, int, bool)) for k, v in env.items()):
             out.append(f"{where}: env must map names (letters, numbers and _, such as TZ or serverIP since API 1.13) to plain values")
@@ -249,9 +259,9 @@ def check(manifest, dev=False, builtin=False):
                     out.append(f"{where}: env {k} has a {{...}} Starboard does not know; use {{secret:name}}, {{jellyfin:url}} or {{jellyfin:key}}")
         user = c.get("user")
         if user == "media":  # API 1.12 (DASH-410): the media folder's owner, so files it adds belong to the person
-            if not any(isinstance(v, str) and (re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v) or v == "jellyfin-metadata")
+            if not any(isinstance(v, str) and (re.match(r"^media/[A-Za-z0-9._-]{1,60}$", v) or v in ("jellyfin-metadata", MEDIA_HOLDING))
                        for v in c.get("volumes") or []):
-                out.append(f"{where}: user media is only for a container that mounts media/<one folder> or jellyfin-metadata")
+                out.append(f"{where}: user media is only for a container that mounts media/<one folder>, media:holding or jellyfin-metadata")
         elif user is not None and (not isinstance(user, str) or not re.match(r"^\d{1,6}:\d{1,6}$", user) or user.split(":")[0] == "0"):
             out.append(f"{where}: user must be a non-root uid:gid such as 1000:1000, or media")
         if c.get("start", "always") not in ("always", "when_needed"):
@@ -439,7 +449,11 @@ CHANGES = {"jellyfin:key": "Anything in Jellyfin: it gets Jellyfin's API key, wh
            "appearance:styles": "How Starboard looks, through styles in Display (checked for accessibility first)",
            # API 1.14 (DASH-432)
            "jellyfin:metadata": "Jellyfin's metadata folder: the posters, photos and details Jellyfin saved. It can change, "
-                                "replace and remove them, and Jellyfin shows what it leaves there"}
+                                "replace and remove them, and Jellyfin shows what it leaves there",
+           # API 1.15 (DASH-406)
+           "library:holding": "Your media folder: it can move films and series into the holding folder there "
+                              "(media/.holding) and put them back. It is given the whole folder to read and change, "
+                              "so add only a plug-in you trust; what it moves leaves Jellyfin until it is put back"}
 REACHES = {"network:lan": "Other computers on your home network, and the internet",
            "network:port": "Its own web page is opened on your home network: anyone on your home network can open it, "
                            "at this computer's address and a port Starboard chooses",
@@ -456,6 +470,8 @@ def install_warning(manifest):
     see += [EVENTS[e][1] for e in manifest.get("events") or [] if e in EVENTS]
     if "media:ro" in vols:
         see.append("Every file in your media folder (read only)")
+    elif MEDIA_HOLDING in vols:  # API 1.15
+        see.append("Every file in your media folder")
     change = []
     if containers:
         change.append("Its own folder in Starboard's data (data/plugins/" + str(manifest.get("id")) + ")")
@@ -466,7 +482,8 @@ def install_warning(manifest):
         change.append("It runs as the owner of your media folder, so the files it adds there are yours to move or delete")
     if "iptv" in vols:
         change.append("The Live TV folder Jellyfin reads")
-    change += [CHANGES[p] for p in perms if p in CHANGES and (p != "jellyfin:metadata" or "jellyfin-metadata" in vols)]
+    change += [CHANGES[p] for p in perms if p in CHANGES and (p != "jellyfin:metadata" or "jellyfin-metadata" in vols)
+               and (p != "library:holding" or MEDIA_HOLDING in vols)]
     if "jellyfin-metadata:ro" in vols and "jellyfin-metadata" not in vols:  # API 1.14: read only, so it is seen, not changed
         see.append("Jellyfin's metadata folder: the posters, photos and details Jellyfin saved (read only)")
     if manifest.get("adopt"):
@@ -630,6 +647,8 @@ def compose(manifest, plugin_dir, media_dir, host=None, media_user=None, extra=N
                 vols.append(f"{plugin_dir}/data/{c['name']}{sub[4:]}:{at}")
             elif v == "media:ro":
                 vols.append(f"{media_dir}:/media:ro")
+            elif v == MEDIA_HOLDING:  # API 1.15 (DASH-406): read and write, only with library:holding (check() made sure)
+                vols.append(f"{media_dir}:/media")
             elif v == "iptv":
                 if not host.get("iptv"):
                     raise ValueError("The installer gave Starboard no Live TV folder (./install.sh asks)")
@@ -829,7 +848,7 @@ def media_mounts(manifest):
     out = []
     for c in (manifest or {}).get("containers") or []:
         for v in c.get("volumes") or []:
-            if v == "media:ro":
+            if v in ("media:ro", MEDIA_HOLDING):
                 out.append("/media")
             elif isinstance(v, str) and re.match(r"^media/[A-Za-z0-9._-]{1,60}(:ro)?$", v):
                 out.append("/" + v.removesuffix(":ro"))

@@ -50,6 +50,18 @@ the next major version.
   `too_large` and `too_many_streams`.
 - **Changed:** a `Link` header for the next page keeps the other query parameters, such as `limit`.
 - Nothing was taken away: every 1.0.0 address answers as before, and a read key works as it did.
+## Plug-in API 1.15.0 (unreleased), 15 November 2026
+
+- **Added:** the permission `library:holding` (high risk) with the volume `media:holding`: the media folder, read and
+  write, at `/media`, so a plug-in can move films and series into the holding folder inside it,
+  `media/.holding/<plug-in id>/`, keeping the folders each was in, and put them back. A container that mounts it may
+  run as `"user": "media"`. Read
+  [The holding folder in the media folder](plugin-manifest-reference.md#the-holding-folder-in-the-media-folder).
+  (DASH-406, for Library clean-up)
+- **Added:** `restore` in a custom setting item's `actions`, drawn as a **Put back** button on the row and sent as
+  `{"action": "restore", "id"}`. (DASH-406)
+- Nothing was taken away: a plug-in made for 1.14 works as before.
+
 ## Plug-in API 1.14.0 (unreleased), 14 November 2026
 
 - **Added:** a card's own refresh time, `refresh_seconds`, from 10 to 3600 seconds, in the manifest and in the card's

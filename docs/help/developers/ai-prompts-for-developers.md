@@ -60,6 +60,9 @@ Rules:
 - If it changes Jellyfin's posters, photos or details, ask for "jellyfin:metadata", mount
   "jellyfin-metadata" (or "jellyfin-metadata:ro" to only read) at /metadata, run as "user": "media", and
   check each file before it replaces the one Jellyfin saved.
+- If it moves films or series out of the library, ask for "library:holding", mount "media:holding" at
+  /media, run as "user": "media", move only into /media/.holding/<id>/ keeping the folders, never delete,
+  show a preview first, and offer Put back with "restore" on each moved row.
 - Keep memory and processor within 512 MB and 1.0 processor core; less is better.
 - Use a tag for the image for now, and tell me how to pin it by digest before I share it.
 - Set starboard_api to the lowest plug-in API version that has every field it uses.

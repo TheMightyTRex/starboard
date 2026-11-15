@@ -21,6 +21,10 @@ shows each permission in plain words with a risk level (low, medium or high) bef
   series and books, or processor, memory and disks. It uses its own key, which only reads, and stops working when
   the plug-in is removed.
 - **Reach your home network or run inside your VPN,** only when it asks for this and you agree.
+- **Move films and series to the holding folder,** only when it asks for this and you agree, such as Library
+  clean-up. They go to a holding folder inside your media folder, `media/.holding`, keeping their folders, and each
+  can be put back with **Put back**. It is given your whole media folder, so its risk is high: add only a plug-in you
+  trust.
 - **Show settings and buttons** in its own section of **Settings**, then **Plug-ins**, drawn by Starboard.
 - **Add cards to the dashboard** that show a number, a short list or a status. You choose to add them with
   **Edit dashboard**. Starboard asks the plug-in at most once a minute and shows its answer as plain text. Read
