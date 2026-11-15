@@ -41,6 +41,10 @@ def text_only(md):
 
 def main():
     problems = []
+    import json
+    config = json.loads((HELP.parent.parent / "help-centre.json").read_text())
+    global GROUPS
+    GROUPS = {(a["key"], g["key"]) for a in config.get("areas", []) for g in a.get("groups", [])}
     files = sorted(p for p in HELP.rglob("*.md"))
     index = (HELP / "README.md").read_text()
     for path in files:
@@ -64,8 +68,18 @@ def main():
             for heading in TIERS[tier]:
                 if heading not in md:
                     problems.append(f"{rel}: has no '{heading[3:]}' section")
-            if tier == "guides" and "```mermaid" not in md:
-                problems.append(f"{rel}: a guide needs its steps as a Mermaid flowchart")
+            if tier == "guides" and "```mermaid" not in md and "```flow" not in md:
+                problems.append(f"{rel}: a guide needs its steps as a flow chart")
+            # The help centre standard (design system HELP-WRITING.md, section 11): every article names its area and
+            # group from help-centre.json, and a troubleshooting topic starts with its flow chart.
+            m = re.search(r"<!--\s*help:\s*([\w-]+)\s*/\s*([\w-]+)\s*-->", md)
+            if not m:
+                problems.append(f"{rel}: has no <!-- help: <area> / <group> --> line under its first line")
+            elif (m.group(1), m.group(2)) not in GROUPS:
+                problems.append(f"{rel}: {m.group(1)} / {m.group(2)} is not a group in help-centre.json")
+            first = md.splitlines()[0]
+            if first.rstrip().endswith("troubleshooting") and "```flow" not in md:
+                problems.append(f"{rel}: a troubleshooting topic starts with a flow chart (a flow block)")
         words = text_only(md)
         for n, line in enumerate(words.splitlines(), 1):
             for pattern, what in RULES:

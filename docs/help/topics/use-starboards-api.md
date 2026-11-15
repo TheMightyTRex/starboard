@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Security · how-to
+<!-- help: dev / api -->
 
 # Make an API key and use Starboard's API
 

@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Your server · how-to
+<!-- help: use / server -->
 
 # Take a drive out of the pool
 

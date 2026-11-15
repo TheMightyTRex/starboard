@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Jellyfin and Audiobookshelf · how-to
+<!-- help: use / media -->
 
 # Copy listening progress into Audiobookshelf
 

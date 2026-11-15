@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Guides
+<!-- help: start / install -->
 
 # Get Starboard up and running, from a bare computer
 

@@ -1,4 +1,5 @@
 [Help centre](../README.md) · The basics
+<!-- help: plugins / adding -->
 
 # What a plug-in can change
 

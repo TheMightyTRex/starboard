@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Everyday use · how-to
+<!-- help: use / library -->
 
 # Search for and add films, series, music and books
 

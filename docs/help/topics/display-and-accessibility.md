@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Everyday use · how-to
+<!-- help: a11y / change -->
 
 # Change text size, theme and other display settings
 

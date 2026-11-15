@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Apps · how-to
+<!-- help: use / apps -->
 
 # Choose a Usenet provider and add it
 

@@ -35,7 +35,7 @@ jobs:
       - name: Build the pages
         run: |
           pip install markdown==3.7 pymdown-extensions==10.9
-          python _design-system/tools/help_centre/build.py --config help-centre.json --out _site
+          python _design-system/tools/help_centre/build.py --config help-centre.json --out _site --strict
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

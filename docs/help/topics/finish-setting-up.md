@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Everyday use · how-to
+<!-- help: start / install -->
 
 # Finish what is still to set up
 

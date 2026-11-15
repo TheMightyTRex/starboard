@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Backup and restore · how-to
+<!-- help: use / backups -->
 
 # Back up the whole server
 

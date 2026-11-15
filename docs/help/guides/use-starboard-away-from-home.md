@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Guides
+<!-- help: start / devices -->
 
 # Use Starboard away from home safely
 

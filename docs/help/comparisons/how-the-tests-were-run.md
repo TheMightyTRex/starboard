@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Comparison tests · how-to
+<!-- help: start / compare -->
 
 # How the tests were run, and how to repeat them
 

@@ -1,4 +1,5 @@
 [Help centre](../README.md) · The basics
+<!-- help: use / server -->
 
 # What a drive pool is
 

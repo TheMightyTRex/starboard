@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Developers
+<!-- help: dev / plugins -->
 
 # Write a plug-in that updates safely
 

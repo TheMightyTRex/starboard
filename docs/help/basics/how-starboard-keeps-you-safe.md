@@ -1,4 +1,5 @@
 [Help centre](../README.md) · The basics
+<!-- help: use / security -->
 
 # How Starboard keeps your server safe
 

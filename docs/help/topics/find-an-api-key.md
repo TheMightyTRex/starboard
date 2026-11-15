@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Apps · reference
+<!-- help: use / apps -->
 
 # Find an app's API key
 

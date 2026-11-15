@@ -1,26 +1,61 @@
 [Help centre](../README.md) · When something is wrong · troubleshooting
+<!-- help: fix / apps -->
 
 # An app shows as not responding
 
 When Starboard cannot reach one of your apps, its card says **Not responding**. Either the app has stopped, or
-Starboard has the wrong address or API key for it. These checks find out which.
+Starboard has the wrong address or API key for it. Find what the app's details say on the chart, then follow its
+numbered answer.
 
-## Steps
+```flow
+title: Find your answer
+start: An app's card says Not responding
+step: Open the app's details | Select its name on Apps
+q: What do the details say?
+  Cannot reach the app -> q2
+  Refused the API key -> 3
+  Answered with an error -> 4
+q2: Does the app open in your browser?
+  No -> 1
+  Yes -> 2
+1: Start the app again #start-the-app-again
+2: Check the address Starboard uses #check-the-address-starboard-uses
+3: Copy the API key again #copy-the-api-key-again
+4: Read the app's own messages #read-the-apps-own-messages
+```
 
-1. On **Apps**, select the app's name on its card to open its details. They say what went wrong, such as
-   "Cannot reach Sonarr" or "Sonarr refused the API key".
-2. Open the app itself in your browser. If it does not open, the app has stopped. Start it again, then
-   select **Check again** in the app's details.
-3. If the app opens in your browser, select **Edit app** in its details. The app's **Edit** panel opens in
+## Find what went wrong
+
+On **Apps**, select the app's name on its card to open its details. They say what went wrong, such as "Cannot reach
+Sonarr" or "Sonarr refused the API key".
+
+## Start the app again
+
+Open the app itself in your browser. If it does not open, the app has stopped. Start it again, then select
+**Check again** in the app's details.
+
+## Check the address Starboard uses
+
+1. If the app opens in your browser, select **Edit app** in its details. The app's **Edit** panel opens in
    **Manage apps**.
-4. Check **Address Starboard uses**. Starboard uses your server's own network, so an app on the same server
+2. Check **Address Starboard uses**. Starboard uses your server's own network, so an app on the same server
    is at `http://127.0.0.1` and the app's port, such as `http://127.0.0.1:8989` for Sonarr.
-5. Check **API key**: copy it again from the app and paste it in. Read
-   [Find an app's API key](find-an-api-key.md#where-each-app-keeps-its-key).
-6. Select **Test connection**. Starboard shows **Connected** and how quickly the app answered, or
+3. Select **Test connection**. Starboard shows **Connected** and how quickly the app answered, or
    **Cannot connect** and the reason.
-7. When the test says **Connected**, select **Save app**. For Sonarr, Radarr, Lidarr and Readarr, select
+4. When the test says **Connected**, select **Save app**. For Sonarr, Radarr, Lidarr and Readarr, select
    **Save and continue**, then **Save adding options**.
+
+## Copy the API key again
+
+1. Select **Edit app** in the app's details.
+2. Check **API key**: copy it again from the app and paste it in. Read
+   [Find an app's API key](find-an-api-key.md#where-each-app-keeps-its-key).
+3. Select **Test connection**, and when it says **Connected**, select **Save app**.
+
+## Read the app's own messages
+
+When the details say the app **answered with error** and a number, the app is running but had a problem. Open the
+app and read its own messages.
 
 ## Things to note
 

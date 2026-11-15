@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Comparison tests · reference
+<!-- help: start / compare -->
 
 # What Starboard does not do yet, and what is planned
 

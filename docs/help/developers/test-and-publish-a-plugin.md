@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Developers
+<!-- help: dev / plugins -->
 
 # Test and publish a plug-in
 

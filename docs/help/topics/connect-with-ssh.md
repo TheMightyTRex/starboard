@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Before you install · how-to
+<!-- help: start / computer -->
 
 # Connect to your server from another computer
 

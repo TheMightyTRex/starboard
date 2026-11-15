@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Your server · how-to
+<!-- help: use / server -->
 
 # Check your disks' health
 

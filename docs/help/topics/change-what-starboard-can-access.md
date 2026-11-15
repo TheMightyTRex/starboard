@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Install and update · how-to
+<!-- help: use / security -->
 
 # Change what Starboard can access
 

@@ -1,10 +1,25 @@
 [Help centre](../README.md) · When something is wrong · how-to
+<!-- help: fix / report -->
 
 # Send feedback about a page
 
 Send feedback adds **Feedback** to the side menu on every page, and **Send feedback** to the menu on a phone. Pages with no side menu, such as the set-up, have a **Send feedback** button instead. Use it to report something that is broken or hard to
 use, suggest something, or check a page for accessibility problems. Each report says which page and which part of
 it, and keeps nothing personal. It uses [Snaglist](https://github.com/TheMightyTRex/snaglist).
+
+```flow
+title: Find your answer
+start: You want to tell us about a page
+q: Is Feedback in the side menu?
+  No -> 1
+  Yes -> q2
+q2: What do you want to do?
+  Report a problem or suggest something -> 2
+  Read the reports you saved -> 3
+1: It is on already #it-is-on-already
+2: Send a report #send-a-report
+3: Find the reports saved in Starboard #find-the-reports-saved-in-starboard
+```
 
 ## Before you begin
 

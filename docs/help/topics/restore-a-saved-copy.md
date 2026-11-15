@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Backup and restore · how-to
+<!-- help: use / backups -->
 
 # Restore a saved copy of your settings
 

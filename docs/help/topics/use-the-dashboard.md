@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Everyday use · how-to
+<!-- help: use / dashboard -->
 
 # Use and change the dashboard
 

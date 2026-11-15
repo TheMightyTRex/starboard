@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Plug-ins · how-to
+<!-- help: plugins / adding -->
 
 # Add a plug-in
 

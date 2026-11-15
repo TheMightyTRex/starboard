@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Before you install · reference
+<!-- help: start / before -->
 
 # Can I use Windows or a Mac?
 

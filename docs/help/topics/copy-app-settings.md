@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Apps · how-to
+<!-- help: start / move -->
 
 # Copy settings from one app to another
 
