@@ -92,6 +92,9 @@ Rules:
   image "local/<id>:<version>", and keep the Dockerfile to the rules in "Built from a zip file" in the
   manifest reference: no "# syntax=" line, no RUN --mount, ADD only from the zip, FROM with a full image
   name.
+- If it moves films or series out of the library, ask for "library:holding", mount "media:holding" at
+  /media, run as "user": "media", move only into /media/.holding/<id>/ keeping the folders, never delete,
+  show a preview first, and offer Put back with "restore" on each moved row.
 - Set starboard_api to the lowest plug-in API version that has every field it uses.
 Then follow this checklist and say, for each line, what you did:
 1. Permissions: the fewest that work, each explained in one sentence.

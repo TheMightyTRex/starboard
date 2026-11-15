@@ -27,7 +27,7 @@ step "API contract tests"
 python3 -m unittest tests.test_api_v1
 step "Plug-in tests"
 python3 -m unittest tests.test_plugins tests.test_plugins_admin tests.test_plugin_cards tests.test_plugin_life \
-  tests.test_plugin_custom tests.test_plugin_files tests.test_plugin_groups tests.test_plugin_catalogues tests.test_plugin_api_114 tests.test_plugin_api_115 \
+  tests.test_plugin_custom tests.test_plugin_files tests.test_plugin_groups tests.test_plugin_catalogues tests.test_plugin_api_114 tests.test_plugin_api_115 tests.test_plugin_api_115_holding \
   tests.test_plugin_update tests.test_reelix_updates
 
 step "Update smoke test: a plug-in from one version to the next and back, with a settings migration and a failing health check"

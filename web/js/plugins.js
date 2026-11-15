@@ -694,11 +694,21 @@ function customScreen(p, s) {
     if (button) button.disabled = true;
     if (last && body.action !== "dismiss") freeze();
     const key = button && button.dataset.key;  // a row's button: focus goes back to it, drawn again (WCAG 2.4.3)
+    // Put back (plug-in API 1.15) takes its row off the list: focus goes to the next row's Put back, or the heading.
+    const backs = () => [...box.querySelectorAll("[data-key$=':restore']")];
+    const place = body.action === "restore" ? backs().indexOf(button) : -1;
     try {
       const out = await api(path, { method: "POST", body });
       if (out.said && !after) said.textContent = out.said;
       draw(out);
-      if (key) [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === key)?.focus();
+      const again = key && [...box.querySelectorAll("[data-key]")].find((x) => x.dataset.key === key);
+      if (again) again.focus();
+      else if (place >= 0) {
+        const next = backs()[Math.min(place, backs().length - 1)];
+        const head = document.getElementById(`pl-${p.id}-${s.key}-h`);
+        if (next) next.focus();
+        else if (head) { head.setAttribute("tabindex", "-1"); head.focus(); }
+      }
       if (after) after(out);
     }
     catch (err) { if (button && button.type === "checkbox") button.checked = !button.checked; problem(err.message, button); }
@@ -735,7 +745,7 @@ function customScreen(p, s) {
         el("ul", { class: "settings-rows" }, list.map(row)))));
   };
   const ACTION_WORDS = { test: ["Test", "activity"], toggle: [null, null], remove: ["Remove", "trash-2"], up: ["Move up", "arrow-up"], down: ["Move down", "arrow-down"],
-    detach: ["Remove guide", "x"] };
+    detach: ["Remove guide", "x"], restore: ["Put back", "undo-2"] };  // restore: plug-in API 1.15 (DASH-406)
   // Show all, active or inactive items (owner, 12 November 2026: "a filter to the channel list for active and not
   // active channels"), on any list whose rows can be activated; kept while the list is drawn again. `pool` is every
   // item in the open level and the sub menus under it.
@@ -798,7 +808,8 @@ function customScreen(p, s) {
           // Test and Activate or Deactivate as buttons; Move up, Move down and Remove in a More menu, so a row has
           // at most two buttons after its state (DASH-309, section 10).
           it.attach && it.actions.includes("attach") ? attachButton(it) : null,
-          ...it.actions.filter((a) => a === "test" || a === "toggle").map((a) => {
+          // Put back (plug-in API 1.15, DASH-406) is a button too: it is what a row of moved items is for.
+          ...it.actions.filter((a) => a === "test" || a === "toggle" || a === "restore").map((a) => {
             const [label, ic] = a === "toggle" ? [it.on ? "Deactivate" : "Activate", it.on ? "pause" : "play"] : ACTION_WORDS[a];
             const b = el("button", { type: "button", class: "btn btn--quiet btn--compact", "data-key": `${it.id}:${a}` }, ic ? icon(ic) : null, label,
               el("span", { class: "visually-hidden", text: ` ${it.title}` }));
@@ -806,7 +817,7 @@ function customScreen(p, s) {
             return b;
           }),
           (() => {
-            const more = it.actions.filter((a) => a !== "test" && a !== "toggle" && a !== "attach");
+            const more = it.actions.filter((a) => a !== "test" && a !== "toggle" && a !== "attach" && a !== "restore");
             if (!more.length) return null;
             let menu = null;
             menu = menuButton(`More for ${it.title}`, more.map((a) => ({ label: ACTION_WORDS[a][0], icon: ACTION_WORDS[a][1], danger: a === "remove",

@@ -808,6 +808,71 @@ def _example_picture_shrinker(data_dir):
                                                       if isinstance(e, dict) and e.get("id") == "disk-forecast" else e)
 
 
+# Library clean-up (DASH-406, plug-in API 1.15): the library:holding permission with the media:holding volume, its rules
+# and exclusions as settings, a Preview table of what would move and the space it frees, and the holding folder with a
+# Put back button on each row (restore). Nothing is read, moved or put back: Put back takes the row off the list here.
+_CLEANUP_HELD = [
+    {"id": "h1", "title": "A made-up film (2001)", "detail": "Films. Moved Saturday 15 November, 4.2 GB. Watched by everyone, last 120 days ago"},
+    {"id": "h2", "title": "Harbour lights (2019)", "detail": "Series. Moved Saturday 15 November, 31.8 GB. Ended, and every episode watched"},
+    {"id": "h3", "title": "The long field (1998)", "detail": "Films. Moved Friday 14 November, 2.7 GB. Not watched for 12 months"}]
+
+
+def _cleanup_screen(key, held):
+    if key == "preview":
+        rows = [("A quiet harbour (2004)", "Films", "Watched by everyone", "3.9 GB"), ("North road (2011)", "Films", "Not watched for 12 months", "2.2 GB"),
+                ("Salt and stone (2016)", "Series", "Ended, all watched", "18.4 GB")]
+        return {"type": "list", "title": "Preview", "layout": "folds", "readonly": True,
+                "intro": "3 items would move to the holding folder, freeing 24.5 GB. Nothing moves until you activate Move items each day.",
+                "columns": [{"key": "title", "label": "Title"}, {"key": "library", "label": "Library"}, {"key": "rule", "label": "Why"},
+                            {"key": "size", "label": "Space"}],
+                "items": [{"id": f"p{i}", "title": t, "group": lib, "actions": [], "cells": {"title": t, "library": lib, "rule": r, "size": z}}
+                          for i, (t, lib, r, z) in enumerate(rows)]}
+    return {"type": "list", "title": "Holding folder",
+            "intro": "What Library clean-up moved, in media/.holding. Put back returns each to where it was, and Reelix follows it again.",
+            "items": [{**h, "state": "off", "state_label": "In holding", "group": "Moved", "actions": ["restore"]} for h in held]}
+
+
+def _example_library_cleanup(data_dir):
+    from starboard import plugin_custom, plugin_watch
+    if not any(p["id"] == "library-cleanup" for p in plugins_admin.listing(data_dir)):
+        plugins_admin.install(data_dir, {
+            "manifest_version": 1, "id": "library-cleanup", "name": "Library clean-up", "version": "1.0.0",
+            "description": "Moves films and series that everyone has watched, or nobody has watched for a long time, to the holding folder. Never deletes.",
+            "author": "TheMightyTRexUK", "licence": "MIT", "homepage": "https://example.invalid/library-cleanup",
+            "support_url": "https://example.invalid/library-cleanup/issues", "starboard_api": ">=1.15 <2.0",
+            "permissions": ["jellyfin:key", "reelix:key", "library:holding", "network:lan"], "needs": ["jellyfin"], "health": "/health",
+            "containers": [{"name": "main", "image": "ghcr.io/example/library-cleanup@sha256:" + "f" * 64, "port": 8080, "network": "lan",
+                            "volumes": ["data", "media:holding"], "user": "media", "start": "always"}],
+            "settings": [{"key": "preview", "label": "Preview", "type": "custom", "choices": "/preview", "group": "Preview"},
+                         {"key": "held", "label": "Holding folder", "type": "custom", "choices": "/held", "group": "Holding folder"},
+                         {"key": "active", "label": "Move items each day", "type": "switch", "default": False, "group": "Rules",
+                          "hint": "In quiet hours. Look at Preview first: nothing moves until you activate this."},
+                         {"key": "watched", "label": "Watched by everyone", "type": "switch", "default": True, "group": "Rules"},
+                         {"key": "watched_days", "label": "Last watched more than", "type": "number", "unit": "days", "default": 90, "min": 7, "max": 3650, "group": "Rules"},
+                         {"key": "keep_tag", "label": "Keep tag", "type": "text", "default": "keep", "group": "Always keep"}],
+            "jobs": [{"id": "move", "label": "Move items to the holding folder", "path": "/jobs/move", "every_hours": 24, "quiet_hours": True}]},
+            "/nonexistent-media")
+        plugins_admin.set_state(data_dir, "library-cleanup", "enabled")
+    real_call, real_ask = plugin_custom.call, plugin_watch._ask
+    held = list(_CLEANUP_HELD)
+
+    def call(data_dir_, pid, key, body=None, opener=None):
+        if pid != "library-cleanup":
+            return real_call(data_dir_, pid, key, body, opener)
+        said = None
+        if body is not None and body.get("action") == "restore":
+            gone = next((h for h in held if h["id"] == body.get("id")), None)
+            if gone:
+                held.remove(gone)
+                said = f"Put back {gone['title']}. This is example data, so nothing moved"
+        out = plugin_custom.clean(_cleanup_screen(key, held))
+        if body is not None:
+            out["said"] = said or "This is example data, so nothing changed"
+        return out
+    plugin_custom.call = call
+    plugin_watch._ask = lambda pid, main, path: "ok" if pid == "library-cleanup" else real_ask(pid, main, path)
+
+
 def _example_plugin_update(data_dir):
     """Update tools (plug-in API 1.14, DASH-424): Picture shrinker 1.1.0 is in a catalogue, with its changes, a
     settings migration (Posters no taller than becomes Largest poster, and a new default for when it runs) and a
@@ -1587,6 +1652,7 @@ def main():
     _example_direct_play(str(DATA))
     _example_picture_shrinker(str(DATA))
     _example_on_demand_zip(str(DATA))
+    _example_library_cleanup(str(DATA))
     _example_plugin_update(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)

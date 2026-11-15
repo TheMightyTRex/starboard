@@ -116,7 +116,7 @@ for (const name of ALL) {
 }
 // The picture shrinker's page (plug-in API 1.14): its logo beside the heading and its schedule setting, in order.
 if (!(process.env.PAGES || "")) {
-  for (const name of ["settings-plugin.html?id=picture-shrinker"]) {
+  for (const name of ["settings-plugin.html?id=picture-shrinker", "settings-plugin.html?id=library-cleanup"]) {  // and Put back (API 1.15)
     try { await page.goto(`${base}/${name}`); await settle(); await check(name); await tabOrder(name); console.log(`checked ${name}`); }
     catch (e) { add(name, "error", e.message.split("\n")[0]); }
   }

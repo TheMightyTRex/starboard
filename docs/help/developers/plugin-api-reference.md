@@ -216,6 +216,7 @@ the table as before.
 | Field | Rules |
 |---|---|
 | `attach`, on an item | `{"label", "field", "hint", "placeholder", "accept", "value"}`, with `attach` in its `actions`: a button, such as **Add guide**, that opens a small form under the row for an address or a file. The address is sent as `{"action": "attach", "id", "value"}`; a file goes to the `/file` path with `id` added. `detach` in `actions` adds a **Remove guide** item to its More menu |
+| `restore` in an item's `actions` (API 1.15) | A **Put back** button on the row, for something your plug-in moved aside, such as a film Library clean-up moved to the holding folder. It sends `{"action": "restore", "id"}`; answer with the list again and `said`, such as "Put back in movies, and Reelix follows it again". An older Starboard leaves the button out |
 | `notices` | Up to 5, each `{"id", "tone", "title", "text", "progress", "dismiss"}`, at the top of the page. `tone` is `info`, `success`, `warning` or `danger`. With `progress` (0 to 100) Starboard shows a bar and asks again every 3 seconds until it has gone. With `dismiss`, a **Close** button sends `{"action": "dismiss", "id"}` |
 
 **POST** the path when the person does something. The body is:
@@ -225,7 +226,7 @@ the table as before.
 ```
 
 `action` is one of `add`, `test`, `test_all`, `toggle`, `remove`, `up`, `down`, `choose`, `bulk` and, from API 1.8,
-`bulk_ids`, `attach`, `detach` and `dismiss`. `id` is the row,
+`bulk_ids`, `attach`, `detach` and `dismiss`, and from API 1.15 `restore`. `id` is the row,
 and `value` is what the person entered or chose. For `bulk`, `id` is the set and `value` is `on` to activate every item
 in it or `off` to deactivate them. Answer with the whole list again, in the same shape, with `said`
 added: one sentence, up to 200 characters, that Starboard shows. To refuse, answer with an HTTP error status and
