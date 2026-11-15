@@ -45,17 +45,34 @@ guide and the notes on GitHub, so they always say the same thing.
    missing). CI runs the same command on every push, where the smoke test says it was not run. A change that breaks
    either is fixed, or becomes a new API version with a deprecation note, before it is merged.
    When the installer, `update.sh` or the image changed, also run `tools/vm/vm.sh test` on at least one PC system
-   and `arm64`. Record the results and any change in system use in `docs/TESTING.md`
-   ([Testing and system use](TESTING.md)).
-6. **Screenshots, at every push.** Run `tools/screenshots.sh` and look at every picture in `docs/screenshots`:
+   and `arm64` (only when the owner asks for virtual machine tests). Record the results and any change in system use
+   in `docs/TESTING.md` ([Testing and system use](TESTING.md)).
+6. **The update step (DASH-418, DASH-423).** Every release is tested as people will get it: as an update, and
+   with the way back.
+   - **Starboard:** run `tools/update_e2e.sh` (in containers, about 15 minutes; one heavy job at a time). It installs
+     the release before this one in a sealed Docker, with plug-in data folders that belong to another user, updates
+     it to this build with `./update.sh`, then to a made-up broken version that must go back by itself with the
+     settings and plug-in data as they were, and then updates from the page's helper (Update now's own path). It
+     ends with every container and folder it made removed. A release that fails it is not tagged.
+   - **Plug-ins:** `bash tools/check-api.sh` runs the update smoke test (above); the `starboard-plugins` smoke test
+     installs each plug-in's published version, updates it to the new one on the same data and rolls it back, and
+     its settings must be as they were. A new plug-in version also passes
+     `python3 -m starboard.plugin_tester --previous old/starboard-plugin.json new/` before it is published.
+   - **Reelix:** a new Reelix image is updated to from the version before by Starboard's own Reelix update
+     (`tools/update_e2e.sh` with `REELIX_FROM` and `REELIX_TO`, two published version tags), which must answer
+     healthy, and go back by itself when it does not.
+   - **Automatic updates:** nothing extra to run: they use the same update runs. Check the release does not change
+     a part's default (each is deactivated until the owner chooses it), and that `starboard/auto_updates.py`'s
+     words match the help.
+7. **Screenshots, at every push.** Run `tools/screenshots.sh` and look at every picture in `docs/screenshots`:
    the screens must match what changed, and only example data may appear (no real names, addresses, titles or
    folders). A screen that is new or changed a lot gets its own shot: add it to the list in
    `tools/screenshots/shoot.mjs` and to the Screenshots table in the README.
-7. **Security record.** List every security fix in the release's `security` entry (the notes show it under
+8. **Security record.** List every security fix in the release's `security` entry (the notes show it under
    Security). Check CodeQL on GitHub has no open alerts that are not explained. Add a row for the release to
    "Security checks for each release" in `docs/SECURITY-AND-TESTS.md`: which checks ran and what they found.
-8. **Commit and tag** on `main`: `git tag vX.Y.Z`.
-9. **Publish** (the owner, TheMightyTRexUK, runs this after giving the OK to push):
+9. **Commit and tag** on `main`: `git tag vX.Y.Z`.
+10. **Publish** (the owner, TheMightyTRexUK, runs this after giving the OK to push):
 
    ```bash
    gh release create vX.Y.Z --notes-file docs/releases/vX.Y.Z.md

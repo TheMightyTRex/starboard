@@ -181,11 +181,20 @@ def newer(tag, version):
     return bool(a and b and a > b)
 
 
+def update_hours(cfg_data):
+    """The hours automatic updates run in (DASH-422, Settings, Updates, When): (start, end) in whole hours. "download"
+    (the default): Starboard's download hours when they are set, otherwise 01:00 to 06:00, the same quiet hours as
+    plug-in jobs (plugin_life._in_quiet_hours); "quiet": always 01:00 to 06:00."""
+    cfg_data = cfg_data or {}
+    hours = cfg_data.get("download_hours") or {}
+    if cfg_data.get("auto_update_hours", "download") == "download" and hours.get("enabled"):
+        return int(hours.get("start", 1)), int(hours.get("end", 6))
+    return 1, 6
+
+
 def in_quiet_hours(cfg_data, now):
-    """Starboard's download hours when they are set, otherwise 01:00 to 06:00: the same quiet hours as Reelix's
-    automatic update and plug-in jobs (plugin_life._in_quiet_hours)."""
-    hours = (cfg_data or {}).get("download_hours") or {}
-    start, end = (int(hours.get("start", 1)), int(hours.get("end", 6))) if hours.get("enabled") else (1, 6)
+    """Inside the hours automatic updates run in (update_hours)."""
+    start, end = update_hours(cfg_data)
     h = now.hour
     return start <= h < end if start < end else (h >= start or h < end)
 

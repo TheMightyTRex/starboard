@@ -64,6 +64,12 @@ DEFAULTS = {
     "settings_advanced": False,  # Settings pages show only the basic settings until this is on (DASH-225)
     "reelix_auto_update": False,  # Starboard installs new Reelix images by itself, with a way back (DASH-263)
     "starboard_auto_update": False,  # Starboard installs its own new releases in quiet hours, with a way back (DASH-417)
+    # DASH-422: the other parts that may update by themselves, each deactivated until chosen (auto_updates.py), and
+    # when: "download" (the download hours when set, otherwise 01:00 to 06:00) or "quiet" (always 01:00 to 06:00).
+    "apps_auto_update": False,
+    "plugins_auto_update": False,
+    "jellyfin_plugins_auto_update": False,
+    "auto_update_hours": "download",
     "infinite_scroll": True,  # long lists load more as you near the end; False keeps the Show more button (DASH-277)
     # The dashboard (DASH-239): the layout, and its cards when changed from the layout's own (None = the layout's).
     "dashboard": {"layout": "glance", "cards": None},
@@ -350,6 +356,10 @@ class Config:
             "settings_advanced": d.get("settings_advanced", False),
             "reelix_auto_update": d.get("reelix_auto_update", False),
             "starboard_auto_update": d.get("starboard_auto_update", False),
+            "apps_auto_update": d.get("apps_auto_update", False),
+            "plugins_auto_update": d.get("plugins_auto_update", False),
+            "jellyfin_plugins_auto_update": d.get("jellyfin_plugins_auto_update", False),
+            "auto_update_hours": d.get("auto_update_hours", "download"),
             "infinite_scroll": d.get("infinite_scroll", True),
             "dashboard": d.get("dashboard") or {"layout": "glance", "cards": None},
             "upcoming_view": d["upcoming_view"],
@@ -415,9 +425,13 @@ class Config:
                 d.pop("first_setup_pending", None)
             for key in ("secure_cookies", "update_check", "network_access", "show_home_address", "show_outside_address",
                         "fetch_icons", "show_posters", "setup_guide_done", "ux_notes", "settings_advanced", "reelix_auto_update", "starboard_auto_update",
-                        "infinite_scroll"):
+                        "apps_auto_update", "plugins_auto_update", "jellyfin_plugins_auto_update", "infinite_scroll"):
                 if key in incoming:
                     d[key] = bool(incoming[key])
+            if "auto_update_hours" in incoming:  # DASH-422
+                if incoming["auto_update_hours"] not in ("download", "quiet"):
+                    raise ConfigError("Choose the download hours or the quiet hours")
+                d["auto_update_hours"] = incoming["auto_update_hours"]
             if "upcoming_view" in incoming:
                 if incoming["upcoming_view"] not in UPCOMING_VIEWS:
                     raise ConfigError("Choose List or Calendar")
@@ -479,7 +493,8 @@ GENERAL_RIGHTS = {
     "infinite_scroll": "manage", "download_hours": "manage", "preset": "manage", "performance": "manage",
     "setup_guide_done": "manage",
     # What Starboard does by itself or reaches out to
-    "update_check": "admin", "ux_notes": "admin", "reelix_auto_update": "admin", "starboard_auto_update": "admin", "extras": "admin", "watch": "admin",
+    "update_check": "admin", "ux_notes": "admin", "reelix_auto_update": "admin", "starboard_auto_update": "admin", "apps_auto_update": "admin",
+    "plugins_auto_update": "admin", "jellyfin_plugins_auto_update": "admin", "auto_update_hours": "admin", "extras": "admin", "watch": "admin",
     "logs": "admin", "backup_schedule": "admin", "backup_keep_versions": "admin",
     # Security: never by key
     "network_access": "never", "secure_cookies": "never", "session_days": "never", "last_version": "never",

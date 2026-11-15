@@ -16,7 +16,13 @@ class StandIn:
         self.repos = list(repos if repos is not None else [{"Name": "Jellyfin Stable", "Url": "https://repo.jellyfin.org/files/plugin/manifest.json", "Enabled": True}])
         self.plugins = list(plugins or [])
         self.config = {}
-        self.tasks = [{"Id": "t-guide", "Key": "RefreshGuide", "Name": "Refresh Guide", "Category": "Live TV", "Triggers": []}]
+        self.tasks = [{"Id": "t-guide", "Key": "RefreshGuide", "Name": "Refresh Guide", "Category": "Live TV", "Triggers": []},
+                      # Jellyfin's own Update plugins task, daily at 03:00 as Jellyfin sets it (DASH-422)
+                      {"Id": "t-plugin-updates", "Key": "PluginUpdates", "Name": "Update Plugins", "Category": "Application",
+                       "State": "Idle", "Triggers": [{"Type": "DailyTrigger", "TimeOfDayTicks": 3 * 36_000_000_000}]}]
+        self.updates = {}  # plug-in id (no dashes) -> the version Update plugins installs
+        self.sessions = []  # who is watching: [{"NowPlayingItem": {...}}]
+        self.broken = set()  # plug-in ids that are Malfunctioned after the next restart
         self.calls = []
 
     # Packages each repository offers, by repository address
@@ -83,6 +89,22 @@ class StandIn:
                     return 404, None
                 t["Triggers"] = list(body or [])
                 return 204, None
+            if method == "POST" and len(parts) == 3 and parts[:2] == ["ScheduledTasks", "Running"]:
+                t = next((t for t in self.tasks if t["Id"] == parts[2]), None)
+                if not t:
+                    return 404, None
+                if t["Key"] == "PluginUpdates":  # installs each newer version; it starts after Jellyfin restarts
+                    for p in self.plugins:
+                        if p["Id"] in self.updates:
+                            p["Version"], p["Status"] = self.updates.pop(p["Id"]), "Restart"
+                            p["_after"] = "Malfunctioned" if p["Id"] in self.broken else "Active"
+                            self.pending = True
+                return 204, None
+            if method == "GET" and len(parts) == 2 and parts[0] == "ScheduledTasks":
+                t = next((t for t in self.tasks if t["Id"] == parts[1]), None)
+                return (200, dict(t, State=t.get("State", "Idle"))) if t else (404, None)
+            if method == "GET" and route == "/Sessions":
+                return 200, [dict(x) for x in self.sessions]
             if method == "POST" and route == "/System/Restart":
                 self.restart()
                 return 204, None

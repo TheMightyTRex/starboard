@@ -204,6 +204,9 @@ def start(app, target, by="you", address="", note=None):
         raise ValueError("target must be starboard, reelix, app:<id> or plugin:<id>, from /api/v1/updates")
     if _busy() or _starboard_running(app):
         raise Busy("An update is already running. Wait for it to finish")
+    if by != "automatic":  # DASH-422: by hand, a version the automatic update stopped trying is tried again
+        from . import auto_updates
+        auto_updates.forget_skip(app.data_dir, target)
     if target == "starboard":
         return _start_starboard(app, by)
     if target == "reelix" or target.startswith("app:"):
@@ -259,12 +262,17 @@ def _start_app(app, target, by):
     if not row["container"].get("compose"):
         raise Refused(f"{row['name']} was not started by Docker Compose, so Starboard cannot update it")
     run = _new(app.data_dir, target, "app", row["name"], "update", row["container"].get("version"), row.get("latest"), by,
-               [("install", "Getting and installing the new version"), ("health", "Waiting for it to run")])
+               [("backup", "Saving a copy of its settings"), ("install", "Getting and installing the new version"),
+                ("health", "Waiting for it to run")])
 
     def work():
         found = containers.containers()
         before = next((c for c in found if c["name"] == row["container"]["name"]), None)
         pinned = bool(row.get("target_tag"))
+        # DASH-422: a copy of its settings first, as Reelix's, so the update never loses them.
+        _step(app.data_dir, run, "backup", "now")
+        state, said = save_app_settings(before) if before else ("skipped", "It was not found")
+        _step(app.data_dir, run, "backup", state, said)
         _step(app.data_dir, run, "install", "now")
         containers.update(services, [sid], keep_old=True)
         while not (containers.job() or {}).get("finished"):
@@ -295,6 +303,37 @@ def _start_app(app, target, by):
         _end(app.data_dir, run, "failed", f"{row['name']}'s new version {why.lower()}. Its Compose file named the new version, so it was not put back by itself", app)
     _go(app.data_dir, run, work)
     return run
+
+
+# What is left out of an app's settings copy: what the app makes again by itself, and can be many gigabytes
+# (Jellyfin's metadata and transcodes, the *arr apps' MediaCover and their own backups).
+NOT_COPIED = ("cache", "metadata", "data/metadata", "transcodes", "data/transcodes", "MediaCover", "logs", "log",
+              "Backups", "backups", "Cache")
+
+
+def save_app_settings(c):
+    """A copy of an app's settings folder (/config) before its update, as <container>-before-update.tgz beside its
+    Compose file, made in a short-lived container that shares the app's folders (as reelix_updates._save_settings).
+    Returns (step state, words): done; skipped when there is nothing to copy (no /config, not started by Compose);
+    failed when the copy could not be made, and the update carries on without it."""
+    from . import containers
+    name = str(c.get("name") or "")
+    if not re.match(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$", name) or not c.get("folder"):
+        return "skipped", "It was not started by Docker Compose, so no copy was made"
+    try:
+        info = containers.docker("GET", f"/containers/{c['id']}/json")
+    except containers.DockerError as e:
+        return "failed", f"Docker did not say where its settings are, so it carries on without a copy: {e}"
+    if not any(m.get("Destination") == "/config" for m in info.get("Mounts") or []):
+        return "skipped", "It keeps no settings folder (/config) to copy"
+    leave_out = " ".join(f"--exclude=config/{x}" for x in NOT_COPIED)
+    copy = f"{name}-before-update.tgz"
+    script = (f"docker run --rm --volumes-from {name} --entrypoint tar {containers.HELPER_IMAGE} czf - -C / {leave_out} config "
+              f"> {copy}.new && mv {copy}.new {copy}")
+    code, text = containers._helper(c["folder"], script)
+    if code != 0:
+        return "failed", f"The copy could not be made, so it carries on without one: {text.strip()[-160:]}"
+    return "done", f"{copy}, beside its Compose file"
 
 
 def _app_healthy(name, wait=None, sleep=time.sleep):
@@ -335,6 +374,9 @@ def _start_plugin(app, pid, by, address):
     if problems:
         raise ValueError("This version cannot be used: " + "; ".join(problems[:6]))
     logo = pa.fetch_logo(manifest, source)[0]  # its logo goes with the version (API 1.14); Roll back brings the old one back
+    if address:  # DASH-422: the automatic update looks for its next version at the same address
+        from . import auto_updates
+        auto_updates.remember_address(app.data_dir, pid, address)
     run = _new(app.data_dir, f"plugin:{pid}", "plugin", p["name"], "update", p.get("version"), manifest.get("version"), by,
                plugin_update.STEPS)
     media = _media_dir(app)

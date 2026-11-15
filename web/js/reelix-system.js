@@ -113,7 +113,7 @@ async function rsTasks(body, locked) {
     // The row says Running: said, as the page shows it (R5).
     run.addEventListener("click", async () => { run.disabled = true; try { const o = await rsCall("run-task", { task: t.kind }, "run a Reelix task"); if (o) { draw(o); announce(o.done); } } catch (e) { problem(e.message, run); run.disabled = false; } });
     return el("li", { class: "row row--no-lead" }, el("div", {}, el("div", { class: "row__title", text: t.name }),
-      el("div", { class: "row__meta", text: [t.last ? `Last ${rsWhen(t.last)}` : "Not run yet", t.next ? `next ${rsWhen(t.next)}` : "", t.on ? "" : "Off"].filter(Boolean).join(" · ") }),
+      el("div", { class: "row__meta", text: [t.last ? `Last ${rsWhen(t.last)}` : "Not run yet", t.next ? `next ${rsWhen(t.next)}` : "", t.on ? "" : "Deactivated"].filter(Boolean).join(" · ") }),
       t.error ? el("div", { class: "row__meta", text: `Last time: ${t.error}` }) : null), el("div", { class: "row__side" }, run));
   })));
   try { const r = await rsCall("tasks", {}, "show Reelix's tasks"); if (r) draw(r); else locked(); } catch (e) { rsFailed(body, locked, e); }

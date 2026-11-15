@@ -205,10 +205,11 @@ HELP = {
     "hours": "Downloading uses most of your internet connection while it runs, so streaming, video calls and games on "
              "other devices can slow down. With download hours, Starboard pauses the download apps outside them and "
              "starts them again when they begin. Nothing is lost.",
-    "auto-updates": "Starboard can install its own new releases, and new Reelix images, by itself in the quiet hours: "
+    "auto-updates": "Starboard can install new versions of itself, Reelix, your other apps and the plug-ins by itself in the update hours: "
                     "your download hours when they are set, otherwise 01:00 to 06:00. Before each one it saves the "
-                    "settings, and if the new version does not start it goes back to the one before. Both are "
-                    "deactivated unless you choose them; change them later in Settings, Updates.",
+                    "settings, and if the new version does not start it goes back to the one before (Jellyfin's "
+                    "plug-ins cannot go back by themselves). Each is deactivated unless you choose it; change them "
+                    "and the hours later in Settings, Updates.",
     "check": "This is everything that will change. Nothing has changed yet: type b to go back and change an answer, or "
              "q to stop. The apps' files are written to Starboard's data folder, then the apps are downloaded and started.",
     "keep": "Your password is already saved. Change it later in Starboard, Settings, Security.",
@@ -2933,38 +2934,49 @@ def step_hours(api, term, state):
             term.failed(f"That did not work: {e}. Type whole hours, such as 1 and 7.", str(e))
 
 
-def updates_summary(starboard, reelix):
-    """The Updates answer in the set-up's summary, in the browser set-up's words (web/setup-answers.json)."""
+def updates_summary(chosen):
+    """The Updates answer in the set-up's summary, in the browser set-up's words (web/setup-answers.json): the parts
+    chosen, such as "Starboard, Reelix and plug-ins", or Deactivated. `chosen`: the setting keys that were activated."""
     from . import setup_answers
     w = setup_answers.WORDS["updates"]
-    return w["summary_both"] if starboard and reelix else w["summary_starboard"] if starboard else w["summary_reelix"] if reelix else w["summary_none"]
+    names = [p["short"] for p in w["parts"] if p["key"] in set(chosen or ())]
+    if not names:
+        return w["summary_none"]
+    text = names[0] if len(names) == 1 else f"{', '.join(names[:-1])} {w['summary_and']} {names[-1]}"
+    return text[:1].upper() + text[1:]
+
+
+def update_parts(state):
+    """The parts the Updates step asks about: Reelix only when it is being installed, Jellyfin's plug-ins only with
+    Jellyfin; the same rule as the browser set-up (settings.js, the updates step)."""
+    from . import setup_answers
+    apps = (state.get("choice") or {}).get("apps") or []
+    return [p for p in setup_answers.WORDS["updates"]["parts"] if p["when"] == "always" or p["when"] in apps]
 
 
 def step_updates(api, term, state):
-    """Updates (DASH-417, DASH-422): automatic Starboard updates, and Reelix's when Reelix is being installed. Both
-    deactivated unless chosen; the same question, words and order as the browser set-up (web/setup-answers.json)."""
+    """Updates (DASH-417, DASH-422): which parts may update by themselves, each deactivated unless chosen; the same
+    question, words and order as the browser set-up (web/setup-answers.json)."""
     if state.get("start") == "restore":
         return False  # the backup brought its own choices
     from . import setup_answers
     w = setup_answers.WORDS["updates"]
-    reelix = "reelix" in ((state.get("choice") or {}).get("apps") or [])
+    parts = update_parts(state)
     head(term, state, "updates")
     term.note(w["intro"])
     term.note(w["later"])
-    items = [(w["starboard"], w["starboard_hint"])] + ([(w["reelix"], w["reelix_hint"])] if reelix else [])
+    items = [(p["label"], p["hint"]) for p in parts]
     while True:
         picked = term.choose_many(question("updates"), items, [i for i in state.get("updates", []) if i < len(items)],
                                   help_key="auto-updates", allow_none=True)
-        body = {"starboard_auto_update": 0 in picked}
-        if reelix:
-            body["reelix_auto_update"] = 1 in picked
+        body = {p["key"]: i in picked for i, p in enumerate(parts)}
         try:
             api.call("PUT", "/api/config/general", body)
             break
         except Problem as e:
             refused(term, e)
     state["updates"] = picked
-    state["updates_chosen"] = (0 in picked, reelix and 1 in picked)
+    state["updates_chosen"] = [k for k, v in body.items() if v]
     term.ok(w["saved"])
     return True
 
@@ -3544,7 +3556,10 @@ def run(api, term, data_dir, port, address=""):
         rows = [("On this computer", f"http://localhost:{port}")]
         if "updates_chosen" in state:  # DASH-417: the Updates answer, as the browser set-up's summary shows it
             from . import setup_answers
-            rows.append((setup_answers.WORDS["updates"]["summary"], updates_summary(*state["updates_chosen"])))
+            chosen = state["updates_chosen"]
+            if isinstance(chosen, (list, tuple)) and chosen and isinstance(chosen[0], bool):  # a set-up saved before DASH-422
+                chosen = [k for k, on in zip(("starboard_auto_update", "reelix_auto_update"), chosen) if on]
+            rows.append((setup_answers.WORDS["updates"]["summary"], updates_summary(chosen)))
         if address:
             rows.append(("On your other devices", f"http://{address}:{port}"))
         args = host_changes(state, data_dir)

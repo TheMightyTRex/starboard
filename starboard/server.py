@@ -2473,6 +2473,45 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, update_runs.job(app, mr.group(1)) if mr.group(2) else update_runs.public(update_runs.get(app, mr.group(1))))
                 except LookupError as e:
                     return self.error(404, str(e))
+            if path in ("/api/updates", "/api/updates/start", "/api/updates/jellyfin"):  # Settings, Updates (DASH-420, DASH-422)
+                from . import auto_updates, update_runs
+                if path == "/api/updates" and method == "GET":
+                    # Everything that can be updated, from what Starboard already knows (nothing is fetched here),
+                    # each part's automatic setting, and the last runs with what is new.
+                    auto = auto_updates.summary(app)
+                    active = {"starboard": "starboard", "reelix": "reelix", "app": "apps", "plugin": "plugins"}
+                    items = [dict(t, automatic=bool(next((p["active"] for p in auto["parts"] if p["id"] == active.get(t["kind"])), False)))
+                             for t in update_runs.targets(app)]
+                    runs = [update_runs.public(r) for r in update_runs.recent(app)]
+                    return self.json(200, {"items": items, "auto": auto, "recent": runs,
+                                           "running": next((r for r in runs if r["state"] == "running"), None)})
+                if path == "/api/updates/jellyfin" and method == "GET":  # asks Jellyfin, so only when the page shows it
+                    return self.json(200, auto_updates.jellyfin_status(app))
+                if path == "/api/updates/start" and method == "POST":
+                    # Update an app, Reelix or Jellyfin's plug-ins from Settings, Updates, with the password. Starboard
+                    # itself uses /api/self-update/start, a plug-in /api/plugins/<id>/update (with its preview).
+                    data = self.body()
+                    self.check_password(data)
+                    target = str(data.get("target") or "")
+                    try:
+                        if target == "jellyfin-plugins":
+                            try:
+                                begun = auto_updates.jellyfin_plugins_begin(app, by="you")
+                            except (OSError, ValueError) as e:
+                                return self.error(502, f"Jellyfin did not answer: {getattr(e, 'reason', e)}")
+                            run = begun[0]
+                            threading.Thread(target=auto_updates.jellyfin_plugins_run, args=(app,), kwargs={"begun": begun},
+                                             name="update-jellyfin-plugins", daemon=True).start()
+                        elif target == "reelix" or target.startswith("app:"):
+                            run = update_runs.start(app, target, by="you")
+                        else:
+                            return self.error(400, "Choose an app, Reelix or Jellyfin's plug-ins")
+                    except LookupError as e:
+                        return self.error(404, str(e))
+                    except (update_runs.Refused, update_runs.Busy) as e:
+                        return self.error(409, str(e))
+                    return self.json(200, {"said": "Started", "run": update_runs.public(run), "job": f"/api/updates/runs/{run['id']}/job"})
+                return self.error(404, "Not found")
             if path.startswith("/api/self-update"):  # Update now and its progress (DASH-417)
                 from . import self_update
                 if path == "/api/self-update" and method == "GET":
@@ -2889,6 +2928,9 @@ class Handler(BaseHTTPRequestHandler):
             if not plugin_tester.report(manifest)["ok"]:
                 raise ValueError("This plug-in has errors. Test it to see them")
             item = pa.install(app.data_dir, manifest, media)
+            if where_from and not listed:  # added from its own address: its automatic update looks there (DASH-422)
+                from . import auto_updates
+                auto_updates.remember_address(app.data_dir, item["id"], where_from)
             if logo:
                 pa.keep_logo(app.data_dir, item["id"], logo)
                 item = next((p for p in pa.listing(app.data_dir) if p["id"] == item["id"]), item)

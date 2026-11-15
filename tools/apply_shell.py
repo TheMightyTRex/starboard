@@ -100,7 +100,7 @@ MENU = [
         # Level 2: Manage, Catalogue, then one tab per added plug-in, which common.js adds from /api/session (DASH-318).
         ("Plug-ins", "puzzle", [("settings-plugins.html", "Manage", "list-checks"),
                                 ("settings-plugins-catalogue.html", "Catalogue", "layout-grid")]),
-        ("Updates", "circle-arrow-up", [("settings-updates.html", "Update settings", "sliders-horizontal"),
+        ("Updates", "circle-arrow-up", [("settings-updates.html", "Updates", "sliders-horizontal"),
                                          ("settings-releases.html", "Releases", "scroll-text"),
                                          ("settings-restore.html", "Restore", "archive-restore")]),
     ]),
