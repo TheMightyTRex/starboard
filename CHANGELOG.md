@@ -7,6 +7,12 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Help for every plug-in in the collection:** the help centre's Plug-ins area now has the same eight pages for each of the 27 plug-ins in the Starboard plug-ins collection (what it does, install and remove, settings, its dashboard card, updates and roll back, accessibility, problems with a flow chart, and for developers), each with its logo, mirrored from the collection's own help centre by tools/sync-plugin-help.py and checked by check-help.py. (DASH-426)
+
+### Changed
+- **AI prompts for developers:** one prompt each for a card plug-in, an app plug-in and a plug-in that converts files like Direct play, each with the checklist the assistant must follow (permissions, memory limits, accessibility, updates, card refresh times and the content rules), Direct play's card worked through, and the Recommended marker. llms.txt lists the app plug-in, update and card pages and the plug-ins help centre. check-help.py fails when Starboard's plug-in API is newer than these pages describe. (DASH-426)
+
 ## [0.18.0] (15 November 2026)
 
 ### Added

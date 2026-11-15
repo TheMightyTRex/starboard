@@ -405,5 +405,120 @@
       ]
     }
   },
-  "goatcounter": "https://themightytrexuk.goatcounter.com/count"
+  "goatcounter": "https://themightytrexuk.goatcounter.com/count",
+  "plugins": {
+    "catalogue": "docs/help/plugins/catalogue.json",
+    "overview": "docs/help/plugins/{id}/README.md",
+    "pages": "docs/help/plugins/{id}/{page}.md",
+    "groups": [
+      {
+        "label": "Watching and library",
+        "ids": [
+          "watching-now",
+          "most-watched",
+          "watch-stats",
+          "library-health",
+          "audio-description",
+          "audio-description-tracks",
+          "direct-play",
+          "picture-shrinker"
+        ]
+      },
+      {
+        "label": "Server and downloads",
+        "ids": [
+          "disk-forecast",
+          "notifications",
+          "download-summary",
+          "vpn-check"
+        ]
+      },
+      {
+        "label": "Network and safety",
+        "ids": [
+          "remote-access",
+          "dns-blocking",
+          "line-speed",
+          "outside-services"
+        ]
+      },
+      {
+        "label": "Home and look",
+        "ids": [
+          "home-assistant",
+          "styles"
+        ]
+      },
+      {
+        "label": "Apps you can add",
+        "ids": [
+          "jellystat",
+          "navidrome",
+          "kavita",
+          "calibre-web",
+          "wizarr",
+          "maintainerr",
+          "uptime-kuma",
+          "seerr",
+          "tdarr"
+        ]
+      }
+    ],
+    "details": {
+      "watching-now": {
+        "icon": "tv"
+      },
+      "most-watched": {
+        "icon": "star"
+      },
+      "watch-stats": {
+        "icon": "chart-line"
+      },
+      "library-health": {
+        "icon": "heart-pulse"
+      },
+      "audio-description": {
+        "icon": "headphones"
+      },
+      "audio-description-tracks": {
+        "icon": "mic"
+      },
+      "disk-forecast": {
+        "icon": "hard-drive"
+      },
+      "notifications": {
+        "icon": "bell"
+      },
+      "download-summary": {
+        "icon": "download"
+      },
+      "vpn-check": {
+        "icon": "shield-check"
+      },
+      "remote-access": {
+        "icon": "globe"
+      },
+      "dns-blocking": {
+        "icon": "ban"
+      },
+      "line-speed": {
+        "icon": "gauge"
+      },
+      "outside-services": {
+        "icon": "server"
+      },
+      "home-assistant": {
+        "icon": "house"
+      },
+      "styles": {
+        "icon": "sparkles"
+      },
+      "direct-play": {
+        "icon": "play"
+      },
+      "picture-shrinker": {
+        "icon": "image"
+      }
+    }
+  }
 }

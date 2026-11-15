@@ -1,0 +1,60 @@
+# Navidrome
+<!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
+
+Navidrome, a music server for Subsonic apps on phones and in the car. It reads your music folder and never changes it.
+
+An app plug-in for Starboard (plug-in API 1.14 or later): Navidrome runs outside the main install, in Starboard's locked-down
+containers, with its own page on your home network. Starboard chooses the port (4533 when it is free) and shows the address
+on the plug-in's page with **Open**.
+
+## Who it is for
+
+People who listen to their music on a phone, offline or in the car, with a Subsonic app such as Symfonium, Substreamer, Amperfy or play:Sub. Jellyfin also plays music; Navidrome is for these apps.
+
+## Set it up
+
+1. Activate it, choose **Open Navidrome** and make the first account, which is its admin.
+2. It reads `media/music`, read only. In your Subsonic app, use the address Starboard shows, such as `http://192.168.1.20:4533`.
+
+## What it may do
+
+- It can see: Files in your media folder under music (read only).
+- It can change: Its own folder in Starboard's data (data/plugins/navidrome).
+- It can reach: Other computers on your home network, and the internet.
+- It can reach: Its own web page is opened on your home network: anyone on your home network can open it, at this computer's address and a port Starboard chooses.
+
+It runs read only, as a user that is not root, with no extra rights, like every plug-in. Its images, pinned by digest:
+
+- `app`: `docker.io/deluan/navidrome@sha256:38dc2727bfcfd5ede290f8ada114fc90368146f265ae4701ddddbcbe2a44ee52`
+
+## At rest
+
+What it uses when nobody is using it, measured with `tools/app_check.py` (median of 36 readings over 3 minutes, after
+2 minutes to settle). A real library uses more.
+
+| Reading | Memory | Processor (one core) |
+|---|---|---|
+| As Starboard runs it (hardened, empty library), 13 November 2026 | 20.0 MiB | 0.01% |
+| 13 November benchmark (`bench-2026-11-13/RESULTS.md`, no limits) | 16.4 MiB | 0.01% |
+
+## Removing it
+
+**Settings**, **Plug-ins**, Navidrome, **Remove**. Its containers stop and go and its key stops working. You choose
+where its folder goes, with everything it kept (settings):
+kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**, from where you can put it
+back or delete it for good. Starboard never deletes it. Your media folder is not touched.
+
+## Licence
+
+This plug-in is MIT, by TheMightyTRexUK. Navidrome itself is under the GPL-3.0 licence, made by others: https://www.navidrome.org
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->

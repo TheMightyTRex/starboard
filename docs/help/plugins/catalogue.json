@@ -1,0 +1,900 @@
+{
+ "catalogue_version": 1,
+ "name": "Starboard plug-ins",
+ "plugins": [
+  {
+   "id": "audio-description",
+   "name": "Audio description",
+   "description": "Finds films and series in Jellyfin with a described sound track for blind and partially sighted people, and prefers releases with one in Reelix.",
+   "kind": "Accessibility",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "reelix:key",
+    "network:lan"
+   ],
+   "version": "1.2.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGxvdWRzcGVha2VyIHdpdGggc291bmQgd2F2ZXM8L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjMGI2NjcwIi8+PHBhdGggZD0iTTEwIDIwaDZsOC03djIybC04LTdoLTZ6IiBmaWxsPSIjZmZmZmZmIi8+PHBhdGggZD0iTTMwIDE4LjVhNy41IDcuNSAwIDAgMSAwIDExTTM0LjUgMTRhMTQgMTQgMCAwIDEgMCAyMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+Cg==",
+   "logo_alt": "A loudspeaker with sound waves",
+   "versions": [
+    {
+     "version": "1.2.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Updates safely: before an update it finishes what it is doing and starts nothing new. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.1.0."
+    },
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.12 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/audio-description/starboard-plugin.json",
+     "manifest_sha256": "86c3741f9e4784d6bd8d6b91fc151ba37bc176d3e02540ebd64776299f234c59"
+    }
+   ]
+  },
+  {
+   "id": "audio-description-tracks",
+   "name": "Audio description tracks",
+   "description": "Adds a description track you already have, such as one from AudioVault, to its film or episode in Jellyfin, after checking that the lengths match.",
+   "kind": "Accessibility",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description-tracks/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGxvdWRzcGVha2VyIHdpdGggYSBwbHVzIHNpZ248L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjMmQ1YTg3Ii8+PHBhdGggZD0iTTggMjBoNmw4LTd2MjJsLTgtN0g4eiIgZmlsbD0iI2ZmZmZmZiIvPjxwYXRoIGQ9Ik0zMyAxOHYxMk0yNyAyNGgxMiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+Cg==",
+   "logo_alt": "A loudspeaker with a plus sign",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description-tracks/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its card says how things are: a status and when it last changed, in the grey band at the top of the card. Updates safely: before an update it finishes adding the track it is on and starts no other. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.12 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/audio-description-tracks/starboard-plugin.json",
+     "manifest_sha256": "fcfce26e63b4e7a1e6dff6fcb7c58280511be9037a28c40baa1578c85e2dbcc3"
+    }
+   ]
+  },
+  {
+   "id": "calibre-web",
+   "name": "Calibre-Web",
+   "description": "Calibre-Web, a browser page for a Calibre library: read, search and send books to an e-reader. It reads your books folder and never changes it.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/calibre-web/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGJvb2sgaW4gYSBicm93c2VyIHdpbmRvdzwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiM2YjNiMWQiLz48cmVjdCB4PSI5IiB5PSIxMSIgd2lkdGg9IjMwIiBoZWlnaHQ9IjI2IiByeD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTkgMTcuNWgzMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTI0IDIzLjVjLTIuMi0xLjUtNS4yLTEuOC04LTEuMnY5LjZjMi44LS42IDUuOC0uMyA4IDEuMiAyLjItMS41IDUuMi0xLjggOC0xLjJ2LTkuNmMtMi44LS42LTUuOC0uMy04IDEuMnoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4K",
+   "logo_alt": "A book in a browser window",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/calibre-web/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/calibre-web/starboard-plugin.json",
+     "manifest_sha256": "e1abcdca37eb9d8e338d600a7a490634e549a77a9bd515c557617cd84ed566e9"
+    }
+   ],
+   "rest": {
+    "memory_mb": 182,
+    "cpu_percent": 0.01
+   }
+  },
+  {
+   "id": "direct-play",
+   "name": "Direct play",
+   "description": "Makes your films and series play directly on the devices you choose, so Jellyfin does not convert them as they play: one file at a time, in the hours you choose.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "reelix:key",
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/direct-play/starboard-plugin.json",
+   "published": true,
+   "recommended": true,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHBsYXkgc3ltYm9sIG9uIGEgc2NyZWVuPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzFmNWY5OSIvPjxyZWN0IHg9IjgiIHk9IjExIiB3aWR0aD0iMzIiIGhlaWdodD0iMjIiIHJ4PSIzIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMjEgMTYuNXYxMWw5LTUuNXoiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCBkPSJNMTcgMzhoMTQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=",
+   "logo_alt": "A play symbol on a screen"
+  },
+  {
+   "id": "disk-forecast",
+   "name": "Disk forecast",
+   "description": "When each disk fills at the rate it has been filling over the last month.",
+   "kind": "System",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "system:read"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/disk-forecast/starboard-plugin.json",
+   "published": true,
+   "recommended": true,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGRpc2sgZHJpdmUsIHBhcnRseSBmdWxsPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzNkNGY2MyIvPjxyZWN0IHg9IjkiIHk9IjEzIiB3aWR0aD0iMzAiIGhlaWdodD0iMjIiIHJ4PSIzIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNOSAyOGgzMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHJlY3QgeD0iMTQiIHk9IjE4IiB3aWR0aD0iMTMiIGhlaWdodD0iNSIgcng9IjEiIGZpbGw9IiNmZmZmZmYiLz48Y2lyY2xlIGN4PSIzMyIgY3k9IjMxLjUiIHI9IjEuOCIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPgo=",
+   "logo_alt": "A disk drive, partly full",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/disk-forecast/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/disk-forecast/starboard-plugin.json",
+     "manifest_sha256": "ee7cf40d60d3b3fcfbc2b7737b64ea8e768e7c2057f921732c390c638fea796c"
+    }
+   ]
+  },
+  {
+   "id": "dns-blocking",
+   "name": "Ad blocking",
+   "description": "How many adverts and trackers Pi-hole or AdGuard Home blocked today.",
+   "kind": "Network",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/dns-blocking/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGNpcmNsZSB3aXRoIGEgbGluZSB0aHJvdWdoIGl0PC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iI2EzMzAyYiIvPjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjEzIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTE1IDMzbDE4LTE4IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+Cg==",
+   "logo_alt": "A circle with a line through it",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/dns-blocking/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/dns-blocking/starboard-plugin.json",
+     "manifest_sha256": "7e691567b0c354cdd45763c3dd5426b4eb5445f8eb9f8b55e374d89b8221e430"
+    }
+   ]
+  },
+  {
+   "id": "download-summary",
+   "name": "Download summary",
+   "description": "How much has downloaded today and this week, from what Starboard sees in the queue.",
+   "kind": "Downloads",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "downloads:read"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/download-summary/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BbiBhcnJvdyBkb3duIGludG8gYSB0cmF5PC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzJlNmIzMCIvPjxwYXRoIGQ9Ik0yNCA5djE4TTE2IDIwbDggOCA4LTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0xMSAyOXY3aDI2di03IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4K",
+   "logo_alt": "An arrow down into a tray",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/download-summary/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/download-summary/starboard-plugin.json",
+     "manifest_sha256": "009021ed61afc73cb8f19908cbbcb2a293bd4b8b8d51b2779c0a4528a3c3cd64"
+    }
+   ]
+  },
+  {
+   "id": "home-assistant",
+   "name": "Home Assistant",
+   "description": "Your house in one sentence on the dashboard: the things you choose from Home Assistant.",
+   "kind": "Home",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/home-assistant/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGhvdXNlIHdpdGggbGluZXMgb2Ygd3JpdGluZzwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiMwZjY4NTciLz48cGF0aCBkPSJNOSAyNEwyNCAxMWwxNSAxMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTE0IDIxdjE2aDIwVjIxIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTkgMjhoMTBNMTkgMzIuNWg3IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+Cg==",
+   "logo_alt": "A house with lines of writing",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/home-assistant/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/home-assistant/starboard-plugin.json",
+     "manifest_sha256": "ea0538fb9fc5a98fc7f02e1c1cfd5c1156eab939681ecc96b310e2cb2a8ea997"
+    }
+   ]
+  },
+  {
+   "id": "jellystat",
+   "name": "Jellystat",
+   "description": "Jellystat, the full watch statistics app for Jellyfin, with its own PostgreSQL database, kept apart from the main install. Opens on its own web page.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/jellystat/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHBpZSBjaGFydDwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiM4YTNiMTIiLz48Y2lyY2xlIGN4PSIyNCIgY3k9IjI0IiByPSIxMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTI0IDI0VjExYTEzIDEzIDAgMCAxIDEyLjQgMTYuOXoiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4K",
+   "logo_alt": "A pie chart",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/jellystat/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its card says how things are: a status and when it last changed, in the grey band at the top of the card. Updates safely: an update waits for a restore that is running, or is refused until it is done. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/jellystat/starboard-plugin.json",
+     "manifest_sha256": "b51e1cab07b2ab62e938865daf7f551adbfd1748c0ce2e78478700263a4bc0fb"
+    }
+   ],
+   "rest": {
+    "memory_mb": 117,
+    "cpu_percent": 0.22
+   }
+  },
+  {
+   "id": "kavita",
+   "name": "Kavita",
+   "description": "Kavita, a reader for comics, manga and books in the browser and in e-reader apps (OPDS). It reads your books and comics folders and never changes them.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/kavita/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BbiBvcGVuIGJvb2s8L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjMWQ2MzYzIi8+PHBhdGggZD0iTTI0IDE1Yy0zLTIuNi04LTMuMi0xMy0yLjJ2MjEuNWM1LTEgMTAtLjQgMTMgMi4yIDMtMi42IDgtMy4yIDEzLTIuMlYxMi44Yy01LTEtMTAtLjQtMTMgMi4yeiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTI0IDE1djIxIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4K",
+   "logo_alt": "An open book",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/kavita/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/kavita/starboard-plugin.json",
+     "manifest_sha256": "b7090716e85f5c7afd2c9a306c832d9f4eaaba49ce5dd7b8757dae0fe7fd4cd1"
+    }
+   ],
+   "rest": {
+    "memory_mb": 337,
+    "cpu_percent": 0.99
+   }
+  },
+  {
+   "id": "library-health",
+   "name": "Library health",
+   "description": "Films and series in Jellyfin with no poster, no description or no year, so you can fix them.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/library-health/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGNsaXBib2FyZCB3aXRoIGEgdGljazwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiM2YjRmMWQiLz48cmVjdCB4PSIxMiIgeT0iMTIiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNyIgcng9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxyZWN0IHg9IjE4LjUiIHk9IjguNSIgd2lkdGg9IjExIiBoZWlnaHQ9IjYuNSIgcng9IjIiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCBkPSJNMTggMjYuNWw0IDQgOC05IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4K",
+   "logo_alt": "A clipboard with a tick",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/library-health/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Updates safely: before an update it finishes what it is doing and starts nothing new. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/library-health/starboard-plugin.json",
+     "manifest_sha256": "f77b37a36738671ecce83742660b7bef6ee4084e8db17d1d3730cb44ab20716d"
+    }
+   ]
+  },
+  {
+   "id": "line-speed",
+   "name": "Line speed",
+   "description": "Tests your internet download speed once a night, outside download hours, and keeps a week of results.",
+   "kind": "Network",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/line-speed/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHNwZWVkIGdhdWdlPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzk4NGEwMCIvPjxwYXRoIGQ9Ik0xMC41IDMyYTEzLjUgMTMuNSAwIDEgMSAyNyAwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTI0IDMybDcuNS04LjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjI0IiBjeT0iMzIiIHI9IjMiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4K",
+   "logo_alt": "A speed gauge",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/line-speed/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Updates safely: before an update it finishes what it is doing and starts nothing new. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/line-speed/starboard-plugin.json",
+     "manifest_sha256": "2b8c88e9e3fc3cfda145e88c323614c6033673d4baf2351d4c712757377cb1e9"
+    }
+   ]
+  },
+  {
+   "id": "maintainerr",
+   "name": "Maintainerr",
+   "description": "Maintainerr, clean-up rules for Jellyfin, such as films everyone has watched. It changes nothing until you give it keys and a rule that removes.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/maintainerr/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGJyb29tPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzVhNDY4NyIvPjxwYXRoIGQ9Ik0zNC41IDguNUwyNSAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTE5IDIyLjVsMTAuNSA2LTQuNSAxMS41LTE0LTh6IiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+Cg==",
+   "logo_alt": "A broom",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/maintainerr/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/maintainerr/starboard-plugin.json",
+     "manifest_sha256": "d7139387efb9dd3d7718334c9a4bcf77c80c1572de6a71df3833f7241194a6ad"
+    }
+   ],
+   "rest": {
+    "memory_mb": 127,
+    "cpu_percent": 0.0
+   }
+  },
+  {
+   "id": "most-watched",
+   "name": "Most watched",
+   "description": "The films and series most people watched in Jellyfin in the last week.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/most-watched/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHN0YXI8L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjOGUyYTZiIi8+PHBhdGggZD0iTTI0IDkuNWw0LjQgOS4zIDEwLjEgMS4yLTcuNSA3IDIgMTAuMUwyNCAzMi4xbC05IDUgMi0xMC4xLTcuNS03IDEwLjEtMS4yeiIgZmlsbD0iI2ZmZmZmZiIvPjwvc3ZnPgo=",
+   "logo_alt": "A star",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/most-watched/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Updates safely: before an update it finishes what it is doing and starts nothing new. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/most-watched/starboard-plugin.json",
+     "manifest_sha256": "f2f9bc1662191636980ac0f4851dafa0eb6bc695c0ee0f9e496c9e07d9ec756a"
+    }
+   ]
+  },
+  {
+   "id": "navidrome",
+   "name": "Navidrome",
+   "description": "Navidrome, a music server for Subsonic apps on phones and in the car. It reads your music folder and never changes it.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/navidrome/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIG11c2ljIG5vdGU8L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjYTMyNDNmIi8+PHBhdGggZD0iTTI4IDMxVjExLjVsOCAzdjUuNWwtOC0zIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48ZWxsaXBzZSBjeD0iMjIiIGN5PSIzMSIgcng9IjYuNSIgcnk9IjUiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4K",
+   "logo_alt": "A music note",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/navidrome/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/navidrome/starboard-plugin.json",
+     "manifest_sha256": "852262eaef0d2f874573ede2f9e94c2f713633379df4a2165716920e0553fa16"
+    }
+   ],
+   "rest": {
+    "memory_mb": 16,
+    "cpu_percent": 0.01
+   }
+  },
+  {
+   "id": "notifications",
+   "name": "Notifications",
+   "description": "Sends Starboard's events to email, Telegram, Discord, Signal, Pushover, ntfy or a webhook, in plain words, and a weekly New this week.",
+   "kind": "System",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "apps:read",
+    "downloads:read",
+    "media:read",
+    "system:read",
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/notifications/starboard-plugin.json",
+   "published": true,
+   "recommended": true,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGJlbGw8L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjYTMzYzE3Ii8+PHBhdGggZD0iTTI0IDEwLjVhOC41IDguNSAwIDAgMC04LjUgOC41djYuNWwtMy41IDUuNWgyNGwtMy41LTUuNVYxOWE4LjUgOC41IDAgMCAwLTguNS04LjV6IiBmaWxsPSIjZmZmZmZmIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIzNSIgcj0iMy4yIiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+Cg==",
+   "logo_alt": "A bell",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/notifications/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Updates safely: before an update it finishes what it is doing and starts nothing new. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.11 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/notifications/starboard-plugin.json",
+     "manifest_sha256": "292e225095f76a1639d34ab839d1f19ffa530dab6ef13acedbf47d9191530dee"
+    }
+   ]
+  },
+  {
+   "id": "outside-services",
+   "name": "Outside services",
+   "description": "Up or down for things that are not on this server: your router, a NAS, a website.",
+   "kind": "Network",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/outside-services/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGdsb2JlPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzMzNDQ5ZSIvPjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjEzIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48ZWxsaXBzZSBjeD0iMjQiIGN5PSIyNCIgcng9IjYiIHJ5PSIxMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0xMSAyNGgyNiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=",
+   "logo_alt": "A globe",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/outside-services/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/outside-services/starboard-plugin.json",
+     "manifest_sha256": "e98b7af657ec3372e1db454114a850b2e3029a2c7ecebd4cc5c19e98f4fb4101"
+    }
+   ]
+  },
+  {
+   "id": "picture-shrinker",
+   "name": "Picture shrinker",
+   "description": "Shrinks the posters and photos of people Jellyfin keeps, so they take less space. Each picture is checked before it replaces the one Jellyfin saved.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:metadata"
+   ],
+   "version": "1.0.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/picture-shrinker/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHBpY3R1cmUgd2l0aCBhbiBhcnJvdyBwb2ludGluZyBpbnRvIGl0cyBjb3JuZXI8L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjOGE0YTBiIi8+PHJlY3QgeD0iOCIgeT0iMTYiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyMiIgcng9IjMiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCBkPSJNMTEuNSAzNC41bDYuNS04IDQuNSA1IDIuNS0zIDQgNnoiIGZpbGw9IiM4YTRhMGIiLz48Y2lyY2xlIGN4PSIyNSIgY3k9IjIyIiByPSIyLjUiIGZpbGw9IiM4YTRhMGIiLz48cGF0aCBkPSJNNDAgOGwtOCA4TTMyIDEwLjVWMTZoNS41IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4K",
+   "logo_alt": "A picture with an arrow pointing into its corner"
+  },
+  {
+   "id": "remote-access",
+   "name": "Remote access",
+   "description": "Starboard, Jellyfin and Audiobookshelf away from home through Tailscale or Cloudflare Tunnel, with no port opened on your router.",
+   "kind": "Network",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "apps:read",
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/remote-access/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHBob25lIHdpdGggc2lnbmFsIHdhdmVzPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzBiNWM4NiIvPjxyZWN0IHg9IjEwIiB5PSIxNiIgd2lkdGg9IjE1IiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTE2IDM0LjVoMyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTMwIDE0YTcgNyAwIDAgMSA1IDVNMzAgOGExMyAxMyAwIDAgMSAxMSAxMSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+Cg==",
+   "logo_alt": "A phone with signal waves",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/remote-access/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its card says how things are: a status and when it last changed, in the grey band at the top of the card. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.8 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/remote-access/starboard-plugin.json",
+     "manifest_sha256": "7e0d7937b3c98b8c064bbec7cf39b6264c4b7501ad7c8405f67afa397e51af9c"
+    }
+   ]
+  },
+  {
+   "id": "seerr",
+   "name": "Seerr",
+   "description": "Seerr, a requests page for Jellyfin users. Reelix already has requests in Starboard, so most people do not need it.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/seerr/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHNwZWVjaCBidWJibGUgd2l0aCBhIHBsdXMgc2lnbjwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiM4YTJmNWMiLz48cGF0aCBkPSJNMTIgMTFoMjRhMyAzIDAgMCAxIDMgM3YxNGEzIDMgMCAwIDEtMyAzSDIzbC04IDYuNVYzMWgtM2EzIDMgMCAwIDEtMy0zVjE0YTMgMyAwIDAgMSAzLTN6IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMjQgMTZ2MTBNMTkgMjFoMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=",
+   "logo_alt": "A speech bubble with a plus sign",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/seerr/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/seerr/starboard-plugin.json",
+     "manifest_sha256": "dc105c12593f29ddb750b7b31acc50a63b9815171b0d9d4fb70014b42f511589"
+    }
+   ],
+   "rest": {
+    "memory_mb": 127,
+    "cpu_percent": 0.0
+   }
+  },
+  {
+   "id": "styles",
+   "name": "Styles",
+   "description": "Twenty-one accessible styles for Display: six reskin the whole look (cards, buttons, tabs, menus), checked for contrast.",
+   "kind": "Look",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "appearance:styles"
+   ],
+   "version": "1.4.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHBhaW50ZXIncyBwYWxldHRlPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzYyMzZhOCIvPjxwYXRoIGQ9Ik0yNCAxMGExNCAxNCAwIDEgMCAwIDI4YzIuMyAwIDMuMi0xLjcgMi4zLTMuNC0uOS0xLjguMy0zLjkgMi40LTMuOUgzMmE2IDYgMCAwIDAgNi02YzAtOC4yLTYuMy0xNC43LTE0LTE0Ljd6IiBmaWxsPSIjZmZmZmZmIi8+PGNpcmNsZSBjeD0iMTYuNSIgY3k9IjIzIiByPSIyLjYiIGZpbGw9IiM2MjM2YTgiLz48Y2lyY2xlIGN4PSIyMS41IiBjeT0iMTYuNSIgcj0iMi42IiBmaWxsPSIjNjIzNmE4Ii8+PGNpcmNsZSBjeD0iMjkuNSIgY3k9IjE3IiByPSIyLjYiIGZpbGw9IiM2MjM2YTgiLz48L3N2Zz4K",
+   "logo_alt": "A painter's palette",
+   "versions": [
+    {
+     "version": "1.4.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/styles/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.3.0."
+    },
+    {
+     "version": "1.3.0",
+     "starboard_api": ">=1.2 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/styles/starboard-plugin.json",
+     "manifest_sha256": "12345733ea27d313cff532f5a5dfc2997c54d477e78de6fdb4acfa0a4f27c041"
+    }
+   ]
+  },
+  {
+   "id": "tdarr",
+   "name": "Tdarr",
+   "description": "Tdarr converts films and series to save space, in Starboard's quiet hours. It can copy the Tdarr you already have, with its libraries and history.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/tdarr/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5Ud28gYXJyb3dzIGluIGEgY2lyY2xlPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzJhNjU4NSIvPjxwYXRoIGQ9Ik0xMy41IDIxYTExIDExIDAgMCAxIDE5LjUtNC41TTM0LjUgMjdBMTEgMTEgMCAwIDEgMTUgMzEuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTM0LjUgMTAuNXY3aC03TTEzLjUgMzcuNXYtN2g3IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4K",
+   "logo_alt": "Two arrows in a circle",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/tdarr/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.2."
+    },
+    {
+     "version": "1.0.2",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/tdarr/starboard-plugin.json",
+     "manifest_sha256": "b5994f02c7229b5bd05d590a90314981646c6113428d7dadd46cc33497452e76"
+    }
+   ],
+   "rest": {
+    "memory_mb": 59,
+    "cpu_percent": 0.11
+   }
+  },
+  {
+   "id": "uptime-kuma",
+   "name": "Uptime Kuma",
+   "description": "Uptime Kuma, status checks for websites and services, with alerts and status pages. Starboard already watches your apps; this is for more.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/uptime-kuma/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGhlYXJ0YmVhdCBsaW5lPC90aXRsZT48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iIzFkNmI0NSIvPjxwYXRoIGQ9Ik03IDI2aDhsMy41LTkgNS41IDE2IDQtMTIgMi41IDVINDEiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=",
+   "logo_alt": "A heartbeat line",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/uptime-kuma/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/uptime-kuma/starboard-plugin.json",
+     "manifest_sha256": "1ff60e7930a7eb9312d3172cf16270b7edd67091b1d3cdeaa8d2aa9367485f55"
+    }
+   ],
+   "rest": {
+    "memory_mb": 116,
+    "cpu_percent": 0.0
+   }
+  },
+  {
+   "id": "vpn-check",
+   "name": "VPN check",
+   "description": "Shows the address and country your downloads use through the VPN, and warns if it is your home address.",
+   "kind": "Downloads",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:vpn"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/vpn-check/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHNoaWVsZCB3aXRoIGEgdGljazwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiMyYzRmN2MiLz48cGF0aCBkPSJNMjQgOS41bDEyLjUgNC41djkuNWMwIDgtNS4zIDEzLjItMTIuNSAxNS41LTcuMi0yLjMtMTIuNS03LjUtMTIuNS0xNS41VjE0eiIgZmlsbD0iI2ZmZmZmZiIvPjxwYXRoIGQ9Ik0xOC41IDI0LjVsNCA0IDcuNS04LjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzJjNGY3YyIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=",
+   "logo_alt": "A shield with a tick",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/vpn-check/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/vpn-check/starboard-plugin.json",
+     "manifest_sha256": "3c104e5a4443379f0374a3c3972eb0d31f16ee647a757c5975a698270beedba1"
+    }
+   ]
+  },
+  {
+   "id": "watch-stats",
+   "name": "Watch statistics",
+   "description": "What was watched, by whom and when, and the top titles, from Jellyfin's Playback Reporting, with no second database.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/watch-stats/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIGJhciBjaGFydDwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiM0YTNhOGMiLz48cmVjdCB4PSIxMi41IiB5PSIyNSIgd2lkdGg9IjUuNSIgaGVpZ2h0PSIxMSIgcng9IjEiIGZpbGw9IiNmZmZmZmYiLz48cmVjdCB4PSIyMS4yNSIgeT0iMTgiIHdpZHRoPSI1LjUiIGhlaWdodD0iMTgiIHJ4PSIxIiBmaWxsPSIjZmZmZmZmIi8+PHJlY3QgeD0iMzAiIHk9IjEyIiB3aWR0aD0iNS41IiBoZWlnaHQ9IjI0IiByeD0iMSIgZmlsbD0iI2ZmZmZmZiIvPjxwYXRoIGQ9Ik0xMCAzOWgyOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=",
+   "logo_alt": "A bar chart",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/watch-stats/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Updates safely: before an update it finishes what it is doing and starts nothing new. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.11 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/watch-stats/starboard-plugin.json",
+     "manifest_sha256": "cc2704c0417f12170b8e3a301840a97abeda94f7838ce76d4e9a26f25fdf716c"
+    }
+   ]
+  },
+  {
+   "id": "watching-now",
+   "name": "Watching now",
+   "description": "Who is watching what in Jellyfin right now, with how far through they are.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "network:lan"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/watching-now/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BbiBleWU8L3RpdGxlPjxyZWN0IHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgcng9IjExIiBmaWxsPSIjN2EyZjhmIi8+PHBhdGggZD0iTTcuNSAyNGM0LTcgMTAtMTAuNSAxNi41LTEwLjVTMzYuNSAxNyA0MC41IDI0Yy00IDctMTAgMTAuNS0xNi41IDEwLjVTMTEuNSAzMSA3LjUgMjR6IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48Y2lyY2xlIGN4PSIyNCIgY3k9IjI0IiByPSI1IiBmaWxsPSIjZmZmZmZmIi8+PC9zdmc+Cg==",
+   "logo_alt": "An eye",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/watching-now/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its cards say how things are: a status and when they last changed, in the grey band at the top of each card. Kept up to date: its card is asked every 30 seconds while the dashboard is open. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.1 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/watching-now/starboard-plugin.json",
+     "manifest_sha256": "98fb2e84caf7e3cfa559cd81b917de964b421489f5454ff3ea893f92adbbb324"
+    }
+   ]
+  },
+  {
+   "id": "wizarr",
+   "name": "Wizarr",
+   "description": "Wizarr, invitation links for Jellyfin: send someone a link and they make their own Jellyfin account, with the libraries you choose.",
+   "kind": "Apps you can add",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "network:lan",
+    "network:port"
+   ],
+   "version": "1.1.0",
+   "starboard_api": ">=1.14 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/wizarr/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BbiBlbnZlbG9wZTwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiMzYjVhYTAiLz48cmVjdCB4PSI5IiB5PSIxMyIgd2lkdGg9IjMwIiBoZWlnaHQ9IjIyIiByeD0iMi41IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMy41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48cGF0aCBkPSJNMTAgMTUuNWwxNCAxMC41IDE0LTEwLjUiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPgo=",
+   "logo_alt": "An envelope",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "starboard_api": ">=1.14 <2.0",
+     "released": "2026-11-15",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/wizarr/starboard-plugin.json",
+     "changelog": "A logo in Settings, Plug-ins and in the Catalogue. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+    },
+    {
+     "version": "1.0.0",
+     "starboard_api": ">=1.13 <2.0",
+     "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/39b3778e6769dfc0b8e1fbf9c8f4e1271c791d62/wizarr/starboard-plugin.json",
+     "manifest_sha256": "40b6f8b1c0aa1ac1a2670467db90fc346829665896c8294f9374f856a6f6f02c"
+    }
+   ],
+   "rest": {
+    "memory_mb": 124,
+    "cpu_percent": 0.02
+   }
+  }
+ ]
+}

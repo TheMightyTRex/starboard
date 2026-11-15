@@ -40,6 +40,52 @@ def text_only(md):
     return md
 
 
+def plugin_mirror():
+    """The plug-ins help mirror (DASH-426, docs/help/plugins, from tools/sync-plugin-help.py): every plug-in in its
+    catalogue has its Overview and seven pages, each marked as a copy. With STARBOARD_PLUGINS set to a starboard-plugins
+    checkout, the copy must also match it."""
+    out = []
+    folder = HELP / "plugins"
+    cat = folder / "catalogue.json"
+    if not cat.exists():
+        return ["docs/help/plugins: no catalogue.json; run tools/sync-plugin-help.py"]
+    import json
+    for p in json.loads(cat.read_text())["plugins"]:
+        for name in ["README.md"] + [f"{k}.md" for k in ("install", "settings", "dashboard-card", "updates", "accessibility",
+                                                          "problems", "for-developers")]:
+            f = folder / p["id"] / name
+            if not f.exists():
+                out.append(f"plugins/{p['id']}/{name}: missing from the plug-ins help mirror; run tools/sync-plugin-help.py")
+            elif "tools/sync-plugin-help.py" not in f.read_text():
+                out.append(f"plugins/{p['id']}/{name}: not marked as a copy; change it in starboard-plugins and run tools/sync-plugin-help.py")
+            elif re.search(r"still to be written|\bTODO\b|\bTBD\b", text_only(f.read_text())):
+                out.append(f"plugins/{p['id']}/{name}: still a placeholder")
+    import os
+    import subprocess
+    if os.environ.get("STARBOARD_PLUGINS"):
+        r = subprocess.run([sys.executable, str(pathlib.Path(__file__).with_name("sync-plugin-help.py")), os.environ["STARBOARD_PLUGINS"], "--check"],
+                           capture_output=True, text=True)
+        if r.returncode:
+            out.append("docs/help/plugins: " + r.stdout.strip().splitlines()[-1])
+    return out
+
+
+def plugin_api_pages():
+    """The pages that describe the plug-in API to AI tools and developers name the version they describe
+    (<!-- plugin-api: 1.14 -->). When Starboard's plug-in API is newer, they fail until they are brought up to it."""
+    out = []
+    code = (HELP.parent.parent / "starboard" / "plugins.py").read_text()
+    have = tuple(int(x) for x in re.search(r'^API_VERSION = "(\d+)\.(\d+)', code, re.M).groups())
+    for rel in ("developers/ai-prompts-for-developers.md", "llms.txt"):
+        m = re.search(r"<!--\s*plugin-api:\s*(\d+)\.(\d+)\s*-->", (HELP / rel).read_text())
+        if not m:
+            out.append(f"{rel}: no <!-- plugin-api: x.y --> line saying which plug-in API it describes")
+        elif tuple(map(int, m.groups())) < have:
+            out.append(f"{rel}: describes plug-in API {m.group(1)}.{m.group(2)}, but Starboard has {have[0]}.{have[1]}: "
+                       "bring it up to date, then change the plugin-api line")
+    return out
+
+
 def main():
     problems = []
     import json
@@ -96,6 +142,7 @@ def main():
     for path in footer.pages():
         if footer.FOOTER not in path.read_text():
             problems.append(f"{path.relative_to(HELP.parent.parent)}: no download rights footer, or an old one (run tools/help_footer.py)")
+    problems += plugin_mirror() + plugin_api_pages()
     for target in re.findall(r"\]\(([^)#\s]+)\)", index):
         if not (HELP / target).exists():
             problems.append(f"README.md: the index lists {target}, which does not exist yet")
