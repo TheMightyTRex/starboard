@@ -7,6 +7,14 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **Examples for a new install:** Add an app's example address is Jellyfin's, http://127.0.0.1:8096, and the Install apps summary says Starboard connects Bazarr to Reelix rather than asking you to connect Sonarr and Radarr. The screenshots' example server shows the default install (Reelix Lite, Jellyfin, Audiobookshelf, qBittorrent, NZBGet, Gluetun and Bazarr); the older set-up with Sonarr and Radarr is kept for Copy app settings.
+
+### Fixed
+- **The Docker helper image:** Starboard downloads its pinned Docker helper image when it is missing, such as after unused images were removed, before it starts or updates apps or plug-ins, makes backups or looks in folders. If it cannot, it says so plainly: check that this computer can reach Docker Hub, then try again. Before, activating a plug-in could fail with "No such image". (DASH-438)
+- **Plug-in buttons that ask first:** A plug-in button with a confirm, such as Line speed's Test now, asks first in the standard confirm box, which starts on Cancel; Escape cancels. Before, the question was never asked. (DASH-441)
+- **Plug-in list settings:** A list setting, such as Outside services' Addresses to check or Home Assistant's What to show, is a box with one value a line, saved as a list. Before, it was a one-line box and saving said "give a list". (DASH-441)
+
 ## [0.18.0] (15 November 2026)
 
 ### Added

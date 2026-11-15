@@ -1044,7 +1044,10 @@ function connectGuide(state, apps) {
     steps.push(el("li", {}, el("strong", { text: "Seerr. " }), open("seerr"), ". Sign in with Jellyfin at ", code("http://jellyfin:8096"),
       ", then add Radarr and Sonarr in Settings, Services with their API keys, so requests go straight to them."));
   }
-  if (has("bazarr")) {
+  if (has("bazarr") && has("reelix")) {
+    // Starboard connects Bazarr to Reelix itself (DASH-182), so the default install says so rather than naming Sonarr.
+    steps.push(el("li", {}, el("strong", { text: "Bazarr. " }), open("bazarr"), ". Starboard connects it to Reelix once Reelix has set itself up. In its Settings, Languages, choose the languages you want subtitles in."));
+  } else if (has("bazarr")) {
     steps.push(el("li", {}, el("strong", { text: "Bazarr. " }), open("bazarr"), ". In Settings, connect Sonarr (", code("sonarr"), ", port 8989) and Radarr (", code("radarr"), ", port 7878) with their API keys, and choose your languages."));
   }
   steps.push(el("li", {}, el("strong", { text: "Starboard. " }), "In ", el("a", { href: "/settings.html", text: "Manage apps" }), ", give each app its API key, so Search, Downloads and Coming up work."));

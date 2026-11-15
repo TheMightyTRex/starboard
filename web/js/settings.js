@@ -367,7 +367,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
   // Step 1: Connection, and how it shows on the dashboard.
   const type = el("select", { class: "select", name: "type" }, Object.entries(config.types).map(([k, v]) => el("option", { value: k, text: v.label })));
   const name = el("input", { class: "input", name: "name", maxlength: "60", required: true, autocomplete: "off" });
-  const url = el("input", { class: "input", name: "url", inputmode: "url", placeholder: "http://127.0.0.1:8989", autocomplete: "off" });
+  const url = el("input", { class: "input", name: "url", inputmode: "url", placeholder: "http://127.0.0.1:8096", autocomplete: "off" });
   const key = el("input", { class: "input", name: "api_key", type: "password", autocomplete: "off" });
   const keyHint = el("span", {});
   const keyField = field("API key", key, { hint: keyHint, span: true });
@@ -406,7 +406,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
       el("div", { class: "form-grid" },
         field("Kind of app", type),
         field("Name", name, { required: true }),
-        field("Address Starboard uses", url, { required: true, hint: "For an app on this computer, 127.0.0.1 and the app's port, such as http://127.0.0.1:8989. For another computer, its address. Optional for a background service.", span: true }),
+        field("Address Starboard uses", url, { required: true, hint: "For an app on this computer, 127.0.0.1 and the app's port, such as http://127.0.0.1:8096 for Jellyfin. For another computer, its address. Optional for a background service.", span: true }),
         keyField),
       el("div", { class: "actions" }, testButton),
       testResult),
@@ -517,7 +517,7 @@ function openService(s = null, opener = null, { background = false, preset = nul
     formError.replaceChildren();
     [name, url, link, outside, iconInput].forEach((c) => setError(c, ""));
     if (!name.value.trim()) { setError(name, "Enter a name for the app"); name.focus(); return; }
-    if (!url.value.trim() && !bg.checked) { setError(url, "Enter the address Starboard uses to reach the app, such as http://127.0.0.1:8989"); url.focus(); return; }
+    if (!url.value.trim() && !bg.checked) { setError(url, "Enter the address Starboard uses to reach the app, such as http://127.0.0.1:8096"); url.focus(); return; }
     saveButton.disabled = true;
     try {
       const saved = await api("/api/services", { method: "POST", body: values() });
