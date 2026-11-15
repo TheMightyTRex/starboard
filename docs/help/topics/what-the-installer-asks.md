@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Install and update · reference
+<!-- help: start / install -->
 
 # What the installer asks, and what each answer means
 

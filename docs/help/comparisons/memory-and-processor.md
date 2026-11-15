@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Comparison tests · reference
+<!-- help: start / compare -->
 
 # Memory and processor: Starboard against other stacks
 

@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Guides
+<!-- help: start / install -->
 
 # Build a media server from nothing
 

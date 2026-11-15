@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Plug-ins · how-to
+<!-- help: plugins / looking-after -->
 
 # Update a plug-in and roll it back
 

@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Your server · how-to
+<!-- help: use / server -->
 
 # Use a drive as a backup drive
 

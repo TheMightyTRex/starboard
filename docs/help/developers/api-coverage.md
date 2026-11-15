@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Developers
+<!-- help: dev / api -->
 
 # What the API covers
 

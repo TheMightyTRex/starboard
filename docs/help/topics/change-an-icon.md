@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Apps · how-to
+<!-- help: use / dashboard -->
 
 # Change an app's icon
 

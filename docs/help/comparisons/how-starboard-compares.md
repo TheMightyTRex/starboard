@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Comparison tests · reference
+<!-- help: start / compare -->
 
 # How Starboard compares with other media server stacks
 

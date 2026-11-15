@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Guides
+<!-- help: start / install -->
 
 # Quick start: one command sets up everything
 

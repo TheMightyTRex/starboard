@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Apps · how-to
+<!-- help: use / apps -->
 
 # Choose the sites Reelix searches
 

@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Jellyfin and Audiobookshelf · how-to
+<!-- help: use / media -->
 
 # Set up free Live TV in Jellyfin
 

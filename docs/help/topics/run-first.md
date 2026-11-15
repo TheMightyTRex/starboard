@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Install and update · how-to
+<!-- help: start / install -->
 
 # Set up everything with the Run first script
 

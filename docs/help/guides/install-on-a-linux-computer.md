@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Guides
+<!-- help: start / install -->
 
 # Install Starboard on a Linux computer
 

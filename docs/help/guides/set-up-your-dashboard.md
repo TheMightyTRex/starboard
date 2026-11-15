@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Guides
+<!-- help: use / dashboard -->
 
 # Set up your dashboard after installing
 

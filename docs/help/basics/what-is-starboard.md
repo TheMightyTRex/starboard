@@ -1,4 +1,5 @@
 [Help centre](../README.md) · The basics
+<!-- help: start / before -->
 
 # What Starboard is
 

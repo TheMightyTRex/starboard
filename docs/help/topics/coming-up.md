@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Everyday use · how-to
+<!-- help: use / library -->
 
 # Find out what is coming up
 

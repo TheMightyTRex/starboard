@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Install and update · how-to
+<!-- help: use / updates -->
 
 # Remove Starboard
 

@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Before you install · how-to
+<!-- help: start / before -->
 
 # Ask an AI assistant to help you set up
 

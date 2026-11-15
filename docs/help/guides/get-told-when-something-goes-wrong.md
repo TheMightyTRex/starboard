@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Guides
+<!-- help: use / alerts -->
 
 # Get told when something goes wrong
 

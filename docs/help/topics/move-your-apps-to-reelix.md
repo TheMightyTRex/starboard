@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Apps · how-to
+<!-- help: start / move -->
 
 # Move from Radarr, Sonarr and the others to Reelix
 

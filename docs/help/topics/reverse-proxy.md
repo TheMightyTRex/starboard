@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Security · how-to
+<!-- help: use / security -->
 
 # Put Starboard behind a reverse proxy
 

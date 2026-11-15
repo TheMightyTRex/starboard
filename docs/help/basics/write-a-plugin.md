@@ -1,4 +1,5 @@
 [Help centre](../README.md) · The basics
+<!-- help: dev / plugins -->
 
 # Write a plug-in
 

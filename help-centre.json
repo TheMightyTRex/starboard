@@ -35,5 +35,366 @@
   "sponsored_links": [
     "a_aid="
   ],
-  "favicon_file": "docs/help/images/favicon.svg"
+  "favicon_file": "docs/help/images/favicon.svg",
+  "version_from": "CHANGELOG.md",
+  "home": {
+    "title": "Welcome to Starboard help",
+    "intro": "Help for installing and using Starboard, written for people who have never run a server before."
+  },
+  "areas": [
+    {
+      "key": "start",
+      "intro": "Everything from a bare computer to Starboard open on your phone.",
+      "groups": [
+        {
+          "key": "before",
+          "label": "Before you install"
+        },
+        {
+          "key": "computer",
+          "label": "Prepare the computer"
+        },
+        {
+          "key": "install",
+          "label": "Install"
+        },
+        {
+          "key": "devices",
+          "label": "Your devices"
+        },
+        {
+          "key": "move",
+          "label": "Move in"
+        },
+        {
+          "key": "compare",
+          "label": "How it compares"
+        }
+      ]
+    },
+    {
+      "key": "use",
+      "intro": "The dashboard, your apps, your library and downloads, and looking after the server.",
+      "groups": [
+        {
+          "key": "dashboard",
+          "label": "Dashboard"
+        },
+        {
+          "key": "apps",
+          "label": "Apps"
+        },
+        {
+          "key": "library",
+          "label": "Library and downloads"
+        },
+        {
+          "key": "media",
+          "label": "Jellyfin and Audiobookshelf"
+        },
+        {
+          "key": "server",
+          "label": "Your server"
+        },
+        {
+          "key": "alerts",
+          "label": "Alerts"
+        },
+        {
+          "key": "security",
+          "label": "Security"
+        },
+        {
+          "key": "backups",
+          "label": "Backups"
+        },
+        {
+          "key": "updates",
+          "label": "Updates"
+        }
+      ]
+    },
+    {
+      "key": "plugins",
+      "intro": "Add more to Starboard with plug-ins, and keep them up to date.",
+      "groups": [
+        {
+          "key": "adding",
+          "label": "Adding plug-ins"
+        },
+        {
+          "key": "looking-after",
+          "label": "Looking after them"
+        }
+      ]
+    },
+    {
+      "key": "a11y",
+      "intro": "What Starboard does so everyone can use it, how to change it for you, how it is tested and its limits.",
+      "groups": [
+        {
+          "key": "change",
+          "label": "Change it for you"
+        },
+        {
+          "key": "ways",
+          "label": "Ways to use it"
+        },
+        {
+          "key": "checks",
+          "label": "How we check it"
+        }
+      ]
+    },
+    {
+      "key": "fix",
+      "intro": "Something not working? Each article starts with a flow chart: find what you see, then follow its numbered answer.",
+      "groups": [
+        {
+          "key": "starboard",
+          "label": "Starboard and set-up"
+        },
+        {
+          "key": "apps",
+          "label": "Apps and media"
+        },
+        {
+          "key": "storage",
+          "label": "Storage"
+        },
+        {
+          "key": "report",
+          "label": "Report a problem"
+        }
+      ]
+    },
+    {
+      "key": "dev",
+      "intro": "For people who make plug-ins, or write scripts and apps that use Starboard.",
+      "groups": [
+        {
+          "key": "plugins",
+          "label": "Plug-ins"
+        },
+        {
+          "key": "api",
+          "label": "Starboard API"
+        }
+      ]
+    }
+  ],
+  "journey": {
+    "title": "Your server, step by step",
+    "intro": "Follow the path, or go straight to any stage.",
+    "stages": [
+      {
+        "label": "Set up",
+        "icon": "compass",
+        "tone": "start",
+        "cards": [
+          {
+            "title": "Quick start",
+            "line": "One command sets up everything",
+            "to": "guides/quick-start.md"
+          },
+          {
+            "title": "Choose your apps",
+            "line": "Basics, Full install or Everything",
+            "to": "topics/install-types.md"
+          },
+          {
+            "title": "Open it on your phone",
+            "line": "From a phone or another computer",
+            "to": "topics/open-from-another-device.md"
+          }
+        ]
+      },
+      {
+        "label": "Use every day",
+        "icon": "play",
+        "tone": "step",
+        "cards": [
+          {
+            "title": "The dashboard",
+            "line": "Cards, sizes and order",
+            "to": "topics/use-the-dashboard.md"
+          },
+          {
+            "title": "Find something to watch",
+            "line": "Search for and add films and series",
+            "to": "topics/search-and-add.md"
+          },
+          {
+            "title": "Downloads",
+            "line": "Pause, resume and remove",
+            "to": "topics/manage-downloads.md"
+          }
+        ]
+      },
+      {
+        "label": "Add more",
+        "icon": "puzzle",
+        "tone": "step",
+        "cards": [
+          {
+            "title": "The plug-in collection",
+            "line": "What each plug-in adds",
+            "to": "basics/plugin-collection.md"
+          },
+          {
+            "title": "Away from home",
+            "line": "Use Starboard safely when you are out",
+            "to": "guides/use-starboard-away-from-home.md"
+          },
+          {
+            "title": "Updates",
+            "line": "By hand or by itself",
+            "to": "topics/update-starboard.md"
+          }
+        ]
+      },
+      {
+        "label": "Fix things",
+        "icon": "wrench",
+        "tone": "fix",
+        "cards": [
+          {
+            "title": "Starboard does not open",
+            "line": "A flow chart finds the cause",
+            "to": "topics/starboard-does-not-open.md"
+          },
+          {
+            "title": "An app is not responding",
+            "line": "A flow chart finds the cause",
+            "to": "topics/app-not-responding.md"
+          },
+          {
+            "title": "Restore your settings",
+            "line": "Go back to a saved copy",
+            "to": "topics/restore-a-saved-copy.md"
+          }
+        ]
+      }
+    ]
+  },
+  "featured": {
+    "chip": "New in 0.18",
+    "title": "Update Starboard from its own page",
+    "text": "Select Update now, or let Starboard update itself in your quiet hours. It backs up your settings first, and if the new version does not start it goes back to the one you had.",
+    "to": "topics/update-starboard.md",
+    "button": "Read how it works",
+    "flow": "start: Update now\nstep1: Back up your settings\nstep2: Install the new version\nq: Does it start?\n  Yes -> end\n  No -> warn\nend: Done\nwarn: Back to the version you had"
+  },
+  "solver": {
+    "title": "Problem solver",
+    "intro": "Answer up to four questions and the problem solver takes you to the article that fixes it.",
+    "card_title": "Something not working?",
+    "card_text": "The problem solver asks up to four questions and takes you to the right fix.",
+    "button": "Start the problem solver",
+    "start": {
+      "question": "What is wrong?",
+      "answers": [
+        {
+          "label": "Starboard will not open in the browser",
+          "to": "topics/starboard-does-not-open.md"
+        },
+        {
+          "label": "The set-up stopped with an error number",
+          "to": "topics/run-first-errors.md"
+        },
+        {
+          "label": "Something is wrong with an app",
+          "next": {
+            "question": "What does the app do?",
+            "answers": [
+              {
+                "label": "It shows as not responding",
+                "to": "topics/app-not-responding.md"
+              },
+              {
+                "label": "A Live TV channel will not play",
+                "to": "topics/live-tv-channel-will-not-play.md"
+              },
+              {
+                "label": "Films, episodes or books are missing",
+                "to": "topics/get-what-is-missing.md"
+              }
+            ]
+          }
+        },
+        {
+          "label": "Something is wrong with downloads",
+          "next": {
+            "question": "What do you want to do?",
+            "answers": [
+              {
+                "label": "Pause, resume or remove a download",
+                "to": "topics/manage-downloads.md"
+              },
+              {
+                "label": "Download only at certain hours",
+                "to": "topics/set-download-hours.md"
+              },
+              {
+                "label": "Keep downloads private through a VPN",
+                "to": "topics/install-apps.md"
+              }
+            ]
+          }
+        },
+        {
+          "label": "Something is wrong with a disk",
+          "next": {
+            "question": "What do you see?",
+            "answers": [
+              {
+                "label": "A drive in the pool has failed",
+                "to": "topics/a-pool-drive-has-failed.md"
+              },
+              {
+                "label": "The disks are nearly full",
+                "to": "topics/check-storage.md"
+              },
+              {
+                "label": "A disk may be wearing out",
+                "to": "topics/check-disk-health.md"
+              }
+            ]
+          }
+        },
+        {
+          "label": "I cannot sign in",
+          "next": {
+            "question": "What happened?",
+            "answers": [
+              {
+                "label": "I have forgotten my password",
+                "to": "topics/reset-a-forgotten-password.md"
+              },
+              {
+                "label": "Someone else may have signed in",
+                "to": "topics/sign-out-everywhere.md"
+              }
+            ]
+          }
+        },
+        {
+          "label": "Something else",
+          "next": {
+            "question": "What would help?",
+            "answers": [
+              {
+                "label": "Read the log and report the problem",
+                "to": "topics/read-the-log.md"
+              },
+              {
+                "label": "Tell us about one page",
+                "to": "topics/send-feedback.md"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
 }

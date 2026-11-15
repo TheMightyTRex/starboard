@@ -1,4 +1,5 @@
 [Help centre](../README.md) · The basics
+<!-- help: use / apps -->
 
 # The apps Starboard works with
 

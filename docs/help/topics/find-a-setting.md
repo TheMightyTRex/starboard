@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Everyday use · reference
+<!-- help: use / apps -->
 
 # What is in each Settings page
 

@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Alerts · how-to
+<!-- help: use / alerts -->
 
 # Activate alerts
 

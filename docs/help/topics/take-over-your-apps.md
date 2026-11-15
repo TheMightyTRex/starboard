@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Apps · how-to
+<!-- help: start / move -->
 
 # Take over the apps you already run
 

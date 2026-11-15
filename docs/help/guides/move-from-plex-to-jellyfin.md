@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Guides
+<!-- help: start / move -->
 
 # Move from Plex to Jellyfin and Audiobookshelf
 

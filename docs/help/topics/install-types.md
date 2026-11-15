@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Apps · reference
+<!-- help: use / apps -->
 
 # Basics, Full install and Everything: what each one has
 

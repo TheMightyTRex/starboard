@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Before you install · reference
+<!-- help: start / before -->
 
 # What you need to run Starboard
 
