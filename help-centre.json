@@ -127,7 +127,14 @@
           "key": "looking-after",
           "label": "Looking after them"
         }
-      ]
+      ],
+      "link_card": {
+        "title": "Help for each plug-in",
+        "text": "The plug-ins help centre has a page for every plug-in: what it does, what it may change, its settings, updates and fixes for problems.",
+        "to": "https://themightytrex.github.io/starboard-plugins/help/",
+        "button": "Open the plug-ins help centre",
+        "icon": "puzzle"
+      }
     },
     {
       "key": "a11y",
