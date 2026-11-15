@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Install and update · how-to
+<!-- help: start / devices -->
 
 # Open Starboard from a phone or another computer
 
@@ -58,8 +59,8 @@ as `http://192.168.1.20:8095`. At the end, Starboard opens in the device's brows
 - **"This site cannot be reached" from every other device:** in Starboard on the server, go to **Settings**, then
   **Security**, and check **Phones and other computers on your home network** is active. Read
   [Choose who can open Starboard](choose-who-can-open-starboard.md).
-- **The server has a firewall:** a firewall on the server can block port 8095. Follow step 7 of
-  [Starboard does not open](starboard-does-not-open.md#steps).
+- **The server has a firewall:** a firewall on the server can block port 8095. Follow
+  [Open the port in the firewall](starboard-does-not-open.md#open-the-port-in-the-firewall).
 
 - **"Starboard does not answer to the name":** you used a name that Starboard does not know. Use the server's
   number address instead, such as `http://192.168.1.20:8095`.

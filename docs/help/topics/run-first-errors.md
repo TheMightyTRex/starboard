@@ -1,4 +1,5 @@
 [Help centre](../README.md) · When something is wrong · reference
+<!-- help: fix / starboard -->
 
 # Run first and installer error numbers
 
@@ -10,6 +11,22 @@ inside the Run first script, the script ends on the installer's number, so there
 Find the number on this page for what it means and how to put it right. Then run the script again: it carries on
 from what is missing. If you ask for help or report a problem, give the error number. The message also says where
 the log is: a file called `run-first.log` in a `starboard-run-first` folder in `/tmp`.
+
+```flow
+title: Find your error number
+start: The script or the installer stopped with an error number
+q: Which number did it give?
+  RF-01 to RF-07 -> 1
+  RF-10 to RF-20 -> 2
+  RF-30 or RF-31 -> 3
+  RF-40 or RF-50 -> 4
+  IN and a number -> 5
+1: Before it starts #before-it-starts
+2: Installing what is missing #installing-what-is-missing
+3: Downloading Starboard #downloading-starboard
+4: Starting the apps #installing-starboard-and-starting-the-apps
+5: Starboard's installer #starboards-installer
+```
 
 ## How an error looks
 

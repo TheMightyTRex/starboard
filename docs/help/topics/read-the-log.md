@@ -1,13 +1,25 @@
 [Help centre](../README.md) · When something is wrong · how-to
+<!-- help: fix / report -->
 
 # Read the log and report a problem
 
 Starboard's log lists what it did and every problem it met, newest first. When something goes wrong, the
 **Report a problem** steps gather the details a bug report needs, with personal details removed.
 
-## Steps
+```flow
+title: Find your answer
+start: Something went wrong in Starboard
+q: Does Starboard open?
+  No -> starboard-does-not-open.md
+  Yes -> q2
+q2: What do you want to do?
+  Find out what happened -> 1
+  Send it to be looked at -> 2
+1: Read the log #read-the-log
+2: Report a problem #report-a-problem
+```
 
-### Read the log
+## Read the log
 
 1. Go to **System**, then **Logs**.
 2. In **Log**, choose what to show:
@@ -20,7 +32,7 @@ Each entry shows its **Time**, its **Level** (Error, Warning, Info or Detail), t
 came from and **What happened**. Select an entry's message to show more, when it has more. Select
 **Show older entries** to go further back.
 
-### Report a problem
+## Report a problem
 
 1. Go to **System**, then **Logs**, and find **Report a problem**.
 2. In **Detailed logging**, choose **For 24 hours**. This records every page request and every call to your
