@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Accessibility · reference
+<!-- help: a11y / ways -->
 
 # Use Starboard on a phone or tablet
 

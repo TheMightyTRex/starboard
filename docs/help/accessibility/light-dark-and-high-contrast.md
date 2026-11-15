@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Accessibility · how-to
+<!-- help: a11y / change -->
 
 # Choose light, dark or high contrast
 

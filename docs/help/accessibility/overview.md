@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Accessibility · overview
+<!-- help: a11y / change -->
 
 # Accessibility in Starboard
 

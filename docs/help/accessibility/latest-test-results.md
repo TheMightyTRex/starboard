@@ -1,4 +1,5 @@
 [Help centre](../README.md) · Accessibility · reference
+<!-- help: a11y / checks -->
 
 # Latest accessibility test results
 
