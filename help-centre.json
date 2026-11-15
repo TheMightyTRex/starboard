@@ -206,9 +206,9 @@
             "to": "guides/quick-start.md"
           },
           {
-            "title": "Choose your apps",
-            "line": "Basics, Full install or Everything",
-            "to": "topics/install-types.md"
+            "title": "Set up your dashboard",
+            "line": "The default install, step by step",
+            "to": "guides/set-up-your-dashboard.md"
           },
           {
             "title": "Open it on your phone",

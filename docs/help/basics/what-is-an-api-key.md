@@ -10,21 +10,21 @@ change the lock if you need to.
 ## What API means
 
 API stands for application programming interface. It is the way apps talk to each other, rather than to people.
-When you use Sonarr, you use its web page. When Starboard uses Sonarr, it skips the page and asks Sonarr's API
-questions directly, such as "what is downloading?" or "add this series".
+When you use Jellyfin, you use its web page. When Starboard uses Jellyfin, it skips the page and asks Jellyfin's
+API questions directly, such as "what is playing?" or "what was added today?".
 
 ## Why an app needs a key
 
-Your apps do not answer anyone who asks. Before Sonarr answers Starboard, it checks that Starboard has Sonarr's API
-key. Without the key, Sonarr says no.
+Your apps do not answer anyone who asks. Before Jellyfin answers Starboard, it checks that Starboard has Jellyfin's
+API key. Without the key, Jellyfin says no.
 
 Each app makes its own key. A key is usually a jumble of about 32 letters and numbers, such as `0a1b2c3d4e5f`
 and so on. Never share your real keys in a message or online.
 
 ## Where to find a key
 
-Each app keeps its API key in its own settings. In Sonarr, Radarr, Lidarr, Readarr and Prowlarr, it is in
-**Settings**, then **General**. Other apps keep it elsewhere. Read
+Starboard gives the apps it installs their keys for you. For an app you run yourself, each app keeps its API key in
+its own settings. In Jellyfin, it is in **Dashboard**, then **API keys**. Other apps keep it elsewhere. Read
 [Find an app's API key](../topics/find-an-api-key.md#where-each-app-keeps-its-key) for every app Starboard works
 with.
 

@@ -65,7 +65,7 @@ Wi-Fi. Follow [Open Starboard from a phone or another computer](../topics/open-f
 
 ## What next
 
-- [Set up your dashboard after installing](set-up-your-dashboard.md): add your apps and make it yours.
+- [Set up your dashboard after installing](set-up-your-dashboard.md): the default install, step by step.
 - No media apps yet? [Build a media server from nothing](build-a-media-server-from-nothing.md).
 - To install by hand instead, follow [Install Docker](../topics/install-docker.md), then
   [Install Starboard with the installer](../topics/install-with-the-installer.md).

@@ -8,7 +8,8 @@ yesterday to as far ahead as you choose. You can show them as a list by day or o
 
 ## Before you begin
 
-- Reelix, or at least one of Sonarr, Radarr, Lidarr or Readarr, is in Starboard. Read [Add an app](add-an-app.md).
+- Reelix is in Starboard; the default install has it. On an existing set-up, at least one of Sonarr, Radarr,
+  Lidarr or Readarr will do. Read [Add an app](add-an-app.md).
   Radio comes from the shows you follow in Reelix. Read [Follow radio shows and podcasts](follow-radio-shows.md).
 
 ## Steps
@@ -20,7 +21,7 @@ yesterday to as far ahead as you choose. You can show them as a list by day or o
 2. Choose **List** to show releases day by day, or **Calendar** to show them on a month.
 3. Optional: select **Wanted** to show only what you do not have yet, or **In library** to show only what you
    have. Select it again to show everything.
-4. Optional: to show one app only, select its name, such as **Sonarr**. Select it again to show every app.
+4. Optional: to show one app only, select its name, such as **Reelix**. Select it again to show every app.
 5. Select a title to open its details: when it comes out, which app it is in and whether it is wanted.
 6. Optional: select **Open in** and the app's name to open it in the app itself, in a new tab.
 

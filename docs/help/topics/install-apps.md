@@ -6,12 +6,16 @@
 **Install apps** sets up a media server for you. It picks the apps for what you want, writes their set-up files,
 starts them and sets most of them up. It takes about 15 minutes, and the first downloads take longer.
 
+The steps use the default install, **Basics**: Starboard and Reelix Lite with the apps they need. Bigger installs
+and other choices are in [Other installs and choices](#other-installs-and-choices).
+
 ## Before you begin
 
 - Docker is installed on the server. Read [Install Docker](install-docker.md), and
   [What Docker is](../basics/what-is-docker.md) if it is new to you.
 - You have a folder or drive with room for your media, such as `/srv/media`.
-- Optional: an account with a VPN (virtual private network) provider, to keep your downloads private.
+- An account with a VPN (virtual private network) provider. The default install sends downloads through it, to
+  keep them private.
 - Optional: Docker access lets Starboard start the apps itself. Without it, you run one command. Read
   [Change what Starboard can access](change-what-starboard-can-access.md).
 - If you are not sure what each app does, read [The apps Starboard works with](../basics/the-apps.md).
@@ -20,24 +24,14 @@ starts them and sets most of them up. It takes about 15 minutes, and the first d
 
 1. Go to **System**, then **Apps**, then **Install apps**. If your server is set up already, the page lists what is
    installed: select **Run the set-up again**, or **Add** beside an app under 'You can add'.
-2. On **Start here**, read how the apps work together. Tick **Advanced settings** only if you want to choose
-   each app and folder yourself. Select **Begin**.
-3. On **What to set up**, under **What to install**, choose one. Read
-   [Basics, Full install and Everything](install-types.md#at-a-glance) to compare them.
-   - **Basics (recommended):** Reelix Lite, Jellyfin, Audiobookshelf, Bazarr for subtitles, and qBittorrent and
-     NZBGet through a VPN. About 1 GB of memory.
-   - **Full install:** everything in Basics with the full Reelix (YouTube and Spotify downloads), plus disk health,
-     Jellystat, FlareSolverr and Tdarr. About 2 GB. Wizarr, Dispatcharr and Dozzle are add-ons you can tick. Under **Usenet app**, keep **NZBGet**
-     or choose **SABnzbd**.
-   - **Everything:** every app Starboard offers. About 2.9 GB. The same Usenet choice.
-   - **Choose myself:** tick each group, and with **Advanced settings** each app.
-
-   Changing a group makes it your own choice. An app also brings what it needs: Jellystat brings Jellyfin, and
-   Reelix brings a download app.
+2. On **Start here**, read how the apps work together, then select **Begin**.
+3. On **What to set up**, under **What to install**, keep **Basics (recommended)**: Reelix Lite, Jellyfin,
+   Audiobookshelf, Bazarr for subtitles, and qBittorrent and NZBGet through a VPN. About 1 GB of memory. You can
+   choose a bigger install now or later: read [Other installs and choices](#other-installs-and-choices).
 
    ![The What to set up step with example data, with Basics (recommended) (step 3) outlined](../images/install-apps-1-what-to-set-up.png)
 
-4. Under **Which Reelix?**, the install has chosen for you; change it if you like. Select **Continue**.
+4. Under **Which Reelix?**, keep the one the install chose. Select **Continue**.
 5. On **Folders**, enter your **Media folder**, such as `/srv/media`. If your other apps already use a media
    folder, Starboard offers it. Select **Continue**.
 6. If your install has a VPN, the **VPN** step asks for your **VPN provider**. Each provider's link opens its site
@@ -62,8 +56,8 @@ starts them and sets most of them up. It takes about 15 minutes, and the first d
 
 9. On **Films and series**, paste your **TMDB key** and select **Test the key**, or leave it empty to add it later.
    Choose the **Language of releases**. Select **Continue**.
-10. If Starboard found apps you already have, the **Moving over** step asks what to bring across later. Tick what
-    you want, then select **Continue**.
+10. Only on a computer that already runs media apps: the **Moving over** step asks what to bring across later.
+    Tick what you want, then select **Continue**.
 11. On **Check**, read the table of your answers. Select **Change** beside anything you want to change. When it is
     right, enter **Your Starboard password** and select **Write the files**.
 
@@ -96,6 +90,26 @@ allowed to use Docker yet, sign out of the server and back in, then paste it aga
 
 Then go back to Starboard and select **Find the new apps**. Continue from step 13.
 
+## Other installs and choices
+
+The default install is complete on its own. These are for when you want more, or want to choose for yourself.
+
+- **Full install:** everything in Basics with the full Reelix (YouTube and Spotify downloads), plus disk health,
+  Jellystat, FlareSolverr and Tdarr. About 2 GB of memory. Under **Usenet app**, keep **NZBGet** or choose
+  **SABnzbd**.
+- **Everything:** every app Starboard offers. About 2.9 GB. The same Usenet choice.
+- **Choose myself:** tick each group, and with **Advanced settings** each app and folder. Changing a group makes it
+  your own choice. An app also brings what it needs: Jellystat brings Jellyfin, and Reelix brings a download app.
+- **Add-ons:** Wizarr, Dispatcharr and Dozzle can be ticked with any install, or added later with **Add** under
+  'You can add'.
+- **Which Reelix?:** Reelix, or Reelix with YouTube and Spotify downloads. Read
+  [Switch between the two versions of Reelix](switch-reelix-version.md).
+- **Several drives:** on **Folders**, select **Join several drives into one** to make a pool. Starboard gives you
+  commands to run on the server first. Nothing on the drives is erased.
+
+Read [Basics, Full install and Everything](install-types.md#at-a-glance) to compare the installs, and
+[Change your install](change-your-install.md) to change it later.
+
 ## Things to note
 
 - Nothing is written until you select **Write the files**, and nothing starts until you select **Start the
@@ -104,8 +118,6 @@ Then go back to Starboard and select **Find the new apps**. Continue from step 1
   and VPN details. Older copies are kept.
 - Starboard makes `movies`, `tv`, `books` and `downloads` folders, and others you need, inside your media folder.
 - If a port is already in use, the app uses the next free one, and the **Check** step says so.
-- Several drives? On **Folders**, select **Join several drives into one** to make a pool. Starboard gives you
-  commands to run on the server first. Nothing on the drives is erased.
 - Starboard only starts apps from its own list, and only with folders it has checked.
 - NZBGet signs in as `starboard`, with a password Starboard makes up (`NZBGET_PASS` in `data/stack/.env`).
 - Reelix replaces Radarr, Sonarr, Lidarr, Bookshelf, Prowlarr and Seerr for new installs. A server that already

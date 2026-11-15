@@ -27,14 +27,13 @@ hours. It takes about 10 minutes, plus the time to download the apps.
    set-up questions follow in the same terminal.
 3. **Your password:** choose one of at least 10 characters and enter it again. Nothing shows as you enter it. You do
    not need the setup code on the server itself. Then name your dashboard, or press Enter to keep "Starboard".
-4. **How to start:** **New install**, **Move from apps you already run** or **Restore a backup**. The recommended one
-   depends on what Starboard finds on this computer. To restore, enter where the backup file is. A restore then asks
-   only what the backup does not hold.
+4. **How to start:** on a new computer, press Enter for **New install**. Moving from apps you already run, or
+   restoring a backup, is in [Other answers](#other-answers).
 5. **Storage:** choose where your media goes: this computer's main disk, a separate disk, or a pool of several
    disks. Press Enter to take the media folder shown. **Your drives** follows when you chose a pool.
-6. **What to set up:** choose **Basics** (recommended), **Full install**, **Everything** or **Let me choose**. Read
-   [Change your install](change-your-install.md) for what each has. Full install and Everything then ask
-   **Which app downloads from Usenet?**: NZBGet (recommended) or SABnzbd. Press Enter to install the apps listed.
+6. **What to set up:** press Enter for **Basics** (recommended): Reelix Lite, Jellyfin, Audiobookshelf, Bazarr,
+   and qBittorrent and NZBGet through a VPN. Press Enter again to install the apps listed. Bigger installs are in
+   [Other answers](#other-answers).
    ![The What to set up step in the terminal, with Basics, Full install, Everything and Let me choose (step 6) outlined](../images/set-up-in-the-terminal-1-what-to-set-up.png)
 
 7. **VPN:** enter the number of your provider. No answer is recommended here. If yours is not listed, choose
@@ -43,7 +42,7 @@ hours. It takes about 10 minutes, plus the time to download the apps.
    list says.
    ![The VPN step in the terminal, with the Ad note and the list of VPN providers and their websites (step 7) outlined](../images/set-up-in-the-terminal-2-vpn.png)
 
-8. **Usenet**, for NZBGet or SABnzbd: your Usenet provider's details.
+8. **Usenet:** your Usenet provider's details, or **Not now: torrents are enough for now** if you have none.
 9. **Sites to search** and **Films and series**, when you have Reelix: the sites Reelix searches, such as `1,4`, and
    a free TMDB key, which you can leave empty. Read [Choose the sites Reelix searches](choose-sites-to-search.md).
 10. **How much it does:** Balanced, Small server or Everything. The recommended one is first. Small server is
@@ -75,6 +74,16 @@ hours. It takes about 10 minutes, plus the time to download the apps.
 - If you use software that reads text aloud, such as Orca, start it with `STARBOARD_PLAIN=1 ./install.sh --terminal`.
   It then shows plain lines with no borders or colour. It does the same by itself in a window narrower than 60
   characters or shorter than 20 lines.
+
+## Other answers
+
+- **How to start:** **Move from apps you already run** adds the media apps already on this computer; read
+  [Move from Radarr, Sonarr and the others to Reelix](move-your-apps-to-reelix.md). **Restore a backup** asks where
+  the backup file is, then only what the backup does not hold. Starboard recommends one of these when it finds media
+  apps or a backup on this computer.
+- **What to set up:** **Full install**, **Everything** or **Let me choose**. Read
+  [Basics, Full install and Everything](install-types.md) for what each has. Full install and Everything then ask
+  **Which app downloads from Usenet?**: NZBGet (recommended) or SABnzbd.
 
 ## Send feedback from the terminal
 

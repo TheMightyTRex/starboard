@@ -15,7 +15,8 @@ sets them up. You finish the few things it cannot do for you.
 - Starboard is installed with Docker access. If you said no to Docker access, read
   [Change what Starboard can access](../topics/change-what-starboard-can-access.md).
 - A disk with enough room for your media. Films and series take a lot of space: plan for 1 TB or more.
-- Optional: an account with a VPN provider, and a free TMDB key from themoviedb.org.
+- An account with a VPN provider: the default install sends downloads through it. Optional: a free TMDB key from
+  themoviedb.org.
 - To know what each app does, read [The apps Starboard works with](../basics/the-apps.md).
 
 ## The steps at a glance
@@ -34,9 +35,9 @@ flowchart LR
 
 ## Step 1: Choose and start your apps
 
-Choose an install, such as **Basics**, and answer the questions about folders, your VPN, Usenet, sites to search
-and your TMDB key. Follow [Install apps with Starboard](../topics/install-apps.md). To compare the installs, read
-[Basics, Full install and Everything](../topics/install-types.md).
+Keep the default install, **Basics (recommended)**, and answer the questions about folders, your VPN, Usenet, sites
+to search and your TMDB key. Follow [Install apps with Starboard](../topics/install-apps.md). Bigger installs are
+in [Basics, Full install and Everything](../topics/install-types.md), and you can change to one later.
 
 **It worked when** Install apps shows **The apps are running**.
 
@@ -50,7 +51,7 @@ and the others for you. Go to **System**, then **Apps**, then **Apps**.
 
 ## Step 3: Finish what is still to set up
 
-Anything Starboard could not do by itself, such as a guided step for Tdarr, is listed under 'Still to set up' on
+Anything Starboard could not do by itself, such as finishing Jellyfin's set-up, is listed under 'Still to set up' on
 your dashboard. Follow [Finish what is still to set up](../topics/finish-setting-up.md). To download from Usenet,
 also read [Choose a Usenet provider and add it](../topics/choose-a-usenet-provider.md).
 
@@ -63,7 +64,8 @@ in **Activity**, **Downloads**.
 
 ## What next
 
-- [Set up your dashboard after installing](set-up-your-dashboard.md) for categories, design and alerts.
+- [Set up your dashboard after installing](set-up-your-dashboard.md): the default install, then more apps and
+  advanced options.
 - [Download only at certain hours](../topics/set-download-hours.md).
 - [Update your apps](../topics/update-your-apps.md).
 

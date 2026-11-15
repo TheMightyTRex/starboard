@@ -1,96 +1,141 @@
 [Help centre](../README.md) · Guides
-<!-- help: use / dashboard -->
+<!-- help: start / install -->
 
 # Set up your dashboard after installing
 
-This guide takes you from a newly installed Starboard to a dashboard that shows what you want, with every app
-set up and in its place. It is for anyone who has created their password.
+This guide takes you from a new password to a working media server with the default install: Starboard and
+Reelix Lite, with the apps they need to find, download and play your films, series, books, audiobooks, music and
+radio. It takes about 20 minutes, most of it waiting for downloads.
 
-After your first password, Starboard opens its set-up guide, **Set up Starboard**. It finds or installs your apps,
-then opens the Apps page. This guide carries on from there. You can run the set-up guide again from **Settings**,
-then **General**, with **Advanced settings** active.
+This page covers the default install, **Basics**. More apps are in [Add more apps](#add-more-apps), and what you
+can change later is in [Advanced options](#advanced-options).
 
 ## Before you begin
 
-- Starboard is installed and you can sign in. If not, start with
-  [Install Starboard on a Linux computer](install-on-a-linux-computer.md).
-- Your media apps are running, or you let Starboard install them. If you have none yet, follow
-  [Build a media server from nothing](build-a-media-server-from-nothing.md) first.
+- Starboard is installed and you have chosen your password. If not, start with
+  [Quick start: one command sets up everything](quick-start.md).
+- You have an account with a VPN (virtual private network) provider. Downloads go through it, so your internet
+  provider cannot tell what you download.
+- Optional: a free TMDB key from themoviedb.org, for film and series posters. You can add it later.
+
+## What the default install has
+
+| App | What it does |
+|---|---|
+| Starboard | The dashboard: installs, watches and updates the other apps |
+| Reelix Lite | Finds, downloads and sorts your films, series, books, audiobooks, music and radio, and takes requests |
+| Jellyfin | Plays films, series and music on your television, phone and computer |
+| Audiobookshelf | Plays audiobooks and podcasts, keeping your place |
+| qBittorrent | Downloads torrents for Reelix |
+| NZBGet | Downloads from Usenet for Reelix, once you have a Usenet provider |
+| Gluetun | Sends the downloads through your VPN |
+| Bazarr | Finds subtitles for your films and series |
+
+Reelix needs at least one download app, and the download apps go through the VPN. Starboard installs these apps
+and connects them to each other for you. Read [The apps Starboard works with](../basics/the-apps.md) for more about
+each one.
 
 ## The steps at a glance
 
-1. Find the apps already on your server, or add them one at a time.
-2. Give each app its API key.
+1. Answer the set-up guide, keeping what it suggests.
+2. Start the apps.
 3. Finish what is still to set up.
-4. Choose your dashboard's cards.
-5. Put your apps into categories and choose a design.
-6. Choose how much Starboard does in the background.
-7. Activate alerts.
+4. Open the dashboard.
 
-```mermaid
-flowchart LR
-    A["1. Add your apps"] --> B["2. Add API keys"]
-    B --> C["3. Still to set up"]
-    C --> D["4. Dashboard cards"]
-    D --> E["5. Categories and design"]
-    E --> F["6. Background work"]
-    F --> G["7. Alerts"]
+```flow
+title: The simplest set-up
+start: You chose your password
+step: Answer the set-up guide | New install, then Basics
+step2: Start the apps | A few minutes
+step3: Finish what is still to set up | Go through them
+end: Open the dashboard
 ```
 
-## Step 1: Find or add your apps
+## Step 1: Answer the set-up guide
 
-Apps Starboard installed for you are added already. If Starboard has Docker access, it can also find the apps you
-run yourself. Follow [Search for apps already on your server](../topics/search-for-new-apps.md). Add anything it
-does not find with [Add an app](../topics/add-an-app.md).
+After your password, Starboard opens its set-up guide, **Set up Starboard**. Keep the answer it suggests on each
+step, with these few to fill in:
 
-**It worked when** each app appears on the **Apps** page, in **System**, then **Apps**.
+- **How to start:** **New install (recommended)**.
+- **Storage:** the media folder it suggests.
+- **What to set up:** **Basics (recommended)**.
+- **VPN:** your VPN provider, and the details from its website.
+- **Usenet:** **Not now: torrents are enough for now**, unless you have a Usenet provider.
+- **Sites to search:** tick at least one of Reelix's built-in sites. None needs an account.
+- **Films and series:** paste your TMDB key, or leave it empty to add it later.
 
-## Step 2: Give each app its API key
+Read [Install apps with Starboard](../topics/install-apps.md) for each of these steps. You can change every answer
+later: read [Advanced options](#advanced-options).
 
-An API key lets Starboard read an app's downloads, calendar and queue. Without one, Starboard can only check
-whether the app answers. Follow [Find an app's API key](../topics/find-an-api-key.md), then add the key to the
-app with [Change or remove an app](../topics/change-or-remove-an-app.md#change-an-apps-details).
+**It worked when** the **Check** step lists your answers. Enter **Your Starboard password** and select **Write the
+files**.
 
-**It worked when** **Test connection** in the app's settings says it connected.
+## Step 2: Start the apps
+
+On **Start**, select **Start the apps**. Starboard downloads and starts each app and counts them, such as "5 of 7
+installed". The first time takes several minutes.
+
+**It worked when** Starboard shows **The apps are running**. The set-up guide then asks a few last questions, such
+as **Download hours** and **Alerts and disk health**. Keep its suggestions, then select **Go to Apps**.
 
 ## Step 3: Finish what is still to set up
 
-**Still to set up** on the dashboard and the Apps page lists what is left, such as a site for Reelix to search.
-Select **Go through them** to take each one in turn. Follow
+**Still to set up**, on the dashboard and on the **Apps** page, lists anything left, such as finishing Jellyfin's
+set-up. Select **Go through them** and take each item in turn. Follow
 [Finish what is still to set up](../topics/finish-setting-up.md).
 
-**It worked when** **Still to set up** goes from the dashboard.
+**It worked when** **Still to set up** is no longer on the dashboard.
 
-## Step 4: Choose your dashboard's cards
+## Step 4: Open the dashboard
 
-The dashboard is the first page after you sign in. Choose one of its four layouts, then add, size and move cards.
-Follow [Use and change the dashboard](../topics/use-the-dashboard.md).
+Go to **Home**, then **Dashboard**. It shows your apps, what is playing and what is downloading. Then find
+something to watch: follow [Search for and add films, series, music and books](../topics/search-and-add.md).
 
-## Step 5: Put your apps into categories and choose a design
+**It worked when** no app on **System**, then **Apps**, says **Not responding**.
 
-Categories are the headings on the **Apps** page, such as Watch or Downloads. Starboard chooses one for each
-app, and you can change them. Follow [Organise apps into categories](../topics/organise-categories.md).
+## Add more apps
 
-The Apps page has five designs. Choose the default for everyone, then make text size, theme and contrast right
-for you. Follow [Choose a design for the Apps page](../topics/choose-a-design.md) and
-[Change text size, theme and other display settings](../topics/display-and-accessibility.md).
+The default install is complete on its own. Add these only when you want what they do.
 
-## Step 6: Choose how much Starboard does in the background
+- **An app Starboard offers,** such as Jellystat for watch statistics, Kavita for reading ebooks, Wizarr for
+  invitations or Tdarr for smaller files: go to **System**, then **Apps**, then **Install apps**, and select **Add**
+  beside it under **You can add**. Read [Install apps with Starboard](../topics/install-apps.md).
+- **A bigger install,** Full install or Everything, or the version of Reelix with YouTube and Spotify downloads:
+  read [Basics, Full install and Everything](../topics/install-types.md), then
+  [Change your install](../topics/change-your-install.md).
+- **An app you already run yourself,** such as Plex: read
+  [Search for apps already on your server](../topics/search-for-new-apps.md) or [Add an app](../topics/add-an-app.md),
+  then give it its API key with [Find an app's API key](../topics/find-an-api-key.md).
+- **An existing set-up with Sonarr, Radarr, Prowlarr or Seerr:** Reelix does their work, so a new install does not
+  have them. Read [Move from Radarr, Sonarr and the others to Reelix](../topics/move-your-apps-to-reelix.md).
+- **A plug-in,** such as free Live TV in Jellyfin: read [Add a plug-in](../topics/add-a-plugin.md) and
+  [Set up free Live TV in Jellyfin](../topics/set-up-live-tv.md).
 
-On a small server, such as a Raspberry Pi, choose the **Small server** preset. Follow
-[Make Starboard use less of your server](../topics/make-starboard-lighter.md).
+## Advanced options
 
-## Step 7: Activate alerts
+The default install works with all of these as they are. Change them when you want to.
 
-Alerts tell your phone when an app stops answering or a disk has a problem. They are inactive until you activate
-them. Follow [Activate alerts](../topics/activate-alerts.md).
+- **Dashboard cards and layouts:** [Use and change the dashboard](../topics/use-the-dashboard.md).
+- **Categories on the Apps page:** [Organise apps into categories](../topics/organise-categories.md).
+- **Designs, text size, theme and contrast:** [Choose a design for the Apps page](../topics/choose-a-design.md) and
+  [Change text size, theme and other display settings](../topics/display-and-accessibility.md).
+- **How much Starboard does in the background,** such as the **Small server** preset for a Raspberry Pi:
+  [Make Starboard use less of your server](../topics/make-starboard-lighter.md).
+- **Alerts on your phone:** [Activate alerts](../topics/activate-alerts.md).
+- **Download hours:** [Download only at certain hours](../topics/set-download-hours.md).
+- **API keys by hand,** for an app Starboard did not install: [Find an app's API key](../topics/find-an-api-key.md),
+  then [Change or remove an app](../topics/change-or-remove-an-app.md#change-an-apps-details).
+- **Reelix's sites and settings:** [Choose the sites Reelix searches](../topics/choose-sites-to-search.md) and
+  [Change Reelix's settings in Starboard](../topics/change-reelix-settings.md).
+- **The set-up guide again:** go to **Settings**, then **General**, activate **Advanced settings**, and select **Run
+  the set-up guide again** under **Set-up guide**. Nothing changes until you select **Continue**.
 
 ## What next
 
 - [Back up and restore Starboard's settings](../topics/back-up-settings.md), now that it holds your work.
+- [Open Starboard from a phone or another computer](../topics/open-from-another-device.md).
 - [Get told when something goes wrong](get-told-when-something-goes-wrong.md).
 - [What is in each Settings page](../topics/find-a-setting.md).
-- Using Jellyfin? [Set up free Live TV in Jellyfin](../topics/set-up-live-tv.md).
 
 <!-- footer: download rights -->
 

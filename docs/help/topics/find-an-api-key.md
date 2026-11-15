@@ -13,20 +13,25 @@ with. Copy the key, then paste it into **API key** when you [add an app](add-an-
 
 ## Where each app keeps its key
 
+Starboard gives the apps it installs their keys for you, so you need this table only for an app you run yourself.
+
 | App | Where the key is in the app |
 |---|---|
-| Sonarr | **Settings**, then **General**, **API Key** |
-| Radarr | **Settings**, then **General**, **API Key** |
-| Lidarr | **Settings**, then **General**, **API Key** |
-| Readarr | **Settings**, then **General**, **API Key** |
-| Prowlarr | **Settings**, then **General**, **API Key** |
-| Bazarr | **Settings**, then **General**, **API Key** |
-| Seerr, Jellyseerr or Overseerr | **Settings**, then **General**, **API Key** |
-| SABnzbd | **Config**, then **General**, **API Key** |
-| qBittorrent | **Options**, then **Web UI**, **API key**. This needs qBittorrent 5.2 or later. |
-| NZBGet | NZBGet has no key. Enter its control user name and password as `user:password`, from **Settings**, then **Security**, **ControlUsername** and **ControlPassword**. |
 | Jellyfin | **Dashboard**, then **API keys**. Make a new key and name it Starboard. |
 | Audiobookshelf | **Settings**, then **API Keys**, signed in as an admin user. |
+| qBittorrent | **Options**, then **Web UI**, **API key**. This needs qBittorrent 5.2 or later. |
+| NZBGet | NZBGet has no key. Enter its control user name and password as `user:password`, from **Settings**, then **Security**, **ControlUsername** and **ControlPassword**. |
+| Bazarr | **Settings**, then **General**, **API Key** |
+| SABnzbd | **Config**, then **General**, **API Key** |
+
+### Apps from an existing set-up
+
+A new install has Reelix in place of these apps. If you run them already:
+
+| App | Where the key is in the app |
+|---|---|
+| Sonarr, Radarr, Lidarr, Readarr and Prowlarr | **Settings**, then **General**, **API Key** |
+| Seerr, Jellyseerr or Overseerr | **Settings**, then **General**, **API Key** |
 
 The hint under **API key** in Starboard also says where the key is for the kind of app you chose.
 
