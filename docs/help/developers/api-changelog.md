@@ -15,7 +15,17 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
-## Starboard API 1.2.0 (unreleased), 14 November 2026
+## Starboard API 1.3.0 (unreleased), 15 November 2026
+
+- **Added:** `GET /downloads/issues`, with the `downloads` scope and a read key: every download in the queue that
+  needs attention or failed, with its app, download client, the app's own state, every message, size, progress,
+  age, indexer, paths inside the container, the ids in Reelix or the app, the download client's ids and what
+  Starboard already tried. `markdown` holds the same as Markdown, with a short prompt at the top for an AI helper.
+  Each app's queue is asked only when you call it, at most every 10 seconds. Keys, passwords, tokens, private
+  addresses and full download addresses are taken out. Read [the API reference](api-reference.md#get-apiv1downloadsissues).
+- Nothing was taken away: every 1.2.0 address answers as before.
+
+## Starboard API 1.2.0, 14 November 2026
 
 - **Added:** updates, for keys that ticked the new `updates` scope (a key with no scopes does not have it, as with
   `logs`): `GET /updates` lists what can be updated (Starboard, Reelix, the other apps and the plug-ins) from what

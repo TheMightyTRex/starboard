@@ -95,6 +95,7 @@ This needs the full version of Reelix. Read [Switch between the two versions of 
 
 ## Find out more
 
+- [Copy download issues for an AI helper](copy-download-issues.md)
 - [Download only at certain hours](set-download-hours.md)
 - [Find and get what is missing](get-what-is-missing.md)
 - [Approve or decline requests](approve-requests.md)

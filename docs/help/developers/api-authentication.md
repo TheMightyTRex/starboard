@@ -52,7 +52,7 @@ the scopes of the read permissions the person approved. Read
 | Scope | Shown as | What it covers |
 |---|---|---|
 | `apps` | **Apps** | `/apps`, `/apps/{id}`, `/status`, `/health`, `/uptime`, `/app-updates`, `/numbers` and `/containers`; looking for container updates |
-| `downloads` | **Downloads** | `/downloads`, `/transfer`, `/download-hours` and `/history`; download actions and download hours |
+| `downloads` | **Downloads** | `/downloads`, `/downloads/issues`, `/transfer`, `/download-hours` and `/history`; download actions and download hours |
 | `media` | **Media** | `/recent`, `/playing`, `/calendar` and `/extras`; running a Jellyfin or Audiobookshelf job |
 | `library` | **Library** | `/library`, `/library/search` and `/library/status`; building a tab again |
 | `requests` | **Requests** | `/requests`; approving and declining |

@@ -364,6 +364,76 @@ async function load({ announceIt = false } = {}) {
   }
 }
 
+// Copy issues for an AI helper (DASH-434): every download that needs attention or failed, with all its details, as
+// Markdown with a short prompt at the top. Gathered only when a button is pressed, never on the timer (lightweight
+// rule). The result is said in the live region ("Copied 3 issues") and shown under the heading; focus stays on the
+// button that was pressed.
+
+let exporting = false;
+const issueWords = (n) => `${n} ${n === 1 ? "issue" : "issues"}`;
+
+function exportBox(tone, title, text, extra = []) {
+  // No role here: the live region says it once, so a screen reader does not hear it twice.
+  const box = $("#issues-export");
+  box.hidden = false;
+  box.replaceChildren(el("div", { class: "notice", "data-tone": tone },
+    icon(tone === "success" ? "circle-check" : tone === "warning" ? "triangle-alert" : "info"),
+    el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: title }), text ? el("p", { text }) : null, ...extra)));
+}
+
+function exportPreview(markdown, open = false) {
+  const pre = el("pre", { class: "code-block", tabindex: "0", "aria-label": "The issues, as Markdown", text: markdown });
+  const details = el("details", { class: "disclosure" }, el("summary", { text: "Show what was copied" }), pre);
+  details.open = open;
+  return details;
+}
+
+async function issuesExport(how, button) {
+  if (exporting) return;
+  exporting = true;
+  button.setAttribute("aria-busy", "true");
+  announce("Gathering the issues…");
+  try {
+    const out = await api("/api/queue/issues?fresh=1");
+    const missed = out.errors.length ? ` ${out.errors.length === 1 ? "One app" : `${out.errors.length} apps`} did not answer, so ${out.errors.length === 1 ? "its" : "their"} downloads are not included.` : "";
+    if (!out.count) {
+      const box = $("#issues-export");
+      box.hidden = false;
+      box.replaceChildren(emptyState("No issues to copy", `Nothing in the queue needs attention or failed right now.${missed}`));
+      announce(`No issues to copy. Nothing in the queue needs attention or failed.${missed}`);
+      return;
+    }
+    if (how === "download") {
+      const stamp = out.generated_at.replace(/[-:]/g, "").replace("T", "-").slice(0, 13);
+      const url = URL.createObjectURL(new Blob([out.markdown], { type: "text/markdown;charset=utf-8" }));
+      const a = el("a", { href: url, download: `starboard-download-issues-${stamp}.md` });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      exportBox("success", `Downloaded ${issueWords(out.count)} as Markdown`,
+        `Attach the file to a chat with an AI helper, such as Claude, or open it to read it first. Keys, passwords and private addresses are taken out.${missed}`);
+      announce(`Downloaded ${issueWords(out.count)} as Markdown`);
+      return;
+    }
+    if (await copyText(out.markdown)) {
+      exportBox("success", `Copied ${issueWords(out.count)} for an AI helper`,
+        `Paste them into a chat with an AI helper, such as Claude. It starts with a short prompt saying what to do. Keys, passwords and private addresses are taken out; read it before you send it.${missed}`,
+        [exportPreview(out.markdown)]);
+      announce(`Copied ${issueWords(out.count)}`);
+    } else {
+      exportBox("warning", "The browser did not let Starboard copy",
+        "Select the text below and copy it, or use Download as Markdown.", [exportPreview(out.markdown, true)]);
+      announce("Not copied. The issues are shown below to copy by hand");
+    }
+  } catch (e) {
+    problem(`The issues could not be gathered: ${e.message}`, button);
+  } finally {
+    exporting = false;
+    button.removeAttribute("aria-busy");
+  }
+}
+
 // Held downloads (DASH-210): releases Reelix found but a delay profile is holding back, in case a better one comes.
 // Asked when the page opens, with Check again and when the tab is shown again; not on the queue's timer, as the
 // list changes only when a delay ends (lightweight rule). Get it now sends one to the download app; Remove drops it.
@@ -563,6 +633,8 @@ function setPaused(on) {
 
 startPage().then(async () => {
   $("#refresh").addEventListener("click", () => { load({ announceIt: true }); loadTransfer(true); loadHeld(); });
+  $("#copy-issues").addEventListener("click", (e) => issuesExport("copy", e.currentTarget));
+  $("#download-issues").addEventListener("click", (e) => issuesExport("download", e.currentTarget));
   $("#auto-refresh").addEventListener("click", () => {
     setPaused(!paused);
     announce(paused ? "Updates paused" : every ? `Updates resumed, every ${every} seconds` : "Updates only when you press Check again");

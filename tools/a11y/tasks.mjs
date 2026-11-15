@@ -549,6 +549,24 @@ check("T21", "the card is named by its band's heading", band21.labelled, JSON.st
 check("T21", "the chip and the time read on their own", band21.chip === "Status: Converting" && /^Updated /.test(band21.time || ""), JSON.stringify(band21));
 check("T21", "the band adds no Tab stops", band21.focusable === 0, JSON.stringify(band21));
 
+// T24 Copy issues for an AI helper (DASH-434): from the Downloads heading, Tab reaches the button by its name; Enter
+// copies, the live region says "Copied N issues", and focus stays on the button.
+await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: base });
+await page.goto(`${base}/downloads.html`);
+await settle();
+await page.locator("h1").first().focus().catch(() => {});
+const copy24 = await tabTo((f) => f.tag === "BUTTON" && f.text === "Copy issues for an AI helper", 150);
+check("T24", "Tab reaches Copy issues for an AI helper, named for a screen reader", !!copy24, copy24 ? copy24.text : "not reached");
+if (copy24) {
+  await page.keyboard.press("Enter");
+  await page.waitForFunction(() => /^Copied \d+ issues?$/.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+  const after24 = await focus();
+  check("T24", "Enter copies and the live region says how many", /Copied \d+ issues?/.test(await said()), await said());
+  check("T24", "focus stays on the button", after24.text === "Copy issues for an AI helper", after24.text);
+  const next24 = await tabTo((f) => f.tag === "BUTTON", 3);
+  check("T24", "Tab goes on to Download as Markdown", next24?.text === "Download as Markdown", next24?.text);
+}
+
 // T23 Reduce motion (DASH-437): Off means full movement even when the device asks for less; Match device follows the
 // device; On stills movement on a device that does not ask. Checked in the styles and scripts a slide-out, a message
 // and the loading line use, as Display leaves them after a reload.

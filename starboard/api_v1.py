@@ -36,7 +36,7 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.2.0"  # 1.2.0 (14 November 2026, DASH-424): updates, with the updates scope
+API_VERSION = "1.3.0"  # 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -434,6 +434,12 @@ def routes():
         items, nxt = page(scrub(out.get("items") or []), q)
         return {"items": items, "errors": scrub(out.get("errors") or []), "next_cursor": nxt}
 
+    def download_issues(h, m, q):  # DASH-434 (API 1.3.0): asked only when called, at most every 10 seconds
+        from . import queue_issues
+        out = queue_issues.export(h.app)
+        return {"generated_at": out["generated_at"], "count": out["count"], "apps_asked": out["apps_asked"],
+                "items": scrub(out["items"]), "errors": scrub(out["errors"]), "markdown": out["markdown"]}
+
     def recent(h, m, q):
         cfg = h.app.config
         out = services.cached("recent", 300, lambda: services.recent(cfg.data["services"]))
@@ -610,6 +616,7 @@ def routes():
         (r"^/api/v1/status$", "apps", 15, status),
         (r"^/api/v1/health$", "apps", 300, health),
         (r"^/api/v1/downloads$", "downloads", 10, downloads),
+        (r"^/api/v1/downloads/issues$", "downloads", 10, download_issues),
         (r"^/api/v1/recent$", "media", 300, recent),
         (r"^/api/v1/playing$", "media", 20, playing),
         (r"^/api/v1/system$", "system", 10, system),
@@ -663,6 +670,8 @@ def actions():
         else:
             services.queue_action(service, int(b["id"]), action, cfg.data["services"])
         logs.event("info", "downloads", f"{action} for a download in {service['name']}, by the API key {h.api_key['name']}")
+        from . import queue_issues
+        queue_issues.note_action(h.app.data_dir, service["id"], b["id"], action, f"by the API key {h.api_key['name']}")
         return 200, {"ok": True}
 
     def hours_action(h, m, q, b):

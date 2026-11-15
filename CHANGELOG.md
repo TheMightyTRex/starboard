@@ -7,6 +7,10 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Copy issues for an AI helper:** Activity, Downloads, Queue has Copy issues for an AI helper and Download as Markdown. They gather every download that needs attention or failed, with its app, download app, state and the app's own state, every message, size, progress, age, indexer, paths inside the container, its ids in Reelix or the app, the download's id and what Starboard already tried, under a short prompt asking the AI helper to diagnose each one, say the likely cause, the fix to try and what to check. Keys, passwords, tokens, private addresses and full download addresses are taken out. Each app is asked only when you select a button. A new help topic, Copy download issues for an AI helper. (DASH-434)
+- **Starboard's API 1.3.0:** GET /api/v1/downloads/issues gives the same, with a read key and the downloads scope. (DASH-434)
+
 ## [0.18.0] (15 November 2026)
 
 ### Added

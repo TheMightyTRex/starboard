@@ -31,6 +31,7 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 | What a person can do | In the API | Right and scope |
 |---|---|---|
 | See the queue, speeds and Reelix's history | `GET /downloads`, `/transfer`, `/history` | read, `downloads` |
+| Copy the downloads that need attention or failed, with their details, for an AI helper | `GET /downloads/issues` | read, `downloads` |
 | Remove, block, or block and search again | `POST /downloads/actions` | manage, `downloads` |
 | See download hours; resume, pause or follow them | `GET /download-hours`; `POST /download-hours` | read and manage, `downloads` |
 | See requests; approve or decline | `GET /requests`; `POST /requests/{id}/approve`, `/decline` | read and manage, `requests` |

@@ -232,3 +232,7 @@ body > .loading-bar--top { position: fixed; top: 0; bottom: auto; z-index: 100; 
 .schedule-fields { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3, 12px); margin: 0; }
 .schedule-fields .field { margin: 0; }
 .schedule-fields .input[type="time"] { min-height: var(--control-h); }
+
+/* Copy issues for an AI helper (DASH-434): what was copied, in a box of its own height that scrolls */
+#issues-export { margin-bottom: var(--space-4); }
+#issues-export .code-block { max-height: 24rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }

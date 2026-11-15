@@ -99,6 +99,7 @@ Each guide is a journey through several topics, in order.
 - [Search for and add films, series, music and books](topics/search-and-add.md)
 - [Find and get what is missing](topics/get-what-is-missing.md)
 - [Pause, resume and remove downloads](topics/manage-downloads.md)
+- [Copy download issues for an AI helper](topics/copy-download-issues.md)
 - [Download only at certain hours](topics/set-download-hours.md)
 - [Approve or decline requests](topics/approve-requests.md)
 - [Find out what is coming up](topics/coming-up.md)

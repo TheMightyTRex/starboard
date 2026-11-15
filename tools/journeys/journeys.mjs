@@ -481,6 +481,40 @@ await page.locator("dialog[open]").getByRole("button", { name: "Remove", exact: 
 await page.waitForFunction(() => document.querySelectorAll("#held > li").length === 1, null, { timeout: 5000 }).catch(() => {});
 check("DL-02", "Remove asks first, then takes it off the list", await page.locator("#held > li").count() === 1);
 
+// DL-03: Copy issues for an AI helper (DASH-434): by keyboard, said in the live region, nothing secret, a Markdown file,
+// and an empty state when nothing needs attention
+console.log("\n== DL-03 copy issues for an AI helper");
+await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: base });
+await open("downloads.html");
+const copyIssues = page.getByRole("button", { name: "Copy issues for an AI helper" });
+check("DL-03", "Queue has a Copy issues for an AI helper button and a Download as Markdown button",
+  await copyIssues.count() === 1 && await page.getByRole("button", { name: "Download as Markdown" }).count() === 1);
+await copyIssues.focus();
+await page.keyboard.press("Enter");
+await page.waitForFunction(() => /^Copied \d+ issues?$/.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
+const said = await page.locator("#announcer").textContent();
+check("DL-03", "the live region says Copied and the number of issues", /^Copied \d+ issues$/.test(said), said);
+check("DL-03", "focus stays on the button", await copyIssues.evaluate((b) => b === document.activeElement));
+const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => "");
+check("DL-03", "the copy starts with the prompt and has each issue with its details", copied.startsWith("# Download issues from Starboard")
+  && /Diagnose the issue/.test(copied) && /Old\.Show\.S05E01/.test(copied) && /Reelix ids:\*\* queue 33, radio episode 203/.test(copied)
+  && /Harbour Usenet/.test(copied) && /output `\/data\/downloads\/complete\/Old\.Show\.S05E01`/.test(copied), copied.slice(0, 200));
+check("DL-03", "no key, passkey, private address or home folder in the copy",
+  copied.length > 0 && !/made-up-indexer-key|made-up-passkey|192\.168\.1\.20|\/home\/someone/.test(copied));
+check("DL-03", "the page says what was copied, with a way to read it", /Copied \d+ issues for an AI helper/.test(await page.locator("#issues-export").textContent())
+  && await page.locator("#issues-export summary", { hasText: "Show what was copied" }).count() === 1);
+const [mdFile] = await Promise.all([page.waitForEvent("download", { timeout: 15000 }).catch(() => null),
+  page.getByRole("button", { name: "Download as Markdown" }).click()]);
+check("DL-03", "Download as Markdown saves a .md file", /^starboard-download-issues-\d{8}-\d{4}\.md$/.test(mdFile?.suggestedFilename() || ""), mdFile?.suggestedFilename());
+await page.route("**/api/queue/issues*", (route) => route.fulfill({ contentType: "application/json",
+  body: JSON.stringify({ generated_at: "2026-11-15T12:00:00Z", count: 0, apps_asked: 2, items: [], errors: [], markdown: "# Download issues from Starboard\n" }) }));
+await copyIssues.click();
+await page.locator("#issues-export .empty").waitFor({ timeout: 5000 }).catch(() => {});
+check("DL-03", "with nothing to copy, an empty state says so", /No issues to copy/.test(await page.locator("#issues-export").textContent()));
+await page.waitForFunction(() => /No issues to copy/.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 3000 }).catch(() => {});
+check("DL-03", "and so does the live region", /No issues to copy/.test(await page.locator("#announcer").textContent()));
+await page.unroute("**/api/queue/issues*");
+
 // SEC-12 and SEC-13: every page has the content policy and runs no blocked script; a saved key never comes back
 console.log("\n== SEC-12 and SEC-13 every page");
 const keyed = await api("/api/services", { method: "POST", body: { type: "sonarr", name: "Journey Keyed", url: "http://journey-keyed:8989", api_key: SECRET } });

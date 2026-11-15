@@ -282,6 +282,40 @@ spec["paths"].update({
                                           "parameters": [path_param("id", {"type": "string", "pattern": "^[0-9a-f]{12}$"})],
                                           "responses": {**ok(RUN), "404": {"$ref": "#/components/responses/Problem"}}}},
 })
+# Added in 1.3.0 (DASH-434): the queue's issues, for an AI helper.
+STR_MAP = {"type": "object", "additionalProperties": {"type": "string"}}
+spec["components"]["schemas"]["DownloadIssue"] = {
+    "type": "object",
+    "required": ["app", "app_id", "app_type", "reelix", "kind", "what", "title", "status", "app_state", "messages", "size", "progress",
+                 "time_left", "added", "age", "indexer", "protocol", "quality", "download_client", "download_client_ids", "paths", "ids", "tried"],
+    "properties": {"app": {"type": "string"}, "app_id": {"type": "string"}, "app_type": {"type": "string", "enum": ["sonarr", "radarr", "lidarr", "readarr", "reelix"]},
+                   "reelix": {"type": "boolean", "description": "true when the download is Reelix's."},
+                   "kind": {"type": "string", "description": "film, episode, album, book or radio episode, when known."},
+                   "what": {"type": "string", "description": "The film, episode or book it is for, when the app says."},
+                   "title": {"type": "string", "description": "The release's name."},
+                   "status": {"type": "string", "enum": ["Needs attention", "Failed"]},
+                   "app_state": {**STR_MAP, "description": "The app's own state words, such as tracked_state importBlocked."},
+                   "messages": {"type": "array", "items": {"type": "string"}, "description": "Every message from the app, with secrets and private addresses taken out."},
+                   "size": {"type": "number"}, "progress": {"type": "number"}, "time_left": {"type": "string"},
+                   "added": {"type": "string"}, "age": {"type": "string"}, "indexer": {"type": "string"}, "protocol": {"type": "string"},
+                   "quality": {"type": "string"}, "download_client": {"type": "string"},
+                   "download_client_ids": {"type": "object", "description": "download_id (the torrent's id or the Usenet download's id) and, for Reelix, client_id_in_reelix."},
+                   "paths": {**STR_MAP, "description": "output: where it downloaded to, as the app sees it inside its container. Only media and download folders."},
+                   "ids": {"type": "object", "description": "The ids in the app (in Reelix, Reelix's ids): queue, and film, series, episode, album, book or radio show."},
+                   "can_manual_import": {"type": "boolean"},
+                   "tried": {"type": "array", "items": {"type": "object", "required": ["at", "what"],
+                                                         "properties": {"at": {"type": "string", "format": "date-time"}, "what": {"type": "string"}}},
+                             "description": "What Starboard already did about it, oldest first."}}}
+spec["paths"]["/api/v1/downloads/issues"] = {"get": {
+    "operationId": "listDownloadIssues", "summary": "Every download that needs attention or failed, with its details, and as Markdown for an AI helper",
+    "tags": ["Downloads"],
+    "description": "Each app's queue is asked once when you call this (at most every 10 seconds), never on a timer. markdown starts with a short "
+                   "prompt telling an AI helper what to do, then one section for each download. Keys, passwords, tokens, private addresses "
+                   "and full download addresses are taken out; paths are only those in media and download folders.",
+    "responses": ok({"type": "object", "required": ["generated_at", "count", "apps_asked", "items", "errors", "markdown"],
+                     "properties": {"generated_at": {"type": "string", "format": "date-time"}, "count": {"type": "integer"},
+                                    "apps_asked": {"type": "integer"}, "items": {"type": "array", "items": {"$ref": "#/components/schemas/DownloadIssue"}},
+                                    **ERRS, "markdown": {"type": "string"}}})}}
 spec["components"]["parameters"]["idempotency"] = {
     "name": "Idempotency-Key", "in": "header", "required": False, "schema": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,100}$"},
     "description": "Send the same value again to get the first answer back without doing it twice. Kept for 24 hours."}
