@@ -27,7 +27,9 @@ plugin_kept() { [ "$(cat $H/data/plugins/e2e-fake/data/kept 2>/dev/null)" = "the
 sign_in() { api -o /dev/null -X POST "http://127.0.0.1:$PORT/api/login" -d '{"password":"e2e correct horse battery"}'; }
 
 printf '\n######## A. Starboard %s, installed with its own installer\n' "$FROM"
-as "git clone -q /e2e/origin.git $H && cd $H && git -c advice.detachedHead=false checkout -q $FROM"
+# The releases' origin sits inside the Starboard folder (untracked), so Update now's helper, which sees only that
+# folder, can fetch from it as it would from GitHub.
+as "git clone -q /e2e/origin.git $H && cp -r /e2e/origin.git $H/.e2e-origin.git && cd $H && git remote set-url origin $H/.e2e-origin.git && git -c advice.detachedHead=false checkout -q $FROM"
 started=$SECONDS
 as "cd $H && ./install.sh --yes --port $PORT --docker --no-starter --local-only" > /e2e/install.log 2>&1
 if answers 90; then pass "$FROM installed and answers ($((SECONDS - started)) s)"; else fail "$FROM did not start"; tail -40 /e2e/install.log; exit 1; fi

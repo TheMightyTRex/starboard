@@ -98,6 +98,7 @@ def app_stage():
     say("config/settings.xml" in listed, "the copy holds its settings")
 
     push_app("3", broken=True)
+    containers.check(app.config.data["services"])  # the next look finds it (an update clears the last look)
     started = time.time()
     r = wait_run(app, update_runs.start(app, "app:e2e", by="automatic"))
     say(r["state"] == "went-back", f"a version that cannot start went back by itself ({r['state']}: {r['said']}) in {time.time() - started:.0f} s")
@@ -122,7 +123,7 @@ def reelix_stage():
                 "    volumes: ['./config:/config']\n    restart: unless-stopped\n")
     sh("docker", "compose", "-p", "e2e-reelix", "up", "-d", "--quiet-pull", cwd=f"{HOME}/reelix")
     base = "http://127.0.0.1:18700"
-    healthy = reelix_updates._healthy(base, wait=120, sleep=time.sleep)
+    healthy = reelix_updates._healthy(base, 120, time.sleep)
     say(healthy, "Reelix Lite (the published image) answers healthy")
     if not healthy:
         print(sh("docker", "logs", "--tail", "20", "reelix", check=False).stdout)
@@ -131,6 +132,8 @@ def reelix_stage():
     stack.reelix_url = lambda data_dir: base
     containers._check_one = lambda c: {"latest": "newer", "update": True, "unknown": False, "big_change": False}
     reelix_updates.HEALTHY_WITHIN = 90
+    healthy_within = reelix_updates._healthy
+    reelix_updates._healthy = lambda base, wait=90, sleep=time.sleep: healthy_within(base, wait, sleep)  # 90 s, not 5 minutes
     if to:
         sh("docker", "pull", "-q", f"ghcr.io/themightytrex/reelix:{to}")
         sh("docker", "tag", f"ghcr.io/themightytrex/reelix:{to}", f"{REG}/reelix:lite")
@@ -146,7 +149,7 @@ def reelix_stage():
     said = reelix_updates.run(app.config, app.data_dir)
     say("went back" in said, f"a Reelix that does not answer went back by itself: {said} ({time.time() - started:.0f} s)")
     say(os.path.exists(f"{HOME}/reelix/reelix-before-update.tgz"), "Reelix's settings were copied first (reelix-before-update.tgz)")
-    say(reelix_updates._healthy(base, wait=120, sleep=time.sleep), "Reelix answers healthy again on the version before")
+    say(healthy_within(base, 120, time.sleep), "Reelix answers healthy again on the version before")
     sh("docker", "compose", "-p", "e2e-reelix", "down", cwd=f"{HOME}/reelix", check=False)
 
 
