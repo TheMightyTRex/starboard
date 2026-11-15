@@ -52,3 +52,11 @@ Every page ends with the same footer: download only what you have the right to. 
 it by hand: run `python3 tools/help_footer.py` after adding or changing a page, and it adds or refreshes the footer
 between its two markers. `tools/check-help.py` fails when a page has no footer or an old one. The wording follows the
 installer's Usenet note, widened to every download app; change it in `tools/help_footer.py` only.
+
+## The plug-ins' pages
+
+`docs/help/plugins/` is a copy of the help in the [starboard-plugins](https://github.com/TheMightyTRex/starboard-plugins)
+repository, where it is written (DASH-426): every plug-in's README and its seven pages, and the catalogue. Change them
+there, then run `python3 tools/sync-plugin-help.py <starboard-plugins checkout>`, which also copies the plug-in groups
+into `help-centre.json`. `tools/check-help.py` checks the copy, and with `STARBOARD_PLUGINS` set to a checkout, that it
+matches.
