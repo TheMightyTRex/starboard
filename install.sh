@@ -27,6 +27,9 @@
 #   --no-starter          Do not run the set-up helper (starter.sh), which starts the apps and makes the set-up's
 #                         changes for the browser; without it, the Run first window or a command does that.
 #                         It stays off, updates included, until --starter
+#   --main                Follow the main branch, with changes not released yet (for testing); saved in .env, so
+#                         ./update.sh follows it too. A first install otherwise gets the newest release (DASH-416)
+#   --releases            Follow releases again after --main (the next ./update.sh installs the newest release)
 #   --yes                 Do not ask: use the options above, and your last answers (or No) for the rest
 #   --start-apps          Download and start the apps the set-up wrote in data/stack, then stop
 #   --terminal            Finish set-up here in the terminal (password, apps, download hours), with no browser:
@@ -70,6 +73,7 @@ TERMINAL=0
 DISKS_GIVEN=0
 DISKS=()
 START_APPS=0
+CHANNEL=""  # DASH-416: release (the default) or main, from --main and --releases, else .env's STARBOARD_CHANNEL
 ARGS=("$@")
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -96,7 +100,9 @@ while [ $# -gt 0 ]; do
     --terminal) TERMINAL=1 ;;
     --start-apps) START_APPS=1 ;;
     --plain) export STARBOARD_PLAIN=1 ;;
-    -h|--help) sed -n '2,34p' "$0"; exit 0 ;;
+    --main) CHANNEL=main ;;
+    --releases) CHANNEL=release ;;
+    -h|--help) sed -n '2,38p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; err IN-01 >&2; exit 2 ;;
   esac
   shift
@@ -104,6 +110,32 @@ done
 [ -t 0 ] || ASK=0
 [ "$TERMINAL" = 0 ] || [ -t 0 ] || { echo "Stopped: --terminal needs a terminal to type in" >&2; err IN-02 >&2; exit 2; }
 [ "$(id -u)" -ne 0 ] || { echo "Stopped: run this as your normal user, not root" >&2; err IN-04 >&2; exit 1; }
+
+# DASH-416: a first install (no .env yet) from a clone of the main branch gets the newest release, as ./update.sh
+# installs it, so it never runs changes that are not released yet; --main keeps main, for testing. After the first
+# install only ./update.sh moves the version. The newest release's own install.sh then runs, from the start: this
+# function is read whole before the checkout changes the file.
+[ -n "$CHANNEL" ] || CHANNEL="$( [ -f .env ] && sed -n 's/^STARBOARD_CHANNEL=//p' .env | tail -n 1)"
+[ "$CHANNEL" = main ] || CHANNEL=release
+# newest-release-begin (tests/test_release_checkout.py runs it on its own)
+newest_release() {
+  local tag
+  [ ! -f .env ] && [ "$CHANNEL" = release ] && [ -z "${STARBOARD_RELEASE_PICKED:-}" ] && [ -d .git ] || return 0
+  command -v git >/dev/null || return 0
+  git fetch -q --tags origin 2>/dev/null || true  # offline: the tags the clone already has
+  tag="$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)"
+  [ -n "$tag" ] || return 0
+  [ "$(git rev-parse HEAD)" != "$(git rev-parse "refs/tags/$tag^{commit}")" ] || return 0
+  if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    echo "Files in this folder have been changed, so the installer stays on this version instead of release $tag."
+    return 0
+  fi
+  echo "Getting release $tag, the newest (run ./install.sh --main to test the main branch instead)."
+  git -c advice.detachedHead=false checkout -q "$tag" || { echo "Release $tag could not be checked out, so this version is installed."; return 0; }
+  STARBOARD_RELEASE_PICKED=1 exec bash "$0" "${ARGS[@]+"${ARGS[@]}"}"
+}
+# newest-release-end
+newest_release
 
 # Added to the docker group a moment ago (by Run first, say) but this sign-in does not know it yet: start again with
 # that group, as Run first does, rather than stop with IN-22 and ask for a sign-out. Newer systems may have no sg.
@@ -691,6 +723,7 @@ job_save() {
   fi
   [ -f .env ] || (umask 077 && cp example.env .env)
   set_env STARBOARD_MODE "$MODE"
+  set_env STARBOARD_CHANNEL "$CHANNEL"  # DASH-416: what ./update.sh follows
   set_env STARBOARD_PORT "$PORT"
   set_env STARBOARD_NETWORK "$NETWORK"
   if [ -n "$NAME" ]; then set_env STARBOARD_NAME "\"$NAME\""; fi

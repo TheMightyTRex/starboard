@@ -7,6 +7,9 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **A new install gets the newest release:** Run first and the installer now install the newest release, as ./update.sh does, instead of the main branch, which can have changes not released yet. For testing, Run first and ./install.sh take --main, which ./update.sh then follows too; ./install.sh --releases goes back to releases. Update in Run first, for a Starboard already installed, now uses ./update.sh, with its backup and way back. (DASH-416)
+
 ## [0.18.0] (15 November 2026)
 
 ### Added
