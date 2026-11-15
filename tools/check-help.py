@@ -12,7 +12,8 @@ import sys
 HELP = pathlib.Path(__file__).resolve().parent.parent / "docs" / "help"
 SCREENSHOTS_PER_TOPIC = 3
 TIERS = {"topics": ["## Find out more"], "guides": ["## Before you begin", "## The steps at a glance", "## What next"],
-         "basics": ["## Find out more"], "developers": ["## Find out more"], "comparisons": ["## Find out more"]}
+         "basics": ["## Find out more"], "developers": ["## Find out more"], "comparisons": ["## Find out more"],
+         "accessibility": ["## Find out more"]}  # the Accessibility menu (DASH-435): tier one articles in their own folder
 RULES = [
     (r"—", "an em dash"),
     (r"\b(can't|won't|don't|doesn't|isn't|aren't|didn't|wasn't|haven't|hasn't|shouldn't|wouldn't|couldn't|you're|you'll|"
@@ -102,7 +103,7 @@ def main():
         print(p)
     # Every topic (tier one) has at least 3 marked-up screenshots (owner, 7 November 2026). Reported, not yet a
     # failure, until the backlog is done: then move it into problems.
-    few = [str(f.relative_to(HELP)) for f in files if f.parent.name == "topics"
+    few = [str(f.relative_to(HELP)) for f in files if f.parent.name in ("topics", "accessibility")
            and len(re.findall(r"!\[[^\]]+\]\(", f.read_text())) < SCREENSHOTS_PER_TOPIC]
     if few:
         print(f"{len(few)} topics have fewer than {SCREENSHOTS_PER_TOPIC} screenshots (python3 tools/check-help.py --list-screenshots lists them)")

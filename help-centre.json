@@ -12,7 +12,8 @@
     "topics": "Topics",
     "basics": "Basics",
     "developers": "Developers",
-    "comparisons": "Comparison tests"
+    "comparisons": "Comparison tests",
+    "accessibility": "Accessibility"
   },
   "footer_starts": "Download only what you have the right to",
   "search_example": "Type what you want to do, such as \"add a drive\" or \"forgotten password\".",

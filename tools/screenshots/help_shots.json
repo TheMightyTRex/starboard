@@ -898,6 +898,590 @@
       "marks": [],
       "steps": [],
       "alt": "The Styles plug-in's section, with a picture of each of the eight styles in light and dark, and Use this style under each"
+    },
+    {
+      "topic": "accessibility-tester",
+      "file": "a11y-plugin-test.png",
+      "page": "settings-plugins-catalogue.html",
+      "height": 1000,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#pl-test-file'); i++) await new Promise(r => setTimeout(r, 250)); const f = new File([\"{\\\"manifest_version\\\": 1, \\\"id\\\": \\\"my-style\\\", \\\"name\\\": \\\"My style\\\", \\\"version\\\": \\\"0.1.0\\\", \\\"description\\\": \\\"A first try at a style.\\\", \\\"author\\\": \\\"Sam\\\", \\\"licence\\\": \\\"MIT\\\", \\\"homepage\\\": \\\"https://example.invalid/my-style\\\", \\\"support_url\\\": \\\"https://example.invalid/my-style/issues\\\", \\\"starboard_api\\\": \\\">=1.0 <2.0\\\", \\\"permissions\\\": [\\\"appearance:styles\\\"], \\\"containers\\\": [], \\\"styles\\\": [{\\\"id\\\": \\\"sky\\\", \\\"name\\\": \\\"Sky\\\", \\\"radius\\\": 8, \\\"font\\\": \\\"system\\\", \\\"shadow\\\": \\\"soft\\\", \\\"light\\\": {\\\"bg\\\": \\\"#eaf4ff\\\", \\\"header\\\": \\\"#f5faff\\\", \\\"surface\\\": \\\"#f2f8ff\\\", \\\"surface_raised\\\": \\\"#ffffff\\\", \\\"surface_sunken\\\": \\\"#dceaf8\\\", \\\"text\\\": \\\"#10202e\\\", \\\"text_muted\\\": \\\"#7a8a99\\\", \\\"border\\\": \\\"#6a7d90\\\", \\\"divider\\\": \\\"#c9d8e6\\\", \\\"accent\\\": \\\"#3d8fe0\\\", \\\"accent_text\\\": \\\"#ffffff\\\", \\\"accent_soft\\\": \\\"#dbeafb\\\", \\\"focus\\\": \\\"#1f5fa8\\\"}, \\\"dark\\\": {\\\"bg\\\": \\\"#0b1520\\\", \\\"header\\\": \\\"#101c29\\\", \\\"surface\\\": \\\"#12202e\\\", \\\"surface_raised\\\": \\\"#182a3b\\\", \\\"surface_sunken\\\": \\\"#08111a\\\", \\\"text\\\": \\\"#e8f2fc\\\", \\\"text_muted\\\": \\\"#a8bccf\\\", \\\"border\\\": \\\"#6a8099\\\", \\\"divider\\\": \\\"#22374b\\\", \\\"accent\\\": \\\"#7cc0ff\\\", \\\"accent_text\\\": \\\"#0b1520\\\", \\\"accent_soft\\\": \\\"#163452\\\", \\\"focus\\\": \\\"#7cc0ff\\\"}}]}\"], 'starboard-plugin.json', { type: 'application/json' }); const dt = new DataTransfer(); dt.items.add(f); const i = document.querySelector('#pl-test-file'); i.files = dt.files; i.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-test-h').scrollIntoView();for (let i = 0; i < 40 && !document.querySelector('[aria-labelledby=pl-test-h] .rows li'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#pl-test-h').scrollIntoView(); window.scrollBy(0, -80);",
+      "marks": [],
+      "steps": [],
+      "alt": "Settings, Plug-ins, Test a plug-in, with a made-up style that fails: Accessibility failed, and each colour pair that is too faint listed with how to fix it"
+    },
+    {
+      "topic": "accessibility-tester",
+      "file": "a11y-plugin-test.png",
+      "page": "settings-plugins-catalogue.html",
+      "height": 1000,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#pl-test-file'); i++) await new Promise(r => setTimeout(r, 250)); [...document.querySelectorAll('[role=tab]')].find((t) => t.textContent.trim() === 'Test a plug-in').click(); await new Promise(r => setTimeout(r, 600)); const f = new File([\"{\\\"manifest_version\\\": 1, \\\"id\\\": \\\"my-style\\\", \\\"name\\\": \\\"My style\\\", \\\"version\\\": \\\"0.1.0\\\", \\\"description\\\": \\\"A first try at a style.\\\", \\\"author\\\": \\\"Sam\\\", \\\"licence\\\": \\\"MIT\\\", \\\"homepage\\\": \\\"https://example.invalid/my-style\\\", \\\"support_url\\\": \\\"https://example.invalid/my-style/issues\\\", \\\"starboard_api\\\": \\\">=1.0 <2.0\\\", \\\"permissions\\\": [\\\"appearance:styles\\\"], \\\"containers\\\": [], \\\"styles\\\": [{\\\"id\\\": \\\"sky\\\", \\\"name\\\": \\\"Sky\\\", \\\"radius\\\": 8, \\\"font\\\": \\\"system\\\", \\\"shadow\\\": \\\"soft\\\", \\\"light\\\": {\\\"bg\\\": \\\"#eaf4ff\\\", \\\"header\\\": \\\"#f5faff\\\", \\\"surface\\\": \\\"#f2f8ff\\\", \\\"surface_raised\\\": \\\"#ffffff\\\", \\\"surface_sunken\\\": \\\"#dceaf8\\\", \\\"text\\\": \\\"#10202e\\\", \\\"text_muted\\\": \\\"#7a8a99\\\", \\\"border\\\": \\\"#6a7d90\\\", \\\"divider\\\": \\\"#c9d8e6\\\", \\\"accent\\\": \\\"#3d8fe0\\\", \\\"accent_text\\\": \\\"#ffffff\\\", \\\"accent_soft\\\": \\\"#dbeafb\\\", \\\"focus\\\": \\\"#1f5fa8\\\"}, \\\"dark\\\": {\\\"bg\\\": \\\"#0b1520\\\", \\\"header\\\": \\\"#101c29\\\", \\\"surface\\\": \\\"#12202e\\\", \\\"surface_raised\\\": \\\"#182a3b\\\", \\\"surface_sunken\\\": \\\"#08111a\\\", \\\"text\\\": \\\"#e8f2fc\\\", \\\"text_muted\\\": \\\"#a8bccf\\\", \\\"border\\\": \\\"#6a8099\\\", \\\"divider\\\": \\\"#22374b\\\", \\\"accent\\\": \\\"#7cc0ff\\\", \\\"accent_text\\\": \\\"#0b1520\\\", \\\"accent_soft\\\": \\\"#163452\\\", \\\"focus\\\": \\\"#7cc0ff\\\"}}]}\"], 'starboard-plugin.json', { type: 'application/json' }); const dt = new DataTransfer(); dt.items.add(f); const i = document.querySelector('#pl-test-file'); i.files = dt.files; i.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-test-h').scrollIntoView();for (let i = 0; i < 40 && !document.querySelector('[aria-labelledby=pl-test-h] .rows li'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#pl-test-h').scrollIntoView(); window.scrollBy(0, -80);",
+      "marks": [],
+      "steps": [],
+      "alt": "Settings, Plug-ins, Test a plug-in, with a made-up style that fails: Accessibility failed, and each colour pair that is too faint listed with how to fix it"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-chart-table.png",
+      "page": "system-monitor.html",
+      "height": 640,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.chart details.disclosure'); i++) await new Promise(r => setTimeout(r, 250)); const d = document.querySelector('.chart details.disclosure'); d.open = true; d.closest('.chart').scrollIntoView({ block: 'start' }); window.scrollBy(0, -16);",
+      "marks": [
+        {
+          "t": "$.chart details.disclosure > summary",
+          "side": "right",
+          "tail": 90
+        }
+      ],
+      "steps": [],
+      "alt": "A chart on System, Monitor, with Show as a table outlined and open: the same readings as a table of times and values under the chart"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-plugin-test.png",
+      "page": "settings-plugins-catalogue.html",
+      "height": 1000,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#pl-test-file'); i++) await new Promise(r => setTimeout(r, 250)); [...document.querySelectorAll('[role=tab]')].find((t) => t.textContent.trim() === 'Test a plug-in').click(); await new Promise(r => setTimeout(r, 600)); const f = new File([\"{\\\"manifest_version\\\": 1, \\\"id\\\": \\\"my-style\\\", \\\"name\\\": \\\"My style\\\", \\\"version\\\": \\\"0.1.0\\\", \\\"description\\\": \\\"A first try at a style.\\\", \\\"author\\\": \\\"Sam\\\", \\\"licence\\\": \\\"MIT\\\", \\\"homepage\\\": \\\"https://example.invalid/my-style\\\", \\\"support_url\\\": \\\"https://example.invalid/my-style/issues\\\", \\\"starboard_api\\\": \\\">=1.0 <2.0\\\", \\\"permissions\\\": [\\\"appearance:styles\\\"], \\\"containers\\\": [], \\\"styles\\\": [{\\\"id\\\": \\\"sky\\\", \\\"name\\\": \\\"Sky\\\", \\\"radius\\\": 8, \\\"font\\\": \\\"system\\\", \\\"shadow\\\": \\\"soft\\\", \\\"light\\\": {\\\"bg\\\": \\\"#eaf4ff\\\", \\\"header\\\": \\\"#f5faff\\\", \\\"surface\\\": \\\"#f2f8ff\\\", \\\"surface_raised\\\": \\\"#ffffff\\\", \\\"surface_sunken\\\": \\\"#dceaf8\\\", \\\"text\\\": \\\"#10202e\\\", \\\"text_muted\\\": \\\"#7a8a99\\\", \\\"border\\\": \\\"#6a7d90\\\", \\\"divider\\\": \\\"#c9d8e6\\\", \\\"accent\\\": \\\"#3d8fe0\\\", \\\"accent_text\\\": \\\"#ffffff\\\", \\\"accent_soft\\\": \\\"#dbeafb\\\", \\\"focus\\\": \\\"#1f5fa8\\\"}, \\\"dark\\\": {\\\"bg\\\": \\\"#0b1520\\\", \\\"header\\\": \\\"#101c29\\\", \\\"surface\\\": \\\"#12202e\\\", \\\"surface_raised\\\": \\\"#182a3b\\\", \\\"surface_sunken\\\": \\\"#08111a\\\", \\\"text\\\": \\\"#e8f2fc\\\", \\\"text_muted\\\": \\\"#a8bccf\\\", \\\"border\\\": \\\"#6a8099\\\", \\\"divider\\\": \\\"#22374b\\\", \\\"accent\\\": \\\"#7cc0ff\\\", \\\"accent_text\\\": \\\"#0b1520\\\", \\\"accent_soft\\\": \\\"#163452\\\", \\\"focus\\\": \\\"#7cc0ff\\\"}}]}\"], 'starboard-plugin.json', { type: 'application/json' }); const dt = new DataTransfer(); dt.items.add(f); const i = document.querySelector('#pl-test-file'); i.files = dt.files; i.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-test-h').scrollIntoView();for (let i = 0; i < 40 && !document.querySelector('[aria-labelledby=pl-test-h] .rows li'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#pl-test-h').scrollIntoView(); window.scrollBy(0, -80);",
+      "marks": [
+        {
+          "t": "$[aria-labelledby=pl-test-h] .title-chip",
+          "side": "left",
+          "tail": 80
+        }
+      ],
+      "steps": [],
+      "alt": "Settings, Plug-ins, Test a plug-in, with a made-up style that fails: Accessibility failed, and each colour pair that is too faint listed with how to fix it"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-feedback-using.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.rail__feedback:not([hidden])'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('.rail__feedback').click(); const W = (ms) => new Promise((r) => setTimeout(r, ms)); await W(1500); const R = [...document.querySelectorAll('body *')].find((e) => e.shadowRoot).shadowRoot; const pick = (t) => [...R.querySelectorAll('label')].find((l) => l.textContent.includes(t))?.click(); const btn = (t) => [...R.querySelectorAll('button')].find((b) => b.textContent.trim() === t)?.click(); pick('Hard to use with my tools or needs'); await W(400); pick('Describe it in words'); await W(400); btn('Continue'); await W(1200);",
+      "marks": [],
+      "steps": [],
+      "alt": "Send feedback after choosing Hard to use with my tools or needs: what happened, and What were you using, with choices such as Keyboard only and A screen reader"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-chart-table.png",
+      "page": "system-monitor.html",
+      "height": 640,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.chart details.disclosure'); i++) await new Promise(r => setTimeout(r, 250)); const d = document.querySelector('.chart details.disclosure'); d.open = true; d.closest('.chart').scrollIntoView({ block: 'start' }); window.scrollBy(0, -16);",
+      "marks": [
+        {
+          "t": "$.chart details.disclosure > summary",
+          "side": "right",
+          "tail": 90
+        }
+      ],
+      "steps": [],
+      "alt": "A chart on System, Monitor, with Show as a table outlined and open: the same readings as a table of times and values under the chart"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-plugin-test.png",
+      "page": "settings-plugins-catalogue.html",
+      "height": 1000,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#pl-test-file'); i++) await new Promise(r => setTimeout(r, 250)); [...document.querySelectorAll('[role=tab]')].find((t) => t.textContent.trim() === 'Test a plug-in').click(); await new Promise(r => setTimeout(r, 600)); const f = new File([\"{\\\"manifest_version\\\": 1, \\\"id\\\": \\\"my-style\\\", \\\"name\\\": \\\"My style\\\", \\\"version\\\": \\\"0.1.0\\\", \\\"description\\\": \\\"A first try at a style.\\\", \\\"author\\\": \\\"Sam\\\", \\\"licence\\\": \\\"MIT\\\", \\\"homepage\\\": \\\"https://example.invalid/my-style\\\", \\\"support_url\\\": \\\"https://example.invalid/my-style/issues\\\", \\\"starboard_api\\\": \\\">=1.0 <2.0\\\", \\\"permissions\\\": [\\\"appearance:styles\\\"], \\\"containers\\\": [], \\\"styles\\\": [{\\\"id\\\": \\\"sky\\\", \\\"name\\\": \\\"Sky\\\", \\\"radius\\\": 8, \\\"font\\\": \\\"system\\\", \\\"shadow\\\": \\\"soft\\\", \\\"light\\\": {\\\"bg\\\": \\\"#eaf4ff\\\", \\\"header\\\": \\\"#f5faff\\\", \\\"surface\\\": \\\"#f2f8ff\\\", \\\"surface_raised\\\": \\\"#ffffff\\\", \\\"surface_sunken\\\": \\\"#dceaf8\\\", \\\"text\\\": \\\"#10202e\\\", \\\"text_muted\\\": \\\"#7a8a99\\\", \\\"border\\\": \\\"#6a7d90\\\", \\\"divider\\\": \\\"#c9d8e6\\\", \\\"accent\\\": \\\"#3d8fe0\\\", \\\"accent_text\\\": \\\"#ffffff\\\", \\\"accent_soft\\\": \\\"#dbeafb\\\", \\\"focus\\\": \\\"#1f5fa8\\\"}, \\\"dark\\\": {\\\"bg\\\": \\\"#0b1520\\\", \\\"header\\\": \\\"#101c29\\\", \\\"surface\\\": \\\"#12202e\\\", \\\"surface_raised\\\": \\\"#182a3b\\\", \\\"surface_sunken\\\": \\\"#08111a\\\", \\\"text\\\": \\\"#e8f2fc\\\", \\\"text_muted\\\": \\\"#a8bccf\\\", \\\"border\\\": \\\"#6a8099\\\", \\\"divider\\\": \\\"#22374b\\\", \\\"accent\\\": \\\"#7cc0ff\\\", \\\"accent_text\\\": \\\"#0b1520\\\", \\\"accent_soft\\\": \\\"#163452\\\", \\\"focus\\\": \\\"#7cc0ff\\\"}}]}\"], 'starboard-plugin.json', { type: 'application/json' }); const dt = new DataTransfer(); dt.items.add(f); const i = document.querySelector('#pl-test-file'); i.files = dt.files; i.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-test-h').scrollIntoView();for (let i = 0; i < 40 && !document.querySelector('[aria-labelledby=pl-test-h] .rows li'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#pl-test-h').scrollIntoView(); window.scrollBy(0, -80);",
+      "marks": [],
+      "steps": [],
+      "alt": "Settings, Plug-ins, Test a plug-in, with a made-up style that fails: Accessibility failed, and each colour pair that is too faint listed with how to fix it"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-feedback-using.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.rail__feedback:not([hidden])'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('.rail__feedback').click(); const W = (ms) => new Promise((r) => setTimeout(r, ms)); await W(1500); const R = [...document.querySelectorAll('body *')].find((e) => e.shadowRoot).shadowRoot; const pick = (t) => [...R.querySelectorAll('label')].find((l) => l.textContent.includes(t))?.click(); const btn = (t) => [...R.querySelectorAll('button')].find((b) => b.textContent.trim() === t)?.click(); pick('Hard to use with my tools or needs'); await W(400); pick('Describe it in words'); await W(400); btn('Continue'); await W(1200);",
+      "marks": [],
+      "steps": [],
+      "alt": "Send feedback after choosing Hard to use with my tools or needs: what happened, and What were you using, with choices such as Keyboard only and A screen reader"
+    },
+    {
+      "topic": "display-and-accessibility",
+      "file": "display-and-accessibility-1-button.png",
+      "page": "index.html",
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [
+        {
+          "t": "$[data-display-toggle]",
+          "side": "bottom",
+          "tail": 70,
+          "step": 1
+        }
+      ],
+      "steps": [
+        1
+      ],
+      "alt": "The Apps page with example data, with Display at the end of the header (step 1) outlined"
+    },
+    {
+      "topic": "display-and-accessibility",
+      "file": "display-and-accessibility-2-panel.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('[data-display-toggle]').click(); await new Promise(r => setTimeout(r, 1200)); ",
+      "marks": [
+        {
+          "t": "$#side-panel fieldset:has(input[name=theme])",
+          "side": "left",
+          "tail": 90,
+          "step": 2
+        },
+        {
+          "t": "$#side-panel .side-panel__foot .btn--primary",
+          "side": "left",
+          "tail": 90,
+          "step": 3
+        }
+      ],
+      "steps": [
+        2,
+        3
+      ],
+      "alt": "The Display and accessibility slide-out open over the Apps page, with Theme (step 2) and Done (step 3) outlined"
+    },
+    {
+      "topic": "display-and-accessibility",
+      "file": "display-and-accessibility-3-appearance.png",
+      "page": "settings-general-appearance.html",
+      "height": 1000,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#gn-access-h'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#gn-access-h').scrollIntoView({ block: 'start' }); window.scrollBy(0, -90);",
+      "marks": [
+        {
+          "t": "$section[aria-labelledby=gn-access-h]",
+          "side": "left",
+          "tail": 60
+        }
+      ],
+      "steps": [],
+      "alt": "Settings, General, Appearance, with its Accessibility part outlined: the same theme, text size, motion, contrast, link and spacing choices as Display"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-panel-theme.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('[data-display-toggle]').click(); await new Promise(r => setTimeout(r, 1200)); ",
+      "marks": [
+        {
+          "t": "$#side-panel fieldset:has(input[name=theme])",
+          "side": "left",
+          "tail": 90,
+          "step": 2
+        },
+        {
+          "t": "$#side-panel label[for=pref-contrast]",
+          "side": "left",
+          "tail": 90,
+          "step": 3
+        }
+      ],
+      "steps": [
+        2,
+        3
+      ],
+      "alt": "The Display and accessibility slide-out, with Theme (step 2) and High contrast (step 3) outlined"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-theme-light.png",
+      "page": "index.html",
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The Apps page with example data in the Light theme: dark text on a pale page"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-theme-dark.png",
+      "page": "index.html",
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"dark\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The same Apps page in the Dark theme: light text on a dark blue page"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-contrast-light.png",
+      "page": "index.html",
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"contrast\": true})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The Apps page with High contrast activated in the Light theme: near-black text, black borders round every card and button, and no shadows"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-contrast-dark.png",
+      "page": "index.html",
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"dark\", \"contrast\": true})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The Apps page with High contrast activated in the Dark theme: white text and white borders on black"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-panel-text.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('[data-display-toggle]').click(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#side-panel label[for=pref-spacing]').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$#side-panel fieldset:has(input[name=text])",
+          "side": "left",
+          "tail": 90,
+          "step": 2
+        },
+        {
+          "t": "$#side-panel label[for=pref-spacing]",
+          "side": "left",
+          "tail": 90,
+          "step": 3
+        }
+      ],
+      "steps": [
+        2,
+        3
+      ],
+      "alt": "The Display and accessibility slide-out, with Text size (step 2) and Wider text spacing (step 3) outlined"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-text-100.png",
+      "page": "index.html",
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The Apps page with Text size at 100%"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-text-175.png",
+      "page": "index.html",
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"text\": \"175\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The same Apps page with Text size at 175%: every word is larger and the page is laid out again, though the name Starboard in the side menu breaks in two and the header's menu is cut off after Network"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-spacing-before.png",
+      "page": "settings-general-lists.html",
+      "height": 700,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "Settings, General, Pages and lists with Wider text spacing deactivated"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-spacing-after.png",
+      "page": "settings-general-lists.html",
+      "height": 700,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"spacing\": true})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The same page with Wider text spacing activated: more space between lines, letters and words, so the same text takes more room"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-reduce-motion.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"motion\": \"on\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('[data-display-toggle]').click(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#side-panel fieldset:has(input[name=motion])').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$#side-panel fieldset:has(input[name=motion])",
+          "side": "left",
+          "tail": 90,
+          "step": 2
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "The Display and accessibility slide-out with Reduce motion (step 2) outlined and set to On"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-long-lists.png",
+      "page": "settings-general-lists.html",
+      "height": 800,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#gn-scroll-h'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#gn-scroll-h').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$section[aria-labelledby=gn-scroll-h]",
+          "side": "left",
+          "tail": 60
+        }
+      ],
+      "steps": [],
+      "alt": "Settings, General, Pages and lists, with Long lists outlined: Load more as you scroll, which can be deactivated to always have Show 40 more"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-panel-underline.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('[data-display-toggle]').click(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#side-panel label[for=pref-underline]').scrollIntoView({ block: 'center' });",
+      "marks": [
+        {
+          "t": "$#side-panel label[for=pref-underline]",
+          "side": "left",
+          "tail": 90,
+          "step": 2
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "The Display and accessibility slide-out with Underline links (step 2) outlined"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-underline-before.png",
+      "page": "settings-general-appearance.html",
+      "height": 700,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "Settings, General, Appearance with Underline links deactivated: links are shown by their colour"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-underline-after.png",
+      "page": "settings-general-appearance.html",
+      "height": 700,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"underline\": true})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The same page with Underline links activated: every link on the page is underlined"
+    },
+    {
+      "topic": "accessibility-checks",
+      "file": "a11y-skip-link.png",
+      "page": "settings-general.html",
+      "height": 700,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); window.scrollTo(0, 0); document.querySelector('.skip-link').focus();",
+      "marks": [],
+      "steps": [],
+      "alt": "The first Tab on a page shows Skip to main content at the start of the page, with a thick focus outline round it"
+    },
+    {
+      "topic": "accessibility-checks",
+      "file": "a11y-focus.png",
+      "page": "index.html",
+      "height": 700,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('#check-now').focus();",
+      "marks": [],
+      "steps": [],
+      "alt": "The Apps page with Check again focused: a thick outline with a small gap round the button shows where the keyboard is"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-slide-out-focus.png",
+      "page": "index.html",
+      "height": 700,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('[data-display-toggle]').click(); await new Promise(r => setTimeout(r, 1200)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The Display and accessibility slide-out just opened: focus is on its Close button, and the page behind is dimmed"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-dialog-focus.png",
+      "page": "history.html",
+      "height": 800,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && ![...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'Delete history'); i++) await new Promise(r => setTimeout(r, 250)); [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Delete history').click(); await new Promise(r => setTimeout(r, 800));",
+      "marks": [],
+      "steps": [],
+      "alt": "The Delete the history? box over the History page, with focus on Cancel, the safe choice, so pressing Enter does not delete anything"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-chart-table.png",
+      "page": "system-monitor.html",
+      "height": 640,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.chart details.disclosure'); i++) await new Promise(r => setTimeout(r, 250)); const d = document.querySelector('.chart details.disclosure'); d.open = true; d.closest('.chart').scrollIntoView({ block: 'start' }); window.scrollBy(0, -16);",
+      "marks": [
+        {
+          "t": "$.chart details.disclosure > summary",
+          "side": "right",
+          "tail": 90
+        }
+      ],
+      "steps": [],
+      "alt": "A chart on System, Monitor, with Show as a table outlined and open: the same readings as a table of times and values under the chart"
+    },
+    {
+      "topic": "accessibility-checks",
+      "file": "a11y-card-band.png",
+      "page": "dashboard.html",
+      "height": 800,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.card-band .chip'); i++) await new Promise(r => setTimeout(r, 250)); const b = [...document.querySelectorAll('.card-band')].find((x) => x.textContent.includes('Watch statistics')); b.dataset.shot = 'band'; b.scrollIntoView({ block: 'start' }); window.scrollBy(0, -90);",
+      "marks": [
+        {
+          "t": "$.card-band[data-shot=band]",
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [],
+      "alt": "A plug-in card on Home, with its band outlined: the plug-in's logo and name as the heading, then its state and when it last updated"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-reflow-320.png",
+      "page": "index.html",
+      "width": 320,
+      "height": 700,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The Apps page 320 pixels wide, as on a computer zoomed to 400%: one column of cards, the menu under Menu, and nothing to scroll sideways"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-large-screen.png",
+      "page": "index.html",
+      "width": 1920,
+      "height": 1080,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\", \"text\": \"150\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The Apps page on a large display with Text size at 150%: more cards in each row, with the text large enough to read from further away"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-phone-apps.png",
+      "page": "index.html",
+      "width": 390,
+      "height": 844,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); ",
+      "marks": [
+        {
+          "t": "$[data-display-toggle]",
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [],
+      "alt": "The Apps page on a phone, with Display in the header outlined"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-phone-menu.png",
+      "page": "index.html",
+      "width": 390,
+      "height": 844,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('[data-phone-menu-open]').click(); await new Promise(r => setTimeout(r, 900));",
+      "marks": [],
+      "steps": [],
+      "alt": "The phone menu open: search, then each part of Starboard as a section that folds open, with large rows to select"
+    },
+    {
+      "topic": "accessibility",
+      "file": "a11y-phone-display.png",
+      "page": "index.html",
+      "width": 390,
+      "height": 844,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); document.querySelector('[data-display-toggle]').click(); await new Promise(r => setTimeout(r, 1200)); ",
+      "marks": [],
+      "steps": [],
+      "alt": "The Display and accessibility slide-out on a phone, filling the width, with the same choices as on a computer"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-plugin-test.png",
+      "page": "settings-plugins-catalogue.html",
+      "height": 1000,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('#pl-test-file'); i++) await new Promise(r => setTimeout(r, 250)); [...document.querySelectorAll('[role=tab]')].find((t) => t.textContent.trim() === 'Test a plug-in').click(); await new Promise(r => setTimeout(r, 600)); const f = new File([\"{\\\"manifest_version\\\": 1, \\\"id\\\": \\\"my-style\\\", \\\"name\\\": \\\"My style\\\", \\\"version\\\": \\\"0.1.0\\\", \\\"description\\\": \\\"A first try at a style.\\\", \\\"author\\\": \\\"Sam\\\", \\\"licence\\\": \\\"MIT\\\", \\\"homepage\\\": \\\"https://example.invalid/my-style\\\", \\\"support_url\\\": \\\"https://example.invalid/my-style/issues\\\", \\\"starboard_api\\\": \\\">=1.0 <2.0\\\", \\\"permissions\\\": [\\\"appearance:styles\\\"], \\\"containers\\\": [], \\\"styles\\\": [{\\\"id\\\": \\\"sky\\\", \\\"name\\\": \\\"Sky\\\", \\\"radius\\\": 8, \\\"font\\\": \\\"system\\\", \\\"shadow\\\": \\\"soft\\\", \\\"light\\\": {\\\"bg\\\": \\\"#eaf4ff\\\", \\\"header\\\": \\\"#f5faff\\\", \\\"surface\\\": \\\"#f2f8ff\\\", \\\"surface_raised\\\": \\\"#ffffff\\\", \\\"surface_sunken\\\": \\\"#dceaf8\\\", \\\"text\\\": \\\"#10202e\\\", \\\"text_muted\\\": \\\"#7a8a99\\\", \\\"border\\\": \\\"#6a7d90\\\", \\\"divider\\\": \\\"#c9d8e6\\\", \\\"accent\\\": \\\"#3d8fe0\\\", \\\"accent_text\\\": \\\"#ffffff\\\", \\\"accent_soft\\\": \\\"#dbeafb\\\", \\\"focus\\\": \\\"#1f5fa8\\\"}, \\\"dark\\\": {\\\"bg\\\": \\\"#0b1520\\\", \\\"header\\\": \\\"#101c29\\\", \\\"surface\\\": \\\"#12202e\\\", \\\"surface_raised\\\": \\\"#182a3b\\\", \\\"surface_sunken\\\": \\\"#08111a\\\", \\\"text\\\": \\\"#e8f2fc\\\", \\\"text_muted\\\": \\\"#a8bccf\\\", \\\"border\\\": \\\"#6a8099\\\", \\\"divider\\\": \\\"#22374b\\\", \\\"accent\\\": \\\"#7cc0ff\\\", \\\"accent_text\\\": \\\"#0b1520\\\", \\\"accent_soft\\\": \\\"#163452\\\", \\\"focus\\\": \\\"#7cc0ff\\\"}}]}\"], 'starboard-plugin.json', { type: 'application/json' }); const dt = new DataTransfer(); dt.items.add(f); const i = document.querySelector('#pl-test-file'); i.files = dt.files; i.closest('form').requestSubmit(); await new Promise(r => setTimeout(r, 1200)); document.querySelector('#pl-test-h').scrollIntoView();for (let i = 0; i < 40 && !document.querySelector('[aria-labelledby=pl-test-h] .rows li'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('#pl-test-h').scrollIntoView(); window.scrollBy(0, -80);",
+      "marks": [],
+      "steps": [],
+      "alt": "Settings, Plug-ins, Test a plug-in, with a made-up style that fails: Accessibility failed, and each colour pair that is too faint listed with how to fix it"
+    },
+    {
+      "topic": "accessibility-checks",
+      "file": "a11y-results-scan.png",
+      "page": "terminal/a11y-results-scan.html",
+      "width": 1000,
+      "height": 420,
+      "run": "",
+      "marks": [],
+      "steps": [],
+      "alt": "The end of the scan's output: 0 findings on 101 pages"
+    },
+    {
+      "topic": "accessibility-checks",
+      "file": "a11y-results-order.png",
+      "page": "terminal/a11y-results-order.html",
+      "width": 1000,
+      "height": 420,
+      "run": "",
+      "marks": [],
+      "steps": [],
+      "alt": "The end of the reading order check's output: 0 findings"
+    },
+    {
+      "topic": "accessibility-checks",
+      "file": "a11y-results-tasks.png",
+      "page": "terminal/a11y-results-tasks.html",
+      "width": 1000,
+      "height": 520,
+      "run": "",
+      "marks": [],
+      "steps": [],
+      "alt": "Part of the keyboard walk's output, with each task marked PASS, and its summary: 76 passed, 0 failed"
+    },
+    {
+      "topic": "accessibility-checks",
+      "file": "a11y-results-contrast.png",
+      "page": "terminal/a11y-results-contrast.html",
+      "width": 1000,
+      "height": 480,
+      "run": "",
+      "marks": [],
+      "steps": [],
+      "alt": "The end of the contrast check's output: every theme and palette listed, and 0 failures"
+    },
+    {
+      "topic": "accessibility-feedback",
+      "file": "a11y-feedback-menu.png",
+      "page": "index.html",
+      "height": 800,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.rail__feedback:not([hidden])'); i++) await new Promise(r => setTimeout(r, 250)); ",
+      "marks": [
+        {
+          "t": "$.rail__feedback",
+          "side": "right",
+          "tail": 90,
+          "step": 1
+        }
+      ],
+      "steps": [
+        1
+      ],
+      "alt": "The Apps page, with Feedback in the side menu (step 1) outlined"
+    },
+    {
+      "topic": "accessibility-feedback",
+      "file": "a11y-feedback-choose.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.rail__feedback:not([hidden])'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('.rail__feedback').click(); await new Promise(r => setTimeout(r, 1500));",
+      "marks": [],
+      "steps": [],
+      "alt": "Send feedback open, with its choices, including Hard to use with my tools or needs and Check this page for accessibility problems"
+    },
+    {
+      "topic": "accessibility-retake",
+      "file": "a11y-feedback-using.png",
+      "page": "index.html",
+      "height": 900,
+      "run": "localStorage.setItem('starboard.display', JSON.stringify({\"theme\": \"light\"})); applyPrefs(); await new Promise(r => setTimeout(r, 500)); for (let i = 0; i < 40 && !document.querySelector('.rail__feedback:not([hidden])'); i++) await new Promise(r => setTimeout(r, 250)); document.querySelector('.rail__feedback').click(); const W = (ms) => new Promise((r) => setTimeout(r, ms)); await W(1500); const R = [...document.querySelectorAll('body *')].find((e) => e.shadowRoot).shadowRoot; const pick = (t) => [...R.querySelectorAll('label')].find((l) => l.textContent.includes(t))?.click(); const btn = (t) => [...R.querySelectorAll('button')].find((b) => b.textContent.trim() === t)?.click(); pick('Hard to use with my tools or needs'); await W(400); pick('Describe it in words'); await W(400); btn('Continue'); await W(1200);",
+      "marks": [],
+      "steps": [],
+      "alt": "Send feedback after choosing Hard to use with my tools or needs: What is wrong, What were you using set to Keyboard only, and How bad is it"
     }
   ]
 }

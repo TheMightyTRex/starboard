@@ -1,0 +1,146 @@
+[Help centre](../README.md) · Accessibility · reference
+
+# How Starboard is tested for accessibility
+
+Starboard is tested against WCAG 2.2 level AA with automated checks on every page, a check of the reading order, a
+walk of the main tasks with the keyboard alone, and a contrast check of every colour. They run on every change
+before it is merged, and again before every release. This page says what each check does, and what checks cannot
+catch.
+
+![How Starboard is tested: a scan, the reading order, a keyboard walk and a contrast check on every change; all of them again before every release; and listening with a screen reader, which still needs a person](../images/a11y-test-process.svg)
+
+The diagram shows the same steps as the sections below, with the latest results. The figures and their dates are in
+[Latest test results](latest-test-results.md).
+
+## When would you use it
+
+- You want to know whether Starboard will work with your tools before you install it.
+- You want to know how a result was reached, or repeat a check yourself.
+- You make plug-ins and want to know what Starboard checks.
+
+## The standard accessibility test
+
+Every accessibility test of Starboard is all four of these parts, never a scan alone. They run against an example
+server with made-up data, so nothing real is read.
+
+| Part | What it checks | How it runs |
+|---|---|---|
+| The scan | Every page against WCAG 2.2 AA with axe-core, in Light, Dark and High contrast; page structure; target size; reflow at 320 pixels wide and at 175% text; Windows' contrast themes; reduced motion | `tools/a11y.sh` |
+| Reading order | What a screen reader reads against what is seen, on every page, at computer and phone widths, and in each design of the Apps page | `ORDER=1 tools/a11y.sh` |
+| Keyboard walk | The main tasks with keys only, checking where focus is and what is said after every step | `TASKS=1 tools/a11y.sh` |
+| Colour contrast | Every text and control colour pair in every theme and colour palette | The design system's `tools/contrast.py` |
+
+### The scan
+
+- **Rules:** axe-core runs every WCAG 2.0, 2.1 and 2.2 rule at levels A and AA on each page, three times: in the
+  Light theme, the Dark theme and High contrast.
+- **Structure:** one level 1 heading, headings in order, a header, navigation and main content, **Skip to main
+  content** as the first Tab, a page title, a polite live region, the page's language, a label for every field and
+  a name for every button.
+- **Keyboard:** up to 45 Tab stops on each page, checking that the focus outline shows, that focus never lands on
+  something hidden, that nothing traps it, and that the sticky header never covers it.
+- **Size:** every button, tick box and choice is at least 24 by 24 pixels.
+- **Reflow:** nothing needs sideways scrolling at 320 pixels wide, or at 175% text.
+- **Slide-outs:** focus moves into **Display and accessibility**, stays inside with Tab, and goes back to
+  **Display** after Escape.
+- **Windows' contrast themes:** the focus outline stays visible in forced colours.
+- **Reduced motion:** with reduced motion asked for, nothing on the Apps page moves for longer than 50 milliseconds.
+
+### Reading order
+
+A screen reader reads, and Tab moves, in the order of the page's code. People see the order on the page. The check
+compares the two on every page, at computer and phone widths: anything read later but shown clearly above, or Tab
+that jumps back up a column, is a finding. It also checks that the landmarks come in order and that the page's
+level 1 heading is the first thing in the main content.
+
+### Keyboard walk
+
+The main tasks are done with keys alone, as a screen reader user would. After each step, the check records where
+focus is, and what was said. The tasks include: sign in, skip to the main content, search, open a film, change a
+setting, change an accessibility option in Settings, edit an app in a slide-out, make and revoke a key, show more of
+a list, delete a file, select several items, the Live TV channel lists, release notes, copies of backups, and a
+plug-in's notices, tables, cards, recommendations and settings.
+
+![The Delete the history? box over the History page, with focus on Cancel, the safe choice, so pressing Enter does not delete anything](../images/a11y-dialog-focus.png)
+
+### Colour contrast
+
+The design system checks every pair of text and background, control border and focus outline, in Light, Dark,
+High contrast and High contrast dark, and in light and dark for every one of the own style colour palettes:
+4.5 to 1 for text, 3 to 1 for borders and the focus outline.
+
+### Plug-ins
+
+Plug-ins are checked too, by the plug-in tester, before any plug-in can be added. Its accessibility tests are never left
+out: every style's colours in light and dark, and the labels, hints, card titles and button words people
+read.
+
+![Settings, Plug-ins, Test a plug-in, with a made-up style that fails: Accessibility failed, and each colour pair that is too faint listed with how to fix it](../images/a11y-plugin-test.png)
+
+### The help centre
+
+The help is checked for its writing rules and links by `tools/check-help.py`. Every picture in it has a text
+description, and every diagram says the same thing in words.
+
+## When the checks run
+
+- **Every change:** the scan, reading order and keyboard walk run before a change is merged, with the unit tests,
+  the journeys (every page used as a person would) and the help checks. A finding is fixed, or checked by hand and
+  shown to come from the test itself, before the change goes in.
+- **Every change to colours:** the contrast check runs, and must show 0 failures.
+- **Before every release:** all of them run again on the release, with fresh screenshots that a person looks at.
+  The results are listed with each release in
+  [Security: how Starboard protects you, and how it was tested](https://github.com/TheMightyTRex/starboard/blob/main/docs/SECURITY-AND-TESTS.md#security-checks-for-each-release).
+
+## What automated checks cannot catch
+
+Tools find many problems, but not all. They cannot tell:
+
+- whether something makes sense when heard, such as a label that is correct but confusing
+- whether the order of a task is easy to follow, or a message is clear
+- how a particular screen reader, browser and device behave together
+- whether alt text describes a picture well
+- what people who use assistive technology every day find hard
+
+That needs people. Listening with a screen reader, and testing with people who use assistive technology, has not
+been done yet. Read [Limits and known gaps](limits-and-known-gaps.md).
+
+## Run the checks yourself
+
+The checks are in Starboard's repository and need Docker. From the repository's folder, this runs the scan:
+
+```bash
+bash tools/a11y.sh
+```
+
+This runs the reading order check:
+
+```bash
+ORDER=1 bash tools/a11y.sh
+```
+
+This runs the keyboard walk:
+
+```bash
+TASKS=1 bash tools/a11y.sh
+```
+
+Each one starts its own example server with made-up data, and prints one line for each finding and a summary.
+
+## Find out more
+
+- [Latest test results](latest-test-results.md)
+- [Limits and known gaps](limits-and-known-gaps.md)
+- [Accessibility in Starboard](overview.md)
+- [Test and publish a plug-in](../developers/test-and-publish-a-plugin.md)
+
+<!-- footer: download rights -->
+
+---
+
+**Download only what you have the right to.** Use the download apps only for files you have the right to download,
+such as open-source software, works in the public domain and your own backups. Downloading films, series, music or
+books without the copyright holder's permission is against the law in the UK and most other countries. Starboard
+does not host or provide any files, and you are responsible for what you download.
+
+<!-- /footer -->
