@@ -931,7 +931,7 @@ check("PLA-02", "Escape closes it, runs nothing, and focus goes back to the butt
   && await page.evaluate(() => document.activeElement?.textContent?.trim() === "Pause fixing"));
 await page.getByRole("button", { name: "Pause fixing" }).click();
 await plaDialog.waitFor({ timeout: 5000 });
-await plaDialog.getByRole("button", { name: "Pause fixing" }).click();
+await plaDialog.getByRole("button", { name: "Pause fixing", exact: true }).click();
 await page.waitForTimeout(800);
 check("PLA-03", "choosing the action in the box runs it", /Paused/.test(await plaSaid.textContent()));
 await open("settings-plugin.html?id=notifications");
