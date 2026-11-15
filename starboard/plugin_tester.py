@@ -44,6 +44,10 @@ def _text_checks(m):
     return out
 
 
+def card_titles(card):
+    return plugins.card_title_problems(card) if isinstance(card, dict) else []
+
+
 def run(manifest, dev=False, builtin=False, logo_problem=""):
     """All issues for a manifest: [{severity, area, where, what, fix}], errors first. Never empty of accessibility
     checks: when a plug-in has nothing to check, it says what was checked. `logo_problem`: what was wrong with its
@@ -56,6 +60,11 @@ def run(manifest, dev=False, builtin=False, logo_problem=""):
         for issue in plugin_styles.check_style(st, f"styles[{i}]"):
             issues.append({**issue, "area": "accessibility"})
             style_errors.add(f"{issue['where']}: {issue['what']}")
+    # A title for each card size (API 1.15, DASH-443): each one too long for one line is named, with its fix.
+    for i, c in enumerate(manifest.get("cards") or []):
+        for what, fix in card_titles(c):
+            issues.append({"severity": "error", "area": "accessibility", "where": f"cards[{i}].titles", "what": what[:1].upper() + what[1:], "fix": fix})
+            style_errors.add(f"cards[{i}]: {what}")
     for p in plugins.check(manifest, dev=dev, builtin=builtin):
         if p not in style_errors:  # style problems are listed once, with their fix
             where, _, what = p.partition(": ") if re.match(r"^[a-z_]+(\[\d+\])?(\.[a-z]+)?: ", p) else ("manifest", "", p)
@@ -100,6 +109,15 @@ def run(manifest, dev=False, builtin=False, logo_problem=""):
     elif "logo" not in manifest and (manifest.get("cards") or manifest.get("containers")):
         issues.append({"severity": "info", "area": "quality", "where": "logo", "what": "No logo, so Starboard shows its initials",
                        "fix": "Add logo: {\"file\": \"logo.svg\", \"alt\": \"What it shows\"}, a small SVG or PNG beside the manifest"})
+    # Without a small title, a small card's heading is the plug-in's name (API 1.15, DASH-443): a nudge when it is
+    # longer than one line there.
+    name = str(manifest.get("name") or "")
+    small = plugins.CARD_TITLE_MAX["small"]
+    for i, c in enumerate(manifest.get("cards") or []):
+        if isinstance(c, dict) and len(name) > small and not (isinstance(c.get("titles"), dict) and c["titles"].get("small")):
+            issues.append({"severity": "info", "area": "quality", "where": f"cards[{i}]",
+                           "what": f"On a small card the heading is the plug-in's name, {len(name)} characters, which takes more than one line",
+                           "fix": f'Add titles with a small title of up to {small} characters, such as "titles": {{"small": "Short name"}}'})
     for i, c in enumerate(manifest.get("cards") or []):
         if isinstance(c, dict) and isinstance(c.get("example"), dict) and c["example"].get("status") is None and c.get("type") != "status":
             issues.append({"severity": "info", "area": "quality", "where": f"cards[{i}]",

@@ -396,6 +396,7 @@ Each item in `cards` is a card people can add with **Edit dashboard**. Read
 |---|---|---|
 | `id` | Its id, in the card's address | Letters, numbers, hyphens and underscores, up to 40. Give every card one |
 | `title` | Its name on the dashboard | A card needs a `title` (or a `label`), so a screen reader can name it |
+| `titles` | Its title for each card size, so it fits on one line in that size: any of `small`, `medium`, `half`, `wide` and `full` | Each one line of words, up to the size's limit: small 17, medium 28, half 22, wide 43 and full 45 characters. A size left out shows the plug-in's name with the card's `title` under it. Read [A title for each size](#a-title-for-each-size-api-115). API 1.15 |
 | `type` | `stat`, `list`, `status` or, from API 1.8, `guide` | Required |
 | `path` | The path on the first container that answers | Required: starts with `/`, up to 80 letters, numbers, `/`, `_`, `.` and `-` |
 | `format` | For `stat`: `number`, `bytes`, `percent`, `duration` (seconds) or `date` (seconds since 1970) | `number` when left out |
@@ -418,6 +419,36 @@ From API 1.14 Starboard draws every plug-in card with a grey band across the top
 its initials), the plug-in's name as the card's heading, the card's `title` under it when it differs, and at the
 right a status chip and when it last updated, from the card's answer. You do not lay any of it out. Read
 [The card band](plugin-api-reference.md#the-card-band-api-114).
+
+### A title for each size (API 1.15)
+
+People choose each card's size in **Edit dashboard**: small (a quarter of the width), medium (a third), half, wide
+(two thirds) or full width. From API 1.15 a card can have its own title for each size in `titles`, so a small card
+has a short title and a wide one can say more. The title for the card's size is then the card's heading on its own,
+on one line beside the logo, and screen readers hear the plug-in's name after it when the title does not say it. A
+size you leave out shows the plug-in's name with the card's `title` under it, as before.
+
+| Size | Up to | Measured at its narrowest |
+|---|---|---|
+| `small` | 17 characters | A quarter of the width, in a window 1101 pixels wide. The chip (its icon only) and the time sit under the title |
+| `medium` | 28 characters | A third of the width, 1101 pixels. The chip and the time sit under the title, as they do not fit beside it |
+| `half` | 22 characters | Half the width, 1101 pixels, with the chip and the time beside it |
+| `wide` | 43 characters | Two thirds of the width, 1101 pixels, with the chip and the time beside it |
+| `full` | 45 characters | The whole width, in a window 768 pixels wide, with the chip and the time beside it |
+
+```json
+"cards": [
+  {"id": "saved", "title": "Space saved", "type": "stat", "path": "/card", "format": "bytes",
+   "titles": {"small": "Space saved", "medium": "Picture space saved", "half": "Pictures: space saved",
+              "wide": "Space saved by shrinking pictures", "full": "Space saved by shrinking posters and photos"}}
+]
+```
+
+Each limit is what fits on one line in the card's band, beside the logo, the status chip and the time, at the
+standard text size in the narrowest window that size is shown at, measured with wide words. On a small card the chip shows only its icon (screen readers still hear its words), and the chip and the time sit under the title; on a medium card they sit under it in windows 1101 pixels wide and wider, where they do not fit beside it. When
+someone makes the text larger in **Display**, a title may take two lines; Starboard never cuts a title short. The
+manifest check refuses a title longer than its size's limit, and the plug-in tester names it with its limit. Keep the
+words that matter first, and write each title in sentence case.
 
 ## Actions
 
@@ -668,7 +699,7 @@ it is missing, because What is new then cannot say what changed. Say when settin
 | 1.12 | 13 November 2026 | `"user": "media"` on a container that mounts `media/<one folder>`; `link` and `state_label` on a custom setting's item; `file_only` on its add box |
 | 1.13 | 13 November 2026 | App plug-ins: `network:port` and `publish` on `lan` with `host_port`, `{secret:...}` and `{jellyfin:...}` in `env`, `tmpfs`, `data:<path>` and `media/<one folder>:ro`, `pids`, and `adopt` |
 | 1.14 | 14 November 2026 | A card's own refresh time, `refresh_seconds`, in the manifest and in its answer, 10 seconds at the quickest; `recommended` on a catalogue entry; `logo` (and `logo`, `logo_alt` on a catalogue entry); every card drawn with a grey band holding the logo, the name, a status chip and when it last updated (`status`, `status_label` and `updated` in its answer); a `schedule` setting and a job's `schedule`; the `jellyfin:metadata` permission with the `jellyfin-metadata` volume; `update` (a `before` and an `after` step, `health_wait_seconds` and settings `migrations`), with the health wait and an automatic Roll back after every update, and **What is new** shown before an update too |
-| 1.15 | 15 November 2026 | `build` on a container, for an image Starboard builds from the `Dockerfile` in the plug-in's zip file, installed with **Upload a zip file** and updated with **Update from a zip file**; `jellyfin_libraries` with the `jellyfin:libraries` permission; the `library:holding` permission with the `media:holding` volume (the media folder, read and write, for its holding folder `media/.holding/<id>`), and `restore` on a custom setting's item, drawn as **Put back** |
+| 1.15 | 15 November 2026 | `build` on a container, for an image Starboard builds from the `Dockerfile` in the plug-in's zip file, installed with **Upload a zip file** and updated with **Update from a zip file**; `jellyfin_libraries` with the `jellyfin:libraries` permission; the `library:holding` permission with the `media:holding` volume (the media folder, read and write, for its holding folder `media/.holding/<id>`), and `restore` on a custom setting's item, drawn as **Put back**; `titles` on a card, a title for each card size that fits on one line in that size |
 
 Use the lowest version that has what you use in `starboard_api`, such as `">=1.4 <2.0"` for a plug-in with jobs.
 Read [API changelog](api-changelog.md).

@@ -8,6 +8,7 @@ add features.
 ## [Unreleased]
 
 ### Added
+- **A title for each card size (plug-in API 1.15):** a plug-in card can have its own title for each size in Edit dashboard (small, medium, half, wide and full), each short enough to fit on one line in that size: up to 17, 28, 22, 43 and 45 characters. The manifest check refuses a longer one and the plug-in tester names it with its limit. Picture shrinker's card in the example pictures has one for each size. (DASH-443)
 - **Help for every plug-in in the collection:** the help centre's Plug-ins area now has the same eight pages for each of the 27 plug-ins in the Starboard plug-ins collection (what it does, install and remove, settings, its dashboard card, updates and roll back, accessibility, problems with a flow chart, and for developers), each with its logo, mirrored from the collection's own help centre by tools/sync-plugin-help.py and checked by check-help.py. (DASH-426)
 
 ### Changed
@@ -15,6 +16,7 @@ add features.
 - **Copy issues for an AI helper:** Activity, Downloads, Queue has Copy issues for an AI helper and Download as Markdown. They gather every download that needs attention or failed, with its app, download app, state and the app's own state, every message, size, progress, age, indexer, paths inside the container, its ids in Reelix or the app, the download's id and what Starboard already tried, under a short prompt asking the AI helper to diagnose each one, say the likely cause, the fix to try and what to check. Keys, passwords, tokens, private addresses and full download addresses are taken out. Each app is asked only when you select a button. A new help topic, Copy download issues for an AI helper. (DASH-434)
 - **Starboard's API 1.3.0:** GET /api/v1/downloads/issues gives the same, with a read key and the downloads scope. (DASH-434)
 ### Changed
+- **Still to set up and small cards:** Go through them sits at the right of the Still to set up card's grey band, and focus comes back to it when the slide-out closes. On a small card (a quarter of the width) the band's status chip shows only its icon; screen readers still hear its words. (DASH-443)
 - **Dashboard cards:** Every card on the dashboard now has the grey band that plug-in cards have: a logo, the card's name as the heading, and at the right a status chip and when it was updated where the card has something to say, such as Nearly full on Disk space or Not responding on Service health. A card about one app shows that app's own logo, the same as on the Apps page: Jellyfin's on Now playing, Reelix's on Downloads, Coming up and Recently added when Reelix is the only source, and so on. Starboard's own cards, and cards that combine several apps, show a Starboard icon. (DASH-442)
 - **Examples for a new install:** Add an app's example address is Jellyfin's, http://127.0.0.1:8096, and the Install apps summary says Starboard connects Bazarr to Reelix rather than asking you to connect Sonarr and Radarr. The screenshots' example server shows the default install (Reelix Lite, Jellyfin, Audiobookshelf, qBittorrent, NZBGet, Gluetun and Bazarr); the older set-up with Sonarr and Radarr is kept for Copy app settings.
 

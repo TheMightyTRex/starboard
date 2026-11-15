@@ -17,6 +17,7 @@
 - [Built from a zip file](developers/plugin-manifest-reference.md#built-from-a-zip-file): a private plug-in with no registry, its image built by Starboard from the Dockerfile in its zip, with the build's limits (plug-in API 1.15).
 - [Jellyfin libraries](developers/plugin-manifest-reference.md#jellyfin-libraries): libraries Starboard adds to Jellyfin for folders a plug-in fills, with jellyfin:libraries (plug-in API 1.15).
 - [The holding folder in the media folder](developers/plugin-manifest-reference.md#the-holding-folder-in-the-media-folder): library:holding, moving films and series aside and putting them back with Put back, never deleting (plug-in API 1.15).
+- [A title for each card size](developers/plugin-manifest-reference.md#a-title-for-each-size-api-115): titles on a card, one for each size, each short enough for one line in that size (plug-in API 1.15).
 - [The card band and refresh times](developers/plugin-api-reference.md#the-card-band-api-114): status, status_label, updated and refresh_seconds on every card (plug-in API 1.14).
 - [The plug-ins help centre](https://themightytrex.github.io/starboard-plugins/help/): every plug-in in the collection explained, a card plug-in, an app plug-in and a converter (Direct play) among them, with Direct play's card worked through.
 

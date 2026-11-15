@@ -61,6 +61,9 @@ From API 1.14 Starboard draws every plug-in card the same way (design 2, "band w
 the top that starts with the plug-in's logo (its [logo](plugin-manifest-reference.md#logo), or its initials on a
 plain tile), then the plug-in's name as the card's heading (the card's `title` under it, smaller, when it differs),
 and ends with a status chip and when the card last updated. The body below shows the answer as before.
+From API 1.15 a card may give its own title for each size (`titles` in the manifest); the title for the card's size
+is then the heading on its own, on one line. On a small card the chip shows only its icon, and its words are still
+read to screen readers. Read [A title for each size](plugin-manifest-reference.md#a-title-for-each-size-api-115).
 
 Any card's answer may add these, all optional:
 

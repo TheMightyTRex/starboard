@@ -11,7 +11,7 @@ import os
 import re
 
 MANIFEST_VERSION = 1
-API_VERSION = "1.15.0"  # 1.15 (15 November 2026): containers built from a zip (build, DASH-414), Jellyfin libraries (jellyfin_libraries, DASH-430), and the permission library:holding with the media:holding volume, so a plug-in such as Library clean-up can move films and series into the holding folder inside the media folder (media/.holding/<plug-in id>) and put them back, never deleting, with restore on a custom screen item drawn as Put back (DASH-406); the list of what it added is in docs/help/developers/api-changelog.md  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432); update tools (DASH-424): an update object with a before and an after step Starboard calls with time limits, a health wait after which a version that does not answer is rolled back by itself, and settings migrations (rename, remove, new defaults) kept for Roll back, and What is new shown before an update from the new version's changes  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
+API_VERSION = "1.15.0"  # 1.15 (15 November 2026): containers built from a zip (build, DASH-414), Jellyfin libraries (jellyfin_libraries, DASH-430), and the permission library:holding with the media:holding volume, so a plug-in such as Library clean-up can move films and series into the holding folder inside the media folder (media/.holding/<plug-in id>) and put them back, never deleting, with restore on a custom screen item drawn as Put back (DASH-406); and titles on a card, a title for each card size, each short enough for one line in that size (DASH-443); the list of what it added is in docs/help/developers/api-changelog.md  # 1.14 (14 November 2026, owner: "allow a card to set its refresh time with 10s being the quickest time"): a card may say how often the dashboard asks it, refresh_seconds from 10 to 3600, in the manifest and, to change it from a setting, in its answer; Starboard never asks a card more often than every 10 seconds, and the catalogue may mark an entry recommended; a small logo (logo: file and alt, DASH-428), cards drawn with a grey band holding the logo, the name, a status chip and when it last updated (status, status_label and updated in the answer); a job on a schedule from its settings (a schedule setting: every day, week or month at a time, DASH-432); the permission jellyfin:metadata with the jellyfin-metadata volume (DASH-432); update tools (DASH-424): an update object with a before and an after step Starboard calls with time limits, a health wait after which a version that does not answer is rolled back by itself, and settings migrations (rename, remove, new defaults) kept for Roll back, and What is new shown before an update from the new version's changes  # 1.13 (13 November 2026, DASH-411): app plug-ins, a whole app such as Jellystat with its database: publish on the lan network with network:port (Starboard chooses a free port on the home network, host_port is the one it tries first), tmpfs, data mounted at a path (data:/path, data/<folder>:/path), env values from {secret:name} and {jellyfin:url} or {jellyfin:key}, resources pids, and adopt, which copies an app you already have into the plug-in  # 1.12 (13 November 2026, DASH-410): a container may run as the media folder's owner (user "media") to add files in the media folders it mounts, which Starboard makes for it; a custom screen's item may have a link (opened in a new tab) and its own words for its state (state_label), and its add box may take only a file (file_only)  # 1.11 (13 November 2026, DASH-401 and DASH-402): four more events (request.available, download.failed, disk.nearly_full, update.available) for a notifications plug-in, and readonly on a custom screen with folds, so a table of figures has no tick boxes or Activate buttons  # 1.10 (13 November 2026, DASH-393): optional changes, the plug-in's own changelog by version (Added, Changed, Fixed and the rest), shown as What is new on its State after an update or a Roll back; older plug-ins without it still work  # 1.9 (13 November 2026): a container on the vpn network may set publish, so its port goes on Gluetun for the home network  # 1.8 (13 November 2026, DASH-359): a custom screen may fold its items into sections with a table each (layout folds, columns, filters, cells), select several (bulk_ids), add a guide to an item (attach, detach), show notices with progress; a card may be a guide  # 1.7 (13 November 2026, DASH-361): a custom screen may have sub menus, items and bulk switches placed in them  # 1.6 (12 November 2026, owner): permissions reelix:key and usenet:servers, handed over as run/reelix.json and run/usenet.json  # 1.5 (12 November 2026, DASH-307): settings may have a group, each its own section; a choice may be {value, label}  # 1.4 (12 November 2026, DASH-330): required settings and setup_required, notices, events, jobs, card refresh_minutes  # 1.3 (12 November 2026): a folder setting is a folder inside the media folders the plug-in mounts, chosen with the location picker  # 1.2 (12 November 2026): styles may also set card, button, border, tab, header, side menu and chip styles  # 1.1 (11 November 2026): styles may set more colours, heading font and weight, focus width
 ID = r"^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$"
 SEMVER = r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$"
 DIGEST_IMAGE = r"^[a-z0-9.-]+(:\d+)?(/[a-z0-9._-]+)+@sha256:[0-9a-f]{64}$"
@@ -95,7 +95,41 @@ BUILTIN_VOLUMES = {"iptv"}
 SETTING = {"key", "label", "type", "hint", "default", "min", "max", "unit", "choices", "restart", "item", "required", "group"}
 # A card's own refresh time (API 1.14, owner 14 November 2026): 10 seconds is the quickest, an hour the slowest.
 REFRESH_MIN, REFRESH_MAX = 10, 3600
-CARD = {"id", "title", "type", "path", "format", "label", "example", "refresh_minutes", "refresh_seconds"}
+CARD = {"id", "title", "titles", "type", "path", "format", "label", "example", "refresh_minutes", "refresh_seconds"}
+# A title for each card size (API 1.15, DASH-443, owner 15 November 2026: "different titles for each type of card and
+# cap the max number of characters for each type", "only to go on one line per card"). Each cap is the most
+# characters of a wide, realistic title that fit on one line beside the logo, with the band's status chip and time,
+# at the default text size and the narrowest desktop width that size is shown at (measured in the real dashboard
+# styles, DASH-443). A size left out uses the card's title, under the plug-in's name, as before.
+CARD_SIZES = ("small", "medium", "half", "wide", "full")
+# Measured (DASH-443) with the widest of ten realistic titles in the heading's font (600 16px Atkinson Hyperlegible
+# Next): small 147 pixels at 1101 wide, the chip and time under it; medium 228 pixels at 1101, the chip and time under
+# it (beside a chip with words only 2 characters fit); half 184, wide 344 at 1101 and full 349 at 768, each beside a
+# chip with words and the time ("Converting", "38 seconds ago").
+CARD_TITLE_MAX = {"small": 17, "medium": 28, "half": 22, "wide": 43, "full": 45}
+
+
+def card_title_problems(card):
+    """What is wrong with a card's titles (API 1.15): [(what, fix)], each title on one line in its size."""
+    if "titles" not in card:
+        return []
+    titles = card["titles"]
+    sizes = ", ".join(CARD_SIZES)
+    if not isinstance(titles, dict) or not titles:
+        return [("titles must be an object with a title for one or more sizes: " + sizes,
+                 'Write it as {"small": "Short title", "half": "A longer title"}')]
+    out = []
+    for size, text in titles.items():
+        if size not in CARD_TITLE_MAX:
+            out.append((f"titles has an unknown size {str(size)[:20]}", f"Use only {sizes}"))
+        elif not isinstance(text, str) or not text.strip():
+            out.append((f"the {size} title must be words", "Give it a title, or leave the size out to use the card's title"))
+        elif re.search(r"[\x00-\x1f\x7f]", text):
+            out.append((f"the {size} title has a line break or a control character", "Write it as one line of plain words"))
+        elif len(text) > CARD_TITLE_MAX[size]:
+            out.append((f"the {size} title is {len(text)} characters, and a {size} card has room for {CARD_TITLE_MAX[size]} on one line",
+                        f"Shorten it to {CARD_TITLE_MAX[size]} characters or fewer"))
+    return out
 # API 1.4 (DASH-330, from Stremio and Jellyfin): notices shown before install, events a plug-in hears, and jobs Starboard
 # runs for it. Each event needs the read permission that already covers what it tells.
 NOTICES = {"p2p": "Shares files with other people over the internet, which can show your internet address",
@@ -389,6 +423,8 @@ def check(manifest, dev=False, builtin=False):
             out.append(f"{where}: needs a type ({', '.join(CARD_TYPES)}) and a path on the plug-in")
         if card.get("format") and card["format"] not in CARD_FORMATS:
             out.append(f"{where}: format must be one of {', '.join(CARD_FORMATS)}")
+        for what, _fix in card_title_problems(card):  # API 1.15 (DASH-443)
+            out.append(f"{where}: {what}")
     for i, a in enumerate(m.get("actions") or []):
         if not isinstance(a, dict) or set(a) - ACTION or not a.get("label") or not re.match(r"^/[A-Za-z0-9/_-]{1,80}$", str(a.get("path", ""))):
             out.append(f"actions[{i}]: needs a label and a path on the plug-in")
@@ -880,7 +916,11 @@ def write_schema(path):
             "cards": {"type": "array", "items": {"type": "object", "required": ["type", "path"],
                                                  "properties": {"type": {"enum": list(CARD_TYPES)}, "format": {"enum": list(CARD_FORMATS)},
                                                                 "refresh_minutes": {"type": "integer", "minimum": 1, "maximum": 1440},
-                                                                "refresh_seconds": {"type": "integer", "minimum": REFRESH_MIN, "maximum": REFRESH_MAX}}}},
+                                                                "refresh_seconds": {"type": "integer", "minimum": REFRESH_MIN, "maximum": REFRESH_MAX},
+                                                                # API 1.15 (DASH-443): a title for each size, on one line
+                                                                "titles": {"type": "object", "additionalProperties": False, "minProperties": 1,
+                                                                           "properties": {k: {"type": "string", "minLength": 1, "maxLength": v}
+                                                                                          for k, v in CARD_TITLE_MAX.items()}}}}},
             # API 1.4 (DASH-330)
             "setup_required": {"type": "boolean"},
             "notices": {"type": "array", "items": {"enum": sorted(NOTICES)}, "uniqueItems": True},
