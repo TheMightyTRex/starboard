@@ -122,7 +122,7 @@ def app_stage():
 
 
 def reelix_stage():
-    lite = "ghcr.io/themightytrex/reelix:lite"
+    lite = f"ghcr.io/themightytrex/reelix:{os.environ.get('REELIX_FROM') or 'lite'}"  # REELIX_FROM: a version tag to start from
     to = os.environ.get("REELIX_TO", "")
     try:
         sh("docker", "pull", "-q", lite)
@@ -138,7 +138,7 @@ def reelix_stage():
     sh("docker", "compose", "-p", "e2e-reelix", "up", "-d", "--quiet-pull", cwd=f"{HOME}/reelix")
     base = "http://127.0.0.1:18700"
     healthy = reelix_updates._healthy(base, 120, time.sleep)
-    say(healthy, "Reelix Lite (the published image) answers healthy")
+    say(healthy, f"Reelix Lite ({lite.rsplit(':', 1)[1]}, the published image) answers healthy")
     if not healthy:
         print(sh("docker", "logs", "--tail", "20", "reelix", check=False).stdout)
         return

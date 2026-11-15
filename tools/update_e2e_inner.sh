@@ -88,7 +88,7 @@ fi
 
 printf '\n######## D. An app and Reelix, as Settings, Updates and Apps, Updates update them\n'
 docker run -d --name e2e-registry --restart no -p 127.0.0.1:5000:5000 registry:2 >/dev/null
-as "cd $H && E2E_FAILED=0 REELIX=$REELIX REELIX_TO='$REELIX_TO' python3 -I /e2e-tools/apps.py" ; [ $? = 0 ] || FAILED=$((FAILED + 1))
+as "cd $H && E2E_FAILED=0 REELIX=$REELIX REELIX_FROM='$REELIX_FROM' REELIX_TO='$REELIX_TO' python3 -I /e2e-tools/apps.py" ; [ $? = 0 ] || FAILED=$((FAILED + 1))
 
 printf '\n######## Clean up\n'
 as "cd $H && docker compose down -v --rmi local" >/dev/null 2>&1 || true

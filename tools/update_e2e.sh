@@ -16,7 +16,8 @@
 #    as the page's Update now runs it), to one more made-up release. It must finish, answer and be that version.
 # D. An app, as Apps, Updates and Settings, Updates update it (update_runs): a small app from a registry inside
 #    the sealed Docker, updated with a copy of its settings, then to a broken version that must go back by itself.
-#    With REELIX=1 (the default), Reelix by itself the same way (reelix_updates.run): the published Lite image,
+#    With REELIX=1 (the default), Reelix by itself the same way (reelix_updates.run): the published Lite image
+#    (REELIX_FROM=<version tag> starts from that build, such as lite-0.8.7-trex.1),
 #    then a broken one that must go back by itself to an answering Reelix; REELIX_TO=<tag> also updates it to that
 #    published version first. A plug-in from the catalogue with Roll back is in the starboard-plugins smoke test.
 #
@@ -54,7 +55,7 @@ git clone -q --no-local --bare . "$run_dir/origin.git"
 cd "$here"
 
 docker run --name "$name" --privileged --memory 3g --memory-swap 3g --cpus 4 \
-  -e DOCKER_TLS_CERTDIR= -e FROM="$FROM" -e REELIX="${REELIX:-1}" -e REELIX_TO="${REELIX_TO:-}" \
+  -e DOCKER_TLS_CERTDIR= -e FROM="$FROM" -e REELIX="${REELIX:-1}" -e REELIX_FROM="${REELIX_FROM:-}" -e REELIX_TO="${REELIX_TO:-}" \
   -v /var/lib/docker -v "$run_dir:/e2e" \
   -v "$here/tools/update_e2e_inner.sh:/e2e-tools/inner.sh:ro" -v "$here/tools/update_e2e_apps.py:/e2e-tools/apps.py:ro" \
   --entrypoint sh "$DIND" /e2e-tools/inner.sh
