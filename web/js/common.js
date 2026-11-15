@@ -702,15 +702,11 @@ function setUpHeader() {
     }));
     matchMedia("(min-width: 721px)").addEventListener("change", (e) => { if (e.matches) drawer.closeLayer?.(false); });
   }
-  // Tabs that do not fit show icons only, as in Storyarr.
-  const fit = () => $$(".site-header .menu-tabs").forEach((nav) => {
-    nav.classList.remove("is-compact");
-    if (nav.scrollWidth > nav.clientWidth + 1) nav.classList.add("is-compact");
-  });
-  fit();
-  window.addEventListener("resize", fit);
+  // When the header's items do not fit, it gives way in steps (the shared header fit, DASH-437): icons only, then
+  // the Search button, then Help and Display as icons, then the level 1 menu under Menu. It measures again when the
+  // text size or spacing changes in Display, the server's name arrives or the window changes size.
   SharedComponents.setupSearch();
-  document.fonts?.ready.then(fit);
+  SharedComponents.setupHeaderFit();
   // Sign out is in the side menu on every page (issue #9, 12 November 2026) and in the phone menu.
   $$("[data-sign-out]").forEach((b) => b.addEventListener("click", async () => {
     await api("/api/logout", { method: "POST" }).catch(() => {});

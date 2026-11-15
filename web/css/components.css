@@ -262,6 +262,35 @@
     overflow: hidden;
     clip-path: inset(50%);
   }
+  /* When even the icons do not fit (large text, wider spacing, a long server name), the header gives way in steps
+     instead of cutting items off or squeezing the search box (DASH-437). SharedComponents.setupHeaderFit measures the
+     header and adds one class at a time to .site-header until everything fits:
+       is-search-folded    the search box becomes the Search button, which opens it as a row under the header;
+       is-actions-compact  Help and Display show their icons only (their names stay for screen readers);
+       is-crowded          the level 1 menu moves into the Menu button's slide-out, as on phones. */
+  .site-header.is-search-folded .site-header__search {
+    display: none;
+  }
+  .site-header.is-search-folded.is-search-open .site-header__search {
+    display: block;
+  }
+  .site-header.is-search-folded .site-header__search-btn,
+  .site-header.is-crowded .phone-menu-button {
+    display: inline-flex;
+  }
+  .site-header.is-search-folded .site-header__actions {
+    margin-left: auto;
+  }
+  .site-header.is-actions-compact .site-header__actions .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .site-header.is-crowded .site-header__bar > .menu-tabs {
+    display: none;
+  }
 
   /* Main menu: the icon rail on the left, on computers. */
   .rail {
@@ -276,6 +305,28 @@
     padding: var(--space-3) var(--space-2);
     background: var(--color-rail, var(--color-header)); /* a style may give the side menu its own colour */
     border-right: 1px solid var(--color-divider);
+    /* A short window, or large text: the side menu scrolls on its own instead of squeezing its items on top of each
+       other (DASH-437). Its width (--rail-w) leaves room for a thin scroll bar. */
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .rail > *,
+  .rail__end > * {
+    flex-shrink: 0;
+  }
+  /* In a short window the items sit a little closer, so the whole menu fits at 100% text in 600 pixels. */
+  @media (max-height: 720px) {
+    .rail {
+      gap: 0;
+      padding-block: var(--space-2);
+    }
+    .rail :is(a, button) {
+      min-height: 48px;
+    }
+    .rail .rail__brand {
+      padding-bottom: var(--space-2);
+    }
   }
   .rail__logo {
     display: grid;
@@ -300,9 +351,11 @@
   .rail .rail__brand:hover {
     background: none;
   }
+  /* The side menu is wide enough for the name at every text size (--rail-w), so it never breaks in the middle;
+     only a name longer than any app's would wrap. */
   .rail__name {
     max-width: 100%;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     text-align: center;
   }
   .rail a,
@@ -1506,7 +1559,7 @@
     animation: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    .progress--busy > span {
+    :root:not(.pref-motion-off) .progress--busy > span {
       width: 50%;
       animation: none;
     }
@@ -1552,6 +1605,7 @@
   .row__meta {
     color: var(--color-text-muted);
     font-size: var(--text-sm);
+    overflow-wrap: anywhere; /* release names and paths have no spaces to wrap at */
   }
   .row__side {
     display: flex;
@@ -1864,7 +1918,7 @@
     animation: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    .toast {
+    :root:not(.pref-motion-off) .toast {
       animation: none;
     }
   }
@@ -2954,10 +3008,10 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .shelf-track {
+    :root:not(.pref-motion-off) .shelf-track {
       scroll-behavior: auto;
     }
-    .cover-actions {
+    :root:not(.pref-motion-off) .cover-actions {
       transition: none;
     }
   }
@@ -4801,9 +4855,21 @@
     .row {
       grid-template-columns: auto minmax(0, 1fr);
     }
+    /* A row with no leading picture keeps one column, so a long name wraps instead of pushing the page sideways. */
+    .row--no-lead {
+      grid-template-columns: minmax(0, 1fr);
+    }
     .row__side {
       grid-column: 1 / -1;
       justify-content: start;
+    }
+    /* At large text a button's words may not fit across a phone: they wrap inside the button instead. */
+    .btn {
+      max-width: 100%;
+      white-space: normal;
+    }
+    .menu-wrap {
+      max-width: 100%;
     }
     .setting {
       grid-template-columns: minmax(0, 1fr);
@@ -5005,18 +5071,18 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .skeleton,
-    .loading-bar[data-active]::before,
-    .loading-bar[data-active]::after {
+    :root:not(.pref-motion-off) :is(.skeleton, .side-panel, .phone-menu),
+    :root:not(.pref-motion-off) .loading-bar[data-active]::before,
+    :root:not(.pref-motion-off) .loading-bar[data-active]::after {
       animation: none;
     }
     /* Reduce motion: nothing slides, but the line still shows that something is happening by fading in and out
        across its whole width (owner, 12 November 2026: a still line looked as if nothing was loading). */
-    .loading-bar[data-active]::before {
+    :root:not(.pref-motion-off) .loading-bar[data-active]::before {
       right: 0;
       animation: loading-fade 1.6s ease-in-out infinite;
     }
-    .loading-bar[data-active]::after {
+    :root:not(.pref-motion-off) .loading-bar[data-active]::after {
       display: none;
     }
   }
@@ -5403,5 +5469,6 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
   .plugin-band__name { margin: 0; font-size: var(--text-lg); font-weight: var(--weight-heading); line-height: var(--leading-tight); }
   .plugin-band__sub { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
   .plugin-band__side { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-inline-start: auto; }
-  @media (prefers-reduced-motion: reduce) { .side-tree__chev { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { :root:not(.pref-motion-off) .side-tree__chev { transition: none; } }
+  :root.pref-motion .side-tree__chev { transition: none; }
 }

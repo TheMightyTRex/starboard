@@ -455,10 +455,19 @@
 
   /* Display and accessibility: theme, text size and reading aids are classes on <html>. Inputs carry
      data-display="theme|text|motion|contrast|underline|spacing". Theme "system" follows the device.
-     Reduce motion is a switch, or radios valued "device", "on" and "off" (the device setting still
-     applies unless the choice is "on"). A form with data-display-save="<key>" keeps the choices in
+     Reduce motion is a switch, or radios valued "device" (follows the device), "on" (always still) and
+     "off" (full movement, even when the device asks for less). A form with data-display-save="<key>" keeps the choices in
      this browser and restores them; a [data-display-reset] button inside it, or one anywhere with
      data-display-reset="<key>", goes back to the defaults written in the markup. An app that saves to the person's account leaves data-display-save off. */
+  /* Whether to keep still: Reduce motion On (pref-motion) always; Off (pref-motion-off) never, even when the device
+     asks for less movement; Match device (neither class) follows the device (DASH-437). Every movement in the
+     library asks this, never the media query alone. */
+  const motionStill = () => {
+    const html = document.documentElement;
+    if (html.classList.contains("pref-motion")) return true;
+    if (html.classList.contains("pref-motion-off")) return false;
+    return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+  };
   function applyDisplay(input) {
     const html = document.documentElement;
     const kind = input.dataset.display;
@@ -471,8 +480,10 @@
       ["125", "150", "175"].forEach((size) =>
         html.classList.toggle(`pref-text-${size}`, input.value === size),
       );
-    if (kind === "motion" && input.type === "radio")
+    if (kind === "motion" && input.type === "radio") {
       html.classList.toggle("pref-motion", input.value === "on");
+      html.classList.toggle("pref-motion-off", input.value === "off");
+    }
     else if (["contrast", "spacing", "motion", "underline"].includes(kind))
       html.classList.toggle(`pref-${kind}`, input.checked);
   }
@@ -542,7 +553,7 @@
         const first = track.firstElementChild;
         const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
         const step = Math.max(track.clientWidth - (first ? first.getBoundingClientRect().width + gap : 0), 100);
-        const still = matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("pref-motion");
+        const still = motionStill();
         track.scrollBy({ left: (arrow.closest(".shelf-edge--start") ? -1 : 1) * step, behavior: still ? "instant" : "smooth" });
       });
       track.addEventListener("focusin", (event) => event.target.closest(".shelf-track > *")?.scrollIntoView({ block: "nearest", inline: "nearest" }));
@@ -588,7 +599,7 @@
   function azGo(nav, letter) {
     const heading = document.getElementById(azId(letter));
     if (!heading) return false;
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("pref-motion");
+    const still = motionStill();
     if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
     heading.scrollIntoView({ block: "start", behavior: still ? "instant" : "smooth" });
     heading.focus({ preventScroll: true });
@@ -725,12 +736,6 @@
      load() fetches and adds the next page and returns how many it added (0 or nothing: nothing more, or busy).
      items: a selector or a function giving the list's items, to find the first new one after Show more.
      auto: true, false or a function read each time (such as the person's setting). Returns { more, reset, destroy }. */
-  const motionStill = () => {
-    const html = document.documentElement;
-    if (html.classList.contains("pref-motion")) return true;
-    if (html.classList.contains("pref-motion-off")) return false;
-    return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
-  };
   function loadMoreFocus(item) {
     if (!item) return;
     const to = item.matches("a[href], button") ? item : item.querySelector("a[href]") || item.querySelector("button") || item; // the title link first
@@ -938,6 +943,53 @@
     });
   }
 
+  /* Header fit (DASH-437): the header gives way in steps when its items do not fit, instead of cutting menu items off
+     or squeezing the search box to a few letters. Each step is tried only while something still does not fit:
+       1. the level 1 menu shows icons only (.menu-tabs.is-compact; the names stay as tooltips and for screen readers);
+       2. the search box becomes the Search button (.site-header.is-search-folded), opening it as a row under the header;
+       3. Help and Display show their icons only (.is-actions-compact);
+       4. the level 1 menu moves into the Menu button's slide-out (.is-crowded), as on phones.
+     A level 2 menu (.site-header__tabs) shows icons only when its names do not fit. It measures again whenever
+     anything in the header changes size: the window, the text size or spacing chosen in Display, a name arriving
+     after the page loads, the font loading. One ResizeObserver, no timers. */
+  const HEADER_STEPS = ["is-search-folded", "is-actions-compact", "is-crowded"];
+  function fitHeader(header) {
+    if (!header || header.classList.contains("is-search-open")) return;
+    const bar = header.querySelector(".site-header__bar");
+    const main = bar?.querySelector(":scope > .menu-tabs");
+    const input = bar?.querySelector(".site-header__search input");
+    const shown = (e) => !!e && e.getClientRects().length > 0;
+    const overflows = (e) => shown(e) && e.scrollWidth > e.clientWidth + 1;
+    const narrow = () => shown(input) && input.clientWidth < Math.max(150, 6 * parseFloat(getComputedStyle(input).fontSize));
+    const fits = () => !overflows(main) && !overflows(bar) && !narrow();
+    header.classList.remove(...HEADER_STEPS);
+    header.querySelectorAll(".menu-tabs").forEach((nav) => nav.classList.remove("is-compact"));
+    header.querySelectorAll(".site-header__tabs .menu-tabs").forEach((nav) => nav.classList.toggle("is-compact", overflows(nav)));
+    const steps = [() => main?.classList.add("is-compact"), ...HEADER_STEPS.map((step) => () => header.classList.add(step))];
+    for (const step of steps) {
+      if (fits()) break;
+      step();
+    }
+  }
+  function setupHeaderFit(root = document) {
+    root.querySelectorAll(".site-header").forEach((header) => {
+      if (header.dataset.fitReady) return;
+      header.dataset.fitReady = "1";
+      let queued = false;
+      const fit = () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => { queued = false; fitHeader(header); });
+      };
+      const watch = new ResizeObserver(fit);
+      const bar = header.querySelector(".site-header__bar");
+      if (bar) [bar, ...bar.children].forEach((e) => watch.observe(e));
+      header.querySelectorAll(".menu-tabs a, .site-header__actions > *").forEach((e) => watch.observe(e));
+      document.fonts?.ready.then(fit);
+      fitHeader(header);
+    });
+  }
+
   function setup(root) {
     setupMenus(root);
     setupShelves(root);
@@ -947,13 +999,14 @@
     setupToggles(root);
     setupCopy(root);
     setupSearch(root);
+    setupHeaderFit(root);
     setupDisplay(root);
     setupAzJump(root);
     setupSortables(root);
     setupSideTrees(root);
     setupSolvers(root);
   }
-  window.SharedComponents = { setup, setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo, loadMore };
+  window.SharedComponents = { setup, setupHeaderFit, fitHeader, motionStill, setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo, loadMore };
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");

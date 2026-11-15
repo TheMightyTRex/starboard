@@ -23,6 +23,13 @@ add features.
 - **Updates:** update.sh hands over to the new version's own update.sh when it updates to a newer version, so a fix to it helps in the very update that brings it. Going back keeps the running copy. (DASH-429)
 - **Upgrade guide:** What is new fills the slide-out's width on wide screens. (Design system 10584ca)
 
+### Fixed
+- **Large text in the side menu:** At 125% to 175% text, and with wider spacing, the side menu grows wider, so Starboard no longer breaks in the middle of the word and Feedback no longer runs past its edge. (DASH-437, design system e3334ef)
+- **Large text in the header:** When the header has too little room, it gives way in steps: icons only, then the Search button, then Help and Display as icons, then the menu under Menu. It refits when the text size or spacing changes in Display, so nothing is cut off and the search box is never squeezed to a few letters. (DASH-437)
+- **Short windows:** In a window about 600 pixels tall, the side menu items no longer overlap: they sit a little closer, and the menu scrolls on its own when they still do not fit. (DASH-437)
+- **Reduce motion Off:** Off now brings back all movement even when your device asks for reduced motion; Match device follows the device and On always reduces it. (DASH-437)
+- **Phones at large text:** Held downloads and long buttons, such as Sort, no longer push Downloads sideways at 150% and 175% text. (DASH-437)
+
 ## [0.17.0] (14 November 2026)
 
 ### Added

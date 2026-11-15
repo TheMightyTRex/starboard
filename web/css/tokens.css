@@ -56,7 +56,11 @@
   --radius-round: 50%;
   --header-h: 64px;
   --tabs-h: 48px;
-  --rail-w: 88px;
+  /* The side menu grows with the text, so its names never break in the middle of a word or run past its edge
+     (DASH-437): room for the widest one-word name (Feedback, Starboard) at --text-xs, plus the menu's padding,
+     its border and a thin scroll bar for short windows. Never narrower than 88px. Wider spacing needs more room. */
+  --rail-name-em: 4.6;
+  --rail-w: max(88px, calc(var(--text-xs) * var(--rail-name-em) + 28px));
   --panel-w: 420px;
   --dialog-w: 560px;
   --content-max: 1440px;
@@ -292,6 +296,7 @@
 :root.pref-text-150 { --text-scale: 1.5; }
 :root.pref-text-175 { --text-scale: 1.75; }
 :root.pref-spacing {
+  --rail-name-em: 6;
   --leading: 1.8;
   --letter-spacing: 0.12em;
   --word-spacing: 0.16em;
@@ -300,8 +305,11 @@
   --motion-fast: 0ms;
   --motion-panel: 0ms;
 }
+/* Reduce motion: On (pref-motion) always stills movement; Match device follows the device; Off (pref-motion-off)
+   means full movement even when the device asks for less (DASH-437). Every reduced-motion query in the library
+   leaves out :root.pref-motion-off in the same way. */
 @media (prefers-reduced-motion: reduce) {
-  :root {
+  :root:not(.pref-motion-off) {
     --motion-fast: 0ms;
     --motion-panel: 0ms;
   }
