@@ -479,6 +479,61 @@ if (often20) {
   check("T20", "Day is next in the Tab order once it shows", day20.id === "pl-picture-shrinker-when-day", day20.id);
   await page.evaluate(async () => { await api("/api/plugins/picture-shrinker/settings", { method: "PUT", body: { settings: { when: { every: "month", date: 31, time: "03:30" } } } }); });
 }
+// T22 A plug-in update by keyboard (plug-in API 1.14, DASH-424): Tab reaches Update, Enter opens the warning with
+// focus inside it and What is new readable before the password; Enter in the password starts the update, whose steps
+// dialog takes focus at its heading, says each step in its live region, focuses the result, and Escape gives focus to
+// the plug-in's State heading.
+await page.goto(`${base}/settings-plugin.html?id=picture-shrinker`);
+await settle();
+const tab22 = page.getByRole("tab", { name: "Versions", exact: true });
+if (await tab22.count()) { await tab22.focus(); await page.keyboard.press("Enter"); await page.waitForTimeout(300); }
+const go22 = await tabTo((f) => /^Update to 1\.1\.0/.test(f.text), 200);
+check("T22", "Tab reaches Update to 1.1.0", !!go22, "not reached");
+if (go22) {
+  await page.keyboard.press("Enter");
+  await page.getByRole("dialog", { name: "Update Picture shrinker to 1.1.0?" }).waitFor({ timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  const in22 = await focus();
+  check("T22", "the warning opens with focus inside it", in22.inPanel, in22.text);
+  const order22 = await page.evaluate(() => {
+    const panel = document.activeElement?.closest("#side-panel, dialog, [role=dialog]");
+    const texts = [...(panel?.querySelectorAll("h2, h3, input") || [])].map((n) => n.tagName === "INPUT" ? `input#${n.id}` : n.textContent.trim());
+    return texts;
+  });
+  const newAt = order22.findIndex((t) => /What is new since 1\.0\.0/.test(t)), pwAt = order22.indexOf("input#pl-install-password");
+  check("T22", "What is new and how it is kept safe come before the password", newAt >= 0 && pwAt > newAt
+    && order22.some((t) => /kept safe/.test(t)), order22.join(" / "));
+  const pw22 = await tabTo((f) => f.id === "pl-install-password", 60);
+  check("T22", "Tab reaches the password in the warning", !!pw22, "not reached");
+  await page.keyboard.type(password);
+  await page.keyboard.press("Enter");
+  const run22 = page.getByRole("dialog", { name: "Updating Picture shrinker to 1.1.0" });
+  await run22.waitFor({ timeout: 8000 }).catch(() => {});
+  const head22 = await focus();
+  check("T22", "the steps dialog opens with focus on its heading", head22.text === "Updating Picture shrinker to 1.1.0", head22.text);
+  const heard = [];
+  for (let i = 0; i < 40 && !(await run22.locator(".notice__title").count()); i++) {
+    const t = await run22.locator("[aria-live=polite]").textContent().catch(() => "");
+    if (t && !heard.includes(t)) heard.push(t);
+    await page.waitForTimeout(250);
+  }
+  await page.waitForTimeout(300);
+  const end22 = await focus();
+  check("T22", "each finished step is said in the dialog's live region", heard.some((t) => /: Done$/.test(t)), heard.join(" | "));
+  check("T22", "the result takes focus when it finishes", /Picture shrinker is updated/.test(end22.text), end22.text);
+  await page.keyboard.press("Escape");
+  // The page is drawn again with the new version as the dialog closes: focus settles on State once it is drawn.
+  let back22 = await focus();
+  for (let i = 0; i < 12 && back22.id !== "pl-picture-shrinker-state-h"; i++) { await page.waitForTimeout(250); back22 = await focus(); }
+  const why22 = await page.evaluate(() => {
+    const h = document.getElementById("pl-picture-shrinker-state-h");
+    return JSON.stringify({ h: !!h, off: h?.closest(".topic-off")?.id || "", hidden: h ? !h.getClientRects().length : null,
+      dialogs: document.querySelectorAll("dialog").length, open: document.querySelectorAll("dialog[open]").length,
+      panel: !!document.querySelector("#side-panel"), tabs: [...document.querySelectorAll("[role=tab][aria-selected=true]")].map((t) => t.textContent) });
+  });
+  check("T22", "Escape gives focus to the plug-in's State", back22.id === "pl-picture-shrinker-state-h", `${back22.id || back22.text} ${why22}`);
+  check("T22", "State says what is new, in a status region", /What is new in 1\.1\.0/.test(await said()), await said());
+}
 // T21 The card band (plug-in API 1.14, DASH-428): the dashboard's plug-in cards are reached by heading, and each
 // band's chip and time read on their own.
 await page.goto(`${base}/dashboard.html`);

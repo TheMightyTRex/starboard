@@ -1089,7 +1089,7 @@ await page.waitForTimeout(400);
 const rights = await page.locator("#key-right option").allTextContents();
 check("API-01", "Make a key asks what it may do: Read only or Read and manage", rights.join("|") === "Read only|Read and manage", rights.join("|"));
 const scopeNames = await page.locator("#key-scopes .check strong").allTextContents();
-check("API-01", "and what it may see, one tick for each area", scopeNames.join("|") === "Apps|Downloads|Media|Library|Requests|System|Logs", scopeNames.join("|"));
+check("API-01", "and what it may see, one tick for each area", scopeNames.join("|") === "Apps|Downloads|Media|Library|Requests|System|Logs|Updates", scopeNames.join("|"));
 await page.fill("#key-name", "Journey manager");
 await page.selectOption("#key-right", "manage");
 await page.check("#key-scope-downloads");
@@ -1344,6 +1344,63 @@ await schedJob.getByRole("button", { name: /Run now/ }).click();
 await page.waitForTimeout(2500);
 check("SCH-05", "Run now works as for any other job", /Shrank 0 pictures/.test(await page.locator("#jobs li", { hasText: "Picture shrinker" }).innerText()));
 await api("/api/plugins/picture-shrinker/settings", { method: "PUT", body: { settings: { when: { every: "month", date: 31, time: "03:30" } } } });
+
+// PUP: a plug-in that updates safely (plug-in API 1.14, DASH-424). Picture shrinker 1.1.0 is in a made-up catalogue,
+// with its changes, a settings migration and a before and an after step that answer here; nothing is fetched.
+console.log("\n== PUP Plug-in updates and What is new");
+await api("/api/plugins/picture-shrinker/settings", { method: "PUT", body: { settings: { poster_height: 1200 } } });
+await open("settings-plugin.html?id=picture-shrinker");
+const pupGo = page.getByRole("button", { name: "Update to 1.1.0…" }).first();
+check("PUP-01", "a newer version in a catalogue offers Update on the plug-in's page", (await pupGo.count()) === 1);
+await pupGo.click();
+const pupWarn = page.getByRole("dialog", { name: "Update Picture shrinker to 1.1.0?" });
+await pupWarn.waitFor({ timeout: 8000 }).catch(() => {});
+const pupNew = pupWarn.locator("section[aria-labelledby=pl-update-new-h]");
+check("PUP-01", "before updating, What is new since 1.0.0 lists the new version's own changes",
+  (await pupNew.getByRole("heading", { name: "What is new since 1.0.0" }).count()) === 1
+  && /Photos of people/.test(await pupNew.innerText()) && /Version 1\.1\.0/.test(await pupNew.innerText()), await pupNew.innerText().catch(() => ""));
+const pupSafe = await pupWarn.locator("section[aria-labelledby=pl-update-safe-h]").innerText().catch(() => "");
+check("PUP-01", "and how it is kept safe: the settings that move, the step before, the health wait and Roll back",
+  /poster_height is now max_poster_height/.test(pupSafe) && /finish or pause its work first/.test(pupSafe)
+  && /waits up to 30 seconds/.test(pupSafe) && /Version 1\.0\.0 is kept/.test(pupSafe), pupSafe);
+await page.locator("#pl-install-password").fill(password);
+await pupWarn.getByRole("button", { name: "Update Picture shrinker", exact: true }).click();
+const pupRun = page.getByRole("dialog", { name: "Updating Picture shrinker to 1.1.0" });
+await pupRun.waitFor({ timeout: 8000 }).catch(() => {});
+check("PUP-02", "the update opens its steps with focus on the heading",
+  await page.evaluate(() => document.activeElement?.textContent === "Updating Picture shrinker to 1.1.0"));
+await pupRun.locator(".notice__title", { hasText: "Picture shrinker is updated" }).waitFor({ timeout: 20000 }).catch(() => {});
+const pupSteps = await pupRun.locator(".task-list__item").allInnerTexts();
+check("PUP-02", "each step is done: ready, settings, install, health and tidy up",
+  (await pupRun.locator(".task-list__item[data-state=done]").count()) === 5 && /Moving its settings/.test(pupSteps.join(" ")), pupSteps.join(" | "));
+check("PUP-02", "the result is focused and said in the live region",
+  await page.evaluate(() => document.activeElement?.closest(".notice")?.textContent.includes("Picture shrinker is updated"))
+  && /Picture shrinker is updated/.test(await pupRun.locator("[role=status][aria-live=polite]").textContent()));
+await pupRun.getByRole("button", { name: "Done" }).click();
+await page.waitForTimeout(400);
+check("PUP-03", "closing it takes focus to the plug-in's State", await page.evaluate(() => document.activeElement?.id === "pl-picture-shrinker-state-h"));
+const pupAfter = (await api("/api/plugins")).plugins.find((p) => p.id === "picture-shrinker");
+check("PUP-03", "the settings moved to the new key with the value chosen", pupAfter.version === "1.1.0"
+  && pupAfter.settings.find((x) => x.key === "max_poster_height")?.value === 1200, JSON.stringify(pupAfter.settings.map((x) => [x.key, x.value])));
+const pupWn = page.locator("#pl-picture-shrinker-whats-new");
+check("PUP-04", "after the update, State shows What is new in 1.1.0", /What is new in 1\.1\.0/.test(await pupWn.innerText().catch(() => "")));
+await page.getByRole("button", { name: "Roll back to 1.0.0" }).first().click();
+await page.locator("#pl-rb-picture-shrinker").fill(password);
+await page.getByRole("dialog", { name: "Roll back Picture shrinker to 1.0.0?" }).getByRole("button", { name: "Roll back", exact: true }).click();
+const pupBack = page.getByRole("dialog", { name: "Rolling Picture shrinker back to 1.0.0" });
+await pupBack.locator(".notice__title", { hasText: "Picture shrinker is back on 1.0.0" }).waitFor({ timeout: 20000 }).catch(() => {});
+check("PUP-05", "Roll back runs as steps and ends back on 1.0.0", (await pupBack.locator(".notice__title").textContent().catch(() => "")) === "Picture shrinker is back on 1.0.0");
+await pupBack.getByRole("button", { name: "Done" }).click();
+await page.waitForTimeout(400);
+const pupBefore = (await api("/api/plugins")).plugins.find((p) => p.id === "picture-shrinker");
+check("PUP-05", "with the settings as they were before the update", pupBefore.version === "1.0.0"
+  && pupBefore.settings.find((x) => x.key === "poster_height")?.value === 1200 && !pupBefore.whats_new);
+check("PUP-05", "and focus back on State", await page.evaluate(() => document.activeElement?.id === "pl-picture-shrinker-state-h"));
+await open("settings-security-keys.html");
+await page.getByRole("button", { name: "Make a key" }).first().click();
+const pupBox = page.getByRole("checkbox", { name: /^Updates/ });
+check("PUP-06", "Make a key offers Updates, only given when ticked", (await pupBox.count()) === 1 && !(await pupBox.isChecked()));
+await page.keyboard.press("Escape");
 
 // UPD: Update now and automatic Starboard updates (DASH-417). The example server has a newer made-up release and an
 // update that only writes update.sh's lines, so nothing is fetched or restarted.

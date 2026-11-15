@@ -182,6 +182,42 @@ if (!pages.length || pages.includes("search.html")) {
   } catch (e) { add(name, "page", "error", e.message.split("\n")[0]); }
 }
 
+// A plug-in update (plug-in API 1.14, DASH-424): the warning with What is new and how it is kept safe, then the
+// update's steps dialog with its result, each in Light, Dark and High contrast, with its structure.
+if (!pages.length || pages.some((p) => p.includes("picture-shrinker"))) {
+  const scan = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  try {
+    await page.goto(`${base}/settings-plugin.html?id=picture-shrinker`);
+    await settle();
+    const versions = page.getByRole("tab", { name: "Versions", exact: true });  // the topic tabs show one part at a time
+    if (await versions.count()) { await versions.click(); await page.waitForTimeout(300); }
+    await page.getByRole("button", { name: "Update to 1.1.0…" }).first().click();
+    const warn = page.getByRole("dialog", { name: "Update Picture shrinker to 1.1.0?" });
+    await warn.waitFor({ timeout: 8000 });
+    await page.waitForTimeout(400);
+    await scan("settings-plugin.html?id=picture-shrinker, Update warning");
+    await page.locator("#pl-install-password").fill(password);
+    await warn.getByRole("button", { name: "Update Picture shrinker", exact: true }).click();
+    const run = page.getByRole("dialog", { name: "Updating Picture shrinker to 1.1.0" });
+    await run.locator(".notice__title").waitFor({ timeout: 20000 });
+    await scan("settings-plugin.html?id=picture-shrinker, Update steps");
+    await run.getByRole("button", { name: "Done" }).click();
+    await settle();
+    await scan("settings-plugin.html?id=picture-shrinker, What is new after the update");
+    console.log("checked the plug-in update");
+  } catch (e) { add("settings-plugin.html?id=picture-shrinker, Update", "page", "error", e.message.split("\n")[0]); }
+}
+
 // Slide-out and dialog behaviour (once; every page uses the same code): Display, then a confirm dialog.
 await page.goto(`${base}/settings-general.html`);
 await settle();

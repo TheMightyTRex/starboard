@@ -753,6 +753,57 @@ def _example_picture_shrinker(data_dir):
                                                       if isinstance(e, dict) and e.get("id") == "disk-forecast" else e)
 
 
+def _example_plugin_update(data_dir):
+    """Update tools (plug-in API 1.14, DASH-424): Picture shrinker 1.1.0 is in a catalogue, with its changes, a
+    settings migration (Posters no taller than becomes Largest poster, and a new default for when it runs) and a
+    before and an after step. Update shows What is new and how it is kept safe, then runs as steps; Roll back goes
+    back to 1.0.0 with the settings as they were. Nothing is fetched or started: the steps answer here."""
+    from starboard import plugin_life, plugin_update
+    shrinker = plugins_admin._read(os.path.join(plugins_admin.folder(data_dir, "picture-shrinker"), "manifest.json")) or {}
+    if shrinker.get("version") == "1.0.0" and "changes" not in shrinker:
+        # 1.0.0 as installed, with its own before step, so the update asks it to get ready first.
+        plugins_admin._write(os.path.join(plugins_admin.folder(data_dir, "picture-shrinker"), "manifest.json"),
+                             {**shrinker, "update": {"before": {"path": "/update/before", "time_limit_seconds": 30}},
+                              "changes": [{"version": "1.0.0", "date": "2026-11-10", "added": ["The first version"]}]})
+        shrinker = plugins_admin._read(os.path.join(plugins_admin.folder(data_dir, "picture-shrinker"), "manifest.json"))
+    newer = json.loads(json.dumps(shrinker))
+    newer["version"] = "1.1.0"
+    newer["settings"] = [{**st, "key": "max_poster_height", "label": "Largest poster"} if st["key"] == "poster_height" else st
+                         for st in newer["settings"]]
+    newer["update"] = {"before": {"path": "/update/before", "time_limit_seconds": 30}, "after": {"path": "/update/after"},
+                       "health_wait_seconds": 30,
+                       "migrations": [{"version": "1.1.0", "rename": {"poster_height": "max_poster_height"},
+                                       "defaults": {"when": {"every": "week", "day": "sunday", "time": "03:30"}}}]}
+    newer["changes"] = [{"version": "1.1.0", "date": "2026-11-14",
+                         "added": ["**Photos of people** are shrunk too, as well as posters."],
+                         "changed": ["Posters no taller than is now **Largest poster**; your choice moves with it.",
+                                     "It runs every Sunday at 03:30 unless you chose another time."],
+                         "fixed": ["A poster with an odd shape kept its size."]}] + newer["changes"]
+    address = "https://example.invalid/picture-shrinker/1.1.0/starboard-plugin.json"
+    real_known, real_fetch, real_compose, real_post = plugin_life.updates_known, plugins_admin.fetch_manifest, plugins_admin._compose_run, plugin_update._post
+
+    def known(d):
+        out = real_known(d)
+        have = next((p for p in plugins_admin.listing(d) if p["id"] == "picture-shrinker"), None)
+        if have and have.get("version") == "1.0.0":
+            out["picture-shrinker"] = {"version": "1.1.0", "changelog": "Shrinks photos of people too", "manifest": address, "sha256": ""}
+        return out
+
+    def fetch(where, opener=None, sha256=""):
+        return json.loads(json.dumps(newer)) if where == address else real_fetch(where, opener)
+
+    def compose(d, pid, command, helper=None):  # its container: nothing is started here
+        return (True, "") if pid == "picture-shrinker" else real_compose(d, pid, command, helper)
+
+    def post(pid, main, path, body, timeout):
+        if pid != "picture-shrinker":
+            return real_post(pid, main, path, body, timeout)
+        time.sleep(1.5)  # long enough to see each step in the dialog, which looks every 2 seconds
+        return True, ("No job was running, so it is ready" if path.endswith("before") else "It started its schedule again")
+    plugin_life.updates_known, plugins_admin.fetch_manifest = known, fetch
+    plugins_admin._compose_run, plugin_update._post = compose, post
+
+
 class _LazyStand:
     """Makes the made-up answer only when Starboard really asks the container, so a kept answer is not counted."""
     def __init__(self, make, stand):
@@ -1396,6 +1447,7 @@ def main():
     _example_audio_description(str(DATA))
     _example_direct_play(str(DATA))
     _example_picture_shrinker(str(DATA))
+    _example_plugin_update(str(DATA))
     _example_dispatcharr()
     _example_folders(DATA)
     _example_full_backups()
