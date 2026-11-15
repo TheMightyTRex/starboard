@@ -279,6 +279,10 @@ def _build_updater():
         return
     except containers.DockerError:
         pass
+    try:
+        containers.ensure_image()  # DASH-438: the updater is built on the pinned helper, downloaded first if missing
+    except containers.DockerError as e:
+        raise Refused(str(e)) from None
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w") as tar:
         info = tarfile.TarInfo("Dockerfile")

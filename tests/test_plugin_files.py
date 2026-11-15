@@ -133,6 +133,15 @@ class Buttons(Base):
         self.assertEqual(out["said"], "Done")
         self.assertTrue(seen["url"].endswith("/api/sync"))
 
+    def test_a_button_with_a_confirm_passes_its_words_to_the_page(self):
+        m = copy.deepcopy(ON_DEMAND)
+        m["actions"] = [{"id": "test", "label": "Test now", "path": "/test", "confirm": "Downloads a test file now. Continue?"},
+                        {"id": "sync", "label": "Update now", "path": "/api/sync", "confirm": "  "}]
+        self.add(m)
+        listed = next(p for p in pa.listing(self.tmp.name) if p["id"] == "on-demand")
+        self.assertEqual(listed["actions"][0]["confirm"], "Downloads a test file now. Continue?")
+        self.assertNotIn("confirm", listed["actions"][1])  # an empty confirm asks nothing (DASH-441)
+
 
 class Health(Base):
     def setUp(self):

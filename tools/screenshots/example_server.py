@@ -2,8 +2,13 @@
 """Starboard with made-up data only, for the README screenshots (tools/screenshots.sh starts it).
 
 Nothing real is read: the folders, drives, apps found on this computer and container access are all
-replaced with examples, and a fake Sonarr and Radarr answer on a second port. Data lives in a temporary
-folder that is thrown away. Usage:  python3 tools/screenshots/example_server.py DATA_DIR [PORT]
+replaced with examples, and made-up apps answer on a second port. Data lives in a temporary folder that is thrown
+away. Usage:  python3 tools/screenshots/example_server.py DATA_DIR [PORT]
+
+The apps are the default install (stack.INSTALLS["basics"]): Reelix Lite, Jellyfin, Audiobookshelf, qBittorrent,
+NZBGet, Gluetun and Bazarr, so every screenshot shows what a new install has. EXAMPLE_SETUP=existing adds an older
+set-up beside them (two Sonarrs and a Radarr), for the help on moving from apps you already run, such as Copy app
+settings; tools/screenshots/shoot.mjs adds the same apps for its one Copy app settings picture.
 It prints READY when signed-in screenshots can start, and writes a throwaway password to DATA_DIR/password.
 """
 import base64
@@ -168,7 +173,7 @@ def _example_full_backups():
     from starboard import full_backup
     full_backup._drives = lambda data_dir: [{"mount": "/srv/media", "device": "sdb1", "size": 4000 * 1000 ** 3, "fs": "ext4",
                                              "model": "WDC WD40EFRX", "label": ""}]
-    apps = ["audiobookshelf", "bazarr", "gluetun", "jellyfin", "qbittorrent", "reelix"]
+    apps = ["audiobookshelf", "bazarr", "gluetun", "jellyfin", "nzbget", "qbittorrent", "reelix"]
     day = dt.datetime.now().replace(hour=3, minute=0, second=0, microsecond=0)
     full_backup.found = lambda folder: [
         {"name": f"starboard-full-{d:%Y-%m-%d-%H%M%S}.starboard", "path": f"{folder}/starboard-full-{d:%Y-%m-%d-%H%M%S}.starboard",
@@ -464,7 +469,8 @@ def _example_watch_stats(data_dir):
                          sw("telegram_active", "Send by Telegram", "Telegram"),
                          {"key": "telegram_token", "label": "Bot token", "type": "secret", "group": "Telegram"},
                          {"key": "telegram_chat", "label": "Telegram chat", "type": "list", "group": "Telegram"}],
-            "actions": [{"id": "test-telegram", "label": "Send a test to Telegram", "path": "/test/telegram"}],
+            "actions": [{"id": "test-telegram", "label": "Send a test to Telegram", "path": "/test/telegram",
+                         "confirm": "Sends a test message to your Telegram chat now. Continue?"}],  # DASH-441
             "events": ["request.available", "download.failed", "disk.nearly_full", "app.down", "app.up", "update.available"],
             "jobs": [{"id": "weekly", "label": "Send New this week on the chosen day", "path": "/jobs/weekly", "daily": "09:00"}]},
             "/nonexistent-media")
@@ -639,7 +645,9 @@ def _example_direct_play(data_dir):
                          {"key": "card_seconds", "label": "Card updates every", "type": "choice", "default": "30", "group": "More",
                           "choices": [{"value": "10", "label": "10 seconds"}, {"value": "30", "label": "30 seconds"},
                                       {"value": "60", "label": "1 minute"}, {"value": "300", "label": "5 minutes"}]}],
-            "actions": [{"id": "pause", "label": "Pause fixing", "path": "/pause"}, {"id": "resume", "label": "Resume fixing", "path": "/resume"}],
+            # Pause fixing asks first (DASH-441: the journeys check a confirm); the real plug-in does not.
+            "actions": [{"id": "pause", "label": "Pause fixing", "path": "/pause", "confirm": "Stops converting files until you select Resume fixing. Continue?"},
+                        {"id": "resume", "label": "Resume fixing", "path": "/resume"}],
             "cards": [{"id": "now", "title": "Direct play", "type": "list", "path": "/card", "refresh_seconds": 30},
                       {"id": "saved", "title": "Space saved by Direct play", "type": "stat", "path": "/summary", "format": "bytes"}],
             "logo": {"file": "logo.svg", "alt": "A play symbol on a screen"}},  # plug-in API 1.14 (DASH-428)
@@ -819,8 +827,8 @@ noip.status = lambda data_dir, **k: {"installed": True, "running": True, "state"
                                      "address": "203.0.113.7", "said": "Type a new DDNS key or password below, then save. The updater starts again with it.",
                                      "username": "examplekey", "hostnames": "home.example.net", "password_set": True}
 discovery.search = lambda services: {"docker": False, "items": [
-    {"key": k, "name": n, "type": k, "url": f"http://127.0.0.1:{p}", "port": p, "needs_key": True, "background": False,
-     "container": "", "already": False, "can_read_key": False} for k, n, p in (("bazarr", "Bazarr", 6767), ("prowlarr", "Prowlarr", 9696))]}
+    {"key": k, "name": n, "type": discovery.CATALOGUE[k][1], "url": f"http://127.0.0.1:{p}", "port": p, "needs_key": discovery.CATALOGUE[k][4], "background": False,
+     "container": "", "already": False, "can_read_key": False} for k, n, p in (("seerr", "Seerr", 5055), ("jellystat", "Jellystat", 3000))]}
 
 KEY = "example-key"
 today = dt.date.today()
@@ -847,6 +855,45 @@ from starboard import jellyfin_plugins  # noqa: E402
 JELLYFIN = JellyfinStandIn(plugins=[{"Name": "Playback Reporting", "Version": "19.0.0.0", "Status": "Active",
                                      "Id": jellyfin_plugins.PACKAGES["playback"]["guid"].replace("-", "")}])
 jellyfin_plugins.find = lambda services: {"type": "jellyfin", "name": "Jellyfin", "url": f"http://127.0.0.1:{FAKE_PORT}/jellyfin", "api_key": JF_KEY}
+
+
+def example_default_app(path):
+    """The default install's apps, made up (DASH-441 batch: every screenshot shows the default stack): Jellyfin with
+    one person watching and what was added, qBittorrent downloading through Gluetun, Bazarr. None for other paths;
+    (body, status) for an address the app does not have."""
+    p = path.split("?")[0]
+    if p.startswith("/jf/"):
+        route = p[len("/jf"):]
+        if route == "/System/Info/Public":
+            return {"Version": "10.11.2", "ProductName": "Jellyfin Server", "ServerName": "Harbour"}
+        if route == "/System/Info":
+            return {"Version": "10.11.2", "HasUpdateAvailable": False, "HasPendingRestart": False}
+        if route == "/Sessions":
+            film = example_library.FILMS[2]
+            return [{"UserName": "Sam", "DeviceName": "Living room TV", "Client": "Jellyfin Android TV",
+                     "NowPlayingItem": {"Name": film["title"], "Type": "Movie", "RunTimeTicks": 72_000_000_000},
+                     "PlayState": {"PositionTicks": 30_000_000_000, "IsPaused": False}}]
+        if route == "/Items":
+            now = dt.datetime.now(dt.timezone.utc)
+            return {"Items": [{"Name": f["title"], "Type": "Movie", "ProductionYear": f["year"],
+                               "DateCreated": (now - dt.timedelta(hours=3 + 9 * n)).isoformat()} for n, f in enumerate(example_library.FILMS[:6])]}
+        return {"message": "not in the example"}, 404
+    if p.startswith("/qbit/api/v2/"):
+        route = p[len("/qbit/api/v2/"):]
+        if route == "app/version":
+            return "v5.1.2"
+        if route == "transfer/info":
+            return {"dl_info_speed": 4_200_000, "up_info_speed": 350_000}
+        return [], 200
+    if p.startswith("/gluetun/"):
+        return {"/gluetun/v1/vpn/status": {"status": "running"},
+                "/gluetun/v1/publicip/ip": {"public_ip": "203.0.113.24", "country": "Netherlands", "city": "Amsterdam"},
+                "/gluetun/v1/portforward": {"port": 51413}}.get(p, ({"message": "not in the example"}, 404))
+    if p.startswith("/bazarr/"):
+        if p == "/bazarr/api/system/status":
+            return {"data": {"bazarr_version": "1.5.3"}}
+        return {"data": []}
+    return None
 
 
 class FakeArr(BaseHTTPRequestHandler):
@@ -914,6 +961,16 @@ class FakeArr(BaseHTTPRequestHandler):
         p = self.path
         if p.startswith("/jellyfin/"):
             return self.jellyfin("GET")
+        default = example_default_app(p)
+        if isinstance(default, str):  # qBittorrent's version is plain text
+            body = default.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            return self.wfile.write(body)
+        if default is not None:
+            return self.send_json(*default) if isinstance(default, tuple) else self.send_json(default)
         if p.startswith("/abs"):  # a made-up Audiobookshelf, for Settings, Audiobookshelf
             if p == "/abs/status":
                 return self.send_json({"app": "audiobookshelf", "serverVersion": "2.37.2"})
@@ -986,6 +1043,12 @@ class FakeArr(BaseHTTPRequestHandler):
 def _post(self):
     if self.path.startswith("/jellyfin/"):
         return self.jellyfin("POST")
+    if self.path.startswith("/nzbget/jsonrpc"):  # the made-up NZBGet of the default install
+        length = int(self.headers.get("Content-Length") or 0)
+        method = (json.loads(self.rfile.read(length) or b"{}") or {}).get("method")
+        result = {"version": "24.3", "listgroups": [],
+                  "status": {"DownloadRate": 0, "RemainingSizeMB": 0, "DownloadPaused": False, "PostPaused": False, "ScanPaused": False}}.get(method)
+        return self.send_json({"id": 1, "result": result})
     if not self.headers.get("X-Api-Key"):  # Reelix's admin routes, signed in with a cookie (Settings, Reelix)
         return self.reelix_admin("POST")
     length = int(self.headers.get("Content-Length") or 0)
@@ -1115,17 +1178,25 @@ def call(method, path, body=None, cookie=None):
     return r, r.read()
 
 
+# The default install (stack.INSTALLS["basics"]), as Install apps adds it: Reelix is added after these, with the
+# manager key. (name, kind, category, path on the made-up apps' port, icon)
+WATCH, FIND, GET = "Watch, listen and request", "Find and organise", "Search and download"
 APPS = [
-    ("Example TV", "sonarr", "Downloads", "tv"),
-    ("Example music", "link", "Watch and listen", "music"),
-    ("Example books", "link", "Watch and listen", "books"),
-    ("Example films", "radarr", "Downloads", "films"),
-    ("Example TV 4K", "sonarr", "Downloads", "tv4k"),
-    ("Media player", "link", "Watch and listen", "player"),
-    ("Audiobookshelf", "audiobookshelf", "Watch and listen", "abs"),
-    ("Dispatcharr", "link", "Watch and listen", "dispatcharr"),  # set up by Starboard, with its key (DASH-228)
-    ("Not running", "link", "Watch and listen", None),
+    ("Jellyfin", "jellyfin", WATCH, "jf", "jellyfin"),
+    ("Audiobookshelf", "audiobookshelf", WATCH, "abs", "audiobookshelf"),
+    ("Bazarr", "bazarr", FIND, "bazarr", "bazarr"),
+    ("qBittorrent", "qbittorrent", GET, "qbit", "qbittorrent"),
+    ("NZBGet", "nzbget", GET, "nzbget", "nzbget"),
+    ("Gluetun (VPN)", "gluetun", GET, "gluetun", "gluetun"),
 ]
+# EXAMPLE_SETUP=existing: an older set-up beside them, for Copy app settings and the help on moving from it.
+EXISTING = [
+    ("Example TV", "sonarr", GET, "tv", ""),
+    ("Example TV 4K", "sonarr", GET, "tv4k", ""),
+    ("Example films", "radarr", GET, "films", ""),
+]
+if os.environ.get("EXAMPLE_SETUP") == "existing":
+    APPS += EXISTING
 
 
 def example_disk_health(data):
@@ -1483,12 +1554,12 @@ def main():
             {"id": "plugin:watch-stats:week", "size": "half"}, {"id": "playing", "size": "half"}, {"id": "health", "size": "half"},
             {"id": "downloads", "size": "half"}, {"id": "coming", "size": "half"}, {"id": "recent", "size": "full"},
             {"id": "disk", "size": "small"}, {"id": "load", "size": "small"}, {"id": "vpn", "size": "small"}, {"id": "alerts", "size": "small"}]}}, cookie)
-        for name, kind, group, path in APPS:
-            url = f"http://127.0.0.1:{FAKE_PORT}/{path}" if path else "http://127.0.0.1:9/"
-            call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": url, "api_key": KEY if kind != "link" or path == "dispatcharr" else "",
-                                           "icon": "dispatcharr" if path == "dispatcharr" else ""}, cookie)
+        for name, kind, group, path, icon in APPS:
+            key = {"nzbget": "starboard:made-up", "gluetun": ""}.get(kind, KEY)
+            call("POST", "/api/services", {"name": name, "type": kind, "group": group, "url": f"http://127.0.0.1:{FAKE_PORT}/{path}",
+                                           "api_key": key, "icon": icon}, cookie)
         # Reelix, as Install apps adds it: a link with the manager key, so radio shows in Coming up and Downloads.
-        call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": "Downloads", "icon": "reelix",
+        call("POST", "/api/services", {"name": "Reelix", "type": "link", "group": FIND, "icon": "reelix",
                                        "url": f"http://127.0.0.1:{FAKE_PORT}/reelix", "api_key": KEY}, cookie)
         if EXAMPLE_CONTAINERS:
             # Reelix, seen at 0.7.0 before, so opening Apps, Updates finds it updated to 0.7.1.

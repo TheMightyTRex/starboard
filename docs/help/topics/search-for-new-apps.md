@@ -28,7 +28,7 @@ do not need to enter each address, and with Docker access Starboard can fill in 
 ## Things to note
 
 - Starboard searches only when you select **Search for new apps**. Nothing runs in the background.
-- It tries the usual port of each app it knows, such as 8989 for Sonarr. With Docker access it also tries every
+- It tries the usual port of each app it knows, such as 8096 for Jellyfin. With Docker access it also tries every
   port a container makes available.
 - Apps already in **Manage apps** are left out. If everything is there, Starboard shows **Nothing new found**.
 - **Fill in API keys for me** works for Sonarr, Radarr, Lidarr, Readarr, Prowlarr, SABnzbd and Seerr. The keys

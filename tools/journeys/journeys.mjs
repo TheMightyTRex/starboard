@@ -743,6 +743,10 @@ await page.keyboard.press("Escape");
 // DASH-228: Dispatcharr set up from Starboard, against the made-up Dispatcharr and Jellyfin of the example server: the
 // IPTV source with its own checks, then Jellyfin's tuner and guide, then channels made from the playlist.
 console.log("\n== DISP Dispatcharr");
+// Dispatcharr is an add-on, not in the default install the example server shows, so it is added for these checks
+// and taken away after (the made-up Dispatcharr answers in the example server whatever the address).
+const dispatcharr = await api("/api/services", { method: "POST", body: { type: "link", name: "Dispatcharr", icon: "dispatcharr",
+  url: `http://127.0.0.1:${Number(new URL(base).port) + 1}/dispatcharr`, api_key: "example-key" } });
 await open("settings-dispatcharr.html");
 await page.locator("#dp-source-h").waitFor({ timeout: 10000 });
 check("DISP-01", "Settings, Apps, Dispatcharr shows the source, channels and Jellyfin",
@@ -766,6 +770,7 @@ await page.locator("#dp-make").waitFor({ state: "detached", timeout: 10000 });
 const made = await page.locator("#dp-channels-h").locator("xpath=ancestor::section").innerText();
 check("DISP-04", "Make channels makes a channel for each stream and says so", /making 48 channels/.test(made) && /Channels in Dispatcharr\s+48/.test(made), made);
 check("DISP-04", "focus goes to the Channels heading, not the top of the page", await page.evaluate(() => document.activeElement.id) === "dp-channels-h");
+await api(`/api/services/${dispatcharr.id}`, { method: "DELETE" }).catch(() => {});
 
 // DASH-389: General's sections are pages on the level 2 menu; Style is Appearance, with the accessibility options;
 // old addresses go to the part's new page.
@@ -909,6 +914,36 @@ check("WS-05", "Top titles shows the most played series first, with plays, peopl
 await page.setViewportSize({ width: 375, height: 812 });
 check("WS-06", "the tables fit at phone width", await page.evaluate(() => document.documentElement.scrollWidth - innerWidth) <= 0);
 await page.setViewportSize({ width: 1280, height: 860 });
+// DASH-441: a plug-in button with a confirm asks first (focus on Cancel, Escape cancels); a list setting is a box
+// with one value a line, saved as a list.
+console.log("\n== PLA Plug-in actions and list settings");
+await open("settings-plugin.html?id=direct-play");
+const plaSaid = page.locator('section[aria-labelledby="pl-direct-play-actions-h"] [role=status]');
+await page.getByRole("button", { name: "Pause fixing" }).click();
+const plaDialog = page.locator("dialog[open]");
+await plaDialog.waitFor({ timeout: 5000 });
+check("PLA-01", "a button with a confirm asks first, in words from the plug-in", /Stops converting files/.test(await plaDialog.innerText()));
+check("PLA-01", "the box starts on Cancel", await page.evaluate(() => document.activeElement?.textContent?.trim() === "Cancel"));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+check("PLA-02", "Escape closes it, runs nothing, and focus goes back to the button",
+  await plaDialog.count() === 0 && !(await plaSaid.textContent()).trim()
+  && await page.evaluate(() => document.activeElement?.textContent?.trim() === "Pause fixing"));
+await page.getByRole("button", { name: "Pause fixing" }).click();
+await plaDialog.waitFor({ timeout: 5000 });
+await plaDialog.getByRole("button", { name: "Pause fixing", exact: true }).click();
+await page.waitForTimeout(800);
+check("PLA-03", "choosing the action in the box runs it", /Paused/.test(await plaSaid.textContent()));
+await open("settings-plugin.html?id=notifications");
+const plaList = page.locator("#pl-notifications-telegram_chat");
+check("PLA-04", "a list setting is a box with one value a line", (await plaList.evaluate((n) => n.tagName)) === "TEXTAREA"
+  && /One chat id a line|One a line/.test(await page.locator(`#${await plaList.getAttribute("aria-describedby")}`).textContent()));
+await plaList.fill("12345\n\n  67890  \n");
+await plaList.locator("xpath=ancestor::form").getByRole("button", { name: "Save" }).click();
+await page.waitForTimeout(800);
+check("PLA-05", "saving a list says nothing is wrong", await page.locator('#toast-stack .toast[data-tone="danger"]').count() === 0);
+await open("settings-plugin.html?id=notifications");
+check("PLA-05", "it is kept as a list: one value a line, blank lines and spaces left out", (await plaList.inputValue()) === "12345\n67890");
 // DASH-411: app plug-ins (plug-in API 1.13). Jellystat's page on the home network, the clear choice on removal, and
 // Tdarr's offer to copy the Tdarr the main install runs.
 console.log("\n== AP App plug-ins");

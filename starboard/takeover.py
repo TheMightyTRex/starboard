@@ -613,11 +613,6 @@ def _run(kind, host_stack, script, binds, after=None, tasks=None, progress=None)
         if progress:
             threading.Thread(target=watch, name=f"takeover-{kind}-progress", daemon=True).start()
         try:
-            try:
-                containers.docker("POST", f"/images/create?fromImage={urllib.parse.quote(containers.HELPER_IMAGE, safe='')}",
-                                  raw=True, timeout=300)
-            except containers.DockerError:
-                pass
             code, log = containers._helper(host_stack, script, extra_binds=binds)
             ok = code == 0
         except containers.DockerError as e:
