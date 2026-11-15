@@ -52,7 +52,7 @@ Or run its installer, `install.py` in its folder, on any computer with Python, a
 2. In **Test at**, enter an hour when nothing is downloading, from 0 to 23. The default is 4, for 04:00.
 3. In **Test size**, enter how many MB each test downloads. The default is 25 MB.
 4. Add its cards to your dashboard. Read [Dashboard card](../line-speed/dashboard-card.md).
-5. To see a result now rather than after the night's test, select **Test now** in **Actions**.
+5. To see a result now rather than after the night's test, select **Test now** in **Actions**, then **Test now** again in the box that asks first.
 
 ## Remove it
 

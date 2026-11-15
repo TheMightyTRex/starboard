@@ -426,6 +426,7 @@
           "most-watched",
           "watch-stats",
           "library-health",
+          "library-cleanup",
           "audio-description",
           "audio-description-tracks",
           "direct-play",
