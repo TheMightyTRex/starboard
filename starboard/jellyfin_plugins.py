@@ -21,8 +21,8 @@ The choices (research, 13 November 2026, from each project's manifest and source
   Its two merge tasks move from every 24 hours to the start of quiet hours.
 - Trakt (Jellyfin's own repository): records what is watched on trakt.tv. Each person links their own account in
   Jellyfin, so Starboard only installs it.
-- Picture shrinker (DASH-433, TheMightyTRex's repository, Jellyfin 10.11 only): shrinks posters and photos of people
-  inside Jellyfin, with a backup of each original, on a task in Jellyfin's Scheduled Tasks. It follows the same rules as
+- Picture shrinker (DASH-433, TheMightyTRex's repository, Jellyfin 10.11 and 12): shrinks posters and photos of
+  people inside Jellyfin, with a backup of each original, on a task in Jellyfin's Scheduled Tasks. It follows the same rules as
   Starboard's own Picture shrinker plug-in, which stays idle while this one is installed. Starboard leaves its schedule
   as it comes (every Sunday at 03:30).
 """
@@ -48,8 +48,8 @@ PACKAGES = {
     "merge": {"name": "Merge Versions", "guid": "f21bbed8-3a97-4d8b-88b2-48aaa65427cb", "min": (10, 11),
               "repo": ("Merge Versions", "https://raw.githubusercontent.com/danieladov/JellyfinPluginManifest/master/manifest.json")},
     "trakt": {"name": "Trakt", "guid": "4fe3201e-d6ae-4f2e-8917-e12bda571281", "min": (10, 11), "repo": OFFICIAL},
-    "pictures": {"name": "Picture shrinker", "guid": "80bf9325-d299-4e24-ac74-c087aeec3011", "min": (10, 11), "below": (10, 12),
-                 "released_only": True, "repo": ("Picture shrinker", "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json")},
+    "pictures": {"name": "Picture shrinker", "guid": "80bf9325-d299-4e24-ac74-c087aeec3011", "min": (10, 11), "below": (13,),
+                 "needs": "Needs Jellyfin 10.11 or 12.", "released_only": True, "repo": ("Picture shrinker", "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json")},
 }
 
 SKIP = ("theintrodb", "skipmedb", "introskipper")
@@ -154,7 +154,9 @@ def suits(key, version):
 
 # A package marked released_only (DASH-433's Picture shrinker) is offered only once its repository lists a version
 # for this Jellyfin: its repository is public before its first release, and Jellyfin cannot install from an empty list.
-# The list is read at most every 6 hours, only when Settings, Apps, Jellyfin is opened or a choice is made.
+# The list is read at most every 6 hours, only when Settings, Apps, Jellyfin is opened or a choice is made. A version
+# suits this Jellyfin when its targetAbi is on the same line and not newer: Jellyfin 10 lines are two numbers (10.11),
+# from Jellyfin 12 one number (12.0.0.0 suits 12.0 to 12.4), as Jellyfin 12's plug-ins all target 12.0.0.0.
 RELEASE_CHECK_SECONDS = 6 * 3600
 _released = {}  # repository address -> (when read, [targetAbi of each version])
 
@@ -179,7 +181,12 @@ def released(key, version, fetch=None, now=None):
             abis = seen[1] if seen else []  # unknown: keep what was read before, or not offered yet
         seen = _released[url] = (now, abis)
     have = _version(version)
-    return any(_version(a) and _version(a)[:2] == have[:2] and _version(a) <= have for a in seen[1])
+    return any(_version(a) and _line(_version(a)) == _line(have) and _version(a) <= have for a in seen[1])
+
+
+def _line(v):
+    """Jellyfin's release line: (10, 11) for 10.11.x, (12,) for every 12.x."""
+    return tuple(v[:2]) if v and v[0] < 12 else tuple(v[:1])
 
 
 NOT_RELEASED = "Not released yet. Starboard offers it once its first version for your Jellyfin is out."
@@ -188,7 +195,7 @@ NOT_RELEASED = "Not released yet. Starboard offers it once its first version for
 def needs_words(key):
     pkg = PACKAGES[key]
     lo = ".".join(map(str, pkg["min"]))
-    return f"Needs Jellyfin {lo}. A version for newer Jellyfin is not ready yet." if pkg.get("below") else f"Needs Jellyfin {lo} or later."
+    return pkg.get("needs") or f"Needs Jellyfin {lo} or later."
 
 
 def _installed(jf, opener=None):
