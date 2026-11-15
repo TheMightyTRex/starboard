@@ -66,7 +66,8 @@ def example():
             with open(path, encoding="utf-8") as f:
                 return json.load(f), "Line speed from starboard-plugins"
     return ({"manifest_version": 1, "id": "line-speed", "name": "Line speed", "version": "1.0.0", "description": "A made-up plug-in",
-             "author": "TheMightyTRexUK", "licence": "MIT", "starboard_api": ">=1.1 <2.0", "permissions": ["network:lan"], "health": "/health",
+             "author": "TheMightyTRexUK", "licence": "MIT", "homepage": "https://github.com/TheMightyTRex/starboard-plugins",
+             "support_url": "https://github.com/TheMightyTRex/starboard-plugins/issues", "starboard_api": ">=1.1 <2.0", "permissions": ["network:lan"], "health": "/health",
              "containers": [{"name": "main", "image": "ghcr.io/example/line-speed@sha256:" + "0" * 64, "port": 8080, "network": "lan", "volumes": ["data"]}],
              "settings": [{"key": "hour", "label": "Test at", "type": "number", "default": 4},
                           {"key": "megabytes", "label": "Test size", "type": "number", "default": 25}]}, "a made-up plug-in")
