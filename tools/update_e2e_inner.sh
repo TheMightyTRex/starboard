@@ -19,7 +19,7 @@ FAILED=0
 pass() { printf 'PASS %s\n' "$*"; }
 fail() { printf 'FAIL %s\n' "$*"; FAILED=$((FAILED + 1)); }
 as() { su tester -s /bin/bash -c "$*"; }
-api() { curl -s -b /tmp/jar -c /tmp/jar -H 'Content-Type: application/json' "$@"; }
+api() { curl -s -b /tmp/jar -c /tmp/jar -H 'Content-Type: application/json' -H 'X-Starboard: 1' "$@"; }
 answers() { for _ in $(seq 1 "${1:-60}"); do curl -sf -o /dev/null "http://127.0.0.1:$PORT/healthz" && return 0; sleep 2; done; return 1; }
 version() { curl -s -b /tmp/jar "http://127.0.0.1:$PORT/api/version" | python3 -c 'import sys,json;print(json.load(sys.stdin)["current"])' 2>/dev/null; }
 setting() { curl -s -b /tmp/jar "http://127.0.0.1:$PORT/api/config" | python3 -c 'import sys,json;print(json.load(sys.stdin)["server_name"])' 2>/dev/null; }

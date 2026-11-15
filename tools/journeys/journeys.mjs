@@ -1411,7 +1411,7 @@ await page.locator("#updates-list:not([aria-busy])").waitFor({ timeout: 5000 }).
 const ready = await page.locator("#up-list-summary").textContent();
 check("UPD-05", "Ready to update says in a live region what is ready", /updates are ready: .*Starboard/.test(ready)
   && (await page.locator("#up-list-summary[role=status]").count()) === 1, ready);
-check("UPD-05", "Reelix waits for you; the plug-in updates by itself", (await page.locator('[data-key="reelix"]').textContent()).includes("Waits for you")
+check("UPD-05", "Starboard waits for you; the plug-in updates by itself", (await page.locator('[data-key="starboard"]').textContent()).includes("Waits for you")
   && (await page.locator('[data-key="plugin:picture-shrinker"]').textContent()).includes("Updates by itself"));
 const autoSwitches = page.locator("#updates-auto").getByRole("switch");
 check("UPD-01", "Update by themselves has a switch for each of the five parts", (await autoSwitches.count()) === 5);
