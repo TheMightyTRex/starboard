@@ -19,7 +19,16 @@ Starboard's help follows the shared guides in the design system, which Starboard
   [help centre home](README.md), and the footer of every Starboard page links to it.
 - **The first line** of every article is `[Help centre](../README.md) · <Area>`, followed by the kind for a topic
   (how-to, reference or troubleshooting).
-- **Guides** show their steps as a Mermaid flowchart, which GitHub and the help centre's pages draw.
+- **The second line** says where the article is listed in the help centre's side menu:
+  `<!-- help: <area> / <group> -->`, such as `<!-- help: fix / apps -->`. The areas are the design system's seven
+  (`start`, `use`, `plugins`, `a11y`, `fix`, `dev`) and the groups are in `help-centre.json`. A new group goes there
+  first. The journey, the newest thing and the problem solver on the help centre's home page are there too.
+- **Flow chart first:** every troubleshooting topic starts with a flow chart in a `flow` block, straight after its
+  opening sentences, and each numbered answer is a section of its own, named on the chart's line with `#its-id`.
+  Guides show their steps as a flow chart too (a `flow` block, or the Mermaid flowcharts they already have). The
+  format is in the design system's
+  [help writing guide, section 11.4](https://github.com/TheMightyTRex/design-system/blob/main/docs/HELP-WRITING.md#114-flow-charts).
+  New Fix a problem articles go in the problem solver in `help-centre.json`.
 - **The help centre's pages** at https://themightytrex.github.io/starboard/help/ are built from these files by
   `the design system's help centre builder (tools/help_centre)` and published when a change reaches main. Each article is its own page; the app's Help
   buttons open them (`tools/apply_shell.py`).
