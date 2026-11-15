@@ -1502,8 +1502,8 @@ def main():
         call("PUT", "/api/config/general", {"server_name": "Harbour", "setup_guide_done": True}, cookie)  # a set-up server (DASH-238)
         # Audio description ticked in the set-up (DASH-399), so the Plug-ins pages show the offer to install it.
         call("PUT", "/api/config/general", {"extras": {"audio_description": True}}, cookie)
-        # Settings, Updates (DASH-422): Starboard and the other apps update by themselves; the rest wait for you.
-        call("PUT", "/api/config/general", {"starboard_auto_update": True, "apps_auto_update": True}, cookie)
+        # Settings, Updates (DASH-422): the plug-ins update by themselves; the rest wait for you (the default).
+        call("PUT", "/api/config/general", {"plugins_auto_update": True}, cookie)
         # The dashboard with plug-in cards in the card band (plug-in API 1.14, DASH-428): Direct play with its logo and
         # a Converting chip, Picture shrinker with a PNG logo and its own words on the chip, Watch statistics without
         # a logo (its initials) and without a status.

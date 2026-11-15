@@ -2710,6 +2710,7 @@ function updatesSummary(w, cfg) {
 }
 
 let selfUpdateAsk = null;  // Update now's dialog, for Starboard's row in Ready to update (DASH-420)
+let updatesRefresh = null;  // draws Ready to update and Recent updates again, after Starboard's own update
 
 // Settings, Updates (DASH-420, DASH-422): the one place for updates. Ready to update lists everything Starboard can
 // update (Starboard, Reelix, the other apps, plug-ins and Jellyfin's plug-ins) from what it already knows, with the
@@ -2885,6 +2886,7 @@ async function startUpdatesPlace() {
     auto.replaceChildren(when, el("ul", { class: "settings-rows", "aria-label": "What may update by itself" }, rows));
   };
   const refresh = async () => { try { await load(); } catch { return; } drawList(); drawRecent(); };
+  updatesRefresh = refresh;
   drawList();
   drawRecent();
   drawAuto();
@@ -2914,11 +2916,11 @@ async function startSelfUpdate() {
   };
   // Opened at once after Update now; an update already running when the page opens shows its line, with Show progress.
   const follow = (openNow = true) => {
-    const job = taskJob({ title: "Updating Starboard", url: "/api/self-update/job", failedWord: "Stopped here", returnTo: "ab-up-h",
+    const job = taskJob({ title: "Updating Starboard", url: "/api/self-update/job", failedWord: "Stopped here", returnTo: "up-list-h",
       intro: "Starboard restarts during the update, so this loses touch with it for about a minute and reconnects by itself. Closing this does not stop the update." });
     if (openNow) job.open();  // first, while Update now is still there to note as the opener; focus comes back to the heading
     box.replaceChildren(job.pageLine, result);
-    job.follow((j) => ({ title: j.title, text: j.text })).then((j) => ended(j, !job.dialog.open));
+    job.follow((j) => ({ title: j.title, text: j.text })).then(async (j) => { await updatesRefresh?.(); ended(j, !job.dialog.open); });
   };
   const ask = async () => {
     const latest = s.latest.replace(/^v/, "");

@@ -7,7 +7,15 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Automatic updates for everything:** Settings, Updates, Update by themselves lets each part update by itself: Starboard, Reelix, your other apps, Starboard's plug-ins (from a catalogue or their own address) and Jellyfin's plug-ins. Each is deactivated until you activate it, here or in either set-up. They update once a day in the hours you choose (your download hours, or always 01:00 to 06:00), one at a time, each with a copy first, a check afterwards and the way back by itself (Jellyfin's plug-ins cannot go back by themselves, so a copy of their folder is kept and you are told). A plug-in version that asks for new permissions always waits for you, and a version that did not work is not tried again until you update it yourself. (DASH-422)
+- **One place for updates:** Settings, Updates now lists everything that can be updated, with Update now on each, the same password dialog and progress for Starboard, Reelix, an app and Jellyfin's plug-ins, how each part is kept safe, and Recent updates with what each did. Apps, Updates points to it. (DASH-420)
+- **A copy of an app's settings before its update:** An app updated from Starboard has its settings folder copied first (without caches), as Reelix's is. (DASH-422)
+- **Alerts when an update waits:** One alert for each plug-in or app version that waits for you, and one "Updated by itself" alert with what is new after an automatic update. Nothing is checked for them. (DASH-420, DASH-421)
+- **Update checks in every release:** The release checklist and the helper rules have an update step; tools/update_e2e.sh updates Starboard from the release before to this build and back, Update now's own helper, an app and Reelix, all in a sealed Docker in a container; the plug-in tester takes --previous to rehearse a plug-in's update and Roll back. (DASH-418, DASH-423)
+
 ### Changed
+- **Clearer words on the way to updating:** the set-up's summary says Activated or Deactivated, not On or Off, and so does Reelix's task list. (DASH-420)
 - **A new install gets the newest release:** Run first and the installer now install the newest release, as ./update.sh does, instead of the main branch, which can have changes not released yet. For testing, Run first and ./install.sh take --main, which ./update.sh then follows too; ./install.sh --releases goes back to releases. Update in Run first, for a Starboard already installed, now uses ./update.sh, with its backup and way back. (DASH-416)
 
 ## [0.18.0] (15 November 2026)
