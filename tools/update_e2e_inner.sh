@@ -40,7 +40,7 @@ api -o /dev/null -X PUT "http://127.0.0.1:$PORT/api/config/general" -d '{"server
 mkdir -p $H/data/plugins/e2e-fake/data
 echo '{"id":"e2e-fake","name":"E2E fake","version":"1.0.0"}' > $H/data/plugins/e2e-fake/manifest.json
 echo "the plug-in's own data" > $H/data/plugins/e2e-fake/data/kept
-chown -R tester $H/data/plugins/e2e-fake && chown -R 4242:4242 $H/data/plugins/e2e-fake/data && chmod 700 $H/data/plugins/e2e-fake/data
+chown tester $H/data/plugins && chown -R tester $H/data/plugins/e2e-fake && chown -R 4242:4242 $H/data/plugins/e2e-fake/data && chmod 700 $H/data/plugins/e2e-fake/data
 [ "$(version)" = "${FROM#v}" ] && pass "version ${FROM#v}" || fail "version is $(version), not ${FROM#v}"
 
 printf '\n######## A. ./update.sh --to v0.18.90 (this build)\n'

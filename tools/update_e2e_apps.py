@@ -28,7 +28,10 @@ def say(ok, words):
 
 
 def sh(*cmd, cwd=None, check=True):
-    return subprocess.run(cmd, cwd=cwd, check=check, capture_output=True, text=True)
+    r = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    if check and r.returncode:
+        raise RuntimeError(f"{' '.join(cmd)} ended with {r.returncode}: {(r.stderr or r.stdout).strip()[-400:]}")
+    return r
 
 
 def push_app(version, broken=False):
@@ -112,8 +115,8 @@ def reelix_stage():
     to = os.environ.get("REELIX_TO", "")
     try:
         sh("docker", "pull", "-q", lite)
-    except subprocess.CalledProcessError as e:
-        say(False, f"Reelix's published image could not be pulled: {e.stderr.strip()[-200:]}")
+    except RuntimeError as e:
+        say(False, f"Reelix's published image could not be pulled: {e}")
         return
     sh("docker", "tag", lite, f"{REG}/reelix:lite")
     sh("docker", "push", "-q", f"{REG}/reelix:lite")
@@ -154,10 +157,13 @@ def reelix_stage():
 
 
 if __name__ == "__main__":
-    app_stage()
-    if os.environ.get("REELIX", "1") == "1":
-        reelix_stage()
-    else:
-        print("Reelix: not run (REELIX=0)")
+    for stage in (app_stage, reelix_stage):
+        if stage is reelix_stage and os.environ.get("REELIX", "1") != "1":
+            print("Reelix: not run (REELIX=0)")
+            continue
+        try:
+            stage()
+        except Exception as e:  # noqa: BLE001  one stage that stops is a failure; the next still runs
+            say(False, f"{stage.__name__} stopped: {e}")
     print(json.dumps({"failed": FAILED}))
     sys.exit(FAILED)
