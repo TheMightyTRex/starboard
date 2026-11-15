@@ -1,19 +1,22 @@
 # Starboard
 
-> Starboard is a lightweight home-server dashboard and installer, with a read-only API at /api/v1 and plug-ins that run in locked-down containers. These are its developer pages, for plug-in API 1.14 (Starboard 0.18.0 and later).
+> Starboard is a lightweight home-server dashboard and installer, with a read-only API at /api/v1 and plug-ins that run in locked-down containers. These are its developer pages, for plug-in API 1.15 (Starboard 0.19.0 and later).
 
-<!-- plugin-api: 1.14 -->
+<!-- plugin-api: 1.15 -->
 
 ## Plug-ins
 
 - [Make your first plug-in](developers/make-a-plugin.md): a tutorial that builds, tests and adds a tiny plug-in with one stat card.
-- [Plug-in manifest reference](developers/plugin-manifest-reference.md): every field of starboard-plugin.json, its check and the security rules, with containers built from a zip file and Jellyfin libraries (plug-in API 1.15).
+- [Plug-in manifest reference](developers/plugin-manifest-reference.md): every field of starboard-plugin.json, its check and the security rules, with containers built from a zip file, Jellyfin libraries and the holding folder in the media folder (plug-in API 1.15).
 - [Plug-in API reference](developers/plugin-api-reference.md): what Starboard calls on a plug-in (cards, actions, custom settings, events, jobs) and what a plug-in may call.
 - [Test and publish a plug-in](developers/test-and-publish-a-plugin.md): the plug-in tester, pinning images by digest, and writing a catalogue.json.
 - [Write a plug-in that updates safely](developers/update-a-plugin-safely.md): settings migrations, a step before and after an update, the health wait with an automatic Roll back, and What is new before and after (plug-in API 1.14).
 - [Write a plug-in](basics/write-a-plugin.md): the overview, with styles and dashboard cards.
 - [App plug-ins](developers/plugin-manifest-reference.md#app-plug-ins): a whole app made by others, such as Seerr, with its own web page on the home network (network:port, publish, host_port, tmpfs, pids, adopt).
 - [Update a plug-in and roll it back](topics/update-a-plugin.md): what people see when they update a plug-in, the automatic Roll back, and What is new.
+- [Built from a zip file](developers/plugin-manifest-reference.md#built-from-a-zip-file): a private plug-in with no registry, its image built by Starboard from the Dockerfile in its zip, with the build's limits (plug-in API 1.15).
+- [Jellyfin libraries](developers/plugin-manifest-reference.md#jellyfin-libraries): libraries Starboard adds to Jellyfin for folders a plug-in fills, with jellyfin:libraries (plug-in API 1.15).
+- [The holding folder in the media folder](developers/plugin-manifest-reference.md#the-holding-folder-in-the-media-folder): library:holding, moving films and series aside and putting them back with Put back, never deleting (plug-in API 1.15).
 - [The card band and refresh times](developers/plugin-api-reference.md#the-card-band-api-114): status, status_label, updated and refresh_seconds on every card (plug-in API 1.14).
 - [The plug-ins help centre](https://themightytrex.github.io/starboard-plugins/help/): every plug-in in the collection explained, a card plug-in, an app plug-in and a converter (Direct play) among them, with Direct play's card worked through.
 
