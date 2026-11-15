@@ -1328,14 +1328,16 @@ const builtIn = await page.evaluate(() => [...document.querySelectorAll(".dash-c
     logoHidden: b?.querySelector(".app-icon")?.getAttribute("aria-hidden") === "true", img: b?.querySelector(".app-icon img")?.getAttribute("src") || "",
     own: !!b?.querySelector(".app-icon > svg"), height: Math.round(b?.getBoundingClientRect().height || 0) };
 }));
-const bandHeight = await page.locator('[data-card="plugin:watch-stats:week"] .card-band').evaluate((b) => Math.round(b.getBoundingClientRect().height));
+// Direct play's band: a plug-in card with one line of title, as every built-in card has (Watch statistics' second line,
+// "Watched this week", makes its band taller).
+const bandHeight = await page.locator('[data-card="plugin:direct-play:now"] .card-band').evaluate((b) => Math.round(b.getBoundingClientRect().height));
 check("BAND-07", "every built-in card has the band, its name as the heading the card is labelled by, and a logo hidden from screen readers",
   builtIn.length >= 8 && builtIn.every((c) => c.band && c.labelled && c.heading && c.logoHidden), JSON.stringify(builtIn.filter((c) => !(c.band && c.labelled && c.logoHidden))));
-check("BAND-07", "a built-in card's band is as tall as a plug-in card's band", builtIn.every((c) => Math.abs(c.height - bandHeight) <= 1),
+check("BAND-07", "a built-in card's band is as tall as a plug-in card's band with one line of title", builtIn.every((c) => Math.abs(c.height - bandHeight) <= 1),
   `${bandHeight}: ${builtIn.map((c) => `${c.id} ${c.height}`).join(", ")}`);
 const byId = Object.fromEntries(builtIn.map((c) => [c.id, c]));
-check("BAND-08", "Now playing shows Jellyfin's own logo, the same file as the Apps page",
-  byId.playing?.img === `/api/icons/${jf.id}?v=`, byId.playing?.img);
+check("BAND-08", "Now playing shows Jellyfin's own logo, the same file as the Apps page, and who is watching",
+  byId.playing?.img === `/api/icons/${jf.id}?v=` && /Example film/.test(await page.locator('[data-card="playing"] .dash-card__body').innerText()), byId.playing?.img);
 check("BAND-08", "Starboard's own cards and cards that combine several apps show a design system icon on the tile",
   ["disk", "load", "alerts", "health", "downloads", "recent"].every((k) => byId[k]?.own && !byId[k]?.img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.img])));
 const healthChip = (await page.locator('[data-card="health"] .card-band .chip').textContent()) || "";

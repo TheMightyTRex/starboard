@@ -83,6 +83,13 @@ class StandIn:
                     return 404, None
                 t["Triggers"] = list(body or [])
                 return 204, None
+            # The dashboard's Now playing (DASH-442): one made-up person watching, and nothing added lately.
+            if method == "GET" and route == "/Sessions":
+                return 200, [{"UserName": "Sam", "DeviceName": "Living room TV", "Client": "Jellyfin Android TV",
+                              "NowPlayingItem": {"Name": "Example film", "Type": "Movie", "RunTimeTicks": 72_000_000_000},
+                              "PlayState": {"PositionTicks": 30_000_000_000, "IsPaused": False}}]
+            if method == "GET" and route == "/Items":
+                return 200, {"Items": [], "TotalRecordCount": 0}
             if method == "POST" and route == "/System/Restart":
                 self.restart()
                 return 204, None
