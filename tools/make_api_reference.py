@@ -242,6 +242,7 @@ def build():
         objects += [f"### {name}", ""] + fields(spec, schemas[name], used) + [""]
     head = [
         "[Help centre](../README.md) · Developers",
+        "<!-- help: dev / api -->",  # its place in the help centre's menu (DASH-436); --strict needs it
         "",
         "# API reference",
         "",
