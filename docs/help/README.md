@@ -156,6 +156,32 @@ Each guide is a journey through several topics, in order.
 - [Read the log and report a problem](topics/read-the-log.md)
 - [Send feedback about a page](topics/send-feedback.md)
 
+## Accessibility
+
+How Starboard works for everyone, how to change it for you, and how it is checked. Start with
+[Accessibility in Starboard](accessibility/overview.md).
+
+### Change it for you
+
+- [Change text size and spacing](accessibility/text-size-and-spacing.md)
+- [Choose light, dark or high contrast](accessibility/light-dark-and-high-contrast.md)
+- [Reduce motion](accessibility/reduce-motion.md)
+- [Underline links](accessibility/underline-links.md)
+
+### Ways to use it
+
+- [Use only a keyboard](accessibility/use-only-a-keyboard.md)
+- [Use a screen reader](accessibility/use-a-screen-reader.md)
+- [Zoom and large screens](accessibility/zoom-and-large-screens.md)
+- [Use Starboard on a phone or tablet](accessibility/on-a-phone-or-tablet.md)
+
+### How we check it
+
+- [How Starboard is tested for accessibility](accessibility/how-starboard-is-tested.md)
+- [Latest accessibility test results](accessibility/latest-test-results.md)
+- [Accessibility limits and known gaps](accessibility/limits-and-known-gaps.md)
+- [Tell us about an accessibility problem](accessibility/tell-us-about-a-problem.md)
+
 ## Comparison tests: Starboard against other stacks
 
 How Starboard and its apps compare with other media server stacks, measured on 13 November 2026.
