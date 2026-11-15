@@ -20,23 +20,22 @@
 #    then a broken one that must go back by itself to an answering Reelix; REELIX_TO=<tag> also updates it to that
 #    published version first. A plug-in from the catalogue with Roll back is in the starboard-plugins smoke test.
 #
-# The sealed Docker's images are kept in /mnt/pool/build-cache/update-e2e-docker for the next run. Each run's own
-# folder is removed at the end, and the container with it. Exit 0 when every stage passed.
+# The sealed Docker keeps its images in an unnamed volume, removed with the container at the end (the pool is a
+# mergerfs folder, where Docker's overlay storage cannot work). The run's own folder is removed too. Exit 0 when
+# every stage passed.
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 FROM="${FROM:-v0.18.0}"
 DIND="docker:27.5.1-dind"
-CACHE="${CACHE:-/mnt/pool/build-cache/update-e2e-docker}"
 run_dir="$(mktemp -d /mnt/pool/build-cache/update-e2e-run.XXXXXX)"
 name="starboard-update-e2e-$$"
 cleanup() {
-  docker rm -f "$name" >/dev/null 2>&1 || true
+  docker rm -fv "$name" >/dev/null 2>&1 || true  # with its own Docker's images (an unnamed volume)
   # The run's folder holds root-owned files from the sealed Docker: removed by a container, as root.
   docker run --rm -v "$run_dir:/r" alpine:3.21 sh -c 'rm -rf /r/* /r/.[!.]*' >/dev/null 2>&1 || true
   rmdir "$run_dir" 2>/dev/null || true
 }
 trap cleanup EXIT
-mkdir -p "$CACHE"
 
 # The releases: a copy of this repository with the made-up releases on top of this build (never pushed anywhere).
 git clone -q --no-local "$here" "$run_dir/make"
@@ -56,6 +55,6 @@ cd "$here"
 
 docker run --name "$name" --privileged --memory 3g --memory-swap 3g --cpus 4 \
   -e DOCKER_TLS_CERTDIR= -e FROM="$FROM" -e REELIX="${REELIX:-1}" -e REELIX_TO="${REELIX_TO:-}" \
-  -v "$CACHE:/var/lib/docker" -v "$run_dir:/e2e" \
+  -v /var/lib/docker -v "$run_dir:/e2e" \
   -v "$here/tools/update_e2e_inner.sh:/e2e-tools/inner.sh:ro" -v "$here/tools/update_e2e_apps.py:/e2e-tools/apps.py:ro" \
   --entrypoint sh "$DIND" /e2e-tools/inner.sh
