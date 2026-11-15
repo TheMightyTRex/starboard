@@ -3,8 +3,8 @@
 
 # Latest accessibility test results
 
-The most recent accessibility checks of Starboard found no problems: the scan of every page, the reading order
-and the colour contrast check all passed, and every keyboard task passed. This page gives the figures, with their
+The most recent accessibility checks of Starboard, for Starboard 0.18.0, found no problems: the scan of every
+page, the reading order, the layout check and the colour contrast check all passed, and every keyboard task passed. This page gives the figures, with their
 dates, and the results of earlier runs. How each check works is in
 [How Starboard is tested](how-starboard-is-tested.md).
 
@@ -13,16 +13,17 @@ dates, and the results of earlier runs. How each check works is in
 - You want to know how Starboard did in its latest accessibility checks.
 - You want to compare a release with an earlier one.
 
-## Results on 14 November 2026
+## Results for Starboard 0.18.0, 15 November 2026
 
-These checks ran on 14 November 2026, on the code that becomes the next release, against the example server with
+These checks ran on 15 November 2026, on the code released as Starboard 0.18.0, against the example server with
 made-up data.
 
 | Check | What was checked | Result |
 |---|---|---|
-| The scan (axe-core 4.14.0, WCAG 2.2 AA) | 101 pages, plus Search with its filters open, each in Light, Dark and High contrast; structure, keyboard, target size, reflow, forced colours and reduced motion | 0 problems |
+| The scan (axe-core 4.14.0, WCAG 2.2 AA) | 101 pages, plus Search with its filters open, each in Light, Dark and High contrast; structure, keyboard, target size, reflow, forced colours and reduced motion | 0 problems, after checking System, Backup again on its own (see below) |
 | Reading order | 93 pages at computer and phone widths, and the Apps page in each of its four card designs | 0 problems |
-| Keyboard walk | The main tasks with keys only: 76 checks of where focus is and what is said | 76 of 76 checks passed |
+| Keyboard walk | The main tasks with keys only: 90 checks of where focus is and what is said | 90 of 90 checks passed |
+| Layout | The side menu and header at every text size and spacing, in each theme, in short windows and at phone width: 1,536 states | 0 problems |
 | Colour contrast | 560 colour pairs in 14 themes and palettes | 0 failures |
 
 ![The end of the scan's output: 0 findings on 101 pages](../images/a11y-results-scan.png)
@@ -37,10 +38,16 @@ made-up data.
 
 | When | Scan | Reading order | Keyboard walk |
 |---|---|---|---|
-| 14 November 2026, the next release | 0 problems on 101 pages | 0 problems | 76 checks passed |
+| Starboard 0.18.0, 15 November 2026 | 0 problems on 101 pages, after checking one page again on its own | 0 problems | 90 checks passed |
+| 14 November 2026, before the layout fixes | 0 problems on 101 pages | 0 problems | 76 checks passed |
 | Starboard 0.17.0, 14 November 2026 | 0 problems on 99 pages | 0 problems, after checking two pages again on their own | 67 checks passed |
 | 13 November 2026 | 0 problems on 93 pages | 0 problems | 49 checks passed |
 | 12 November 2026, the first full check | 48 problems found and fixed; 4 left, checked by hand and shown to come from the test itself | 8 problems found and fixed | 23 checks passed |
+
+On 0.18.0 the scan found one 320 pixel sideways scroll on System, Backup while the computer was busy, the same
+timing effect seen before; the page passed when checked again on its own. The layout check is new in 0.18.0: it
+covers the four problems fixed in this release (the side menu and header at large text, short windows and Reduce
+motion Off) and found none.
 
 Two findings on 0.17.0, a 4 pixel sideways scroll on System, Backup and one Tab step on Library, Films, came from
 timing while the computer was busy; both pages passed when checked again on their own.

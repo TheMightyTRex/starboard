@@ -7,9 +7,11 @@ add features.
 
 ## [Unreleased]
 
+## [0.18.0] (15 November 2026)
+
 ### Added
 - **Update now and automatic updates:** Settings, Updates has Update now, which asks for your Starboard password and installs the newest release, with its progress step by step, and Install Starboard updates automatically (deactivated by default), which installs a new release by itself in quiet hours and does not try a version again after it did not install. Reelix's automatic updates wait for quiet hours too, and both set-ups ask about updates after Download hours. (DASH-417)
-- **Recommended plug-ins:** The Catalogue starts with Recommended: Direct play and Disk forecast, each with a Recommended chip. Nothing is added until you choose it, with what it may do and your password as before. (DASH-425)
+- **Recommended plug-ins:** The Catalogue starts with Recommended: Direct play, Notifications and Disk forecast, each with a Recommended chip. Nothing is added until you choose it, with what it may do and your password as before. (DASH-425)
 - **Plug-in logos:** A plug-in can have a small logo, which Starboard checks and cleans before it shows it in Manage, the Catalogue, the plug-in's page and its dashboard cards. A plug-in without one shows its initials. (DASH-428)
 - **Plug-in jobs on your schedule:** A plug-in's job can run when you choose in its settings: every day, every week on a day, or every month on a date (the last day in a shorter month), at a time. System, Jobs shows when it runs next, with Run now. (DASH-432)
 - **Plug-ins for Jellyfin's pictures:** A new permission lets a plug-in read and change Jellyfin's metadata folder (its posters, photos and details), said plainly before you add it, with a medium risk. Nothing else gets the folder. (DASH-432)
@@ -17,6 +19,8 @@ add features.
 - **Starboard's API 1.2.0, updates:** A key with Updates ticked (never given unless ticked) can list what can be updated (Starboard, Reelix, your apps and plug-ins), start an update to the version Starboard already found, follow its steps and roll a plug-in back, with Read and manage, an Idempotency-Key and a line in the audit log. One update runs at a time, each with the same backup, health check and way back as the pages; an app updated this way goes back by itself if it does not run within two minutes. (DASH-424)
 - **Help for updating:** New topics, Update a plug-in and roll it back, and Update Starboard from its page with Update now and automatic updates; going back for Reelix, apps and plug-ins; and for developers, Write a plug-in that updates safely, with the references, the API changelog, the API reference and AI prompts for a safe new version and an update script. (DASH-424)
 - **Plug-in API 1.14:** A card's own refresh time (10 seconds at the quickest, cards due together asked in one request, nothing while the tab is hidden), recommended entries in the catalogue, logos, the card band with a status and when it updated, job schedules from settings, the jellyfin:metadata permission, and update tools: a step before and after an update with time limits, a health wait with an automatic Roll back, settings migrations kept for Roll back, and What is new before an update. The developer help, the manifest schema, the plug-in tester and the AI prompts are brought up to date, and check-api updates an example plug-in with a settings migration and a failing health check. Plug-ins made for earlier versions work as before, and gain the health wait when they have a health path. (DASH-424, DASH-425, DASH-428, DASH-432)
+- **A new help centre:** The help has a home page with the journey from first install to everyday use, a side menu of areas and groups on every page, the newest change, and a problem solver that asks what is wrong and leads to the answer. Every Fix a problem topic starts with a flow chart, with each answer in its own section. (DASH-436)
+- **Accessibility in the help:** The help has its own Accessibility section: an overview; Change it for you (text size and spacing, light, dark and high contrast, reduce motion, underline links); Ways to use it (a keyboard, a screen reader, zoom and large screens, a phone or tablet); and How we check it (how Starboard is tested, the latest results, limits and known gaps, and how to tell us about a problem), each with marked-up pictures. (DASH-435)
 
 ### Changed
 - **Plug-in cards:** Every plug-in card on the dashboard has a grey band across the top with the plug-in's logo, its name as the heading, and at the right a status chip and when it last updated, so they all look the same. (DASH-428)
@@ -29,6 +33,12 @@ add features.
 - **Short windows:** In a window about 600 pixels tall, the side menu items no longer overlap: they sit a little closer, and the menu scrolls on its own when they still do not fit. (DASH-437)
 - **Reduce motion Off:** Off now brings back all movement even when your device asks for reduced motion; Match device follows the device and On always reduces it. (DASH-437)
 - **Phones at large text:** Held downloads and long buttons, such as Sort, no longer push Downloads sideways at 150% and 175% text. (DASH-437)
+
+### Security
+- **Updates need your password or their own scope:** Update now asks for your Starboard password, and an API key can start updates only when Updates was ticked when it was made; each update is in the audit log. (DASH-417, DASH-424)
+- **Logos are cleaned before they show:** A plug-in's logo is checked and cleaned by Starboard (no scripts, links or outside files) before any page shows it. (DASH-428)
+- **Jellyfin's pictures only when you approve:** Only a plug-in with the jellyfin:metadata permission, approved when you add it, can reach Jellyfin's metadata folder. (DASH-432)
+- **Checks:** The unit tests, the browser journeys, the accessibility checks (with the new layout check), the API contract tests and example plug-ins, the help check, the private details check and the full security scans, with CodeQL, ran on this release.
 
 ## [0.17.0] (14 November 2026)
 
@@ -1300,7 +1310,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/TheMightyTRex/starboard/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/TheMightyTRex/starboard/compare/v0.16.5...v0.17.0
 [0.16.5]: https://github.com/TheMightyTRex/starboard/compare/v0.16.4...v0.16.5
 [0.16.4]: https://github.com/TheMightyTRex/starboard/compare/v0.16.3...v0.16.4
