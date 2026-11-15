@@ -46,7 +46,7 @@
     "jellyfin:key",
     "network:lan"
    ],
-   "version": "1.1.0",
+   "version": "1.1.1",
    "starboard_api": ">=1.14 <2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description-tracks/starboard-plugin.json",
    "published": true,
@@ -55,11 +55,11 @@
    "logo_alt": "A loudspeaker with a plus sign",
    "versions": [
     {
-     "version": "1.1.0",
+     "version": "1.1.1",
      "starboard_api": ">=1.14 <2.0",
      "released": "2026-11-15",
      "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/audio-description-tracks/starboard-plugin.json",
-     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its card says how things are: a status and when it last changed, in the grey band at the top of the card. Updates safely: before an update it finishes adding the track it is on and starts no other. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+     "changelog": "Its card says when it last looked: the grey band now shows when it last looked in the folder or a track last changed. Before, it never showed a time."
     },
     {
      "version": "1.0.0",
@@ -264,7 +264,7 @@
     "network:lan",
     "network:port"
    ],
-   "version": "1.1.0",
+   "version": "1.1.1",
    "starboard_api": ">=1.14 <2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/jellystat/starboard-plugin.json",
    "published": true,
@@ -273,11 +273,11 @@
    "logo_alt": "A pie chart",
    "versions": [
     {
-     "version": "1.1.0",
+     "version": "1.1.1",
      "starboard_api": ">=1.14 <2.0",
      "released": "2026-11-15",
      "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/jellystat/starboard-plugin.json",
-     "changelog": "A logo in Settings, Plug-ins, in the Catalogue and on its dashboard cards. Its card says how things are: a status and when it last changed, in the grey band at the top of the card. Updates safely: an update waits for a restore that is running, or is refused until it is done. Needs Starboard with plug-in API 1.14 or later. A Starboard with an older plug-in API keeps version 1.0.0."
+     "changelog": "Its card's example in the Catalogue and on Edit dashboard now shows what the card really says: \"Jellystat has your Jellyfin.\""
     },
     {
      "version": "1.0.0",
@@ -327,6 +327,26 @@
     "memory_mb": 337,
     "cpu_percent": 0.99
    }
+  },
+  {
+   "id": "library-cleanup",
+   "name": "Library clean-up",
+   "description": "Moves films and series everyone has watched, or nobody has watched for a long time, to the holding folder, so your disks do not fill up. It never deletes, and each can be put back.",
+   "kind": "Jellyfin",
+   "author": "TheMightyTRexUK",
+   "permissions": [
+    "jellyfin:key",
+    "reelix:key",
+    "library:holding",
+    "network:lan"
+   ],
+   "version": "1.0.0",
+   "starboard_api": ">=1.15 <2.0",
+   "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/library-cleanup/starboard-plugin.json",
+   "published": true,
+   "recommended": false,
+   "logo": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByb2xlPSJpbWciPjx0aXRsZT5BIHN0b3JhZ2UgYm94IHdpdGggYW4gYXJyb3cgZ29pbmcgaW50byBpdDwvdGl0bGU+PHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTEiIGZpbGw9IiM0ZDViMTYiLz48cmVjdCB4PSI4LjUiIHk9IjExIiB3aWR0aD0iMzEiIGhlaWdodD0iNy41IiByeD0iMiIgZmlsbD0iI2ZmZmZmZiIvPjxwYXRoIGQ9Ik0xMS41IDE4LjV2MTdhMi41IDIuNSAwIDAgMCAyLjUgMi41aDIwYTIuNSAyLjUgMCAwIDAgMi41LTIuNXYtMTciIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0yNCAyM3Y5LjVNMTkuNSAyOC41bDQuNSA0LjUgNC41LTQuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjMuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+Cg==",
+   "logo_alt": "A storage box with an arrow going into it"
   },
   {
    "id": "library-health",
@@ -571,13 +591,15 @@
   {
    "id": "picture-shrinker",
    "name": "Picture shrinker",
-   "description": "Shrinks the posters and photos of people Jellyfin keeps, so they take less space. Each picture is checked before it replaces the one Jellyfin saved.",
+   "description": "Shrinks the posters and photos of people Jellyfin keeps, so they take less space. Each original is backed up and each picture checked before it replaces the original.",
    "kind": "Jellyfin",
    "author": "TheMightyTRexUK",
    "permissions": [
-    "jellyfin:metadata"
+    "jellyfin:metadata",
+    "jellyfin:key",
+    "network:lan"
    ],
-   "version": "1.0.0",
+   "version": "1.1.0",
    "starboard_api": ">=1.14 <2.0",
    "manifest": "https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/picture-shrinker/starboard-plugin.json",
    "published": true,

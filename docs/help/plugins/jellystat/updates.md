@@ -1,16 +1,23 @@
 # Jellystat: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Jellystat 1.1.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Jellystat 1.1.1 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
+| 1.1.1 | 1.14 or later | 2026-11-15 |
 | 1.1.0 | 1.14 or later | 2026-11-15 |
 | 1.0.0 | 1.13 or later | 2026-11-13 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.1.1
+
+Fixed:
+
+- **Its card's example** in the Catalogue and on Edit dashboard now shows what the card really says: "Jellystat has your Jellyfin."
 
 ## What is new in 1.1.0
 

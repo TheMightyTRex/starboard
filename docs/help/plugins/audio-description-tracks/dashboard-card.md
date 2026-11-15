@@ -8,6 +8,7 @@ Audio description tracks adds 1 card you can put on your dashboard. Each starts 
 Shows how many added tracks are waiting for you to say whether they play in step. Under it, how many other files need a look, such as one with no match or lengths that differ, or "Nothing else waiting".
 
 - **How often it updates:** once an hour while the dashboard is open. Nothing is asked while the browser tab is hidden.
+- **When it last changed:** the time in the band is when it last looked in the folder, or when a track last changed, whichever is later.
 - **Example:** 2 to check, Nothing else waiting
 
 ## What the status says

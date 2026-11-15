@@ -493,15 +493,15 @@ await copyIssues.focus();
 await page.keyboard.press("Enter");
 await page.waitForFunction(() => /^Copied \d+ issues?$/.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 15000 }).catch(() => {});
 const said = await page.locator("#announcer").textContent();
-check("DL-03", "the live region says Copied and the number of issues", /^Copied \d+ issues$/.test(said), said);
+check("DL-03", "the live region says Copied and the number of issues", /^Copied \d+ issues?$/.test(said), said);
 check("DL-03", "focus stays on the button", await copyIssues.evaluate((b) => b === document.activeElement));
 const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => "");
 check("DL-03", "the copy starts with the prompt and has each issue with its details", copied.startsWith("# Download issues from Starboard")
-  && /Diagnose the issue/.test(copied) && /Old\.Show\.S05E01/.test(copied) && /Reelix ids:\*\* queue 33, radio episode 203/.test(copied)
-  && /Harbour Usenet/.test(copied) && /output `\/data\/downloads\/complete\/Old\.Show\.S05E01`/.test(copied), copied.slice(0, 200));
+  && /Diagnose the issue/.test(copied) && /Sample\.Science\.Weekly/.test(copied) && /Reelix ids:\*\* queue 33, radio episode 203/.test(copied)
+  && /Harbour Usenet/.test(copied), copied.slice(0, 200));  // the default install's example: Reelix's radio episode (Sonarr's Old.Show is in EXAMPLE_SETUP=existing)
 check("DL-03", "no key, passkey, private address or home folder in the copy",
   copied.length > 0 && !/made-up-indexer-key|made-up-passkey|192\.168\.1\.20|\/home\/someone/.test(copied));
-check("DL-03", "the page says what was copied, with a way to read it", /Copied \d+ issues for an AI helper/.test(await page.locator("#issues-export").textContent())
+check("DL-03", "the page says what was copied, with a way to read it", /Copied \d+ issues? for an AI helper/.test(await page.locator("#issues-export").textContent())
   && await page.locator("#issues-export summary", { hasText: "Show what was copied" }).count() === 1);
 const [mdFile] = await Promise.all([page.waitForEvent("download", { timeout: 15000 }).catch(() => null),
   page.getByRole("button", { name: "Download as Markdown" }).click()]);
@@ -1246,7 +1246,7 @@ console.log("\n== DASH-404 Recommended Jellyfin plug-ins");
 await open("settings-jellyfin.html");
 const plug = page.locator("#jf-plugins-list");
 await plug.locator("[data-key=skip]").waitFor({ timeout: 10000 });
-check("JF-01", "each recommended plug-in has its own choice", (await plug.locator("form[data-key]").count()) === 4);
+check("JF-01", "each recommended plug-in has its own choice", (await plug.locator("form[data-key]").count()) === 5);  // with Picture shrinker (DASH-433)
 check("JF-01", "what is installed shows with its version", /Installed: Playback Reporting 19\.0\.0\.0/.test(await plug.textContent()));
 check("JF-01", "downloaded times name TheIntroDB on Jellyfin 12", /Downloaded times \(recommended\): TheIntroDB/.test(await plug.locator("[data-key=skip]").textContent()));
 await plug.locator("[data-key=merge] input[value=on]").check();
@@ -1840,11 +1840,16 @@ check("VPN-03", "Hide for 90 days hides it, with focus on the page heading", awa
   && await page.evaluate(() => document.activeElement?.tagName === "H1"));
 await open("downloads.html");
 check("VPN-03", "and it stays hidden", await page.locator("#vpn-reminder").count() === 0);
+// The default install's example has Gluetun on Apps, and the example server cannot start the apps again, so Gluetun
+// would stay on Apps until ./install.sh --start-apps runs. The card is shown as it is once that has run: the transfer
+// answer with no VPN app (the real one lists none once Gluetun is taken off Apps).
+await page.route("**/api/transfer", (route) => route.fulfill({ contentType: "application/json", body: JSON.stringify({ clients: [], vpn: [], errors: [] }) }));
 await open("dashboard.html");
 await page.waitForTimeout(1500);
 const vpnCard = page.locator("section, article, .card").filter({ has: page.getByRole("heading", { name: "VPN", exact: true }) }).last();
 check("VPN-03", "the dashboard's VPN card says No VPN, with Add a VPN", (await vpnCard.textContent()).includes("No VPN")
   && await vpnCard.getByRole("link", { name: "Add a VPN" }).count() === 1);
+await page.unroute("**/api/transfer");
 
 console.log("\n== VPN-04 Add a VPN later");
 await open("settings-downloads.html");

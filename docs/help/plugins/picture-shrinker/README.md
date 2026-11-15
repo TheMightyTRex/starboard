@@ -6,7 +6,13 @@ photos of cast and crew 400 pixels wide, both settings. Each picture is checked 
 saved. It runs on the schedule you choose, at the lowest priority.
 
 A Starboard plug-in by TheMightyTRexUK, MIT licence. Its rules are those of a one-off shrink of a Jellyfin server's
-pictures on 14 November 2026.
+pictures on 14 November 2026, now kept in `rules.json` (rules 1.1).
+
+**A version for Jellyfin itself** runs on any Jellyfin 10.11 server, with or without Starboard:
+[TheMightyTRex/jellyfin-plugin-picture-shrinker](https://github.com/TheMightyTRex/jellyfin-plugin-picture-shrinker).
+Both follow the same `rules.json` and shared test pictures; its [SYNC.md](https://github.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/blob/main/SYNC.md)
+says what must match and how to change a rule (`tools/sync_picture_rules.py` copies the rules here). When the Jellyfin
+version is installed, this one stays idle and says so on its card, so the two never shrink the same pictures.
 
 Read [HELP.md](https://github.com/TheMightyTRex/starboard-plugins/blob/main/picture-shrinker/HELP.md) for how to use it.
 
@@ -19,10 +25,26 @@ Read [HELP.md](https://github.com/TheMightyTRex/starboard-plugins/blob/main/pict
 
 A picture already that small is only opened, never written. Backdrops, logos and other pictures are left alone.
 
-Each picture is written to a hidden file beside it (JPEG at quality 85, progressive; PNG and WebP stay PNG and WebP),
-opened again and decoded in full, checked for its size and format, and swapped in only when it is smaller than the
-original. Jellyfin never reads a half-written file. A picture that cannot be read is left as it is and listed on the
-**Space saved** page.
+Each picture is written to a hidden file beside it (JPEG at **Quality** 85, progressive; PNG and WebP stay PNG and
+WebP), opened again and decoded in full, checked for its size and format, and swapped in only when it is smaller than
+the original. Jellyfin never reads a half-written file. A picture that cannot be read is left as it is and listed on
+the **Space saved** page.
+
+## The backup
+
+**Back up each original before it is replaced** is activated when you add it. Each original is copied once, before its
+first shrink, to `originals` in the plug-in's own folder, keeping its place under `library` or `People`. A copy
+already there is never replaced. If the copy fails, or the disk would have less than 100 MB free, the picture is not
+shrunk and the run says why.
+
+- **Restore original pictures** in its actions puts every original back and keeps the backup.
+- **Delete backup** in its actions removes the backup for good, after asking. Restore can then no longer put those
+  pictures back; the shrunk pictures stay. It removes only the pictures in the backup folder and is refused while a
+  run is going.
+- **Space saved** shows the pictures now, the backup and the space saved, measured when the page opens; the card shows
+  the figures kept after the last run or action.
+
+The first run may need almost as much free space as the pictures take now.
 
 ## When it runs
 
@@ -32,6 +54,9 @@ original. Jellyfin never reads a half-written file. A picture that cannot be rea
   it is on.
 - **Shrink new pictures in quiet hours:** deactivated when you add it. When activated, each hour of Starboard's quiet
   hours it shrinks the pictures Jellyfin saved since the last pass.
+- **No notifications:** a finished run changes only the figures on its card and **Space saved** page. It sends no
+  event, so the Notifications plug-in hears nothing, and the card's status stays on when it runs next. A run that
+  failed says so on the **Space saved** page.
 
 A run stops itself after 115 minutes, and the next one carries on: pictures already shrunk are only opened.
 
@@ -39,9 +64,32 @@ A run stops itself after 115 minutes, and the next one carries on: pictures alre
 
 - It reads and changes Jellyfin's metadata folder: the posters, photos and details Jellyfin saved
   (`jellyfin:metadata`, medium risk). It changes only posters and photos of people, as the owner of Jellyfin's files.
-- It reaches nothing else: no network, no key, no media file.
+- It uses Jellyfin's key (`jellyfin:key`, on the home network) for one thing: reading Jellyfin's list of plug-ins, at
+  most every 10 minutes, to stay idle when the Jellyfin version is installed. No media file is touched.
 - It runs one small container, with 128 MB of memory and half a processor at most; its work runs at nice 19 and in
   the idle disk class.
+
+## How much it uses
+
+Measured on 15 November 2026 against the Jellyfin version, one at a time, on a sample of 540 made-up pictures (300
+posters at 2,000 by 3,000 pixels and 240 photos at 1,365 by 2,048, 776.3 MB), with backup activated in both. This one
+ran as Starboard runs it (128 MB, half a processor); the Jellyfin version in a throwaway Jellyfin 10.11.11.
+
+| What | Jellyfin version | Starboard version (this plug-in) |
+|---|---|---|
+| Where it runs | Inside Jellyfin | Its own container beside Jellyfin |
+| Memory at rest | At most about 15 MB more than Jellyfin without it (164 MB against 148 MB; the samples overlap) | 13 MB (its whole container) |
+| Memory at the peak of a run | About 20 MB more than Jellyfin at rest (183 MB against 164 MB) | 33 MB (its whole container) |
+| Memory after a run | Back to Jellyfin at rest (164 MB) | 23 MB (the image library stays loaded) |
+| Processor time for the run | 35 seconds | 39 seconds |
+| Time the run took | 55 seconds (one processor at most, as it uses one thread) | 80 seconds (capped at half a processor) |
+| Pictures shrunk | 540 of 540 | 540 of 540 |
+| Space saved | 758.8 MB (776.3 MB to 17.5 MB) | 758.4 MB (776.3 MB to 17.9 MB) |
+| Jellyfin's answers during the run | `/System/Info` every 2 seconds: median 25 ms, slowest 68 ms (at rest: 30 ms and 59 ms) | Not affected (a separate container) |
+
+Both work at the lowest priority. At rest both are small (about 13 to 15 MB). The Jellyfin version uses slightly
+less processor time and less memory during a run; the Starboard version keeps its memory apart from Jellyfin's, so a
+problem in it can never slow Jellyfin.
 
 ## Updating
 

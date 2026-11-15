@@ -44,7 +44,7 @@ The cards say "Not tested yet" and **Next test at** with the hour from **Test at
 To see a result now:
 
 1. Go to **Settings**, then **Plug-ins**, then **Line speed**.
-2. In **Actions**, select **Test now**.
+2. In **Actions**, select **Test now**, then **Test now** in the box that asks first.
 
 ## Check the internet connection
 

@@ -14,7 +14,7 @@ Line speed's settings are on its own tab: go to **Settings**, then **Plug-ins**,
 
 These are on Line speed's tab.
 
-- **Test now** runs a test straight away, downloading one test file. When it is done, Starboard shows the speed in **Actions** and on the cards. It is in **Actions**, and works only while Line speed is active.
+- **Test now** runs a test straight away, downloading one test file. Starboard asks first: select **Test now** in the box to go on, or **Cancel** to leave it. The box starts on **Cancel**, and Escape closes it without testing. When it is done, Starboard shows the speed in **Actions** and on the cards. It is in **Actions**, and works only while Line speed is active.
 
 ## Things to note
 

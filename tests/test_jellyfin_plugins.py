@@ -120,13 +120,50 @@ class JellyfinPluginsTest(unittest.TestCase):
         self.assertFalse(jp.released("pictures", "10.10.7", fetch, now=1000))
         self.assertTrue(jp.released("playback", "10.11.6"))  # no check for the others
 
-    def test_picture_shrinker_not_offered_on_newer_jellyfin(self):
+    def test_picture_shrinker_on_jellyfin_12(self):
+        """DASH-433: the Jellyfin 12 build (targetAbi 12.0.0.0) suits every Jellyfin 12, such as the 12.4 here."""
+        self.released_list(["12.0.0.0", "10.11.0.0"])
+        self.start()  # Jellyfin 12.4
+        on = self.group(self.status(), "pictures")["choices"][0]
+        self.assertTrue(on["available"])
+        self.assertNotIn("not ready", on.get("hint", ""))
+        out = jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
+        self.assertIn("Installed Picture shrinker", out["done"][0])
+
+    def test_picture_shrinker_on_jellyfin_12_waits_for_a_12_build(self):
+        """A list with only the 10.11 build is not a release for Jellyfin 12."""
+        self.released_list(["10.11.0.0"])
         self.start()  # Jellyfin 12.4
         on = self.group(self.status(), "pictures")["choices"][0]
         self.assertFalse(on["available"])
-        self.assertIn("Needs Jellyfin 10.11", on["hint"])
+        self.assertIn("Not released yet", on["hint"])
         with self.assertRaises(ValueError):
             jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
+
+    def test_picture_shrinker_not_offered_on_jellyfin_13(self):
+        self.released_list(["12.0.0.0", "10.11.0.0"])
+        self.start(version="13.0.0")
+        on = self.group(self.status(), "pictures")["choices"][0]
+        self.assertFalse(on["available"])
+        self.assertEqual(on["hint"], "Needs Jellyfin 10.11 or 12.")
+        with self.assertRaises(ValueError):
+            jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
+
+    def test_picture_shrinker_release_lines(self):
+        def fetch(url):
+            return [{"guid": jp.PACKAGES["pictures"]["guid"], "versions": [{"targetAbi": "12.0.0.0"}, {"targetAbi": "10.11.0.0"}]}]
+        for version, ok in (("10.11.0", True), ("10.11.11", True), ("12.0.0", True), ("12.4.0", True), ("10.10.7", False)):
+            jp._released.clear()
+            self.assertEqual(jp.released("pictures", version, fetch, now=1000), ok, version)
+        def only12(url):
+            return [{"guid": jp.PACKAGES["pictures"]["guid"], "versions": [{"targetAbi": "12.1.0.0"}]}]
+        for version, ok in (("12.0.0", False), ("12.4.0", True), ("10.11.11", False)):
+            jp._released.clear()
+            self.assertEqual(jp.released("pictures", version, only12, now=1000), ok, version)
+        self.assertTrue(jp.suits("pictures", "12.4.0"))
+        self.assertTrue(jp.suits("pictures", "10.11.11"))
+        self.assertFalse(jp.suits("pictures", "13.0.0"))
+        self.assertFalse(jp.suits("pictures", "10.10.7"))
 
     def test_downloaded_times_by_version(self):
         self.assertEqual(jp.downloaded_choice("12.4.0"), "theintrodb")
