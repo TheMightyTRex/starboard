@@ -1376,8 +1376,13 @@ const byId = Object.fromEntries(builtIn.map((c) => [c.id, c]));
 check("BAND-08", "Now playing shows Jellyfin's own logo, the same file as the Apps page",
   byId.playing?.app === "jellyfin" && byId.playing?.img === `/api/icons/${appId((s) => s.type === "jellyfin")}?v=jellyfin`, byId.playing?.img);
 // The made-up Reelix serves no logo.png, so its tile falls back to its initials, as on the Apps page.
-check("BAND-08", "Downloads and Coming up, from Reelix alone, show Reelix's logo; VPN shows Gluetun's",
-  byId.downloads?.app === "reelix" && byId.coming?.app === "reelix"
+// Earlier journeys may leave a Sonarr or Radarr beside Reelix: then Downloads and Coming up combine apps and show
+// Starboard's icon. Either way the logo follows the rule.
+const arrKinds = new Set(exampleApps.filter((s) => s.enabled !== false && (s.icon === "reelix" || ["sonarr", "radarr", "lidarr", "readarr"].includes(s.type)))
+  .map((s) => (s.icon === "reelix" ? "reelix" : s.type)));
+const arrLogo = arrKinds.size === 1 ? [...arrKinds][0] : "starboard";
+check("BAND-08", `Downloads and Coming up show ${arrLogo === "reelix" ? "Reelix's logo (Reelix alone)" : "Starboard's icon (several apps)"}; VPN shows Gluetun's`,
+  byId.downloads?.app === arrLogo && byId.coming?.app === arrLogo
   && byId.vpn?.app === "gluetun" && byId.vpn?.img === `/api/icons/${appId((s) => s.type === "gluetun")}?v=gluetun`, JSON.stringify(builtIn.map((c) => [c.id, c.app, c.img])));
 check("BAND-08", "Starboard's own cards show a design system icon on the tile",
   ["disk", "load", "alerts", "health", "setup"].filter((k) => byId[k]).every((k) => byId[k].own && byId[k].app === "starboard" && !byId[k].img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.app])));
