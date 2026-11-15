@@ -2574,6 +2574,7 @@ const KEY_SCOPES = {
   requests: ["Requests", "Requests from Seerr or Reelix"],
   system: ["System", "Processor, memory, disks, version and test alerts"],
   logs: ["Logs", "Starboard's log, with addresses, names and keys taken out. Only when ticked"],
+  updates: ["Updates", "What can be updated; with Read and manage, also update Starboard, Reelix, an app or a plug-in, and roll a plug-in back. Only when ticked"],
 };
 
 function apiKeys() {
@@ -2589,7 +2590,7 @@ function apiKeys() {
     const panel = sidePanel({ title: k.name, opener, body: [el("dl", { class: "facts" },
       el("dt", { text: "Starts with" }), el("dd", { text: `${k.prefix}…` }),
       el("dt", { text: "May" }), el("dd", { text: KEY_RIGHTS[k.right] || k.right }),
-      el("dt", { text: "Sees" }), el("dd", { text: k.scopes.length ? k.scopes.map((s) => (KEY_SCOPES[s] || [s])[0]).join(", ") : "Everything the API offers" }),
+      el("dt", { text: "Sees" }), el("dd", { text: k.scopes.length ? k.scopes.map((s) => (KEY_SCOPES[s] || [s])[0]).join(", ") : "Everything the API offers, except Logs and Updates" }),
       el("dt", { text: "Ends" }), el("dd", { text: k.expires_at ? when(k.expires_at) : "Never" }),
       el("dt", { text: "Last used" }), el("dd", { text: k.last_used_at ? new Date(k.last_used_at).toLocaleString("en-GB") : "Not used yet" }))],
       foot: [revoke] });
@@ -2617,7 +2618,7 @@ function apiKeys() {
     });
     const scopes = el("fieldset", { class: "form-stack", id: "key-scopes", "aria-describedby": "key-scopes-hint" },
       el("legend", { class: "field__label", text: "What it may see" }),
-      el("span", { class: "hint", id: "key-scopes-hint", text: "Leave them all empty for everything the API offers. An AI assistant should see only what it needs." }),
+      el("span", { class: "hint", id: "key-scopes-hint", text: "Leave them all empty for everything the API offers, except Logs and Updates, which are only given when ticked. An AI assistant should see only what it needs." }),
       boxes.map((b) => b.node));
     const pw = el("input", { class: "input", id: "key-password", type: "password", autocomplete: "current-password" });
     const go = el("button", { type: "submit", class: "btn btn--primary", form: "key-form", text: "Make a key" });
@@ -3728,6 +3729,9 @@ function topicTabs() {
   const show = (id, focus) => {
     topicCurrent = id;
     topics.forEach((s) => s.classList.toggle("topic-off", s.id !== id));
+    // Each section is also found by its id now, not only from when the tabs were made: a page drawn again since (a
+    // plug-in's page after an update, DASH-424) has new sections, and the old ones are no longer on the page.
+    $$("[role=tab]", nav).forEach((t) => document.getElementById(t.getAttribute("aria-controls"))?.classList.toggle("topic-off", t.getAttribute("aria-controls") !== id));
     $$("[role=tab]", nav).forEach((t) => {
       const on = t.getAttribute("aria-controls") === id;
       t.setAttribute("aria-selected", String(on));

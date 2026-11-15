@@ -58,7 +58,8 @@ function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
         el("p", { class: "small install-warning__by", text: [s.author && `By ${s.author}`, s.licence, s.homepage].filter(Boolean).join(" · ") }),
         s.description ? el("p", { text: s.description }) : null,
         // An update (DASH-330): what changed, and anything it may do that the installed version may not.
-        s.changelog ? el("p", { class: "small" }, el("strong", { text: `New in ${s.version}: ` }), s.changelog) : null,
+        s.whats_new?.length ? null : s.changelog ? el("p", { class: "small" }, el("strong", { text: `New in ${s.version}: ` }), s.changelog) : null,
+        updateBefore(s),
         s.new_permissions?.length ? el("div", { class: "notice", "data-tone": "warning", role: "note" }, icon("triangle-alert"),
           el("div", { class: "notice__body" }, el("span", { class: "notice__title", text: "This version asks for more" }),
             el("ul", {}, s.permissions.filter((x) => s.new_permissions.includes(x.permission)).map((x) => el("li", { text: `New: ${x.words}` }))))) : null,
@@ -82,6 +83,49 @@ function installWarning(s, { builtin = false, opener, verb = "Install" } = {}) {
     });
     // Focus stays at the top (the shared slide-out's own start), so the warning is read before the password.
   });
+}
+
+// Before an update (API 1.14, DASH-424): what is new between the installed version and this one, from the new
+// version's own changes, the settings that move, and what Starboard does to keep the update safe.
+function updateBefore(s) {
+  if (s.from === undefined) return null;
+  const parts = [];
+  if (s.whats_new?.length) {
+    parts.push(el("section", { class: "stack-2", "aria-labelledby": "pl-update-new-h" },
+      el("h3", { id: "pl-update-new-h" }, icon("circle-arrow-up"), ` What is new since ${s.from}`),
+      ...s.whats_new.map((v) => el("div", { class: "release-notes" },
+        el("h4", { text: `Version ${v.version}${v.date ? `, ${v.date}` : ""}` }),
+        el("ul", {}, v.sections.flatMap((sec) => sec.items.map((parts2) => el("li", {}, el("strong", { text: `${sec.type}: ` }), ...changeParts(parts2)))))))));
+  } else if (!s.changelog) {
+    parts.push(el("p", { class: "small", text: "Its maker did not list what changed in this version." }));
+  }
+  const safe = [];
+  if (s.settings_move?.length) safe.push(`Your settings move to this version: ${s.settings_move.join("; ")}. The settings you have now are kept, and Roll back puts them back.`);
+  if (s.before_step) safe.push("Starboard asks it to finish or pause its work first. If it is not ready, nothing is changed.");
+  if (s.health_wait_seconds) safe.push(`Starboard waits up to ${s.health_wait_seconds} seconds for the new version to answer. If it does not, Starboard goes back to ${s.from} by itself.`);
+  safe.push(`Version ${s.from} is kept, so you can roll back.`);
+  parts.push(el("section", { class: "stack-2", "aria-labelledby": "pl-update-safe-h" },
+    el("h3", { id: "pl-update-safe-h" }, icon("shield-check"), " How the update is kept safe"),
+    el("ul", {}, safe.map((t) => el("li", { text: t })))));
+  return el("div", { class: "stack-4" }, ...parts);
+}
+
+// An update or a roll back runs as steps (DASH-424): the task dialog shows each one, and focus returns to State.
+async function followRun(p, r, title, redraw) {
+  const job = taskJob({ title, url: r.job, failedWord: "Stopped here", returnTo: `pl-${p.id}-state-h` });
+  // The slide-out that opened it has just closed, so focus may be on nothing yet: State's heading takes it back.
+  // The page may still be drawn again after it closes, so it looks twice more that focus did not fall to the page.
+  job.dialog.addEventListener("close", () => {
+    focusState(p);
+    [400, 1200].forEach((ms) => setTimeout(() => {
+      if (!document.activeElement || document.activeElement === document.body) focusState(p);
+    }, ms));
+  });
+  job.open();
+  const j = await job.follow((x) => ({ title: x.title, text: x.text }));
+  await redraw();
+  if (!job.dialog.open) focusState(p);
+  return j;
 }
 
 // The tester's issues (DASH-284): errors first, each with where, what and how to fix it.
@@ -463,10 +507,7 @@ function updateButton(p, redraw) {
       const password = await installWarning(s, { opener: b, verb: "Update" });
       if (password === null) return;
       const r = await api(`/api/plugins/${p.id}/update`, { method: "POST", body: { password } });
-      announce(r.said);
-      toast(r.said);
-      await redraw();
-      focusState(p);
+      await followRun(p, r, `Updating ${p.name} to ${p.update.version}`, redraw);
     } catch (err) { problem(err.message, b); }
     finally { b.disabled = false; }
   });
@@ -483,10 +524,7 @@ function rollbackButton(p, redraw, primary = false) {
     if (!ok) return;
     try {
       const r = await api(`/api/plugins/${p.id}/rollback`, { method: "POST", body: { password: pw.value } });
-      announce(r.said);
-      toast(r.said);
-      await redraw();
-      focusState(p);
+      await followRun(p, r, `Rolling ${p.name} back to ${p.status.previous_version}`, redraw);
     } catch (err) { problem(err.message, b); }
   });
   return b;
@@ -513,10 +551,7 @@ function updateFromAddress(p, redraw) {
     if (password === null) return;
     try {
       const r = await api(`/api/plugins/${p.id}/update`, { method: "POST", body: { address: where, password } });
-      announce(r.said);
-      toast(r.said);
-      await redraw();
-      focusState(p);
+      await followRun(p, r, `Updating ${p.name} to ${s.version}`, redraw);
     } catch (err) { problem(err.message, go); }
   });
   return form;

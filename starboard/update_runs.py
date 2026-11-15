@@ -126,6 +126,11 @@ def _go(data_dir, run, work):
     t.start()
 
 
+def _starboard_running(app):
+    from . import self_update
+    return self_update.running(self_update.load(app.data_dir), data_dir=app.data_dir)
+
+
 def _busy():
     with _lock:
         return any(t.is_alive() for t in _active.values())
@@ -197,7 +202,7 @@ def start(app, target, by="you", address="", note=None):
     target = str(target or "")
     if not re.match(r"^(starboard|reelix|app:[A-Za-z0-9_-]{1,64}|plugin:[a-z0-9-]{3,40})$", target):
         raise ValueError("target must be starboard, reelix, app:<id> or plugin:<id>, from /api/v1/updates")
-    if _busy():
+    if _busy() or _starboard_running(app):
         raise Busy("An update is already running. Wait for it to finish")
     if target == "starboard":
         return _start_starboard(app, by)
@@ -371,7 +376,7 @@ def rollback(app, target, by="you"):
         raise LookupError("No plug-in with that id")
     if not (p.get("status") or {}).get("can_roll_back"):
         raise Refused(f"{p['name']} has no earlier version kept to go back to")
-    if _busy():
+    if _busy() or _starboard_running(app):
         raise Busy("An update is already running. Wait for it to finish")
     run = _new(app.data_dir, target, "plugin", p["name"], "rollback", p.get("version"), p["status"].get("previous_version"), by,
                plugin_update.ROLLBACK_STEPS)
@@ -391,7 +396,6 @@ def rollback(app, target, by="you"):
 def _live(app, run):
     """A run as it is now: Starboard's own update is read from its record, which outlives the restart; any other run
     left running when Starboard restarted has stopped."""
-    run = json.loads(json.dumps(run))
     if run.get("kind") == "starboard" and run.get("delegate") == "self-update" and run["state"] == "running":
         from . import self_update
         j = self_update.job(app)
@@ -406,9 +410,9 @@ def _live(app, run):
 
 
 def get(app, rid):
-    with _lock:
+    with _lock:  # a copy, taken while no step is being written
         _load(app.data_dir)
-        run = _runs.get(rid)
+        run = json.loads(json.dumps(_runs[rid])) if rid in _runs else None
     if not run:
         raise LookupError("No update run with that id")
     return _live(app, run)
@@ -418,7 +422,7 @@ def recent(app):
     """The last 20 runs, newest first."""
     with _lock:
         _load(app.data_dir)
-        runs = list(_runs.values())
+        runs = json.loads(json.dumps(list(_runs.values())))
     return [_live(app, r) for r in reversed(runs)]
 
 
