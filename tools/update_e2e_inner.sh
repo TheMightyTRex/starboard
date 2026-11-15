@@ -8,7 +8,7 @@ addgroup -g 2375 docker 2>/dev/null || true
 id tester >/dev/null 2>&1 || adduser -D -u 1000 -s /bin/bash tester
 addgroup tester docker
 dockerd-entrypoint.sh dockerd --group docker > /var/log/dockerd.log 2>&1 &
-for i in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 1; done
+for _ in $(seq 1 60); do docker info >/dev/null 2>&1 && break; sleep 1; done
 docker info >/dev/null 2>&1 || { tail -30 /var/log/dockerd.log; exit 1; }
 chown -R tester /e2e
 exec bash -s <<'INNER'
