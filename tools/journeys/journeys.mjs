@@ -1521,7 +1521,8 @@ await page.getByRole("button", { name: "Add a VPN" }).click();
 check("VPN-04", "Add a VPN opens the form with focus on the provider", await page.evaluate(() => document.activeElement?.id === "dl-vpn-add-provider"));
 await page.getByRole("button", { name: "Add the VPN" }).click();
 check("VPN-04", "a missing detail is said by its field", (await page.locator(".field-error:not([hidden])").first().textContent()).includes("Choose your VPN provider"));
-await page.locator("#dl-vpn-add-provider").selectOption("mullvad");
+await page.locator("#dl-vpn-add-provider").selectOption("other");  // a provider that is not listed, typed as Gluetun writes it
+await page.locator("#dl-vpn-add-other").fill("mullvad");
 await page.locator("#dl-vpn-add-key").fill("made-up");
 await page.locator("#dl-vpn-add-address").fill("192.168.1.20/32");
 await page.locator("#dl-vpn-add-pw").fill(password);

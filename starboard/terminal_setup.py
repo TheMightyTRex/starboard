@@ -2406,6 +2406,8 @@ def ask_vpn_or_not(term, state):
                 choice["groups"] = sorted(set(choice.get("groups") or []) | {"vpn"})
                 state["names"] = _names(choice["apps"])
             return True
+        if state.get("no_vpn") and "gluetun" not in choice["apps"]:
+            return False  # chosen before, after the warning: Back to this step keeps it without asking again
         term.say("")
         term.warn(w["warning_title"])
         for line in w["warning"]:

@@ -180,7 +180,7 @@ class TerminalChoiceTest(unittest.TestCase):
         state = self.state()
         self.assertFalse(terminal_setup.ask_vpn_or_not(term, state))
         text = " ".join(out.getvalue().split())
-        for line in NOVPN["warning"]:
+        for line in NOVPN["warning"][:3]:  # the last line is also the choice's own hint
             self.assertEqual(text.count(line), 2)  # shown each time it was chosen
         self.assertEqual(text.count(NOVPN["question"]), 2)  # Cancel asked again
         self.assertTrue(state["no_vpn"])

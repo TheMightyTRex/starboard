@@ -1018,17 +1018,15 @@ def plan_change(data_dir, install=None, usenet=None, edition=None, check=None, o
         c = install_choice(install, check=check, usenet=usenet or usenet_now or "nzbget")
         apps = c["apps"]
         edition = edition or c["reelix_edition"]
-        if "gluetun" not in now["apps"]:
-            # Downloading without a VPN was a choice (DASH-440): another install keeps it. The VPN is added in
-            # Settings, Downloads, VPN, with its details.
-            apps = [k for k in apps if k != "gluetun"]
     if usenet and usenet in USENET_APPS and usenet != next((k for k in USENET_APPS if k in apps), usenet):
         apps = [usenet if k in USENET_APPS else k for k in apps]
     apps, _ = with_needs(apps)
-    if "gluetun" not in now["apps"]:
-        apps = [k for k in apps if k != "gluetun"]
     left_out = [k for k in apps if k in set(outside) and k not in now["apps"]]
     apps = [k for k in apps if k not in left_out]
+    if "gluetun" not in now["apps"]:
+        # Downloading without a VPN was a choice (DASH-440): another install keeps it. The VPN is added in Settings,
+        # Downloads, VPN, with its details.
+        apps = [k for k in apps if k != "gluetun"]
     choice = {**now, "apps": apps, "reelix_edition": edition or now["reelix_edition"], "own_ports": compose_ports(data_dir)}
     if choice["reelix_edition"] == "full" and "reelix" in apps:
         reelix_image("full", check)  # raises when the full Reelix cannot be downloaded
