@@ -549,6 +549,29 @@ check("T21", "the card is named by its band's heading", band21.labelled, JSON.st
 check("T21", "the chip and the time read on their own", band21.chip === "Status: Converting" && /^Updated /.test(band21.time || ""), JSON.stringify(band21));
 check("T21", "the band adds no Tab stops", band21.focusable === 0, JSON.stringify(band21));
 
+// T23 Reduce motion (DASH-437): Off means full movement even when the device asks for less; Match device follows the
+// device; On stills movement on a device that does not ask. Checked in the styles and scripts a slide-out, a message
+// and the loading line use, as Display leaves them after a reload.
+for (const [device, choice, still] of [["reduce", "off", false], ["reduce", "device", true], ["no-preference", "on", true], ["no-preference", "device", false]]) {
+  const mctx = await browser.newContext({ viewport: { width: 1280, height: 860 }, reducedMotion: device });
+  await mctx.addCookies(await page.context().cookies());
+  const mp = await mctx.newPage();
+  await mp.addInitScript((choice) => localStorage.setItem("starboard.display", JSON.stringify({ motion: choice })), choice);
+  await mp.goto(`${base}/index.html`);
+  await mp.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
+  const m = await mp.evaluate(() => {
+    const add = (html) => { const d = document.createElement("div"); d.innerHTML = html; document.body.append(d); return d.firstElementChild; };
+    const toast = add('<div class="toast">x</div>'), bar = add('<div class="loading-bar" data-active></div>');
+    return { panel: getComputedStyle(document.documentElement).getPropertyValue("--motion-panel").trim(),
+      toast: getComputedStyle(toast).animationName, line: getComputedStyle(bar, "::after").display,
+      script: SharedComponents.motionStill() };
+  });
+  const isStill = m.panel === "0ms" && m.toast === "none" && m.line === "none" && m.script === true;
+  const moves = m.panel !== "0ms" && m.toast !== "none" && m.line !== "none" && m.script === false;
+  check("T23", `Reduce motion ${choice} on a device set to ${device}: ${still ? "still" : "full movement"}`, still ? isStill : moves, JSON.stringify(m));
+  await mctx.close();
+}
+
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
