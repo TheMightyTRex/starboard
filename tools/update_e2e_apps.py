@@ -38,11 +38,22 @@ def push_app(version, broken=False):
     """A tiny web app answering its version, pushed as REG/e2e-app:latest."""
     d = tempfile.mkdtemp()
     with open(os.path.join(d, "Dockerfile"), "w") as f:
-        f.write("FROM alpine:3.21\n" + (
+        f.write("FROM busybox:1.37\n" + (
             'CMD ["sh", "-c", "echo this made-up version cannot start; exit 1"]\n' if broken else
             f'RUN mkdir -p /www && echo {version} > /www/index.html\nCMD ["httpd", "-f", "-p", "8080", "-h", "/www"]\n'))
-    sh("docker", "build", "-q", "-t", f"{REG}/e2e-app:latest", d)
-    sh("docker", "push", "-q", f"{REG}/e2e-app:latest")
+    sh("docker", "build", "-q", "-t", "e2e-build:app", d)
+    publish("e2e-build:app", f"{REG}/e2e-app:latest")
+
+
+def publish(local, ref):
+    """Pushes `local` as `ref` to the registry, then points this computer's `ref` back where it was: on a server
+    the tag moves only when Starboard pulls the new version (a running container whose tag moved shows only its
+    image id, which Starboard leaves alone)."""
+    before = sh("docker", "image", "inspect", "-f", "{{.Id}}", ref, check=False).stdout.strip()
+    sh("docker", "tag", local, ref)
+    sh("docker", "push", "-q", ref)
+    if before:
+        sh("docker", "tag", before, ref)
 
 
 def answer(port, path="/"):
@@ -139,15 +150,14 @@ def reelix_stage():
     reelix_updates._healthy = lambda base, wait=90, sleep=time.sleep: healthy_within(base, wait, sleep)  # 90 s, not 5 minutes
     if to:
         sh("docker", "pull", "-q", f"ghcr.io/themightytrex/reelix:{to}")
-        sh("docker", "tag", f"ghcr.io/themightytrex/reelix:{to}", f"{REG}/reelix:lite")
-        sh("docker", "push", "-q", f"{REG}/reelix:lite")
+        publish(f"ghcr.io/themightytrex/reelix:{to}", f"{REG}/reelix:lite")
         said = reelix_updates.run(app.config, app.data_dir)
         say("healthy" in said, f"Reelix updated to {to}: {said}")
     d = tempfile.mkdtemp()
     with open(os.path.join(d, "Dockerfile"), "w") as f:
         f.write('FROM alpine:3.21\nCMD ["sh", "-c", "echo this made-up Reelix cannot start; sleep 3600"]\n')
-    sh("docker", "build", "-q", "-t", f"{REG}/reelix:lite", d)
-    sh("docker", "push", "-q", f"{REG}/reelix:lite")
+    sh("docker", "build", "-q", "-t", "e2e-build:reelix", d)
+    publish("e2e-build:reelix", f"{REG}/reelix:lite")
     started = time.time()
     said = reelix_updates.run(app.config, app.data_dir)
     say("went back" in said, f"a Reelix that does not answer went back by itself: {said} ({time.time() - started:.0f} s)")
