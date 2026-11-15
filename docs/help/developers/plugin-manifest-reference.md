@@ -258,7 +258,7 @@ them in the plug-in's `settings.json`. Read [Settings and key files](plugin-api-
 | `address` | An address box | An address Starboard is allowed to call |
 | `secret` | A password box | Never sent back to the browser; shown as set or not set. Up to 2000 characters |
 | `folder` | Browse, inside what the plug-in mounts | A folder inside `/media` or `/media/<one folder>`. Needs a container that mounts `media:ro` or `media/<one folder>`. API 1.3 |
-| `list` | Several values | Up to 200, each up to 500 characters |
+| `list` | A box with one value a line | Saved as a list of strings, blank lines left out. Up to 200, each up to 500 characters |
 | `custom` | A list the plug-in describes, drawn by Starboard | `choices` is a path on the plug-in. Read [Custom screens](plugin-api-reference.md#custom-screens) |
 | `schedule` | How often (every day, every week or every month), the day or the date, and a time, side by side | Every day, week or month; a day of the week for a week; a date from 1 to 31 for a month; a time such as `03:30`. A month without the date runs on its last day. API 1.14. Read [A job on a schedule from its settings](#a-job-on-a-schedule-from-its-settings) |
 
@@ -323,7 +323,7 @@ Each item in `actions` is a button in the plug-in's section of **Settings**, the
 | `id` | Its id: letters, numbers, hyphens and underscores, up to 40. Give every button one. A button without one is known by its place in the list, counting from 0, which changes when you move it |
 | `label` | The words on the button, saying what it does, such as `Run Live TV now`. Required |
 | `path` | The path on the first container that Starboard sends a POST to. Required |
-| `confirm` | Accepted, reserved for a question before the button runs |
+| `confirm` | A question Starboard asks before the button runs, such as `Downloads a test file now. Continue?`, in its standard confirm box. The box starts on **Cancel**, and Escape cancels. Up to 300 characters |
 
 ## Health
 
