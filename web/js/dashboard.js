@@ -114,9 +114,9 @@ const CARDS = {
       let st = null;
       try { st = await ask("/api/downloads/vpn-state"); } catch { /* the plain words below */ }
       if (!st?.downloads) return empty("No VPN on your apps.");
-      return el("div", { class: "stack-2" }, headChip("No VPN", "muted"),
+      return band(["No VPN", "muted"], el("div", { class: "stack-2" },  // the chip in the band, as every card (DASH-442)
         el("p", { class: "small muted", text: "Downloads use your home internet address." }),
-        el("p", { class: "small" }, el("a", { href: "/settings-downloads.html", text: "Add a VPN" })));
+        el("p", { class: "small" }, el("a", { href: "/settings-downloads.html", text: "Add a VPN" }))));
     }
     const v = r.vpn[0];
     return band(v.running ? ["Connected", "success"] : ["Not connected", "danger"],  // in the band (DASH-442; DASH-309's title line)
