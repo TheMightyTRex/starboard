@@ -3305,7 +3305,8 @@
        "starboard",
        "reelix",
        "app",
-       "plugin"
+       "plugin",
+       "jellyfin-plugins"
       ]
      },
      "name": {

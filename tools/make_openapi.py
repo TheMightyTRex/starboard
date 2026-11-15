@@ -239,7 +239,7 @@ UPDATE_STEP = {"type": "object", "required": ["id", "label", "state"],
                               "detail": {"type": "string"}}}
 spec["components"]["schemas"]["UpdateRun"] = {
     "type": "object", "required": ["id", "target", "kind", "name", "action", "from", "to", "by", "state", "said", "started_at", "steps"],
-    "properties": {"id": {"type": "string"}, "target": {"type": "string"}, "kind": {"type": "string", "enum": ["starboard", "reelix", "app", "plugin"]},
+    "properties": {"id": {"type": "string"}, "target": {"type": "string"}, "kind": {"type": "string", "enum": ["starboard", "reelix", "app", "plugin", "jellyfin-plugins"]},
                    "name": {"type": "string"}, "action": {"type": "string", "enum": ["update", "rollback"]},
                    "from": {"type": "string"}, "to": {"type": "string"}, "by": {"type": "string"},
                    "state": {"type": "string", "enum": ["running", "updated", "up-to-date", "went-back", "rolled-back", "refused", "failed"]},

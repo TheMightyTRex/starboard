@@ -43,6 +43,7 @@ add features.
 - **Plug-in buttons that ask first:** A plug-in button with a confirm, such as Line speed's Test now, asks first in the standard confirm box, which starts on Cancel; Escape cancels. Before, the question was never asked. (DASH-441)
 - **Plug-in list settings:** A list setting, such as Outside services' Addresses to check or Home Assistant's What to show, is a box with one value a line, saved as a list. Before, it was a one-line box and saving said "give a list". (DASH-441)
 - **Removing an app plug-in:** Its entry on Apps goes with it (the one it added, or the app it took over), and Settings, Tdarr says Tdarr is not installed, with a link to add its plug-in, instead of offering to connect it. (DASH-427)
+- **An app update that keeps restarting goes back:** After an app update, Starboard now waits until the new version has stayed running for 15 seconds without starting again. Before, a version that exited at once and was started again by its restart policy could be caught running for a moment and kept. Found by the end-to-end update test before this release.
 
 ### Security
 - **Plug-ins from a zip are built with limits:** Only a zip can install a plug-in that is built on your computer; its Dockerfile is checked first (no outside builders, mounts, network or security options, no downloads with ADD, no images from your computer), the build cannot reach your home network, folders, Docker or apps, and it has limits on memory, processor, time and size. (DASH-414)

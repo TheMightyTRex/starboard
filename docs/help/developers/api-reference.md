@@ -2006,7 +2006,7 @@ The named objects the answers use.
 |---|---|---|
 | `id` | text | yes |
 | `target` | text | yes |
-| `kind` | one of `starboard`, `reelix`, `app`, `plugin` | yes |
+| `kind` | one of `starboard`, `reelix`, `app`, `plugin`, `jellyfin-plugins` | yes |
 | `name` | text | yes |
 | `action` | one of `update`, `rollback` | yes |
 | `from` | text | yes |

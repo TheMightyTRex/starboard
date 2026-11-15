@@ -27,6 +27,7 @@ from . import api_v1, logs
 RUNS = "update-runs.json"
 KEEP = 20
 APP_HEALTHY_WITHIN = 120
+APP_STEADY = 15  # seconds an updated app must stay running, with no restart, to count as working
 _lock = threading.Lock()
 _active = {}  # run id -> thread, while it runs
 _runs = collections.OrderedDict()
@@ -336,20 +337,42 @@ def save_app_settings(c):
     return "done", f"{copy}, beside its Compose file"
 
 
-def _app_healthy(name, wait=None, sleep=time.sleep):
-    """Running, and not unhealthy, within two minutes; a container whose health check is still starting is waited for."""
+def _run_mark(containers, c):
+    """What tells one run of a container from the next: its id, restart count and start time (one Docker call)."""
+    try:
+        info = containers.docker("GET", f"/containers/{c['id']}/json") or {}
+    except Exception:  # noqa: BLE001  unknown: the list's status is used alone
+        return c.get("id"), None, None
+    return c.get("id"), info.get("RestartCount"), (info.get("State") or {}).get("StartedAt")
+
+
+def _app_healthy(name, wait=None, sleep=time.sleep, clock=time.monotonic):
+    """Running, and not unhealthy, within two minutes, and still running APP_STEADY seconds later with no restart in
+    between: a version that exits at once and is started again by its restart policy is running for a moment between
+    tries, which is not a working app (found by the release 0.19.0 end-to-end test). A container whose health check is
+    still starting is waited for."""
     from . import containers
-    until = time.monotonic() + (APP_HEALTHY_WITHIN if wait is None else wait)
-    why = "did not start"
+    until = clock() + (APP_HEALTHY_WITHIN if wait is None else wait)
+    why, since, seen = "did not start", None, None
     while True:
         c = next((x for x in containers.containers() if x["name"] == name), None)
         status = (c or {}).get("status", "")
-        if c and c.get("state") == "running" and "(unhealthy)" not in status and "health: starting" not in status:
-            return True, ""
-        why = "was not healthy" if "(unhealthy)" in status else "did not start" if not c or c.get("state") != "running" else "was still starting"
-        if time.monotonic() >= until:
+        ok = c and c.get("state") == "running" and "(unhealthy)" not in status and "health: starting" not in status
+        mark = _run_mark(containers, c) if ok else None
+        if ok and since is not None and mark == seen:
+            if clock() - since >= APP_STEADY:
+                return True, ""
+        elif ok:
+            since, seen = clock(), mark
+        else:
+            since = None
+            why = ("was not healthy" if "(unhealthy)" in status else "did not start" if not c or c.get("state") != "running"
+                   else "was still starting")
+        if clock() >= until:
+            if since is not None:
+                why = "kept stopping and starting again"
             return False, f"{why[:1].upper()}{why[1:]} within {APP_HEALTHY_WITHIN // 60} minutes"
-        sleep(5)
+        sleep(3 if since is not None else 5)
 
 
 def _start_plugin(app, pid, by, address):

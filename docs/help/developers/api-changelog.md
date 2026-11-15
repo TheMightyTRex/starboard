@@ -23,6 +23,8 @@ the next major version.
   Starboard already tried. `markdown` holds the same as Markdown, with a short prompt at the top for an AI helper.
   Each app's queue is asked only when you call it, at most every 10 seconds. Keys, passwords, tokens, private
   addresses and full download addresses are taken out. Read [the API reference](api-reference.md#get-apiv1downloadsissues).
+- **Fixed:** an update run's `kind` in `GET /updates/runs` can be `jellyfin-plugins` (Jellyfin's own plug-ins updated by
+  Starboard, DASH-422), which the description now lists.
 - Nothing was taken away: every 1.2.0 address answers as before.
 
 ## Starboard API 1.2.0, 14 November 2026
