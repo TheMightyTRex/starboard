@@ -847,6 +847,97 @@
     return handle;
   }
 
+  /* Side tree (.side-tree): the folding side menu is details and summary, so it needs no script. This only makes
+     sure the page you are on is shown: its area and group open, and the link in view inside a menu that scrolls
+     (only the menu scrolls, never the page). */
+  function setupSideTrees(root = document) {
+    root.querySelectorAll(".side-tree").forEach((tree) => {
+      if (tree.dataset.ready) return;
+      tree.dataset.ready = "1";
+      const here = tree.querySelector('a[aria-current="page"]');
+      if (!here) return;
+      for (let d = here.closest("details"); d; d = d.parentElement.closest("details")) d.open = true;
+      const box = tree.closest("[data-side-scroll]") || tree;
+      if (box.scrollHeight > box.clientHeight) box.scrollTop = here.offsetTop - box.offsetTop - box.clientHeight / 3;
+    });
+  }
+
+  /* Problem solver (.solver[data-solver]): with no script, the whole tree of questions is a nested list of links.
+     With it, one question at a time: each answer that leads to another question is a button, each that leads to an
+     article is a link. The new question's heading takes the focus and a polite message says which question it is;
+     Back returns to the last question with the focus on the answer chosen; Start again goes back to the first. */
+  function setupSolvers(root = document) {
+    root.querySelectorAll(".solver[data-solver]").forEach((solver) => {
+      if (solver.dataset.ready) return;
+      solver.dataset.ready = "1";
+      const tree = solver.querySelector(".solver__node");
+      if (!tree) return;
+      const live = announcer("solver-announcer", "status");
+      const step = document.createElement("div");
+      step.className = "solver__step";
+      const path = [];
+      const show = (node, focusChoice) => {
+        step.replaceChildren();
+        const depth = path.length + 1;
+        const progress = document.createElement("p");
+        progress.className = "solver__progress";
+        progress.textContent = `Question ${depth}`;
+        const h = document.createElement("h2");
+        h.tabIndex = -1;
+        h.textContent = node.querySelector(":scope > .solver__question").textContent;
+        const list = document.createElement("ul");
+        list.className = "solver__options";
+        let again = null;
+        node.querySelectorAll(":scope > .solver__answers > li").forEach((li, i) => {
+          const item = document.createElement("li");
+          const link = li.querySelector(":scope > a");
+          const next = li.querySelector(":scope > .solver__node");
+          if (next) {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "btn";
+            b.textContent = li.querySelector(":scope > .solver__choice").textContent;
+            b.addEventListener("click", () => { path.push([node, i]); show(next); });
+            item.append(b);
+            if (focusChoice === i) again = b;
+          } else if (link) {
+            const a = link.cloneNode(true);
+            a.className = "btn";
+            item.append(a);
+            if (focusChoice === i) again = a;
+          }
+          list.append(item);
+        });
+        const nav = document.createElement("div");
+        nav.className = "solver__nav";
+        if (path.length) {
+          const back = document.createElement("button");
+          back.type = "button";
+          back.className = "btn btn--quiet";
+          back.textContent = "Back";
+          back.addEventListener("click", () => { const [prev, i] = path.pop(); show(prev, i); });
+          const restart = document.createElement("button");
+          restart.type = "button";
+          restart.className = "btn btn--quiet";
+          restart.textContent = "Start again";
+          restart.addEventListener("click", () => { path.length = 0; show(tree); });
+          nav.append(back, restart);
+        }
+        step.append(progress, h, list, nav);
+        if (focusChoice !== undefined && again) again.focus();
+        else if (solver.classList.contains("is-live")) h.focus();
+        if (solver.classList.contains("is-live")) {
+          live.textContent = "";
+          setTimeout(() => { live.textContent = `Question ${depth}: ${h.textContent}`; }, 50);
+        }
+      };
+      tree.hidden = true;
+      solver.append(step);
+      show(tree);
+      solver.classList.add("is-live");
+    });
+  }
+
   function setup(root) {
     setupMenus(root);
     setupShelves(root);
@@ -859,8 +950,10 @@
     setupDisplay(root);
     setupAzJump(root);
     setupSortables(root);
+    setupSideTrees(root);
+    setupSolvers(root);
   }
-  window.SharedComponents = { setup, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo, loadMore };
+  window.SharedComponents = { setup, setupSideTrees, setupSolvers, setupSearch, setupSearchIcons, setupSortables, openLayer, toast, savedNote, copyText, azLetter, azJump, azGo, loadMore };
   // An app that wires its own behaviour (Starboard's page scripts) loads this file with data-manual, or
   // sets window.SharedComponentsManual = true first, and calls setup() or openLayer() itself.
   const manual = window.SharedComponentsManual || document.currentScript?.hasAttribute("data-manual");
