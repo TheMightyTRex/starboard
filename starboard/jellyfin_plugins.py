@@ -29,8 +29,10 @@ The choices (research, 13 November 2026, from each project's manifest and source
 import json
 import os
 import threading
+import time
 import urllib.error
 import urllib.parse
+import urllib.request
 
 from .livetv_jellyfin import _call
 
@@ -47,7 +49,7 @@ PACKAGES = {
               "repo": ("Merge Versions", "https://raw.githubusercontent.com/danieladov/JellyfinPluginManifest/master/manifest.json")},
     "trakt": {"name": "Trakt", "guid": "4fe3201e-d6ae-4f2e-8917-e12bda571281", "min": (10, 11), "repo": OFFICIAL},
     "pictures": {"name": "Picture shrinker", "guid": "80bf9325-d299-4e24-ac74-c087aeec3011", "min": (10, 11), "below": (10, 12),
-                 "repo": ("Picture shrinker", "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json")},
+                 "released_only": True, "repo": ("Picture shrinker", "https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json")},
 }
 
 SKIP = ("theintrodb", "skipmedb", "introskipper")
@@ -150,6 +152,39 @@ def suits(key, version):
     return v >= pkg["min"] and (not pkg.get("below") or v < pkg["below"])
 
 
+# A package marked released_only (DASH-433's Picture shrinker) is offered only once its repository lists a version
+# for this Jellyfin: its repository is public before its first release, and Jellyfin cannot install from an empty list.
+# The list is read at most every 6 hours, only when Settings, Apps, Jellyfin is opened or a choice is made.
+RELEASE_CHECK_SECONDS = 6 * 3600
+_released = {}  # repository address -> (when read, [targetAbi of each version])
+
+
+def _fetch_manifest(url):
+    with urllib.request.urlopen(url, timeout=10) as r:  # a fixed GitHub address from PACKAGES  # nosec B310
+        return json.loads(r.read(2_000_000))
+
+
+def released(key, version, fetch=None, now=None):
+    """True when the package needs no release check, or its repository lists a version this Jellyfin can run."""
+    pkg = PACKAGES[key]
+    if not pkg.get("released_only"):
+        return True
+    url, now = pkg["repo"][1], now or time.time()
+    seen = _released.get(url)
+    if not seen or now - seen[0] > RELEASE_CHECK_SECONDS:
+        try:
+            listed = [p for p in (fetch or _fetch_manifest)(url) or [] if str(p.get("guid", "")).lower() == pkg["guid"]]
+            abis = [str(v.get("targetAbi") or "") for p in listed for v in p.get("versions") or []]
+        except (urllib.error.URLError, OSError, ValueError, AttributeError, TypeError):
+            abis = seen[1] if seen else []  # unknown: keep what was read before, or not offered yet
+        seen = _released[url] = (now, abis)
+    have = _version(version)
+    return any(_version(a) and _version(a)[:2] == have[:2] and _version(a) <= have for a in seen[1])
+
+
+NOT_RELEASED = "Not released yet. Starboard offers it once its first version for your Jellyfin is out."
+
+
 def needs_words(key):
     pkg = PACKAGES[key]
     lo = ".".join(map(str, pkg["min"]))
@@ -219,6 +254,9 @@ def status(services, data_dir, cfg_data=None, opener=None):
                 c["available"] = suits(g["id"], version)
                 if not c["available"]:
                     c["hint"] = needs_words(g["id"])
+                elif not released(g["id"], version):
+                    c["available"] = False
+                    c["hint"] = NOT_RELEASED
             else:
                 c["available"] = True
             if isinstance(COST[g["id"]], dict):
@@ -296,6 +334,8 @@ def choose(services, data_dir, group, choice, cfg_data=None, opener=None):
             others = [] if want else [group]
             if want and not suits(want, info.get("Version")):
                 raise ValueError(f"{PACKAGES[want]['name']}: {needs_words(want)}")
+            if want and not released(want, info.get("Version")):
+                raise ValueError(f"{PACKAGES[want]['name']}: {NOT_RELEASED}")
         done = [d for d in (_deactivate(jf, k, installed, opener) for k in others) if d]
         if want:
             d = _install(jf, want, installed, opener)

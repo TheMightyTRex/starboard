@@ -4,6 +4,7 @@ import os
 import tempfile
 import threading
 import unittest
+import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from starboard import jellyfin_plugins as jp
@@ -37,6 +38,14 @@ def serve(stand_in):
 
 
 class JellyfinPluginsTest(unittest.TestCase):
+    def setUp(self):
+        # Never GitHub in a test: the Picture shrinker's list is empty unless a test gives it one (released_list).
+        jp._released.clear()
+        self.addCleanup(jp._released.clear)
+        original = jp._fetch_manifest
+        jp._fetch_manifest = lambda url: []
+        self.addCleanup(setattr, jp, "_fetch_manifest", original)
+
     def start(self, **kw):
         self.jf = StandIn(**kw)
         self.srv = serve(self.jf)
@@ -66,13 +75,50 @@ class JellyfinPluginsTest(unittest.TestCase):
         downloaded = self.group(st, "skip")["choices"][0]
         self.assertEqual((downloaded["id"], downloaded["package"], downloaded["available"]), ("downloaded", "TheIntroDB", True))
 
+    def released_list(self, abis):
+        """The Picture shrinker repository's list, as GitHub would give it, without asking GitHub."""
+        jp._released.clear()
+        self.addCleanup(jp._released.clear)
+        listed = [{"guid": jp.PACKAGES["pictures"]["guid"], "versions": [{"version": "1.1.0.0", "targetAbi": a} for a in abis]}]
+        original = jp._fetch_manifest
+        jp._fetch_manifest = lambda url: listed
+        self.addCleanup(setattr, jp, "_fetch_manifest", original)
+
     def test_picture_shrinker_on_jellyfin_10_11(self):
+        self.released_list(["10.11.0.0"])
         self.start(version="10.11.11")
         on = self.group(self.status(), "pictures")["choices"][0]
         self.assertTrue(on["available"])
         out = jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
         self.assertIn("Installed Picture shrinker, from the Picture shrinker repository Starboard added", out["done"][0])
         self.assertIn("https://raw.githubusercontent.com/TheMightyTRex/jellyfin-plugin-picture-shrinker/main/manifest.json", [r["Url"] for r in self.jf.repos])
+
+    def test_picture_shrinker_waits_for_its_first_release(self):
+        """DASH-433: its repository is public with an empty list until the owner releases it, so it is not offered."""
+        self.released_list([])
+        self.start(version="10.11.11")
+        on = self.group(self.status(), "pictures")["choices"][0]
+        self.assertFalse(on["available"])
+        self.assertIn("Not released yet", on["hint"])
+        with self.assertRaises(ValueError):
+            jp.choose(self.services, self.dir, "pictures", "on", self.cfg)
+        self.assertFalse(any("picture-shrinker" in r["Url"] for r in self.jf.repos))
+
+    def test_release_check_is_kept_and_survives_a_failed_read(self):
+        jp._released.clear()
+        self.addCleanup(jp._released.clear)
+        calls = []
+        def fetch(url):
+            calls.append(url)
+            return [{"guid": jp.PACKAGES["pictures"]["guid"], "versions": [{"targetAbi": "10.11.0.0"}]}]
+        self.assertTrue(jp.released("pictures", "10.11.6", fetch, now=1000))
+        self.assertTrue(jp.released("pictures", "10.11.6", fetch, now=2000))
+        self.assertEqual(len(calls), 1)  # read once in 6 hours
+        def broken(url):
+            raise urllib.error.URLError("offline")
+        self.assertTrue(jp.released("pictures", "10.11.6", broken, now=1000 + jp.RELEASE_CHECK_SECONDS + 1))  # keeps what it read
+        self.assertFalse(jp.released("pictures", "10.10.7", fetch, now=1000))
+        self.assertTrue(jp.released("playback", "10.11.6"))  # no check for the others
 
     def test_picture_shrinker_not_offered_on_newer_jellyfin(self):
         self.start()  # Jellyfin 12.4
