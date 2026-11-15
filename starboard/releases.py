@@ -1562,7 +1562,7 @@ RELEASES = [
             ],
             [
                 "Plug-in API 1.15",
-                "For plug-in makers: containers built from a zip file, Jellyfin libraries, the holding folder in the media folder and Put back on a custom screen's rows. Plug-ins made for earlier versions work as before."
+                "For plug-in makers: containers built from a zip file, Jellyfin libraries, the holding folder in the media folder, Put back on a custom screen's rows, and a card title for each card size. Plug-ins made for earlier versions work as before."
             ],
             [
                 "Help for every plug-in",
@@ -1572,7 +1572,7 @@ RELEASES = [
         "changed": [
             [
                 "Every dashboard card has the band",
-                "Every built-in card now has the grey band plug-in cards have: a logo, its name, and a status chip and when it updated where it has something to say. A card about one app shows that app's logo."
+                "Every built-in card now has the grey band plug-in cards have: a logo, its name, and a status chip and when it updated where it has something to say. A card about one app shows that app's logo. Go through them sits in the Still to set up card's band, and a small card's chip shows only its icon."
             ],
             [
                 "A new install gets the newest release",

@@ -7,12 +7,6 @@ add features.
 
 ## [Unreleased]
 
-### Added
-- **A title for each card size (plug-in API 1.15):** a plug-in card can have its own title for each size in Edit dashboard (small, medium, half, wide and full), each short enough to fit on one line in that size: up to 17, 28, 22, 43 and 45 characters. The manifest check refuses a longer one and the plug-in tester names it with its limit. Picture shrinker's card in the example pictures has one for each size. (DASH-443)
-
-### Changed
-- **Still to set up and small cards:** Go through them sits at the right of the Still to set up card's grey band, and focus comes back to it when the slide-out closes. On a small card (a quarter of the width) the band's status chip shows only its icon; screen readers still hear its words. (DASH-443)
-
 ## [0.19.0] (15 November 2026)
 
 ### Added
@@ -32,6 +26,7 @@ add features.
 - **Picture shrinker inside Jellyfin:** Settings, Apps, Jellyfin can offer Picture shrinker for Jellyfin 10.11 and 12, which shrinks posters and photos inside Jellyfin with a backup of each original. It is offered once its first version for your Jellyfin is released; until then it says Not released yet. Starboard's own Picture shrinker plug-in stays idle while it is installed. (DASH-433)
 - **Which Reelix you run:** Starboard notes the exact Reelix build it installed (its version tag, such as lite-0.8.7-trex.2, version, commit and digest) after an install, a switch, an update or a way back, with the 20 before it. GET /api/reelix/editions gives it. (DASH-419)
 - **Help for every plug-in in the collection:** The help centre's Plug-ins area has the same eight pages for each plug-in in the Starboard plug-ins collection (what it does, install and remove, settings, its dashboard card, updates and roll back, accessibility, problems with a flow chart, and for developers), each with its logo, mirrored from the collection's own help centre by tools/sync-plugin-help.py and checked by check-help.py. (DASH-426)
+- **A title for each card size (plug-in API 1.15):** a plug-in card can have its own title for each size in Edit dashboard (small, medium, half, wide and full), each short enough to fit on one line in that size: up to 17, 28, 22, 43 and 45 characters. The manifest check refuses a longer one and the plug-in tester names it with its limit. Picture shrinker's card in the example pictures has one for each size. (DASH-443)
 
 ### Changed
 - **Dashboard cards:** Every card on the dashboard now has the grey band that plug-in cards have: a logo, the card's name as the heading, and at the right a status chip and when it was updated where the card has something to say, such as Nearly full on Disk space or Not responding on Service health. A card about one app shows that app's own logo, the same as on the Apps page: Jellyfin's on Now playing, Reelix's on Downloads, Coming up and Recently added when Reelix is the only source, and so on. Starboard's own cards, and cards that combine several apps, show a Starboard icon. (DASH-442)
@@ -41,6 +36,7 @@ add features.
 - **Examples for a new install:** Add an app's example address is Jellyfin's, http://127.0.0.1:8096, and the Install apps summary says Starboard connects Bazarr to Reelix rather than asking you to connect Sonarr and Radarr. The screenshots' example server shows the default install; the older set-up with Sonarr and Radarr is kept for Copy app settings.
 - **Clearer words on the way to updating:** The set-up's summary says Activated or Deactivated, not On or Off, and so does Reelix's task list. (DASH-420)
 - **Update checks in every release:** The release checklist has an update step: tools/update_e2e.sh updates Starboard from the release before to this build and back, Update now's own helper, an app and Reelix (from one version tag to another with REELIX_FROM and REELIX_TO), all in a sealed Docker in a container; the plug-in tester takes --previous to rehearse a plug-in's update and Roll back. (DASH-418, DASH-423)
+- **Still to set up and small cards:** Go through them sits at the right of the Still to set up card's grey band, and focus comes back to it when the slide-out closes. On a small card (a quarter of the width) the band's status chip shows only its icon; screen readers still hear its words. (DASH-443)
 
 ### Fixed
 - **The Docker helper image:** Starboard downloads its pinned Docker helper image when it is missing, such as after unused images were removed, before it starts or updates apps or plug-ins, makes backups or looks in folders. If it cannot, it says so plainly: check that this computer can reach Docker Hub, then try again. Before, activating a plug-in could fail with "No such image". (DASH-438)
