@@ -136,7 +136,7 @@ def updates_known(data_dir):
     """For each added plug-in, a newer version from a catalogue Starboard has already read (nothing is fetched here):
     {id: {version, changelog, manifest, sha256}}."""
     out = {}
-    have = {p["id"]: p for p in pa.listing(data_dir)}
+    have = {p["id"]: p for p in pa.basics(data_dir)}
     for hit in list(pa._catalogues.values()):
         for e in hit.get("items") or []:
             p = have.get(e["id"])
@@ -329,7 +329,7 @@ def emit(event, data=None):
         return 0
     from . import plugin_cards
     sent = 0
-    for p in pa.listing(_data_dir):
+    for p in pa.basics(_data_dir):
         if p["state"] != "enabled":
             continue
         m = pa._read(os.path.join(pa.folder(_data_dir, p["id"]), "manifest.json"), {}) or {}
@@ -361,7 +361,7 @@ REQUEST_READY = ("Available", "Completed")  # Reelix's and Seerr's words for a r
 def listened(data_dir):
     """The events active plug-ins asked for."""
     out = set()
-    for p in pa.listing(data_dir):
+    for p in pa.basics(data_dir):
         if p["state"] == "enabled":
             out |= set((pa._read(os.path.join(pa.folder(data_dir, p["id"]), "manifest.json"), {}) or {}).get("events") or [])
     return out
@@ -464,7 +464,7 @@ def jobs(data_dir):
     """Every job from every added plug-in, for System, Jobs: [{plugin, id, title, when, enabled, last...}]."""
     last = pa._read_kept(_jobs_file(data_dir), {}) or {}
     out = []
-    for p in pa.listing(data_dir):
+    for p in pa.basics(data_dir):
         m = pa._read_kept(os.path.join(pa.folder(data_dir, p["id"]), "manifest.json"), {}) or {}
         for j in m.get("jobs") or []:
             key = f"{p['id']}/{j['id']}"
@@ -619,7 +619,7 @@ class Clock:
     def _active_jobs(self):
         out = []
         self._manifests = {}
-        for p in pa.listing(self.data_dir):
+        for p in pa.basics(self.data_dir):
             if p["state"] == "enabled":
                 m = pa._read(os.path.join(pa.folder(self.data_dir, p["id"]), "manifest.json"), {}) or {}
                 self._manifests[p["id"]] = m
@@ -644,7 +644,7 @@ class Clock:
             for name, c in (containers._state.get("check") or {}).items():
                 if c.get("update") and c.get("latest"):
                     out.append({"app": name, "current": "", "latest": c["latest"]})
-            names = {p["id"]: p for p in pa.listing(self.data_dir)}
+            names = {p["id"]: p for p in pa.basics(self.data_dir)}
             for pid, u in updates_known(self.data_dir).items():
                 p = names.get(pid) or {}
                 out.append({"app": p.get("name") or pid, "current": p.get("version") or "", "latest": u["version"]})

@@ -164,7 +164,7 @@ class Plugins(unittest.TestCase):
         manifests = {"https://example.invalid/ls.json": {"id": "line-speed", "version": "1.1.0", "permissions": ["apps:read", "jellyfin:admin"]},
                      "https://example.invalid/disk-forecast.json": {"id": "disk-forecast", "version": "1.2.0", "permissions": ["apps:read"]}}
         started = []
-        with mock.patch.object(self.pa, "listing", return_value=listing), mock.patch.object(self.pa, "catalogue"), \
+        with mock.patch.object(self.pa, "basics", return_value=listing), mock.patch.object(self.pa, "catalogue"), \
                 mock.patch("starboard.plugin_life.updates_known", return_value=known), \
                 mock.patch.object(self.pa, "fetch_manifest", side_effect=lambda a, sha256="", opener=None: manifests[a]), \
                 mock.patch.object(au, "_run", side_effect=lambda app, target, address="": started.append((target, address)) or
@@ -255,7 +255,7 @@ class Waiting(unittest.TestCase):
         listing = [{"id": "line-speed", "name": "Line speed"}]
         known = {"line-speed": {"version": "1.1.0"}}
         check = {"sonarr": {"update": True, "latest": "4.0.11"}, "reelix": {"update": True, "latest": "0.7.2"}, "quiet": {"update": False}}
-        with mock.patch("starboard.plugins_admin.listing", return_value=listing), mock.patch("starboard.plugin_life.updates_known", return_value=known), \
+        with mock.patch("starboard.plugins_admin.basics", return_value=listing), mock.patch("starboard.plugin_life.updates_known", return_value=known), \
                 mock.patch.dict("starboard.containers._state", {"check": check}):
             self.assertEqual(au.waiting(app), [("plugin:line-speed", "Line speed", "1.1.0"), ("app:sonarr", "sonarr", "4.0.11"), ("app:reelix", "Reelix", "0.7.2")])
             app.config.data.update(plugins_auto_update=True, reelix_auto_update=True)

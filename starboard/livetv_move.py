@@ -18,7 +18,7 @@ PID = "livetv"
 def plugin_state(data_dir):
     """"enabled", "installed", "disabled", "failed" or None when the plug-in is not added."""
     from . import plugins_admin
-    return next((p["state"] for p in plugins_admin.listing(data_dir) if p["id"] == PID), None)
+    return next((p["state"] for p in plugins_admin.basics(data_dir) if p["id"] == PID), None)
 
 
 _active = {}

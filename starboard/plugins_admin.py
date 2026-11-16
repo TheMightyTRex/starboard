@@ -118,7 +118,7 @@ def _read_kept(path, default=None):
         with _kept_lock:
             _kept.pop(path, None)
         return default
-    stamp = (st.st_mtime_ns, st.st_size, st.st_ino)
+    stamp = (st.st_mtime_ns, st.st_ctime_ns, st.st_size, st.st_ino)  # the change time: a copy over the file shows too
     hit = _kept.get(path)
     if hit and hit[0] == stamp:
         return hit[1]
@@ -130,10 +130,32 @@ def _read_kept(path, default=None):
     return value
 
 
+def basics(data_dir):
+    """The plug-ins added, as listing() names and orders them, with only what their manifest and state files say:
+    [{id, name, version, state, builtin}]. For code that needs only which plug-ins are added and which are on, such as
+    the styles, the cards, the jobs and the background checks (optimisation review, 16 November 2026: listing() also
+    works out each one's status, logo, settings and pages, about 13 files each, and ran every minute at idle)."""
+    try:
+        names = sorted(os.listdir(root(data_dir)))
+    except OSError:
+        return []
+    out = []
+    for pid in names:
+        if pid.startswith(".") or not re.match(plugins.ID, pid):
+            continue
+        where = folder(data_dir, pid)
+        m = _read_kept(os.path.join(where, "manifest.json"))
+        if m:
+            st = _read_kept(os.path.join(where, "state.json"), {}) or {}
+            out.append({"id": pid, "name": m.get("name"), "version": m.get("version"), "state": st.get("state", "installed"),
+                        "builtin": bool(st.get("builtin"))})
+    return out
+
+
 def styles(data_dir):
     """Every style from plug-ins that are turned on: [{value, name, description, plugin}] for Display (DASH-284)."""
     out = []
-    for p in listing(data_dir):
+    for p in basics(data_dir):
         if p["state"] != "enabled":
             continue
         m = _read_kept(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {})
@@ -147,7 +169,7 @@ def styles(data_dir):
 def styles_css(data_dir):
     from . import plugin_styles
     rules = []
-    for p in listing(data_dir):
+    for p in basics(data_dir):
         if p["state"] == "enabled":
             m = _read_kept(os.path.join(folder(data_dir, p["id"]), "manifest.json"), {})
             rules.append(plugin_styles.css(p["id"], m.get("styles") or []))
@@ -769,7 +791,7 @@ def choose_ports(data_dir, pid, manifest, refused=()):
     st = _read(path, {}) or {}
     kept = dict(st.get("ports") or {})
     taken = set(RESERVED_PORTS) | ports_in_use(pid) | set(refused)
-    for p in listing(data_dir):
+    for p in basics(data_dir):
         if p["id"] != pid:
             taken |= {int(v) for v in ((_read(os.path.join(folder(data_dir, p["id"]), "state.json"), {}) or {}).get("ports") or {}).values()}
     out = {}
@@ -985,7 +1007,7 @@ def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
     settings. Returns the names started again; a problem is left in the plug-in's own state, never raised."""
     done = []
     shipped = builtins()
-    for p in listing(data_dir):
+    for p in basics(data_dir):
         if not p.get("builtin") or p["id"] not in shipped:
             continue
         pid, manifest = p["id"], shipped[p["id"]]
@@ -1012,7 +1034,7 @@ def upgrade_all(data_dir, services, helper=None):
     """At each start, for plug-ins added before DASH-357: run/ is filled and the Compose file mounts it; an active
     one is started again once so it reads the folder. Returns the names started again."""
     done = []
-    for p in listing(data_dir):
+    for p in basics(data_dir):
         where = folder(data_dir, p["id"])
         try:
             if p["state"] == "enabled":  # Reelix's key and the news servers as they are now (API 1.6)
@@ -1035,7 +1057,7 @@ def upgrade_all(data_dir, services, helper=None):
 def stop_all(data_dir, helper=None):
     """The kill switch (PS11): every enabled plug-in stopped."""
     stopped = []
-    for p in listing(data_dir):
+    for p in basics(data_dir):
         if p["state"] == "enabled":
             disable(data_dir, p["id"], helper)
             stopped.append(p["name"])

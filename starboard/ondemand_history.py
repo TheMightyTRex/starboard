@@ -15,7 +15,7 @@ PID = "on-demand"
 
 def _plugin(data_dir, method, path):
     from . import plugin_cards, plugins_admin
-    listing = {p["id"]: p for p in plugins_admin.listing(data_dir)}
+    listing = {p["id"]: p for p in plugins_admin.basics(data_dir)}
     if listing.get(PID, {}).get("state") != "enabled":
         raise LookupError("Add On demand in Settings, Plug-ins, and activate it, to see what you watched there")
     m = plugins_admin._read(f"{plugins_admin.folder(data_dir, PID)}/manifest.json", {}) or {}

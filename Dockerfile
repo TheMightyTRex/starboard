@@ -26,8 +26,10 @@ COPY --chown=root:root web ./web
 COPY --chown=root:root plugins ./plugins
 # Compiled once here, so Python does not compile Starboard again at every start (start-up 430 ms to 204 ms), then
 # readable by the app's user whatever permissions the files had on the host. (COPY --chmod would save a layer but
-# needs a newer Docker than some servers that build this image have.)
-RUN python -m compileall -q -j 0 /app/starboard && chmod -R a+rX,go-w /app
+# needs a newer Docker than some servers that build this image have.) Only files whose permissions are not right
+# already are changed: changing a file copies it into this layer, so chmod -R kept a second copy of every file
+# (optimisation review, 16 November 2026).
+RUN python -m compileall -q -j 0 /app/starboard && python /app/starboard/fix_modes.py /app
 
 ENV STARBOARD_PORT=8095 \
     STARBOARD_DATA=/data \

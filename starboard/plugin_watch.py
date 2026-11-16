@@ -33,7 +33,8 @@ _started = time.time()
 
 
 def _manifest(data_dir, pid):
-    return pa._read(os.path.join(pa.folder(data_dir, pid), "manifest.json"), {}) or {}
+    """Read only: the parsed manifest is shared while the file is unchanged (pa._read_kept), so never change it."""
+    return pa._read_kept(os.path.join(pa.folder(data_dir, pid), "manifest.json"), {}) or {}
 
 
 def _state(data_dir, pid):
@@ -41,7 +42,8 @@ def _state(data_dir, pid):
 
 
 def resting(data_dir, pid):
-    return list(_state(data_dir, pid).get("resting") or [])
+    # Read on each plug-ins list and each minute at idle: the kept copy, as nothing here changes it.
+    return list((pa._read_kept(os.path.join(pa.folder(data_dir, pid), "state.json"), {}) or {}).get("resting") or [])
 
 
 def _set_resting(data_dir, pid, names):
@@ -162,7 +164,7 @@ def rest_idle(data_dir, now=None, moved=None):
     now = now or time.time()
     moved = moved or _moved
     stopped = []
-    for p in pa.listing(data_dir):
+    for p in pa.basics(data_dir):
         if p.get("state") != "enabled":
             continue
         main = (_manifest(data_dir, p["id"]).get("containers") or [None])[0]
@@ -185,7 +187,7 @@ def rest_idle(data_dir, now=None, moved=None):
 def wanted(data_dir):
     """True while an active plug-in's main container has start: when_needed."""
     return any(p.get("state") == "enabled" and _idle((_manifest(data_dir, p["id"]).get("containers") or [{}])[0])
-               for p in pa.listing(data_dir))
+               for p in pa.basics(data_dir))
 
 
 class Watcher:
