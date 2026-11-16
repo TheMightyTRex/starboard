@@ -220,14 +220,21 @@ function drawBandSide(id, r) {
 }
 
 // The band's right-hand side, the same for plug-in and built-in cards: a status chip, then when it was updated.
+// The band's right-hand side, the same for plug-in and built-in cards: the status chip (and a card's own button), with
+// when the card was updated in a small footer, so the band stays on one line (owner, 16 November 2026, design B).
 function bandSide(side, words, tone, when, action) {
   if (!side) return;
+  const card = side.closest(".dash-card");
   side.replaceChildren(...[
     words ? el("span", { class: "chip", "data-tone": tone }, icon(CHIP_ICONS[tone] || "circle", 14),
       el("span", { class: "visually-hidden", text: "Status: " }), el("span", { class: "chip__words", text: words })) : null,
-    when ? el("time", { class: "card-band__time", datetime: new Date(when).toISOString(), "data-at": String(when) },
-      el("span", { class: "visually-hidden", text: "Updated " }), el("span", { text: timeAgo(when) })) : null,
     action || null].filter(Boolean));
+  card?.querySelector(":scope > .card-foot")?.remove();
+  if (card && when) {
+    card.append(el("div", { class: "card-foot" },
+      el("time", { class: "card-band__time", datetime: new Date(when).toISOString(), "data-at": String(when) },
+        el("span", { text: "Updated " }), el("span", { text: timeAgo(when) }))));
+  }
 }
 
 // A built-in card's answer with something to say in its band (DASH-442): a state chip, from the shared vocabulary,

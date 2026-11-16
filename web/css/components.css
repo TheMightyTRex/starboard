@@ -1429,7 +1429,10 @@
      (Starboard DASH-443, 15 November 2026), so a short name stays on one line and only larger text wraps it. The card keeps its own padding for the body: put the band first and give the card
      .has-band. Markup: .card-band > .app-icon + .card-band__title (a heading) + .card-band__side > .chip +
      .card-band__time (a <time>, with words a screen reader can read on their own). */
-  .has-band {
+  /* .card sets its padding later in this file, so the band's rule names .card too, or the card's top padding came
+     back as a white strip above the band (owner, 16 November 2026). */
+  .has-band,
+  .card.has-band {
     padding-top: 0;
     overflow: hidden;
   }
@@ -1468,6 +1471,23 @@
     color: var(--color-text-muted);
     font-size: var(--text-xs);
     white-space: nowrap;
+  }
+  /* Card footer (owner, 16 November 2026): a small strip across the foot of a card, edge to edge, a lighter grey than
+     the band, for when the card last updated. It keeps the band to one line: the band has the logo, the name and the
+     status chip; the footer has the time. Put it last in the card. Markup: .card-foot > time.card-band__time (with
+     words a screen reader can read on their own, such as "Updated 2 minutes ago"). */
+  .card-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin: auto calc(-1 * var(--space-4)) calc(-1 * var(--space-4));
+    padding: var(--space-1) var(--space-4);
+    border-top: 1px solid var(--color-divider);
+    background: color-mix(in srgb, var(--color-surface-sunken) 45%, var(--color-surface));
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
   }
   /* Cover: a book cover at 2:3; audiobook squares are letterboxed, never cropped. */
   .cover {
@@ -5473,7 +5493,11 @@ body:has(.side-panel-layer:not([hidden]), dialog[open]) snag-list { display: non
   /* Plug-in card: a card with the grey band (.card-band, design 2) carrying the logo, the name and a status chip,
      then what it does and its main pages. Markup: article.card.has-band.plugin-card > .card-band (.app-icon.app-icon--compact,
      h3.card-band__title > a, .card-band__side > .chip) + p + ul.plugin-card__links. */
-  .plugin-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+  /* At most three plug-in cards to a row, so a name and its chip share the band; fewer on narrow screens, one on a
+     phone (owner, 16 November 2026). Each column is at least 16rem and at least a third of the row. */
+  .plugin-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, max(16rem, calc((100% - 2 * var(--space-3)) / 3))), 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+  .plugin-cards > li { display: flex; }
+  .plugin-cards > li > .plugin-card { flex: 1; }
   .plugin-card p { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
   .plugin-card .card-band__title a { color: var(--color-text); text-decoration: none; }
   .plugin-card .card-band__title a:hover { text-decoration: underline; }

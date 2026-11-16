@@ -105,7 +105,7 @@ it as it sees it, such as `/media/music`. Nothing outside the media folder can b
 - Links must start with `http://` or `https://`, and open in a new tab.
 - If your page does not answer, or answers the wrong shape, the card says "No answer from" your plug-in.
 - From plug-in API 1.14, it draws every plug-in card with a grey band across the top: your logo (or your plug-in's
-  initials), your plug-in's name as the heading, and at the right a status chip and when it last updated. Add
+  initials), your plug-in's name as the heading, and at the right a status chip, with when it last updated in a lighter footer. Add
   `status` and `updated` to your answer to fill them, and a small `logo` to the manifest. Read
   [The card band](../developers/plugin-api-reference.md#the-card-band-api-114) and
   [Logo](../developers/plugin-manifest-reference.md#logo).
