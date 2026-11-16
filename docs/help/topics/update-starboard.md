@@ -5,7 +5,8 @@
 
 Update Starboard from its own page, with **Update now**, or let it update itself in the quiet hours. Either way it
 backs up your settings, installs the newest release and goes back to the version you had if the new one does not
-start. You can also run one command on the server.
+start. When several updates are waiting, **Install all updates** installs them all in one go. You can also run one
+command on the server.
 
 ## Before you begin
 
@@ -50,6 +51,37 @@ This works if you used the installer and Starboard has Docker access, or if you 
 
 Closing the dialog does not stop the update. If **Update now** is not there, the page says why, such as a Starboard
 from the ready-made image, which you update on the server.
+
+## Install all updates at once
+
+When more than one update is waiting, for Starboard, Reelix, your other apps or plug-ins, you can install them all
+with one action. They still install one at a time, because that is safer on a small server: each one makes its copy
+first, is checked afterwards and goes back by itself if it does not work, and the rest carry on.
+
+1. Go to **Settings**, then **Updates**. At the top of **Ready to update**, select **Install all updates**. The
+   button says how many are waiting, such as **Install all 6 updates**.
+2. Enter **Your Starboard password** and select **Continue**. Starboard looks at each waiting update.
+3. A dialog lists what will install, in the order it installs. Under **Held back for you**, it lists any update that
+   always waits for you, with the reason:
+   - a plug-in that asks for new permissions, or comes as a zip file: update it on its own page;
+   - a big change, such as Radarr 5 to 6: read what is new first and update it on its own;
+   - anything Starboard cannot update from here, such as an app that Docker Compose did not start.
+4. Select **Install 4 updates**, for example.
+5. A panel shows each update with its state: **Waiting**, **Updating**, **Done**, **Went back** or **Held back**, and
+   how many have finished, such as "3 of 5". You can leave the page, and it carries on.
+6. When it ends, the panel says how it went, such as "4 of 5 updated. Went back by itself: Sonarr".
+
+The order is always the same:
+
+1. Your other apps, then Jellyfin's plug-ins. Jellyfin installs its plug-ins but does not restart yet.
+2. Starboard's plug-ins.
+3. Reelix.
+4. Jellyfin restarts once, for all its plug-ins. If someone is watching, it waits until nobody is, and the panel says
+   so.
+5. Starboard itself, last, because it restarts Starboard. The panel loses touch for about a minute and reconnects by
+   itself.
+
+**Recent updates** lists the whole batch as **All updates**, with each update under it.
 
 ## Let parts update by themselves
 
@@ -145,9 +177,10 @@ If you only want to know whether an update is out, without installing it, run `.
   for how to edit it.
 - To update your other apps, read [Update your apps](update-your-apps.md). To update a plug-in, read
   [Update a plug-in and roll it back](update-a-plugin.md).
-- One update runs at a time, for Starboard, its apps and its plug-ins.
-- A script or an AI assistant can start an update through Starboard's API, with a key that has **Updates** ticked.
-  Read [Use Starboard's API](use-starboards-api.md).
+- One update runs at a time, for Starboard, its apps and its plug-ins. **Install all updates** runs them one after
+  another, in the order in [Install all updates at once](#install-all-updates-at-once).
+- A script or an AI assistant can start an update, or install all updates, through Starboard's API, with a key that
+  has **Updates** ticked. Read [Use Starboard's API](use-starboards-api.md).
 
 ## If it does not work
 

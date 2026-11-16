@@ -76,8 +76,9 @@ def _new(data_dir, target, kind, name, action, came, going, by, steps, extra=Non
     with _lock:
         _load(data_dir)
         _runs[run["id"]] = run
-        while len(_runs) > KEEP:
-            _runs.popitem(last=False)
+        while len(_runs) > KEEP:  # the oldest goes, but never a running batch (DASH-454), whose updates come after it
+            old = next((k for k, r in _runs.items() if not (r.get("kind") == "batch" and r["state"] == "running")), None)
+            _runs.pop(old if old else next(iter(_runs)))
         _save(data_dir)
     api_v1.audit(data_dir, "update_started" if action == "update" else "rollback_started", target=target, version=going or "",
                  previous=came or "", by=by)
@@ -141,7 +142,8 @@ def _busy():
 
 def targets(app):
     """Everything Starboard can update, from what it already knows: [{id, kind, name, current, latest,
-    update_available, can_update, why, can_roll_back, roll_back_to, note}]."""
+    update_available, can_update, why, can_roll_back, roll_back_to, note}]; an app or Reelix also has big_change
+    (a new major version, from the last look at its image)."""
     from . import containers, plugin_life, self_update
     from . import plugins_admin as pa
     out = []
@@ -168,7 +170,7 @@ def targets(app):
                         "current": r["container"].get("version") or "", "latest": r.get("latest") or "",
                         "update_available": bool(r.get("update")), "can_update": bool(r.get("update")) and r["container"].get("compose", False),
                         "why": "" if r.get("update") else ("Look for updates first" if "update" not in r else "Up to date"),
-                        "can_roll_back": False, "roll_back_to": "",
+                        "can_roll_back": False, "roll_back_to": "", "big_change": bool(r.get("update") and r.get("big_change")),
                         "note": "Goes back by itself when the new version is not healthy"})
     known = plugin_life.updates_known(app.data_dir)
     for p in pa.listing(app.data_dir):
@@ -196,15 +198,18 @@ def _media_dir(app):
 
 # Starting ---------------------------------------------------------------------------------------------------------
 
-def start(app, target, by="you", address="", note=None):
+def start(app, target, by="you", address="", note=None, batch=None):
     """Starts an update of `target` (starboard, reelix, app:<id> or plugin:<id>) to the newest version Starboard
     knows. `address`: a plug-in's own manifest address (the page's Update from an address; never from the API).
+    `batch`: the id of the Install all updates run starting it (DASH-454), which is itself the update running.
     Returns the run. Raises LookupError, Refused or Busy."""
     target = str(target or "")
     if not re.match(r"^(starboard|reelix|app:[A-Za-z0-9_-]{1,64}|plugin:[a-z0-9-]{3,40})$", target):
         raise ValueError("target must be starboard, reelix, app:<id> or plugin:<id>, from /api/v1/updates")
-    if _busy() or _starboard_running(app):
+    if (not batch and _busy()) or _starboard_running(app):
         raise Busy("An update is already running. Wait for it to finish")
+    if batch and batch not in _active:
+        raise Busy("Install all updates has stopped")
     if by != "automatic":  # DASH-422: by hand, a version the automatic update stopped trying is tried again
         from . import auto_updates
         auto_updates.forget_skip(app.data_dir, target)
@@ -472,6 +477,9 @@ def _live(app, run):
         if j.get("finished"):
             run.update(state={"updated": "updated", "up-to-date": "up-to-date", "went-back": "went-back", "refused": "refused"}.get(j.get("outcome"), "failed"),
                        said=j.get("text") or "", finished=time.time())
+    elif run.get("kind") == "batch":  # Install all updates (DASH-454): its end may come after Starboard restarted
+        from . import update_batch
+        update_batch.settle(app, run)
     elif run["state"] == "running" and run["id"] not in _active:
         run.update(state="failed", said="Starboard restarted while it ran, so it did not finish. Look at the plug-in's or app's state")
     return run

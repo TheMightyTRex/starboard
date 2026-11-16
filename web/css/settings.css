@@ -24,6 +24,12 @@
 .add-row .btn { align-self: end; }
 .days-group { max-width: 200px; }
 .network-addresses { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+/* Install all updates (DASH-454): the batch's panel on Settings, Updates, with the shared task list (app.css). */
+.update-all { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-divider);
+  background: var(--color-surface); max-width: 75ch; }
+.update-all h3 { margin: 0; }
+.update-all__count { margin: 0; }
+.update-plan { display: grid; gap: var(--space-1); margin: 0; padding-left: var(--space-5); }
 .update-steps { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); }
 .command { max-width: 560px; }
 .notice--page { max-width: 75ch; }  /* a page-wide message keeps a readable line */

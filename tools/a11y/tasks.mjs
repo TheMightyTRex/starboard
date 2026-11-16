@@ -479,6 +479,43 @@ if (often20) {
   check("T20", "Day is next in the Tab order once it shows", day20.id === "pl-picture-shrinker-when-day", day20.id);
   await page.evaluate(async () => { await api("/api/plugins/picture-shrinker/settings", { method: "PUT", body: { settings: { when: { every: "month", date: 31, time: "03:30" } } } }); });
 }
+// T29 Install all updates by keyboard (DASH-454): Tab reaches Install all updates, which says how many; Enter asks for
+// the password with focus in the field; Enter then lists what installs with focus on the main button; Enter starts it,
+// and focus goes to the batch's panel heading; each change is said in its polite live region; at the end the result
+// takes focus. The example server only acts each update's steps (Starboard's writes update.sh's lines).
+await page.goto(`${base}/settings-updates.html`);
+await settle();
+const go29 = await tabTo((f) => f.tag === "BUTTON" && /^Install all \d+ updates$/.test(f.text), 80);
+check("T29", "Tab reaches Install all updates, which says how many", !!go29, "not reached");
+if (go29) {
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(600);
+  const pw29 = await focus();
+  check("T29", "Enter asks for the password, with focus in the field", pw29.inPanel && pw29.tag === "INPUT", `${pw29.tag} ${pw29.text}`);
+  await page.keyboard.type(password);
+  await page.keyboard.press("Enter");
+  await page.getByRole("dialog", { name: /^Install \d+ updates?$/ }).waitFor({ timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  const ok29 = await focus();
+  check("T29", "the list of what installs opens with focus on its main button", ok29.inPanel && /^Install \d+ updates?$/.test(ok29.text), ok29.text);
+  const listed = await page.evaluate(() => [...(document.querySelector("dialog[open] ol")?.children || [])].map((li) => li.textContent));
+  check("T29", "it lists the updates in order, Starboard last", listed.length >= 2 && /^Starboard /.test(listed[listed.length - 1]), listed.join(" / "));
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(800);
+  const head29 = await focus();
+  check("T29", "focus goes to the batch's panel heading", head29.id === "update-all-h", `${head29.id} ${head29.text}`);
+  const heard29 = [];
+  for (let i = 0; i < 240 && !(await page.locator(".update-all .notice").count()); i++) {
+    const t = await page.locator(".update-all [aria-live=polite]").textContent().catch(() => "");
+    if (t && !heard29.includes(t)) heard29.push(t);
+    await page.waitForTimeout(250);
+  }
+  await page.waitForTimeout(800);
+  check("T29", "each change is said in the panel's polite live region", heard29.some((t) => /: (Done|Updating)/.test(t)), heard29.join(" | "));
+  const end29 = await focus();
+  check("T29", "the result takes focus at the end", /updates finished|did not install|stopped/i.test(end29.text) && !end29.inPanel, end29.text);
+}
+
 // T22 A plug-in update by keyboard (plug-in API 1.14, DASH-424): Tab reaches Update, Enter opens the warning with
 // focus inside it and What is new readable before the password; Enter in the password starts the update, whose steps
 // dialog takes focus at its heading, says each step in its live region, focuses the result, and Escape gives focus to
