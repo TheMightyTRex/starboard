@@ -463,7 +463,8 @@ def apps(services):
 
 
 def check(services):
-    found = {c["name"]: c for c in containers(fresh=True)}
+    _images.clear()  # Look for updates: each image's registry digests read from Docker again
+    found = {c["name"]: c for c in containers()}
     wanted = [match(s, found.values()) for s in services if s.get("enabled", True)]
     targets = {c["name"]: c for c in wanted if c}
     with cf.ThreadPoolExecutor(8) as pool:
