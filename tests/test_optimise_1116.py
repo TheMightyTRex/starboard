@@ -163,3 +163,50 @@ class ImageDetailsKept(unittest.TestCase):
         self.listed.pop()
         self.c.containers()
         self.assertEqual(set(self.c._images), {"sha256:a"})
+
+
+class LogProblemsRead(unittest.TestCase):
+    """The dashboard's Alerts card reads the problems every minute: lines of other levels are passed over before they
+    are read as JSON, and the answer is the same as reading every line."""
+
+    def every_line(self, log, level="all", query="", before=None, limit=300):
+        import json as j
+        out = []
+        for name in log.files():
+            with open(os.path.join(log.dir, name), encoding="utf-8") as f:
+                for line in reversed(f.readlines()):
+                    try:
+                        e = j.loads(line)
+                    except ValueError:
+                        continue
+                    if (before and e.get("t", 0) >= before) or (level == "problems" and e.get("level") not in ("error", "warning")) \
+                            or (level == "detail" and e.get("level") != "detail") \
+                            or (query and query.lower() not in (e.get("message", "") + " " + e.get("area", "")).lower()):
+                        continue
+                    out.append(e)
+                    if len(out) >= limit:
+                        return out
+        return out
+
+    def test_the_same_entries_as_reading_every_line(self):
+        import json as j
+        import time as t
+        from starboard import logs
+        with tempfile.TemporaryDirectory() as d:
+            log = logs.Log(d)
+            levels = ["info", "detail", "warning", "error", "detail", "info"]
+            words = ["error in the word", "a warning about", "plain", "Café \u00e9 erreur", '"error" in quotes']
+            for day in range(5):
+                name = t.strftime("%Y-%m-%d", t.localtime(1_700_000_000 + day * 86400))
+                with open(os.path.join(log.dir, f"{name}.log"), "w", encoding="utf-8") as f:
+                    for i in range(400):
+                        f.write(j.dumps({"t": 1_700_000_000 + day * 86400 + i, "level": levels[(i * 7 + day) % 6],
+                                         "area": "warning" if i % 11 == 0 else "request", "message": words[i % 5]},
+                                        separators=(",", ":")) + "\n")
+                    f.write("not json at all\n" if day % 2 else '{"t": 1, "level": "error", "message": "spaced"}')
+            for level in ("problems", "detail", "all"):
+                for query in ("", "warning", "café"):
+                    for before in (None, 1_700_000_000 + 2 * 86400 + 100):
+                        for limit in (300, 5000):
+                            self.assertEqual(log.read(level, query, before, limit), self.every_line(log, level, query, before, limit),
+                                             (level, query, before, limit))
