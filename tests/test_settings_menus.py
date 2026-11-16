@@ -38,7 +38,8 @@ def parts_of(page):
 
 class SettingsMenusTest(unittest.TestCase):
     WANT = {
-        "General": ["Names and apps", "Appearance", "Pages and lists", "Discover rows", "Download hours", "Logs and feedback"],
+        "General": ["Names and apps", "Appearance", "Pages and lists", "Discover rows", "Download hours", "Logs and feedback",
+                    "Backup and restore"],
         "Downloads": ["VPN", "Usenet", "Download hours"],
         "Radio": ["Sources", "Add a show from a link", "Your podcast library", "Station logos"],
         "Performance": ["Preset", "Pictures"],
@@ -61,6 +62,8 @@ class SettingsMenusTest(unittest.TestCase):
         for group in self.WANT:
             seen = []
             for page, label, _ in level2(group):
+                if page == "system-backup.html":  # its own page, kept at its address (owner, 16 November 2026)
+                    continue
                 parts = parts_of(page)
                 self.assertTrue(parts, f"{page} has no data-parts")
                 self.assertIn(f"<h1>{label}</h1>", read(WEB, page))
