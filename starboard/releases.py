@@ -1625,6 +1625,32 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Nothing changes in your settings: every automatic update stays deactivated until you activate it, and an install with a VPN keeps it. To go back, run ./update.sh --to v0.18.0."
+    },
+    {
+        "version": "0.19.1",
+        "date": "16 November 2026",
+        "fixed": [
+            [
+                "Update now stopped at Backing up your settings",
+                "Updating from the page could stop with Starboard was not updated, because the backup read Starboard's settings folder while the page's update log was being rewritten there. The backup now leaves out the update log and half-written files, carries on when a file changes as it is read, and when a backup really fails the page says why."
+            ],
+            [
+                "Two topic tabs at once",
+                "Activating Advanced settings on a page with topic tabs, such as Settings, Reelix, no longer selects two tabs at once."
+            ],
+            [
+                "Search said null",
+                "Each kind under Not in your library in Search no longer ends with the word null."
+            ]
+        ],
+        "security": [
+            [
+                "Checks",
+                "The unit tests (also as another user), the browser journeys, the accessibility checks, the API contract tests and example plug-ins, the end-to-end update test, the help check, the private details check and the security scans ran on this release."
+            ]
+        ],
+        "review": [],
+        "settings": "Nothing changes in your settings. Updating from 0.18.0 or earlier still uses that version's script: if Update now stops at Backing up your settings, try it again or run ./update.sh on the server. To go back, run ./update.sh --to v0.19.0."
     }
 ]
 

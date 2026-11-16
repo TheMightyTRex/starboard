@@ -7,6 +7,8 @@ add features.
 
 ## [Unreleased]
 
+## [0.19.1] (16 November 2026)
+
 ### Fixed
 - **Update now stopped at Backing up your settings:** Updating from the page could stop with "Starboard was not updated" because the backup read Starboard's settings folder while the page's update log, and Starboard's own settings, were being rewritten there. The backup now leaves out the update log and half-written files, carries on when a file changes as it is read, and when a backup really fails, the page says why instead of "update.sh stopped without saying why". Updating from 0.18.0 or earlier still uses that version's script: if Update now stops at the backup, try it again or run ./update.sh on the server.
 - **Settings topic tabs:** Activating Advanced settings on a page with topic tabs, such as Settings, Reelix, no longer selects two tabs at once and shows two sections together. A section that appears gets an id no other has.
@@ -1365,7 +1367,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.19.1...HEAD
+[0.19.1]: https://github.com/TheMightyTRex/starboard/compare/v0.19.0...v0.19.1
 [0.19.0]: https://github.com/TheMightyTRex/starboard/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/TheMightyTRex/starboard/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/TheMightyTRex/starboard/compare/v0.16.5...v0.17.0
