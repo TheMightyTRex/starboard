@@ -316,6 +316,50 @@ spec["paths"]["/api/v1/downloads/issues"] = {"get": {
                      "properties": {"generated_at": {"type": "string", "format": "date-time"}, "count": {"type": "integer"},
                                     "apps_asked": {"type": "integer"}, "items": {"type": "array", "items": {"$ref": "#/components/schemas/DownloadIssue"}},
                                     **ERRS, "markdown": {"type": "string"}}})}}
+# Added in 1.4.0 (DASH-451): the log limits and Delete all logs. Only for keys that ticked Logs; changing the limits
+# and deleting need manage.
+LOGS_NOTE = "Only for keys that ticked Logs: a key with no scopes does not have them."
+LOG_SUMMARY = {"type": "object", "required": ["days", "oldest", "bytes", "files", "keep_days", "max_bytes"],
+               "properties": {"days": {"type": "integer", "description": "Day files kept."},
+                              "oldest": {"type": ["string", "null"], "description": "The oldest day kept, YYYY-MM-DD."},
+                              "bytes": {"type": "integer", "description": "What every log the limits cover takes now."},
+                              "files": {"type": "integer"}, "keep_days": {"type": "integer"}, "max_bytes": {"type": "integer"}}}
+APP_LIMITS = {"type": "object", "required": ["available", "driver", "max_size", "max_file", "per_app", "capped", "uncapped"],
+              "description": "The apps' own logs, which Docker keeps: the limit most containers have (from daemon.json or their "
+                             "Compose file), read from Docker. Starboard cannot change daemon.json.",
+              "properties": {"available": {"type": "boolean", "description": "false when Starboard cannot reach Docker."},
+                             "driver": {"type": "string"}, "max_size": {"type": "string", "description": "Such as 10m."},
+                             "max_file": {"type": "string"}, "per_app": {"type": ["integer", "null"], "description": "The most bytes each container keeps."},
+                             "capped": {"type": "integer"}, "uncapped": {"type": "array", "items": {"type": "string"},
+                                                                         "description": "Containers whose log has no size limit."}}}
+LIMITS = {"keep_days": {"type": "integer", "enum": [7, 14, 30, 60, 90, 180, 365], "description": "Days kept (30 by default)."},
+          "max_mb": {"type": "integer", "enum": [10, 25, 50, 100, 250, 500], "description": "The most every log may take together, in MB (50 by default)."}}
+LOG_LIMITS = {"type": "object", "required": ["keep_days", "max_mb", "keep_days_choices", "max_mb_choices", "summary", "covers"],
+              "properties": {**LIMITS, "keep_days_choices": {"type": "array", "items": {"type": "integer"}},
+                             "max_mb_choices": {"type": "array", "items": {"type": "integer"}}, "summary": LOG_SUMMARY,
+                             "covers": {"type": "array", "items": {"type": "string"}}, "apps": APP_LIMITS,
+                             "removed": {"type": "integer", "description": "After a change: files removed by the new limits."},
+                             "freed": {"type": "integer"}}}
+spec["paths"].update({
+    "/api/v1/logs/limits": {
+        "get": {"operationId": "getLogLimits", "summary": "How long Starboard keeps its logs, the most they may take, and what they take now", "tags": ["System"],
+                "description": LOGS_NOTE + " Whichever limit comes first removes the oldest days: when a new day starts, when the limits change "
+                               "and when the size written passes the limit. They cover Starboard's own log (with its jobs, updates and plug-ins' "
+                               "lines), the API's audit log and the last Starboard update's log. apps is the apps' own limit, read from Docker.",
+                "responses": ok(LOG_LIMITS)},
+        "post": write(LOG_LIMITS, "Change how long Starboard keeps its logs and the most they may take", "setLogLimits", "System",
+                      body={"type": "object", "properties": LIMITS}) | {
+            "description": LOGS_NOTE + " The same choices as Settings, General, Logs and feedback. Older days go at once; the answer says how many."}},
+    "/api/v1/logs/delete": {"post": write(
+        {"type": "object", "required": ["removed", "emptied", "freed", "summary"],
+         "properties": {"removed": {"type": "integer"}, "emptied": {"type": "integer", "description": "Today's file and the audit log, emptied so logging goes on."},
+                        "freed": {"type": "integer"}, "summary": LOG_SUMMARY}},
+        "Delete all logs", "deleteLogs", "System",
+        body={"type": "object", "required": ["confirm"], "properties": {"confirm": {"const": True, "description": "Must be true."}}}) | {
+        "description": LOGS_NOTE + " Every log the limits cover goes, apart from today's file and the audit log, which are emptied, and the "
+                       "last update's log while an update runs. Cannot be undone. The first new line says the key deleted them; this "
+                       "write is in the audit log too. The apps' own logs (Docker's) are not touched."}},
+})
 spec["components"]["parameters"]["idempotency"] = {
     "name": "Idempotency-Key", "in": "header", "required": False, "schema": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,100}$"},
     "description": "Send the same value again to get the first answer back without doing it twice. Kept for 24 hours."}

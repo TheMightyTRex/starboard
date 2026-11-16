@@ -57,7 +57,7 @@ the scopes of the read permissions the person approved. Read
 | `library` | **Library** | `/library`, `/library/search` and `/library/status`; building a tab again |
 | `requests` | **Requests** | `/requests`; approving and declining |
 | `system` | **System** | `/system`, `/system/history` and `/version`; sending a test alert |
-| `logs` | **Logs** | `/logs`: Starboard's log, with addresses, names and keys taken out. Only a key with `logs` ticked reads it: a key with no scopes does not |
+| `logs` | **Logs** | `/logs`: Starboard's log, with addresses, names and keys taken out, and `/logs/limits`. With Read and manage, also change the log limits and delete all logs. Only a key with `logs` ticked has it: a key with no scopes does not |
 | `updates` | **Updates** | `/updates`, `/updates/runs` and `/updates/runs/{id}`; with **Read and manage**, starting an update and rolling a plug-in back. Only a key with `updates` ticked has it: a key with no scopes does not. API 1.2.0 |
 
 `/api/v1/` and `/me` work with any key. `/openapi.json` needs no key. `/events` works with any key, and each event
@@ -110,7 +110,9 @@ has no body to read. Read [API quickstart](api-quickstart.md#5-ask-again-only-wh
 Starboard writes a line to its audit log, `data/logs/audit.jsonl`, each time a key is made or revoked, each time
 a key changes something (`api_write`, with the key's id, the address and the answer's status), and each time a wrong
 key is refused, with the address it came from. Plug-ins being added, updated, rolled back, activated
-and removed are written there too. The log never holds a key or a password. It keeps 5 files of about 1 MB each.
+and removed are written there too. The log never holds a key or a password. It keeps 5 files of about 1 MB each, and counts towards the log limits in
+Settings, General, Logs and feedback: its older files go with the oldest days, and Delete all logs empties it (the
+delete itself is its next line).
 
 ## Keep keys safe
 

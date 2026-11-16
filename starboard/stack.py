@@ -20,7 +20,7 @@ import socket
 import threading
 import time
 
-from . import containers
+from . import app_logs, containers
 
 # The groups and apps ticked by default are the recommended install, Basics (DASH-83, owner 4 and 7 November 2026), so
 # "Let me choose" starts from the same apps as Basics in both set-ups; a test keeps them the same.
@@ -711,7 +711,8 @@ def build(choice):
         keep = keep_all.get(key) or {}
         through_vpn = vpn and (keep["vpn"] if isinstance(keep.get("vpn"), bool) else a.get("vpn"))
         image = keep.get("image") or (reelix_image(choice.get("reelix_edition") or "lite") if key == "reelix" else a["image"])
-        lines += [f"  {key}:", f"    image: {image}", f"    container_name: {key}", "    restart: unless-stopped"]
+        lines += [f"  {key}:", f"    image: {image}", f"    container_name: {key}", "    restart: unless-stopped",
+                  *app_logs.compose_logging()]  # each app's own log capped (DASH-451)
         if a.get("later"):
             lines.append('    profiles: ["later"]  # needs its own settings file first: docker compose --profile later up -d')
             later.append(a["name"])
@@ -783,7 +784,8 @@ def build(choice):
                     shown[db[s]] = "(made up for you)"
             dkeep = keep_all.get(db["service"]) or {}
             lines += [f"  {db['service']}:", f"    image: {dkeep.get('image') or db['image']}",
-                      f"    container_name: {db['service']}", "    restart: unless-stopped", "    environment:"]
+                      f"    container_name: {db['service']}", "    restart: unless-stopped", *app_logs.compose_logging(),
+                      "    environment:"]
             db_env = {k: _yaml_value(v) for k, v in db["env"].items()}
             db_env.update(_kept_env(dkeep, kept_vars))
             lines += [f"      {k}: {v}" for k, v in db_env.items()]

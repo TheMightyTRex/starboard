@@ -916,6 +916,11 @@ class Handler(BaseHTTPRequestHandler):
     def signed_in(self):
         return self.app.sessions.valid(self.token(), self.app.session_version)
 
+    def session_label(self):
+        """A short name for this browser's session in the log (DASH-451): the start of the hash Starboard keeps, so
+        it matches nothing that could sign in."""
+        return auth.Sessions._key(self.token() or "")[:8]
+
     def session_cookie(self, token, max_age):
         """max_age None makes a cookie the browser forgets when it closes (Remember me not ticked)."""
         secure = self.is_https() or self.app.config.data.get("secure_cookies")
@@ -1363,6 +1368,8 @@ class Handler(BaseHTTPRequestHandler):
                 general_right(incoming)
                 cfg.update_general(incoming)
                 logs.event("info", "settings", f"Changed: {', '.join(sorted(incoming)) or 'nothing'}")
+                if "logs" in incoming:
+                    app.log.prune()  # new limits apply at once (DASH-451), with no timer
                 if "watch" in incoming:
                     app.watch.wake.set()  # turning watching on, or changing how often, takes effect at once
                 # Background work follows the settings at once: threads start when turned on and end when off.
@@ -2332,10 +2339,16 @@ class Handler(BaseHTTPRequestHandler):
                                  {"Content-Disposition": f'attachment; filename="starboard-log-{time.strftime("%Y-%m-%d")}.txt"'})
             if path == "/api/logs/report" and method == "GET":
                 return self.send(200, logs.report(app, app.log).encode(), "text/plain; charset=utf-8")
+            if path == "/api/logs/limits" and method == "GET":
+                # Settings, General, Logs and feedback (DASH-451): the limits, what the logs take now, and the apps'
+                # own limit read from Docker (asked only here, kept 10 minutes).
+                from . import app_logs
+                return self.json(200, logs.limits_answer(app, app_logs.limits()))
             if path == "/api/logs/clear" and method == "POST":
-                removed = app.log.clear()
-                logs.event("info", "logs", f"Logs deleted ({removed} {'day' if removed == 1 else 'days'})")
-                return self.json(200, {"removed": removed})
+                # Delete all logs (DASH-451): a danger action, so after the password, as Sign out everywhere is.
+                self.check_password(self.body())
+                out = logs.delete_all(app, f"a signed-in browser (session {self.session_label()})")
+                return self.json(200, {**out, "summary": app.log.summary()})
             if path == "/api/help" and method == "GET":
                 # A help centre article for the help slide-out, as data (helpdocs.py).
                 page = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("page", [""])[0]

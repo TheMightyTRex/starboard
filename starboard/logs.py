@@ -1,7 +1,13 @@
 """Starboard's own log, for System, Logs and for reporting a problem.
 
-One file a day in data/logs (one JSON line per entry), kept for as many days as Settings, General says (60 by
-default); older days are removed once a day when something is written. No thread of its own.
+One file a day in data/logs (one JSON line per entry). Settings, General, Logs and feedback limits Starboard's logs
+(DASH-451): kept for a number of days (30 by default) and no more than a total size (50 MB by default), whichever
+comes first removing the oldest days. The limits cover every log Starboard keeps itself: the day files (which hold
+the jobs, updates and plug-ins' lines too), the API's audit log (audit.jsonl and its older copies) and the last
+Starboard update's log (data/self-update.log). Plug-ins keep no log files in Starboard; their containers' logs are
+Docker's, like the apps'. Old days go when a new day's file starts, when the limits are saved, and when the size
+written since passes the limit: no timer and no thread of its own. Delete all logs (clear) empties today's file
+instead of removing it, so Starboard keeps logging, and writes who deleted them as the first new line.
 
 Normal logging records what happened: Starboard starting, signing in, settings and apps changing, background
 work, alerts, updates and every error. Detailed logging (for reporting a problem) adds each page request and
@@ -25,8 +31,12 @@ import traceback
 
 LEVELS = ("error", "warning", "info", "detail")
 KEEP_CHOICES = (7, 14, 30, 60, 90, 180, 365)
+SIZE_CHOICES = (10, 25, 50, 100, 250, 500)  # MB, for every log Starboard keeps together
 DETAIL_CHOICES = ("off", "day", "on")
-DEFAULTS = {"keep_days": 60, "detail": "off", "detail_until": 0}
+DEFAULTS = {"keep_days": 30, "max_mb": 50, "detail": "off", "detail_until": 0}
+DAY_FILE = re.compile(r"^\d{4}-\d{2}-\d{2}\.log$")
+AUDIT_FILE = re.compile(r"^audit\.jsonl(\.\d{1,2})?$")  # api_v1.audit: audit.jsonl and audit.jsonl.1 to .5
+UPDATE_LOG = "self-update.log"  # in the data folder: the last Starboard update's lines (self_update.py)
 
 _current = None  # the running app's log, so any module can write with logs.event()
 _hidden = []  # secrets Starboard was handed while it runs (such as the password for first runs), never written
@@ -113,15 +123,27 @@ def _lines_with(text, words):
     return [text[a:b] for a, b in sorted(spans)]
 
 
+def size_words(n):
+    """Bytes in words for the log and the pages' status: 352 KB, 1.2 MB."""
+    n = int(n or 0)
+    if n < 1024:
+        return f"{n} bytes" if n != 1 else "1 byte"
+    for unit in ("KB", "MB", "GB"):
+        n /= 1024
+        if n < 1024 or unit == "GB":
+            return f"{n:.0f} {unit}" if unit == "KB" or n >= 10 else f"{n:.1f} {unit}"
+
 
 class Log:
     def __init__(self, data_dir, settings=lambda: DEFAULTS, words=lambda: ()):
+        self.data_dir = data_dir
         self.dir = os.path.join(data_dir, "logs")
         os.makedirs(self.dir, mode=0o700, exist_ok=True)
         self.settings = settings
         self.words = words
         self.lock = threading.Lock()
         self.pruned = None
+        self.room = None  # bytes that can be written before the size limit is looked at again (None: not known yet)
 
     def _words(self):
         try:
@@ -147,32 +169,148 @@ class Log:
             # and holds nothing the Delete logs button cannot reach.
             print(f"[starboard] {entry['area']}: {entry['message']}", flush=True)
         day = time.strftime("%Y-%m-%d")
+        line = json.dumps(entry, separators=(",", ":")) + "\n"
         try:
             with self.lock:
                 fd = os.open(os.path.join(self.dir, f"{day}.log"), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
                 with os.fdopen(fd, "a", encoding="utf-8") as f:
-                    f.write(json.dumps(entry, separators=(",", ":")) + "\n")
-                if self.pruned != day:
+                    f.write(line)
+                if self.room is not None:
+                    self.room -= len(line)
+                # A new day's file, or more written since the last look than the size limit leaves room for: old days
+                # go now. Counted in memory, so a write costs no extra look at the folder.
+                if self.pruned != day or self.room is None or self.room < 0:
                     self.pruned = day
-                    self.prune()
+                    self._prune()
         except OSError:
             pass
 
     def files(self):
+        """The day files, newest first."""
         try:
-            return sorted((n for n in os.listdir(self.dir) if re.match(r"^\d{4}-\d{2}-\d{2}\.log$", n)), reverse=True)
+            return sorted((n for n in os.listdir(self.dir) if DAY_FILE.match(n)), reverse=True)
         except OSError:
             return []
 
-    def prune(self):
-        keep = int(self.settings().get("keep_days", 60))
-        cutoff = time.strftime("%Y-%m-%d", time.localtime(time.time() - keep * 86400))
-        for name in self.files():
-            if name[:10] < cutoff:
+    def limits(self):
+        s = self.settings()
+        try:
+            keep = int(s.get("keep_days", DEFAULTS["keep_days"]))
+        except (TypeError, ValueError):
+            keep = DEFAULTS["keep_days"]
+        try:
+            most = int(s.get("max_mb", DEFAULTS["max_mb"]))
+        except (TypeError, ValueError):
+            most = DEFAULTS["max_mb"]
+        return max(1, keep), max(1, most) * 1024 * 1024
+
+    def covered(self):
+        """Every log file the limits and Delete all logs cover, as dicts: path, name, kind (day, audit or update),
+        size, and when (the day's start for a day file, else when it was last written). A file that goes while it is
+        looked at, or cannot be read, is left out."""
+        out = []
+        try:
+            names = os.listdir(self.dir)
+        except OSError:
+            names = []
+        paths = [(os.path.join(self.dir, n), n, "day" if DAY_FILE.match(n) else "audit")
+                 for n in names if DAY_FILE.match(n) or AUDIT_FILE.match(n)]
+        paths.append((os.path.join(self.data_dir, UPDATE_LOG), UPDATE_LOG, "update"))
+        for path, name, kind in paths:
+            try:
+                st = os.stat(path)
+            except OSError:
+                continue
+            when = st.st_mtime
+            if kind == "day":
                 try:
-                    os.remove(os.path.join(self.dir, name))
-                except OSError:
+                    when = time.mktime(time.strptime(name[:10], "%Y-%m-%d"))
+                except ValueError:
+                    continue
+            out.append({"path": path, "name": name, "kind": kind, "size": st.st_size, "when": when})
+        return out
+
+    def prune(self):
+        """Applies the limits now (after they are saved). Returns {"removed": files, "freed": bytes}."""
+        with self.lock:
+            return self._prune()
+
+    def _prune(self):
+        keep, most = self.limits()
+        today = time.strftime("%Y-%m-%d")
+        cutoff = time.strftime("%Y-%m-%d", time.localtime(time.time() - keep * 86400))
+        oldest_kept = time.time() - keep * 86400
+        files = self.covered()
+        # Only older days and the audit log's older copies go: today's file, the audit log being written and the
+        # last update's log stay, so Starboard and the API keep logging and Settings, Updates keeps its steps.
+        removable = [f for f in files if (f["kind"] == "day" and f["name"][:10] < today) or
+                     (f["kind"] == "audit" and f["name"] != "audit.jsonl")]
+        removed, freed = 0, 0
+
+        def remove(f):
+            nonlocal removed, freed
+            try:
+                os.remove(f["path"])
+            except FileNotFoundError:
+                pass
+            except OSError:
+                return False  # cannot be removed (its permissions): left, and the next oldest goes instead
+            removed += 1
+            freed += f["size"]
+            return True
+
+        gone = set()
+        for f in removable:
+            if (f["name"][:10] < cutoff) if f["kind"] == "day" else f["when"] < oldest_kept:
+                if remove(f):
+                    gone.add(f["path"])
+        total = sum(f["size"] for f in files if f["path"] not in gone)
+        for f in sorted((f for f in removable if f["path"] not in gone), key=lambda f: f["when"]):
+            if total <= most:
+                break
+            if remove(f):
+                total -= f["size"]
+        # What is left to write before the size is looked at again; if today's file alone is over the limit, look
+        # again after another tenth of it rather than at every line.
+        self.room = most - total if total < most else most // 10
+        return {"removed": removed, "freed": freed}
+
+    def summary(self):
+        files = self.covered()
+        days = sorted(f["name"][:10] for f in files if f["kind"] == "day")
+        keep, most = self.limits()
+        return {"days": len(days), "oldest": days[0] if days else None, "bytes": sum(f["size"] for f in files),
+                "files": len(files), "keep_days": keep, "max_bytes": most}
+
+    def clear(self, by="", update_running=False):
+        """Delete all logs: every log file goes, apart from today's file and the audit log being written, which are
+        emptied so Starboard and the API keep writing to them, and the last update's log while an update runs. Then
+        the first new line says who deleted them and how much. Returns {"removed", "emptied", "freed"}."""
+        removed, emptied, freed = 0, 0, 0
+        today = time.strftime("%Y-%m-%d") + ".log"
+        with self.lock:
+            for f in self.covered():
+                if f["kind"] == "update" and update_running:
+                    continue
+                try:
+                    if f["name"] in (today, "audit.jsonl"):
+                        with open(f["path"], "r+b") as fh:
+                            fh.truncate(0)
+                        emptied += 1
+                    else:
+                        os.remove(f["path"])
+                        removed += 1
+                    freed += f["size"]
+                except FileNotFoundError:
                     pass
+                except OSError:
+                    continue  # one that cannot be changed stays; the rest still go
+            self.pruned = time.strftime("%Y-%m-%d")
+            self.room = None
+        files = removed + emptied
+        self.write("info", "logs", f"All logs deleted{' by ' + by if by else ''}: {size_words(freed)} in "
+                                   f"{files} {'file' if files == 1 else 'files'}")
+        return {"removed": removed, "emptied": emptied, "freed": freed}
 
     def read(self, level="all", query="", before=None, limit=300):
         """Newest first. level: all, problems (warnings and errors) or detail. before: a time, for the next page."""
@@ -206,22 +344,6 @@ class Log:
                 if len(out) >= limit:
                     return out
         return out
-
-    def summary(self):
-        names = self.files()
-        size = sum(os.path.getsize(os.path.join(self.dir, n)) for n in names if os.path.exists(os.path.join(self.dir, n)))
-        return {"days": len(names), "oldest": names[-1][:10] if names else None, "bytes": size}
-
-    def clear(self):
-        removed = 0
-        with self.lock:
-            for name in self.files():
-                try:
-                    os.remove(os.path.join(self.dir, name))
-                    removed += 1
-                except OSError:
-                    pass
-        return removed
 
     def text(self, entries):
         lines = []
@@ -276,3 +398,26 @@ def start(data_dir, settings, words):
     global _current
     _current = Log(data_dir, settings, words)
     return _current
+
+
+# Settings, General, Logs and feedback and the API (DASH-451) ------------------------------------------------------
+
+def limits_answer(app, apps=None):
+    """The limits, their choices, what the logs take now, what they cover, and the apps' own limit from Docker."""
+    s = app.config.data["logs"]
+    return {"keep_days": s.get("keep_days", DEFAULTS["keep_days"]), "max_mb": s.get("max_mb", DEFAULTS["max_mb"]),
+            "keep_days_choices": list(KEEP_CHOICES), "max_mb_choices": list(SIZE_CHOICES),
+            "summary": app.log.summary(),
+            "covers": ["Starboard's own log, one file a day, with its jobs, updates and plug-ins' lines",
+                       "the API's audit log", "the last Starboard update's log"],
+            **({"apps": apps} if apps is not None else {})}
+
+
+def delete_all(app, by):
+    """Delete all logs, from the page (after the password) or the API (a manage key that ticked Logs)."""
+    from . import self_update
+    try:
+        busy = self_update.running(self_update.load(app.data_dir), data_dir=app.data_dir)
+    except Exception:  # noqa: BLE001  if it cannot tell, the update's log is kept
+        busy = True
+    return app.log.clear(by, update_running=busy)

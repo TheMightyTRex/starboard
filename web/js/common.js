@@ -1663,3 +1663,25 @@ function shelfScroller(list, name) {
   requestAnimationFrame(() => window.SharedComponents?.setup(outer));
   return outer;
 }
+
+// Delete all logs (DASH-451): the danger dialog, with the password, from Settings, General, Logs and feedback and
+// System, Logs. Says what goes (with the size) and what stays. Resolves the server's answer, or null when cancelled;
+// a wrong password throws, for the page to say beside its button.
+const logBytes = (n) => (n < 1024 ? "less than 1 KB" : formatBytes(n));
+const logDay = (d) => new Date(`${d}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+async function deleteAllLogs(summary) {
+  const s = summary || {};
+  const pw = el("input", { class: "input", type: "password", id: `logs-delete-pw-${Date.now()}`, autocomplete: "current-password", required: true });
+  const ok = await confirmDialog({
+    title: "Delete all logs?", danger: true, confirm: "Delete all logs",
+    message: [
+      el("p", { text: s.files ? `Every log Starboard keeps goes: ${logBytes(s.bytes)} in ${s.files} ${s.files === 1 ? "file" : "files"}${s.oldest ? `, back to ${logDay(s.oldest)}` : ""}.` : "Every log Starboard keeps goes." }),
+      el("p", { text: "Today's file and the API's audit log are emptied, not removed, so Starboard keeps logging. Its first new line says the logs were deleted, from this browser, and when. The apps' own logs, which Docker keeps, stay." }),
+      el("p", {}, el("strong", { text: "This cannot be undone." }))],
+    fields: [el("div", { class: "field" }, el("label", { for: pw.id, text: "Your Starboard password" }), pw)] });
+  if (!ok) return null;
+  return api("/api/logs/clear", { method: "POST", body: { password: pw.value } });
+}
+function deletedLogsText(r) {
+  return `All logs deleted: ${logBytes(r.freed)} freed. They now take ${logBytes(r.summary.bytes)}, the line saying they were deleted.`;
+}

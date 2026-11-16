@@ -101,7 +101,7 @@ const MOVED_PARTS = {
     ...["gn-up", "coming-up", "gn-scroll", "library-views", "library-views-s"].map((k) => [k, "settings-general-lists.html"]),
     ...["discover-rows", "discover-rows-s"].map((k) => [k, "settings-general-discover.html"]),
     ...["gn-dh", "download-hours"].map((k) => [k, "settings-general-hours.html"]),
-    ...["gn-logs", "logs", "gn-test", "testing", "feedback-list"].map((k) => [k, "settings-general-logs.html"]),
+    ...["gn-logs", "logs", "gn-test", "testing", "feedback-list", "gn-logdel", "delete-logs"].map((k) => [k, "settings-general-logs.html"]),
     ...["gn-style", "gn-design", "gn-access", "style", "appearance"].map((k) => [k, "settings-general-appearance.html"]),
   ]),
   // DASH-396: Discover rows is its own page, a section per area.
@@ -867,15 +867,7 @@ function startGeneral() {
     section("gn-guide", "Set-up guide", "Finds your apps and walks through what Starboard can do. Running it again changes nothing until you press Continue.",
       el("div", { class: "actions" }, el("a", { class: "btn", href: "/setup-guide.html" }, icon("play"), config.setup_guide_done ? "Run the set-up guide again" : "Run the set-up guide"),
         el("a", { class: "btn", href: "/install-apps.html" }, icon("download"), "Install apps"))),
-    el("div", { id: "logs" }, section("gn-logs", "Logs", "What Starboard did and every problem it met, on System, Logs. Personal details (passwords, API keys, addresses, names) are removed before anything is written.",
-      el("ul", { class: "settings-rows" },
-        settingRow("Keep logs for", withCost("Older days are removed once a day.", "logKeep"),
-          logPick("lg-keep-l", [[7, "7 days"], [14, "14 days"], [30, "30 days"], [60, "60 days"], [90, "90 days"], [180, "180 days"], [365, "A year"]], config.logs.keep_days,
-            (v, t) => saveGeneral({ logs: { keep_days: Number(v) } }, true)), "lg-keep-l"),
-        settingRow("Detailed logging", withCost("For reporting a problem: adds every page request and every call to your apps, and the full detail of errors. Personal details are still removed.", "logDetail"),
-          logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I deactivate it"]], config.logs.detail,
-            (v, t) => saveGeneral({ logs: { detail: v } }, true)), "lg-detail-l")),
-      el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")))),
+    wants(holder, "gn-logs") ? el("div", { id: "logs" }, logsSection()) : null,
     // Appearance (owner, 13 November 2026: "Change the word Style to Appearance and add the accessibility options
     // there as well"): the own style and its colours, the default design and accessibility, together.
     styleForm && section("gn-style", "Style and colours", "A style from a plug-in is chosen in Display, for this browser only. Reset style goes back to Starboard's own style, in its colours below, and keeps your other Display choices.", styleForm),
@@ -885,10 +877,12 @@ function startGeneral() {
       el("ul", { class: "settings-rows" },
         settingRow("Send feedback", "Feedback in the side menu, on every page, reports a problem, suggests something or checks a page for accessibility problems. Each report opens as an issue on Starboard's GitHub page, or is saved here. Deactivate it to remove Feedback from the menu.",
           uxSwitch, "ux-notes-l")),
-      el("div", { id: "feedback-list" })))]));
+      el("div", { id: "feedback-list" }))),
+    wants(holder, "gn-logdel") ? logsDangerSection() : null]));
   if ($("#category-list")) renderCategories();
+  if (wants(holder, "gn-logs") || wants(holder, "gn-logdel")) loadLogLimits();
   renderFeedback();
-  if (["#categories", "#coming-up", "#download-hours", "#logs", "#testing"].includes(location.hash)) $(location.hash)?.scrollIntoView();
+  if (["#categories", "#coming-up", "#download-hours", "#logs", "#testing", "#delete-logs"].includes(location.hash)) $(location.hash)?.scrollIntoView();
 }
 
 // Reports saved with Save in Starboard (and notes from the older Note an issue button), newest first.
@@ -1002,6 +996,7 @@ const COSTS = {
   usage: "Costs about: each run reads every file name in your folders (a few minutes for 30 TB, mostly disk reading, under 20 MB of memory), and nothing between runs. Starboard skips the drives inside a pool, so a pool is read once. Every night or every week keeps one sleeping thread; the other choices keep none.",
   spaceLog: "Costs about: one size check of each folder a day, taken when a page or the history asks anyway, and a few kilobytes a year. Nothing noticeable.",
   logKeep: "Costs about: a few kilobytes a day on disk (about 100 KB a month for a quiet server). Nothing in memory.",
+  logSize: "Costs about: nothing between days. Starboard counts what it writes as it writes it, so the size is only looked at when the count passes the limit.",
   logDetail: "Costs about: one short line per page request and per call to your apps, about 1 to 5 MB a day on a busy dashboard. For 24 hours deactivates itself, so it cannot fill the disk.",
   storageRefresh: "Each update checks the size of each folder, under a thousandth of a second. Inactive means only when you open the page or press Check again.",
   posters: "Costs about: a small download per new poster, kept for a week (a few megabytes on disk).",
@@ -1010,6 +1005,83 @@ const COSTS = {
 
 const USAGE_CHOICES = [["ask", "Only when I press Sort by type"], ["open", "When I open Storage, if over a day old"], ["nightly", "Every night at 3 am"], ["weekly", "Every week, at 3 am"], ["off", "Off"]];
 const STORAGE_REFRESH = [[0, "Only when I press Check again"], [60, "Every minute"], [300, "Every 5 minutes"]];
+
+// Logs (DASH-451, owner, 16 November 2026: "Can we also have limits on the logs with a setting for it and a way to
+// delete them all"): how long and how much, what they take now, detailed logging, and the apps' own limit from Docker.
+// The figures come from /api/logs/limits once the page is drawn (loadLogLimits); nothing is asked again on a timer.
+let logLimits = null;
+const LOG_DAYS = [[7, "7 days"], [14, "14 days"], [30, "30 days"], [60, "60 days"], [90, "90 days"], [180, "180 days"], [365, "A year"]];
+const LOG_SIZES = [[10, "10 MB"], [25, "25 MB"], [50, "50 MB"], [100, "100 MB"], [250, "250 MB"], [500, "500 MB"]];
+
+function logsSection() {
+  const saveLimit = async (key, value) => {
+    await saveGeneral({ logs: { [key]: Number(value) } }, true);
+    await loadLogLimits();
+  };
+  return section("gn-logs", "Logs", "What Starboard did and every problem it met, on System, Logs. Personal details (passwords, API keys, addresses, names) are removed before anything is written.",
+    el("ul", { class: "settings-rows" },
+      settingRow("Keep logs for", withCost("Older days are removed when a new day starts, and at once when you change this.", "logKeep"),
+        logPick("lg-keep-l", LOG_DAYS, config.logs.keep_days, (v) => saveLimit("keep_days", v)), "lg-keep-l"),
+      settingRow("No more than", withCost("All of Starboard's logs together. When they reach this, the oldest days are removed, whichever limit comes first.", "logSize"),
+        logPick("lg-size-l", LOG_SIZES, config.logs.max_mb ?? 50, (v) => saveLimit("max_mb", v)), "lg-size-l"),
+      settingRow("Detailed logging", withCost("For reporting a problem: adds every page request and every call to your apps, and the full detail of errors. Personal details are still removed.", "logDetail"),
+        logPick("lg-detail-l", [["off", "Off"], ["day", "For 24 hours"], ["on", "Until I deactivate it"]], config.logs.detail,
+          (v) => saveGeneral({ logs: { detail: v } }, true)), "lg-detail-l")),
+    el("div", { class: "stack-2" },
+      el("h3", { text: "What the limits cover" }),
+      el("p", { class: "small", text: "Starboard's own log, one file a day, which also holds its jobs, updates and plug-ins' lines; the API's audit log; and the last Starboard update's log. Plug-ins keep no log files in Starboard." }),
+      el("p", { class: "small", id: "logs-now", text: "Looking at the logs…" })),
+    el("div", { class: "stack-2" },
+      el("h3", { text: "The apps' own logs" }),
+      el("p", { class: "small", id: "logs-apps", text: "Asking Docker…" })),
+    el("div", { class: "actions" }, el("a", { class: "btn", href: "/system-logs.html" }, icon("scroll-text"), "Open the logs")));
+}
+
+function logsNowText(s) {
+  if (!s || !s.files) return "There are no logs yet.";
+  return `Now: ${logBytes(s.bytes)}${s.days ? `, ${s.days} ${s.days === 1 ? "day" : "days"} since ${logDay(s.oldest)}` : ""}.`;
+}
+
+function logsAppsText(a) {
+  if (!a || !a.available) return "Starboard cannot reach Docker, so it cannot say how long the apps keep their logs.";
+  const each = a.max_size ? `${a.max_file} ${a.max_file === "1" ? "file" : "files"} of ${a.max_size.replace(/^(\d+)([kmg])$/i, (m, n, u) => `${n} ${u.toUpperCase()}B`)}` : "";
+  const words = [];
+  if (a.capped && each) words.push(`Docker keeps each app's log to ${each}${a.per_app ? ` (${formatBytes(a.per_app)} at most)` : ""}. Docker's settings set this (daemon.json on the server), which Starboard cannot change.`);
+  else words.push("Docker does not limit the apps' logs here.");
+  if (a.uncapped?.length) words.push(`${a.uncapped.length === 1 ? "1 app has" : `${a.uncapped.length} apps have`} no limit: ${a.uncapped.slice(0, 8).join(", ")}${a.uncapped.length > 8 ? " and more" : ""}.`);
+  words.push("Apps and plug-ins Starboard installs get 3 files of 10 MB each in their own set-up. Delete all logs leaves the apps' logs alone.");
+  return words.join(" ");
+}
+
+async function loadLogLimits() {
+  try { logLimits = await api("/api/logs/limits"); }
+  catch (e) { $("#logs-now")?.replaceChildren(`The logs could not be looked at: ${e.message}`); return; }
+  $("#logs-now")?.replaceChildren(logsNowText(logLimits.summary));
+  $("#logs-apps")?.replaceChildren(logsAppsText(logLimits.apps));
+  const size = $("#logs-delete-size");
+  if (size) size.textContent = logsNowText(logLimits.summary);
+}
+
+// Settings pattern 9: Delete all logs, last on the page, with the danger dialog and the password, as Sign out
+// everywhere is. The result is said in the section's live region, and focus stays on the button.
+function logsDangerSection() {
+  const status = el("p", { class: "small", id: "logs-delete-status", role: "status" });
+  const button = el("button", { type: "button", class: "btn btn--danger", id: "logs-delete" }, icon("trash-2"), "Delete all logs");
+  button.addEventListener("click", async () => {
+    let r;
+    try { r = await deleteAllLogs(logLimits?.summary); } catch (e) { problem(e.message, button); return; }
+    if (!r) return;
+    logLimits = { ...(logLimits || {}), summary: r.summary };
+    $("#logs-now")?.replaceChildren(logsNowText(r.summary));
+    $("#logs-delete-size").textContent = logsNowText(r.summary);
+    status.textContent = "";
+    status.textContent = deletedLogsText(r);
+    button.focus();
+  });
+  return el("div", { id: "delete-logs" }, dangerSection("gn-logdel", "Delete all logs", "Removes Starboard's logs now, before the limits would. It asks for your password first.",
+    el("p", { class: "small", id: "logs-delete-size", text: "Looking at the logs…" }),
+    el("div", { class: "actions" }, button), status));
+}
 
 function logPick(labelId, options, value, onChange) {
   const select = el("select", { class: "select", "aria-labelledby": labelId },
@@ -2609,7 +2681,7 @@ const KEY_SCOPES = {
   library: ["Library", "The Library and its search"],
   requests: ["Requests", "Requests from Seerr or Reelix"],
   system: ["System", "Processor, memory, disks, version and test alerts"],
-  logs: ["Logs", "Starboard's log, with addresses, names and keys taken out. Only when ticked"],
+  logs: ["Logs", "Starboard's log, with addresses, names and keys taken out, and its limits; with Read and manage, also change the limits and delete all logs. Only when ticked"],
   updates: ["Updates", "What can be updated; with Read and manage, also update Starboard, Reelix, an app or a plug-in, and roll a plug-in back. Only when ticked"],
 };
 
@@ -3862,7 +3934,7 @@ function takeoverSection() {
 // The basic settings are the approved table (FULL-INSTALL-AND-APP-SETUP section 3); the sections listed here are the
 // advanced ones, marked as each page draws them.
 const ADVANCED_SECTIONS = new Set([
-  "gn-cat", "gn-card", "gn-up", "gn-logs", "gn-design", "gn-guide",  // General
+  "gn-cat", "gn-card", "gn-up", "gn-logs", "gn-logdel", "gn-design", "gn-guide",  // General
   "sc-ses",  // Security
   "in-how", "tk",  // Your install
   "rx-mediaservers", "rx-downloadclients", "rx-library", "rx-folders", "rx-information", "rx-files", "rx-requests",

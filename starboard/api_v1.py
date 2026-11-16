@@ -8,7 +8,9 @@ Rules from starboard/DEVELOPER-BEST-PRACTICE-2026-11-09.md (A1 to A19, AS1 to AS
   those stay with a signed-in person (STARBOARD-CAPABILITIES-2026-11-09.md lists them as never by key). The one
   exception, since API 1.2.0 (DASH-424): a manage key with the updates scope, which is never given unless ticked,
   may update Starboard, Reelix, an app or a plug-in to the version Starboard already knows of (never from an
-  address), and roll a plug-in back, each with the same backup, health check and way back as the pages;
+  address), and roll a plug-in back, each with the same backup, health check and way back as the pages. The
+  second, since API 1.4.0 (DASH-451): a manage key with the logs scope, also never given unless ticked, may change
+  the log limits (days and size) and delete all logs, as Settings, General, Logs and feedback does;
   optional expiry, last used at most once a minute, revoke (AS8); an audit line for each change and each refused
   key (AS9); refused keys count towards the sign-in lockout per address (AS10). No cookies, so no CSRF and no CORS.
 - Answers: JSON, snake_case, RFC 3339 times; errors as RFC 9457 problem details (A6); lists with limit and an
@@ -36,7 +38,7 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.3.0"  # 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.4.0"  # 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -587,6 +589,11 @@ def routes():
         items, nxt = page(rows, q)
         return {"items": items, "next_cursor": nxt}
 
+    def log_limits(h, m, q):
+        """The log limits, what the logs take now and the apps' own limit from Docker (DASH-451)."""
+        from . import app_logs, logs
+        return logs.limits_answer(h.app, app_logs.limits())
+
     def update_list(h, m, q):
         """What can be updated (DASH-424), from what Starboard already knows: nothing is fetched to answer."""
         from . import update_runs
@@ -636,6 +643,7 @@ def routes():
         (r"^/api/v1/system/history$", "system", 60, system_history),
         (r"^/api/v1/extras$", "media", 30, extras),
         (r"^/api/v1/logs$", "logs", 30, log_entries),
+        (r"^/api/v1/logs/limits$", "logs", 30, log_limits),
         (r"^/api/v1/updates$", "updates", 30, update_list),
         (r"^/api/v1/updates/runs$", "updates", 5, update_runs_list),
         (r"^/api/v1/updates/runs/([0-9a-f]{12})$", "updates", 2, update_run),
@@ -730,6 +738,28 @@ def actions():
         logs.event("info", "updates", f"Roll back of {run['name']} to {run['to']} started by the API key {h.api_key['name']}")
         return 202, {"accepted": True, "run": update_runs.public(run), "status": f"/api/v1/updates/runs/{run['id']}"}
 
+    def log_limits_set(h, m, q, b):
+        """Changes the log limits (DASH-451): keep_days and max_mb, from the same choices as the page."""
+        from .config import ConfigError
+        wanted = {k: b[k] for k in ("keep_days", "max_mb") if k in b}
+        if not wanted:
+            raise ValueError("Send keep_days, max_mb or both")
+        try:
+            h.app.config.update_general({"logs": wanted})
+        except ConfigError as e:
+            raise ValueError(str(e)) from None
+        logs.event("info", "settings", f"Log limits changed by the API key {h.api_key['name']}: "
+                   + ", ".join(f"{k} {v}" for k, v in sorted(wanted.items())))
+        pruned = h.app.log.prune()
+        return 200, {**logs.limits_answer(h.app), "removed": pruned["removed"], "freed": pruned["freed"]}
+
+    def log_delete(h, m, q, b):
+        """Delete all logs (DASH-451): the same as the page's Delete all logs, so confirm must be true."""
+        if b.get("confirm") is not True:
+            raise ValueError("Send confirm: true to delete all logs")
+        out = logs.delete_all(h.app, f"the API key {h.api_key['name']}")
+        return 200, {**out, "summary": h.app.log.summary()}
+
     def extra_run(h, m, q, b):
         h.app.jobs.run_soon(m.group(1), force=True)
         return 202, {"accepted": True, "status": "/api/v1/extras"}
@@ -744,6 +774,8 @@ def actions():
         (r"^/api/v1/extras/(livetv|import|defaults|listening)/run$", "POST", "media", extra_run),
         (r"^/api/v1/updates$", "POST", "updates", update_start),
         (r"^/api/v1/updates/rollback$", "POST", "updates", update_rollback),
+        (r"^/api/v1/logs/limits$", "POST", "logs", log_limits_set),
+        (r"^/api/v1/logs/delete$", "POST", "logs", log_delete),
     ]
 
 

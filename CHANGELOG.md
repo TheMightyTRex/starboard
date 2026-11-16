@@ -7,6 +7,12 @@ add features.
 
 ## [Unreleased]
 
+### Added
+- **Log limits (DASH-451):** Settings, General, Logs and feedback keeps Starboard's logs for a number of days (30 by default) and no more than a total size (50 MB by default, from 10 MB to 500 MB); whichever comes first removes the oldest days. They cover Starboard's own log (with its jobs, updates and plug-ins' lines), the API's audit log and the last Starboard update's log, and the page says what the logs take now. Old days go when a new day starts, when the limits are saved, or when what was written since passes the limit, with no new timer or thread. A Starboard from before keeps the days it was set to.
+- **Delete all logs (DASH-451):** In its own danger section on Settings, General, Logs and feedback, and on System, Logs: the dialog says how much goes and what stays, and asks for the password. Today's file and the audit log are emptied, not removed, so logging goes on, and the first new line says the logs were deleted, from which browser session or API key.
+- **The apps' own log limit:** Logs and feedback shows what Docker keeps for each app (such as 3 files of 10 MB, from daemon.json) and lists apps with no limit. Apps and plug-ins Starboard installs get 3 files of 10 MB in their own Compose file, so a new install is capped without daemon.json; running containers keep theirs until their file is written again. The Compose check refuses a log driver that sends logs away from the computer.
+- **API 1.4.0:** `GET /api/v1/logs/limits`, and with a manage key that ticked Logs, `POST /api/v1/logs/limits` and `POST /api/v1/logs/delete` (`{"confirm": true}`).
+
 ### Changed
 - **Lighter plug-in pages and checks:** The plug-ins list no longer reads and hashes every plug-in's logo on each call, and the styles, dashboard cards, System jobs, events and the idle-stop check (every minute) read only each plug-in's manifest and state. The plug-ins routes answer 1.6 to 2.8 times faster. (DASH-445)
 - **Alerts card:** The log's problems are found without reading every line of every day kept as JSON: 13 ms instead of 250 ms over 60 days, each minute the dashboard is open. (DASH-445)

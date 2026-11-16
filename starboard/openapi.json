@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -3061,6 +3061,545 @@
       "$ref": "#/components/responses/Problem"
      }
     }
+   }
+  },
+  "/api/v1/logs/limits": {
+   "get": {
+    "operationId": "getLogLimits",
+    "summary": "How long Starboard keeps its logs, the most they may take, and what they take now",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "logs",
+    "description": "Only for keys that ticked Logs: a key with no scopes does not have them. Whichever limit comes first removes the oldest days: when a new day starts, when the limits change and when the size written passes the limit. They cover Starboard's own log (with its jobs, updates and plug-ins' lines), the API's audit log and the last Starboard update's log. apps is the apps' own limit, read from Docker.",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "keep_days",
+          "max_mb",
+          "keep_days_choices",
+          "max_mb_choices",
+          "summary",
+          "covers"
+         ],
+         "properties": {
+          "keep_days": {
+           "type": "integer",
+           "enum": [
+            7,
+            14,
+            30,
+            60,
+            90,
+            180,
+            365
+           ],
+           "description": "Days kept (30 by default)."
+          },
+          "max_mb": {
+           "type": "integer",
+           "enum": [
+            10,
+            25,
+            50,
+            100,
+            250,
+            500
+           ],
+           "description": "The most every log may take together, in MB (50 by default)."
+          },
+          "keep_days_choices": {
+           "type": "array",
+           "items": {
+            "type": "integer"
+           }
+          },
+          "max_mb_choices": {
+           "type": "array",
+           "items": {
+            "type": "integer"
+           }
+          },
+          "summary": {
+           "type": "object",
+           "required": [
+            "days",
+            "oldest",
+            "bytes",
+            "files",
+            "keep_days",
+            "max_bytes"
+           ],
+           "properties": {
+            "days": {
+             "type": "integer",
+             "description": "Day files kept."
+            },
+            "oldest": {
+             "type": [
+              "string",
+              "null"
+             ],
+             "description": "The oldest day kept, YYYY-MM-DD."
+            },
+            "bytes": {
+             "type": "integer",
+             "description": "What every log the limits cover takes now."
+            },
+            "files": {
+             "type": "integer"
+            },
+            "keep_days": {
+             "type": "integer"
+            },
+            "max_bytes": {
+             "type": "integer"
+            }
+           }
+          },
+          "covers": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          },
+          "apps": {
+           "type": "object",
+           "required": [
+            "available",
+            "driver",
+            "max_size",
+            "max_file",
+            "per_app",
+            "capped",
+            "uncapped"
+           ],
+           "description": "The apps' own logs, which Docker keeps: the limit most containers have (from daemon.json or their Compose file), read from Docker. Starboard cannot change daemon.json.",
+           "properties": {
+            "available": {
+             "type": "boolean",
+             "description": "false when Starboard cannot reach Docker."
+            },
+            "driver": {
+             "type": "string"
+            },
+            "max_size": {
+             "type": "string",
+             "description": "Such as 10m."
+            },
+            "max_file": {
+             "type": "string"
+            },
+            "per_app": {
+             "type": [
+              "integer",
+              "null"
+             ],
+             "description": "The most bytes each container keeps."
+            },
+            "capped": {
+             "type": "integer"
+            },
+            "uncapped": {
+             "type": "array",
+             "items": {
+              "type": "string"
+             },
+             "description": "Containers whose log has no size limit."
+            }
+           }
+          },
+          "removed": {
+           "type": "integer",
+           "description": "After a change: files removed by the new limits."
+          },
+          "freed": {
+           "type": "integer"
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   },
+   "post": {
+    "operationId": "setLogLimits",
+    "summary": "Change how long Starboard keeps its logs and the most they may take",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "logs",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "keep_days": {
+          "type": "integer",
+          "enum": [
+           7,
+           14,
+           30,
+           60,
+           90,
+           180,
+           365
+          ],
+          "description": "Days kept (30 by default)."
+         },
+         "max_mb": {
+          "type": "integer",
+          "enum": [
+           10,
+           25,
+           50,
+           100,
+           250,
+           500
+          ],
+          "description": "The most every log may take together, in MB (50 by default)."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "keep_days",
+          "max_mb",
+          "keep_days_choices",
+          "max_mb_choices",
+          "summary",
+          "covers"
+         ],
+         "properties": {
+          "keep_days": {
+           "type": "integer",
+           "enum": [
+            7,
+            14,
+            30,
+            60,
+            90,
+            180,
+            365
+           ],
+           "description": "Days kept (30 by default)."
+          },
+          "max_mb": {
+           "type": "integer",
+           "enum": [
+            10,
+            25,
+            50,
+            100,
+            250,
+            500
+           ],
+           "description": "The most every log may take together, in MB (50 by default)."
+          },
+          "keep_days_choices": {
+           "type": "array",
+           "items": {
+            "type": "integer"
+           }
+          },
+          "max_mb_choices": {
+           "type": "array",
+           "items": {
+            "type": "integer"
+           }
+          },
+          "summary": {
+           "type": "object",
+           "required": [
+            "days",
+            "oldest",
+            "bytes",
+            "files",
+            "keep_days",
+            "max_bytes"
+           ],
+           "properties": {
+            "days": {
+             "type": "integer",
+             "description": "Day files kept."
+            },
+            "oldest": {
+             "type": [
+              "string",
+              "null"
+             ],
+             "description": "The oldest day kept, YYYY-MM-DD."
+            },
+            "bytes": {
+             "type": "integer",
+             "description": "What every log the limits cover takes now."
+            },
+            "files": {
+             "type": "integer"
+            },
+            "keep_days": {
+             "type": "integer"
+            },
+            "max_bytes": {
+             "type": "integer"
+            }
+           }
+          },
+          "covers": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          },
+          "apps": {
+           "type": "object",
+           "required": [
+            "available",
+            "driver",
+            "max_size",
+            "max_file",
+            "per_app",
+            "capped",
+            "uncapped"
+           ],
+           "description": "The apps' own logs, which Docker keeps: the limit most containers have (from daemon.json or their Compose file), read from Docker. Starboard cannot change daemon.json.",
+           "properties": {
+            "available": {
+             "type": "boolean",
+             "description": "false when Starboard cannot reach Docker."
+            },
+            "driver": {
+             "type": "string"
+            },
+            "max_size": {
+             "type": "string",
+             "description": "Such as 10m."
+            },
+            "max_file": {
+             "type": "string"
+            },
+            "per_app": {
+             "type": [
+              "integer",
+              "null"
+             ],
+             "description": "The most bytes each container keeps."
+            },
+            "capped": {
+             "type": "integer"
+            },
+            "uncapped": {
+             "type": "array",
+             "items": {
+              "type": "string"
+             },
+             "description": "Containers whose log has no size limit."
+            }
+           }
+          },
+          "removed": {
+           "type": "integer",
+           "description": "After a change: files removed by the new limits."
+          },
+          "freed": {
+           "type": "integer"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    },
+    "description": "Only for keys that ticked Logs: a key with no scopes does not have them. The same choices as Settings, General, Logs and feedback. Older days go at once; the answer says how many."
+   }
+  },
+  "/api/v1/logs/delete": {
+   "post": {
+    "operationId": "deleteLogs",
+    "summary": "Delete all logs",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "logs",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "confirm"
+        ],
+        "properties": {
+         "confirm": {
+          "const": true,
+          "description": "Must be true."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "removed",
+          "emptied",
+          "freed",
+          "summary"
+         ],
+         "properties": {
+          "removed": {
+           "type": "integer"
+          },
+          "emptied": {
+           "type": "integer",
+           "description": "Today's file and the audit log, emptied so logging goes on."
+          },
+          "freed": {
+           "type": "integer"
+          },
+          "summary": {
+           "type": "object",
+           "required": [
+            "days",
+            "oldest",
+            "bytes",
+            "files",
+            "keep_days",
+            "max_bytes"
+           ],
+           "properties": {
+            "days": {
+             "type": "integer",
+             "description": "Day files kept."
+            },
+            "oldest": {
+             "type": [
+              "string",
+              "null"
+             ],
+             "description": "The oldest day kept, YYYY-MM-DD."
+            },
+            "bytes": {
+             "type": "integer",
+             "description": "What every log the limits cover takes now."
+            },
+            "files": {
+             "type": "integer"
+            },
+            "keep_days": {
+             "type": "integer"
+            },
+            "max_bytes": {
+             "type": "integer"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    },
+    "description": "Only for keys that ticked Logs: a key with no scopes does not have them. Every log the limits cover goes, apart from today's file and the audit log, which are emptied, and the last update's log while an update runs. Cannot be undone. The first new line says the key deleted them; this write is in the audit log too. The apps' own logs (Docker's) are not touched."
    }
   }
  },
