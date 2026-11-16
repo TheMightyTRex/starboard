@@ -735,8 +735,10 @@ await page.evaluate(() => localStorage.setItem("starboard.topic-tabs", "off"));
 // "Upgrade available" when a newer release is out, and TheMightyTRexUK on the right; no footer on Sign in.
 console.log("\n== FOOT Footer and version");
 await open("index.html");
-check("FOOT-01", "the version is plain text at the bottom of the side menu",
-  /^(Starboard version )?v\d+\.\d+\.\d+$/.test((await page.locator(".rail__end .rail__version").textContent()).trim()));
+// 0.19.1 (owner): the version is a link to Settings, Updates, with a gently pulsing dot above it when an update is out.
+check("FOOT-01", "the version at the bottom of the side menu links to Settings, Updates",
+  /^v\d+\.\d+\.\d+$/.test((await page.locator(".rail__end a.rail__version [data-version-short]").textContent()).trim())
+  && (await page.locator(".rail__end a.rail__version").getAttribute("href")) === "/settings-updates.html");
 const footLinks = await page.locator(".site-footer .site-footer__links a").evaluateAll((as) => as.map((a) => a.childNodes[0].textContent.trim()));
 check("FOOT-01", "the footer links are Help, Release notes, GitHub repository, About and updates",
   footLinks.join("|") === "Help|Release notes|GitHub repository|About and updates", footLinks.join(", "));
@@ -811,8 +813,8 @@ await api(`/api/services/${dispatcharr.id}`, { method: "DELETE" }).catch(() => {
 console.log("\n== MENU2 General on the level 2 menu");
 const level2 = async (p) => { await open(p); return (await page.locator(".site-header__tabs .menu-tabs a").evaluateAll((as) => as.map((a) => a.textContent.trim()))).join("|"); };
 const headings = () => page.locator("main .settings-sections h2").evaluateAll((hs) => hs.map((h) => h.textContent.trim()).join("|"));
-check("MENU2-01", "General has Names and apps, Appearance, Pages and lists, Discover rows, Download hours, Logs and feedback",
-  (await level2("settings-general.html")) === "Names and apps|Appearance|Pages and lists|Discover rows|Download hours|Logs and feedback", await level2("settings-general.html"));
+check("MENU2-01", "General has Names and apps, Appearance, Pages and lists, Discover rows, Download hours, Logs and feedback, Backup and restore",
+  (await level2("settings-general.html")) === "Names and apps|Appearance|Pages and lists|Discover rows|Download hours|Logs and feedback|Backup and restore", await level2("settings-general.html"));
 check("MENU2-01", "each page shows only its own parts", (await headings()) === "Names|Categories|App cards|Set-up guide", await headings());
 await open("settings-general-appearance.html");
 check("MENU2-02", "Appearance holds style and colours, the default design and accessibility", (await headings()) === "Style and colours|Default design|Accessibility", await headings());
@@ -1365,10 +1367,12 @@ await dpBand.locator(".chip").waitFor({ timeout: 8000 }).catch(() => {});
 check("BAND-01", "Direct play's card has the grey band with its logo and its name as the card's heading",
   (await dpBand.locator(".app-icon img").count()) === 1 && (await dpBand.locator("h2").innerText()) === "Direct play"
   && await dpBand.evaluate((b) => getComputedStyle(b).backgroundColor !== getComputedStyle(b.parentElement).backgroundColor));
+// 0.19.1 (owner, design B): the time is in a lighter grey footer at the foot of the card, so the band stays on one line.
+const dpFoot = page.locator('[data-card="plugin:direct-play:now"] > .card-foot');
 check("BAND-02", "the chip and the time make sense alone to a screen reader",
-  (await dpBand.locator(".chip").textContent()) === "Status: Converting" && /^Updated (\d+ seconds|just now)/.test(await dpBand.locator("time").textContent()),
-  `${await dpBand.locator(".chip").textContent()} / ${await dpBand.locator("time").textContent()}`);
-check("BAND-02", "the chip and the time sit at the right of the band", await dpBand.evaluate((b) => {
+  (await dpBand.locator(".chip").textContent()) === "Status: Converting" && /^Updated (\d+ seconds|just now)/.test(await dpFoot.locator("time").textContent()),
+  `${await dpBand.locator(".chip").textContent()} / ${await dpFoot.locator("time").textContent()}`);
+check("BAND-02", "the chip sits at the right of the band", await dpBand.evaluate((b) => {
   const side = b.querySelector(".card-band__side").getBoundingClientRect(), h = b.querySelector("h2").getBoundingClientRect();
   return side.left > h.left && Math.abs(side.top + side.height / 2 - (h.top + h.height / 2)) < 12; }));
 const bandHeadings = await page.evaluate(() => [...document.querySelectorAll("main h1, main h2, main h3, main h4")].map((h) => Number(h.tagName[1])));
@@ -1377,7 +1381,7 @@ check("BAND-03", "the page's headings stay in order: the cards' headings are h2 
 const wsBand = page.locator('[data-card="plugin:watch-stats:week"] .card-band');
 check("BAND-04", "a plug-in without a logo has its initials, and without a status only the time",
   (await wsBand.locator(".app-icon[data-initials]").innerText()) === "WS" && (await wsBand.locator(".chip").count()) === 0
-  && /^Updated 10 minutes ago$/.test(await wsBand.locator("time").textContent()) && /Watched this week/.test(await wsBand.locator("h2").innerText()));
+  && /^Updated 10 minutes ago$/.test(await page.locator('[data-card="plugin:watch-stats:week"] > .card-foot time').textContent()) && /Watched this week/.test(await wsBand.locator("h2").innerText()));
 check("BAND-05", "a status with its own words keeps the chip's colour from the status",
   (await page.locator('[data-card="plugin:picture-shrinker:saved"] .card-band .chip').textContent()) === "Status: Waiting for 03:30"
   && (await page.locator('[data-card="plugin:picture-shrinker:saved"] .card-band .chip').getAttribute("data-tone")) === "neutral");
@@ -1421,10 +1425,11 @@ check("BAND-08", `Downloads and Coming up show ${arrLogo === "reelix" ? "Reelix'
 check("BAND-08", "Starboard's own cards show a design system icon on the tile",
   ["disk", "load", "alerts", "health", "setup"].filter((k) => byId[k]).every((k) => byId[k].own && byId[k].app === "starboard" && !byId[k].img), JSON.stringify(builtIn.map((c) => [c.id, c.own, c.app])));
 const healthChip = (await page.locator('[data-card="health"] .card-band .chip').textContent()) || "";
-check("BAND-09", "Service health's state is a chip in the band, in words with no number, and the band says when it was updated",
-  /^Status: (All running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] .card-band time').textContent()), healthChip);
+check("BAND-09", "Service health's state is a chip in the band, in words with no number, and the footer says when it was updated",
+  /^Status: (All running|Not responding)$/.test(healthChip) && /^Updated /.test(await page.locator('[data-card="health"] > .card-foot time').textContent()), healthChip);
 check("BAND-09", "a card with nothing to say has no chip and no time (Recently added, kept by the server for 5 minutes)",
-  (await page.locator('[data-card="recent"] .card-band__side > *').count()) === 0);
+  (await page.locator('[data-card="recent"] .card-band__side > *').count()) === 0
+  && (await page.locator('[data-card="recent"] > .card-foot').count()) === 0);
 const healthBefore = (await page.evaluate(() => [...document.querySelectorAll(".dash-card")].map((c) => c.dataset.card))).indexOf("health");
 await page.getByRole("button", { name: "Edit dashboard" }).click();
 await page.locator('[data-card="health"] .dash-card__tools').waitFor({ timeout: 5000 }).catch(() => {});
@@ -1475,7 +1480,7 @@ for (const size of ["small", "medium", "half", "wide", "full"]) {
     const words = c.querySelector(".chip__words");
     return { shown: h.firstChild?.textContent.trim(), heard: h.textContent.trim(), lines: Math.round(h.getBoundingClientRect().height / lh),
       labelled: c.getAttribute("aria-labelledby") === h.id, wordsWidth: words ? words.getBoundingClientRect().width : -1,
-      chip: c.querySelector(".card-band .chip")?.textContent || "", time: !!c.querySelector(".card-band time") };
+      chip: c.querySelector(".card-band .chip")?.textContent || "", time: !!c.querySelector(":scope > .card-foot time") };
   });
   check("TTL-04", `a ${size} card shows its ${size} title on one line, its name for screen readers after it`,
     got.shown === psTitles[size] && got.lines === 1 && got.labelled && got.heard.includes("Picture shrinker"), JSON.stringify(got));

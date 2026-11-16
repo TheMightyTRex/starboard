@@ -146,13 +146,21 @@ healthy() {
 # 2), which stopped the update from the page on 16 November 2026. The log is this update's own record, not a setting,
 # so it is left out, and so is every half-written .tmp or .new file (Starboard keeps running during the backup and
 # writes its settings the same way: a .tmp file, then a rename).
-# Starboard's files can still change while tar reads the folder ("file changed as we read it"); tar then ends with 1,
-# which means the archive is whole and some file changed, so that one is accepted. Any other failure still stops.
+# Starboard's files can still change while GNU tar reads the folder ("file changed as we read it"); GNU tar then ends
+# with 1, which means the archive is whole and some file changed, so that one is accepted. The page's updater (DASH-417)
+# has BusyBox tar, which knows no --warning options and ends with 1 for any error, so there only 0 is accepted. Either
+# way the backup must exist and read back whole before anything is changed: a missing backup left going back with
+# nothing to restore (found by the update test, 16 November 2026).
 backup_data() {  # backup_data <file>
-  local code=0
-  (umask 077 && tar -czf "$1" --warning=no-file-changed --warning=no-file-removed --exclude='data/plugins/*/data' \
-    --exclude='data/self-update.log' --exclude='*.tmp' --exclude='*.new' data) || code=$?  # private backup
-  [ "$code" -le 1 ]
+  local code=0 gnu=0
+  local opts=(--exclude='data/plugins/*/data' --exclude='data/self-update.log' --exclude='*.tmp' --exclude='*.new')
+  if tar --version 2>/dev/null | grep -q 'GNU tar'; then
+    gnu=1
+    opts=(--warning=no-file-changed --warning=no-file-removed "${opts[@]}")
+  fi
+  (umask 077 && tar -czf "$1" "${opts[@]}" data) || code=$?  # private backup
+  if [ "$gnu" = 1 ]; then [ "$code" -le 1 ] || return 1; else [ "$code" -eq 0 ] || return 1; fi
+  [ -s "$1" ] && tar -tzf "$1" >/dev/null || { echo "The backup $1 could not be read back."; return 1; }
 }
 
 restore_data() {  # restore_data <file>: data goes to data.failed-update, the backup comes back, plug-ins keep their data

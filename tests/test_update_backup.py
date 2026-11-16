@@ -117,3 +117,47 @@ class UpdateBackupTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BusyBoxTarTest(unittest.TestCase):
+    """16 November 2026: the update test found that the page's updater, which has BusyBox tar, made no backup at all.
+    BusyBox tar knows no --warning options and ends with 1, which the backup took for GNU tar's "a file changed", so
+    going back after a failed start had nothing to restore. A tar that is not GNU tar gets no --warning options and
+    only 0 is accepted, and the backup must read back before the update goes on."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = pathlib.Path(self.tmp.name)
+        (self.dir / "data").mkdir()
+        (self.dir / "data" / "config.json").write_text('{"site_name": "before"}')
+        self.bin = self.dir / "bin"
+        self.bin.mkdir()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def fake_tar(self, body):
+        tar = self.bin / "tar"
+        tar.write_text("#!/bin/bash\n" + body)
+        tar.chmod(0o755)
+
+    def run_backup(self):
+        env = dict(os.environ, PATH=f"{self.bin}:{os.environ['PATH']}")
+        return subprocess.run(["bash", "-c", "set -euo pipefail\n" + functions() + "backup_data backup.tar.gz\n"],
+                              cwd=self.dir, capture_output=True, text=True, env=env)
+
+    def test_busybox_tar_gets_no_warning_options_and_the_backup_is_made(self):
+        real = subprocess.run(["bash", "-c", "command -v tar"], capture_output=True, text=True).stdout.strip()
+        self.fake_tar(f'[ "${{1:-}}" = --version ] && {{ echo "BusyBox v1.36"; exit 0; }}\n'
+                      f'for a in "$@"; do case "$a" in --warning=*) echo "tar: unrecognized option $a" >&2; exit 1;; esac; done\n'
+                      f'exec {real} "$@"\n')
+        done = self.run_backup()
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        with tarfile.open(self.dir / "backup.tar.gz") as t:
+            self.assertIn("data/config.json", t.getnames())
+
+    def test_a_backup_that_was_not_written_stops_the_update(self):
+        self.fake_tar('[ "${1:-}" = --version ] && { echo "tar (GNU tar) 1.35"; exit 0; }\nexit 1\n')
+        done = self.run_backup()
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("could not be read back", done.stdout)
