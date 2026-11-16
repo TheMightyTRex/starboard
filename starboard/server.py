@@ -2580,6 +2580,29 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(200, update_runs.job(app, mr.group(1)) if mr.group(2) else update_runs.public(update_runs.get(app, mr.group(1))))
                 except LookupError as e:
                     return self.error(404, str(e))
+            mr = re.match(r"^/api/updates/all(?:/(plan|start|[0-9a-f]{12}))?$", path)
+            if mr:  # Install all updates (DASH-454): the plan and the start with the password, then the batch's progress
+                from . import update_batch, update_runs
+                what = mr.group(1) or ""
+                if re.match(r"^[0-9a-f]{12}$", what) and method == "GET":
+                    try:
+                        return self.json(200, update_batch.view(app, what))
+                    except LookupError as e:
+                        return self.error(404, str(e))
+                if what in ("plan", "start") and method == "POST":
+                    data = self.body()
+                    self.check_password(data)
+                    if what == "plan":
+                        return self.json(200, update_batch.plan(app))
+                    targets = data.get("targets")
+                    if targets is not None and not (isinstance(targets, list) and all(isinstance(t, str) for t in targets) and len(targets) <= 200):
+                        return self.error(400, "targets must be a list of the updates you confirmed")
+                    try:
+                        run = update_batch.start(app, by="you", targets=targets)
+                    except (update_runs.Refused, update_runs.Busy) as e:
+                        return self.error(409, str(e))
+                    return self.json(200, {"said": "Started", "batch": update_batch.view(app, run["id"]), "follow": f"/api/updates/all/{run['id']}"})
+                return self.error(404, "Not found")
             if path in ("/api/updates", "/api/updates/start", "/api/updates/jellyfin"):  # Settings, Updates (DASH-420, DASH-422)
                 from . import auto_updates, update_runs
                 if path == "/api/updates" and method == "GET":
@@ -2590,8 +2613,10 @@ class Handler(BaseHTTPRequestHandler):
                     items = [dict(t, automatic=bool(next((p["active"] for p in auto["parts"] if p["id"] == active.get(t["kind"])), False)))
                              for t in update_runs.targets(app)]
                     runs = [update_runs.public(r) for r in update_runs.recent(app)]
+                    from . import update_batch
                     return self.json(200, {"items": items, "auto": auto, "recent": runs,
-                                           "running": next((r for r in runs if r["state"] == "running"), None)})
+                                           "running": next((r for r in runs if r["state"] == "running"), None),
+                                           "batch": update_batch.latest(app)})
                 if path == "/api/updates/jellyfin" and method == "GET":  # asks Jellyfin, so only when the page shows it
                     return self.json(200, auto_updates.jellyfin_status(app))
                 if path == "/api/updates/start" and method == "POST":
@@ -2631,6 +2656,9 @@ class Handler(BaseHTTPRequestHandler):
                     latest = app.latest_release()
                     if not latest or str(data.get("to", "")) != latest:
                         return self.error(409, "Only the newest release GitHub has can be installed from here. Reload the page")
+                    from . import update_runs
+                    if update_runs._busy():  # another update, or Install all updates, which updates Starboard last (DASH-454)
+                        return self.error(409, "An update is already running. Wait for it to finish")
                     try:
                         return self.json(200, self_update.start(app, latest, by="you"))
                     except self_update.Refused as e:

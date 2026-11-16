@@ -235,14 +235,16 @@ TARGET = {"type": "string", "pattern": "^(starboard|reelix|app:[A-Za-z0-9_-]{1,6
           "description": "starboard, reelix, app:<app id> or plugin:<plug-in id>, as /api/v1/updates lists them."}
 UPDATE_STEP = {"type": "object", "required": ["id", "label", "state"],
                "properties": {"id": {"type": "string"}, "label": {"type": "string"},
-                              "state": {"type": "string", "enum": ["waiting", "working", "done", "failed", "skipped", "not-needed"]},
+                              "state": {"type": "string", "enum": ["waiting", "working", "done", "failed", "skipped", "not-needed", "went-back", "held"],
+                                        "description": "went-back and held only in Install all updates, where each step is one update."},
                               "detail": {"type": "string"}}}
 spec["components"]["schemas"]["UpdateRun"] = {
     "type": "object", "required": ["id", "target", "kind", "name", "action", "from", "to", "by", "state", "said", "started_at", "steps"],
-    "properties": {"id": {"type": "string"}, "target": {"type": "string"}, "kind": {"type": "string", "enum": ["starboard", "reelix", "app", "plugin", "jellyfin-plugins"]},
+    "properties": {"id": {"type": "string"}, "target": {"type": "string"}, "kind": {"type": "string", "enum": ["starboard", "reelix", "app", "plugin", "jellyfin-plugins", "batch"]},
                    "name": {"type": "string"}, "action": {"type": "string", "enum": ["update", "rollback"]},
                    "from": {"type": "string"}, "to": {"type": "string"}, "by": {"type": "string"},
-                   "state": {"type": "string", "enum": ["running", "updated", "up-to-date", "went-back", "rolled-back", "refused", "failed"]},
+                   "state": {"type": "string", "enum": ["running", "updated", "up-to-date", "went-back", "rolled-back", "refused", "failed", "some-updated"],
+                             "description": "some-updated only for Install all updates (kind batch): some updated, some did not."},
                    "said": {"type": "string"}, "started_at": {"type": "string", "format": "date-time"},
                    "finished_at": {"type": ["string", "null"], "format": "date-time"}, "steps": {"type": "array", "items": UPDATE_STEP}}}
 spec["components"]["schemas"]["UpdateTarget"] = {
@@ -250,7 +252,8 @@ spec["components"]["schemas"]["UpdateTarget"] = {
     "properties": {"id": {"type": "string"}, "kind": {"type": "string", "enum": ["starboard", "reelix", "app", "plugin"]},
                    "name": {"type": "string"}, "current": {"type": "string"}, "latest": {"type": "string"},
                    "update_available": {"type": "boolean"}, "can_update": {"type": "boolean"}, "why": {"type": "string"},
-                   "can_roll_back": {"type": "boolean"}, "roll_back_to": {"type": "string"}, "note": {"type": "string"}}}
+                   "can_roll_back": {"type": "boolean"}, "roll_back_to": {"type": "string"}, "note": {"type": "string"},
+                   "big_change": {"type": "boolean", "description": "An app or Reelix: the new version is a new major version (1.5.0)."}}}
 RUN = {"$ref": "#/components/schemas/UpdateRun"}
 STARTED = {"type": "object", "required": ["accepted", "run", "status"],
            "properties": {"accepted": {"type": "boolean"}, "run": RUN, "status": {"type": "string"}}}
@@ -282,6 +285,32 @@ spec["paths"].update({
                                           "parameters": [path_param("id", {"type": "string", "pattern": "^[0-9a-f]{12}$"})],
                                           "responses": {**ok(RUN), "404": {"$ref": "#/components/responses/Problem"}}}},
 })
+# Added in 1.5.0 (DASH-454): Install all updates, as one batch.
+BATCH_ITEM = {"type": "object", "required": ["target", "kind", "name", "from", "to", "order"],
+              "properties": {"target": {"type": "string"}, "kind": {"type": "string", "enum": ["starboard", "reelix", "app", "plugin", "jellyfin-plugins"]},
+                             "name": {"type": "string"}, "from": {"type": "string"}, "to": {"type": "string"},
+                             "order": {"type": "integer", "description": "Lower runs first."},
+                             "why": {"type": "string", "description": "Held back only: why it waits for you."},
+                             "note": {"type": "string"}}}
+spec["paths"]["/api/v1/updates/all"] = {
+    "get": {"operationId": "planAllUpdates", "summary": "What Install all updates would do now, in order, and what is held back", "tags": ["Updates"],
+            "description": UPDATES_NOTE + " items run one at a time, in this order: the other apps, Jellyfin's plug-ins, Starboard's plug-ins, Reelix, "
+                           "then Jellyfin restarts once (never while someone is watching), then Starboard last. held lists what always waits for "
+                           "you: a plug-in asking for new permissions or that comes as a zip file, a new major version, and anything Starboard "
+                           "cannot update here. Reads each waiting plug-in's new manifest from its catalogue (kept 10 minutes). count does not "
+                           "include Jellyfin's plug-ins, whose new versions only Jellyfin knows.",
+            "responses": ok({"type": "object", "required": ["items", "held", "count"],
+                             "properties": {"items": {"type": "array", "items": BATCH_ITEM}, "held": {"type": "array", "items": BATCH_ITEM},
+                                            "count": {"type": "integer"}}})},
+    "post": write(STARTED, "Install all updates: every waiting update as one batch", "startAllUpdates", "Updates", status="202",
+                  desc="Started. Read status every few seconds: its steps are the updates, in order, each with its state. Starboard updates "
+                       "last and restarts, so the answer may not come for about a minute near the end.",
+                  body={"type": "object", "properties": {"targets": {"type": "array", "items": {"type": "string"}, "maxItems": 200,
+                                                                       "description": "Only these targets of GET /api/v1/updates/all, such as the ones you showed a person. Leave it out for all of them."}}},
+                  extra={"409": {"$ref": "#/components/responses/Problem"}}) | {
+        "description": UPDATES_NOTE + " One at a time, never in parallel, each with its own backup, health check and way back. One that fails "
+                       "goes back by itself and the rest carry on. Answers 409 update_running while another update runs, and 409 "
+                       "cannot_update when nothing is waiting or everything waiting is held back."}}
 # Added in 1.3.0 (DASH-434): the queue's issues, for an AI helper.
 STR_MAP = {"type": "object", "additionalProperties": {"type": "string"}}
 spec["components"]["schemas"]["DownloadIssue"] = {

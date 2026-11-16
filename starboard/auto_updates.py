@@ -360,14 +360,15 @@ def _save_jellyfin_copy(app):
     return "done", f"{copy}, beside the set-up files"
 
 
-def jellyfin_plugins_begin(app, by="automatic"):
+def jellyfin_plugins_begin(app, by="automatic", batch=False):
     """Checks that Jellyfin's plug-ins can be updated now and makes the run. Returns (run, jf, task, before).
+    `batch`: started by Install all updates (DASH-454), which is itself the update running.
     Raises update_runs.Refused or Busy; Jellyfin that does not answer raises URLError or OSError."""
     from . import update_runs
     jf = _jf(app.config.data["services"])
     if not jf:
         raise update_runs.Refused("Add Jellyfin with its API key in Manage apps first")
-    if update_runs._busy() or update_runs._starboard_running(app):
+    if (not batch and update_runs._busy()) or update_runs._starboard_running(app):
         raise update_runs.Busy("An update is already running. Wait for it to finish")
     before = {p.get("Id"): p for p in _jf_call(jf, "GET", "/Plugins") or []}
     task = next((t for t in _jf_call(jf, "GET", "/ScheduledTasks") or [] if t.get("Key") == JF_TASK), None)
@@ -379,15 +380,20 @@ def jellyfin_plugins_begin(app, by="automatic"):
     return run, jf, task, before
 
 
-def jellyfin_plugins_run(app, by="automatic", sleep=time.sleep, task_wait=600, restart_wait=300, begun=None):
+def jellyfin_plugins_run(app, by="automatic", sleep=time.sleep, task_wait=600, restart_wait=300, begun=None, restart_later=False):
     """Jellyfin updates its own plug-ins (its Update plugins task), with a copy first; then Jellyfin restarts when
     nobody is watching, and each plug-in must be active. Returns the finished run (update_runs record). `begun`:
-    what jellyfin_plugins_begin gave, when the page started it and this runs in its own thread."""
+    what jellyfin_plugins_begin gave, when the page started it and this runs in its own thread.
+
+    restart_later (Install all updates, DASH-454): Jellyfin is restarted once at the end of the batch, not here.
+    Returns (run, pending): pending is (jf, news) when plug-ins changed and the run waits, still running, for
+    jellyfin_plugins_restart; None when the run has ended."""
     from . import update_runs
     run, jf, task, before = begun or jellyfin_plugins_begin(app, by)
     with update_runs._lock:
         update_runs._active[run["id"]] = threading.current_thread()
     step = lambda *a: update_runs._step(app.data_dir, run, *a)  # noqa: E731
+    later = False
     try:
         step("backup", "now")
         step("backup", *_save_jellyfin_copy(app))
@@ -405,16 +411,51 @@ def jellyfin_plugins_run(app, by="automatic", sleep=time.sleep, task_wait=600, r
         if not changed:
             step("install", "done", "Every plug-in is up to date")
             update_runs._end(app.data_dir, run, "up-to-date", "Jellyfin's plug-ins are up to date", app)
-            return run
+            return (run, None) if restart_later else run
         news = "; ".join(f"{n} {a or 'new'} to {b}" for n, a, b in changed)
         run.update(**{"from": "", "to": ", ".join(f"{n} {b}" for n, _, b in changed)[:200]})
         step("install", "done", news)
+        if restart_later:
+            step("restart", "waiting", "Once, after the other updates, for all of Jellyfin's plug-ins")
+            later = True
+            return run, (jf, news)
+        jellyfin_plugins_restart(app, run, jf, news, sleep=sleep, restart_wait=restart_wait)
+        return run
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        update_runs._end(app.data_dir, run, "failed", f"Jellyfin did not answer: {getattr(e, 'reason', e)}", app)
+        return (run, None) if restart_later else run
+    finally:
+        if not later:  # a run waiting for its restart stays followed until jellyfin_plugins_restart ends it
+            with update_runs._lock:
+                update_runs._active.pop(run["id"], None)
+
+
+def _watching(jf):
+    return sum(1 for s in _jf_call(jf, "GET", "/Sessions") or [] if s.get("NowPlayingItem"))
+
+
+def jellyfin_plugins_restart(app, run, jf, news, sleep=time.sleep, restart_wait=300, watch_wait=0, watch_look=60, waiting=None):
+    """Restarts Jellyfin for its updated plug-ins, when nobody is watching, and checks each plug-in is active. Ends
+    the run. watch_wait: how long to wait for nobody to be watching (Install all updates, DASH-454), calling
+    waiting(how many) at each look; 0 leaves the restart for later at once when someone is watching."""
+    from . import update_runs
+    step = lambda *a: update_runs._step(app.data_dir, run, *a)  # noqa: E731
+    try:
         step("restart", "now")
-        sessions = _jf_call(jf, "GET", "/Sessions") or []
-        if any(s.get("NowPlayingItem") for s in sessions):
-            step("restart", "skipped", "")
-            update_runs._end(app.data_dir, run, "updated", f"Updated: {news}. Someone is watching, so the new versions start when Jellyfin next restarts", app)
-            return run
+        until = time.monotonic() + watch_wait
+        while True:
+            n = _watching(jf)
+            if not n:
+                break
+            if time.monotonic() >= until:
+                step("restart", "skipped", "")
+                update_runs._end(app.data_dir, run, "updated", f"Updated: {news}. Someone is watching, so the new versions start when Jellyfin next restarts", app)
+                return run
+            if waiting:
+                waiting(n)
+            step("restart", "now", f"Waiting: {n} watching. Jellyfin restarts when nobody is")
+            sleep(watch_look)
+        step("restart", "now", "")
         _jf_call(jf, "POST", "/System/Restart")
         sleep(10)
         until = time.monotonic() + restart_wait

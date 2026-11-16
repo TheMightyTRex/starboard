@@ -38,6 +38,8 @@ restarts for a moment while it updates, and so does anything that depends on it.
   **Settings**, **Apps**, **Manage apps** and choose it in **Container**.
 - After an update, Starboard removes the old version's download if nothing else uses it.
 - **What the last update did** shows the log of the last update.
+- To update every app with a waiting update, and Starboard and its plug-ins too, in one go, read
+  [Install all updates at once](update-starboard.md#install-all-updates-at-once). A big change is held back for you.
 
 ### Updates for Reelix
 

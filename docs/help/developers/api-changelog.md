@@ -15,6 +15,19 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Starboard API 1.5.0 (Starboard 0.20.0), 16 November 2026
+
+- **Added:** Install all updates, for keys that ticked `updates`: `GET /updates/all` says what would install, in the
+  order it runs (the other apps, Jellyfin's plug-ins, Starboard's plug-ins, Reelix, then Starboard last), and what is
+  held back with `why` (a plug-in asking for new permissions or that comes as a zip file, a new major version, or
+  anything Starboard cannot update from here). With a manage key, `POST /updates/all` starts them as one batch, one at
+  a time, each with its own copy, check and way back; send `{"targets": [...]}` to run only the ones you showed
+  someone. It answers 202 with the batch's run, which `GET /updates/runs/{id}` follows: its steps are the updates, with
+  the states `went-back` and `held` too, and the batch ends `updated`, `some-updated`, `went-back` or `failed`. Read
+  [the API reference](api-reference.md#post-apiv1updatesall).
+- **Added:** `big_change` on apps and Reelix in `GET /updates`.
+- Nothing was taken away: every 1.4.0 address answers as before.
+
 ## Starboard API 1.4.0 (Starboard 0.20.0), 16 November 2026
 
 - **Added:** the log limits, for keys that ticked `logs`: `GET /logs/limits` says how long Starboard keeps its logs

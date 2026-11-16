@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -2987,6 +2987,243 @@
     }
    }
   },
+  "/api/v1/updates/all": {
+   "get": {
+    "operationId": "planAllUpdates",
+    "summary": "What Install all updates would do now, in order, and what is held back",
+    "tags": [
+     "Updates"
+    ],
+    "x-scope": "updates",
+    "description": "Only for keys that ticked Updates: a key with no scopes does not have them. items run one at a time, in this order: the other apps, Jellyfin's plug-ins, Starboard's plug-ins, Reelix, then Jellyfin restarts once (never while someone is watching), then Starboard last. held lists what always waits for you: a plug-in asking for new permissions or that comes as a zip file, a new major version, and anything Starboard cannot update here. Reads each waiting plug-in's new manifest from its catalogue (kept 10 minutes). count does not include Jellyfin's plug-ins, whose new versions only Jellyfin knows.",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "held",
+          "count"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "target",
+             "kind",
+             "name",
+             "from",
+             "to",
+             "order"
+            ],
+            "properties": {
+             "target": {
+              "type": "string"
+             },
+             "kind": {
+              "type": "string",
+              "enum": [
+               "starboard",
+               "reelix",
+               "app",
+               "plugin",
+               "jellyfin-plugins"
+              ]
+             },
+             "name": {
+              "type": "string"
+             },
+             "from": {
+              "type": "string"
+             },
+             "to": {
+              "type": "string"
+             },
+             "order": {
+              "type": "integer",
+              "description": "Lower runs first."
+             },
+             "why": {
+              "type": "string",
+              "description": "Held back only: why it waits for you."
+             },
+             "note": {
+              "type": "string"
+             }
+            }
+           }
+          },
+          "held": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "target",
+             "kind",
+             "name",
+             "from",
+             "to",
+             "order"
+            ],
+            "properties": {
+             "target": {
+              "type": "string"
+             },
+             "kind": {
+              "type": "string",
+              "enum": [
+               "starboard",
+               "reelix",
+               "app",
+               "plugin",
+               "jellyfin-plugins"
+              ]
+             },
+             "name": {
+              "type": "string"
+             },
+             "from": {
+              "type": "string"
+             },
+             "to": {
+              "type": "string"
+             },
+             "order": {
+              "type": "integer",
+              "description": "Lower runs first."
+             },
+             "why": {
+              "type": "string",
+              "description": "Held back only: why it waits for you."
+             },
+             "note": {
+              "type": "string"
+             }
+            }
+           }
+          },
+          "count": {
+           "type": "integer"
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   },
+   "post": {
+    "operationId": "startAllUpdates",
+    "summary": "Install all updates: every waiting update as one batch",
+    "tags": [
+     "Updates"
+    ],
+    "x-scope": "updates",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "targets": {
+          "type": "array",
+          "items": {
+           "type": "string"
+          },
+          "maxItems": 200,
+          "description": "Only these targets of GET /api/v1/updates/all, such as the ones you showed a person. Leave it out for all of them."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "Started. Read status every few seconds: its steps are the updates, in order, each with its state. Starboard updates last and restarts, so the answer may not come for about a minute near the end.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "accepted",
+          "run",
+          "status"
+         ],
+         "properties": {
+          "accepted": {
+           "type": "boolean"
+          },
+          "run": {
+           "$ref": "#/components/schemas/UpdateRun"
+          },
+          "status": {
+           "type": "string"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
+      "$ref": "#/components/responses/Problem"
+     }
+    },
+    "description": "Only for keys that ticked Updates: a key with no scopes does not have them. One at a time, never in parallel, each with its own backup, health check and way back. One that fails goes back by itself and the rest carry on. Answers 409 update_running while another update runs, and 409 cannot_update when nothing is waiting or everything waiting is held back."
+   }
+  },
   "/api/v1/downloads/issues": {
    "get": {
     "operationId": "listDownloadIssues",
@@ -3845,7 +4082,8 @@
        "reelix",
        "app",
        "plugin",
-       "jellyfin-plugins"
+       "jellyfin-plugins",
+       "batch"
       ]
      },
      "name": {
@@ -3876,8 +4114,10 @@
        "went-back",
        "rolled-back",
        "refused",
-       "failed"
-      ]
+       "failed",
+       "some-updated"
+      ],
+      "description": "some-updated only for Install all updates (kind batch): some updated, some did not."
      },
      "said": {
       "type": "string"
@@ -3917,8 +4157,11 @@
           "done",
           "failed",
           "skipped",
-          "not-needed"
-         ]
+          "not-needed",
+          "went-back",
+          "held"
+         ],
+         "description": "went-back and held only in Install all updates, where each step is one update."
         },
         "detail": {
          "type": "string"
@@ -3979,6 +4222,10 @@
      },
      "note": {
       "type": "string"
+     },
+     "big_change": {
+      "type": "boolean",
+      "description": "An app or Reelix: the new version is a new major version (1.5.0)."
      }
     }
    },
