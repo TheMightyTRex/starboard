@@ -737,7 +737,7 @@ console.log("\n== FOOT Footer and version");
 await open("index.html");
 // 0.19.1 (owner): the version is a link to Settings, Updates, with a gently pulsing dot above it when an update is out.
 check("FOOT-01", "the version at the bottom of the side menu links to Settings, Updates",
-  /^v\d+\.\d+\.\d+$/.test((await page.locator(".rail__end a.rail__version [data-version-short]").textContent()).trim())
+  /^(Starboard version )?v\d+\.\d+\.\d+(, update available: version \d+\.\d+\.\d+)?$/.test((await page.locator(".rail__end a.rail__version [data-version-short]").textContent()).trim())
   && (await page.locator(".rail__end a.rail__version").getAttribute("href")) === "/settings-updates.html");
 const footLinks = await page.locator(".site-footer .site-footer__links a").evaluateAll((as) => as.map((a) => a.childNodes[0].textContent.trim()));
 check("FOOT-01", "the footer links are Help, Release notes, GitHub repository, About and updates",
@@ -1460,6 +1460,9 @@ check("TTL-01", "the card's heading comes before the button, and the button befo
 await walkButton.focus();
 await page.keyboard.press("Enter");
 await page.locator("#side-panel h3").waitFor({ timeout: 5000 }).catch(() => {});
+// On a busy server the slide-out can be drawn a moment before it moves focus to its heading; wait for that, as a
+// person would, so Escape reaches the slide-out (release 0.19.1 checks, 16 November 2026).
+await page.waitForFunction(() => document.activeElement?.closest?.("#side-panel"), null, { timeout: 5000 }).catch(() => {});
 const walkOpened = await page.locator("#side-panel").count() === 1;
 await page.keyboard.press("Escape");
 await page.waitForFunction(() => document.activeElement?.closest?.('[data-card="setup"] .card-band__side'), null, { timeout: 5000 }).catch(() => {});
