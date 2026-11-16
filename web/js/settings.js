@@ -4202,6 +4202,9 @@ startPage().then(async (session) => {
   if (!session) return;
   if ($("#releases-list")) { startReleases(session.repo); return; }
   try { config = await api("/api/config"); } catch (e) { problem(e.message); return; }
+  // The page's other scripts (radio-settings.js, reelix-settings.js) load after this one: an answer that came back
+  // before they ran found startRadioSettings not defined (seen in the journeys, 16 November 2026).
+  if (document.readyState === "loading") await new Promise((done) => document.addEventListener("DOMContentLoaded", done, { once: true }));
   advancedSwitch();
   watchTopics();
   if ($("#app-sections")) startManageApps();
