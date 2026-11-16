@@ -1646,7 +1646,7 @@ RELEASES = [
         "fixed": [
             [
                 "Update now stopped at Backing up your settings",
-                "Updating from the page could stop with Starboard was not updated, because the backup read Starboard's settings folder while the page's update log was being rewritten there. The backup now leaves out the update log and half-written files, carries on when a file changes as it is read, and when a backup really fails the page says why."
+                "Updating from the page could stop with Starboard was not updated, because the backup read Starboard's settings folder while the page's update log was being rewritten there. The backup now leaves out the update log and half-written files, carries on when a file changes as it is read, and when a backup really fails the page says why. Every update now checks that its backup reads back whole before it changes anything, so going back after a failed update always has your settings to restore."
             ],
             [
                 "Two topic tabs at once",
