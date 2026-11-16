@@ -8,7 +8,9 @@ there, with the docker group. So the window checks the file first, with Starboar
   /dev/net/tun, which a VPN needs;
 - every folder a service mounts is inside the settings folder or the media folder from .env, and those two pass the
   same rules as Install apps (no system folders, no top folders, no home folder itself); the one exception is a
-  fixed path the app's own catalogue entry mounts, such as Dozzle's read-only Docker socket, for that app only.
+  fixed path the app's own catalogue entry mounts, such as Dozzle's read-only Docker socket, for that app only;
+- a service's log stays on this computer: json-file (what Starboard writes, capped), local, journald or none
+  (DASH-451), never a driver that sends it elsewhere.
 
 Usage: docker compose ... config --format json | python3 -m starboard.compose_check data/stack/.env
 Prints one problem a line; exits 1 when there are any.
@@ -18,7 +20,7 @@ import os
 import re
 import sys
 
-from . import stack
+from . import app_logs, stack
 
 ALLOWED_DEVICES = {"gluetun": {"/dev/net/tun"}}
 ALLOWED_CAPS = {"gluetun": {"NET_ADMIN"}}
@@ -86,6 +88,9 @@ def problems(config, env):
             source = dev.get("source") if isinstance(dev, dict) else str(dev).split(":", 1)[0]
             if source not in ALLOWED_DEVICES.get(name, set()):
                 out.append(f"{name}: uses the device {source}")
+        driver = str((svc.get("logging") or {}).get("driver") or "")
+        if driver and driver not in app_logs.COMPOSE_DRIVERS:
+            out.append(f"{name}: sends its log to {driver}, away from this computer's own logs")
         if svc.get("security_opt") or svc.get("volumes_from"):
             out.append(f"{name}: has security or shared-volume settings Starboard does not write")
         for vol in svc.get("volumes") or []:

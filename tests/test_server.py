@@ -147,10 +147,21 @@ class ServerTest(unittest.TestCase):
         resp, text = self.request("GET", "/api/logs/report")
         self.assertIn(b"## About this Starboard", text)
         self.assertNotIn(b"correct horse", text)
+        # Delete all logs (DASH-451): after the password, like the other danger actions.
         resp, data = self.request("POST", "/api/logs/clear", {}, {"Origin": f"http://127.0.0.1:{self.port}"})
+        self.assertEqual(resp.status, 401)
+        resp, data = self.request("POST", "/api/logs/clear", {"password": "correct horse battery"}, {"Origin": f"http://127.0.0.1:{self.port}"})
         self.assertEqual(resp.status, 200)
+        self.assertGreater(data["freed"], 0)
+        self.assertEqual(data["summary"]["days"], 1)  # today's file stays, emptied
         resp, data = self.request("GET", "/api/logs")
         self.assertEqual([e["area"] for e in data["entries"]], ["logs"])  # only the line saying they were deleted
+        self.assertRegex(data["entries"][0]["message"], r"^All logs deleted by a signed-in browser \(session [0-9a-f]{8}\): ")
+        resp, limits = self.request("GET", "/api/logs/limits")
+        self.assertEqual((resp.status, limits["keep_days"], limits["max_mb"]), (200, 30, 50))
+        self.assertFalse(limits["apps"]["available"])  # no Docker in the tests
+        resp, _ = self.request("PUT", "/api/config/general", {"logs": {"max_mb": 7}}, {"Origin": f"http://127.0.0.1:{self.port}"})
+        self.assertEqual(resp.status, 400)
 
     def test_05_security_headers(self):
         resp, _ = self.request("GET", "/login.html", cookie=False)

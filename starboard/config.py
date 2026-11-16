@@ -91,8 +91,9 @@ DEFAULTS = {
     "performance": {"preset": "balanced", "history": True, "history_every": 300, "schedule_every": 60,
                     "downloads_refresh": 15, "monitor_refresh": 2, "card_numbers": True,
                     "storage_refresh": 0, "usage_every": "ask", "space_log": True},
-    # Starboard's own log (System, Logs): days to keep, and detailed logging for reporting a problem.
-    "logs": {"keep_days": 60, "detail": "off", "detail_until": 0},
+    # Starboard's own logs (System, Logs): days to keep and the most they may take together (DASH-451), and detailed
+    # logging for reporting a problem. A Starboard from before 0.20 keeps the 60 days it had.
+    "logs": {"keep_days": 30, "max_mb": 50, "detail": "off", "detail_until": 0},
     # Scheduled backups (DASH-17, owner, 9 November 2026): off, manual (by hand only, with a reminder when the newest
     # is a month old), weekly (Sunday 03:00, keeping 4) or nightly (03:00, keeping 7). Settings, General, Backup and restore.
     "backup_schedule": "off",
@@ -601,15 +602,26 @@ def clean_performance(incoming, current):
 
 
 def clean_logs(incoming, current):
-    from .logs import DETAIL_CHOICES, KEEP_CHOICES
+    from .logs import DETAIL_CHOICES, KEEP_CHOICES, SIZE_CHOICES
     if not isinstance(incoming, dict):
         raise ConfigError("Send the log settings as an object")
     out = dict(current)
     if "keep_days" in incoming:
-        days = int(incoming["keep_days"])
+        try:
+            days = int(incoming["keep_days"])
+        except (TypeError, ValueError):
+            days = None
         if days not in KEEP_CHOICES:
             raise ConfigError("Choose how long to keep logs from the list")
         out["keep_days"] = days
+    if "max_mb" in incoming:
+        try:
+            most = int(incoming["max_mb"])
+        except (TypeError, ValueError):
+            most = None
+        if most not in SIZE_CHOICES:
+            raise ConfigError("Choose the most the logs can take from the list")
+        out["max_mb"] = most
     if "detail" in incoming:
         if incoming["detail"] not in DETAIL_CHOICES:
             raise ConfigError("Choose Off, For 24 hours or Until I deactivate it")

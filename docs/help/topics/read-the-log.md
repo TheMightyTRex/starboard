@@ -15,8 +15,12 @@ q: Does Starboard open?
 q2: What do you want to do?
   Find out what happened -> 1
   Send it to be looked at -> 2
+  Keep the logs smaller -> 3
+  Remove every log now -> 4
 1: Read the log #read-the-log
 2: Report a problem #report-a-problem
+3: Limit how much is kept #limit-how-much-is-kept
+4: Delete all logs #delete-all-logs
 ```
 
 ## Read the log
@@ -45,6 +49,38 @@ came from and **What happened**. Select an entry's message to show more, when it
 
 To check what will be copied before you share it, select **Show what will be copied**.
 
+## Limit how much is kept
+
+Starboard keeps its logs for 30 days and lets them take no more than 50 MB, unless you change it. Whichever
+limit comes first removes the oldest days.
+
+1. Go to **Settings**, then **General**, then **Logs and feedback**.
+2. Activate **Advanced settings**, at the right of the page's heading.
+3. In **Logs**, choose in **Keep logs for**: 7, 14, 30, 60, 90 or 180 days, or a year.
+4. Choose in **No more than**: 10, 25, 50, 100, 250 or 500 MB.
+
+Starboard shows "Saved" beside each one. Older days go at once, and from then on when a new day starts or the logs
+reach the size. **What the limits cover** says what the logs take now and since when.
+
+The limits cover Starboard's own log, which also holds its jobs, updates and plug-ins' lines, the API's audit log,
+and the last Starboard update's log. Plug-ins keep no log files in Starboard.
+
+**The apps' own logs** says how much Docker keeps for each app, such as "3 files of 10 MB". Docker's settings on
+the server set that, and Starboard cannot change them. Apps and plug-ins Starboard installs get 3 files of 10 MB
+each in their own set-up, so they stay small even without that setting.
+
+## Delete all logs
+
+1. Go to **Settings**, then **General**, then **Logs and feedback**, and activate **Advanced settings**. Or go to
+   **System**, then **Logs**.
+2. Select **Delete all logs**. It is in its own section at the end of the page, or at the top of System, Logs.
+3. Starboard asks **Delete all logs?** and says how much goes. Enter your Starboard password.
+4. Select **Delete all logs** to go ahead, or **Cancel** to keep them.
+
+Starboard says "All logs deleted" and how much was freed. Today's file and the API's audit log are emptied, not
+removed, so Starboard keeps logging. Their first new line says the logs were deleted, from which browser or API
+key, and when. This cannot be undone. The apps' own logs, which Docker keeps, are not deleted.
+
 ## Things to note
 
 - Starboard removes personal details before anything is written to its log: passwords, API keys and tokens,
@@ -53,10 +89,9 @@ To check what will be copied before you share it, select **Show what will be cop
 - **Download** saves the whole log as a text file, for example to attach it to an issue.
 - To suggest something or report a problem with one page, use **Feedback** in the side menu instead. Read
   [Send feedback about a page](send-feedback.md).
-- **Delete logs** removes every day of the log. Starboard asks **Delete all logs?** first. This cannot be
-  undone, and new entries start again straight away.
-- Starboard keeps the log for 60 days unless you change it. Go to **Settings**, then **General**, then **Logs
-  and feedback**, activate **Advanced settings**, and choose in **Keep logs for**, in the **Logs** section. That section also has **Detailed logging**.
+- **Detailed logging** is also in **Settings**, **General**, **Logs and feedback**, in the **Logs** section.
+- A Starboard installed before version 0.20 keeps the days it was set to (60 by default then). Choose again in
+  **Keep logs for** to keep fewer.
 - If Starboard installed Reelix, **System**, **Logs** also has **Reelix's log** and **Reelix's scheduled tasks**.
   Starboard asks for Reelix's password first.
 - If you cannot open Starboard at all, read the server's copy of the log. On the server, in the Starboard
@@ -72,6 +107,10 @@ To check what will be copied before you share it, select **Show what will be cop
 
 - **"Could not copy. Use Download instead":** your browser did not allow copying. Select **Download**, then
   attach the file or copy the text from it.
+- **"That password is not right":** enter the password you sign in to Starboard with, then select **Delete all
+  logs** again.
+- **The logs take more than No more than says:** today's file is never removed, so a busy day with detailed
+  logging can go over the limit until the next day starts. Set **Detailed logging** back to **Off**.
 - **"Set STARBOARD_REPO on the server to link straight to the issue page":** Starboard does not know where
   to report problems. Go to the Starboard project on GitHub and open a new issue there.
 

@@ -101,6 +101,10 @@ if EXAMPLE_CONTAINERS:
     containers.containers = lambda light=False: [{"id": REELIX["id"], "name": REELIX["name"]}] if light else [dict(REELIX)]
     containers._check_one = lambda c: {"latest": "0.7.2", "update": True, "unknown": False, "big_change": False}
     changes._fetch = lambda url: changes.parse(EXAMPLE_CHANGELOG)
+# The apps' own log limit (DASH-451), as Docker reports it on a server whose daemon.json caps every container's log.
+from starboard import app_logs  # noqa: E402
+app_logs.limits = lambda docker=None, now=None: {"available": True, "driver": "json-file", "max_size": "10m", "max_file": "3",
+                                                 "per_app": 30 * 1024 * 1024, "capped": 9, "uncapped": []}
 stack._port_free = lambda port: True
 stack.reelix_url = lambda data_dir: f"http://127.0.0.1:{FAKE_PORT}/reelix"  # the made-up Reelix, for Settings, Reelix
 # Plug-ins (DASH-149, DASH-284): the Styles plug-in added and active, and a made-up Hello card that the help's

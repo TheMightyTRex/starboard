@@ -58,6 +58,9 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 | Send a test alert | `POST /alerts/test` | manage, `system` |
 | Events as they happen: apps down and up, alerts, new items, finished downloads, playback | `GET /events` | read, by each event's scope |
 | Read Starboard's log, with addresses, names and keys taken out | `GET /logs` | read, `logs`, only when ticked |
+| See the log limits, what the logs take now and the apps' own limit from Docker | `GET /logs/limits` | read, `logs`, only when ticked |
+| Change the log limits (days and size) | `POST /logs/limits` | manage, `logs`, only when ticked |
+| Delete all logs | `POST /logs/delete` with `{"confirm": true}` | manage, `logs`, only when ticked |
 | Jobs, storage, disk health and the pool | Not yet | |
 | Back up, restore, the pool's plan, server jobs | Signed in only: they need the password or run as root | |
 
@@ -65,7 +68,7 @@ Every address starts with `/api/v1`. The [API reference](api-reference.md) gives
 
 | What a person can do | In the API | Right and scope |
 |---|---|---|
-| Change General, Alerts, Performance or Jellyfin settings | Signed in only | |
+| Change General, Alerts, Performance or Jellyfin settings (apart from the log limits, above) | Signed in only | |
 | Make or revoke API keys; add or remove plug-ins; update a plug-in from an address | Signed in only | |
 | Password, Sign out everywhere, who can open the dashboard | Signed in only | |
 | Reelix's settings, editions and moving apps into Reelix | Signed in only: they use Reelix's admin password | |
