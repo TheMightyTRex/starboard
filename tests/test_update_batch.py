@@ -196,6 +196,15 @@ class BatchTest(unittest.TestCase):
         self.assertIn("Held back for you: Watch statistics", v["said"])
         self.assertEqual(v["state"], "updated")  # everything that could update did
 
+    def test_the_panel_counts_what_the_dialog_lists_with_jellyfin_as_one(self):
+        """The dialog's title and button count plan["items"] (Jellyfin's plug-ins as one); the panel must agree."""
+        self.manifests["watch-stats"]["permissions"] = ["jellyfin:read", "jellyfin:write"]  # one held back
+        listed = update_batch.plan(self.app)["items"]
+        self.assertIn("jellyfin-plugins", [i["target"] for i in listed])
+        v = self.run_batch(targets=[i["target"] for i in listed])
+        self.assertEqual((v["count"], v["ended"]), (len(listed), len(listed)))
+        self.assertIn(f"{len(listed)} of {len(listed)} updated", v["said"])
+
     def test_only_the_updates_the_person_confirmed_run(self):
         v = self.run_batch(targets=["app:sonarr", "reelix"])
         self.assertEqual(self.order, ["app:sonarr", "reelix"])

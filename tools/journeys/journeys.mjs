@@ -1677,12 +1677,15 @@ await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click()
 const allAsk = page.getByRole("dialog", { name: /^Install \d+ updates?$/ });
 await allAsk.waitFor({ timeout: 10000 }).catch(() => {});
 const allOrder = await allAsk.locator("ol li").allTextContents();
+const allTitle = (await allAsk.locator("h2").textContent()).trim();
+check("UPD-08", "the dialog's title, its button and its list count the same updates", allTitle === `Install ${allOrder.length} updates`
+  && (await allAsk.getByRole("button", { name: allTitle }).count()) === 1, `${allTitle} / ${allOrder.length}`);
 check("UPD-08", "the list puts Starboard last", allOrder.length >= 2 && /^Starboard /.test(allOrder[allOrder.length - 1]), allOrder.join(" / "));
 await allAsk.getByRole("button", { name: /^Install \d+ updates?$/ }).click();
 await page.locator(".update-all .notice").waitFor({ timeout: 90000 }).catch(() => {});
 const batchItems = await page.locator(".update-all .task-list__item").evaluateAll((li) => li.map((n) => [n.dataset.state, n.querySelector(".chip")?.textContent, !!n.querySelector(".chip svg")]));
 check("UPD-08", "each update ends with its state in words and an icon", batchItems.length >= 2 && batchItems.every(([st, w, ic]) => st && w && ic), JSON.stringify(batchItems));
-check("UPD-08", "the count says how many finished", /^\d+ of \d+$/.test((await page.locator("#update-all-count .numeric").textContent()).trim()));
+check("UPD-08", "the panel counts the same updates as the dialog", new RegExp(`^${allOrder.length} of ${allOrder.length}$`).test((await page.locator("#update-all-count .numeric").textContent()).trim()));
 await page.waitForTimeout(1500);
 check("UPD-08", "Recent updates records the batch as All updates", (await page.locator("#updates-recent").textContent()).includes("All updates"));
 const allRuns = await api("/api/updates");

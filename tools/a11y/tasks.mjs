@@ -500,10 +500,14 @@ if (go29) {
   check("T29", "the list of what installs opens with focus on its main button", ok29.inPanel && /^Install \d+ updates?$/.test(ok29.text), ok29.text);
   const listed = await page.evaluate(() => [...(document.querySelector("dialog[open] ol")?.children || [])].map((li) => li.textContent));
   check("T29", "it lists the updates in order, Starboard last", listed.length >= 2 && /^Starboard /.test(listed[listed.length - 1]), listed.join(" / "));
+  const title29 = await page.evaluate(() => document.querySelector("dialog[open] h2")?.textContent || "");
+  check("T29", "the dialog's title and button count what it lists", title29 === `Install ${listed.length} updates` && ok29.text === title29, `${title29} / ${ok29.text} / ${listed.length}`);
   await page.keyboard.press("Enter");
   await page.waitForTimeout(800);
   const head29 = await focus();
   check("T29", "focus goes to the batch's panel heading", head29.id === "update-all-h", `${head29.id} ${head29.text}`);
+  const count29 = (await page.locator("#update-all-count .numeric").textContent()).trim();
+  check("T29", "the panel counts the same updates", new RegExp(`^\\d+ of ${listed.length}$`).test(count29), `${count29} / ${listed.length}`);
   const heard29 = [];
   for (let i = 0; i < 240 && !(await page.locator(".update-all .notice").count()); i++) {
     const t = await page.locator(".update-all [aria-live=polite]").textContent().catch(() => "");
