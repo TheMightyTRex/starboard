@@ -44,6 +44,9 @@
     line-height: var(--leading-tight);
     font-weight: var(--weight-strong);
     text-wrap: balance;
+    /* A word too long for the line, such as a folder path or an address, wraps instead of pushing the page sideways
+       at 320 pixels (WCAG 1.4.10; found on Starboard's Backup and restore, 16 November 2026). */
+    overflow-wrap: anywhere;
   }
   h1 {
     font-size: var(--text-xl);
