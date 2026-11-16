@@ -1659,6 +1659,38 @@ check("UPD-06", "Jellyfin's plug-ins update with each step and end with what is 
 await jfProgress.getByRole("button", { name: "Done" }).click();
 check("UPD-06", "and it is in Recent updates", (await page.locator("#updates-recent").textContent()).includes("Jellyfin's plug-ins"));
 
+// UPD-08 Install all updates (DASH-454): with more than one update waiting, one button says how many; a wrong
+// password is said in the dialog; the list says what installs in order; the panel follows each update to the end,
+// with words and icons for each state, and Recent updates records the batch.
+const allBtn = page.locator("#install-all");
+await allBtn.waitFor({ timeout: 5000 }).catch(() => {});
+check("UPD-08", "Install all updates says how many are waiting", /^Install all \d+ updates$/.test((await allBtn.textContent().catch(() => "")).trim()));
+await allBtn.click();
+await page.getByRole("dialog").locator("input[type=password]").fill("not-the-password");
+await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+await page.getByRole("dialog").locator(".field-error:not([hidden])").waitFor({ timeout: 5000 }).catch(() => {});
+check("UPD-08", "a wrong password is said under the field", /not right/.test(await page.getByRole("dialog").locator(".field-error").textContent().catch(() => "")));
+{ const expected = problems.filter((x) => !(/settings-updates\.html: .*\b401\b/.test(x)));
+  problems.splice(0, problems.length, ...expected); }
+await page.getByRole("dialog").locator("input[type=password]").fill(password);
+await page.getByRole("dialog").getByRole("button", { name: "Continue" }).click();
+const allAsk = page.getByRole("dialog", { name: /^Install \d+ updates?$/ });
+await allAsk.waitFor({ timeout: 10000 }).catch(() => {});
+const allOrder = await allAsk.locator("ol li").allTextContents();
+const allTitle = (await allAsk.locator("h2").textContent()).trim();
+check("UPD-08", "the dialog's title, its button and its list count the same updates", allTitle === `Install ${allOrder.length} updates`
+  && (await allAsk.getByRole("button", { name: allTitle, exact: true }).count()) === 1, `${allTitle} / ${allOrder.length}`);
+check("UPD-08", "the list puts Starboard last", allOrder.length >= 2 && /^Starboard /.test(allOrder[allOrder.length - 1]), allOrder.join(" / "));
+await allAsk.getByRole("button", { name: /^Install \d+ updates?$/ }).click();
+await page.locator(".update-all .notice").waitFor({ timeout: 90000 }).catch(() => {});
+const batchItems = await page.locator(".update-all .task-list__item").evaluateAll((li) => li.map((n) => [n.dataset.state, n.querySelector(".chip")?.textContent, !!n.querySelector(".chip svg")]));
+check("UPD-08", "each update ends with its state in words and an icon", batchItems.length >= 2 && batchItems.every(([st, w, ic]) => st && w && ic), JSON.stringify(batchItems));
+check("UPD-08", "the panel counts the same updates as the dialog", new RegExp(`^${allOrder.length} of ${allOrder.length}$`).test((await page.locator("#update-all-count .numeric").textContent()).trim()));
+await page.waitForTimeout(1500);
+check("UPD-08", "Recent updates records the batch as All updates", (await page.locator("#updates-recent").textContent()).includes("All updates"));
+const allRuns = await api("/api/updates");
+check("UPD-08", "the batch is in the record, and nothing is left running", allRuns.recent.some((r) => r.kind === "batch" && r.state !== "running") && !allRuns.running, JSON.stringify(allRuns.running));
+
 // Batch 0.19, plug-in API 1.15: a plug-in from a zip file (DASH-414), updated from one, and Jellyfin's metadata moved
 // out of its settings folder (DASH-431). The example server never reaches Docker: its build is made up.
 console.log("\n== ZIP Plug-ins from a zip file");

@@ -20,6 +20,8 @@
 #    (REELIX_FROM=<version tag> starts from that build, such as lite-0.8.7-trex.1),
 #    then a broken one that must go back by itself to an answering Reelix; REELIX_TO=<tag> also updates it to that
 #    published version first. A plug-in from the catalogue with Roll back is in the starboard-plugins smoke test.
+#    Then Install all updates (DASH-454): three apps as one batch, one at a time; one updates, one that cannot start
+#    goes back by itself while the rest carry on, and a big change is held back.
 #
 # The sealed Docker keeps its images in an unnamed volume, removed with the container at the end (the pool is a
 # mergerfs folder, where Docker's overlay storage cannot work). The run's own folder is removed too. Exit 0 when

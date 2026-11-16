@@ -8,9 +8,10 @@ Rules from starboard/DEVELOPER-BEST-PRACTICE-2026-11-09.md (A1 to A19, AS1 to AS
   those stay with a signed-in person (STARBOARD-CAPABILITIES-2026-11-09.md lists them as never by key). The one
   exception, since API 1.2.0 (DASH-424): a manage key with the updates scope, which is never given unless ticked,
   may update Starboard, Reelix, an app or a plug-in to the version Starboard already knows of (never from an
-  address), and roll a plug-in back, each with the same backup, health check and way back as the pages. The
-  second, since API 1.4.0 (DASH-451): a manage key with the logs scope, also never given unless ticked, may change
-  the log limits (days and size) and delete all logs, as Settings, General, Logs and feedback does;
+  address), roll a plug-in back and (1.5.0, DASH-454) install every waiting update as one batch, each with the
+  same backup, health check and way back as the pages. The second, since API 1.4.0 (DASH-451): a manage key with
+  the logs scope, also never given unless ticked, may change the log limits (days and size) and delete all logs, as
+  Settings, General, Logs and feedback does;
   optional expiry, last used at most once a minute, revoke (AS8); an audit line for each change and each refused
   key (AS9); refused keys count towards the sign-in lockout per address (AS10). No cookies, so no CSRF and no CORS.
 - Answers: JSON, snake_case, RFC 3339 times; errors as RFC 9457 problem details (A6); lists with limit and an
@@ -38,7 +39,7 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.4.0"  # 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.5.0"  # 1.5.0 (16 November 2026, DASH-454): /updates/all, Install all updates. 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -601,6 +602,11 @@ def routes():
         running = next((r for r in update_runs.recent(h.app) if r["state"] == "running"), None)
         return {"items": items, "running": update_runs.public(running) if running else None, "next_cursor": nxt}
 
+    def update_all_plan(h, m, q):
+        """What Install all updates would do now (DASH-454): in order, and what is held back for the owner."""
+        from . import update_batch
+        return update_batch.plan(h.app)
+
     def update_runs_list(h, m, q):
         from . import update_runs
         items, nxt = page([update_runs.public(r) for r in update_runs.recent(h.app)], q)
@@ -645,6 +651,7 @@ def routes():
         (r"^/api/v1/logs$", "logs", 30, log_entries),
         (r"^/api/v1/logs/limits$", "logs", 30, log_limits),
         (r"^/api/v1/updates$", "updates", 30, update_list),
+        (r"^/api/v1/updates/all$", "updates", 60, update_all_plan),
         (r"^/api/v1/updates/runs$", "updates", 5, update_runs_list),
         (r"^/api/v1/updates/runs/([0-9a-f]{12})$", "updates", 2, update_run),
         (r"^/api/v1/events$", None, 0, None),  # the event stream: answered by _stream, each event by its own scope
@@ -760,6 +767,22 @@ def actions():
         out = logs.delete_all(h.app, f"the API key {h.api_key['name']}")
         return 200, {**out, "summary": h.app.log.summary()}
 
+    def update_all(h, m, q, b):
+        """Install all updates (DASH-454): every waiting update as one batch, one at a time in a safe order, each with
+        its own copy, check and way back. targets: only these of the plan (what the caller looked at)."""
+        from . import update_batch, update_runs
+        targets = b.get("targets")
+        if targets is not None and not (isinstance(targets, list) and all(isinstance(t, str) for t in targets) and len(targets) <= 200):
+            raise ValueError("targets must be a list of targets from GET /api/v1/updates/all")
+        try:
+            run = update_batch.start(h.app, by=f"api:{h.api_key['name']}", targets=targets)
+        except update_runs.Busy as e:
+            raise Conflict(str(e), "update_running") from None
+        except update_runs.Refused as e:
+            raise Conflict(str(e), "cannot_update") from None
+        logs.event("info", "updates", f"Install all updates started by the API key {h.api_key['name']}")
+        return 202, {"accepted": True, "run": update_runs.public(run), "status": f"/api/v1/updates/runs/{run['id']}"}
+
     def extra_run(h, m, q, b):
         h.app.jobs.run_soon(m.group(1), force=True)
         return 202, {"accepted": True, "status": "/api/v1/extras"}
@@ -776,6 +799,7 @@ def actions():
         (r"^/api/v1/updates/rollback$", "POST", "updates", update_rollback),
         (r"^/api/v1/logs/limits$", "POST", "logs", log_limits_set),
         (r"^/api/v1/logs/delete$", "POST", "logs", log_delete),
+        (r"^/api/v1/updates/all$", "POST", "updates", update_all),
     ]
 
 

@@ -85,7 +85,8 @@ select **See what is new**. Read [Add a plug-in from a zip file](add-a-plugin-fr
 - **Only one earlier version is kept.** Updating again replaces it with the version you are on now.
 - **Inactive plug-ins** are updated straight away, with no steps: the new version starts when you activate it.
 - **Plug-ins built into Starboard,** such as Live TV, update with Starboard. Read [Update Starboard](update-starboard.md).
-- One update runs at a time, for Starboard, its apps and its plug-ins.
+- One update runs at a time, for Starboard, its apps and its plug-ins. To install every waiting update in one go, read
+  [Install all updates at once](update-starboard.md#install-all-updates-at-once).
 - **System**, **Logs** lists each update and roll back, and how it ended.
 
 ## If it does not work

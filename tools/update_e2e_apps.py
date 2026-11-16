@@ -4,7 +4,9 @@
 Starboard's own update code (update_runs, containers, reelix_updates) updates real containers started by Docker
 Compose. Only the question "does the registry have a newer build?" is answered here (the registry is local, over
 plain HTTP, which Starboard never asks); pulling, the settings copy, starting, the health check and the way back are
-Starboard's own. Prints PASS or FAIL lines; exits with the number of failures."""
+Starboard's own. Then Install all updates (DASH-454): three apps as one batch, one updating, one that cannot start
+going back by itself while the rest carry on, and one big change held back. Prints PASS or FAIL lines; exits with
+the number of failures."""
 import json
 import os
 import subprocess
@@ -14,7 +16,7 @@ import time
 import urllib.request
 
 sys.path.insert(0, os.getcwd())
-from starboard import containers, reelix_updates, stack, update_runs  # noqa: E402
+from starboard import containers, reelix_updates, stack, update_batch, update_runs  # noqa: E402
 
 REG = "127.0.0.1:5000"
 FAILED = 0
@@ -34,15 +36,15 @@ def sh(*cmd, cwd=None, check=True):
     return r
 
 
-def push_app(version, broken=False):
-    """A tiny web app answering its version, pushed as REG/e2e-app:latest."""
+def push_app(version, broken=False, name="e2e-app"):
+    """A tiny web app answering its version, pushed as REG/<name>:latest."""
     d = tempfile.mkdtemp()
     with open(os.path.join(d, "Dockerfile"), "w") as f:
         f.write("FROM busybox:1.37\n" + (
             'CMD ["sh", "-c", "echo this made-up version cannot start; exit 1"]\n' if broken else
             f'RUN mkdir -p /www && echo {version} > /www/index.html\nCMD ["httpd", "-f", "-p", "8080", "-h", "/www"]\n'))
     sh("docker", "build", "-q", "-t", "e2e-build:app", d)
-    publish("e2e-build:app", f"{REG}/e2e-app:latest")
+    publish("e2e-build:app", f"{REG}/{name}:latest")
 
 
 def publish(local, ref):
@@ -121,6 +123,48 @@ def app_stage():
     sh("docker", "compose", "-p", "e2e", "down", cwd=f"{HOME}/app", check=False)
 
 
+def batch_stage():
+    """Install all updates: e2e-a updates, e2e-b's new version cannot start and goes back by itself, e2e-c's is a
+    big change and is held back; one at a time, in order, with a copy of each one's settings first."""
+    names = ("e2e-a", "e2e-b", "e2e-c")
+    os.makedirs(f"{HOME}/batch", exist_ok=True)
+    services = "".join(f"  {n}:\n    image: {REG}/{n}:latest\n    container_name: {n}\n    ports: ['127.0.0.1:{18610 + i}:8080']\n"
+                       f"    volumes: ['./{n}:/config']\n    restart: unless-stopped\n" for i, n in enumerate(names))
+    with open(f"{HOME}/batch/compose.yaml", "w") as f:
+        f.write("services:\n" + services)
+    for n in names:
+        os.makedirs(f"{HOME}/batch/{n}", exist_ok=True)
+        with open(f"{HOME}/batch/{n}/settings.xml", "w") as f:
+            f.write(f"<settings>{n}</settings>\n")
+        push_app("1", name=n)
+    sh("docker", "compose", "-p", "e2e-batch", "up", "-d", "--quiet-pull", cwd=f"{HOME}/batch")
+    time.sleep(2)
+    say(all(answer(18610 + i) == "1" for i in range(3)), "three apps run version 1")
+    app = App([{"id": n, "name": n, "type": "link", "url": f"http://127.0.0.1:{18610 + i}", "enabled": True} for i, n in enumerate(names)])
+    containers._check_one = lambda c: {"latest": "2", "update": True, "unknown": False, "big_change": c.get("name") == "e2e-c"}
+    containers.check(app.config.data["services"])
+    push_app("2", name="e2e-a")
+    push_app("2", broken=True, name="e2e-b")
+    push_app("2", name="e2e-c")
+    plan = update_batch.plan(app)
+    say([i["target"] for i in plan["items"]] == ["app:e2e-a", "app:e2e-b"] and [h["target"] for h in plan["held"]] == ["app:e2e-c"],
+        f"the plan: {[i['target'] for i in plan['items']]}, held back {[h['target'] for h in plan['held']]}")
+    started = time.time()
+    batch = wait_run(app, update_batch.start(app, by="you"), limit=900)
+    v = update_batch.view(app, batch["id"])
+    states = {i["target"]: i["state"] for i in v["items"]}
+    say(states == {"app:e2e-a": "done", "app:e2e-b": "went-back", "app:e2e-c": "held"},
+        f"Install all updates: {states}, {v['said']} ({time.time() - started:.0f} s)")
+    runs = {r["target"]: r for r in update_runs.recent(app) if r["kind"] == "app"}
+    a, b = runs.get("app:e2e-a"), runs.get("app:e2e-b")
+    say(bool(a and b and a["finished"] and b["started"] >= a["finished"]), "one at a time: e2e-b started after e2e-a had finished")
+    time.sleep(3)
+    say([answer(18610 + i) for i in range(3)] == ["2", "1", "1"], "e2e-a answers 2, e2e-b went back to 1, e2e-c was not touched")
+    say(all(os.path.exists(f"{HOME}/batch/{n}-before-update.tgz") for n in ("e2e-a", "e2e-b")), "each update copied its settings first")
+    say(v["state"] == "some-updated" and "Went back by itself: e2e-b" in v["said"] and "Held back for you: e2e-c" in v["said"], f"it says how it went: {v['said']}")
+    sh("docker", "compose", "-p", "e2e-batch", "down", cwd=f"{HOME}/batch", check=False)
+
+
 def reelix_stage():
     lite = f"ghcr.io/themightytrex/reelix:{os.environ.get('REELIX_FROM') or 'lite'}"  # REELIX_FROM: a version tag to start from
     to = os.environ.get("REELIX_TO", "")
@@ -167,7 +211,7 @@ def reelix_stage():
 
 
 if __name__ == "__main__":
-    for stage in (app_stage, reelix_stage):
+    for stage in (app_stage, batch_stage, reelix_stage):
         if stage is reelix_stage and os.environ.get("REELIX", "1") != "1":
             print("Reelix: not run (REELIX=0)")
             continue

@@ -200,6 +200,76 @@ def _example_updates(data):
     JELLYFIN.updates[jellyfin_plugins.PACKAGES["playback"]["guid"].replace("-", "")] = "20.0.0.0"
 
 
+def _example_update_all():
+    """Install all updates (DASH-454): each update of the batch only acts its steps over a few seconds (nothing is
+    fetched, installed or restarted), except Starboard's own, which writes update.sh's lines as Update now does, and
+    Jellyfin's plug-ins, which the stand-in Jellyfin updates and restarts. With EXAMPLE_UPDATE_ALL=1, more updates
+    wait: Sonarr (which goes back by itself), Reelix, Radarr 6 (a big change, held back) and Watch statistics (asks
+    for new permissions, held back)."""
+    from starboard import update_batch, update_runs
+    real_targets, real_start, real_hold = update_runs.targets, update_runs.start, update_batch._plugin_hold
+    more = os.environ.get("EXAMPLE_UPDATE_ALL") == "1"
+
+    def targets(app):
+        out = real_targets(app)
+        if not more:
+            return out
+        for t in out:
+            if t["id"] == "reelix":
+                t.update(update_available=True, can_update=True, latest="0.7.2", why="")
+            if t["id"] == "plugin:watch-stats":
+                t.update(update_available=True, can_update=True, latest="1.1.0", why="")
+        app_row = lambda tid, name, cur, new, big: {"id": tid, "kind": "app", "name": name, "current": cur, "latest": new,  # noqa: E731
+                                                    "update_available": True, "can_update": True, "why": "", "can_roll_back": False,
+                                                    "roll_back_to": "", "big_change": big, "note": "Goes back by itself when the new version is not healthy"}
+        return out[:1] + [app_row("app:sonarr", "Sonarr", "4.0.11", "4.0.12", False), app_row("app:radarr", "Radarr", "5.14.0", "6.0.0", True)] + out[1:]
+
+    def hold(app, t, known):
+        if t["id"] == "plugin:watch-stats":
+            return "It asks for new permissions (jellyfin:write). Update it on its own page"
+        return real_hold(app, t, known)
+
+    def start(app, target, by="you", address="", note=None, batch=None):
+        if not batch or target == "starboard":
+            return real_start(app, target, by=by, address=address, note=note, batch=batch)
+        t = next(x for x in update_runs.targets(app) if x["id"] == target)
+        steps = [("backup", "Saving a copy of its settings"), ("install", "Installing the new version"), ("health", "Checking it works")]
+        run = update_runs._new(app.data_dir, target, t["kind"], t["name"], "update", t["current"], t["latest"], by, steps)
+
+        def work():
+            for k, _ in steps:
+                update_runs._step(app.data_dir, run, k, "now")
+                time.sleep(1.5)
+                if target == "app:sonarr" and k == "health":
+                    update_runs._step(app.data_dir, run, k, "failed", "It kept stopping and starting again within 2 minutes")
+                    update_runs._step(app.data_dir, run, "going-back", "now")
+                    time.sleep(1)
+                    update_runs._step(app.data_dir, run, "going-back", "done")
+                    return update_runs._end(app.data_dir, run, "went-back", "Sonarr's new version kept stopping and starting again within 2 minutes, "
+                                            "so Starboard went back to the version before", app)
+                update_runs._step(app.data_dir, run, k, "done")
+            update_runs._end(app.data_dir, run, "updated", f"{t['name']} is updated and running", app)
+        update_runs._go(app.data_dir, run, work)
+        return run
+    update_runs.targets, update_runs.start, update_batch._plugin_hold = targets, start, hold
+    if os.environ.get("EXAMPLE_UPDATE_ALL_DONE") == "1":  # a batch that ended ten minutes ago, so the page opens with its panel
+        now = time.time()
+        steps = [("app:sonarr", "Sonarr 4.0.11 to 4.0.12", "went-back", "Sonarr's new version kept stopping and starting again within 2 minutes, so Starboard went back to the version before"),
+                 ("jellyfin-plugins", "Jellyfin's plug-ins", "done", "Updated: Playback Reporting 19.0.0.0 to 20.0.0.0"),
+                 ("plugin:picture-shrinker", "Picture shrinker 1.0.0 to 1.1.0", "done", "Picture shrinker is updated"),
+                 ("reelix", "Reelix 0.7.1 to 0.7.2", "done", "Reelix is updated and running"),
+                 ("starboard", "Starboard 0.19.1 to 0.20.0", "done", "Starboard is updated to 0.20.0"),
+                 ("app:radarr", "Radarr 5.14.0 to 6.0.0", "held", "Version 6.0.0 is a big change. Read what is new and update it on its own"),
+                 ("plugin:watch-stats", "Watch statistics 1.0.0 to 1.1.0", "held", "It asks for new permissions (jellyfin:write). Update it on its own page")]
+        batch = {"id": "d4e5f6a1b2c3", "target": "all", "kind": "batch", "name": "All updates", "action": "update", "from": "", "to": "4 updates",
+                 "by": "you", "started": now - 900, "finished": now - 600, "state": "some-updated",
+                 "said": "4 of 5 updated. Went back by itself: Sonarr. Held back for you: Radarr, Watch statistics",
+                 "items": [{"target": k, "name": label.split(" ")[0] if k.startswith("app:") else label} for k, label, _, _ in steps],
+                 "steps": [{"id": k, "label": label, "state": st, "detail": d} for k, label, st, d in steps]}
+        path = DATA / "update-runs.json"
+        path.write_text(json.dumps(json.loads(path.read_text()) + [batch]))
+
+
 def _example_full_backups():
     """System, Backup and restore, Full without media (DASH-260): the media folder on its own disk, so the page says
     which disk the copies go on, and two made-up copies in the folder. Nothing is read from this computer."""
@@ -1704,6 +1774,7 @@ def main():
     _example_tdarr()
     _example_self_update()
     _example_updates(DATA)
+    _example_update_all()
     if os.environ.get("EXAMPLE_DIRECT_BROKEN") == "1":
         # DASH-218: the full Reelix's YouTube and Spotify downloads as the admin last saw them, with yt-dlp broken and
         # Spotify's sign-in run out, so Apps and System show both warnings with what to do. Off by default.
