@@ -1679,7 +1679,7 @@ await allAsk.waitFor({ timeout: 10000 }).catch(() => {});
 const allOrder = await allAsk.locator("ol li").allTextContents();
 const allTitle = (await allAsk.locator("h2").textContent()).trim();
 check("UPD-08", "the dialog's title, its button and its list count the same updates", allTitle === `Install ${allOrder.length} updates`
-  && (await allAsk.getByRole("button", { name: allTitle }).count()) === 1, `${allTitle} / ${allOrder.length}`);
+  && (await allAsk.getByRole("button", { name: allTitle, exact: true }).count()) === 1, `${allTitle} / ${allOrder.length}`);
 check("UPD-08", "the list puts Starboard last", allOrder.length >= 2 && /^Starboard /.test(allOrder[allOrder.length - 1]), allOrder.join(" / "));
 await allAsk.getByRole("button", { name: /^Install \d+ updates?$/ }).click();
 await page.locator(".update-all .notice").waitFor({ timeout: 90000 }).catch(() => {});
