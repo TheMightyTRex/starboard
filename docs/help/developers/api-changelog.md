@@ -15,6 +15,18 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Starboard API 1.6.0 (Starboard 0.20.0), 16 November 2026
+
+- **Added:** `GET /backup/copies`, with the `system` scope and a read key: where copies of full backups go off this
+  computer (another disk, a share or a cloud service), how many are kept there, the last copy and the last Test
+  connection. Never a password, key or rclone config. Read [the API reference](api-reference.md#get-apiv1backupcopies).
+- **Added:** `POST /backup/copies/test`, with the `system` scope and a manage key: Test connection, as the button on
+  Settings, General, Backup and restore. It reaches the place, writes a small file, reads it back, removes it and
+  checks there is room for the newest backup, in 2 minutes at most, and keeps the result. `409 not_set_up` when no
+  place is set up, `409 cannot_test` when a test is already running. An `error` that starts `SIGNIN|` means a cloud
+  service no longer accepts the sign-in.
+- Nothing was taken away: every earlier address answers as before.
+
 ## Starboard API 1.5.0 (Starboard 0.20.0), 16 November 2026
 
 - **Added:** Install all updates, for keys that ticked `updates`: `GET /updates/all` says what would install, in the

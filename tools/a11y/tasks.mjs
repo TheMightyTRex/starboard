@@ -13,7 +13,7 @@ const page = await (await browser.newContext({ viewport: { width: 1280, height: 
 const focus = () => page.evaluate(() => {
   const e = document.activeElement;
   if (!e || e === document.body) return { lost: true, text: "the page itself" };
-  return { lost: false, tag: e.tagName, id: e.id, role: e.getAttribute("role") || "", text: (e.getAttribute("aria-label") || e.textContent || e.value || "").trim().replace(/\s+/g, " ").slice(0, 60),
+  return { lost: false, tag: e.tagName, id: e.id, name: e.name || "", role: e.getAttribute("role") || "", text: (e.getAttribute("aria-label") || e.textContent || e.value || "").trim().replace(/\s+/g, " ").slice(0, 60),
     inMain: !!e.closest("main"), inPanel: !!e.closest("#side-panel, dialog") };
 });
 const said = () => page.evaluate(() => [...document.querySelectorAll("#announcer, [role=status], [role=alert], .saved-note:not([hidden])")]
@@ -362,8 +362,8 @@ if (await wsTab.count()) {
   check("T15", "the table has nothing to tick or press but its column sort buttons", !(await page.locator(".fold__panel input, .fold__panel tbody button").count()));
 } else check("T15", "the example Watch statistics plug-in has its tables", false, "no Recent plays tab");
 // T16 Copies off this computer (DASH-380): from the section's heading, Tab reaches the chosen place; arrows move
-// between the places without saving; Tab reaches Test the other place; Enter tests, focus stays on it and the result
-// is said in the polite line.
+// between the places without saving; Tab reaches Test connection (DASH-452); Enter tests, focus stays on it and the
+// result is shown beside the place and said in the polite announcer.
 await page.goto(`${base}/system-backup.html`);
 await settle();
 await page.evaluate(() => { const h = document.querySelector("#bk-copies-h"); h.tabIndex = -1; h.focus(); });
@@ -377,15 +377,16 @@ if (radio15) {
   await page.keyboard.press("ArrowUp");
   await page.waitForTimeout(200);
 } else check("T16", "Tab reaches the places", false);
-const test15 = await tabTo((f) => /^Test the other place/.test(f.text) && f.tag === "BUTTON", 60);
-check("T16", "Tab reaches Test the other place", !!test15, test15 ? test15.text : "not reached");
+const test15 = await tabTo((f) => /^Test connection/.test(f.text) && f.tag === "BUTTON", 60);
+check("T16", "Tab reaches Test connection", !!test15, test15 ? test15.text : "not reached");
 if (test15) {
   await page.keyboard.press("Enter");
   await settle();
   const f15 = await focus();
   check("T16", "after Test, focus stays on it", f15.id === "copies-test", `${f15.tag} ${f15.id}`);
-  check("T16", "the result is said politely", /other place works/.test(await page.locator("#copies-state").innerText())
-    && (await page.locator("#copies-state").getAttribute("aria-live")) === "polite");
+  await page.waitForFunction(() => /^Connected: /.test(document.querySelector("#announcer")?.textContent || ""), null, { timeout: 3000 }).catch(() => {});
+  check("T16", "the result is beside the place and said politely", /Connected/.test(await page.locator("#copies-tested").innerText())
+    && /^Connected: /.test(await page.locator("#announcer").innerText()), await page.locator("#announcer").innerText());
 }
 // T17 Recommended Jellyfin plug-ins (DASH-404): arrows choose Trakt's Install and activate without doing anything,
 // Tab to Apply this choice and Enter installs it; focus stays in Trakt's choice and the result is said.
@@ -707,6 +708,42 @@ await page.keyboard.press("Escape");
 await page.waitForTimeout(500);
 const afterWarn = await focus();
 check("T28", "Escape cancels and gives focus back to Remove the VPN", afterWarn.text === "Remove the VPN" && !(await page.locator("dialog[open]").count()), afterWarn.text);
+
+// T29 Connect a cloud service (DASH-452) by keyboard alone: the button opens the slide-out with focus on step 1's
+// heading; arrows choose a service; Continue; the way to sign in by arrows; focus stays in the slide-out; Escape closes
+// it part way, says nothing was saved and gives focus back to the button.
+await page.goto(`${base}/system-backup.html`);
+await settle();
+await page.evaluate(() => { const r = document.querySelector("input[name=copies-kind][value=rclone]"); r.focus(); r.click(); });
+const connect29 = await tabTo((f) => f.id === "copies-connect", 10);
+check("T29", "Tab reaches Connect a cloud service", !!connect29);
+await page.keyboard.press("Enter");
+await page.locator("#cloud-step-heading").waitFor({ timeout: 8000 }).catch(() => {});
+const f29 = await focus();
+check("T29", "the slide-out opens with focus on step 1's heading", f29.id === "cloud-step-heading" && f29.inPanel, `${f29.tag} ${f29.id}`);
+const svc29 = await tabTo((f) => f.tag === "INPUT" && f.inPanel, 3);
+await page.keyboard.press("ArrowRight");  // the second service: OneDrive
+await page.keyboard.press("ArrowLeft");   // back to Google Drive, which arrows also select
+check("T29", "arrows choose a service", !!svc29 && await page.evaluate(() => document.querySelector("input[name=cloud-service]:checked")?.value === "drive"));
+const go29 = await tabTo((f) => f.text === "Continue" && f.tag === "BUTTON", 10);
+await page.keyboard.press("Enter");
+await page.locator("#cloud-way").waitFor({ timeout: 8000 }).catch(() => {});
+const way29 = await tabTo((f) => f.tag === "INPUT" && f.inPanel && f.name === "cloud-way", 6);
+check("T29", "Continue by Enter, then Tab reaches the two ways to sign in", !!go29 && !!way29);
+await page.keyboard.press("ArrowLeft");
+await page.locator(".qr-card").waitFor({ timeout: 8000 }).catch(() => {});
+const f29b = await focus();
+check("T29", "choosing Complete on the phone keeps focus on the choice", f29b.inPanel && f29b.name === "cloud-way", `${f29b.tag} ${f29b.name}`);
+const copy29 = await tabTo((f) => /^Copy the code|^Copy/.test(f.text) && f.tag === "BUTTON", 12);
+check("T29", "Tab reaches Copy for the code, inside the slide-out", !!copy29 && copy29.inPanel, copy29 ? copy29.text : "not reached");
+let out29 = false;
+for (let i = 0; i < 25; i++) { await page.keyboard.press("Tab"); if (!(await focus()).inPanel) { out29 = true; break; } }
+check("T29", "Tab stays inside the slide-out", !out29);
+await page.keyboard.press("Escape");
+await page.waitForTimeout(600);
+const f29c = await focus();
+check("T29", "Escape closes it part way and gives focus back to the button", f29c.id === "copies-connect" && !(await page.locator("#side-panel").count()), `${f29c.tag} ${f29c.id}`);
+check("T29", "and says nothing was saved", /nothing was saved/.test(await page.locator("#announcer").innerText()));
 
 await browser.close();
 console.log(`\n== ${passed} passed, ${failed} failed`);

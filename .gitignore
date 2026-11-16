@@ -26,4 +26,5 @@ _site/
 tools/a11y/a11y.json
 tools/a11y/order.json
 tools/a11y/layout.json
+tools/a11y/server.log
 tools/a11y/shots/

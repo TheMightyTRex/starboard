@@ -311,8 +311,83 @@ def _example_copies(data):
         backup_copies._say(str(data), state="done", started=last - 40, finished=last, where=usb,
                            file=str(data / "example-computer" / "mnt" / "disk2" / "backups" / "starboard-full-2026-11-13-030000.starboard"),
                            said=f"Copied to {usb}, which keeps 5 full backups")
-    backup_copies._helper = lambda script, binds, image=None, network="none", volumes=(), timeout=7200: (0, "COUNT 5\n")
+    # Test connection (DASH-452) answers with every check done, 1.8 TB free and 5 backups there.
+    backup_copies._helper = lambda script, binds, image=None, network="none", volumes=(), timeout=7200: (
+        0, "STEP-FOLDER\nSTEP-WRITE\nSTEP-READ\nSTEP-REMOVE\nFREE 1979120929996\nCOUNT 5\n")
     backup_copies.newest = lambda data_dir: str(data / "example-computer" / "mnt" / "disk2" / "backups" / "starboard-full-2026-11-13-030000.starboard")
+    backup_copies.newest_size = lambda data_dir: 412 * 1024 ** 2
+    real_test = backup_copies.test
+
+    def test(data_dir):  # the example server has no Docker: the stand-in helper above answers instead
+        was, folder = containers.available, stack.host_folder
+        containers.available = lambda: True
+        stack.host_folder = lambda d: str(data / "stack")  # where Starboard's folder would be, for a cloud place's config
+        try:
+            return real_test(data_dir)
+        finally:
+            containers.available, stack.host_folder = was, folder
+    backup_copies.test = test
+    _example_cloud(data)
+
+
+def _example_cloud(data):
+    """Connect a cloud service (DASH-452) with stand-ins only: no real sign-in, no Docker. Complete on the phone talks
+    to tests/oauth_stand_in.py on PORT + 2 (open /device/approve?user_code=... there to approve, as a phone would), with
+    the page shown as Google's or Microsoft's; Complete in this browser shows a made-up sign-in link, and any address
+    pasted back with its state signs in after a second. The folders and the test answer as a real service would."""
+    from starboard import cloud_connect as cc
+    from tests.oauth_stand_in import StandIn
+    os.environ.setdefault("STARBOARD_GOOGLE_CLIENT_ID", "example.apps.example")
+    os.environ.setdefault("STARBOARD_GOOGLE_CLIENT_SECRET", "example")
+    os.environ.setdefault("STARBOARD_MICROSOFT_CLIENT_ID", "example-microsoft")
+    svc = StandIn("127.0.0.1", PORT + 2).start()
+    b = svc.base
+    cc.TEST_HOOK = {"device": {"drive": {"code": b + "/device/code", "token": b + "/token", "pages": ("www.google.com",)},
+                               "onedrive": {"code": b + "/device/code", "token": b + "/token", "pages": ("microsoft.com",)}},
+                    "graph": b + "/me/drive", "hosts": ()}
+    real_http = cc._http
+
+    def http(url, form=None, headers=None):
+        status, got = real_http(url, form, headers)
+        if url.endswith("/device/code") and status == 200:  # shown as the service's own page
+            google = "googleapis" in (form or {}).get("scope", "")
+            got["verification_uri"] = "https://www.google.com/device" if google else "https://microsoft.com/devicelogin"
+        return status, got
+    cc.HTTP = http
+
+    class Runner:
+        def authorize(self, sess):
+            state = secrets.token_urlsafe(16)
+            sess["cid"] = "example-signin"
+            link = {"drive": f"https://accounts.google.com/o/oauth2/auth?access_type=offline&client_id=example&redirect_uri=http%3A%2F%2F127.0.0.1%3A53682%2F&response_type=code&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.file&state={state}",
+                    "onedrive": f"https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=example&redirect_uri=http%3A%2F%2Flocalhost%3A53682%2F&response_type=code&state={state}",
+                    "dropbox": f"https://www.dropbox.com/oauth2/authorize?client_id=example&redirect_uri=http%3A%2F%2Flocalhost%3A53682%2F&response_type=code&state={state}"}[sess["service"]]
+            work = sess["work"]
+            (pathlib.Path(work) / "link").write_text(link + "\n")
+
+            def listen():  # rclone's listener: an answer, then the token a second later
+                until = time.time() + cc.SIGNIN_LIMIT
+                while time.time() < until and os.path.isdir(work):
+                    if os.path.exists(os.path.join(work, "answer")):
+                        time.sleep(1)
+                        tok = {"access_token": "standin-example", "token_type": "Bearer", "refresh_token": "r", "expiry": "2026-11-16T12:00:00Z"}
+                        (pathlib.Path(work) / "out").write_text("Paste the following into your remote machine --->\n" + json.dumps(tok) + "\n<---End paste\n")
+                        (pathlib.Path(work) / "done").write_text("0")
+                        return
+                    time.sleep(0.3)
+            threading.Thread(target=listen, daemon=True).start()
+
+        def short(self, sess, script, work):
+            if "config create" in script:
+                (pathlib.Path(work) / "rclone.conf").write_text(f"[{cc.REMOTE}]\ntype = {sess['service']}\n")
+                return 0, ""
+            if "lsf --dirs-only" in script:
+                return 0, "Documents/\nPhotos/\nstarboard-backups/\n"
+            return 0, "STEP-FOLDER\nSTEP-WRITE\nSTEP-READ\nSTEP-REMOVE\nFREE 1979120929996\n"
+
+        def remove(self, cid):
+            pass
+    cc.RUN = Runner()
 
 
 def _example_folders(data):

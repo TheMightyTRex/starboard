@@ -258,6 +258,69 @@ if (!pages.length || pages.some((p) => p.includes("install-apps") || p.includes(
   } catch (e) { add("install-apps.html / settings-downloads.html, no-VPN warning", "page", "error", e.message.split("\n")[0]); }
 }
 
+// Connect a cloud service (DASH-452): each step of the wizard, both ways to sign in, and Test connection's result,
+// in Light, Dark and High contrast, with their structure. Stand-ins only; the phone is approved at the example
+// server's stand-in on its port + 2.
+if (!pages.length || pages.some((p) => p.includes("system-backup"))) {
+  const themes = async (name) => {
+    await axe(name, "light");
+    await structure(name);
+    await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+    await page.waitForTimeout(150);
+    await axe(name, "dark");
+    await page.evaluate(() => { document.documentElement.removeAttribute("data-theme"); document.documentElement.classList.add("pref-contrast"); });
+    await page.waitForTimeout(150);
+    await axe(name, "high contrast");
+    await page.evaluate(() => document.documentElement.classList.remove("pref-contrast"));
+  };
+  const foot = () => page.locator(".side-panel__foot .btn--primary").first().click();
+  try {
+    const kept = await page.evaluate(() => api("/api/backup/copies").catch(() => null));
+    await page.goto(`${base}/system-backup.html`);
+    await settle();
+    await page.locator("input[name=copies-kind][value=rclone]").check();
+    await themes("system-backup.html, A cloud service");
+    await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#copies-connect").click(); });
+    await page.locator("#cloud-step-heading").waitFor();
+    await themes("Connect a cloud service, choose a service");
+    await page.locator("input[name=cloud-service][value=drive]").check();
+    await foot();
+    await page.locator("#cloud-way").waitFor();
+    await page.locator("input[name=cloud-way][value=browser]").check();
+    await page.locator("#cloud-open-signin").waitFor();
+    await themes("Connect a cloud service, Google Drive, Complete in this browser");
+    await page.locator("input[name=cloud-way][value=phone]").check();
+    await page.locator(".qr-card").waitFor();
+    await themes("Connect a cloud service, Google Drive, Complete on the phone");
+    const code = (await page.locator(".device-code__value").innerText()).trim();
+    await page.request.get(base.replace(/:(\d+)$/, (_, p) => `:${Number(p) + 2}`) + `/device/approve?user_code=${encodeURIComponent(code)}`);
+    await page.locator("#cloud-folder-list .check").first().waitFor({ timeout: 20000 });
+    await themes("Connect a cloud service, choose the folder");
+    await foot();
+    await page.locator("#cloud-test-box .notice").waitFor();
+    await themes("Connect a cloud service, test");
+    await foot();
+    await page.locator("#cloud-save").waitFor();
+    await themes("Connect a cloud service, check and save");
+    await page.locator("#cloud-password").fill(password);
+    await foot();
+    await page.locator(".side-panel").waitFor({ state: "detached" });
+    await page.locator("#copies-test").click();
+    await page.waitForFunction(() => !document.querySelector("#copies-test")?.disabled);
+    await themes("system-backup.html, Test connection result");
+    // Opened without scrolling the page, so nothing on the page behind sits half under the sticky header.
+    await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector("#copies-connect").click(); });
+    await page.locator("#cloud-step-heading").waitFor();
+    await page.locator("input[name=cloud-service][value=webdav]").check();
+    await foot();
+    await page.locator("#cloud-details").waitFor();
+    await themes("Connect a cloud service, Nextcloud details");
+    await page.keyboard.press("Escape");
+    if (kept) await page.evaluate(([k, pw]) => api("/api/backup/copies", { method: "PUT", body: { password: pw, kind: k.kind, folder: k.folder, keep: k.keep } }), [kept, password]);
+    console.log("checked Connect a cloud service");
+  } catch (e) { add("system-backup.html, Connect a cloud service", "page", "error", e.message.split("\n")[0]); }
+}
+
 // Slide-out and dialog behaviour (once; every page uses the same code): Display, then a confirm dialog.
 await page.goto(`${base}/settings-general.html`);
 await settle();

@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Starboard API",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Make a key in Starboard: Settings, Security, API keys. Send it as Authorization: Bearer sb_read_... or sb_manage_... A read key reads; a manage key also does the everyday actions (each POST, marked x-right: manage). x-scope is the scope a key needs. Errors are RFC 9457 problem details. Lists use limit and cursor. Answers carry an ETag; send If-None-Match to get 304.",
   "license": {
    "name": "MIT",
@@ -3837,6 +3837,231 @@
      }
     },
     "description": "Only for keys that ticked Logs: a key with no scopes does not have them. Every log the limits cover goes, apart from today's file and the audit log, which are emptied, and the last update's log while an update runs. Cannot be undone. The first new line says the key deleted them; this write is in the audit log too. The apps' own logs (Docker's) are not touched."
+   }
+  },
+  "/api/v1/backup/copies": {
+   "get": {
+    "operationId": "getBackupCopies",
+    "summary": "Where copies of full backups go off this computer, the last copy and the last Test connection",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "system",
+    "description": "Never a password, key or rclone config: only whether the place is set up and where.",
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "ETag": {
+        "$ref": "#/components/headers/ETag"
+       },
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "kind"
+         ],
+         "properties": {
+          "kind": {
+           "type": "string",
+           "enum": [
+            "off",
+            "disk",
+            "smb",
+            "nfs",
+            "rclone"
+           ]
+          },
+          "where": {
+           "type": "string"
+          },
+          "where_words": {
+           "type": "string"
+          },
+          "service": {
+           "type": "string",
+           "description": "The cloud service the wizard connected (drive, onedrive, dropbox, b2, s3, webdav, sftp), or empty"
+          },
+          "keep": {
+           "type": "integer"
+          },
+          "status": {
+           "type": "object",
+           "additionalProperties": true
+          },
+          "tested": {
+           "type": [
+            "object",
+            "null"
+           ],
+           "description": "The last Test connection: ok, each step (folder, write, read, remove) done or not, free bytes there when the place says, when (at, seconds since 1970), and error in words when it did not work. An error that starts SIGNIN| means the cloud service no longer accepts the sign-in: sign in again on the page.",
+           "properties": {
+            "ok": {
+             "type": "boolean"
+            },
+            "steps": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": true
+             }
+            },
+            "free": {
+             "type": [
+              "integer",
+              "null"
+             ]
+            },
+            "at": {
+             "type": "number"
+            },
+            "error": {
+             "type": "string"
+            },
+            "where": {
+             "type": "string"
+            },
+            "count": {
+             "type": [
+              "integer",
+              "null"
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "304": {
+      "description": "Not changed since the ETag sent in If-None-Match."
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
+   }
+  },
+  "/api/v1/backup/copies/test": {
+   "post": {
+    "operationId": "testBackupCopies",
+    "summary": "Test connection: reach the place, write a small file, read it back, remove it and check the room, as the page's button does",
+    "tags": [
+     "System"
+    ],
+    "x-scope": "system",
+    "x-right": "manage",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/idempotency"
+     }
+    ],
+    "requestBody": {
+     "required": false,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "It worked.",
+      "headers": {
+       "X-Request-Id": {
+        "$ref": "#/components/headers/X-Request-Id"
+       }
+      },
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "ok",
+          "tested"
+         ],
+         "properties": {
+          "ok": {
+           "type": "boolean"
+          },
+          "tested": {
+           "type": [
+            "object",
+            "null"
+           ],
+           "description": "The last Test connection: ok, each step (folder, write, read, remove) done or not, free bytes there when the place says, when (at, seconds since 1970), and error in words when it did not work. An error that starts SIGNIN| means the cloud service no longer accepts the sign-in: sign in again on the page.",
+           "properties": {
+            "ok": {
+             "type": "boolean"
+            },
+            "steps": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": true
+             }
+            },
+            "free": {
+             "type": [
+              "integer",
+              "null"
+             ]
+            },
+            "at": {
+             "type": "number"
+            },
+            "error": {
+             "type": "string"
+            },
+            "where": {
+             "type": "string"
+            },
+            "count": {
+             "type": [
+              "integer",
+              "null"
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "401": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "403": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "404": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "413": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "429": {
+      "$ref": "#/components/responses/Problem"
+     },
+     "409": {
+      "$ref": "#/components/responses/Problem"
+     }
+    }
    }
   }
  },

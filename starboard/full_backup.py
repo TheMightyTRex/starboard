@@ -43,7 +43,7 @@ WORK = "backup-work"
 # Starboard's own folder: what never goes in, and the pictures only the person added (station logos from a zip).
 KEY_FILE = "backup-key.json"  # the scheduled copies' key (DASH-17): never in a backup itself
 # Copies off this computer (DASH-380): the share's password and rclone's config, and the copy's own work folder and status.
-COPY_SKIP = ("backup-copies-secret.json", "backup-copies-status.json", "backup-copy-work/")
+COPY_SKIP = ("backup-copies-secret.json", "backup-copies-status.json", "backup-copies-test.json", "backup-copy-work/")
 STARBOARD_SKIP = ("sessions.json", "logs/", "backups/", WORK + "/", "plugins/.removed/", "setup-token", "posters/", "icons/", KEY_FILE, *COPY_SKIP,
                   "library/films.json", "library/tv.json", "library/music.json", "library/books.json", "library/audiobooks.json",
                   "library/radio.json", "library/network-logos.json", "space.json", "usage.json", "disk-temps.json", "imports/")

@@ -1,0 +1,39 @@
+{
+  "about": "Connect a cloud service (DASH-452): the services the wizard offers, in the order shown, with each field's words. One list for the page (web/js/cloud-wizard.js) and the checks on the server (starboard/cloud_connect.py), so they cannot drift. Sign-in: oauth services sign in with the service's own page; keys services take keys or a password here.",
+  "services": [
+    {"id": "drive", "name": "Google Drive", "line": "Sign in with your Google account.", "site": "https://drive.google.com", "signin": "oauth", "phone": true,
+     "folder_note": "Starboard can only see the folders it made itself, so a new folder is the usual choice."},
+    {"id": "onedrive", "name": "OneDrive", "line": "Sign in with your Microsoft account.", "site": "https://onedrive.live.com", "signin": "oauth", "phone": true},
+    {"id": "dropbox", "name": "Dropbox", "line": "Sign in with your Dropbox account.", "site": "https://www.dropbox.com", "signin": "oauth", "phone": false},
+    {"id": "b2", "name": "Backblaze B2", "line": "An application key from your Backblaze account.", "site": "https://www.backblaze.com", "signin": "keys",
+     "folder_note": "The first part is the bucket, such as my-backups/starboard. The key must be allowed to write to it.",
+     "fields": [
+       {"id": "account", "label": "Application key ID", "hint": "From Backblaze: Application keys, Add a new application key.", "kind": "id", "required": true},
+       {"id": "key", "label": "Application key", "hint": "Shown once, when the key is made. Kept by Starboard only.", "kind": "secret", "required": true}
+     ]},
+    {"id": "s3", "name": "An S3-compatible service", "line": "Amazon S3, Cloudflare R2, Wasabi, MinIO and others.", "site": "", "signin": "keys",
+     "folder_note": "The first part is the bucket, such as my-backups/starboard.",
+     "fields": [
+       {"id": "endpoint", "label": "Address of the service", "hint": "Such as https://s3.eu-west-2.wasabisys.com. Leave it empty for Amazon S3.", "kind": "url", "required": false},
+       {"id": "region", "label": "Region", "hint": "Such as eu-west-2. Leave it empty if the service does not use one.", "kind": "region", "required": false},
+       {"id": "access_key_id", "label": "Access key ID", "hint": "From the service's keys or API page.", "kind": "id", "required": true},
+       {"id": "secret_access_key", "label": "Secret access key", "hint": "Kept by Starboard only.", "kind": "secret", "required": true}
+     ]},
+    {"id": "webdav", "name": "Nextcloud or another WebDAV server", "line": "Your own Nextcloud, ownCloud or WebDAV address.", "site": "", "signin": "keys",
+     "fields": [
+       {"id": "url", "label": "WebDAV address", "hint": "For Nextcloud: Files, Files settings, WebDAV, such as https://cloud.example/remote.php/dav/files/alex/.", "kind": "url", "required": true},
+       {"id": "vendor", "label": "Kind of server", "hint": "Nextcloud and ownCloud keep the file times right.", "kind": "choice", "required": true,
+        "choices": [["nextcloud", "Nextcloud"], ["owncloud", "ownCloud"], ["other", "Another WebDAV server"]]},
+       {"id": "user", "label": "User name", "hint": "", "kind": "user", "required": true},
+       {"id": "pass", "label": "Password", "hint": "For Nextcloud, make an app password: Personal settings, Security, Create new app password. Kept by Starboard only.", "kind": "secret", "required": true}
+     ]},
+    {"id": "sftp", "name": "An SFTP server", "line": "Another computer or a NAS you can reach with SSH.", "site": "", "signin": "keys",
+     "fields": [
+       {"id": "host", "label": "Computer", "hint": "Its name or address, such as 192.168.1.20 or nas.home.", "kind": "host", "required": true},
+       {"id": "port", "label": "Port", "hint": "Usually 22.", "kind": "port", "required": true, "default": "22"},
+       {"id": "user", "label": "User name", "hint": "", "kind": "user", "required": true},
+       {"id": "pass", "label": "Password", "hint": "Kept by Starboard only.", "kind": "secret", "required": true}
+     ]},
+    {"id": "own", "name": "Your own rclone remote", "line": "Paste the part of your rclone.conf for a remote you made already.", "site": "", "signin": "paste"}
+  ]
+}

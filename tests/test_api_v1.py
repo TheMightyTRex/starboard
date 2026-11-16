@@ -7,6 +7,7 @@ import re
 import tempfile
 import threading
 import unittest
+from unittest import mock
 
 from starboard import api_v1, auth
 from starboard.server import make_server
@@ -284,6 +285,31 @@ class ApiV1Test(unittest.TestCase):
         self.assertEqual((r.status, body["code"]), (400, "bad_request"))
         r, body = self.send_json("POST", "/api/v1/downloads/actions", {"app_id": app_id, "id": 1, "action": "delete-everything"})
         self.assertEqual((r.status, body["code"]), (400, "bad_request"))
+
+    def test_backup_copies_and_test_connection(self):
+        """DASH-452 (API 1.6.0): where copies go, and Test connection by key; never a secret in either answer."""
+        from starboard import backup_copies
+        r, body = self.get("/api/v1/backup/copies")
+        self.assertEqual((r.status, body["kind"]), (200, "off"))
+        r, body = self.send_json("POST", "/api/v1/backup/copies/test")
+        self.assertEqual((r.status, body["code"]), (409, "not_set_up"))
+        backup_copies.save(self.tmp.name, {**backup_copies.settings(self.tmp.name), "kind": "smb", "smb": "//192.0.2.4/backups", "smb_user": "alex"},
+                           {"smb_password": "share-secret-123", "rclone_config": ""})
+        done = "STEP-FOLDER\nSTEP-WRITE\nSTEP-READ\nSTEP-REMOVE\nFREE 5000000000\nCOUNT 2\n"
+        with mock.patch("starboard.containers.available", return_value=True), mock.patch.object(backup_copies, "_run", return_value=(0, done)), \
+                mock.patch.object(backup_copies, "newest_size", return_value=None):
+            r, body = self.send_json("POST", "/api/v1/backup/copies/test")
+        self.assertEqual((r.status, body["ok"], body["tested"]["free"]), (200, True, 5000000000))
+        self.assertNotIn("share-secret-123", json.dumps(body))
+        r, body = self.get("/api/v1/backup/copies")
+        self.assertEqual((body["kind"], body["where"], body["tested"]["ok"]), ("smb", "//192.0.2.4/backups", True))
+        self.assertNotIn("share-secret-123", json.dumps(body))
+        reader, _ = api_v1.create_key(self.tmp.name, "Reader", "read", [], None)
+        r, body = self.send_json("POST", "/api/v1/backup/copies/test", key=reader)
+        self.assertEqual(r.status, 403)
+        other, _ = api_v1.create_key(self.tmp.name, "Downloads", "manage", ["downloads"], None)
+        r, body = self.get("/api/v1/backup/copies", key=other)
+        self.assertEqual(r.status, 404)  # without the system scope the route is not there for this key
 
     def test_the_library_needs_reelix(self):
         r, body = self.get("/api/v1/library")

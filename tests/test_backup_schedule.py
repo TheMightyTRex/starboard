@@ -23,12 +23,35 @@ class Times(unittest.TestCase):
         self.assertEqual(bs.next_run("weekly", datetime(2026, 11, 15, 4, 0)), datetime(2026, 11, 22, 3, 0))
         self.assertEqual(bs.previous_run("weekly", datetime(2026, 11, 15, 4, 0)), datetime(2026, 11, 15, 3, 0))
 
+    def test_monthly_is_the_first_at_three(self):
+        self.assertEqual(bs.next_run("monthly", datetime(2026, 11, 13, 12, 0)), datetime(2026, 12, 1, 3, 0))
+        self.assertEqual(bs.next_run("monthly", datetime(2026, 12, 1, 2, 59)), datetime(2026, 12, 1, 3, 0))
+        self.assertEqual(bs.next_run("monthly", datetime(2026, 12, 1, 3, 0)), datetime(2027, 1, 1, 3, 0))
+        self.assertEqual(bs.previous_run("monthly", datetime(2026, 12, 1, 3, 0)), datetime(2026, 12, 1, 3, 0))
+        self.assertEqual(bs.previous_run("monthly", datetime(2026, 11, 30, 23, 0)), datetime(2026, 11, 1, 3, 0))
+
+    def test_monthly_in_months_shorter_than_31_days(self):
+        # 30 November, 28 February and a leap-year 29 February: never a 31st that is not there.
+        self.assertEqual(bs.next_run("monthly", datetime(2026, 11, 30, 4, 0)), datetime(2026, 12, 1, 3, 0))
+        self.assertEqual(bs.next_run("monthly", datetime(2027, 2, 28, 4, 0)), datetime(2027, 3, 1, 3, 0))
+        self.assertEqual(bs.next_run("monthly", datetime(2028, 2, 29, 4, 0)), datetime(2028, 3, 1, 3, 0))
+        self.assertEqual(bs.next_run("monthly", datetime(2027, 1, 31, 4, 0)), datetime(2027, 2, 1, 3, 0))
+        self.assertEqual(bs.previous_run("monthly", datetime(2027, 3, 15)), datetime(2027, 3, 1, 3, 0))
+        self.assertEqual(bs.previous_run("monthly", datetime(2027, 3, 1, 1, 0)), datetime(2027, 2, 1, 3, 0))
+        self.assertEqual(bs.next_run("monthly", datetime(2026, 12, 31, 23, 59)), datetime(2027, 1, 1, 3, 0))
+
     def test_off_and_manual_have_no_run(self):
         self.assertIsNone(bs.next_run("off", datetime(2026, 11, 13)))
         self.assertIsNone(bs.next_run("manual", datetime(2026, 11, 13)))
 
     def test_how_many_are_kept(self):
-        self.assertEqual((bs.keep_for("weekly"), bs.keep_for("nightly"), bs.keep_for("manual"), bs.keep_for("off")), (4, 7, 5, 5))
+        self.assertEqual((bs.keep_for("monthly"), bs.keep_for("weekly"), bs.keep_for("nightly"), bs.keep_for("manual"), bs.keep_for("off")),
+                         (6, 4, 7, 5, 5))
+
+    def test_the_choices_go_from_least_to_most_often(self):
+        from starboard.config import BACKUP_SCHEDULES
+        self.assertEqual(bs.MODES, ("off", "manual", "monthly", "weekly", "nightly"))
+        self.assertEqual(BACKUP_SCHEDULES, bs.MODES)
 
 
 class Setting(unittest.TestCase):
@@ -38,6 +61,8 @@ class Setting(unittest.TestCase):
             self.assertEqual(c.data["backup_schedule"], "off")
             c.update_general({"backup_schedule": "weekly", "backup_keep_versions": 10})
             self.assertEqual((c.data["backup_schedule"], c.data["backup_keep_versions"]), ("weekly", 10))
+            c.update_general({"backup_schedule": "monthly"})
+            self.assertEqual(c.data["backup_schedule"], "monthly")
             with self.assertRaises(ConfigError):
                 c.update_general({"backup_schedule": "hourly"})
             with self.assertRaises(ConfigError):
@@ -169,6 +194,54 @@ class Run(unittest.TestCase):
             self.assertFalse(s._missed() and bs.previous_run("nightly", datetime.now()).timestamp() < 0)
             s.save({"mode": "nightly", "since": datetime.now().timestamp()})
             self.assertFalse(s._missed())
+
+
+    def test_a_server_off_on_the_first_catches_up_once(self):
+        with tempfile.TemporaryDirectory() as d:
+            s = bs.Scheduler(self.app(d, "monthly"))
+            chosen = datetime(2026, 10, 20).timestamp()
+            s.save({"mode": "monthly", "since": chosen})
+            # Off from 30 November to the 4th: the 1 December run is made once when it starts again.
+            self.assertTrue(s._missed(now=datetime(2026, 12, 4, 9, 0)))
+            s.save({"mode": "monthly", "since": chosen, "last_run": datetime(2026, 12, 4, 9, 0).timestamp()})
+            self.assertFalse(s._missed(now=datetime(2026, 12, 4, 9, 5)))
+            self.assertFalse(s._missed(now=datetime(2026, 12, 20, 9, 0)))
+        with tempfile.TemporaryDirectory() as d:
+            # A weekly run more than a day late is not made (the next one is soon); a monthly one still is.
+            w = bs.Scheduler(self.app(d, "weekly"))
+            w.save({"mode": "weekly", "since": datetime(2026, 10, 20).timestamp()})
+            self.assertTrue(w._missed(now=datetime(2026, 11, 15, 9, 0)))   # Sunday the 15th, 6 hours late
+            self.assertFalse(w._missed(now=datetime(2026, 11, 17, 9, 0)))  # 2 days late
+
+    def test_monthly_keeps_six(self):
+        with tempfile.TemporaryDirectory() as d, tempfile.TemporaryDirectory() as jobs:
+            os.makedirs(os.path.join(jobs, "requests"))
+            with mock.patch.dict(os.environ, {"STARBOARD_JOBS_DIR": jobs}):
+                s = bs.Scheduler(self.app(d, "monthly"))
+                s.run()
+                with open(os.path.join(jobs, "requests", "backup")) as f:
+                    self.assertEqual(json.load(f), {"keep": 6, "scheduled": True})
+                self.assertEqual(s.status()["keep"], 6)
+
+    def test_monthly_asks_the_full_backup_to_keep_six(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {"STARBOARD_JOBS_DIR": ""}):
+            s = bs.Scheduler(self.app(d, "monthly"))
+            saved = {"folder": "/mnt/backups", "pictures": False, "saved": 1}
+            with mock.patch.object(full_backup, "saved_key", return_value=saved), \
+                    mock.patch.object(full_backup, "start") as start, mock.patch.object(s, "_wait_full", return_value="Made a full backup"):
+                s.run()
+            self.assertEqual(start.call_args.kwargs["keep"], 6)
+
+    def test_monthly_prunes_to_the_newest_six(self):
+        # Nine monthly backups at the other place: the three oldest go, by the date in their names; nothing else is touched.
+        import subprocess
+        from starboard import backup_copies
+        with tempfile.TemporaryDirectory() as folder:
+            names = [f"starboard-full-2026-{m:02d}-01-030000.starboard" for m in range(1, 10)]
+            for n in names + ["notes.txt"]:
+                open(os.path.join(folder, n), "w").close()
+            subprocess.run(["sh", "-c", backup_copies._prune_script(folder, bs.keep_for("monthly"))], check=True)
+            self.assertEqual(sorted(os.listdir(folder)), sorted(names[3:] + ["notes.txt"]))
 
 
 if __name__ == "__main__":

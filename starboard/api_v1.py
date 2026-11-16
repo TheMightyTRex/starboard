@@ -39,7 +39,7 @@ import time
 import urllib.parse
 import uuid
 
-API_VERSION = "1.5.0"  # 1.5.0 (16 November 2026, DASH-454): /updates/all, Install all updates. 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
+API_VERSION = "1.6.0"  # 1.6.0 (16 November 2026, DASH-452): /backup/copies and its test. 1.5.0: Install all updates (DASH-454). 1.4.0 (16 November 2026, DASH-451): /logs/limits and /logs/delete. 1.3.0 (15 November 2026, DASH-434): /downloads/issues. 1.2.0 (DASH-424): updates
 KEYS_FILE = "api-keys.json"
 RIGHTS = ("read", "manage")  # manage: read, and the everyday actions (DASH-274). "admin" stays with the pages
 SCOPES = ("apps", "downloads", "media", "system", "library", "requests")
@@ -616,6 +616,11 @@ def routes():
         from . import update_runs
         return update_runs.public(update_runs.get(h.app, m.group(1)))
 
+    def backup_copies_get(h, m, q):  # DASH-452 (API 1.6.0): where copies go, the last copy and the last Test connection
+        from . import backup_copies
+        p = backup_copies.public(h.app.data_dir)
+        return scrub({k: p.get(k) for k in ("kind", "where", "where_words", "service", "keep", "status", "tested")})
+
     def extras(h, m, q):
         rows = [{k: r.get(k) for k in ("key", "title", "what", "enabled", "started", "finished", "state", "summary", "needs")}
                 for r in h.app.jobs.status().get("jobs") or [] if r.get("key") in EXTRA_JOBS]
@@ -648,6 +653,7 @@ def routes():
         (r"^/api/v1/version$", "system", 3600, version),
         (r"^/api/v1/system/history$", "system", 60, system_history),
         (r"^/api/v1/extras$", "media", 30, extras),
+        (r"^/api/v1/backup/copies$", "system", 30, backup_copies_get),
         (r"^/api/v1/logs$", "logs", 30, log_entries),
         (r"^/api/v1/logs/limits$", "logs", 30, log_limits),
         (r"^/api/v1/updates$", "updates", 30, update_list),
@@ -783,6 +789,18 @@ def actions():
         logs.event("info", "updates", f"Install all updates started by the API key {h.api_key['name']}")
         return 202, {"accepted": True, "run": update_runs.public(run), "status": f"/api/v1/updates/runs/{run['id']}"}
 
+    def copies_test(h, m, q, b):
+        """Test connection (DASH-452, API 1.6.0): as the page's button; at most 2 minutes."""
+        from . import backup_copies
+        if backup_copies.settings(h.app.data_dir)["kind"] == "off":
+            raise NotReady("Copies off this computer are not set up")
+        try:
+            got = backup_copies.test(h.app.data_dir)
+        except backup_copies.CopyError as e:
+            raise Conflict(str(e), "cannot_test") from None
+        logs.event("info", "backup", f"Test connection by the API key {h.api_key['name']}: {'connected' if got and got.get('ok') else 'not connected'}")
+        return 200, {"ok": bool(got and got.get("ok")), "tested": scrub(got)}
+
     def extra_run(h, m, q, b):
         h.app.jobs.run_soon(m.group(1), force=True)
         return 202, {"accepted": True, "status": "/api/v1/extras"}
@@ -794,6 +812,7 @@ def actions():
         (r"^/api/v1/library/refresh$", "POST", "library", library_refresh),
         (r"^/api/v1/containers/check$", "POST", "apps", containers_check),
         (r"^/api/v1/alerts/test$", "POST", "system", alerts_test),
+        (r"^/api/v1/backup/copies/test$", "POST", "system", copies_test),
         (r"^/api/v1/extras/(livetv|import|defaults|listening)/run$", "POST", "media", extra_run),
         (r"^/api/v1/updates$", "POST", "updates", update_start),
         (r"^/api/v1/updates/rollback$", "POST", "updates", update_rollback),

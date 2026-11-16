@@ -420,7 +420,7 @@ const COPY_KINDS = [
   ["disk", "Another disk", "A USB disk or a second disk in this computer."],
   ["smb", "A Windows or NAS share", "SMB, such as //192.168.1.20/backups."],
   ["nfs", "An NFS share", "Such as 192.168.1.20:/export/backups."],
-  ["rclone", "A cloud remote", "Your own rclone remote, such as Backblaze B2, Google Drive or OneDrive."],
+  ["rclone", "A cloud service", "Google Drive, OneDrive, Dropbox, Backblaze B2, S3, Nextcloud or SFTP, or your own rclone remote."],
 ];
 
 function copyField(label, input, hint) {
@@ -434,6 +434,39 @@ function copyState(s) {
   if (s.state === "running") return notice("info", "Copying now", `${s.file ? `${s.file.split("/").pop()} to ${s.where || "the other place"}` : "To the other place"}. You can leave this page.`);
   if (s.state === "failed") return notice("danger", `The last copy did not work${s.finished ? `, ${formatDate(s.finished * 1000, true)}` : ""}`, s.error || "");
   return notice("success", `Last copy ${formatDate(s.finished * 1000, true)}`, s.said || "");
+}
+
+// A cloud service (DASH-452): connected by the wizard in a slide-out (cloud-wizard.js); pasting your own rclone remote
+// stays here as the other way, behind a button that shows its two fields.
+function cloudPart(c, remote, config) {
+  const connected = c.kind === "rclone" && c.service;
+  const connect = el("button", { type: "button", class: "btn", id: "copies-connect" }, icon("plug"), connected ? "Connect a different cloud service" : "Connect a cloud service");
+  connect.addEventListener("click", (e) => cloudWizard({ opener: e.currentTarget, onSaved: () => loadCopies("copies-connect") }));
+  const own = el("div", { class: "stack-2", id: "copies-own", hidden: !(c.kind === "rclone" && !c.service && c.remote) },
+    copyField("Remote and folder", remote, "As name:folder, the remote's name as it is in your rclone.conf."),
+    copyField("The remote's part of rclone.conf", config, c.rclone_config_set
+      ? "Kept. Leave empty to keep it, or paste it again to change it."
+      : "Paste the lines from [name] to the next [ ]. rclone config file shows where rclone.conf is. Kept by Starboard only."));
+  const toggle = el("button", { type: "button", class: "btn btn--quiet", id: "copies-own-toggle", "aria-expanded": String(!own.hidden), "aria-controls": "copies-own" },
+    "Paste your own rclone remote instead");
+  toggle.addEventListener("click", () => { own.hidden = !own.hidden; toggle.setAttribute("aria-expanded", String(!own.hidden)); if (!own.hidden) remote.focus(); });
+  return [
+    connected ? el("p", {}, "Connected to ", el("strong", { text: c.where_words }), ".") : el("p", { class: "small muted", text: "The wizard signs in to the service, chooses the folder and tests it, in 5 steps." }),
+    el("div", { class: "actions" }, connect, toggle), own];
+}
+
+// Test connection (DASH-452, owner: "Can you add a test button to items to check they are connected ok?"): the
+// result beside the place, an icon and words, kept by the server so it shows when the page is opened again.
+function testedLine(t) {
+  if (!t) return el("p", { class: "small muted", text: "Not tested yet." });
+  const at = t.at ? formatDate(t.at * 1000, true) : "";
+  if (t.ok) {
+    return el("p", { class: "tested", "data-tone": "success" }, icon("circle-check", 20), el("strong", { text: "Connected" }),
+      el("span", { class: "muted", text: `Tested ${at}${t.free != null ? `, ${formatBytes(t.free)} free` : ""}${t.count != null ? `, ${t.count} full ${t.count === 1 ? "backup" : "backups"} there` : ""}` }));
+  }
+  const text = String(t.error || "The test did not work").replace(/^SIGNIN\|/, "");
+  return el("div", { class: "stack-2" }, el("p", { class: "tested", "data-tone": "danger" }, icon("circle-alert", 20), el("strong", { text: "Not connected" }),
+    el("span", { class: "muted", text: `Tested ${at}` })), el("p", { text }));
 }
 
 async function loadCopies(focusId) {
@@ -462,11 +495,7 @@ async function loadCopies(focusId) {
       copyField("User name", smbUser, "Leave empty for a share anyone on your network may write to."),
       copyField("Password", smbPassword, c.smb_password_set ? "Kept. Leave empty to keep it." : "The share's own password, kept by Starboard only.")),
     nfs: el("div", { class: "stack-2", "data-kind": "nfs" }, copyField("Share", nfs, "As computer:/folder. The share must let this computer write.")),
-    rclone: el("div", { class: "stack-2", "data-kind": "rclone" },
-      copyField("Remote and folder", remote, "As name:folder, the remote's name as it is in your rclone.conf."),
-      copyField("The remote's part of rclone.conf", config, c.rclone_config_set
-        ? "Kept. Leave empty to keep it, or paste it again to change it."
-        : "Paste the lines from [name] to the next [ ]. rclone config file shows where rclone.conf is. Kept by Starboard only.")),
+    rclone: el("div", { class: "stack-3", "data-kind": "rclone" }, cloudPart(c, remote, config)),
   };
   const keepField = el("div", { class: "stack-2" }, copyField("Keep the newest", keep, "How many full backups stay at the other place. Older ones there are removed."));
   const errorBox = el("div", { id: "copies-error", tabindex: "-1" });
@@ -481,15 +510,21 @@ async function loadCopies(focusId) {
   };
   kinds.addEventListener("change", show);
   const state = el("div", { id: "copies-state", "aria-live": "polite" }, copyState(c.status));
-  const test = el("button", { type: "button", class: "btn", id: "copies-test" }, icon("plug"), "Test the other place");
+  const test = el("button", { type: "button", class: "btn", id: "copies-test" }, icon("plug"), "Test connection");
+  const testedBox = el("div", { id: "copies-tested" }, testedLine(c.tested));
+  const signinAgain = c.tested && !c.tested.ok && String(c.tested.error || "").startsWith("SIGNIN|") && c.service
+    ? el("button", { type: "button", class: "btn", id: "copies-signin-again" }, "Sign in again") : null;
+  signinAgain?.addEventListener("click", (e) => cloudWizard({ opener: e.currentTarget, startAt: "signin", serviceId: c.service,
+    folder: (c.remote.split(":")[1] || ""), onSaved: () => loadCopies("copies-test") }));
   const now = el("button", { type: "button", class: "btn", id: "copies-now" }, icon("copy"), "Copy the newest now");
   const stop = el("button", { type: "button", class: "btn btn--quiet", id: "copies-stop" }, "Stop making copies");
   const running = c.status?.state === "running";
   test.disabled = now.disabled = running;
   const active = c.kind !== "off";
   body.replaceChildren(form,
-    active ? el("h3", { text: `Copies go to ${c.where}` }) : "",
-    active ? el("div", { class: "actions" }, test, now, stop) : "",
+    active ? el("h3", { text: `Copies go to ${c.where_words || c.where}` }) : "",
+    active ? testedBox : "",
+    active ? el("div", { class: "actions" }, test, signinAgain, now, stop) : "",
     state);
   show();
 
@@ -513,12 +548,22 @@ async function loadCopies(focusId) {
   });
   test.addEventListener("click", async () => {
     test.disabled = true;
-    state.replaceChildren(notice("info", "Testing", `Writing a small file to ${c.where} and removing it again.`));
+    test.setAttribute("aria-busy", "true");
+    test.lastChild.textContent = "Testing…";
+    announce(`Testing ${c.where_words || c.where}`);
     try {
       const r = await api("/api/backup/copies/test", { method: "POST" });
-      state.replaceChildren(notice("success", "The other place works", r.said));
-    } catch (err) { state.replaceChildren(notice("danger", "The test did not work", err.message)); }
-    finally { test.disabled = false; test.focus(); }
+      const t = r.tested;
+      await loadCopies("copies-test");
+      announce(t?.ok ? `Connected: ${c.where_words || c.where}` : `Not connected: ${String(t?.error || "").replace(/^SIGNIN\|/, "")}`);
+    } catch (err) {
+      test.disabled = false;
+      test.removeAttribute("aria-busy");
+      test.lastChild.textContent = "Test connection";
+      testedBox.replaceChildren(notice("danger", "The test did not run", err.message));
+      announce(`The test did not run: ${err.message}`);
+      test.focus();
+    }
   });
   now.addEventListener("click", async () => {
     now.disabled = true;
@@ -551,12 +596,13 @@ async function loadCopies(focusId) {
 }
 
 // When backups are made (DASH-17) ---------------------------------------------------------------------------------
-// Settings pattern 3: four choice cards that apply at once, with the saved note under them. Then one status line: when
+// Settings pattern 3: five choice cards, from least to most often that apply at once, with the saved note under them. Then one status line: when
 // the next one is, and what it makes, with at most one button.
 
 const SCHEDULES = [
   ["off", "Off", "Starboard makes no backup by itself."],
   ["manual", "Manual", "You make each backup on this page. Starboard reminds you when the newest is more than 30 days old."],
+  ["monthly", "Monthly", "On the 1st of each month at 03:00. The newest 6 are kept."],
   ["weekly", "Weekly", "Every Sunday at 03:00. The newest 4 are kept."],
   ["nightly", "Nightly", "Every night at 03:00. The newest 7 are kept."],
 ];
@@ -579,7 +625,7 @@ async function loadSchedule(focusAfter) {
 }
 
 function scheduleState(s, canFull) {
-  const scheduled = s.mode === "weekly" || s.mode === "nightly";
+  const scheduled = ["monthly", "weekly", "nightly"].includes(s.mode);
   const parts = [];
   if (scheduled) {
     const makes = [s.key ? "a full backup without media" : null, s.server_job ? "the server's own backup" : null].filter(Boolean);

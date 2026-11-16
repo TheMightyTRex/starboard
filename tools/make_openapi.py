@@ -389,6 +389,22 @@ spec["paths"].update({
                        "last update's log while an update runs. Cannot be undone. The first new line says the key deleted them; this "
                        "write is in the audit log too. The apps' own logs (Docker's) are not touched."}},
 })
+TESTED = {"type": ["object", "null"], "description": "The last Test connection: ok, each step (folder, write, read, remove) done or not, "
+           "free bytes there when the place says, when (at, seconds since 1970), and error in words when it did not work. An error "
+           "that starts SIGNIN| means the cloud service no longer accepts the sign-in: sign in again on the page.",
+           "properties": {"ok": {"type": "boolean"}, "steps": {"type": "array", "items": ANY}, "free": {"type": ["integer", "null"]},
+                          "at": {"type": "number"}, "error": {"type": "string"}, "where": {"type": "string"}, "count": {"type": ["integer", "null"]}}}
+spec["paths"]["/api/v1/backup/copies"] = {"get": {
+    "operationId": "getBackupCopies", "summary": "Where copies of full backups go off this computer, the last copy and the last Test connection",
+    "tags": ["System"], "description": "Never a password, key or rclone config: only whether the place is set up and where.",
+    "responses": ok({"type": "object", "required": ["kind"], "properties": {
+        "kind": {"type": "string", "enum": ["off", "disk", "smb", "nfs", "rclone"]}, "where": {"type": "string"}, "where_words": {"type": "string"},
+        "service": {"type": "string", "description": "The cloud service the wizard connected (drive, onedrive, dropbox, b2, s3, webdav, sftp), or empty"},
+        "keep": {"type": "integer"}, "status": ANY, "tested": TESTED}})}}
+spec["paths"]["/api/v1/backup/copies/test"] = {"post": write(
+    {"type": "object", "required": ["ok", "tested"], "properties": {"ok": {"type": "boolean"}, "tested": TESTED}},
+    "Test connection: reach the place, write a small file, read it back, remove it and check the room, as the page's button does",
+    "testBackupCopies", "System", extra={"409": {"$ref": "#/components/responses/Problem"}})}
 spec["components"]["parameters"]["idempotency"] = {
     "name": "Idempotency-Key", "in": "header", "required": False, "schema": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,100}$"},
     "description": "Send the same value again to get the first answer back without doing it twice. Kept for 24 hours."}

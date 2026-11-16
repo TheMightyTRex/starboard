@@ -32,6 +32,22 @@ Starboard shows "Backup downloaded" and how many apps it holds.
 
 Starboard shows **Settings restored** and how many apps it put back.
 
+### Choose when backups are made
+
+1. Go to **Settings**, then **General**, then **Backup and restore**.
+2. Under **When backups are made**, choose one. It saves at once and Starboard shows "Saved".
+
+| Choice | What Starboard does |
+|---|---|
+| **Off** | Makes no backup by itself. |
+| **Manual** | You make each backup on the page. Starboard reminds you when the newest is more than 30 days old. |
+| **Monthly** | On the 1st of each month at 03:00. The newest 6 are kept. |
+| **Weekly** | Every Sunday at 03:00. The newest 4 are kept. |
+| **Nightly** | Every night at 03:00. The newest 7 are kept. |
+
+If the server was off at the time, Starboard makes the backup once when it starts again: a nightly or weekly one
+up to a day late, and a monthly one at any time before the next 1st.
+
 ## Things to note
 
 - The backup holds your apps' API keys. Keep the file somewhere private, such as a USB stick you keep at
@@ -45,6 +61,8 @@ Starboard shows **Settings restored** and how many apps it put back.
   longer knows becomes a plain link.
 - This backup covers Starboard only, not your other apps or your media. For the whole server, read
   [Back up the whole server](back-up-the-server.md).
+- To keep a copy of each full backup somewhere else, such as Google Drive, OneDrive or your own Nextcloud, read
+  [Copy backups to a cloud service](copy-backups-to-a-cloud-service.md).
 - If Starboard installed Reelix, **Reelix's backups** on the same page makes and restores Reelix's own
   backups. Starboard asks for Reelix's password first.
 
@@ -59,6 +77,7 @@ Starboard shows **Settings restored** and how many apps it put back.
 - [Restore a saved copy of your settings](restore-a-saved-copy.md)
 - [Move Starboard to a new computer](../guides/move-starboard-to-a-new-computer.md)
 - [Back up the whole server](back-up-the-server.md)
+- [Copy backups to a cloud service](copy-backups-to-a-cloud-service.md)
 - [What an API key is](../basics/what-is-an-api-key.md)
 
 <!-- footer: download rights -->
