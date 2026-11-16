@@ -141,8 +141,18 @@ healthy() {
 # Each plug-in's own data folder (data/plugins/<id>/data) belongs to the plug-in's own user, so Starboard's user cannot
 # read it and tar would stop the update. Those folders are left out of this backup; the plug-ins' settings and
 # manifests are in it. An update does not touch them, and going back leaves them with their plug-in.
+# The page's update log (data/self-update.log, written as self-update.log.new and renamed after every line) changes
+# while this runs, so tar could list the .new file and find it gone a moment later ("No such file or directory", exit
+# 2), which stopped the update from the page on 16 November 2026. The log is this update's own record, not a setting,
+# so it is left out, and so is every half-written .tmp or .new file (Starboard keeps running during the backup and
+# writes its settings the same way: a .tmp file, then a rename).
+# Starboard's files can still change while tar reads the folder ("file changed as we read it"); tar then ends with 1,
+# which means the archive is whole and some file changed, so that one is accepted. Any other failure still stops.
 backup_data() {  # backup_data <file>
-  (umask 077 && tar -czf "$1" --exclude='data/plugins/*/data' data)  # private backup; the code files must stay readable
+  local code=0
+  (umask 077 && tar -czf "$1" --warning=no-file-changed --warning=no-file-removed --exclude='data/plugins/*/data' \
+    --exclude='data/self-update.log' --exclude='*.tmp' --exclude='*.new' data) || code=$?  # private backup
+  [ "$code" -le 1 ]
 }
 
 restore_data() {  # restore_data <file>: data goes to data.failed-update, the backup comes back, plug-ins keep their data
@@ -173,7 +183,12 @@ say "Backing up your settings"
 mkdir -p backups
 chmod 700 backups
 BACKUP="backups/starboard-data-$(date +%Y-%m-%d-%H%M%S)-$(git rev-parse --short HEAD).tar.gz"
-backup_data "$BACKUP"
+if ! backup_err="$(backup_data "$BACKUP" 2>&1)"; then
+  rm -f -- "$BACKUP"
+  printf '%s\n' "$backup_err"
+  echo "Stopped: your settings could not be backed up, so nothing was changed. $(printf '%s\n' "$backup_err" | grep -m1 -v 'error exit delayed' || true)"
+  exit 1
+fi
 echo "Saved $BACKUP (the plug-ins' own data folders are not in it: they stay where they are)"
 # DASH-109: keep the copies of the last versions only (Settings, Updates, Restore: 5, 10 or 20; 5 if unset). These are
 # update.sh's own rolling copies, one per update, so the older ones are removed rather than kept elsewhere.

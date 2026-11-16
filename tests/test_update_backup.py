@@ -3,7 +3,12 @@ user, so Starboard's user cannot read it and tar stopped the update ("Cannot ope
 backup leaves those folders out, and going back after a failed start keeps them with their plug-in.
 
 The test runs update.sh's own backup_data and restore_data functions, cut out between their markers, in a scratch
-folder with a plug-in data folder nobody can read."""
+folder with a plug-in data folder nobody can read.
+
+16 November 2026: Update now on the page stopped at the backup with "tar: data/self-update.log.new: No such file or
+directory". The page's helper rewrites its log after every line as self-update.log.new and renames it, so tar listed
+the file and found it gone. The backup now leaves out that log and every half-written .tmp or .new file, and a backup
+that fails says why."""
 import os
 import pathlib
 import subprocess
@@ -74,6 +79,40 @@ class UpdateBackupTest(unittest.TestCase):
         self.assertIn('restore_data "$BACKUP"', text)
         self.assertIn("plug-ins' own data folders are not in it", text)
         self.assertNotIn('tar -czf "$BACKUP" data)', text)
+
+    def test_the_backup_leaves_out_the_update_log_and_half_written_files(self):
+        data = self.dir / "data"
+        for name in ("self-update.log", "self-update.log.new", "config.json.tmp", "versions.json.tmp"):
+            (data / name).write_text("half written")
+        (data / "self-update.json").write_text("{}")
+        done = self.run_sh('backup_data backup.tar.gz\n')
+        self.assertEqual(done.returncode, 0, done.stderr)
+        with tarfile.open(self.dir / "backup.tar.gz") as t:
+            names = t.getnames()
+        self.assertIn("data/config.json", names)
+        self.assertIn("data/self-update.json", names)
+        for name in ("self-update.log", "self-update.log.new", "config.json.tmp", "versions.json.tmp"):
+            self.assertNotIn("data/" + name, names)
+
+    def test_the_backup_carries_on_while_the_page_rewrites_its_log(self):
+        # The page's helper, as self_update.WRAPPER writes: copy to .new, then rename, as fast as it can.
+        data = self.dir / "data"
+        for i in range(200):
+            (data / f"settings-{i}.json").write_text("x" * 2000)
+        writer = subprocess.Popen(["bash", "-c", 'while :; do echo line >> t; cp t data/self-update.log.new && '
+                                   'mv -f data/self-update.log.new data/self-update.log; done'], cwd=self.dir)
+        try:
+            for n in range(15):
+                done = self.run_sh(f'backup_data backup-{n}.tar.gz\n')
+                self.assertEqual(done.returncode, 0, done.stderr)
+        finally:
+            writer.kill()
+            writer.wait()
+
+    def test_a_backup_that_fails_stops_the_update_and_says_why(self):
+        text = (ROOT / "update.sh").read_text(encoding="utf-8")
+        self.assertIn('if ! backup_err="$(backup_data "$BACKUP" 2>&1)"; then', text)
+        self.assertIn("Stopped: your settings could not be backed up, so nothing was changed.", text)
 
 
 if __name__ == "__main__":
