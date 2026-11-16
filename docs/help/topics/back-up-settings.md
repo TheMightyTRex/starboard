@@ -14,7 +14,7 @@ apps, their API keys, your categories and your other settings.
 
 ### Download a backup
 
-1. Go to **System**, then **Backup**.
+1. Go to **Settings**, then **General**, then **Backup and restore**.
 2. Find **Starboard's settings**.
 3. Select **Download a backup**.
 4. Starboard asks for **Your password**. Enter it and select **Download**.
@@ -24,7 +24,7 @@ Starboard shows "Backup downloaded" and how many apps it holds.
 
 ### Restore from a file
 
-1. Go to **System**, then **Backup**.
+1. Go to **Settings**, then **General**, then **Backup and restore**.
 2. In **Starboard's settings**, select **Restore from a file**.
 3. Choose the backup file you downloaded.
 4. Starboard asks **Restore Starboard's settings?** and says how many apps the file holds and when it was

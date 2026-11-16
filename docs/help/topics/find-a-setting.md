@@ -39,6 +39,9 @@ where a setting lives.
 - **Discover rows:** which rows each Discover page shows.
 - **Download hours:** when downloads run. Read [Download only at certain hours](set-download-hours.md).
 - **Logs and feedback:** logs and **Send feedback**. Read [Send feedback about a page](send-feedback.md).
+- **Backup and restore:** full backups of Starboard and every app's settings, the backup schedule, copies off this
+  computer and restoring a backup. Read [Back up Starboard's settings](back-up-settings.md). **Updates**, **Restore** also
+  restores a backup.
 
 ## Apps
 

@@ -1,7 +1,7 @@
 # Audio description tracks: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Audio description tracks adds 1 card you can put on your dashboard. Each starts with a grey band: Audio description tracks' logo and name, a status in words, and when it last changed.
+Audio description tracks adds 1 card you can put on your dashboard. Each starts with a grey band: Audio description tracks' logo and name and a status in words. A lighter grey footer says when it last changed.
 
 ## Description tracks to check
 

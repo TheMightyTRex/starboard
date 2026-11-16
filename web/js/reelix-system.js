@@ -1,4 +1,4 @@
-// Reelix's own backups (System, Backup), log and scheduled tasks (System, Logs): DASH-201, 202, 203. Reelix keeps them
+// Reelix's own backups (Settings, General, Backup and restore), log and scheduled tasks (System, Logs): DASH-201, 202, 203. Reelix keeps them
 // behind its admin password, so each section asks for it when opened, uses it for that change only, and this page
 // remembers it for 5 minutes, as Settings, Reelix does. Loaded after common.js on those two pages.
 

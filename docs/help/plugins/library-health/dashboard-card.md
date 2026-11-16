@@ -1,7 +1,7 @@
 # Library health: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Library health adds 2 cards you can put on your dashboard. Each starts with a grey band: Library health's logo and name, a status in words, and when it last changed.
+Library health adds 2 cards you can put on your dashboard. Each starts with a grey band: Library health's logo and name and a status in words. A lighter grey footer says when it last changed.
 
 ## Library health
 

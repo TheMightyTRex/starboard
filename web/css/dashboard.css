@@ -50,18 +50,8 @@
 /* Plug-in cards with the band (plug-in API 1.14, DASH-428, design 2): the design system's .card-band across the top,
    edge to edge; the card's own padding stays for the body. */
 .dash-card.has-band { padding-top: 0; }
-/* Small cards (a quarter of the width) show only the icon of their status chip; the words stay for screen
-   readers (owner, 15 November 2026). Their chip and time always sit on their own line under the title, at the right:
-   at 1101 pixels wide a small card has room beside them for about 5 characters (DASH-443, measured), so the title
-   gets the whole line beside the logo, and every small card's band looks the same. */
-.dash-card--small .card-band__side { flex-basis: 100%; justify-content: flex-end; }
-.dash-card--small .card-band__side:empty { display: none; }
-/* Medium cards at 1101 pixels and wider (a third of the width) have room beside a chip with words for 2 characters,
-   so their chip and time sit under the title too; from 768 to 1100 pixels a medium card is full width and keeps them
-   beside it. */
-@media (min-width: 1101px) {
-  .dash-card--medium .card-band__side { flex-basis: 100%; justify-content: flex-end; }
-  .dash-card--medium .card-band__side:empty { display: none; }
-}
+/* The band holds the logo, the name and the status chip on one line; the design system's .card-foot, a lighter grey
+   strip at the foot of the card, says when it was updated (owner, 16 November 2026). */
+.card-band__side:empty { display: none; }
 .dash-card--small .card-band__side .chip { gap: 0; justify-content: center; min-width: 24px; padding-inline: var(--space-1, 4px); }  /* a square around the icon */
-.dash-card--small .chip__words { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.dash-card--small .card-band__side .chip__words { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

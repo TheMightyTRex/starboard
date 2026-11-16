@@ -1,4 +1,4 @@
-"""A QR code encoder, standard library only, for the terminal set-up's feedback (ISO/IEC 18004).
+"""A QR code encoder, standard library only, for the terminal set-up's feedback and web pages (ISO/IEC 18004).
 
 Byte mode (the text as UTF-8), error correction level L or M, every version from 1 to 40, Reed-Solomon error
 correction, the mask with the lowest penalty, and the format and version information. draw() gives the code as
@@ -347,3 +347,21 @@ def draw(code, colour=True, quiet=QUIET):
         line = "".join(chars)
         out.append(f"\033[38;5;16;48;5;231m{line}\033[0m" if colour else line)
     return out
+
+
+def svg_path(code, quiet=QUIET):
+    """The code for a web page: (width in modules, an SVG path of the dark modules), one unit to a module with the quiet
+    zone round it. The page draws it dark on white, so it scans in every theme (.qr-card; Starboard's cloud sign-in on a
+    phone, DASH-452)."""
+    parts = []
+    for y, row in enumerate(code.modules):
+        x = 0
+        while x < code.size:
+            if row[x]:
+                start = x
+                while x < code.size and row[x]:
+                    x += 1
+                parts.append(f"M{start + quiet} {y + quiet}h{x - start}v1h-{x - start}z")
+            else:
+                x += 1
+    return code.size + 2 * quiet, "".join(parts)

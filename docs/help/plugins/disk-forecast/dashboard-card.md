@@ -1,7 +1,7 @@
 # Disk forecast: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Disk forecast adds 1 card you can put on your dashboard. Each starts with a grey band: Disk forecast's logo and name, a status in words, and when it last changed.
+Disk forecast adds 1 card you can put on your dashboard. Each starts with a grey band: Disk forecast's logo and name and a status in words. A lighter grey footer says when it last changed.
 
 ## Disk forecast
 

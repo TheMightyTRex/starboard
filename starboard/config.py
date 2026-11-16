@@ -94,7 +94,7 @@ DEFAULTS = {
     # Starboard's own log (System, Logs): days to keep, and detailed logging for reporting a problem.
     "logs": {"keep_days": 60, "detail": "off", "detail_until": 0},
     # Scheduled backups (DASH-17, owner, 9 November 2026): off, manual (by hand only, with a reminder when the newest
-    # is a month old), weekly (Sunday 03:00, keeping 4) or nightly (03:00, keeping 7). System, Backup and restore.
+    # is a month old), weekly (Sunday 03:00, keeping 4) or nightly (03:00, keeping 7). Settings, General, Backup and restore.
     "backup_schedule": "off",
     # Settings copies Starboard saves by itself (DASH-109): those of the newest this many versions stay, older go.
     "backup_keep_versions": 5,

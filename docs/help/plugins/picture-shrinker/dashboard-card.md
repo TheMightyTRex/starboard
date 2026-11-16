@@ -1,7 +1,7 @@
 # Picture shrinker: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Picture shrinker adds 1 card you can put on your dashboard. Each starts with a grey band: Picture shrinker's logo and name, a status in words, and when it last changed.
+Picture shrinker adds 1 card you can put on your dashboard. Each starts with a grey band: Picture shrinker's logo and name and a status in words. A lighter grey footer says when it last changed.
 
 ## Space saved
 

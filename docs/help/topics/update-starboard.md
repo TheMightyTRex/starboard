@@ -15,8 +15,9 @@ start. You can also run one command on the server.
 
 ## Find out whether an update is out
 
-- Starboard's version is at the foot of the side menu. When a newer one is out, **Update** appears beside it. It
-  goes to **Settings**, then **Updates**. **About and updates** in the footer of any page goes there too.
+- Starboard's version is at the foot of the side menu. When a newer one is out, a red dot appears just above it and
+  pulses gently (it keeps still when **Reduce motion** is on). Select the version to go to **Settings**, then
+  **Updates**. **About and updates** in the footer of any page goes there too.
 - At the top of **Updates**, a notice says "Version 0.20.0 is out", for example, with a **Release notes** button that
   says what changed.
 

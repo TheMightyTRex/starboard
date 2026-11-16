@@ -1,4 +1,4 @@
-"""Scheduled backups (DASH-17, owner, 9 November 2026): System, Backup and restore, Schedule.
+"""Scheduled backups (DASH-17, owner, 9 November 2026): Settings, General, Backup and restore, Schedule.
 
 - Off (the default): Starboard makes no backup by itself.
 - Manual: backups are made only by hand; the page reminds you when the newest is more than 30 days old.

@@ -68,7 +68,6 @@ MENU = [
         ("Storage", "hard-drive", [("system-storage.html", "Storage", "hard-drive"), ("system-pool.html", "Pool", "layers"),
                                    ("system-disks.html", "Disk health", "heart-pulse")]),
         ("Network", "network", [("system-network.html", "Network", "network")]),
-        ("Backup", "archive-restore", [("system-backup.html", "Backup and restore", "archive-restore")]),
         ("Clean up", "trash-2", [("system-cleanup.html", "What is left over", "trash-2"), ("system-holding.html", "Holding folder", "archive")]),
         ("Logs", "scroll-text", [("system-logs.html", "Logs", "scroll-text")]),
     ]),
@@ -80,7 +79,10 @@ MENU = [
                                            # DASH-396: one section per Discover area, so its own page (topic tabs)
                                            ("settings-general-discover.html", "Discover rows", "compass"),
                                            ("settings-general-hours.html", "Download hours", "clock"),
-                                           ("settings-general-logs.html", "Logs and feedback", "scroll-text")]),
+                                           ("settings-general-logs.html", "Logs and feedback", "scroll-text"),
+                                           # Owner, 16 November 2026: "Backup and restore should go in general" (it was
+                                           # System, Backup; the page keeps its address). Restore also stays in Updates.
+                                           ("system-backup.html", "Backup and restore", "archive-restore")]),
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
                                 ("settings-reelix.html", "Reelix", "film"),
                                 ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
@@ -304,8 +306,7 @@ def shell(current):
   <div class="rail__end">
     <button type="button" class="rail__feedback" data-feedback-open hidden>{icon("message-square-warning", 24)}<span>Feedback</span><span class="visually-hidden"> (send feedback)</span></button>
     <button type="button" class="rail__signout" data-sign-out>{icon("log-out", 24)}<span>Sign out</span></button>
-    <a class="rail__update" href="/settings-updates.html" data-update-available hidden><span class="update-dot" aria-hidden="true"></span><span>Update</span></a>
-    <span class="rail__version" data-version-short></span>
+    <a class="rail__version" href="/settings-updates.html" data-version-link><span class="update-dot" data-update-available hidden aria-hidden="true"></span><span data-version-short></span></a>
   </div>
 </nav>
 <header class="site-header">

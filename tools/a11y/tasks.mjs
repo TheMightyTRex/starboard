@@ -543,7 +543,7 @@ const band21 = await page.evaluate(() => {
   const card = document.querySelector('[data-card="plugin:direct-play:now"]');
   const h = card?.querySelector(".card-band h2");
   return { labelled: card?.getAttribute("aria-labelledby") === h?.id, chip: card?.querySelector(".card-band .chip")?.textContent,
-    time: card?.querySelector(".card-band time")?.textContent, focusable: card?.querySelectorAll(".card-band a, .card-band button, .card-band [tabindex]").length };
+    time: card?.querySelector(":scope > .card-foot time")?.textContent  /* 0.19.1: the time is in the card's footer */, focusable: card?.querySelectorAll(".card-band a, .card-band button, .card-band [tabindex]").length };
 });
 check("T21", "the card is named by its band's heading", band21.labelled, JSON.stringify(band21));
 check("T21", "the chip and the time read on their own", band21.chip === "Status: Converting" && /^Updated /.test(band21.time || ""), JSON.stringify(band21));

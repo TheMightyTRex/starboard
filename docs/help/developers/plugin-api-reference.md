@@ -60,7 +60,8 @@ view. It overrides the `refresh_seconds` in the manifest, so a plug-in can let p
 From API 1.14 Starboard draws every plug-in card the same way (design 2, "band with status"): a grey band across
 the top that starts with the plug-in's logo (its [logo](plugin-manifest-reference.md#logo), or its initials on a
 plain tile), then the plug-in's name as the card's heading (the card's `title` under it, smaller, when it differs),
-and ends with a status chip and when the card last updated. The body below shows the answer as before.
+and ends with a status chip. The body below shows the answer as before, and a lighter grey footer says when the
+card last updated (from Starboard 0.19.1; before, the time sat in the band).
 From API 1.15 a card may give its own title for each size (`titles` in the manifest); the title for the card's size
 is then the heading on its own, on one line. On a small card the chip shows only its icon, and its words are still
 read to screen readers. Read [A title for each size](plugin-manifest-reference.md#a-title-for-each-size-api-115).
@@ -71,7 +72,7 @@ Any card's answer may add these, all optional:
 |---|---|---|
 | `status` | The card's state, shown as a chip in the band | One of the values below. An unknown value is left out, and the tester reports it |
 | `status_label` | Your own words on the chip, such as `Waiting for 03:30` | Up to 24 characters, cut beyond. Needs a `status`, which sets the chip's colour and shape |
-| `updated` | When what the card shows last changed, in seconds since 1970 | Not in the future. Left out, the band says when Starboard last asked the plug-in |
+| `updated` | When what the card shows last changed, in seconds since 1970 | Not in the future. Left out, the footer says when Starboard last asked the plug-in |
 
 ```json
 {"items": [{"title": "Converting now: Dune (2021)", "detail": "Shrink, 34% done"}],
@@ -88,10 +89,10 @@ Any card's answer may add these, all optional:
 | `problem`, `failed`, `stopped` | Problem, Failed, Stopped | danger: a cross |
 
 - The chips are the design system's status chips: words, an icon and a colour together, never colour alone.
-- A screen reader reads the heading, then "Status: Converting" and "Updated 30 seconds ago", so each makes sense on
-  its own. The cards' headings are level 2, under the dashboard's own heading.
-- The time is kept in words as it ages ("2 minutes ago") without asking the plug-in again. Nothing in the band is a
-  live region, so a refresh does not interrupt a screen reader.
+- A screen reader reads the heading, then "Status: Converting", the body, and "Updated 30 seconds ago" in the
+  footer, so each makes sense on its own. The cards' headings are level 2, under the dashboard's own heading.
+- The time is kept in words as it ages ("2 minutes ago") without asking the plug-in again. Nothing in the band or the
+  footer is a live region, so a refresh does not interrupt a screen reader.
 - A `status` card's own `state` shows as the chip when the answer has no `status`.
 - An older Starboard ignores these fields, so a plug-in can send them whatever `starboard_api` it names.
 
