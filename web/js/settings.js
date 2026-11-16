@@ -3019,12 +3019,14 @@ async function startUpdatesPlace() {
   const planLine = (i) => (i.kind === "jellyfin-plugins" ? `${i.name}: ${i.note || "Jellyfin installs any new versions it has"}, and restarts once at the end, when nobody is watching`
     : i.from && i.to ? `${i.name} ${i.from} to ${i.to}` : `${i.name} ${i.to}`.trim());
   // The dialog counts what will run (Jellyfin's plug-ins as one), as the panel does; the page button counts what is
-  // ready. This sentence joins the two: "4 of the 6 updates ready, and Jellyfin's plug-ins, install one at a time".
+  // ready. These sentences join the two: "4 of the 6 updates ready, plus Jellyfin's plug-ins. They install one at a
+  // time, in this order."
   const introText = (plan) => {
     const known = plan.items.filter((i) => i.kind !== "jellyfin-plugins").length, ready = waitingUpdates().length;
-    const jf = plan.items.length > known ? ", and Jellyfin's plug-ins," : "";
+    const jf = plan.items.length > known ? ", plus Jellyfin's plug-ins" : "";
     const which = known === ready ? `${ready === 1 ? "The update" : `All ${ready} updates`} ready${jf}` : `${known} of the ${ready} updates ready${jf}`;
-    return `${which} install one at a time, in this order. One that does not work goes back by itself, and the rest carry on.`;
+    if (plan.items.length === 1) return `${which}. If it does not work, it goes back by itself.`;
+    return `${which}. They install one at a time, in this order. One that does not work goes back by itself, and the rest carry on.`;
   };
   const installAll = async (opener) => {
     let password = "";
