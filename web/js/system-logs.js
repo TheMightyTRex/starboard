@@ -1,5 +1,5 @@
 // System, Logs: what Starboard did and every problem it met, newest first. Report a problem gathers the details
-// an issue needs (personal details removed) and links to GitHub. Download and Delete logs sit in the page head.
+// an issue needs (personal details removed) and links to GitHub. Download and Delete all logs sit in the page head.
 
 const LEVEL_WORDS = { error: ["Error", "danger"], warning: ["Warning", "warning"], info: ["Info", "neutral", "info"], detail: ["Detail", "muted"] };
 const DETAIL_WORDS = { off: "Off", day: "For 24 hours", on: "Until I deactivate it" };
@@ -23,18 +23,20 @@ async function load(more = false) {
 function renderHead() {
   const s = state.summary;
   const keep = state.settings.keep_days;
+  const most = state.settings.max_mb ?? 50;
   $("#logs-summary").replaceChildren(
-    s.days ? `${s.days} ${s.days === 1 ? "day" : "days"} of logs (${formatBytes(s.bytes)}) · kept for ${keep} days · ` : `No logs yet · kept for ${keep} days · `,
+    s.files ? `${s.days} ${s.days === 1 ? "day" : "days"} of logs (${logBytes(s.bytes)}) · kept for ${keep} days, no more than ${most} MB · `
+      : `No logs yet · kept for ${keep} days, no more than ${most} MB · `,
     el("a", { href: "/settings-general-logs.html#logs", text: "Change in Settings, General, Logs and feedback" }));
-  const del = el("button", { type: "button", class: "btn btn--danger", disabled: !s.days }, icon("trash-2"), "Delete logs");
+  const del = el("button", { type: "button", class: "btn btn--danger", id: "logs-delete-all", disabled: !s.files }, icon("trash-2"), "Delete all logs");
   del.addEventListener("click", async () => {
-    const ok = await confirmDialog({ title: "Delete all logs?", danger: true, confirm: "Delete logs",
-      message: "Starboard removes every day of its log now. This cannot be undone. New entries start again straight away." });
-    if (!ok) return;
-    const r = await api("/api/logs/clear", { method: "POST" });
-    // Said, as the page shows it (R5): the summary says No logs yet, and focus goes to the list's heading.
+    let r;
+    try { r = await deleteAllLogs(s); } catch (e) { problem(e.message, del); return; }
+    if (!r) return;
+    // Said, as the page shows it (R5): the summary is drawn again, and focus goes back to the button.
     await load();
-    announce(`Deleted ${r.removed} ${r.removed === 1 ? "day" : "days"} of logs`);
+    $("#logs-delete-all")?.focus();
+    announce(deletedLogsText(r));
   });
   $("#logs-actions").replaceChildren(
     el("a", { class: "btn", href: "/api/logs/download", download: "" }, icon("download"), "Download"), del);

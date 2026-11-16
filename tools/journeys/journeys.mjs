@@ -1866,6 +1866,42 @@ await page.getByRole("button", { name: "Add the VPN" }).click();
 await page.getByText("VPN added").waitFor({ timeout: 10000 });
 check("VPN-04", "the VPN is added back, with Gluetun", (await api("/api/downloads/vpn-state")).on === true);
 
+console.log("\n== LOG-01 Log limits and Delete all logs, by keyboard (DASH-451)");
+await open("settings-general-logs.html");
+await page.locator("#logs-now").filter({ hasText: /^Now: |no logs/ }).waitFor({ timeout: 10000 });
+const sizeSelect = page.locator('select[aria-labelledby="lg-size-l"]');
+check("LOG-01", "No more than shows 50 MB, the default", (await sizeSelect.inputValue()) === "50");
+await sizeSelect.focus();
+await page.keyboard.press("ArrowUp");  // 25 MB, chosen by keyboard
+await page.waitForTimeout(800);
+check("LOG-01", "the new limit is saved", (await api("/api/config")).logs.max_mb === 25
+  && await page.locator(".saved-note:not([hidden])").count() > 0);
+check("LOG-01", "the apps' own logs say what Docker keeps or that it cannot ask", /Docker/.test(await page.locator("#logs-apps").textContent()));
+const delBtn = page.getByRole("button", { name: "Delete all logs" });
+await delBtn.focus();
+await page.keyboard.press("Enter");
+const dialog = page.getByRole("dialog", { name: "Delete all logs?" });
+await dialog.waitFor({ timeout: 5000 });
+check("LOG-01", "the dialog says how much goes and what stays", /Every log Starboard keeps goes: .+ in \d+ files?/.test(await dialog.textContent())
+  && (await dialog.textContent()).includes("Today's file and the API's audit log are emptied, not removed"));
+check("LOG-01", "focus starts on the password", await page.evaluate(() => document.activeElement?.type === "password"));
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+check("LOG-01", "Escape cancels, with focus back on Delete all logs", await page.evaluate(() => document.activeElement?.id === "logs-delete"));
+await page.keyboard.press("Enter");
+await dialog.waitFor({ timeout: 5000 });
+await page.keyboard.type(password);
+await page.keyboard.press("Tab");
+check("LOG-01", "Tab goes from the password to Delete all logs", await page.evaluate(() => document.activeElement?.textContent === "Delete all logs" && !!document.activeElement.closest("dialog")));
+await page.keyboard.press("Enter");
+await page.locator("#logs-delete-status").filter({ hasText: "All logs deleted" }).waitFor({ timeout: 10000 });
+check("LOG-01", "said in the live region, with focus on Delete all logs",
+  (await page.locator("#logs-delete-status").getAttribute("role")) === "status" && await page.evaluate(() => document.activeElement?.id === "logs-delete"));
+check("LOG-01", "the size is shown as next to nothing", (await page.locator("#logs-delete-size").textContent()).includes("less than 1 KB"));
+const logsAfter = (await api("/api/logs")).entries;
+check("LOG-01", "the log says who deleted them", logsAfter.length < 5 && logsAfter.some((e) => /^All logs deleted by a signed-in browser \(session [0-9a-f]{8}\)/.test(e.message)));
+await api("/api/config/general", { method: "PUT", body: { logs: { max_mb: 50 } } });
+
 console.log("\n== Phone width");
 await page.setViewportSize({ width: 375, height: 812 });
 const wide = [];

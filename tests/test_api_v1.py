@@ -346,6 +346,47 @@ class ApiV1Test(unittest.TestCase):
         r, body = self.get("/api/v1/logs?level=everything", key=self.logs_key)
         self.assertEqual((r.status, body["code"]), (400, "bad_request"))
 
+    # Version 1.4.0 (DASH-451): the log limits and Delete all logs, only with the logs scope ---------------------------
+
+    def test_log_limits_only_when_ticked(self):
+        r, body = self.get("/api/v1/logs/limits")  # a key with no scopes
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        r, body = self.get("/api/v1/logs/limits", key=self.logs_key)
+        self.assertEqual((r.status, body["keep_days"], body["max_mb"]), (200, 30, 50))
+        self.assertEqual(body["max_mb_choices"], [10, 25, 50, 100, 250, 500])
+        self.assertFalse(body["apps"]["available"])  # no Docker in the tests
+        r, body = self.send_json("POST", "/api/v1/logs/limits", {"keep_days": 14}, key=self.logs_key)  # read only
+        self.assertEqual((r.status, body["code"]), (403, "right_needed"))
+        r, body = self.send_json("POST", "/api/v1/logs/limits", {"keep_days": 14})  # a manage key with no scopes
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+        r, body = self.send_json("POST", "/api/v1/logs/delete", {"confirm": True})
+        self.assertEqual((r.status, body["code"]), (404, "not_found"))
+
+    def test_a_manage_key_with_logs_changes_the_limits_and_deletes_all_logs(self):
+        from starboard import logs
+        key, _ = api_v1.create_key(self.tmp.name, "Log keeper", "manage", ["logs"], None)
+        before = dict(self.app.config.data["logs"])
+        self.addCleanup(lambda: self.app.config.data["logs"].update(before))
+        for body in ({}, {"keep_days": 3}, {"max_mb": "lots"}, {"max_mb": 7}):
+            r, out = self.send_json("POST", "/api/v1/logs/limits", body, key=key)
+            self.assertEqual((r.status, out["code"]), (400, "bad_request"), body)
+        r, out = self.send_json("POST", "/api/v1/logs/limits", {"keep_days": 14, "max_mb": 25}, key=key)
+        self.assertEqual((r.status, out["keep_days"], out["max_mb"], out["removed"]), (200, 14, 25, 0))
+        self.assertEqual(self.app.config.data["logs"]["max_mb"], 25)
+        logs.event("warning", "apps", "Something to delete")
+        for body in ({}, {"confirm": "yes"}):
+            r, out = self.send_json("POST", "/api/v1/logs/delete", body, key=key)
+            self.assertEqual((r.status, out["code"]), (400, "bad_request"), body)
+        r, out = self.send_json("POST", "/api/v1/logs/delete", {"confirm": True}, key=key)
+        self.assertEqual(r.status, 200)
+        self.assertGreater(out["freed"], 0)
+        self.assertEqual(out["summary"]["days"], 1)  # today's file, emptied, with the line saying who
+        r, rows = self.get("/api/v1/logs", key=self.logs_key)
+        self.assertRegex(rows["items"][0]["message"], r"^All logs deleted by the API key Log keeper: ")
+        with open(os.path.join(self.tmp.name, "logs", "audit.jsonl")) as f:
+            writes = [json.loads(line) for line in f if '"api_write"' in line]
+        self.assertEqual([w["path"] for w in writes], ["/api/v1/logs/delete"])  # emptied, then the delete itself
+
     # Version 1.2.0 (DASH-424): updates, only with the updates scope -------------------------------------------------
 
     def test_updates_only_when_ticked(self):

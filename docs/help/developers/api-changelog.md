@@ -15,6 +15,20 @@ the next major version.
 - **The plug-in API**: `API_VERSION` in `starboard/plugins.py`. A plug-in names the versions it works with in
   `starboard_api`. Read [What each API version added](plugin-manifest-reference.md#what-each-api-version-added).
 
+## Starboard API 1.4.0 (Starboard 0.20.0), 16 November 2026
+
+- **Added:** the log limits, for keys that ticked `logs`: `GET /logs/limits` says how long Starboard keeps its logs
+  (`keep_days`, 30 by default), the most they may take together (`max_mb`, 50 by default), what they take now, what
+  the limits cover, and the apps' own limit read from Docker (`apps`). With a manage key, `POST /logs/limits` with
+  `{"keep_days": 14, "max_mb": 25}` changes them, from the same choices as the page, and older days go at once.
+  Read [the API reference](api-reference.md#post-apiv1logslimits).
+- **Added:** `POST /logs/delete` with `{"confirm": true}` and a manage key that ticked `logs`: Delete all logs, as on
+  Settings, General, Logs and feedback. Today's file and the audit log are emptied, not removed, and the first new
+  line says which key deleted them.
+- **Changed:** a manage key with `logs` may change these two settings and delete the logs, the second exception to
+  "a key never changes settings" after `updates`. A key with no scopes still has neither.
+- Nothing was taken away: every 1.3.0 address answers as before.
+
 ## Starboard API 1.3.0 (Starboard 0.19.0), 15 November 2026
 
 - **Added:** `GET /downloads/issues`, with the `downloads` scope and a read key: every download in the queue that
