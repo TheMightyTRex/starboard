@@ -7,6 +7,12 @@ add features.
 
 ## [Unreleased]
 
+### Changed
+- **Lighter plug-in pages and checks:** The plug-ins list no longer reads and hashes every plug-in's logo on each call, and the styles, dashboard cards, System jobs, events and the idle-stop check (every minute) read only each plug-in's manifest and state. The plug-ins routes answer 1.6 to 2.8 times faster. (DASH-445)
+- **Alerts card:** The log's problems are found without reading every line of every day kept as JSON: 13 ms instead of 250 ms over 60 days, each minute the dashboard is open. (DASH-445)
+- **Apps and Updates pages:** Docker is asked about each image once, not on every visit; Look for updates still reads each image's registry digests fresh. (DASH-445)
+- **Set-up steps:** The set-ups' words are read once for each page instead of at every step. (DASH-445)
+
 ### Fixed
 - **Update now stopped at Backing up your settings:** Updating from the page could stop with "Starboard was not updated" because the backup read Starboard's settings folder while the page's update log, and Starboard's own settings, were being rewritten there. The backup now leaves out the update log and half-written files, carries on when a file changes as it is read, and when a backup really fails, the page says why instead of "update.sh stopped without saying why". Updating from 0.18.0 or earlier still uses that version's script: if Update now stops at the backup, try it again or run ./update.sh on the server.
 - **Settings topic tabs:** Activating Advanced settings on a page with topic tabs, such as Settings, Reelix, no longer selects two tabs at once and shows two sections together. A section that appears gets an id no other has.
