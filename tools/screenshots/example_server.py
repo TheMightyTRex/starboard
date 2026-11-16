@@ -150,7 +150,10 @@ def _example_self_update():
     from starboard import server as server_mod, self_update
     major, minor, _ = (int(x) for x in (REPO / "VERSION").read_text().strip().split("."))
     newer = f"v{major}.{minor + 1}.0"
-    server_mod.App.latest_release = lambda self: newer
+    def latest_release(self):  # remembered as the real check does, so the side menu's update dot shows
+        self._latest.update(tag=newer, checked=time.time())
+        return newer
+    server_mod.App.latest_release = latest_release
     self_update.plan = lambda data_dir, root: {"how": "native", "folder": str(REPO)}
 
     def launch(p, to):

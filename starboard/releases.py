@@ -1629,6 +1629,12 @@ RELEASES = [
     {
         "version": "0.19.1",
         "date": "16 November 2026",
+        "changed": [
+            [
+                "The version in the side menu",
+                "The version at the foot of the side menu now opens Settings, Updates. When a newer release is out, a red dot sits just above it and pulses gently, and keeps still when Reduce motion is on."
+            ]
+        ],
         "fixed": [
             [
                 "Update now stopped at Backing up your settings",

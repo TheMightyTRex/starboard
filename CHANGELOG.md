@@ -9,6 +9,9 @@ add features.
 
 ## [0.19.1] (16 November 2026)
 
+### Changed
+- **The version in the side menu:** The version at the foot of the side menu is a link to Settings, Updates. When a newer release is out, a red dot sits just above it and pulses gently, still when Reduce motion is on; screen readers hear "update available" with the version. The word Update above the version is gone. (Design system c7c53bc.)
+
 ### Fixed
 - **Update now stopped at Backing up your settings:** Updating from the page could stop with "Starboard was not updated" because the backup read Starboard's settings folder while the page's update log, and Starboard's own settings, were being rewritten there. The backup now leaves out the update log and half-written files, carries on when a file changes as it is read, and when a backup really fails, the page says why instead of "update.sh stopped without saying why". Updating from 0.18.0 or earlier still uses that version's script: if Update now stops at the backup, try it again or run ./update.sh on the server.
 - **Settings topic tabs:** Activating Advanced settings on a page with topic tabs, such as Settings, Reelix, no longer selects two tabs at once and shows two sections together. A section that appears gets an id no other has.

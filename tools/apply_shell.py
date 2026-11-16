@@ -304,8 +304,7 @@ def shell(current):
   <div class="rail__end">
     <button type="button" class="rail__feedback" data-feedback-open hidden>{icon("message-square-warning", 24)}<span>Feedback</span><span class="visually-hidden"> (send feedback)</span></button>
     <button type="button" class="rail__signout" data-sign-out>{icon("log-out", 24)}<span>Sign out</span></button>
-    <a class="rail__update" href="/settings-updates.html" data-update-available hidden><span class="update-dot" aria-hidden="true"></span><span>Update</span></a>
-    <span class="rail__version" data-version-short></span>
+    <a class="rail__version" href="/settings-updates.html" data-version-link><span class="update-dot" data-update-available hidden aria-hidden="true"></span><span data-version-short></span></a>
   </div>
 </nav>
 <header class="site-header">

@@ -776,12 +776,15 @@ function showVersion(version, repo, latest) {
   if (!version) return;
   const newer = isNewer(latest, version);
   $$("[data-version]").forEach((n) => { n.textContent = `Starboard: v${version}`; });
+  // The version is a link to Settings, Updates; a newer release adds the red dot above it and says so in words.
+  const latestShort = String(latest || "").replace(/^v/, "");
   $$("[data-version-short]").forEach((n) => {
-    n.replaceChildren(el("span", { class: "visually-hidden", text: "Starboard version " }), `v${version}`);
+    n.replaceChildren(el("span", { class: "visually-hidden", text: "Starboard version " }), `v${version}`,
+      newer ? el("span", { class: "visually-hidden", text: `, update available: version ${latestShort}` }) : "");
   });
-  $$("[data-update-available]").forEach((n) => {
-    n.hidden = !newer;
-    if (newer) n.setAttribute("aria-label", `Update available: version ${String(latest).replace(/^v/, "")}. About and updates`);
+  $$("[data-update-available]").forEach((n) => { n.hidden = !newer; });
+  $$("[data-version-link]").forEach((n) => {
+    if (newer) n.title = `Update available: version ${latestShort}`; else n.removeAttribute("title");
   });
   // Every page but Sign in and Set up has the footer (the design system's footer rule).
   const setUp = document.body.classList.contains("first-setup") || /\/(login|setup)\.html$/.test(location.pathname);

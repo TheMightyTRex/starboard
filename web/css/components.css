@@ -415,27 +415,44 @@
     gap: var(--space-2);
     justify-items: center;
   }
-  /* "Update" above the version when a newer release is out: a dot and the word, a 44px target, to About and updates. */
-  .rail__update {
+  /* The app's version at the bottom of the side menu: a link to the update page. When a newer release is out, a red dot
+     sits just above the number and pulses gently (still when Reduce motion is on); the link's words say it too. */
+  .rail__version {
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--space-1);
     min-height: 44px;
-    padding-inline: var(--space-2);
-    color: var(--color-text);
-    font-size: var(--text-xs);
-    font-weight: var(--weight-strong);
-    text-decoration: none;
-  }
-  .rail__update[hidden] {
-    display: none;
-  }
-  /* The app's version at the bottom of the side menu: plain text, not a link (Release notes is in the footer). */
-  .rail__version {
-    padding-bottom: var(--space-2);
+    min-width: 44px;
+    padding: var(--space-1) var(--space-2) var(--space-2);
     color: var(--color-text-muted);
     font-size: var(--text-xs);
     text-align: center;
+    text-decoration: none;
+  }
+  a.rail__version:hover {
+    color: var(--color-text);
+    text-decoration: underline;
+  }
+  .rail__version .update-dot {
+    vertical-align: baseline;
+    animation: update-dot-pulse 2.4s ease-in-out infinite;
+  }
+  .update-dot[hidden] {
+    display: none;
+  }
+  @keyframes update-dot-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-danger-fg) 55%, transparent); }
+    50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--status-danger-fg) 0%, transparent); }
+  }
+  :root.pref-motion .rail__version .update-dot {
+    animation: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root:not(.pref-motion-off) .rail__version .update-dot {
+      animation: none;
+    }
   }
   .with-rail {
     padding-left: var(--rail-w);
