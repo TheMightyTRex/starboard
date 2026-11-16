@@ -13,6 +13,9 @@ add features.
 - **Apps and Updates pages:** Docker is asked about each image once, not on every visit; Look for updates still reads each image's registry digests fresh. (DASH-445)
 - **Set-up steps:** The set-ups' words are read once for each page instead of at every step. (DASH-445)
 
+### Fixed
+- **Settings, Radio:** The page could stop with a script error when Starboard answered before the page's radio script had loaded; Settings pages now wait for all their scripts. (DASH-445)
+
 ## [0.19.1] (16 November 2026)
 
 ### Changed
