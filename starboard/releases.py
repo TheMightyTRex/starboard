@@ -1631,6 +1631,10 @@ RELEASES = [
         "date": "16 November 2026",
         "changed": [
             [
+                "Backup and restore in Settings",
+                "Backup and restore is now in Settings, General, where you would look for it. It was under System. Settings, Updates, Restore still restores a backup."
+            ],
+            [
                 "Dashboard cards on one line",
                 "Each card's grey band now holds its logo, its name and its status, on one line. When it last updated sits in a small, lighter grey footer at the bottom of the card."
             ],

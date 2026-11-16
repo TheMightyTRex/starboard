@@ -13,7 +13,7 @@ one of those copies back with no file to find.
 ## Steps
 
 1. Go to **Settings**, then **Updates**, then **Restore**, and find **Restore your settings**. The same list is
-   on **System**, **Backup**, under **Copies Starboard saved**.
+   on **Settings**, **General**, **Backup and restore**, under **Copies Starboard saved**.
 2. In the list, the newest copy comes first. Each one shows when it was made and why: **Before a restore** or
    **Before an update changed the settings**.
 3. Select the date of a copy to show what it holds: how many apps, its categories and the apps' names.

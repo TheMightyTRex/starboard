@@ -700,7 +700,7 @@ async function showGoBack() {
 
 startPage().then((session) => {
   if (!session) return;
-  // The same script runs System, Backup and restore and Settings, Updates, Restore (no download or server there).
+  // The same script runs Settings, General, Backup and restore and Settings, Updates, Restore (no download or server there).
   if ($("#back-command")) { showGoBack(); loadSaved(); showKeepVersions(); }
   const picker = $("#restore-input");
   $("#restore-file").addEventListener("click", () => picker.click());

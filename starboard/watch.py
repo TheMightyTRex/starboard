@@ -276,12 +276,12 @@ class Watch:
                 status = (backup.server_status().get("status") or {})
                 key = f"backup:{status.get('started')}"
                 if status.get("status") == "failed":
-                    self.alert(key, "The server backup failed", f"{name}: {status.get('summary') or 'see System, Backup'}.")
+                    self.alert(key, "The server backup failed", f"{name}: {status.get('summary') or 'see Settings, General, Backup and restore'}.")
                 from . import full_backup  # Full without media, by hand or on the schedule (DASH-17, DASH-78)
                 full = full_backup.status(self.app.data_dir) if getattr(self.app, "data_dir", None) else {}
                 if full.get("state") == "failed":
                     self.alert(f"full-backup:{full.get('started')}", "The full backup failed",
-                               f"{name}: {full.get('error') or 'see System, Backup'}.")
+                               f"{name}: {full.get('error') or 'see Settings, General, Backup and restore'}.")
 
             # Certificates, once a day.
             days = int(on.get("cert_days", 0) or 0)

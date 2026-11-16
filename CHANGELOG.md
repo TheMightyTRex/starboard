@@ -10,6 +10,7 @@ add features.
 ## [0.19.1] (16 November 2026)
 
 ### Changed
+- **Backup and restore is in Settings, General:** It was under System, Backup. The page keeps its address, and Settings, Updates, Restore still restores a backup.
 - **Dashboard cards keep their band on one line:** The grey band at the top of each card has the logo, the name and the status chip; when the card last updated moves to a small footer, a lighter grey, so Disk space, System load, VPN and the rest no longer wrap onto two lines. (Design system 3949689, `.card-foot`.)
 - **The version in the side menu:** The version at the foot of the side menu is a link to Settings, Updates. When a newer release is out, a red dot sits just above it and pulses gently, still when Reduce motion is on; screen readers hear "update available" with the version. The word Update above the version is gone. (Design system c7c53bc.)
 

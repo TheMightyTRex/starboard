@@ -68,7 +68,6 @@ MENU = [
         ("Storage", "hard-drive", [("system-storage.html", "Storage", "hard-drive"), ("system-pool.html", "Pool", "layers"),
                                    ("system-disks.html", "Disk health", "heart-pulse")]),
         ("Network", "network", [("system-network.html", "Network", "network")]),
-        ("Backup", "archive-restore", [("system-backup.html", "Backup and restore", "archive-restore")]),
         ("Clean up", "trash-2", [("system-cleanup.html", "What is left over", "trash-2"), ("system-holding.html", "Holding folder", "archive")]),
         ("Logs", "scroll-text", [("system-logs.html", "Logs", "scroll-text")]),
     ]),
@@ -80,7 +79,10 @@ MENU = [
                                            # DASH-396: one section per Discover area, so its own page (topic tabs)
                                            ("settings-general-discover.html", "Discover rows", "compass"),
                                            ("settings-general-hours.html", "Download hours", "clock"),
-                                           ("settings-general-logs.html", "Logs and feedback", "scroll-text")]),
+                                           ("settings-general-logs.html", "Logs and feedback", "scroll-text"),
+                                           # Owner, 16 November 2026: "Backup and restore should go in general" (it was
+                                           # System, Backup; the page keeps its address). Restore also stays in Updates.
+                                           ("system-backup.html", "Backup and restore", "archive-restore")]),
         ("Apps", "app-window", [("settings.html", "Manage apps", "app-window"), ("settings-install.html", "Your install", "layers"),
                                 ("settings-reelix.html", "Reelix", "film"),
                                 ("settings-jellyfin.html", "Jellyfin", "tv"), ("settings-audiobookshelf.html", "Audiobookshelf", "headphones"),
