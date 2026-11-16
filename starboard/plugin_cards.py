@@ -161,15 +161,16 @@ def available(data_dir):
     from .plugins import card_title_problems
     from . import plugins_admin
     out = []
-    for p in plugins_admin.listing(data_dir):
+    for p in plugins_admin.basics(data_dir):  # only the active ones' manifests and logos are read
         if p["state"] != "enabled":
             continue
         m = plugins_admin._read_kept(f"{plugins_admin.folder(data_dir, p['id'])}/manifest.json", {}) or {}
+        logo = plugins_admin.logo_info(data_dir, p["id"], m) if m.get("cards") else None
         for i, c in enumerate(m.get("cards") or []):
             cid = c.get("id") or str(i)
             titles = c.get("titles") if isinstance(c.get("titles"), dict) and not card_title_problems(c) else {}
             out.append({"id": f"plugin:{p['id']}:{cid}", "title": c.get("title") or p["name"], "titles": titles, "type": c["type"],
-                        "format": c.get("format", "number"), "plugin": p["name"], "plugin_id": p["id"], "logo": p.get("logo")})
+                        "format": c.get("format", "number"), "plugin": p["name"], "plugin_id": p["id"], "logo": logo})
     return out
 
 

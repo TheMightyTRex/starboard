@@ -186,9 +186,16 @@ def save(folder, data, ctype):
         if other != ext and os.path.exists(p):
             os.replace(p, p + ".old")
     path = os.path.join(folder, f"logo.{ext}")
+    _hashes.pop(path, None)
     with open(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644), "wb") as f:
         f.write(data)
     return path
+
+
+# The short hash of each kept logo, by path, while its size, time and inode are unchanged: the plug-ins list asked
+# for every plug-in's logo on each call, and read and hashed the file each time (optimisation review, 16 November
+# 2026). The stamp holds the change time too, which every write, copy or move sets, so any new logo shows at once.
+_hashes = {}
 
 
 def kept(folder):
@@ -197,11 +204,22 @@ def kept(folder):
     for ext, ctype in (("svg", "image/svg+xml"), ("png", "image/png")):
         p = os.path.join(folder, f"logo.{ext}")
         try:
+            st = os.stat(p)
+        except OSError:
+            _hashes.pop(p, None)
+            continue
+        stamp = (st.st_mtime_ns, st.st_ctime_ns, st.st_size, st.st_ino)
+        hit = _hashes.get(p)
+        if hit and hit[0] == stamp:
+            return p, ctype, hit[1]
+        try:
             with open(p, "rb") as f:
                 data = f.read(PNG_MAX + 1)
         except OSError:
             continue
-        return p, ctype, hashlib.sha256(data).hexdigest()[:12]
+        short = hashlib.sha256(data).hexdigest()[:12]
+        _hashes[p] = (stamp, short)
+        return p, ctype, short
     return None
 
 

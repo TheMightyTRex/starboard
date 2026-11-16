@@ -234,7 +234,7 @@ def _plugin_candidates(app):
         logs.event("warning", "updates", f"The plug-in catalogues were not read: {e}")
     known = plugin_life.updates_known(app.data_dir)
     out, waiting = [], []
-    for p in pa.listing(app.data_dir):
+    for p in pa.basics(app.data_dir):
         if p.get("builtin"):
             continue
         where = pa.folder(app.data_dir, p["id"])
@@ -522,7 +522,7 @@ def waiting(app):
     data = app.config.data
     out = []
     if not data.get("plugins_auto_update"):
-        names = {p["id"]: p["name"] for p in pa.listing(app.data_dir)}
+        names = {p["id"]: p["name"] for p in pa.basics(app.data_dir)}
         for pid, u in plugin_life.updates_known(app.data_dir).items():
             out.append((f"plugin:{pid}", names.get(pid, pid), u["version"]))
     services = data.get("services") or []
