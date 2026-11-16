@@ -667,7 +667,10 @@ def _run(names, keep_old=False):
     finally:
         with _lock:
             job.update(finished=True, ended=time.time())
-            _state["check"] = {}
+            # Only what was updated is looked at again: the rest keep their last look, so Install all updates
+            # (DASH-454, found by the end-to-end test) still knows the next app has a newer version.
+            for name in names:
+                _state["check"].pop(name, None)
 
 
 def update(services, ids, keep_old=False):

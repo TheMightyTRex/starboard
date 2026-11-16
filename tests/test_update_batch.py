@@ -329,5 +329,21 @@ class BatchTest(unittest.TestCase):
             update_runs._active.pop(run["id"], None)
 
 
+
+class LastLookTest(unittest.TestCase):
+    def test_an_app_update_forgets_only_its_own_last_look(self):
+        """Found by the end-to-end test: every update emptied the whole last look, so the batch's next app was
+        refused as not known to have a newer version."""
+        from starboard import containers
+        saved = (dict(containers._state["check"]), containers._state["job"])
+        self.addCleanup(lambda: containers._state.update(check=saved[0], job=saved[1]))
+        containers._state["check"] = {"e2e-a": {"update": True, "latest": "2"}, "e2e-b": {"update": True, "latest": "2"}}
+        containers._state["job"] = {"items": {"e2e-a": {}}, "finished": False}
+        with mock.patch.object(containers, "containers", side_effect=containers.DockerError("no Docker in the test")), \
+             mock.patch("starboard.logs.event"):
+            containers._run(["e2e-a"])
+        self.assertEqual(list(containers._state["check"]), ["e2e-b"])
+        self.assertTrue(containers._state["job"]["finished"])
+
 if __name__ == "__main__":
     unittest.main()
