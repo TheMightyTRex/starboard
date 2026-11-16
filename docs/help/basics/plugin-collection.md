@@ -35,7 +35,7 @@ Eight styles for Starboard, each checked for accessibility in light and dark.
   light and dark, with **Use this style**. **Style** in the Display panel has the same choice. Read
   [Choose a style from a plug-in](../topics/display-and-accessibility.md#choose-a-style-from-a-plug-in).
 
-![The Styles plug-in's section, with a picture of each of the eight styles in light and dark, and Use this style under each](../images/plugin-collection-1-styles.png)
+![The Styles plug-in's section, with a picture of each style in light and dark, and Use this style under each](../images/plugin-collection-1-styles.png)
 
 No style in the collection has see-through panels, because they change how well the text on them stands out.
 

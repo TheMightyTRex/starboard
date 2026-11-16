@@ -1,0 +1,80 @@
+{
+  "shots": [
+    {
+      "topic": "download-without-a-vpn",
+      "file": "download-without-a-vpn-1-step.png",
+      "page": "install-apps.html?wizard=1",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; await press('Begin'); await press('Continue'); await press('Continue'); document.querySelector('main input[type=radio][value=without]').click(); await wait(600); document.querySelector('fieldset:has(input[value=without])').scrollIntoView({ block: 'center' }); await wait(300);",
+      "marks": [
+        {
+          "t": "$label:has(input[value=without])",
+          "step": 1,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        1
+      ],
+      "alt": "The VPN step of Install apps, with Continue without a VPN (step 1) chosen and outlined"
+    },
+    {
+      "topic": "download-without-a-vpn",
+      "file": "download-without-a-vpn-2-warning.png",
+      "page": "install-apps.html?wizard=1",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; await press('Begin'); await press('Continue'); await press('Continue'); document.querySelector('main input[type=radio][value=without]').click(); await wait(600); await press('Continue'); const d = document.querySelector('dialog[open]'); const c = d.cloneNode(true); d.close(); c.style.cssText = 'position: fixed; inset: 0; margin: auto; z-index: 5; height: fit-content'; const back = document.createElement('div'); back.style.cssText = 'position: fixed; inset: 0; background: rgb(0 0 0 / 0.45); z-index: 4'; document.body.append(back, c); c.show(); await wait(300);",
+      "marks": [
+        {
+          "t": "$dialog[open] button[value=ok]",
+          "step": 2,
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "The Download without a VPN? warning, with I understand, continue without a VPN (step 2) outlined"
+    },
+    {
+      "topic": "download-without-a-vpn",
+      "file": "download-without-a-vpn-3-check.png",
+      "page": "install-apps.html?wizard=1",
+      "height": 1000,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const press = async (t) => { [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === t).click(); await wait(1800); }; await press('Begin'); await press('Continue'); await press('Continue'); document.querySelector('main input[type=radio][value=without]').click(); await wait(600); await press('Continue'); document.querySelector('dialog[open] button[value=ok]').click(); await wait(1800); for (let i = 0; i < 6 && ![...document.querySelectorAll('main h2')].some((x) => x.textContent.startsWith('Check')); i++) await press('Continue'); const row = [...document.querySelectorAll('main .panel > ul.rows li')].find((l) => l.textContent.startsWith('VPN')); row.dataset.shot = 'vpn'; row.scrollIntoView({ block: 'center' }); await wait(300);",
+      "marks": [
+        {
+          "t": "$li[data-shot=vpn]",
+          "step": 3,
+          "side": "top",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "The Check step without a VPN, with VPN, None: downloads use your home internet address (step 3) outlined"
+    },
+    {
+      "topic": "download-without-a-vpn",
+      "file": "download-without-a-vpn-4-remove.png",
+      "page": "settings-downloads.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tag = (el, name) => { el.dataset.shot = name; }; await until(() => btn('Remove the VPN')); const b = [...document.querySelectorAll('main button')].filter((x) => x.textContent.trim() === 'Remove the VPN').pop(); tag(b, 'remove'); b.scrollIntoView({ block: 'center' }); await wait(300);",
+      "marks": [
+        {
+          "t": "$button[data-shot=remove]",
+          "step": 2,
+          "side": "right",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "Settings, Downloads, VPN, with Remove the VPN (step 2) outlined under Remove the VPN"
+    }
+  ]
+}

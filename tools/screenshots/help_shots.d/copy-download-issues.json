@@ -1,0 +1,68 @@
+{
+  "shots": [
+    {
+      "topic": "copy-download-issues",
+      "file": "copy-download-issues-1-copy.png",
+      "page": "downloads.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tag = (el, name) => { el.dataset.shot = name; }; await until(() => btn('Copy issues for an AI helper')); await wait(500); ",
+      "marks": [
+        {
+          "t": "$.rail a[href='/downloads.html']",
+          "step": 1,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "Copy issues for an AI helper",
+          "step": 2,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        1,
+        2
+      ],
+      "alt": "Activity, Downloads, Queue with example data, with Activity (step 1) and Copy issues for an AI helper (step 2) outlined"
+    },
+    {
+      "topic": "copy-download-issues",
+      "file": "copy-download-issues-2-copied.png",
+      "page": "downloads.html",
+      "height": 1000,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tag = (el, name) => { el.dataset.shot = name; }; await until(() => btn('Copy issues for an AI helper')); await wait(500); btn('Copy issues for an AI helper').click(); await until(() => document.querySelector('main details.disclosure')); document.querySelector('main details.disclosure').open = true; await wait(600); window.scrollTo(0, 0);",
+      "marks": [
+        {
+          "t": "$main details.disclosure > summary",
+          "step": 3,
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "The Copied 1 issue for an AI helper notice, with Show what was copied (step 3) open and outlined"
+    },
+    {
+      "topic": "copy-download-issues",
+      "file": "copy-download-issues-3-markdown.png",
+      "page": "downloads.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tag = (el, name) => { el.dataset.shot = name; }; await until(() => btn('Copy issues for an AI helper')); await wait(500); ",
+      "marks": [
+        {
+          "t": "Download as Markdown",
+          "step": 2,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "Activity, Downloads, Queue with example data, with Download as Markdown (step 2) outlined"
+    }
+  ]
+}

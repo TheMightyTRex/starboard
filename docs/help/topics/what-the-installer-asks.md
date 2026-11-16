@@ -44,8 +44,8 @@ Some access needs nothing from the installer, so it is a setting in Starboard:
 
 - **Your apps** (**Settings**, **Apps**, **Manage apps**): Starboard reads status, queues and calendars with the
   API keys you give it, and adds films, series and books only when you choose **Add**.
-- **Download hours** (**Settings**, **General**): pauses the download apps outside the hours you choose.
-- **Updates** (**Settings**, **Updates**, **Update settings**): looks for new Starboard releases, at most every 6
+- **Download hours** (**Settings**, **Downloads**, **Download hours**): pauses the download apps outside the hours you choose.
+- **Updates** (**Settings**, **Updates**, **What Starboard can access**): looks for new Starboard releases, at most every 6
   hours, and downloads app icons and posters.
 
 [Change what Starboard can access](change-what-starboard-can-access.md#check-what-starboard-can-access-now) shows

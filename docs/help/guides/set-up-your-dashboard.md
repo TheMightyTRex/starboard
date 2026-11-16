@@ -129,8 +129,8 @@ The default install works with all of these as they are. Change them when you wa
   then [Change or remove an app](../topics/change-or-remove-an-app.md#change-an-apps-details).
 - **Reelix's sites and settings:** [Choose the sites Reelix searches](../topics/choose-sites-to-search.md) and
   [Change Reelix's settings in Starboard](../topics/change-reelix-settings.md).
-- **The set-up guide again:** go to **Settings**, then **General**, activate **Advanced settings**, and select **Run
-  the set-up guide again** under **Set-up guide**. Nothing changes until you select **Continue**.
+- **The set-up guide again:** go to **Settings**, then **General**, then **Names and apps**, activate **Advanced
+  settings**, and select **Run the set-up guide again** under **Set-up guide**. Nothing changes until you select **Continue**.
 
 ## What next
 

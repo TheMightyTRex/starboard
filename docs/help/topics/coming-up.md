@@ -20,26 +20,38 @@ yesterday to as far ahead as you choose. You can show them as a list by day or o
    how many are already in the library.
 2. Choose **List** to show releases day by day, or **Calendar** to show them on a month.
 3. Optional: select **Wanted** to show only what you do not have yet, or **In library** to show only what you
-   have. Select it again to show everything.
-4. Optional: to show one app only, select its name, such as **Reelix**. Select it again to show every app.
+   have. Select **All** to show everything again.
+
+   ![The Coming up page with example data, with Discover in the side menu (step 1), List and Calendar (step 2) and Wanted (step 3) outlined](../images/coming-up-1-page.png)
+
+4. Optional: when releases come from more than one app, a button for each app shows. Select an app's name, such
+   as **Sonarr**, to show that app only. Select it again to show every app. With Reelix alone, there are no app
+   buttons.
 5. Select a title to open its details: when it comes out, which app it is in and whether it is wanted.
-6. Optional: select **Open in** and the app's name to open it in the app itself, in a new tab.
+6. Optional: select the button at the foot of the details, such as **Open the show**, to open it.
+
+   ![The details of The Example Hour, Series 4, episode 2, Lighthouses: when it is broadcast, its app and its status, with Open the show (step 6) outlined](../images/coming-up-3-details.png)
 
 In **Calendar**, select **Earlier** or **Later** and the month's name to move by a month, and **Back to now**
 to return.
 
+![The Coming up page as a month calendar with example data, with Calendar chosen (step 2) outlined](../images/coming-up-2-calendar.png)
+
 ### Change how far ahead it looks
 
-1. On the Coming up page, select **Change how far ahead**. This opens **Settings**, then **General**, at
-   **Coming up**.
+1. On the Coming up page, select **Change how far ahead**. This opens **Settings**, then **General**, then
+   **Pages and lists**. The **Coming up** section shows when **Advanced settings** is active: activate it if you
+   do not see the section.
 2. In **How far ahead**, choose **1 week**, **2 weeks**, **30 days**, **60 days** or **90 days**. The change
    applies at once.
 3. Optional: in **View**, choose whether the page opens as **List** or **Calendar**.
 
+   ![Settings, General, Pages and lists with Advanced settings active, with How far ahead (step 2) and View (step 3) outlined in the Coming up section](../images/coming-up-4-how-far.png)
+
 ### Show or hide posters
 
 1. Go to **Settings**, then **Performance**, and activate **Advanced settings**.
-2. Under **Background work**, activate or deactivate **Posters on Coming up and the Library**. When it is
+2. Select the **Background work** tab, then activate or deactivate **Posters on Coming up and the Library**. When it is
    inactive, each release shows its app's icon instead.
 
 ## Things to note

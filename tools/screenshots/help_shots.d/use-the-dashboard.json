@@ -1,0 +1,98 @@
+{
+  "shots": [
+    {
+      "file": "use-the-dashboard-1-edit.png",
+      "page": "dashboard.html",
+      "height": 640,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => btn('Edit dashboard'));",
+      "marks": [
+        {
+          "t": "$.rail a[href='/dashboard.html']",
+          "step": 1,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "Edit dashboard",
+          "step": 2,
+          "side": "left",
+          "tail": 110
+        }
+      ],
+      "steps": [
+        1,
+        2
+      ],
+      "alt": "The dashboard with example data, with Home in the side menu (step 1) and Edit dashboard (step 2) outlined",
+      "topic": "use-the-dashboard"
+    },
+    {
+      "file": "use-the-dashboard-2-layout.png",
+      "page": "dashboard.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => btn('Edit dashboard')); btn('Edit dashboard').click(); await until(() => btn('Save')); await wait(800); document.querySelectorAll('main select')[0].dataset.shot = 'layout'; document.querySelectorAll('main select')[1].dataset.shot = 'add'; btn('Save').dataset.shot = 'save';",
+      "marks": [
+        {
+          "t": "$select[data-shot=layout]",
+          "step": 3,
+          "side": "left",
+          "tail": 50
+        },
+        {
+          "t": "$select[data-shot=add]",
+          "step": 4,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "$button[data-shot=save]",
+          "step": 6,
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        3,
+        4,
+        6
+      ],
+      "alt": "Edit dashboard with example data, with Layout (step 3), Add a card (step 4) and Save (step 6) outlined",
+      "topic": "use-the-dashboard"
+    },
+    {
+      "file": "use-the-dashboard-3-card.png",
+      "page": "dashboard.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => btn('Edit dashboard')); btn('Edit dashboard').click(); await until(() => btn('Save')); await wait(800); btn('Remove Direct play (Direct play)').click(); await wait(600); const tools = () => [...document.querySelectorAll('main button')].find((b) => b.textContent.includes('(Picture shrinker)')).closest('.dash-card__tools'); const sel = tools().querySelector('select'); sel.value = 'small'; sel.dispatchEvent(new Event('change', { bubbles: true })); await wait(1000); const t = tools(); t.dataset.shot = 'tools'; t.closest('.dash-card__head').parentElement.scrollIntoView({ block: 'center' }); await wait(400);",
+      "marks": [
+        {
+          "t": "$[data-shot=tools]",
+          "step": 5,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        5
+      ],
+      "alt": "Edit dashboard with example data, with the Picture shrinker card's size set to Small, its arrows and Remove (step 5) outlined; at this size its title is Space saved",
+      "topic": "use-the-dashboard"
+    },
+    {
+      "file": "use-the-dashboard-4-band.png",
+      "page": "dashboard.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => document.querySelectorAll('.card-band').length > 5); const band = [...document.querySelectorAll('.card-band')].find((b) => b.textContent.trim().startsWith('VPN')); band.dataset.shot = 'vpn'; band.scrollIntoView({ block: 'end' }); window.scrollBy(0, 60); await wait(400);",
+      "marks": [
+        {
+          "t": "$.card-band[data-shot=vpn]",
+          "side": "top",
+          "tail": 70
+        }
+      ],
+      "steps": [],
+      "alt": "The small cards at the foot of the dashboard with example data: each has a grey band with its logo and name, and the small VPN card's band, which shows only the status chip's icon, is outlined",
+      "topic": "use-the-dashboard"
+    }
+  ]
+}

@@ -55,8 +55,8 @@ To check what will be copied before you share it, select **Show what will be cop
   [Send feedback about a page](send-feedback.md).
 - **Delete logs** removes every day of the log. Starboard asks **Delete all logs?** first. This cannot be
   undone, and new entries start again straight away.
-- Starboard keeps the log for 60 days unless you change it. Go to **Settings**, then **General**, and choose in
-  **Keep logs for**, in the **Logs** section. That section also has **Detailed logging**.
+- Starboard keeps the log for 60 days unless you change it. Go to **Settings**, then **General**, then **Logs
+  and feedback**, activate **Advanced settings**, and choose in **Keep logs for**, in the **Logs** section. That section also has **Detailed logging**.
 - If Starboard installed Reelix, **System**, **Logs** also has **Reelix's log** and **Reelix's scheduled tasks**.
   Starboard asks for Reelix's password first.
 - If you cannot open Starboard at all, read the server's copy of the log. On the server, in the Starboard

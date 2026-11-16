@@ -1,0 +1,84 @@
+{
+  "shots": [
+    {
+      "topic": "update-starboard",
+      "file": "update-starboard-1-ready.png",
+      "page": "settings-updates.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const tab = async (t) => { for (let i = 0; i < 40 && !document.querySelector('#topic-tabs [role=tab]'); i++) await wait(250); [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === t).click(); await wait(600); }; for (let i = 0; i < 40 && ![...document.querySelectorAll('main button')].some((b) => b.textContent.trim() === 'Update now'); i++) await wait(250); const up = [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === 'Update now'); up.dataset.shot = 'update-now'; window.scrollTo(0, 0);",
+      "marks": [
+        {
+          "t": "$button[data-shot=update-now]",
+          "step": 2,
+          "side": "left",
+          "tail": 110
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "Settings, Updates, Ready to update with example data, with Update now beside Starboard (step 2) outlined"
+    },
+    {
+      "topic": "update-starboard",
+      "file": "update-starboard-2-confirm.png",
+      "page": "settings-updates.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const tab = async (t) => { for (let i = 0; i < 40 && !document.querySelector('#topic-tabs [role=tab]'); i++) await wait(250); [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === t).click(); await wait(600); }; for (let i = 0; i < 40 && ![...document.querySelectorAll('main button')].some((b) => b.textContent.trim() === 'Update now'); i++) await wait(250); const up = [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === 'Update now'); up.click(); for (let i = 0; i < 40 && !document.querySelector('dialog[open] input[type=password]'); i++) await wait(250); const d = document.querySelector('dialog[open]'); d.querySelector('input[type=password]').value = 'example-password'; const c = d.cloneNode(true); d.close(); c.style.cssText = 'position: fixed; inset: 0; margin: auto; z-index: 5; height: fit-content'; const back = document.createElement('div'); back.style.cssText = 'position: fixed; inset: 0; background: rgb(0 0 0 / 0.45); z-index: 4'; document.body.append(back, c); c.show(); await wait(300);",
+      "marks": [
+        {
+          "t": "$dialog[open] input[type=password]",
+          "step": 3,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        3
+      ],
+      "alt": "The Update Starboard to 0.20.0 dialog, with Your Starboard password (step 3) outlined"
+    },
+    {
+      "topic": "update-starboard",
+      "file": "update-starboard-3-by-themselves.png",
+      "page": "settings-updates.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const tab = async (t) => { for (let i = 0; i < 40 && !document.querySelector('#topic-tabs [role=tab]'); i++) await wait(250); [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === t).click(); await wait(600); }; await tab('Update by themselves'); window.scrollTo(0, 0); await wait(300);",
+      "marks": [
+        {
+          "t": "$section:has(#up-auto-h) fieldset",
+          "step": 2,
+          "side": "top",
+          "tail": 40
+        },
+        {
+          "t": "$.setting:has(#auto-starboard)",
+          "step": 3,
+          "side": "bottom",
+          "tail": 35
+        }
+      ],
+      "steps": [
+        2,
+        3
+      ],
+      "alt": "Settings, Updates, Update by themselves, with When they update (step 2) and Starboard: update by itself (step 3) outlined"
+    },
+    {
+      "topic": "update-starboard",
+      "file": "update-starboard-4-recent.png",
+      "page": "settings-updates.html",
+      "height": 1000,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const tab = async (t) => { for (let i = 0; i < 40 && !document.querySelector('#topic-tabs [role=tab]'); i++) await wait(250); [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === t).click(); await wait(600); }; await tab('Recent updates'); window.scrollTo(0, 0); await wait(300);",
+      "marks": [
+        {
+          "t": "$section:has(#up-recent-h) .settings-rows",
+          "side": "top",
+          "tail": 50
+        }
+      ],
+      "steps": [],
+      "alt": "Settings, Updates, Recent updates with example data, with the list of updates and how each ended outlined"
+    }
+  ]
+}

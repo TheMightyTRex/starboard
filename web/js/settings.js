@@ -3945,7 +3945,14 @@ function topicTabs() {
     topics.forEach((s) => s.classList.remove("topic-off"));
     return;
   }
-  topics.forEach((s, n) => { if (!s.id) s.id = `topic-${n}`; });
+  // Each new section gets an id no other element has: numbering by place gave a section shown by Advanced settings
+  // the id of one already named, so two tabs were selected at once (found taking the 0.19 help pictures).
+  let free = 0;
+  topics.forEach((s) => {
+    if (s.id) return;
+    while (document.getElementById(`topic-${free}`)) free++;
+    s.id = `topic-${free}`;
+  });
   const key = topics.map((s) => `${s.id}:${$("h2", s).textContent}`).join("|");
   if (!nav) {
     nav = el("nav", { id: "topic-tabs", class: "topic-tabs", "aria-label": "Topics on this page" }, el("div", { role: "tablist", "aria-label": "Topics on this page" }));

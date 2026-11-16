@@ -133,7 +133,7 @@ function drawLookSlot(kind, label) {
         drawLookSlot(kind, label);
         $(`#lookup [data-kind="${kind}"] .rows > li:nth-child(${SHOW_FIRST + 1}) h4`)?.setAttribute("tabindex", "-1");
         $(`#lookup [data-kind="${kind}"] .rows > li:nth-child(${SHOW_FIRST + 1}) h4`)?.focus();
-      }) : null] : []));
+      }) : null].filter(Boolean) : []));  // replaceChildren writes a null as the text "null"
   return items.length;
 }
 

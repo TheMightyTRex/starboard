@@ -21,10 +21,18 @@ activate.
 2. Under **Upload a zip file**, choose the zip in **The plug-in's zip file**, then select **Check the zip**.
    Starboard checks the zip before it shows anything. It says how many files it holds, and the image the build starts
    from when the plug-in builds its own container.
+
+   ![Settings, Plug-ins, Catalogue, Upload a zip file, with The plug-in's zip file and Check the zip (step 2) outlined](../images/add-a-plugin-from-a-zip-file-1-upload.png)
+
 3. Read **What it may do** and the **Test results**. When the test finds an error, the plug-in cannot be installed:
-   its maker needs to fix it.
-4. Select **Install** and the plug-in's name. A slide-out lists what it **can see**, what it **can change**, what it
-   **can reach** and what it runs, including the build. Read it all.
+   its maker needs to fix it. **Ready to add** means it passed.
+
+   ![The checked zip of a made-up plug-in, with What it may do (step 3) outlined, and the test result, Ready to add, under it](../images/add-a-plugin-from-a-zip-file-2-checked.png)
+
+4. Select **Install** and the plug-in's name, such as **Install Harbour notes…**. A slide-out lists what it **can
+   see**, what it **can change**, what it **can reach** and what it **runs**, including the build. Read it all.
+
+   ![The Install Harbour notes slide-out, with It runs, the build from the zip (step 4), outlined](../images/add-a-plugin-from-a-zip-file-3-warning.png)
 5. To go ahead, enter your Starboard password and select **Install** and the plug-in's name. To stop, select
    **Cancel**: nothing is installed.
 6. A window shows each step: **Checking the zip**, **Building its container from the zip** and **Installing**. The
@@ -34,13 +42,17 @@ activate.
 ### Update it from a newer zip
 
 1. Go to the plug-in's own page, under **Settings**, then **Plug-ins**.
-2. Under **Versions**, in **Update from a zip file**, choose the new version's zip, then select **See what is new**.
+2. Select the **Versions** tab. In **Update from a zip file**, choose the new version's zip in **The new version's zip
+   file**, then select **See what is new**.
+
+   ![On demand's Versions, with Update from a zip file, its zip file field and See what is new (step 2), outlined](../images/add-a-plugin-from-a-zip-file-4-update.png)
+
 3. Read what is new and anything the new version asks for, enter your Starboard password, then select **Update**
    and its name.
 4. A window shows each step, starting with the build. If the new version does not start or answer, Starboard goes
    back to the version before by itself.
 
-To go back later, select **Roll back** under **Versions**. Nothing is downloaded: the version before is still on your
+To go back later, select **Roll back to** and the version before, under **Versions**. Nothing is downloaded: the version before is still on your
 server. Read [Update a plug-in and roll it back](update-a-plugin.md).
 
 ## Things to note

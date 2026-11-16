@@ -1,0 +1,77 @@
+{
+  "shots": [
+    {
+      "topic": "set-download-hours",
+      "file": "set-download-hours-1-page.png",
+      "page": "settings-downloads-hours.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tag = (el, name) => { el.dataset.shot = name; }; await until(() => document.querySelector('main select')); tag([...document.querySelectorAll('header a')].find((a) => a.offsetParent && a.textContent.trim() === 'Download hours'), 'tab'); const s = document.querySelectorAll('main select'); tag(s[0], 'start'); tag(s[1], 'end');",
+      "marks": [
+        {
+          "t": "$a[data-shot=tab]",
+          "step": 1,
+          "side": "bottom",
+          "tail": 60
+        },
+        {
+          "t": "$select[data-shot=start]",
+          "step": 2,
+          "side": "left",
+          "tail": 90
+        },
+        {
+          "t": "$select[data-shot=end]",
+          "step": 3,
+          "side": "left",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        1,
+        2,
+        3
+      ],
+      "alt": "Settings, Downloads, Download hours, with Download hours (step 1), Start (step 2) and End (step 3) outlined"
+    },
+    {
+      "topic": "set-download-hours",
+      "file": "set-download-hours-2-on.png",
+      "page": "settings-downloads-hours.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tag = (el, name) => { el.dataset.shot = name; }; await until(() => document.getElementById('dh-on-l')); window.shotHours = (await api('/api/config')).download_hours; const row = document.getElementById('dh-on-l').closest('li'); const sw = row.querySelector('input[role=switch]'); if (!sw.checked) sw.click(); await wait(1200); tag(row, 'on');",
+      "after": "await api('/api/config/general', { method: 'PUT', body: { download_hours: window.shotHours || { enabled: false, start: 1, end: 6 } } });",
+      "marks": [
+        {
+          "t": "$li[data-shot=on]",
+          "step": 4,
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        4
+      ],
+      "alt": "Download hours, with Only download between set hours activated (step 4) outlined"
+    },
+    {
+      "topic": "set-download-hours",
+      "file": "set-download-hours-3-resume.png",
+      "page": "downloads.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tag = (el, name) => { el.dataset.shot = name; }; await until(() => btn('Copy issues for an AI helper')); await wait(500); const cfg = await api('/api/config'); window.shotHours = cfg.download_hours; const hr = new Date().getHours(); await api('/api/config/general', { method: 'PUT', body: { download_hours: { enabled: true, start: (hr + 2) % 24, end: (hr + 3) % 24 } } }); await wait(500); btn('Check again').click(); await until(() => btn('Resume downloads now')); await wait(800); tag(btn('Resume downloads now'), 'resume');",
+      "after": "await api('/api/config/general', { method: 'PUT', body: { download_hours: window.shotHours || { enabled: false, start: 1, end: 6 } } });",
+      "marks": [
+        {
+          "t": "$button[data-shot=resume]",
+          "step": 2,
+          "side": "bottom",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        2
+      ],
+      "alt": "Activity, Downloads, Queue while download hours pause downloads, with Paused and Resume downloads now (step 2) outlined"
+    }
+  ]
+}

@@ -10,6 +10,10 @@ Shows how much is in the holding folder. Under it, how many items are held and w
 - **How often it updates:** every 30 seconds while it is working, and every 10 minutes the rest of the time, while the dashboard is open and in view. Nothing is asked while the browser tab is hidden.
 - **Example:** 186.40 GB in the holding folder. 41 items held. Next look in quiet hours
 
+![The Holding folder card in the light theme: the band with Library clean-up's logo and Deactivated, 38.7 GB in the holding folder and what Preview would move](../../images/plugins/library-cleanup/dashboard-card-2-light.png)
+
+![The same Holding folder card in the dark theme](../../images/plugins/library-cleanup/dashboard-card-3-dark.png)
+
 ## What the status says
 
 | Status | Means |
@@ -24,6 +28,8 @@ Shows how much is in the holding folder. Under it, how many items are held and w
 1. Select **Edit dashboard**.
 2. In **Add a card**, choose the card. Its name ends with (Library clean-up), such as **Holding folder (Library clean-up)**.
 3. Select **Save**.
+
+   ![Edit dashboard, with Holding folder (Library clean-up) chosen in Add a card (step 2) and Save (step 3) outlined](../../images/plugins/library-cleanup/dashboard-card-1-add.png)
 
 Library clean-up must be added and active first. Read [Install](../library-cleanup/install.md).
 

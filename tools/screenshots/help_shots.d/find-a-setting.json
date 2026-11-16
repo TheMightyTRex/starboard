@@ -1,0 +1,95 @@
+{
+  "shots": [
+    {
+      "file": "find-a-setting-1-menus.png",
+      "page": "settings-general-lists.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await wait(500);",
+      "marks": [
+        {
+          "t": "$.rail a[href='/settings-general.html']",
+          "step": 1,
+          "side": "right",
+          "tail": 90
+        },
+        {
+          "t": "$.menu-tabs:not(.is-compact) a[href='/settings-general-lists.html']",
+          "step": 3,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        1,
+        3
+      ],
+      "alt": "Settings, General, Pages and lists with example data, with Settings in the side menu (step 1) and Pages and lists in the row of pages (step 3) outlined",
+      "topic": "find-a-setting"
+    },
+    {
+      "file": "find-a-setting-2-tabs.png",
+      "page": "settings-updates.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => document.querySelector('#topic-tabs [role=tab]')); await wait(500);",
+      "marks": [
+        {
+          "t": "$#topic-tabs",
+          "step": 4,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        4
+      ],
+      "alt": "Settings, Updates with example data, with the topic tabs under the heading (step 4) outlined",
+      "topic": "find-a-setting"
+    },
+    {
+      "file": "find-a-setting-3-basic.png",
+      "page": "settings-general.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => document.getElementById('advanced-switch')); await wait(500);",
+      "marks": [
+        {
+          "t": "$.advanced-toggle",
+          "step": 5,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        5
+      ],
+      "alt": "Settings, General, Names and apps with only its basic settings, with Advanced settings inactive (step 5) outlined",
+      "topic": "find-a-setting"
+    },
+    {
+      "file": "find-a-setting-4-advanced.png",
+      "page": "settings-general.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => document.getElementById('advanced-switch')); document.getElementById('advanced-switch').click(); await wait(1500); await until(() => document.querySelector('#topic-tabs [role=tab]')); await wait(500);",
+      "after": "await api('/api/config/general', { method: 'PUT', body: { settings_advanced: false } });",
+      "marks": [
+        {
+          "t": "$.advanced-toggle",
+          "step": 5,
+          "side": "bottom",
+          "tail": 70
+        },
+        {
+          "t": "$#topic-tabs",
+          "step": 5,
+          "side": "bottom",
+          "tail": 70
+        }
+      ],
+      "steps": [
+        5,
+        5
+      ],
+      "alt": "Settings, General, Names and apps with Advanced settings active (step 5): its tabs now include Categories, App cards and Set-up guide, both outlined",
+      "topic": "find-a-setting"
+    }
+  ]
+}

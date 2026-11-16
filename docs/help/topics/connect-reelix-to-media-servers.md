@@ -16,23 +16,22 @@ already has.
 ## Steps
 
 1. Go to **Settings**, then **Apps**, then **Reelix**.
-2. Activate **Advanced settings**.
-3. Under **Media servers**, select **Show media servers**. Enter your Reelix password, then select
+2. Activate **Advanced settings** at the right of the heading.
+3. Select the **Media servers** tab, then **Show media servers**. Enter your Reelix password, then select
    **Continue**.
 4. Select **Connect Jellyfin** or **Connect Audiobookshelf**. Starboard adds it to Reelix with its key, and
    tests it.
 
    ![Media servers, with Connect Audiobookshelf (step 4) outlined](../images/connect-reelix-to-media-servers-1-connect.png)
 
-5. Check that it shows **Connected**.
+5. Check that it shows **Connected**, and that the list under it shows it as **Working**.
 
-   ![Media servers, with Connected beside Jellyfin and Audiobookshelf (step 5) outlined](../images/connect-reelix-to-media-servers-2-connected.png)
+   ![Media servers, with Jellyfin and Audiobookshelf both Connected, and the list of media servers, each Working (step 5), outlined](../images/connect-reelix-to-media-servers-2-connected.png)
 
-6. To change the address or key Reelix uses, select **More** (three dots) beside it in the list, then
-   **Change**. Change the **URL** or the key.
+6. To change the address or key Reelix uses, select **Edit** beside it in the list. Change the **URL** or the key.
 7. Select **Test**, then **Save**.
 
-   ![The Change panel for Jellyfin, with URL (step 6) and Test (step 7) outlined](../images/connect-reelix-to-media-servers-3-change.png)
+   ![The Change Jellyfin panel, with URL (step 6) and Test (step 7) outlined](../images/connect-reelix-to-media-servers-3-change.png)
 
 ## Things to note
 

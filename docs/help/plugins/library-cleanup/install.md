@@ -43,9 +43,21 @@ Measured:
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Jellyfin**, find **Library clean-up** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+
+   ![The Catalogue under Jellyfin, with Install… beside Library clean-up (step 2) outlined](../../images/plugins/library-cleanup/install-1-catalogue.png)
+
+3. A slide-out opens with what it can see, change and reach. Read it all. Under **It can change**, the line about your media folder says what it may do there.
+
+   ![The Install Library clean-up? slide-out, High risk, with the line about your media folder under It can change (step 3) outlined](../../images/plugins/library-cleanup/install-2-what-it-may-do.png)
+
 4. Enter your Starboard password and select **Install Library clean-up**. To stop, select **Cancel**: nothing is installed.
+
+   ![The foot of the install slide-out, with Your Starboard password filled in and Install Library clean-up (step 4) outlined](../../images/plugins/library-cleanup/install-3-password.png)
+
 5. Library clean-up's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
+
+   ![Library clean-up's own tab on State, with Activate (step 5) outlined](../../images/plugins/library-cleanup/install-4-activate.png)
+
 6. Check the rules, **Libraries** and **Always keep**. If someone never watches, such as a guest account, add their Jellyfin user name to **People to leave out**. Read [Settings](../library-cleanup/settings.md).
 7. Open **Preview**. It lists what the rules would move now, and the space each frees. Nothing moves from **Preview**.
 8. When **Preview** lists only what you are happy to move, activate **Move items each day** in **Rules**.

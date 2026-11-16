@@ -31,7 +31,7 @@ Tip: if the app is on the same computer as Starboard,
    computer as Starboard, use `127.0.0.1`, such as `http://127.0.0.1:8096` for Jellyfin. For an app on another computer,
    use that computer's address, such as `http://192.168.1.20:8096`.
 
-   ![The Add an app panel, with Kind of app set to Sonarr (step 3), Name (step 4) and Address Starboard uses (step 5) outlined](../images/add-an-app-2-connection.png)
+   ![The Add an app panel, with Kind of app set to Jellyfin (step 3), Name (step 4) and Address Starboard uses (step 5) outlined](../images/add-an-app-2-connection.png)
 
 6. In **API key**, paste the app's API key. The hint under the field says where that app keeps it.
    **Other app** has no API key field.

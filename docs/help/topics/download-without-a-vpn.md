@@ -19,10 +19,21 @@ With a VPN, your internet provider and other people sharing torrents see only th
 
 ## Steps
 
-1. In the set-up, on the **VPN** step, choose **Continue without a VPN**, then select **Continue**.
-2. Read the warning. Select **I understand, continue without a VPN** to go on, or **Cancel** to go back and enter
-   your VPN account.
-3. Carry on with the set-up. The **Check** step shows **VPN: None**.
+1. In the set-up, on the **VPN** step, under **How should your downloads connect?**, choose **Continue without a
+   VPN**, then select **Continue**.
+
+   ![The VPN step of Install apps, with Continue without a VPN (step 1) chosen and outlined](../images/download-without-a-vpn-1-step.png)
+
+2. Read the warning, **Download without a VPN?**. Select **I understand, continue without a VPN** to go on, or
+   **Cancel** to go back and enter your VPN account.
+
+   ![The Download without a VPN? warning, with I understand, continue without a VPN (step 2) outlined](../images/download-without-a-vpn-2-warning.png)
+
+3. Carry on with the set-up. On the **Check** step, **VPN** says **None: downloads use your home internet
+   address**, and the apps have no Gluetun.
+
+   ![The Check step without a VPN, with VPN, None: downloads use your home internet address (step 3) outlined](../images/download-without-a-vpn-3-check.png)
+
 
 Starboard installs your apps without Gluetun. qBittorrent and NZBGet run on their own, with their own ports, and
 Reelix connects to them by their names.
@@ -45,6 +56,9 @@ through the VPN too. The download apps restart for a moment.
 
 1. Go to **Settings**, then **Downloads**, then **VPN**.
 2. Under **Remove the VPN**, enter **Your Starboard password**, then select **Remove the VPN**.
+
+   ![Settings, Downloads, VPN, with Remove the VPN (step 2) outlined under Remove the VPN](../images/download-without-a-vpn-4-remove.png)
+
 3. Read the warning. Select **I understand, remove the VPN**, or **Cancel** to keep it.
 
 Starboard removes Gluetun, and qBittorrent and NZBGet run on their own with their own ports.

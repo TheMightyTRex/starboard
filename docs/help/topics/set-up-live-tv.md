@@ -24,10 +24,16 @@ numbered the way Sky numbers them. Live TV is a plug-in built into Starboard, so
 2. Under **Built into Starboard**, select **Add Live TV**.
 3. Read **What it may do**, enter **Your Starboard password** and select **Add Live TV**. Starboard shows
    "Live TV added and active".
-4. In the **Live TV** section, check **Address Jellyfin uses to reach Starboard**, such as
-   `http://192.168.1.20:8095`.
+4. Live TV's own page opens, under **Settings**, then **Plug-ins**. Select its **Settings** tab and check **Address
+   Jellyfin uses to reach Starboard**, such as `http://192.168.1.20:8095`.
 5. Check **Live TV folder as Jellyfin sees it**, such as `/config/iptv`, then select **Save**.
-6. Select **Run Live TV now**. The first run tests every channel, so it takes a few minutes.
+
+   ![Live TV's Settings, with Address Jellyfin uses to reach Starboard (step 4) and Live TV folder as Jellyfin sees it (step 5) outlined](../images/set-up-live-tv-1-settings.png)
+
+6. Select the **Actions** tab, then **Run Live TV now**. The first run tests every channel, so it takes a few
+   minutes.
+
+   ![Live TV's Actions, with Run Live TV now (step 6) outlined](../images/set-up-live-tv-2-run.png)
 
 Live TV adds its channel lists and guides to Jellyfin itself, then starts Jellyfin's guide refresh. It reads
 the folder from Jellyfin's own tuners first, so nothing is added twice.
@@ -37,6 +43,33 @@ To follow it on the dashboard, add the **Live TV** card with **Edit dashboard**.
 
 If you used Live TV before Starboard 0.15.0, Starboard moved it into the plug-in by itself, with the same
 settings. Your channels and guides in Jellyfin did not change.
+
+### Add your own lists and guides
+
+Live TV can also take your own channel lists and guides, by address or as a file.
+
+1. On Live TV's page, select the **Your lists and guides** tab.
+2. Under **Add a list or guide**, enter the address of an M3U playlist, a JSON channel list or an XMLTV guide
+   (`.xml` or `.xml.gz`), then select **Add a list or guide**. To use a file from your computer instead, choose it
+   under **Or choose a file** and select **Upload**.
+3. Starboard tests the channels and says what it added, such as "Harbour community: 1 of 3 channels added, 1
+   inactive". A channel already in Live TV comes in inactive: activate it in **Channels** when you want it.
+4. Each list has its own **Deactivate**, so an inactive list is not fetched. **Change guide** gives it a guide, and
+   **Test** tests it again. **Test all** tests every list.
+
+   ![Live TV's Your lists and guides with a made-up list, with Add a list or guide (step 2) and the list with its own Deactivate, Change guide and Test (step 4) outlined](../images/set-up-live-tv-3-your-lists.png)
+
+### Choose the channels
+
+1. On Live TV's page, select the **Channels** tab. Under **Activate or deactivate in bulk**, each list, **Every
+   channel** and each region has its own switch. Each switch applies at once.
+2. Under the search and the **List** and **Region** chips, the channels are in folding sections, such as
+   **Entertainment**, each with how many are active and its own switch. Select a section to open it and switch
+   single channels.
+
+   ![Live TV's Channels, with the folding sections, each with how many channels are active and its own switch (step 2), outlined](../images/set-up-live-tv-4-channels.png)
+
+A channel you deactivate stays inactive when the lists are rebuilt.
 
 ### Add the channels and guides in Jellyfin
 

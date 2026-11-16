@@ -14,12 +14,19 @@ at a lower quality than you want. You can ask Reelix to search for one, for a fe
 ## Steps
 
 1. Go to **Activity**, then **Wanted**. Choose **Missing**, or **Below the quality wanted**.
-2. Choose **Films** or **Episodes**. The page says how many there are.
+2. Choose the kind: **Films**, **TV**, **Music**, **Books** or **Audiobooks**. The page says how many there are,
+   such as **12 films missing**. Select a film or episode to open its details.
 3. Search in one of these ways:
    - For one title, select **Search** beside it.
-   - For a few, tick each one, then select **Search for the** number **ticked**.
+   - For a few, select **Select several**, tick each one, then select **Search for them** in the bar at the foot
+     of the page. **Done** puts the ticks away.
    - For the whole list, select **Search all**, then **Search all** again to confirm. Reelix searches a few at a
      time, so a long list can take a while.
+
+   ![Activity, Wanted with example films, with Missing (step 1), Films (step 2) and Search beside one film (step 3) outlined](../images/get-what-is-missing-1-missing.png)
+
+   ![Wanted after Select several, with two films ticked and the bar with 2 ticked and Search for them (step 3) outlined](../images/get-what-is-missing-2-several.png)
+
 4. Starboard says what Reelix is doing. What Reelix finds appears in **Activity**, then **Downloads**. Read
    [Pause, resume and remove downloads](manage-downloads.md).
 
@@ -29,6 +36,8 @@ While [download hours](set-download-hours.md) pause downloads, each item has **D
 
 1. Select **Download now** beside the item.
 2. Select **Download now** again to confirm.
+
+   ![Wanted while download hours pause downloads, with Download now beside the first film (step 1) outlined](../images/get-what-is-missing-3-download-now.png)
 
 Reelix searches for it now, and it downloads as soon as it is found. Everything else stays paused until the
 hours start. The **Download hours** panel on the Queue page names what is downloading outside the hours.

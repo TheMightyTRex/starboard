@@ -17,17 +17,24 @@ all downloads, remove one download, or ask an app to find a different copy.
 
 ### Check what is downloading
 
-1. Go to **Activity**, then **Downloads**, then **Queue**. Each download shows its name, its app, its size, the
-   time left and its state, such as **Downloading**, **Waiting** or **Needs attention**.
+1. Go to **Activity**, then **Downloads**, then **Queue**. Each download shows its name, its app, its size and
+   the time left. Its state, such as **Downloading**, **Waiting** or **Needs attention**, is a chip before how far
+   it has got.
 2. Optional: to show only one state, select its filter, such as **Needs attention**. Select it again to show
    everything.
 3. Optional: select **Sort** to change the order: **Needs you first**, **Time left**, **Name** or **Queue order**.
 4. Optional: select **Group by app** to show one list for each app.
 
+   ![Activity, Downloads, Queue with example data, with the Needs attention filter (step 2), Sort (step 3) and Group by app (step 4) outlined](../images/manage-downloads-1-queue.png)
+
+
 ### Remove a download
 
 1. Select the download's name. A side panel opens with its details and any messages from the app.
 2. Select **Remove**. Starboard asks **Remove this download?**
+
+   ![A download's details, with the messages from Reelix, Find another, and Remove (step 2) outlined](../images/manage-downloads-2-remove.png)
+
 3. Optional: tick **Block this release** so the app never downloads this copy again.
 4. Select **Remove download**. The app removes it from the queue and from the download app, with what it has
    downloaded so far.
@@ -40,6 +47,18 @@ Use this when a download is stuck or the wrong one.
 2. Select **Find another**. Starboard asks **Block this release and find another?**
 3. Select **Block and search**. The app removes this copy, never downloads it again and searches for another
    now.
+
+### Get a held download now, or remove it
+
+Reelix can hold a release back for a while, in case a better one comes. This is a delay profile. Held releases
+show under **Held downloads** on the Queue page, with **Held**, why each waits, such as **Waiting for the delay to
+pass**, and when it goes to the download app by itself.
+
+1. To send one to the download app straight away, select **Get it now** beside it.
+2. To drop one, select **Remove**, then **Remove** again. Nothing is downloaded, and Reelix may find it again at its
+   next search.
+
+   ![Held downloads with example releases, with Get it now (step 1) and Remove (step 2) beside the first one outlined](../images/manage-downloads-3-held.png)
 
 ### Fix a Reelix download that will not import
 

@@ -25,7 +25,7 @@ is ready to use.
 3. A slide-out opens. It says the plug-in is installed at your own risk, then lists what it **can see**, what it
    **can change**, what it **can reach**, what it runs and what it can never reach. Read it all.
 
-   ![Settings, Plug-ins, Catalogue, with the install slide-out open: the warning, It can see, It can change and It can reach (step 3) outlined](../images/add-a-plugin-1-preview.png)
+   ![Settings, Plug-ins, Catalogue, with the install slide-out for a made-up plug-in open: the warning, and It can see (step 3) outlined](../images/add-a-plugin-1-preview.png)
 
 4. To go ahead, enter your Starboard password and select **Install** and the plug-in's name. To stop, select
    **Cancel**: nothing is installed.

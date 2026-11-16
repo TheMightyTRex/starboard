@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Takes the help centre's screenshots from made-up data, marked up with annotate.js, into docs/help/images:
-#   tools/help-screenshots.sh [topic,topic...]     (all of tools/screenshots/help_shots.json when none is given)
+#   tools/help-screenshots.sh [topic,topic...]     (all of tools/screenshots/help_shots.json and help_shots.d/*.json
+#                                                   when none is given)
 # Look at every picture before committing (docs/help/HOW-THIS-HELP-IS-WRITTEN.md, Screenshots).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PORT="${SHOTS_PORT:-18792}"
 PLAYWRIGHT="1.63.0"
+# Playwright's node modules from a cache folder when there is one (PLAYWRIGHT_NPM_CACHE), so a run needs no download.
+cache="${PLAYWRIGHT_NPM_CACHE:-/mnt/pool/build-cache/npm-playwright-1.63}"
+[ -d "$cache/node_modules/playwright" ] || cache=""
 work="$(mktemp -d)"
 trap 'kill "$server" 2>/dev/null || true; rm -rf "$work"' EXIT
 EXAMPLE_CONTAINERS=1 python3 tools/screenshots/example_server.py "$work/data" "$PORT" > "$work/server.log" 2>&1 &
@@ -17,10 +21,11 @@ status=0
 docker run --rm --memory 3g --memory-swap 3g --cpus 4 --network host -u "$(id -u):$(id -g)" -e HOME=/tmp -e ONLY="${1:-}" \
   -e BASE="http://127.0.0.1:$PORT" -e PASSWORD_FILE=/work/data/password -e OUT=/work/out \
   -v "$work:/work" -v "$PWD/tools/screenshots:/shots:ro" \
-  "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
-  sh -c "mkdir -p /tmp/s && cp -r /shots/help_shoot.mjs /shots/help_shots.json /shots/annotate.js /shots/terminal /tmp/s/ && cd /tmp/s && npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT >/dev/null && node help_shoot.mjs" || status=$?
+  ${cache:+-v "$cache:/cache:ro"} "mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble" \
+  sh -c "mkdir -p /tmp/s && cp -r /shots/help_shoot.mjs /shots/help_shots.json /shots/help_shots.d /shots/annotate.js /shots/terminal /tmp/s/ && cd /tmp/s && if [ -d /cache/node_modules/playwright ]; then ln -s /cache/node_modules node_modules; else npm init -y >/dev/null && npm i --silent playwright@$PLAYWRIGHT >/dev/null; fi && node help_shoot.mjs" || status=$?
 mkdir -p docs/help/images
+# Only this run's pictures are made smaller, so pictures already in the help are not written again.
+command -v pngquant >/dev/null && pngquant --force --ext .png --quality 70-90 "$work"/out/*.png 2>/dev/null || true
 cp "$work"/out/*.png docs/help/images/ 2>/dev/null || true
-command -v pngquant >/dev/null && pngquant --force --ext .png --quality 70-90 docs/help/images/*.png 2>/dev/null || true
 echo "Written to docs/help/images. Look at each one before committing."
 exit $status

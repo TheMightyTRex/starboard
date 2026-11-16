@@ -7,6 +7,15 @@ add features.
 
 ## [Unreleased]
 
+### Fixed
+- **Settings topic tabs:** Activating Advanced settings on a page with topic tabs, such as Settings, Reelix, no longer selects two tabs at once and shows two sections together. A section that appears gets an id no other has.
+- **Search:** Each kind under Not in your library no longer ends with the word "null".
+
+### Help
+- **Pictures for 0.19:** Every help and README picture retaken from the example server's default install, and new marked-up pictures (at least 3 each) for Use the dashboard, Finish setting up, Find a setting, Coming up, Organise categories, Copy download issues, Get what is missing, Manage downloads, Download without a VPN, Set download hours, Update Starboard, Update a plug-in, Add a plug-in from a zip file, Use Starboard's API and Set up Live TV. Their steps were checked against the screens and corrected where they had changed (Settings, Updates as one page, Settings, General's pages, Discover's Search, Reelix's topic tabs and Edit buttons, Make a key as a slide-out).
+- **Library clean-up's help pages** now have their pictures in the plug-ins help, mirrored here with the pictures (tools/sync-plugin-help.py copies help/images/<id>/ to docs/help/images/plugins/<id>/).
+- **Help picture tools:** tools/help-screenshots.sh runs to the end: a shot that fails is listed and the rest are still taken (it stopped at change-reelix-settings-3-form.png). Each shot has a fresh page, can put back what it changed (after), and topics can keep their shots in tools/screenshots/help_shots.d/. Both picture tools use the Playwright cache folder when there is one.
+
 ## [0.19.0] (15 November 2026)
 
 ### Added

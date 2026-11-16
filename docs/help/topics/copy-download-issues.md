@@ -18,14 +18,25 @@ each issue, say the likely cause, the fix to try in Starboard or Reelix, and wha
 
 1. Go to **Activity**, then **Downloads**, then **Queue**.
 2. Select **Copy issues for an AI helper**. Starboard asks each app for its queue once, and copies every download
-   that needs attention or failed. It says **Copied** and the number of issues.
-3. Optional: select **Show what was copied** to read it first.
+   that needs attention or failed. It says **Copied** and the number of issues, such as **Copied 1 issue for an AI
+   helper**.
+
+   ![Activity, Downloads, Queue with example data, with Activity (step 1) and Copy issues for an AI helper (step 2) outlined](../images/copy-download-issues-1-copy.png)
+
+3. Optional: select **Show what was copied** to read it first. Keys, passwords and private addresses are taken
+   out.
+
+   ![The Copied 1 issue for an AI helper notice, with Show what was copied (step 3) open and outlined](../images/copy-download-issues-2-copied.png)
+
 4. Paste it into a chat with your AI helper and send it.
 
 ### Save the issues as a file
 
 1. Go to **Activity**, then **Downloads**, then **Queue**.
 2. Select **Download as Markdown**. Your browser saves a file whose name starts with `starboard-download-issues`.
+
+   ![Activity, Downloads, Queue with example data, with Download as Markdown (step 2) outlined](../images/copy-download-issues-3-markdown.png)
+
 3. Attach the file to a chat with your AI helper, or open it in any text editor.
 
 ## What the copy holds

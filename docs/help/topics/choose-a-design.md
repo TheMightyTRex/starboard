@@ -18,7 +18,7 @@ their own in the Display panel.
 
 ### Set the design everyone sees
 
-1. Go to **Settings**, then **General**, and activate **Advanced settings**.
+1. Go to **Settings**, then **General**, then **Appearance**, and activate **Advanced settings**.
 2. Find **Default design**.
 3. Choose a design, such as **Tiles**. The change applies at once, and Starboard confirms with **Default
    design: Tiles**.

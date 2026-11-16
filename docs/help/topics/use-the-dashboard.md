@@ -17,14 +17,23 @@ four layouts. You can choose another layout, add and remove cards, and change ea
 
 1. Go to **Home**, then **Dashboard**.
 2. Select **Edit dashboard**. Nothing changes until you save.
+
+   ![The dashboard with example data, with Home in the side menu (step 1) and Edit dashboard (step 2) outlined](../images/use-the-dashboard-1-edit.png)
+
 3. Optional: in **Layout**, choose **At a glance**, **Watch and listen**, **Downloads and storage** or
    **Compact**. The cards change to that layout's own.
 4. Optional: in **Add a card**, choose a card from **Add a card…**. It is added at the end, at **Half** size.
-5. Optional: change a card with the controls on the card itself:
-   - Choose its size: **Small**, **Medium**, **Half**, **Wide** or **Full width**.
+5. Optional: change a card with the controls under its band:
+   - Choose its size: **Small**, **Medium**, **Half**, **Wide** or **Full width**. Some plug-in cards have a
+     shorter title at a smaller size, such as **Space saved** for Picture shrinker's **Pictures: space saved**.
    - Select the up or down arrow to move it earlier or later.
    - Select **Remove** to take it off the dashboard.
+
+   ![Edit dashboard with example data, with the Picture shrinker card's size set to Small, its arrows and Remove (step 5) outlined; at this size its title is Space saved](../images/use-the-dashboard-3-card.png)
+
 6. Select **Save**. Starboard confirms with **Dashboard saved**.
+
+   ![Edit dashboard with example data, with Layout (step 3), Add a card (step 4) and Save (step 6) outlined](../images/use-the-dashboard-2-layout.png)
 
 To start again, select **Back to the layout's own**, then **Save**. To leave without changing anything, select
 **Cancel**.
@@ -54,9 +63,13 @@ Some plug-ins add a card, such as Live TV. The plug-in must be added and active.
 - **Quick links:** a button for each of your apps.
 
 Each card has a grey band across the top with a logo and the card's name. A card about one app shows that app's
-logo, such as Jellyfin's on **Now playing**. Starboard's own cards, and cards that combine several apps, show a
-Starboard icon. At the right of the band, a status and when the card was updated show when the card has something
-to say, such as **Nearly full** on **Disk space**.
+logo, such as Jellyfin's on **Now playing**. A plug-in's card shows the plug-in's logo, or its initials, such as
+**WS** for Watch statistics. Starboard's own cards, and cards that combine several apps, show a Starboard icon. At
+the right of the band, a status and when the card was updated show when the card has something to say, such as
+**Nearly full** on **Disk space**. A small card shows only the status's icon, so the band stays on one line.
+**Still to set up** has **Go through them** at the right of its band.
+
+![The small cards at the foot of the dashboard with example data: each has a grey band with its logo and name, and the small VPN card's band, which shows only the status chip's icon, is outlined](../images/use-the-dashboard-4-band.png)
 
 ## Things to note
 

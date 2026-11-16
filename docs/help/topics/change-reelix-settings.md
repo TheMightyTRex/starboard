@@ -16,11 +16,11 @@ them behind its admin password, so each section asks for it before it opens.
 
 ### Open a section
 
-1. Go to **Settings**, then **Apps**, then **Reelix**. The page opens on **Basic settings**, **Sites to
-   search** and, in the full version of Reelix, **YouTube and Spotify**.
-2. For any other section, activate **Advanced settings**. The sections are in
-   [Which settings are where](#which-settings-are-where).
-3. In the section, select its **Show** button, such as **Show sites to search**.
+1. Go to **Settings**, then **Apps**, then **Reelix**. The page opens on **Version**. Each section has its own
+   tab under the heading, such as **Basic settings** and **Sites to search**.
+2. For any other section, activate **Advanced settings** at the right of the heading. More tabs appear. The
+   sections are in [Which settings are where](#which-settings-are-where).
+3. Select the section's tab, then its **Show** button, such as **Show sites to search**.
 
    ![Settings, Reelix, with Show sites to search (step 3) outlined](../images/change-reelix-settings-1-show.png)
 
@@ -34,7 +34,7 @@ them behind its admin password, so each section asks for it before it opens.
 **Sites to search**, **Media servers**, **Download apps**, **Notifications** and **Lists** are lists, with each
 one's state.
 
-1. To change one, select **More** (three dots) beside it, then **Change**. To add one, select the button under
+1. To change one, select **Edit** beside it: the **Change** panel opens. To add one, select the button under
    the list, such as **Add a site to search**, then choose one.
 2. Change the fields. **More settings** holds the ones most people leave as they are.
 3. Select **Test**. Reelix tries the settings and says whether **The test passed**.

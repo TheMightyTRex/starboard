@@ -96,7 +96,7 @@ In the help centre: [Quick start guide](https://themightytrex.github.io/starboar
 |---|---|
 | ![Apps, in the Health first design: each app with its status](docs/screenshots/apps.png) | ![System, Storage: the pool by type, with free space](docs/screenshots/storage.png) |
 | **Apps**, with problems first | **Storage**, by type |
-| ![Install apps: groups such as Movies and TV](docs/screenshots/install-apps.png) | ![The terminal set-up at 80 by 24, step 2 of 10, How to start](docs/screenshots/terminal-setup.jpg) |
+| ![Install apps, What to set up: Basics (recommended), Full install or Everything](docs/screenshots/install-apps.png) | ![The terminal set-up at 80 by 24, step 2 of 10, How to start](docs/screenshots/terminal-setup.jpg) |
 | **Install apps** in the browser | **The terminal set-up** |
 
 In the help centre: [Everything Starboard does](https://themightytrex.github.io/starboard/help/topics/everything-starboard-does.html) · [What Starboard is](https://themightytrex.github.io/starboard/help/basics/what-is-starboard.html) · [Set up your dashboard](https://themightytrex.github.io/starboard/help/guides/set-up-your-dashboard.html) · [Display and accessibility](https://themightytrex.github.io/starboard/help/topics/display-and-accessibility.html)

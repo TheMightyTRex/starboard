@@ -15,11 +15,15 @@ Library clean-up's settings are on its own tab: go to **Settings**, then **Plug-
 | **Not watched for** | For films and series nobody watches: how long since anyone watched it. A number from 1 to 120 months. | 12 months |
 | **People to leave out** | Jellyfin user names whose watching does not count, such as a guest account. Everyone else who can sign in to Jellyfin counts. | Nobody |
 
+![Library clean-up's Rules, with Move items each day, deactivated, outlined](../../images/plugins/library-cleanup/settings-1-rules.png)
+
 ## Libraries
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Libraries** | A page of its own that lists each film and series library in Jellyfin. Choose **Deactivate** for a library the rules should leave alone, such as a children's library. | Every library activated |
+| **Libraries** | A page of its own that lists each film and series library in Jellyfin. Choose **Deactivate** for a library the rules should leave alone, such as a children's library. It then says **Left alone**; **Activate** brings it back. | Every library activated |
+
+![Library clean-up's Libraries, with Children's films Left alone and Activate beside it outlined](../../images/plugins/library-cleanup/settings-4-libraries.png)
 
 ## Always keep
 
@@ -36,6 +40,10 @@ Library clean-up's settings are on its own tab: go to **Settings**, then **Plug-
 |---|---|---|
 | **Preview** | A page of its own that lists every film and series the rules would move now, with why and how much space each frees, and the total at the top. It is worked out in the background when you open it, when a setting changes, after six hours, or with **Preview again**. Nothing moves from it. | Not a setting |
 | **Holding folder** | A page of its own that lists everything Library clean-up moved, newest first, with when, why and its size, and a **Put back** button beside each. | Not a setting |
+
+![Library clean-up's Preview, with the total it would free at the top and one film's row, with why it would move and its space, outlined](../../images/plugins/library-cleanup/settings-2-preview.png)
+
+![Library clean-up's Holding folder, three items in holding, with Put back beside the first outlined](../../images/plugins/library-cleanup/settings-3-holding-folder.png)
 
 ## Buttons
 

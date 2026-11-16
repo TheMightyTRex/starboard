@@ -1,0 +1,84 @@
+{
+  "shots": [
+    {
+      "file": "organise-categories-1-categories.png",
+      "page": "settings-general.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tab = async (t) => { await until(() => document.querySelector('#topic-tabs [role=tab]')); [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === t).click(); await wait(500); }; await until(() => document.getElementById('advanced-switch')); document.getElementById('advanced-switch').click(); await wait(1500); await tab('Categories');",
+      "after": "await api('/api/config/general', { method: 'PUT', body: { settings_advanced: false } });",
+      "marks": [
+        {
+          "t": "$.advanced-toggle",
+          "step": 2,
+          "side": "bottom",
+          "tail": 70
+        },
+        {
+          "t": "$#topic-tabs [aria-selected=true]",
+          "step": 2,
+          "side": "bottom",
+          "tail": 60
+        },
+        {
+          "t": "Add category",
+          "step": 3,
+          "side": "right",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        2,
+        2,
+        3
+      ],
+      "alt": "Settings, General, Names and apps with Advanced settings active and the Categories tab (step 2) outlined, and Add category (step 3) under the list",
+      "topic": "organise-categories"
+    },
+    {
+      "file": "organise-categories-2-more.png",
+      "page": "settings-general.html",
+      "height": 900,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; const tab = async (t) => { await until(() => document.querySelector('#topic-tabs [role=tab]')); [...document.querySelectorAll('#topic-tabs [role=tab]')].find((x) => x.textContent.trim() === t).click(); await wait(500); }; await until(() => document.getElementById('advanced-switch')); document.getElementById('advanced-switch').click(); await wait(1500); await tab('Categories'); [...document.querySelectorAll('main button')].find((b) => (b.getAttribute('aria-label') || b.textContent.trim()) === 'More actions for Find and organise').click(); await wait(500); [...document.querySelectorAll('[role=menu]')].find((m) => m.offsetParent).dataset.shot = 'menu';",
+      "after": "await api('/api/config/general', { method: 'PUT', body: { settings_advanced: false } });",
+      "marks": [
+        {
+          "t": "$[role=menu][data-shot=menu]",
+          "step": 5,
+          "side": "left",
+          "tail": 90
+        }
+      ],
+      "steps": [
+        5
+      ],
+      "alt": "The Categories list, with More actions for Find and organise open: Move up, Move down and Remove (step 5) outlined",
+      "topic": "organise-categories"
+    },
+    {
+      "file": "organise-categories-3-app.png",
+      "page": "settings.html",
+      "height": 800,
+      "run": "const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const btn = (t) => [...document.querySelectorAll('main button, #side-panel button')].find((b) => b.textContent.trim() === t); const until = async (f) => { for (let i = 0; i < 60 && !f(); i++) await wait(250); }; await until(() => btn('Edit Jellyfin')); btn('Edit Jellyfin').click(); await until(() => document.querySelector('#side-panel [name=group]')); await wait(600); document.querySelector('#side-panel [name=group]').scrollIntoView({ block: 'center' }); await wait(300);",
+      "marks": [
+        {
+          "t": "field:group",
+          "step": 2,
+          "side": "left",
+          "tail": 110
+        },
+        {
+          "t": "Save app",
+          "step": 3,
+          "side": "top",
+          "tail": 60
+        }
+      ],
+      "steps": [
+        2,
+        3
+      ],
+      "alt": "The Edit Jellyfin panel, with Category (step 2) and Save app (step 3) outlined",
+      "topic": "organise-categories"
+    }
+  ]
+}

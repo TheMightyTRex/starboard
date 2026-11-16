@@ -15,23 +15,32 @@ start. You can also run one command on the server.
 
 ## Find out whether an update is out
 
-- Starboard's version is at the foot of the side menu. When a newer one is out, **Update** appears beside it, and
-  the footer link becomes **About and updates (1)**. Either goes to **Settings**, **Updates**, **Update settings**.
-- On **Update settings**, a notice says "Version 0.15.5 is out", for example, with a **Release notes** button that
+- Starboard's version is at the foot of the side menu. When a newer one is out, **Update** appears beside it. It
+  goes to **Settings**, then **Updates**. **About and updates** in the footer of any page goes there too.
+- At the top of **Updates**, a notice says "Version 0.20.0 is out", for example, with a **Release notes** button that
   says what changed.
 
-For this to work, **Check GitHub for new releases** must be active, in the **Updates** section of **Update
-settings**. What changed in every version is on **Settings**, **Updates**, **Releases**.
+For this to work, **Check GitHub for new releases** must be activated. It is on the **Updates** page, under **Update
+Starboard on the server instead**. What changed in every version is on **Settings**, then **Updates**, then
+**Releases**.
 
 ## Update from Starboard's page
 
 This works if you used the installer and Starboard has Docker access, or if you installed it without Docker.
 
-1. Go to **Settings**, then **Updates**, then **Update settings**.
-2. In **Updates**, select **Update now to** and the new version, such as **Update now to 0.18.0**.
-3. A dialog says what happens: your settings are backed up first, Starboard restarts for about a minute, and it goes
-   back to your version by itself if the new one does not start. Enter your Starboard password and select
-   **Update now**.
+1. Go to **Settings**, then **Updates**. The page opens on **Ready to update**. It lists Starboard, Reelix, each
+   plug-in and Jellyfin's plug-ins, with the version you have, the new one and whether it waits for you or updates by
+   itself.
+2. Beside **Starboard**, select **Update now**.
+
+   ![Settings, Updates, Ready to update with example data, with Update now beside Starboard (step 2) outlined](../images/update-starboard-1-ready.png)
+
+3. A dialog says what happens: your settings are backed up first, Starboard restarts and is away for about a minute,
+   and it goes back to your version by itself if the new one does not start. Enter **Your Starboard password** and
+   select **Update now**.
+
+   ![The Update Starboard to 0.20.0 dialog, with Your Starboard password (step 3) outlined](../images/update-starboard-2-confirm.png)
+
 4. A dialog shows each step with its state: checking, backing up, getting the new version, building it, restarting
    and checking that it answers. While Starboard restarts, the dialog loses touch for about a minute and reconnects
    by itself.
@@ -41,17 +50,28 @@ This works if you used the installer and Starboard has Docker access, or if you 
 Closing the dialog does not stop the update. If **Update now** is not there, the page says why, such as a Starboard
 from the ready-made image, which you update on the server.
 
-## Let Starboard update itself
+## Let parts update by themselves
 
-1. Go to **Settings**, then **Updates**, then **Update settings**.
-2. In **Automatic updates**, activate **Install Starboard updates automatically**. It is deactivated until you
-   activate it.
+Starboard, Reelix, your other apps, Starboard plug-ins and Jellyfin's plug-ins can each update by themselves.
 
-Starboard then installs a new release by itself in the quiet hours: your download hours when they are set,
-otherwise 01:00 to 06:00. It backs up and checks in the same way, and you get an alert either way if alerts are
-active. A version that did not install is not tried again by itself: **Update now** tries it again.
-**Install Reelix updates automatically**, beside it, does the same for Reelix. Read
+1. Go to **Settings**, then **Updates**, and select the **Update by themselves** tab.
+2. Under **When they update**, choose **In your download hours** or **In the quiet hours** (always 01:00 to 06:00).
+   Without download hours, both mean 01:00 to 06:00. The line under the choices says which hours are used now.
+3. Activate the switch of each part you want, such as **Starboard: update by itself**. Each part is deactivated
+   until you activate it. Beside each one, **Copy first**, **Checked by** and **Way back** say what is copied before
+   the update, how the new version is checked and how it goes back if it does not work.
+
+   ![Settings, Updates, Update by themselves, with When they update (step 2) and Starboard: update by itself (step 3) outlined](../images/update-starboard-3-by-themselves.png)
+
+Each part backs up and checks in the same way as **Update now**, and you get an alert either way if alerts are
+active. A version that did not install is not tried again by itself: **Update now** tries it again. Jellyfin's
+plug-ins cannot go back by themselves, as Jellyfin keeps no older version. Read
 [Updates for Reelix](update-your-apps.md#updates-for-reelix).
+
+**Recent updates**, the next tab, lists the last 20 updates: by you, by themselves or from the API, with how each
+ended, such as **Updated**, **Rolled back** or **Went back by itself**.
+
+![Settings, Updates, Recent updates with example data, with the list of updates and how each ended outlined](../images/update-starboard-4-recent.png)
 
 ## Steps if you used the installer
 

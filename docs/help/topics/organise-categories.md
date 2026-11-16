@@ -14,13 +14,18 @@ rename, reorder and remove them, and choose each app's category. Changes apply a
 
 ### Add, rename or reorder categories
 
-1. Go to **Settings**, then **General**.
-2. Activate **Advanced settings**. The **Categories** section lists the categories in the order the Apps page
-   shows them, with how many apps are in each.
+1. Go to **Settings**, then **General**, then **Names and apps**.
+2. Activate **Advanced settings** at the right of the heading, then select the **Categories** tab. It lists the
+   categories in the order the Apps page shows them, with how many apps are in each.
 3. To add one, enter its name in **New category**, then select **Add category**.
+
+   ![Settings, General, Names and apps with Advanced settings active and the Categories tab (step 2) outlined, and Add category (step 3) under the list](../images/organise-categories-1-categories.png)
+
 4. To rename one, select **Rename** for it. Enter the **New name**, then select **Rename category**. Its apps
    move with it.
 5. To change the order, select **More actions** (three dots) for a category, then **Move up** or **Move down**.
+
+   ![The Categories list, with More actions for Find and organise open: Move up, Move down and Remove (step 5) outlined](../images/organise-categories-2-more.png)
 
 ### Remove a category
 
@@ -34,6 +39,8 @@ rename, reorder and remove them, and choose each app's category. Changes apply a
 2. In **Category**, choose a category. **Choose for me** puts well-known apps in their usual category, and
    shows which one it picked.
 3. Select **Save app**, or **Save and continue** for Sonarr, Radarr, Lidarr and Readarr.
+
+   ![The Edit Jellyfin panel, with Category (step 2) and Save app (step 3) outlined](../images/organise-categories-3-app.png)
 
 ## Things to note
 

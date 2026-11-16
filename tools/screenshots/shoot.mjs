@@ -48,7 +48,9 @@ const SHOTS = [
   { file: "storage-drives.png", page: "system-storage.html", ...desk, run: top("#drives-panel") },
   { file: "storage-history.png", page: "system-storage.html", width: 1280, height: 760, run: top("#growth-panel") },
   { file: "jellyfin.png", page: "system.html", width: 1280, height: 560, run: jellyfin },
-  { file: "install-apps.png", page: "install-apps.html", ...desk },
+  // The set-up's What to set up step: on a set-up server the page opens on what is installed, so ?wizard=1 (0.19).
+  { file: "install-apps.png", page: "install-apps.html?wizard=1", ...desk,
+    run: `(async () => { [...document.querySelectorAll("button")].find((b) => b.textContent.trim() === "Begin").click(); ${wait(1800)} })()` },
   { file: "your-install.png", page: "settings-install.html", ...desk },
   { file: "setup-guide.png", page: "setup-guide.html", ...desk },
   { file: "performance.png", page: "settings-performance.html", ...desk },
@@ -59,8 +61,10 @@ const SHOTS = [
   { file: "display.png", page: "index.html", ...desk, click: "[data-display-toggle]" },
   { file: "copy-settings.png", page: "copy-settings.html", width: 1280, height: 1000, before: addExisting, click: "#copy-sections button[type=submit]",
     after: top("#copy-sections h3"), cleanup: removeExisting },
-  { file: "audiobookshelf.png", page: "settings-audiobookshelf.html", ...desk, run: top("#listening-sections .table-wrap") },
-  { file: "logs-settings.png", page: "settings-general-logs.html", width: 1280, height: 700, run: top("#gn-logs-h") },
+  // Copy listening progress is under Advanced settings, so the shot turns it on and puts it back (0.19 pictures).
+  { file: "audiobookshelf.png", page: "settings-audiobookshelf.html", ...desk, before: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: true } })',
+    cleanup: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: false } })' },
+  { file: "logs-settings.png", page: "settings-general-logs.html", width: 1280, height: 700, before: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: true } })', cleanup: 'api("/api/config/general", { method: "PUT", body: { settings_advanced: false } })' },
   { file: "apps-phone.png", page: "index.html", ...phone },
   // The Library and Search from the made-up Reelix (DASH-163, DASH-162).
   { file: "library.png", page: "library-films.html", ...desk, run: '(async () => { for (let i = 0; i < 40 && !document.querySelector("#lib-wall .media-card img"); i++) await new Promise((r) => setTimeout(r, 250)); await new Promise((r) => setTimeout(r, 800)); })()' },

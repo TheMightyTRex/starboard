@@ -16,19 +16,26 @@ key can change Starboard's settings. Make one key for each app that uses it.
 
 ### Make a key
 
-1. Go to **Settings**, then **Security**.
-2. Find **API keys**.
+1. Go to **Settings**, then **Security**, then **API keys**.
+2. Select **Make a key**. A slide-out opens.
 3. In **Name it after what will use it**, enter a name, such as `Home Assistant`.
 4. In **What it may do**, choose **Read only**, or **Read and manage** if it must act, such as approving requests.
 5. In **What it may see**, tick only the areas it needs. Leave them all empty for everything except **Logs** and
    **Updates**, which a key has only when they are ticked. **Updates** with **Read and manage** lets it update
    Starboard, Reelix, your apps and plug-ins, and roll a plug-in back, as the pages do.
+
+   ![The Make a key slide-out, with What it may do set to Read only (step 4), and What it may see with Apps and System ticked and Updates unticked (step 5) outlined](../images/use-starboards-api-1-make.png)
+
 6. In **Ends**, choose **In 90 days**, **In a year** or **Never**.
 7. In **Your Starboard password**, enter the password.
 8. Select **Make a key**.
 9. Select **Copy**, then paste the key into the app that will use it. Starboard shows the key only this once.
+   Select **Done**.
 
-The key appears in the list with its name, what it may do, when it ends and when it was last used.
+   ![My script's key, shown once with a made-up key, with Copy (step 9) outlined](../images/use-starboards-api-2-copy.png)
+
+The key appears in the list with its name, the start of the key, what it may do, when it ends and whether it has
+been used.
 
 ### Use the key
 
@@ -45,8 +52,14 @@ processor, memory and disks, within the areas you ticked.
 ### Revoke a key
 
 1. Go to **Settings**, then **Security**, then **API keys**.
-2. Select **Revoke** beside the key.
-3. Select **Revoke** to confirm. Anything using the key stops working at once.
+2. Select **Edit** beside the key.
+
+   ![Settings, Security, API keys with example keys, with Edit beside the Home Assistant key (step 2) outlined](../images/use-starboards-api-3-list.png)
+
+3. The slide-out shows what the key **May** do, what it **Sees** and when it ends. Select **Revoke**, then **Revoke**
+   again to confirm. Anything using the key stops working at once.
+
+   ![The Home Assistant key's slide-out, with what it may do and see, and Revoke (step 3) outlined](../images/use-starboards-api-4-revoke.png)
 
 ## Things to note
 

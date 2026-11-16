@@ -14,8 +14,8 @@ Starboard. Others you change by running the installer again, which keeps your se
 
 ## Check what Starboard can access now
 
-1. Go to **Settings**, then **Updates**, then **Update settings**.
-2. Find the section **What Starboard can access**.
+1. Go to **Settings**, then **Updates**.
+2. Select the **What Starboard can access** tab.
 
 Each row names one kind of access, says what it is for and what it costs your server, and shows whether it is
 active. Each row also shows how to change it: a switch, a button such as **Change it**, or a command to run on the
@@ -55,7 +55,7 @@ your folders for free space, and Disk health reports.
    [What the installer asks](what-the-installer-asks.md#the-access-it-asks-for) for what each question means.
 4. Wait for "Starboard is running". Starboard restarts with the new access. Your settings and password stay.
 
-On **Update settings**, each row that needs the installer also shows the exact command, such as
+On **What Starboard can access**, each row that needs the installer also shows the exact command, such as
 `./install.sh --no-docker`, with a copy button. Running that command changes that one answer straight away and asks the
 other questions as usual.
 

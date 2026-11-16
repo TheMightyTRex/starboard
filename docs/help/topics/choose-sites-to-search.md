@@ -16,10 +16,11 @@ download app. Nothing is added unless you add it. Add, test and remove sites in 
 ## Steps
 
 1. Go to **Settings**, then **Apps**, then **Reelix**.
-2. Under **Sites to search**, select **Show sites to search**. Enter your Reelix password, then select
+2. Select the **Sites to search** tab, then **Show sites to search**. Enter your Reelix password, then select
    **Continue**.
-3. Read the list. **State** says whether each site is working. **Results** says how many searches it answered
-   and how many downloads Reelix chose from it.
+3. Read the list. The chip beside each site says whether it is **Working**, **Failed last time** or **Not
+   active**. The line under its name says how many searches it answered, how many downloads Reelix chose from it,
+   and how long it takes to answer.
 
    ![Sites to search, with the list of sites (step 3) and Add a site to search (step 4) outlined](../images/choose-sites-to-search-1-list.png)
 

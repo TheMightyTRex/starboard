@@ -18,9 +18,10 @@ listen in Audiobookshelf. Starboard shows what is due in Coming up, and episodes
 
 ### Find and follow a show
 
-![The Search page with example data, with Search in the side menu (step 1), the search box (step 2) and Follow beside a radio show under Not in your library (step 3) outlined](../images/follow-radio-shows-1-search-link.png)
+![The Search page with example data, with Discover in the side menu (step 1), the search box (step 2) and Follow beside a radio show under Not in your library (step 3) outlined](../images/follow-radio-shows-1-search-link.png)
 
-1. Select **Search** in the side menu. On a phone, select **Search** in the header.
+1. Select **Discover** in the side menu. It opens on **Search**. Or enter the name in the search box at the top
+   of any page.
 2. Enter the show's name, such as `Morning Story`. Your library is searched first, so you can check whether you
    follow it already.
 3. Under **Not in your library**, **Radio** lists the shows Reelix found. Select **Follow** beside the one you want.
@@ -40,11 +41,12 @@ up Audiobookshelf yourself, do this once. After that, every episode Reelix downl
 
 ### Check what is due and what is downloading
 
-![The Coming up page with example data, with Discover (step 1), the Reelix filter (step 2) and The Example Hour, Series 4, episode 1, Tides (step 3) outlined](../images/follow-radio-shows-2-coming-up.png)
+![The Coming up page with example data, with Discover (step 1), Wanted (step 2) and The Example Hour, Series 4, episode 2, Lighthouses (step 3) outlined](../images/follow-radio-shows-2-coming-up.png)
 
 1. Go to **Discover**, then **Coming up**. Episodes of the shows you follow are listed by the day and time they
    are broadcast, with a radio icon.
-2. Optional: to show radio only, select **Reelix**. Select it again to show every app.
+2. Optional: to show only the episodes still to come in, select **Wanted**. **In library** shows the ones you have
+   already. Select **All** to show every episode again.
 3. Select an episode to open its details. **Open in Reelix** opens the show's page in Reelix, in a new tab.
 
 ![The Downloads page with example data, with Activity (step 4) and The Example Hour, Lighthouses, downloading in Reelix (step 5) outlined](../images/follow-radio-shows-3-downloads.png)

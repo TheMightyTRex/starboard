@@ -17,14 +17,23 @@ work. You can roll back to the version you had at any time.
 ## Update a plug-in
 
 1. Go to **Settings**, then **Plug-ins**. A plug-in with a newer version has an **Update** chip in **Manage**.
+
+   ![Settings, Plug-ins, Manage with example data, with the Update chip beside Picture shrinker (step 1) outlined](../images/update-a-plugin-1-manage.png)
+
 2. Select the plug-in's name to open its page.
-3. In **Versions**, select **Update to** and the new version, such as **Update to 1.1.0…**.
+3. Select the **Versions** tab, then **Update to** and the new version, such as **Update to 1.1.0…**.
+
+   ![Picture shrinker's Versions, with Update to 1.1.0 (step 3) outlined](../images/update-a-plugin-2-versions.png)
+
 4. A slide-out opens with the same warning as when you added it. Anything the new version may do that the one you
    have may not is marked **New**. Read the rest:
    - **What is new since** your version: each version's changes, under **Added**, **Changed**, **Fixed** and other
      headings.
    - **How the update is kept safe**: which of your settings move to the new version, whether Starboard asks the
      plug-in to finish its work first, and how long Starboard waits for the new version to answer.
+
+   ![The Update Picture shrinker to 1.1.0 slide-out, with What is new since 1.0.0 (step 4) outlined, and How the update is kept safe under it](../images/update-a-plugin-3-warning.png)
+
 5. To go ahead, enter your Starboard password and select **Update** and the plug-in's name. To stop, select
    **Cancel**: nothing changes.
 6. A dialog shows each step with its state: **Asking it to get ready**, **Moving its settings**, **Installing the
@@ -34,19 +43,24 @@ work. You can roll back to the version you had at any time.
 8. The plug-in's **State** shows **What is new** and the new version. Select **Got it** when you have read it: it is
    then hidden on every device.
 
+   ![The Styles plug-in's State after an update, with What is new in 1.1.0 and Got it (step 8) outlined](../images/update-a-plugin-4-state.png)
+
 Closing the dialog does not stop the update. The page says it is still running, with **Show progress**.
 
 ## Roll back to the version you had
 
 1. On the plug-in's page, select **Roll back to** and the version you had, such as **Roll back to 1.0.0**. It is in
    **Versions**, and on **State** when the plug-in stopped working soon after an update.
+
+   ![The Styles plug-in's Versions, with Roll back to 1.0.0 (step 1) outlined](../images/update-a-plugin-5-roll-back.png)
+
 2. Enter your Starboard password and select **Roll back**.
 3. A dialog shows each step. When it ends, it says **is back on** and the version. Select **Done**.
 
 Rolling back needs no download. Your settings go back to how they were before the update. The newer version is kept,
 so **Update** brings it back when you are ready.
 
-## Update a plug-in from an address
+## Update a plug-in from an address or a zip file
 
 For a plug-in that is not in a catalogue, such as one from its maker's own page:
 
@@ -54,6 +68,9 @@ For a plug-in that is not in a catalogue, such as one from its maker's own page:
 2. Paste the address of the new version's `starboard-plugin.json` into **Address of the new version**.
 3. Select **See what is new**. The same slide-out opens: go on from step 4 of
    [Update a plug-in](#update-a-plug-in).
+
+A plug-in you added from a zip file has **Update from a zip file** there instead: choose the new version's zip, then
+select **See what is new**. Read [Add a plug-in from a zip file](add-a-plugin-from-a-zip-file.md#update-it-from-a-newer-zip).
 
 ## Things to note
 

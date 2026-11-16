@@ -14,23 +14,31 @@ during the day. It pauses qBittorrent, NZBGet, SABnzbd and Soulseek. You can sti
 
 ## Steps
 
-1. Go to **Settings**, then **General**.
-2. Find **Download hours**. If it says **No download apps yet**, add a download app with its API key first.
-3. In **Start**, choose the hour downloads start, such as **01:00**.
-4. In **End**, choose the hour downloads pause, such as **07:00**.
-5. Activate **Only download between set hours**. Starboard confirms with **Download hours activated** and the
-   hours.
+1. Go to **Settings**, then **Downloads**, then **Download hours**. If it says **No download apps yet**, add a
+   download app with its API key first.
+2. In **Start**, choose the hour downloads start, such as **01:00**.
+3. In **End**, choose the hour downloads pause, such as **07:00**.
 
-Each change applies at once. There is no save button.
+   ![Settings, Downloads, Download hours, with Download hours (step 1), Start (step 2) and End (step 3) outlined](../images/set-download-hours-1-page.png)
 
-**Settings**, then **Downloads** also shows whether download hours are active, with a **Change download hours**
-link. The same page holds your VPN and your Usenet provider's server, with **Test the server** for the Usenet
-server. Read [Choose a Usenet provider and add it](choose-a-usenet-provider.md).
+4. Activate **Only download between set hours**. Starboard says **Saved at** and the time beside it.
+
+   ![Download hours, with Only download between set hours activated (step 4) outlined](../images/set-download-hours-2-on.png)
+
+Each change applies at once. There is no save button. Outside the hours, Starboard pauses qBittorrent, NZBGet,
+SABnzbd and Soulseek (slskd).
+
+**Settings**, then **General**, then **Download hours** is the same setting in a second place: a change in one shows
+in the other. **Settings**, then **Downloads** also holds your VPN and your Usenet provider's server. Read
+[Choose a Usenet provider and add it](choose-a-usenet-provider.md).
 
 ### Resume or pause by hand
 
 1. Go to **Activity**, then **Downloads**, then **Queue**.
 2. In **Download hours**, select **Resume downloads now**, or **Pause downloads until** a time.
+
+   ![Activity, Downloads, Queue while download hours pause downloads, with Paused and Resume downloads now (step 2) outlined](../images/set-download-hours-3-resume.png)
+
 3. To go back to your hours, select **Follow the hours**. Otherwise Starboard goes back to them at the next
    start or end time.
 

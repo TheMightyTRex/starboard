@@ -15,10 +15,10 @@ podcasts have **Follow** instead.
 
 ## Steps
 
-![The Search page with example data before anything is typed, with Search in the side menu (step 1) and Your library with each kind and its count (step 2) outlined](../images/search-and-add-1-start.png)
+![The Search page with example data before anything is typed, with Discover in the side menu (step 1) and Your library with each kind and its count (step 2) outlined](../images/search-and-add-1-start.png)
 
-1. Select **Search** in the side menu. Or enter a name in the search box in the header of any page. On a phone,
-   select **Search** in the header, or use the search box in the menu.
+1. Select **Discover** in the side menu. It opens on **Search**. Or enter a name in the search box at the top of
+   any page. On a phone, use the search box in the menu.
 2. Before you type, Search shows your library: **Recently added**, then each kind with how many you have, such as
    **Films** and **64 films**. Select a kind to open it in the Library.
 
@@ -36,7 +36,7 @@ podcasts have **Follow** instead.
 6. In the panel, choose the **Quality**: how good a copy Reelix looks for.
 7. Choose the **Folder** it goes in. Each folder shows the free space on its drive. For a book, in **Get it as**,
    choose **Ebook**, **Audiobook** or both.
-8. Leave **Start looking for it now** activated, so Reelix looks for it straight away. Deactivate it to add it now
+8. Leave **Start looking for it now** ticked, so Reelix looks for it straight away. Untick it to add it now
    and search later.
 9. Select **Add to Reelix**. The button beside it changes to **Added**, and it appears in the Library within a few
    minutes.

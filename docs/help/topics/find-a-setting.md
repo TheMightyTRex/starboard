@@ -6,18 +6,39 @@
 Each page under **Settings** in the side menu, what it holds, and the article that explains it. Use it to find
 where a setting lives.
 
-## Basic and advanced settings
+## Find your way
 
-Each Settings page opens on its basic settings. To show the rest, activate **Advanced settings** on the
-page. The page then says how many more sections it shows. Your choice is saved for every Settings page.
+1. Select **Settings** in the side menu. **Sign out** is in the side menu too, under **Feedback**.
+2. In the row of icons at the top, select an area: **General**, **Apps**, **Downloads**, **Radio**, **Alerts**,
+   **Performance**, **Security**, **Plug-ins** or **Updates**. Each icon's name shows when you point at it or move
+   to it with the keyboard.
+3. In the row under it, select a page, such as **Pages and lists** under **General**.
+
+   ![Settings, General, Pages and lists with example data, with Settings in the side menu (step 1) and Pages and lists in the row of pages (step 3) outlined](../images/find-a-setting-1-menus.png)
+
+4. On a page with four sections or more, a tab for each section shows under the heading. Select a tab to show
+   that section.
+
+   ![Settings, Updates with example data, with the topic tabs under the heading (step 4) outlined](../images/find-a-setting-2-tabs.png)
+
+5. Each page opens on its basic settings. To show the rest, activate the small **Advanced settings** switch at the
+   right of the heading. More sections and tabs appear. Your choice is saved for every Settings page.
+
+   ![Settings, General, Names and apps with only its basic settings, with Advanced settings inactive (step 5) outlined](../images/find-a-setting-3-basic.png)
+
+   ![Settings, General, Names and apps with Advanced settings active (step 5): its tabs now include Categories, App cards and Set-up guide, both outlined](../images/find-a-setting-4-advanced.png)
 
 ## General
 
-- **General:** the server and dashboard names, download hours, Library views and long lists. **Send feedback** is on
-  **General**, **Logs and feedback**.
-  With **Advanced settings**: categories, what app cards show, Coming up, logs, the default design and the set-up
-  guide. Read [Organise apps into categories](organise-categories.md),
-  [Download only at certain hours](set-download-hours.md) and [Send feedback about a page](send-feedback.md).
+- **Names and apps:** the server and dashboard names. With **Advanced settings**: categories, what app cards show
+  and the set-up guide. Read [Organise apps into categories](organise-categories.md).
+- **Appearance:** Starboard's own style and its colours, the default design and the accessibility choices for this
+  browser. Read [Choose a design for the Apps page](choose-a-design.md).
+- **Pages and lists:** long lists and Library views. With **Advanced settings**: Coming up. Read
+  [Find out what is coming up](coming-up.md).
+- **Discover rows:** which rows each Discover page shows.
+- **Download hours:** when downloads run. Read [Download only at certain hours](set-download-hours.md).
+- **Logs and feedback:** logs and **Send feedback**. Read [Send feedback about a page](send-feedback.md).
 
 ## Apps
 
@@ -33,25 +54,31 @@ page. The page then says how many more sections it shows. Your choice is saved f
   [Give every Jellyfin user the same defaults](jellyfin-user-defaults.md).
 - **Audiobookshelf:** with **Advanced settings**, where everyone is in each audiobook, copied from another
   server. Read [Copy listening progress into Audiobookshelf](copy-listening-progress.md).
+- **Tdarr** and **Dispatcharr:** connect each one, when it is in your install. Read
+  [Set up free Live TV in Jellyfin](set-up-live-tv.md) for Dispatcharr.
 
 ## Everything else
 
-- **Downloads:** your VPN, your Usenet provider's server, with **Test the server**, and whether download hours
-  are active. Read [Choose a Usenet provider and add it](choose-a-usenet-provider.md) and
-  [Download only at certain hours](set-download-hours.md).
+- **Downloads:** three pages: **VPN**, **Usenet**, with your Usenet provider's server and **Test the server**, and
+  **Download hours**. Read [Choose a Usenet provider and add it](choose-a-usenet-provider.md),
+  [Download without a VPN](download-without-a-vpn.md) and [Download only at certain hours](set-download-hours.md).
+- **Radio:** **Sources**, **Add a show from a link**, **Your podcast library** and **Station logos**. Read
+  [Follow radio shows and podcasts](follow-radio-shows.md).
 - **Alerts:** where alerts go. With **Advanced settings**: what to alert on, a weekly summary and watching. Read
   [Activate alerts](activate-alerts.md) and [Get a weekly summary](weekly-summary.md).
-- **Performance:** a preset for how much Starboard does. With **Advanced settings**: each part of the background
-  work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
-- **Security:** who can open the dashboard, your password and API keys. With **Advanced settings**: how long
-  people stay signed in. Read [Choose who can open Starboard](choose-who-can-open-starboard.md),
-  [Change your password](change-your-password.md) and [Make an API key and use Starboard's API](use-starboards-api.md).
-- **Plug-ins:** add, activate, deactivate and remove plug-ins, and test your own. Read
+- **Performance:** **Preset**, for how much Starboard does, and **Pictures**. With **Advanced settings**: each part
+  of the background work, and how often pages update. Read [Make Starboard use less of your server](make-starboard-lighter.md).
+- **Security:** four pages: **Who can open the dashboard**, **Password**, **API keys** and **Sign out everywhere**.
+  Read [Choose who can open Starboard](choose-who-can-open-starboard.md),
+  [Change your password](change-your-password.md), [Make an API key and use Starboard's API](use-starboards-api.md)
+  and [Sign out everywhere](sign-out-everywhere.md).
+- **Plug-ins:** **Manage**, **Catalogue** and a page for each plug-in you added. Read
   [Add a plug-in](add-a-plugin.md).
-- **Updates:** **Update settings** has your version, how to update and what Starboard can access. **Releases**
-  lists what changed in each version. **Restore** puts back saved settings or an earlier version. Read
-  [Update Starboard](update-starboard.md), [Change what Starboard can access](change-what-starboard-can-access.md)
-  and [Go back to an earlier version](go-back-to-an-earlier-version.md).
+- **Updates:** **Updates** has Ready to update, Update by themselves, Recent updates and What Starboard can
+  access. **Releases** lists what changed in each version. **Restore** puts back saved settings or an earlier
+  version. Read [Update Starboard](update-starboard.md),
+  [Change what Starboard can access](change-what-starboard-can-access.md) and
+  [Go back to an earlier version](go-back-to-an-earlier-version.md).
 
 ## Find out more
 
