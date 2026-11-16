@@ -124,7 +124,10 @@ class Answers(unittest.TestCase):
         from starboard import terminal_setup as ts
         with open(os.path.join(setup_answers.HERE, "web", "js", "install.js"), encoding="utf-8") as f:
             js = f.read()
-        self.assertIn('fetch("/setup-answers.json"', js)
+        # Read through common.js's setupWords(), which reads the file once for each page (optimisation review, 16 November 2026).
+        self.assertIn("setupWords()", js)
+        with open(os.path.join(setup_answers.HERE, "web", "js", "common.js"), encoding="utf-8") as f:
+            self.assertIn('fetch("/setup-answers.json"', f.read())
         self.assertLess(js.index('stepNamed(T, "sites")'), js.index('stepNamed(T, "films")'))
         self.assertIn("/api/setup/test-tmdb", js)
         self.assertIn("/api/setup/test-usenet", js)
