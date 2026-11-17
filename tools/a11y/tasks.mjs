@@ -725,11 +725,11 @@ const svc29 = await tabTo((f) => f.tag === "INPUT" && f.inPanel, 3);
 await page.keyboard.press("ArrowRight");  // the second service: OneDrive
 await page.keyboard.press("ArrowLeft");   // back to Google Drive, which arrows also select
 check("T29", "arrows choose a service", !!svc29 && await page.evaluate(() => document.querySelector("input[name=cloud-service]:checked")?.value === "drive"));
-const go29 = await tabTo((f) => f.text === "Continue" && f.tag === "BUTTON", 10);
+const go29c = await tabTo((f) => f.text === "Continue" && f.tag === "BUTTON", 10);
 await page.keyboard.press("Enter");
 await page.locator("#cloud-way").waitFor({ timeout: 8000 }).catch(() => {});
 const way29 = await tabTo((f) => f.tag === "INPUT" && f.inPanel && f.name === "cloud-way", 6);
-check("T29", "Continue by Enter, then Tab reaches the two ways to sign in", !!go29 && !!way29);
+check("T29", "Continue by Enter, then Tab reaches the two ways to sign in", !!go29c && !!way29);
 await page.keyboard.press("ArrowLeft");
 await page.locator(".qr-card").waitFor({ timeout: 8000 }).catch(() => {});
 const f29b = await focus();
