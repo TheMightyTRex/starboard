@@ -7,6 +7,8 @@ add features.
 
 ## [Unreleased]
 
+## [0.21.0] (17 November 2026)
+
 ### Added
 - **Check for updates (DASH-462):** Settings, Updates, Ready to update has a Check for updates button. It asks now, instead of waiting for the next scheduled check: GitHub for Starboard's newest release, each app's and Reelix's image registry, every plug-in catalogue, and Jellyfin for new versions of its plug-ins. Ready to update then says when it checked, what is ready and anything it could not reach, and focus stays on the button. Nothing is asked when the page opens.
 - **What is new for every waiting update (DASH-462):** A What is new button beside Install all updates opens one slide-out with the release notes of every update ready, from the version you have to the new one: Starboard, Reelix, each plug-in, Jellyfin's plug-ins and the apps, each item's changes under Added, Changed, Fixed and Security, the version of each change in brackets when there are several, a list at the top to jump to each item, and each item's release page. An item with no notes says so and links its release page. The notes are read only when you press the button.
@@ -1439,7 +1441,8 @@ Lightweight first: a dashboard for smaller servers that uses very little process
   work from a phone.
 - **Downloads:** show the download client's own state, so a paused client shows Paused. Help: [Pause, resume and remove downloads](https://github.com/TheMightyTRex/starboard/blob/main/docs/help/topics/manage-downloads.md).
 
-[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.20.2...HEAD
+[Unreleased]: https://github.com/TheMightyTRex/starboard/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/TheMightyTRex/starboard/compare/v0.20.2...v0.21.0
 [0.20.2]: https://github.com/TheMightyTRex/starboard/compare/v0.20.1...v0.20.2
 [0.20.1]: https://github.com/TheMightyTRex/starboard/compare/v0.20.0...v0.20.1
 [0.20.0]: https://github.com/TheMightyTRex/starboard/compare/v0.19.1...v0.20.0

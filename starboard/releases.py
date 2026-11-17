@@ -1771,6 +1771,33 @@ RELEASES = [
         ],
         "review": [],
         "settings": "Your settings stay as they are. To go back, run ./update.sh --to v0.20.1."
+    },
+    {
+        "version": "0.21.0",
+        "date": "17 November 2026",
+        "added": [
+            ["Check for updates", "Settings, Updates, Ready to update has a Check for updates button that asks every part for new versions now: Starboard, the apps, Reelix, the plug-ins and Jellyfin."],
+            ["What is new in every update", "A What is new button beside Install all updates opens the release notes of every waiting update in one slide-out, from the version you have to the new one."]
+        ],
+        "changed": [
+            ["Install all updates from one update", "Install all updates shows when even one update is ready, as Install 1 update, with the same order, safety copies and way back."],
+            ["One address for the Jellyfin plug-ins", "Settings, Apps, Jellyfin installs TheMightyTRexUK's Jellyfin plug-ins from one repository, and replaces the old Picture shrinker address in Jellyfin."],
+            ["Words that follow the design system", "Pages, messages, the terminal set-up and the help follow the design system's words: no sight words, Enter for typing, disk for a disk, and Active and Inactive for settings."],
+            ["One set of status words", "Every chip, band and row takes its word and colour from the design system's one list."],
+            ["Square library cards", "Collection and network cards, logo tiles and the dashboard's edit box use the design system's square corners and focus ring."],
+            ["What Starboard does not do", "The help article that listed plans now gives the facts only."]
+        ],
+        "fixed": [
+            ["Reading the Jellyfin plug-ins list changed Jellyfin", "Opening Settings, Apps, Jellyfin no longer changes Intro Skipper's or Merge Versions' settings when you added them yourself."],
+            ["A plug-in job's failure gave only a status line", "System, Jobs and the log keep the plug-in's own reason when a job fails."],
+            ["A built-in plug-in left failed was never started again", "Live TV and other built-in plug-ins start again at the next start after a failure."],
+            ["Apps a full backup stopped could stay stopped", "If Starboard stops during a full backup, the apps it stopped start again at its next start."]
+        ],
+        "security": [
+            ["A check for banned words, and the word check reads charts", "The weekly checks fail on the design system's banned words in pages, scripts, help and flow charts."]
+        ],
+        "review": [],
+        "settings": "Your settings stay as they are. To go back, run ./update.sh --to v0.20.2."
     }
 ]
 
