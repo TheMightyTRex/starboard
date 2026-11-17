@@ -1012,7 +1012,9 @@ def uninstall(data_dir, pid, helper=None, to_holding=False, config=None):
 def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
     """At each start: a built-in plug-in follows Starboard's own update. Its manifest and Compose file are written
     again from the copy inside Starboard, and an active one is started again, so it runs the new image with the new
-    settings. Returns the names started again; a problem is left in the plug-in's own state, never raised."""
+    settings. One left failed is tried again too (DASH-449): failed means someone turned it on and it did not start,
+    for example because its helper image had been tidied away, so it is never left off for good while its container
+    may run. Returns the names started again; a problem is left in the plug-in's own state, never raised."""
     done = []
     shipped = builtins()
     for p in basics(data_dir):
@@ -1029,7 +1031,7 @@ def refresh_builtins(data_dir, media_dir, services, helper=None, host=None):
         _write(os.path.join(where, "manifest.json"), manifest)
         _write(os.path.join(where, "compose.yaml"), text, 0o644)
         keep_logo(data_dir, pid, fetch_logo(manifest, "builtin")[0])  # API 1.14: its logo follows Starboard's copy
-        if p["state"] == "enabled":
+        if p["state"] in ("enabled", "failed"):
             try:
                 enable(data_dir, pid, helper=helper, services=services)
                 done.append(p["name"])
