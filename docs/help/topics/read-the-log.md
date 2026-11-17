@@ -14,7 +14,7 @@ q: Does Starboard open?
   Yes -> q2
 q2: What do you want to do?
   Find out what happened -> 1
-  Send it to be looked at -> 2
+  Send it to someone to check -> 2
   Keep the logs smaller -> 3
   Remove every log now -> 4
 1: Read the log #read-the-log

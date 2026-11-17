@@ -70,9 +70,10 @@ def markdown_lines(text):
     fenced = in_comment = False
     for n, line in enumerate(text.splitlines(), 1):
         if not in_comment and line.lstrip().startswith("```"):
-            fenced = not fenced
+            # A ```flow block is a chart people read, so its words are checked; other code blocks are not.
+            fenced = False if fenced else ("code" if not line.lstrip().startswith("```flow") else "flow")
             continue
-        if fenced:
+        if fenced == "code":
             continue
         line, in_comment = without_comments(line, in_comment)
         line = re.sub(r"`[^`]*`", " ", line)
