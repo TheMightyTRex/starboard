@@ -330,6 +330,23 @@ class LiveTvPluginTest(unittest.TestCase):
         self.assertIn("chown", runs[-1])
         self.assertIn("up -d", runs[-1])
 
+    def test_a_built_in_plug_in_left_failed_is_tried_again_at_start(self):
+        # DASH-449, issue 146: Live TV's state said failed (its helper image was gone) while its container ran
+        cfg = FakeConfig(self.tmp.name, {"livetv": True})
+        runs = []
+        helper = lambda folder, script: (runs.append(script) or (0, ""))
+        with mock.patch.object(livetv_move, "can_run", return_value=""), mock.patch.object(pa, "host_for_builtin", return_value=HOST):
+            livetv_move.move(cfg, self.tmp.name, "/srv/media", "http://192.168.1.20:8095", helper=helper)
+        pa.set_state(self.tmp.name, "livetv", "failed", "No such image: docker@sha256:851f91d2")
+        runs.clear()
+        again = pa.refresh_builtins(self.tmp.name, "/srv/media", cfg.data["services"], helper=helper, host=HOST)
+        self.assertEqual(again, ["Live TV"])
+        self.assertIn("up -d", runs[-1])
+        self.assertEqual(next(p for p in pa.basics(self.tmp.name) if p["id"] == "livetv")["state"], "enabled")
+        # Inactive on purpose stays inactive
+        pa.set_state(self.tmp.name, "livetv", "disabled")
+        self.assertEqual(pa.refresh_builtins(self.tmp.name, "/srv/media", cfg.data["services"], helper=helper, host=HOST), [])
+
     def test_an_address_is_needed(self):
         settings = os.path.join(self.tmp.name, "settings.json")
         json.dump({}, open(settings, "w"))

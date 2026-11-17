@@ -13,6 +13,7 @@ import os
 import shutil
 import threading
 import time
+import urllib.error
 import urllib.request
 
 from . import api_v1, logs, plugins
@@ -516,6 +517,12 @@ def run_job(data_dir, pid, jid, helper=None):
         summary = plugin_cards._text(said or "Done", 160)
         _record(data_dir, key, finished=time.time(), status="done", summary=summary)
         return summary
+    except urllib.error.HTTPError as e:
+        # The plug-in's own words, not only the status line (DASH-448): its helper answers {"error": "..."}.
+        why = answer_error(e)
+        _record(data_dir, key, finished=time.time(), status="failed", summary=why[:200])
+        logs.event("warning", "plug-ins", f"Job {key} failed: {why}")
+        return f"It failed: {why}"
     except (OSError, ValueError) as e:
         _record(data_dir, key, finished=time.time(), status="failed", summary=str(e)[:200])
         logs.event("warning", "plug-ins", f"Job {key} failed: {e}")
@@ -523,6 +530,28 @@ def run_job(data_dir, pid, jid, helper=None):
     finally:
         with _jobs_lock:
             _running.discard(key)
+
+
+def answer_error(e):
+    """A failed answer from a plug-in in words: the "error" (or "said") its answer gives, then the status line, so
+    "HTTP Error 403: Forbidden (the plug-in answered 502: Bad Gateway)" rather than the status line alone (DASH-448)."""
+    from . import plugin_cards
+    try:
+        raw = e.read(plugin_cards.MAX_BYTES) or b""
+        body = json.loads(raw) if raw[:1] == b"{" else {}
+    except (OSError, ValueError):
+        body = {}
+    said = body.get("error") or body.get("said") if isinstance(body, dict) else ""
+    said = plugin_cards._text(said, 160) if isinstance(said, str) else ""
+    line = f"{e.code}: {e.reason}" if e.reason else str(e.code)
+    return f"{said} (the plug-in answered {line})" if said else str(e)
+
+
+def last_failure(data_dir, pid):
+    """{job label: why} for this plug-in's jobs whose last run failed, for Settings, Plug-ins (DASH-448)."""
+    last = pa._read_kept(_jobs_file(data_dir), {}) or {}
+    return {jid: (v.get("summary") or "") for k, v in last.items() if isinstance(v, dict) and v.get("status") == "failed"
+            for p, _, jid in [k.partition("/")] if p == pid}
 
 
 def _in_quiet_hours(cfg, now):
