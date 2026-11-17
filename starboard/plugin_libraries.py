@@ -43,7 +43,10 @@ def media_inside(data_dir, service, inspect=None):
 
 def _call(service, method, path, body=None, call=None):
     from . import app_setup
-    headers = {"X-Emby-Token": service["api_key"]}
+    # Jellyfin 12 with legacy authorisation off takes the key only in Authorization; older versions and Emby in
+    # X-Emby-Token. Both are sent (DASH-458).
+    key = service["api_key"]
+    headers = {"Authorization": f'MediaBrowser Token="{key}"', "X-Emby-Token": key}
     if call:
         return call(method, path, body)
     return app_setup._call(service["url"], method, path, body, headers=headers)

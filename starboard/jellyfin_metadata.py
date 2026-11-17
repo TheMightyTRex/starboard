@@ -291,7 +291,8 @@ def check_posters(services, sample=8):
     svc = next((s for s in services or [] if s.get("type") == "jellyfin" and s.get("api_key")), None)
     if not svc:
         return ""
-    h = {"X-Emby-Token": svc["api_key"]}
+    # Jellyfin 12 with legacy authorisation off takes the key only in Authorization; both are sent (DASH-458).
+    h = {"Authorization": f'MediaBrowser Token="{svc["api_key"]}"', "X-Emby-Token": svc["api_key"]}
     try:
         items = (app_setup._call(svc["url"], "GET", f"/Items?Recursive=true&ImageTypes=Primary&Limit={sample}"
                                  "&IncludeItemTypes=Movie,Series,Episode&SortBy=Random", headers=h) or {}).get("Items") or []

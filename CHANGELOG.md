@@ -8,6 +8,7 @@ add features.
 ## [Unreleased]
 
 ### Fixed
+- **Jellyfin 12 refused two of Starboard's calls (DASH-458):** Jellyfin 12 with legacy authorisation off answers 401 when the key comes only in X-Emby-Token. Adding a plug-in's libraries to Jellyfin and the poster check on the Library health page now send the key in Authorization too, as Live TV and Moving in already did, and keep X-Emby-Token for older Jellyfin and Emby.
 - **Release notes for 0.15.2:** Starboard's own release notes had the 0.15.2 Added entry twice, in two wordings, and showed only the second. They now have the one in this changelog.
 
 ### Security
