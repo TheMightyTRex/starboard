@@ -344,6 +344,8 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
             _say(data_dir, step=f"Copying {app}'s settings ({n} of {len(apps)})")
             stopped = []
             for cid in using.get(app, []):
+                # Noted before it stops, so a Starboard that stops part way starts it again next time (DASH-382).
+                _say(data_dir, stopped=stopped + [cid])
                 try:
                     containers.docker("POST", f"/containers/{cid}/stop?t=30", timeout=60)
                     stopped.append(cid)
@@ -358,6 +360,7 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
                         containers.docker("POST", f"/containers/{cid}/start", timeout=60)
                     except containers.DockerError:
                         pass
+                _say(data_dir, stopped=[])
             if code not in (0, 1):  # tar's 1: a file changed while it was read
                 raise BackupError(f"Copying {app} did not work: {said.strip()[-200:]}")
         _say(data_dir, step="Encrypting")
@@ -407,6 +410,30 @@ def _make(data_dir, version, password, target, pictures, config_dir, host_data, 
     finally:
         shutil.rmtree(work, ignore_errors=True)
         _lock.release()
+
+
+def start_left_stopped(data_dir):
+    """At start (DASH-382): apps a full backup stopped while it copied them, when Starboard itself stopped before it
+    could start them again, are started now, and a backup left "running" is marked as stopped. Returns the
+    containers started again; one that would not start stays listed, for the next start."""
+    from . import containers
+    now = status(data_dir)
+    left = [c for c in now.get("stopped") or [] if isinstance(c, str) and re.fullmatch(r"[0-9a-zA-Z_.-]{1,128}", c)]
+    if _lock.locked():
+        return []  # a backup is being made in this Starboard: it starts its own apps again
+    started, still = [], []
+    for cid in left:
+        try:
+            containers.docker("POST", f"/containers/{cid}/start", timeout=60)
+            started.append(cid)
+        except containers.DockerError:
+            still.append(cid)
+    if left or now.get("stopped"):
+        _say(data_dir, stopped=still)
+    if now.get("state") == "running":
+        _say(data_dir, state="failed", step="", finished=time.time(),
+             error="Starboard stopped while the backup was being made. Make it again.")
+    return started
 
 
 # Finding and restoring -------------------------------------------------------------------------------------------------
