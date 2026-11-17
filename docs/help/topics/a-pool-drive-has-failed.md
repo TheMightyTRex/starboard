@@ -8,18 +8,18 @@ first and how to get the files back.
 
 ```flow
 title: Find your answer
-start: A pool drive shows Not mounted or Failing
-step: Do these first | Pause downloads, keep the drive, check its cable
-q: Is the drive back after a restart?
+start: A pool disk shows Not mounted or Failing
+step: Do these first | Pause downloads, keep the disk, check its cable
+q: Is the disk back after a restart?
   Yes -> check-disk-health.md
   No -> q2
 q2: Which backup do you have?
-  A parity drive -> 1
-  A copy drive -> 2
+  A parity disk -> 1
+  A copy disk -> 2
   Neither -> 3
-1: Rebuild it from the parity drive #with-a-parity-drive
-2: Copy the files back #with-a-copy-drive
-3: Only that drive's files are lost #with-neither
+1: Rebuild it from the parity disk #with-a-parity-disk
+2: Copy the files back #with-a-copy-disk
+3: Only that disk's files are lost #with-neither
 ```
 
 ## What happens

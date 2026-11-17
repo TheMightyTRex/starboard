@@ -44,7 +44,7 @@ each one.
 4. Open the dashboard.
 
 ```flow
-title: The simplest set-up
+title: The default set-up, in four steps
 start: You chose your password
 step: Answer the set-up guide | New install, then Basics
 step2: Start the apps | A few minutes

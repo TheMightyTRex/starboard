@@ -5,8 +5,8 @@
 
 Update Starboard from its own page, with **Update now**, or let it update itself in the quiet hours. Either way it
 backs up your settings, installs the newest release and goes back to the version you had if the new one does not
-start. When several updates are waiting, **Install all updates** installs them all in one go. You can also run one
-command on the server.
+start. When updates are waiting, **Install all updates** installs them all in one go, and **What is new** gives the
+notes of every one of them together. You can also run one command on the server.
 
 ## Before you begin
 
@@ -21,6 +21,9 @@ command on the server.
   **Updates**. **About and updates** in the footer of any page goes there too.
 - At the top of **Updates**, a notice says "Version 0.20.0 is out", for example, with a **Release notes** button that
   says what changed.
+- To find out now, without waiting for the next check, go to **Settings**, then **Updates**, and select **Check for
+  updates** at the top of **Ready to update**. It asks Starboard, the apps, Reelix, the plug-ins and Jellyfin for new
+  versions, and says what it found.
 
 For this to work, **Check GitHub for new releases** must be activated. It is on the **Updates** page, under **Update
 Starboard on the server instead**. What changed in every version is on **Settings**, then **Updates**, then
@@ -54,12 +57,13 @@ from the ready-made image, which you update on the server.
 
 ## Install all updates at once
 
-When more than one update is waiting, for Starboard, Reelix, your other apps or plug-ins, you can install them all
+When one or more updates are waiting, for Starboard, Reelix, your other apps or plug-ins, you can install them all
 with one action. They still install one at a time, because that is safer on a small server: each one makes its copy
 first, is checked afterwards and goes back by itself if it does not work, and the rest carry on.
 
 1. Go to **Settings**, then **Updates**. At the top of **Ready to update**, select **Install all updates**. The
-   button says how many are waiting, such as **Install all 6 updates**.
+   button says how many are waiting, such as **Install 1 update** or **Install all 6 updates**. To read their notes
+   first, read [What is new in every update](#what-is-new-in-every-update).
 2. Enter **Your Starboard password** and select **Continue**. Starboard checks each waiting update.
 3. A dialog lists what will install, in the order it installs. Under **Held back for you**, it lists any update that
    always waits for you, with the reason:
@@ -82,6 +86,17 @@ The order is always the same:
    itself.
 
 **Recent updates** lists the whole batch as **All updates**, with each update under it.
+
+## What is new in every update
+
+Before you install, you can read the notes of every waiting update in one place.
+
+1. Go to **Settings**, then **Updates**. At the top of **Ready to update**, select **What is new**, beside **Install
+   all updates**.
+2. A slide-out opens with the notes of each waiting update, from the version you have to the new one: Starboard,
+   Reelix, each plug-in and each app, each under **Added**, **Changed**, **Fixed** and **Security**. An update that
+   gives no notes says so, with a link to its release page.
+3. Select **Close**, or press Escape, to go back to **Ready to update**.
 
 ## Let parts update by themselves
 
