@@ -45,17 +45,38 @@ def rule_for(word):
     return ""
 
 
+def without_comments(line, in_comment):
+    """The line with every HTML comment taken out, also one that began on an earlier line or goes on to a later one
+    (CodeQL py/bad-tag-filter). Returns (text, whether a comment is still open at the end of the line)."""
+    out, i = [], 0
+    while i < len(line):
+        if in_comment:
+            end = line.find("-->", i)
+            if end < 0:
+                return "".join(out), True
+            i, in_comment = end + 3, False
+            out.append(" ")
+        else:
+            start = line.find("<!--", i)
+            if start < 0:
+                out.append(line[i:])
+                break
+            out.append(line[i:start])
+            i, in_comment = start + 4, True
+    return "".join(out), in_comment
+
+
 def markdown_lines(text):
-    fenced = False
+    fenced = in_comment = False
     for n, line in enumerate(text.splitlines(), 1):
-        if line.lstrip().startswith("```"):
+        if not in_comment and line.lstrip().startswith("```"):
             fenced = not fenced
             continue
         if fenced:
             continue
+        line, in_comment = without_comments(line, in_comment)
         line = re.sub(r"`[^`]*`", " ", line)
         line = re.sub(r"\]\([^)]*\)", "]", line)  # link targets
-        line = re.sub(r"<!--.*?-->", " ", line)
         yield n, line
 
 
@@ -66,8 +87,8 @@ def html_lines(text):
     # Blank out scripts, styles, comments and code, keeping the line count.
     def blank(m):
         return re.sub(r"[^\n]", " ", m.group(0))
-    text = re.sub(r"<(script|style)\b.*?</\1>", blank, text, flags=re.S | re.I)
-    text = re.sub(r"<!--.*?-->", blank, text, flags=re.S)
+    text = re.sub(r"<(script|style)\b.*?</\1\s*>", blank, text, flags=re.S | re.I)  # also "</script >"
+    text = re.sub(r"<!--.*?--!?>", blank, text, flags=re.S)  # a comment also ends at "--!>", as browsers read it
     text = re.sub(r"<code\b.*?</code>", blank, text, flags=re.S | re.I)
     text = re.sub(r"\{\{[^}]*\}\}", " ", text)
     for n, line in enumerate(text.splitlines(), 1):
