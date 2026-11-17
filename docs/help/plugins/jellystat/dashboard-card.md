@@ -1,22 +1,22 @@
 # Jellystat: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Jellystat adds 1 card you can put on your dashboard. Each starts with a grey band: Jellystat's logo and name and a status in words. A lighter grey footer says when it last changed.
+Jellystat adds 1 card you can put on your dashboard. Each starts with a band: Jellystat's logo and name and a status in words. A footer says when it last changed.
 
 ## Jellystat
 
-Shows one line saying whether Jellystat has your Jellyfin, or that a backup is being restored. The figures themselves are on Jellystat's own page: open it from its tab with **Open**.
+Shows one line saying whether Jellystat is connected to Jellyfin, or that a backup is being restored. The figures themselves are on Jellystat's own page: open it from its tab with **Open**.
 
 - **How often it updates:** every 10 minutes while the dashboard is open. Nothing is asked while the browser tab is hidden.
-- **Example:** Jellystat has your Jellyfin.
+- **Example:** Jellystat is connected to Jellyfin.
 
 ## What the status says
 
 | Status | Means |
 |---|---|
-| **OK** | Jellystat has your Jellyfin's address and key. The card says "Jellystat has your Jellyfin." or "Gave Jellystat your Jellyfin's address and key." |
+| **OK** | Jellystat has your Jellyfin's address and key. The card says "Jellystat is connected to Jellyfin." or "Gave Jellystat your Jellyfin's address and key." |
 | **Working** | A backup is being restored. The band says "Restoring a backup" and the card says which file. |
-| **Waiting** | It has just started and has not asked Jellystat yet. The band and the card say "Starting". |
+| **Waiting** | It started moments ago and has not asked Jellystat yet. The band and the card say "Starting". |
 | **Warning** | Jellystat does not have your Jellyfin yet. The card says why: "Jellystat is not answering yet", "Starboard has no Jellyfin key to give yet: add Jellyfin in Settings, Apps." or "Jellystat did not accept Jellyfin's address and key". |
 
 It asks Jellystat every 2 minutes, starting 20 seconds after it starts.

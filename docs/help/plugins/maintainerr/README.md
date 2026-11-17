@@ -14,7 +14,7 @@ People whose disks fill up: rules such as "films everyone has watched and older 
 ## Set it up
 
 1. Activate it, choose **Open Maintainerr**, and add Jellyfin (and Seerr if you have it) with keys you make in each app.
-2. Make rules and look at what they find. Nothing is removed until you give a rule an action and the keys allow it. Starboard gives Maintainerr no key and no media folder.
+2. Make rules and check what they find. Nothing is removed until you give a rule an action and the keys allow it. Starboard gives Maintainerr no key and no media folder.
 
 ## What it may do
 
@@ -40,8 +40,8 @@ What it uses when nobody is using it, measured with `tools/app_check.py` (median
 
 **Settings**, **Plug-ins**, Maintainerr, **Remove**. Its containers stop and go and its key stops working. You choose
 where its folder goes, with everything it kept (settings):
-kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**, from where you can put it
-back or delete it for good. Starboard never deletes it. Your media folder is not touched.
+kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**.
+From there you can put it back or delete it permanently. Starboard never deletes it. Your media folder is not touched.
 
 ## Licence
 

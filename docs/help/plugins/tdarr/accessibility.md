@@ -7,7 +7,7 @@ Starboard draws everything Tdarr shows in Starboard: its tab, its buttons and it
 
 - **The plug-in tester:** accessibility passed. Starboard runs it before the plug-in is added, every time. Tdarr has no settings, card or actions in its manifest, so there was little to check.
 - **Its Settings section** is Starboard's own Tdarr settings, drawn with Starboard's parts: each choice is a labelled control and says beside itself when it is saved. It was not checked on its own for this plug-in: not checked.
-- **Its logo** has a text description, "Two arrows in a circle", for where it is shown without its name.
+- **Its logo**, two arrows in a circle, has the text description "Tdarr logo" where it is shown without its name. Beside its name, screen readers skip it, so the name is read once.
 - **Starboard's own parts** (settings, buttons, dialogs and cards) are checked with axe, a keyboard walk and the reading order in each Starboard release. Read [How Starboard is tested](../../accessibility/how-starboard-is-tested.md).
 
 ## Not checked

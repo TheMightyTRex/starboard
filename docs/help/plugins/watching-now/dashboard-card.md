@@ -1,7 +1,7 @@
 # Watching now: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Watching now adds 1 card you can put on your dashboard. Each starts with a grey band: Watching now's logo and name and a status in words. A lighter grey footer says when it last changed.
+Watching now adds 1 card you can put on your dashboard. Each starts with a band: Watching now's logo and name and a status in words. A footer says when it last changed.
 
 ## Watching now
 
@@ -15,7 +15,7 @@ Shows a short list, up to 10 lines: one line for each person playing something i
 
 | Status | Means |
 |---|---|
-| **Running** | One person or more is watching. The band says how many, such as "1 watching". |
+| **Running** | One person or more is watching. The band says "Watching", and the card lists each person. |
 | **Idle** | Nobody is watching. The band says "Nobody watching" and the card says "Nobody is watching" and "Jellyfin is quiet". |
 
 Someone who has paused is still counted as watching: their line ends with "paused".

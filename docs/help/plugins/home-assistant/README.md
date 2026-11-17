@@ -19,7 +19,7 @@ An example Starboard plug-in by TheMightyTRexUK, MIT licence.
 - **Home Assistant's address**: Such as http://192.0.2.30:8123
 - **Long-lived access token**: In Home Assistant: your profile, Security, Long-lived access tokens, Create token. Kept by Starboard.
 - **What to show**: One entity id each, such as binary_sensor.front_door or sensor.lounge_temperature.
-- **Warn when any is**: States that turn the card amber, separated by commas.
+- **Warn when any is**: States that give the card a warning, separated by commas.
 
 ## Add it
 

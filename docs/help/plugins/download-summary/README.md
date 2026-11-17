@@ -1,13 +1,13 @@
 # Download summary
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-How much has downloaded today and this week, from what Starboard sees in the queue.
+How much has downloaded today and this week, from the download queue in Starboard.
 
 An example Starboard plug-in by TheMightyTRexUK, MIT licence.
 
 ## What it may do
 
-- It sees what is downloading.
+- It reads what is downloading.
 - It runs one small container (48 MB of memory at most).
 
 ## On the dashboard

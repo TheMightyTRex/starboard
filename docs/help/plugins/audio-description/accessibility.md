@@ -6,7 +6,7 @@ Starboard draws everything Audio description shows in Starboard: its settings, b
 ## What was checked
 
 - **The plug-in tester:** accessibility passed, checking settings, cards and actions. Starboard runs it before the plug-in is added, every time.
-- **Its logo** has a text description, "A loudspeaker with sound waves", for where it is shown without its name.
+- **Its logo**, a loudspeaker with sound waves, has the text description "Audio description logo" where it is shown without its name. Beside its name, screen readers skip it, so the name is read once.
 - **Its cards** say their status in words with an icon, never by colour alone. A screen reader hears the card's heading, then its status and when it last changed. Nothing on a card interrupts a screen reader when it refreshes.
 - **What it is for:** it helps blind and partially sighted people find films and series with a described sound track, and keep that track in Jellyfin.
 - **Its words:** a test checks that what people read on its pages and cards, and its README, has no em dashes or contractions.

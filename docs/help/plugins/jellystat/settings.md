@@ -7,7 +7,7 @@ Jellystat's settings are on its own tab: go to **Settings**, then **Plug-ins**, 
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Backup file to restore** | Only if you have one: the name of a pg_dump file you put in the restore folder, such as jfstat.pgdump. Type the file's name only, not a path. | Empty |
+| **Backup file to restore** | Only if you have one: the name of a pg_dump file you put in the restore folder, such as jfstat.pgdump. Enter the file's name only, not a path. | Empty |
 
 ## Settings
 
@@ -24,7 +24,7 @@ These are on Jellystat's tab.
 ## Things to note
 
 - Everything else is set in Jellystat itself: open it from its tab with **Open**. Its own account and password are kept by Jellystat, not Starboard.
-- Starboard gives Jellystat your Jellyfin's address and key once, the first time it starts with an empty database, so you never type them.
+- Starboard gives Jellystat your Jellyfin's address and key once, the first time it starts with an empty database, so you never enter them.
 - The backup must be a PostgreSQL backup made with `pg_dump -Fc`, in `data/plugins/jellystat/data/main/restore` in Starboard's data folder. Jellystat's own JSON backups are restored in Jellystat itself.
 - A restore goes into a new database first. Only when that worked is it swapped in. If it fails, nothing is changed.
 - Settings are kept when you update or deactivate it, and when you remove it they stay in its folder, with its database.

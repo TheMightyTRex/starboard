@@ -1,7 +1,7 @@
 # Home Assistant: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Home Assistant adds 1 card you can put on your dashboard. It starts with a grey band: Home Assistant's logo and name, a status in words, and when it last changed.
+Home Assistant adds 1 card you can put on your dashboard. It starts with a band: Home Assistant's logo and name, a status in words, and when it last changed.
 
 ## Home
 
@@ -15,7 +15,7 @@ Shows the things in **What to show** in one sentence: each one's name in Home As
 | Status | Means |
 |---|---|
 | **OK** | Home Assistant answered, and nothing is in a state from **Warn when any is**. The time in the band is when it last asked. |
-| **Warning** | At least one thing is in a state from **Warn when any is**, such as a door that is open or unlocked. The card turns amber. |
+| **Warning** | At least one thing is in a state from **Warn when any is**, such as a door that is open or unlocked. The card says **Warning**. |
 | **Needs setting up** | The address, the token or **What to show** is empty. The card says "Add the address, a token and what to show in the plug-in's settings". |
 
 If Home Assistant does not answer, refuses the token or does not know an entity id, the card shows **No answer from Home Assistant** instead. Read [Problems](../home-assistant/problems.md).

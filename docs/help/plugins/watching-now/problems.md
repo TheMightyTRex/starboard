@@ -17,7 +17,7 @@ q2: What does the card say?
 1: Start it again #start-it-again
 2: Update it or update Starboard #update-it-or-update-starboard
 3: Add Jellyfin to Starboard #add-jellyfin-to-starboard
-4: Check what Jellyfin sees #check-what-jellyfin-sees
+4: Check what Jellyfin is playing #check-what-jellyfin-is-playing
 5: Read what the card says #read-what-the-card-says
 ```
 
@@ -26,13 +26,13 @@ q2: What does the card say?
 1. On Watching now's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../watching-now/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Watching now works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Add Jellyfin to Starboard
@@ -43,11 +43,11 @@ The card says "Starboard has no Jellyfin key to give yet: add Jellyfin in Settin
 2. Add Jellyfin, with its address and API key.
 3. Go back to the dashboard and wait up to 30 seconds for the card to be asked again.
 
-## Check what Jellyfin sees
+## Check what Jellyfin is playing
 
 The card says "Nobody is watching" while someone is watching.
 
-- The card is asked every 30 seconds, so someone who has just started can take that long to appear.
+- The card is asked every 30 seconds, so someone who started moments ago can take that long to appear.
 - It lists only sessions Jellyfin saw in the last 2 minutes that are playing something. Someone who opened Jellyfin but has not started playing is not listed.
 - It asks the Jellyfin that Starboard knows, in **Settings**, then **Apps**. If you have more than one Jellyfin, check it is the one they are watching on.
 

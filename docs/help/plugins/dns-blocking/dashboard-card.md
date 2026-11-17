@@ -1,7 +1,7 @@
 # Ad blocking: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Ad blocking adds 1 card you can put on your dashboard. It starts with a grey band: Ad blocking's logo and name, a status in words, and when it last changed.
+Ad blocking adds 1 card you can put on your dashboard. It starts with a band: Ad blocking's logo and name, a status in words, and when it last changed.
 
 ## Blocked today
 

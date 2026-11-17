@@ -40,8 +40,8 @@ What it uses when nobody is using it, measured with `tools/app_check.py` (median
 
 **Settings**, **Plug-ins**, Seerr, **Remove**. Its containers stop and go and its key stops working. You choose
 where its folder goes, with everything it kept (settings):
-kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**, from where you can put it
-back or delete it for good. Starboard never deletes it. Your media folder is not touched.
+kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**.
+From there you can put it back or delete it permanently. Starboard never deletes it. Your media folder is not touched.
 
 ## Licence
 

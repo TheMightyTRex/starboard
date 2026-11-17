@@ -18,8 +18,8 @@ People who read comics, manga and books, in the browser or in an e-reader app th
 
 ## What it may do
 
-- It can see: Files in your media folder under books (read only).
-- It can see: Files in your media folder under comics (read only).
+- It can read: Files in your media folder under books (read only).
+- It can read: Files in your media folder under comics (read only).
 - It can change: Its own folder in Starboard's data (data/plugins/kavita).
 - It can reach: Other computers on your home network, and the internet.
 - It can reach: Its own web page is opened on your home network: anyone on your home network can open it, at this computer's address and a port Starboard chooses.
@@ -42,8 +42,8 @@ What it uses when nobody is using it, measured with `tools/app_check.py` (median
 
 **Settings**, **Plug-ins**, Kavita, **Remove**. Its containers stop and go and its key stops working. You choose
 where its folder goes, with everything it kept (settings):
-kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**, from where you can put it
-back or delete it for good. Starboard never deletes it. Your media folder is not touched.
+kept in `data/plugins/.removed`, or moved to the holding folder in **System**, **Clean up**.
+From there you can put it back or delete it permanently. Starboard never deletes it. Your media folder is not touched.
 
 ## Licence
 

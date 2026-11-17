@@ -1,14 +1,14 @@
 # VPN check: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-VPN check adds 1 card you can put on your dashboard. Each starts with a grey band: VPN check's logo and name and a status in words. A lighter grey footer says when it last changed.
+VPN check adds 1 card you can put on your dashboard. Each starts with a band: VPN check's logo and name and a status in words. A footer says when it last changed.
 
 ## VPN
 
-Shows the public address and place the internet sees through your VPN, and how long the answer took, such as "185.65.134.12 in Amsterdam, NL, 120 ms". It asks ipinfo.io, through the VPN, every 15 minutes or as often as **Check every** says.
+Shows the public address and place your downloads come from through your VPN, and how long the answer took, such as "198.51.100.23 in Amsterdam, NL, 120 ms". It asks ipinfo.io, through the VPN, every 15 minutes or as often as **Check every** says.
 
 - **How often it updates:** once a minute while the dashboard is open. Nothing is asked while the browser tab is hidden.
-- **Example:** 185.65.134.12 in the Netherlands
+- **Example:** 198.51.100.23 in the Netherlands
 
 ## What the status says
 
@@ -17,7 +17,7 @@ Shows the public address and place the internet sees through your VPN, and how l
 | **Protected** | The last check worked through the VPN, and the address is not your home address. |
 | **Waiting** | Shown as **Checking soon**. It has not checked yet. The card says "Not checked yet". |
 | **Warning** | Shown as **No answer**. No check has worked for more than 3 times **Check every**. The card says "No answer through the VPN since" and the time of the last one that worked, then what went wrong. |
-| **Problem** | Shown as **Home address showing** when the VPN shows the address in **Your home's public address**: "The VPN shows your home address, 81.2.69.160. Downloads are not hidden." Before its first check works, **Problem** with what went wrong. |
+| **Problem** | Shown as **Home address showing** when the VPN shows the address in **Your home's public address**: "The VPN shows your home address, 203.0.113.7. Downloads are not hidden." Before its first check works, **Problem** with what went wrong. |
 
 **When it last changed** is when the last check worked.
 

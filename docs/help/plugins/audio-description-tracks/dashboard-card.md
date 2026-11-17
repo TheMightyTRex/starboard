@@ -1,14 +1,14 @@
 # Audio description tracks: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Audio description tracks adds 1 card you can put on your dashboard. Each starts with a grey band: Audio description tracks' logo and name and a status in words. A lighter grey footer says when it last changed.
+Audio description tracks adds 1 card you can put on your dashboard. Each starts with a band: Audio description tracks' logo and name and a status in words. A footer says when it last changed.
 
 ## Description tracks to check
 
-Shows how many added tracks are waiting for you to say whether they play in step. Under it, how many other files need a look, such as one with no match or lengths that differ, or "Nothing else waiting".
+Shows how many added tracks are waiting for you to say whether they play in step. Under it, how many other files need checking, such as one with no match or lengths that differ, or "Nothing else waiting".
 
 - **How often it updates:** once an hour while the dashboard is open. Nothing is asked while the browser tab is hidden.
-- **When it last changed:** the time in the band is when it last looked in the folder, or when a track last changed, whichever is later.
+- **When it last changed:** the time in the band is when it last checked the folder, or when a track last changed, whichever is later.
 - **Example:** 2 to check, Nothing else waiting
 
 ## What the status says
@@ -16,10 +16,10 @@ Shows how many added tracks are waiting for you to say whether they play in step
 | Status | Means |
 |---|---|
 | **OK** | Nothing is waiting for you. Every file in the folder is confirmed, already described or already added. |
-| **Working** | Shown as **Adding tracks**. It is looking in the folder and checking new files now. |
-| **Warning** | Files need you, such as "3 tracks to check": added tracks to play and confirm, and files it could not add, such as **Lengths differ**, **No match** or **Choose the title**. |
+| **Working** | Shown as **Adding tracks**. It is checking the folder and checking new files now. |
+| **Warning** | Files need you. The band says "To check": added tracks to play and confirm, and files it could not add, such as **Lengths differ**, **No match** or **Choose the title**. |
 
-To see each file and what to do, open **Description tracks to add** on its tab. Read [Settings](../audio-description-tracks/settings.md).
+For each file and what to do, open **Description tracks to add** on its tab. Read [Settings](../audio-description-tracks/settings.md).
 
 ## Add it to your dashboard
 

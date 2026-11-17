@@ -1,18 +1,25 @@
 # Tdarr: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Tdarr 1.1.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Tdarr 1.1.1 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.1.0 | 1.14 or later | 2026-11-15 |
-| 1.0.2 | 1.13 or later | 2026-11-13 |
+| 1.1.1 | 1.14 or later | 17 November 2026 |
+| 1.1.0 | 1.14 or later | 15 November 2026 |
+| 1.0.2 | 1.13 or later | 13 November 2026 |
 
 Versions 1.0.1 and 1.0.0, from 13 November 2026, are no longer offered.
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.1.1
+
+Changed:
+
+- **Logo description:** where its logo stands on its own, a screen reader says "Tdarr logo", the plug-in's name, instead of a description of the symbol.
 
 ## What is new in 1.1.0
 

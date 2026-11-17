@@ -30,13 +30,13 @@ q2: What does the card say?
 1. On Remote access's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../remote-access/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Remote access works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Choose a way to connect
@@ -56,12 +56,12 @@ The card says "Not set up: choose Tailscale or Cloudflare Tunnel in its settings
 
 The card says **Not connected** and why. Do what it says:
 
-- **"Paste a Tailscale auth key"** or **"Paste your Cloudflare tunnel token"**: the key or token is empty. Paste it, or for Tailscale choose **A sign-in link** in **Sign in with**.
+- **"Paste a Tailscale auth key"** or **"Paste your Cloudflare Tunnel token"**: the key or token is empty. Paste it, or for Tailscale choose **A sign-in link** in **Sign in with**.
 - **"That is not a Tailscale auth key"**: auth keys start with `tskey-auth-`. Make one in Tailscale's admin page, **Settings**, **Keys**, and paste it whole.
-- **"That is not a Cloudflare tunnel token"**: copy the long token after `--token` from Cloudflare's dashboard, **Networks**, **Tunnels**.
+- **"That is not a Cloudflare Tunnel token"**: copy the long token after `--token` from Cloudflare's dashboard, **Networks**, **Tunnels**.
 - **"Tailscale did not accept the auth key"**: it may be expired, used already or deleted. Make a new one and paste it.
 - **"Cloudflare did not accept the tunnel token"**: the tunnel may have been deleted or its token changed. Copy the token again.
-- **"could not be reached"**: check this computer's internet connection. Remote access tries again by itself.
+- **"could not be reached"**: check the server's internet connection. Remote access tries again by itself.
 
 When you paste a new key or token and select **Save**, it starts again by itself.
 

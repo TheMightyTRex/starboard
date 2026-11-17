@@ -1,13 +1,13 @@
 # Remote access: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Remote access adds 1 card you can put on your dashboard. It starts with a grey band: Remote access's logo and name and a status in words. A lighter grey footer says when the connection last changed.
+Remote access adds 1 card you can put on your dashboard. It starts with a band: Remote access's logo and name and a status in words. A footer says when the connection last changed.
 
 ## Away from home
 
 When it is connected, it shows the address to use away from home and the way it connects, such as `Away from home: http://<its Tailscale address>:8095 (Tailscale)`. The address is Starboard's, or Jellyfin's when Starboard is not shared. When it is not connected, it says what to do next.
 
-- **How often it updates:** once a minute while the dashboard is open. Remote access itself looks at the connection every 10 seconds. Nothing is asked while the browser tab is hidden.
+- **How often it updates:** once a minute while the dashboard is open. Remote access itself checks the connection every 10 seconds. Nothing is asked while the browser tab is hidden.
 - **Example:** `Away from home: http://<its Tailscale address>:8095 (Tailscale)`
 
 ## What the status says

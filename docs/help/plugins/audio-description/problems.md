@@ -20,7 +20,7 @@ q2: What is wrong?
 2: Update it or update Starboard #update-it-or-update-starboard
 3: Add Jellyfin to Starboard #add-jellyfin-to-starboard
 4: Add Reelix or stop preferring #add-reelix-or-stop-preferring
-5: Look for described titles now #look-for-described-titles-now
+5: Check for described titles now #check-for-described-titles-now
 6: Check the track name #check-the-track-name
 7: Activate the person #activate-the-person
 ```
@@ -30,7 +30,7 @@ q2: What is wrong?
 1. On Audio description's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../audio-description/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 It rests after 10 minutes with nothing to do, and Starboard wakes it when it is needed. Resting is not a problem.
 
@@ -38,7 +38,7 @@ It rests after 10 minutes with nothing to do, and Starboard wakes it when it is 
 
 Your Starboard's plug-in API is outside what this version of Audio description works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Add Jellyfin to Starboard
@@ -47,7 +47,7 @@ Your Starboard's plug-in API is outside what this version of Audio description w
 
 1. Go to **Settings**, then **Apps**, and add Jellyfin with its API key. Read [Add an app, in Starboard's help](../../topics/add-an-app.md).
 2. Go to **Settings**, then **Plug-ins**, then **Audio description**.
-3. Select **Look for described titles now**.
+3. Select **Check for described titles now**.
 
 ## Add Reelix or stop preferring
 
@@ -56,12 +56,12 @@ Your Starboard's plug-in API is outside what this version of Audio description w
 - If you use Reelix, add it in **Settings**, then **Apps**, then select **Apply the Reelix choice now** on Audio description's tab.
 - If you do not use Reelix, deactivate **Prefer releases with audio description**. The rest of the plug-in works without Reelix.
 
-## Look for described titles now
+## Check for described titles now
 
 "Not checked yet" and **Checks tonight** mean it has not read the library yet. It checks once a night at 04:20, in quiet hours.
 
 1. Go to **Settings**, then **Plug-ins**, then **Audio description**.
-2. Select **Look for described titles now**.
+2. Select **Check for described titles now**.
 3. Wait a minute or two, then open **Titles with audio description**.
 
 If it still says "Not checked yet", the card shows what went wrong instead: read [Add Jellyfin to Starboard](#add-jellyfin-to-starboard).
@@ -72,8 +72,8 @@ It finds a described track by its name, because Jellyfin does not read the flag 
 
 - A track counts when its name says "Audio Description", "Audio described", "Descriptive audio", "Described", "DVS" or "AD" on its own, such as "English (Audio Description)".
 - A track whose name mentions commentary never counts.
-- A track with no name, or another name, is not found. In Jellyfin, play the film and look at its sound tracks to see their names.
-- A film added since the last check is found at the next one. Select **Look for described titles now** to check straight away.
+- A track with no name, or another name, is not found. In Jellyfin, play the film and open its list of sound tracks: it shows their names.
+- A film added since the last check is found at the next one. Select **Check for described titles now** to check straight away.
 
 ## Activate the person
 

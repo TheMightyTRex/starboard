@@ -28,13 +28,13 @@ Its tab says **Did not start** when Uptime Kuma did not start, or stopped answer
 1. On Uptime Kuma's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../uptime-kuma/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Uptime Kuma works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Open its page

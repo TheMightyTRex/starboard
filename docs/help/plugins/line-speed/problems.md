@@ -10,7 +10,7 @@ q: What does its tab say?
   Failed or Not answering -> 1
   Not supported -> 2
   Active -> q2
-q2: What do you see?
+q2: What does the card say?
   Not tested yet -> 3
   Problem on the card -> 4
   Did not answer after Test now -> 5
@@ -28,20 +28,20 @@ q2: What do you see?
 1. On Line speed's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../line-speed/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Line speed works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Wait for the first test
 
-The cards say "Not tested yet" and **Next test at** with the hour from **Test at**. Nothing is wrong: Line speed tests once a night, so the first result comes at that hour.
+The cards say "Not tested yet" and "Next test at" with the hour from **Test at**. Nothing is wrong: Line speed tests once a night, so the first result comes at that hour.
 
-To see a result now:
+To get a result now:
 
 1. Go to **Settings**, then **Plug-ins**, then **Line speed**.
 2. In **Actions**, select **Test now**, then **Test now** in the box that asks first.
@@ -59,7 +59,7 @@ The **Line speed** card says **Problem** and the reason, such as a time-out: the
 Starboard waits 10 seconds for a button. A test on a slower line can take longer, so Starboard says "Line speed did not answer", but the test carries on.
 
 1. Wait a minute or two.
-2. Look at the **Line speed** card: the new result is there when the test is done.
+2. Open the dashboard: the **Line speed** card shows the new result when the test is done.
 3. If tests often take this long, choose a smaller **Test size**.
 
 ## Make the test fairer

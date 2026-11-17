@@ -1,9 +1,9 @@
 # Styles, a Starboard plug-in
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Twenty-one styles for Starboard, chosen from current interface trends and checked for accessibility in light and dark.
+21 styles for Starboard, chosen from current interface trends and checked for accessibility in light and dark.
 
-| Style | Look |
+| Style | What it is like |
 |---|---|
 | Midnight | Dark first and dense, with calm blue accents |
 | Frost | Soft frosted tints and gentle shadows, with solid panels for reading |
@@ -17,17 +17,17 @@ Twenty-one styles for Starboard, chosen from current interface trends and checke
 | Nordic | Scandinavian calm: soft greys, birch white and fjord blue |
 | Sunset | Warm coral and plum on soft peach |
 | Graphite | Precise monochrome greys with one electric lime accent |
-| Editorial | A magazine look: serif headings and a deep red rule |
+| Editorial | Magazine style: serif headings and a deep red rule |
 | Winter | Pine and berry over a frosty page, with snow dots, glows and glass |
-| Large and clear | Strong contrast, heavy headings and wide focus rings, for easy reading |
-| Studio | A quiet product look: hairline borders, one indigo accent, outlined buttons |
+| Large and clear | Strong contrast, heavy headings and wide focus rings, for reading with low vision |
+| Studio | A quiet product style: hairline borders, one indigo accent, outlined buttons |
 | Expressive | Tonal colour blocks, big round shapes and pill buttons |
 | Swiss | White, black and red on a grid, heavy rules and capital labels |
 | Neon | Synthwave glows on a faint grid, with a gradient button |
 | Clay | Puffy, matte soft-3D panels in calm pastels |
-| Mica | A calm desktop look with see-through menus |
+| Mica | A calm desktop style with transparent menus |
 
-The last six reskin the whole look: cards, buttons, tabs, the header, the side menu and chips (Starboard's plug-in
+The last six change every part of Starboard: cards, buttons, tabs, the header, the side menu and chips (Starboard's plug-in
 API 1.2).
 
 ## Install
@@ -36,7 +36,7 @@ Needs Starboard with plug-in API 1.14 or later. An older Starboard keeps version
 
 1. Run `python3 install.py` and give your Starboard's address. Your browser opens Settings, Plug-ins, Catalogue
    with Styles ready to add.
-2. Select **Install**, read what it may do (add styles to Display, nothing else), type your Starboard password
+2. Select **Install**, read what it may do (add styles to Display, nothing else), enter your Starboard password
    and select **Install Styles**.
 3. Select **Activate** on its tab, then open **Display** and choose a style.
 

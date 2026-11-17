@@ -1,12 +1,12 @@
 # Styles: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Styles has no dashboard card. It changes how the dashboard, and every other page, looks when you choose one of its styles in **Display**.
+Styles has no dashboard card. It changes the colours and shapes of the dashboard, and every other page, when you choose one of its styles in **Display**.
 
 ## Choose a style
 
 1. Select **Display** in the header.
-2. Under **Style**, choose a style, such as **Midnight**. **Starboard's own style** is the standard look.
+2. Under **Style**, choose a style, such as **Midnight**. **Starboard's own style** is the standard style.
 3. Select **Done**.
 
 Styles must be added and active first. Read [Install](../styles/install.md).

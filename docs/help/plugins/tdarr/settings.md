@@ -9,7 +9,7 @@ The section is there while Tdarr is active. When it is not, it says to activate 
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Libraries** | **Films** and **Series**: the folders Tdarr works on. Tdarr sees them as `/media/movies` and `/media/tv`. | Both |
+| **Libraries** | **Films** and **Series**: the folders Tdarr works on. Inside its container they are `/media/movies` and `/media/tv`. | Both |
 | **What Tdarr does** | **Save space** converts to H.265 and keeps the new file only when it is smaller. **Check files only** finds damaged files and changes nothing. **Off** means Tdarr does nothing until you choose again. | Not checked |
 | **Conversions at once** | From **1 at a time (lightest)** to **4 at a time**. Each one uses about one processor core while it runs. | 1 at a time |
 | **When** | **Any time** starts on new files straight away. **In quiet hours** converts in Starboard's download hours when they are set, otherwise 01:00 to 06:00, so the server stays quick in the day. | In quiet hours |
@@ -28,7 +28,7 @@ Under the choices, **Files Tdarr knows** shows how many files it has converted a
 ## Things to note
 
 - **Save space** replaces a file with its smaller copy, in `media/movies` and `media/tv` only. It runs as the owner of your media folder, so the new file is yours.
-- Tdarr converts in a `tdarr-cache` folder in your media folder, on the same drives as your films, so working copies of large films cannot fill the system disk.
+- Tdarr converts in a `tdarr-cache` folder in your media folder, on the same disks as your films, so working copies of large films cannot fill the system disk.
 - Converting is heavy work: Tdarr may use up to 2 GB of memory and 2 processor cores. Keep **Conversions at once** low on a small server.
 - Its settings, history and converted-file records are kept when you update or deactivate it, and when you remove it they stay in its folder.
 

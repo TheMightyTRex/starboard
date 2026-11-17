@@ -22,8 +22,16 @@ Read [HELP.md](https://github.com/TheMightyTRex/starboard-plugins/blob/main/pict
 |---|---|---|
 | Posters | `poster.jpg`, `poster.png` or `poster.webp` under `library` in Jellyfin's metadata folder | At most 900 pixels tall (**Posters no taller than**) |
 | Photos of cast and crew | Under `People` in Jellyfin's metadata folder | At most 400 pixels wide (**Photos of people no wider than**) |
+| Backdrops | `backdrop.jpg`, `backdrop1.jpg` and so on under `library` | At most 1920 pixels wide |
+| Thumbnails | `landscape.*` under `library` | At most 1280 pixels wide |
+| Logos | `logo.*` under `library` | At most 800 pixels wide |
+| Banners | `banner.*` under `library` | At most 1000 pixels wide |
+| Disc art | `disc.*` under `library` | At most 500 pixels wide |
+| Clear art | `clearart.*` under `library` | At most 800 pixels wide |
 
-A picture already that small is only opened, never written. Backdrops, logos and other pictures are left alone.
+Every type is shrunk when you add it (**Shrink all picture types**); deactivate that to choose types one by one.
+
+A picture already that small is only opened, never written.
 
 Each picture is written to a hidden file beside it (JPEG at **Quality** 85, progressive; PNG and WebP stay PNG and
 WebP), opened again and decoded in full, checked for its size and format, and swapped in only when it is smaller than
@@ -32,10 +40,13 @@ the **Space saved** page.
 
 ## The backup
 
-**Back up each original before it is replaced** is activated when you add it. Each original is copied once, before its
-first shrink, to `originals` in the plug-in's own folder, keeping its place under `library` or `People`. A copy
-already there is never replaced. If the copy fails, or the disk would have less than 100 MB free, the picture is not
-shrunk and the run says why.
+**Original pictures** has no default: you choose **Keep a backup copy of each original** or **Shrink without a
+backup** after you add it, and again after the update to 1.2.0 (rules 1.2). Nothing is shrunk until you choose, and the
+card says **Choose a backup**. A backup you already have is kept whatever you choose.
+
+With a backup, each original is copied once, before its first shrink, to `originals` in the plug-in's own folder,
+keeping its place under `library` or `People`. A copy already there is never replaced. If the copy fails, or the disk
+would have less than 100 MB free, the picture is not shrunk and the run says why.
 
 - **Restore original pictures** in its actions puts every original back and keeps the backup.
 - **Delete backup** in its actions removes the backup for good, after asking. Restore can then no longer put those
@@ -45,6 +56,20 @@ shrunk and the run says why.
   the figures kept after the last run or action.
 
 The first run may need almost as much free space as the pictures take now.
+
+## Start again
+
+Two actions clear everything and have Jellyfin download pictures again at full size. Each deletes the backup and the
+records of what was shrunk, keeps the choice in **Original pictures**, is refused while a run is going, and changes
+nothing if Jellyfin does not answer.
+
+- **Start again: the pictures it shrinks** moves each poster, backdrop and photo of a person aside, to a hidden
+  `.<name>.picture-shrinker-old` beside it, and asks Jellyfin to refresh that film, series or person with every
+  picture checked again and nothing replaced, so Jellyfin downloads the missing one. A check every 10 minutes, only
+  while pictures are waiting, deletes the old one once Jellyfin has a new one, and puts it back after 24 hours without
+  one, so a poster you added yourself is never lost.
+- **Start again: every picture** asks Jellyfin to refresh each library and each person with every picture replaced,
+  backdrops and logos included.
 
 ## When it runs
 

@@ -28,18 +28,18 @@ q2: What does the card say?
 2. Check that your VPN's Gluetun container is running: VPN check runs inside its network and cannot start without it.
 3. Select **Try again**.
 4. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../vpn-check/updates.md).
-5. Still failing: go to **System**, then **Logs**, and look for its name.
+5. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of VPN check works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Stop downloads and fix the VPN
 
-"The VPN shows your home address" means the internet sees your downloads coming from your home, not from the VPN. Downloads are not hidden.
+"The VPN shows your home address" means your downloads come from your home address, not from the VPN. Downloads are not hidden.
 
 1. Pause your downloads: go to **Activity**, then **Downloads**. Read [Pause, resume and remove downloads, in Starboard's help](../../topics/manage-downloads.md).
 2. Check your VPN's settings and that its subscription is still active.

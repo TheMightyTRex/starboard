@@ -1,7 +1,7 @@
 # Most watched: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Most watched adds 1 card you can put on your dashboard. Each starts with a grey band: Most watched's logo and name and a status in words. A lighter grey footer says when it last changed.
+Most watched adds 1 card you can put on your dashboard. Each starts with a band: Most watched's logo and name and a status in words. A footer says when it last changed.
 
 ## Most watched
 

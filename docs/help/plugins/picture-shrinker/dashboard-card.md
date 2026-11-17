@@ -1,7 +1,7 @@
 # Picture shrinker: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Picture shrinker adds 1 card you can put on your dashboard. Each starts with a grey band: Picture shrinker's logo and name and a status in words. A lighter grey footer says when it last changed.
+Picture shrinker adds 1 card you can put on your dashboard. Each starts with a band: Picture shrinker's logo and name and a status in words. A footer says when it last changed.
 
 ## Space saved
 
@@ -14,8 +14,8 @@ Shows how much space Picture shrinker has saved. Under it, how many pictures are
 
 | Status | Means |
 |---|---|
-| **Running** | It is shrinking pictures now. The band says how many so far, such as "120 shrunk so far", and the card says "Shrinking now" with how many it has looked at. |
-| **Scheduled** | Nothing is being shrunk. The band says when it runs next, such as "Next Sun 03:30", or "First run" and when before its first run. |
+| **Running** | It is shrinking pictures now. The band says how many so far, such as "120 shrunk so far", and the card says "Shrinking now" with how many it has checked. |
+| **Scheduled** | Nothing is being shrunk. The card says when it runs next, or "First run" and when before its first run. |
 | **Done** | The last run finished and no next run is set in **When to shrink**. |
 | **Problem** | The last run did not finish. The band says "Last run failed" and the card says "The last run did not finish" and why. |
 

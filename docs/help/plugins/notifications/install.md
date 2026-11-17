@@ -13,19 +13,19 @@ Add Notifications from Starboard's **Catalogue**, where it is listed under **Sys
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
-| See your apps and whether they answer (`apps:read`) | Low |
-| See what is downloading (`downloads:read`) | Low |
-| See your films, series and books (the media folder, read only, and the library) (`media:read`) | Medium |
-| See processor, memory and disks (`system:read`) | Low |
+| Your apps and whether they answer (`apps:read`) | Low |
+| What is downloading (`downloads:read`) | Low |
+| Your films, series and books (the media folder, read only, and the library) (`media:read`) | Medium |
+| Processor, memory and disks (`system:read`) | Low |
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
 
 What it runs:
 
 - **main:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/notifications`). It rests after 5 minutes with nothing to do, and Starboard wakes it when it is needed.
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
@@ -39,7 +39,7 @@ Measured:
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **System**, find **Notifications** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Notifications**. To stop, select **Cancel**: nothing is installed.
 5. Notifications' own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 6. On its tab, fill in the details for one way to send, such as **Email**, and select **Save**.
@@ -55,7 +55,7 @@ Tip: Notifications is marked **Recommended** in the catalogue.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/notifications/starboard-plugin.json

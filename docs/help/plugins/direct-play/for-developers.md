@@ -34,7 +34,7 @@ Each image is pinned by digest in the manifest:
 | `GET /summary` | The Space saved by Direct play card (stat) |
 | `POST /pause` | The Pause fixing button |
 | `POST /resume` | The Resume fixing button |
-| `POST /survey` | The Look at the library now button |
+| `POST /survey` | The Check the library now button |
 | `GET /files` | The Files page |
 | `POST /jobs/quiet` | The job Direct play in quiet hours |
 | `POST /update/before` | The update's before step, 60 seconds at most |
@@ -46,7 +46,7 @@ Each image is pinned by digest in the manifest:
 
 ## How it works
 
-- A worker wakes once a minute and does nothing outside the hours set in **When it works**. In its hours it looks at the movies and tv folders with ffprobe, at most every 6 hours, reading only new or changed files, then fixes one file at a time, cheapest fix first.
+- A worker wakes once a minute and does nothing outside the hours set in **When it works**. In its hours it reads the movies and tv folders with ffprobe, at most every 6 hours, reading only new or changed files, then fixes one file at a time, cheapest fix first.
 - ffmpeg runs with `nice` and `ionice` at the lowest priority, with two threads. Each new file is checked before it replaces the original, then Reelix rescans the film or series and Jellyfin is told the file changed.
 - Starboard's quiet-hours job (`POST /jobs/quiet`) wakes it each hour in Starboard's quiet hours.
 - The cards read a small status file the worker writes, at most as often as **Card updates every** says, so nothing is probed for a card. The **Direct play** card sends `converting`, `waiting`, `paused`, `done` or `needs_setup`.

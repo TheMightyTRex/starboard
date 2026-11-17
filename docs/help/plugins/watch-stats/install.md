@@ -14,7 +14,7 @@ Add Watch statistics from Starboard's **Catalogue**, where it is listed under **
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Use Jellyfin's API key, kept by Starboard (`jellyfin:key`) | High |
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
@@ -23,7 +23,7 @@ What it runs:
 
 - **main:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/watch-stats`). It rests after 5 minutes with nothing to do, and Starboard wakes it when it is needed.
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
@@ -37,16 +37,16 @@ Measured:
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Jellyfin**, find **Watch statistics** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Watch statistics**. To stop, select **Cancel**: nothing is installed.
 5. Watch statistics's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
-6. Look at its **Watch statistics source** card or its tables. If they say "Playback Reporting is not installed in Jellyfin", go on to the next step. Otherwise, you are done.
+6. Check its **Watch statistics source** card or its tables. If they say "Playback Reporting is not installed in Jellyfin", go on to the next step. Otherwise, you are done.
 7. Add Playback Reporting in Starboard's **Settings**, then **Jellyfin**, or in Jellyfin's **Dashboard**, then **Plugins**, then **Catalogue**.
 8. Restart Jellyfin. Playback Reporting counts from then on, so the figures grow from that day.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/watch-stats/starboard-plugin.json

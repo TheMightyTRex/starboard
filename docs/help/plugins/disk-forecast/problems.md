@@ -28,13 +28,13 @@ q2: What does the card say?
 1. On Disk forecast's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../disk-forecast/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Disk forecast works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Wait for two days
@@ -56,10 +56,10 @@ Your Starboard's plug-in API is outside what this version of Disk forecast works
 **Warning** means a disk fills in less than 60 days, and **Problem** means in less than 14 days, at the rate it has been filling.
 
 1. Read which disk the card names.
-2. Make room on it, or add space. Read [Check storage, in Starboard's help](../../topics/check-storage.md).
+2. Make room on it, or add space. Read [Check free space and what is using it, in Starboard's help](../../topics/check-storage.md).
 3. Wait for the next reading, within an hour.
 
-The forecast compares with the oldest day it kept, up to 35 days back, so a big download some weeks ago can make the date look sooner than it will be.
+The forecast compares with the oldest day it kept, up to 35 days back, so a big download some weeks ago can bring the date forward.
 
 ## Read the error
 
@@ -68,7 +68,7 @@ When it could not measure at all, the card shows **Problem** and what went wrong
 1. Go to **Settings**, then **Plug-ins**, then **Disk forecast**.
 2. Select **Deactivate**.
 3. Select **Activate**. It measures again a few seconds after it starts.
-4. If the error stays, go to **System**, then **Logs**, and look for its name.
+4. If the error stays, go to **System**, then **Logs**, and find its name.
 
 Once it has readings, a later error is not shown on the card. If the time in the band is more than a few hours old, it has stopped measuring: start it again.
 

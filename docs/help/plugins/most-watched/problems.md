@@ -13,7 +13,7 @@ q: What does its tab say?
 q2: What does the card say?
   No Jellyfin key -> 3
   Nothing watched yet -> 4
-  The list looks wrong -> 5
+  The list is wrong -> 5
   Something else went wrong -> 6
 1: Start it again #start-it-again
 2: Update it or update Starboard #update-it-or-update-starboard
@@ -28,13 +28,13 @@ q2: What does the card say?
 1. On Most watched's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../most-watched/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Most watched works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Add Jellyfin to Starboard
@@ -49,13 +49,13 @@ The card says "Nothing watched yet" with "Starboard has no Jellyfin key to give 
 
 The card says "Nothing watched yet" and "in the last 7 days", or the days you set, with status **Idle**.
 
-- The first count starts a few seconds after Most watched is active. It asks Jellyfin about every user, so wait for it to finish, then look again.
+- The first count starts a few seconds after Most watched is active. It asks Jellyfin about every user, so wait for it to finish, then check again.
 - If nobody marked anything as played in that time, there is nothing to show. Make **Over the last** longer on its tab: the next count, within the hour, uses it.
 
 ## Check how it counts
 
 - A series is one title: each episode watched counts as a play, and each person counts once.
-- It looks at up to 200 of each person's most recently played films and episodes, so a heavy watcher's oldest plays may be left out.
+- It reads up to 200 of each person's most recently played films and episodes, so a heavy watcher's oldest plays may be left out.
 - The list is counted once an hour, so the newest plays can take up to an hour to appear.
 
 ## Read what the card says

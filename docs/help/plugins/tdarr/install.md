@@ -13,7 +13,7 @@ Add Tdarr from Starboard's **Catalogue**, where it is listed under **Apps you ca
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
 | Open its own web page on your home network, at a port Starboard chooses (`network:port`) | Medium |
@@ -22,7 +22,7 @@ What it runs:
 
 - **server:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/tdarr`), the `tdarr-cache` folder in your media folder, to read and change, the `movies` folder in your media folder, to read and change, the `tv` folder in your media folder, to read and change. Its web page is on your home network at port 8265 when that port is free, or the next free one.
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
@@ -37,13 +37,13 @@ Measured:
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Apps you can add**, find **Tdarr** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Tdarr**. To stop, select **Cancel**: nothing is installed.
 5. Tdarr's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/tdarr/starboard-plugin.json

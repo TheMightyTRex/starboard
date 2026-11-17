@@ -18,7 +18,7 @@ Cheapest first, one at a time:
 |---|---|---|
 | Repackage as MKV | The wrong container, such as AVI, M2TS or TS | The streams are copied into MKV; nothing is converted |
 | Add a playable sound track | No sound track every chosen device plays, such as DTS, TrueHD or FLAC only | A Dolby Digital 5.1 track (or AAC stereo when a chosen device lacks Dolby Digital) is added first; the original track is kept |
-| Shrink | H.264 above the bitrate you set: 15 Mbps for 1080p, 8 for 720p, 5 for smaller | H.264 at CRF 20, capped at 10 Mbps; kept as it was unless it gets at least a tenth smaller |
+| Shrink | H.264 over the bitrate you set: 15 Mbps for 1080p, 8 for 720p, 5 for smaller | H.264 at CRF 20, capped at 10 Mbps; kept as it was unless it gets at least a tenth smaller |
 | Convert to H.264 | DivX, Xvid, MPEG-2, WMV, VC-1, 10-bit H.264, larger than a chosen device shows, or HEVC when you ask and no chosen device plays it | H.264 at CRF 20 |
 
 HEVC is left alone unless you activate **Convert HEVC to H.264**: it costs space, and Jellyfin converts it as it

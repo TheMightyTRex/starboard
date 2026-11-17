@@ -42,7 +42,7 @@ there is no arm/v7 build for older Raspberry Pis.
 
 ## What it may do
 
-- It sees your apps and whether they answer (`apps:read`), to find Jellyfin and Audiobookshelf.
+- It reads your apps and whether they answer (`apps:read`), to find Jellyfin and Audiobookshelf.
 - It reaches your home network and the internet (`network:lan`).
 - It runs one container, 128 MB of memory and half a core at most. Measured on 13 November 2026: about 20 MB with
   nothing chosen, about 22 to 32 MB with Tailscale waiting to sign in, about 20 to 30 MB with Cloudflare Tunnel, and

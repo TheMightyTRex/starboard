@@ -26,13 +26,13 @@ q2: What does the card say?
 1. On Ad blocking's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../dns-blocking/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 ## Update it or update Starboard
 
 Your Starboard's plug-in API is outside what this version of Ad blocking works with, so Starboard stopped it.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Add the address
@@ -50,7 +50,7 @@ Ad blocking asked Pi-hole or AdGuard Home and got no numbers back, or did not an
 
 1. Open the address in **Its address** in your browser. If it does not open, Pi-hole or AdGuard Home is not running at that address.
 2. Check **Which one** matches what you run.
-3. Enter the password again and select **Save**. A saved password is never shown, so typing it again is the only way to be sure.
+3. Enter the password again and select **Save**. A saved password is never shown, so entering it again is the only way to be sure.
 4. For Pi-hole, check it is Pi-hole 6. Ad blocking uses the way Pi-hole 6 answers, and an older Pi-hole gives it no numbers.
 5. For AdGuard Home, check **User name**, and that the address includes its port, such as `http://192.0.2.2:3000`.
 6. Wait a minute for the card to ask again.

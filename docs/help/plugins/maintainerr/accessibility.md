@@ -6,7 +6,7 @@ Starboard draws everything Maintainerr shows in Starboard: its tab, its buttons 
 ## What was checked
 
 - **The plug-in tester:** accessibility passed. Starboard runs it before the plug-in is added, every time. Maintainerr has no settings, card or actions in Starboard, so there was little to check.
-- **Its logo** has a text description, "A broom", for where it is shown without its name.
+- **Its logo**, a broom, has the text description "Maintainerr logo" where it is shown without its name. Beside its name, screen readers skip it, so the name is read once.
 - **Starboard's own parts** (settings, buttons, dialogs and cards) are checked with axe, a keyboard walk and the reading order in each Starboard release. Read [How Starboard is tested](../../accessibility/how-starboard-is-tested.md).
 
 ## Not checked

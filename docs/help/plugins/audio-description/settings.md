@@ -57,8 +57,8 @@ Audio description's settings are on its own tab: go to **Settings**, then **Plug
 
 These are on Audio description's tab.
 
-- **Look for described titles now** reads the sound tracks of every film and episode in Jellyfin straight away, in the background, instead of waiting for tonight's check. It says "Looking for described titles. The list updates in a minute or two".
-- **Apply the Reelix choice now** makes Reelix match **Prefer releases with audio description**: it adds the **Audio description** format to Reelix if it is not there and prefers it in every video quality level, or puts the scores back to neutral when the setting is deactivated. It says what it did, such as "Reelix prefers releases with audio description in 4 quality levels".
+- **Check for described titles now** reads the sound tracks of every film and episode in Jellyfin straight away, in the background, instead of waiting for tonight's check. It says "Checking for described titles. The list updates in a minute or two".
+- **Apply the Reelix choice now** makes Reelix match **Prefer releases with audio description**. It adds the **Audio description** format to Reelix if it is not there, and prefers it in every video quality level. When the setting is deactivated, it puts the scores back to neutral. It says what it did, such as "Reelix prefers releases with audio description in 4 quality levels".
 
 ## Things to note
 

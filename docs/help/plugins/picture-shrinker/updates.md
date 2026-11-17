@@ -1,15 +1,50 @@
 # Picture shrinker: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Picture shrinker 1.0.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Picture shrinker 1.2.1 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.0.0 | 1.14 or later | 2026-11-15 |
+| 1.2.1 | 1.14 or later | 17 November 2026 |
+| 1.2.0 | 1.14 or later | 17 November 2026 |
+| 1.1.1 | 1.14 or later | 16 November 2026 |
+| 1.0.0 | 1.14 or later | 15 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.2.1
+
+Changed:
+
+- **Clearer words:** **Just shrink, with no backup** is now **Shrink without a backup**. The card's band says **Scheduled**, and the card says when it runs next.
+- **Logo description:** where its logo stands on its own, a screen reader says "Picture shrinker logo", the plug-in's name, instead of a description of the symbol.
+
+## What is new in 1.2.0
+
+Added:
+
+- **Choose the backup:** Original pictures asks whether to keep a backup copy of each original or just shrink, once it is added and again after this update. Nothing is shrunk until you choose; a backup you already have is kept.
+- **Start again** in its actions, for the pictures it shrinks or for every picture: deletes the backup and the records, and has Jellyfin download the pictures again at full size. A picture Jellyfin cannot download again is put back after a day.
+- **Every picture type:** posters, photos of people, backdrops, thumbnails, logos, banners, disc art and clear art, each with its own size and all activated when you add it, with Shrink all picture types to shrink them all in one setting. Backdrops were asked for by Lentzeris in the Jellyfin version's issue #2.
+
+Changed:
+
+- **Rules 1.2:** the same rules file as the Jellyfin version.
+
+Removed:
+
+- **Back up each original before it is replaced:** replaced by Original pictures.
+
+After this update, open Picture shrinker's tab and choose in **Original pictures**: until you do, it shrinks nothing and its card says **Choose a backup**.
+
+## What is new in 1.1.1
+
+Changed:
+
+- **Lighter at rest:** it wakes about once a minute while nothing asks it anything, not twice a second.
+- **Starts faster:** its image comes with Python's modules already compiled, so a start takes about a quarter of the processor time.
 
 ## What is new in 1.0.0
 

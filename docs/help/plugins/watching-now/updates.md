@@ -1,16 +1,39 @@
 # Watching now: Updates
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Watching now 1.1.0 is the latest version. It needs Starboard with plug-in API 1.14 or later.
+Watching now 1.1.3 is the latest version. It needs Starboard with plug-in API 1.14 or later.
 
 ## Versions
 
 | Version | Needs plug-in API | Released |
 |---|---|---|
-| 1.1.0 | 1.14 or later | 2026-11-15 |
-| 1.0.0 | 1.1 or later | 2026-11-12 |
+| 1.1.3 | 1.14 or later | 17 November 2026 |
+| 1.1.2 | 1.14 or later | 17 November 2026 |
+| 1.1.1 | 1.14 or later | 16 November 2026 |
+| 1.1.0 | 1.14 or later | 15 November 2026 |
+| 1.0.0 | 1.1 or later | 12 November 2026 |
 
 The catalogue offers each Starboard the newest version it can run, so an older Starboard keeps an earlier version.
+
+## What is new in 1.1.3
+
+Changed:
+
+- **Clearer words:** the band says **Watching**, and the card lists each person.
+- **Logo description:** where its logo stands on its own, a screen reader says "Watching now logo", the plug-in's name, instead of a description of the symbol.
+
+## What is new in 1.1.2
+
+Fixed:
+
+- **Jellyfin 12:** it sends Jellyfin's key the way Jellyfin 12 asks for it, so Jellyfin no longer refuses its requests where legacy authorisation is off. Older Jellyfin still works.
+
+## What is new in 1.1.1
+
+Changed:
+
+- **Lighter at rest:** it wakes about once a minute while nothing asks it anything, not twice a second, and writes nothing to its folder when a run goes well.
+- **Starts faster:** its image comes with Python's modules already compiled, so a start takes about a quarter of the processor time.
 
 ## What is new in 1.1.0
 

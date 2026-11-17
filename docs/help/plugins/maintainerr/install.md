@@ -14,7 +14,7 @@ Add Maintainerr from Starboard's **Catalogue**, where it is listed under **Apps 
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
 | Open its own web page on your home network, at a port Starboard chooses (`network:port`) | Medium |
@@ -23,7 +23,7 @@ What it runs:
 
 - **app:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/maintainerr`). Its web page is on your home network at port 6246 when that port is free, or the next free one.
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
@@ -37,13 +37,13 @@ Measured:
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Apps you can add**, find **Maintainerr** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Maintainerr**. To stop, select **Cancel**: nothing is installed.
 5. Maintainerr's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/maintainerr/starboard-plugin.json
@@ -58,7 +58,7 @@ Maintainerr's tab shows its address on your home network, under **Its web page**
 1. On Maintainerr's tab, under **Its web page**, select **Open Maintainerr**. Its page opens in a new tab.
 2. In Maintainerr, add Jellyfin with the key you made in Jellyfin.
 3. If you have Seerr, add it too, with a key you made in Seerr.
-4. Make a rule, such as films everyone has watched and older than 90 days, and look at what it finds.
+4. Make a rule, such as films everyone has watched and older than 90 days, and check what it finds.
 5. Give a rule an action only when you are happy with what it finds.
 
 Nothing is removed until you give a rule an action and the keys allow it. Starboard gives Maintainerr no key and no media folder, so it removes through Jellyfin or Seerr only.

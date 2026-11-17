@@ -17,7 +17,7 @@ Watch statistics's settings are on its own tab: go to **Settings**, then **Plug-
 
 These are on Watch statistics's tab.
 
-- **Read the figures again now** reads the plays from Jellyfin straight away, without waiting for the 15 minutes the last answer is kept. It says how many plays it read, such as "Read 23 plays over the last 30 days".
+- **Check now** reads the plays from Jellyfin straight away, without waiting for the 15 minutes the last answer is kept. It says how many plays it read, such as "Read 23 plays over the last 30 days".
 
 ## Things to note
 

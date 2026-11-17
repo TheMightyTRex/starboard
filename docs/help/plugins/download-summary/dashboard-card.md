@@ -1,11 +1,11 @@
 # Download summary: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Download summary adds 1 card you can put on your dashboard. Each starts with a grey band: Download summary's logo and name and a status in words. A lighter grey footer says when it last changed.
+Download summary adds 1 card you can put on your dashboard. Each starts with a band: Download summary's logo and name and a status in words. A footer says when it last changed.
 
 ## Downloaded today
 
-Shows how much has downloaded today, with how much this week under it. It adds up what Starboard sees in **Activity**, then **Downloads**, then **Queue**: every minute, how much further each download has gone since the minute before. This week means today and the 6 days before it.
+Shows how much has downloaded today, with how much this week under it. It adds up what **Activity** shows, then **Downloads**, then **Queue**: every minute, how much further each download has gone since the minute before. This week means today and the 6 days before it.
 
 - **How often it updates:** once a minute while the dashboard is open. Nothing is asked while the browser tab is hidden.
 - **Example:** 12.88 GB today, 41 GB this week

@@ -10,7 +10,7 @@ Home Assistant's settings are on its own tab: go to **Settings**, then **Plug-in
 | **Home Assistant's address** | Such as http://192.0.2.30:8123 A web address. | Empty |
 | **Long-lived access token** | In Home Assistant: your profile, Security, Long-lived access tokens, Create token. Kept by Starboard. Kept secret by Starboard: it is never shown again. | Empty |
 | **What to show** | One entity id each, such as binary_sensor.front_door or sensor.lounge_temperature. One a line. | Empty |
-| **Warn when any is** | States that turn the card amber, separated by commas. Words. | on, open, unlocked |
+| **Warn when any is** | States that give the card a warning, separated by commas. Words. | on, open, unlocked |
 
 Home Assistant has no buttons. Select **Save** to keep the settings.
 

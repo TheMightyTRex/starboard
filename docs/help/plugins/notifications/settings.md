@@ -21,7 +21,7 @@ Notifications' settings are on its own tab: go to **Settings**, then **Plug-ins*
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Send by email** | Activate once the details below are filled in and the test arrives. Activated or deactivated. | Deactivated |
+| **Send by email** | Activate once the email details are entered and the test arrives. Activated or deactivated. | Deactivated |
 | **Email server** | Such as smtp.example.com Words. | Empty |
 | **Port** | A number from 1 to 65535. | 587 |
 | **Security** | How the connection to your email server is protected. Your email service says which to use. One of: STARTTLS (usually port 587), SSL (usually port 465), None (only on your own network). | STARTTLS (usually port 587) |
@@ -34,7 +34,7 @@ Notifications' settings are on its own tab: go to **Settings**, then **Plug-ins*
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Send by Telegram** | Activate once the details below are filled in and the test arrives. Activated or deactivated. | Deactivated |
+| **Send by Telegram** | Activate once the bot token and chat are entered and the test arrives. Activated or deactivated. | Deactivated |
 | **Bot token** | From @BotFather in Telegram. Kept secret by Starboard: it is never shown again. | Empty |
 | **Telegram chat** | One chat id a line. Send your bot a message first, so it may write to you. One a line. | Empty |
 
@@ -58,7 +58,7 @@ Notifications' settings are on its own tab: go to **Settings**, then **Plug-ins*
 
 | Setting | What it does | Default |
 |---|---|---|
-| **Send by Pushover** | Activate once the keys below are filled in and the test arrives. Activated or deactivated. | Deactivated |
+| **Send by Pushover** | Activate once both keys are entered and the test arrives. Activated or deactivated. | Deactivated |
 | **User key** | Kept secret by Starboard: it is never shown again. | Empty |
 | **Application token** | Make an application for Starboard on pushover.net. Kept secret by Starboard: it is never shown again. | Empty |
 
@@ -82,13 +82,13 @@ Notifications' settings are on its own tab: go to **Settings**, then **Plug-ins*
 
 | Setting | What it does | Default |
 |---|---|---|
-| **People** | One person a line: the name they use in Reelix or Seerr, a comma, then their email address or telegram and their chat id. One a line. | Empty |
+| **People** | One person a line: the name they use in Reelix or Seerr, a comma, then their email address, or "telegram" and their chat id. One a line. | Empty |
 
 ## Buttons
 
 These are on Notifications' tab.
 
-- **Send a test email**, **Send a test to Telegram**, **Send a test to Discord**, **Send a test by Signal**, **Send a test by Pushover**, **Send a test by ntfy** and **Send a test to the webhooks** each send "A test from Starboard" by that one channel, with the details saved, even before you activate it. Starboard says "Test sent by" and the channel, or "Test not sent" and why.
+- **Send a test email**, **Send a test to Telegram**, **Send a test to Discord**, **Send a test by Signal**, **Send a test by Pushover**, **Send a test by ntfy** and **Send a test to the webhooks** each send "A test from Starboard" by that one channel, with the details saved. They work even before you activate the channel. Starboard says "Test sent by" and the channel, or "Test not sent" and why.
 - **Send New this week now** sends New this week straight away, on any day, by every active channel. It says "Sending New this week now. The Notifications card says when it has gone". If nothing arrived in the last 7 days, nothing is sent.
 
 ## Things to note

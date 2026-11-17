@@ -1,7 +1,7 @@
 # Library health: Dashboard card
 <!-- Mirrored from the starboard-plugins repository by tools/sync-plugin-help.py: change it there. -->
 
-Library health adds 2 cards you can put on your dashboard. Each starts with a grey band: Library health's logo and name and a status in words. A lighter grey footer says when it last changed.
+Library health adds 2 cards you can put on your dashboard. Each starts with a band: Library health's logo and name and a status in words. A footer says when it last changed.
 
 ## Library health
 
@@ -23,8 +23,8 @@ Shows a short list, up to 10 lines: the films and series to fix, each with what 
 | Status | Means |
 |---|---|
 | **OK** | The last check found nothing to fix. The band says "Nothing to fix". |
-| **Waiting** | It has just started and has not checked yet. The band says "Checking soon" and the number card says "Not checked yet". |
-| **Warning** | The last check found titles to fix. The band says how many, such as "4 titles to fix". |
+| **Waiting** | It started moments ago and has not checked yet. The band says "Checking soon" and the number card says "Not checked yet". |
+| **Warning** | The last check found titles to fix. The band says "To fix", and the number card says how many. |
 | **Problem** | The first check went wrong. The number card says what went wrong under the number, such as "LookupError: Starboard has no Jellyfin key to give yet: add Jellyfin in Settings, Apps". The list card shows its "Nothing to fix" line until a check works, so read the band and the number card. |
 
 Once a check has worked, the cards keep showing its result if a later check goes wrong.

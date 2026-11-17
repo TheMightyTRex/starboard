@@ -14,16 +14,16 @@ Add Remote access from Starboard's **Catalogue**, where it is listed under **Net
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
-| See your apps and whether they answer (`apps:read`) | Low |
+| Your apps and whether they answer (`apps:read`) | Low |
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
 
 What it runs:
 
 - **main:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/remote-access`).
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
@@ -37,13 +37,13 @@ Measured:
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Network**, find **Remote access** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Remote access**. To stop, select **Cancel**: nothing is installed.
 5. Remote access's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/remote-access/starboard-plugin.json
@@ -75,7 +75,7 @@ You get a web address of your own, such as `https://tv.example.org`, through Clo
 3. Protect Starboard's hostname with Cloudflare Access. Without it, Remote access stops the tunnel.
 4. In Starboard, go to **Settings**, then **Plug-ins**, then **Remote access**.
 5. In **Connect with**, choose **Cloudflare Tunnel**.
-6. In **Cloudflare tunnel token**, paste the token.
+6. In **Cloudflare Tunnel token**, paste the token.
 7. Select **Save**.
 8. Add Starboard's hostname to `STARBOARD_ALLOWED_HOSTS` in Starboard's settings file, so Starboard answers to it.
 9. Select **Test remote access**.

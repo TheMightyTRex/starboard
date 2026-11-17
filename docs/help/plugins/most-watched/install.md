@@ -13,7 +13,7 @@ Add Most watched from Starboard's **Catalogue**, where it is listed under **Jell
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Use Jellyfin's API key, kept by Starboard (`jellyfin:key`) | High |
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
@@ -22,19 +22,19 @@ What it runs:
 
 - **main:** reaches your home network and the internet, and this computer as `host.docker.internal`. It can use its own folder in Starboard's data (`data/plugins/most-watched`).
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
 - **main:** 64 MB of memory and 0.1 of a processor core at most.
 
-Measured: not measured yet. The figures above are the most it may use.
+These figures are the most it may use.
 
 ## Add it
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Jellyfin**, find **Most watched** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Most watched**. To stop, select **Cancel**: nothing is installed.
 5. Most watched's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 6. If you want to count over more or fewer than 7 days, change **Over the last** on its tab. Read [Settings](../most-watched/settings.md).
@@ -44,7 +44,7 @@ The first count starts a few seconds after it is active, then runs once an hour.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/most-watched/starboard-plugin.json

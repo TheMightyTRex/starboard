@@ -21,7 +21,7 @@ q2: What is wrong?
 3: Check Move items each day #check-move-items-each-day
 4: Check the rules #check-the-rules
 5: Read what the card says #read-what-the-card-says
-6: Look at the Holding folder page #look-at-the-holding-folder-page
+6: Check the Holding folder page #check-the-holding-folder-page
 7: Free the space for good #free-the-space-for-good
 ```
 
@@ -30,7 +30,7 @@ q2: What is wrong?
 1. On Library clean-up's tab, read the message under its state: it says why it stopped.
 2. Select **Try again**.
 3. If it stopped soon after an update, select **Roll back to** and the version you had. Read [Updates](../library-cleanup/updates.md).
-4. Still failing: go to **System**, then **Logs**, and look for its name.
+4. Still failing: go to **System**, then **Logs**, and find its name.
 
 It stops answering when it cannot read and change the media folder, or cannot write its own folder. Check that Jellyfin is added in **Settings**, then **Apps**, then deactivate and activate Library clean-up.
 
@@ -38,7 +38,7 @@ It stops answering when it cannot read and change the media folder, or cannot wr
 
 Your Starboard's plug-in API is outside what this version of Library clean-up works with, so Starboard stopped it. Library clean-up needs plug-in API 1.15, in Starboard 0.19.0 or later.
 
-1. Select **Look for an update** on its tab.
+1. Select **Check for an update** on its tab.
 2. If there is none, update Starboard. Read [Update Starboard](../../topics/update-starboard.md).
 
 ## Check Move items each day
@@ -53,7 +53,7 @@ Your Starboard's plug-in API is outside what this version of Library clean-up wo
 - **Films watched by everyone** finds nothing when one person never watches, such as a guest account. Add their Jellyfin user name to **People to leave out**.
 - Check that the rules you want are activated in **Rules**, and that the library is not deactivated in **Libraries**.
 - Something in **Always keep** stays: favourites, anything someone is part way through, films in a collection and anything with the keep tag.
-- To keep something **Preview** lists, add the keep tag to it in Jellyfin, or change the rules. Then select **Preview again** and look again.
+- To keep something **Preview** lists, add the keep tag to it in Jellyfin, or change the rules. Then select **Preview again** and check the list again.
 - **Preview** is worked out in the background, which takes a few seconds on a large library. The page updates by itself.
 
 ## Read what the card says
@@ -61,7 +61,7 @@ Your Starboard's plug-in API is outside what this version of Library clean-up wo
 - **No answer from** and its name: it did not answer in 3 seconds. Check that it is **Active** on its tab, then wait a minute.
 - **Last run failed** in the band: the card says "The last run did not finish" and why. Fix that, then select **Run now** in **System**, then **Jobs**, or wait for the next run.
 
-## Look at the Holding folder page
+## Check the Holding folder page
 
 1. On Library clean-up's tab, open **Holding folder**.
 2. Find the item. If something else is in its place now, it stays in the holding folder and the page says so. Move or rename what is in its place, then select **Put back** again.

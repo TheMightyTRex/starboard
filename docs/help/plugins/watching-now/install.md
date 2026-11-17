@@ -13,7 +13,7 @@ Add Watching now from Starboard's **Catalogue**, where it is listed under **Jell
 
 Starboard lists these before you add it, each with its risk.
 
-| It asks to | Risk |
+| Permission | Risk |
 |---|---|
 | Use Jellyfin's API key, kept by Starboard (`jellyfin:key`) | High |
 | Reach other computers on your home network, and the internet (`network:lan`) | Medium |
@@ -22,19 +22,19 @@ What it runs:
 
 - **main:** reaches your home network and the internet, and this computer as `host.docker.internal`.
 
-Like every plug-in, it runs read only, as a user that is not root, with no extra rights, and its image is pinned by digest, so what you approved is what runs.
+Like every plug-in, it runs read only, as a user that is not root, with no extra rights. Its image is pinned by digest, so what you approved is what runs.
 
 ## Memory and processor
 
 - **main:** 48 MB of memory and 0.1 of a processor core at most.
 
-Measured: not measured yet. The figures above are the most it may use.
+These figures are the most it may use.
 
 ## Add it
 
 1. Go to **Settings**, then **Plug-ins**, then **Catalogue**.
 2. Under **Jellyfin**, find **Watching now** and select **Install…**.
-3. A slide-out opens with what it can see, change and reach. Read it all.
+3. A slide-out opens with what it can read, change and reach. Read it all.
 4. Enter your Starboard password and select **Install Watching now**. To stop, select **Cancel**: nothing is installed.
 5. Watching now's own tab opens under **Settings**, then **Plug-ins**. Select **Activate**. Its state changes to **Active**.
 6. Add its card to your dashboard. Read [Dashboard card](../watching-now/dashboard-card.md).
@@ -43,7 +43,7 @@ There is nothing else to set up: it has no settings of its own.
 
 ### Add it by its address
 
-On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **See what it does** and carry on from step 3:
+On the **Catalogue** page, under **Add one from elsewhere**, paste this into **The plug-in's manifest address**, then select **What it does** and carry on from step 3:
 
 ```text
 https://raw.githubusercontent.com/TheMightyTRex/starboard-plugins/main/watching-now/starboard-plugin.json
